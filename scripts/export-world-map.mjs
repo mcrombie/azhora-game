@@ -199,7 +199,7 @@ for (const hex of hexes) {
 }
 
 /** Hand-drawn glyphs, one per hex, jittered deterministically so nothing lines up like a grid. */
-const glyphs = { peakLine: [], peakShade: [], snow: [], hill: [], treeCrown: [], treeTrunk: [], deepCrown: [], jungle: [], marsh: [], hatch: [], tuft: [], dune: [] };
+const glyphs = { peakFill: [], peakLine: [], peakShadowLine: [], peakShade: [], peakHatch: [], snow: [], hill: [], treeCrown: [], treeTrunk: [], deepCrown: [], jungle: [], marsh: [], hatch: [], tuft: [], dune: [] };
 for (const hex of hexes) {
   if (!isLand(hex)) continue;
   const [cx, cy] = normalizedPoint(hex.q, hex.r);
@@ -207,17 +207,26 @@ for (const hex of hexes) {
   const x = cx + jx, y = cy + jy, n = n => number(n);
   const desert = desertRegions.has(hex.region);
   switch (hex.terrain) {
-    case 'high_mountain': {
-      const s = 9 + hash(hex.q, hex.r, 3) * 3;
-      glyphs.peakLine.push(`M${n(x - s)},${n(y + s * .7)}L${n(x - s * .2)},${n(y - s)}L${n(x + s * .15)},${n(y - s * .55)}L${n(x + s * .45)},${n(y - s * .85)}L${n(x + s)},${n(y + s * .7)}`);
-      glyphs.peakShade.push(`M${n(x - s * .2)},${n(y - s)}L${n(x + s)},${n(y + s * .7)}L${n(x + s * .1)},${n(y + s * .7)}Z`);
-      glyphs.snow.push(`M${n(x - s * .45)},${n(y - s * .45)}L${n(x - s * .2)},${n(y - s)}L${n(x + s * .05)},${n(y - s * .4)}Z`);
-      break;
-    }
-    case 'mountain': {
-      const s = 6.5 + hash(hex.q, hex.r, 3) * 2.5;
-      glyphs.peakLine.push(`M${n(x - s)},${n(y + s * .65)}L${n(x - s * .1)},${n(y - s)}L${n(x + s * .3)},${n(y - s * .45)}L${n(x + s)},${n(y + s * .65)}`);
-      glyphs.peakShade.push(`M${n(x - s * .1)},${n(y - s)}L${n(x + s)},${n(y + s * .65)}L${n(x + s * .15)},${n(y + s * .65)}Z`);
+    case 'high_mountain': case 'mountain': {
+      // One summit per hex, never a joined pair of humps that reads as a letter
+      // when the chart is zoomed: a long lit flank with a kink, a steeper shaded
+      // flank with a shoulder, a parchment fill, hatching in the shade, and a
+      // heavier line on the shadow side, the way a pen would do it.
+      const high = hex.terrain === 'high_mountain';
+      const s = (high ? 9.5 : 7) + hash(hex.q, hex.r, 3) * (high ? 3 : 2.5);
+      const lean = (hash(hex.q, hex.r, 4) - .5) * .5, shoulder = .3 + hash(hex.q, hex.r, 5) * .25;
+      const px = x + lean * s, py = y - s, base = y + s * .6;
+      const ridge = [[x - s, base], [x - s * .5, y - s * (.08 + shoulder * .35)], [px, py], [x + s * .45, y - s * shoulder * .7], [x + s, base]];
+      const pointsOf = points => points.map(([ax, ay]) => `${n(ax)},${n(ay)}`).join('L');
+      glyphs.peakFill.push(`M${pointsOf(ridge)}Z`);
+      glyphs.peakLine.push(`M${pointsOf(ridge.slice(0, 3))}`);
+      glyphs.peakShadowLine.push(`M${pointsOf(ridge.slice(2))}`);
+      glyphs.peakShade.push(`M${pointsOf([ridge[2], ridge[3], ridge[4], [x + s * .2, base]])}Z`);
+      for (const t of [.3, .55, .8]) {
+        const ax = px + (x + s - px) * t, ay = py + (base - py) * t;
+        glyphs.peakHatch.push(`M${n(ax)},${n(ay)}L${n(ax - s * .16)},${n(ay + s * .12)}`);
+      }
+      if (high) glyphs.snow.push(`M${pointsOf([[px - s * .26, py + s * .38], [px, py], [px + s * .22, py + s * .34], [px + s * .08, py + s * .3], [px - s * .06, py + s * .42]])}Z`);
       break;
     }
     case 'hills': {
@@ -256,7 +265,7 @@ for (const hex of hexes) {
       break;
     case 'grassland': case 'plains':
       if (desert) { if (hash(hex.q, hex.r, 6) > .6) glyphs.dune.push(`M${n(x - 7)},${n(y + 2)}Q${n(x - 2)},${n(y - 3)} ${n(x + 2)},${n(y + 1)}Q${n(x + 5)},${n(y + 3)} ${n(x + 8)},${n(y + 1)}`); }
-      else if (hash(hex.q, hex.r, 6) > (hex.terrain === 'grassland' ? .72 : .86)) glyphs.tuft.push(`M${n(x - 3)},${n(y + 2)}L${n(x - 1)},${n(y - 3)}L${n(x)},${n(y + 1)}L${n(x + 1.5)},${n(y - 3.5)}L${n(x + 3)},${n(y + 2)}`);
+      else if (hash(hex.q, hex.r, 6) > (hex.terrain === 'grassland' ? .72 : .86)) glyphs.tuft.push(`M${n(x)},${n(y + 2)}L${n(x - 2.6)},${n(y - 2.4)}M${n(x)},${n(y + 2)}L${n(x + .4)},${n(y - 4)}M${n(x)},${n(y + 2)}L${n(x + 2.8)},${n(y - 2)}`);
       break;
     default: break;
   }
@@ -358,9 +367,12 @@ const svg = [
   `<path data-glyph="tree-crown" fill="#a9bd86" stroke="${INK_SOFT}" stroke-width=".9" d="${glyphs.treeCrown.join('')}"/>`,
   `<path data-glyph="deep-crown" fill="#8ea973" stroke="${INK_SOFT}" stroke-width=".9" d="${glyphs.deepCrown.join('')}"/>`,
   `<path data-glyph="jungle" fill="#86a56e" stroke="${INK_SOFT}" stroke-width=".9" d="${glyphs.jungle.join('')}"/>`,
-  `<path data-glyph="peak-shade" fill="${INK}" fill-opacity=".28" stroke="none" d="${glyphs.peakShade.join('')}"/>`,
-  `<path data-glyph="peak" stroke="${INK}" stroke-width="1.3" d="${glyphs.peakLine.join('')}"/>`,
-  `<path data-glyph="snow" fill="#f4efe2" stroke="none" d="${glyphs.snow.join('')}"/>`,
+  `<path data-glyph="peak-fill" fill="#ddd0b4" stroke="none" d="${glyphs.peakFill.join('')}"/>`,
+  `<path data-glyph="peak-shade" fill="${INK}" fill-opacity=".22" stroke="none" d="${glyphs.peakShade.join('')}"/>`,
+  `<path data-glyph="peak-hatch" stroke="${INK}" stroke-width=".7" stroke-opacity=".55" d="${glyphs.peakHatch.join('')}"/>`,
+  `<path data-glyph="peak" stroke="${INK}" stroke-width="1.1" d="${glyphs.peakLine.join('')}"/>`,
+  `<path data-glyph="peak-shadow" stroke="${INK}" stroke-width="1.7" d="${glyphs.peakShadowLine.join('')}"/>`,
+  `<path data-glyph="snow" fill="#f4efe2" stroke="${INK}" stroke-width=".5" d="${glyphs.snow.join('')}"/>`,
   '</g>',
   `<g id="lakes"><path d="${lakePath}" fill="${SEA}" stroke="${INK_SOFT}" stroke-width="1.2"/></g>`,
   `<path id="region-boundaries" clip-path="url(#land-clip)" fill="none" stroke="${INK_SOFT}" stroke-opacity="0.75" stroke-width="1.5" stroke-dasharray="7 4" stroke-linecap="round" stroke-linejoin="round" d="${borderLines.map(line => pathOf(line, false)).join('')}"/>`,

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createGoblin } from './characters.js';
+import { createGoblin, createWolf } from './characters.js';
 
 // A handful of pooled effects and three articulated actors; nothing allocates
 // new geometry during a swing. Combat rules remain independent of the renderer.
@@ -36,7 +36,7 @@ export function createCombatView(scene, world, camera) {
     if(e.type==='player-hit'){hitFlash=.4;shake=.1;burst(e.x,e.z,8);}
   }
   function createEnemy(enemy,index) {
-    const actor=createGoblin({variant:index});scene.add(actor.group);
+    const actor=enemy.kind==='wolf'?createWolf({variant:index}):createGoblin({variant:index});scene.add(actor.group);
     const tell=new THREE.Group();scene.add(tell);
     const sector=new THREE.Mesh(new THREE.CircleGeometry(2.3,32,-.85,1.7),new THREE.MeshBasicMaterial({color:0xeab34f,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     // In local coordinates +Y of the disc becomes +Z on the ground.
@@ -44,17 +44,17 @@ export function createCombatView(scene, world, camera) {
     const edge=new THREE.Mesh(new THREE.RingGeometry(2.22,2.32,32,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0xf6c867,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     edge.rotation.copy(sector.rotation);tell.add(edge);
     const badge=document.createElement('div');badge.className='enemy-badge';
-    const name=document.createElement('span');name.textContent=index===0?'Bramble scout':'Bramble raider';
+    const name=document.createElement('span');name.textContent=enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):index===0?'Bramble scout':'Bramble raider';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
   }
   function update(dt,time,state,position,visible=true) {
-    const ids=new Set(state.enemies.filter(e=>e.kind==='goblin').map(e=>e.id));
+    const ids=new Set(state.enemies.filter(e=>e.kind==='goblin'||e.kind==='wolf').map(e=>e.id));
     for(const [id,item] of actors)if(!ids.has(id)){item.actor.group.visible=false;item.tell.visible=false;item.badge.hidden=true;}
     let index=0;
     for(const enemy of state.enemies) {
-      if(enemy.kind!=='goblin')continue;
+      if(enemy.kind!=='goblin'&&enemy.kind!=='wolf')continue;
       const item=actors.get(enemy.id)||createEnemy(enemy,index);index++;
       const dead=enemy.hp<=0;
       item.deadTime=dead?item.deadTime+dt:0;
@@ -84,7 +84,7 @@ export function createCombatView(scene, world, camera) {
         vertices.needsUpdate=true;
       }
       const range=Math.hypot(enemy.x-position.x,enemy.z-position.z);
-      projection.set(enemy.x,group.position.y+1.73,enemy.z).project(camera);
+      projection.set(enemy.x,group.position.y+(enemy.kind==='wolf'?1.15:1.73),enemy.z).project(camera);
       item.badge.hidden=!visible||dead||enemy.active===false||range>21||projection.z>1||projection.z< -1;
       if(!item.badge.hidden){
         item.badge.style.transform=`translate(-50%,-100%) translate(${(projection.x*.5+.5)*innerWidth}px,${(-projection.y*.5+.5)*innerHeight}px)`;

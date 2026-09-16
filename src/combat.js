@@ -13,6 +13,12 @@ const ENEMY_TELL = .94;
 const ENEMY_ATTACK = .62;
 const ENEMY_CONTACT = .27;
 const ENEMY_RECOVERY = 1.35;
+// Each enemy kind has its own pace. Goblins keep the original timings; wolves
+// close faster, bite sooner and hit a little lighter.
+const ENEMY_KINDS = Object.freeze({
+  goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
+  wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
+});
 const DEFAULT_ENCOUNTER = Object.freeze({
   id: 'tidehaven-raiders', center: Object.freeze({ x: 0, z: -36 }),
   checkpoint: Object.freeze({ x: 0, z: -25 }), retreatZ: -16,
@@ -40,11 +46,13 @@ function encounterConfig(config) {
   const seen = new Set(), enemies = [];
   for (const enemy of config.enemies) {
     if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || !point(enemy)) return null;
+    const kind = enemy.kind ?? 'goblin';
+    if (!Object.hasOwn(ENEMY_KINDS, kind)) return null;
     const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
       || Math.abs(enemy[across] - config.center[across]) > 12 || enemy[axis] < config.center[axis] - 21
       || enemy[axis] > config.center[axis] + 18 || enemy[axis] >= line) return null;
-    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry });
+    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind });
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
@@ -163,7 +171,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     restorePlayer();
     enemyTimers.clear();
     lastEncounter = next;
-    state.enemies = next.enemies.map(enemy => makeEnemy(enemy.id, 'goblin', enemy, enemy.entry, enemy.hp));
+    state.enemies = next.enemies.map(enemy => makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, enemy.hp));
     state.phase = 'active';
     state.encounterId = next.id;
     nextAttackerAt = time + .6;
@@ -284,7 +292,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   function hurtPlayer(enemy) {
     if (player.invulnerable || state.phase !== 'active' || player.hp <= 0) return;
-    const damage = 17;
+    const damage = (ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage;
     player.hp = Math.max(0, player.hp - damage);
     player.action = player.hp ? 'hurt' : 'dead';
     player.progress = 0;
@@ -378,28 +386,29 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       return;
     }
     if (enemy.kind === 'dummy' || state.phase !== 'active') return;
+    const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
     if (enemy.action === 'windup') {
-      enemy.progress = clamp(timers.actionTime / ENEMY_TELL, 0, 1);
+      enemy.progress = clamp(timers.actionTime / profile.tell, 0, 1);
       // Aim is locked for the whole tell; a sidestep or dodge can beat the actual strike.
-      if (timers.actionTime >= ENEMY_TELL) {
+      if (timers.actionTime >= profile.tell) {
         enemy.action = 'attack';
         enemy.progress = 0;
-        timers.actionTime -= ENEMY_TELL;
+        timers.actionTime -= profile.tell;
         timers.hitApplied = false;
       }
       return;
     }
     if (enemy.action === 'attack') {
-      enemy.progress = clamp(timers.actionTime / ENEMY_ATTACK, 0, 1);
-      if (timers.actionTime <= ENEMY_CONTACT) moveCharacter(enemy, Math.sin(enemy.yaw) * dt * 1.3, Math.cos(enemy.yaw) * dt * 1.3, world);
-      if (!timers.hitApplied && timers.actionTime >= ENEMY_CONTACT) {
+      enemy.progress = clamp(timers.actionTime / profile.attack, 0, 1);
+      if (timers.actionTime <= profile.contact) moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
+      if (!timers.hitApplied && timers.actionTime >= profile.contact) {
         timers.hitApplied = true;
-        if (distance(enemy, position) <= 2.15 && facing(enemy, position, enemy.yaw, Math.PI * .25)) hurtPlayer(enemy);
+        if (distance(enemy, position) <= profile.reach && facing(enemy, position, enemy.yaw, Math.PI * .25)) hurtPlayer(enemy);
       }
-      if (timers.actionTime >= ENEMY_ATTACK && state.phase === 'active') {
+      if (timers.actionTime >= profile.attack && state.phase === 'active') {
         enemy.action = 'idle';
         enemy.progress = 0;
-        timers.cooldown = ENEMY_RECOVERY;
+        timers.cooldown = profile.recovery;
         nextAttackerAt = time + .55;
       }
       return;
@@ -409,7 +418,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const targetYaw = Math.atan2(position.x - enemy.x, position.z - enemy.z);
     enemy.yaw += angleDifference(targetYaw, enemy.yaw) * Math.min(1, dt * 7);
     const someoneAttacking = state.enemies.some(other => other.active && ['windup', 'attack'].includes(other.action));
-    if (dist <= 2.12 && timers.cooldown <= 0 && !someoneAttacking && time >= nextAttackerAt) {
+    if (dist <= profile.engage && timers.cooldown <= 0 && !someoneAttacking && time >= nextAttackerAt) {
       enemy.action = 'windup';
       enemy.yaw = targetYaw;
       enemy.progress = 0;
@@ -423,7 +432,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         x: clamp(position.x, lastEncounter.center.x - 8, lastEncounter.center.x + 8),
         z: clamp(position.z, lastEncounter.center.z - 16, lastEncounter.center.z + 16),
       };
-      const speed = 1.8 + (enemy.id === 'goblin-scout' ? .15 : 0);
+      const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
       enemy.speed = amount / dt;
     }
