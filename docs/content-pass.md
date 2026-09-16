@@ -12,6 +12,13 @@ This is the brief for the pass that follows the region rebuild (`docs/region-reb
 - Tests: every new conversation gets a case in `tests/journey-content.test.js` or `tests/regional-life.test.js` (regex on a line, plus the choice ids). `npm test` must stay green. Run the Electron smokes one at a time (`test:game`, `test:road`, `test:autoplay`, `test:local-map`).
 - Files: `src/main.js` and `index.html` are CRLF. Large heredocs fail in Git Bash on this machine; write scripts to a file and run them.
 
+## Assets already built for this pass
+
+- Character roles in `src/characters.js` (`createCharacter({ role })`): `legion-soldier` (banded cuirass, helmet, shield, planted spear), `legion-officer` (crest, red cloak, hand on the hilt; use for the Legate and the picket sergeant), `suvali-guard` (studded jerkin, iron cap, spear). Give NPCs these as `modelRole` in `JOURNEY_NPCS`.
+- `createWolf({ variant })`: a four-legged enemy with trot, crouch, lunge, hurt and death poses. Encounters take `kind: 'wolf'` on an enemy (`combat.startEncounter`); wolves close faster, bite sooner and hit for 14 instead of 17. The combat view spawns and labels them.
+- `createHorse({ variant, saddled })`: bay, chestnut or grey, with a Legion saddle when saddled; idles, grazes (`pose.grazing`) and walks. Use it for the camp's horse line and the hitch. Riding is not built.
+- Tests for all three live in `tests/legion-characters.test.js`, `tests/wolves.test.js` and `tests/horses.test.js`; keep them green.
+
 ## Luscia (chapter `luscia-aftermath`)
 
 - **Iven's relay**: Iven now reports the Lauvel battle as ten days old and sends the player to the field to identify a missing Legion courier. Three lines of rumour about wolves on the burial line.
