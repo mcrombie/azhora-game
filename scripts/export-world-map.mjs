@@ -294,13 +294,56 @@ function labelPose(cells) {
   const tilt = elongation > 2.2 && Math.abs(angle) <= 38 ? angle : 0;
   return { tilt: number(tilt), fontSize: number(Math.max(11.5, Math.min(27, 9 + Math.sqrt(p.length) * 2.4))) };
 }
-const labels = regionMetadata.filter(region => !UNCHARTED_LABELS.has(region.name)).map(region => {
+// Labels are first sized by extent and tilted along an elongated province's
+// axis, then settled so that neighbouring names never print over each other:
+// the smaller province's name shrinks first, and whatever still collides is
+// nudged apart along the shorter overlap without leaving its own province.
+const labelBoxes = regionMetadata.filter(region => !UNCHARTED_LABELS.has(region.name)).map(region => {
   const cells = regionHexes.get(region.id), pose = labelPose(cells);
   const lines = splitLabel(region.name);
   const uppercase = /Mountains|Desert|Plain|Highlands|Plateau|Hills|Wetlands|Stones|Archipeligo/i.test(region.name);
-  const lineHeight = pose.fontSize * 1.08;
+  return { region, pose, lines, uppercase, fontSize: pose.fontSize, x: region.centerX, y: region.centerY };
+});
+function labelExtent(label) {
+  // A serif estimate: spaced capitals run wider than italics of the same size.
+  const longest = Math.max(...label.lines.map(line => line.length));
+  const width = longest * (label.uppercase ? label.fontSize * .72 + 2.4 : label.fontSize * .52);
+  const height = label.lines.length * label.fontSize * 1.08;
+  const tilt = Math.abs(label.pose.tilt) * Math.PI / 180, cos = Math.cos(tilt), sin = Math.sin(tilt);
+  return { width: width * cos + height * sin, height: width * sin + height * cos };
+}
+function labelOverlap(a, b) {
+  const ea = labelExtent(a), eb = labelExtent(b);
+  const dx = (ea.width + eb.width) / 2 + 6 - Math.abs(a.x - b.x), dy = (ea.height + eb.height) / 2 + 4 - Math.abs(a.y - b.y);
+  return dx > 0 && dy > 0 ? { dx, dy } : null;
+}
+for (const label of labelBoxes) {
+  while (label.fontSize > 10 && labelExtent(label).width > label.region.width * 1.15) label.fontSize = number(label.fontSize - .5);
+}
+let labelCollisions = 0;
+for (let pass = 0; pass < 40; pass++) {
+  labelCollisions = 0;
+  for (let i = 0; i < labelBoxes.length; i++) for (let j = i + 1; j < labelBoxes.length; j++) {
+    const a = labelBoxes[i], b = labelBoxes[j], hit = labelOverlap(a, b);
+    if (!hit) continue;
+    labelCollisions++;
+    const smaller = a.region.hexCount <= b.region.hexCount ? a : b;
+    if (smaller.fontSize > 10) { smaller.fontSize = number(Math.max(10, smaller.fontSize - 1)); continue; }
+    const vertical = hit.dy <= hit.dx, push = (vertical ? hit.dy : hit.dx) / 2 + 1;
+    for (const [label, sign] of [[a, -1], [b, 1]]) {
+      const direction = sign * Math.sign((vertical ? b.y - a.y : b.x - a.x) || 1);
+      const extent = labelExtent(label), { region } = label;
+      if (vertical) label.y = number(Math.max(region.y + extent.height / 2, Math.min(region.y + region.height - extent.height / 2, label.y + direction * push)));
+      else label.x = number(Math.max(region.x + extent.width / 2, Math.min(region.x + region.width - extent.width / 2, label.x + direction * push)));
+    }
+  }
+  if (!labelCollisions) break;
+}
+if (labelCollisions) console.error(`chart labels: ${labelCollisions} name(s) still overlap after settling`);
+const labels = labelBoxes.map(({ region, pose, lines, uppercase, fontSize, x, y }) => {
+  const lineHeight = fontSize * 1.08;
   const text = lines.map((line, i) => `<tspan x="0" y="${number((i - (lines.length - 1) / 2) * lineHeight)}">${escape(uppercase ? line.toUpperCase() : line)}</tspan>`).join('');
-  return `<text data-region="${escape(region.id)}" transform="translate(${region.centerX} ${region.centerY}) rotate(${pose.tilt})" font-size="${pose.fontSize}"${uppercase ? ' letter-spacing="2.4"' : ' font-style="italic"'}>${text}</text>`;
+  return `<text data-region="${escape(region.id)}" transform="translate(${x} ${y}) rotate(${pose.tilt})" font-size="${fontSize}"${uppercase ? ' letter-spacing="2.4"' : ' font-style="italic"'}>${text}</text>`;
 });
 
 // Sea decorations: a few ships and one serpent, placed on open water far from any land.
