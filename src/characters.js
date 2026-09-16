@@ -1132,16 +1132,19 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       // A curved rectangular shield rides on the left forearm, boss outward.
       const shield = new THREE.Group();
       shield.name = 'Legion shield';
-      shield.position.set(-0.085, -0.1, 0.01);
+      // Held in front of the body: the face is perpendicular to the forearm
+      // and tipped so it stands vertical in the at-attention pose.
+      shield.position.set(0.13, -0.16, 0);
+      shield.rotation.x = -0.6;
       elbows[0].add(shield);
-      const shieldMat = material(0x8a3128), rim = material(0x3f3128);
+      const shieldMat = material(0x35507a), rim = material(0xcbb98e);
       for (const side of [-1, 1]) {
-        const half = box(shield, shieldMat, [-0.012, 0, side * 0.105], [0.028, 0.62, 0.215]);
-        half.rotation.y = side * 0.24;
+        const half = box(shield, shieldMat, [side * 0.105, 0.012, 0], [0.215, 0.028, 0.62]);
+        half.rotation.z = side * 0.24;
       }
-      for (const y of [-0.31, 0.31]) box(shield, rim, [-0.02, y, 0], [0.034, 0.024, 0.43]);
-      round(shield, iron, [-0.035, 0, 0], [0.022, 0.065, 0.065]);
-      box(shield, gold, [-0.03, 0.17, 0], [0.008, 0.14, 0.05]);
+      for (const z of [-0.31, 0.31]) box(shield, rim, [0, 0.02, z], [0.43, 0.034, 0.024]);
+      round(shield, iron, [0, -0.03, 0], [0.065, 0.022, 0.065]);
+      box(shield, gold, [0, -0.026, 0.17], [0.05, 0.008, 0.14]);
     }
   }
 
