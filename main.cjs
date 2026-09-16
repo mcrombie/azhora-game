@@ -70,7 +70,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     });
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const win = mainWindow = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 640, show: false, title: 'Azhora · A shore called Eastreena', icon:path.join(__dirname,'assets','azhora.ico'), backgroundColor: '#9bc3cb', autoHideMenuBar: true,
+  const win = mainWindow = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 640, show: false, title: 'Azhora · An Adventure Game', icon:path.join(__dirname,'assets','azhora.ico'), backgroundColor: '#9bc3cb', autoHideMenuBar: true,
     fullscreen: !smoke, fullscreenable: true,
     webPreferences: { preload:path.join(__dirname,'preload.cjs'),nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false, offscreen: smoke } });
   win.once('ready-to-show', revealGame);

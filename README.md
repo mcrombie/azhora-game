@@ -1,4 +1,4 @@
-﻿# Azhora: A shore called Eastreena
+﻿# Azhora: An Adventure Game
 
 A standalone 3D adventure through four connected local districts of **Drent**, the Ambroni Empire’s quietest province, ending across the Caloss in **Luscia**. A mercenary hired from across the sea arrives by fishing boat during a goblin attack, carries Mara's introduction to the Ambroni Legion, and follows a roughly 700-metre road from the wooded coast through forest clearings, the Caloss crossing, and the first Luscian hills. The districts connect without loading screens, and the road remains open for return visits.
 
