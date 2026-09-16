@@ -1,0 +1,27 @@
+#journal.map-open{width:min(1120px,calc(100vw - 48px));height:min(900px,calc(100vh - 48px));display:flex;flex-direction:column;overflow:hidden;padding:28px 34px}
+#journal.map-open>.eyebrow,#journal.map-open>h2,#journal.map-open>.tabs{flex:none}
+#journal.map-open>h2{font-size:34px;margin:5px 0 16px}
+#journal.map-open>.tabs{margin-bottom:14px}
+#world-map{display:flex;flex:1;min-height:0;flex-direction:column}
+.atlas-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex:none}
+.atlas-toolbar button{border:1px solid #e3c88e66;border-radius:3px;padding:7px 12px;background:#efe0b508;color:#f7e6bf;font-size:12px}
+.atlas-toolbar button:disabled{opacity:.35;cursor:default}
+.atlas-toolbar .atlas-zoom-button{font-size:20px;line-height:20px;padding:5px 12px}
+#atlas-zoom{min-width:42px;text-align:center;font-size:11px;color:#d4d9bb}
+.atlas-spacer{flex:1}
+#atlas-viewport{position:relative;flex:1;min-height:170px;width:100%;overflow:hidden;border:1px solid #b8985f77;border-radius:3px;background:#2b2219;touch-action:none;cursor:grab;isolation:isolate}
+#atlas-viewport.dragging{cursor:grabbing}
+#atlas-viewport:focus-visible{outline:2px solid #f6d895;outline-offset:3px}
+#world-map #atlas-image{position:absolute;top:0;left:0;max-width:none;max-height:none;margin:0;display:block;transform-origin:0 0;user-select:none;pointer-events:none;background:none;will-change:transform}
+#atlas-loading{position:absolute;inset:0;display:grid;place-content:center;color:#e5d6aa;font-size:14px;background:#2b2219;padding:24px;z-index:2}
+#atlas-loading[hidden]{display:none}
+#world-map .atlas-help{font-size:11px;color:#b8c9b9;line-height:1.5;margin:10px 0 5px;flex:none}
+#world-map .atlas-caption{font-size:12px;line-height:1.6;color:#e0dfc6;margin:0;flex:none}
+@media(max-height:750px){#journal.map-open{padding:19px 25px}#journal.map-open>h2{font-size:28px;margin:3px 0 6px}#journal.map-open>.tabs{margin-bottom:9px}.atlas-toolbar{margin-bottom:9px}#world-map .atlas-help{margin-top:8px}}
+
+/* The traveler's marker on the chart: positioned in atlas pixels, never scaled with the image. */
+#atlas-traveler{position:absolute;top:0;left:0;z-index:3;pointer-events:none;transform-origin:0 0}
+#atlas-traveler i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#c9472f;border:3px solid #fff2cc;box-shadow:0 0 0 2px #3d2b1a,0 0 14px #c9472f99;animation:atlas-traveler-pulse 1.6s ease-in-out infinite}
+#atlas-traveler span{position:absolute;left:13px;top:-9px;white-space:nowrap;font:italic 12px Georgia,'Palatino Linotype',serif;color:#3d2b1a;background:#f2e6c4ee;border:1px solid #5e4630;border-radius:3px;padding:1px 6px}
+#atlas-traveler[hidden]{display:none}
+@keyframes atlas-traveler-pulse{0%,100%{box-shadow:0 0 0 2px #3d2b1a,0 0 10px #c9472f88}50%{box-shadow:0 0 0 2px #3d2b1a,0 0 22px #c9472fcc}}

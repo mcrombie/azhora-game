@@ -1,0 +1,4 @@
+# Store every file byte-for-byte: main.js and index.html are CRLF, the rest LF, and nothing should convert them.
+* -text
+*.png -diff
+*.jpg -diff

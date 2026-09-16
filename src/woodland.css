@@ -1,0 +1,33 @@
+#dialogue{max-height:calc(100vh - 120px);overflow-y:auto}
+#dialogue-choices{display:grid;gap:7px;margin-top:20px}
+#dialogue-choices button{padding:11px 15px;text-align:left;border:1px solid #d9c39055;border-radius:3px;background:#f0d8a309;font-size:13px;line-height:1.45;color:#f6e8c6}
+#dialogue-choices button:first-child{background:#edd39b19;border-color:#dbc180}
+#dialogue-choices button:hover,#dialogue-choices button:focus-visible{background:#e8d29c26;border-color:#e4ca8b}
+#dialogue-choices button:last-child{color:#b7c9b7}
+#side-quest{position:absolute;right:34px;top:238px;width:225px;padding:13px 15px;border-left:2px solid #aed3a7;background:linear-gradient(90deg,#193d35ca,#193d3540);pointer-events:none}
+#side-quest .eyebrow{font-size:9px;letter-spacing:.17em;color:#b6d9b1}
+#side-quest h3{font:20px Adventure,Georgia,serif;margin:5px 0 8px;color:#f6e8c7}
+#side-quest p{font-size:12px;line-height:1.6;color:#e3e5cf}
+#journal-side-quest{margin-top:25px;padding:18px 20px;border-left:2px solid #aed3a7;background:#c8d9a50a}
+#journal-side-quest h3{margin:4px 0 8px}
+#journal-side-quest .eyebrow{color:#b5d6ac;font-size:10px}
+#journal-side-quest p{font-size:13px}
+#lysa-friendship{margin-top:12px;color:#e4cf9f!important;font-size:12px!important}
+#journal-forest{margin-top:25px;padding:18px 20px;border-left:2px solid #c5b47d;background:#d1b68108}
+#journal-forest h3{margin:4px 0 8px}
+#journal-forest .eyebrow,#forest-notes-count{color:#d1c38f;font-size:10px;letter-spacing:.1em}
+#forest-notes{padding:0;list-style:none;display:grid;gap:14px}
+#forest-notes li{font-size:15px;color:#f2dfb9}
+#forest-notes small{display:block;margin-top:4px;font-size:12px;line-height:1.65;color:#bfcbbb}
+@media(max-width:1100px){#side-quest{right:24px;top:207px;width:200px;padding:11px 13px}}
+@media(max-height:750px){#dialogue{bottom:45px;max-height:calc(100vh - 80px);padding:19px 27px}#dialogue-choices{margin-top:13px;gap:6px}#dialogue-choices button{padding:9px 12px;font-size:12px}#dialogue .dialogue-actions{margin-top:12px}#side-quest{top:212px}#side-quest h3{font-size:18px}}
+
+/* A nearby map and an optional personal marker leave the main quest intact. */
+#open-trail-map{display:block;width:100%;height:100%;border-radius:50%;background:transparent;padding:0;pointer-events:auto;cursor:pointer}
+#open-trail-map:disabled{cursor:default;filter:none}
+#open-trail-map:not(:disabled):hover{filter:none;box-shadow:0 0 0 2px #ffe2a087}
+#trail-pin{position:absolute;top:201px;right:-20px;width:208px;display:flex;background:#193d36e8;border:1px solid #8acfc25e;border-radius:3px;pointer-events:auto;overflow:hidden}
+#trail-pin button{background:transparent;font-size:11px;color:#c3eee2;padding:7px 8px;min-width:0}
+#trail-pin-open{flex:1;text-align:left}#trail-pin-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#trail-pin-clear{border-left:1px solid #8acfc240;font-size:18px!important;line-height:14px}
+@media(max-width:1100px){#trail-pin{top:173px;width:178px;right:-13px}}

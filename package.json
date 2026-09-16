@@ -1,0 +1,32 @@
+{
+  "name": "azhora-eastreena",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A playable 3D prologue on the shores of Azhora",
+  "type": "module",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "node scripts/launch.cjs",
+    "test": "node --test --test-isolation=none tests/campaign-world.test.js tests/campaign.test.js tests/autopilot.test.js tests/region-layout.test.js tests/region-survey.test.js tests/game-state.test.js tests/combat.test.js tests/weapons.test.js tests/consumables.test.js tests/campcraft.test.js tests/inventory.test.js tests/acorn-quest.test.js tests/woodland-life.test.js tests/journey.test.js tests/road-checkpoint.test.js tests/regions-world.test.js tests/checkpoint-store.test.cjs tests/road-life.test.js tests/road-audio.test.js tests/journey-content.test.js tests/road-verges.test.js tests/forest-story.test.js tests/forest-places.test.js tests/forest-ecology.test.js tests/woodland-progress.test.js tests/ghost-camera.test.js tests/developer-atlas.test.js tests/thalmagar-world.test.js tests/survey-world.test.js tests/forest-hideout.test.js tests/forest-hideout-world.test.js tests/local-map-data.test.js tests/minimap.test.js tests/trail-map.test.js tests/regional-life.test.js tests/regional-places.test.js tests/local-characters.test.js",
+    "test:game": "node scripts/launch.cjs --smoke-test",
+    "test:road": "node scripts/launch.cjs --smoke-test --traverse-road",
+    "test:checkpoints": "node scripts/launch.cjs --smoke-test --road-checks",
+    "test:autoplay": "node scripts/launch.cjs --smoke-test --autoplay-checks",
+    "test:window": "node scripts/launch.cjs --window-test",
+    "map:refresh": "node scripts/export-world-map.mjs",
+    "test:forest": "node scripts/launch.cjs --smoke-test --forest-checks",
+    "review:forest": "node scripts/launch.cjs --smoke-test --forest-review",
+    "test:developer": "node scripts/launch.cjs --smoke-test --developer-checks",
+    "review:developer": "node scripts/launch.cjs --smoke-test --developer-review",
+    "map:developer": "node scripts/export-developer-atlas.mjs",
+    "test:hideout": "node scripts/launch.cjs --smoke-test --hideout-checks",
+    "review:hideout": "node scripts/launch.cjs --smoke-test --hideout-review",
+    "test:local-map": "node scripts/launch.cjs --smoke-test --local-map-checks",
+    "review:local-map": "node scripts/launch.cjs --smoke-test --local-map-review",
+    "test:regional-life": "node scripts/launch.cjs --smoke-test --regional-life-checks",
+    "review:regional-life": "node scripts/launch.cjs --smoke-test --regional-life-review"
+  },
+  "devDependencies": {
+    "electron": "32.3.3"
+  }
+}

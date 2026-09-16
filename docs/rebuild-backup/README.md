@@ -1,0 +1,267 @@
+﻿# Azhora: A shore called Eastreena
+
+A standalone 3D adventure through four connected local districts of **Drent**, the Ambroni Empire’s quietest province, ending across the Caloss in **Luscia**. A mercenary hired from across the sea arrives by fishing boat during a goblin attack, carries Mara's introduction to the Ambroni Legion, and follows a roughly 700-metre road from the wooded coast through forest clearings, the Caloss crossing, and the first Luscian hills. The districts connect without loading screens, and the road remains open for return visits.
+
+The adventure has **11 speaking NPCs and 26 discoverable places**. Eastreena's forest now includes small working places, optional woodland errands, a goblin scout camp, deer, foraging birds, insects, and understory plants. A separate developer ghost mode lets you inspect the authored world atlas, fly through the four playable districts, visit a Cape Thalmagar fortress prototype, or survey terrain from the wider map. These previews do not extend the playable story beyond the North Relay.
+
+The **civil-war campaign** that follows the road is designed and executable, though not yet playable in 3D. See [docs/campaign-design.md](docs/campaign-design.md). Every authored region has a difficulty level (0 tutorial to 5 deadly), a controlling faction and its threats (`src/campaign-world.js`); the main quest runs Drent → Luscia → Moros Plain → West Suval, forks at Solis between the Ambroni Empire and the Republican Coalition, and continues along mirrored branches to the South Oremindi Mountains (`src/campaign.js`). Regional side arcs flip provinces on the political map, faction trust rises and falls, and double-dealing is eventually exposed. The journal’s **The civil war** section shows the current chapter, your standing, and the regions around Drent; the developer atlas tints every region by level.
+
+## Play
+
+Double-click the **Azhora desktop icon**, **Play Azhora.cmd** in this folder, or run `npm start`. Close an existing game window and reopen it after an update.
+
+The desktop game opens in native fullscreen, covering the Windows title bar and taskbar. **F11** or **Alt+Enter** switches between fullscreen and a window. Escape pauses without leaving fullscreen.
+
+The launcher uses this project's Electron runtime if installed, otherwise the runtime in the neighboring `world-builder/map` project. On another computer, install Node.js, run `npm install`, then `npm start`. The game works offline: Three.js, the atlas, procedural models, interface, and synthesized sound are local. It needs no API keys or external asset requests.
+
+| Control | Action |
+| --- | --- |
+| WASD / arrow keys | Walk relative to the camera |
+| Q / E | Move forward-left / forward-right |
+| Shift / hold Tab | Run; Tab navigates controls inside menus |
+| Space | Jump |
+| Right mouse drag | Turn the camera |
+| Mouse wheel | Zoom |
+| F | Talk, continue dialogue, gather, repair, restore a waymarker, cast/reel, or tend a fire |
+| Left click / R | Swing the equipped weapon; timed presses chain a three-hit combo |
+| Ctrl + movement direction | Dodge; with no direction, dodge backward |
+| Enter | Begin / continue dialogue |
+| I | Open or close the satchel; hover for hints, then select items, equipment, or food |
+| J | Journal and journey notes |
+| L / click the minimap | Open the local trails map; L also closes it |
+| M | Open the traveler’s chart of Azhora |
+| Escape | Pause, dismiss a panel, or cancel fishing |
+| F8 | Open testing tools, including from the opening screen |
+| P | Start autoplay (also **Watch the computer play** on the opening screen or **Autoplay the road** in Pause); any key or click takes control back |
+| F11 / Alt+Enter | Toggle fullscreen |
+
+Pause offers lighter graphics, a return to the pier, testing tools, and **Save adventure** after stepping ashore, outside an active fight.
+
+**Autoplay** lets the computer play the main quest while you watch or step away. Press **P**, choose **Watch the computer play** on the opening screen, or **Autoplay the road** in Pause. The autopilot uses only ordinary inputs: it walks the Greenway and the northern road, talks to Mara, Eren, Corvan, Hollis, Sava and Iven at a readable pace, practises at the straw post, fights the goblins and the meadow raiders with the same dodge-and-counter rules you use, gathers driftwood for the bridge, restores the waymarkers, and stops when Iven files the report (the campaign chapter beyond Drent is not built). A badge shows what it is doing. Any real key press or click hands control straight back; the game does not pause on losing window focus while autoplay is on, so it can run unattended. Autosaves happen exactly as in normal play. Switching to another window pauses play. Named signposts point to the next district, back toward Eastreena, and along the smaller woodland paths. Flowers, ferns, riverbank leaves, and heather change with the landscape. Sound starts off; enabling it adds sea, forest, field, river, and ridge ambience, nearby animal calls, combat effects, and footfalls that change on wood, earth, and stone.
+
+The minimap stays centered on the traveler, with north up and a constant **62-metre radius** across all four districts. It shows nearby roads, smaller trails, buildings, and water. The **Local trails** journal tab opens with **L** or a click on the minimap and adapts to compact windows. Browse any of the four regional charts, or choose **Where I am** to return to your current district. Use **+ / −** or the mouse wheel to zoom around a selected place, and **Fit** to show the whole region again. Browsing pauses play and does not teleport the traveler or discover places.
+
+Discovered places and destinations learned through quests have names; unexplored places remain anonymous and cannot be marked. Select a known place and choose **Mark** to follow its **teal optional pin**, alongside the **gold main journey objective**. Clear it from the map or the small pin label beside the minimap. Optional pins last for the current run only. Existing discoveries continue to autosave through adventure checkpoints. **J** still opens journey notes, and **M** opens the developed World Builder atlas.
+
+## The four-region journey
+
+| Region | Places and people | Main errand |
+| --- | --- | --- |
+| **1 · Eastreena** | Tidehaven's pier and village, the Greenway, Willowmere Pond, Fernway Rest, six quiet woodland places, and Bramble Scout Camp; Mara, Tobin, Eren, Lysa, Orris, Bran, and **Tamsin** | Receive Mara's message, learn movement and combat, defeat three goblins, inspect the message, and reach the forest boundary. Optional woodland errands remain separate. |
+| **2 · Sunmeadow Plain** | Open fields, a broken cart, stone field walls, a turning windmill, and sheep; Legion quartermaster **Corvan** | Deliver the letter and enter Ambroni field service. Recover **three parcels**, deal with **two meadow raiders**, and return to Nessa for **two cooked fish**. |
+| **3 · Reedwater Crossing** | A reed-lined river, timber bridge, fishing bank, and reedcutters' camp; keeper **Hollis** | Gather **three sticks**, repair the damaged bridge lane, then report to Hollis for **four spare branches**. |
+| **4 · Threefold Rise** | Stone paths, a roofless waystation, three waymarkers, an open-sky shrine, and the North Relay; **Sava** and **Iven** | Restore **three waymarkers**, then let Iven copy Mara's report. Keep the original as your service document while learning whom the Empire calls rebels. |
+
+### Eastreena's tutorial
+
+Walk ashore and speak to Mara with **F**. Your simple sword is equipped from arrival; Mara gives you her message and points out the practice post and repair bench. Land two hits on the straw post and complete a directional dodge nearby, then follow the woodland road to the warning bell.
+
+The three bramble goblins enter with staggered arrivals. Amber ground arcs show their committed strikes; dodge, then counter during recovery. Goblins take turns attacking, stamina recovers between actions, and melee has light aim assistance and a short input buffer. Defeat offers a full-health encounter retry, retaining items and completed lessons. Retreating to the safe side also gives you another attempt. Neither action repairs weapon wear.
+
+Report to Eren beyond the village for his travel token. Press **I**, hover over Mara's message for its tooltip, and **select the message** to read it. Dismiss the satchel with I, Escape, or Close. Follow the minimap marker through Fernway Rest to the open field gate. The thinning forest gives way to Sunmeadow Plain, and the next quest begins.
+
+### Army service and the people called rebels
+
+Mara's letter sends the hired mercenary from Region 1 to Quartermaster Corvan of the Ambroni Legion on Sunmeadow Plain. Corvan records the letter, inducts the traveler into Legion field service, and assigns supply recovery for the campaign against the rebels. He presents the Legion as bringing order while goblin raids out of Pueth threaten the roads. Legion soldiers are men by default; named exceptions can be written later.
+
+The mandatory regional conversations change that picture gradually. Hollis, at the Caloss where Drent ends, reveals that most households feed and shelter the resistance. Sava, on the Luscia side, tells you the Legion broke a rebel army at the Lauvel crossing ten days ago and that most of Luscia wanted what those rebels wanted: a republic in place of the emperor. The people are caught between goblin raids from the north and an empire squeezing harder as it slips. Iven records that truth while the player remains employed by the Empire; choosing whose sellsword you are belongs to the fork at Solis.
+
+The **Ambroni Empire** and its capital Ambron in Elagos, Drent as a loosely held subject province, the Pebbles offshore, Luscia’s Lauvel valley and the neutral Elodi of East Suval all come from the existing lore in `../world-builder/azhora_lore`. The Republican Coalition, the Legion, Corvan, Solis’s role, and the battle at the Lauvel are new campaign material. This arc changes the meaning of the existing errands without adding rebel battles or a resolved war; the allegiance choice is modeled in the campaign and reached in play only after the road. Existing checkpoints remain compatible; a save without a campaign loads with a fresh one.
+
+### Work and conversation along the road
+
+Corvan's parcels lie east of the main road among the field walls. Each is a distinct pickup; returning them is a one-time exchange. The meadow encounter has its own retreat and retry behavior, so leaving its area does not keep later camp activities locked in combat.
+
+Hollis's bridge still has a sound eastern walkway before the repair. Spending three sticks restores the damaged side as an actual walkable lane. If you have burned or broken all available wood, ask **“I need sound wood for the repair.”** Hollis supplies enough marked repair timber to bring your stack to three. This remains available while the accepted repair is unfinished, so spending the timber cannot strand the quest. Borrowing wood does not complete the repair for you.
+
+The waymarkers on Threefold Rise are reflective road stones. Restoring them uses no firewood or tinderbox. Iven serves at the Legion’s relay on the Luscia side: he copies the warning and the people's account, then returns the original. Filing it completes the campaign’s first chapter; the onward road southwest to the Lauvel is the second.
+
+All four road NPCs have optional conversations before and after their errands. Corvan talks about caravans and field mornings; Hollis explains river repairs and fishing; Sava describes tending a small working shrine; Iven explains how reports move along the road. These branches do not advance the main quests.
+
+## The woods around Tidehaven
+
+Take the smaller signed paths off the Greenway. Each of these six places has an inspection prompt with **F** and a short entry under **Woodland notes** in the **J** journal. You can discover them in any order; they never replace the main tutorial objective.
+
+| Place | What is there |
+| --- | --- |
+| **Old Charcoal Hearth** · western trail | A cold charcoal mound, working shelter, stacked wood, and Tamsin's abandoned red-tied tool bundle. |
+| **The Bee Fold** · east of the village | A tended flower garden, old hives, a resting stool, and bees moving near their hives. |
+| **Stormfall Oak** · eastern woods | A large fallen oak, exposed roots, and a path left around the trunk. Its timber tag explains why the woodcutter left it standing as habitat. |
+| **Mosskeeper's Shrine** · western woods | Three mossy stones and a fallen wooden wayboard. Use **one forest stick** to fit a new peg and visibly set the board upright. |
+| **Fern Hollow** · northern western trail | A sheltered pocket of ferns with a sitting stone and a quiet woodland note. |
+| **Saltwind Lookout** · western shore | A coastal resting place with old fishing knots and a view back across the sheltered landing. |
+
+**Tamsin**, the woodcutter at the village's northwestern edge, wears a patched short apron, rolled sleeves, a faded red headcloth, and tied brown hair. Her idle pose includes a small tired shoulder roll. Speak with her about the work people do in these woods, or accept **A working day interrupted**: recover her tools from the charcoal hearth and return them for **two cooked fish**. You can find the bundle before meeting her. It is tracked in the optional errand, and the reward is given only once. Afterward she remembers who made it possible for her to work again.
+
+The shrine repair is a separate small kindness, with no item reward or prerequisite quest. It spends a spare stick through the weapon system, preserving a partly worn branch if another remains. Tamsin notices the repair in later conversation. Her comments about an army timber levy add local pressure without giving away the later story reveal.
+
+Between these places, **410 ground details**—ferns, sorrel, pale flowers, violets, and mossy logs with small fungi—break up the forest floor. **Three adult deer and a fawn** browse and flee from an approaching traveler. **Five woodland thrushes** peck, look around, and hop through the leaf litter, then take short flights to clear ground when you approach. **Eight butterflies** move above flowers, **six bees** work the Bee Fold, and **four dragonflies** skim Willowmere. The existing squirrels still forage and climb. These animals are scenery, and the planting leaves paths, gathering spots, conversation approaches, and the goblin camp clear. Shared instanced geometry and distance culling keep this detail inexpensive; pausing also freezes the birds in flight.
+
+### Bramble Scout Camp
+
+Follow the scraps of **blue cloth** along the eastern woodland trail to find a rough camp with two goblin lookouts and sacks stolen from Tidehaven. **F** lets you inspect it from the approach and decide whether to fight. You can scout the place earlier, but challenging the scouts becomes available after defeating the first three goblins on the Greenway. Simply walking past never starts this encounter.
+
+Choose **Challenge the two scouts** when ready. The encounter uses the same readable attack tells, dodging, weapon wear, and forgiving retry as the main tutorial. You can retreat toward the Greenway and return later. After winning, press **F** at the marked sacks beyond the camp, then return the village supplies to **Tamsin** for **three ripe pawpaws**, awarded once. The supplies are tracked in the journal rather than taking a satchel slot. This errand does not advance the army assignment or change the original tutorial sequence.
+
+## Weapons, food, and campcraft
+
+The traveler wears simple brown cloth and a patched cloak, without armor. His **simple sword** has **24 condition** and deals **24 / 26 / 34 damage** across its combo. Every landed strike costs one condition, including practice hits; misses cost none. At zero condition the sword cannot attack but remains owned and repairable.
+
+**Forest sticks** are gatherable weapons and camp materials. Fourteen woodland pickup sites include four on the village side of the first ambush; further bundles lie along the new road. A stick has **6 condition**, **80% sword reach**, and a **14 / 16 / 20** combo. Breaking one consumes it and readies the next carried stick. Switching equipment preserves wear. Spending spare sticks on repairs or fire also preserves the partly worn stick while one remains.
+
+Use **F** at a repair bench to restore carried weapons free of charge. There is one in the village and one in each new district. The satchel shows condition and provides Equip buttons; changing weapons waits until a swing or dodge has finished. A broken weapon never prevents dodging or retreat.
+
+### Lysa, squirrels, and pawpaws
+
+Lysa lives beside the western village cottage and its outdoor kitchen. Bring her **five acorns** for one reusable **tinderbox**. Previously gathered acorns count, only five are consumed, and her favor is independent of the road tutorial. Afterward she remembers the kindness, becomes fond of you, and offers warmer conversation with light flirting. You can also ask about squirrels, acorn cookery, or forest fruit without accepting the favor.
+
+Four tiny squirrels forage in Eastreena, flee faster than the traveler, climb real tree trunks, and perch on branches. There are **24 acorn pickups** in six woodland pockets. The new districts add **11 ambient animals**: six sheep, three bank birds, and two rock hares. Their bodies and articulated parts use **nine instanced meshes** in total, with distant groups paused and hidden. These critters add movement and character without blocking quests or becoming combat targets.
+
+Eastreena has **12 ripe pawpaws in six patches**, with four available before the ambush, and additional fruit bundles along the road. Look beneath broad, drooping leaves and press F to gather. Open I, select **Ripe pawpaws**, and choose **Eat** for up to **25 health**. Gathering saves food for later; full health preserves it. Eating requires an idle, living character and cannot revive defeat.
+
+The fruit's habitat and appearance draw on [National Park Service pawpaw ecology](https://www.nps.gov/articles/pawpaw.htm) and [NC State Extension's description](https://plants.ces.ncsu.edu/plants/asimina-triloba/). Its health effect is a game mechanic. Lysa's distinction between raw acorns and leached meal follows [US Forest Service acorn food research](https://www.fs.usda.gov/psw/publications/documents/psw_gtr044/psw_gtr044_004.pdf); her dialogue supplies background, not a cooking recipe.
+
+### Fishing and cooking
+
+**Bran** teaches fishing at **Willowmere Pond**, east of the forest road beyond Eren's watch. **Hollis** also teaches it at Reedwater and can lend a spare rod if you do not already have one. The marked riverbank is east of the bridge. The rod is reusable; repeat lessons do not duplicate it.
+
+At either marked bank, press **F** to cast. Wait about three seconds for the float to dip and the **A bite! Reel now** prompt, then press **F or click** during the bite window. An early or late reel misses without a cost. Escape cancels. Each catch becomes one **raw fish** in the satchel.
+
+Bring a **tinderbox and two sticks** to any of the five prepared fire rings. Light fire consumes the sticks and retains the tinderbox. A fire lasts **120 seconds of active play**, pausing during conversations and menus. **Cook one raw fish** makes one **cooked fish**, which restores up to **40 health** through its satchel Eat button. Raw fish cannot be eaten. Fishing and cooking do not advance the road quests.
+
+### Orris and the distant cape
+
+Orris, the hooded doomsayer with a gnarled staff, stands near Lysa and also explains cooking. His optional warning introduces the **dark lord of Cape Thalmagar** without establishing a personal name or deeds. The cape lies far to the northwest of Drent, beyond the Oremindi, on the existing World Builder geography; the campaign’s orc arc leads toward it.
+
+Orris never points to the cape on a chart: the traveler’s atlas leaves Cape Thalmagar uncharted and has no shortcut to it, so the player learns of it as rumor rather than geography. In the adventure it remains distant foreshadowing. The separate ghost-mode fortress study is available for inspection, but has no boss encounter or story route from Eastreena.
+
+## Adventure checkpoints
+
+Saving is available from **the first step ashore**, including during the unfinished tutorial. Normal play saves at supported lesson and quest transitions, discoveries, gathering, favors, fishing/cooking events, repairs, and eating. You can also choose **Save adventure** in Pause. Use **Continue** on the next opening screen to resume the last checkpoint. Active fights, defeat, and testing overrides cannot overwrite it.
+
+The desktop stores one slot at **`saves/road-checkpoint.json`** through the isolated Electron IPC bridge. It survives restarts and does not depend on the asset server's randomly assigned loopback port. Writes validate the checkpoint and replace the previous file only after the new data has been written. Storage failures are reported without stopping the game; automated smoke runs use an isolated memory slot.
+
+A checkpoint restores:
+
+- First-shore lesson progress, including partial practice hits and dodges, plus ordered road quests, recovered parcels, waymarkers, the repaired bridge, and the cleared meadow encounter.
+- Satchel quantities, equipment selection, exact weapon wear, health, and a valid saved position.
+- Collected woodland acorns, sticks, and pawpaws; collected road supplies; discovered places and woodland journal notes.
+- Lysa's available, active, or completed favor; Tamsin's accepted/recovered/returned bundle state; the restored shrine board; and whether Orris's warning was heard.
+- The scouted, accepted, or cleared goblin camp, recovered village supplies, and their completed return to Tamsin. An unfinished camp fight resumes from its accepted errand, without saving a battle in progress.
+- Fishing instruction, catch history, and each campfire's remaining fuel **at the time of the checkpoint**.
+
+The storage key and file keep their original road-checkpoint names. **Older version-1 road saves remain compatible**: missing woodland history starts from its default state while the already saved satchel and road progress remain intact. Current saves restore collected forage and completed acts without granting their items or rewards again. Ambient animal positions and a cast or battle in progress are not serialized. Fire timers pause in menus and ghost view; reopening resumes the fuel recorded at the last checkpoint.
+
+## Testing tools
+
+Press **F8**, use the opening screen's testing button, or choose **Testing tools** from Pause. F8 also works from a defeat screen, so a failed fight cannot block regional testing. **Skip tutorial & give camp supplies** finishes the first-shore tutorial, restores health and weapons, and tops up a rod, tinderbox, five acorns, six sticks, and two raw fish. Existing quantities are not repeatedly accumulated, and Lysa's completed friendship is kept.
+
+Travel buttons lead directly to the village, Willowmere Pond, **Sunmeadow Plain**, **Reedwater Crossing**, and **Threefold Rise**. **Explore woodland trails** places you beside Tamsin so the new forest content is easy to find. **Try the goblin camp** resets the optional camp errand for testing and places you at its approach; press F and choose whether to challenge the two scouts. Traveling to Region 3 completes its meadow prerequisites; traveling to Region 4 also completes the bridge prerequisites. This lets each district be tested immediately.
+
+The **TESTING SESSION** badge identifies the override. Testing supplies and travel **never overwrite the normal road checkpoint**. Reopen the game and choose Continue to recover the normal saved road, or begin from the boat for a fresh playthrough.
+
+### Developer ghost view
+
+Open **F8 → Ghost view developer · atlas / free flight**. The current adventure pauses, and a translucent traveler becomes your spectator. Choose a region on the actual World Builder atlas, then use its **Fly into** button. All **131 authored region outlines** are clickable. Scroll and drag to inspect the map, or use the Drent and Thalmagar focus buttons.
+
+Drent offers the four existing playable districts. They share one **provisional locality pin** on the Drent coast; a separate schematic shows their order along the road. Every region is tinted by its campaign difficulty level, with provisional levels labeled. Cape Thalmagar opens its own fortress prototype. Every other mapped region opens a **Terrain survey · gameplay not built** scene, using the authored region's hex layout and terrain categories. Survey elevations and scenery are illustrative. These visits do not imply that the whole continent has quests, settlements, or connected playable terrain.
+
+| Ghost control | Action |
+| --- | --- |
+| WASD / arrows; Q / E | Fly relative to the view; forward diagonals |
+| Space / Ctrl | Rise / descend |
+| Shift / hold Tab | Boost from the default **28 m/s** to **100 m/s** |
+| Right mouse drag | Look freely |
+| Mouse wheel | Adjust cruise speed from **6–120 m/s**, with boost up to **360 m/s** |
+| M | Open the atlas / resume flight |
+| Escape | Open the atlas, or dismiss it when a flight is available |
+| F8 / Return to adventure | Leave ghost mode and return to the paused traveler |
+
+Ghost visits do not move the ordinary player, grant supplies, complete quests, or write checkpoints. The separate scene is released when you leave it. Flight passes through scenery within generous inspection bounds.
+
+The **Cape Thalmagar** study contains a basalt approach, dead forest, broken arches, drifting cinders, and fortress spires reaching **219.5 metres**. It is a distant atmosphere and scale prototype, with no boss, combat encounter, allegiance choice, or ordinary route into it. The cape's region location comes from the authored atlas; the fortress and dark wasteland are new gameplay material, not a rewrite of the source map's terrain or existing Thalmagar lore.
+
+## Scope and lore provenance
+
+Eastreena, Sunmeadow Plain, and Reedwater Crossing are local districts of **Drent**; Threefold Rise is the first of **Luscia**, across the Caloss. Their short connected road does not replace Azhora's large-scale geography. The local road runs along the world’s -Z axis, which the minimap draws as north, while the continental route out of Drent runs southwest; reconciling the two is a later task. Luscia’s battlefield, the Moros Plain, and everything beyond are designed in the campaign but unbuilt in 3D. Building interiors, a seamless continent, and Clashvergence's broader simulation systems are not implemented.
+
+The chart marks **where you are**: a red marker follows the traveler, and **Where I am** centres on it. Bearings are true to the chart: today's hand-built road runs west-south-west across Drent toward Luscia, so the compass, the minimap (turned so north stays up) and the marker all agree (`src/region-layout.js`, `LEGACY_ROAD_TRANSFORM`). The planned rebuild of Drent, Luscia, the Moros Plain and East Suval on the atlas's own hex outlines is specified in [docs/region-rebuild.md](docs/region-rebuild.md).
+
+The journal atlas is an inked parchment chart generated from the developed World Builder map: the same hex geography, region borders and rivers, drawn with smoothed coastlines, a hatched sea, mountain, hill, forest, marsh and dune glyphs, calligraphic province names tilted along elongated provinces, ships, a compass rose and a cartouche. Cape Thalmagar is left unlabeled. Zoom, pan and regional focus are unchanged. The minimap and the local trail charts use the same parchment-and-ink palette. The playable terrain is an authored interpretation of this opening locality, not a map-scale terrain conversion. Developer selection reuses the exact region polygon paths from that atlas; it does not alter normal map navigation or draw invented country borders.
+
+The local trails chart and minimap read the playable world's existing roads, buildings, and landmarks. Shared water metadata copies the rendered shoreline, pond, and river outlines for those charts; it changes neither the world geometry nor the continental atlas.
+
+`assets/azhora-dev-regions.json` contains **3,733 region-assigned hexes across 131 regions**, exported read-only from `azhora.wwmap`. It uses the same pointy-top axial projection and source SHA-256 as the normal atlas. The checked-in export is based on **`b36c32babaf85213a93459c87eeabe79455268db714681f88444831a221588df`**. The developer loader rejects mismatched map and survey exports instead of silently combining different geography.
+
+Existing sources were read from `../world-builder/` and `../../python/Clashvergence/`. Key references are:
+
+- `../world-builder/azhora_lore/geography/regions/drent.md`, `luscia.md`, `elagos.md`, `moros.md`, `suval.md`, `peblos.md`, `pueth.md`, `amod.md`, `nesdor.md`
+- `../world-builder/azhora_lore/geography/regions/izol.md`
+- `../world-builder/azhora_lore/geography/regions/thalmagar.md`
+- `../world-builder/azhora_lore/geography/regions/oremindi.md`
+- `../world-builder/azhora_lore/geography/regions/north_azhora.md`
+- `../world-builder/saved_maps/azhora.azmap` and `azhora.cmap.json`
+- `../world-builder/map/resources/examples/azhora.wwmap`, exported into the offline journal atlas.
+
+The spelling **Azhora**, **Drent**, **Luscia**, **Elagos**, **Izol**, and **Izolveth** follows those files. **Eastreena** preserves the user's requested name and is provisionally placed on the Drent coast. The four playable districts, Tidehaven, the named local NPCs, ponds, roadside landmarks, errands, and dialogue are new connective material. They do not modify the source lore or claim to be previously established canon.
+
+The first goblin encounter adapts the requested pacing of `../../cromonsters`: a village introduction, audible warning, visible goblin arrivals, readable combat, and a forgiving retry. The bramble raiders and these particular encounters are original procedural creatures and scenes.
+
+## Code and validation
+
+| Module | Responsibility |
+| --- | --- |
+| `src/world.js`, `src/regions.js` | Terrain, regional layouts, paths, props, collision, fishing banks, landmarks, and completed-site visuals |
+| `src/characters.js` | Procedural traveler/NPC/goblin models, clothing, and articulated animation |
+| `src/game-state.js` | Movement, collision, and first-shore tutorial transitions |
+| `src/journey.js`, `src/journey-content.js` | Ordered road quests, rewards, versioned progress, and optional NPC dialogue |
+| `src/campaign-world.js` | Campaign atlas: difficulty levels, factions, threats, settlements, transcript name aliases, hex adjacency and terrain summaries |
+| `src/campaign.js` | The branching civil-war main quest: fork, battles with side-quest odds, regional arcs, trust and exposure, missions, map control, validated saves |
+| `src/autopilot.js`, `src/autoplay-smoke.js` | Autoplay: quest planner, trail-following navigation with collision probing and stall detours, combat policy, dialogue pacing; the rendered end-to-end check |
+| `src/forest-places.js`, `src/forest-story.js` | Six woodland places, optional Tamsin errand, shrine repair, journal notes, dialogue, and exactly-once rewards |
+| `src/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
+| `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
+| `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
+| `src/acorn-quest.js` | Lysa's atomic turn-in and relationship memory |
+| `src/inventory.js`, `src/weapons.js`, `src/consumables.js` | Satchel UI, item stacks, wear, equipment, repairs, and guarded food consumption |
+| `src/campcraft.js` | Fishing timing, catches, fire fuel, and cooking exchanges |
+| `src/combat.js`, `src/combat-view.js` | Deterministic encounters, stamina, tells, coordinated enemies, effects, and retry/retreat |
+| `src/road-audio.js` | Optional local ambience, surface footfalls, nearby calls, and effects |
+| `src/road-checkpoint.js`, `src/woodland-progress.js` | Validated first-shore/road saves, woodland gathering/history, camp state, and legacy compatibility |
+| `src/world-map.js`, `scripts/export-world-map.mjs` | Offline parchment chart generated from the World Builder map (coast, border and river chaining, terrain glyphs, tilted labels, uncharted names), zoom/pan/focus |
+| `src/local-map-data.js`, `src/trail-map.js`, `src/minimap.js` | Read-only regional chart data, discovery-aware journal maps, optional pins, and the player-centered local minimap |
+| `src/developer-atlas.js`, `scripts/export-developer-atlas.mjs` | Exact atlas selection polygons, authored hex survey export, destination provenance, and schematic local route |
+| `src/developer-mode.js`, `src/ghost-camera.js` | Paused adventure isolation, developer controls, translucent spectator, free flight, atlas UI, and scene switching |
+| `src/thalmagar-world.js`, `src/survey-world.js` | Separate fortress study and illustrative terrain survey scenes, with resource cleanup |
+| `src/main.js` and the CSS files | Renderer, input, camera, game flow, HUD, journals, and panels |
+| `main.cjs`, `preload.cjs`, `scripts/checkpoint-store.cjs` | Desktop window, local asset server, isolated IPC, and atomic disk checkpoint storage |
+| `src/road-smoke.js`, `src/road-traversal.js`, `src/road-check-smoke.js` | Rendered gameplay, continuous walking, intermediate saves/reload, audio, and F8 checks |
+| `src/forest-smoke.js`, `src/developer-smoke.js` | Rendered woodland errands, saved forest state, developer flight, atlas selection, and scene-isolation checks |
+| `src/local-map-smoke.js` | Actual local-map controls, anonymous unexplored places, physical discovery, independent tracking, and adventure/save isolation |
+| `vendor/` | Three.js 0.185.1 modules and MIT license |
+
+`npm test` runs the Node test suite for the campaign atlas and branching campaign, the autopilot planner and navigator, movement, ordered and optional quests, inventory, repair supplies, weapon condition, combat, campcraft, collectible reachability, ecology, audio lifecycle, checkpoint compatibility/storage failures, exact atlas selection, ghost flight, the Thalmagar scene, and local-map projection, discovery privacy, and rendering.
+
+`npm run test:game` runs the actual renderer in an offscreen Electron window. It exercises the boat arrival, movement, dialogue, tutorial practice, defeat/retry, the tutorial and meadow battles, satchel tooltips and food, atlas navigation, Lysa's favor, forest campcraft, all three road quests, replacement bridge timber, river fishing, physical bridge traversal, checkpoints, and F8 travel. Enemy travel is shortened with test-only positioning while attacks still use normal input, timing, and damage. This is a correctness walkthrough, not a performance benchmark.
+
+`npm run test:autoplay` starts autoplay on the opening screen and watches the computer play the whole road to Iven's relay at real walking speed, checking that no step teleports, that a synthetic key press cannot take control, and that a hand-over and resume work. It takes several minutes.
+
+`npm run test:road` holds real movement controls for the complete northern road and return trip, checking collision and the final boundary. `npm run test:checkpoints` checks intermediate autosaves, actual WebAudio, testing from meadow defeat, and Continue in a fresh renderer. It restores an unfinished bridge quest while standing on the repaired deck. Both commands use the isolated test save slot.
+
+`npm run test:forest` exercises the optional woodland trail, Tamsin's bundle, the shrine repair, journal notes, and a fresh-renderer reload of saved forest progress. `npm run review:forest` captures the six places, wildlife, and dialogue at desktop and compact sizes. The full story walkthrough has also passed with these forest additions in place.
+
+`npm run test:hideout` exercises the optional goblin camp, its supply recovery and reward, and restoration of saved camp progress. `npm run review:hideout` captures the approach, camp, dialogue, and cleared state for visual review.
+
+`npm run test:local-map` exercises L, the clickable minimap, all four regional charts, anonymous unexplored markers, physical woodland discovery, marking and clearing a known place, paused movement, and unchanged adventure/save data. It also checks that J and M retain their journey and World Builder behavior. `npm run review:local-map` captures the local charts and minimap at desktop and compact sizes.
+
+`npm run test:developer` exercises atlas selection, local/Cape/survey visits, ghost movement and boost controls, return to the ordinary player, and isolation from saved progress. `npm run review:developer` captures the developer atlas and inspection scenes. These are correctness and visual checks, not claims that terrain surveys contain finished gameplay or that a target frame rate has been established.
+
+The new landscape keeps large static scenery batches local to each district and divides the northern terrain into tiles sharing the original vertex buffers. This preserves terrain resolution while allowing the renderer to skip ground behind the camera. Matching offscreen views after 75 rendered frames submitted about 7% fewer triangles at Sunmeadow, 25% fewer at Reedwater, 42% fewer on Threefold Rise, and 54% fewer at North Relay than the single-batch baseline. Draw calls increased by 25, 16, 7, and 1 respectively. These are geometry/call observations from `tests/artifacts/road-render*.json`, not an FPS benchmark.
+
+For a fresh visual/culling comparison, run `node scripts/launch.cjs --smoke-test --road-review`, then add `--unbatched-world` for the baseline. Normal play always uses district batching. The comparison does not write a player checkpoint.
+
+The harness writes results and desktop/compact screenshots to `tests/artifacts/`. `npm run test:window` separately verifies native fullscreen coverage, F11/Alt+Enter toggles, and Escape behavior. After changing the source World Builder map, run **both** `npm run map:refresh` and `npm run map:developer` to regenerate matching normal-atlas and developer-survey assets. Neither export writes to the World Builder source.
+
+Each test launch uses its own temporary Electron profile under `tests/.electron-profiles/`, removed when that test exits. Offscreen checks keep their saves in memory and do not share the normal game's Chromium cache.
+
+The desktop icon is an abstract gold sun and winding coastal path over teal water. `scripts/create-icon.ps1` generates its seven ICO sizes; `scripts/create-desktop-shortcut.ps1` updates the shortcut without restarting a live game.

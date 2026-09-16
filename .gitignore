@@ -1,0 +1,6 @@
+node_modules/
+tests/artifacts/
+*.log
+logs/
+saves/
+tests/.electron-profiles/

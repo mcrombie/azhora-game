@@ -1,0 +1,1509 @@
+import * as THREE from 'three';
+import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
+import { regions, regionAt, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
+import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
+import { FOREST_HIDEOUT, forestHideoutClear, tintForestHideoutGround, createForestHideout } from './forest-hideout-world.js';
+import {
+  VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
+  CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
+  calossDistance, landDistance,
+} from './region-world.js';
+import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, smooth, lerp } from './world-terrain.js';
+import { createRegionScenery } from './world-regions.js';
+
+/**
+ * The playable world of Drent, Luscia, the Moros Plain and East Suval.
+ *
+ * Shapes, sizes and positions come from the authored atlas through
+ * `region-world.js`; north is -Z and one authored hex is 56 m. Tidehaven, the
+ * Greenway tutorial and the woodland places were built with the sea to the
+ * south, so they are carried over whole inside `villageRoot`, a group turned a
+ * quarter turn onto Drent's east-facing coast. Everything inside that group
+ * still speaks the village's own local metres; everything else is world metres.
+ */
+export function createWorld(scene, { spatialBatches = true } = {}) {
+  let seed = 341937;
+  const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const range = (a, b) => a + random() * (b - a);
+  let terrainSeed = 0x5a2f11b7;
+  const trandom = () => { terrainSeed = (Math.imul(terrainSeed, 1664525) + 1013904223) >>> 0; return terrainSeed / 4294967296; };
+  const trange = (a, b) => a + trandom() * (b - a);
+  const clamp = THREE.MathUtils.clamp;
+  const colliders = [];
+  const training = { x: 3, z: -12 };
+  const repairBench = { x: 6, z: -6.4, name: 'Village repair bench' };
+  const doomsayer = { x: -9.3, z: 2.2 }, pondFisher = { x: 20.4, z: -82 };
+  const pond = { x: 27, z: -77, radius: 5.4, surfaceY: 0,
+    fishingSpot: { x: 20.4, z: -77 }, castPoint: { x: 24.8, y: 0, z: -77.2 } };
+  const firePits = [
+    { id: 'village-fire', x: -9.2, z: -2.3, fireX: -10.5, fireZ: -2.3 },
+    { id: 'pond-fire', x: 17.8, z: -72, fireX: 17.8, fireZ: -70.7 },
+  ];
+  const pondPaths = [
+    [{ x: 0, z: -74 }, { x: 8, z: -74.7 }, { x: 15, z: -76.7 }, pond.fishingSpot],
+    [{ x: 16.1, z: -77 }, { x: 18, z: -80 }, pondFisher],
+    [{ x: 12.7, z: -76 }, { x: 15, z: -73 }, firePits[1]],
+  ];
+  function pondPathDistance(x, z) {
+    let distance = Infinity;
+    for (const path of pondPaths) for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1], b = path[i], dx = b.x - a.x, dz = b.z - a.z;
+      const t = clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz), 0, 1);
+      distance = Math.min(distance, Math.hypot(x - a.x - dx * t, z - a.z - dz * t));
+    }
+    return distance;
+  }
+  const featureClear = (x, z, tree = false) => Math.hypot(x - pond.x, z - pond.z) < pond.radius + (tree ? 2.8 : .1)
+    || pondPathDistance(x, z) < (tree ? 2.35 : 1.45)
+    || [doomsayer, pondFisher, ...firePits].some(p => Math.hypot(x - p.x, z - p.z) < (tree ? 2.1 : 1.0))
+    || firePits.some(p => Math.hypot(x - p.fireX, z - p.fireZ) < (tree ? 2.1 : 1.25))
+    || forestFeatureClear(x, z, tree) || forestHideoutClear(x, z, tree);
+  const encounter = { x: 0, z: -34, radius: 8 };
+  const northTrail = { x: -5, z: -108, name: FERNWAY_REST.name };
+  const border = { x: 0, z: -156, name: CALOSS_GATE.name, barrierZ: -162,
+    regionName: CALOSS_GATE.regionName, open: true };
+  const routeNorth = [
+    { x: 0, z: -72 }, { x: -11, z: -86 }, { x: -5, z: -108 },
+    { x: 8, z: -128 }, { x: 3, z: -143 }, { x: border.x, z: border.z },
+  ];
+  const inLessonSpace = (x, z, margin = 0) => Math.hypot(x - training.x, z - training.z) < 2.5 + margin
+    || Math.hypot(x - encounter.x, z - encounter.z) < encounter.radius + margin;
+
+  const world = new THREE.Group();
+  world.name = 'Drent and the road to the Moros';
+  scene.add(world);
+  // Tidehaven, carried over whole onto Drent's east coast.
+  const villageRoot = new THREE.Group();
+  villageRoot.name = 'Tidehaven and the Greenway';
+  villageRoot.position.set(VILLAGE.x, 0, VILLAGE.z);
+  villageRoot.rotation.y = VILLAGE.yaw;
+  world.add(villageRoot);
+  const isLocal = parent => { for (let node = parent; node; node = node.parent) if (node === villageRoot) return true; return false; };
+  /** Village colliders are authored locally; the world only ever sees world metres. */
+  function vpush(collider) {
+    const point = villageToWorld(collider.x, collider.z);
+    collider.x = point.x; collider.z = point.z;
+    if (Number.isFinite(collider.angle)) collider.angle += VILLAGE.yaw;
+    if (collider.hx !== undefined) { const half = collider.hx; collider.hx = collider.hz; collider.hz = half; }
+    colliders.push(collider);
+    return collider;
+  }
+  const localColliders = new Proxy(colliders, {
+    get(target, property) {
+      if (property === 'push') return (...items) => { for (const item of items) vpush(item); return target.length; };
+      const value = target[property];
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+
+  const materials = {};
+  const material = (color, extra = {}) => {
+    const key = `${color}:${JSON.stringify(extra)}`;
+    return materials[key] ||= new THREE.MeshStandardMaterial({ color, roughness: 0.93, ...extra });
+  };
+  const wood = material('#71523a');
+  const woodLight = material('#ab7950');
+  const darkWood = material('#59432e');
+  const cream = material('#eee0ac');
+  const rockMat = material('#85998a');
+  const windowMat = material('#ffe4a0', { emissive: '#ffd287', emissiveIntensity: 0.52, roughness: 0.35 });
+  const cube = new THREE.BoxGeometry(1, 1, 1);
+  const cylinder = new THREE.CylinderGeometry(1, 1, 1, 7);
+  const round = new THREE.IcosahedronGeometry(1, 0);
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+  function mesh(geometry, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = villageRoot) {
+    const item = new THREE.Mesh(geometry, mat);
+    item.position.set(x, y, z);
+    item.scale.set(sx, sy, sz);
+    item.castShadow = true;
+    item.receiveShadow = true;
+    parent.add(item);
+    return item;
+  }
+  const box = (mat, x, y, z, sx, sy, sz, parent = villageRoot) => mesh(cube, mat, x, y, z, sx, sy, sz, parent);
+  const post = (mat, x, y, z, radius, height, parent = villageRoot) => mesh(cylinder, mat, x, y, z, radius, height, radius, parent);
+  const pebble = (mat, x, y, z, sx, sy, sz, parent = villageRoot) => mesh(round, mat, x, y, z, sx, sy, sz, parent);
+
+  // ---------------------------------------------------------------------------
+  // Ground
+  // ---------------------------------------------------------------------------
+  /** Tidehaven's own field, including its pond, in local metres. */
+  function localGround(x, z) {
+    const original = villageBase(x, z), distance = Math.hypot(x - pond.x, z - pond.z);
+    if (distance < pond.radius) return pond.surfaceY - .85 * (1 - smooth(pond.radius - 1.5, pond.radius, distance));
+    if (distance < pond.radius + 2.4) return THREE.MathUtils.lerp(pond.surfaceY, original, smooth(pond.radius, pond.radius + 2.4, distance));
+    return original;
+  }
+  /** World ground: the hex biomes, Tidehaven where it stands, the Caloss channel. */
+  function groundHeight(x, z) {
+    const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
+    if (weight <= 0) return groundWithRiver(x, z);
+    const village = localGround(local.x, local.z);
+    if (weight >= 1) return village;
+    return lerp(groundWithRiver(x, z), village, weight);
+  }
+  pond.surfaceY = villageBase(pond.x, pond.z) - .55;
+  pond.castPoint.y = pond.surfaceY + .035;
+  const pondWorld = villageToWorld(pond.x, pond.z);
+
+  let bridgeDeck = null;
+  function onBridge(x, z) {
+    if (!bridgeDeck) return false;
+    const dx = x - bridgeDeck.crossing.x, dz = z - bridgeDeck.crossing.z;
+    const along = dx * bridgeDeck.axis.x + dz * bridgeDeck.axis.z;
+    const across = dx * bridgeDeck.side.x + dz * bridgeDeck.side.z;
+    return Math.abs(along) <= bridgeDeck.halfSpan + .4 && Math.abs(across) <= 2.55;
+  }
+  function heightAt(x, z) {
+    const local = worldToVillage(x, z);
+    // The pier deck, exactly as Tidehaven always had it.
+    if (Math.abs(local.x) < 2.2 && local.z >= 22 && local.z <= 48) return 1.8;
+    if (onBridge(x, z)) return bridgeDeck.deckY + .09;
+    return groundHeight(x, z);
+  }
+
+  const fishingSpots = [
+    { id: 'willowmere', name: 'Willowmere Pond', x: pondWorld.x, z: pondWorld.z, radius: pond.radius, surfaceY: pond.surfaceY,
+      fishingSpot: villageToWorld(pond.fishingSpot.x, pond.fishingSpot.z),
+      castPoint: { ...villageToWorld(pond.castPoint.x, pond.castPoint.z), y: pond.castPoint.y } },
+    { id: 'reedwater', name: 'Caloss fishing bank', x: CALOSS_BANK.spot.x, z: CALOSS_BANK.spot.z,
+      surfaceY: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z),
+      fishingSpot: { ...CALOSS_BANK.spot },
+      castPoint: { x: CALOSS_BANK.cast.x, y: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z) + .035, z: CALOSS_BANK.cast.z } },
+  ];
+  let activeFishingSpot = fishingSpots[0];
+
+  // ---------------------------------------------------------------------------
+  // Roads: drawn in world metres, sampled locally for Tidehaven's own scatter
+  // ---------------------------------------------------------------------------
+  const roadSegments = [], paths = [], movingGroups = new Set();
+  /** Road centre lines, coarse, for keeping scatter and scenery off the road. */
+  function measurePath(points, width) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
+    const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 4)));
+    for (let i = 1; i < samples.length; i++) roadSegments.push({ ax: samples[i - 1].x, az: samples[i - 1].z,
+      bx: samples[i].x, bz: samples[i].z, width });
+  }
+  function addPath(points, width, parent = world) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
+    const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 1.1)));
+    const positions = [], indices = [];
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const direction = samples[Math.min(i + 1, samples.length - 1)].clone().sub(samples[Math.max(0, i - 1)]).normalize();
+      const left = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(width / 2 * (1 + Math.sin(i * .61) * .025));
+      for (const sign of [-1, 1]) {
+        const x = p.x + left.x * sign, z = p.z + left.z * sign;
+        positions.push(x, (onBridge(x, z) ? bridgeDeck.deckY + .05 : groundHeight(x, z)) + .045, z);
+      }
+      if (i) { const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1); }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const path = new THREE.Mesh(geometry, material('#c6b384', { side: THREE.DoubleSide }));
+    path.receiveShadow = true;
+    parent.add(path);
+    paths.push(points.map(p => ({ x: p.x, z: p.z })));
+  }
+  function roadDistance(x, z) {
+    let min = Infinity;
+    for (const s of roadSegments) {
+      const dx = s.bx - s.ax, dz = s.bz - s.az;
+      const t = clamp(((x - s.ax) * dx + (z - s.az) * dz) / (dx * dx + dz * dz), 0, 1);
+      min = Math.min(min, Math.hypot(x - s.ax - t * dx, z - s.az - t * dz) - s.width / 2);
+    }
+    return min;
+  }
+  // Tidehaven's vegetation uses the original local road sampling, so the
+  // woodland's tree, acorn, stick and squirrel layout is unchanged.
+  const originalScatterSegments = [];
+  const localTrail = [{ x: 0, z: 25 }, { x: 0, z: 9 }, { x: 0, z: -5 }, { x: -1.6, z: -20 }, { x: 1.7, z: -34 },
+    { x: 0, z: -47 }, { x: -1.5, z: -60 }, ...routeNorth,
+    { x: 1, z: -184 }, { x: -9, z: -220 }, { x: -25, z: -267 }, { x: -19, z: -330 }];
+  const localSidePaths = [
+    [{ x: -21, z: 13 }, { x: -10, z: 8 }, { x: 0, z: 7 }, { x: 14, z: 7 }, { x: 27, z: 9 }],
+    [{ x: -24, z: -12 }, { x: -11, z: -8 }, { x: 0, z: -9 }, { x: 12, z: -9 }, { x: 25, z: -17 }],
+    [{ x: 0, z: -40 }, { x: 12, z: -43 }, { x: 24, z: -53 }, { x: 32, z: -60 }],
+  ];
+  for (const [index, points] of [localTrail, ...localSidePaths].entries()) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
+    const samples = curve.getPoints(Math.ceil(curve.getLength() / .65));
+    for (let i = 1; i < samples.length; i++) originalScatterSegments.push({ ax: samples[i - 1].x, az: samples[i - 1].z,
+      bx: samples[i].x, bz: samples[i].z, width: index === 0 ? 4.2 : 2.6 });
+  }
+  function localPathDistance(x, z) {
+    let min = Infinity;
+    for (const s of originalScatterSegments) {
+      const dx = s.bx - s.ax, dz = s.bz - s.az;
+      const t = clamp(((x - s.ax) * dx + (z - s.az) * dz) / (dx * dx + dz * dz), 0, 1);
+      min = Math.min(min, Math.hypot(x - s.ax - t * dx, z - s.az - t * dz) - s.width / 2);
+    }
+    return min;
+  }
+  const distanceToPath = localPathDistance;
+
+  // ---------------------------------------------------------------------------
+  // Terrain: one graded grid over the whole world, finest around Tidehaven
+  // ---------------------------------------------------------------------------
+  function axisSamples(min, max, fineMin, fineMax) {
+    const out = [min];
+    let value = min;
+    while (value < max) {
+      const outside = Math.max(fineMin - value, value - fineMax, 0);
+      value = Math.min(max, value + 2.5 + Math.min(4.6, outside / 20 * 4.6));
+      out.push(value);
+    }
+    return out;
+  }
+  const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, -252, 62);
+  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, -110, 172);
+  const columns = terrainXs.length, rows = terrainZs.length;
+  const terrainPositions = new Float32Array(columns * rows * 3);
+  const terrainColors = new Float32Array(columns * rows * 3);
+  const grassColors = ['#86a859', '#80a452', '#92ac5e', '#75994f', '#83a45b'];
+  const meadowTint = new THREE.Color(), beachColor = new THREE.Color('#d5c99a'), villageColor = new THREE.Color();
+  for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
+    const x = terrainXs[i], z = terrainZs[j], index = j * columns + i;
+    terrainPositions.set([x, groundHeight(x, z), z], index * 3);
+    groundTint(color, x, z, THREE);
+    const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
+    if (weight > 0) {
+      villageColor.set(grassColors[Math.floor(trandom() * grassColors.length)]);
+      meadowTint.setHSL(.198 + Math.sin(local.x * .034 + local.z * .012) * .023, .31, .49, THREE.SRGBColorSpace);
+      villageColor.lerp(meadowTint, smooth(132, 171, -local.z));
+      villageColor.lerp(beachColor, smooth(18.5, 29, local.z - Math.sin(local.x * .055) * 2.5));
+      villageColor.multiplyScalar(trange(0.94, 1.05));
+      tintForestGround(villageColor, local.x, local.z);
+      tintForestHideoutGround(villageColor, local.x, local.z);
+      color.lerp(villageColor, weight);
+    } else color.multiplyScalar(trange(.955, 1.045));
+    terrainColors.set([color.r, color.g, color.b], index * 3);
+  }
+  const terrainIndices = [];
+  for (let j = 0; j < rows - 1; j++) for (let i = 0; i < columns - 1; i++) {
+    const a = j * columns + i;
+    terrainIndices.push(a, a + columns, a + 1, a + 1, a + columns, a + columns + 1);
+  }
+  const terrainGeometry = new THREE.BufferGeometry();
+  terrainGeometry.setAttribute('position', new THREE.BufferAttribute(terrainPositions, 3));
+  terrainGeometry.setAttribute('color', new THREE.BufferAttribute(terrainColors, 3));
+  terrainGeometry.setIndex(terrainIndices);
+  terrainGeometry.computeVertexNormals();
+  const terrainMaterial = material('#ffffff', { vertexColors: true, flatShading: true });
+  const terrainRoot = new THREE.Group();
+  terrainRoot.name = 'The ground of the four regions';
+  world.add(terrainRoot);
+  if (!spatialBatches) {
+    const single = new THREE.Mesh(terrainGeometry, terrainMaterial);
+    single.receiveShadow = true; single.name = 'Whole-world terrain';
+    terrainRoot.add(single);
+  } else {
+    // Share one vertex buffer between tiles; only index ranges and bounds differ,
+    // so a camera facing Drent can discard the Moros without changing the ground.
+    const tilesX = 7, tilesZ = 7;
+    const spanX = Math.ceil((columns - 1) / tilesX), spanZ = Math.ceil((rows - 1) / tilesZ);
+    const bounds = new THREE.Box3(), vertex = new THREE.Vector3();
+    const positionAttribute = terrainGeometry.attributes.position;
+    for (let tz = 0; tz < tilesZ; tz++) for (let tx = 0; tx < tilesX; tx++) {
+      const firstX = tx * spanX, firstZ = tz * spanZ;
+      const lastX = Math.min(firstX + spanX, columns - 1), lastZ = Math.min(firstZ + spanZ, rows - 1);
+      if (firstX >= lastX || firstZ >= lastZ) continue;
+      const indices = [];
+      bounds.makeEmpty();
+      for (let j = firstZ; j <= lastZ; j++) for (let i = firstX; i <= lastX; i++)
+        bounds.expandByPoint(vertex.fromBufferAttribute(positionAttribute, j * columns + i));
+      for (let j = firstZ; j < lastZ; j++) for (let i = firstX; i < lastX; i++) {
+        const a = j * columns + i;
+        indices.push(a, a + columns, a + 1, a + 1, a + columns, a + columns + 1);
+      }
+      const geometry = new THREE.BufferGeometry();
+      for (const [name, attribute] of Object.entries(terrainGeometry.attributes)) geometry.setAttribute(name, attribute);
+      geometry.setIndex(indices);
+      geometry.boundingBox = bounds.clone();
+      geometry.boundingSphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const tile = new THREE.Mesh(geometry, terrainMaterial);
+      tile.name = `Terrain ${tx}:${tz}`; tile.receiveShadow = true;
+      terrainRoot.add(tile);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // The Stills
+  // ---------------------------------------------------------------------------
+  const seaWidth = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 260, seaDepth = WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ + 260;
+  const waterGeometry = new THREE.PlaneGeometry(seaWidth, seaDepth, 72, 72);
+  waterGeometry.rotateX(-Math.PI / 2);
+  const waterMaterial = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 }, shallow: { value: new THREE.Color('#65bdba') }, deep: { value: new THREE.Color('#328e9c') } },
+    vertexShader: `uniform float time; varying vec3 vWorld; varying float vWave;
+      void main() { vec3 p=position; float w=sin(p.x*.12+time*.65)*.10+sin(p.z*.19+p.x*.035+time*.8)*.055;
+      p.y+=w; vWave=w; vec4 world=modelMatrix*vec4(p,1.); vWorld=world.xyz; gl_Position=projectionMatrix*viewMatrix*world; }`,
+    fragmentShader: `uniform float time; uniform vec3 shallow; uniform vec3 deep; varying vec3 vWorld; varying float vWave;
+      void main() { float band=sin(vWorld.x*.26+vWorld.z*.47+time*.7)*sin(vWorld.x*.45-vWorld.z*.1+time*.21);
+      vec3 col=mix(shallow,deep,smoothstep(20.,150.,vWorld.x)); col+=vWave*.32;
+      float sparkle=pow(max(0.,band),22.); col+=vec3(.21,.25,.20)*sparkle;
+      gl_FragColor=vec4(col,1.); }`,
+  });
+  const water = new THREE.Mesh(waterGeometry, waterMaterial);
+  water.name = 'The Stills';
+  water.position.set((WORLD_BOUNDS.minX + WORLD_BOUNDS.maxX) / 2, SEA_LEVEL, (WORLD_BOUNDS.minZ + WORLD_BOUNDS.maxZ) / 2);
+  world.add(water);
+  // A foam line traced along the actual coast, from Drent's north cape to the
+  // southern bay, so the shore reads as a place and not a plane edge.
+  const shorePoints = [];
+  for (let z = -170; z <= 330; z += 5) {
+    let best = null;
+    for (let x = 240; x > -320; x -= 2.5) {
+      const distance = landDistance(x, z);
+      if (distance >= 0) { best = x + clamp(distance, 0, 2.5); break; }
+    }
+    if (best !== null) shorePoints.push({ x: best, z });
+  }
+  const shorePositions = [];
+  for (const spot of shorePoints) shorePositions.push(spot.x, .11, spot.z, spot.x + .28 + Math.sin(spot.z * .2) * .09, .115, spot.z);
+  const shoreIndices = [];
+  for (let i = 2; i < shorePositions.length / 3; i += 2) shoreIndices.push(i - 2, i, i - 1, i - 1, i, i + 1);
+  const shoreGeometry = new THREE.BufferGeometry();
+  shoreGeometry.setAttribute('position', new THREE.Float32BufferAttribute(shorePositions, 3));
+  shoreGeometry.setIndex(shoreIndices);
+  const shoreFoam = new THREE.Mesh(shoreGeometry, new THREE.MeshBasicMaterial({ color: '#ddf2d9', transparent: true, opacity: .38, side: THREE.DoubleSide }));
+  shoreFoam.name = 'Shore foam';
+  world.add(shoreFoam);
+
+  // ---------------------------------------------------------------------------
+  // Shared props, authored in whichever frame their parent belongs to
+  // ---------------------------------------------------------------------------
+  const groundFor = parent => (isLocal(parent) ? localGround : groundHeight);
+  const pushFor = parent => (isLocal(parent) ? vpush : (collider => { colliders.push(collider); return collider; }));
+  function roofGeometry(width, depth, rise) {
+    const w = width / 2, d = depth / 2;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([-w, 0, -d, w, 0, -d, 0, rise, -d, -w, 0, d, w, 0, d, 0, rise, d], 3));
+    geometry.setIndex([0, 2, 1, 3, 4, 5, 0, 3, 5, 0, 5, 2, 1, 2, 5, 1, 5, 4, 0, 1, 4, 0, 4, 3]);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+  function rope(points, radius = .033, mat = material('#d7c198'), parent = villageRoot) {
+    const geometry = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), Math.max(6, points.length * 6), radius, 4, false);
+    return mesh(geometry, mat, 0, 0, 0, 1, 1, 1, parent);
+  }
+  const houseLocations = [];
+  const smokeSources = [];
+  function cottage(x, z, width, depth, height, roofColor, wallColor, angle = 0, parent = villageRoot) {
+    const y = groundFor(parent)(x, z);
+    const group = new THREE.Group(); group.position.set(x, y, z); group.rotation.y = angle; parent.add(group);
+    if (isLocal(parent)) houseLocations.push({ x, z, r: Math.max(width, depth) * .72 });
+    pushFor(parent)({ x, z, r: Math.max(width, depth) * .62, kind: 'house', width, depth, angle });
+    box(material('#929580'), 0, .2, 0, width + .35, .7, depth + .3, group);
+    box(material(wallColor), 0, height / 2 + .38, 0, width, height, depth, group);
+    box(darkWood, 0, .59, depth / 2 + .035, width, .19, .13, group);
+    box(darkWood, 0, height + .28, depth / 2 + .035, width, .17, .14, group);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(wood, sx * (width / 2 - .06), height / 2 + .35, sz * (depth / 2 + .02), .18, height + .14, .18, group);
+    const roofBase = height + .33;
+    mesh(roofGeometry(width + .95, depth + 1.05, 1.85), material(roofColor), 0, roofBase, 0, 1, 1, 1, group);
+    box(material('#d4a66f'), 0, roofBase + 1.85, 0, .18, .15, depth + 1.14, group);
+    for (const side of [-1, 1]) {
+      const trim = box(darkWood, side * (width + .95) / 4, roofBase + .92, depth / 2 + .55, Math.hypot((width + .95) / 2, 1.85), .15, .16, group);
+      trim.rotation.z = -side * Math.atan2(1.85, (width + .95) / 2);
+    }
+    box(darkWood, 0, 1.32, depth / 2 + .09, 1.12, 2.02, .17, group);
+    box(material('#997348'), 0, 1.32, depth / 2 + .19, .89, 1.88, .10, group);
+    for (let k = -1; k <= 1; k++) box(wood, k * .23, 1.32, depth / 2 + .26, .028, 1.87, .025, group);
+    pebble(material('#d4b465'), .3, 1.25, depth / 2 + .3, .055, .055, .035, group);
+    box(rockMat, 0, .26, depth / 2 + .52, 1.55, .3, .8, group);
+    for (const side of [-1, 1]) {
+      const wx = side * width * .31;
+      box(darkWood, wx, 2.03, depth / 2 + .075, 1.08, 1.18, .15, group);
+      box(windowMat, wx, 2.03, depth / 2 + .17, .86, .94, .04, group);
+      box(wood, wx, 2.03, depth / 2 + .21, .075, 1.0, .05, group);
+      box(wood, wx, 2.03, depth / 2 + .215, .91, .075, .055, group);
+      for (const shutter of [-1, 1]) box(material(roofColor), wx + shutter * .65, 2.03, depth / 2 + .14, .26, 1.13, .08, group);
+      box(woodLight, wx, 1.34, depth / 2 + .35, 1.19, .27, .43, group);
+      for (let f = 0; f < 5; f++) pebble(material(f % 2 ? '#eeb679' : '#d78082'), wx - .42 + f * .21, 1.62, depth / 2 + .38, .13, .17, .13, group);
+    }
+    box(darkWood, width / 2 + .075, 2.05, 0, .14, 1.1, 1.05, group);
+    box(windowMat, width / 2 + .155, 2.05, 0, .035, .87, .84, group);
+    box(wood, width / 2 + .19, 2.05, 0, .05, .92, .07, group);
+    const chimneyX = -width * .27, chimneyZ = -depth * .21;
+    box(material('#b38e77'), chimneyX, roofBase + 1.45, chimneyZ, .61, 2.1, .65, group);
+    box(material('#cbb19a'), chimneyX, roofBase + 2.48, chimneyZ, .8, .16, .81, group);
+    const source = new THREE.Vector3(chimneyX, roofBase + 2.64, chimneyZ).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle).add(group.position);
+    if (isLocal(parent)) { const world3 = villageToWorld(source.x, source.z); source.set(world3.x, source.y, world3.z); }
+    smokeSources.push(source);
+    return group;
+  }
+  function barrel(x, z, scale = 1, parent = villageRoot, y = groundFor(parent)(x, z)) {
+    const barrelGeo = new THREE.CylinderGeometry(.38, .35, .95, 9);
+    mesh(barrelGeo, woodLight, x, y + .48 * scale, z, scale, scale, scale, parent);
+    const hoop = material('#59605a');
+    [.18, .75].forEach(h => post(hoop, x, y + h * scale, z, .391 * scale, .06 * scale, parent));
+    post(wood, x, y + .975 * scale, z, .33 * scale, .028, parent);
+  }
+  function crate(x, z, size = .8, y = null, parent = villageRoot) {
+    const base = y === null ? groundFor(parent)(x, z) : y;
+    box(woodLight, x, base + size / 2, z, size, size, size, parent);
+    for (const dx of [-1, 1]) for (const dz of [-1, 1]) box(wood, x + dx * size * .43, base + size * .5, z + dz * size * .5, size * .095, size, size * .09, parent);
+    const diagonal = box(wood, x, base + size * .5, z + size * .512, size * 1.14, size * .095, size * .045, parent); diagonal.rotation.z = Math.PI / 4;
+  }
+  function fence(x, z, length, rotation = 0, parent = villageRoot) {
+    const group = new THREE.Group(); group.position.set(x, groundFor(parent)(x, z), z); group.rotation.y = rotation; parent.add(group);
+    for (let f = -length / 2; f <= length / 2 + .1; f += 1.35) box(woodLight, f, .67, 0, .11, 1.3, .12, group);
+    box(woodLight, 0, .51, 0, length, .12, .10, group); box(woodLight, 0, 1.04, 0, length, .11, .10, group);
+  }
+  function leanTo(x, z, tint = '#b29b70', angle = 0, parent = villageRoot) {
+    const ground = groundFor(parent);
+    const shelter = new THREE.Group(); shelter.position.set(x, ground(x, z), z); shelter.rotation.y = angle; parent.add(shelter);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(wood, sx * 2.2, 1.45, sz * 1.55, .11, 2.9, shelter);
+    mesh(roofGeometry(5.2, 4.0, 1.25), material(tint), 0, 2.85, 0, 1, 1, 1, shelter);
+    box(woodLight, -1.3, .42, -.7, 1.6, .1, .65, shelter);
+    for (const x0 of [-1.85, -.75]) box(wood, x0, .2, -.7, .14, .4, .55, shelter);
+    const push = pushFor(parent);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) push({
+      x: x + sx * 2.2 * Math.cos(angle) + sz * 1.55 * Math.sin(angle),
+      z: z - sx * 2.2 * Math.sin(angle) + sz * 1.55 * Math.cos(angle), r: .17, kind: 'shelter-post' });
+    return shelter;
+  }
+  function wornPatch(x, z, radius, tint, edgeScale = 1, parent = world) {
+    const ground = groundFor(parent);
+    const geometry = new THREE.CircleGeometry(radius, 32);
+    geometry.rotateX(-Math.PI / 2);
+    const p = geometry.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const localX = p.getX(i), localZ = p.getZ(i);
+      const irregular = i ? 1 + Math.sin(i * 2.1) * .045 : 1;
+      const px = x + localX * irregular, pz = z + localZ * irregular * edgeScale;
+      p.setXYZ(i, px, ground(px, pz) + .028, pz);
+    }
+    geometry.computeVertexNormals();
+    const patch = new THREE.Mesh(geometry, material(tint));
+    patch.receiveShadow = true;
+    parent.add(patch);
+  }
+  const localPatch = (x, z, radius, tint, edgeScale = 1) => wornPatch(x, z, radius, tint, edgeScale, villageRoot);
+
+  // ---------------------------------------------------------------------------
+  // Tidehaven, unchanged in its own frame
+  // ---------------------------------------------------------------------------
+  const square = new THREE.CircleGeometry(6.8, 32);
+  square.rotateX(-Math.PI / 2);
+  const sqv = square.attributes.position;
+  for (let i = 0; i < sqv.count; i++) {
+    const x = sqv.getX(i), z = sqv.getZ(i) + 5;
+    sqv.setXYZ(i, x, localGround(x, z) + .06, z);
+  }
+  square.computeVertexNormals();
+  const plaza = new THREE.Mesh(square, material('#cabb8b')); plaza.receiveShadow = true; villageRoot.add(plaza);
+  localPatch(training.x, training.z, 2.2, '#b9aa7b', .88);
+  localPatch(encounter.x, encounter.z, 7.4, '#9ba967', 1.03);
+
+  const pondGeometry = new THREE.CircleGeometry(pond.radius, 72);
+  pondGeometry.rotateX(-Math.PI / 2);
+  const pondMaterial = new THREE.ShaderMaterial({
+    uniforms: { time: { value: 0 } },
+    vertexShader: `varying vec3 p; void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader: `uniform float time;varying vec3 p;void main(){
+      float wave=sin(p.x*2.4+p.z*.8+time*.7)*sin(p.z*1.7-p.x*.5-time*.45);
+      float edge=smoothstep(2.8,5.4,length(p.xz));
+      vec3 color=mix(vec3(.105,.285,.255),vec3(.25,.44,.31),edge);
+      color+=vec3(.11,.17,.13)*pow(max(0.,wave),12.);
+      gl_FragColor=vec4(color,1.);}`,
+  });
+  const pondWater = new THREE.Mesh(pondGeometry, pondMaterial);
+  pondWater.name = 'Willowmere forest pond';
+  pondWater.position.set(pond.x, pond.surfaceY + .027, pond.z); villageRoot.add(pondWater);
+  vpush({ x: pond.x, z: pond.z, r: pond.radius - .04, kind: 'pond-water' });
+
+  const boardCount = 35;
+  const dockBoards = new THREE.InstancedMesh(cube, material('#b48d61'), boardCount);
+  for (let i = 0; i < boardCount; i++) {
+    dummy.position.set(0, 1.67, 22 + i * .75);
+    dummy.rotation.set(0, range(-.009, .009), 0); dummy.scale.set(4.3, .26, .72); dummy.updateMatrix();
+    dockBoards.setMatrixAt(i, dummy.matrix); dockBoards.setColorAt(i, color.setHSL(.092, .30, range(.43, .55)));
+  }
+  dockBoards.castShadow = true; dockBoards.receiveShadow = true; villageRoot.add(dockBoards);
+  box(darkWood, -1.65, 1.32, 34.8, .25, .4, 26.5); box(darkWood, 1.65, 1.32, 34.8, .25, .4, 26.5);
+  for (const side of [-1, 1]) {
+    let previous = null;
+    for (let z = 24; z <= 48; z += 4) {
+      post(wood, side * 2.1, 1.2, z, .16, 4.2);
+      post(woodLight, side * 2.1, 3.31, z, .19, .11);
+      if (previous !== null && !(side === -1 && z === 44))
+        rope([new THREE.Vector3(side * 2.1, 2.88, previous), new THREE.Vector3(side * 2.1, 2.52, z - 2), new THREE.Vector3(side * 2.1, 2.88, z)]);
+      previous = z;
+    }
+  }
+  const ramp = new THREE.BufferGeometry();
+  ramp.setAttribute('position', new THREE.Float32BufferAttribute([-2.15, 1.8, 22, 2.15, 1.8, 22, -2.15, localGround(-2.15, 19) + .035, 19, 2.15, localGround(2.15, 19) + .035, 19], 3));
+  ramp.setIndex([0, 1, 2, 1, 3, 2]); ramp.computeVertexNormals();
+  const rampMesh = new THREE.Mesh(ramp, woodLight); rampMesh.receiveShadow = true; villageRoot.add(rampMesh);
+
+  function boat(x, z, scale = 1, rotation = 0, sail = false) {
+    const group = new THREE.Group(); group.position.set(x, .38, z); group.rotation.y = rotation; group.scale.setScalar(scale); villageRoot.add(group);
+    const outline = [[0, -3.2], [1.1, -2.1], [1.3, .9], [.82, 2.55], [0, 3.1], [-.82, 2.55], [-1.3, .9], [-1.1, -2.1]];
+    const bp = [], bi = [];
+    for (const [bx, bz] of outline) bp.push(bx, .67, bz, bx * .53, -.35, bz * .78);
+    for (let i = 0; i < outline.length; i++) { const a = i * 2, b = ((i + 1) % outline.length) * 2; bi.push(a, b, a + 1, b, b + 1, a + 1); }
+    const hull = new THREE.BufferGeometry(); hull.setAttribute('position', new THREE.Float32BufferAttribute(bp, 3)); hull.setIndex(bi); hull.computeVertexNormals();
+    mesh(hull, material('#497c80', { side: THREE.DoubleSide }), 0, 0, 0, 1, 1, 1, group);
+    box(woodLight, 0, -.08, 0, 1.5, .16, 4.4, group);
+    [-1.6, -.1, 1.45].forEach(bz => box(woodLight, 0, .53, bz, 2.07, .16, .32, group));
+    const rail = outline.map(([bx, bz]) => new THREE.Vector3(bx, .72, bz)); rail.push(rail[0]); rope(rail, .09, woodLight, group);
+    if (sail) {
+      post(wood, 0, 2.7, -.45, .085, 5.8, group);
+      const sailGeometry = new THREE.BufferGeometry();
+      sailGeometry.setAttribute('position', new THREE.Float32BufferAttribute([.1, 5.5, -.45, .1, 1.3, -.45, 2.8, 1.55, -.3], 3)); sailGeometry.computeVertexNormals();
+      mesh(sailGeometry, material('#f2e6bd', { side: THREE.DoubleSide }), 0, 0, 0, 1, 1, 1, group);
+      rope([new THREE.Vector3(0, 5.5, -.45), new THREE.Vector3(0, .72, 2.9)], .018, material('#e7d1a3'), group);
+      const flag = box(material('#e4ac59'), 0, 5.62, -.45, .85, .32, .028, group); flag.position.x = .41;
+    } else {
+      const oar = box(woodLight, .65, .85, .4, .09, .09, 4.3, group); oar.rotation.y = .45;
+      const blade = box(woodLight, 1.51, .85, 2.17, .33, .08, .65, group); blade.rotation.y = .45;
+    }
+    return group;
+  }
+  const arrivalBoat = boat(-5.0, 43, 1, -.12, true);
+  const gangplank = box(woodLight, -3.25, 1.36, 43, 3.25, .12, .95);
+  gangplank.rotation.z = .25;
+  rope([new THREE.Vector3(-2.1, 2.6, 44), new THREE.Vector3(-3.1, 1.55, 44.2), new THREE.Vector3(-3.8, 1.1, 44.5)], .038);
+  const fishingBoat = boat(-18, 31, .72, 1.05, false);
+  boat(28, 33, .62, -.8, false);
+  boat(-56, 97, .6, 1.1, true);
+  boat(66, 118, .74, -.65, true);
+
+  cottage(-11, 12, 5.2, 4.7, 3.15, '#bf785e', '#e9dbad', .64);
+  cottage(12, 13, 6.0, 5.3, 3.8, '#547f7b', '#efdb9f', -.61);
+  cottage(-16, 0, 6.0, 5.0, 3.45, '#87905a', '#eeddb4', 1.19);
+  cottage(16, -2, 6.3, 5.5, 3.15, '#d19b55', '#e8d1a0', -1.20);
+  cottage(-10, -13, 5.6, 4.8, 3.5, '#6d8895', '#efe0b9', .44);
+  cottage(11, -21, 5.9, 5.3, 3.45, '#bd8062', '#e9d4a8', -.37);
+  cottage(-25, -12, 6.2, 5.2, 3.25, '#ae8564', '#e8d4a6', .85);
+  cottage(29, 8, 5.5, 5.1, 3.0, '#73876b', '#eadcb9', -1.38);
+  cottage(27, -20, 5.6, 4.6, 3.15, '#648d90', '#eddfb5', -.75);
+
+  barrel(2.95, 19, .95); barrel(3.76, 18.6, .78); crate(5.0, 18.7, .88); crate(5.05, 18.7, .57, localGround(5.05, 18.7) + .89);
+  crate(-1.15, 37.2, .68, 1.8); barrel(-1.24, 35.9, .62, villageRoot, 1.8);
+  barrel(-15.0, 19.6, .85); crate(-16.0, 20.2, .75); barrel(19, 2, .85); crate(-19, -2, .84);
+  const acornCook = { x: -5.6, z: 9.1 };
+  const cookTable = { x: -7.5, z: 9.9 }, cookY = localGround(cookTable.x, cookTable.z);
+  box(woodLight, cookTable.x, cookY + .82, cookTable.z, 1.65, .12, .85);
+  for (const dx of [-.66, .66]) for (const dz of [-.28, .28]) box(wood, cookTable.x + dx, cookY + .40, cookTable.z + dz, .12, .80, .12);
+  vpush({ x: cookTable.x, z: cookTable.z, hx: .84, hz: .44, kind: 'cook-table' });
+  const basketMat = material('#aa7c49'), nutMat = material('#915630'), capMat = material('#654a32');
+  post(basketMat, cookTable.x - .41, cookY + 1.0, cookTable.z, .27, .24);
+  const basketRim = new THREE.TorusGeometry(.255, .031, 4, 10); basketRim.rotateX(Math.PI / 2);
+  mesh(basketRim, woodLight, cookTable.x - .41, cookY + 1.13, cookTable.z);
+  for (let i = 0; i < 8; i++) {
+    const a = i * 2.4, nx = cookTable.x - .41 + Math.cos(a) * .16, nz = cookTable.z + Math.sin(a) * .14;
+    pebble(nutMat, nx, cookY + 1.12 + (i % 2) * .035, nz, .065, .075, .061);
+    pebble(capMat, nx, cookY + 1.17 + (i % 2) * .035, nz, .07, .03, .065);
+  }
+  post(material('#b98e69'), cookTable.x + .35, cookY + .98, cookTable.z, .25, .18);
+  post(material('#74999b'), cookTable.x + .35, cookY + 1.077, cookTable.z, .205, .009);
+  const spoon = box(wood, cookTable.x + .62, cookY + .92, cookTable.z + .23, .06, .025, .42);
+  spoon.rotation.y = .5;
+  pebble(woodLight, cookTable.x + .52, cookY + .92, cookTable.z + .05, .09, .018, .11);
+  for (const x of [-17.4, -13.2]) post(wood, x, localGround(x, 22) + 1.35, 22, .095, 2.7);
+  const netTop = localGround(-15.3, 22) + 2.5;
+  rope([new THREE.Vector3(-17.4, netTop, 22), new THREE.Vector3(-15.3, netTop - .3, 22), new THREE.Vector3(-13.2, netTop, 22)], .035);
+  const netPositions = [];
+  for (let i = 0; i <= 10; i++) { const x = -17.4 + i * .42; netPositions.push(x, netTop - .1, 22, x, netTop - 1.55, 22.05); }
+  for (let i = 0; i < 6; i++) netPositions.push(-17.4, netTop - .15 - i * .27, 22, -13.2, netTop - .15 - i * .27, 22);
+  const netGeo = new THREE.BufferGeometry(); netGeo.setAttribute('position', new THREE.Float32BufferAttribute(netPositions, 3));
+  const net = new THREE.LineSegments(netGeo, new THREE.LineBasicMaterial({ color: '#c5b394', transparent: true, opacity: .75 })); villageRoot.add(net);
+  for (let i = 0; i < 6; i++) {
+    const fish = pebble(material(i % 2 ? '#a9c3c0' : '#789b9e'), -17 + i * .6, netTop - .45 - i % 2 * .2, 22.12, .105, .31, .065); fish.rotation.z = .15;
+  }
+  fence(-23, 5, 6, -.12); fence(-26.5, 1, 7, .12 + Math.PI / 2); fence(23, -9, 6, -.08); fence(34, 4, 5, Math.PI / 2);
+  fence(-18, -23, 7, .1); fence(18, -29, 6, -.08);
+  for (const [gx, gz] of [[-24, 1], [23, -10], [-18, -21]]) {
+    box(material('#887553'), gx, localGround(gx, gz) + .045, gz, 4.5, .09, 2.4);
+    for (let i = 0; i < 12; i++) {
+      const px = gx - 1.8 + (i % 6) * .7, pz = gz - .65 + Math.floor(i / 6) * 1.25;
+      pebble(material('#5f9150'), px, localGround(px, pz) + .25, pz, .3, .27, .32);
+    }
+  }
+  const wellX = -5.7, wellZ = 1.5, wellY = localGround(wellX, wellZ);
+  const wellRing = new THREE.TorusGeometry(1, .26, 5, 12); wellRing.rotateX(Math.PI / 2);
+  mesh(wellRing, material('#a8a18a'), wellX, wellY + .6, wellZ);
+  post(material('#4b6e6b'), wellX, wellY + .2, wellZ, .83, .07);
+  [-1, 1].forEach(s => box(wood, wellX + s * 1.1, wellY + 1.6, wellZ, .15, 3.2, .16));
+  mesh(roofGeometry(2.85, 2.5, .72), material('#849273'), wellX, wellY + 3.15, wellZ);
+  box(woodLight, wellX, wellY + 2.35, wellZ, 2.25, .13, .13);
+  rope([new THREE.Vector3(wellX, wellY + 2.35, wellZ), new THREE.Vector3(wellX, wellY + .55, wellZ)], .027);
+  vpush({ x: wellX, z: wellZ, r: 1.3 });
+  const signY = localGround(4.4, 15.1);
+  post(wood, 4.4, signY + 1.25, 15.1, .11, 2.5);
+  box(woodLight, 4.4, signY + 2.23, 15.1, 1.72, .65, .12);
+  const arrowGeo = new THREE.Shape();
+  arrowGeo.moveTo(-.55, -.09); arrowGeo.lineTo(.15, -.09); arrowGeo.lineTo(.15, -.23); arrowGeo.lineTo(.53, 0); arrowGeo.lineTo(.15, .23); arrowGeo.lineTo(.15, .09); arrowGeo.lineTo(-.55, .09);
+  mesh(new THREE.ShapeGeometry(arrowGeo), material('#f0dfb4', { side: THREE.DoubleSide }), 4.4, signY + 2.23, 15.18);
+  function lantern(x, z, h = 3.2) {
+    const y = localGround(x, z);
+    post(wood, x, y + h / 2, z, .075, h); box(darkWood, x + .27, y + h - .12, z, .64, .075, .075);
+    box(windowMat, x + .5, y + h - .45, z, .25, .43, .25);
+    box(darkWood, x + .5, y + h - .71, z, .33, .09, .33); box(darkWood, x + .5, y + h - .2, z, .36, .09, .36);
+    for (const dx of [-.13, .13]) for (const dz of [-.13, .13]) box(darkWood, x + .5 + dx, y + h - .45, z + dz, .027, .45, .027);
+  }
+  lantern(2.15, 26, 2.9); lantern(-3.6, 16.0); lantern(5.3, -5); lantern(-9, -29);
+
+  const trainingY = localGround(training.x, training.z);
+  const trainingStand = new THREE.Group();
+  trainingStand.name = 'Village practice post';
+  trainingStand.position.set(training.x, trainingY, training.z);
+  villageRoot.add(trainingStand);
+  post(wood, 0, 1.05, 0, .105, 2.1, trainingStand);
+  box(woodLight, 0, 1.57, 0, 1.45, .15, .18, trainingStand);
+  const footA = box(darkWood, 0, .12, 0, .95, .16, .18, trainingStand); footA.rotation.y = .56;
+  const footB = box(wood, 0, .12, 0, .95, .16, .18, trainingStand); footB.rotation.y = -.56;
+  const sack = new THREE.Group();
+  sack.name = 'Straw practice sack';
+  sack.position.set(0, 1.85, 0);
+  trainingStand.add(sack);
+  const straw = material('#c7ad70'), binding = material('#8d754d');
+  mesh(cylinder, straw, 0, -.51, .07, .43, 1.00, .29, sack);
+  pebble(straw, 0, -.07, .07, .38, .17, .27, sack);
+  pebble(straw, 0, -.98, .07, .36, .14, .25, sack);
+  [-.22, -.78].forEach(y => mesh(cylinder, binding, 0, y, .07, .444, .065, .304, sack));
+  box(binding, .12, -.51, .365, .028, .90, .026, sack);
+  for (let i = 0; i < 5; i++) {
+    const tuft = box(cream, -.16 + i * .08, .055 + (i % 2) * .035, .04, .026, .16, .025, sack);
+    tuft.rotation.z = (i - 2) * .17;
+  }
+  vpush({ x: training.x, z: training.z, r: .5, kind: 'training' });
+  training.object = sack;
+  training.y = trainingY;
+
+  const repairX = repairBench.x + 1.5, repairZ = repairBench.z;
+  const repairY = localGround(repairX, repairZ);
+  const repairProps = new THREE.Group(); repairProps.name = repairBench.name;
+  repairProps.position.set(repairX, repairY, repairZ); villageRoot.add(repairProps);
+  box(woodLight, 0, .77, 0, 1.7, .15, .94, repairProps);
+  for (const dx of [-.66, .66]) for (const dz of [-.32, .32]) box(wood, dx, .36, dz, .15, .72, .15, repairProps);
+  box(darkWood, 0, .25, 0, 1.48, .12, .58, repairProps);
+  const iron = material('#737872', { metalness: .35, roughness: .8 });
+  const wheel = mesh(new THREE.CylinderGeometry(.43, .43, .18, 16), material('#a09e8c'), .14, 1.2, -.06, 1, 1, 1, repairProps);
+  wheel.rotation.x = Math.PI / 2;
+  for (const z of [-.25, .15]) box(darkWood, .14, 1.0, z, .14, .44, .12, repairProps);
+  const axle = post(iron, .14, 1.2, .02, .055, .72, repairProps); axle.rotation.x = Math.PI / 2;
+  box(woodLight, .14, 1.07, .4, .095, .30, .095, repairProps);
+  const crank = post(wood, .14, .94, .48, .057, .20, repairProps); crank.rotation.x = Math.PI / 2;
+  box(material('#c5c3a7'), -.56, .88, .16, .35, .08, .16, repairProps);
+  post(material('#98704a'), -.53, .91, -.27, .10, .16, repairProps);
+  post(darkWood, .67, 1.41, -.36, .055, 1.35, repairProps);
+  box(woodLight, .67, 1.91, -.36, .52, .62, .10, repairProps);
+  const signMetal = material('#e0d2a8');
+  box(signMetal, .67, 2.0, -.299, .053, .29, .017, repairProps);
+  box(signMetal, .67, 1.835, -.294, .25, .046, .023, repairProps);
+  box(darkWood, .67, 1.76, -.29, .057, .11, .029, repairProps);
+  vpush({ x: repairX, z: repairZ, hx: .87, hz: .49, kind: 'repair-bench' });
+
+  const bellX = 4, bellZ = -25, bellY = localGround(bellX, bellZ);
+  const bellFrame = new THREE.Group();
+  bellFrame.name = 'Greenway warning bell';
+  bellFrame.position.set(bellX, bellY, bellZ);
+  villageRoot.add(bellFrame);
+  for (const side of [-1, 1]) {
+    post(wood, side * .58, 1.6, 0, .10, 3.2, bellFrame);
+    vpush({ x: bellX + side * .58, z: bellZ, r: .14 });
+  }
+  box(woodLight, 0, 3.19, 0, 1.42, .17, .22, bellFrame);
+  const bellSwing = new THREE.Group();
+  bellSwing.position.y = 3.1;
+  bellFrame.add(bellSwing);
+  const bellMetal = material('#ac975c', { metalness: .45, roughness: .52 });
+  mesh(new THREE.CylinderGeometry(.15, .39, .48, 10, 1, true), bellMetal, 0, -.35, 0, 1, 1, 1, bellSwing);
+  const bellRim = new THREE.TorusGeometry(.36, .038, 4, 10); bellRim.rotateX(Math.PI / 2);
+  mesh(bellRim, bellMetal, 0, -.59, 0, 1, 1, 1, bellSwing);
+  post(darkWood, 0, -.1, 0, .05, .2, bellSwing);
+  const bellTongue = new THREE.Group();
+  bellTongue.position.y = -.17;
+  bellSwing.add(bellTongue);
+  post(darkWood, 0, -.27, 0, .025, .54, bellTongue);
+  pebble(bellMetal, 0, -.53, 0, .071, .09, .071, bellTongue);
+  rope([new THREE.Vector3(.37, 2.86, .03), new THREE.Vector3(.4, 1.37, .06)], .023, cream, bellFrame);
+  let bellStarted = -Infinity, worldTime = 0;
+  rope([new THREE.Vector3(-8, 5.8, 7), new THREE.Vector3(0, 4.9, 7), new THREE.Vector3(7, 5.6, 7)], .022);
+  for (let i = 0; i < 13; i++) {
+    const t = (i + .5) / 13, x = THREE.MathUtils.lerp(-8, 7, t), y = 5.8 - .2 * t - .75 * Math.sin(t * Math.PI);
+    const flagGeo = new THREE.BufferGeometry();
+    flagGeo.setAttribute('position', new THREE.Float32BufferAttribute([-.28, 0, 0, .28, 0, 0, 0, -.55, .03], 3)); flagGeo.computeVertexNormals();
+    mesh(flagGeo, material(['#dba168', '#749b95', '#ddba70', '#c88b7c'][i % 4], { side: THREE.DoubleSide }), x, y, 7);
+  }
+
+  const wy = localGround(0, -66);
+  const archMat = material('#756245');
+  [-3.9, 3.9].forEach(x => { post(archMat, x, localGround(x, -66) + 2.4, -66, .26, 4.8); vpush({ x, z: -66, r: .36 }); });
+  const arch = box(woodLight, 0, wy + 4.72, -66, 8.4, .32, .36); arch.rotation.z = -.015;
+  box(wood, 0, wy + 4.02, -66, 2.35, .75, .15);
+  const leaf = pebble(material('#c9d3a0'), 0, wy + 4.04, -65.9, .20, .31, .055); leaf.rotation.z = -.5;
+  cottage(-10, -68, 4.9, 4.0, 2.8, '#748770', '#dfd6b3', .83);
+  const benchX = 5.6, benchZ = -63, benchY = localGround(benchX, benchZ);
+  box(woodLight, benchX, benchY + .62, benchZ, 2.7, .14, .65);
+  [-1, 1].forEach(s => box(wood, benchX + s * .95, benchY + .3, benchZ, .15, .6, .49));
+  box(woodLight, benchX, benchY + 1.15, benchZ - .32, 2.7, .5, .12);
+  vpush({ x: benchX, z: benchZ, r: 1.15 });
+  const markerX = 31, markerZ = -59, markerY = localGround(markerX, markerZ);
+  const standingStone = pebble(material('#899b8f'), markerX, markerY + 1.7, markerZ, 1.3, 2.1, .8); standingStone.rotation.z = -.1;
+  vpush({ x: markerX, z: markerZ, r: 1.25 });
+  const inset = box(material('#96c5b1', { emissive: '#569e89', emissiveIntensity: .24 }), markerX, markerY + 1.9, markerZ + .68, .13, .76, .08); inset.rotation.z = .42;
+
+  // ---------------------------------------------------------------------------
+  // Road signs, shared between Tidehaven and the regions
+  // ---------------------------------------------------------------------------
+  const roadSigns = [];
+  const roadSignLabels = ['The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge',
+    'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Tidehaven', 'Return to bridge',
+    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel',
+    ...forestPlaceDefinitions.map(site => site.name), 'Village road'];
+  const signRowHeight = 56;
+  const signAtlas = (() => {
+    if (typeof document === 'undefined') {
+      const texture = new THREE.DataTexture(new Uint8Array([171, 121, 80, 255]), 1, 1);
+      texture.needsUpdate = true; return texture;
+    }
+    const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 1536;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ab7950'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 40px Georgia, serif';
+    roadSignLabels.forEach((label, index) => {
+      ctx.fillStyle = '#513c2c'; ctx.fillText(label, 256, index * signRowHeight + signRowHeight / 2 + 2, 490);
+      ctx.fillStyle = '#fff0c9'; ctx.fillText(label, 256, index * signRowHeight + signRowHeight / 2, 490);
+    });
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4; return texture;
+  })();
+  const signLettering = new THREE.MeshStandardMaterial({ color: '#ffffff', map: signAtlas, roughness: 1 });
+  const SIGN_ATLAS_HEIGHT = 1536;
+  function signFace(label, z, rotation, parent) {
+    const row = Math.max(0, roadSignLabels.indexOf(label)), geometry = new THREE.PlaneGeometry(2.23, .43);
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setY(i, (SIGN_ATLAS_HEIGHT - (row + 1) * signRowHeight + uv.getY(i) * signRowHeight) / SIGN_ATLAS_HEIGHT);
+    const face = mesh(geometry, signLettering, .22, 0, z, 1, 1, 1, parent); face.rotation.y = rotation;
+    if (rotation) face.position.x = -.22;
+    face.castShadow = false;
+  }
+  function trailSign(x, z, direction = 1, label = '', signYaw = 0, returnLabel = label === 'Quiet fishing bank' ? 'Return to bridge' : 'Tidehaven', parent = villageRoot) {
+    const y = groundFor(parent)(x, z), push = pushFor(parent);
+    post(wood, x, y + (label ? .825 : 1.13), z, .095, label ? 1.65 : 2.26, parent);
+    if (label) {
+      const head = new THREE.Group(); head.name = `Road sign: ${label}`; head.position.set(x, y + 1.94, z); head.rotation.set(0, signYaw, .035 * direction); parent.add(head);
+      box(woodLight, 0, 0, 0, 3.15, .70, .12, head);
+      signFace(label, .073, 0, head); signFace(returnLabel, -.073, Math.PI, head);
+      for (const side of [-1, 1]) {
+        const arrow = mesh(new THREE.ShapeGeometry(arrowGeo), cream, side * 1.30, 0, -side * .079, .49, .49, 1, head);
+        arrow.rotation.set(0, side === 1 ? Math.PI : 0, Math.PI / 2);
+      }
+      const spot = isLocal(parent) ? villageToWorld(x, z) : { x, z };
+      roadSigns.push({ x: spot.x, z: spot.z, label, returnLabel, yaw: signYaw });
+      push({ x, z, r: .17 });
+      return;
+    }
+    const plank = box(woodLight, x, y + 1.94, z, 1.65, .48, .12, parent);
+    plank.rotation.z = .035 * direction;
+    const arrow = mesh(new THREE.ShapeGeometry(arrowGeo), cream, x, y + 1.94, z + .074, .86, .86, 1, parent);
+    arrow.rotation.z = Math.PI / 2;
+    push({ x, z, r: .17 });
+  }
+  trailSign(-6, -86); trailSign(-10.7, -105); trailSign(12.9, -129);
+
+  localPatch(northTrail.x, northTrail.z, 6.7, '#aaa87d', .82);
+  const restX = northTrail.x + 4.9, restZ = northTrail.z + 1.2;
+  const restY = localGround(restX, restZ);
+  box(woodLight, restX, restY + .58, restZ, 2.5, .16, .72);
+  box(woodLight, restX, restY + 1.08, restZ - .34, 2.5, .45, .12);
+  for (const s of [-1, 1]) box(wood, restX + s * .87, restY + .26, restZ, .18, .52, .61);
+  vpush({ x: restX, z: restZ, r: 1.1 });
+  const cairnX = northTrail.x - 4.8, cairnZ = northTrail.z - 1.7, cairnY = localGround(cairnX, cairnZ);
+  pebble(rockMat, cairnX, cairnY + .24, cairnZ, .68, .37, .56);
+  pebble(rockMat, cairnX + .08, cairnY + .67, cairnZ, .48, .26, .41);
+  pebble(rockMat, cairnX - .03, cairnY + 1.00, cairnZ + .05, .29, .17, .25);
+  vpush({ x: cairnX, z: cairnZ, r: .65 });
+  lantern(restX + 1.6, restZ - .2, 2.8);
+
+  // The Caloss Gate: an open field gate between Tidehaven's wood and the clearing.
+  localPatch(border.x, border.z, 7.6, '#b5b387', .83);
+  const gateY = localGround(0, border.barrierZ);
+  for (const side of [-1, 1]) {
+    const x = side * 3.8, y = localGround(x, border.barrierZ);
+    box(rockMat, x, y + .31, border.barrierZ, .72, .62, .7);
+    post(wood, x, y + 1.25, border.barrierZ, .19, 2.5);
+    post(woodLight, x, y + 2.54, border.barrierZ, .23, .13);
+    for (const gy of [.53, 1.22]) box(woodLight, x, gateY + gy, border.barrierZ - 1.8, .15, .16, 3.6);
+    vpush({ x, z: border.barrierZ, r: .35 });
+    // Short wing fences, not a wall across the forest: the border is a place.
+    for (let distance = 8.8; distance <= 26; distance += 5) {
+      const nextX = side * distance, nextY = localGround(nextX, border.barrierZ);
+      post(wood, nextX, nextY + .76, border.barrierZ, .09, 1.52);
+    }
+    for (let distance = 8.8; distance < 26; distance += 5) {
+      const a = side * distance, b = side * (distance + 5);
+      rope([new THREE.Vector3(a, localGround(a, border.barrierZ) + 1.13, border.barrierZ),
+        new THREE.Vector3((a + b) / 2, localGround((a + b) / 2, border.barrierZ) + .94, border.barrierZ),
+        new THREE.Vector3(b, localGround(b, border.barrierZ) + 1.13, border.barrierZ)], .035);
+    }
+  }
+  const boundaryX = -4.8, boundaryZ = border.z + 1.0, boundaryY = localGround(boundaryX, boundaryZ);
+  box(rockMat, boundaryX, boundaryY + .79, boundaryZ, .84, 1.58, .68);
+  box(cream, boundaryX, boundaryY + .95, boundaryZ + .35, .48, .51, .04);
+  box(wood, boundaryX, boundaryY + .91, boundaryZ + .378, .36, .055, .025);
+  mesh(new THREE.CircleGeometry(.105, 12), material('#d4b465'), boundaryX, boundaryY + 1.06, boundaryZ + .379);
+  vpush({ x: boundaryX, z: boundaryZ, r: .52 });
+
+  // ---------------------------------------------------------------------------
+  // Tidehaven's woodland: the original deterministic scatter
+  // ---------------------------------------------------------------------------
+  const specialClearings = [{ x: 0, z: 5, r: 9 }, { x: 0, z: -64, r: 7.5 }, { x: 31, z: -59, r: 5.7 }, { x: -10, z: -68, r: 5.5 },
+    { x: training.x, z: training.z, r: 2.5 }, { x: encounter.x, z: encounter.z, r: encounter.radius }, { x: bellX, z: bellZ, r: 1.4 },
+    { x: northTrail.x, z: northTrail.z, r: 7.7 }, { x: border.x, z: border.z, r: 11 }];
+  function canPlant(x, z, margin = 0) {
+    if (z > 19 || Math.abs(x) < 5 && z > 12) return false;
+    if (z < -153 + Math.cos(x * .073) * 3) return false;
+    if (z < -126 && random() < smooth(126, 154, -z) * .86) return false;
+    if (distanceToPath(x, z) < 2.0 + margin) return false;
+    if (houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + 2.5 + margin)) return false;
+    if (specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r + margin)) return false;
+    if (Math.abs(x) < 30 && z > -28 && random() < .83) return false;
+    return true;
+  }
+  const trees = [];
+  [[-25, 17, 1.35], [25, 20, 1.4], [-34, 7, 1.2], [37, 5, 1.5], [-11, -30, 1.2], [10, -36, 1.3]]
+    .forEach(([x, z, s]) => trees.push({ x, z, s, pine: false, h: range(8.1, 10.5), rot: range(0, 6.28) }));
+  let attempts = 0;
+  while (trees.length < 610 && attempts++ < 18000) {
+    const x = range(-105, 105), z = range(-157, 22);
+    if (!canPlant(x, z, .7) || trees.some(t => Math.hypot(x - t.x, z - t.z) < 3.0)) continue;
+    trees.push({ x, z, s: range(.74, 1.25), pine: z < -70 ? random() < .56 : random() < .28, h: range(7, 11), rot: range(0, Math.PI * 2) });
+  }
+  const trunkMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(.21, .38, 1, 7), material('#795e41'), trees.length);
+  const broadTrees = trees.filter(t => !t.pine), pineTrees = trees.filter(t => t.pine);
+  const canopyMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), material('#ffffff', { flatShading: true }), broadTrees.length * 4);
+  const pineMesh = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7), material('#ffffff', { flatShading: true }), pineTrees.length * 3);
+  let broadIndex = 0, pineIndex = 0;
+  trees.forEach((tree, i) => {
+    const { x, z, s, h, rot } = tree, y = localGround(x, z), th = h * s;
+    // Hidden trees keep their index, so oak ids, acorns and squirrel homes never shuffle.
+    tree.hidden = featureClear(x, z, true) || forestFeatureClear(x, z, true, th * .52) || forestHideoutClear(x, z, true, th * .52)
+      || (spot => landDistance(spot.x, spot.z) < 3)(villageToWorld(x, z));
+    dummy.position.set(x, y + th * .41, z); dummy.rotation.set(range(-.025, .025), rot, range(-.025, .025));
+    dummy.scale.set(s, th * .82, s); if (tree.hidden) dummy.scale.setScalar(0); dummy.updateMatrix(); trunkMesh.setMatrixAt(i, dummy.matrix);
+    const axis = new THREE.Vector3(0, 1, 0).applyEuler(dummy.rotation);
+    const base = villageToWorld(x - axis.x * th * .41, z - axis.z * th * .41);
+    tree.trunk = { axis: [axis.z, axis.y, -axis.x], base: { x: base.x, y: y + th * .41 - axis.y * th * .41, z: base.z } };
+    if (!tree.hidden && x > -95 && x < 95 && z > border.barrierZ) vpush({ x, z, r: .52 * s });
+    if (tree.pine) for (let c = 0; c < 3; c++) {
+      dummy.position.set(x, y + th * (.48 + c * .19), z); dummy.rotation.set(0, rot + c * .35, 0);
+      dummy.scale.set(th * (.29 - c * .051), th * .49, th * (.29 - c * .051)); if (tree.hidden) dummy.scale.setScalar(0);
+      dummy.updateMatrix(); pineMesh.setMatrixAt(pineIndex, dummy.matrix);
+      pineMesh.setColorAt(pineIndex++, color.setHSL(range(.25, .31), range(.28, .40), range(.28, .41) + c * .025));
+    } else for (let c = 0; c < 4; c++) {
+      const a = rot + c * 2.1, spread = c === 3 ? 0 : th * .15;
+      dummy.position.set(x + Math.sin(a) * spread, y + th * (c === 3 ? .96 : .77) + Math.sin(c * 3) * .18, z + Math.cos(a) * spread);
+      dummy.rotation.set(range(-.2, .2), a, range(-.18, .18));
+      dummy.scale.set(th * (c === 3 ? .28 : .32), th * (c === 3 ? .25 : .31), th * (c === 3 ? .27 : .31));
+      if (tree.hidden) dummy.scale.setScalar(0); dummy.updateMatrix(); canopyMesh.setMatrixAt(broadIndex, dummy.matrix);
+      canopyMesh.setColorAt(broadIndex++, color.setHSL(range(.215, .29), range(.32, .47), range(.37, .52) + (c === 3 ? .025 : 0)));
+    }
+  });
+  [trunkMesh, canopyMesh, pineMesh].forEach(m => { m.castShadow = true; m.receiveShadow = true; villageRoot.add(m); });
+
+  const grassPositions = [], grassNormals = [];
+  for (let b = 0; b < 5; b++) {
+    const a = b * 2.4, bx = Math.cos(a) * .16, bz = Math.sin(a) * .16, w = .055, h = .24 + (b % 3) * .085;
+    const cx = Math.cos(a + Math.PI / 2) * w, cz = Math.sin(a + Math.PI / 2) * w;
+    grassPositions.push(bx - cx, 0, bz - cz, bx + cx, 0, bz + cz, bx + Math.cos(a) * .09, h, bz + Math.sin(a) * .09);
+    for (let j = 0; j < 3; j++) grassNormals.push(0, 1, 0);
+  }
+  const grassGeometry = new THREE.BufferGeometry();
+  grassGeometry.setAttribute('position', new THREE.Float32BufferAttribute(grassPositions, 3));
+  grassGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(grassNormals, 3));
+  const grass = new THREE.InstancedMesh(grassGeometry, material('#ffffff', { side: THREE.DoubleSide }), 4300);
+  let grassIndex = 0, grassAttempts = 0;
+  while (grassIndex < 4300 && grassAttempts++ < 18000) {
+    const x = range(-88, 88), z = range(-166, 24);
+    if (distanceToPath(x, z) < .15 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + .2) || specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r * .58)) continue;
+    if (inLessonSpace(x, z) && random() < .76) continue;
+    const y = localGround(x, z); if (y < .65) continue;
+    dummy.position.set(x, y + .02, z); dummy.rotation.set(0, range(0, 6.28), 0);
+    const s = range(.7, 1.65) * (inLessonSpace(x, z) ? .45 : 1); dummy.scale.set(s, s, s); dummy.updateMatrix(); grass.setMatrixAt(grassIndex, dummy.matrix);
+    grass.setColorAt(grassIndex++, color.setHSL(z < -140 ? range(.15, .22) : range(.20, .28), range(.35, .49), range(.34, .52)));
+  }
+  grass.count = grassIndex; grass.receiveShadow = true; villageRoot.add(grass);
+  const bushCount = 210, bushes = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff'), bushCount);
+  let bidx = 0;
+  for (let i = 0; i < 1800 && bidx < bushCount; i++) {
+    const x = range(-80, 80), z = range(-149, 19);
+    if (distanceToPath(x, z) < 1.4 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + 1) || inLessonSpace(x, z, 1.2) || Math.hypot(x - bellX, z - bellZ) < 2 || specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r * .7)) continue;
+    const s = range(.45, 1.2); dummy.position.set(x, localGround(x, z) + s * .42, z); dummy.rotation.set(0, range(0, 6.28), 0);
+    dummy.scale.set(s, s * .7, s * .85); dummy.updateMatrix(); bushes.setMatrixAt(bidx, dummy.matrix);
+    bushes.setColorAt(bidx++, color.setHSL(range(.22, .31), .34, range(.33, .46)));
+  }
+  bushes.count = bidx; bushes.castShadow = true; bushes.receiveShadow = true; villageRoot.add(bushes);
+  const flowers = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), material('#ffffff'), 600);
+  let findex = 0;
+  const flowerColors = ['#efe4b1', '#eac780', '#b8b9db', '#e7a2a0', '#e6e5c5'];
+  for (let i = 0; i < 1800 && findex < 600; i++) {
+    const x = range(-45, 45), z = range(-158, 22), d = distanceToPath(x, z);
+    if (d < .28 || d > 9 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + .6) || inLessonSpace(x, z, .5)) continue;
+    const count = Math.min(3, 600 - findex), fc = flowerColors[Math.floor(random() * flowerColors.length)];
+    for (let f = 0; f < count; f++) {
+      const fx = x + range(-.5, .5), fz = z + range(-.5, .5), s = range(.07, .13);
+      dummy.position.set(fx, localGround(fx, fz) + range(.2, .38), fz); dummy.rotation.set(0, range(0, 6.28), 0);
+      dummy.scale.set(s, s * .48, s); dummy.updateMatrix(); flowers.setMatrixAt(findex, dummy.matrix); flowers.setColorAt(findex++, color.set(fc));
+    }
+  }
+  flowers.count = findex; villageRoot.add(flowers);
+  const rocks = new THREE.InstancedMesh(round, rockMat, 145);
+  for (let i = 0; i < 145; i++) {
+    let x, z;
+    do {
+      if (i < 75) { x = range(-95, 95); z = range(23, 31); } else { x = range(-100, 100); z = range(-157, 19); }
+    } while (distanceToPath(x, z) < 1.6 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + 1.3) || inLessonSpace(x, z, 1.4) || Math.hypot(x - bellX, z - bellZ) < 2 || specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r * .8));
+    const s = range(.3, 1.25), y = localGround(x, z);
+    dummy.position.set(x, y + s * .21, z); dummy.rotation.set(range(-.2, .2), range(0, 6.28), range(-.2, .2));
+    dummy.scale.set(s, s * range(.35, .75), s * range(.7, 1.3)); dummy.updateMatrix(); rocks.setMatrixAt(i, dummy.matrix);
+    rocks.setColorAt(i, color.setHSL(.17, .10, range(.44, .61)));
+    if (s > .85 && y > .4) vpush({ x, z, r: s * .76 });
+  }
+  rocks.castShadow = true; rocks.receiveShadow = true; villageRoot.add(rocks);
+
+  // ---------------------------------------------------------------------------
+  // Roads, in world metres
+  // ---------------------------------------------------------------------------
+  const roadSpurs = [
+    [{ x: -236, z: 30 }, { x: -248, z: 16 }, { x: -252, z: 8 }],
+    [{ x: -230, z: 38 }, { x: -230, z: 50 }],
+    [{ x: -330, z: 88 }, { x: -318, z: 96 }, { x: CALOSS_BANK.spot.x, z: CALOSS_BANK.spot.z }],
+    [{ x: -362, z: 107 }, { x: -370, z: 114 }, { x: -374, z: 118 }],
+    [{ x: -378, z: 132 }, { x: -392, z: 132 }],
+    [{ x: -372, z: 142 }, { x: -364, z: 150 }],
+    [{ x: -394, z: 168 }, { x: -404, z: 172 }],
+    [{ x: -392, z: 176 }, { x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z }],
+    [{ x: -398, z: 202 }, { x: -376, z: 208 }, { x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z }],
+    [{ x: -446, z: 276 }, { x: -420, z: 292 }, { x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z }],
+    [{ x: -556, z: 334 }, { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
+  ];
+  // Measure every road before any scenery, so nothing is planted across one.
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4);
+  for (const spur of roadSpurs) measurePath(spur, 2.2);
+  for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
+  const regionScenery = createRegionScenery({
+    root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
+    groundHeight, colliders, wornPatch, dummy, color,
+    wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
+    movingGroups, roadDistance, riverDistance: calossDistance,
+    // Tidehaven's own woodland already fills this box; the regional scatter
+    // starts where the carried-over settlement ends.
+    insideVillage: (x, z) => {
+      const local = worldToVillage(x, z);
+      return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40;
+    },
+  });
+  bridgeDeck = regionScenery.bridge;
+  addPath(MAIN_ROAD, 4.2);
+  addPath(SUVAL_ROAD, 3.4);
+  for (const spur of roadSpurs) addPath(spur, 2.2);
+  // Tidehaven's own lanes and woodland spurs stay in the village's frame.
+  function addLocalPath(points, width) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
+    const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / .9)));
+    const positions = [], indices = [];
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const direction = samples[Math.min(i + 1, samples.length - 1)].clone().sub(samples[Math.max(0, i - 1)]).normalize();
+      const left = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(width / 2);
+      for (const sign of [-1, 1]) {
+        const x = p.x + left.x * sign, z = p.z + left.z * sign;
+        positions.push(x, localGround(x, z) + .045, z);
+      }
+      if (i) { const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1); }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices); geometry.computeVertexNormals();
+    const path = new THREE.Mesh(geometry, material('#c6b384', { side: THREE.DoubleSide }));
+    path.receiveShadow = true; villageRoot.add(path);
+    paths.push(points.map(p => villageToWorld(p.x, p.z)));
+  }
+  for (const lane of localSidePaths) addLocalPath(lane, 2.6);
+  for (const path of pondPaths) addLocalPath(path, 2.1);
+  for (const path of [...forestPlacePaths, FOREST_HIDEOUT.trail]) addLocalPath(path, 1.85);
+  for (const path of REGIONAL_PATHS) addPath(path, 1.85);
+
+  // Signposts along the new road.
+  for (const [x, z, label, yaw] of [
+    [-192, 22, 'The Avrel Clearing', -1.3], [-222, 46, 'Clearing mill & farms', -1.1],
+    [-284, 58, 'Caloss Crossing', -.9], [-330, 82, 'The Caloss Bridge', -.9],
+    [-366, 112, 'Reedcutters’ Camp', -.6], [-378, 128, 'Sava’s Shrine', -.4],
+    [-386, 158, 'The Waymarkers', -.3], [-396, 186, 'The Lauvel Relay', -.2],
+    [-321, 100, 'Quiet fishing bank', -1.0],
+    [-418, 250, 'The Moros Gate', .4], [-500, 318, 'The Legion Camp', .5],
+    [-244, 274, 'Elod’s Border Post', 1.1], [-120, 330, 'Elod', 1.2],
+  ]) {
+    let px = x, py = z, guard = 0;
+    while (roadDistance(px, py) < 2.4 && guard++ < 14) { px += Math.sign(x + 300) * .8; py += 1.1; }
+    trailSign(px, py, 1, label, yaw, 'Tidehaven', world);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Journey sites, benches and fires along the new road
+  // ---------------------------------------------------------------------------
+  const journeyVisuals = new Map();
+  const journeyState = Object.fromEntries(Object.keys(journeySites).map(id => [id, false]));
+  for (const p of Object.values(regionNpcPositions)) wornPatch(p.x, p.z, 4.7, '#b2a881');
+  for (const p of Object.values(journeySites)) wornPatch(p.x, p.z, p.type === 'beacon' ? 3.0 : 1.25, '#b5a582');
+  let beaconIndex = 0;
+  for (const site of Object.values(journeySites)) {
+    const group = new THREE.Group(); group.name = `Journey site ${site.id}`; world.add(group); movingGroups.add(group);
+    const y = groundHeight(site.x, site.z);
+    if (site.type === 'parcel') {
+      box(material(site.id.endsWith('2') ? '#849b8e' : '#c4b384'), site.x, y + .24, site.z, .62, .43, .47, group);
+      box(cream, site.x, y + .465, site.z, .075, .016, .49, group); box(cream, site.x, y + .466, site.z, .65, .016, .07, group);
+      pebble(material('#b17150'), site.x, y + .48, site.z, .075, .025, .065, group);
+      journeyVisuals.set(site.id, { incomplete: group });
+    } else if (site.type === 'sticks') {
+      for (let i = 0; i < 3; i++) { const branch = post(woodLight, site.x + (i - 1) * .15, y + .10, site.z, .065, 1.15, group); branch.rotation.set(Math.PI / 2, 0, (i - 1) * .22); }
+      journeyVisuals.set(site.id, { incomplete: group });
+    } else if (site.type === 'fruit') {
+      for (let i = 0; i < 3; i++) pebble(material('#b5b66c'), site.x + (i - 1) * .22, y + .13, site.z + (i % 2) * .22, .15, .13, .26, group);
+      journeyVisuals.set(site.id, { incomplete: group });
+      const tx = site.x + 2.9, tz = site.z + .7, ty = groundHeight(tx, tz);
+      post(wood, tx, ty + 1.45, tz, .13, 2.9, world); pebble(material('#799757'), tx, ty + 3.0, tz, 1.65, 1.2, 1.45, world);
+      colliders.push({ x: tx, z: tz, r: .25, kind: 'fruit-tree' });
+    } else if (site.type === 'beacon') {
+      const lean = beaconIndex++ % 2 ? .24 : -.24;
+      const bx = site.x + (lean < 0 ? -2.1 : 2.1), bz = site.z, by = groundHeight(bx, bz);
+      post(material('#a6a596'), bx, by + .30, bz, .77, .6, world);
+      group.position.set(bx, by + .35, bz); group.rotation.z = lean;
+      pebble(material('#91998c'), 0, 1.0, 0, .55, 1.18, .45, group);
+      box(material('#897a51'), 0, 1.21, .40, .18, .78, .05, group);
+      const arrowInset = mesh(new THREE.ShapeGeometry(arrowGeo), material('#8f8963'), 0, 1.59, .43, .34, .34, 1, group); arrowInset.rotation.z = Math.PI / 2;
+      colliders.push({ x: bx, z: bz, r: .85, kind: 'waymarker' });
+      const flame = new THREE.Group(); flame.name = `${site.id} light`; flame.position.set(0, 1.21, .445); group.add(flame);
+      box(material('#f6d690', { emissive: '#d9b661', emissiveIntensity: .7 }), 0, 0, 0, .18, .78, .025, flame);
+      const polishedArrow = mesh(new THREE.ShapeGeometry(arrowGeo), material('#fae2a3', { emissive: '#d9b661', emissiveIntensity: .5 }), 0, .38, .012, .34, .34, 1, flame);
+      polishedArrow.rotation.z = Math.PI / 2;
+      flame.visible = false;
+      journeyVisuals.set(site.id, { complete: flame, pivot: group, lean });
+    }
+  }
+  journeyVisuals.set('bridge-repair', { complete: regionScenery.repairedDeck, incomplete: regionScenery.brokenCord, blockers: regionScenery.damagedColliders });
+  movingGroups.add(regionScenery.repairedDeck); movingGroups.add(regionScenery.brokenCord); movingGroups.add(regionScenery.millSails);
+  for (const bench of regionRepairBenches) {
+    const x = bench.x - 1.65, z = bench.z, y = groundHeight(x, z);
+    wornPatch(bench.x, bench.z, 2.5, '#aaa182');
+    box(woodLight, x, y + .78, z, 1.5, .15, .75, world);
+    for (const dx of [-.57, .57]) for (const dz of [-.25, .25]) box(wood, x + dx, y + .38, z + dz, .13, .76, .13, world);
+    pebble(material('#96988e'), x, y + .96, z, .4, .11, .25, world); box(darkWood, x + .43, y + .92, z + .17, .4, .07, .08, world);
+    colliders.push({ x, z, hx: .78, hz: .4, kind: 'repair-bench' });
+  }
+  const worldFirePits = [
+    ...firePits.map(fire => ({ ...fire, ...villageToWorld(fire.x, fire.z),
+      ...(({ x, z }) => ({ fireX: x, fireZ: z }))(villageToWorld(fire.fireX, fire.fireZ)) })),
+    ...regionFirePits.map(fire => ({ ...fire })),
+  ];
+
+  // ---------------------------------------------------------------------------
+  // Distant country and the inland horizon
+  // ---------------------------------------------------------------------------
+  const distantSummits = [
+    { x: -690, z: -120, topY: 58, width: 34, depth: 29, lean: -3, phase: .2 },
+    { x: -760, z: -40, topY: 66, width: 37, depth: 31, lean: 2, phase: 1.1 },
+    { x: -800, z: 60, topY: 54, width: 30, depth: 26, lean: -1.5, phase: 2.4 },
+  ];
+  const summitMaterial = material('#7c8b83', { flatShading: true });
+  for (const [index, summit] of distantSummits.entries()) {
+    const baseY = bedrockHeight(summit.x, summit.z) - 2, height = summit.topY - baseY, positions = [], indices = [];
+    for (let ring = 0; ring < 3; ring++) for (let i = 0; i < 7; i++) {
+      const angle = i * Math.PI * 2 / 7 + summit.phase, radius = [1, .70, .29][ring] * (1 + Math.sin(i * 1.83 + summit.phase) * .13);
+      const localY = height * [0, .43, .77][ring] + (ring ? Math.sin(i * 2.2 + summit.phase) * height * .045 : 0);
+      positions.push(Math.cos(angle) * summit.width * radius + summit.lean * ring * .28, localY, Math.sin(angle) * summit.depth * radius);
+    }
+    positions.push(summit.lean, height, -1.5);
+    for (let ring = 0; ring < 2; ring++) for (let i = 0; i < 7; i++) {
+      const a = ring * 7 + i, b = ring * 7 + (i + 1) % 7;
+      indices.push(a, a + 7, b, b, a + 7, b + 7);
+    }
+    for (let i = 0; i < 7; i++) indices.push(14 + i, 21, 14 + (i + 1) % 7);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
+    const peak = mesh(geometry, summitMaterial, summit.x, baseY, summit.z, 1, 1, 1, world);
+    peak.name = `Three Presences summit ${index + 1}`; peak.castShadow = false;
+  }
+  const mountainMat = material('#849b83');
+  for (let i = 0; i < 10; i++) {
+    const x = -880 - (i % 5) * 46, z = -160 + i * 92;
+    const mountain = mesh(new THREE.ConeGeometry(1, 1, 7), mountainMat, x, 6, z, range(30, 48), range(12, 26), range(30, 50), world);
+    mountain.rotation.y = range(0, 6.28); mountain.castShadow = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Clearings, places and people
+  // ---------------------------------------------------------------------------
+  const clearingMatrix = new THREE.Matrix4(), clearingPosition = new THREE.Vector3();
+  for (const cover of [grass, bushes, flowers, rocks]) {
+    for (let i = 0; i < cover.count; i++) {
+      cover.getMatrixAt(i, clearingMatrix); clearingPosition.setFromMatrixPosition(clearingMatrix);
+      const spot = villageToWorld(clearingPosition.x, clearingPosition.z);
+      if (!featureClear(clearingPosition.x, clearingPosition.z, cover === rocks) && landDistance(spot.x, spot.z) > .4) continue;
+      clearingMatrix.makeScale(0, 0, 0); cover.setMatrixAt(i, clearingMatrix);
+    }
+    cover.instanceMatrix.needsUpdate = true;
+  }
+  for (let i = colliders.length - 1; i >= 0; i--) {
+    const local = worldToVillage(colliders[i].x, colliders[i].z);
+    if (!colliders[i].kind && featureClear(local.x, local.z, true)) colliders.splice(i, 1);
+  }
+  const forestSignPositions = [[-5, -43.5, Math.PI / 2], [19, -43, -Math.PI / 2], [14.3, -81, .6],
+    [-14, -89, Math.PI / 2], [-10, -109.7, Math.PI / 2], [-27, 13, Math.PI / 2]];
+  forestPlaceDefinitions.forEach((site, index) => {
+    const [x, z, angle] = forestSignPositions[index];
+    trailSign(x, z, 1, site.name, angle, 'Village road');
+  });
+  const localWorld = { heightAt: localGround, colliders: localColliders };
+  const forestPlaces = createForestPlaces(villageRoot, localWorld);
+  const forestHideout = createForestHideout(villageRoot, localWorld);
+  const regionalPlaces = createRegionalPlaces(world, { heightAt: groundHeight, colliders });
+
+  const reedMat = material('#758249'), reedHead = material('#705637');
+  for (let i = 0; i < 25; i++) {
+    const angle = i * .247 + .3, r = pond.radius + .2 + Math.sin(i * 1.7) * .18;
+    const x = pond.x + Math.sin(angle) * r, z = pond.z + Math.cos(angle) * r;
+    if (Math.hypot(x - pond.fishingSpot.x, z - pond.fishingSpot.z) < 3.8) continue;
+    const y = localGround(x, z);
+    if (i % 3 === 0) pebble(rockMat, x, y + .10, z, .38, .22, .28);
+    for (let j = 0; j < 3; j++) {
+      const rx = x + Math.sin(j * 2.1) * .17, rz = z + Math.cos(j * 2.1) * .17, h = .55 + (i % 4) * .11 + j * .06;
+      post(reedMat, rx, localGround(rx, rz) + h / 2, rz, .018, h);
+      const leaf2 = box(reedMat, rx + .09, localGround(rx, rz) + h * .46, rz, .04, h * .66, .019); leaf2.rotation.z = -.35;
+      if (j === 0) post(reedHead, rx, localGround(rx, rz) + h * .96, rz, .043, .19);
+    }
+  }
+  localPatch(pond.fishingSpot.x, pond.fishingSpot.z, 1.1, '#b7aa7b', .8);
+  const fishingBucket = { x: pondFisher.x - 1.0, z: pondFisher.z - 1.3 };
+  post(woodLight, fishingBucket.x, localGround(fishingBucket.x, fishingBucket.z) + .23, fishingBucket.z, .28, .43);
+  post(darkWood, fishingBucket.x, localGround(fishingBucket.x, fishingBucket.z) + .455, fishingBucket.z, .23, .012);
+  mesh(new THREE.TorusGeometry(.24, .024, 4, 12, Math.PI), darkWood, fishingBucket.x, localGround(fishingBucket.x, fishingBucket.z) + .42, fishingBucket.z);
+
+  // ---------------------------------------------------------------------------
+  // Fires and fishing
+  // ---------------------------------------------------------------------------
+  const campfires = new Map();
+  const flameMat = new THREE.MeshBasicMaterial({ color: '#ee9a3f' });
+  const flameCoreMat = new THREE.MeshBasicMaterial({ color: '#ffe6a4' });
+  for (const fire of worldFirePits) {
+    const x = fire.fireX, z = fire.fireZ, y = groundHeight(x, z);
+    wornPatch(x, z, 1.02, '#8c8166');
+    for (let i = 0; i < 9; i++) {
+      const a = i * Math.PI * 2 / 9;
+      pebble(rockMat, x + Math.sin(a) * .68, y + .13, z + Math.cos(a) * .68, .22, .17, .19, world);
+    }
+    for (const angle of [-.65, .7]) {
+      const log = post(darkWood, x, y + .17, z, .13, .91, world); log.rotation.set(Math.PI / 2, 0, angle);
+    }
+    colliders.push({ x, z, r: .62, kind: 'firepit' });
+    const flames = new THREE.Group(); flames.name = `${fire.id} flames`; flames.position.set(x, y + .2, z); world.add(flames);
+    const flameBatch = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 6), flameMat, 3);
+    for (let i = 0; i < 3; i++) {
+      dummy.position.set((i - 1) * .17, .21 + (i % 2) * .14, (i % 2) * .10);
+      dummy.rotation.set(.08, i * 2, (i - 1) * -.15); dummy.scale.set(.20, .60 + (i % 2) * .27, .17); dummy.updateMatrix();
+      flameBatch.setMatrixAt(i, dummy.matrix);
+    }
+    flames.add(flameBatch);
+    const flameCore = new THREE.Mesh(new THREE.ConeGeometry(.15, .48, 5), flameCoreMat); flameCore.position.y = .15; flames.add(flameCore);
+    const glow = new THREE.PointLight('#ffc675', 2.4, 4.5, 2); glow.position.y = .52; flames.add(glow);
+    flames.visible = false; fire.lit = false; campfires.set(fire.id, { fire, flames, glow });
+    movingGroups.add(flames);
+  }
+  let fishingPhase = 'idle';
+  const fishingVisual = new THREE.Group(); fishingVisual.name = 'Pond fishing line and float'; world.add(fishingVisual);
+  const bobber = new THREE.Group();
+  bobber.position.set(fishingSpots[0].castPoint.x, fishingSpots[0].castPoint.y, fishingSpots[0].castPoint.z); fishingVisual.add(bobber);
+  pebble(material('#d9794e'), 0, .035, 0, .095, .12, .095, bobber);
+  pebble(cream, 0, -.02, 0, .103, .065, .103, bobber);
+  const rippleGeometry = new THREE.RingGeometry(.25, .28, 32); rippleGeometry.rotateX(-Math.PI / 2);
+  const fishingRipple = new THREE.Mesh(rippleGeometry, new THREE.MeshBasicMaterial({ color: '#e4e8bd', transparent: true, opacity: .6, depthWrite: false }));
+  fishingRipple.position.set(fishingSpots[0].castPoint.x, fishingSpots[0].surfaceY + .048, fishingSpots[0].castPoint.z); fishingVisual.add(fishingRipple);
+  const lineStart = new THREE.Vector3(fishingSpots[0].fishingSpot.x, groundHeight(fishingSpots[0].fishingSpot.x, fishingSpots[0].fishingSpot.z) + 1.65, fishingSpots[0].fishingSpot.z + 1.45);
+  const lineEnd = new THREE.Vector3(fishingSpots[0].castPoint.x, fishingSpots[0].castPoint.y + .08, fishingSpots[0].castPoint.z);
+  const fishingLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+    lineStart, lineStart.clone().lerp(lineEnd, .5).add(new THREE.Vector3(0, -.23, 0)), lineEnd,
+  ]), new THREE.LineBasicMaterial({ color: '#d7c89b', transparent: true, opacity: .85 }));
+  const fishingMidpoint = new THREE.Vector3();
+  function setFishingOrigin(position) {
+    if (!position || ![position.x, position.y, position.z].every(Number.isFinite)) return false;
+    lineStart.copy(position); lineEnd.copy(bobber.position); lineEnd.y += .08;
+    fishingMidpoint.copy(lineStart).lerp(lineEnd, .5); fishingMidpoint.y -= .23;
+    const vertices = fishingLine.geometry.attributes.position;
+    vertices.setXYZ(0, lineStart.x, lineStart.y, lineStart.z);
+    vertices.setXYZ(1, fishingMidpoint.x, fishingMidpoint.y, fishingMidpoint.z);
+    vertices.setXYZ(2, lineEnd.x, lineEnd.y, lineEnd.z);
+    vertices.needsUpdate = true; fishingLine.geometry.computeBoundingSphere(); return true;
+  }
+  fishingVisual.add(fishingLine); fishingVisual.visible = false;
+  movingGroups.add(fishingVisual);
+  function setFishingSpot(id) {
+    const next = fishingSpots.find(spot => spot.id === id);
+    if (!next || (fishingPhase !== 'idle' && next !== activeFishingSpot)) return false;
+    activeFishingSpot = next;
+    bobber.position.set(next.castPoint.x, next.castPoint.y, next.castPoint.z);
+    fishingRipple.position.set(next.castPoint.x, next.surfaceY + .048, next.castPoint.z);
+    lineEnd.set(next.castPoint.x, next.castPoint.y + .08, next.castPoint.z);
+    setFishingOrigin(lineStart); return true;
+  }
+
+  const smoke = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshBasicMaterial({ color: '#ecebd4', transparent: true, opacity: .13, depthWrite: false }), smokeSources.length * 4);
+  world.add(smoke);
+  const birds = [];
+  const wingGeo = new THREE.BufferGeometry();
+  wingGeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, .66, .06, .13, .22, 0, -.13], 3)); wingGeo.computeVertexNormals();
+  const birdMat = material('#f4ecce', { side: THREE.DoubleSide });
+  for (let i = 0; i < 9; i++) {
+    const group = new THREE.Group(); world.add(group);
+    const l = mesh(wingGeo, birdMat, 0, 0, 0, 1, 1, 1, group), r = mesh(wingGeo, birdMat, 0, 0, 0, -1, 1, 1, group);
+    l.castShadow = false; r.castShadow = false;
+    birds.push({ group, l, r, phase: range(0, 6.28), radius: range(13, 36), height: range(12, 22), speed: range(.06, .13) });
+    movingGroups.add(group);
+  }
+  const butterflies = [];
+  const butterflyMat = material('#e8cd83', { side: THREE.DoubleSide, emissive: '#cfb45f', emissiveIntensity: .1 });
+  for (let i = 0; i < 12; i++) {
+    const bx = range(-13, 13), bz = range(-55, 6); if (distanceToPath(bx, bz) < 1) continue;
+    const group = new THREE.Group(); villageRoot.add(group);
+    const l = pebble(butterflyMat, .065, 0, 0, .105, .018, .095, group), r = pebble(butterflyMat, -.065, 0, 0, .105, .018, .095, group);
+    l.castShadow = false; r.castShadow = false;
+    butterflies.push({ group, l, r, x: bx, z: bz, phase: range(0, 6.28) });
+    movingGroups.add(group);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Static batching, kept per district
+  // ---------------------------------------------------------------------------
+  for (const group of [arrivalBoat, fishingBoat, sack, bellSwing, ...[...campfires.values()].map(f => f.flames)]) movingGroups.add(group);
+  const batches = new Map(), batchCenter = new THREE.Vector3();
+  world.updateMatrixWorld(true);
+  world.traverse(object => {
+    if (!object.isMesh || object.isInstancedMesh || object.material.isShaderMaterial || object.material.transparent || object.geometry.attributes.color) return;
+    for (let parent = object; parent && parent !== world; parent = parent.parent) if (movingGroups.has(parent)) return;
+    if (!object.geometry.attributes.normal) return;
+    if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
+    batchCenter.copy(object.geometry.boundingSphere.center).applyMatrix4(object.matrixWorld);
+    const district = spatialBatches ? regionAt(batchCenter.x, batchCenter.z)?.id ?? 1 : 1;
+    if (!batches.has(object.material)) batches.set(object.material, new Map());
+    const districtBatches = batches.get(object.material);
+    if (!districtBatches.has(district)) districtBatches.set(district, []);
+    districtBatches.get(district).push(object);
+  });
+  for (const [mat, districtBatches] of batches) if (districtBatches.size > 1) {
+    const objects = [...districtBatches.values()].flat();
+    const triangles = objects.reduce((sum, object) => sum + (object.geometry.index?.count || object.geometry.attributes.position.count) / 3, 0);
+    if (triangles < 2400) batches.set(mat, new Map([[1, objects]]));
+  }
+  const positionVector = new THREE.Vector3(), normalVector = new THREE.Vector3(), normalMatrix = new THREE.Matrix3();
+  for (const [mat, districtBatches] of batches) for (const [district, objects] of districtBatches) {
+    if (objects.length < 2) continue;
+    let vertexCount = 0, indexCount = 0;
+    for (const object of objects) { vertexCount += object.geometry.attributes.position.count; indexCount += object.geometry.index?.count || object.geometry.attributes.position.count; }
+    const positions = new Float32Array(vertexCount * 3), normals = new Float32Array(vertexCount * 3), indices = new Uint32Array(indexCount), uvs = mat.map ? new Float32Array(vertexCount * 2) : null;
+    let vertexOffset = 0, indexOffset = 0;
+    for (const object of objects) {
+      const geometry = object.geometry, p = geometry.attributes.position, n = geometry.attributes.normal;
+      normalMatrix.getNormalMatrix(object.matrixWorld);
+      for (let i = 0; i < p.count; i++) {
+        positionVector.fromBufferAttribute(p, i).applyMatrix4(object.matrixWorld); positionVector.toArray(positions, (vertexOffset + i) * 3);
+        normalVector.fromBufferAttribute(n, i).applyMatrix3(normalMatrix).normalize(); normalVector.toArray(normals, (vertexOffset + i) * 3);
+        if (uvs && geometry.attributes.uv) { uvs[(vertexOffset + i) * 2] = geometry.attributes.uv.getX(i); uvs[(vertexOffset + i) * 2 + 1] = geometry.attributes.uv.getY(i); }
+      }
+      if (geometry.index) { for (let i = 0; i < geometry.index.count; i++) indices[indexOffset++] = vertexOffset + geometry.index.getX(i); }
+      else { for (let i = 0; i < p.count; i++) indices[indexOffset++] = vertexOffset + i; }
+      vertexOffset += p.count;
+      object.removeFromParent();
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3)); geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    if (uvs) geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.computeBoundingSphere();
+    const batch = new THREE.Mesh(geometry, mat); batch.castShadow = objects.some(o => o.castShadow); batch.receiveShadow = true;
+    batch.name = 'Static scenery batch'; batch.userData.district = district; world.add(batch);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chart geometry
+  // ---------------------------------------------------------------------------
+  const mapPoint = (x, z) => Object.freeze({ x, z });
+  const seaEdge = shorePoints.map(spot => mapPoint(spot.x, spot.z));
+  const mapWaters = Object.freeze([
+    Object.freeze({ id: 'coast-water', kind: 'polygon', points: Object.freeze([...seaEdge,
+      mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
+    Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
+    Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
+      ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
+      ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
+  ]);
+
+  const worldSpawn = villageToWorld(0, 43), worldBoat = villageToWorld(-4.8, 43);
+  const worldTraining = villageToWorld(training.x, training.z);
+  const worldEncounter = villageToWorld(encounter.x, encounter.z);
+  const worldNorthTrail = villageToWorld(northTrail.x, northTrail.z);
+  const worldBorder = villageToWorld(border.x, border.z);
+  const worldRepairBench = villageToWorld(repairBench.x, repairBench.z);
+
+  return {
+    heightAt,
+    mapWaters,
+    colliders,
+    training: { ...worldTraining, object: training.object, y: training.y },
+    repairBench: { ...worldRepairBench, name: repairBench.name },
+    repairBenches: [{ ...worldRepairBench, name: repairBench.name }, ...regionRepairBenches],
+    regions,
+    regionAt,
+    journeySites,
+    routeJourney: ONWARD_ROAD.map(p => ({ x: p.x, z: p.z })),
+    suvalRoute: SUVAL_ROAD.map(p => ({ x: p.x, z: p.z })),
+    roadSigns,
+    frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
+    storySites: STORY_SITES,
+    regionMetrics: regionScenery.metrics,
+    distantSummits,
+    forestPlaces: forestPlaceDefinitions.map(site => ({ ...site, ...villageToWorld(site.x, site.z),
+      trail: site.trail.map(p => villageToWorld(p.x, p.z)) })),
+    forestPlaceMetrics: forestPlaces.metrics,
+    setForestPlaceState: forestPlaces.setState,
+    regionalPlaces: REGIONAL_PLACES,
+    regionalActivitySites: REGIONAL_ACTIVITY_SITES,
+    regionalPlaceMetrics: regionalPlaces.metrics,
+    setRegionalPlaceState: regionalPlaces.setState,
+    regionalPlaceState: regionalPlaces.state,
+    updateRegionalPlaces: regionalPlaces.update,
+    forestPlaceState: forestPlaces.state,
+    forestHideout: {
+      ...FOREST_HIDEOUT, ...villageToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
+      center: villageToWorld(FOREST_HIDEOUT.center.x, FOREST_HIDEOUT.center.z),
+      approach: villageToWorld(FOREST_HIDEOUT.approach.x, FOREST_HIDEOUT.approach.z),
+      checkpoint: villageToWorld(FOREST_HIDEOUT.checkpoint.x, FOREST_HIDEOUT.checkpoint.z),
+      supplies: villageToWorld(FOREST_HIDEOUT.supplies.x, FOREST_HIDEOUT.supplies.z),
+      trail: FOREST_HIDEOUT.trail.map(p => villageToWorld(p.x, p.z)),
+      enemies: FOREST_HIDEOUT.enemies.map(p => villageToWorld(p.x, p.z)),
+      retreatAxis: 'x', retreatX: villageToWorld(0, FOREST_HIDEOUT.retreatZ).x,
+    },
+    forestHideoutMetrics: forestHideout.metrics,
+    setForestHideoutState: forestHideout.setState,
+    forestHideoutState: forestHideout.state,
+    setJourneySiteState(id, completed) {
+      if (!(id in journeyState)) return false;
+      journeyState[id] = Boolean(completed);
+      const visual = journeyVisuals.get(id);
+      if (visual?.incomplete) visual.incomplete.visible = !completed;
+      if (visual?.complete) visual.complete.visible = Boolean(completed);
+      if (visual?.pivot) visual.pivot.rotation.z = completed ? 0 : visual.lean;
+      for (const blocker of visual?.blockers ?? []) {
+        const index = colliders.indexOf(blocker);
+        if (completed && index !== -1) colliders.splice(index, 1);
+        if (!completed && index === -1) colliders.push(blocker);
+      }
+      return true;
+    },
+    journeySiteState: () => ({ ...journeyState }),
+    pond: { ...pond, x: pondWorld.x, z: pondWorld.z,
+      fishingSpot: fishingSpots[0].fishingSpot, castPoint: fishingSpots[0].castPoint },
+    fishingSpots,
+    setFishingSpot,
+    activeFishingSpot: () => activeFishingSpot,
+    firePits: worldFirePits,
+    setCampfireLit(id, lit) {
+      const camp = campfires.get(id); if (!camp) return false;
+      camp.fire.lit = Boolean(lit); camp.flames.visible = camp.fire.lit; return true;
+    },
+    setFishingState(phase) {
+      if (!['idle', 'waiting', 'bite'].includes(phase)) return false;
+      fishingPhase = phase; fishingVisual.visible = phase !== 'idle'; return true;
+    },
+    setFishingOrigin,
+    encounter: { ...worldEncounter, radius: encounter.radius },
+    northTrail: { ...worldNorthTrail, name: northTrail.name },
+    border: { ...worldBorder, name: border.name, barrierX: CALOSS_GATE.barrierX,
+      regionName: border.regionName, open: true },
+    routeNorth: routeNorth.map(p => villageToWorld(p.x, p.z)),
+    broadleafTrees: broadTrees.flatMap((tree, i) => {
+      if (tree.hidden) return [];
+      const spot = villageToWorld(tree.x, tree.z);
+      return [{ id: `oak-${i}`, x: spot.x, z: spot.z, y: localGround(tree.x, tree.z), height: tree.h * tree.s,
+        radius: .38 * tree.s, trunkHeight: tree.h * tree.s * .82, trunkTopRadius: .21 * tree.s, ...tree.trunk }];
+    }),
+    ringBell(time = worldTime) { bellStarted = time; },
+    spawn: { x: worldSpawn.x, z: worldSpawn.z },
+    boatStart: { x: worldBoat.x, z: worldBoat.z, y: 1.0 },
+    bounds: { minX: WORLD_BOUNDS.minX, maxX: WORLD_BOUNDS.maxX, minZ: WORLD_BOUNDS.minZ, maxZ: WORLD_BOUNDS.maxZ },
+    npcPositions: {
+      harbormaster: villageToWorld(4, 20), fisher: villageToWorld(-15, 22), warden: villageToWorld(0, -65),
+      'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
+      'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
+      'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS,
+    },
+    landmarks: [
+      { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
+      { id: 'village', name: 'Tidehaven Village', ...villageToWorld(0, 5), description: 'Salt on the breeze. Smoke above the rooftops. A quiet place to begin.' },
+      { id: 'woodland', name: 'The Greenway', ...villageToWorld(0, -36), description: 'An old footpath winds inland beneath the welcoming forest canopy.' },
+      { id: 'waystone', name: 'Mosslight Waystone', ...villageToWorld(31, -59), description: 'A weathered marker remembers a road older than the village.' },
+      { id: 'watch', name: 'Greenway Watch', ...villageToWorld(0, -66), description: 'The woodland warden watches the route to the greater regions of Azhora.' },
+      { id: 'pond', name: 'Willowmere Pond', ...fishingSpots[0].fishingSpot, description: 'A quiet forest pool, a fishing ledge, and an old stone firepit beside the water.' },
+      { id: 'northTrail', name: northTrail.name, ...worldNorthTrail, description: 'A shaded bench and an old cairn mark the last rest beneath Drent’s canopy.' },
+      { id: 'border', name: border.name, ...worldBorder, description: 'An old field gate stands open where the Tidehaven wood gives way to the Avrel clearing and the road to the Caloss.' },
+      ...forestPlaceDefinitions.map(site => ({ ...site, ...villageToWorld(site.x, site.z) })),
+      { ...FOREST_HIDEOUT, ...villageToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
+        description: 'A half-hidden goblin shelter beside a trail of stolen village supplies.' },
+      ...regionLandmarks,
+      ...REGIONAL_PLACES,
+    ],
+    paths,
+    update(time, dt) {
+      worldTime = time;
+      const bellAge = Number.isFinite(bellStarted) ? Math.max(0, time - bellStarted) : 6;
+      const bellEnvelope = bellAge < 6 ? Math.exp(-bellAge * .7) : 0;
+      bellSwing.rotation.z = Math.sin(bellAge * 10) * .43 * bellEnvelope;
+      bellTongue.rotation.z = Math.sin(bellAge * 10 - .9) * .5 * bellEnvelope;
+      waterMaterial.uniforms.time.value = time;
+      pondMaterial.uniforms.time.value = time;
+      regionScenery.riverMaterial.uniforms.time.value = time;
+      regionScenery.millSails.rotation.z = time * .115;
+      for (const [i, camp] of [...campfires.values()].entries()) if (camp.fire.lit) {
+        camp.flames.scale.set(1 + Math.sin(time * 8 + i) * .04, .94 + Math.sin(time * 11 + i) * .10, 1);
+        camp.glow.intensity = 2.3 + Math.sin(time * 9 + i) * .24;
+      }
+      if (fishingPhase !== 'idle') {
+        bobber.position.y = activeFishingSpot.castPoint.y + Math.sin(time * (fishingPhase === 'bite' ? 12 : 2.5)) * (fishingPhase === 'bite' ? .13 : .026);
+        bobber.rotation.z = Math.sin(time * 6) * (fishingPhase === 'bite' ? .36 : .06);
+        fishingRipple.scale.setScalar(.8 + (time * (fishingPhase === 'bite' ? 1.7 : .6) % 1) * 2.4);
+        fishingRipple.material.opacity = fishingPhase === 'bite' ? .77 : .38;
+      }
+      shoreFoam.material.opacity = .31 + Math.sin(time * .55) * .09;
+      arrivalBoat.position.y = .38 + Math.sin(time * .72) * .085; arrivalBoat.rotation.z = Math.sin(time * .62) * .018;
+      fishingBoat.position.y = .38 + Math.sin(time * .82 + 2) * .065; fishingBoat.rotation.z = Math.sin(time * .77) * .026;
+      let si = 0;
+      for (let i = 0; i < smokeSources.length; i++) for (let j = 0; j < 4; j++) {
+        const age = (time * .11 + j * .25 + i * .073) % 1, source = smokeSources[i];
+        dummy.position.set(source.x + age * 1.65 + Math.sin(time * .25 + j) * age * .28, source.y + age * 4.4, source.z + age * .6);
+        dummy.rotation.set(age, age * 2, 0); const s = .19 + age * .56; dummy.scale.set(s, s * .85, s); dummy.updateMatrix(); smoke.setMatrixAt(si++, dummy.matrix);
+      }
+      smoke.instanceMatrix.needsUpdate = true;
+      birds.forEach((bird, i) => {
+        const a = time * bird.speed + bird.phase;
+        bird.group.position.set(worldSpawn.x + 8 + Math.cos(a) * bird.radius, bird.height + Math.sin(a * 3) * 1.0, worldSpawn.z + Math.sin(a) * bird.radius * .7);
+        bird.group.rotation.y = -a;
+        const flap = Math.sin(time * 3.4 + i) * .3;
+        bird.l.rotation.z = flap; bird.r.rotation.z = -flap;
+      });
+      butterflies.forEach((butterfly, i) => {
+        const a = time * .42 + butterfly.phase;
+        const x = butterfly.x + Math.sin(a) * 1.3, z = butterfly.z + Math.cos(a * .8) * 1.0;
+        butterfly.group.position.set(x, localGround(x, z) + 1.1 + Math.sin(time * 1.25 + i) * .26, z);
+        butterfly.group.rotation.y = a;
+        butterfly.l.rotation.z = Math.sin(time * 13 + i) * .95; butterfly.r.rotation.z = -Math.sin(time * 13 + i) * .95;
+      });
+    },
+  };
+}

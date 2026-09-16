@@ -1,0 +1,48 @@
+/* Quiet teaching at the edges, with room in the middle for the world. */
+#quest {width:265px;padding:16px 18px 16px 0;background:linear-gradient(90deg,#183b315c,transparent);}
+#quest #objective-distance {color:#f8d88f;font-size:12px;letter-spacing:.03em;margin-top:14px;}
+#quest-step {font-size:10px!important;}
+#inventory-count {display:inline-block;min-width:15px;color:#efd491;font-size:10px;}
+#inventory-button.needs-attention {border-color:#efd491;background:#efd4911c;box-shadow:0 0 0 2px #eddaad12;}
+#journal-satchel {margin-top:15px;width:100%;}
+#border-status {position:absolute;right:34px;bottom:105px;max-width:250px;padding:17px 21px;background:#1b3c32de;border:1px solid #dfcc8d6b;border-radius:4px;pointer-events:none;}
+#border-status .eyebrow {font-size:10px;letter-spacing:.16em;color:#e7cf8d;}
+#border-status h3 {font-family:Georgia,serif;font-size:24px;font-weight:400;margin:6px 0 9px;}
+#border-status p {font-size:12px;line-height:1.7;color:#e6e5ca;}
+#lesson {position:absolute;bottom:103px;left:50%;transform:translateX(-50%);width:min(490px,43vw);padding:16px 21px 17px;background:linear-gradient(120deg,#173c35ec,#16332ee5);border:1px solid #eddaad43;border-radius:4px;pointer-events:none;box-shadow:0 8px 28px #153b3826;}
+#lesson .eyebrow {font-size:10px;color:#efd491;letter-spacing:.17em;}
+#lesson p {font-size:14px;line-height:1.6;color:#eee9d1;margin-top:5px;}
+#practice-progress {display:flex;gap:20px;border-top:1px solid #f0db9b29;padding-top:10px;margin-top:12px;color:#f4d899;font-size:12px;}
+#vitals {position:absolute;left:42px;bottom:94px;width:205px;padding:15px 17px;background:#193d33b8;border:1px solid #d6ce9f30;border-radius:4px;pointer-events:none;}
+.vital-label {display:flex;justify-content:space-between;font-size:11px;color:#e8e6ca;margin-bottom:7px;letter-spacing:.02em;}
+.stamina-label {margin-top:12px;color:#d6deb7;font-size:10px;}
+.meter {height:6px;background:#0a2826;border-radius:4px;overflow:hidden;}
+.meter i {display:block;width:100%;height:100%;background:#d9a482;transition:width .12s linear;border-radius:4px;}
+.meter.stamina {height:4px;}.stamina i {background:#b2cc84;}
+#weapon-condition {margin-top:13px;padding-top:11px;border-top:1px solid #e0cc942b;}
+.weapon-label {font-size:10px;color:#e3d3ac;}.meter.weapon {height:3px;}.meter.weapon i {background:#e1c17d;}
+#weapon-condition small {display:block;font-size:9px;color:#b9c6ae;margin-top:7px;}
+#weapon-condition.worn .weapon-label {color:#f3ae87;}#weapon-condition.worn .meter i {background:#ec9d70;}
+#encounter-status {position:absolute;top:92px;left:50%;transform:translateX(-50%);text-align:center;background:#193b32d9;border:1px solid #ebcc8a47;border-radius:4px;padding:12px 24px;pointer-events:none;}
+#encounter-status .eyebrow {font-size:10px;letter-spacing:.18em;color:#efd49a;}#encounter-status p {font-size:13px;margin-top:5px;color:#f4eedb;}#encounter-status b {font-size:17px;font-weight:500;}
+#enemy-labels {position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.enemy-badge {position:absolute;top:0;left:0;width:130px;text-align:center;will-change:transform;text-shadow:0 1px 5px #142c24;}
+.enemy-badge span {font-size:11px;font-weight:600;letter-spacing:.03em;}
+.enemy-health {width:86px;height:4px;background:#253729d9;margin:6px auto 0;border-radius:2px;overflow:hidden;box-shadow:0 1px 5px #102b293b;}
+.enemy-health i {display:block;height:100%;background:#deac79;transition:width .12s;}
+.enemy-badge small {display:block;margin-top:5px;font-size:11px;color:#ffdf93;min-height:15px;}
+.enemy-badge.warning span {color:#ffe2a4;}
+#damage-flash {position:fixed;inset:0;box-shadow:inset 0 0 110px 30px #a24835;opacity:0;pointer-events:none;}
+.combat-control {display:none;}body.armed .combat-control {display:inline;}
+#controls {gap:13px;font-size:11px;bottom:26px;}#controls kbd {font-size:10px;}
+#interaction {bottom:31%;z-index:2;}
+#toast {top:23%;max-width:500px;width:45vw;font-size:23px;padding:12px 18px;border-radius:4px;background:radial-gradient(ellipse,#20453990,transparent 75%);}
+.in-combat #toast {top:22%;}
+.dialogue-actions {display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:20px;}
+.dialogue-actions small {font-size:11px;color:#c4ccae;}#dialogue-next {margin:0;}
+#journal-steps {padding:0;list-style:none;margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;font-size:12px;line-height:1.5;color:#b5bfa5;}
+#journal-steps .done {color:#c8d9a5;}#journal-steps .current {color:#ffe0a0;}
+#defeat {width:min(560px,calc(100vw - 60px));}#defeat p {margin-bottom:16px;}#retry {display:block;background:#f3daa0;color:#273e36;border-radius:3px;padding:15px 22px;width:100%;margin-top:24px;font-size:15px;font-weight:600;}#retry span {float:right;}#defeat>small {display:block;text-align:center;margin-top:13px;font-size:12px;color:#c4c9a9;}
+@media(max-width:1200px){#controls {gap:9px;font-size:10px;left:28px;}#controls .control-jump,#controls .control-map{display:none;}#vitals {left:28px;width:175px;}#lesson {width:43vw;bottom:92px;padding:13px 16px;}#lesson p{font-size:12px;}#bottom-right{right:24px;}#quest{width:230px;}}
+@media(max-height:750px){#location{top:22px;}#location h1{font-size:36px;}#quest{top:145px;}#quest h2{font-size:22px;}#quest p{font-size:12px;}#quest .quest-rule{margin:12px 0 8px;}#lesson{bottom:77px;}#vitals{bottom:77px;}#dialogue{bottom:60px;padding:20px 28px;}#dialogue p{font-size:15px;}#interaction{bottom:34%;}#toast{top:25%;font-size:20px;}#encounter-status{top:82px;}}
+@media(max-width:1100px){#border-status{right:24px;bottom:225px;max-width:210px;padding:13px 16px;}#border-status h3{font-size:21px;}#bottom-right{gap:8px;}#bottom-right button{padding:9px 10px;}}

@@ -1,0 +1,30 @@
+#location h1{font-size:clamp(1.7rem,3vw,3.1rem);max-width:420px;line-height:1.12}
+#location .eyebrow span#region-kicker{margin:0;color:inherit;letter-spacing:inherit}
+#journey-regions{list-style:none;padding:0;margin:18px 0 30px}
+#journey-regions li{padding:12px 0;border-bottom:1px solid #b6b38830;color:#f4e4bb}
+#journey-regions small{display:block;color:#b6c7b6;font-size:12px;margin-top:5px;line-height:1.7}
+.test-regions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.test-regions button{margin:0!important;font-size:12px;padding:13px 10px!important;min-width:0}
+#testing{max-height:90vh;overflow:auto}
+#testing p{line-height:1.7}
+#road-checkpoint-status{font-size:12px;color:#b8cbbb;line-height:1.6}
+#continue-road{margin:10px 0 0;display:block}
+#continue-road.hidden{display:none}
+body:not(.playing) #location{display:none}
+#quest{max-width:270px}
+@media(max-width:1000px){#location h1{max-width:270px;font-size:28px}#quest{max-width:210px}.test-regions{grid-template-columns:1fr}.test-regions button{padding:9px!important}#testing{padding:25px 32px}}
+@media(max-height:720px){#testing h2{margin:8px 0 12px;font-size:32px}#testing p{margin:10px 0}.test-regions{grid-template-columns:repeat(3,1fr)}#testing>button{padding:11px!important}}
+
+/* The civil-war campaign in the journal. */
+#journal-campaign{margin-top:25px;padding:18px 20px;border-left:2px solid #d9c27a;background:#d9c27a0a}
+#journal-campaign h3{margin:4px 0 8px}
+#journal-campaign .eyebrow{color:#e2cf8f;font-size:10px}
+#journal-campaign p{font-size:13px}
+#journal-campaign ul{margin:10px 0 0;padding-left:18px;font-size:13px}
+#journal-campaign li{margin:0 0 8px}
+#journal-campaign li small{display:block;opacity:.78;font-size:12px}
+
+/* Autoplay badge, beside the testing badge. */
+#autoplay-badge{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;padding:7px 12px;border:1px solid #9fd3c166;border-radius:3px;background:#1f3a35d9;color:#cfeee2;font-size:10px;letter-spacing:.08em;pointer-events:none;max-width:70vw;text-align:center}
+#autoplay-badge span{color:#f6ecd1;letter-spacing:.02em}
+@media (max-width:720px){#autoplay-badge{bottom:70px;font-size:9px}}
