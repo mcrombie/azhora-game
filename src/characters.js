@@ -1506,6 +1506,154 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
   return { animate };
 }
 
+/**
+ * A riding horse for the Legion's lines and the road: bay, chestnut or grey,
+ * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
+ * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
+ */
+export function createHorse({ variant = 0, saddled = false } = {}) {
+  const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
+  const group = new THREE.Group();
+  group.name = `horse-${variation}${saddled ? '-saddled' : ''}`;
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  group.add(body);
+  const coat = material([0x6b4a32, 0x9a5a34, 0xb9b3a6][variation]);
+  const coatLight = material([0x7d5a3f, 0xad6f45, 0xcac5ba][variation]);
+  const points = material([0x2f241c, 0x4a3324, 0x8c877d][variation]);
+  const mane = material([0x2a201a, 0x3d2a1e, 0xd9d4c9][variation]);
+  const hoof = material(0x3a3129), eyeMat = material(0x1d1815), leather = material(0x5b4130), blanket = material(0x8f3b30), brass = material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
+  const spine = new THREE.Group();
+  spine.name = 'Spine';
+  spine.position.set(0, 1.0, 0);
+  body.add(spine);
+  round(spine, coat, [0, 0.02, -0.5], [0.29, 0.33, 0.42]);
+  round(spine, coat, [0, 0.04, 0.02], [0.3, 0.34, 0.62]);
+  round(spine, coatLight, [0, -0.12, 0.05], [0.24, 0.2, 0.5]);
+  round(spine, coat, [0, 0.12, 0.5], [0.27, 0.34, 0.34]);
+  round(spine, coat, [0, 0.3, 0.4], [0.16, 0.14, 0.24]);
+  const neck = new THREE.Group();
+  neck.name = 'Neck';
+  neck.position.set(0, 0.22, 0.55);
+  spine.add(neck);
+  const neckCore = part(neck, new THREE.CylinderGeometry(0.11, 0.17, 0.62, 8), coat, [0, 0.26, 0.2]);
+  neckCore.rotation.x = 0.66;
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    const lock = part(neck, UNIT_HAIR_LOCK, mane, [(i % 2 ? .02 : -.02), 0.08 + t * 0.46, -0.02 + t * 0.34], [0.05, 0.12, 0.09]);
+    lock.rotation.x = -0.5;
+  }
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 0.44, 0.4);
+  neck.add(head);
+  round(head, coat, [0, 0.02, 0.02], [0.13, 0.17, 0.2]);
+  const face = part(head, new THREE.CylinderGeometry(0.075, 0.115, 0.42, 8), coat, [0, -0.15, 0.2]);
+  face.rotation.x = 0.95;
+  round(head, coatLight, [0, -0.3, 0.33], [0.085, 0.07, 0.1]);
+  round(head, points, [0, -0.28, 0.4], [0.06, 0.04, 0.05]);
+  for (const side of [-1, 1]) {
+    const ear = part(head, UNIT_HAIR_LOCK, coat, [side * 0.075, 0.2, -0.04], [0.035, 0.09, 0.03]);
+    ear.rotation.z = side * -0.2;
+    ear.name = `${side < 0 ? 'Left' : 'Right'} Ear`;
+    round(head, eyeMat, [side * 0.11, 0.03, 0.12], [0.02, 0.025, 0.018]);
+  }
+  const forelock = part(head, UNIT_HAIR_LOCK, mane, [0, 0.16, 0.1], [0.07, 0.05, 0.11]);
+  forelock.rotation.x = 0.4;
+  const tail = new THREE.Group();
+  tail.name = 'Tail';
+  tail.position.set(0, 0.18, -0.86);
+  spine.add(tail);
+  ribbon(tail, mane, [0, 0, 0], [0, -0.62, -0.18], 0.09, 0.09);
+  ribbon(tail, mane, [0.03, -0.3, -0.1], [0.06, -0.78, -0.22], 0.06, 0.06);
+  const legs = [], knees = [];
+  for (const [name, side, z] of [['Left Fore', -1, 0.46], ['Right Fore', 1, 0.46], ['Left Hind', -1, -0.5], ['Right Hind', 1, -0.5]]) {
+    const hip = new THREE.Group();
+    hip.name = `${name} Hip`;
+    hip.position.set(side * 0.19, 0.95, z);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, coat, [0, -0.2, z > 0 ? 0 : -0.04], [0.1, 0.3, z > 0 ? 0.11 : 0.17]);
+    const knee = new THREE.Group();
+    knee.name = `${name} Knee`;
+    knee.position.set(0, -0.48, 0);
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, coat, [0, -0.02, 0], [0.07, 0.08, 0.075]);
+    part(knee, new THREE.CylinderGeometry(0.048, 0.06, 0.36, 7), variation === 2 ? coat : points, [0, -0.22, 0.01]);
+    part(knee, new THREE.CylinderGeometry(0.075, 0.065, 0.1, 7), hoof, [0, -0.42, 0.02]);
+  }
+  let saddle = null;
+  if (saddled) {
+    // A Legion saddle: a red blanket, a leather seat, girth and a bridle.
+    saddle = new THREE.Group();
+    saddle.name = 'Saddle';
+    spine.add(saddle);
+    box(saddle, blanket, [0, 0.27, 0.18], [0.66, 0.06, 0.62]);
+    round(saddle, leather, [0, 0.36, 0.14], [0.2, 0.09, 0.3]);
+    round(saddle, leather, [0, 0.44, -0.04], [0.16, 0.07, 0.09]);
+    round(saddle, leather, [0, 0.45, 0.34], [0.15, 0.08, 0.08]);
+    part(saddle, UNIT_CYLINDER, leather, [0, 0.02, 0.14], [0.33, 0.05, 0.36]);
+    for (const side of [-1, 1]) {
+      ribbon(saddle, leather, [side * 0.28, 0.3, 0.16], [side * 0.34, -0.06, 0.18], 0.04, 0.02);
+      round(saddle, brass, [side * 0.35, -0.08, 0.18], [0.05, 0.03, 0.06]);
+    }
+    ribbon(head, leather, [-0.09, -0.24, 0.26], [0.09, -0.24, 0.26], 0.03, 0.015);
+    ribbon(head, leather, [-0.12, 0.04, 0.02], [-0.11, -0.25, 0.26], 0.025, 0.015);
+    ribbon(head, leather, [0.12, 0.04, 0.02], [0.11, -0.25, 0.26], 0.025, 0.015);
+  }
+  const pivots = [body, spine, neck, head, tail, ...legs, ...knees];
+  if (saddle) pivots.push(saddle);
+  batchRigidParts(group, pivots);
+  const { animate } = makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset: variation * 2.7 + 1.1 });
+  return { group, animate, setArmed: () => {}, saddled };
+}
+
+// A four-beat walk and a patient idle: a breath, the occasional dip of the head
+// to the grass, a tail swish and a shift of weight from one hind leg to the other.
+function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset = 0 }) {
+  let stridePhase = offset, lastTime, movementBlend = 0;
+  const lerp = THREE.MathUtils.lerp;
+  function animate(time, speed = 0, grounded = true, pose = {}) {
+    const seconds = Number.isFinite(time) ? time : 0;
+    const dt = lastTime === undefined ? 1 / 60 : THREE.MathUtils.clamp(seconds - lastTime, 0, 0.1);
+    lastTime = seconds;
+    const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
+    const damping = 1 - Math.exp(-9 * dt);
+    movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 1.2, 0, 1) : 0, 1 - Math.exp(-8 * dt));
+    stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1);
+    const idle = 1 - movementBlend, breath = Math.sin(seconds * 1.3 + offset);
+    const graze = pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
+    const shift = Math.sin(seconds * .21 + offset) * idle;
+    const hip = [], knee = [];
+    for (let i = 0; i < 4; i++) {
+      // Walk order: left hind, left fore, right hind, right fore, a quarter cycle apart.
+      const phase = stridePhase - [Math.PI / 2, 3 * Math.PI / 2, 0, Math.PI][i], fore = i < 2;
+      hip[i] = Math.sin(phase) * (fore ? 0.42 : 0.4) * movementBlend + (fore ? 0 : 0.2) * idle + (i === 2 ? shift : i === 3 ? -shift : 0) * 0.05;
+      knee[i] = (fore ? 0.02 : -0.32) * idle + (fore ? Math.max(0, Math.sin(phase + 0.7)) * 0.75 : -0.32 + Math.max(0, Math.sin(phase + 0.7)) * 0.4) * movementBlend
+        + (i === 2 && shift > 0 ? shift * 0.12 : i === 3 && shift < 0 ? -shift * 0.12 : 0);
+    }
+    const spineX = movementBlend * 0.02 + graze * 0.05, spineZ = shift * 0.012;
+    const neckX = -0.05 + breath * 0.01 + graze * 0.75 + movementBlend * 0.08;
+    const headX = 0.1 + graze * 0.55 + Math.sin(stridePhase) * 0.06 * movementBlend;
+    const headY = Math.sin(seconds * 0.43 + offset) * 0.18 * idle * (1 - graze);
+    const tailX = -0.15 + Math.sin(seconds * 0.9 + offset) * 0.05, tailY = Math.sin(seconds * 2.3 + offset) * 0.3 * idle + Math.sin(stridePhase * 2) * 0.05 * movementBlend;
+    const rotate = (object, x, y, z) => {
+      object.rotation.x = lerp(object.rotation.x, x, damping);
+      object.rotation.y = lerp(object.rotation.y, y, damping);
+      object.rotation.z = lerp(object.rotation.z, z, damping);
+    };
+    rotate(spine, spineX, 0, spineZ);
+    rotate(neck, neckX, 0, -spineZ);
+    rotate(head, headX, headY, 0);
+    rotate(tail, tailX, tailY, 0);
+    for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
+    rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
+    body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend, 1 - Math.exp(-20 * dt));
+  }
+  return { animate };
+}
+
 /** Animated by the caller so all markers share one scene clock. */
 export function makeQuestMarker() {
   const group = new THREE.Group();
