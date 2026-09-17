@@ -40,7 +40,7 @@ test('Clearance and terrain tint are confined to the new camp and its eastern fo
   assert.ok(forestHideoutClear(84, -124.8, true, 9), 'The broad-phase bounds must include large canopies above the supply corner');
 });
 
-test('Integrated Eastreena keeps every original collectible and connects the full hideout to the village', async () => {
+test('Drent keeps every original collectible, and the goblin camp in north Luscia connects to the main road', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), life = createWoodlandLife(scene, world), original = life.state();
@@ -64,8 +64,8 @@ test('Integrated Eastreena keeps every original collectible and connects the ful
       if (cells[next] === 1) queue.push(next);
     }
   }
+  assert.equal(world.regionAt(camp.center.x, camp.center.z).name, 'Luscia', 'the camp stands in Luscia, not in level 0 Drent');
   const targets = [...original.acorns, ...original.sticks, ...original.fruits, ...world.forestPlaces,
-    ...camp.trail, camp.supplies, ...camp.enemies,
     ...Object.values(world.npcPositions).filter(p => p.x > -170 && p.x < 12 && p.z > -58 && p.z < 92)];
   for (const target of targets) {
     assert.ok(canStand(target.x, target.z, world, .48), `${target.id || ''} is obstructed`);
@@ -76,6 +76,28 @@ test('Integrated Eastreena keeps every original collectible and connects the ful
         && Math.hypot(minX + ix - target.x, minZ + iz - target.z) < 1.01) reached = true;
     }
     assert.ok(reached, `Disconnected destination ${target.id || ''} at ${target.x},${target.z}`);
+  }
+  // The camp's own ground: flood from the main road and reach the trail, the scouts and the sacks.
+  const road = world.paths[0].reduce((best, p) => Math.hypot(p.x - camp.trail[0].x, p.z - camp.trail[0].z) < Math.hypot(best.x - camp.trail[0].x, best.z - camp.trail[0].z) ? p : best);
+  const ox = -500, oz = 100, w = 140, h = 100, seen = new Int8Array(w * h), frontier = [];
+  const first = Math.round(road.z - oz) * w + Math.round(road.x - ox); seen[first] = 1; frontier.push(first);
+  for (let cursor = 0; cursor < frontier.length; cursor++) {
+    const index = frontier[cursor], ix = index % w, iz = Math.floor(index / w);
+    for (const [nx, nz] of [[ix - 1, iz], [ix + 1, iz], [ix, iz - 1], [ix, iz + 1]]) {
+      if (nx < 0 || nz < 0 || nx >= w || nz >= h) continue;
+      const next = nz * w + nx; if (seen[next]) continue;
+      seen[next] = canStand(ox + nx, oz + nz, world, .48) ? 1 : -1;
+      if (seen[next] === 1) frontier.push(next);
+    }
+  }
+  for (const target of [...camp.trail, camp.approach, camp.supplies, ...camp.enemies]) {
+    assert.ok(canStand(target.x, target.z, world, .48), `camp point ${target.x},${target.z} is obstructed`);
+    let reached = false;
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      const ix = Math.round(target.x - ox) + dx, iz = Math.round(target.z - oz) + dz;
+      if (ix >= 0 && ix < w && iz >= 0 && iz < h && seen[iz * w + ix] === 1) reached = true;
+    }
+    assert.ok(reached, `the camp at ${target.x},${target.z} cannot be reached from the main road`);
   }
 });
 

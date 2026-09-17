@@ -1,11 +1,11 @@
 import { canStand } from './game-state.js';
 import { FOREST_HIDEOUT_QUEST as QUEST } from './forest-hideout.js';
 import { FOREST_HIDEOUT as CAMP } from './forest-hideout-world.js';
-import { villageToWorld } from './region-world.js';
+import { hideoutToWorld } from './region-world.js';
 
 // The camp trail is authored in Tidehaven's local metres; walk it in world metres.
-const TRAIL = CAMP.trail.map(p => villageToWorld(p.x, p.z));
-const CAMP_CENTER = villageToWorld(CAMP.center.x, CAMP.center.z);
+const TRAIL = CAMP.trail.map(p => hideoutToWorld(p.x, p.z));
+const CAMP_CENTER = hideoutToWorld(CAMP.center.x, CAMP.center.z);
 
 const detached = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value) ? value.map(canonical)

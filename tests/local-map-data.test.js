@@ -173,8 +173,10 @@ test('the real world exports immutable shoreline, pond, and unbroken Caloss char
   assert.throws(() => { river.points[0].x = 99; }, TypeError);
   const village = model(world), crossing = model(world, { regionId: 2 });
   assert.equal(village.buildings.length, 11, 'nine Tidehaven cottages, the woodland watch, and the Avrel clearing farm');
-  assert.ok(village.paths.some(path => path.some(p => Math.abs(p.x + 138) < .01 && Math.abs(p.z + 31) < .01)),
-    'the real camp trail appears on the chart');
+  assert.ok(!village.paths.some(path => path.some(p => Math.abs(p.x + 138) < .01 && Math.abs(p.z + 31) < .01)),
+    'Drent is a level 0 province: no goblin camp trail remains on its chart');
+  assert.ok(crossing.paths.some(path => path.some(p => Math.abs(p.x + 456) < .01 && Math.abs(p.z - 154) < .01)),
+    'the goblin camp trail appears on Luscia’s chart');
   assert.equal(crossing.waters.find(w => w.id === 'caloss-water').points.length, river.points.length);
   assert.equal(village.landmarks.every(place => !place.known && place.name === 'Unexplored place'), true);
 });

@@ -18,7 +18,7 @@ import { createWoodlandLife } from './woodland-life.js';
 import { createForestEcology } from './forest-ecology.js';
 import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './forest-story.js';
 import { runForestSmoke, verifyForestReload } from './forest-smoke.js';
-import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, hideoutConversation, hideoutTamsinChoices } from './forest-hideout.js';
+import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON, hideoutConversation, hideoutTamsinChoices, garrisonConversation } from './forest-hideout.js';
 import { createForestHideoutWatch } from './forest-hideout-watch.js';
 import { runHideoutSmoke, verifyHideoutReload } from './forest-hideout-smoke.js';
 import { buildLocalMapModel } from './local-map-data.js';
@@ -80,6 +80,9 @@ function init() {
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
+  // Lumber Town's garrison: they stand on the square, and march and fight beside the traveler on the goblin camp.
+  npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
+  const garrisonIds=new Set(HIDEOUT_GARRISON.map(npc=>npc.id));
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -99,12 +102,13 @@ function init() {
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
   for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});}
   for(const npc of npcData) {
-    npc.actor=npc.dog?createDog({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
+    npc.actor=npc.dog?createDog({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
     npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:npc.id==='harbormaster'?-Math.PI/2:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
     if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
+  const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
   const objectiveMarker=makeQuestMarker();scene.add(objectiveMarker);
@@ -153,7 +157,7 @@ function init() {
   const worldMap=createWorldMap();
   const woodlandLife=createWoodlandLife(scene,world);
   const woodlandSites=woodlandLife.state();
-  const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,{x:-138,z:-31,radius:12},{x:-129,z:-16,radius:3.5}]});
+  const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
   const forestHideout=createForestHideoutQuest({inventory});
@@ -310,7 +314,8 @@ function init() {
     if(discoveries.has('village'))for(const id of ['fisher','acorn-cook','doomsayer','forest-woodcutter'])knownNPCs.add(id);
     if(questStage>=5)knownNPCs.add('warden');
     if(discoveries.has('pond')||inventory.has('fishing-rod'))knownNPCs.add('pond-fisher');
-    if(forest.workAccepted||forest.bundleRecovered||hideout.recovered)knownNPCs.add('forest-woodcutter');
+    if(forest.workAccepted||forest.bundleRecovered)knownNPCs.add('forest-woodcutter');
+    if(hideout.inspected)knownNPCs.add('garrison-captain');
     if(acornQuest.status!=='available')knownNPCs.add('acorn-cook');
     if(heardDoom)knownNPCs.add('doomsayer');
     if(questStage===10)for(const id of journey.view().destinationIds)if(world.npcPositions[id])knownNPCs.add(id);
@@ -501,10 +506,14 @@ function init() {
     if(result.startEncounter){
       // Save the accepted errand before the battle; active combat is never saved.
       saveRoad(false);
-      if(!combat.startEncounter(hideoutEncounter)){
+      // With the garrison at the traveler's shoulder, the three soldiers join the fight as allies.
+      const allies=forestHideout.state.escort?HIDEOUT_GARRISON.map(g=>{const at=npcById.get(g.id).actor.group.position,c=hideoutEncounter.center;return {id:g.id,name:g.name,kind:g.kind,x:Math.max(c.x-20,Math.min(hideoutEncounter.retreatLine-1,at.x)),z:Math.max(c.z-11,Math.min(c.z+11,at.z))};}).filter(a=>Math.hypot(a.x-hideoutEncounter.center.x,a.z-hideoutEncounter.center.z)<40):[];
+      if(!combat.startEncounter(allies.length?{...hideoutEncounter,allies}:hideoutEncounter)){
         forestHideout.endEncounter(hideoutEncounter.id);return {ok:false,changed:false,reason:'The encounter could not start.'};
       }
-      stopInput();toast('Two scouts. Watch their swings; the trail behind you is a way out.','OPTIONAL ENCOUNTER · BRAMBLE SCOUT CAMP');audio?.effect('bell');
+      stopInput();toast(allies.length?'Two scouts, and three swords beside you. Watch their swings.':'Two scouts. Watch their swings; the trail behind you is a way out.','OPTIONAL ENCOUNTER · BRAMBLE SCOUT CAMP');audio?.effect('bell');
+    }else if(result.escort!==undefined){
+      toast(result.message,result.escort?'THE GARRISON MARCHES WITH YOU':'BRAMBLE SCOUT CAMP');
     }else if(result.changed){
       syncHideout();inventory.refresh();toast(result.message,'BRAMBLE SCOUT CAMP');
       if(action!=='inspect-hideout')audio?.effect('success');
@@ -622,6 +631,7 @@ function init() {
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
+    if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
@@ -857,7 +867,7 @@ function init() {
   }
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
-  $('test-hideout').onclick=()=>{testTravel('village');forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=-.95;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  $('test-hideout').onclick=()=>{testTravel(2);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=-.95;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','EASTREENA · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
@@ -1017,7 +1027,8 @@ function init() {
     $('inventory-count').textContent=inventory.items().length;
     $('inventory-button').classList.toggle('needs-attention',questStage===6||questStage===7);
     const hideoutTask=forestHideout.view().task;
-    const forestTask=hideoutTask&&!hideoutTask.complete?hideoutTask:forestStory.view().task,showForestTask=forestTask&&!forestTask.complete&&world.regionAt(player.group.position.x,player.group.position.z)?.id===1;
+    const hereId=world.regionAt(player.group.position.x,player.group.position.z)?.id,campTask=hideoutTask&&!hideoutTask.complete&&hereId===2?hideoutTask:null;
+    const forestTask=campTask||forestStory.view().task,showForestTask=forestTask&&!forestTask.complete&&(campTask?true:hereId===1);
     const localRegion=world.regionAt(player.group.position.x,player.group.position.z)?.id;
     const regionalTask=regionalLife.view().tasks.find(task=>task.region===localRegion&&!task.complete);
     show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask)&&!active);
@@ -1031,7 +1042,7 @@ function init() {
     $('side-quest-progress').textContent=inventory.count('acorn')>=acornQuest.target?'Return to Lysa by the western cottage.':`Acorns in your satchel · ${inventory.count('acorn')} / 5`;
     $('side-quest-title').textContent=showForestTask?forestTask.title:'A little kindness';
     if(showForestTask)$('side-quest-progress').textContent=forestTask.destinationIds.includes('charcoal-hearth')?'Take the western path to the Old Charcoal Hearth.':"Return the red-tied bundle to Tamsin. J · Woodland notes";
-    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the village supplies to Tamsin. J · Woodland notes':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':'Follow the blue cloth trail in the eastern woods. J · Details';
+    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the town’s stores to Captain Varo. J · Details':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':forestHideout.state.escort?'Lead the garrison up the pennant trail west of the rise.':'Follow the pennant trail west of the rise, or ask Captain Varo to march. J · Details';
     if(regionalTask){$('side-quest-title').textContent=regionalTask.title;$('side-quest-progress').textContent=regionalTask.detail;}
     show('border-status',mode==='playing'&&player.group.position.z<world.bounds.minZ+18);
     $('practice-hits').textContent=`${Math.min(2,practiceHits)} / 2 hits`;$('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
@@ -1135,6 +1146,14 @@ function init() {
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.
+      {const escorting=forestHideout.state.escort,fighting=['active','defeated'].includes(combat.state.phase)&&combat.state.encounterId===hideoutEncounter.id&&combat.state.allies.length>0;
+        for(const [i,g] of HIDEOUT_GARRISON.entries()){const npc=npcById.get(g.id),ally=fighting?combat.state.allies.find(a=>a.id===g.id):null;
+          if(ally){npc.hidden=true;npc.lastFight={x:ally.x,z:ally.z};continue;}
+          if(npc.hidden&&npc.lastFight){npc.actor.group.position.set(npc.lastFight.x,world.heightAt(npc.lastFight.x,npc.lastFight.z),npc.lastFight.z);npc.lastFight=null;}
+          npc.hidden=false;npc.escorting=escorting;
+          if(escorting){const back=player.group.rotation.y+Math.PI+(i-1)*.75,reach=2.9+i*.35;world.npcPositions[g.id]={x:player.group.position.x+Math.sin(back)*reach,z:player.group.position.z+Math.cos(back)*reach};npc.pace=3.6;}
+          else{world.npcPositions[g.id]=garrisonHome[g.id];npc.pace=2.4;}}}
       if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
       const lusciaDestinations=questStage===10&&luscia.state.started?luscia.view().destinationIds:[];
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
@@ -1151,7 +1170,7 @@ function init() {
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(npc.pace||2.4)),bx=pos.x,bz=pos.z;moveCharacter(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,world);pos.y=world.heightAt(pos.x,pos.z);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1});
-        const d=pos.distanceTo(player.group.position)+(npc.dog?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest){nearest=d;currentNPC=npc;}
+        const d=pos.distanceTo(player.group.position)+(npc.dog?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
         npc.marker.visible=(questStage===1&&npc.id==='harbormaster')||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
         if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
         if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
@@ -1296,9 +1315,9 @@ function init() {
         if(view==='hideout-approach'){p=FOREST_HIDEOUT_QUEST.approach;yaw=-1.01;pitch=.27;distance=targetDistance=6.5;}
         if(view==='hideout-supplies'){p=FOREST_HIDEOUT_QUEST.supplies;yaw=-.25;pitch=.38;distance=targetDistance=6;}
         player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);player.group.rotation.y=Math.PI+yaw;
-        if(view==='hideout-overview')reviewTarget=new THREE.Vector3(-140,world.heightAt(-140,-31)+1,-31);
+        if(view==='hideout-overview')reviewTarget=new THREE.Vector3(hideoutEncounter.center.x,world.heightAt(hideoutEncounter.center.x,hideoutEncounter.center.z)+1,hideoutEncounter.center.z);
         if(view==='hideout-dialogue')hideoutConversation(hideoutContext);
-        if(view==='hideout-cleared'){forestHideout.inspect();forestHideout.begin({questStage});forestHideout.markCleared(hideoutEncounter.id);syncHideout();reviewTarget=new THREE.Vector3(-140,world.heightAt(-140,-31)+1,-31);}
+        if(view==='hideout-cleared'){forestHideout.inspect();forestHideout.begin({questStage});forestHideout.markCleared(hideoutEncounter.id);syncHideout();reviewTarget=new THREE.Vector3(hideoutEncounter.center.x,world.heightAt(hideoutEncounter.center.x,hideoutEncounter.center.z)+1,hideoutEncounter.center.z);}
         if(view==='hideout-tamsin'){
           forestHideout.inspect();forestHideout.begin({questStage});forestHideout.markCleared(hideoutEncounter.id);forestHideout.recover();syncHideout();
           const npc=npcData.find(n=>n.id===FOREST_STORY_NPC.id),home=world.npcPositions[npc.id];

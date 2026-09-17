@@ -144,10 +144,11 @@ export async function runDeveloperSmoke(h) {
     if(h.ghostVisibilityState){
       const before=h.ghostVisibilityState();
       assert(before.road.groups.some(group=>group.visible), 'ghost visit to East Suval left all road wildlife culled');
-      // The Bramble Scout Camp sits at world (-138, -31) since the village turned to face east.
+      // The goblin camp stands in north Luscia; the woodland ecology stays in Drent, so each is observed from nearby.
+      developer.setPosition({x:-448,y:12,z:150});await frames(3);
+      assert(h.ghostVisibilityState().camp.visible===2, 'ghost inspection did not reveal both camp lookouts from its own position');
       developer.setPosition({x:-130,y:12,z:-31});await frames(3);
       const observed=h.ghostVisibilityState();
-      assert(observed.camp.visible===2, 'ghost inspection did not reveal both camp lookouts from its own position');
       assert(observed.forest.groups.some(group=>group.visible), 'ghost inspection left the forest detail groups hidden');
       const poses=state=>({animals:state.animals.map(({x,y,z,clock})=>({x,y,z,clock})),birds:state.birds.map(({x,y,z,clock})=>({x,y,z,clock}))});
       assert(same(poses(before.forest),poses(observed.forest)), 'ghost visibility changed woodland animal positions or simulation time');

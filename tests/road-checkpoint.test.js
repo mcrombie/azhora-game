@@ -50,7 +50,7 @@ test('road checkpoint round-trips partial quest progress, satchel, weapon wear, 
 test('optional hideout checkpoints preserve unfinished supplies and reject impossible progress without overwriting the adventure', () => {
   const { checkpoint, data, inventory, storage } = fixture();
   const hideout = createForestHideoutQuest({ inventory });
-  hideout.inspect(); hideout.begin({ questStage: 5 }); hideout.markCleared('forest-hideout'); hideout.recover();
+  hideout.inspect(); hideout.begin({ questStage: 10 }); hideout.markCleared('forest-hideout'); hideout.recover();
   const withHideout = { ...data, forestHideout: hideout.snapshot() };
   assert.equal(checkpoint.save(withHideout).ok, true);
   assert.deepEqual(checkpoint.read().data.forestHideout, hideout.snapshot());

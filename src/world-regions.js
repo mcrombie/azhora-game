@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
-  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions,
-} from './region-world.js';
+  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions, HIDEOUT_CLEARINGS } from './region-world.js';
 import { calossSurface } from './world-terrain.js';
 import { regionalFeatureClear } from './regional-places.js';
 
@@ -34,6 +33,7 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: STORY_SITES.waystation.x, z: STORY_SITES.waystation.z, r: 15 }),
   Object.freeze({ x: STORY_SITES.elodGate.x, z: STORY_SITES.elodGate.z, r: 26 }),
   Object.freeze({ x: STORY_SITES.banditLookout.x, z: STORY_SITES.banditLookout.z, r: 10 }),
+  ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, north Luscia
 ]);
 
 

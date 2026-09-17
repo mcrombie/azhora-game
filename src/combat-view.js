@@ -65,7 +65,7 @@ export function createCombatView(scene, world, camera) {
     for(const ally of state.allies||[]) {
       const item=allies.get(ally.id)||createAlly(ally);index++;
       const dead=ally.hp<=0;item.deadTime=dead?item.deadTime+dt:0;
-      const group=item.actor.group;group.visible=item.deadTime<2.4;
+      const group=item.actor.group;group.visible=item.deadTime<2.4&&['active','defeated'].includes(state.phase);
       group.position.set(ally.x,world.heightAt(ally.x,ally.z),ally.z);group.rotation.y=ally.yaw;
       group.scale.setScalar(dead?Math.max(0,1-Math.max(0,item.deadTime-1.4)):1);
       item.actor.animate(time+index*1.3,ally.speed||0,true,{action:ally.action,progress:ally.progress,alert:state.phase==='active',armed:true});

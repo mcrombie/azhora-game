@@ -74,6 +74,21 @@ export function isLandHex(x, z) { const h = hexAt(x, z); return landHexes.has(ke
 export const VILLAGE = Object.freeze({ x: -20, z: 29, yaw: Math.PI / 2 });
 export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - lx });
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
+
+/**
+ * The goblin camp keeps the local layout it was authored with (a trail of six points into a
+ * clearing) but no longer stands in Drent, which is a level 0 province with no goblin camp.
+ * It sits in the wilderness of north Luscia, turned half a circle so its trail leaves the main
+ * road just west of Sava's rise: local (60, -118), the camp's centre, is world (-456, 154).
+ */
+export const HIDEOUT_SITE = Object.freeze({ x: -396, z: 36, yaw: Math.PI });
+export const hideoutToWorld = (lx, lz) => ({ x: HIDEOUT_SITE.x - lx, z: HIDEOUT_SITE.z - lz });
+export const worldToHideout = (x, z) => ({ x: HIDEOUT_SITE.x - x, z: HIDEOUT_SITE.z - z });
+/** Ground the Luscia scatter keeps clear for the camp and its trail. */
+export const HIDEOUT_CLEARINGS = Object.freeze([
+  Object.freeze({ x: -456, z: 154, r: 16 }), Object.freeze({ x: -466, z: 159, r: 6 }),
+  ...[[1, -117], [14, -112], [29, -111], [45, -109], [53, -111]].map(([lx, lz]) => Object.freeze({ ...hideoutToWorld(lx, lz), r: 5 })),
+]);
 /** The local box the original Eastreena terrain and scatter occupy. */
 export const VILLAGE_LOCAL_BOX = Object.freeze({ minX: -112, maxX: 112, minZ: -168, maxZ: 60 });
 
@@ -282,6 +297,10 @@ export const regionNpcPositions = Object.freeze({
   'town-sawyer': townPoint(4, 13),
   'town-yardhand': townPoint(0, 14),
   'town-beggar': townPoint(0, -4),        // Smiths, who wanders the square
+  // The garrison: the Captain and Casso by the relay post, Brill watching the north road into the square.
+  'garrison-captain': townPoint(10, -6),
+  'garrison-casso': townPoint(14, -8),
+  'garrison-brill': townPoint(-8, -6),
   // The field at the Lauvel and the burned hamlet, north-east of the town.
   'lauvel-picket': point(-392, 186),      // Talvus, on the picket line
   'burial-searcher': point(-387, 198),    // Ilva, at the burial line

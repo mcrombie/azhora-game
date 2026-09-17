@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
 import { regions, regionAt, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
 import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
-import { FOREST_HIDEOUT, forestHideoutClear, tintForestHideoutGround, createForestHideout } from './forest-hideout-world.js';
+import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
-  VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
+  VILLAGE, villageToWorld, worldToVillage, HIDEOUT_SITE, hideoutToWorld, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
   calossDistance, landDistance,
 } from './region-world.js';
@@ -57,7 +57,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     || pondPathDistance(x, z) < (tree ? 2.35 : 1.45)
     || [doomsayer, pondFisher, ...firePits].some(p => Math.hypot(x - p.x, z - p.z) < (tree ? 2.1 : 1.0))
     || firePits.some(p => Math.hypot(x - p.fireX, z - p.fireZ) < (tree ? 2.1 : 1.25))
-    || forestFeatureClear(x, z, tree) || forestHideoutClear(x, z, tree);
+    || forestFeatureClear(x, z, tree);
   const encounter = { x: 0, z: -34, radius: 8 };
   const northTrail = { x: -5, z: -108, name: FERNWAY_REST.name };
   const border = { x: 0, z: -156, name: CALOSS_GATE.name, barrierZ: -162,
@@ -88,6 +88,21 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     colliders.push(collider);
     return collider;
   }
+  // The goblin camp is authored in its own local metres too; it stands in north Luscia, turned half a circle.
+  const hideoutRoot = new THREE.Group();
+  hideoutRoot.name = 'Goblin camp site';
+  hideoutRoot.position.set(HIDEOUT_SITE.x, 0, HIDEOUT_SITE.z);
+  hideoutRoot.rotation.y = HIDEOUT_SITE.yaw;
+  world.add(hideoutRoot);
+  const hideoutPlaced = new WeakSet();
+  const hideoutColliders = new Proxy(colliders, {
+    get(target, property) {
+      // A collider is converted once; the camp re-adds its supply collider when a save is restored.
+      if (property === 'push') return (...items) => { for (const item of items) { if (!hideoutPlaced.has(item)) { const p = hideoutToWorld(item.x, item.z); item.x = p.x; item.z = p.z; if (Number.isFinite(item.angle)) item.angle += HIDEOUT_SITE.yaw; hideoutPlaced.add(item); } target.push(item); } return target.length; };
+      const value = target[property];
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
   const localColliders = new Proxy(colliders, {
     get(target, property) {
       if (property === 'push') return (...items) => { for (const item of items) vpush(item); return target.length; };
@@ -277,7 +292,6 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       villageColor.lerp(beachColor, smooth(18.5, 29, local.z - Math.sin(local.x * .055) * 2.5));
       villageColor.multiplyScalar(trange(0.94, 1.05));
       tintForestGround(villageColor, local.x, local.z);
-      tintForestHideoutGround(villageColor, local.x, local.z);
       color.lerp(villageColor, weight);
     } else color.multiplyScalar(trange(.955, 1.045));
     terrainColors.set([color.r, color.g, color.b], index * 3);
@@ -885,7 +899,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   trees.forEach((tree, i) => {
     const { x, z, s, h, rot } = tree, y = localGround(x, z), th = h * s;
     // Hidden trees keep their index, so oak ids, acorns and squirrel homes never shuffle.
-    tree.hidden = featureClear(x, z, true) || forestFeatureClear(x, z, true, th * .52) || forestHideoutClear(x, z, true, th * .52)
+    tree.hidden = featureClear(x, z, true) || forestFeatureClear(x, z, true, th * .52)
       || (spot => landDistance(spot.x, spot.z) < 3)(villageToWorld(x, z));
     dummy.position.set(x, y + th * .41, z); dummy.rotation.set(range(-.025, .025), rot, range(-.025, .025));
     dummy.scale.set(s, th * .82, s); if (tree.hidden) dummy.scale.setScalar(0); dummy.updateMatrix(); trunkMesh.setMatrixAt(i, dummy.matrix);
@@ -1029,8 +1043,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   for (const lane of localSidePaths) addLocalPath(lane, 2.6);
   for (const path of pondPaths) addLocalPath(path, 2.1);
-  for (const path of [...forestPlacePaths, FOREST_HIDEOUT.trail]) addLocalPath(path, 1.85);
+  for (const path of forestPlacePaths) addLocalPath(path, 1.85);
   for (const path of REGIONAL_PATHS) addPath(path, 1.85);
+  addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
 
   // Signposts along the new road.
   for (const [x, z, label, yaw] of [
@@ -1164,7 +1179,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   });
   const localWorld = { heightAt: localGround, colliders: localColliders };
   const forestPlaces = createForestPlaces(villageRoot, localWorld);
-  const forestHideout = createForestHideout(villageRoot, localWorld);
+  const forestHideout = createForestHideout(hideoutRoot, { heightAt: (x, z) => { const p = hideoutToWorld(x, z); return groundHeight(p.x, p.z); }, colliders: hideoutColliders });
   const regionalPlaces = createRegionalPlaces(world, { heightAt: groundHeight, colliders });
 
   const reedMat = material('#758249'), reedHead = material('#705637');
@@ -1380,14 +1395,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     updateRegionalPlaces: regionalPlaces.update,
     forestPlaceState: forestPlaces.state,
     forestHideout: {
-      ...FOREST_HIDEOUT, ...villageToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
-      center: villageToWorld(FOREST_HIDEOUT.center.x, FOREST_HIDEOUT.center.z),
-      approach: villageToWorld(FOREST_HIDEOUT.approach.x, FOREST_HIDEOUT.approach.z),
-      checkpoint: villageToWorld(FOREST_HIDEOUT.checkpoint.x, FOREST_HIDEOUT.checkpoint.z),
-      supplies: villageToWorld(FOREST_HIDEOUT.supplies.x, FOREST_HIDEOUT.supplies.z),
-      trail: FOREST_HIDEOUT.trail.map(p => villageToWorld(p.x, p.z)),
-      enemies: FOREST_HIDEOUT.enemies.map(p => villageToWorld(p.x, p.z)),
-      retreatAxis: 'x', retreatX: villageToWorld(0, FOREST_HIDEOUT.retreatZ).x,
+      ...FOREST_HIDEOUT, ...hideoutToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
+      center: hideoutToWorld(FOREST_HIDEOUT.center.x, FOREST_HIDEOUT.center.z),
+      approach: hideoutToWorld(FOREST_HIDEOUT.approach.x, FOREST_HIDEOUT.approach.z),
+      checkpoint: hideoutToWorld(FOREST_HIDEOUT.checkpoint.x, FOREST_HIDEOUT.checkpoint.z),
+      supplies: hideoutToWorld(FOREST_HIDEOUT.supplies.x, FOREST_HIDEOUT.supplies.z),
+      trail: FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)),
+      enemies: FOREST_HIDEOUT.enemies.map(p => hideoutToWorld(p.x, p.z)),
+      retreatAxis: 'x', retreatX: hideoutToWorld(FOREST_HIDEOUT.approach.x, FOREST_HIDEOUT.approach.z).x + 8,
     },
     forestHideoutMetrics: forestHideout.metrics,
     setForestHideoutState: forestHideout.setState,
@@ -1454,8 +1469,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       { id: 'northTrail', name: northTrail.name, ...worldNorthTrail, description: 'A shaded bench and an old cairn mark the last rest beneath Drent’s canopy.' },
       { id: 'border', name: border.name, ...worldBorder, description: 'An old field gate stands open where the Tidehaven wood gives way to the Avrel clearing and the road to the Caloss.' },
       ...forestPlaceDefinitions.map(site => ({ ...site, ...villageToWorld(site.x, site.z) })),
-      { ...FOREST_HIDEOUT, ...villageToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
-        description: 'A half-hidden goblin shelter beside a trail of stolen village supplies.' },
+      { ...FOREST_HIDEOUT, ...hideoutToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
+        description: 'Torn pennants mark a side trail west of the rise. A goblin camp squats in the scrub beyond, with sacks taken from Lumber Town’s stores.' },
       ...regionLandmarks,
       ...REGIONAL_PLACES,
     ],
