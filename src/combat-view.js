@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { createGoblin, createWolf } from './characters.js';
+import { createCharacter, createGoblin, createWolf } from './characters.js';
 
 // A handful of pooled effects and three articulated actors; nothing allocates
 // new geometry during a swing. Combat rules remain independent of the renderer.
 export function createCombatView(scene, world, camera) {
-  const actors = new Map();
+  const actors = new Map(), allies = new Map();
   const labels = document.getElementById('enemy-labels');
   const projection = new THREE.Vector3();
   const sparkGeometry = new THREE.IcosahedronGeometry(.055, 0);
@@ -34,6 +34,7 @@ export function createCombatView(scene, world, camera) {
       if(e.type==='practice-hit')trainingSway=.22;
     }
     if(e.type==='player-hit'){hitFlash=.4;shake=.1;burst(e.x,e.z,8);}
+    if(e.type==='ally-hit'||e.type==='ally-down'){burst(e.x,e.z,e.type==='ally-down'?14:6);}
   }
   function createEnemy(enemy,index) {
     const actor=enemy.kind==='wolf'?createWolf({variant:index}):createGoblin({variant:index});scene.add(actor.group);
@@ -49,7 +50,36 @@ export function createCombatView(scene, world, camera) {
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
   }
+  function createAlly(ally) {
+    const actor=createCharacter({role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
+    const badge=document.createElement('div');badge.className='enemy-badge ally';
+    const name=document.createElement('span');name.textContent=ally.name||'Legionary';
+    const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
+    const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
+    const item={actor,badge,fill,intent,deadTime:0};allies.set(ally.id,item);return item;
+  }
+  function updateAllies(dt,time,state,visible) {
+    const ids=new Set((state.allies||[]).map(a=>a.id));
+    for(const [id,item] of allies)if(!ids.has(id)){item.actor.group.visible=false;item.badge.hidden=true;}
+    let index=0;
+    for(const ally of state.allies||[]) {
+      const item=allies.get(ally.id)||createAlly(ally);index++;
+      const dead=ally.hp<=0;item.deadTime=dead?item.deadTime+dt:0;
+      const group=item.actor.group;group.visible=item.deadTime<2.4;
+      group.position.set(ally.x,world.heightAt(ally.x,ally.z),ally.z);group.rotation.y=ally.yaw;
+      group.scale.setScalar(dead?Math.max(0,1-Math.max(0,item.deadTime-1.4)):1);
+      item.actor.animate(time+index*1.3,ally.speed||0,true,{action:ally.action,progress:ally.progress,alert:state.phase==='active',armed:true});
+      projection.set(ally.x,group.position.y+1.9,ally.z).project(camera);
+      item.badge.hidden=!visible||dead||projection.z>1||projection.z< -1||state.phase!=='active';
+      if(!item.badge.hidden){
+        item.badge.style.transform=`translate(-50%,-100%) translate(${(projection.x*.5+.5)*innerWidth}px,${(-projection.y*.5+.5)*innerHeight}px)`;
+        item.fill.style.width=`${Math.max(0,100*ally.hp/ally.maxHp)}%`;
+        item.intent.textContent=ally.action==='windup'?'Striking':ally.action==='hurt'?'Staggered':' ';
+      }
+    }
+  }
   function update(dt,time,state,position,visible=true) {
+    updateAllies(dt,time,state,visible);
     const ids=new Set(state.enemies.filter(e=>e.kind==='goblin'||e.kind==='wolf').map(e=>e.id));
     for(const [id,item] of actors)if(!ids.has(id)){item.actor.group.visible=false;item.tell.visible=false;item.badge.hidden=true;}
     let index=0;

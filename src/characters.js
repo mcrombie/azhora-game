@@ -543,7 +543,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role) } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role), armed = false } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -1117,7 +1117,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       const cloakMat = material(0x7d2a24, { side: THREE.DoubleSide });
       part(body, new THREE.CylinderGeometry(0.2, 0.34, 0.72, 8, 1, true, Math.PI / 2, Math.PI), cloakMat, [0, 0.95, -0.03], [1, 1, 0.85]);
       for (const side of [-1, 1]) round(body, gold, [side * 0.16, 1.3, 0.13], [0.03, 0.03, 0.012]);
-    } else {
+    } else if (!armed) {
       // The spear stays planted beside the right foot while the body breathes.
       staff = new THREE.Group();
       staff.name = isSuvaliGuard ? 'Suvali guard spear' : 'Legion spear';
@@ -1150,8 +1150,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
 
   const idleOffset = isMiller ? 1.35 : isReedWorker ? 3.55 : isShelterKeeper ? 5.15 : isWoodcutter ? 2.1 : isCourier ? .8 : isBridgeKeeper ? 2.8 : isCustodian ? 4.4 : isClerk ? 5.6 : isCook ? 2.35 : isDoomsayer ? 1.1 : isPondFisher ? 3.8 : role === 'harbormaster' ? 1.8 : role === 'fisher' ? 3.1 : role === 'warden' ? 4.7 : 0;
   const chest = addChestPivot(body, legs, 0.935);
-  const weapon = isTraveler ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : null;
-  const weapons = weapon ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon) } : {};
+  // A soldier called to fight draws his sword instead of planting his spear.
+  const fights = isSoldier && armed;
+  const weapon = isTraveler ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip') : null;
+  const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon) } : fights ? { 'simple-sword': makeSword(weapon) } : {};
   const fishingGrip = isTraveler || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
   const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
@@ -1196,7 +1198,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     fishingRod.updateWorldMatrix(true, false);
     return rodTipWorld.set(.056, 1.625, 0).applyMatrix4(fishingRod.matrixWorld);
   }
-  if (isTraveler) setWeapon('simple-sword');
+  if (isTraveler || fights) setWeapon('simple-sword');
   if (fishingGrip) setFishing(isPondFisher);
   return { group, animate, setArmed, setWeapon, setFishing, fishingTip };
 }

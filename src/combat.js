@@ -19,6 +19,11 @@ const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
 });
+// Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
+const ALLY_KINDS = Object.freeze({
+  legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90 }),
+  officer: Object.freeze({ tell: .5, attack: .48, contact: .2, recovery: 1.7, damage: 22, speed: 2.2, engage: 1.95, reach: 2.2, hp: 110 }),
+});
 const DEFAULT_ENCOUNTER = Object.freeze({
   id: 'tidehaven-raiders', center: Object.freeze({ x: 0, z: -36 }),
   checkpoint: Object.freeze({ x: 0, z: -25 }), retreatZ: -16,
@@ -54,9 +59,21 @@ function encounterConfig(config) {
       || enemy[axis] > config.center[axis] + 18 || enemy[axis] >= line) return null;
     seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind });
   }
+  const allies = [];
+  if (config.allies !== undefined) {
+    if (!Array.isArray(config.allies) || config.allies.length > 6) return null;
+    for (const ally of config.allies) {
+      if (!ally || !identifier(ally.id) || seen.has(ally.id) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
+        || (ally.name !== undefined && typeof ally.name !== 'string')
+        || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
+        || Math.abs(ally[across] - config.center[across]) > 12 || ally[axis] < config.center[axis] - 21
+        || ally[axis] > config.center[axis] + 18 || ally[axis] >= line) return null;
+      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}) });
+    }
+  }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
-    retreatZ: line, retreatLine: line, retreatAxis: axis, enemies };
+    retreatZ: line, retreatLine: line, retreatAxis: axis, enemies, allies };
 }
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -74,9 +91,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       action: 'idle', progress: 0, combo: 0, yaw: 0, invulnerable: false,
     },
     enemies: [],
+    allies: [],
   };
   const player = state.player;
   const enemyTimers = new Map();
+  const allyTimers = new Map();
   let time = 0;
   let actionTime = 0;
   let hitApplied = false;
@@ -150,6 +169,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     weaponReady = true;
     restorePlayer();
     enemyTimers.clear();
+    clearAllies();
     state.enemies = [makeEnemy('practice-dummy', 'dummy', point)];
     state.phase = 'practice';
     state.encounterId = null;
@@ -159,6 +179,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (state.phase !== 'practice') return;
     state.enemies = [];
     enemyTimers.clear();
+    clearAllies();
     state.phase = 'peaceful';
     restorePlayer();
   }
@@ -172,6 +193,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     enemyTimers.clear();
     lastEncounter = next;
     state.enemies = next.enemies.map(enemy => makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, enemy.hp));
+    allyTimers.clear();
+    state.allies = next.allies.map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
     state.encounterId = next.id;
     nextAttackerAt = time + .6;
@@ -366,6 +389,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         return Math.hypot(other.x - x, other.z - z) < minimum;
       })) continue;
       if (distance({ x, z }, position) < 1.1) continue;
+      if (state.allies.some(ally => ally.active && Math.hypot(ally.x - x, ally.z - z) < .9)) continue;
       const before = { x: enemy.x, z: enemy.z };
       moveCharacter(enemy, x - enemy.x, z - enemy.z, world);
       return distance(before, enemy);
@@ -403,7 +427,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       if (timers.actionTime <= profile.contact) moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
       if (!timers.hitApplied && timers.actionTime >= profile.contact) {
         timers.hitApplied = true;
-        if (distance(enemy, position) <= profile.reach && facing(enemy, position, enemy.yaw, Math.PI * .25)) hurtPlayer(enemy);
+        // The strike lands on whoever the tell was aimed at: the traveler, or an ally still standing.
+        const aimedAlly = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
+        const struckPoint = aimedAlly ?? position;
+        if (distance(enemy, struckPoint) <= profile.reach && facing(enemy, struckPoint, enemy.yaw, Math.PI * .25)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
       }
       if (timers.actionTime >= profile.attack && state.phase === 'active') {
         enemy.action = 'idle';
@@ -414,8 +441,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       return;
     }
     if (timers.entry > 0) { timers.entry = Math.max(0, timers.entry - dt); return; }
-    const dist = distance(enemy, position);
-    const targetYaw = Math.atan2(position.x - enemy.x, position.z - enemy.z);
+    const focus = enemyTarget(enemy), aim = focus.point;
+    const dist = distance(enemy, aim);
+    const targetYaw = Math.atan2(aim.x - enemy.x, aim.z - enemy.z);
     enemy.yaw += angleDifference(targetYaw, enemy.yaw) * Math.min(1, dt * 7);
     const someoneAttacking = state.enemies.some(other => other.active && ['windup', 'attack'].includes(other.action));
     if (dist <= profile.engage && timers.cooldown <= 0 && !someoneAttacking && time >= nextAttackerAt) {
@@ -423,19 +451,120 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       enemy.yaw = targetYaw;
       enemy.progress = 0;
       timers.actionTime = 0;
-      emit('windup', { id: enemy.id });
+      timers.targetId = focus.ally?.id ?? null;
+      emit('windup', { id: enemy.id, targetId: timers.targetId });
       return;
     }
     const desiredDistance = someoneAttacking ? 2.7 : 1.8;
     if (dist > desiredDistance) {
       const target = {
-        x: clamp(position.x, lastEncounter.center.x - 8, lastEncounter.center.x + 8),
-        z: clamp(position.z, lastEncounter.center.z - 16, lastEncounter.center.z + 16),
+        x: clamp(aim.x, lastEncounter.center.x - 8, lastEncounter.center.x + 8),
+        z: clamp(aim.z, lastEncounter.center.z - 16, lastEncounter.center.z + 16),
       };
       const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
       enemy.speed = amount / dt;
     }
+  }
+
+  // Allies: Legion soldiers who join an encounter, close on the nearest enemy and
+  // strike with the same tell-then-swing rhythm. Enemies treat them as targets.
+  function makeAlly(spec, index) {
+    const profile = ALLY_KINDS[spec.kind];
+    const ally = { id: spec.id, name: spec.name, kind: spec.kind, ...safePoint(spec.x, spec.z), yaw: 0,
+      hp: spec.hp ?? profile.hp, maxHp: spec.hp ?? profile.hp, action: 'idle', progress: 0, speed: 0, active: true };
+    allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
+    return ally;
+  }
+
+  function clearAllies() { state.allies = []; allyTimers.clear(); }
+
+  /** The nearest standing target for an enemy: the traveler or a living ally. */
+  function enemyTarget(enemy) {
+    let best = { point: position, ally: null }, bestDistance = distance(enemy, position);
+    for (const ally of state.allies) {
+      if (!ally.active) continue;
+      const d = distance(enemy, ally);
+      if (d < bestDistance) { best = { point: ally, ally }; bestDistance = d; }
+    }
+    return best;
+  }
+
+  function hurtAlly(ally, enemy) {
+    if (!ally.active) return;
+    const damage = (ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage;
+    const timers = allyTimers.get(ally.id);
+    ally.hp = Math.max(0, ally.hp - damage);
+    ally.action = ally.hp ? 'hurt' : 'dead';
+    ally.active = ally.hp > 0;
+    ally.progress = 0;
+    ally.speed = 0;
+    timers.actionTime = 0;
+    timers.hitApplied = false;
+    moveCharacter(ally, Math.sin(enemy.yaw) * .4, Math.cos(enemy.yaw) * .4, world);
+    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z });
+    if (!ally.hp) emit('ally-down', { id: ally.id, x: ally.x, z: ally.z });
+  }
+
+  function steerAlly(ally, target, step) {
+    const yaw = Math.atan2(target.x - ally.x, target.z - ally.z);
+    for (const offset of [0, .45, -.45, .9, -.9, 1.4, -1.4]) {
+      const x = ally.x + Math.sin(yaw + offset) * step;
+      const z = ally.z + Math.cos(yaw + offset) * step;
+      const center = lastEncounter.center;
+      if (x < center.x - 12 || x > center.x + 12 || z < center.z - 21 || z > center.z + 18 || !canStand(x, z, world, .43)) continue;
+      if (distance({ x, z }, position) < .9) continue;
+      if (state.allies.some(other => other !== ally && other.active && Math.hypot(other.x - x, other.z - z) < .9)) continue;
+      if (state.enemies.some(other => other.active && Math.hypot(other.x - x, other.z - z) < 1.0)) continue;
+      const before = { x: ally.x, z: ally.z };
+      moveCharacter(ally, x - ally.x, z - ally.z, world);
+      return distance(before, ally);
+    }
+    return 0;
+  }
+
+  function updateAlly(ally, dt) {
+    const timers = allyTimers.get(ally.id), profile = ALLY_KINDS[ally.kind];
+    timers.actionTime += dt;
+    timers.cooldown = Math.max(0, timers.cooldown - dt);
+    ally.speed = 0;
+    if (ally.action === 'dead') { ally.progress = clamp(timers.actionTime / .85, 0, 1); return; }
+    if (ally.action === 'hurt') {
+      ally.progress = clamp(timers.actionTime / .44, 0, 1);
+      if (timers.actionTime >= .44) { ally.action = 'idle'; ally.progress = 0; }
+      return;
+    }
+    if (state.phase !== 'active') { ally.action = 'idle'; ally.progress = 0; return; }
+    const foes = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead');
+    if (!foes.length) { ally.action = 'idle'; ally.progress = 0; return; }
+    if (ally.action === 'windup') {
+      ally.progress = clamp(timers.actionTime / profile.tell, 0, 1);
+      if (timers.actionTime >= profile.tell) { ally.action = 'attack'; ally.progress = 0; timers.actionTime -= profile.tell; timers.hitApplied = false; }
+      return;
+    }
+    if (ally.action === 'attack') {
+      ally.progress = clamp(timers.actionTime / profile.attack, 0, 1);
+      if (timers.actionTime <= profile.contact) moveCharacter(ally, Math.sin(ally.yaw) * dt * 1.2, Math.cos(ally.yaw) * dt * 1.2, world);
+      if (!timers.hitApplied && timers.actionTime >= profile.contact) {
+        timers.hitApplied = true;
+        const struck = foes.filter(enemy => distance(ally, enemy) <= profile.reach && facing(ally, enemy, ally.yaw, Math.PI * .3))
+          .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
+        if (struck) hurtEnemy(struck, profile.damage, ally.yaw);
+        emit('ally-strike', { id: ally.id, targetId: struck?.id ?? null, x: ally.x, z: ally.z });
+      }
+      if (timers.actionTime >= profile.attack) { ally.action = 'idle'; ally.progress = 0; timers.cooldown = profile.recovery; }
+      return;
+    }
+    foes.sort((a, b) => distance(ally, a) - distance(ally, b));
+    const target = foes[0], dist = distance(ally, target);
+    const targetYaw = Math.atan2(target.x - ally.x, target.z - ally.z);
+    ally.yaw += angleDifference(targetYaw, ally.yaw) * Math.min(1, dt * 8);
+    if (dist <= profile.engage && timers.cooldown <= 0) {
+      ally.action = 'windup'; ally.yaw = targetYaw; ally.progress = 0; timers.actionTime = 0;
+      emit('ally-windup', { id: ally.id, targetId: target.id });
+      return;
+    }
+    if (dist > 1.7) ally.speed = steerAlly(ally, target, Math.min(profile.speed * dt, Math.max(0, dist - 1.7))) / dt;
   }
 
   function update(dt) {
@@ -451,11 +580,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         state.phase = 'peaceful';
         state.enemies = [];
         enemyTimers.clear();
+        clearAllies();
         restorePlayer();
         emit('retreat', { encounterId: state.encounterId });
       }
       updatePlayer(step);
       state.enemies.forEach(enemy => updateEnemy(enemy, step));
+      state.allies.forEach(ally => updateAlly(ally, step));
     }
   }
 
