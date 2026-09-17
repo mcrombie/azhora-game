@@ -12,6 +12,7 @@ import { legionPostStake } from '../src/occupation.js';
 import { RIDE } from '../src/riding.js';
 import { LUMBER_TOWN_STABLE } from '../src/region-world.js';
 import { HIDEOUT_GARRISON, FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
+import { STORY_STARTS, startingSpot } from '../src/story-starts.js';
 
 test('everyone the later chapters place on the ground stands on walkable ground in the right region', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
@@ -88,4 +89,22 @@ test('the roads can be ridden end to end, and the stable yard has room for a man
   }
   // Mounting from beside the hitch and stepping down again both find room.
   assert.ok(Math.hypot(stand.x - hitch.x, stand.z - hitch.z) < 12, 'the horse is handed over within sight of the ostler');
+});
+
+test('every story start puts the traveler on open ground beside the person it names', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  for (const entry of STORY_STARTS) {
+    const stand = LEGION_POSTS.find(post => post.id === entry.beside);
+    assert.ok(stand, `${entry.id} names someone the world places`);
+    const spot = startingSpot(stand, (x, z) => canStand(x, z, world, .45));
+    assert.ok(spot, `${entry.id} finds room to stand`);
+    assert.ok(canStand(spot.x, spot.z, world, .45), `${entry.id} begins on ground a traveler can stand on`);
+    assert.ok(spot.reach <= 8.5 && Math.hypot(spot.x - stand.x, spot.z - stand.z) < 9, `${entry.id} begins within talking distance`);
+    // And the horse it is given has room of its own, clear of the traveler.
+    if (entry.horse) {
+      const hitch = startingSpot(spot, (x, z) => canStand(x, z, world, RIDE.radius), { reaches: [3, 4.5, 6] });
+      assert.ok(hitch && canStand(hitch.x, hitch.z, world, RIDE.radius), `${entry.id} has room for the horse`);
+    }
+  }
 });

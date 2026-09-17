@@ -137,6 +137,25 @@ test('the computer travels at a run and walks only the last stride', () => {
   pilot.stop();
 });
 
+test('a game begun at a later chapter is played from there, not from the road behind it', () => {
+  const world = fakeWorld();
+  world.npcPositions['post-camp-legate'] = { x: -20, z: -300 };
+  world.npcNames['post-camp-legate'] = 'Legate Verro';
+  // The road, Luscia and the Moros are behind this traveler: their chapters were never played here.
+  const staged = snapshot({
+    questStage: 10, position: { x: -18, z: -296 },
+    campaign: { chapterId: 'suval-envoy' },
+    journey: { started: true, stage: 'meet-courier', complete: false, destinationIds: [], actions: [] },
+    border: { stage: 'take-orders', complete: false, destinationIds: ['post-camp-legate'], actions: [], objectiveId: 'post-camp-legate' },
+  });
+  const goal = planGoal(staged, world);
+  assert.equal(goal.kind, 'talk', `it goes to the chapter the campaign is on, not ${goal.intent}`);
+  assert.equal(goal.npcId, 'post-camp-legate');
+  // Without the campaign it would have nothing left on the road and give up.
+  const blind = planGoal({ ...staged, campaign: undefined }, world);
+  assert.equal(blind.kind, 'done');
+});
+
 test('the fight policy dodges tells, strikes in reach, closes the gap, and waits on stamina', () => {
   const base = { position: { x: 0, z: 0 }, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } };
   const goblin = (x, z, action = 'idle', progress = 0) => ({ id: 'g', x, z, action, progress, active: true, hp: 50 });

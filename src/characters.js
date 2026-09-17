@@ -2233,6 +2233,30 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
 }
 
 /** Animated by the caller so all markers share one scene clock. */
+/**
+ * Take a figure out of the shadow pass. A fighter is twenty-odd separate moving
+ * parts, so a crowd of them costs as much again in shadows as it does in itself;
+ * in a fight the crowd is close together and a cast shadow apiece buys little.
+ * `groundShadow()` is the dark patch that stands in for one.
+ */
+export function setShadowCasting(actor, casting) {
+  const group = actor?.group ?? actor;
+  if (!group?.traverse) return false;
+  group.traverse(object => { if (object.isMesh && !object.userData?.groundShadow) object.castShadow = casting; });
+  return true;
+}
+
+const SHADOW_DISC = new THREE.CircleGeometry(0.42, 14);
+/** A soft dark disc laid on the ground under a figure that no longer casts its own. */
+export function groundShadow(opacity = 0.34) {
+  const mesh = new THREE.Mesh(SHADOW_DISC, new THREE.MeshBasicMaterial({ color: 0x1d2a22, transparent: true, opacity, depthWrite: false, toneMapped: false }));
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.renderOrder = -1;
+  mesh.userData.groundShadow = true;
+  mesh.castShadow = false; mesh.receiveShadow = false;
+  return mesh;
+}
+
 export function makeQuestMarker() {
   const group = new THREE.Group();
   group.name = 'quest-marker';

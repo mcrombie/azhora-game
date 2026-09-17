@@ -89,6 +89,21 @@ export function outpostGateApproaches() {
   return OUTPOST_CIRCUIT.gates.map(gate => ({ id: gate.id, ...OUTPOST_CIRCUIT.passage(gate.id) }));
 }
 
+/**
+ * Walled places the autopilot must leave and enter by their gates, in the shape
+ * `world.enclosures` takes (see src/autopilot.js): the outpost, and the forward
+ * stockade on the border.
+ */
+export const enclosureOf = (circuit, id, name) => Object.freeze({
+  id, name,
+  contains: (x, z) => circuit.outward(x, z) < 12,
+  gates: Object.freeze(circuit.gates.map(gate => {
+    // `passage` walks from beyond the ditch (`from`) to well inside the wall (`to`).
+    const walk = circuit.passage(gate.id, 14);
+    return Object.freeze({ id: gate.id, outer: Object.freeze({ x: walk.from.x, z: walk.from.z }), inner: Object.freeze({ x: walk.to.x, z: walk.to.z }) });
+  })),
+});
+
 export { FORT_STANDARD };
 
 // ---------------------------------------------------------------------------

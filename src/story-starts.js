@@ -25,5 +25,20 @@ export const STORY_STARTS = Object.freeze([
   }),
 ]);
 
+/**
+ * Open ground beside `stand` to begin on: the command tent, like most places
+ * worth standing next to, is solid, so the ring around it is searched outward
+ * until `standable(x, z)` agrees, with the horse given room of its own.
+ */
+export function startingSpot(stand, standable, { reaches = [2.6, 3.4, 4.5, 6, 8.5] } = {}) {
+  if (!stand || typeof standable !== 'function') return null;
+  for (const reach of reaches) for (let step = 0; step < 12; step++) {
+    const angle = step * Math.PI / 6;
+    const x = stand.x + Math.sin(angle) * reach, z = stand.z + Math.cos(angle) * reach;
+    if (standable(x, z)) return { x, z, reach };
+  }
+  return null;
+}
+
 export const newestStart = () => STORY_STARTS.find(entry => entry.newest) ?? null;
 export const storyStart = id => STORY_STARTS.find(entry => entry.id === id) ?? null;

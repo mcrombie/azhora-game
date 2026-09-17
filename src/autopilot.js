@@ -34,6 +34,31 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const angleTo = (from, to) => Math.atan2(-(to.x - from.x), -(to.z - from.z)); // camera yaw that faces `to`
 const wrap = angle => Math.atan2(Math.sin(angle), Math.cos(angle));
 
+/**
+ * What a straight walk to a point would cost: its distance, with ground that
+ * cannot be walked counted dearly. The driftwood on the far bank of the Caloss is
+ * nearer in a straight line than the pile on this side and a river away on foot.
+ */
+export function walkCost(from, to, world, radius = .4) {
+  const gap = distance(from, to), steps = Math.max(1, Math.ceil(gap / 2.5));
+  let blocked = 0;
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps;
+    if (!canStand(from.x + (to.x - from.x) * t, from.z + (to.z - from.z) * t, world, radius)) blocked++;
+  }
+  return gap + blocked * 30;
+}
+
+/** The one of `places` that is easiest to walk to, water and walls counted. */
+export function easiestOf(places, from, world) {
+  let best = null, bestCost = Infinity;
+  for (const place of places) {
+    const cost = walkCost(from, place, world);
+    if (cost < bestCost) { best = place; bestCost = cost; }
+  }
+  return best;
+}
+
 /** Camera-relative movement input that walks the character along a world direction. */
 export function moveInput(yaw, dx, dz, run = false) {
   const length = Math.hypot(dx, dz);
@@ -233,6 +258,15 @@ export function planGoal(snapshot, world) {
   if (snapshot.combat.phase === 'active') return { kind: 'fight', intent: 'Fighting' };
   if (snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
   if (snapshot.mapTutorial === 2) return { kind: 'open-trails', intent: 'Reading the local trails' };
+  // The campaign says which chapter the traveler is on. Follow it: a game begun at a
+  // later chapter (the opening screen offers one) has no earlier chapter to finish.
+  const chapter = snapshot.campaign?.chapterId;
+  if (chapter && questStage >= 10) {
+    if (snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
+    if (chapter === 'suval-envoy' && snapshot.border) return borderGoal(snapshot, world);
+    if (chapter === 'moros-camp' && snapshot.moros) return morosGoal(snapshot, world);
+    if (chapter === 'luscia-aftermath' && snapshot.luscia) return lusciaGoal(snapshot, world);
+  }
   if (!snapshot.weapon.usable) {
     if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
     const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
@@ -260,7 +294,7 @@ export function planGoal(snapshot, world) {
   if (!journey?.started) return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };
   if (journey.complete) return lusciaGoal(snapshot, world);
   if (journey.stage === 'repair-bridge' && (snapshot.inventory.sticks ?? 0) < 3) {
-    const site = nearestOf((world.stickSites ?? []).filter(site => !site.collected), snapshot.position);
+    const site = easiestOf((world.stickSites ?? []).filter(site => !site.collected), snapshot.position, world);
     if (site) return { kind: 'use', target: site, radius: 1.5, siteId: site.id, intent: 'Gathering driftwood' };
     return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Asking Hollis for timber' };
   }

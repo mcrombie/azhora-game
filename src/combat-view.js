@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createCharacter, createGoblin, createWolf } from './characters.js';
+import { createCharacter, createGoblin, createWolf, setShadowCasting, groundShadow } from './characters.js';
 
 // A handful of pooled effects and three articulated actors; nothing allocates
 // new geometry during a swing. Combat rules remain independent of the renderer.
@@ -38,6 +38,8 @@ export function createCombatView(scene, world, camera) {
   }
   function createEnemy(enemy,index) {
     const actor=enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):createGoblin({variant:index});scene.add(actor.group);
+    // A fight is a crowd of articulated figures: each shadow costs as much as the figure.
+    setShadowCasting(actor,false);const enemyShade=groundShadow(enemy.kind==='wolf'?.3:.34);actor.group.add(enemyShade);
     const tell=new THREE.Group();scene.add(tell);
     const sector=new THREE.Mesh(new THREE.CircleGeometry(2.3,32,-.85,1.7),new THREE.MeshBasicMaterial({color:0xeab34f,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     // In local coordinates +Y of the disc becomes +Z on the ground.
@@ -52,6 +54,7 @@ export function createCombatView(scene, world, camera) {
   }
   function createAlly(ally) {
     const actor=createCharacter(ally.model?{...ally.model,armed:true}:{role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
+    setShadowCasting(actor,false);actor.group.add(groundShadow());
     const badge=document.createElement('div');badge.className='enemy-badge ally';
     const name=document.createElement('span');name.textContent=ally.name||'Legionary';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);

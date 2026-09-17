@@ -13,6 +13,7 @@
     "test:road": "node scripts/launch.cjs --smoke-test --traverse-road",
     "test:checkpoints": "node scripts/launch.cjs --smoke-test --road-checks",
     "test:autoplay": "node scripts/launch.cjs --smoke-test --autoplay-checks",
+    "test:autoplay:leg": "node scripts/launch.cjs --smoke-test --autoplay-checks --autoplay-from=solis-parley",
     "test:window": "node scripts/launch.cjs --window-test",
     "map:refresh": "node scripts/export-world-map.mjs",
     "test:forest": "node scripts/launch.cjs --smoke-test --forest-checks",

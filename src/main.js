@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
-import { createCharacter, createDog, createHorse, makeQuestMarker } from './characters.js';
+import { createCharacter, createDog, createHorse, makeQuestMarker, setShadowCasting } from './characters.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -54,7 +54,7 @@ import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FI
 import { createDrentBirds } from './drent-birds.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
-import { newestStart } from './story-starts.js';
+import { newestStart, storyStart, startingSpot } from './story-starts.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -424,8 +424,9 @@ function init() {
   }
   // The opening screen's other way in: stand where the newest built chapter begins, with the road behind you.
   // Nothing is saved from this start, so a saved adventure is never overwritten (src/story-starts.js).
-  function beginNewestChapter(){
-    const entry=newestStart(),stand=entry&&world.npcPositions[entry.beside];
+  function beginNewestChapter(){return beginStoryStart(newestStart());}
+  function beginStoryStart(entry){
+    const stand=entry&&world.npcPositions[entry.beside];
     if(!entry||!stand||!['opening','playing','pause','journal','testing'].includes(mode))return false;
     campaign.restore(createCampaign().snapshot());for(const id of entry.completed)campaign.completeChapter(id);
     questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=true;meadowCleared=true;
@@ -433,10 +434,11 @@ function init() {
     const purse=inventory.count(COPPER_ITEM);if(purse<entry.purse)inventory.add(COPPER_ITEM,entry.purse-purse);
     combat.startPractice(world.training);combat.finishPractice();weapons.repair();
     journey.start();syncJourney();if(!border.state.started)border.start();
-    const spot={x:stand.x+3.4,z:stand.z+3.4};
+    const spot=startingSpot(stand,(x,z)=>canStand(x,z,world,.45));
+    if(!spot){toast('There is no room to stand where that chapter begins.','THE NEWEST CHAPTER');return false;}
     player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;
     yaw=Math.atan2(-(stand.x-spot.x),-(stand.z-spot.z));pitch=.35;distance=targetDistance=8;
-    if(entry.horse&&!riding.owned){const hitch={x:spot.x+2.6,z:spot.z-2.2};if(riding.grant(hitch,yaw).ok){riding.teach();placeOwnHorse();}}
+    if(entry.horse&&!riding.owned){const hitch=startingSpot(spot,(x,z)=>canStand(x,z,world,RIDE.radius),{reaches:[3,4.5,6]});if(hitch&&riding.grant(hitch,yaw).ok){riding.teach();placeOwnHorse();}}
     mapFog.reveal(spot.x,spot.z);
     mode='playing';document.body.classList.add('playing');show('opening',false);show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('testing-badge',true);
     refreshQuest();refreshChart();inventory.refresh();stopInput();settleCamera();canvas.focus();
@@ -1201,7 +1203,7 @@ function init() {
   $('quality').onclick=()=>{fullQuality=!fullQuality;renderer.setPixelRatio(fullQuality?Math.min(devicePixelRatio,1.7):1);renderer.shadowMap.enabled=fullQuality;$('quality').textContent='Graphics: '+(fullQuality?'full':'light');};
   $('sound').onclick=()=>{audio??=createAudio();$('sound').textContent=audio.toggle()?'Sound on':'Sound off';};
   // Autoplay: the computer plays the road with ordinary inputs; any trusted key or click takes control back.
-  const autopilotWorld={bounds:world.bounds,colliders:world.colliders,heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
+  const autopilotWorld={bounds:world.bounds,colliders:world.colliders,nearColliders:(x,z,reach,out)=>world.nearColliders(x,z,reach,out),heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
     repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border};
@@ -1210,7 +1212,7 @@ function init() {
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     journey:{started:journey.state.started,stage:journey.view().stage,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
-    mapTutorial:mapTutorial.step,
+    mapTutorial:mapTutorial.step,campaign:{chapterId:campaign.view().chapterId},
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
     border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
@@ -1533,6 +1535,8 @@ function init() {
         if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(npc.pace||2.4)),bx=pos.x,bz=pos.z;moveCharacter(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,world);pos.y=world.heightAt(pos.x,pos.z);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1});
         const d=pos.distanceTo(player.group.position)+(npc.dog?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
+        // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
+        {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
         npc.marker.visible=(questStage===1&&npc.id==='harbormaster')||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
         if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
         if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
@@ -1720,7 +1724,7 @@ function init() {
       },
       runForestChecks:()=>runForestSmoke(forestHooks()),verifyForestReload:expected=>verifyForestReload(forestHooks(),expected),
       runRoadChecks:()=>runRoadCheckSmoke(focusedRoadHooks()),
-      runAutoplayChecks:()=>runAutoplaySmoke({...focusedRoadHooks(),autopilot,start:startAutopilot,stop:stopAutopilot,readState:state}),
+      runAutoplayChecks:(options={})=>runAutoplaySmoke({...focusedRoadHooks(),autopilot,start:startAutopilot,stop:stopAutopilot,readState:state,beginAt:id=>beginStoryStart(storyStart(id)),...options}),
       autoplay:()=>({active:autopilot.active,intent:autopilot.intent,stopReason:autopilot.stopReason}),
       verifyReload:expected=>verifyRoadReload({...focusedRoadHooks(),continueRoad:()=>{$('continue-road').click();return mode==='playing';}},expected),
       async runRecoveryCheck(){

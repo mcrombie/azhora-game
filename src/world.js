@@ -12,7 +12,7 @@ import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint,
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { createSigns, SIGN_COLOURS } from './signs.js';
 import { buildMorosWorks } from './moros-works.js';
-import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH } from './outpost.js';
+import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH, OUTPOST_CIRCUIT, STOCKADE_CIRCUIT, enclosureOf } from './outpost.js';
 import { WAYSIDE_LANDMARKS } from './wayside.js';
 import { buildFrontierWorks } from './frontier-works.js';
 import { buildPlaceWorks } from './place-works.js';
@@ -1485,7 +1485,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     solisRoute: SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })),
     westSuvalMetrics: westSuval.metrics,
     setSolisHolder: westSuval.setHolder,
-    enclosures: SOLIS_ENCLOSURES,
+    // Walled places the autopilot leaves and enters by their gates: Solis and its court, the outpost, the stockade.
+    enclosures: [...SOLIS_ENCLOSURES, enclosureOf(OUTPOST_CIRCUIT, 'outpost', 'The Ambroni outpost'), enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade')],
     solisHolder: westSuval.holder,
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
