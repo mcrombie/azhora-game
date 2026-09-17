@@ -216,8 +216,7 @@ conversation hook, frame hook, reward, chapter toast, a comment),
 
 ## Tests and smokes
 
-- `npm test`: **414 tests, 414 pass** (402 before this branch's later milestones;
-  the base had 376 + the riding tests). New files, both in `package.json`'s list:
+- `npm test`: **414 tests, 414 pass**. New files, both in `package.json`'s list:
   `tests/west-suval.test.js` (10: the region against the atlas, the road and its
   signpost, a rider on the road and through the gate and at the hitching rail, the
   closed circuit sampled every 2 m with both passages walked end to end, the
