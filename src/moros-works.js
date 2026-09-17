@@ -330,7 +330,7 @@ function buildMorosWayside({ parent, heightAt, push, circle, box, signs }) {
     const lean = { x: f.x - Math.sin(gapAngle) * 3.2, z: f.z - Math.cos(gapAngle) * 3.2 }, ly = y(lean.x, lean.z);
     b.frame(lean.x, ly, lean.z, gapAngle, () => {
       for (const sx of [-1, 1]) b.beam('#6d5439', [sx * 1.3, 0, .6], [sx * 1.3, 1.6, .6], .1);
-      b.quad('#7d7a55', [-1.5, 1.7, .7], [1.5, 1.7, .7], [1.5, .1, -1.1], [-1.5, .1, -1.1]);
+      b.sheet('#7d7a55', [-1.5, 1.7, .7], [1.5, 1.7, .7], [1.5, .1, -1.1], [-1.5, .1, -1.1]);
       b.block('#7b6f55', 0, 0, -.6, 2.6, .3, .8);
     });
     circle(lean.x, lean.z, 1.5, 'fold-shelter');

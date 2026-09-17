@@ -19,8 +19,10 @@ import { isOut } from './occupation.js';
 const EMPIRE = Object.freeze({ holds: 'empire', region: 'Moros Plain' });
 const COALITION = Object.freeze({ holds: 'coalition', region: 'Moros Plain' });
 const faceToward = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
+/** Ambient people are drawn only within this many metres; quest people keep the game's own longer range. */
+export const TOWN_LIFE_VIEW_RANGE = 80;
 const person = (id, name, role, modelRole, spot, yaw, lines, extra = {}) => Object.freeze({
-  id, name, role, modelRole, x: spot.x, z: spot.z, yaw, lines: Object.freeze(lines), ...extra,
+  id, name, role, modelRole, x: spot.x, z: spot.z, yaw, lines: Object.freeze(lines), viewRange: TOWN_LIFE_VIEW_RANGE, ...extra,
 });
 const RED = 0x8f3b30, COALITION_BLUE = 0x3f5f86, COALITION_SLATE = 0x55636f, ELODI = 0x2b2b2f;
 
@@ -43,18 +45,11 @@ export const TOWN_LIFE_NPCS = Object.freeze([
     'The hall is open to anyone with a quarrel or a prayer. Most people bring both.',
     'We buried nine from the Lauvel in the yard behind. Their families are still coming up the road to find them.',
   ], { color: 0x6f6a5c }),
-  person('life-town-washer', 'Nell', 'Lumber Town washerwoman', 'acorn-cook', PLACE_STANDS['life-town-washer'], PLACE_STANDS['life-town-washer'].yaw, [
-    'Mind the sheets. They are cleaner than you are, and I mean to keep it that way.',
-    'The sawyers go through shirts the way the saw goes through pine.',
-  ], { color: 0x7d8a86 }),
   person('life-town-watch-north', 'Watchman Tobias', 'Town watch, north gate', 'bridge-keeper', PLACE_STANDS['life-town-watch-north'], PLACE_STANDS['life-town-watch-north'].yaw, [
-    'Town watch. We have shut these gates at dark since the Lauvel, and nobody has argued.',
+    'Town watch. We have shut both gates at dark since the Lauvel, and nobody has argued.',
     'Travelers are welcome in Lumber Town. Armies go round it, if they know what is good for the timber.',
+    'The road south goes out to the Moros. The Legion leaves by that gate in a column and comes back in ones and twos.',
   ], { color: 0x6b5d45 }),
-  person('life-town-watch-south', 'Watchman Emmet', 'Town watch, south gate', 'bridge-keeper', PLACE_STANDS['life-town-watch-south'], PLACE_STANDS['life-town-watch-south'].yaw, [
-    'That is the road to the Moros. The Legion goes out this way in a column and comes back in ones and twos.',
-    'The ostler is by the stable yard if you have business with a horse. Mind the paddock rails; he counts them.',
-  ], { color: 0x5d6a52 }),
   person('life-crossing-ferryman', 'Cade', 'Ferryman of the Caloss', 'reed-worker', PLACE_STANDS['life-crossing-ferryman'], PLACE_STANDS['life-crossing-ferryman'].yaw, [
     'Before the bridge there was me. When the bridge is down, there is still me.',
     'Hollis thinks timber solves everything. The river thinks otherwise, every spring.',
@@ -68,9 +63,6 @@ export const TOWN_LIFE_NPCS = Object.freeze([
   person('life-outpost-rear-north', 'Legionary Varus', 'Ambroni Legion soldier', 'legion-soldier', campPoint(-54.5, .2), -Math.PI / 2, [
     'Rear gate. Wagons and the horse line use it. Hired swords use the main gate.',
     'The ditch is wider than a man can jump and deeper than he is tall. Use the causeway.',
-  ], { ...EMPIRE, color: RED }),
-  person('life-outpost-rear-south', 'Legionary Orm', 'Ambroni Legion soldier', 'legion-soldier', campPoint(-54.5, 9.8), -Math.PI / 2, [
-    'State your business or keep walking.',
     'Nobody goes up on the wall walk without an order. If you want to see the plain, look through the gate.',
   ], { ...EMPIRE, color: RED }),
   person('life-outpost-smith', 'Armourer Petrus', 'Legion armourer', 'forest-woodcutter', campPoint(-30.5, -8.3), .4, [
@@ -154,7 +146,6 @@ export const WALL_FIGURES = Object.freeze([
   figure('wall-legion-main-a', 'legion-soldier', towerTop(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-a'), outward(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-a'), EMPIRE),
   figure('wall-legion-main-b', 'legion-soldier', towerTop(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-b'), outward(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-b'), EMPIRE),
   figure('wall-legion-north', 'legion-soldier', onWalk(OUTPOST_CIRCUIT, 0, 16), 0, EMPIRE),
-  figure('wall-legion-rear', 'legion-soldier', towerTop(OUTPOST_CIRCUIT, 'outpost-rear-gate-tower-a'), outward(OUTPOST_CIRCUIT, 'outpost-rear-gate-tower-a'), EMPIRE),
   // The Coalition, if the outpost falls.
   figure('wall-coalition-main-a', 'suvali-guard', towerTop(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-a'), outward(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-a'), { ...COALITION, tunic: COALITION_BLUE }),
   figure('wall-coalition-main-b', 'suvali-guard', towerTop(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-b'), outward(OUTPOST_CIRCUIT, 'outpost-main-gate-tower-b'), { ...COALITION, tunic: COALITION_SLATE }),
@@ -175,7 +166,7 @@ export const WALL_FIGURES = Object.freeze([
  * occupation control map and a clock, and shows only the figures that are out
  * and within `range`.
  */
-export function createWallWatch({ scene, createCharacter, heightAt, range = 150 }) {
+export function createWallWatch({ scene, createCharacter, heightAt, range = 95 }) {
   const figures = WALL_FIGURES.map(entry => {
     const actor = createCharacter({ role: entry.role, tunic: entry.tunic, look: entry.look ?? null });
     actor.group.position.set(entry.x, heightAt(entry.x, entry.z) + entry.lift, entry.z);

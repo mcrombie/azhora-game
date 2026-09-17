@@ -130,9 +130,7 @@ export const PLACE_STANDS = Object.freeze({
   'life-avrel-farmer': avrel(19, 15, { yaw: -2.4 }),
   'life-town-smith': town(-24.5, -6.5, { yaw: .9 }),
   'life-town-hall': town(-32.5, 6.5, { yaw: -2.2 }),
-  'life-town-washer': town(15, -15.2, { yaw: 2.6 }),
   'life-town-watch-north': town(-43.5, -6.2, { yaw: 1.2 }),
-  'life-town-watch-south': town(37.5, -6, { yaw: -.9 }),
   'life-crossing-ferryman': crossing(12, 30, { yaw: .9 }),
   'life-lauvel-healer': lauvel(-25.5, -3, { yaw: -1.2 }),
 });

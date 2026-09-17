@@ -38,9 +38,10 @@ export function drawCircuit(circuit, { parent, heightAt, colliders, style = 'tim
         if (style === 'timber') {
           // The rampart: an earth bank across the whole thickness.
           const toe = t, top = 1.7;
-          b.quad(C.earth, [X(toe), 0, -span / 2], [X(toe), 0, span / 2], [X(1.05), top, span / 2], [X(1.05), top, -span / 2]);
-          b.quad(C.earthTop, [X(1.05), top, -span / 2], [X(1.05), top, span / 2], [X(-.7), top, span / 2], [X(-.7), top, -span / 2]);
-          b.quad(C.earth, [X(-.7), top, -span / 2], [X(-.7), top, span / 2], [X(-toe), .05, span / 2], [X(-toe), .05, -span / 2]);
+          // Which face is outward depends on the frame's handedness, so the bank's three faces carry both windings.
+          b.sheet(C.earth, [X(toe), 0, -span / 2], [X(toe), 0, span / 2], [X(1.05), top, span / 2], [X(1.05), top, -span / 2]);
+          b.sheet(C.earthTop, [X(1.05), top, -span / 2], [X(1.05), top, span / 2], [X(-.7), top, span / 2], [X(-.7), top, -span / 2]);
+          b.sheet(C.earth, [X(-.7), top, -span / 2], [X(-.7), top, span / 2], [X(-toe), .05, span / 2], [X(-toe), .05, -span / 2]);
           // Squared stakes, sharpened, on the outer edge of the bank.
           const count = Math.max(1, Math.round(span / .38));
           for (let s = 0; s < count; s++) {

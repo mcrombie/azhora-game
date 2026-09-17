@@ -1333,7 +1333,7 @@ function init() {
         if(npc.hidden){npc.actor.group.visible=false;npc.marker.visible=false;continue;}
         const pos=npc.actor.group.position,home=npc.id===BEGGAR_NPC.id&&beggarStep?beggarStep.target:world.npcPositions[npc.id];
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
-        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>180){pos.set(home.x,world.heightAt(home.x,home.z),home.z);npc.actor.group.visible=false;npc.marker.visible=false;continue;}
+        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z),home.z);npc.actor.group.visible=false;npc.marker.visible=false;continue;}
         npc.actor.group.visible=true;
         const alarm=combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         const destX=home.x+(alarm?(npc.id==='warden'?3:npc.id==='harbormaster'?4:-3):0),destZ=home.z+(alarm?2:0);

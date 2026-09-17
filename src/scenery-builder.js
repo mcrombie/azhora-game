@@ -12,7 +12,11 @@ import * as THREE from 'three';
 const SHARED = new Map();
 function sharedMaterial() {
   if (!SHARED.has('scenery')) {
-    const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, metalness: 0, flatShading: true, side: THREE.DoubleSide });
+    // Front faces only: solid timbers and walls are closed, and the few thin
+    // things seen from both sides (canvas, roofs over open sheds, flags) are
+    // emitted with both windings by `sheet`. Culling the backs of thousands of
+    // boxes is most of what keeps a fort cheap to draw.
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, metalness: 0, flatShading: true });
     SHARED.set('scenery', material);
   }
   return SHARED.get('scenery');
@@ -91,21 +95,21 @@ export function createSceneryBuilder(name = 'Hand-built place') {
       for (const v of [va, vb, vc]) { positions.push(v.x, v.y, v.z); normals.push(n.x, n.y, n.z); colors.push(color.r, color.g, color.b); }
     },
     quad(tint, a, b, c, d) { api.triangle(tint, a, b, c); api.triangle(tint, a, c, d); },
-    /** A thin sheet: canvas, flags, boards. The shared material is double-sided and flat-shaded, so either winding lights alike. */
-    sheet(tint, a, b, c, d) { api.quad(tint, a, b, c, d); },
+    /** A thin sheet seen from both sides: canvas, flags, a roof over an open shed. Both windings are emitted. */
+    sheet(tint, a, b, c, d) { api.quad(tint, a, b, c, d); api.quad(tint, a, d, c, b); },
     /**
      * A gable roof over a `width` by `depth` rectangle centred at (x, y, z), its
-     * ridge running along local z. Eaves overhang by `eave`; gables are closed.
+     * ridge running along local z. Its slopes and gables show from beneath too,
+     * so it serves an open shed as well as a closed house.
      */
     roof(tint, x, y, z, width, depth, rise, yaw = 0, gable = tint) {
       api.frame(x, y, z, yaw, () => {
         const w = width / 2, d = depth / 2;
-        api.quad(tint, [-w, 0, -d], [-w, 0, d], [0, rise, d], [0, rise, -d]);
-        api.quad(tint, [w, 0, d], [w, 0, -d], [0, rise, -d], [0, rise, d]);
-        api.quad(tint, [-w, -.12, d], [-w, -.12, -d], [-w, 0, -d], [-w, 0, d]);
-        api.quad(tint, [w, -.12, -d], [w, -.12, d], [w, 0, d], [w, 0, -d]);
-        api.triangle(gable, [-w, 0, d], [w, 0, d], [0, rise, d]);
-        api.triangle(gable, [w, 0, -d], [-w, 0, -d], [0, rise, -d]);
+        api.sheet(tint, [-w, 0, -d], [-w, 0, d], [0, rise, d], [0, rise, -d]);
+        api.sheet(tint, [w, 0, d], [w, 0, -d], [0, rise, -d], [0, rise, d]);
+        api.quad(tint, [-w, -.12, -d], [-w, -.12, d], [-w, 0, d], [-w, 0, -d]);
+        api.quad(tint, [w, -.12, d], [w, -.12, -d], [w, 0, -d], [w, 0, d]);
+        for (const [a, b, c] of [[[-w, 0, d], [w, 0, d], [0, rise, d]], [[w, 0, -d], [-w, 0, -d], [0, rise, -d]]]) { api.triangle(gable, a, b, c); api.triangle(gable, a, c, b); }
       });
     },
     /** A ridge tent: canvas to the ground on both sides, closed ends. */

@@ -55,7 +55,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
         const px = -width / 2 + width * i / (posts - 1);
         b.block(WOOD, px, 0, -depth / 2, .2, high, .2); b.block(WOOD, px, 0, depth / 2, .2, low, .2);
       }
-      b.quad(roof, [-width / 2 - .3, high + .05, -depth / 2 - .4], [width / 2 + .3, high + .05, -depth / 2 - .4], [width / 2 + .3, low + .05, depth / 2 + .3], [-width / 2 - .3, low + .05, depth / 2 + .3]);
+      b.sheet(roof, [-width / 2 - .3, high + .05, -depth / 2 - .4], [width / 2 + .3, high + .05, -depth / 2 - .4], [width / 2 + .3, low + .05, depth / 2 + .3], [-width / 2 - .3, low + .05, depth / 2 + .3]);
       b.box(WOOD_DARK, 0, high - .05, -depth / 2, width + .2, .14, .14);
       if (walls) b.block('#8b6c4a', 0, 0, depth / 2 - .05, width, low - .1, .12);
     });
@@ -160,7 +160,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       const p = A.corvanPost, py = y(p.x, p.z);
       b.frame(p.x, py, p.z, p.yaw, () => {
         for (const sx of [-1, 1]) { b.block(WOOD, sx * 2.3, 0, -1.7, .18, 2.9, .18); b.block(WOOD, sx * 2.3, 0, 1.7, .18, 2.0, .18); }
-        b.quad('#b8a374', [-2.7, 3.0, -2.1], [2.7, 3.0, -2.1], [2.7, 2.05, 2.1], [-2.7, 2.05, 2.1]);
+        b.sheet('#b8a374', [-2.7, 3.0, -2.1], [2.7, 3.0, -2.1], [2.7, 2.05, 2.1], [-2.7, 2.05, 2.1]);
         b.block('#8b6c4a', 0, 0, 1.65, 4.6, 1.9, .12);
         b.block(WOOD, 3.4, 0, 0, .14, 4.4, .14);
         b.box(WOOD_DARK, 3.4, 4.2, .55, .08, .08, 1.3);
@@ -259,7 +259,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
         for (let row = 0; row < 8; row++) for (const xx of [-2.5, 2.5]) b.beam('#6d5439', [xx, .35 + row * .3, -2.1], [xx, .35 + row * .3, 2.1], .3);
         b.roof('#7a6a4e', 0, 2.55, 0, 6.2, 5.2, 1.6, Math.PI / 2);
         for (const sx of [-1, 1]) b.block(WOOD, sx * 2.4, 0, -3.1, .15, 2.4, .15);
-        b.quad('#8a7a55', [-2.8, 2.5, -2.2], [2.8, 2.5, -2.2], [2.8, 2.3, -3.4], [-2.8, 2.3, -3.4]);
+        b.sheet('#8a7a55', [-2.8, 2.5, -2.2], [2.8, 2.5, -2.2], [2.8, 2.3, -3.4], [-2.8, 2.3, -3.4]);
         b.block('#2e2620', 0, 0, -2.16, .9, 1.9, .05);
       });
       footprint(hut.x, hut.z, yaw, 5.4, 4.4, 'foresters-hut');
@@ -496,7 +496,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       building(b, { x: s.x, z: s.z, yaw: s.yaw, width: s.width, depth: s.depth }, { wall: '#9a9888', roof: '#5f5f5a', height: 2.6, chimney: true, kind: 'smithy' });
       b.frame(s.x, sy, s.z, s.yaw, () => {
         for (const sx of [-1, 1]) b.block(WOOD, sx * 3, 0, -3.8, .18, 2.6, .18);
-        b.quad('#6d5a43', [-3.4, 2.75, -2.6], [3.4, 2.75, -2.6], [3.4, 2.5, -4.2], [-3.4, 2.5, -4.2]);
+        b.sheet('#6d5a43', [-3.4, 2.75, -2.6], [3.4, 2.75, -2.6], [3.4, 2.5, -4.2], [-3.4, 2.5, -4.2]);
         b.cylinder('#6d5439', 1.3, 0, -3.2, .3, .5); b.block(IRON, 1.3, .5, -3.2, .5, .22, .2);
         b.block('#3b3530', -1.6, 0, -2.9, .9, .9, .6); b.box('#9c4a26', -1.6, .95, -2.9, .6, .06, .4);
       });
