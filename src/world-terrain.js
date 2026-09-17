@@ -6,7 +6,7 @@
  */
 import {
   VILLAGE, villageToWorld, worldToVillage, villageShoreLocalZ, landDistance, terrainMix, relief,
-  REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS,
+  REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS, TERRAIN_PADS,
 } from './region-world.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -38,7 +38,19 @@ export function regionBase(x, z) {
   const mix = terrainMix(x, z), inland = mix.base + relief(x, z, mix.amp, mix.wave);
   const distance = landDistance(x, z);
   const beach = lerp(-5.6, 1.4, smooth(-26, 6, distance));
-  return lerp(beach, inland, smooth(2, 40, distance));
+  return padded(x, z, lerp(beach, inland, smooth(2, 40, distance)));
+}
+
+/** Built ground (`TERRAIN_PADS`) replaces the relief it stands on and fades back into it at its edge. */
+function padded(x, z, natural) {
+  let height = natural;
+  for (const pad of TERRAIN_PADS) {
+    const outside = Math.max(Math.abs(x - pad.x) - pad.halfX, Math.abs(z - pad.z) - pad.halfZ, 0);
+    if (outside >= pad.feather) continue;
+    const plane = pad.level + (x - pad.x) * pad.slopeX + (z - pad.z) * pad.slopeZ;
+    height = lerp(plane, height, smooth(0, pad.feather, outside));
+  }
+  return height;
 }
 
 /** The land without water features: the two fields, blended where they meet. */

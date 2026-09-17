@@ -95,9 +95,18 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
     const length = Math.hypot(c.x - a.x, c.z - a.z), n = Math.max(1, Math.round(length / 2.2));
     for (let i = 0; i <= n; i++) { const px = a.x + (c.x - a.x) * i / n, pz = a.z + (c.z - a.z) * i / n; b.block(WOOD, px, y(px, pz), pz, .14, height + .1, .14); }
     for (const h of [.5, height - .1]) b.beam(tint, [a.x, y(a.x, a.z) + h, a.z], [c.x, y(c.x, c.z) + h, c.z], .09, .11);
-    const m = Math.max(1, Math.ceil(length / .75));
-    for (let i = 0; i <= m; i++) circle(a.x + (c.x - a.x) * i / m, a.z + (c.z - a.z) * i / m, .28, kind);
+    lineColliders(a, c, .28, kind);
   };
+  /**
+   * A barrier along a line: one box where it runs square to the world, otherwise
+   * circles spaced so the gaps between them are narrower than a person.
+   */
+  function lineColliders(a, c, half, kind) {
+    const dx = c.x - a.x, dz = c.z - a.z, length = Math.hypot(dx, dz);
+    if (Math.abs(dx) < .01 || Math.abs(dz) < .01) return push({ x: (a.x + c.x) / 2, z: (a.z + c.z) / 2, hx: Math.abs(dx) / 2 + half, hz: Math.abs(dz) / 2 + half, kind });
+    const m = Math.max(1, Math.ceil(length / (half * 2 + .5)));
+    for (let i = 0; i <= m; i++) circle(a.x + dx * i / m, a.z + dz * i / m, half, kind);
+  }
   const stoneWall = (b, a, c, kind = 'field-wall', height = .95) => {
     const length = Math.hypot(c.x - a.x, c.z - a.z), n = Math.max(1, Math.round(length / .9));
     for (let i = 0; i <= n; i++) {
@@ -105,8 +114,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       b.rock(i % 3 ? STONE : STONE_DARK, px, py + height * .35, pz, .55, height * .42, .5, i * 1.3);
       b.rock('#a3a192', px, py + height * .8, pz, .42, height * .26, .4, i * .7);
     }
-    const m = Math.max(1, Math.ceil(length / .8));
-    for (let i = 0; i <= m; i++) circle(a.x + (c.x - a.x) * i / m, a.z + (c.z - a.z) * i / m, .45, kind);
+    lineColliders(a, c, .45, kind);
   };
   const barrel = (b, x, z) => { const g = y(x, z); b.cylinder('#8c6a47', x, g, z, .38, .95); b.cylinder(IRON, x, g + .2, z, .4, .06); b.cylinder(IRON, x, g + .75, z, .4, .06); };
   const crate = (b, x, z, size = .8, yaw = 0) => b.block('#9c7a52', x, y(x, z), z, size, size, size, yaw);
@@ -337,8 +345,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
         const length = Math.hypot(e.x - a.x, e.z - a.z), n = Math.max(1, Math.round(length / 1.2));
         for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 1) / n, px = a.x + (e.x - a.x) * (t0 + t1) / 2, pz = a.z + (e.z - a.z) * (t0 + t1) / 2; b.block(i % 2 ? '#b0afa0' : '#a6a99a', px, y(px, pz) - .1, pz, Math.abs(e.x - a.x) > .1 ? length / n + .02 : .55, 1.15, Math.abs(e.z - a.z) > .1 ? length / n + .02 : .55); }
         b.beam('#c3c2b3', [a.x, y(a.x, a.z) + 1.08, a.z], [e.x, y(e.x, e.z) + 1.08, e.z], .7, .1);
-        const m = Math.ceil(length / .7);
-        for (let i = 0; i <= m; i++) circle(a.x + (e.x - a.x) * i / m, a.z + (e.z - a.z) * i / m, .35, 'shrine-court');
+        lineColliders(a, e, .35, 'shrine-court');
       };
       // The back wall to the east, and north and south returns that stop short of the road on the west.
       low(corner(w, -d), corner(w, d)); low(corner(w, -d), corner(-w + SHRINE_COURT.returnsStop, -d)); low(corner(w, d), corner(-w + SHRINE_COURT.returnsStop, d));
@@ -419,7 +426,13 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
           if (gap && Math.abs(t - .5) * length < gap) continue;
           const h = ragged(i, k), horizontal = Math.abs(x1 - x0) > Math.abs(z1 - z0);
           b.block(wallTint, px, hy - .1, pz, horizontal ? length / n + .02 : .45, h, horizontal ? .45 : length / n + .02);
-          push({ x: px, z: pz, hx: horizontal ? length / n / 2 + .01 : .23, hz: horizontal ? .23 : length / n / 2 + .01, kind: 'hamlet-wall' });
+        }
+        // One box for each stretch of wall either side of a doorway.
+        if (!gap) lineColliders({ x: x0, z: z0 }, { x: x1, z: z1 }, .23, 'hamlet-wall');
+        else {
+          const ux = (x1 - x0) / length, uz = (z1 - z0) / length, mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+          lineColliders({ x: x0, z: z0 }, { x: mx - ux * gap, z: mz - uz * gap }, .23, 'hamlet-wall');
+          lineColliders({ x: mx + ux * gap, z: mz + uz * gap }, { x: x1, z: z1 }, .23, 'hamlet-wall');
         }
       };
       run(x - w / 2, z - d / 2 * toward * -1, x + w / 2, z - d / 2 * toward * -1);             // back wall
@@ -467,7 +480,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
           b.block(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, .34, yaw);
           b.cone('#634833', w.x, wy + h, w.z, .25, .35, yaw + Math.PI / 4, 4);
         }
-        for (let k = 0; k <= 16; k++) { const w = side(s * (6 + k * .74)); circle(w.x, w.z, .32, 'town-palisade'); }
+        lineColliders(side(s * 6), side(s * 17.8), .32, 'town-palisade');
       }
       const beamA = side(-5.6), beamB = side(5.6);
       b.beam(WOOD_DARK, [beamA.x, gy + 4.3, beamA.z], [beamB.x, gy + 4.3, beamB.z], .3, .38);

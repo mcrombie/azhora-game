@@ -146,7 +146,7 @@ export function fortCircuit(spec) {
         hx: Math.abs(edge.dir.x) > .5 ? Math.abs(hi.x - lo.x) / 2 : thickness / 2,
         hz: Math.abs(edge.dir.z) > .5 ? Math.abs(hi.z - lo.z) / 2 : thickness / 2, kind: `${kind}-wall` });
     } else {
-      const r = thickness / 2, step = 1.2;
+      const r = thickness / 2, step = r * .8;
       const inset = (at, atEnd) => (atEnd ? 0 : r);   // stop a radius short of a gate passage
       const from = run.from + inset(run.from, run.from === 0), to = run.to - inset(run.to, Math.abs(run.to - edge.length) < 1e-6);
       const count = Math.max(1, Math.ceil((to - from) / step));
@@ -185,7 +185,7 @@ export function fortCircuit(spec) {
         // Stop a radius short of a causeway, so the causeway keeps its whole width.
         const r = S.ditchWidth / 2, from = p0 > 1e-6 ? p0 + r : p0, to = p1 < length - 1e-6 ? p1 - r : p1;
         if (to < from) continue;
-        const count = Math.max(1, Math.ceil((to - from) / 1.1));
+        const count = Math.max(1, Math.ceil((to - from) / (r * 1.15)));
         for (let k = 0; k <= count; k++) { const t = from + (to - from) * k / count; colliders.push({ x: a.x + d.x * t, z: a.z + d.z * t, r, kind: `${kind}-ditch` }); }
       }
     }

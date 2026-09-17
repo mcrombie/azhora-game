@@ -10,7 +10,7 @@
  * the day after the border battle is fought, lies outside the ditch.
  * Pure: no three, no DOM.
  */
-import { MAIN_ROAD, STORY_SITES } from './region-world.js';
+import { MAIN_ROAD, STORY_SITES, SOLIS_ROAD } from './region-world.js';
 import { fortCircuit, FORT_STANDARD } from './fortification.js';
 
 export const OUTPOST_CENTRE = Object.freeze({ x: STORY_SITES.legionCamp.x, z: STORY_SITES.legionCamp.z });
@@ -97,19 +97,26 @@ export { FORT_STANDARD };
 export const STOCKADE_CENTRE = Object.freeze({ x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z });
 const stockadePoint = (dx, dz) => Object.freeze({ x: STOCKADE_CENTRE.x + dx, z: STOCKADE_CENTRE.z + dz });
 /**
- * One gate in the west face, where the envoy's party stands under the truce, a
- * tower at each corner, the ditch and a wall walk all round. The causeway is
- * wide enough for the envoy's two spearmen to stand on it either side of him.
+ * One gate, in the south face where the road to Solis leaves the stockade's
+ * yard, a tower at each corner, the ditch and a wall walk all round. The track
+ * up from the Moros road comes round the west side to that gate.
  */
+const solisLeg = (() => { const a = SOLIS_ROAD[0], b = SOLIS_ROAD[1], l = Math.hypot(b.x - a.x, b.z - a.z); return { x: (b.x - a.x) / l, z: (b.z - a.z) / l }; })();
+const STOCKADE_HALF = 8;
+/** Where the Solis road crosses the south wall line, measured from the south-east corner along the south face. */
+const southGateAt = STOCKADE_HALF - solisLeg.x * STOCKADE_HALF / solisLeg.z;
 export const STOCKADE_CIRCUIT = fortCircuit({
   id: 'stockade', kind: 'stockade',
   corners: [stockadePoint(-8, -8), stockadePoint(8, -8), stockadePoint(8, 8), stockadePoint(-8, 8)],
-  gates: [{ id: 'stockade-gate', kind: 'main', edge: 3, at: 9.5, towers: false }],
-  standard: { wallThickness: 3.0, towerSize: 3.4, towerProjection: 0, causewayHalf: 7 },
+  gates: [{ id: 'stockade-gate', kind: 'main', edge: 2, at: southGateAt, towers: false }],
+  standard: { wallThickness: 3.0, towerSize: 3.4, towerProjection: 0 },
 });
+/** Outside the south gate, on the Solis road: where the track from the Moros road joins it. */
+export const STOCKADE_APPROACH = Object.freeze(stockadePoint(solisLeg.x * 16, solisLeg.z * 16));
+export const STOCKADE_TRACK_BEND = Object.freeze(stockadePoint(-15, 17));
 export const STOCKADE_LAYOUT = Object.freeze({
-  truce: stockadePoint(-2.5, 4),
-  notice: stockadePoint(2.5, 3.2),
-  shelter: stockadePoint(3, -3.5),
+  truce: stockadePoint(-3.6, 2.4),
+  notice: stockadePoint(-4, -3.6),
+  shelter: stockadePoint(3.4, -3.6),
 });
 export const STOCKADE_CLEARING = Object.freeze({ ...STOCKADE_CENTRE, r: 18 });

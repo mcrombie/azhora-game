@@ -25,7 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'side-empire', 'sound-advance', 'begin-assault', 'close-aftermath',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'enter-solis', 'side-empire', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -83,6 +83,8 @@ export const ROAD_CORRIDOR = 14;
  * the last stretch go straight, sliding around anything in the way.
  */
 export function nextWaypoint(position, target, world, memory = {}) {
+  const gateway = enclosureWaypoint(position, target, world);
+  if (gateway) return gateway;
   const trail = world.paths?.[0] ?? [];
   if (trail.length > 1) {
     const here = nearestVertex(trail, position), there = nearestVertex(trail, target);
@@ -116,6 +118,34 @@ export function nextWaypoint(position, target, world, memory = {}) {
     }
   }
   return { point: target, onTrail: false };
+}
+
+/**
+ * Walled places (`world.enclosures`, outermost first: Solis, then its Court of
+ * Oaths) are entered and left by their gates. When the traveler and the
+ * destination are on either side of a wall, leave the innermost place first or
+ * enter the outermost first: make for the near end of the cheapest gate, then
+ * walk its passage to the far end.
+ */
+export function enclosureWaypoint(position, target, world) {
+  const places = world.enclosures ?? [];
+  const leaving = [...places].reverse().find(place => place.contains(position.x, position.z) && !place.contains(target.x, target.z));
+  const place = leaving ?? places.find(candidate => !candidate.contains(position.x, position.z) && candidate.contains(target.x, target.z));
+  if (place) {
+    const inside = place === leaving;
+    let best = null, bestCost = Infinity;
+    for (const gate of place.gates) {
+      const near = inside ? gate.inner : gate.outer, far = inside ? gate.outer : gate.inner;
+      const cost = distance(position, near) + distance(far, target);
+      if (cost < bestCost) { bestCost = cost; best = { near, far }; }
+    }
+    // Already in the gate's corridor: keep going through. Otherwise head for its mouth.
+    const dx = best.far.x - best.near.x, dz = best.far.z - best.near.z, length = dx * dx + dz * dz;
+    const t = length ? Math.max(0, Math.min(1, ((position.x - best.near.x) * dx + (position.z - best.near.z) * dz) / length)) : 0;
+    const corridor = Math.hypot(position.x - best.near.x - dx * t, position.z - best.near.z - dz * t);
+    return { point: corridor < 1.6 ? best.far : best.near, onTrail: false, gate: true };
+  }
+  return null;
 }
 
 /** Whether a straight walk from `from` to `to` stays on standable ground. */
@@ -258,7 +288,7 @@ export function aftermathGoal(snapshot, world) {
   return { kind: 'wait', intent: 'Holding with the company' };
 }
 
-/** The Legate's terms, the envoy at the stockade, and the line. The autopilot keeps the Empire's contract. */
+/** The Legate's terms, the gate and the envoy at Solis, the report and the march, and the line. The autopilot keeps the Empire's contract. */
 export function borderGoal(snapshot, world) {
   const border = snapshot.border;
   if (border?.complete && snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);

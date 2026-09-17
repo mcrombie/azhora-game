@@ -81,6 +81,12 @@ export const CLUSTERS = Object.freeze([
   cluster('moros-sheep', [-430, 325], 28, { note: 'The Moros sheep range.' }),
   cluster('caloss-bank-birds', [-284, 92], 22, { note: 'The bank birds upstream of the crossing.' }),
   cluster('suval-hares', [-108, 379], 34, { note: 'The rock hares in the East Suval hills.' }),
+  // West Suval (src/west-suval.js): Solis is laid out in its own frame from its centre; these keep the story's sites on it.
+  cluster('solis', [-297, 551], 80, { note: 'Solis inside its walls, its ditch, the quay and the road outside the Gate of Sun Horses, where the day after the border battle is fought.' }),
+  cluster('coalition-camp', [-199, 551], 42, { pivot: [-297, 551], note: 'The Coalition’s camp east of the walls, its tent lines and picket line. It hangs from the city, so the two keep their distance.' }),
+  cluster('west-suval-fold', [-392, 433], 16, { note: 'The shepherds’ fold on the downs west of the Solis road.' }),
+  cluster('west-suval-watchtower', [-330, 387], 14, { note: 'The ruined watchtower on the rise east of the Solis road.' }),
+  cluster('west-suval-well', [-338, 455], 10, { note: 'The wayside well beside the Solis road.' }),
 ]);
 
 const CLUSTER_BY_ID = new Map(CLUSTERS.map(entry => [entry.id, entry]));

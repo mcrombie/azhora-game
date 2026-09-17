@@ -212,7 +212,7 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
     s.block('#9c7a52', h.x - .8, hy, h.z - .4, .8, .8, .8); s.cylinder('#8c6a47', h.x + .7, hy, h.z - .3, .36, .9);
     circle(h.x, h.z, 1.9, 'stockade-shelter');
     s.finish(parent);
-    signs.notice({ x: STOCKADE_LAYOUT.notice.x, z: STOCKADE_LAYOUT.notice.z, label: 'Truce', facing: -Math.PI / 2, parent });
+    signs.notice({ x: STOCKADE_LAYOUT.notice.x, z: STOCKADE_LAYOUT.notice.z, label: 'Truce', facing: Math.PI / 2, parent });
   }
 
   // -------------------------------------------------------------------------
@@ -315,7 +315,7 @@ function buildMorosWayside({ parent, heightAt, push, circle, box, signs }) {
 
   // The shepherd's fold: a ring of dry stone with a hurdle gate facing the road, and a turf lean-to.
   {
-    const f = byId['shepherds-fold'].frame, fy = y(f.x, f.z), radius = 6.2;
+    const f = byId['moros-shepherds-fold'].frame, fy = y(f.x, f.z), radius = 6.2;
     const gapAngle = Math.atan2(-f.left.x, -f.left.z);   // toward the road
     for (let k = 0; k < 34; k++) {
       const a = k / 34 * Math.PI * 2, gap = Math.abs(Math.atan2(Math.sin(a - gapAngle), Math.cos(a - gapAngle))) < .17;

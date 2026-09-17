@@ -6,19 +6,22 @@ import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
   VILLAGE, villageToWorld, worldToVillage, HIDEOUT_SITE, hideoutToWorld, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
-  calossDistance, landDistance,
+  calossDistance, landDistance, SOLIS, solisPoint,
 } from './region-world.js';
 import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, smooth, lerp } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { createRegionScenery } from './world-regions.js';
 import { createSigns, SIGN_COLOURS } from './signs.js';
 import { buildMorosWorks } from './moros-works.js';
-import { OUTPOST_BENCH, OUTPOST_FIRE } from './outpost.js';
+import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH } from './outpost.js';
 import { WAYSIDE_LANDMARKS } from './wayside.js';
 import { buildFrontierWorks } from './frontier-works.js';
 import { buildPlaceWorks } from './place-works.js';
 import { PLACE_LANDMARKS } from './places.js';
 import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
+import { SOLIS_ROAD } from './region-world.js';
+import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
+import { createWestSuvalScenery } from './west-suval-world.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -786,6 +789,17 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const signs = createSigns({ material, mesh, box, groundFor, pushFor,
     worldSpot: (parent, x, z) => (isLocal(parent) ? villageToWorld(x, z) : { x, z }) });
   const roadSigns = signs.records;
+  /**
+   * The older roadside-sign call, (x, z, label, yaw, returnLabel), as scenery
+   * modules still make it: a fingerpost whose fingers point at the places they
+   * name where those are known, and along the road's line otherwise.
+   */
+  const signTargets = { Solis: SOLIS.centre, 'The Gate of Sun Horses': solisPoint(0, -42), 'The Coalition camp': solisPoint(100, 0), 'The border stockade': STORY_SITES.morosStockade };
+  const roadsideSign = (x, z, label, yaw = 0, returnLabel = 'Tidehaven') => {
+    const along = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+    return signs.direction({ x, z, label, parent: world, backLabel: returnLabel,
+      toward: signTargets[label] ?? { x: x + along.x * 20, z: z + along.z * 20 }, back: signTargets[returnLabel] ?? { x: x - along.x * 20, z: z - along.z * 20 } });
+  };
   // The Greenway's own fingerposts, in the village's local metres (north is -z here).
   signs.direction({ x: 4.4, z: 15.1, label: 'The Greenway', toward: { x: 0, z: -36 }, back: { x: 0, z: 29 }, backLabel: 'Tidehaven Landing', parent: villageRoot });
   signs.direction({ x: -6, z: -86, label: 'Fernway Rest', toward: northTrail, back: { x: -2, z: -60 }, backLabel: 'Tidehaven', parent: villageRoot });
@@ -962,11 +976,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-394, 168), at(-404, 172)],
     [at(-392, 176), { x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z }],
     [at(-398, 202), at(-376, 208), { x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z }],
-    [at(-446, 276), at(-420, 292), { x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z }],
+    // The track to the border stockade comes round its west side to the south gate, where the Solis road leaves.
+    [at(-446, 276), at(-420, 292), STOCKADE_TRACK_BEND, STOCKADE_APPROACH],
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
-  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4);
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
@@ -982,6 +997,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     },
   });
   bridgeDeck = regionScenery.bridge;
+  // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
+  const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
+    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
   const stakedProps = [];
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
@@ -989,6 +1007,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   buildPlaceWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
+  addPath(SOLIS_ROAD, 4.2);
   for (const spur of roadSpurs) addPath(spur, 2.2);
   // Tidehaven's own lanes and woodland spurs stay in the village's frame.
   function addLocalPath(points, width) {
@@ -1342,6 +1361,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     Object.freeze({ id: 'coast-water', kind: 'polygon', points: Object.freeze([...seaEdge,
       mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
     Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
+    Object.freeze({ id: 'west-suval-water', kind: 'polygon', points: WEST_SUVAL_SEA }),
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
       ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
       ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
@@ -1370,6 +1390,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // The branch is walkable only to Elod's shut gate: East Suval is closed (closed-border.js).
     suvalRoute: FRONTIER_ROUTE.map(p => ({ x: p.x, z: p.z })),
     closedFrontier: { region: 'East Suval', gate: { x: FRONTIER_GATE.x, z: FRONTIER_GATE.z }, approach: { x: FRONTIER_APPROACH.x, z: FRONTIER_APPROACH.z }, into: { x: FRONTIER_GATE.u.x, z: FRONTIER_GATE.u.z } },
+    solisRoute: SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })),
+    westSuvalMetrics: westSuval.metrics,
+    setSolisHolder: westSuval.setHolder,
+    enclosures: SOLIS_ENCLOSURES,
+    solisHolder: westSuval.holder,
     roadSigns,
     frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
     storySites: STORY_SITES,
@@ -1468,6 +1493,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...FRONTIER_LANDMARKS,
       ...PLACE_LANDMARKS,
       ...REGIONAL_PLACES,
+      ...WEST_SUVAL_LANDMARKS,
     ],
     paths,
     update(time, dt) {

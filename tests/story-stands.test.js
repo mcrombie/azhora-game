@@ -18,7 +18,9 @@ test('everyone the later chapters place on the ground stands on walkable ground 
   const world = createWorld(new THREE.Scene());
   for (const person of BORDER_NPCS) {
     assert.ok(canStand(person.x, person.z, world, .45), `${person.name} stands on solid ground`);
-    assert.equal(world.regionAt(person.x, person.z)?.name, 'Moros Plain', `${person.name} stands on the Moros Plain`);
+    // The parley is at Solis; the line and the Legion's column are on the Moros.
+    const region = person.shows === 'envoy' || person.shows === 'report-coalition' || person.shows === 'march-coalition' ? 'West Suval' : 'Moros Plain';
+    assert.equal(world.regionAt(person.x, person.z)?.name, region, `${person.name} stands in ${region}`);
   }
   for (const side of ['empire', 'coalition']) {
     const fight = borderEncounter(side, Array.from({ length: 5 }, (_, i) => ({ id: `ally-${i}`, kind: 'legionary' })));
@@ -59,8 +61,8 @@ test('the day after the battle has ground under it wherever its places are built
     assert.ok(canStand(beyond.x, beyond.z, world, .45), `${spec.id} can be retreated from`);
     assert.equal(world.regionAt(fight.center.x, fight.center.z)?.name, spec.region, `${spec.id} is fought in ${spec.region}`);
   }
-  // The Moros variants are playable today.
-  assert.ok(aftermathBuilt(AFTERMATH_VARIANTS['moros-fallback']) && aftermathBuilt(AFTERMATH_VARIANTS['moros-outpost']));
+  // Every variant is playable: the Moros ones and, with Solis built, the two in West Suval.
+  for (const spec of Object.values(AFTERMATH_VARIANTS)) assert.ok(aftermathBuilt(spec), `${spec.id} has its ground`);
 });
 
 test('the roads can be ridden end to end, and the stable yard has room for a man and a horse', async () => {

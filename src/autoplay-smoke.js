@@ -14,7 +14,7 @@ export async function runAutoplaySmoke(h) {
   const started = performance.now();
   const milestones = [];
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
-  let lastChapterStage = '', wolfFight = false;
+  let lastChapterStage = '', wolfFight = false, wentToSolis = false;
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
   let previousFrames = readState().frames, previousAction = null;
 
@@ -51,6 +51,8 @@ export async function runAutoplaySmoke(h) {
     if (state.journeyView?.stage && state.journeyView.stage !== lastJourneyStage) { note(`road ${state.journeyView.stage}`); lastJourneyStage = state.journeyView.stage; }
     if (state.luscia?.stage && state.luscia.stage !== lastChapterStage) { note(`luscia ${state.luscia.stage}`); lastChapterStage = state.luscia.stage; }
     if (state.enemies?.some(enemy => String(enemy.id).startsWith('lauvel-wolf'))) wolfFight = true;
+    // The Legate's terms go to the envoy at Solis, in West Suval, before the border battle.
+    if (state.region === 5 && state.border && !state.border.side) wentToSolis = true;
     if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight'); fights++; }
     if (state.mode === 'defeated') retries++;
     if (state.mode === 'dialogue') lines++;
@@ -84,10 +86,12 @@ export async function runAutoplaySmoke(h) {
   assert(final.campaign?.horse === true, 'the chapter did not pay the Legion horse');
   assert(wolfFight, 'no wolf came off the burial line');
   assert(final.border?.complete, 'the border battle was not fought');
+  assert(wentToSolis, 'the Legate’s terms were never carried to Solis');
   assert(/border battle/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mapTutorial === 3, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
-  assert(world.regionAt(final.position[0], final.position[2]).id === 3, 'the traveler did not end at the Legion camp on the Moros Plain');
+  // The day after the battle is fought on the Moros (the outpost) or at Solis, as the battle went.
+  assert([3, 5].includes(world.regionAt(final.position[0], final.position[2]).id), 'the traveler did not end on the Moros Plain or in West Suval');
   assert(tookOver && restarted, 'the hand-over was never exercised');
   assert(fights >= 3, `only ${fights} fights were seen`);
   checks += 12;

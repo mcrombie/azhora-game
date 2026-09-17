@@ -228,7 +228,10 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
     ['admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: true }] } }],
     ['join-muster', { moros: { actions: [{ id: 'join-muster', enabled: true }] } }],
     ['take-legate-terms', { border: { actions: [{ id: 'take-legate-terms', enabled: true }] } }],
+    ['enter-solis', { border: { actions: [{ id: 'enter-solis', enabled: true }] } }],
     ['side-empire', { border: { actions: [{ id: 'side-empire', enabled: true }] } }],
+    ['march-out', { border: { actions: [{ id: 'march-out', enabled: true }] } }],
+    ['reach-line', { border: { actions: [{ id: 'reach-line', enabled: true }] } }],
     ['sound-advance', { border: { actions: [{ id: 'sound-advance', enabled: true }] } }],
     ['begin-assault', { aftermath: { actions: [{ id: 'begin-assault', enabled: true }] } }],
     ['close-aftermath', { aftermath: { actions: [{ id: 'close-aftermath', enabled: true }] } }],
@@ -239,4 +242,37 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
   }
   // A reply the chapter has disabled is still not chosen.
   assert.equal(reply('admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: false }] } }), 'leave-it');
+});
+
+test('the autopilot carries the terms to Solis, keeps the Empire’s contract, reports to the Legate and marches to the line', async () => {
+  const { createBorderChapter } = await import('../src/border-chapter.js');
+  const border = createBorderChapter(); border.start();
+  const world = { npcPositions: { 'post-camp-legate': { x: 1, z: 1 }, 'solis-gate-captain': { x: 2, z: 2 }, 'coalition-envoy': { x: 3, z: 3 }, 'battle-tribune': { x: 4, z: 4 } }, npcNames: {} };
+  const walked = [];
+  for (let turn = 0; turn < 8 && !border.view().fighting; turn++) {
+    const view = border.view(), goal = borderGoal({ border: { stage: view.stage, complete: view.complete, destinationIds: view.destinationIds, actions: border.availableActions() } }, world);
+    assert.equal(goal.kind, 'talk', `at ${view.stage} the autopilot has someone to see`);
+    walked.push(goal.npcId);
+    const actions = border.availableActions();
+    const reply = chooseReply([...actions, { id: 'leave-border', label: 'Not yet.', enabled: true }], { journey: { actions: [] }, inventory: { sticks: 0 }, border: { actions } });
+    assert.equal(border.act(reply).ok, true, `${reply} moves the chapter on`);
+  }
+  assert.deepEqual(walked, ['post-camp-legate', 'solis-gate-captain', 'coalition-envoy', 'post-camp-legate', 'battle-tribune']);
+  assert.equal(border.view().side, 'empire');
+  assert.equal(border.view().stage, 'fighting');
+});
+
+test('walled places are entered and left by their gates, innermost first on the way out', async () => {
+  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const box = (id, half, gates) => ({ id, contains: (x, z) => Math.abs(x) < half && Math.abs(z) < half, gates });
+  const town = box('town', 50, [{ id: 'north', outer: { x: 0, z: -60 }, inner: { x: 0, z: -40 } }, { id: 'west', outer: { x: -60, z: 0 }, inner: { x: -40, z: 0 } }]);
+  const hall = { id: 'hall', contains: (x, z) => x > 20 && x < 40 && Math.abs(z) < 10, gates: [{ id: 'door', outer: { x: 15, z: 0 }, inner: { x: 25, z: 0 } }] };
+  const world = { enclosures: [town, hall] };
+  assert.equal(enclosureWaypoint({ x: 0, z: -200 }, { x: 5, z: 5 }, { enclosures: [] }), null, 'no walls, no detour');
+  assert.equal(enclosureWaypoint({ x: 1, z: 1 }, { x: 5, z: 5 }, world), null, 'both inside: walk straight');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -200 }, { x: 5, z: 5 }, world).point, { x: 0, z: -60 }, 'from the north, make for the north gate');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -58 }, { x: 5, z: 5 }, world).point, { x: 0, z: -40 }, 'in the gate’s corridor, go through');
+  assert.deepEqual(enclosureWaypoint({ x: -200, z: 3 }, { x: -30, z: 0 }, world).point, { x: -60, z: 0 }, 'the cheaper gate');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -30 }, { x: 30, z: 0 }, world).point, { x: 15, z: 0 }, 'inside the town, make for the hall’s door');
+  assert.deepEqual(enclosureWaypoint({ x: 30, z: 0 }, { x: 0, z: -200 }, world).point, { x: 25, z: 0 }, 'leave the hall before the town');
 });

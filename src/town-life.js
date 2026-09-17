@@ -95,7 +95,7 @@ export const TOWN_LIFE_NPCS = Object.freeze([
   ], { ...EMPIRE, color: RED }),
 
   // --- The Coalition's garrison, out only if the outpost falls. Plain speech, soldiers of the valley.
-  person('life-outpost-valley-captain', 'Captain Tamar Venn', 'Captain of the valley companies', 'suvali-guard', campPoint(-.5, 11.5), Math.PI, [
+  person('life-outpost-valley-captain', 'Captain Tamar Venn', 'Captain of the valley companies', 'suvali-guard', campPoint(-3, 13.5), Math.PI, [
     'The Republic holds the Moros now. The Legion built a good fort. It will be harder to take back than it was to take.',
     'Water the horses, eat what the Legion left in the stores, and keep off the walls unless you are on the rota.',
   ], { ...COALITION, color: COALITION_BLUE }),

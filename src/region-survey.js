@@ -2,7 +2,7 @@
 // Do not edit by hand; tests/region-survey.test.js checks it against the atlas.
 export const SURVEY_ORIGIN = Object.freeze({ x: -13.856, y: -16 });
 
-/** The four playable regions, exactly as the atlas authored them. */
+/** The playable regions, exactly as the atlas authored them. */
 export const PLAYABLE_SURVEY = Object.freeze({
   origin: SURVEY_ORIGIN,
   regions: Object.freeze([
@@ -40,6 +40,13 @@ export const PLAYABLE_SURVEY = Object.freeze({
         r:113,terrain:'grassland'},{q:7,r:114,terrain:'hills'},{q:8,r:114,terrain:'plains'},{q:9,r:114,terrain:'plains'},{q:10,r:114,terrain:'grassland'},
         {q:7,r:115,terrain:'hills'},{q:8,r:115,terrain:'hills'},{q:9,r:115,terrain:'hills'},{q:10,r:115,terrain:'grassland'},{q:7,r:116,terrain:'hills'},{q:8,
         r:116,terrain:'hills'},{q:9,r:116,terrain:'hills'},{q:10,r:116,terrain:'grassland'},{q:7,r:117,terrain:'hills'}]) }),
+    Object.freeze({ id: "West Suval", name: "West Suval",
+      bounds: Object.freeze({"x":1621.2,"y":2712,"width":193.99,"height":176}), centerX: 1732.628, centerY: 2791,
+      cells: Object.freeze([{q:5,r:113,terrain:'hills'},{q:6,r:113,terrain:'hills'},{q:3,r:114,terrain:'plains'},{q:4,r:114,terrain:'plains'},{q:5,r:114,terrain:'hills'},{q:6,
+        r:114,terrain:'plains'},{q:1,r:115,terrain:'grassland'},{q:2,r:115,terrain:'grassland'},{q:3,r:115,terrain:'grassland'},{q:4,r:115,terrain:'plains'},
+        {q:5,r:115,terrain:'plains'},{q:6,r:115,terrain:'hills'},{q:2,r:116,terrain:'grassland'},{q:3,r:116,terrain:'grassland'},{q:4,r:116,
+        terrain:'grassland'},{q:5,r:116,terrain:'plains'},{q:6,r:116,terrain:'plains'},{q:3,r:117,terrain:'grassland'},{q:4,r:117,terrain:'grassland'},{q:5,
+        r:117,terrain:'plains'},{q:6,r:117,terrain:'hills'},{q:4,r:118,terrain:'grassland'},{q:5,r:118,terrain:'grassland'},{q:4,r:119,terrain:'grassland'}]) }),
   ]),
 });
 

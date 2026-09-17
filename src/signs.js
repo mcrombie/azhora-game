@@ -36,6 +36,8 @@ export const SIGN_LABELS = Object.freeze([
   'The Shepherd’s Fold', 'The Legion Picket', 'Truce',
   // East Suval
   'East Suval', 'Elod', 'The Elodi Frontier', 'Elod’s Border Post', 'Closed by Elod',
+  // West Suval
+  'West Suval', 'Solis', 'The Gate of Sun Horses', 'The Coalition camp', 'The border stockade',
   // Milestones on the Moros
   'I', 'II', 'III',
 ]);

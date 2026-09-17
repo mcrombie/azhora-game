@@ -26,7 +26,7 @@ const AUTHORED_ZONES = [
 // ferryman's jetty. These are laid out in world metres round the places they belong to.
 const around = (centre, halfX, halfZ, offsets) => ({ minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ,
   sites: offsets.map(([dx, dz]) => [centre.x + dx, centre.z + dz]) });
-const fold = MOROS_WAYSIDE.find(place => place.id === 'shepherds-fold');
+const fold = MOROS_WAYSIDE.find(place => place.id === 'moros-shepherds-fold');
 const WORLD_ZONES = [
   { id: 'moros-fold-sheep', prefix: 'fold-sheep', species: 'sheep', region: 2, radius: .43,
     ...around(fold, 22, 18, [[-11, -4], [-9, 5], [10, -6], [12, 4], [2, -12]]) },

@@ -48,7 +48,7 @@ export const DRENT_WAYSIDE = Object.freeze([
 export const MOROS_WAYSIDE = Object.freeze([
   place('moros-ruts', 'The Cart Ruts', moros(40, 8), 8,
     'Wheel ruts cut deep beside the road where the supply carts pull aside for the columns. Nobody fills them; nobody needs to.'),
-  place('shepherds-fold', 'The Shepherd’s Fold', moros(95, -36), 11,
+  place('moros-shepherds-fold', 'The Shepherd’s Fold', moros(95, -36), 11,
     'A ring of dry stone with a hurdle for a gate, and a turf lean-to for the shepherd. The Legion buys his wethers and pays him in scrip.'),
   place('legion-picket', 'The Legion Picket', moros(158, 15), 9,
     'A wattle windbreak, a tent and a cold brazier: two legionaries watch the road for whoever the camp is expecting.'),

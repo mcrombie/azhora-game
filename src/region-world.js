@@ -11,7 +11,7 @@
  * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
  * authored 56 m frame the content was designed in and converted here, at the
  * boundary, by `at()` for a place and `road()` for a road vertex.
- * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval.
+ * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
 import {
@@ -23,8 +23,8 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4 });
-export const REGION_NAME_BY_ID = Object.freeze({ 1: 'Drent', 2: 'Luscia', 3: 'Moros Plain', 4: 'East Suval' });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5 });
+export const REGION_NAME_BY_ID = Object.freeze({ 1: 'Drent', 2: 'Luscia', 3: 'Moros Plain', 4: 'East Suval', 5: 'West Suval' });
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
 export const WORLD_BOUNDS = Object.freeze(worldBoundsFor(SURVEY));
@@ -111,6 +111,7 @@ export const REGION_TERRAIN = Object.freeze({
   Luscia: Object.freeze({ base: 8.6, amp: 4.5, wave: 140, ground: REGION_BIOMES.Luscia.ground }),
   'Moros Plain': Object.freeze({ base: 6.4, amp: .9, wave: 260, ground: REGION_BIOMES['Moros Plain'].ground }),
   'East Suval': Object.freeze({ base: 17, amp: 11, wave: 120, ground: REGION_BIOMES['East Suval'].ground }),
+  'West Suval': Object.freeze({ base: 9.5, amp: REGION_BIOMES['West Suval'].relief.amplitude, wave: REGION_BIOMES['West Suval'].relief.wavelength, ground: REGION_BIOMES['West Suval'].ground }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
 
@@ -118,7 +119,7 @@ export const REGION_TERRAIN = Object.freeze({
 export function terrainMix(x, z) {
   const home = hexAt(x, z);
   let total = 0, base = 0, amp = 0, wave = 0;
-  const weights = { Drent: 0, Luscia: 0, 'Moros Plain': 0, 'East Suval': 0, outland: 0 };
+  const weights = Object.fromEntries([...REGION_ORDER, 'outland'].map(name => [name, 0]));
   for (const [dq, dr] of [[0, 0], ...AXIAL_NEIGHBORS]) {
     const q = home.q + dq, r = home.r + dr, centre = hexCentre(q, r);
     const weight = Math.max(0, 1 - Math.hypot(x - centre.x, z - centre.z) / (METRES_PER_HEX * 1.28));
@@ -265,6 +266,32 @@ export const SUVAL_ROAD = Object.freeze([
   road(-118, 332), road(-86, 346), road(-56, 358), road(-28, 368.5),
 ]);
 
+/**
+ * Solis, the walled city on West Suval's south-west coast. Its whole layout is
+ * in its own frame, square to the world: `solisPoint(a, b)` is `a` metres east
+ * and `b` metres south of the market cross, with the Gate of Sun Horses at
+ * (0, -42) on the road from the border and the quay gate at (-50, -8) on the sea.
+ * The centre is an authored point (the `solis` cluster); the rest is metres.
+ */
+export const SOLIS = Object.freeze({ name: 'Solis', centre: at(-297, 551), halfX: 50, halfZ: 42 });
+export const solisPoint = (a, b) => point(SOLIS.centre.x + a, SOLIS.centre.z + b);
+
+/** From the border stockade on the Moros, south-east over the downs to the Gate of Sun Horses. */
+export const SOLIS_ROAD = Object.freeze([
+  at(-368, 308), road(-370, 339), road(-363, 374), road(-353, 407.5), road(-339, 441), road(-324, 472), road(-308, 495.5),
+  solisPoint(-2, -78), solisPoint(0, -56), solisPoint(0, -42), solisPoint(0, -34),
+]);
+
+/**
+ * Built ground: a plane that overrides the natural relief inside its half
+ * extents and fades back to it across `feather` metres. Solis stands on one,
+ * rising gently from the quay to the Court of Oaths, so its walls keep one
+ * height and its square is level enough to fight across.
+ */
+export const TERRAIN_PADS = Object.freeze([
+  Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
+]);
+
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
 const CALOSS_GATE_VERTEX = road(-176, 29);
 export const ONWARD_ROAD = Object.freeze(MAIN_ROAD.slice(MAIN_ROAD.findIndex(p => p.x === CALOSS_GATE_VERTEX.x && p.z === CALOSS_GATE_VERTEX.z)));
@@ -371,14 +398,14 @@ export const regionLandmarks = Object.freeze([
   Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', ...at(-377, 138), description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
   Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', ...at(-386, 152), description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
   Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The Legion’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
-  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town: a square of stalls and a well, an inn, the timber yard above the sawpits, and the Legion’s relay post on the corner.' }),
+  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town between its two palisade gates: a square of stalls and a well, an inn, a smithy and a hall, the timber yard above the sawpits, the stable yard, and the Legion’s relay post on the corner.' }),
   // Story hooks placed as scenery for the chapter that follows.
   Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the Legion met a rebel army here.' }),
   Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', ...at(-348, 212), description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
-  Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', ...at(-427, 259.4), description: 'A signpost, a cattle grid and the last copse. West of here the grass runs to the horizon.' }),
-  Object.freeze({ id: 'legion-camp', name: 'The Legion Camp', ...at(-549.2, 348.1), description: 'A palisade, ordered tents, a horse line and the Legate’s standard on the open Moros.' }),
-  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small stockade the Legion and the republic both want: a ditch, a rampart and an empty gate.' }),
-  Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'A barrier across the road, two guards, and a shelter belonging to neither army.' }),
+  Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', ...at(-427, 259.4), description: 'Two great posts under a beam, palisade wings and a watch platform where the last copse ends. West of here the grass runs to the horizon.' }),
+  Object.freeze({ id: 'legion-camp', name: 'The Legion Camp', ...at(-549.2, 348.1), description: 'The Ambroni outpost at the heart of the Moros: a ditch, a timber palisade on its rampart, towers, ordered tent lines and the Legate’s standard.' }),
+  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small timber work the Legion and the republic both want: a ditch, a rampart with a fighting platform, corner towers and a truce flag.' }),
+  Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'Elod’s old barrier across the road, behind the stone frontier that now shuts East Suval.' }),
   Object.freeze({ id: 'old-waystation', name: 'The Roofless Waystation', ...at(-154, 328), description: 'A leaning stone arch and a few paving slabs outlast a forgotten roadside shelter.' }),
   Object.freeze({ id: 'elod-gate', name: 'Elod', ...at(-28, 368.5), description: 'The stone gate of Elod, a few slate roofs, and the Stills glittering beyond the town.' }),
   Object.freeze({ id: 'bandit-lookout', name: 'The Hill Lookout', ...at(-74, 498), description: 'A ring of ridge stones above the southern hills. Somebody watches the road from here, but not today.' }),
@@ -420,9 +447,13 @@ const REGION_TEXT = {
     palette: { ground: '#b9b36c', accent: '#e4d59a', fog: '#cfd3b4' },
     npcIds: [], landmarks: ['moros-gate', 'legion-camp', 'moros-stockade'] },
   'East Suval': { subtitle: 'Stone hills and Elod', spawn: at(-214, 294),
-    description: 'Grey stone country: heather, ridge rock, a guarded border post that belongs to neither army, and the town of Elod above the Stills.',
+    description: 'Grey stone country: heather, ridge rock and the town of Elod above the Stills. Elod has closed its borders to stay out of the war; its black-clad pickets turn back anyone who tries to cross.',
     palette: { ground: '#9b9d85', accent: '#e1d1a7', fog: '#bbc6bf' },
     npcIds: ['shelter-keeper'], landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout'] },
+  'West Suval': { subtitle: 'The coast downs and Solis', spawn: road(-353, 407.5),
+    description: 'Rolling coastal grass, thorn and olive, field walls of pale stone, and Solis on its terraces above the sea: once a kingdom’s capital, then the Empire’s, and for a few days now the Coalition’s.',
+    palette: { ground: '#a9a95c', accent: '#e8cf8e', fog: '#c9d0bd' },
+    npcIds: ['solis-gate-captain', 'solis-merchant'], landmarks: ['west-suval-border', 'shepherds-fold', 'old-watchtower', 'wayside-well', 'coalition-camp', 'solis'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {
