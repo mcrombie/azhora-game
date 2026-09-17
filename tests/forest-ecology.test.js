@@ -7,14 +7,14 @@ import { canStand } from '../src/game-state.js';
 const { createForestEcology } = await sourceModule('../src/forest-ecology.js');
 function fixture(colliders = []) {
   const scene = new THREE.Scene(), world = {
-    bounds: { minX: -94, maxX: 94, minZ: -680, maxZ: 48 }, heightAt: () => 2, colliders,
-    paths: [[{ x: 0, z: -162 }, { x: 0, z: 40 }]],
-    npcPositions: { warden: { x: 8, z: -64 } },
-    encounter: { x: 0, z: -34, radius: 8 },
-    pond: { x: 27, z: -77, radius: 5.4, surfaceY: 1.5 },
-    broadleafTrees: Array.from({ length: 50 }, (_, i) => ({ x: (i % 10 - 4.5) * 12, z: -29 - Math.floor(i / 10) * 27 })),
+    bounds: { minX: -700, maxX: 28, minZ: -65, maxZ: 123 }, heightAt: () => 2, colliders,
+    paths: [[{ x: -182, z: 29 }, { x: 20, z: 29 }]],
+    npcPositions: { warden: { x: -84, z: 21 } },
+    encounter: { x: -54, z: 29, radius: 8 },
+    pond: { x: -97, z: 2, radius: 5.4, surfaceY: 1.5 },
+    broadleafTrees: Array.from({ length: 50 }, (_, i) => ({ x: -49 - Math.floor(i / 10) * 27, z: 29 - (i % 10 - 4.5) * 12 })),
   };
-  return { scene, world, life: createForestEcology(scene, world, { exclusionSites: [{ x: -28, z: -48, radius: 5.4 }] }) };
+  return { scene, world, life: createForestEcology(scene, world, { exclusionSites: [{ x: -68, z: 57, radius: 5.4 }] }) };
 }
 
 test('woodland has distinct low vegetation, deadwood, deer and insects within an explicit render budget', () => {
@@ -32,24 +32,24 @@ test('woodland has distinct low vegetation, deadwood, deer and insects within an
 });
 
 test('ecology preserves main paths, NPC/quest spaces, and supplied inspection clearings', () => {
-  const { life, world } = fixture([{ x: -35, z: -100, r: 6 }, { x: 30, z: -124, hx: 5, hz: 3 }]);
+  const { life, world } = fixture([{ x: -120, z: 64, r: 6 }, { x: -144, z: -1, hx: 3, hz: 5 }]);
   for (const p of life.state().plants) {
-    assert.ok(p.z >= -154 && p.z <= -23 && Math.abs(p.x) <= 72);
+    assert.ok(p.x >= -174 && p.x <= -43 && p.z >= -43 && p.z <= 101);
     assert.ok(canStand(p.x, p.z, world, p.radius), p.id);
-    assert.ok(Math.abs(p.x) >= 2.5 + p.radius, 'trail must stay visibly clear');
-    assert.ok(Math.hypot(p.x - 8, p.z + 64) >= 3.2 + p.radius, 'speaking space stays open');
-    assert.ok(Math.hypot(p.x + 28, p.z + 48) >= 5.4 + p.radius, 'new forest-place clearing stays open');
-    assert.ok(Math.hypot(p.x, p.z + 34) >= 9.5 + p.radius, 'initial battle arena stays open');
+    assert.ok(Math.abs(p.z - 29) >= 2.5 + p.radius, 'trail must stay visibly clear');
+    assert.ok(Math.hypot(p.x + 84, p.z - 21) >= 3.2 + p.radius, 'speaking space stays open');
+    assert.ok(Math.hypot(p.x + 68, p.z - 57) >= 5.4 + p.radius, 'new forest-place clearing stays open');
+    assert.ok(Math.hypot(p.x + 54, p.z - 29) >= 9.5 + p.radius, 'initial battle arena stays open');
   }
   life.dispose();
 });
 
 test('paused and invalid frames freeze every pose; distant wildlife performs no simulation', () => {
-  const { life } = fixture(); life.update(.1, 42, { x: -21, z: -55 }); const before = life.state();
-  for (let i = 0; i < 80; i++) life.update(.1, 1000 + i, { x: -21, z: -55 }, false);
-  for (const dt of [0, -1, NaN, Infinity]) life.update(dt, 10, { x: -21, z: -55 });
-  life.update(.1, 10, { x: NaN, z: -55 }); assert.deepEqual(life.state(), before);
-  life.update(.1, 2000, { x: 0, z: -650 }); const far = life.state();
+  const { life } = fixture(); life.update(.1, 42, { x: -75, z: 50 }); const before = life.state();
+  for (let i = 0; i < 80; i++) life.update(.1, 1000 + i, { x: -75, z: 50 }, false);
+  for (const dt of [0, -1, NaN, Infinity]) life.update(dt, 10, { x: -75, z: 50 });
+  life.update(.1, 10, { x: NaN, z: 50 }); assert.deepEqual(life.state(), before);
+  life.update(.1, 2000, { x: -670, z: 29 }); const far = life.state();
   assert.deepEqual(far.animals, before.animals); assert.deepEqual(far.insects, before.insects); assert.deepEqual(far.birds, before.birds);
   assert.ok(far.groups.every(g => !g.visible));
   life.dispose();
@@ -66,7 +66,7 @@ test('a ghost observer refreshes distant visibility without advancing paused wil
     birds: state.birds.map(({ visible, ...birdState }) => birdState),
     insects: state.insects.map(({ visible, ...insect }) => insect),
   });
-  assert.equal(life.setObserver({ x: 0, y: 150, z: -650 }), true);
+  assert.equal(life.setObserver({ x: -670, y: 150, z: 29 }), true);
   const far = life.state();
   assert.ok(far.groups.every(group => !group.visible));
   assert.ok(far.birds.every(b => !b.visible) && far.insects.every(i => !i.visible));
@@ -110,7 +110,7 @@ test('thrushes peck and hop, then fly away from an approaching player and land s
 
 test('bird ground and flight routes keep exclusion sites clear and stay finite through repeated scares', () => {
   const { scene, world, life: originalLife } = fixture(); originalLife.dispose();
-  const site = { x: 60, z: -118, radius: 12 }, approach = { x: 45, z: -109, radius: 3.5 };
+  const site = { x: -138, z: -31, radius: 12 }, approach = { x: -129, z: -16, radius: 3.5 };
   const life = createForestEcology(scene, world, { exclusionSites: [site, approach] });
   for (let step = 0; step < 160; step++) {
     const bird = life.state().birds[step % 5];
@@ -120,7 +120,7 @@ test('bird ground and flight routes keep exclusion sites clear and stay finite t
       assert.ok(canStand(current.x, current.z, world, .22));
       assert.ok(Math.hypot(current.x - site.x, current.z - site.z) >= site.radius + .22);
       assert.ok(Math.hypot(current.x - approach.x, current.z - approach.z) >= approach.radius + .22);
-      assert.ok(current.z >= -154 && current.z <= -23 && Math.abs(current.x) <= 72);
+      assert.ok(current.x >= -174 && current.x <= -43 && current.z >= -43 && current.z <= 101);
     }
   }
   life.dispose();
@@ -136,25 +136,25 @@ test('deer watch a distant visitor, flee an approaching visitor, and eventually 
   assert.equal(fled.action, 'flee'); assert.ok(Math.hypot(fled.x - player.x, fled.z - player.z) > 10);
   assert.ok(canStand(fled.x, fled.z, world, .57 * fled.scale));
   let browsed = false;
-  for (let i = 0; i < 100; i++) { life.update(.1, 3 + i / 10, { x: 28, z: -115 }); browsed ||= life.state().animals[0].action === 'browse'; }
+  for (let i = 0; i < 100; i++) { life.update(.1, 3 + i / 10, { x: -135, z: 1 }); browsed ||= life.state().animals[0].action === 'browse'; }
   assert.ok(browsed, 'fear expires after the player leaves'); life.dispose();
 });
 
 test('running deer cannot tunnel through fences or leave region one, including slow frames', () => {
-  const { life, world } = fixture([{ x: -30, z: -67, hx: 42, hz: .10 }]);
+  const { life, world } = fixture([{ x: -87, z: 59, hx: .10, hz: 42 }]);
   for (let i = 0; i < 240; i++) {
-    const first = life.state().animals[0]; life.update(i % 9 === 0 ? 6 : .1, i / 10, { x: first.x, z: first.z + 3 });
+    const first = life.state().animals[0]; life.update(i % 9 === 0 ? 6 : .1, i / 10, { x: first.x + 3, z: first.z });
     const after = life.state().animals[0];
     assert.ok(canStand(after.x, after.z, world, .57 * after.scale));
-    assert.ok(after.z > -66.4, 'continuous fence cannot be crossed');
-    assert.ok(after.z >= -154 && after.z <= -23 && Math.abs(after.x) <= 72);
+    assert.ok(after.x > -86.4, 'continuous fence cannot be crossed');
+    assert.ok(after.x >= -174 && after.x <= -43 && after.z >= -43 && after.z <= 101);
   }
   life.dispose();
 });
 
 test('moving models keep finite, positive transforms; disposal removes all owned resources safely', () => {
   const { scene, life } = fixture(), matrix = new THREE.Matrix4();
-  for (let i = 0; i < 80; i++) life.update(.1, i, { x: 18, z: -78 });
+  for (let i = 0; i < 80; i++) life.update(.1, i, { x: -98, z: 11 });
   let disposedGeometries = 0, disposedMaterials = 0; const geometries = new Set(), materials = new Set();
   scene.traverse(object => { if (object.isInstancedMesh) {
     geometries.add(object.geometry); materials.add(object.material);
@@ -164,24 +164,24 @@ test('moving models keep finite, positive transforms; disposal removes all owned
   for (const material of materials) material.addEventListener('dispose', () => disposedMaterials++);
   life.dispose(); life.dispose();
   assert.equal(scene.children.length, 0); assert.equal(disposedGeometries, geometries.size); assert.equal(disposedMaterials, materials.size);
-  const after = life.state(); life.update(.1, 1000, { x: 0, z: -60 }); assert.deepEqual(life.state(), after);
+  const after = life.state(); life.update(.1, 1000, { x: -80, z: 29 }); assert.deepEqual(life.state(), after);
 });
 
-test('actual Eastreena supports the full ecology and keeps original deterministic trees unchanged', async () => {
+test('the real Drent woodland supports the full ecology and keeps original deterministic trees unchanged', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), trees = JSON.stringify(world.broadleafTrees);
   const pickups = createWoodlandLife(scene, world).state();
   const colliders = JSON.stringify(world.colliders);
   const exclusions = [...pickups.acorns, ...pickups.sticks, ...pickups.fruits, ...pickups.fruitPatches,
-    { x: 60, z: -118, radius: 12 }, { x: 45, z: -109, radius: 3.5 }];
+    { x: -138, z: -31, radius: 12 }, { x: -129, z: -16, radius: 3.5 }];
   const life = createForestEcology(scene, world, { exclusionSites: exclusions }), state = life.state();
   assert.equal(state.plants.length, 410); assert.equal(state.animals.length, 4); assert.equal(state.birds.length, 5);
   for (const plant of state.plants) assert.ok(canStand(plant.x, plant.z, world, plant.radius), plant.id);
   for (const plant of state.plants) assert.ok(exclusions.every(p => Math.hypot(p.x - plant.x, p.z - plant.z) >= 3.2 + plant.radius),
     `${plant.id}: acorns, branches and fruit stay easy to see and gather`);
   for (const a of state.animals) assert.ok(canStand(a.x, a.z, world, .57 * a.scale), a.id);
-  for (const visitor of [{ x: -25, z: -61 }, { x: 43, z: -106 }, { x: -37, z: -131 }])
+  for (const visitor of [{ x: -81, z: 54 }, { x: -126, z: -14 }, { x: -151, z: 66 }])
     for (let i = 0; i < 60; i++) life.update(1 / 30, i / 30, visitor);
   for (const a of life.state().animals) assert.ok(canStand(a.x, a.z, world, .57 * a.scale), a.id);
   for (const bird of life.state().birds) assert.ok(canStand(bird.x, bird.z, world, .22), bird.id);

@@ -69,7 +69,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   function view() {
     const current = stage();
     const views = {
-      'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry Mara’s message to the far edge of Eastreena.', ['border']],
+      'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry Mara’s message out to the Caloss Gate.', ['border']],
       'meet-courier': [2, 1, 1, 'Report for field service', 'Bring Mara’s letter to Corvan, the Ambroni Legion quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
       'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your Legion service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],

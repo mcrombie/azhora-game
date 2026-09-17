@@ -1,6 +1,11 @@
 import { canStand } from './game-state.js';
 import { FOREST_HIDEOUT_QUEST as QUEST } from './forest-hideout.js';
 import { FOREST_HIDEOUT as CAMP } from './forest-hideout-world.js';
+import { villageToWorld } from './region-world.js';
+
+// The camp trail is authored in Tidehaven's local metres; walk it in world metres.
+const TRAIL = CAMP.trail.map(p => villageToWorld(p.x, p.z));
+const CAMP_CENTER = villageToWorld(CAMP.center.x, CAMP.center.z);
 
 const detached = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value) ? value.map(canonical)
@@ -113,9 +118,9 @@ export async function runHideoutSmoke(h) {
     assert(weapons.profile().id === 'simple-sword' && weapons.profile().usable, 'fixture sword is not ready');
     const mainBefore = detached(journey.snapshot()), stockBefore = stock(inventory);
     const swordBefore = weapons.status('simple-sword').durability;
-    await moveTo(CAMP.trail[0]);
-    for (const point of CAMP.trail.slice(1)) await walkSegment(point);
-    assert(walkedMeters > 55 && distance(player.group.position, CAMP.center) < 1, 'normal walking did not reach the camp');
+    await moveTo(TRAIL[0]);
+    for (const point of TRAIL.slice(1)) await walkSegment(point);
+    assert(walkedMeters > 55 && distance(player.group.position, CAMP_CENTER) < 1, 'normal walking did not reach the camp');
     assert(hideoutWatch.state().visible === 2, 'the unchallenged camp has no visible scouts');
     await inspect(); await choose('leave-hideout');
     assert(!forestHideout.state.active && !forestHideout.state.accepted && combat.state.phase !== 'active',
@@ -126,7 +131,7 @@ export async function runHideoutSmoke(h) {
     assert(!saveRoad(false), 'the active optional battle allowed a checkpoint write');
     // Follow the marked trail back to the Greenway without changing encounter state.
     const retreatDeadline = performance.now() + 30000;
-    for (const end of [...CAMP.trail.slice(0, 3)].reverse()) {
+    for (const end of [...TRAIL.slice(0, 3)].reverse()) {
       press('KeyW');
       while (combat.state.phase === 'active' && distance(player.group.position, end) > .65) {
         const p = player.group.position; setYaw(Math.atan2(p.x - end.x, p.z - end.z));

@@ -53,8 +53,8 @@ export function createDeveloperMode({renderer,normalScene,world,player,onExit=()
     if(!active||!destination)return false;held.clear();look=null;releaseScene();
     let start,bounds,target,subtitle;
     if(destination.scene==='eastreena'){
-      const points={eastreena:{x:0,z:18},sunmeadow:{x:0,z:-190},reedwater:{x:0,z:-370},threefold:{x:0,z:-545}};
-      const p=points[destination.travelTarget]||points.eastreena;start={x:p.x,y:world.heightAt(p.x,p.z)+8,z:p.z};target={x:p.x,y:start.y-2,z:p.z-30};bounds={...world.bounds,minY:-20,maxY:350};subtitle='Playable region · ghost inspection';
+      const points={drent:{x:-15,z:29},luscia:{x:-386,z:183},moros:{x:-500,z:312},suval:{x:-120,z:340}};
+      const p=points[destination.travelTarget]||points.drent;start={x:p.x,y:world.heightAt(p.x,p.z)+8,z:p.z};target={x:p.x,y:start.y-2,z:p.z-30};bounds={...world.bounds,minY:-20,maxY:350};subtitle='Playable region · ghost inspection';
     }else{
       const dark=destination.scene==='cape-thalmagar';currentScene=makeScene(dark);
       const area=dark?createThalmagarWorld(currentScene):createSurveyWorld(currentScene,atlas.regions.find(r=>r.id===destination.regionId));isolated={scene:currentScene,world:area};

@@ -1,7 +1,7 @@
 /** Optional local lives along the road. This module never advances the main journey. */
 export const REGIONAL_LIFE_NPCS = Object.freeze([
-  Object.freeze({ id: 'commons-miller', name: 'Enna', role: 'Commons miller', modelRole: 'commons-miller', color: 0xa18452, x: -236, z: 62, region: 2 }),
-  Object.freeze({ id: 'reed-worker', name: 'Merren', role: 'Reed worker and boatkeeper', modelRole: 'reed-worker', color: 0x5f8078, x: -380, z: 120, region: 3 }),
+  Object.freeze({ id: 'commons-miller', name: 'Enna', role: 'Commons miller', modelRole: 'commons-miller', color: 0xa18452, x: -233, z: 59, region: 1 }),
+  Object.freeze({ id: 'reed-worker', name: 'Merren', role: 'Reed worker and boatkeeper', modelRole: 'reed-worker', color: 0x5f8078, x: -380, z: 120, region: 2 }),
   Object.freeze({ id: 'shelter-keeper', name: 'Oda', role: 'Waystation shelter keeper', modelRole: 'shelter-keeper', color: 0x827b6d, x: -152, z: 322, region: 4 }),
 ]);
 
@@ -9,23 +9,23 @@ const site = (id, name, x, z, region, storyId, prompt, lines) => Object.freeze({
   id, name, x, z, region, storyId, prompt, lines: Object.freeze(lines),
 });
 export const REGIONAL_LIFE_SITES = Object.freeze([
-  site('mill-commons', 'The Mill Commons', -238, 63, 2, 'village-share', 'Read the common mill tally', [
+  site('mill-commons', 'The Mill Commons', -238, 63, 1, 'village-share', 'Read the common mill tally', [
     "Household names run down the mill tally: Iria, Pell, the lower cottages. Each has a modest share beside it. Several names have been crossed through and their sacks added to a column headed Army requisition.",
     "The old figures are still readable. Whoever changed the tally has counted the grain carefully; the people waiting for it do not appear in the new total.",
   ]),
-  site('mill-hoist', 'The Village Grain Hoist', -243, 67, 2, 'village-share', 'Lower the village grain basket', [
+  site('mill-hoist', 'The Village Grain Hoist', -243, 67, 1, 'village-share', 'Lower the village grain basket', [
     "A grain basket hangs from the mill's short hoist. The rope is sound, but its weight holds the catch tight. A chalk mark on the basket reads Village share.",
     "Enna keeps the common mill. Ask before working the catch; this is somebody's supper, not an abandoned sack.",
   ]),
-  site('landing-workshop', 'The Working Landing', -385, 124, 3, 'landing-nets', 'Look over the working landing', [
+  site('landing-workshop', 'The Working Landing', -385, 124, 2, 'landing-nets', 'Look over the working landing', [
     "Reed mats dry beside a small working boat. A repaired basket, a wrapped blanket, and the scuffed edge of the landing suggest more than fish have passed this way.",
     "Two net floats are caught in tight knots just west of Merren's work place. Most of the net is sound. Patient hands would do more good here than a blade.",
   ]),
-  site('net-float-west', 'Near Net Float', -389, 126, 3, 'landing-nets', 'Ease the near float knot free', [
+  site('net-float-west', 'Near Net Float', -389, 126, 2, 'landing-nets', 'Ease the near float knot free', [
     "A pale float has twisted back through its own line. The knot tightens whenever the wet net pulls. A little slack and a careful turn should free it.",
     "This is Merren's working net. Ask whether help is wanted before undoing a line that somebody depends on.",
   ]),
-  site('net-float-east', 'Far Net Float', -392, 128, 3, 'landing-nets', 'Ease the far float knot free', [
+  site('net-float-east', 'Far Net Float', -392, 128, 2, 'landing-nets', 'Ease the far float knot free', [
     "The farther float is caught against a reed stem. Its line is doubled through a small, stubborn knot; the float itself is unbroken.",
     "There is no need to cut the cord. Merren can tell you which lines are holding the boat and which belong to the net.",
   ]),
@@ -81,15 +81,15 @@ export function createRegionalLife({ inventory, onEvent = () => {} } = {}) {
 
   function availableActions(siteId) {
     const list = REGIONAL_LIFE_SITES.map(item => action(`inspect-${item.id}`, item.prompt, item.id, item.region, item.storyId));
-    if (!state.millAccepted) list.push(action('accept-mill-share', 'Help lower the village share', 'commons-miller', 2, 'village-share'));
-    if (!state.millLowered) list.push(action('lower-mill-share', 'Ease the catch and lower the basket', 'mill-hoist', 2, 'village-share',
+    if (!state.millAccepted) list.push(action('accept-mill-share', 'Help lower the village share', 'commons-miller', 1, 'village-share'));
+    if (!state.millLowered) list.push(action('lower-mill-share', 'Ease the catch and lower the basket', 'mill-hoist', 1, 'village-share',
       state.millAccepted ? '' : 'Ask Enna at the commons before working the grain hoist.'));
-    if (state.millLowered && !state.millCompleted) list.push(action('return-mill-share', 'Tell Enna the village share is down', 'commons-miller', 2, 'village-share'));
-    if (!state.netsAccepted) list.push(action('accept-net-help', 'Help free the two net floats', 'reed-worker', 3, 'landing-nets'));
+    if (state.millLowered && !state.millCompleted) list.push(action('return-mill-share', 'Tell Enna the village share is down', 'commons-miller', 1, 'village-share'));
+    if (!state.netsAccepted) list.push(action('accept-net-help', 'Help free the two net floats', 'reed-worker', 2, 'landing-nets'));
     for (const [id, flag, label] of [['net-float-west', 'netWestFreed', 'Ease the near knot free'], ['net-float-east', 'netEastFreed', 'Ease the far knot free']])
-      if (!state[flag]) list.push(action(`free-${id}`, label, id, 3, 'landing-nets', state.netsAccepted ? '' : 'Ask Merren which lines need freeing first.'));
+      if (!state[flag]) list.push(action(`free-${id}`, label, id, 2, 'landing-nets', state.netsAccepted ? '' : 'Ask Merren which lines need freeing first.'));
     if (state.netWestFreed && state.netEastFreed && !state.netsCompleted)
-      list.push(action('return-net-help', 'Tell Merren the net is free - accept 2 raw fish', 'reed-worker', 3, 'landing-nets'));
+      list.push(action('return-net-help', 'Tell Merren the net is free - accept 2 raw fish', 'reed-worker', 2, 'landing-nets'));
     if (!state.testimonyAccepted) list.push(action('accept-witness-account', 'Carry an account from the shelter', 'shelter-keeper', 4, 'shelter-account'));
     if (!state.testimonyMode) {
       const reason = state.testimonyAccepted ? '' : 'Ask Oda for her account before writing at the board.';
@@ -146,12 +146,12 @@ export function createRegionalLife({ inventory, onEvent = () => {} } = {}) {
     const task = (storyId, region, title, detail, destinationIds, complete) => ({ storyId, id: storyId, region,
       title, detail, destinationIds: [...destinationIds], objectiveId: destinationIds[0] || null, complete, optional: true });
     const tasks = [];
-    if (state.millAccepted) tasks.push(task('village-share', 2, state.millCompleted ? 'A share back with its people' : 'The village share',
+    if (state.millAccepted) tasks.push(task('village-share', 1, state.millCompleted ? 'A share back with its people' : 'The village share',
       state.millCompleted ? 'Enna has the village grain ready for its households, and remembers who helped lower it.'
         : state.millLowered ? 'Tell Enna beside the commons that the basket is safely down. The grain belongs to the village.'
           : 'Work the hoist beside Enna to lower the village grain basket. This is a helping hand, without a promised item reward.',
       state.millCompleted ? [] : state.millLowered ? ['commons-miller'] : ['mill-hoist'], state.millCompleted));
-    if (state.netsAccepted) tasks.push(task('landing-nets', 3, state.netsCompleted ? 'A working net again' : 'Two patient knots',
+    if (state.netsAccepted) tasks.push(task('landing-nets', 2, state.netsCompleted ? 'A working net again' : 'Two patient knots',
       state.netsCompleted ? 'Merren has her net back in working order and shared two raw fish for your cooking fire.'
         : state.netWestFreed && state.netEastFreed ? 'Both floats are free. Return to Merren for two raw fish; they need cooking before eating.'
           : 'Ease the two float knots free just west of Merren. Either can be done first; no tool or material is spent.',
@@ -165,9 +165,9 @@ export function createRegionalLife({ inventory, onEvent = () => {} } = {}) {
           : "Use the shelter writing board. Leave the account unsigned, or sign with Oda's offered name. Leave the families out.",
       state.testimonyDelivered ? [] : state.testimonyMode ? ['relay-clerk'] : ['shelter-ledger'], state.testimonyDelivered));
     const entries = [
-      { id: 'village-share', region: 2, title: 'The common mill', detail: 'The commons tally still shows the households behind the grain. Army requisitions have crossed some of their shares into another column.',
+      { id: 'village-share', region: 1, title: 'The common mill', detail: 'The commons tally still shows the households behind the grain. Army requisitions have crossed some of their shares into another column.',
         afterword: state.millCompleted ? 'Enna remembers your help. The village basket is down and ready for the households that depend on it.' : state.millLowered ? 'The basket is safely down. Enna is waiting beside the commons.' : '' },
-      { id: 'landing-nets', region: 3, title: 'A landing for neighbors', detail: "Merren's working boat carries fish, food, and families. The neighbors an army notice calls rebels still mend lines and help one another here.",
+      { id: 'landing-nets', region: 2, title: 'A landing for neighbors', detail: "Merren's working boat carries fish, food, and families. The neighbors an army notice calls rebels still mend lines and help one another here.",
         afterword: state.netsCompleted ? 'Both float knots are free; Merren shared two raw fish.' : state.netWestFreed || state.netEastFreed ? `${Number(state.netWestFreed) + Number(state.netEastFreed)} of two float knots freed.` : '' },
       { id: 'shelter-account', region: 4, title: 'The shelter account', detail: 'The shelter offers water and room to people caught between northern goblin attacks and imperial demands. Oda asks that an account reach the relay without exposing the households passing through.',
         afterword: state.testimonyMode ? `${state.testimonyMode === 'signed' ? "The account carries Oda's offered name" : 'The account is unsigned'}. ${state.testimonyDelivered ? 'Iven has filed the account.' : 'The account awaits delivery to Iven.'}` : '' },
@@ -320,7 +320,7 @@ export function regionalLifeRelayChoices(npc, context) {
   const back = typeof returnToNeighbor === 'function' ? returnToNeighbor : closeDialogue;
   if (state.testimonyDelivered) return [{ id: 'relay-witness-receipt', label: 'Was the shelter account kept as agreed?', action: () => {
     openDialogue(npc, [state.testimonyMode === 'signed'
-      ? "Oda's name is on it, just as she asked. No family roll tucked underneath."
+      ? "Oda's name is on it, with her permission, just as she asked. No family roll tucked underneath."
       : 'Unsigned, as requested. The account says what was done here; it does not point to somebody\'s door.',
     'It has its own page among the field reports. Grain taken, roofs lost, families on the road. I will keep it dry.',
     ], null, 'Back to Iven', { onComplete: back });

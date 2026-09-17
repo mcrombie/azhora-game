@@ -5,7 +5,7 @@ export const DEV_ATLAS_SIZE = Object.freeze({ width: 3062.266, height: 4088 });
 export const DEV_ATLAS_PROVENANCE = Object.freeze({
   source: '../../world-builder/map/resources/examples/azhora.wwmap',
   sha256: 'b36c32babaf85213a93459c87eeabe79455268db714681f88444831a221588df',
-  localityNote: 'The first four playable districts lie on the Drent coast and the Luscia border. Their exact location within Drent is provisional; the local route diagram is not to world-map scale.',
+  localityNote: 'The four playable regions are the authored Drent, Luscia, Moros Plain and East Suval hexes at 56 m per hex. Tidehaven\u2019s exact place on the Drent coast is still provisional; the local route diagram is not to world-map scale.',
   capeNote: 'Cape Thalmagar is an authored region northwest of the Oremindi. The fortress and surrounding dark wasteland are a new gameplay prototype within that region.',
   surveyNote: 'Terrain survey · gameplay not built. Terrain categories and region outlines come from World Builder; elevation and scenery are illustrative.',
 });
@@ -15,17 +15,22 @@ const point = (x, y, q, r) => Object.freeze({ x, y, u: x / DEV_ATLAS_SIZE.width,
 // locality anchor, NOT a surveyed location for Tidehaven or a claim that a
 // 700 m path crosses the whole of Drent.
 const drentAnchor = point(1870.615, 2560, 14, 106);
+const lusciaAnchor = point(1679.6, 2636.2, 7, 109);
+const morosAnchor = point(1598.8, 2717.9, 1, 112);
+const suvalAnchor = point(1825.4, 2748.9, 11, 113);
 const capeAnchor = point(1025.374, 1864, -2, 77);
-const local = (region, name, travelTarget, insetY) => Object.freeze({
-  id: `region-${region}`, name, region, regionId: 'Drent', scene: 'eastreena',
-  travelTarget, atlas: drentAnchor, placement: 'provisional-locality',
+// The four playable regions sit on their own authored hexes now: Drent's coast,
+// Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
+const local = (region, name, travelTarget, insetY, regionId, atlas) => Object.freeze({
+  id: `region-${region}`, name, region, regionId, scene: 'eastreena',
+  travelTarget, atlas, placement: 'authored-region',
   inset: Object.freeze({ x: 50, y: insetY }), status: 'Playable local region',
 });
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
-  local(1, 'Eastreena', 'eastreena', 88),
-  local(2, 'Sunmeadow Plain', 'sunmeadow', 64),
-  local(3, 'Reedwater Crossing', 'reedwater', 40),
-  local(4, 'Threefold Rise', 'threefold', 16),
+  local(1, 'Drent', 'drent', 88, 'Drent', drentAnchor),
+  local(2, 'Luscia', 'luscia', 64, 'Luscia', lusciaAnchor),
+  local(3, 'Moros Plain', 'moros', 40, 'Moros Plain', morosAnchor),
+  local(4, 'East Suval', 'suval', 16, 'East Suval', suvalAnchor),
   Object.freeze({ id: 'cape-thalmagar', name: 'Cape Thalmagar', regionId: 'Cape Thalmagar',
     scene: 'cape-thalmagar', travelTarget: 'cape-thalmagar', atlas: capeAnchor,
     placement: 'provisional-fortress-within-authored-region', status: 'Fortress prototype' }),

@@ -70,13 +70,13 @@ export async function runRegionalLifeSmoke(h) {
       await ui.inspect('mill-hoist'); await ui.pages();
       assert(document.querySelector('[data-choice="lower-mill-share"]')?.disabled, 'unaccepted hoist task bypassed Enna'); await ui.leave();
       await ui.talk('commons-miller'); await choose('accept-mill-share');
-      assert(h.localMapModel(2).landmarks.some(p => p.id === 'mill-hoist' && p.known && p.trackable), 'Enna did not reveal the known hoist destination');
+      assert(h.localMapModel(1).landmarks.some(p => p.id === 'mill-hoist' && p.known && p.trackable), 'Enna did not reveal the known hoist destination');
       await ui.inspect('mill-hoist'); await choose('lower-mill-share'); autosaved();
       if (mode === 'anonymous') { await ui.talk('commons-miller'); await choose('return-mill-share'); autosaved(); }
       assert(same(stock(h.inventory), initial), 'the village grain incorrectly became a satchel reward');
 
       await ui.talk('reed-worker'); await choose('accept-net-help');
-      for (const id of ['net-float-west', 'net-float-east']) assert(h.localMapModel(3).landmarks.some(p => p.id === id && p.known), `${id}: accepted activity is absent from local trails`);
+      for (const id of ['net-float-west', 'net-float-east']) assert(h.localMapModel(2).landmarks.some(p => p.id === id && p.known), `${id}: accepted activity is absent from local trails`);
       await ui.inspect('net-float-east'); await choose('free-net-float-east'); autosaved();
       assert(h.regionalLife.state.netEastFreed && !h.regionalLife.state.netWestFreed, 'the far knot could not be freed first and saved independently');
       await ui.inspect('net-float-west'); await choose('free-net-float-west');
@@ -88,7 +88,9 @@ export async function runRegionalLifeSmoke(h) {
 
       await ui.talk('shelter-keeper'); await choose('accept-witness-account');
       await ui.inspect('shelter-ledger'); await ui.pages();
-      assert(document.querySelector('[data-choice="record-testimony-signed"]')?.textContent.includes('permission'), 'signature choice omits Oda\'s permission');
+      // Signing with Oda's name is offered only once she has given her account and permission.
+      const signed = document.querySelector('[data-choice="record-testimony-signed"]');
+      assert(signed && !signed.disabled && signed.textContent.includes("Oda's name"), "signature choice is not offered after Oda's permission");
       await choose(`record-testimony-${mode}`); autosaved();
       assert(h.regionalLife.state.testimonyMode === mode, 'writing board ignored the selected form of account');
       if (mode === 'anonymous') {

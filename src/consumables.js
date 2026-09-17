@@ -1,7 +1,52 @@
-/** Food changes health only; it does not reset combat or grant protection. */
-const FOODS = Object.freeze({
-  pawpaw: Object.freeze({ healing: 25, missing: 'You have no pawpaw fruit. Gather some in the forest.' }),
-  'cooked-fish': Object.freeze({ healing: 40, missing: 'You have no cooked fish. Cook a fresh catch at a lit firepit.' }),
+/**
+ * Food changes health only; it does not reset combat or grant protection.
+ * Every id here must also be a `Food` entry in INVENTORY_ITEMS (src/inventory.js),
+ * which supplies the satchel name, icon and description. `missing` is shown when the
+ * traveler tries to eat something they do not carry, and says where it comes from.
+ */
+const define = (healing, missing) => Object.freeze({ healing, missing });
+
+export const FOODS = Object.freeze({
+  // Gathered and cooked on the road today.
+  pawpaw: define(25, 'You have no pawpaw fruit. Gather some in the forest.'),
+  'cooked-fish': define(40, 'You have no cooked fish. Cook a fresh catch at a lit firepit.'),
+
+  // Foraged in Drent’s broadleaf forest and along its hedges.
+  'wood-sorrel': define(10, 'You have no wood sorrel. It grows in the shade of Drent’s broadleaf woods.'),
+  hazelnuts: define(15, 'You have no hazelnuts. Look for hazel thickets where the forest meets the fields.'),
+  'bramble-berries': define(15, 'You have no bramble berries. Pick them from the thorn tangles the bramble goblins are named for.'),
+  honeycomb: define(30, 'You have no honeycomb. The keeper of the bee-fold sometimes parts with a piece.'),
+  'dried-venison': define(35, 'You have no dried venison. Drent’s hunters dry deer meat in chimney smoke for the winter road.'),
+
+  // Tidehaven kitchens and the farms of the Avrel clearing.
+  'boiled-egg': define(15, 'You have no boiled eggs. Hens scratch behind every cottage in Tidehaven.'),
+  oatcake: define(20, 'You have no oatcakes. Farm kitchens around the Avrel clearing bake them on a griddle stone.'),
+  'avrel-apple': define(20, 'You have no apples. The Avrel valley orchards are the best in Drent.'),
+  'acorn-flatbread': define(30, 'You have no acorn flatbread. Lysa bakes it from leached acorn meal at her outdoor kitchen.'),
+  'rye-loaf': define(30, 'You have no rye bread. The Clearing Mill grinds the Avrel harvest, and the miller’s household bakes it dark and dense.'),
+  'ewe-cheese': define(30, 'You have no ewe’s cheese. The shepherds of the Avrel clearing press it from their flock’s milk.'),
+  'honey-cake': define(35, 'You have no honey cakes. Lysa’s little cakes need acorn meal and bee-fold honey.'),
+  'smoked-sausage': define(40, 'You have no smoked sausage. Drent households hang forest-hog sausages in the chimney smoke all winter.'),
+  'roast-duck': define(45, 'You have no roast duck. The fowlers at Willowmere Pond take birds in the reeds.'),
+  'mutton-pie': define(50, 'You have no mutton pie. A farm kitchen with a sheep to spare and a hot oven makes one.'),
+
+  // The Tidehaven landing, the Stills and the Pebbles.
+  'marsh-samphire': define(10, 'You have no samphire. It grows on the salt flats along the Stills; the reedcutters know where.'),
+  'stills-oysters': define(20, 'You have no oysters. The calm sounds behind the Pebbles are famous for them as far away as Solis.'),
+  'salt-shoal-fish': define(30, 'You have no salt shoal-fish. The Pebbles fleet salts the migratory catch in barrels for the whole coast.'),
+  'dressed-crab': define(35, 'You have no dressed crab. Pebble islanders pot flat-water crab in the Stills and sell it at the landing.'),
+  'smoked-eel': define(40, 'You have no smoked eel. Eel traps line the slow reaches of the Caloss and the Avrel.'),
+  'fish-stew': define(50, 'You have no fish stew. It is ladled out at the Tidehaven landing whenever the boats come in.'),
+
+  // Legion rations and traders’ goods from farther off.
+  hardtack: define(15, 'You have no hardtack. Quartermaster Corvan issues it by the sack; it keeps for years and tastes like it.'),
+  'brined-olives': define(15, 'You have no olives. Galan traders bring them up the Iberos coast in brine jars.'),
+  'dried-figs': define(25, 'You have no dried figs. They come the long way, on the desert road out of Marosh.'),
+  'dried-pears': define(25, 'You have no dried pears. They travel from the Sorten orchards of Ovesos in traders’ packs.'),
+  'roasted-chestnuts': define(30, 'You have no roasted chestnuts. They come down from the Amod terraces by the sackful each autumn.'),
+  'salt-pork': define(35, 'You have no salt pork. The Legion’s barrels come up the coast from the Elagosi lake country.'),
+  'smoked-whitefish': define(45, 'You have no smoked whitefish. Ambron’s lake fleet smokes it for the Legion’s supply trains.'),
+  'narcoshi-cheese': define(45, 'You have no Narcoshi cheese. The eastern-valley cheese sells dear on the Iberos coast and rarely reaches Drent.'),
 });
 
 export function createConsumables({ inventory, combat, onEvent = () => {} }) {

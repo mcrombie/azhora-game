@@ -304,7 +304,7 @@ export function createRegionScenery(kit) {
       const t = k / count, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
       for (const offset of offsets) {
         const px = x + a.nx * offset, pz = z + a.nz * offset;
-        if (laneDistance(px, pz) <= radius + 2.9) continue;
+        if (laneDistance(px, pz) <= radius + 2.3) continue;
         colliders.push({ x: px, z: pz, r: radius, kind: 'river-water' });
       }
     }

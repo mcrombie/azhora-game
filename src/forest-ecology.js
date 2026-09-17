@@ -170,7 +170,9 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
     ...(world.landmarks || []).filter(s => s.z > -162), ...explicit].filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.z))
     .map(p => ({ x: p.x, z: p.z, radius: Math.max(3.2, Number(p.radius ?? p.r) || 0) }));
   if (world.encounter) sites.push({ ...world.encounter, radius: world.encounter.radius + 1.5 });
-  const isForest = (x, z) => x >= -72 && x <= 72 && z >= -154 && z <= -23;
+  // The village woodland in world metres: Tidehaven's old local box (x within 72, z -154..-23)
+  // turned the same quarter turn as the village, so the Greenway now runs along z = 29.
+  const isForest = (x, z) => x >= -174 && x <= -43 && z >= -43 && z <= 101;
   function clear(x, z, radius = .55, avoidPath = true) {
     const point = { x, z }, y = world.heightAt(x, z);
     return isForest(x, z) && Number.isFinite(y) && canStand(x, z, world, radius)
@@ -193,8 +195,8 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
     group.add(mesh); return mesh;
   }
   const tiles = [
-    { id: 'west-greenway', x: -36, z: -55 }, { id: 'east-greenway', x: 36, z: -55 },
-    { id: 'west-fernway', x: -36, z: -123 }, { id: 'east-fernway', x: 36, z: -123 },
+    { id: 'west-greenway', x: -75, z: 65 }, { id: 'east-greenway', x: -75, z: -7 },
+    { id: 'west-fernway', x: -143, z: 65 }, { id: 'east-fernway', x: -143, z: -7 },
   ].map(t => { const group = new THREE.Group(); group.name = t.id; root.add(group); return { ...t, group, plants: [], meshes: [], ticks: 0 }; });
   const nearestTile = point => tiles.reduce((best, tile) => distance(point, tile) < distance(point, best) ? tile : best, tiles[0]);
   const samples = [];
@@ -207,7 +209,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
     let count = 0;
     for (let patch = 0; patch < 1200 && count < config.count; patch++) {
       const anchor = trees.length && random() < .76 ? trees[Math.floor(random() * trees.length)]
-        : { x: -65 + random() * 130, z: -148 + random() * 119 };
+        : { x: -168 + random() * 119, z: -36 + random() * 130 };
       const angle = random() * TAU, radius = 1.5 + random() * 4.8;
       const center = { x: anchor.x + Math.sin(angle) * radius, z: anchor.z + Math.cos(angle) * radius };
       for (let n = 0; n < (config.kind === 'moss-log' ? 1 : 6) && count < config.count; n++) {
@@ -227,7 +229,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
     mesh.computeBoundingSphere(); tile.meshes.push(mesh);
   }
   const deerGroups = [], deer = [];
-  for (const [i, home] of [{ x: -21, z: -60 }, { x: 44, z: -112 }, { x: -41, z: -133 }].entries()) {
+  for (const [i, home] of [{ x: -80, z: 50 }, { x: -132, z: -15 }, { x: -153, z: 70 }].entries()) {
     const group = new THREE.Group(); group.name = `Eastreena deer ${i + 1}`; root.add(group);
     const animals = [];
     for (let n = 0; n < (i === 2 ? 2 : 1); n++) {
@@ -244,8 +246,8 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
   // existing scatter RNG, so adding birds cannot move plants or collectibles.
   const birdGroup = new THREE.Group(); birdGroup.name = 'Eastreena woodland thrushes'; root.add(birdGroup);
   const birds = [];
-  for (const [index, home] of [{ x: -22, z: -53 }, { x: 25, z: -56 }, { x: 30, z: -88 },
-    { x: -24, z: -112 }, { x: -40, z: -141 }].entries()) {
+  for (const [index, home] of [{ x: -73, z: 51 }, { x: -76, z: 4 }, { x: -108, z: -1 },
+    { x: -132, z: 53 }, { x: -161, z: 69 }].entries()) {
     const point = nearClear(home.x, home.z, .28, true); if (!point) continue;
     birds.push({ id: `woodland-thrush-${index + 1}`, species: 'woodland-thrush', ...point, home: { ...point },
       index, yaw: index * 1.61 + .2, clock: index * .73, timer: .8 + index * .31, cooldown: 0,
@@ -267,7 +269,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
       if (species === 'butterfly' && !bee && !flower) continue;
       // Bees share the butterfly's two instanced batches. Their smaller scale,
       // quick level flight, and hive-bound routes distinguish them without draws.
-      const hiveX = [39.9, 41.95, 44][(i - 8) % 3], hiveZ = -36.9 + (i % 2) * .3;
+      const hiveX = -56.9 + (i % 2) * .3, hiveZ = [-10.9, -12.95, -15][(i - 8) % 3];
       const pond = world.pond, home = bee ? { x: hiveX, y: world.heightAt(hiveX, hiveZ) + 1.10, z: hiveZ }
         : species === 'butterfly' ? { x: flower.x, y: flower.y + .60, z: flower.z }
         : { x: pond.x + Math.sin(i * 1.7) * pond.radius * .54, y: pond.surfaceY + .75, z: pond.z + Math.cos(i * 1.7) * pond.radius * .54 };

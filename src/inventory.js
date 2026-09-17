@@ -50,6 +50,156 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A simple meal cooked over a fire. Restores up to 40 health.',
     description: 'Restores up to 40 health. A fish cooked over the campfire, ready for the road. Open your satchel with I, select it, and choose Eat. Each meal uses one cooked fish. At full health, no food is consumed.',
   }),
+  // The wider larder: foods of Drent and its trade. Healing values live in src/consumables.js.
+  // Foraged in Drent’s broadleaf forest and along its hedges.
+  'wood-sorrel': Object.freeze({
+    name: 'Wood sorrel', type: 'Food', icon: 'leaf', stackable: true, eatName: 'handful of wood sorrel',
+    brief: 'Tart, clover-shaped leaves from the forest floor. Restores up to 10 health.',
+    description: 'Restores up to 10 health. Sharp, lemony leaves that grow in the shade under Drent’s oaks and beeches. Travelers chew them for the taste and the small lift they give; nobody pretends they are a meal.',
+  }),
+  hazelnuts: Object.freeze({
+    name: 'Hazelnuts', type: 'Food', icon: 'nut', stackable: true, eatName: 'handful of hazelnuts',
+    brief: 'Sweet nuts from the hazel thickets at the forest edge. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Shelled hazelnuts, gathered in autumn where the woods thin toward the Avrel fields. They keep for months in a dry pouch, which is why every Drent traveler carries some.',
+  }),
+  'bramble-berries': Object.freeze({
+    name: 'Bramble berries', type: 'Food', icon: 'berries', stackable: true, eatName: 'handful of bramble berries',
+    brief: 'Dark, sweet berries from the thorn tangles. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Picked from the same brambles that give the bramble goblins their name. They stain the fingers and bruise within a day, so eat them soon.',
+  }),
+  honeycomb: Object.freeze({
+    name: 'Honeycomb', type: 'Food', icon: 'honeycomb', stackable: true, eatName: 'piece of honeycomb',
+    brief: 'A dripping piece of comb from the bee-fold hives. Restores up to 30 health.',
+    description: 'Restores up to 30 health. Wax comb heavy with dark forest honey, wrapped in a leaf. Bees are livestock in Azhoran law and hive rights are leased like fields, so a piece of comb is a real gift.',
+  }),
+  'dried-venison': Object.freeze({
+    name: 'Dried venison', type: 'Food', icon: 'strips', stackable: true, eatName: 'strip of dried venison',
+    brief: 'Lean deer meat dried over a smoky fire. Restores up to 35 health.',
+    description: 'Restores up to 35 health. Thin strips of deer meat, salted and dried in chimney smoke until they bend without breaking. Drent’s hunters make it for the winter road; it is chewy, salty, and nearly indestructible.',
+  }),
+  // Tidehaven kitchens and the farms of the Avrel clearing.
+  'boiled-egg': Object.freeze({
+    name: 'Boiled eggs', type: 'Food', icon: 'egg', stackable: true, eatName: 'boiled egg',
+    brief: 'A hen’s egg boiled hard for the road. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Hard-boiled and still in the shell, from the hens that scratch behind every Tidehaven cottage. Plain food that survives a day in a satchel.',
+  }),
+  oatcake: Object.freeze({
+    name: 'Oatcakes', type: 'Food', icon: 'flatbread', stackable: true, eatName: 'oatcake',
+    brief: 'Thin, dry oat rounds baked on a griddle stone. Restores up to 20 health.',
+    description: 'Restores up to 20 health. Rough oat rounds from the farm kitchens around the Avrel clearing, baked hard so they keep. Better with cheese or honey, but fine on their own.',
+  }),
+  'avrel-apple': Object.freeze({
+    name: 'Avrel apples', type: 'Food', icon: 'apple', stackable: true, eatName: 'apple',
+    brief: 'A crisp orchard apple from the Avrel valley. Restores up to 20 health.',
+    description: 'Restores up to 20 health. The Avrel valley has the best orchard land in Drent, and its apples go out by barge through the Stills every autumn. Crisp, sharp and juicy.',
+  }),
+  'acorn-flatbread': Object.freeze({
+    name: 'Acorn flatbread', type: 'Food', icon: 'flatbread', stackable: true, eatName: 'acorn flatbread',
+    brief: 'Lysa’s nutty flatbread, baked from leached acorn meal. Restores up to 30 health.',
+    description: 'Restores up to 30 health. A dense round from Lysa’s outdoor kitchen. She soaks and rinses the acorns until the bitterness is gone before grinding them; the bread tastes faintly of hazelnut and smoke.',
+  }),
+  'rye-loaf': Object.freeze({
+    name: 'Rye loaf', type: 'Food', icon: 'loaf', stackable: true, eatName: 'heel of rye bread',
+    brief: 'Dark, dense bread from the Clearing Mill’s flour. Restores up to 30 health.',
+    description: 'Restores up to 30 health. A heel of dark rye, sour and close-grained, baked by the miller’s household from the Avrel harvest. It keeps for a week and stands up to a long road.',
+  }),
+  'ewe-cheese': Object.freeze({
+    name: 'Ewe’s cheese', type: 'Food', icon: 'cheese', stackable: true, eatName: 'wedge of ewe’s cheese',
+    brief: 'A firm, salty cheese from the clearing’s flock. Restores up to 30 health.',
+    description: 'Restores up to 30 health. Pressed from the milk of the sheep grazing the Avrel clearing, rubbed with salt and aged in a cool shed. Crumbly, sharp, and good with oatcakes.',
+  }),
+  'honey-cake': Object.freeze({
+    name: 'Honey cakes', type: 'Food', icon: 'cake', stackable: true, eatName: 'honey cake',
+    brief: 'Lysa’s little acorn cakes, sweet with bee-fold honey. Restores up to 35 health.',
+    description: 'Restores up to 35 health. Small, sticky cakes of acorn meal and honey, the reward at the end of Lysa’s long afternoon of acorn work. They smell wonderfully nutty and vanish quickly.',
+  }),
+  'smoked-sausage': Object.freeze({
+    name: 'Smoked sausage', type: 'Food', icon: 'sausage', stackable: true, eatName: 'length of smoked sausage',
+    brief: 'Forest-hog sausage hung in chimney smoke. Restores up to 40 health.',
+    description: 'Restores up to 40 health. Coarse forest-hog sausage, smoked hard in a Drent chimney over the winter. The hogs fatten on acorns and beech mast in the woods, and the sausage tastes of it.',
+  }),
+  'roast-duck': Object.freeze({
+    name: 'Roast duck', type: 'Food', icon: 'drumstick', stackable: true, eatName: 'roast duck leg',
+    brief: 'A duck leg roasted crisp, from the Willowmere reeds. Restores up to 45 health.',
+    description: 'Restores up to 45 health. A wild duck taken in the reeds at Willowmere Pond and roasted over an open fire. Rich, dark meat with crackling skin. Cold, it is still better than most hot dinners.',
+  }),
+  'mutton-pie': Object.freeze({
+    name: 'Mutton pie', type: 'Food', icon: 'pie', stackable: true, eatName: 'mutton pie',
+    brief: 'A hand-sized pie of mutton and onion in thick crust. Restores up to 50 health.',
+    description: 'Restores up to 50 health. Slow-cooked mutton and onion baked in a sturdy crust made to be carried. A farm kitchen with a sheep to spare makes them for shepherds and travelers alike.',
+  }),
+  // The Tidehaven landing, the Stills and the Pebbles.
+  'marsh-samphire': Object.freeze({
+    name: 'Marsh samphire', type: 'Food', icon: 'leaf', stackable: true, eatName: 'handful of samphire',
+    brief: 'Crisp, salty green shoots from the flats along the Stills. Restores up to 10 health.',
+    description: 'Restores up to 10 health. Jointed green shoots picked at low water on the salt flats behind the Pebbles. Crunchy and briny raw, better blanched. The reedcutters gather it by the basket and think little of it.',
+  }),
+  'stills-oysters': Object.freeze({
+    name: 'Stills oysters', type: 'Food', icon: 'oyster', stackable: true, eatName: 'half-dozen oysters',
+    brief: 'Fresh oysters from the calm water behind the Pebbles. Restores up to 20 health.',
+    description: 'Restores up to 20 health. Drent oysters are known by name in the markets of Solis and Enebreum. Pebble pilots carry them as a sideline, and Tidehaven eats them straight from the shell.',
+  }),
+  'salt-shoal-fish': Object.freeze({
+    name: 'Salt shoal-fish', type: 'Food', icon: 'dried-fish', stackable: true, eatName: 'salt shoal-fish',
+    brief: 'Migratory fish salted and dried on the Pebbles. Restores up to 30 health.',
+    description: 'Restores up to 30 health. When the shoals run through the Pebble channels, the islanders salt and dry the catch by the barrel. Stiff, salty and long-keeping, it feeds the whole coast through the winter.',
+  }),
+  'dressed-crab': Object.freeze({
+    name: 'Dressed crab', type: 'Food', icon: 'crab', stackable: true, eatName: 'dressed crab',
+    brief: 'Flat-water crab from the Stills, picked and packed in its shell. Restores up to 35 health.',
+    description: 'Restores up to 35 health. The flat-water crab of the Stills’ southern reaches, boiled and picked, with the meat packed back into the cleaned shell. Sweet and rich, and worth a good price in Solis.',
+  }),
+  'smoked-eel': Object.freeze({
+    name: 'Smoked eel', type: 'Food', icon: 'eel', stackable: true, eatName: 'piece of smoked eel',
+    brief: 'Oily river eel smoked golden. Restores up to 40 health.',
+    description: 'Restores up to 40 health. Eels trapped in the slow reaches of the Caloss and the Avrel, smoked over oak until the flesh is golden and firm. Rich, filling, and easy to carry wrapped in a cloth.',
+  }),
+  'fish-stew': Object.freeze({
+    name: 'Fish stew', type: 'Food', icon: 'bowl', stackable: true, eatName: 'bowl of fish stew',
+    brief: 'A thick stew of the day’s catch, carried in a lidded crock. Restores up to 50 health.',
+    description: 'Restores up to 50 health. Fish, onion and barley simmered in one pot and ladled out at the Tidehaven landing whenever the boats come in. In a lidded crock it stays warm for a while and good for longer.',
+  }),
+  // Legion rations and traders’ goods from farther off.
+  hardtack: Object.freeze({
+    name: 'Legion hardtack', type: 'Food', icon: 'biscuit', stackable: true, eatName: 'hardtack biscuit',
+    brief: 'The Ambroni Legion’s square, rock-hard ration biscuit. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Flour, water and salt baked twice until it could stop an arrow. Quartermaster Corvan issues it by the sack. Soak it in something before biting, or lose a tooth to the Empire.',
+  }),
+  'brined-olives': Object.freeze({
+    name: 'Brined olives', type: 'Food', icon: 'olives', stackable: true, eatName: 'handful of olives',
+    brief: 'Salty green olives from the Galan coast. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Olives from the dry-farmed groves of the Pyrosi coast, brought up the Iberos Sea in brine jars by Galan traders. A taste of warmer country a long way from Drent.',
+  }),
+  'dried-figs': Object.freeze({
+    name: 'Dried figs', type: 'Food', icon: 'fig', stackable: true, eatName: 'dried fig',
+    brief: 'Sweet, chewy figs from the southern desert road. Restores up to 25 health.',
+    description: 'Restores up to 25 health. Figs dried in the southern sun and packed tight for the caravan road out of Marosh. By the time they reach Drent they have crossed most of Azhora, and cost accordingly.',
+  }),
+  'dried-pears': Object.freeze({
+    name: 'Dried pears', type: 'Food', icon: 'pear', stackable: true, eatName: 'handful of dried pears',
+    brief: 'Sliced pears dried sweet and leathery. Restores up to 25 health.',
+    description: 'Restores up to 25 health. Pears from the orchard slopes of the Sorten in Ovesos, sliced and dried for traders’ packs. Sweet, leathery, and a favorite of children along the road.',
+  }),
+  'roasted-chestnuts': Object.freeze({
+    name: 'Roasted chestnuts', type: 'Food', icon: 'nut', stackable: true, eatName: 'portion of roasted chestnuts',
+    brief: 'Sweet chestnuts roasted until they split. Restores up to 30 health.',
+    description: 'Restores up to 30 health. Chestnuts from the Amod foothills, roasted over coals until the shells split and the insides go soft and sweet. Autumn in Amod smells of chestnut smoke; a twist of them keeps the memory.',
+  }),
+  'salt-pork': Object.freeze({
+    name: 'Salt pork', type: 'Food', icon: 'slab', stackable: true, eatName: 'slice of salt pork',
+    brief: 'Fat pork packed in salt, the Legion’s marching meat. Restores up to 35 health.',
+    description: 'Restores up to 35 health. Barrelled pork from the Elagosi lake country, salted hard for the Legion’s supply trains. Sliced and fried it is good; cold from the barrel it is still food.',
+  }),
+  'smoked-whitefish': Object.freeze({
+    name: 'Smoked whitefish', type: 'Food', icon: 'cooked-fish', stackable: true, eatName: 'smoked whitefish',
+    brief: 'Lake fish from Elagos, smoked for the supply trains. Restores up to 45 health.',
+    description: 'Restores up to 45 health. Whitefish from Lake Ela, split and smoked by Ambron’s lake fleet. Elagosi dried fish reaches markets across Azhora, and the Legion marches on it.',
+  }),
+  'narcoshi-cheese': Object.freeze({
+    name: 'Narcoshi cheese', type: 'Food', icon: 'cheese', stackable: true, eatName: 'wedge of Narcoshi cheese',
+    brief: 'A dense mountain goat cheese with a flavor no one can copy. Restores up to 45 health.',
+    description: 'Restores up to 45 health. Made from the milk of the Narcoshi goats of the eastern valleys and aged in cold mountain cellars. Its flavor cannot be reproduced anywhere else, and Iberos coast merchants pay accordingly. A rare thing to find in Drent.',
+  }),
 });
 
 /** No DOM dependency: ownership and selection can be checked independently. */
@@ -107,7 +257,34 @@ const iconPaths = {
   'fishing-rod': '<path d="m5 32 9-14C20 9 24 5 30 3M4 29l4 3M7 25l4 3M30 3v23c0 6-7 6-7 1v-3l2 2M17 16l2 2M23 9l2 2"/><circle cx="12" cy="24" r="3"/>',
   'raw-fish': '<path d="M9 18C16 7 26 9 32 18c-6 9-16 11-23 0ZM9 18 3 11v14ZM22 12c-3 3-3 9 0 12M14 12l3-6 5 5M14 24l3 6 5-5"/><circle cx="27" cy="17" r="1"/>',
   'cooked-fish': '<path d="M9 23c7-9 17-8 23 0-6 8-16 9-23 0ZM9 23l-6-6v12ZM24 18c-3 3-3 7 0 10M13 20l3 6m3-8 3 8M12 13c-4-4 4-5 0-9m8 9c-4-4 4-5 0-9m8 9c-4-4 4-5 0-9"/><circle cx="28" cy="22" r="1"/>',
+  leaf: '<path d="M7 30C8 17 17 8 31 6c-1 14-9 23-22 24Z"/><path d="m7 30 19-19M13 22c3 1 6 1 9-1M11 26c3 1 6 1 8-1M17 17c2 1 5 1 7-1"/>',
+  nut: '<path d="M12 16c-2 6 1 12 6 14 5-2 8-8 6-14Z"/><path d="M10 16c2-7 5-9 8-9s6 2 8 9c-5-2-11-2-16 0Z"/><path d="M14 18c1 4 2 7 4 10"/>',
+  berries: '<circle cx="13" cy="22" r="4.5"/><circle cx="22" cy="25" r="4.5"/><circle cx="20" cy="15" r="4.5"/><circle cx="28" cy="18" r="3.5"/><path d="M20 10V4M20 6c-4-3-8-2-10 1 4 2 7 1 10-1"/>',
+  honeycomb: '<path d="M22.5 18l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM29.25 14.1l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM29.25 21.9l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM15.75 14.1l-2.25 3.9h-4.5L6.75 14.1 9 10.2h4.5ZM15.75 21.9l-2.25 3.9h-4.5L6.75 21.9 9 18h4.5ZM22.5 10.2l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM22.5 25.8l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5Z"/>',
+  strips: '<path d="M5 26c5-7 12-11 20-13l7-1-4 5c-6 4-13 8-21 10Z"/><path d="M10 22c2 1 3 2 4 4M16 18c2 1 3 2 4 4M22 15c2 1 3 2 4 4"/>',
+  egg: '<path d="M18 5c-6 0-11 9-11 17a11 9 0 0 0 22 0C29 14 24 5 18 5Z"/><path d="M12 22c0 3 2 5 5 5"/>',
+  flatbread: '<ellipse cx="18" cy="20" rx="13" ry="8"/><path d="M11 18h.01M16 17h.01M22 18h.01M14 22h.01M20 23h.01M25 21h.01"/>',
+  apple: '<path d="M18 12c-3-3-8-3-11 1-4 5-2 14 3 17 3 2 5 0 8 0s5 2 8 0c5-3 7-12 3-17-3-4-8-4-11-1Z"/><path d="M18 12V6M18 8c2-4 6-4 9-3-1 3-5 5-9 3"/>',
+  loaf: '<path d="M5 24c0-7 6-11 13-11s13 4 13 11c0 3-2 5-5 5H10c-3 0-5-2-5-5Z"/><path d="M12 15c2 3 2 6 0 9M18 13c2 3 2 7 0 10M24 15c2 3 2 6 0 9"/>',
+  cheese: '<path d="M4 18 30 10l-2 12ZM28 22v8L4 26v-8"/><circle cx="12" cy="25" r="1.6"/><circle cx="20" cy="26" r="1.2"/><circle cx="17" cy="16" r="1.2"/>',
+  cake: '<path d="M8 21c0-6 5-10 10-10s10 4 10 10v8H8Z"/><path d="M8 21c2 2 4-1 6 1s4-1 6 1 4-1 6 1 3 0 4-1M12 15c2 1 4 1 6 0s4-1 6 0"/>',
+  sausage: '<path d="M8 27c-4-4-3-13 3-17s15-4 19 1c3 4 1 11-5 15s-13 5-17 1Z"/><path d="m8 27-3 3M30 11l3-3M13 21c3-3 7-5 12-6"/>',
+  drumstick: '<path d="M23 7c5 0 8 3 8 8 0 4-3 7-7 8l-3 1-8 8c-2 2-5 2-6 0s-1-4 1-6l8-8 1-3c1-4 2-8 6-8Z"/><path d="m7 32-2-2M10 29l-2-2M16 22c2-1 5-1 7 1"/>',
+  pie: '<path d="M4 20h28c0 6-6 11-14 11S4 26 4 20Z"/><path d="M4 20c2-3 5-3 7 0s5 3 7 0 5-3 7 0 5 3 7 0M14 15c-2-2 1-4 0-7m8 7c-2-2 1-4 0-7"/>',
+  oyster: '<path d="M5 15c4-8 22-8 26 0 1 8-5 15-13 15S4 23 5 15Z"/><path d="M5 15h26M18 15v15M11 16l2 13M25 16l-2 13M9 15l3-6m12 6 3-6"/>',
+  'dried-fish': '<path d="M6 12c8-4 16-4 24 0v12c-8 4-16 4-24 0Z"/><path d="m6 12-3 6 3 6M30 12l3 6-3 6M12 13v10m6-11v12m6-11v10"/>',
+  crab: '<ellipse cx="18" cy="22" rx="9" ry="6"/><path d="M9 21c-4 0-6-1-7-4m7 8c-3 2-6 1-7-2M27 21c4 0 6-1 7-4m-7 8c3 2 6 1 7-2M12 17c-3-3-6-4-8-2 0-3 4-5 7-3M24 17c3-3 6-4 8-2 0-3-4-5-7-3M15 17l1-4m4 4 1-4"/><circle cx="15.5" cy="12" r="1"/><circle cx="20.5" cy="12" r="1"/>',
+  eel: '<path d="M3 24c4-8 8-8 12-2s8 6 12-2c2-4 3-8 3-11"/><path d="M30 9c1-2 3-3 5-2-1 2-3 3-5 3M5 22l-2 4 3 2"/>',
+  bowl: '<path d="M4 18h28c0 8-6 13-14 13S4 26 4 18Z"/><path d="M9 31h18M13 13c-2-3 1-4 0-7m6 7c-2-3 1-4 0-7m6 7c-2-3 1-4 0-7"/>',
+  biscuit: '<rect x="6" y="8" width="24" height="20" rx="3"/><path d="M12 14h.01M18 14h.01M24 14h.01M12 20h.01M18 20h.01M24 20h.01M15 17h.01M21 17h.01M15 23h.01M21 23h.01"/>',
+  olives: '<path d="M4 29C10 21 19 13 32 6"/><ellipse cx="13" cy="19" rx="3" ry="4.2" transform="rotate(-35 13 19)"/><ellipse cx="22" cy="13" rx="3" ry="4.2" transform="rotate(-35 22 13)"/><path d="M18 21c3 0 6 2 7 5M9 14c3-1 6 0 8 2M25 9c3-1 6 0 8 2"/>',
+  fig: '<path d="M18 7c-1 5-8 7-8 15 0 5 4 9 8 9s8-4 8-9c0-8-7-10-8-15Z"/><path d="M18 7c0-2 1-3 2-5M12 16l6 5 6-5M14 25c1 2 2 3 4 4"/>',
+  pear: '<path d="M18 8c-2 4-8 7-9 14-1 6 3 10 9 10s10-4 9-10c-1-7-7-10-9-14Z"/><path d="M18 8c0-2 1-4 3-5M12 22c0 4 2 7 5 8"/>',
+  slab: '<path d="M6 13c6-2 18-2 24 0v13c-6 2-18 2-24 0Z"/><path d="M6 19c6-2 18-2 24 0M12 14v11m12-11v11"/>',
 };
+
+/** Every icon the satchel can draw; item definitions are checked against it in tests. */
+export const ICON_KINDS = Object.freeze(Object.keys(iconPaths));
 
 function icon(kind) {
   const wrapper = document.createElement('span');

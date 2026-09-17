@@ -36,7 +36,7 @@ export function journeyConversation(npc,context) {
         const hasRod=inventory.has('fishing-rod'),canBorrow=!hasRod&&typeof teachFishing==='function';
         openDialogue(npc,[
           'There is a marked fishing bank east of the bridge. Stand on the dry patch with a rod and press F to cast. Wait until the float dips and the prompt says a bite, then press F again to reel. Too early, and all you catch is my sympathy.',
-          `${hasRod?'You already have a good enough rod. Patience matters more than polish.':canBorrow?'I keep a spare rod for travelers. You are welcome to borrow it for the road.':'Bran at Willowmere Pond, back in Eastreena, can lend you a rod.'} The catch goes into your satchel raw. Bring it to a fire ring nearby: a tinderbox and two sticks light the fire, then Cook turns a raw fish into a meal. Eat it from I when you need health.`
+          `${hasRod?'You already have a good enough rod. Patience matters more than polish.':canBorrow?'I keep a spare rod for travelers. You are welcome to borrow it for the road.':'Bran at Willowmere Pond, back in Tidehaven’s wood, can lend you a rod.'} The catch goes into your satchel raw. Bring it to a fire ring nearby: a tinderbox and two sticks light the fire, then Cook turns a raw fish into a meal. Eat it from I when you need health.`
         ],null,canBorrow?'Borrow a spare rod':'Back to our conversation',{onComplete:()=>{
           if(canBorrow&&!inventory.has('fishing-rod')){
             const result=teachFishing();

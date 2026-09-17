@@ -12,6 +12,7 @@ export async function runAutoplaySmoke(h) {
   const milestones = [];
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
+  let previousFrames = readState().frames, previousAction = null;
 
   const note = (label, extra = {}) => milestones.push({ label, seconds: Math.round((performance.now() - started) / 100) / 10, ...extra });
   autopilot.configure({ dialoguePace: .35, choicePace: .3 });
@@ -25,9 +26,20 @@ export async function runAutoplaySmoke(h) {
     await frames(6);
     const state = readState(), now = position();
     const stepDistance = Math.hypot(now.x - previous.x, now.z - previous.z);
-    // Six frames at the 50 ms simulation cap and 7.2 m/s running is at most 2.16 m; retries and arrivals are placed by the game itself.
-    if (state.mode === 'playing' && previousMode === 'playing') { maxJump = Math.max(maxJump, stepDistance); assert(stepDistance <= 2.4, `autoplay moved ${stepDistance.toFixed(2)} m in six frames`); }
-    else if (state.mode === 'playing') walked += 0;
+    // Each rendered frame simulates at most 50 ms, so running at 7.2 m/s covers
+    // at most .36 m per frame. Count the frames the game actually rendered: the
+    // frame waiter can miss one under load, and a missed frame is not a teleport.
+    const renderedFrames = Number.isFinite(state.frames) && Number.isFinite(previousFrames)
+      ? Math.max(1, state.frames - previousFrames) : 6;
+    previousFrames = state.frames;
+    // A dodge is an ordinary player action that lunges 3.05 m of its own.
+    const dodging = state.combat?.action === 'dodge' || previousAction === 'dodge';
+    if (state.mode === 'playing' && previousMode === 'playing') {
+      maxJump = Math.max(maxJump, stepDistance / renderedFrames);
+      assert(stepDistance <= renderedFrames * 7.2 * .05 + .24 + (dodging ? 3.05 : 0),
+        `autoplay moved ${stepDistance.toFixed(2)} m over ${renderedFrames} rendered frame(s)`);
+    }
+    previousAction = state.combat?.action ?? null;
     if (state.mode === 'playing' && previousMode === 'playing') walked += stepDistance;
     previous = now; previousMode = state.mode;
     if (state.questStage !== lastStage) { note(`quest stage ${state.questStage}`, { region: state.region }); lastStage = state.questStage; }
@@ -62,12 +74,12 @@ export async function runAutoplaySmoke(h) {
   assert(final.journeyView.complete, 'the road was not completed');
   assert(final.campaign?.chapterId === 'luscia-aftermath', 'the campaign did not advance to Luscia');
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
-  assert(world.regionAt(final.position[0], final.position[2]).id === 4, 'the traveler did not end on Threefold Rise');
+  assert(world.regionAt(final.position[0], final.position[2]).id === 2, 'the traveler did not end beside the Lauvel relay in Luscia');
   assert(tookOver && restarted, 'the hand-over was never exercised');
   assert(fights >= 2, `only ${fights} fights were seen`);
   checks += 7;
   return {
-    ok: true, checks, fights, retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxSixFrameStep: Math.round(maxJump * 100) / 100,
+    ok: true, checks, fights, retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxMetresPerRenderedFrame: Math.round(maxJump * 100) / 100,
     elapsedSeconds: Math.round((performance.now() - started) / 100) / 10, milestones, stopReason: autopilot.stopReason,
   };
 }

@@ -3,7 +3,7 @@ import { createWorld } from './world.js';
 import { createCharacter, makeQuestMarker } from './characters.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
-import { createInventory } from './inventory.js';
+import { createInventory, INVENTORY_ITEMS } from './inventory.js';
 import { createWeapons } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
@@ -28,6 +28,7 @@ import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
+import { insideRegion } from './regions.js';
 import { runAutoplaySmoke } from './autoplay-smoke.js';
 import { describeRegion, computeAdjacency, FACTIONS } from './campaign-world.js';
 import { runRoadSmoke, runRoadTestingSmoke } from './road-smoke.js';
@@ -113,7 +114,7 @@ function init() {
   }});
   inventory.refresh();combat.setWeaponReady(true);
   consumables=createConsumables({inventory,combat,onEvent(event){
-    toast(`Recovered ${event.healed} health.`, event.id==='cooked-fish'?'ATE COOKED FISH':'ATE A RIPE PAWPAW');audio?.effect('success');updateHUD();
+    toast(`Recovered ${event.healed} health.`, `ATE ${(INVENTORY_ITEMS[event.id]?.eatName??'food').toUpperCase()}`);audio?.effect('success');updateHUD();
     if(questStage>=1)saveRoad(false);
   }});
   const campEvents=[];
@@ -362,8 +363,12 @@ function init() {
     }
     combat.startPractice(world.training);if(questStage!==2)combat.finishPractice();combat.state.player.hp=Math.max(1,saved.health??100);
     syncJourney();
-    const point=canStand(saved.position.x,saved.position.z,world)?saved.position:questStage<10?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
-    player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=0;
+    // A saved position is only honoured when it still stands on one of the four
+    // authored regions; older saves from the straight 700 m road resume at a spawn.
+    const onPlayableGround=canStand(saved.position.x,saved.position.z,world)
+      &&world.regions.some(region=>insideRegion(region.name,saved.position.x,saved.position.z));
+    const point=onPlayableGround?saved.position:questStage<10?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
+    player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
     mode='playing';testingEnabled=false;document.body.classList.add('playing');show('opening',false);show('testing-badge',false);show('modal-backdrop',false);
     syncJourney();refreshQuest();inventory.refresh();stopInput();settleCamera();canvas.focus();toast('The road is where you left it.','CONTINUING YOUR JOURNEY');return true;
   }
@@ -884,7 +889,7 @@ function init() {
     const region=world.regionAt?.(player.group.position.x,player.group.position.z);
     if(region){
       $('region-name').textContent=region.name;$('map-caption').textContent=region.name.toUpperCase();
-      $('region-kicker').textContent=region.id===1?'THE FIRST SHORE':region.id===4?'LUSCIA · REGION 4':`DRENT · REGION ${region.id}`;
+      $('region-kicker').textContent=region.id===1?'THE FIRST SHORE · DRENT':`AZHORA · REGION ${region.id}`;
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;toast(region.subtitle,`REGION ${region.id} · ${region.name.toUpperCase()}`);}
     }
     $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':'DEFEND THE GREENWAY';
@@ -948,7 +953,7 @@ function init() {
         else player.group.position.y=floor;
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
-        if(questStage===3&&player.group.position.z< -26&&player.group.position.z> -48&&Math.abs(player.group.position.x)<8)startAmbush();
+        if(questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
         if(questStage===8&&Math.hypot(player.group.position.x-world.northTrail.x,player.group.position.z-world.northTrail.z)<5)updateQuest('reach-north-trail');
         if(questStage===9&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<4.5)updateQuest('reach-border');
         if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x+250,player.group.position.z-12)<14){
@@ -999,7 +1004,7 @@ function init() {
       if(mode==='playing'){
         const state=forestHideout.state,config=FOREST_HIDEOUT_QUEST;
         if(state.cleared&&!state.recovered&&Math.hypot(p.x-config.supplies.x,p.z-config.supplies.z)<2.7)currentHideoutSite='supplies';
-        else if(Math.hypot(p.x-config.approach.x,p.z-config.approach.z)<3.5||Math.hypot(p.x-60,p.z+118)<9)currentHideoutSite='approach';
+        else if(Math.hypot(p.x-config.approach.x,p.z-config.approach.z)<3.5||Math.hypot(p.x-config.encounter.center.x,p.z-config.encounter.center.z)<9)currentHideoutSite='approach';
       }
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
@@ -1229,12 +1234,12 @@ function init() {
         canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0}));await until(()=>practiceHits>=2,'Left-click practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         press('KeyA');tap('ControlLeft');release('KeyA');await until(()=>questStage===3,'Dodge lesson failed');await until(()=>combat.state.player.action==='idle','Dodge recovery failed');
         assert(weapons.status('simple-sword').durability===22,'Practice hits did not wear the sword exactly once each');
-        warp(0,-27);await frames();assert(questStage===4&&combat.state.enemies.length===3,'Goblin ambush failed');
+        warp(-47,29);await frames();assert(questStage===4&&combat.state.enemies.length===3,'Goblin ambush failed');
         // Pause freezes a committed encounter. A reduced-health fixture then
         // exercises an actual enemy strike, defeat screen, and checkpoint retry.
         modal('pause');const pausedEnemies=combat.state.enemies.map(e=>[e.x,e.z,e.progress]);await frames(4);
         assert(JSON.stringify(pausedEnemies)===JSON.stringify(combat.state.enemies.map(e=>[e.x,e.z,e.progress])),'Pause did not freeze combat');closeModal();
-        combat.state.player.hp=17;warp(-1.3,-34.5);
+        combat.state.player.hp=17;warp(-54.5,30.3);
         await until(()=>mode==='defeated','Enemy did not land the defeat strike');await frames(18);
         assert(!$('defeat').classList.contains('hidden'),'Defeat screen missing');assert(combat.state.player.progress>0,'Defeat pose froze');
         $('retry').click();assert(mode==='playing'&&combat.state.player.hp===100&&questStage===4,'Checkpoint retry failed');assert(practiceHits>=2&&practiceDodges>=1,'Retry lost lessons');

@@ -10,11 +10,12 @@ const EFFECTS=Object.freeze({
 export function roadAudioProfile({position={},region=1}={}) {
   const id=[1,2,3,4].includes(region?.id??region)?(region?.id??region):1;
   const x=Number.isFinite(position.x)?position.x:0,z=Number.isFinite(position.z)?position.z:0;
-  const shore=clamp((z+48)/78,0,1),water=clamp(1-Math.abs(z+412)/78,0,1);
-  const wood=(id===1&&Math.abs(x)<3&&z>=24)||(id===3&&Math.abs(x)<2.8&&z>=-425&&z<=-399);
+  // Drent's coast is east (+X); the Caloss crosses the Drent-Luscia border.
+  const shore=clamp((x+42)/54,0,1),water=clamp(1-Math.hypot(x+345,z-93)/86,0,1);
+  const wood=(id===1&&Math.abs(z-29)<3&&x>=4)||(id===2&&Math.hypot(x+345,z-93)<13);
   return {region:id,surface:wood?'wood':id===4?'stone':'earth',
     sea:id===1?.22*shore:0,forest:id===1?.065*(1-shore*.7):0,
-    field:id===2?.055:0,river:id===3?.14*water:0,ridge:id===4?.105:0};
+    field:id===3?.055:0,river:(id===1||id===2)?.14*water:0,ridge:id===4?.105:0};
 }
 
 /** Lazy, local synthesis. No audio context, timers, or sources exist until unmuted. */
@@ -118,12 +119,12 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
     callCountdown-=step;
     if(callCountdown<=0) {
       let heard=false;
-      if(region===2&&Math.hypot(position.x+32,position.z+248)<72)
+      if(region===3&&Math.hypot(position.x+500,position.z-312)<140)
         heard=tone([235,182,.48,.016],{turn:270});
-      else if((region===1&&position.z<12)||(region===3&&Math.abs(position.z+412)<72))
+      else if((region===1&&position.x< -30)||(region===2&&Math.hypot(position.x+345,position.z-93)<86))
         heard=tone([1450+rand()*280,1360,.29,.018],{type:'sine',turn:2190+rand()*160});
       if(heard)calls++;
-      callCountdown=region===2?12+rand()*6:8+rand()*7;
+      callCountdown=region===3?12+rand()*6:8+rand()*7;
     }
   }
   function dispose() {

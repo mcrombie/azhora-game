@@ -137,13 +137,15 @@ export async function runDeveloperSmoke(h) {
     assert(routeStops.length === 4, 'Drent is missing the four local playable destinations');
     await click(routeStops.find(node => node.dataset.devDestination === 'region-4'));
     assert(developer.state().scene === 'eastreena' && developer.state().destination === 'region-4', 'local region4 marker did not return to the playable world scene');
-    assert(developer.state().flight.position.z < -500 && developer.state().flight.position.z > -600,
-      'Threefold Rise local destination uses the wrong world coordinates');
+    // East Suval lies south of Luscia on the atlas: large positive z, east of the Moros.
+    assert(developer.state().flight.position.z > 200 && developer.state().flight.position.z < 460 && developer.state().flight.position.x > -320 && developer.state().flight.position.x < 150,
+      'East Suval local destination uses the wrong world coordinates');
     unchanged('local region inspection');
     if(h.ghostVisibilityState){
       const before=h.ghostVisibilityState();
-      assert(before.road.groups.some(group=>group.visible), 'ghost visit to Threefold left all road wildlife culled');
-      developer.setPosition({x:60,y:12,z:-110});await frames(3);
+      assert(before.road.groups.some(group=>group.visible), 'ghost visit to East Suval left all road wildlife culled');
+      // The Bramble Scout Camp sits at world (-138, -31) since the village turned to face east.
+      developer.setPosition({x:-130,y:12,z:-31});await frames(3);
       const observed=h.ghostVisibilityState();
       assert(observed.camp.visible===2, 'ghost inspection did not reveal both camp lookouts from its own position');
       assert(observed.forest.groups.some(group=>group.visible), 'ghost inspection left the forest detail groups hidden');

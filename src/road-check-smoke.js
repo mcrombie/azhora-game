@@ -64,12 +64,13 @@ export async function runRoadCheckSmoke(h) {
     await frames(4);
     assert(audioState()?.initialized && audioState()?.enabled && !audioState()?.lastError, 'real WebAudio did not initialize');
     audioChecks++;
-    const stepStart = audioState().footsteps, walkStart = player.group.position.z;
-    setYaw(0); press('KeyW');
-    await waitFor(() => walkStart - player.group.position.z > 3 && audioState().footsteps > stepStart,
+    const stepStart = audioState().footsteps, walkStart = player.group.position.x;
+    setYaw(Math.PI / 2); press('KeyW');
+    await waitFor(() => walkStart - player.group.position.x > 3 && audioState().footsteps > stepStart,
       'real keyboard movement did not produce surface footfalls');
     release('KeyW'); await frames(3);
-    assert(audioState().region === 2 && audioState().surface === 'earth', 'meadow footfalls used the wrong regional surface');
+    assert(audioState().region === world.regionAt(player.group.position.x, player.group.position.z).id
+      && audioState().surface === 'earth', 'clearing footfalls used the wrong regional surface');
     audioChecks++;
     const stillSteps = audioState().footsteps;
     await frames(8);
@@ -88,7 +89,7 @@ export async function runRoadCheckSmoke(h) {
     setFishingSpot('reedwater'); startFishing(); await frames(5);
     const fishingSteps = audioState().footsteps;
     assert(getMode() === 'fishing' && world.activeFishingSpot().id === 'reedwater', 'river cast did not choose the river float');
-    assert(audioState().playing && audioState().region === 3 && audioState().profile.river > 0, 'river ambience stopped while fishing');
+    assert(audioState().playing && audioState().region === world.regionAt(river.fishingSpot.x, river.fishingSpot.z).id && audioState().profile.river > 0, 'river ambience stopped while fishing');
     audioChecks++;
     await frames(8);
     assert(audioState().footsteps === fishingSteps && audioState().playing, 'fishing emitted footsteps or muted its ambience');
@@ -103,15 +104,18 @@ export async function runRoadCheckSmoke(h) {
     const sticksNeeded = Math.max(0, 3 - inventory.count('forest-stick'));
     if (sticksNeeded) assert(inventory.add('forest-stick', sticksNeeded), 'could not prepare bridge repair supplies');
     accepted('meet-crossing-keeper');
-    assert(!canStand(-1.9, -412, world), 'the west bridge lane was open before repair');
+    const damagedLane = world.colliders.filter(c => c.kind === 'bridge-damage');
+    const damagedSpot = damagedLane[Math.floor(damagedLane.length / 2)];
+    assert(damagedSpot && !canStand(damagedSpot.x, damagedSpot.z, world), 'the west bridge lane was open before repair');
     accepted('repair-bridge');
-    assert(canStand(-1.9, -412, world), 'the repaired west bridge lane is still blocked');
+    assert(canStand(damagedSpot.x, damagedSpot.z, world), 'the repaired west bridge lane is still blocked');
     assert(journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2]), 'the checkpoint fixture advanced beyond the partial crossing quest');
-    await moveTo(-1.9, -412);
+    await moveTo(damagedSpot.x, damagedSpot.z);
     combat.state.player.hp = 61;
     assert(saveRoad(false), 'saving on the repaired deck failed');
     const expected = detached(saved());
-    assert(expected.position.x === -1.9 && expected.position.z === -412 && expected.health === 61, 'the saved repaired-deck position or health is wrong');
+    assert(Math.abs(expected.position.x - damagedSpot.x) < .001 && Math.abs(expected.position.z - damagedSpot.z) < .001
+      && expected.health === 61, 'the saved repaired-deck position or health is wrong');
     assert(expected.weapons.sword.durability === swordWear, 'quest completion changed sword condition');
     assert(expected.journey.bridgeRepaired && !expected.journey.bridgeComplete && !expected.journey.ridgeAccepted, 'the saved crossing state is not partial');
     if (cameraState) {
@@ -136,7 +140,9 @@ export async function verifyRoadReload(h, expected) {
   const assert = (condition, message) => { checks++; if (!condition) throw new Error(`Road reload smoke: ${message}`); };
   assert(expected && expected.version === 1, 'the expected checkpoint is missing');
   assert(getMode() === 'opening', 'reload must begin in a fresh opening screen');
-  assert(!canStand(-1.9, -412, world), 'fresh world unexpectedly began with the bridge already repaired');
+  const damagedLane = world.colliders.filter(c => c.kind === 'bridge-damage');
+  const damagedSpot = damagedLane[Math.floor(damagedLane.length / 2)];
+  assert(damagedSpot && !canStand(damagedSpot.x, damagedSpot.z, world), 'fresh world unexpectedly began with the bridge already repaired');
   const stored = checkpoint.read();
   assert(stored.ok && same(stored.data, expected), 'the save slot changed or disappeared across renderer reload');
   assert(continueRoad(), 'Continue could not restore the saved road');
@@ -144,7 +150,7 @@ export async function verifyRoadReload(h, expected) {
   assert(getMode() === 'playing' && !readState().testingEnabled && readState().questStage === 10, 'Continue did not restore normal road play');
   assert(same(journey.snapshot(), expected.journey), 'Continue changed intermediate quest progress');
   assert(journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2]), 'Continue skipped the unfinished report to Hollis');
-  assert(world.journeySiteState()['bridge-repair'] && canStand(-1.9, -412, world), 'Continue failed to restore the physical bridge repair');
+  assert(world.journeySiteState()['bridge-repair'] && canStand(damagedSpot.x, damagedSpot.z, world), 'Continue failed to restore the physical bridge repair');
   assert(Math.abs(player.group.position.x - expected.position.x) < .001
     && Math.abs(player.group.position.z - expected.position.z) < .001, 'Continue moved the player off the saved repaired bridge lane');
   assert(Number.isFinite(player.group.position.y) && canStand(player.group.position.x, player.group.position.z, world), 'Continue left the player outside walkable terrain');

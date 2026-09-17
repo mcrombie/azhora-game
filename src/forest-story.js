@@ -248,7 +248,7 @@ export function forestSiteConversation(siteId, context) {
   const site = forestStory.siteView(siteId);
   if (!site) return false;
   if (!site.inspected) act(`inspect-${siteId}`);
-  const place = { id: siteId, name: site.name, role: 'A place in Eastreena' };
+  const place = { id: siteId, name: site.name, role: 'A place in Drent' };
   const choices = forestStory.availableActions(siteId).filter(option => !option.id.startsWith('inspect-'))
     .map(option => ({ ...option, action: () => { closeDialogue(); act(option.id); } }));
   choices.push({ id: `leave-${siteId}`, label: 'Return to the woods.', action: closeDialogue });

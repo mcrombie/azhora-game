@@ -47,17 +47,18 @@ test('developer export is derived from unchanged World Builder source using the 
   }
 });
 
-test('local regions share one honest provisional world anchor and a separate schematic route', () => {
+test('local destinations stand on their own authored regions, with a separate schematic route', () => {
   const locals = DEV_WORLD_DESTINATIONS.filter(destination => destination.region);
   assert.deepEqual(locals.map(destination => destination.region), [1, 2, 3, 4]);
+  assert.deepEqual(locals.map(destination => destination.regionId), ['Drent', 'Luscia', 'Moros Plain', 'East Suval']);
   for (const destination of locals) {
-    assert.equal(destination.regionId, 'Drent');
-    assert.equal(destination.atlas, locals[0].atlas);
-    assert.equal(destination.placement, 'provisional-locality');
-    assert.equal(hitAtlasRegion(atlas, destination.atlas.x, destination.atlas.y)?.id, 'Drent');
+    assert.equal(destination.placement, 'authored-region');
+    assert.equal(hitAtlasRegion(atlas, destination.atlas.x, destination.atlas.y)?.id, destination.regionId,
+      `${destination.name} must sit on its own authored hexes`);
     assert.ok(destination.atlas.u > 0 && destination.atlas.u < 1);
     assert.ok(destination.atlas.v > 0 && destination.atlas.v < 1);
   }
+  assert.equal(new Set(locals.map(destination => destination.atlas)).size, 4, 'each region has its own anchor');
   assert.equal(new Set(locals.map(destination => destination.inset.y)).size, 4);
   assert.match(DEV_ATLAS_PROVENANCE.localityNote, /provisional/);
   assert.match(DEV_ATLAS_PROVENANCE.localityNote, /not to world-map scale/);
@@ -84,7 +85,9 @@ test('every region selection supports a survey, while built destinations remain 
     assert.match(selection.survey.status, /gameplay not built/);
     assert.ok(selection.destinations.length > 0);
   }
-  assert.equal(developerRegionSelection(atlas, 'Drent').destinations.length, 4);
+  assert.equal(developerRegionSelection(atlas, 'Drent').destinations.length, 1);
+  assert.equal(developerRegionSelection(atlas, 'Luscia').destinations.length, 1);
+  assert.equal(developerRegionSelection(atlas, 'East Suval').destinations.length, 1);
   assert.equal(developerRegionSelection(atlas, 'Cape Thalmagar').destinations[0].scene, 'cape-thalmagar');
   const other = developerRegionSelection(atlas, 'West Izol');
   assert.equal(other.destinations[0].scene, 'terrain-survey');

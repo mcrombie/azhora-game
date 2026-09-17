@@ -234,7 +234,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,1500));
         fs.writeFileSync(path.join(artifactDir,'compact-continue.png'),(await win.webContents.capturePage()).toPNG());
         const openingLayout=await win.webContents.executeJavaScript(`(()=>{const ids=['opening','begin','continue-road','opening-testing'];return Object.fromEntries(ids.map(id=>{const r=document.getElementById(id).getBoundingClientRect();return [id,{top:r.top,bottom:r.bottom,left:r.left,right:r.right,visible:r.width>0&&r.height>0}];}));})()`);
-        if(Object.values(openingLayout).some(r=>!r.visible||r.top<0||r.bottom>640||r.left<0||r.right>900))throw new Error('Opening controls exceed the compact window');
+        if(Object.values(openingLayout).some(r=>!r.visible||r.top<0||r.bottom>640||r.left<0||r.right>900))throw new Error('Opening controls exceed the compact window: '+JSON.stringify(openingLayout));
         await win.webContents.executeJavaScript(`document.getElementById('continue-road').focus();document.dispatchEvent(new KeyboardEvent('keydown',{code:'Enter',key:'Enter',bubbles:true,cancelable:true}));if(window.__AZHORA__.state().mode!=='opening')throw new Error('Enter on Continue incorrectly started a new journey');`);
         const reloadResult=await win.webContents.executeJavaScript(`window.__AZHORA__.verifyReload(${JSON.stringify(result.expected)})`);
         const {expected,...report}=result;

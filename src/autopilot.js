@@ -72,8 +72,23 @@ export function nextWaypoint(position, target, world, memory = {}) {
       index = step > 0 ? Math.min(index, there.index) : Math.max(index, there.index);
       if (index !== there.index) return { point: trail[index], onTrail: true };
     }
+    // The destination sits on the road but the traveler has strayed off it —
+    // onto a river bank, say. Walk back to the road before trying again, rather
+    // than grinding against whatever stands between here and there.
+    if (!alongTrail && there.distance < 7 && here.distance > 2.5 && here.distance < 26 && !clearLine(position, target, world))
+      return { point: trail[here.index], onTrail: true };
   }
   return { point: target, onTrail: false };
+}
+
+/** Whether a straight walk from `from` to `to` stays on standable ground. */
+export function clearLine(from, to, world, radius = .42) {
+  const steps = Math.max(1, Math.ceil(distance(from, to) / .6));
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps;
+    if (!canStand(from.x + (to.x - from.x) * t, from.z + (to.z - from.z) * t, world, radius)) return false;
+  }
+  return true;
 }
 
 function isBehind(position, vertex, next) {
@@ -157,8 +172,9 @@ export function planGoal(snapshot, world) {
     case 0: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Walking up from the landing to Mara' };
     case 1: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Speaking with Mara' };
     case 2: return { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post' : 'Practising a dodge' };
-    case 3: return { kind: 'walk', target: { x: 0, z: -38 }, radius: 2.5, intent: 'Following the Greenway to the bell' };
-    case 4: return { kind: 'walk', target: { x: 0, z: -38 }, radius: 2.5, intent: 'Returning to the bell' };
+    // The ambush clearing on the Greenway, a little past the warning bell.
+    case 3: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Following the Greenway to the bell' };
+    case 4: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Returning to the bell' };
     case 5: return { kind: 'talk', target: npc('warden'), npcId: 'warden', intent: 'Reporting to Eren' };
     case 6: return { kind: 'open-inventory', intent: 'Opening the satchel' };
     case 7: return { kind: 'close-inventory', intent: 'Closing the satchel' };

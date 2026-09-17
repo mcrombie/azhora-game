@@ -5,7 +5,7 @@ const point = (x, z) => Object.freeze({ x, z });
 // Drent, the reedcutters' landing on the Luscia bank of the Caloss, and the
 // roofless waystation in East Suval.
 export const REGIONAL_NPC_POSITIONS = Object.freeze({
-  'commons-miller': point(-236, 62), 'reed-worker': point(-380, 120), 'shelter-keeper': point(-152, 322),
+  'commons-miller': point(-233, 59), 'reed-worker': point(-380, 120), 'shelter-keeper': point(-152, 322),
 });
 export const REGIONAL_ACTIVITY_SITES = Object.freeze({
   'mill-hoist': Object.freeze({ id: 'mill-hoist', name: 'The grain hoist', x: -243, z: 67, region: 2 }),

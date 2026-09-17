@@ -151,7 +151,7 @@ test('partial and completed snapshots restore silently, retain testimony choice,
   const partial = story.snapshot(), restoredEvents = [];
   const restored = createRegionalLife({ inventory, onEvent: e => restoredEvents.push(e) });
   assert.equal(restored.restore(partial), true); assert.deepEqual(restored.snapshot(), partial); assert.deepEqual(restoredEvents, []);
-  assert.deepEqual(restored.view().tasks.find(task => task.region === 3).destinationIds, ['net-float-west']);
+  assert.deepEqual(restored.view().tasks.find(task => task.region === 2).destinationIds, ['net-float-west']);
   assert.equal(restored.state.testimonyMode, 'signed'); assert.equal(inventory.count('raw-fish'), 0);
   act(restored, 'free-net-float-west', 'return-net-help', 'deliver-testimony');
   const completed = restored.snapshot(), beforeEvents = restoredEvents.length;
@@ -249,7 +249,7 @@ test('Iven’s optional receipt preserves the exact testimony choice without con
     pending[0].action(); d.choose('deliver-testimony'); assert.equal(d.story.state.testimonyDelivered, true);
     const receipt = regionalLifeRelayChoices(relay, d.context); assert.equal(receipt[0].id, 'relay-witness-receipt');
     receipt[0].action();
-    assert.match(d.latest().lines.join(' '), mode === 'signed' ? /Oda's name is on it, just as she asked/ : /Unsigned, as requested/);
+    assert.match(d.latest().lines.join(' '), mode === 'signed' ? /Oda's name is on it, with her permission, just as she asked/ : /Unsigned, as requested/);
     assert.match(d.latest().lines.join(' '), /own page among the field reports/);
     d.latest().options.onComplete(); assert.equal(d.returned, 2);
     assert.deepEqual(d.inventory.items(), []);
@@ -267,7 +267,7 @@ test('regional perspective follows the intended local arc and all authored activ
   assert.match(d.latest().lines.join(' '), /imperial levies/);
   assert.equal(d.story.state.testimonyAccepted, false);
   assert.deepEqual(REGIONAL_LIFE_NPCS.map(({ id, modelRole, x, z }) => ({ id, modelRole, x, z })), [
-    { id: 'commons-miller', modelRole: 'commons-miller', x: -236, z: 62 },
+    { id: 'commons-miller', modelRole: 'commons-miller', x: -233, z: 59 },
     { id: 'reed-worker', modelRole: 'reed-worker', x: -380, z: 120 },
     { id: 'shelter-keeper', modelRole: 'shelter-keeper', x: -152, z: 322 },
   ]);
