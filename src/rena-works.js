@@ -263,7 +263,7 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
       b.cylinder(HAY, s.x, sy, s.z, 1.5, 1.7); b.cone('#b39a5e', s.x, sy + 1.7, s.z, 1.65, 1.5);
       circle(s.x, s.z, 1.7, 'applegarth-hay-stack');
     }
-    // Pell's sister keeps a bench and a basket of apples outside her door.
+    // Lorn's sister keeps a bench and a basket of apples outside her door.
     {
       const stand = RENA_STANDS['rena-hesta'], bench = applePoint(-10.5, 6.6), by = y(bench.x, bench.z);
       b.frame(bench.x, by, bench.z, OLD_ROAD_YAW, () => {
@@ -344,26 +344,26 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
   }
 
   // -------------------------------------------------------------------------
-  // Pell's work: the crab pots he is mending on the Tidehaven shingle
+  // Lorn's work: the crab pots he is mending on the Tidehaven shingle
   // -------------------------------------------------------------------------
   {
-    const b = createSceneryBuilder('Pell’s crab pots');
-    const stand = RENA_STANDS['rena-pell'];
+    const b = createSceneryBuilder('Lorn’s crab pots');
+    const stand = RENA_STANDS['rena-lorn'];
     const at = (dx, dz) => ({ x: stand.x + dx, z: stand.z + dz });
     const stool = at(-.2, 1.6), py = y(stool.x, stool.z);
     b.cylinder(WOOD, stool.x, py, stool.z, .26, .42);
     b.cylinder(WOOD_LIGHT, stool.x, py + .42, stool.z, .34, .08);
-    circle(stool.x, stool.z, .3, 'pell-stool');
+    circle(stool.x, stool.z, .3, 'lorn-stool');
     // Two finished pots and one half made, and a bundle of withies to work from.
     for (const [i, spot] of [at(-2.4, .6), at(-2.6, -1.1), at(-1.9, 2.6)].entries()) {
       const g = y(spot.x, spot.z);
       b.cylinder(i === 2 ? '#9a8355' : '#a98a52', spot.x, g, spot.z, .52, .48, i);
       if (i !== 2) b.cone('#a98a52', spot.x, g + .48, spot.z, .5, .34, i);
-      circle(spot.x, spot.z, .55, 'pell-pot');
+      circle(spot.x, spot.z, .55, 'lorn-pot');
     }
     const withies = at(-3.4, 1.8), wy = y(withies.x, withies.z);
     for (let i = 0; i < 7; i++) b.beam('#b09a63', [withies.x - .3 + i * .09, wy + .1, withies.z - .9], [withies.x + .3 + i * .07, wy + .16, withies.z + .9], .04);
-    circle(withies.x, withies.z, .5, 'pell-withies');
+    circle(withies.x, withies.z, .5, 'lorn-withies');
     b.finish(parent, { castShadow: false });
   }
 

@@ -33,11 +33,12 @@ test('the chart starts blank and is charted hex by hex as the traveler walks', (
   assert.ok(events.some(event => event.type === 'chart-widened'));
 });
 
-test('Eastreena is the first named ground, and each area is found by reaching it', () => {
+test('Tidehaven, which was Eastreena, is the first named ground, and each area is found by reaching it', () => {
   const found = [], fog = createMapFog({ onEvent: event => { if (event.type === 'subregion-found') found.push(event.id); } });
   fog.reveal(TIDEHAVEN.x, TIDEHAVEN.z);
   assert.deepEqual(found, ['eastreena'], 'the port village names itself and nothing else');
-  assert.equal(fog.view().found[0].name, 'Eastreena');
+  assert.equal(fog.view().found[0].name, 'Tidehaven', 'the chart uses the name the village uses now');
+  assert.match(fog.view().found[0].note, /Eastreena/, 'and keeps the old name in its note');
   fog.reveal(TIDEHAVEN.x, TIDEHAVEN.z);
   assert.deepEqual(found, ['eastreena'], 'found once');
   fog.reveal(LUMBER_TOWN.x, LUMBER_TOWN.z);

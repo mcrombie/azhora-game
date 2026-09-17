@@ -182,14 +182,14 @@ export const APPLEGARTH_WORKS = Object.freeze({
 // The people: where they stand
 // ---------------------------------------------------------------------------
 /**
- * Where the new people of this pass stand, in world metres. Pell is in
+ * Where the new people of this pass stand, in world metres. Lorn is in
  * Tidehaven, on the shingle west of the landing, between the harbourmaster and
  * the fisher and well clear of both; his sister is in Applegarth, by her own
  * door. The rest are Applegarth's, Tidehaven's and the Greenway's.
  */
 export const RENA_STANDS = Object.freeze({
   // Tidehaven, in the carried-over village's own frame: nothing here moves an existing stand.
-  'rena-pell': Object.freeze({ ...villageToWorld(-6.5, 20), yaw: Math.PI / 2 }),
+  'rena-lorn': Object.freeze({ ...villageToWorld(-6.5, 20), yaw: Math.PI / 2 }),
   'tide-carter': Object.freeze({ ...villageToWorld(-24, 6), yaw: -1.1 }),
   'tide-boy': Object.freeze({ ...villageToWorld(-30, 0), yaw: 2.2 }),
   'greenway-forager': Object.freeze({ ...villageToWorld(6, -46), yaw: -1.9 }),
@@ -206,7 +206,7 @@ export const RENA_NPC_POSITIONS = Object.freeze(Object.fromEntries(
   Object.entries(RENA_STANDS).map(([id, stand]) => [id, point(stand.x, stand.z)])));
 
 /** The two who remember, and where each of them is. Nothing else in the tree hard-codes their stands. */
-export const PELL = Object.freeze({ id: 'rena-pell', name: 'Pell Ardry', place: 'Tidehaven' });
+export const LORN = Object.freeze({ id: 'rena-lorn', name: 'Lorn Ardry', place: 'Tidehaven' });
 export const HESTA = Object.freeze({ id: 'rena-hesta', name: 'Hesta Ardry', place: 'Applegarth' });
 
 // ---------------------------------------------------------------------------
