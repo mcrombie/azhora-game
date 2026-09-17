@@ -11,7 +11,7 @@
  * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
  * authored 56 m frame the content was designed in and converted here, at the
  * boundary, by `at()` for a place and `road()` for a road vertex.
- * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval.
+ * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
 import {
@@ -23,8 +23,8 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4 });
-export const REGION_NAME_BY_ID = Object.freeze({ 1: 'Drent', 2: 'Luscia', 3: 'Moros Plain', 4: 'East Suval' });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5 });
+export const REGION_NAME_BY_ID = Object.freeze({ 1: 'Drent', 2: 'Luscia', 3: 'Moros Plain', 4: 'East Suval', 5: 'West Suval' });
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
 export const WORLD_BOUNDS = Object.freeze(worldBoundsFor(SURVEY));
@@ -111,6 +111,7 @@ export const REGION_TERRAIN = Object.freeze({
   Luscia: Object.freeze({ base: 8.6, amp: 4.5, wave: 140, ground: REGION_BIOMES.Luscia.ground }),
   'Moros Plain': Object.freeze({ base: 6.4, amp: .9, wave: 260, ground: REGION_BIOMES['Moros Plain'].ground }),
   'East Suval': Object.freeze({ base: 17, amp: 11, wave: 120, ground: REGION_BIOMES['East Suval'].ground }),
+  'West Suval': Object.freeze({ base: 9.5, amp: REGION_BIOMES['West Suval'].relief.amplitude, wave: REGION_BIOMES['West Suval'].relief.wavelength, ground: REGION_BIOMES['West Suval'].ground }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
 
@@ -118,7 +119,7 @@ export const REGION_TERRAIN = Object.freeze({
 export function terrainMix(x, z) {
   const home = hexAt(x, z);
   let total = 0, base = 0, amp = 0, wave = 0;
-  const weights = { Drent: 0, Luscia: 0, 'Moros Plain': 0, 'East Suval': 0, outland: 0 };
+  const weights = Object.fromEntries([...REGION_ORDER, 'outland'].map(name => [name, 0]));
   for (const [dq, dr] of [[0, 0], ...AXIAL_NEIGHBORS]) {
     const q = home.q + dq, r = home.r + dr, centre = hexCentre(q, r);
     const weight = Math.max(0, 1 - Math.hypot(x - centre.x, z - centre.z) / (METRES_PER_HEX * 1.28));
@@ -263,6 +264,32 @@ export const SUVAL_ROAD = Object.freeze([
   road(-390, 162), road(-360, 178), road(-330, 196), road(-300, 216), road(-272, 240),
   road(-250, 262), road(-231, 283.6), road(-204, 298), road(-176, 308), road(-150, 318),
   road(-118, 332), road(-86, 346), road(-56, 358), road(-28, 368.5),
+]);
+
+/**
+ * Solis, the walled city on West Suval's south-west coast. Its whole layout is
+ * in its own frame, square to the world: `solisPoint(a, b)` is `a` metres east
+ * and `b` metres south of the market cross, with the Gate of Sun Horses at
+ * (0, -42) on the road from the border and the quay gate at (-50, -8) on the sea.
+ * The centre is an authored point (the `solis` cluster); the rest is metres.
+ */
+export const SOLIS = Object.freeze({ name: 'Solis', centre: at(-297, 551), halfX: 50, halfZ: 42 });
+export const solisPoint = (a, b) => point(SOLIS.centre.x + a, SOLIS.centre.z + b);
+
+/** From the border stockade on the Moros, south-east over the downs to the Gate of Sun Horses. */
+export const SOLIS_ROAD = Object.freeze([
+  at(-368, 308), road(-370, 339), road(-363, 374), road(-353, 407.5), road(-339, 441), road(-324, 472), road(-308, 495.5),
+  solisPoint(-2, -78), solisPoint(0, -56), solisPoint(0, -42), solisPoint(0, -34),
+]);
+
+/**
+ * Built ground: a plane that overrides the natural relief inside its half
+ * extents and fades back to it across `feather` metres. Solis stands on one,
+ * rising gently from the quay to the Court of Oaths, so its walls keep one
+ * height and its square is level enough to fight across.
+ */
+export const TERRAIN_PADS = Object.freeze([
+  Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
 ]);
 
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
@@ -423,6 +450,10 @@ const REGION_TEXT = {
     description: 'Grey stone country: heather, ridge rock, a guarded border post that belongs to neither army, and the town of Elod above the Stills.',
     palette: { ground: '#9b9d85', accent: '#e1d1a7', fog: '#bbc6bf' },
     npcIds: ['shelter-keeper'], landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout'] },
+  'West Suval': { subtitle: 'The coast downs and Solis', spawn: road(-353, 407.5),
+    description: 'Rolling coastal grass, thorn and olive, field walls of pale stone, and Solis on its terraces above the sea: once a kingdom’s capital, then the Empire’s, and for a few days now the Coalition’s.',
+    palette: { ground: '#a9a95c', accent: '#e8cf8e', fog: '#c9d0bd' },
+    npcIds: ['solis-gate-captain', 'solis-merchant'], landmarks: ['west-suval-border', 'shepherds-fold', 'old-watchtower', 'wayside-well', 'coalition-camp', 'solis'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

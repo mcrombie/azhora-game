@@ -38,7 +38,7 @@ function deepFreeze(object) {
   Object.freeze(object); Object.values(object).forEach(deepFreeze); return object;
 }
 
-test('the chart selects all four actual regions with eight metres of padding and never relocates the player', () => {
+test('the chart selects every actual region with eight metres of padding and never relocates the player', () => {
   const world = fixture(), position = { ...at(-14, 30), heading: .5 };
   for (const region of regions) {
     const chart = model(world, { position, regionId: String(region.id) });
@@ -46,7 +46,7 @@ test('the chart selects all four actual regions with eight metres of padding and
     assert.deepEqual(chart.bounds, { minX: region.bounds.minX - 8, maxX: region.bounds.maxX + 8,
       minZ: region.bounds.minZ - 8, maxZ: region.bounds.maxZ + 8 });
     assert.deepEqual(chart.player, position); assert.notEqual(chart.player, position);
-    assert.deepEqual(chart.regions.map(item => item.id), [1, 2, 3, 4]);
+    assert.deepEqual(chart.regions.map(item => item.id), regions.map(item => item.id));
   }
   assert.equal(model(world, { position: at(-386, 183) }).region.id, 2);
   assert.equal(model(world, { position: at(-386, 183), regionId: 700 }).region.id, 2);

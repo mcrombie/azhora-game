@@ -5,8 +5,8 @@
  * The renderer builds the playable world synchronously, and the Node tests load
  * src modules through a data: URL loader, so neither can fetch or read the
  * 240 KB atlas at module time. This script bakes the small part the game needs
- * into an ordinary ES module: the four playable regions' hexes, and every
- * claimed hex near the playable window so the coastline knows where the sea is.
+ * into an ordinary ES module: the playable regions' hexes, and every claimed
+ * hex near the playable window so the coastline knows where the sea is.
  *
  * tests/region-survey.test.js re-derives the same file and fails if it drifts.
  * Never hand-edit src/region-survey.js; run `node scripts/build-region-survey.mjs`.
@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval'];
+export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval'];
 // Axial window around the playable regions, in atlas hex coordinates. Wide
 // enough that every coast and inland horizon inside the world bounds is honest.
 export const WINDOW = { minQ: -14, maxQ: 34, minR: 92, maxR: 124 };
@@ -47,7 +47,7 @@ export function buildSource(survey) {
   };
   return `${HEADER}export const SURVEY_ORIGIN = Object.freeze({ x: ${survey.origin.x}, y: ${survey.origin.y} });
 
-/** The four playable regions, exactly as the atlas authored them. */
+/** The playable regions, exactly as the atlas authored them. */
 export const PLAYABLE_SURVEY = Object.freeze({
   origin: SURVEY_ORIGIN,
   regions: Object.freeze([
