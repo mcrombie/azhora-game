@@ -1,0 +1,22 @@
+/* Birding: the observe prompt, the first-sighting card, and the journal's skills sheet. */
+#observe-prompt{position:absolute;left:50%;bottom:31%;transform:translate(-50%,-128px);display:flex;align-items:center;gap:12px;border:1px solid #f6e6b853;background:#173b31d9;box-shadow:0 6px 30px #103c3155;border-radius:5px;padding:10px 17px;font-size:15px;white-space:nowrap;z-index:2}
+#observe-prompt .key{font-size:14px;border-color:#f2dc9b9e;padding:4px 9px;color:#ffe3a0}
+#bird-card{position:absolute;top:18%;left:50%;width:min(460px,calc(100vw - 40px));transform:translate(-50%,-12px);opacity:0;transition:opacity .7s,transform .7s;pointer-events:none;text-align:center;background:#173b31e6;border:1px solid #e5cb8566;border-radius:6px;padding:18px 24px 16px;box-shadow:0 18px 60px #09242b88;z-index:6}
+#bird-card.visible{opacity:1;transform:translate(-50%,0)}
+#bird-card .eyebrow{color:#f7df97;font-size:11px;letter-spacing:.14em}
+#bird-card h2{font-family:Adventure,Georgia,serif;font-size:38px;font-weight:400;margin:4px 0 6px;color:#fff6dd}
+#bird-card p{font-size:14px;line-height:1.6;color:#e7e2c8;margin:0 0 12px}
+#bird-card small{display:block;margin-top:7px;font-size:12px;color:#d1c38f;letter-spacing:.06em}
+.bird-card-bar,.skill-bar{height:6px;border-radius:3px;background:#0e2a24;border:1px solid #e5cb8544;overflow:hidden}
+.bird-card-bar i,.skill-bar i{display:block;height:100%;background:linear-gradient(90deg,#c7a45a,#f1d68b);transition:width .8s}
+#skills-sheet .skill-card{border-top:1px solid #d9d5ae2b;padding-top:6px}
+#skills-sheet .skill-card:first-child{border-top:0;padding-top:0}
+#skills-sheet .skill-card>.eyebrow{color:#d1c38f;font-size:10px;letter-spacing:.14em}
+#skills-sheet .skill-card>h3:first-of-type{margin-top:4px}
+#skills-sheet .skill-bar{max-width:420px;margin:4px 0 6px}
+#skills-sheet .skill-xp{font-size:12px;color:#d1c38f;margin:0 0 6px;line-height:1.5}
+#skills-sheet .skill-task{font-size:13px;color:#ffe7ac;margin-top:14px}
+#skills-sheet .bird-list{padding:0;list-style:none;display:grid;gap:12px}
+#skills-sheet .bird-list li{font-size:15px;color:#f2dfb9}
+#skills-sheet .bird-list li.unseen{color:#a9b5a4;font-style:italic}
+#skills-sheet .bird-list small{display:block;margin-top:4px;font-size:12px;line-height:1.65;color:#bfcbbb;font-style:normal}

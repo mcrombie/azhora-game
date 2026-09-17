@@ -14,6 +14,8 @@ import { createMorosChapter, validateMorosSnapshot } from './moros-chapter.js';
 import { createBorderChapter, validateBorderSnapshot } from './border-chapter.js';
 import { createAftermathChapter, validateAftermathSnapshot } from './aftermath-chapter.js';
 import { createRiding, validateRidingSnapshot } from './riding.js';
+import { createSkills, validateSkillsSnapshot } from './skills.js';
+import { createBirding, validateBirdingSnapshot } from './birding.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
@@ -61,6 +63,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateBorderSnapshot(data.border)) return failed('The saved border chapter is invalid.');
     if (!validateAftermathSnapshot(data.aftermath)) return failed('The saved chapter after the border battle is invalid.');
     if (!validateRidingSnapshot(data.riding)) return failed('The saved horse is invalid.');
+    if (!validateSkillsSnapshot(data.skills)) return failed('The saved skills are invalid.');
+    if (!validateBirdingSnapshot(data.birding)) return failed('The saved birding notes are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
       const held = data.mercenaryWeapons;
@@ -135,6 +139,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'border')) { const chapter = createBorderChapter(); chapter.restore(data.border); result.border = chapter.snapshot(); }
     if (Object.hasOwn(data, 'aftermath')) { const chapter = createAftermathChapter(); chapter.restore(data.aftermath); result.aftermath = chapter.snapshot(); }
     if (Object.hasOwn(data, 'riding')) { const riding = createRiding(); riding.restore(data.riding); result.riding = riding.snapshot(); }
+    if (Object.hasOwn(data, 'skills')) { const skills = createSkills(); skills.restore(data.skills); result.skills = skills.snapshot(); }
+    if (Object.hasOwn(data, 'birding')) { const birding = createBirding(); birding.restore(data.birding); result.birding = birding.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();

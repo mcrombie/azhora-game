@@ -14,6 +14,7 @@ import { createRegionScenery } from './world-regions.js';
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
+import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -652,6 +653,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pebble(material('#5f9150'), px, localGround(px, pz) + .25, pz, .3, .27, .32);
     }
   }
+  // Ansel's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
+  const birdGarden = buildBirdGarden({ root: villageRoot, material, mesh, box, post, pebble, localGround, vpush, movingGroups });
   const wellX = -5.7, wellZ = 1.5, wellY = localGround(wellX, wellZ);
   const wellRing = new THREE.TorusGeometry(1, .26, 5, 12); wellRing.rotateX(Math.PI / 2);
   mesh(wellRing, material('#a8a18a'), wellX, wellY + .6, wellZ);
@@ -964,7 +967,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const x = range(-80, 80), z = range(-149, 19);
     if (distanceToPath(x, z) < 1.4 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + 1) || inLessonSpace(x, z, 1.2) || Math.hypot(x - bellX, z - bellZ) < 2 || specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r * .7)) continue;
     const s = range(.45, 1.2); dummy.position.set(x, localGround(x, z) + s * .42, z); dummy.rotation.set(0, range(0, 6.28), 0);
-    dummy.scale.set(s, s * .7, s * .85); dummy.updateMatrix(); bushes.setMatrixAt(bidx, dummy.matrix);
+    dummy.scale.set(s, s * .7, s * .85); if (inBirdGarden(x, z)) dummy.scale.setScalar(0); dummy.updateMatrix(); bushes.setMatrixAt(bidx, dummy.matrix);
     bushes.setColorAt(bidx++, color.setHSL(range(.22, .31), .34, range(.33, .46)));
   }
   bushes.count = bidx; bushes.castShadow = true; bushes.receiveShadow = true; villageRoot.add(bushes);
@@ -978,7 +981,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     for (let f = 0; f < count; f++) {
       const fx = x + range(-.5, .5), fz = z + range(-.5, .5), s = range(.07, .13);
       dummy.position.set(fx, localGround(fx, fz) + range(.2, .38), fz); dummy.rotation.set(0, range(0, 6.28), 0);
-      dummy.scale.set(s, s * .48, s); dummy.updateMatrix(); flowers.setMatrixAt(findex, dummy.matrix); flowers.setColorAt(findex++, color.set(fc));
+      dummy.scale.set(s, s * .48, s); if (inBirdGarden(fx, fz)) dummy.scale.setScalar(0); dummy.updateMatrix(); flowers.setMatrixAt(findex, dummy.matrix); flowers.setColorAt(findex++, color.set(fc));
     }
   }
   flowers.count = findex; villageRoot.add(flowers);
@@ -990,7 +993,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     } while (distanceToPath(x, z) < 1.6 || houseLocations.some(h => Math.hypot(x - h.x, z - h.z) < h.r + 1.3) || inLessonSpace(x, z, 1.4) || Math.hypot(x - bellX, z - bellZ) < 2 || specialClearings.some(h => Math.hypot(x - h.x, z - h.z) < h.r * .8));
     const s = range(.3, 1.25), y = localGround(x, z);
     dummy.position.set(x, y + s * .21, z); dummy.rotation.set(range(-.2, .2), range(0, 6.28), range(-.2, .2));
-    dummy.scale.set(s, s * range(.35, .75), s * range(.7, 1.3)); dummy.updateMatrix(); rocks.setMatrixAt(i, dummy.matrix);
+    dummy.scale.set(s, s * range(.35, .75), s * range(.7, 1.3)); if (inBirdGarden(x, z)) dummy.scale.setScalar(0); dummy.updateMatrix(); rocks.setMatrixAt(i, dummy.matrix);
     rocks.setColorAt(i, color.setHSL(.17, .10, range(.44, .61)));
     if (s > .85 && y > .4) vpush({ x, z, r: s * .76 });
   }
@@ -1476,6 +1479,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         radius: .38 * tree.s, trunkHeight: tree.h * tree.s * .82, trunkTopRadius: .21 * tree.s, ...tree.trunk }];
     }),
     ringBell(time = worldTime) { bellStarted = time; },
+    birdGarden: birdGardenSites(groundHeight),
+    setFeederHung: hung => birdGarden.setFeederHung(hung),
     spawn: { x: worldSpawn.x, z: worldSpawn.z },
     boatStart: { x: worldBoat.x, z: worldBoat.z, y: 1.0 },
     bounds: { minX: WORLD_BOUNDS.minX, maxX: WORLD_BOUNDS.maxX, minZ: WORLD_BOUNDS.minZ, maxZ: WORLD_BOUNDS.maxZ },
