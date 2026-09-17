@@ -2,6 +2,14 @@
 #quest {width:265px;padding:16px 18px 16px 0;background:linear-gradient(90deg,#183b315c,transparent);}
 #quest #objective-distance {color:#f8d88f;font-size:12px;letter-spacing:.03em;margin-top:14px;}
 #quest-step {font-size:10px!important;}
+#quest .chapter-line {display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#cfe0c9;margin-bottom:5px;}
+#journal-chapters ol {margin:8px 0 0;padding-left:20px;display:grid;gap:7px;}
+#journal-chapters li {font-size:14px;color:#cfdbc2;line-height:1.5;}
+#journal-chapters li.done {color:#c8d9a5;}
+#journal-chapters li.current {color:#ffe0a0;}
+#journal-chapters li.later {color:#9fae9b;}
+#journal-chapters li small {display:block;font-size:12px;line-height:1.55;color:#a9b5a4;margin-top:2px;}
+#chapter-goal {font-size:14px;}
 #inventory-count {display:inline-block;min-width:15px;color:#efd491;font-size:10px;}
 #inventory-button.needs-attention {border-color:#efd491;background:#efd4911c;box-shadow:0 0 0 2px #eddaad12;}
 #journal-satchel {margin-top:15px;width:100%;}

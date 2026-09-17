@@ -11,13 +11,14 @@ import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
 
 /** A ferry with a purse, a place to stand and a record of everything the scene asked for. */
-function harness({ purse = STARTING_PURSE, free = false, mounted = false, at = FERRY_LANDINGS.drent.ashore } = {}) {
+function harness({ purse = STARTING_PURSE, free = false, charges = false, mounted = false, at = FERRY_LANDINGS.drent.ashore } = {}) {
   const log = { veil: [], boat: [], placed: [], stands: [], toasts: [], saves: 0, modes: [], carried: [] };
   const state = { purse, mode: 'playing', position: { x: at.x, z: at.z } };
   const ferry = createFerry({
     purse: () => state.purse,
     pay: n => { if (state.purse < n) return false; state.purse -= n; return true; },
     free: () => free,
+    charges: () => charges,
     mounted: () => mounted,
     position: () => state.position,
     // The veil as it stood in the frame the traveler was moved: nothing may be seen to happen.
@@ -34,7 +35,7 @@ function harness({ purse = STARTING_PURSE, free = false, mounted = false, at = F
   return { ferry, state, log, run };
 }
 
-test('Corran Sell waits at Tidehaven’s landing and takes a few coppers to the Pebbles', () => {
+test('Corran Sell waits at Tidehaven’s landing and carries anyone who asks', () => {
   assert.equal(FERRY_FARE, 3);
   assert.ok(FERRY_FARE * 2 < STARTING_PURSE / 2, 'the traveler lands with the fare for several return trips');
   assert.equal(FERRY_NPC.id, 'boatman');
@@ -49,15 +50,22 @@ test('Corran Sell waits at Tidehaven’s landing and takes a few coppers to the 
   assert.deepEqual(log.boat.at(-1), { ...FERRY_LANDINGS.drent.mooring, yaw: FERRY_LANDINGS.drent.mooring.yaw });
   const offer = ferry.offer();
   assert.equal(offer.ok, true);
-  assert.equal(offer.fare, FERRY_FARE);
-  assert.equal(offer.free, false);
+  assert.equal(offer.fare, 0, 'the crossing is free while the islands are young');
+  assert.equal(offer.free, true);
 });
 
-test('The fare is taken once, and a traveler without it is refused', () => {
-  const { ferry, state } = harness({ purse: 4 });
+test('An empty purse still crosses while the crossing is free', () => {
+  const empty = harness({ purse: 0 });
+  assert.equal(empty.ferry.offer().ok, true);
+  assert.equal(empty.ferry.board().ok, true);
+  assert.equal(empty.state.purse, 0, 'and it costs nothing');
+});
+
+test('With a fare asked, it is taken once and a traveler without it is refused', () => {
+  const { ferry, state } = harness({ purse: 4, charges: true });
   assert.equal(ferry.board().ok, true);
   assert.equal(state.purse, 1, 'three copper, once');
-  const poor = harness({ purse: 2 });
+  const poor = harness({ purse: 2, charges: true });
   const refused = poor.ferry.offer();
   assert.equal(refused.ok, false);
   assert.match(refused.reason, /3 copper/);
@@ -66,15 +74,15 @@ test('The fare is taken once, and a traveler without it is refused', () => {
   assert.equal(poor.state.mode, 'playing');
 });
 
-test('Testing crosses free; an ordinary traveler never does', () => {
-  const { ferry, state } = harness({ purse: 0, free: true });
+test('Testing crosses free even when a fare is asked', () => {
+  const { ferry, state } = harness({ purse: 0, free: true, charges: true });
   assert.equal(ferry.fare, 0);
   const offer = ferry.offer();
   assert.equal(offer.ok, true);
   assert.equal(offer.free, true);
   assert.equal(ferry.board().ok, true);
   assert.equal(state.purse, 0);
-  const paying = harness({ purse: 0 });
+  const paying = harness({ purse: 0, charges: true });
   assert.equal(paying.ferry.fare, FERRY_FARE);
   assert.equal(paying.ferry.offer().ok, false, 'an empty purse stays ashore when nobody is testing');
 });
@@ -121,8 +129,8 @@ test('The crossing is a scene: the boat pulls out, the view fades, and the trave
   assert.ok(FERRY_SCENE.done < 6, 'a short scene, not a sailing sim');
 });
 
-test('He brings the traveler back for the same fare, and waits on the shore they are on', () => {
-  const { ferry, state, log, run } = harness();
+test('He brings the traveler back, and waits on the shore they are on', () => {
+  const { ferry, state, log, run } = harness({ charges: true });
   ferry.board(); run(FERRY_SCENE.done + .2);
   assert.equal(state.purse, STARTING_PURSE - FERRY_FARE);
   assert.equal(ferry.state.side, 'peblos');
@@ -146,7 +154,12 @@ test('He brings the traveler back for the same fare, and waits on the shore they
 test('His conversation offers the crossing and says plainly why it cannot happen', () => {
   const open = () => { let opened = null;
     return { get value() { return opened; }, openDialogue: (npc, lines, event, action, options) => { opened = { npc, lines, action, options }; }, closeDialogue: () => {} }; };
-  const rich = harness(), box = open();
+  const free = harness(), freeBox = open();
+  ferryConversation({ ...FERRY_NPC }, { ferry: free.ferry, openDialogue: freeBox.openDialogue, closeDialogue: freeBox.closeDialogue });
+  const freeBoard = freeBox.value.options.choices.find(choice => choice.id === 'board-ferry');
+  assert.equal(freeBoard.enabled, true);
+  assert.doesNotMatch(freeBoard.label, /copper/, 'nothing is asked for while the crossing is free');
+  const rich = harness({ charges: true }), box = open();
   let acted = null;
   ferryConversation({ ...FERRY_NPC }, { ferry: rich.ferry, openDialogue: box.openDialogue, closeDialogue: box.closeDialogue, act: result => { acted = result; } });
   const board = box.value.options.choices.find(choice => choice.id === 'board-ferry');
@@ -158,15 +171,15 @@ test('His conversation offers the crossing and says plainly why it cannot happen
   assert.equal(acted.ok, true);
   assert.equal(rich.state.mode, 'ferry');
   // Short of the fare, the choice is there and greyed, with the reason on it.
-  const poor = harness({ purse: 1 }), poorBox = open();
+  const poor = harness({ purse: 1, charges: true }), poorBox = open();
   ferryConversation({ ...FERRY_NPC }, { ferry: poor.ferry, openDialogue: poorBox.openDialogue, closeDialogue: poorBox.closeDialogue });
   const blocked = poorBox.value.options.choices.find(choice => choice.id === 'board-ferry');
   assert.equal(blocked.enabled, false);
   assert.match(blocked.reason, /copper/);
   // Free while testing, and it says so.
-  const dev = harness({ purse: 0, free: true }), devBox = open();
+  const dev = harness({ purse: 0, free: true, charges: true }), devBox = open();
   ferryConversation({ ...FERRY_NPC }, { ferry: dev.ferry, openDialogue: devBox.openDialogue, closeDialogue: devBox.closeDialogue });
-  assert.match(devBox.value.options.choices[0].label, /testing/);
+  assert.match(devBox.value.options.choices[0].label, /Peblos/);
   // On the island he offers the way home.
   const away = harness({ at: FERRY_LANDINGS.peblos.ashore }), awayBox = open();
   away.ferry.settle();

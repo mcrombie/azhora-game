@@ -25,6 +25,12 @@ import { COBBLE_QUAY, MAIN_ISLAND, FERRY_MOORINGS, quayHeight } from './peblos-w
  * else's rowing is worth on this coast.
  */
 export const FERRY_FARE = 3;
+/**
+ * The crossing is free: Corran carries anyone who asks while the islands are
+ * young and worth showing. The fare above is what he would charge, and the
+ * machinery that takes it is kept, so putting a price back is one flag.
+ */
+export const FERRY_FREE = true;
 export const FERRY_VERSION = 1;
 
 export const FERRY_NPC = Object.freeze({
@@ -76,14 +82,15 @@ const noop = () => {};
 
 /**
  * The ferry. Hooks, all optional:
- * `purse()`, `pay(n)`, `free()` (the developer override), `mounted()`,
+ * `purse()`, `pay(n)`, `free()` (the developer override), `charges()` (whether a
+ * fare is asked at all; free while the islands are young), `mounted()`,
  * `position()`, `place(x, z, yaw)`, `setMode(name)`, `veil(value, caption)`,
  * `boat(x, z, yaw)`, `carry(x, y, z)`, `save()`, `toast(text, kicker)`,
  * `stand(side, point)` and `onArrive(side)`.
  */
 export function createFerry(hooks = {}) {
   const {
-    purse = () => 0, pay = () => false, free = () => false, mounted = () => false,
+    purse = () => 0, pay = () => false, free = () => false, mounted = () => false, charges = () => !FERRY_FREE,
     position = () => ({ x: 0, z: 0 }), place = noop, setMode = noop, veil = noop,
     boat = noop, carry = noop, save = noop, toast = noop, stand = noop, onArrive = noop,
     // The boat serves Cobble and nowhere else, so "the island side" is the main
@@ -95,7 +102,7 @@ export function createFerry(hooks = {}) {
   let side = 'drent', crossings = 0, met = false, crossing = null, settled = false;
 
   const landing = () => FERRY_LANDINGS[side];
-  const fare = () => (free() ? 0 : FERRY_FARE);
+  const fare = () => (charges() && !free() ? FERRY_FARE : 0);
 
   /** Where the traveler is standing, as the ferry sees it. Never asked mid-crossing. */
   function settle() {
@@ -199,8 +206,9 @@ export function ferryConversation(npc, context) {
   const lines = here === 'drent' ? drentLines(ferry.state) : peblosLines(ferry.state);
   // Why not, in his own mouth: a greyed-out choice with a tooltip is not an answer.
   if (!chance.ok && chance.reason) lines.push(chance.reason);
-  const label = chance.free ? 'Take me out to Peblos. (testing · no fare)'
-    : here === 'drent' ? `Take me out to Peblos. (${FERRY_FARE} copper)` : `Take me back to Tidehaven. (${FERRY_FARE} copper)`;
+  const label = here === 'drent'
+    ? (chance.free ? 'Take me out to Peblos.' : `Take me out to Peblos. (${FERRY_FARE} copper)`)
+    : (chance.free ? 'Take me back to Tidehaven.' : `Take me back to Tidehaven. (${FERRY_FARE} copper)`);
   const choices = [
     { id: 'board-ferry', label, enabled: chance.ok, reason: chance.reason, title: chance.reason,
       action: () => { const result = ferry.board(); closeDialogue(); act(result); } },
@@ -214,22 +222,26 @@ function drentLines(state) {
   if (!state.met) return [
     'You will not remember much of the crossing. You were the colour of the water the whole way in, and you did not once look up.',
     'Corran Sell. That is my boat, and she is sound, whatever she looked like to you yesterday.',
-    `I go out to the Pebbles and back while the tide serves. Cobble is the village, on the big island — my own people. ${FERRY_FARE} copper and I will put you on the quay there, and ${FERRY_FARE} more when you want to come home.`,
+    FERRY_FREE
+      ? 'I go out to the Pebbles and back while the tide serves. Cobble is the village, on the big island — my own people. Say the word and I will put you on the quay there, and bring you home after. You paid your passage across the sea; I am not taking your coin for a mile of flat water.'
+      : `I go out to the Pebbles and back while the tide serves. Cobble is the village, on the big island — my own people. ${FERRY_FARE} copper and I will put you on the quay there, and ${FERRY_FARE} more when you want to come home.`,
   ];
   if (state.crossings > 0) return [
     'Back again. The tide serves for another hour, then it does not, and I would rather not row against it.',
-    `Same fare out: ${FERRY_FARE} copper. The Pebbles do not get any further away.`,
+    FERRY_FREE ? 'Out again whenever you like. The Pebbles do not get any further away.' : `Same fare out: ${FERRY_FARE} copper. The Pebbles do not get any further away.`,
   ];
   return [
     'Corran Sell. The boat is sound and the water is quiet, which is as much as anyone gets on this coast.',
-    `${FERRY_FARE} copper out to Cobble, ${FERRY_FARE} back. There is nothing on the islands that will eat you, whatever they tell you in the village.`,
+    FERRY_FREE ? 'Out to Cobble and back, and no charge for it. There is nothing on the islands that will eat you, whatever they tell you in the village.'
+      : `${FERRY_FARE} copper out to Cobble, ${FERRY_FARE} back. There is nothing on the islands that will eat you, whatever they tell you in the village.`,
   ];
 }
 
 function peblosLines(state) {
   return [
     state.crossings > 1 ? 'You again. Seen enough of us?' : 'Cobble. It is smaller than it looked from the water, and it looked small from the water.',
-    `${FERRY_FARE} copper back to Tidehaven, whenever you are ready. I will not go without you; I have a sister up that quay who would hear about it.`,
+    FERRY_FREE ? 'Back to Tidehaven whenever you are ready, and nothing owing. I will not go without you; I have a sister up that quay who would hear about it.'
+      : `${FERRY_FARE} copper back to Tidehaven, whenever you are ready. I will not go without you; I have a sister up that quay who would hear about it.`,
   ];
 }
 

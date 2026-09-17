@@ -8,6 +8,8 @@ import { PLAYABLE_SURVEY } from './region-survey.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const polygonPoints = (q, r) => hexAtlasCorners(q, r).map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
 
+const MAX_ZOOM = 64;
+
 export function createWorldMap() {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
@@ -24,8 +26,8 @@ export function createWorldMap() {
   let places = [];
   // Areas are named as soon as the chart is more than glanced at; the smaller places
   // inside them wait until the traveler has zoomed in far enough to read them.
-  const placeShown = place => place.kind === 'area' || zoom >= 4;
-  const placeNamed = place => place.kind === 'area' ? zoom >= 1.8 : zoom >= 7;
+  const placeShown = place => place.kind === 'area' || zoom >= 3.5;
+  const placeNamed = place => place.kind === 'area' ? zoom >= 1.8 : zoom >= 5.5;
   function drawPlaces() {
     placeLayer.replaceChildren();
     for (const place of places) {
@@ -111,7 +113,7 @@ export function createWorldMap() {
     }
     $('atlas-zoom').textContent = `${Math.round(zoom * 100)}%`;
     $('atlas-out').disabled = zoom <= 1;
-    $('atlas-in').disabled = zoom >= 24;
+    $('atlas-in').disabled = zoom >= MAX_ZOOM;
   }
   function resize() {
     if (!metadata || !viewport.clientWidth || !viewport.clientHeight) return;
@@ -127,7 +129,7 @@ export function createWorldMap() {
     if (!metadata) return;
     const scale = fitScale * zoom;
     const mx = (x - offsetX) / scale, my = (y - offsetY) / scale;
-    zoom = Math.max(1, Math.min(24, next));
+    zoom = Math.max(1, Math.min(MAX_ZOOM, next));
     offsetX = x - mx * fitScale * zoom; offsetY = y - my * fitScale * zoom;
     render();
   }
@@ -135,7 +137,7 @@ export function createWorldMap() {
     if (!metadata) return;
     const f = metadata.regions.find(region=>region.name===name)||metadata.focus;
     // Keep the coast and neighboring regions visible around Drent.
-    zoom = Math.max(1, Math.min(24, Math.min(width / (f.width + 220), height / (f.height + 180)) / fitScale));
+    zoom = Math.max(1, Math.min(MAX_ZOOM, Math.min(width / (f.width + 220), height / (f.height + 180)) / fitScale));
     offsetX = width / 2 - (f.x + f.width / 2) * fitScale * zoom;
     offsetY = height / 2 - (f.y + f.height / 2) * fitScale * zoom;
     render();
@@ -198,7 +200,7 @@ export function createWorldMap() {
   function setTraveler(point) { travelerPoint = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null; render(); }
   function focusTraveler() {
     if (!metadata || !travelerPoint) return false;
-    zoom = Math.max(zoom, Math.min(24, Math.min(width / 520, height / 520) / fitScale));
+    zoom = Math.max(zoom, Math.min(MAX_ZOOM, Math.min(width / 520, height / 520) / fitScale));
     offsetX = width / 2 - travelerPoint.x * fitScale * zoom; offsetY = height / 2 - travelerPoint.y * fitScale * zoom; render(); return true;
   }
   $('atlas-traveler-button').onclick = () => focusTraveler();

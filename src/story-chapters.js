@@ -1,0 +1,93 @@
+/**
+ * The main quest as the player reads it: numbered chapters with a goal apiece.
+ *
+ * The campaign (`src/campaign.js`) tracks the war; these are the chapters of the
+ * traveler's own story, and each one closes on a plain moment the player will
+ * remember — reporting for duty, carrying the rolls back, riding out to the
+ * muster. A chapter is done when its `done(state)` says so, and the state is the
+ * same views the journal already has. Pure: no DOM, no three.
+ */
+export const STORY_CHAPTER_VERSION = 1;
+
+const chapter = entry => Object.freeze({ ...entry, steps: Object.freeze(entry.steps) });
+
+export const STORY_CHAPTERS = Object.freeze([
+  chapter({
+    number: 1, id: 'road-to-luscia', title: 'The Road to Luscia', region: 'Drent',
+    goal: 'Report for duty. The Empire is gathering its hired swords at Lumber Town, across the Caloss in Luscia; get there and find the clerk who keeps the muster.',
+    steps: [
+      'Come ashore at Tidehaven and clear the Greenway of raiders',
+      'Carry Mara’s letter to the Legion’s post in the Avrel clearing',
+      'Make the road sound as far as the Caloss crossing',
+      'Cross the river into Luscia and find Lumber Town',
+      'Report to Iven at the relay post on the town square',
+    ],
+    done: state => !!state.luscia?.briefed,
+  }),
+  chapter({
+    // Everything the traveler does once they have reported: the errand that shows them
+    // what the war is, the muster, the parley that asks them to choose, and the battle.
+    number: 2, id: 'joining-the-war', title: 'Joining the War', region: null,
+    // It ends where the side you chose keeps its own ground: the Legion's outpost on
+    // the Moros, or the walls of Solis.
+    goal: state => `You have reported for duty. Take the Legion’s work, ride to the muster on the Moros, carry the Legate’s terms to the Coalition at Solis, choose the side you will fight for, and see the battle through${
+      state.side === 'coalition' ? ' — until you stand inside Solis as one of the Republic’s own.'
+      : state.side === 'empire' ? ' — until you stand in the Legion’s outpost on the Moros as one of the Empire’s own.'
+      : '. Whichever side you take, it ends on that side’s own ground: the Legion’s outpost on the Moros, or the walls of Solis.'}`,
+    steps: [
+      'Find the lost courier at the field at the Lauvel',
+      'Carry the muster rolls back to Iven and draw the Legion’s horse',
+      'Report to Legate Verro at the outpost on the Moros',
+      'Carry the terms into Solis and hear the Republic’s offer',
+      'Choose your side, march to the border, and fight the battle',
+      'The morning after: rally, clear the ground, and take your pay where your side stands',
+    ],
+    done: state => !!state.aftermath?.complete,
+  }),
+  chapter({
+    // Which war you joined decides where you go: the Empire's one city that holds a
+    // chokepoint, or a republic that keeps no capital at all and meets where it meets.
+    number: 3, id: 'the-side-you-chose', region: null,
+    title: state => state.side === 'coalition' ? 'The Republic of Izol' : 'The Kingdom of Ambron',
+    goal: state => state.side === 'coalition'
+      ? 'Take your pay the day after the battle, then sail east to Izolveth in West Izol, the port that shelters the Coalition’s army. The Republic keeps no capital: its business is done at a council, and the council wants to see the sellsword who fought at the border.'
+      : 'Take your pay the day after the battle, then ride north-west across the Moros into Elagos, to Ambron on the Lake Ela narrows: the walled city whose tolls are the Empire, where the Legate-General decides what you are used for next.',
+    steps: [
+      'Leave your side’s ground with its orders in your hand',
+      'Cross to the seat of the power you fight for',
+      'Ambron on the Lake Ela narrows, or the council at Izolveth in West Izol',
+    ],
+    // The ground beyond the day after is not built yet, so this chapter stays open.
+    done: () => false,
+  }),
+]);
+
+export const chapterCount = STORY_CHAPTERS.length;
+export const storyChapter = id => STORY_CHAPTERS.find(entry => entry.id === id) ?? null;
+
+/**
+ * Where the traveler stands in the story: every chapter before the first
+ * unfinished one is done, and that unfinished one is the chapter they are on.
+ */
+export function chapterProgress(state = {}) {
+  const done = [];
+  for (const entry of STORY_CHAPTERS) {
+    if (!entry.done(state)) {
+      return {
+        current: entry, done, complete: false, number: entry.number, of: chapterCount,
+        list: STORY_CHAPTERS.map(item => ({ ...item, state: done.includes(item) ? 'done' : item === entry ? 'current' : 'later' })),
+      };
+    }
+    done.push(entry);
+  }
+  const last = STORY_CHAPTERS.at(-1);
+  return { current: null, done, complete: true, number: chapterCount, of: chapterCount,
+    list: STORY_CHAPTERS.map(item => ({ ...item, state: item === last ? 'done' : 'done' })) };
+}
+
+/** A chapter's title and goal may depend on the side the traveler took. */
+export const chapterTitle = (entry, state = {}) => typeof entry?.title === 'function' ? entry.title(state) : entry?.title ?? '';
+export const chapterGoal = (entry, state = {}) => typeof entry?.goal === 'function' ? entry.goal(state) : entry?.goal ?? '';
+
+/** "Chapter 1 · The Road to Luscia", for the heading over the quest. */
+export const chapterLabel = (entry, state = {}) => entry ? `Chapter ${entry.number} · ${chapterTitle(entry, state)}` : 'The war moves on';

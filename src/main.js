@@ -55,6 +55,7 @@ import { createDrentBirds } from './drent-birds.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
+import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount } from './story-chapters.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -388,11 +389,35 @@ function init() {
     $('toast').append(small,document.createTextNode(title));$('toast').classList.add('visible');
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);
   }
+  // The main quest as the player reads it: numbered chapters (src/story-chapters.js).
+  const storyState=()=>({questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side});
+  let chapterShown=0;
+  function refreshChapter(){
+    const state=storyState(),progress=chapterProgress(state),current=progress.current;
+    $('quest-chapter').textContent=current?`Chapter ${current.number} of ${chapterCount} · ${chapterTitle(current,state)}`:'The war moves on';
+    $('chapter-heading').textContent=chapterLabel(current,state);
+    $('chapter-goal').textContent=current?chapterGoal(current,state):'Every chapter built so far is behind you.';
+    const list=$('chapter-list');list.replaceChildren();
+    for(const entry of progress.list){
+      const item=document.createElement('li');item.className=entry.state;
+      item.textContent=`${entry.state==='done'?'✓ ':''}${chapterTitle(entry,state)}`;
+      if(entry.state!=='later'){const note=document.createElement('small');note.textContent=chapterGoal(entry,state);item.append(note);}
+      list.append(item);
+    }
+    // A chapter closing is worth a word, once.
+    const reached=current?current.number:chapterCount+1;
+    if(chapterShown&&reached>chapterShown){
+      const closed=progress.done.at(-1);
+      if(closed)toast(chapterTitle(closed,state),`CHAPTER ${closed.number} COMPLETE · J FOR THE JOURNAL`);
+    }
+    chapterShown=reached;
+  }
   function refreshQuest() {
     if(questStage===10){
       journey.start();const quest=journey.view();
       if(quest.complete&&campaign.view().chapterId==='luscia-aftermath')luscia.start();
       if(border.state.complete&&!aftermath.state.variant&&AFTERMATH_VARIANTS[campaign.view().chapterId])aftermath.start(campaign.view().chapterId);
+      refreshChapter();
       if(aftermath.state.variant){const chapter=aftermath.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=aftermathBuilt(aftermath.spec)||chapter.complete?chapter.detail:`${chapter.detail} That ground is not built yet.`;$('quest-step').textContent=chapter.kicker;return;}
       if(moros.state.complete&&campaign.view().chapterId==='suval-envoy'&&!border.state.started)border.start();
       if(border.state.started){const chapter=border.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
@@ -404,6 +429,7 @@ function init() {
       $('quest-step').textContent=quest.complete?'THE ROAD OUT OF DRENT · RESTORED':`THE ROAD OUT OF DRENT · ${quest.regionName.toUpperCase()}`;
       return;
     }
+    refreshChapter();
     const quest=questSteps[questStage];$('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
     $('lesson-title').textContent=quest.lesson;$('lesson-hint').textContent=quest.hint;
     $('quest-step').textContent=questStage===10?'TIDEHAVEN · COMPLETE':`FIRST SHORE · ${questStage+1} / ${questSteps.length-1}`;
@@ -536,6 +562,7 @@ function init() {
     return ` · the company: ${s.arrived} of ${s.total} landed, ${s.mustered} at the muster, you stand ${ordinal(rank)} on the road`;
   }
   function refreshCampaign(){
+    refreshChapter();
     const view=campaign.view(),control=campaign.mapControl();
     $('campaign-chapter-title').textContent=`${view.title}${view.region?` · ${view.region}`:''}${view.levelName?` · level ${view.level} ${view.levelName}`:''}`;
     $('campaign-chapter-detail').textContent=view.detail;
@@ -883,7 +910,7 @@ function init() {
   }
   function ferryAct(result){
     if(!result?.ok){if(result?.reason)toast(result.reason,'THE CROSSING');return;}
-    toast(result.fare?`${result.fare} copper to Corran. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'No fare while testing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
+    toast(result.fare?`${result.fare} copper to Corran. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'Corran takes no fare for the crossing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
   }
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
@@ -1607,7 +1634,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,birding:birding.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
