@@ -24,6 +24,8 @@ const SOLDIER_CLOTH = Object.freeze({
   'legion-soldier': 0x8f3b30,
   'legion-officer': 0x832d2b,
   'suvali-guard': 0x55636f,
+  // Elod's frontier guards: black lamellar over charcoal wool, nothing red and nothing slate.
+  'elodi-guard': 0x2b2b2f,
 });
 // Builds for the hired company. Height and girth scale the whole standing body,
 // and `shoulders` moves the arm joints in or out, so two men of the same cloth
@@ -596,8 +598,16 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestX = .05; chestZ = -.06 + settle * .015;
         headX = .03; headY = Math.sin(seconds * .29 + offset) * .28;
         hip[0] = -.03 + settle * .01; hip[1] = -.05; knee[0] = .17; knee[1] = .05;
+      } else if (role === 'elodi-guard') {
+        // Upright and light on the feet: the spear held close, the weight forward, a slow sweep of the eyes along the wall.
+        const sweep = Math.sin(seconds * .21 + offset), ready = Math.sin(seconds * .37 + offset);
+        arm[1] = -.16 + breath * .01; elbow[1] = -.34; armOut[1] = .12;
+        arm[0] = -.3; elbow[0] = -1.05; armOut[0] = -.2;
+        chestX = .04 + breath * .006; chestZ = ready * .01;
+        headX = -.01; headY = sweep * .42;
+        hip[0] = -.05 + ready * .012; hip[1] = .03 - ready * .012; knee[0] = .12; knee[1] = .09;
       }
-      if (['commons-miller', 'reed-worker', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role))
+      if (['commons-miller', 'reed-worker', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard'].includes(role))
         for (let i = 0; i < 2; i++) ankle[i] = -hip[i] * .52 - knee[i] * .67;
       if (pose.fishing) {
         const patience = Math.sin(seconds * 1.8 + offset) * .023;
@@ -676,7 +686,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role), armed = false, look = null } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard'].includes(role), armed = false, look = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -688,7 +698,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
   const isLegionary = role === 'legion-soldier', isOfficer = role === 'legion-officer', isSuvaliGuard = role === 'suvali-guard';
-  const isSoldier = isLegionary || isOfficer || isSuvaliGuard;
+  // Elod's guards: light, black and quick. `look.kit` is 'spear' (the default) or 'bow'.
+  const isElodiGuard = role === 'elodi-guard';
+  const isSoldier = isLegionary || isOfficer || isSuvaliGuard || isElodiGuard;
   // A hired sword from abroad: the traveler's kind of cloth and sword, a leather jerkin,
   // and a look (hair, beard, cap) chosen by the roster rather than the role.
   const isMercenary = role === 'mercenary';
@@ -709,15 +721,15 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
 
   const cloth = material(tunic);
   const clothLight = material(new THREE.Color(tunic).lerp(new THREE.Color(0xe4d3a1), 0.18));
-  const linen = material(isSoldier ? 0xcdbf9f : isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
+  const linen = material(isElodiGuard ? 0x46464b : isSoldier ? 0xcdbf9f : isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
   const skinMat = material(skin);
   const noseMat = material(new THREE.Color(skin).lerp(new THREE.Color(0xd99476), 0.22));
   const leather = material(0x664833);
-  const bootMat = material(0x49392c);
+  const bootMat = material(isElodiGuard ? 0x2e2824 : 0x49392c);
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
   const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
@@ -1023,7 +1035,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     const bunTie = part(head, new THREE.TorusGeometry(0.091, 0.012, 4, 10), linen, [0.034, 0.253, -0.267]);
     bunTie.rotation.y = 0.12;
     ribbon(head, linen, [-0.043, 0.254, -0.267], [-0.051, 0.17, -0.272], 0.024, 0.014);
-  } else {
+  } else if (!isElodiGuard) {
     const fringe = round(head, hairMat, [-0.055, 0.334, 0.08], [0.143, 0.061, 0.123]);
     fringe.rotation.z = -0.18;
   }
@@ -1560,13 +1572,24 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // and a neck guard, greaves, a sheathed sword at the hip and a planted
     // spear. Officers add a crest and a cloak and keep a hand on the hilt;
     // Suval's border guards wear a studded jerkin and a plain iron cap.
-    const iron = material(isSuvaliGuard ? 0x7b7d78 : 0x9a9d96, { metalness: 0.46, roughness: 0.6 });
-    const ironDark = material(0x62655f, { metalness: 0.46, roughness: 0.6 });
-    const strap = material(0x4d3a2a);
+    const iron = material(isSuvaliGuard ? 0x7b7d78 : isElodiGuard ? 0x55575a : 0x9a9d96, { metalness: 0.46, roughness: 0.6 });
+    const ironDark = material(isElodiGuard ? 0x2f3033 : 0x62655f, { metalness: 0.46, roughness: 0.6 });
+    const strap = material(isElodiGuard ? 0x1d1c1e : 0x4d3a2a);
     const armor = new THREE.Group();
-    armor.name = isSuvaliGuard ? 'Suvali studded jerkin' : 'Legion banded cuirass';
+    armor.name = isSuvaliGuard ? 'Suvali studded jerkin' : isElodiGuard ? 'Elodi black lamellar' : 'Legion banded cuirass';
     body.add(armor);
-    if (isSuvaliGuard) {
+    if (isElodiGuard) {
+      // A short coat of small black lacquered plates laced in rows over charcoal wool: lighter than the Legion's bands.
+      const lacquer = material(0x18181a, { metalness: 0.2, roughness: 0.55 });
+      part(armor, new THREE.CylinderGeometry(0.258, 0.232, 0.38, 8), strap, [0, 1.12, 0], [1, 1, 0.69]);
+      for (let row = 0; row < 4; row++) for (let i = -3; i <= 3; i++) {
+        const angle = i * 0.36, y = 1.26 - row * 0.085;
+        const plate = box(armor, row % 2 ? lacquer : ironDark, [Math.sin(angle) * 0.25, y, Math.cos(angle) * 0.178], [0.062, 0.07, 0.012]);
+        plate.rotation.y = angle;
+      }
+      for (const side of [-1, 1]) round(armor, lacquer, [side * 0.235, 1.305, 0], [0.11, 0.05, 0.12]);
+      box(armor, material(0x6b6d70, { metalness: 0.3, roughness: 0.5 }), [0, 1.2, 0.19], [0.032, 0.05, 0.01]);
+    } else if (isSuvaliGuard) {
       part(armor, new THREE.CylinderGeometry(0.262, 0.236, 0.40, 8), strap, [0, 1.115, 0], [1, 1, 0.7]);
       for (let row = 0; row < 3; row++) for (let i = -2; i <= 2; i++) round(armor, iron, [i * 0.072, 1.245 - row * 0.1, 0.176 - Math.abs(i) * 0.022], [0.016, 0.016, 0.01]);
     } else {
@@ -1578,25 +1601,44 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       }
       box(armor, gold, [0, 1.19, 0.198], [0.06, 0.13, 0.012]);
     }
-    // Leather pteruges hang from the belt around the front and sides.
+    // Leather pteruges hang from the belt around the front and sides; Elod's are short black tassets.
     for (let i = 0; i < 7; i++) {
       const angle = (i - 3) * 0.38;
-      const strip = box(armor, i % 2 ? strap : leather, [Math.sin(angle) * 0.235, 0.86, Math.cos(angle) * 0.19], [0.058, 0.17, 0.014]);
+      const strip = box(armor, i % 2 ? strap : isElodiGuard ? material(0x232326) : leather, [Math.sin(angle) * 0.235, isElodiGuard ? 0.9 : 0.86, Math.cos(angle) * 0.19], [0.058, isElodiGuard ? 0.12 : 0.17, 0.014]);
       strip.rotation.y = angle;
     }
-    // The sword stays sheathed at the left hip: scabbard, guard and grip.
-    const scabbard = box(armor, leather, [-0.26, 0.84, -0.03], [0.05, 0.42, 0.06]);
+    // The sword stays sheathed at the left hip: scabbard, guard and grip. An Elodi guard carries a long knife instead.
+    const scabbard = box(armor, isElodiGuard ? strap : leather, [-0.26, isElodiGuard ? 0.92 : 0.84, -0.03], [0.045, isElodiGuard ? 0.26 : 0.42, 0.05]);
     scabbard.rotation.z = 0.12;
-    box(armor, ironDark, [-0.283, 1.06, -0.03], [0.12, 0.02, 0.04]);
+    box(armor, ironDark, [-0.283, 1.06, -0.03], [isElodiGuard ? 0.07 : 0.12, 0.02, 0.04]);
     part(armor, UNIT_CYLINDER, strap, [-0.29, 1.11, -0.03], [0.018, 0.09, 0.018]);
-    for (const knee of knees) box(knee, iron, [0, -0.135, 0.104], [0.15, 0.2, 0.03]);
+    // Greaves for the Legion and Suval; soft boots with a black wrap for Elod.
+    for (const knee of knees) box(knee, isElodiGuard ? strap : iron, [0, isElodiGuard ? -0.06 : -0.135, 0.104], [isElodiGuard ? 0.17 : 0.15, isElodiGuard ? 0.05 : 0.2, 0.03]);
     part(elbows[1], UNIT_CYLINDER, strap, [0, -0.1, 0.004], [0.077, 0.09, 0.079]);
     const helmet = new THREE.Group();
-    helmet.name = isSuvaliGuard ? 'Suvali iron cap' : isOfficer ? 'Legion crested helmet' : 'Legion helmet';
+    helmet.name = isSuvaliGuard ? 'Suvali iron cap' : isElodiGuard ? 'Elodi open helm' : isOfficer ? 'Legion crested helmet' : 'Legion helmet';
     head.add(helmet);
-    round(helmet, iron, [0, 0.27, -0.015], [0.222, 0.2, 0.205]);
-    part(helmet, UNIT_CYLINDER, ironDark, [0, 0.245, 0], [0.228, 0.036, 0.208]);
-    if (isSuvaliGuard) {
+    if (isElodiGuard) {
+      // A black hood drawn over a light open helm: the face bare, the hood falling to the shoulders.
+      const hood = material(0x19191b);
+      const hoodGroup = new THREE.Group(); hoodGroup.name = 'Elodi black hood'; helmet.add(hoodGroup);
+      round(hoodGroup, hood, [0, 0.215, -0.06], [0.235, 0.232, 0.2]);
+      for (const side of [-1, 1]) round(hoodGroup, hood, [side * 0.185, 0.14, 0.01], [0.06, 0.16, 0.14]);
+      // The hood's tail falls down the back, and its short cape lies over the shoulders.
+      const tail = part(hoodGroup, new THREE.ConeGeometry(0.1, 0.36, 5), hood, [0, 0.2, -0.27]);
+      tail.rotation.x = -2.3;
+      part(hoodGroup, new THREE.CylinderGeometry(0.19, 0.33, 0.2, 9), hood, [0, -0.05, -0.02], [1, 1, 0.78]);
+      // A light open helm over the hood: a low iron bowl, a rim and a nasal.
+      round(helmet, iron, [0, 0.385, -0.03], [0.205, 0.115, 0.19]);
+      part(helmet, UNIT_CYLINDER, ironDark, [0, 0.36, -0.03], [0.215, 0.024, 0.2]);
+      box(helmet, ironDark, [0, 0.33, 0.17], [0.024, 0.1, 0.02]);
+    } else {
+      round(helmet, iron, [0, 0.27, -0.015], [0.222, 0.2, 0.205]);
+      part(helmet, UNIT_CYLINDER, ironDark, [0, 0.245, 0], [0.228, 0.036, 0.208]);
+    }
+    if (isElodiGuard) {
+      // Nothing more on the head: the hood is the whole of it.
+    } else if (isSuvaliGuard) {
       part(helmet, UNIT_CYLINDER, ironDark, [0, 0.228, 0], [0.27, 0.014, 0.25]);
     } else {
       for (const side of [-1, 1]) {
@@ -1617,6 +1659,17 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       const cloakMat = material(0x7d2a24, { side: THREE.DoubleSide });
       part(body, new THREE.CylinderGeometry(0.2, 0.34, 0.72, 8, 1, true, Math.PI / 2, Math.PI), cloakMat, [0, 0.95, -0.03], [1, 1, 0.85]);
       for (const side of [-1, 1]) round(body, gold, [side * 0.16, 1.3, 0.13], [0.03, 0.03, 0.012]);
+    } else if (isElodiGuard && !armed) {
+      // A short spear held close, or a bow across the back; a small round shield either way.
+      // Elod's frontier captain carries no spear: a charcoal half-cloak with a silver clasp marks him instead.
+      if (look?.officer) {
+        const cloak = new THREE.Group(); cloak.name = 'Elodi captain cloak'; body.add(cloak);
+        part(cloak, new THREE.CylinderGeometry(0.2, 0.33, 0.66, 8, 1, true, Math.PI / 2, Math.PI), material(0x3a3b3f, { side: THREE.DoubleSide }), [0, 0.98, -0.03], [1, 1, 0.85]);
+        round(cloak, material(0xb9bcc0, { metalness: 0.5, roughness: 0.4 }), [0.15, 1.3, 0.14], [0.035, 0.035, 0.012]);
+      } else if (look?.kit === 'bow') makeBow(body);
+      else staff = makeSpearProp(wrists[1], 'Elodi short spear', 1.72, 0.26);
+      const buckler = makeShield(elbows[0], { face: 0x242427, rim: 0x5f6164, round: true, width: 0.23 });
+      buckler.name = 'Elodi round shield';
     } else if (!armed) {
       // The spear stays planted beside the right foot while the body breathes.
       staff = new THREE.Group();
@@ -1665,6 +1718,11 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   body.name = 'Weight and hips';
   head.name = 'Head';
   batchRigidParts(group, pivots);
+  if (isElodiGuard) {
+    // Lean and quick-looking: a little taller and narrower than a legionary, the head kept to its own size.
+    body.scale.set(0.93, 1.03, 0.93);
+    head.scale.set(1 / Math.sqrt(0.93), 1 / 1.03, 1 / Math.sqrt(0.93));
+  }
   if (mercBuild) {
     // Build rides on the hips, not on the root, so the combat view's own
     // group scale (it shrinks the fallen) never flattens a man's proportions.

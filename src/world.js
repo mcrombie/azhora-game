@@ -6,10 +6,18 @@ import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
   VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
-  calossDistance, landDistance,
+  calossDistance, landDistance, SOLIS, solisPoint,
 } from './region-world.js';
 import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, puethRiverSurface, smooth, lerp } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
+import { createSigns, SIGN_COLOURS } from './signs.js';
+import { buildMorosWorks } from './moros-works.js';
+import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH } from './outpost.js';
+import { WAYSIDE_LANDMARKS } from './wayside.js';
+import { buildFrontierWorks } from './frontier-works.js';
+import { buildPlaceWorks } from './place-works.js';
+import { PLACE_LANDMARKS } from './places.js';
+import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
@@ -676,12 +684,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   box(woodLight, wellX, wellY + 2.35, wellZ, 2.25, .13, .13);
   rope([new THREE.Vector3(wellX, wellY + 2.35, wellZ), new THREE.Vector3(wellX, wellY + .55, wellZ)], .027);
   vpush({ x: wellX, z: wellZ, r: 1.3 });
-  const signY = localGround(4.4, 15.1);
-  post(wood, 4.4, signY + 1.25, 15.1, .11, 2.5);
-  box(woodLight, 4.4, signY + 2.23, 15.1, 1.72, .65, .12);
   const arrowGeo = new THREE.Shape();
   arrowGeo.moveTo(-.55, -.09); arrowGeo.lineTo(.15, -.09); arrowGeo.lineTo(.15, -.23); arrowGeo.lineTo(.53, 0); arrowGeo.lineTo(.15, .23); arrowGeo.lineTo(.15, .09); arrowGeo.lineTo(-.55, .09);
-  mesh(new THREE.ShapeGeometry(arrowGeo), material('#f0dfb4', { side: THREE.DoubleSide }), 4.4, signY + 2.23, 15.18);
   function lantern(x, z, h = 3.2) {
     const y = localGround(x, z);
     post(wood, x, y + h / 2, z, .075, h); box(darkWood, x + .27, y + h - .12, z, .64, .075, .075);
@@ -790,66 +794,62 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const markerX = 31, markerZ = -59, markerY = localGround(markerX, markerZ);
   const standingStone = pebble(material('#899b8f'), markerX, markerY + 1.7, markerZ, 1.3, 2.1, .8); standingStone.rotation.z = -.1;
   vpush({ x: markerX, z: markerZ, r: 1.25 });
-  const inset = box(material('#96c5b1', { emissive: '#569e89', emissiveIntensity: .24 }), markerX, markerY + 1.9, markerZ + .68, .13, .76, .08); inset.rotation.z = .42;
+  // The waystone's old road mark, picked out in paint like every other marker (no glow).
+  const inset = box(material('#96c5b1'), markerX, markerY + 1.9, markerZ + .68, .13, .76, .08); inset.rotation.z = .42;
 
   // ---------------------------------------------------------------------------
   // Road signs, shared between Tidehaven and the regions
   // ---------------------------------------------------------------------------
-  const roadSigns = [];
-  const roadSignLabels = ['The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge',
-    'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Tidehaven', 'Return to bridge',
-    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel', 'The Tessen Bridge', 'Rimeholt',
-    ...forestPlaceDefinitions.map(site => site.name), 'Village road'];
-  const signRowHeight = 56;
-  const signAtlas = (() => {
-    if (typeof document === 'undefined') {
-      const texture = new THREE.DataTexture(new Uint8Array([171, 121, 80, 255]), 1, 1);
-      texture.needsUpdate = true; return texture;
+  // One sign language everywhere (src/signs.js): fingers point, square boards
+  // name a place, plaques carry notices and painted stones mark a border.
+  const signs = createSigns({ material, mesh, box, groundFor, pushFor,
+    worldSpot: (parent, x, z) => (isLocal(parent) ? villageToWorld(x, z) : { x, z }) });
+  const roadSigns = signs.records;
+  /**
+   * The older roadside-sign call, (x, z, label, yaw, returnLabel), as scenery
+   * modules still make it: a fingerpost whose fingers point at the places they
+   * name where those are known, and along the road's line otherwise.
+   */
+  const signTargets = { Solis: SOLIS.centre, 'The Gate of Sun Horses': solisPoint(0, -42), 'The Coalition camp': solisPoint(100, 0), 'The border stockade': STORY_SITES.morosStockade };
+  const roadsideSign = (x, z, label, yaw = 0, returnLabel = 'Tidehaven') => {
+    const along = { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+    return signs.direction({ x, z, label, parent: world, backLabel: returnLabel,
+      toward: signTargets[label] ?? { x: x + along.x * 20, z: z + along.z * 20 }, back: signTargets[returnLabel] ?? { x: x - along.x * 20, z: z - along.z * 20 } });
+  };
+  // The Greenway's own fingerposts, in the village's local metres (north is -z here).
+  signs.direction({ x: 4.4, z: 15.1, label: 'The Greenway', toward: { x: 0, z: -36 }, back: { x: 0, z: 29 }, backLabel: 'Tidehaven Landing', parent: villageRoot });
+  signs.direction({ x: -6, z: -86, label: 'Fernway Rest', toward: northTrail, back: { x: -2, z: -60 }, backLabel: 'Tidehaven', parent: villageRoot });
+  signs.direction({ x: -10.7, z: -105, label: 'The Caloss Gate', toward: border, back: { x: -8, z: -80 }, backLabel: 'Tidehaven', parent: villageRoot });
+  signs.direction({ x: 12.9, z: -129, label: 'The Caloss Gate', toward: border, back: northTrail, backLabel: 'Fernway Rest', parent: villageRoot });
+  // Pueth's scenery still calls the older trailSign(x, z, direction, label, yaw, returnLabel, parent): the same
+  // fingerposts, pointing ahead along the Pueth road to the place named and back along it (or the main road home).
+  /** The point `metres` along a road (negative: back toward its start) from the road point nearest (x, z). */
+  const roadStep = (road, x, z, metres) => {
+    let best = { i: 1, t: 0, d: Infinity };
+    for (let i = 1; i < road.length; i++) {
+      const a = road[i - 1], b = road[i], dx = b.x - a.x, dz = b.z - a.z, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1)));
+      const d = Math.hypot(x - a.x - dx * t, z - a.z - dz * t);
+      if (d < best.d) best = { i, t, d };
     }
-    const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 1536;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ab7950'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 40px Georgia, serif';
-    roadSignLabels.forEach((label, index) => {
-      ctx.fillStyle = '#513c2c'; ctx.fillText(label, 256, index * signRowHeight + signRowHeight / 2 + 2, 490);
-      ctx.fillStyle = '#fff0c9'; ctx.fillText(label, 256, index * signRowHeight + signRowHeight / 2, 490);
-    });
-    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 4; return texture;
-  })();
-  const signLettering = new THREE.MeshStandardMaterial({ color: '#ffffff', map: signAtlas, roughness: 1 });
-  const SIGN_ATLAS_HEIGHT = 1536;
-  function signFace(label, z, rotation, parent) {
-    const row = Math.max(0, roadSignLabels.indexOf(label)), geometry = new THREE.PlaneGeometry(2.23, .43);
-    const uv = geometry.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setY(i, (SIGN_ATLAS_HEIGHT - (row + 1) * signRowHeight + uv.getY(i) * signRowHeight) / SIGN_ATLAS_HEIGHT);
-    const face = mesh(geometry, signLettering, .22, 0, z, 1, 1, 1, parent); face.rotation.y = rotation;
-    if (rotation) face.position.x = -.22;
-    face.castShadow = false;
-  }
-  function trailSign(x, z, direction = 1, label = '', signYaw = 0, returnLabel = label === 'Quiet fishing bank' ? 'Return to bridge' : 'Tidehaven', parent = villageRoot) {
-    const y = groundFor(parent)(x, z), push = pushFor(parent);
-    post(wood, x, y + (label ? .825 : 1.13), z, .095, label ? 1.65 : 2.26, parent);
-    if (label) {
-      const head = new THREE.Group(); head.name = `Road sign: ${label}`; head.position.set(x, y + 1.94, z); head.rotation.set(0, signYaw, .035 * direction); parent.add(head);
-      box(woodLight, 0, 0, 0, 3.15, .70, .12, head);
-      signFace(label, .073, 0, head); signFace(returnLabel, -.073, Math.PI, head);
-      for (const side of [-1, 1]) {
-        const arrow = mesh(new THREE.ShapeGeometry(arrowGeo), cream, side * 1.30, 0, -side * .079, .49, .49, 1, head);
-        arrow.rotation.set(0, side === 1 ? Math.PI : 0, Math.PI / 2);
+    let i = best.i, left = metres, a = road[i - 1], b = road[i], length = Math.hypot(b.x - a.x, b.z - a.z), at = best.t * length;
+    while (true) {
+      const target = at + left;
+      if (target >= 0 && target <= length || (target < 0 && i === 1) || (target > length && i === road.length - 1)) {
+        const t = Math.max(0, Math.min(1, target / (length || 1)));
+        return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t };
       }
-      const spot = isLocal(parent) ? villageToWorld(x, z) : { x, z };
-      roadSigns.push({ x: spot.x, z: spot.z, label, returnLabel, yaw: signYaw });
-      push({ x, z, r: .17 });
-      return;
+      if (target > length) { left = target - length; i++; at = 0; } else { left = target; i--; }
+      a = road[i - 1]; b = road[i]; length = Math.hypot(b.x - a.x, b.z - a.z);
+      if (target < 0) at = length;
     }
-    const plank = box(woodLight, x, y + 1.94, z, 1.65, .48, .12, parent);
-    plank.rotation.z = .035 * direction;
-    const arrow = mesh(new THREE.ShapeGeometry(arrowGeo), cream, x, y + 1.94, z + .074, .86, .86, 1, parent);
-    arrow.rotation.z = Math.PI / 2;
-    push({ x, z, r: .17 });
+  };
+  function trailSign(x, z, direction = 1, label = '', signYaw = 0, returnLabel = 'Tidehaven', parent = villageRoot) {
+    if (parent === villageRoot || !label) return signs.direction({ x, z, label: label || 'Tidehaven', parent, backLabel: returnLabel,
+      toward: { x: x - Math.sin(signYaw) * 20, z: z - Math.cos(signYaw) * 20 }, back: { x: x + Math.sin(signYaw) * 20, z: z + Math.cos(signYaw) * 20 } });
+    const atJunction = Math.hypot(x - PUETH_ROAD[0].x, z - PUETH_ROAD[0].z) < 15;
+    return signs.direction({ x, z, label, parent, backLabel: returnLabel, toward: roadStep(PUETH_ROAD, x, z, 20),
+      back: atJunction && returnLabel === 'Tidehaven' ? roadStep(MAIN_ROAD, x, z, -40) : roadStep(PUETH_ROAD, x, z, -20) });
   }
-  trailSign(-6, -86); trailSign(-10.7, -105); trailSign(12.9, -129);
 
   localPatch(northTrail.x, northTrail.z, 6.7, '#aaa87d', .82);
   const restX = northTrail.x + 4.9, restZ = northTrail.z + 1.2;
@@ -887,12 +887,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         new THREE.Vector3(b, localGround(b, border.barrierZ) + 1.13, border.barrierZ)], .035);
     }
   }
-  const boundaryX = -4.8, boundaryZ = border.z + 1.0, boundaryY = localGround(boundaryX, boundaryZ);
-  box(rockMat, boundaryX, boundaryY + .79, boundaryZ, .84, 1.58, .68);
-  box(cream, boundaryX, boundaryY + .95, boundaryZ + .35, .48, .51, .04);
-  box(wood, boundaryX, boundaryY + .91, boundaryZ + .378, .36, .055, .025);
-  mesh(new THREE.CircleGeometry(.105, 12), material('#d4b465'), boundaryX, boundaryY + 1.06, boundaryZ + .379);
-  vpush({ x: boundaryX, z: boundaryZ, r: .52 });
+  // Tidehaven's boundary: a painted stone, its faces naming the ground each looks into.
+  signs.border({ x: -5.2, z: border.z + 1.0, facing: Math.PI, parent: villageRoot,
+    faces: [{ label: 'Tidehaven', paint: SIGN_COLOURS.paint.drent }, { label: 'Avrel', paint: SIGN_COLOURS.paint.drent }] });
 
   // ---------------------------------------------------------------------------
   // Tidehaven's woodland: the original deterministic scatter
@@ -1024,7 +1021,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-394, 168), at(-404, 172)],
     [at(-392, 176), { x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z }],
     [at(-398, 202), at(-376, 208), { x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z }],
-    [at(-446, 276), at(-420, 292), { x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z }],
+    // The track to the border stockade comes round its west side to the south gate, where the Solis road leaves.
+    [at(-446, 276), at(-420, 292), STOCKADE_TRACK_BEND, STOCKADE_APPROACH],
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
@@ -1054,7 +1052,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   bridgeDecks.push(puethScenery.bridge);
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
-    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: (x, z, label, yaw, returnLabel) => trailSign(x, z, 1, label, yaw, returnLabel, world) });
+    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
+  // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
+  const stakedProps = [];
+  buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
+  buildFrontierWorks({ parent: world, heightAt: groundHeight, colliders, signs });
+  buildPlaceWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);
@@ -1089,20 +1092,32 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(PUETH_ROAD, 4.2);
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
 
-  // Signposts along the new road.
-  for (const [x, z, label, yaw] of [
-    [-192, 22, 'The Avrel Clearing', -1.3], [-222, 46, 'Clearing mill & farms', -1.1],
-    [-284, 58, 'Caloss Crossing', -.9], [-330, 82, 'The Caloss Bridge', -.9],
-    [-366, 112, 'Reedcutters’ Camp', -.6], [-378, 128, 'Sava’s Shrine', -.4],
-    [-386, 158, 'The Waymarkers', -.3], [-396, 186, 'The Lauvel Relay', -.2],
-    [-321, 100, 'Quiet fishing bank', -1.0],
-    [-418, 250, 'The Moros Gate', .4], [-500, 318, 'The Legion Camp', .5],
-    [-244, 274, 'Elod’s Border Post', 1.1], [-120, 330, 'Elod', 1.2],
+  // Fingerposts along the new road: each points at its place, and back the way the traveler came.
+  /** A point 40 m back along the nearest road, toward where that road starts. */
+  const backAlong = (x, z) => {
+    let best = null, bestDistance = Infinity;
+    for (const road of [MAIN_ROAD, SUVAL_ROAD]) for (let i = 1; i < road.length; i++) {
+      const a = road[i - 1], b = road[i], dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz);
+      const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (length * length)));
+      const distance = Math.hypot(x - a.x - dx * t, z - a.z - dz * t);
+      if (distance < bestDistance) { bestDistance = distance; best = { x: a.x + dx * (t - 40 / length), z: a.z + dz * (t - 40 / length) }; }
+    }
+    return best;
+  };
+  const branch = (() => { const [a, b] = SUVAL_ROAD, l = Math.hypot(b.x - a.x, b.z - a.z); return { x: a.x + (b.x - a.x) / l * 14 - (b.z - a.z) / l * 3.6, z: a.z + (b.z - a.z) / l * 14 + (b.x - a.x) / l * 3.6 }; })();
+  for (const [x, z, label, target, backLabel = 'Tidehaven'] of [
+    [-192, 22, 'The Avrel Clearing', AVREL_CLEARING], [-222, 46, 'Clearing mill & farms', at(-222, 62)],
+    [-284, 58, 'Caloss Crossing', CALOSS.crossing], [-330, 82, 'The Caloss Bridge', CALOSS.crossing],
+    [-366, 112, 'Reedcutters’ Camp', at(-372, 116)], [-378, 128, 'Sava’s Shrine', at(-374, 134)],
+    [-386, 158, 'The Waymarkers', at(-386, 152)], [-396, 186, 'The Lauvel Relay', at(-401, 196)],
+    [-321, 100, 'Quiet fishing bank', CALOSS_BANK.spot, 'Return to bridge'],
+    [-470, 300, 'The Legion Camp', STORY_SITES.legionCamp],
+    [branch, null, 'The Elodi Frontier', SUVAL_ROAD[6]], [-120, 330, 'Elod', STORY_SITES.elodGate, 'The Elodi Frontier'],
   ]) {
-    const spot = at(x, z);
+    const spot = typeof x === 'object' ? x : at(x, z);
     let px = spot.x, py = spot.z, guard = 0;
-    while (roadDistance(px, py) < 2.4 && guard++ < 14) { px += Math.sign(x + 300) * .8; py += 1.1; }
-    trailSign(px, py, 1, label, yaw, 'Tidehaven', world);
+    while (roadDistance(px, py) < 2.4 && guard++ < 14) { px += Math.sign(spot.x + 535) * .8; py += 1.1; }
+    signs.direction({ x: px, z: py, label, toward: target, back: backAlong(px, py), backLabel, parent: world });
   }
 
   // ---------------------------------------------------------------------------
@@ -1140,8 +1155,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       const arrowInset = mesh(new THREE.ShapeGeometry(arrowGeo), material('#8f8963'), 0, 1.59, .43, .34, .34, 1, group); arrowInset.rotation.z = Math.PI / 2;
       colliders.push({ x: bx, z: bz, r: .85, kind: 'waymarker' });
       const flame = new THREE.Group(); flame.name = `${site.id} light`; flame.position.set(0, 1.21, .445); group.add(flame);
-      box(material('#f6d690', { emissive: '#d9b661', emissiveIntensity: .7 }), 0, 0, 0, .18, .78, .025, flame);
-      const polishedArrow = mesh(new THREE.ShapeGeometry(arrowGeo), material('#fae2a3', { emissive: '#d9b661', emissiveIntensity: .5 }), 0, .38, .012, .34, .34, 1, flame);
+      // Restored: a fresh coat of lime on the face and the arrow repainted, in the signs' own paint.
+      box(material(SIGN_COLOURS.letter), 0, 0, 0, .18, .78, .025, flame);
+      const polishedArrow = mesh(new THREE.ShapeGeometry(arrowGeo), material(SIGN_COLOURS.paint.empire), 0, .38, .012, .34, .34, 1, flame);
       polishedArrow.rotation.z = Math.PI / 2;
       flame.visible = false;
       journeyVisuals.set(site.id, { complete: flame, pivot: group, lean });
@@ -1149,7 +1165,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   journeyVisuals.set('bridge-repair', { complete: regionScenery.repairedDeck, incomplete: regionScenery.brokenCord, blockers: regionScenery.damagedColliders });
   movingGroups.add(regionScenery.repairedDeck); movingGroups.add(regionScenery.brokenCord); movingGroups.add(regionScenery.millSails);
-  for (const bench of regionRepairBenches) {
+  for (const bench of [...regionRepairBenches, OUTPOST_BENCH]) {
     const x = bench.x - 1.65, z = bench.z, y = groundHeight(x, z);
     wornPatch(bench.x, bench.z, 2.5, '#aaa182');
     box(woodLight, x, y + .78, z, 1.5, .15, .75, world);
@@ -1160,7 +1176,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const worldFirePits = [
     ...firePits.map(fire => ({ ...fire, ...villageToWorld(fire.x, fire.z),
       ...(({ x, z }) => ({ fireX: x, fireZ: z }))(villageToWorld(fire.fireX, fire.fireZ)) })),
-    ...regionFirePits.map(fire => ({ ...fire })),
+    ...regionFirePits.map(fire => ({ ...fire })), { ...OUTPOST_FIRE },
   ];
 
   // ---------------------------------------------------------------------------
@@ -1220,8 +1236,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const forestSignPositions = [[-5, -43.5, Math.PI / 2], [19, -43, -Math.PI / 2], [14.3, -81, .6],
     [-14, -89, Math.PI / 2], [-10, -109.7, Math.PI / 2], [-27, 13, Math.PI / 2]];
   forestPlaceDefinitions.forEach((site, index) => {
-    const [x, z, angle] = forestSignPositions[index];
-    trailSign(x, z, 1, site.name, angle, 'Village road');
+    const [x, z] = forestSignPositions[index], head = site.trail[1] ?? site;
+    signs.direction({ x, z, label: site.name, toward: head, back: { x: 2 * x - head.x, z: 2 * z - head.z }, backLabel: 'Village road', parent: villageRoot });
   });
   const localWorld = { heightAt: localGround, colliders: localColliders };
   const forestPlaces = createForestPlaces(villageRoot, localWorld);
@@ -1422,12 +1438,16 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     colliders,
     training: { ...worldTraining, object: training.object, y: training.y },
     repairBench: { ...worldRepairBench, name: repairBench.name },
-    repairBenches: [{ ...worldRepairBench, name: repairBench.name }, ...regionRepairBenches],
+    repairBenches: [{ ...worldRepairBench, name: repairBench.name }, ...regionRepairBenches, OUTPOST_BENCH],
+    /** Props that belong to a garrison and are out only while their side holds the region (see occupation.js). */
+    stakedProps,
     regions,
     regionAt,
     journeySites,
     routeJourney: ONWARD_ROAD.map(p => ({ x: p.x, z: p.z })),
-    suvalRoute: SUVAL_ROAD.map(p => ({ x: p.x, z: p.z })),
+    // The branch is walkable only to Elod's shut gate: East Suval is closed (closed-border.js).
+    suvalRoute: FRONTIER_ROUTE.map(p => ({ x: p.x, z: p.z })),
+    closedFrontier: { region: 'East Suval', gate: { x: FRONTIER_GATE.x, z: FRONTIER_GATE.z }, approach: { x: FRONTIER_APPROACH.x, z: FRONTIER_APPROACH.z }, into: { x: FRONTIER_GATE.u.x, z: FRONTIER_GATE.u.z } },
     solisRoute: SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })),
     westSuvalMetrics: westSuval.metrics,
     setSolisHolder: westSuval.setHolder,
@@ -1531,6 +1551,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       { ...FOREST_HIDEOUT, ...hideoutToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
         description: 'Scraps of blue cloth mark a side trail east from the Tessen road post. A goblin camp squats in the birch beyond, with sacks taken from the post’s stores.' },
       ...regionLandmarks,
+      ...WAYSIDE_LANDMARKS,
+      ...FRONTIER_LANDMARKS,
+      ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,

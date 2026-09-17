@@ -1,5 +1,7 @@
 import { regionFirePits } from './regions.js';
-const KNOWN_FIRES = new Set(['village-fire', 'pond-fire', ...regionFirePits.map(fire => fire.id)]);
+import { OUTPOST_FIRE } from './outpost.js';
+// Every fire the world lights: the village's, the road's, and the mess fire in the Legion's outpost.
+const KNOWN_FIRES = new Set(['village-fire', 'pond-fire', ...regionFirePits.map(fire => fire.id), OUTPOST_FIRE.id]);
 const uniqueIds = (value, pattern, limit) => Array.isArray(value) && value.length <= limit
   && new Set(value).size === value.length && value.every(id => typeof id === 'string' && pattern.test(id));
 
@@ -11,7 +13,7 @@ export function validateWoodlandProgress(value, stock) {
     || !uniqueIds(value.acorns, /^acorn-[1-6]-[1-4]$/, 24)
     || !uniqueIds(value.sticks, /^stick-[1-7]-[1-2]$/, 14)
     || !uniqueIds(value.fruits, /^pawpaw-[1-6]-[1-2]$/, 12)
-    || !uniqueIds(value.discoveries, /^[a-zA-Z][a-zA-Z0-9-]{0,63}$/, 64)) return false;
+    || !uniqueIds(value.discoveries, /^[a-zA-Z][a-zA-Z0-9-]{0,63}$/, 160)) return false;   // room for every landmark the regions add
   const camp = value.camp;
   if (!camp || camp.version !== 1 || typeof camp.taught !== 'boolean'
     || !Number.isSafeInteger(camp.catches) || camp.catches < 0

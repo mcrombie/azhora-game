@@ -55,8 +55,31 @@ export function regionalFeatureClear(x, z, margin = 0) {
   return clearancePaths.some(path => path.some((b, i) => i && segmentDistance(x, z, path[i - 1], b) < 1.8 + extra));
 }
 
+/**
+ * The yards' scenery was authored in the pre-rebuild world, where the mill yard
+ * stood near (-35, -277), the boatyard near (-32, -453) and the shelter near
+ * (-33, -580). Each frame lays a yard's `legacy` point on the ground its place
+ * now owns (`world`) and turns the yard by `yaw`, so the scenery stands where
+ * its people, sites and reserved ground already are.
+ */
+const yardFrame = (index, legacy, dx, dz, yaw) => Object.freeze({ legacy: Object.freeze(legacy),
+  world: Object.freeze({ x: REGIONAL_PLACES[index].center.x + dx, z: REGIONAL_PLACES[index].center.z + dz }), yaw });
+// Chosen so that every person, site and approach path keeps its clearance, every
+// collider stays on the yard's reserved ground, and each working prop (the grain
+// cradle, the two float lines, the ledger) lands beside the site that works it.
+export const YARD_FRAMES = Object.freeze({
+  mill: yardFrame(0, { x: -35, z: -277 }, 2, 3, 2.2253),
+  workshop: yardFrame(1, { x: -32, z: -453.5 }, -4, 2, 6.161),
+  shelter: yardFrame(2, { x: -33, z: -580 }, -3, 3, 1.1781),
+});
+/** A legacy yard point in world metres. */
+export function place(frame, x, z) {
+  const dx = x - frame.legacy.x, dz = z - frame.legacy.z, c = Math.cos(frame.yaw), s = Math.sin(frame.yaw);
+  return { x: frame.world.x + dx * c + dz * s, z: frame.world.z - dx * s + dz * c };
+}
+
 /** Authored scenery; the regional story controller owns all activity decisions. */
-export function createRegionalPlaces(scene, world) {
+export function createRegionalPlaces(scene, world, frames = YARD_FRAMES) {
   const root = new THREE.Group(); root.name = 'Drent working places'; scene.add(root);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, flatShading: true, side: THREE.DoubleSide });
   material.shadowSide = THREE.BackSide;
@@ -65,11 +88,17 @@ export function createRegionalPlaces(scene, world) {
     rim: new THREE.TorusGeometry(1, .085, 4, 12) };
   const geometries = new Set(), ownedColliders = new Set(), meshes = [], transform = new THREE.Object3D();
   const p = new THREE.Vector3(), n = new THREE.Vector3(), normalMatrix = new THREE.Matrix3(), color = new THREE.Color();
-  const direction = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), h = (x, z) => world.heightAt(x, z);
+  const direction = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  // Each yard was drawn in the pre-rebuild frame; `frame` carries it onto the ground where its people stand.
+  let frame = frames.mill;
+  const yawMatrix = new THREE.Matrix4();
+  const map = (x, z) => place(frame, x, z);
+  const h = (x, z) => { const q = map(x, z); return world.heightAt(q.x, q.z); };
+  const lift = v => { const q = map(v[0], v[2]); return [q.x, v[1], q.z]; };
   let disposed = false, elapsed = 0;
   const palette = { wood: '#806349', cut: '#b29b6c', dark: '#544f3e', rope: '#b5aa81', flour: '#e0d5b0', blue: '#648b89', slate: '#777f70', canvas: '#b7a987' };
   function collider(site, x, z, radius) {
-    const c = { x, z, r: radius, kind: `regional-${site}` }; world.colliders.push(c); ownedColliders.add(c);
+    const q = map(x, z), c = { x: q.x, z: q.z, r: radius, kind: `regional-${site}` }; world.colliders.push(c); ownedColliders.add(c);
   }
   function builder(name) {
     const positions = [], normals = [], colors = [];
@@ -83,15 +112,18 @@ export function createRegionalPlaces(scene, world) {
       }
     }
     function shape(kind, tint, x, y, z, sx, sy, sz, rotation = [0, 0, 0]) {
-      transform.position.set(x, y, z); transform.rotation.set(...rotation); transform.scale.set(sx, sy, sz); transform.updateMatrix(); append(shapes[kind], tint);
+      transform.position.set(0, 0, 0); transform.rotation.set(...rotation); transform.scale.set(sx, sy, sz); transform.updateMatrix();
+      const q = map(x, z); transform.matrix.premultiply(yawMatrix.makeRotationY(frame.yaw)).setPosition(q.x, y, q.z); append(shapes[kind], tint);
     }
-    function branch(a, b, radius = .065, tint = palette.wood) {
+    function branch(a0, b0, radius = .065, tint = palette.wood) {
+      const a = lift(a0), b = lift(b0);
       direction.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const length = direction.length();
       if (length < .0001) return;
       transform.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2);
       transform.quaternion.setFromUnitVectors(up, direction.normalize()); transform.scale.set(radius, length, radius); transform.updateMatrix(); append(shapes.pole, tint);
     }
-    function triangle(a, b, c, tint) {
+    function triangle(a0, b0, c0, tint) {
+      const a = lift(a0), b = lift(b0), c = lift(c0);
       n.crossVectors(new THREE.Vector3(...b).sub(new THREE.Vector3(...a)), new THREE.Vector3(...c).sub(new THREE.Vector3(...a))).normalize(); color.set(tint);
       for (const v of [a, b, c]) { positions.push(...v); normals.push(n.x, n.y, n.z); colors.push(color.r, color.g, color.b); }
     }
@@ -145,6 +177,7 @@ export function createRegionalPlaces(scene, world) {
 
   // SUNMEADOW: warm canvas, shared grain, and a working timber hoist. Nothing
   // crosses the older wheat field's fence at Z=-283.5 or the mill's front door.
+  frame = frames.mill;
   const mill = builder('Mill Commons workyard');
   awning(mill, 'mill', -38, -273.3, 5.7, 4.2, '#c6ad76');
   const flourY = bench(mill, -38.6, -272.3, 3.0, .82, .87);
@@ -188,6 +221,7 @@ export function createRegionalPlaces(scene, world) {
 
   // REEDWATER: the boat is deliberately on trestles, well above the ground;
   // these are dry repair yards behind the old reedcutters' shelter.
+  frame = frames.workshop;
   const workshop = builder('Landing Workshop boatyard and net frames');
   for (const [x, z] of [[-30, -451.4], [-35, -451.4]]) {
     const y = h(x, z);
@@ -250,6 +284,7 @@ export function createRegionalPlaces(scene, world) {
 
   // THREEFOLD: a small canvas refuge nests beside, rather than inside, the
   // old arch. Its ledger faces the open approach; beds sit at the sheltered rear.
+  frame = frames.shelter;
   const shelter = builder('Waystation canvas shelter');
   awning(shelter, 'shelter', -34.0, -580.8, 6.1, 7.3, '#b2a58c', true);
   for (const [x, z, yaw, tint] of [[-36.0, -580.0, .14, '#827f68'], [-34.7, -581.1, -.11, '#a38e78'], [-32.8, -582.0, .16, '#84918b']]) {
@@ -306,7 +341,7 @@ export function createRegionalPlaces(scene, world) {
     if (disposed || !playing || !Number.isFinite(dt) || dt <= 0) return;
     elapsed += Math.min(dt, .1);
     const position = observer?.position || observer;
-    if (position && Number.isFinite(position.x) && Number.isFinite(position.z) && Math.hypot(position.x + 32, position.z + 450) > 80) return;
+    if (position && Number.isFinite(position.x) && Number.isFinite(position.z) && Math.hypot(position.x - frames.workshop.world.x, position.z - frames.workshop.world.z) > 80) return;
     // Millimetres of net movement suggest air without adding render batches.
     netWest.mesh.position.z = Math.sin(elapsed * 1.1) * .018;
     netEast.mesh.position.z = Math.sin(elapsed * .9 + .7) * .015;
