@@ -33,7 +33,7 @@ export function validateMorosSnapshot(data, { allowMissing = true } = {}) {
   return data.revision === booleanFields.reduce((count, key) => count + Number(data[key]), 0);
 }
 
-export function createMorosChapter({ inventory, onEvent = () => {} } = {}) {
+export function createMorosChapter({ inventory, hasHorse = () => false, onEvent = () => {} } = {}) {
   let state = initial();
   const snapshot = () => ({ ...state });
 
@@ -51,8 +51,11 @@ export function createMorosChapter({ inventory, onEvent = () => {} } = {}) {
       'not-started': [0, 'West to the Moros', 'The Legion’s camp lies west of Lumber Town, past the Moros gate, on the open plain.', 'MOROS PLAIN · THE LEGION ON THE PLAIN', []],
       'report-at-gate': [1, 'Name and contract', 'Follow the road west out of Lumber Town through the Moros gate. Report to the sentry at the camp’s gate; the Legion is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE LEGION ON THE PLAIN', [MOROS_GATE_ID]],
       'report-to-legate': [2, 'The Legate’s muster', 'Legate Marcus Verro keeps the muster at the command tent beyond the tent lines. Sign it, and draw your first wage.', 'MOROS PLAIN · 2 / 3 · THE LEGION ON THE PLAIN', [MOROS_LEGATE_ID]],
-      'claim-horse': [3, 'What the Legion owes', 'Take Iven’s token to the horse line south of the tents and claim the horse the Legion owes you.', 'MOROS PLAIN · 3 / 3 · THE LEGION ON THE PLAIN', ['legion-horse-line']],
-      complete: [4, 'One of twelve', 'You are on the Legate’s muster with a horse on the line. When the company is full he will send an envoy to Solis in West Suval under a flag of truce. That chapter is not built yet.', 'MOROS PLAIN · CHAPTER COMPLETE', []],
+      // A traveler who rode in pickets the horse they came on; one who walked the whole way with Iven's token still draws a horse here.
+      'claim-horse': hasHorse()
+        ? [3, 'A place on the line', 'Picket your horse on the Legion’s line south of the tents and draw its fodder. The quartermaster counts horses as carefully as men.', 'MOROS PLAIN · 3 / 3 · THE LEGION ON THE PLAIN', ['legion-horse-line']]
+        : [3, 'What the Legion owes', 'Take Iven’s token to the horse line south of the tents and claim the horse the Legion owes you.', 'MOROS PLAIN · 3 / 3 · THE LEGION ON THE PLAIN', ['legion-horse-line']],
+      complete: [4, 'One of twelve', 'You are on the Legate’s muster with a horse on the line. When the company is full he will send an envoy to Solis in West Suval under a flag of truce.', 'MOROS PLAIN · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return { chapterId: MOROS_CHAPTER_ID, regionName: 'Moros Plain', questTitle: 'The Legion on the plain', stage: current, step, steps: 3,
@@ -64,8 +67,9 @@ export function createMorosChapter({ inventory, onEvent = () => {} } = {}) {
     switch (stage()) {
       case 'report-at-gate': return [action('admit-to-camp', 'Show Iven’s receipt and the horse token', MOROS_GATE_ID)];
       case 'report-to-legate': return [action('join-muster', `Sign the muster · take ${MOROS_PAY} copper`, MOROS_LEGATE_ID)];
-      case 'claim-horse': return [action('claim-legion-horse', 'Hand over the token and take your horse', 'legion-horse-line',
-        inventory?.has?.(MOROS_HORSE_TOKEN) ? '' : 'You need the Legion’s horse token from Iven in Lumber Town.')];
+      case 'claim-horse': return [hasHorse() ? action('claim-legion-horse', 'Picket your horse and draw its fodder', 'legion-horse-line')
+        : action('claim-legion-horse', 'Hand over the token and take your horse', 'legion-horse-line',
+          inventory?.has?.(MOROS_HORSE_TOKEN) ? '' : 'You need the Legion’s horse token from Iven in Lumber Town.')];
       default: return [];
     }
   }
@@ -95,8 +99,11 @@ export function createMorosChapter({ inventory, onEvent = () => {} } = {}) {
       if (!inventory?.add?.('copper-piece', MOROS_PAY)) return fail('The Legate’s clerk could not pay you. Make room in your satchel and speak again.');
       state.mustered = true; reward = { id: 'copper-piece', quantity: MOROS_PAY };
     } else if (actionId === 'claim-legion-horse') {
-      if (!inventory?.remove?.(MOROS_HORSE_TOKEN, 1)) return fail('You need the Legion’s horse token from Iven in Lumber Town.');
-      state.horseClaimed = true; reward = { id: 'legion-horse', quantity: 1 };
+      if (hasHorse()) state.horseClaimed = true;
+      else {
+        if (!inventory?.remove?.(MOROS_HORSE_TOKEN, 1)) return fail('You need the Legion’s horse token from Iven in Lumber Town.');
+        state.horseClaimed = true; reward = { id: 'legion-horse', quantity: 1 };
+      }
     }
     return emit(actionId, { objectiveId: choice.objectiveId, reward });
   }

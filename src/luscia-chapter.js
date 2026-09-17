@@ -13,7 +13,7 @@
  */
 export const LUSCIA_VERSION = 1;
 export const LUSCIA_CHAPTER_ID = 'luscia-aftermath';
-/** The Legion's promissory token for a horse, spent at the Moros camp's hitch. */
+/** The Legion's promissory token for a horse, spent with the ostler in Lumber Town (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
 export const LUSCIA_REWARD_ITEM = 'horse-token';
 /** The rest of the chapter's pay, in Ambroni copper. */
 export const LUSCIA_REWARD_COINS = 20;
@@ -91,7 +91,7 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
       'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Lumber Town’s square; a Legion courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
       'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Lumber Town, past the old relay hut, to the field at the Lauvel. Sergeant Talvus holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
       'return-satchel': [3, 'Carry the rolls back', 'Take the courier’s satchel back down the road to Iven in Lumber Town before anything else finds it.', 'LUSCIA · 3 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      complete: [4, 'The Legion’s horse', 'Iven has the muster rolls and you have the Legion’s horse token. The road turns west for the Moros gate and the Legion camp on the plain. That chapter is not built yet.', 'LUSCIA · CHAPTER COMPLETE', []],
+      complete: [4, 'The Legion’s horse', 'Iven has the muster rolls and you have the Legion’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, turns it into a horse. Then the road turns west for the Moros gate and the Legion’s outpost on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return {
@@ -221,7 +221,7 @@ export function lusciaConversation(npc, context) {
 
   if (npc.id === 'relay-clerk') {
     if (state.returned) return tell([
-      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token west to the Moros gate; the camp on the plain keeps the Legion’s horse lines, and they will hand you a mount against my mark.',
+      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token to Bede Harrow at the stable yard on the edge of town; he keeps the Legion’s remounts and will hand you one against my mark. Then ride west for the Moros gate. It is too far to walk with orders in your pocket.',
       'Sixty-one of ours named, and a list of the men we took. The Moros will read it as a victory return. I will file it as what it is: the valley’s dead, in two columns, in my handwriting.',
     ], []);
     if (state.satchelTaken) return tell([
@@ -234,7 +234,7 @@ export function lusciaConversation(npc, context) {
     return tell([
       'You again, and in Legion pay. Then here are the orders that came up from the Moros, ten days late, like everything that comes up from the Moros. The Legion met the rebel army at the Lauvel on the ninth and broke it. The field is a quarter mile up the road out of this square and I have not walked out to it once.',
       'A Legion courier rode off that field the same evening with the muster rolls and never reached this relay. Sergeant Talvus keeps the picket and will not pass a civilian. You are on the Legion’s field detail, which makes you neither one thing nor the other, which makes you useful.',
-      'Find the courier’s satchel and bring it here. Those rolls name our dead and the men we took prisoner. Do that and I will pay you the way the Legion pays me: with a horse it owes me, and a token to claim it at the camp on the Moros.',
+      'Find the courier’s satchel and bring it here. Those rolls name our dead and the men we took prisoner. Do that and I will pay you the way the Legion pays me: with a horse it owes me, and a token to claim it from the ostler here in town.',
     ], [choice('accept-lauvel-search', 'I’ll go out to the field.')]);
   }
   if (npc.id === 'lauvel-picket') {
