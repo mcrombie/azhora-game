@@ -37,6 +37,7 @@ import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOR
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
+import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
@@ -184,6 +185,8 @@ function init() {
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
   const inAftermathFight=()=>!!aftermath.spec&&combat.state.encounterId===aftermath.spec.encounterId;
+  // Places change hands: garrisons (anyone with a stake, see occupation.js) are out only while their side holds their region.
+  let heldControl=null,stakedNpcs=null,occupationClock=0;
   let currentMorosSite=null;
   // The Legion's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const x=-566+1.8+i*3.6,z=320-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
@@ -1240,6 +1243,8 @@ function init() {
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
+      occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
+      for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
       {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
       // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.

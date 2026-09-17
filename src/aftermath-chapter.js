@@ -1,12 +1,13 @@
 /**
  * After the border battle: the four chapters the campaign can reach from it.
  * The Empire's sellsword either goes into Solis with the Legion (`solis-sweep`)
- * or holds the camp gate on the retreat (`moros-fallback`); the Republic's
- * either storms the border stockade (`moros-outpost`) or holds the gate of
- * Solis (`solis-fallback`). Each is the same shape: rally to your commander,
- * fight one corner of the day beside your allies, and report to whoever sends
- * you on. Where the people stand is the host's business: this module names
- * sites and the host resolves them (`src/aftermath-sites.js`).
+ * or holds the outpost's gate on the retreat (`moros-fallback`); the Republic's
+ * either storms the Legion's outpost at the centre of the Moros
+ * (`moros-outpost`) or holds the gate of Solis (`solis-fallback`). Each is the
+ * same shape: rally to your commander, fight one corner of the day beside your
+ * allies, and report to whoever sends you on. Where the people stand is the
+ * host's business: this module names sites and the host resolves them
+ * (`src/aftermath-sites.js`).
  * Pure: no DOM, no three.
  */
 export const AFTERMATH_VERSION = 1;
@@ -19,6 +20,7 @@ export const AFTERMATH_NPCS = Object.freeze([
   Object.freeze({ id: 'aftermath-envoy', name: 'Envoy Telis Orren', role: 'Envoy of the Republic and the Coalition', modelRole: 'rise-custodian', color: 0x3f5f86 }),
 ]);
 
+// The Coalition outbids the Empire in hard coin (the user's brief: their offer is the better one); the paper promise on top is talk, not an item.
 const SCRIP_NOTE = 'a note for forty more when the Republic has a treasury that is not a chest on a ship';
 
 const variant = (id, spec) => Object.freeze({ id, encounterId: `aftermath-${id}`, ...spec });
@@ -70,29 +72,29 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     toasts: { start: 'Their pursuit is on the road. Hold the gate.', won: 'The gate held. The Legate wants you at the command tent.', closed: 'Forty copper, and the Legate’s dispatch for Ambron.' },
   }),
   'moros-outpost': variant('moros-outpost', {
-    side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 25, onward: 'The voyage to West Izol is not built yet.',
-    commanderId: 'aftermath-captain', rallySite: 'stockade-approach', arena: 'stockade-yard', principalId: 'aftermath-envoy', reportSite: 'stockade-approach',
-    rally: ['The garrison Verro left', 'The Legion broke and fell back across the plain, but it left a garrison in the border stockade. Captain Arlen Voss means to take it before dark. Find him there.'],
-    fight: ['Take the stockade', 'Five legionaries hold the ground before the stockade. Break them, with the valley companies beside you. Fall back if you must.'],
-    report: ['The Republic’s flag', 'The stockade is taken. Envoy Telis Orren has ridden up behind the army. Report to her.'],
-    done: 'The Republic’s flag flies over the border stockade, and Solis is safe behind it. The envoy sends you on to West Izol.',
+    side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
+    commanderId: 'aftermath-captain', rallySite: 'outpost-approach', arena: 'outpost-gate', principalId: 'aftermath-envoy', reportSite: 'outpost-command',
+    rally: ['The Legion’s outpost', 'The Legion broke and ran for its outpost at the centre of the Moros. Captain Arlen Voss means to take it before Verro can shut the gate and send for Ambron. Find him on the road outside its north-east gate.'],
+    fight: ['Storm the gate', 'Five legionaries hold the ground before the north-east gate while the Legate’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
+    report: ['The Republic’s flag', 'The gate is taken and the Legion has quit its outpost. Envoy Telis Orren has ridden up behind the army and taken the Legate’s tent. Report to her there.'],
+    done: 'The Republic’s flag flies over the Legion’s outpost at the centre of the Moros, and Solis is safe behind it. The envoy sends you on to West Izol.',
     orders: [
-      'They ran. I have waited since the Lauvel to say that. But Verro left a half-century in the stockade to hold the road, and while they hold it the plain is still his.',
-      'No one here has stormed anything. Most of my men had never held a spear before this spring. You have. So you go first, and we go with you.',
+      'They ran. I have waited since the Lauvel to say that. But they ran to that: a ditch, a palisade, towers, and a Legate who is already writing to Ambron for another legion.',
+      'If the gate shuts tonight we sit outside it until that legion comes. It is open now because their wounded are still going in. No one here has stormed anything; most of my men had never held a spear before this spring. You have. So you go first, and we go with you.',
       'Say when.',
     ],
     ready: 'We take it now.',
     debrief: [
-      'So this is an imperial fort. It is smaller than the tax it cost.',
-      `The Republic’s flag goes up here tonight, and the council will vote you its thanks, which is worth what votes are worth. I prefer to pay: twenty-five copper in hard coin, and ${SCRIP_NOTE}.`,
+      'So this is an imperial command tent. It is smaller than the tax it cost.',
+      `The Republic’s flag goes up over this outpost tonight, and the council will vote you its thanks, which is worth what votes are worth. I prefer to pay: sixty copper, hard coin, which is more than Verro ever counted out for you, and ${SCRIP_NOTE}.`,
       'West Izol raised this war and has not yet met the sellsword who turned its first battle. There is a ship at the Solis quay. Be on it.',
     ],
     close: 'Take the coin and the passage.',
     after: ['The ship will not wait for the council to finish talking. Neither should you.'],
-    toasts: { start: 'You go first, and the valley companies go with you.', won: 'The stockade is taken. The envoy has ridden up behind the army.', closed: 'Twenty-five copper in hard coin, and passage from Solis to West Izol.' },
+    toasts: { start: 'You go first, and the valley companies go with you.', won: 'The gate is taken and the Legion is gone. The envoy has the Legate’s tent.', closed: 'Sixty copper in hard coin, and passage from Solis to West Izol.' },
   }),
   'solis-fallback': variant('solis-fallback', {
-    side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 25, onward: 'The voyage to West Izol is not built yet.',
+    side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
     commanderId: 'aftermath-captain', rallySite: 'solis-gate', arena: 'solis-approach', principalId: 'aftermath-envoy', reportSite: 'solis-hall',
     rally: ['The road back', 'The Coalition lost the field and fell back on Solis, and the Legion’s outriders are close behind. Captain Arlen Voss is at the city gate. Get back to him.'],
     fight: ['Hold the gate of Solis', 'Five of the Legion’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
@@ -106,12 +108,12 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     ready: 'We hold the gate.',
     debrief: [
       'The gate is shut and Solis is still ours. The council is already arguing over whose fault the morning was. I told them the afternoon was yours.',
-      `We lost a field. Ambron has lost provinces and not noticed. The Republic needs its sellsword more tonight, not less: twenty-five copper in coin, and ${SCRIP_NOTE}.`,
+      `We lost a field. Ambron has lost provinces and not noticed. The Republic needs its sellsword more tonight, not less: sixty copper, hard coin, which is more than Verro ever counted out for you, and ${SCRIP_NOTE}.`,
       'West Izol has the army that was supposed to be here. Go and tell them what waiting cost. There is a ship at the quay.',
     ],
     close: 'Take the coin and the passage.',
     after: ['The ship will not wait for the council to finish talking. Neither should you.'],
-    toasts: { start: 'Their outriders are on the road. Hold the gate.', won: 'The gate is shut. The envoy is in the council hall.', closed: 'Twenty-five copper in hard coin, and passage from Solis to West Izol.' },
+    toasts: { start: 'Their outriders are on the road. Hold the gate.', won: 'The gate is shut. The envoy is in the council hall.', closed: 'Sixty copper in hard coin, and passage from Solis to West Izol.' },
   }),
 });
 

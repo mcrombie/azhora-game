@@ -8,6 +8,7 @@ import { MOROS_SITES } from '../src/moros-chapter.js';
 import { AFTERMATH_VARIANTS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, aftermathEncounter } from '../src/aftermath-chapter.js';
 import { AFTERMATH_SITES, AFTERMATH_ARENAS, aftermathBuilt } from '../src/aftermath-sites.js';
 import { LEGION_POSTS } from '../src/legion-posts.js';
+import { legionPostStake } from '../src/occupation.js';
 import { HIDEOUT_GARRISON, FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
 
 test('everyone the later chapters place on the ground stands on walkable ground in the right region', async () => {
@@ -41,7 +42,9 @@ test('the day after the battle has ground under it wherever its places are built
   for (const [id, site] of Object.entries(AFTERMATH_SITES)) {
     if (!site) continue;
     assert.ok(canStand(site.x, site.z, world, .45), `${id} can be stood on`);
-    for (const post of LEGION_POSTS) assert.ok(Math.hypot(post.x - site.x, post.z - site.z) >= 4, `${id} leaves ${post.id} room`);
+    // The envoy takes the Legate's own place, but only once the Legion's people have quit the outpost.
+    const gone = post => id === 'outpost-command' && legionPostStake(post.id);
+    for (const post of LEGION_POSTS) assert.ok(gone(post) || Math.hypot(post.x - site.x, post.z - site.z) >= 4, `${id} leaves ${post.id} room`);
   }
   const allies = Array.from({ length: 4 }, (_, index) => ({ id: `ally-${index}`, kind: 'legionary' }));
   for (const spec of Object.values(AFTERMATH_VARIANTS)) {
