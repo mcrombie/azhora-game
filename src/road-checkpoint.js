@@ -9,6 +9,7 @@ import { createForestHideoutQuest, validateForestHideoutSnapshot } from './fores
 import { createRegionalLife, validateRegionalLifeSnapshot } from './regional-life.js';
 import { createCampaign } from './campaign.js';
 import { validateMapTutorial } from './map-tutorial.js';
+import { createMorosChapter, validateMorosSnapshot } from './moros-chapter.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
@@ -52,6 +53,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (typeof data.meadowCleared !== 'boolean' || typeof data.heardDoom !== 'boolean'
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
     if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
+    if (!validateMorosSnapshot(data.moros)) return failed('The saved Moros camp chapter is invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
       const held = data.mercenaryWeapons;
@@ -113,6 +115,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'regionalLife')) { const life = createRegionalLife(); life.restore(data.regionalLife); result.regionalLife = life.snapshot(); }
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
     if (Object.hasOwn(data, 'mapTutorial')) result.mapTutorial = data.mapTutorial;
+    if (Object.hasOwn(data, 'moros')) { const chapter = createMorosChapter(); chapter.restore(data.moros); result.moros = chapter.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();

@@ -591,10 +591,7 @@ export function createRegionScenery(kit) {
   for (let i = 0; i < 4; i++) {
     const x = hitch.x + 1.8 + i * 3.6, z = hitch.z - 1.6, y = groundHeight(x, z);
     if (kit.roadDistance(x, z) < 4) continue;
-    const horse = new THREE.Group(); horse.position.set(x, y, z); horse.rotation.y = .2 * (i % 2 ? 1 : -1); moros.add(horse);
-    box(material(i % 2 ? '#6b543c' : '#4f4238'), 0, 1.35, 0, .78, .92, 2.15, horse);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(material('#463a2e'), sx * .3, .44, sz * .78, .1, .9, horse);
-    box(material(i % 2 ? '#6b543c' : '#4f4238'), 0, 1.75, -1.35, .42, .5, .95, horse);
+    // The horses themselves are animated models placed by the game; only their footprint lives here.
     colliders.push({ x, z, r: 1.15, kind: 'horse' });
   }
   const stockade = STORY_SITES.morosStockade;

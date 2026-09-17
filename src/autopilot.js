@@ -25,7 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -208,8 +208,22 @@ export function planGoal(snapshot, world) {
  * Town's square, the courier's satchel at the Lauvel, the wolves that come off
  * the burial line (the ordinary fight policy handles those), and back again.
  */
+/** The Legion on the plain: the camp gate, the Legate's muster, the horse line. */
+export function morosGoal(snapshot, world) {
+  const moros = snapshot.moros;
+  if (moros?.complete)
+    return { kind: 'done', intent: 'On the Legate’s muster', reason: 'You are on the Legate’s muster with a horse on the line. The road to Solis is the next chapter, and it is not built yet.' };
+  if (!moros?.destinationIds?.length) return { kind: 'wait', intent: 'Waiting for orders from the Moros' };
+  const id = moros.destinationIds[0];
+  if (world.npcPositions?.[id]) return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Reporting to ${world.npcNames?.[id] ?? id}` };
+  const site = world.morosSites?.[id];
+  if (site) return { kind: 'use', target: site, radius: 1.8, siteId: id, intent: `Going to ${site.name ?? id}` };
+  return { kind: 'wait', intent: 'Looking for the next step on the Moros' };
+}
+
 export function lusciaGoal(snapshot, world) {
   const luscia = snapshot.luscia;
+  if (luscia?.complete && snapshot.moros) return morosGoal(snapshot, world);
   if (!luscia?.destinationIds?.length || luscia.complete)
     return { kind: 'done', intent: luscia?.complete ? 'The field at the Lauvel is settled' : 'The road out of Drent is done',
       reason: luscia?.complete ? 'The field at the Lauvel is settled and the Legion owes you a horse. The Moros camp is the next chapter, and it is not built yet.' : null };

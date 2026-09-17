@@ -5,7 +5,7 @@
  * control back once by hand to prove the hand-over works.
  */
 export async function runAutoplaySmoke(h) {
-  const { autopilot, start, stop, readState, frames, press, release, player, world, deadlineMs = 9 * 60 * 1000 } = h;
+  const { autopilot, start, stop, readState, frames, press, release, player, world, deadlineMs = 12 * 60 * 1000 } = h;
   const assert = (condition, message) => { if (!condition) throw new Error(`Autoplay smoke: ${message}`); };
   const position = () => ({ x: player.group.position.x, z: player.group.position.z });
   const started = performance.now();
@@ -76,13 +76,14 @@ export async function runAutoplaySmoke(h) {
   assert(final.questStage === 10, 'the tutorial was not completed');
   assert(final.journeyView.complete, 'the road was not completed');
   assert(final.luscia?.complete, 'the field at the Lauvel was not finished');
-  assert(final.campaign?.chapterId === 'moros-camp', `the campaign stopped at ${final.campaign?.chapterId} instead of the Moros camp`);
+  assert(final.moros?.complete, 'the Legion camp on the Moros was not finished');
+  assert(final.campaign?.chapterId !== 'moros-camp' && final.campaign?.chapterId !== 'luscia-aftermath', `the campaign stopped at ${final.campaign?.chapterId} instead of going on past the Moros camp`);
   assert(final.campaign?.horse === true, 'the chapter did not pay the Legion horse');
   assert(wolfFight, 'no wolf came off the burial line');
-  assert(/Moros camp/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
+  assert(/Solis/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mapTutorial === 3, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
-  assert(world.regionAt(final.position[0], final.position[2]).id === 2, "the traveler did not end at Iven's relay post in Luscia");
+  assert(world.regionAt(final.position[0], final.position[2]).id === 3, 'the traveler did not end at the Legion camp on the Moros Plain');
   assert(tookOver && restarted, 'the hand-over was never exercised');
   assert(fights >= 3, `only ${fights} fights were seen`);
   checks += 12;
