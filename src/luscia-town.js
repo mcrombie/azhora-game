@@ -21,7 +21,7 @@ export const TOWN_NPC_IDS = Object.freeze(TOWN_NPCS.map(npc => npc.id));
 
 /** Smiths's round of the square, starting on his own patch. */
 export const TOWN_BEGGAR_ROUTE = Object.freeze([
-  townPoint(0, -4), townPoint(-7, 3), townPoint(4, 8), townPoint(-3, -8), townPoint(-13, 1),
+  townPoint(0, -4), townPoint(-7, 3), townPoint(2, 10), townPoint(-3, -8), townPoint(-13, 1),
 ]);
 
 /** The region and side the stall keeper's arc belongs to, for the campaign call. */

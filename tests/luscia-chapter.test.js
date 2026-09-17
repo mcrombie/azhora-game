@@ -70,7 +70,7 @@ test('the chapter runs from Iven to the wrecked cart and back, granting the hors
   assert.equal(f.luscia.view().stage, 'complete');
   assert.equal(f.luscia.view().complete, true);
   assert.equal(f.inventory.count(LUSCIA_REWARD_ITEM), 1);
-  assert.equal(f.inventory.count('silver-coin'), LUSCIA_REWARD_COINS);
+  assert.equal(f.inventory.count('copper-piece'), LUSCIA_REWARD_COINS);
   assert.equal(f.luscia.act('return-courier-satchel').ok, false);
   assert.equal(f.inventory.count(LUSCIA_REWARD_ITEM), 1, 'the token is never granted twice');
   assert.equal(INVENTORY_ITEMS[LUSCIA_REWARD_ITEM].type, 'Quest item');

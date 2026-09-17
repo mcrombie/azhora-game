@@ -1,8 +1,9 @@
 import { canStand } from './game-state.js';
+import { LUSCIA_SITES, LUSCIA_WOLVES } from './luscia-chapter.js';
 
 /** Browser smoke coverage for the actual F prompts, dialogue buttons and combat. */
 export async function runRoadSmoke(h) {
-  const { world, player, npcData, combat, journey, inventory, weapons,
+  const { world, player, npcData, combat, journey, inventory, weapons, beggar,
     press, release, tap, until, frames, warp, getMode, finishDialogue, choose, setYaw, readState } = h;
   let checks = 0, battleSwings = 0, battleDodges = 0;
   const assert = (condition, message) => { checks++; if (!condition) throw new Error(`Road smoke: ${message}`); };
@@ -15,6 +16,14 @@ export async function runRoadSmoke(h) {
     warp(x, z);
     await frames(3);
     assert(canStand(position.x, position.z, world), `interaction approach blocked at ${x}, ${z}`);
+  }
+
+  /** Stand beside somebody wherever they happen to be, on whichever side is clear. */
+  async function standBeside(target) {
+    for (const [dx, dz] of [[1.2, 1.2], [-1.2, 1.2], [1.2, -1.2], [-1.2, -1.2], [1.9, 0], [0, 1.9], [-1.9, 0], [0, -1.9]]) {
+      if (canStand(target.x + dx, target.z + dz, world)) { await arrive(target.x + dx, target.z + dz); return true; }
+      }
+    return false;
   }
 
   async function visit(id) {
@@ -33,7 +42,7 @@ export async function runRoadSmoke(h) {
     choose(id);
     await frames(2);
     assert(getMode() === 'playing', `${id} did not return control to the player`);
-    assert(query('#quest-title')?.textContent === journey.view().title, `quest HUD did not reflect ${id}`);
+    assert([journey.view().title, state().luscia?.title].includes(query('#quest-title')?.textContent), `quest HUD did not reflect ${id}`);
   }
 
   async function checkDestination(id) {
@@ -225,11 +234,67 @@ export async function runRoadSmoke(h) {
     assert(journey.view().complete, 'Iven did not finish the road report');
     assert(JSON.stringify(journey.state.completedRegions) === '[2,3,4]', 'all three new regions were not completed');
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the relay consumed the onward quest items');
-    assert(query('#quest-step')?.textContent.includes('FOUR REGIONS'), 'the completed road HUD is missing');
+    assert(inventory.count('copper-piece') >= 12, 'the Legion did not pay for the road report');
+
+    // The Luscia chapter, straight out of the road report: the clerk's errand,
+    // the courier's satchel, the wolves that come with it, and the walk back.
+    assert(query('#quest-step')?.textContent.includes('LUSCIA'), 'the road did not roll into the Luscia chapter');
+    assert(state().campaign?.chapterId === 'luscia-aftermath', 'the campaign did not reach Luscia');
+    assert(state().luscia?.stage === 'meet-relay-clerk', 'the chapter did not open at Iven');
+    await visit('relay-clerk'); await chooseRoad('accept-lauvel-search');
+    assert(state().luscia?.stage === 'find-satchel', 'Iven did not send the traveler to the field');
+    const satchel = LUSCIA_SITES['courier-satchel'];
+    await arrive(satchel.x + .5, satchel.z - .8);
+    assert(query('#interaction-label')?.textContent.includes('satchel'), 'the satchel prompt is missing at the wrecked cart');
+    tap('KeyF'); await frames(3);
+    assert(state().luscia?.stage === 'return-satchel', 'the courier’s satchel was not lifted');
+    assert(combat.state.encounterId === LUSCIA_WOLVES.id && combat.state.phase === 'active', 'no encounter followed the satchel');
+    assert(combat.state.enemies.length === 2 && combat.state.enemies.every(enemy => enemy.kind === 'wolf'), 'the pack was not two wolves');
+    // Backing east onto the open grass breaks off the fight, and keeps the satchel.
+    await arrive(LUSCIA_WOLVES.retreatLine + 4, 178);
+    await until(() => combat.state.phase !== 'active', 'the wolves did not break off east of the field');
+    assert(state().luscia?.stage === 'return-satchel', 'breaking off the fight lost the satchel');
+    await visit('relay-clerk'); await chooseRoad('return-courier-satchel');
+    assert(inventory.has('horse-token') && inventory.count('copper-piece') >= 32, 'the chapter did not pay the horse token and the copper');
+    assert(state().campaign?.chapterId === 'moros-camp', 'the campaign did not move on to the Moros camp');
+    assert(state().luscia?.complete, 'the chapter did not finish');
+
+    // Lumber Town's square: Smiths, who begs until he is paid, and a stall
+    // keeper who is only a stall keeper until she is asked three careful things.
+    const square = world.landmarks.find(place => place.id === 'lumber-town');
+    const smiths = npcData.find(item => item.id === 'town-beggar');
+    // He has had the run of the square for the whole visit; start his round afresh.
+    beggar.reset();
+    await arrive(square.x, square.z);
+    await until(() => smiths.actor.group.position.distanceTo(position) < 3.4,
+      `Smiths never came over to beg (he is at ${smiths.actor.group.position.x.toFixed(1)}, ${smiths.actor.group.position.z.toFixed(1)}, ${Math.round(smiths.actor.group.position.distanceTo(position))} m off, ${JSON.stringify(beggar.state)})`);
+    assert(await standBeside(smiths.actor.group.position), 'no clear ground beside Smiths');
+    await frames(2); tap('KeyF');
+    assert(getMode() === 'dialogue' && query('#speaker')?.textContent === 'Smiths', 'Smiths did not answer on the square');
+    await finishDialogue();
+    const purse = inventory.count('copper-piece');
+    choose('give-smiths-coin'); await frames(3);
+    assert(getMode() === 'playing' && inventory.count('copper-piece') === purse - 1, 'the copper never left the satchel');
+    assert(beggar.state.resting && !beggar.state.following, 'a paid Smiths kept begging');
+    await arrive(square.x, square.z);
+    await frames(120);
+    assert(!beggar.state.following, 'Smiths went back to begging after his copper');
+
+    const stall = world.npcPositions['timber-stall'];
+    assert(await standBeside(stall), 'no clear ground beside the timber stall');
+    await frames(2); tap('KeyF');
+    assert(getMode() === 'dialogue' && query('#speaker')?.textContent === 'Hara', 'the stall keeper did not answer');
+    await finishDialogue();
+    for (const id of ['hara-legion', 'hara-other-side', 'hara-families']) { choose(id); await finishDialogue(); }
+    assert(query('#speech')?.textContent.includes('rangers'), 'the republic’s contact never revealed herself');
+    choose('hara-join'); await frames(3);
+    assert(getMode() === 'playing', 'the stall keeper’s offer did not return control');
+    assert(state().campaign?.arcs?.coalition === 1, 'Luscia’s Coalition arc did not start');
     assert(!state().testingEnabled, 'the road required a testing override');
     return { roadChecks: checks, roadRegions: 3, roadNPCs: 4, roadParcels: 3, roadWaymarkers: 3,
       roadBridgeWalked: Math.round(bridgeWalked), roadBattleSwings: battleSwings, roadBattleDodges: battleDodges,
-      roadRepairLoanChecks: 6, roadRiverFishingChecks: 10,
+      roadRepairLoanChecks: 6, roadRiverFishingChecks: 10, lusciaChapter: 'complete', lusciaWolves: 2,
+      townChecks: 12, beggarPaid: true, rebelContact: 'coalition',
       roadComplete: true, roadLetterRetained: true };
   } finally {
     for (const key of ['KeyW', 'KeyD', 'ShiftLeft']) release(key);

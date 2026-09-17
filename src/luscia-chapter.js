@@ -15,8 +15,8 @@ export const LUSCIA_VERSION = 1;
 export const LUSCIA_CHAPTER_ID = 'luscia-aftermath';
 /** The Legion's promissory token for a horse, spent at the Moros camp's hitch. */
 export const LUSCIA_REWARD_ITEM = 'horse-token';
-/** The rest of the chapter's pay, in coin. */
-export const LUSCIA_REWARD_COINS = 4;
+/** The rest of the chapter's pay, in Ambroni copper. */
+export const LUSCIA_REWARD_COINS = 20;
 
 /** The people the chapter adds. Their stands live with Luscia's other positions in `region-world.js`. */
 export const LUSCIA_NPCS = Object.freeze([
@@ -140,7 +140,7 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
     else if (actionId === 'return-courier-satchel') {
       // The token and the pay are the chapter's reward, granted exactly once.
       if (!inventory?.add?.(LUSCIA_REWARD_ITEM, 1)) return fail('There is no room in your satchel for the Legion’s token. Make space and speak again.');
-      inventory?.add?.('silver-coin', LUSCIA_REWARD_COINS);
+      inventory?.add?.('copper-piece', LUSCIA_REWARD_COINS);
       state.returned = true; reward = { id: LUSCIA_REWARD_ITEM, quantity: 1, coins: LUSCIA_REWARD_COINS };
     }
     return emit(actionId, { objectiveId: choice.objectiveId, reward, startEncounter });
@@ -221,7 +221,7 @@ export function lusciaConversation(npc, context) {
 
   if (npc.id === 'relay-clerk') {
     if (state.returned) return tell([
-      'The rolls are in my hand, and you have your pay: the horse token and four silver. Take the token west to the Moros gate; the camp on the plain keeps the Legion’s horse lines, and they will hand you a mount against my mark.',
+      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token west to the Moros gate; the camp on the plain keeps the Legion’s horse lines, and they will hand you a mount against my mark.',
       'Sixty-one of ours named, and a list of the men we took. The Moros will read it as a victory return. I will file it as what it is: the valley’s dead, in two columns, in my handwriting.',
     ], []);
     if (state.satchelTaken) return tell([

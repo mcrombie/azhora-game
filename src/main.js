@@ -72,7 +72,7 @@ function init() {
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
   const npcData=[{id:'harbormaster',name:'Mara',role:'Harbormaster',color:0x4b8291},{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper',color:0x647b4d},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
-  npcData.push(...LUSCIA_NPCS,...TOWN_NPCS,BEGGAR_NPC);
+  npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   for(const npc of npcData) {
@@ -337,7 +337,7 @@ function init() {
     const result=journey.act(action);if(!result.ok){toast(result.reason||'Speak with the road keeper first.','THE DRENT ROAD');return result;}
     syncJourney();refreshQuest();inventory.refresh();audio?.effect('success');
     const complete=journey.view().complete;
-    if(complete&&campaign.view().chapterId==='drent-road'){campaign.completeChapter('drent-road');inventory.add('silver-coin',3);inventory.refresh();refreshQuest();}
+    if(complete&&campaign.view().chapterId==='drent-road'){campaign.completeChapter('drent-road');inventory.add('copper-piece',12);inventory.refresh();refreshQuest();}
     toast(complete?'The road is restored. Iven will send your report ahead; Luscia waits across the Caloss.':journey.view().title,complete?'FOUR REGIONS EXPLORED':'JOURNAL UPDATED');
     if(!testingEnabled)saveRoad(false);
     return result;
@@ -352,7 +352,7 @@ function init() {
     }
     if(action==='return-courier-satchel'&&campaign.view().chapterId==='luscia-aftermath')campaign.completeChapter('luscia-aftermath');
     const view=luscia.view();
-    toast(view.complete?'The rolls are filed. A Legion horse token and four silver for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(view.complete?'The rolls are filed. A Legion horse token and twenty copper for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
@@ -364,8 +364,8 @@ function init() {
       return result;
     }
     if(action==='give-smiths-coin'){
-      if(!inventory.remove('silver-coin',1))return {ok:false,reason:'You have no silver to give.'};
-      beggar.satisfy();inventory.refresh();toast('Smiths thanks you twice and shuffles back to his corner of the square.','A SILVER COIN');saveRoad(false);
+      if(!inventory.remove('copper-piece',1))return {ok:false,reason:'You have no copper to give.'};
+      beggar.satisfy();inventory.refresh();toast('Smiths thanks you twice and shuffles back to his corner of the square.','ONE COPPER PIECE');saveRoad(false);
       return {ok:true,reason:''};
     }
     if(action==='dismiss-smiths'){beggar.dismiss();return {ok:true,reason:''};}
@@ -1459,7 +1459,7 @@ function init() {
         const fishEat=document.querySelector('[data-consume="cooked-fish"]');assert(fishEat&&!fishEat.disabled&&fishEat.textContent.includes('40'),'Cooked fish Eat control missing');fishEat.click();
         assert(combat.state.player.hp===90&&!inventory.has('cooked-fish')&&inventory.count('raw-fish')===1,'Cooked fish failed to restore 40 health and consume one');tap('KeyI');
         assert(!testingEnabled&&questStage===10&&acornQuest.status==='complete','Normal campcraft required override or changed completed quests');
-        const roadResults=await runRoadSmoke({world,player,npcData,combat,journey,inventory,weapons,press,release,tap,until,frames,warp,getMode:()=>mode,finishDialogue:()=>{let n=0;while(mode==='dialogue'&&!(activeDialogue.choices&&activeDialogue.index===activeDialogue.lines.length-1)){assert(n++<12,'Road dialogue failed to reach its choices');nextSpeech();}},choose,setYaw:value=>yaw=value,readState:state});
+        const roadResults=await runRoadSmoke({world,player,npcData,combat,journey,inventory,weapons,beggar,press,release,tap,until,frames,warp,getMode:()=>mode,finishDialogue:()=>{let n=0;while(mode==='dialogue'&&!(activeDialogue.choices&&activeDialogue.index===activeDialogue.lines.length-1)){assert(n++<12,'Road dialogue failed to reach its choices');nextSpeech();}},choose,setYaw:value=>yaw=value,readState:state});
         assert(saveRoad(false),'Completed road checkpoint did not save');const savedRoad=checkpoint.read().data;
         const savedWear=weapons.profile().durability;inventory.add('forest-stick',1);weapons.repair();warp(0,9);
         assert(continueRoad()&&journey.view().complete&&weapons.profile().durability===savedWear&&inventory.count('forest-stick')===savedRoad.inventory.find(item=>item.id==='forest-stick').quantity,'Checkpoint did not restore road progress, inventory, and wear');

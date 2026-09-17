@@ -25,14 +25,17 @@ export const BEGGAR_DEFAULTS = Object.freeze({
   leaveRange: 52,       // metres from his patch: past this, the traveler has left town
   arriveWithin: 1.6,    // metres that count as reaching a wander point
   dwell: 6,             // seconds he stands at a wander point
+  stuckAfter: 2,        // seconds of no progress before he tries another way round
+  detourFor: 2.5,       // seconds he holds that other way
+  sidestep: 2.6,        // metres he steps aside to get round it
 });
 
 /** What he says while he follows, in order. Short, cracked, harmless. */
 export const BEGGAR_LINES = Object.freeze([
-  'Coin for Smiths? One coin. I am not proud of it.',
+  'A copper for Smiths? One copper. I am not proud of it.',
   'You have the look of a soldier. Soldiers get paid. Smiths does not.',
-  'Just a silver. I will say a good word for you at the shrine. I know the words.',
-  'One coin and I am gone. That is the bargain. I keep my bargains.',
+  'One copper. I will say a good word for you at the shrine. I know the words.',
+  'One copper and I am gone. That is the bargain. I keep my bargains.',
 ]);
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -42,6 +45,7 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
   const route = waypoints.map(point => ({ x: point.x, z: point.z }));
   const home = route[0] ?? { x: 0, z: 0 };
   let index = 0, mode = 'wander', follow = 0, rest = 0, dwell = 0, asked = 0, line = 0;
+  let stuck = 0, detour = 0, detourSide = 1, detours = 0, closest = Infinity;
 
   const target = () => route[index] ?? home;
 
@@ -49,7 +53,13 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
    * Where he stands while following: `keepDistance` metres from the traveler,
    * on the side his own patch lies, so he trails rather than blocks the way.
    */
-  function beside(position) {
+  function beside(position, here) {
+    // Leaning on a stall or the well: step out sideways for a moment rather
+    // than keep pushing at the stone. The host walks him and cannot plan a way.
+    if (detour > 0 && here) {
+      const dx = position.x - here.x, dz = position.z - here.z, length = Math.hypot(dx, dz) || 1;
+      return { x: here.x - dz / length * detourSide * config.sidestep, z: here.z + dx / length * detourSide * config.sidestep };
+    }
     let dx = home.x - position.x, dz = home.z - position.z;
     // Standing on his own patch, he steps off to one side rather than onto the traveler.
     if (Math.hypot(dx, dz) < .5) { dx = target().x - position.x + .7; dz = target().z - position.z + .7; }
@@ -69,13 +79,22 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
    * stands, so the host's own movement decides when he has arrived.
    */
   function update(dt = 1 / 60, { position, here = position, awake = true } = {}) {
-    if (!Number.isFinite(dt) || dt <= 0 || !position) return step(null, position);
-    if (!awake) return step(null, position);
+    if (!Number.isFinite(dt) || dt <= 0 || !position) return step(null, position, null);
+    if (!awake) return step(null, position, null);
     if (rest > 0) rest = Math.max(0, rest - dt);
     const gap = distance(position, home), reach = distance(position, here);
     let said = null;
     if (mode === 'follow') {
       follow += dt; asked += dt;
+      if (reach < closest - .05) { closest = reach; stuck = 0; detours = 0; } else stuck += dt;
+      if (detour > 0) detour = Math.max(0, detour - dt);
+      else if (stuck > config.stuckAfter && reach > config.keepDistance + .6) {
+        // Keep going the same way round for a few tries: alternating on every
+        // attempt only walks him back into the same corner of the stall.
+        detours++;
+        if (detours % 3 === 0) detourSide = -detourSide;
+        detour = config.detourFor; stuck = 0; closest = reach;
+      }
       if (asked >= config.askEvery && reach <= config.askWithin) {
         said = BEGGAR_LINES[line % BEGGAR_LINES.length]; line++; asked = 0;
       }
@@ -83,28 +102,28 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
     } else {
       wanderStep(dt, here);
       if (rest <= 0 && reach <= config.noticeRange && gap <= config.leaveRange) {
-        mode = 'follow'; follow = 0; asked = config.askEvery - 1.5;
+        mode = 'follow'; follow = 0; asked = config.askEvery - 1.5; stuck = 0; detour = 0; detours = 0; closest = reach;
       }
     }
-    return step(said, position);
+    return step(said, position, here);
   }
 
   /** A coin, or a word, sends him away for a while. */
   function give(kind) {
-    mode = 'wander'; follow = 0; asked = 0; dwell = 0;
+    mode = 'wander'; follow = 0; asked = 0; dwell = 0; stuck = 0; detour = 0; detours = 0; closest = Infinity;
     rest = kind === 'coin' ? config.coinRest : kind === 'give-up' ? config.giveUpRest : config.wordRest;
     return { ok: true, resting: rest };
   }
 
-  function step(said = null, position = null) {
+  function step(said = null, position = null, here = null) {
     const following = mode === 'follow' && !!position;
-    return { following, target: following ? beside(position) : { ...target() },
-      keepDistance: config.keepDistance, line: said, resting: rest > 0 };
+    return { following, target: following ? beside(position, here) : { ...target() },
+      keepDistance: config.keepDistance, line: said, detouring: detour > 0, resting: rest > 0 };
   }
 
   return {
     update, satisfy: () => give('coin'), dismiss: () => give('word'),
-    reset() { mode = 'wander'; follow = 0; rest = 0; dwell = 0; asked = 0; line = 0; index = 0; },
+    reset() { mode = 'wander'; follow = 0; rest = 0; dwell = 0; asked = 0; line = 0; index = 0; stuck = 0; detour = 0; detours = 0; closest = Infinity; },
     get state() { return { mode, following: mode === 'follow', resting: rest > 0, rest: Math.round(rest), asked: line, index }; },
   };
 }
@@ -112,16 +131,16 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
 /** His replies when the traveler stops and speaks to him. */
 export function beggarConversation(npc, context) {
   const { beggar, inventory, openDialogue, closeDialogue, act } = context;
-  const coins = inventory?.count?.('silver-coin') ?? 0;
+  const coins = inventory?.count?.('copper-piece') ?? 0;
   const resting = beggar?.state?.resting;
   const choices = [];
-  if (coins > 0) choices.push({ id: 'give-smiths-coin', label: 'Give Smiths a silver coin.', action: () => { closeDialogue(); act('give-smiths-coin'); } });
+  if (coins > 0) choices.push({ id: 'give-smiths-coin', label: 'Give Smiths a copper piece.', action: () => { closeDialogue(); act('give-smiths-coin'); } });
   choices.push({ id: 'thank-smiths', label: 'Thank you, Smiths. That is enough for today.', action: () => { closeDialogue(); act('dismiss-smiths'); } });
   choices.push({ id: 'nothing-for-smiths', label: 'I have nothing for you.', action: () => { closeDialogue(); act('dismiss-smiths'); } });
   const lines = resting
     ? ['Smiths is fed. Smiths is not asking. You see? I keep my bargains.',
       'Go on about your business. I will be here. I am always here.']
     : ['Smiths, they call me. Not my name. A name I had off a man who owned a forge, and he is gone, and the forge is gone.',
-      'A coin. One coin buys bread at the stall and then nobody has to look at me. That is a fair trade for everyone.'];
+      'A copper. One copper buys bread at the stall and then nobody has to look at me. That is a fair trade for everyone.'];
   openDialogue(npc, lines, null, 'Back to the square', { choices });
 }

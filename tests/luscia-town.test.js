@@ -4,6 +4,12 @@ import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversa
 import { createCampaign, REGIONAL_ARCS } from '../src/campaign.js';
 import { regionNpcPositions, LUMBER_TOWN, regionAt, MAIN_ROAD } from '../src/regions.js';
 import { createInventoryState } from '../src/inventory.js';
+import { canStand } from '../src/game-state.js';
+import { sourceModule } from './module-loader.js';
+import * as THREE from '../vendor/three.module.js';
+
+const { createWorld } = await sourceModule('../src/world.js');
+const world = createWorld(new THREE.Scene());
 
 function fixture() {
   const campaign = createCampaign();
@@ -117,4 +123,24 @@ test('taking her offer starts Luscia’s Coalition arc through the campaign, and
   assert.match(f.shown.lines.join(' '), /Solis/);
   assert.equal(f.choice('hara-join'), undefined);
   assert.equal(f.choice(REBEL_CONTACT.reveal[0]), undefined);
+});
+
+test('the town leaves clear ground under every stand and every point of Smiths’s round', () => {
+  for (const npc of TOWN_NPCS) {
+    const stand = regionNpcPositions[npc.id];
+    assert.ok(canStand(stand.x, stand.z, world, .48), `${npc.id} is walled in at ${stand.x}, ${stand.z}`);
+  }
+  for (const id of ['relay-clerk', 'town-beggar']) {
+    const stand = regionNpcPositions[id];
+    assert.ok(canStand(stand.x, stand.z, world, .48), `${id} is walled in at ${stand.x}, ${stand.z}`);
+  }
+  // A blocked wander point would strand Smiths somewhere off his round for good.
+  for (const [index, point] of TOWN_BEGGAR_ROUTE.entries())
+    assert.ok(canStand(point.x, point.z, world, .48), `Smiths cannot reach point ${index} at ${point.x}, ${point.z}`);
+  // The square and the road through it stay walkable between the stalls.
+  assert.ok(canStand(LUMBER_TOWN.square.x, LUMBER_TOWN.square.z, world, .5), 'the market square is blocked');
+  for (let step = -20; step <= 20; step += 4) {
+    const x = LUMBER_TOWN.square.x + LUMBER_TOWN.along.x * step, z = LUMBER_TOWN.square.z + LUMBER_TOWN.along.z * step;
+    assert.ok(canStand(x, z, world, .5), `the road through the town is blocked ${step} m along`);
+  }
 });

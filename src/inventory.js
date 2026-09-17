@@ -25,10 +25,10 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
     description: 'The relay clerk in Lumber Town pays in what the Legion owes him. The horse lines at the camp on the Moros keep the mounts; present this token there and they will hand one over. Riding is not built yet; the token is what the next chapter begins with.',
   }),
-  'silver-coin': Object.freeze({
-    name: 'Silver coins', type: 'Currency', icon: 'token', stackable: true,
-    brief: 'Small worn coins. The Legion pays in chits; these are the exception.',
-    description: 'Ambroni silver, thin and much handled. Wages, a bed at an inn, bread from a market stall, or a coin for Smiths on Lumber Town’s square.',
+  'copper-piece': Object.freeze({
+    name: 'Copper pieces', type: 'Money', icon: 'token', stackable: true,
+    brief: 'Ambroni copper. Ten make a silver piece, a hundred a gold.',
+    description: 'The Empire’s small coin, good in any market that answers to Ambron. Traders and beggars take it; the Legion pays in it.',
   }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,

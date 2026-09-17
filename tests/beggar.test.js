@@ -91,8 +91,8 @@ test('speaking to Smiths offers a coin only when one is carried, and both replie
   assert.equal(shown.options.choices.some(choice => choice.id === 'give-smiths-coin'), false);
   assert.ok(shown.options.choices.some(choice => choice.id === 'thank-smiths'));
   assert.ok(shown.options.choices.some(choice => choice.id === 'nothing-for-smiths'));
-  assert.match(shown.lines.join(' '), /coin/i);
-  inventory.add('silver-coin', 2);
+  assert.match(shown.lines.join(' '), /copper/i);
+  inventory.add('copper-piece', 2);
   beggarConversation(BEGGAR_NPC, context);
   shown.options.choices.find(choice => choice.id === 'give-smiths-coin').action();
   assert.deepEqual(acted, ['give-smiths-coin']);
@@ -106,4 +106,26 @@ test('Smiths keeps to Lumber Town: his round is five points around the square', 
   assert.ok(Math.max(...spread) < BEGGAR_DEFAULTS.leaveRange, 'he never wanders out of town');
   assert.equal(BEGGAR_NPC.id, 'town-beggar');
   assert.equal(BEGGAR_NPC.name, 'Smiths');
+});
+
+test('Smiths finds a way round the well when it stands between him and the traveler', () => {
+  // The host walks him and the host cannot plan a route: a stall or the well
+  // would pin him against the stone for good without a detour of his own.
+  const well = { x: 2, z: 0, r: 1.74 };
+  const blocked = (x, z) => Math.hypot(x - well.x, z - well.z) < well.r;
+  const beggar = createBeggar({ waypoints: route });
+  const here = { x: 5, z: 0 }, player = { x: -1, z: 0 };
+  let closest = Infinity;
+  for (let i = 0; i < 60 * 25; i++) {
+    const step = beggar.update(1 / 60, { position: player, here });
+    const gap = Math.hypot(step.target.x - here.x, step.target.z - here.z);
+    if (gap > .1) {
+      const move = Math.min(gap, 2.4 / 60);
+      const nx = here.x + (step.target.x - here.x) / gap * move, nz = here.z + (step.target.z - here.z) / gap * move;
+      if (!blocked(nx, here.z)) here.x = nx;
+      if (!blocked(here.x, nz)) here.z = nz;
+    }
+    closest = Math.min(closest, Math.hypot(here.x - player.x, here.z - player.z));
+  }
+  assert.ok(closest < 2.6, `Smiths stayed ${closest.toFixed(2)} m away, stuck on the well`);
 });
