@@ -30,7 +30,7 @@ export function createPeblosScenery(kit) {
   const group = new THREE.Group(); group.name = 'Peblos scenery'; root.add(group);
   const metrics = { buildings: 0, pines: 0, gorse: 0, rocks: 0, grass: 0, thrift: 0, batches: 0, landmarks: 0 };
 
-  const stone = material('#8d9188'), stone2 = material('#8a8f85'), paleStone = material('#a7a89b'), darkStone = material('#6f7570');
+  const stone = material('#8d9188'), stone2 = material('#8a8f85'), paleStone = material('#9a9c90'), darkStone = material('#6f7570');
   const shingle = material('#b4ab92'), iron = material('#494b47'), legionRed = material('#8c3f38');
   const canvasMat = material('#cbbd96'), netMat = material('#6f7a5f'), pitch = material('#413a33');
 
@@ -41,6 +41,8 @@ export function createPeblosScenery(kit) {
   const quayLength = Q.maxX - Q.minX, quayWidth = Q.maxZ - Q.minZ;
   const quayMid = { x: (Q.minX + Q.maxX) / 2, z: (Q.minZ + Q.maxZ) / 2 };
   box(stone, quayMid.x, Q.deckY - 2.35, quayMid.z, quayLength, 4.7, quayWidth, group);
+  // Courses in the face, so the mass reads as laid stone and not as one block.
+  for (const height of [.55, 1.15, 1.75]) box(darkStone, quayMid.x, height, quayMid.z, quayLength - .3, .12, quayWidth + .12, group);
   box(paleStone, quayMid.x, Q.deckY - .11, quayMid.z, quayLength, .22, quayWidth, group);
   // A kerb of set stones down both sides, low enough to step over and high enough to read as an edge.
   for (const side of [-1, 1]) for (let x = Q.minX + .6; x <= Q.maxX - .6; x += 1.3)
