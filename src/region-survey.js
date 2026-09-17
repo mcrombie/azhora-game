@@ -55,6 +55,10 @@ export const PLAYABLE_SURVEY = Object.freeze({
         {q:11,r:102,terrain:'grassland'},{q:12,r:102,terrain:'grassland'},{q:13,r:102,terrain:'grassland'},{q:14,r:102,terrain:'grassland'},{q:15,r:102,
         terrain:'grassland'},{q:16,r:102,terrain:'hills'},{q:17,r:102,terrain:'plains'},{q:14,r:103,terrain:'grassland'},{q:15,r:103,terrain:'grassland'},
         {q:16,r:103,terrain:'plains'},{q:15,r:104,terrain:'plains'},{q:16,r:104,terrain:'plains'},{q:15,r:105,terrain:'plains'}]) }),
+    Object.freeze({ id: "Peblos", name: "Peblos",
+      bounds: Object.freeze({"x":1829.046,"y":2568,"width":180.134,"height":128}), centerX: 1941.437, centerY: 2645.333,
+      cells: Object.freeze([{q:17,r:107,terrain:'hills'},{q:17,r:108,terrain:'hills'},{q:13,r:109,terrain:'plains'},{q:15,r:109,terrain:'plains'},{q:11,r:110,terrain:'plains'},
+        {q:16,r:110,terrain:'hills'},{q:13,r:111,terrain:'plains'},{q:15,r:111,terrain:'hills'},{q:16,r:111,terrain:'hills'}]) }),
   ]),
 });
 

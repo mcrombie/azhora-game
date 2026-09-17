@@ -73,6 +73,9 @@ export function trailMapSVG(model, { width = 600, height = 430, selectedId = nul
       const p = project(water); svg.push(`<circle cx="${number(p.x)}" cy="${number(p.y)}" r="${number(water.radius * scale)}" class="trail-water"/>`);
     } else if (water.kind === 'polygon' && water.points?.length > 2) svg.push(`<path d="${path(water.points)}Z" class="trail-water"/>`);
   }
+  // Islands are land inside that water: the Pebbles are drawn back over the Stills.
+  for (const land of model.lands || [])
+    if (land.points?.length > 2) svg.push(`<path d="${path(land.points)}Z" class="trail-land" fill="${landColor}"/>`);
   for (const points of model.paths || []) if (Array.isArray(points) && points.length > 1) {
     const d = path(points); svg.push(`<path d="${d}" class="trail-road-edge"/><path d="${d}" class="trail-road"/>`);
   }

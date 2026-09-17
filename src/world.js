@@ -17,6 +17,8 @@ import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js
 import { createRegionScenery, regionClear } from './world-regions.js';
 import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './pueth-world.js';
 import { createPuethScenery } from './pueth-scenery.js';
+import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
+import { createPeblosScenery } from './peblos-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -189,6 +191,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const local = worldToVillage(x, z);
     // The pier deck, exactly as Tidehaven always had it.
     if (Math.abs(local.x) < 2.2 && local.z >= 22 && local.z <= 48) return 1.8;
+    // Cobble's quay, out over the water of the bay in Peblos.
+    const quay = quayHeight(x, z);
+    if (quay !== null) return quay;
     const deck = deckAt(x, z);
     if (deck) return deck.deckY + .09;
     return groundHeight(x, z);
@@ -372,8 +377,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // ---------------------------------------------------------------------------
   // The Stills
   // ---------------------------------------------------------------------------
-  const seaWidth = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 260, seaDepth = WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ + 260;
-  const waterGeometry = new THREE.PlaneGeometry(seaWidth, seaDepth, 72, 72);
+  // Open water on every side, far enough out that its edge reads as the horizon
+  // rather than as the corner of a plane: from Peblos the traveler looks east at nothing else.
+  const seaWidth = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 900, seaDepth = WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ + 900;
+  // One vertex per 32 m, as the 2 280 m sea always had, so the swell keeps its scale.
+  const waterGeometry = new THREE.PlaneGeometry(seaWidth, seaDepth, Math.round(seaWidth / 32), Math.round(seaDepth / 32));
   waterGeometry.rotateX(-Math.PI / 2);
   const waterMaterial = new THREE.ShaderMaterial({
     uniforms: { time: { value: 0 }, shallow: { value: new THREE.Color('#65bdba') }, deep: { value: new THREE.Color('#328e9c') } },
@@ -398,7 +406,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     let best = null;
     for (let x = shoreFrom.x; x > shoreTo.x; x -= 3) {
       const distance = landDistance(x, z);
-      if (distance >= 0) { best = x + clamp(distance, 0, 2.5); break; }
+      // The Pebbles are land too; the mainland's coast is what this traces.
+      if (distance >= 0 && !islandAt(x, z)) { best = x + clamp(distance, 0, 2.5); break; }
     }
     if (best !== null) shorePoints.push({ x: best, z });
   }
@@ -432,7 +441,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   const houseLocations = [];
   const smokeSources = [];
-  function cottage(x, z, width, depth, height, roofColor, wallColor, angle = 0, parent = villageRoot) {
+  // `plain` leaves off the window flower boxes: nothing is grown on a window ledge in the Pebbles.
+  function cottage(x, z, width, depth, height, roofColor, wallColor, angle = 0, parent = villageRoot, { plain = false } = {}) {
     const y = groundFor(parent)(x, z);
     const group = new THREE.Group(); group.position.set(x, y, z); group.rotation.y = angle; parent.add(group);
     if (isLocal(parent)) houseLocations.push({ x, z, r: Math.max(width, depth) * .72 });
@@ -461,6 +471,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       box(wood, wx, 2.03, depth / 2 + .21, .075, 1.0, .05, group);
       box(wood, wx, 2.03, depth / 2 + .215, .91, .075, .055, group);
       for (const shutter of [-1, 1]) box(material(roofColor), wx + shutter * .65, 2.03, depth / 2 + .14, .26, 1.13, .08, group);
+      if (plain) continue;
       box(woodLight, wx, 1.34, depth / 2 + .35, 1.19, .27, .43, group);
       for (let f = 0; f < 5; f++) pebble(material(f % 2 ? '#eeb679' : '#d78082'), wx - .42 + f * .21, 1.62, depth / 2 + .38, .13, .17, .13, group);
     }
@@ -798,7 +809,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const roadSigns = [];
   const roadSignLabels = ['The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge',
     'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Tidehaven', 'Return to bridge',
-    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel', 'The Tessen Bridge', 'Rimeholt',
+    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel', 'The Tessen Bridge', 'Rimeholt', 'Cobble',
     ...forestPlaceDefinitions.map(site => site.name), 'Village road'];
   const signRowHeight = 56;
   const signAtlas = (() => {
@@ -1052,6 +1063,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     insideVillage: (x, z) => { const local = worldToVillage(x, z); return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40; },
   });
   bridgeDecks.push(puethScenery.bridge);
+  // Peblos: Cobble and its quay, the island places, the outer islands' landmarks and the ferryman's boat.
+  const peblosScenery = createPeblosScenery({
+    root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups,
+  });
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: (x, z, label, yaw, returnLabel) => trailSign(x, z, 1, label, yaw, returnLabel, world) });
@@ -1409,6 +1425,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...[...samples].reverse().map(s => mapPoint(s.x + s.nx * s.half, s.z + s.nz * s.half))]) })),
   ]);
 
+  // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
+  const mapLands = Object.freeze(PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
+    ?.filter(loop => loop.some(p => island.cells.some(cell => Math.hypot(cell.x - p.x, cell.z - p.z) < 90)))
+    .map((loop, index) => Object.freeze({ id: `${island.id}-land-${index}`, kind: 'polygon', region: 'Peblos',
+      points: Object.freeze(loop.map(p => mapPoint(p.x, p.z))) })) ?? []));
   const worldSpawn = villageToWorld(0, 43), worldBoat = villageToWorld(-4.8, 43);
   const worldTraining = villageToWorld(training.x, training.z);
   const worldEncounter = villageToWorld(encounter.x, encounter.z);
@@ -1435,6 +1456,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     solisHolder: westSuval.holder,
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
+    peblosMetrics: peblosScenery.metrics,
+    peblosQuay: COBBLE_QUAY,
+    placeFerryBoat: peblosScenery.placeFerryBoat,
+    mapLands,
     roadSigns,
     frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
     storySites: STORY_SITES,
@@ -1516,7 +1541,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS,
     },
     landmarks: [
       { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
@@ -1532,6 +1557,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         description: 'Scraps of blue cloth mark a side trail east from the Tessen road post. A goblin camp squats in the birch beyond, with sacks taken from the post’s stores.' },
       ...regionLandmarks,
       ...PUETH_LANDMARKS,
+      ...PEBLOS_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
     ],
