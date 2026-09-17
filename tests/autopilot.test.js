@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { borderGoal, aftermathGoal } from '../src/autopilot.js';
-import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, freeDirection, moveInput, nearestVertex, CHOICE_PRIORITY } from '../src/autopilot.js';
+import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, CHOICE_PRIORITY } from '../src/autopilot.js';
 
 /** A small flat world with the same collision rules as the game. */
 function fakeWorld() {
@@ -135,6 +135,19 @@ test('the computer travels at a run and walks only the last stride', () => {
   assert.equal(last.run, false, 'the last stride up to Mara is walked');
   assert.ok(Math.hypot(last.forward, last.side) > .9, 'and it is still walking toward her');
   pilot.stop();
+});
+
+test('the computer follows whichever road serves the leg, not only the first one', () => {
+  const world = fakeWorld();
+  // A second road, far off the first: the way from the outpost to Solis is like this.
+  const spur = [{ x: 400, z: -40 }, { x: 430, z: -120 }, { x: 460, z: -200 }, { x: 500, z: -280 }];
+  world.paths = [...world.paths, spur];
+  const from = { x: 402, z: -44 }, to = { x: 498, z: -276 };
+  assert.deepEqual(bestTrail(world.paths, from, to), spur, 'the spur serves this leg');
+  assert.deepEqual(bestTrail(world.paths, { x: 0, z: 20 }, { x: 0, z: -150 }), world.paths[0], 'the main road still serves its own');
+  const step = nextWaypoint(from, to, world);
+  assert.equal(step.onTrail, true);
+  assert.ok(step.point.z < from.z, `it walks along the spur, not back to the far road (${JSON.stringify(step.point)})`);
 });
 
 test('a game begun at a later chapter is played from there, not from the road behind it', () => {

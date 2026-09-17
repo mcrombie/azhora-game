@@ -13,6 +13,13 @@ export const SKILLS = Object.freeze({
     // Experience needed for levels 1 to 10. Drent's five birds together are worth 90: level 4.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
+  fishing: Object.freeze({
+    id: 'fishing', name: 'Fishing',
+    blurb: 'Reading water, waiting out a float, and knowing what you have landed. Every kind of fish you land for the first time teaches you something.',
+    teacher: 'Bran at Willowmere Pond, and Hollis at the Caloss crossing',
+    // The ten fish of Drent, Luscia and Pueth together are worth 200: level 6.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));

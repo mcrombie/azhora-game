@@ -52,6 +52,7 @@ import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel } from './skills.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createDrentBirds } from './drent-birds.js';
+import { createFishing, FISHING_SKILL } from './fishing-skill.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
@@ -207,6 +208,8 @@ function init() {
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
   const skills=createSkills();
   const birding=createBirding({skills});
+  // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
+  const fishing=createFishing({skills});
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0;
   const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
@@ -298,11 +301,15 @@ function init() {
     refreshSkillsSheet();saveRoad(false);
   }
   function showBirdCard(result){
-    const level=skillLevel('birding',skills.view().find(skill=>skill.id==='birding').xp);
-    $('bird-card-kicker').textContent=`FIRST SIGHTING · BIRDING +${result.xp}${result.levelled?` · LEVEL ${level.level}`:''}`;
-    $('bird-card-name').textContent=result.species.name;$('bird-card-note').textContent=result.species.note;
+    showSkillCard({kicker:`FIRST SIGHTING · BIRDING +${result.xp}${result.levelled?` · LEVEL ${result.level}`:''}`,name:result.species.name,note:result.species.note,skill:'birding'});
+  }
+  // The card a skill puts up when the traveler learns something new: a bird seen, a fish landed.
+  function showSkillCard({kicker,name,note,skill}){
+    const view=skills.view().find(entry=>entry.id===skill),level=skillLevel(skill,view?.xp??0);
+    $('bird-card-kicker').textContent=kicker;
+    $('bird-card-name').textContent=name;$('bird-card-note').textContent=note;
     $('bird-card-fill').style.width=`${Math.round(level.progress*100)}%`;
-    $('bird-card-level').textContent=level.max?`Birding ${level.level} · ${level.xp} experience`:`Birding ${level.level} · ${level.xp} / ${level.next} experience`;
+    $('bird-card-level').textContent=level.max?`${view.name} ${level.level} · ${level.xp} experience`:`${view.name} ${level.level} · ${level.xp} / ${level.next} experience`;
     $('bird-card').classList.add('visible');clearTimeout(birdCardTimer);birdCardTimer=setTimeout(()=>$('bird-card').classList.remove('visible'),7000);
   }
   // The skills sheet in the journal: each skill's level and experience, and for birding the birds of Drent, seen and not.
@@ -313,6 +320,11 @@ function init() {
       const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level}`:'NOT YET LEARNED'),el('h3','',skill.name));
       if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
       card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+      if(skill.id==='fishing'&&skill.learned){
+        const view=fishing.view(),list=el('ul','bird-list');
+        for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+        card.append(el('h3','',`Fish landed · ${view.caughtCount} / ${view.total}`),list);
+      }
       if(skill.id==='birding'){
         const view=birding.view();
         if(view.met)card.append(el('p','skill-xp',`Observation range ${observeRange(skill.level)} m · B to observe · a new kind of bird is worth experience`));
@@ -744,7 +756,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -767,7 +779,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());
     ferry.restore(saved.ferry??createFerry().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
@@ -965,7 +977,7 @@ function init() {
     if(LUSCIA_NPC_IDS.has(npc.id)||(npc.id==='relay-clerk'&&luscia.state.started)){lusciaConversation(npc,{luscia,inventory,openDialogue,closeDialogue,act:lusciaAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext)});return;}
     if(journeyNpcIds.has(npc.id)){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
       provideBridgeWood:()=>{const needed=Math.max(0,3-inventory.count('forest-stick'));const ok=!needed||inventory.add('forest-stick',needed);if(ok&&needed){toast('Three sound branches are ready for the bridge.','HOLLIS’S REPAIR TIMBER');saveRoad(false);}return {ok,reason:ok?'':'There is no room for the repair timber.'};},
-      teachFishing:()=>{const owned=inventory.has('fishing-rod');const result=campcraft.teachFishing();if(!owned)toast('A spare rod for your journey. Find the marked bank east of the bridge.','FISHING ROD · ADDED TO SATCHEL');return result;}});return;}
+      teachFishing:()=>{const owned=inventory.has('fishing-rod');const result=campcraft.teachFishing();fishing.learn();refreshSkillsSheet();if(!owned)toast('A spare rod for your journey. Find the marked bank east of the bridge.','FISHING ROD · ADDED TO SATCHEL');return result;}});return;}
     if(npc.id==='acorn-cook'){lysaConversation(npc);return;}
     if(npc.id==='doomsayer'){doomsayerConversation(npc);return;}
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
@@ -1054,7 +1066,13 @@ function init() {
   }
   function handleCampEvents(){
     for(const event of campEvents.splice(0)){
-      if(event.type==='catch'){toast('A raw fish for your satchel. Cook it over a fire.','FRESH CATCH');audio?.effect('success');}
+      if(event.type==='catch'){
+        const spot=world.activeFishingSpot?.()?.id??currentFishingSpot?.id??'willowmere';
+        const landed=fishing.land(spot);
+        if(landed.ok&&landed.first){showSkillCard({kicker:`FIRST CATCH · FISHING +${landed.xp}${landed.levelled?` · LEVEL ${landed.level}`:''}`,name:landed.species.name,note:landed.species.note,skill:FISHING_SKILL});}
+        else toast(landed.ok?`${landed.species.name} · ${landed.count} landed. Cook it over a fire.`:'A raw fish for your satchel. Cook it over a fire.','FRESH CATCH');
+        refreshSkillsSheet();audio?.effect('success');
+      }
       if(event.type==='miss')toast(event.reason,'TRY ANOTHER CAST');
       if(event.type==='bite')audio?.effect('bite');
       if(event.type==='fire-lit'||event.type==='cook')audio?.effect('success');
@@ -1635,7 +1653,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),fishing:fishing.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

@@ -108,10 +108,25 @@ export const ROAD_CORRIDOR = 14;
  * path, which runs from the landing up the whole northern road); short hops and
  * the last stretch go straight, sliding around anything in the way.
  */
+/** The road that best serves a walk from `position` to `target`: both ends near it, the nearest such. */
+export function bestTrail(paths = [], position, target) {
+  let best = paths?.[0] ?? [], bestCost = Infinity;
+  for (const path of paths ?? []) {
+    if (!path || path.length < 2) continue;
+    const from = nearestOnPath(path, position), to = nearestOnPath(path, target);
+    if (to.distance >= ROAD_CORRIDOR) continue;
+    const cost = from.distance + to.distance;
+    if (cost < bestCost) { best = path; bestCost = cost; }
+  }
+  return best;
+}
+
 export function nextWaypoint(position, target, world, memory = {}) {
   const gateway = enclosureWaypoint(position, target, world);
   if (gateway) return gateway;
-  const trail = world.paths?.[0] ?? [];
+  // Whichever road serves this leg, not only the road out of Drent: the way from
+  // the outpost to Solis runs along the stockade spur and the Solis road.
+  const trail = bestTrail(world.paths, position, target);
   if (trail.length > 1) {
     const here = nearestVertex(trail, position), there = nearestVertex(trail, target);
     const onRoad = nearestOnPath(trail, position), goal = nearestOnPath(trail, target);
