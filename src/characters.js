@@ -606,6 +606,17 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestX = .045; chestY = -.025; headX = .09 + patience; headY = .045;
       }
     }
+    if (pose.riding) {
+      // Astride: thighs forward and apart, shins hanging, hands low on the reins. The seat follows the horse's stride,
+      // and the rider leans into a canter. The host passes the horse's pace; the rider's own speed is zero.
+      const gait = THREE.MathUtils.clamp((Number(pose.riding.pace) || 0) / 12, 0, 1), beat = Math.sin(seconds * (5.5 + gait * 8) + offset);
+      for (let i = 0; i < 2; i++) {
+        hip[i] = -1.08 + beat * .035 * gait; knee[i] = 1.22; ankle[i] = -.12;
+        arm[i] = -.52 + beat * .05 * gait; elbow[i] = -.78; armOut[i] = (i ? 1 : -1) * .1;
+      }
+      stance = .8; chestX = .05 + gait * .2 + beat * .025 * gait; chestY = 0; chestZ = 0; bodyX = 0; bodyZ = 0;
+      headX = -.03 - gait * .13; headY *= .5; bounce = beat * .018 * gait;
+    }
     const rotate = (object, x, y, z) => {
       object.rotation.x = THREE.MathUtils.lerp(object.rotation.x, x, damping);
       object.rotation.y = THREE.MathUtils.lerp(object.rotation.y, y, damping);
@@ -618,7 +629,8 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       // The curved cloak hangs from its own soft joint. Its slower response
       // lets the hem trail a turn or lift with a run without a cloth solver.
       const settle = 1 - Math.exp(-5.5 * dt);
-      const lift = 0.025 + run * 0.2 + (grounded ? 0 : 0.12) + (action === 'dodge' ? 0.26 : 0);
+      // In the saddle the hem lies back over the horse's croup instead of hanging through it.
+      const lift = 0.025 + run * 0.2 + (grounded ? 0 : 0.12) + (action === 'dodge' ? 0.26 : 0) + (pose.riding ? 0.55 : 0);
       clothPivot.rotation.x = THREE.MathUtils.lerp(clothPivot.rotation.x, lift + Math.cos(stridePhase * 2) * movementBlend * 0.025, settle);
       clothPivot.rotation.y = THREE.MathUtils.lerp(clothPivot.rotation.y, -chestY * 0.15, settle);
       clothPivot.rotation.z = THREE.MathUtils.lerp(clothPivot.rotation.z, Math.sin(seconds * 1.35 + offset) * 0.018 + step * movementBlend * 0.035, settle);
@@ -2112,19 +2124,21 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
     const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
     const damping = 1 - Math.exp(-9 * dt);
     movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 1.2, 0, 1) : 0, 1 - Math.exp(-8 * dt));
-    stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1);
+    // Above a fast trot the gait gathers into a canter: hind pair and fore pair nearly together, a longer reach, a rocking back.
+    const canter = THREE.MathUtils.clamp((pace - 8.5) / 3, 0, 1);
+    stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1 + canter * 2.6);
     const idle = 1 - movementBlend, breath = Math.sin(seconds * 1.3 + offset);
     const graze = pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
     const shift = Math.sin(seconds * .21 + offset) * idle;
     const hip = [], knee = [];
     for (let i = 0; i < 4; i++) {
       // Walk order: left hind, left fore, right hind, right fore, a quarter cycle apart.
-      const phase = stridePhase - [Math.PI / 2, 3 * Math.PI / 2, 0, Math.PI][i], fore = i < 2;
-      hip[i] = Math.sin(phase) * (fore ? 0.42 : 0.4) * movementBlend + (fore ? 0 : 0.2) * idle + (i === 2 ? shift : i === 3 ? -shift : 0) * 0.05;
+      const phase = stridePhase - lerp([Math.PI / 2, 3 * Math.PI / 2, 0, Math.PI][i], [Math.PI, Math.PI + 0.55, 0, 0.55][i], canter), fore = i < 2;
+      hip[i] = Math.sin(phase) * ((fore ? 0.42 : 0.4) + canter * 0.34) * movementBlend + (fore ? 0 : 0.2) * idle + (i === 2 ? shift : i === 3 ? -shift : 0) * 0.05;
       knee[i] = (fore ? 0.02 : -0.32) * idle + (fore ? Math.max(0, Math.sin(phase + 0.7)) * 0.75 : -0.32 + Math.max(0, Math.sin(phase + 0.7)) * 0.4) * movementBlend
         + (i === 2 && shift > 0 ? shift * 0.12 : i === 3 && shift < 0 ? -shift * 0.12 : 0);
     }
-    const spineX = movementBlend * 0.02 + graze * 0.05, spineZ = shift * 0.012;
+    const spineX = movementBlend * 0.02 + graze * 0.05 + Math.sin(stridePhase) * 0.07 * canter, spineZ = shift * 0.012;
     const neckX = -0.05 + breath * 0.01 + graze * 0.75 + movementBlend * 0.08;
     const headX = 0.1 + graze * 0.55 + Math.sin(stridePhase) * 0.06 * movementBlend;
     const headY = Math.sin(seconds * 0.43 + offset) * 0.18 * idle * (1 - graze);
@@ -2140,7 +2154,7 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
     rotate(tail, tailX, tailY, 0);
     for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
     rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
-    body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend, 1 - Math.exp(-20 * dt));
+    body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend * (1 - canter) + Math.max(0, Math.sin(stridePhase + 0.4)) * 0.09 * canter, 1 - Math.exp(-20 * dt));
   }
   return { animate };
 }

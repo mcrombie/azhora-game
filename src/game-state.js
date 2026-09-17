@@ -18,11 +18,12 @@ export function canStand(x, z, world, radius = 0.34) {
     ? Math.hypot(x-c.x,z-c.z) < c.r+radius
     : Math.abs(x-c.x) < c.hx+radius && Math.abs(z-c.z) < c.hz+radius);
 }
-export function moveCharacter(position, dx, dz, world) {
+// `radius` is the mover's footprint: a person by default, wider for a rider on a horse.
+export function moveCharacter(position, dx, dz, world, radius) {
   const steps = Math.max(1, Math.ceil(Math.hypot(dx,dz)/0.18));
   for(let i=0;i<steps;i++) {
-    if(canStand(position.x+dx/steps,position.z,world)) position.x+=dx/steps;
-    if(canStand(position.x,position.z+dz/steps,world)) position.z+=dz/steps;
+    if(canStand(position.x+dx/steps,position.z,world,radius)) position.x+=dx/steps;
+    if(canStand(position.x,position.z+dz/steps,world,radius)) position.z+=dz/steps;
   }
   return position;
 }
