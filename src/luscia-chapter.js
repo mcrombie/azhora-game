@@ -11,6 +11,8 @@
  * Modelled on `journey.js` (rules, validated snapshots) plus
  * `journey-content.js` (the words, as `tangent(...)` / `choice(...)` lines).
  */
+import { toWorld, toWorldXIn } from './world-scale.js';
+
 export const LUSCIA_VERSION = 1;
 export const LUSCIA_CHAPTER_ID = 'luscia-aftermath';
 /** The Legion's promissory token for a horse, spent with the ostler in Lumber Town (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
@@ -27,7 +29,7 @@ export const LUSCIA_NPCS = Object.freeze([
 
 /** The one site of this chapter: the courier's satchel at a wrecked cart. Mirrors `journeySites`. */
 export const LUSCIA_SITES = Object.freeze({
-  'courier-satchel': Object.freeze({ id: 'courier-satchel', x: -375, z: 177, region: 2,
+  'courier-satchel': Object.freeze({ id: 'courier-satchel', ...toWorld(-375, 177), region: 2,
     name: 'The courier’s satchel', prompt: 'Lift the courier’s satchel from the wrecked cart' }),
 });
 
@@ -40,11 +42,11 @@ export const LUSCIA_SITE_ACTIONS = Object.freeze({ 'courier-satchel': 'take-cour
  * stays inside it.
  */
 export const LUSCIA_WOLVES = Object.freeze({
-  id: 'lauvel-wolves', center: Object.freeze({ x: -375, z: 177 }), checkpoint: Object.freeze({ x: -386, z: 182.9 }),
-  retreatAxis: 'x', retreatLine: -364,
+  id: 'lauvel-wolves', center: Object.freeze(toWorld(-375, 177)), checkpoint: Object.freeze(toWorld(-386, 182.9)),
+  retreatAxis: 'x', retreatLine: toWorldXIn('lauvel-field', -364),
   enemies: Object.freeze([
-    Object.freeze({ id: 'lauvel-wolf-lead', x: -381.5, z: 186, hp: 58, kind: 'wolf', entry: .2 }),
-    Object.freeze({ id: 'lauvel-wolf-second', x: -384, z: 182, hp: 58, kind: 'wolf', entry: 1.4 }),
+    Object.freeze({ id: 'lauvel-wolf-lead', ...toWorld(-381.5, 186), hp: 58, kind: 'wolf', entry: .2 }),
+    Object.freeze({ id: 'lauvel-wolf-second', ...toWorld(-384, 182), hp: 58, kind: 'wolf', entry: 1.4 }),
   ]),
 });
 

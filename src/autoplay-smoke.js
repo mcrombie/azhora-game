@@ -5,7 +5,10 @@
  * control back once by hand to prove the hand-over works.
  */
 export async function runAutoplaySmoke(h) {
-  const { autopilot, start, stop, readState, frames, press, release, player, world, deadlineMs = 15 * 60 * 1000 } = h;
+  // The road is 1.7 km at 100 m per authored hex and the main quest now runs on
+  // past it through Luscia, the Moros camp, the border and the day after, so the
+  // autopilot needs far longer on its feet than the road alone used to take.
+  const { autopilot, start, stop, readState, frames, press, release, player, world, deadlineMs = 30 * 60 * 1000 } = h;
   const assert = (condition, message) => { if (!condition) throw new Error(`Autoplay smoke: ${message}`); };
   const position = () => ({ x: player.group.position.x, z: player.group.position.z });
   const started = performance.now();

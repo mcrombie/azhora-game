@@ -11,6 +11,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
+import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
 import { COPPER_ITEM, PEDDLER, STARTING_PURSE, describeSum, peddlerOffers } from './economy.js';
 import { VILLAGE_DOG, createVillageDog } from './village-dog.js';
@@ -189,7 +190,7 @@ function init() {
   let heldControl=null,stakedNpcs=null,occupationClock=0;
   let currentMorosSite=null;
   // The Legion's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
-  const horseLine=[0,1,2,3].map(i=>{const x=-566+1.8+i*3.6,z=320-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
+  const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
   const beggar=createBeggar({waypoints:TOWN_BEGGAR_ROUTE});
   const LUSCIA_NPC_IDS=new Set(LUSCIA_NPCS.map(person=>person.id));
@@ -206,7 +207,7 @@ function init() {
   let currentHideoutSite=null;
   let meadowCleared=false;
   const greenwayEncounter={id:'tidehaven-raiders',center:{x:-56,z:29},checkpoint:{x:-45,z:29},retreatAxis:'x',retreatLine:-36,enemies:[{id:'goblin-scout',x:-56,z:30.3,hp:75,entry:.2},{id:'goblin-scrapper',x:-60,z:27.7,hp:75,entry:1.5},{id:'goblin-lookout',x:-64,z:29,hp:75,entry:2.8}]};
-  const meadowEncounter={id:'meadow-raiders',center:{x:-250,z:12},checkpoint:{x:-236,z:22},retreatAxis:'x',retreatLine:-222,enemies:[{id:'meadow-scout',x:-253,z:8,hp:65,entry:.2},{id:'meadow-scrapper',x:-256,z:18,hp:65,entry:1.5}]};
+  const meadowEncounter={id:'meadow-raiders',center:toWorld(-250,12),checkpoint:toWorld(-236,22),retreatAxis:'x',retreatLine:toWorldXIn('avrel',-222),enemies:[{id:'meadow-scout',...toWorld(-253,8),hp:65,entry:.2},{id:'meadow-scrapper',...toWorld(-256,18),hp:65,entry:1.5}]};
   let roadStorage;try{roadStorage=window.azhoraRoadStorage||localStorage;}catch{/* Play remains available when storage is disabled. */}
   const checkpoint=createRoadCheckpoint({storage:roadStorage});
   let checkpointAvailable=checkpoint.read();
@@ -519,7 +520,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1223,7 +1224,7 @@ function init() {
         if(questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
         if(questStage===8&&Math.hypot(player.group.position.x-world.northTrail.x,player.group.position.z-world.northTrail.z)<5)updateQuest('reach-north-trail');
         if(questStage===9&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<4.5)updateQuest('reach-border');
-        if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x+250,player.group.position.z-12)<14){
+        if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-meadowEncounter.center.x,player.group.position.z-meadowEncounter.center.z)<14){
           if(combat.startEncounter(meadowEncounter)){toast('Two raiders among the field walls. Give their swings room.','THE AVREL CLEARING · WATCH THE AMBER TELLS');audio?.effect('bell');}
         }
         for(const place of world.landmarks)if(!discoveries.has(place.id)&&Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<(place.radius||8)){
@@ -1342,7 +1343,7 @@ function init() {
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
         combat.startPractice(world.training);combat.finishPractice();mode='playing';document.body.classList.add('playing');
-        show('opening',false);player.group.position.set(-198,world.heightAt(-198,26),26);refreshQuest();settleCamera();},
+        show('opening',false);{const p=toWorld(-198,26);player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);}refreshQuest();settleCamera();},
       press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code})),
       release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code})),
       getMode:()=>mode,setYaw:value=>yaw=value,audioState:()=>audio?.state(),toggleAudio:()=>$('sound').click(),
@@ -1462,7 +1463,7 @@ function init() {
         const frames=focusedRoadHooks().frames;
         const saved=JSON.stringify(checkpoint.read().data);
         if(mode==='fishing')endFishing(true);
-        mode='playing';player.group.position.set(-244,world.heightAt(-244,12),12);
+        mode='playing';{const p=toWorld(-244,12);player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);}
         combat.startEncounter(meadowEncounter);combat.state.player.hp=1;
         const deadline=performance.now()+18000;
         while(mode!=='defeated'){assert(performance.now()<deadline,'Meadow defeat did not arrive');await frames();}

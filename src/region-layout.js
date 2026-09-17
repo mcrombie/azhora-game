@@ -17,23 +17,28 @@
  * from these functions, so a region can be regenerated from the atlas rather
  * than drawn by hand.
  */
+import { METRES_PER_HEX, WORLD_SCALE } from './world-scale.js';
+
 export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas pixels
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
-export const METRES_PER_HEX = 56;                       // flat-to-flat width of one authored hex in the rebuilt world
+// Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
+export { METRES_PER_HEX };
 export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval']);
+/** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
+const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
 /** What each rebuilt region should feel like, whatever the survey's raw terrain says. */
 export const REGION_BIOMES = Object.freeze({
-  Drent: Object.freeze({ id: 'dense-forest', name: 'Drent forest', ground: '#4d7a3e', canopy: '#2f5a2c', treesPerHex: 42, rocksPerHex: 1, undergrowth: 'dense',
+  Drent: Object.freeze({ id: 'dense-forest', name: 'Drent forest', ground: '#4d7a3e', canopy: '#2f5a2c', treesPerHex: perHex(42), rocksPerHex: perHex(1), undergrowth: 'dense',
     relief: { amplitude: 2.6, wavelength: 90 }, clearings: ['village', 'farm'],
     note: 'All of Drent is green forest: broadleaf canopy, ferns and sorrel, the village and one farm clearing cut out of it. Larger than today’s Eastreena.' }),
-  Luscia: Object.freeze({ id: 'sparse-woodland', name: 'Luscian woods and meadows', ground: '#8fa35a', canopy: '#5f8a48', treesPerHex: 9, rocksPerHex: 1, undergrowth: 'light',
+  Luscia: Object.freeze({ id: 'sparse-woodland', name: 'Luscian woods and meadows', ground: '#8fa35a', canopy: '#5f8a48', treesPerHex: perHex(9), rocksPerHex: perHex(1), undergrowth: 'light',
     relief: { amplitude: 4.5, wavelength: 140 }, clearings: ['battlefield', 'hamlet'],
     note: 'Rolling grass with copses of trees that thin toward the Moros; the Lauvel battlefield and a burned hamlet.' }),
   'Moros Plain': Object.freeze({ id: 'open-plain', name: 'Moros Plain', ground: '#b9b36c', canopy: null, treesPerHex: 0, rocksPerHex: 0, undergrowth: 'none',
     relief: { amplitude: .9, wavelength: 260 }, clearings: ['legion-camp'],
     note: 'Absolutely flat grassland, an enormous sky, and the Legion camp visible from a long way off. Horse country.' }),
-  'East Suval': Object.freeze({ id: 'stone-hills', name: 'East Suval hills', ground: '#9b9d85', canopy: '#6c7f5a', treesPerHex: 3, rocksPerHex: 7, undergrowth: 'heather',
+  'East Suval': Object.freeze({ id: 'stone-hills', name: 'East Suval hills', ground: '#9b9d85', canopy: '#6c7f5a', treesPerHex: perHex(3), rocksPerHex: perHex(7), undergrowth: 'heather',
     relief: { amplitude: 11, wavelength: 120 }, clearings: ['border-post', 'elod'],
     note: 'Grey stone country like today’s Threefold Rise: waymarkers, ridge rock, heather, Elod’s guarded border post in the north.' }),
 });

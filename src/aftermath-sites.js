@@ -6,8 +6,13 @@
  * built yet: the chapter then waits, and the journal says so.
  * Pure: no DOM, no three.
  */
-const site = (x, z, yaw, name) => Object.freeze({ x, z, yaw, name });
-const arena = (x, z, retreatAxis) => Object.freeze({ center: Object.freeze({ x, z }), retreatAxis });
+import { toWorld } from './world-scale.js';
+
+// Coordinates are the authored ones (56 m per hex) and are converted here, at
+// the boundary, like every other literal table. `aftermathEncounter` adds its
+// offsets after this, so only a site's stand and an arena's centre convert.
+const site = (x, z, yaw, name) => Object.freeze({ ...toWorld(x, z), yaw, name });
+const arena = (x, z, retreatAxis) => Object.freeze({ center: Object.freeze(toWorld(x, z)), retreatAxis });
 
 export const AFTERMATH_SITES = Object.freeze({
   // Outside the north-east gate of the Legion's outpost on the Moros, off the road, clear of the gate guards.

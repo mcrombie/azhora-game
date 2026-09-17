@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { drawMinimap, miniMapProjection } from '../src/minimap.js';
 import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
+import { toWorld } from '../src/world-scale.js';
+
+/** The fixture speaks authored metres, like the world it stands in for. */
+const at = (x, z) => toWorld(x, z);
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 
@@ -19,18 +23,18 @@ function context() {
 function fixture() {
   return {
     regions, regionAt, bounds: { ...WORLD_BOUNDS },
-    paths: [[{ x: 5, z: 29 }, { x: -176, z: 29 }, { x: -345, z: 93 }, { x: -549, z: 348 }],
-      [{ x: -97, z: 2 }, { x: -80, z: 6 }]],
+    paths: [[at(5, 29), at(-176, 29), at(-345, 93), at(-549, 348)],
+      [at(-97, 2), at(-80, 6)]],
     heightAt() { return 3; },
-    pond: { x: -97, z: 2, radius: 5.4 }, border: { barrierX: -182 },
+    pond: { ...at(-97, 2), radius: 5.4 }, border: { barrierX: at(-182, 29).x },
     colliders: [
-      { x: -8, z: 34, kind: 'house', width: 6, depth: 8, angle: .2 },
-      { x: -235, z: 55, kind: 'house', hx: 3.5, hz: 4 },
-      { x: -350, z: 100, kind: 'river-water', hx: 7, hz: 6.7 },
-      { x: -338, z: 86, kind: 'river-water', hx: 7, hz: 6.7 },
-      { x: -344, z: 95, kind: 'bridge-rail', hx: .11, hz: 12.1 },
+      { ...at(-8, 34), kind: 'house', width: 6, depth: 8, angle: .2 },
+      { ...at(-235, 55), kind: 'house', hx: 3.5, hz: 4 },
+      { ...at(-350, 100), kind: 'river-water', hx: 7, hz: 6.7 },
+      { ...at(-338, 86), kind: 'river-water', hx: 7, hz: 6.7 },
+      { ...at(-344, 95), kind: 'bridge-rail', hx: .11, hz: 12.1 },
     ],
-    landmarks: [{ id: 'village', x: -15, z: 29 }, { id: 'pond', x: -102, z: 8 }, { id: 'secret', x: -60, z: 10 }],
+    landmarks: [{ id: 'village', ...at(-15, 29) }, { id: 'pond', ...at(-102, 8) }, { id: 'secret', ...at(-60, 10) }],
   };
 }
 
@@ -80,16 +84,16 @@ test('a world without rendered water still traces its own coast and pond', () =>
 
 test('the rebuilt districts, the Caloss and their borders share the same local scale', () => {
   const world = fixture();
-  const river = drawMinimap(context(), { world, position: { x: -345, z: 93 } });
-  const ridge = drawMinimap(context(), { world, position: { x: -91, z: 411 } });
-  const camp = drawMinimap(context(), { world, position: { x: -549, z: 348 } });
+  const river = drawMinimap(context(), { world, position: at(-345, 93) });
+  const ridge = drawMinimap(context(), { world, position: at(-91, 411) });
+  const camp = drawMinimap(context(), { world, position: at(-549, 348) });
   assert.equal(river.counts.waterShapes, 2); assert.equal(ridge.counts.waterShapes, 0);
   assert.equal(river.regionId, 2); assert.equal(ridge.regionId, 4); assert.equal(camp.regionId, 3);
   assert.equal(river.scale, ridge.scale);
   // District ground is filled from the authored hex outlines, so a view near a
   // border shows the real shape of both sides.
   const borderContext = context();
-  drawMinimap(borderContext, { world, position: { x: -330, z: 90 } });
+  drawMinimap(borderContext, { world, position: at(-330, 90) });
   const fills = borderContext.calls.filter(call => call.method === 'fill');
   assert.ok(fills.some(call => call.fill === '#d9caa0'), 'Drent is filled by outline');
   assert.ok(fills.some(call => call.fill === '#e6d8ad'), 'Luscia is filled by outline');
@@ -97,11 +101,11 @@ test('the rebuilt districts, the Caloss and their borders share the same local s
 
 test('new-region house half-extents render finite footprints; invalid data cannot reach canvas', () => {
   const world = fixture();
-  world.colliders.push({ kind: 'house', x: -232, z: 50, width: NaN, depth: Infinity, angle: NaN });
+  world.colliders.push({ kind: 'house', ...at(-232, 50), width: NaN, depth: Infinity, angle: NaN });
   world.colliders.push({ kind: 'house', x: NaN, z: 50 });
-  world.paths.push([{ x: NaN, z: 2 }, { x: -235, z: 55 }, { x: -236, z: 60 }]);
+  world.paths.push([{ x: NaN, z: 2 }, at(-235, 55), at(-236, 60)]);
   const ctx = context();
-  const state = drawMinimap(ctx, { world, position: { x: -235, z: 55 }, angle: Infinity, time: NaN,
+  const state = drawMinimap(ctx, { world, position: at(-235, 55), angle: Infinity, time: NaN,
     goal: { x: Infinity, z: 0 }, tracked: { x: NaN, z: 0 } });
   assert.equal(state.counts.buildings, 2); assert.equal(state.goal, null); assert.equal(state.optional, null);
   assert.ok(ctx.calls.some(call => call.method === 'fillRect' && Math.abs(call.args[2] - 7 * state.scale) < 1e-9
@@ -111,12 +115,12 @@ test('new-region house half-extents render finite footprints; invalid data canno
 
 test('discovery rendering and combat are read-only and cannot expose distant live enemies', () => {
   const world = fixture(), discoveries = new Set(['pond']);
-  const combat = { phase: 'active', enemies: [{ x: -100, z: 14, hp: 2 }, { x: -500, z: 300, hp: 3 }, { x: -98, z: 2, hp: 0 }] };
+  const combat = { phase: 'active', enemies: [{ ...at(-100, 14), hp: 2 }, { ...at(-500, 300), hp: 3 }, { ...at(-98, 2), hp: 0 }] };
   const before = JSON.stringify({ world, combat, discoveries: [...discoveries] });
-  const state = drawMinimap(context(), { world, position: { x: -104, z: 6 }, discoveries, combat });
+  const state = drawMinimap(context(), { world, position: at(-104, 6), discoveries, combat });
   assert.equal(state.counts.landmarks, 2); assert.equal(state.counts.discovered, 1); assert.equal(state.counts.enemies, 1);
   assert.equal(JSON.stringify({ world, combat, discoveries: [...discoveries] }), before);
-  assert.equal(drawMinimap(context(), { world, position: { x: -104, z: 6 }, combat: { ...combat, phase: 'won' } }).counts.enemies, 0);
+  assert.equal(drawMinimap(context(), { world, position: at(-104, 6), combat: { ...combat, phase: 'won' } }).counts.enemies, 0);
 });
 
 test('the built world uses rendered water outlines and bridge rails without terrain resampling', async () => {
@@ -128,18 +132,18 @@ test('the built world uses rendered water outlines and bridge rails without terr
     if (object.material) for (const material of Array.isArray(object.material) ? object.material : [object.material]) materialCount.add(material);
   });
   try {
-    for (const [position, regionId] of [[{ x: 5, z: 29 }, 1], [{ x: -102, z: 6 }, 1],
-      [{ x: -236, z: 30 }, 1], [{ x: -345, z: 93 }, 2], [{ x: -549, z: 348 }, 3], [{ x: -91, z: 411 }, 4]]) {
+    for (const [position, regionId] of [[at(5, 29), 1], [at(-102, 6), 1],
+      [at(-236, 30), 1], [at(-345, 93), 2], [at(-549, 348), 3], [at(-91, 411), 4]]) {
       const ctx = context(), state = drawMinimap(ctx, { world, position });
       assert.equal(state.regionId, regionId, `${position.x}, ${position.z}`);
       assert.equal(state.counts.heightSamples, 0, 'the live world supplies exact rendered water instead of CPU height sampling');
       assert.equal(ctx.calls.filter(c => c.method === 'save').length, ctx.calls.filter(c => c.method === 'restore').length);
     }
-    const bridge = drawMinimap(context(), { world, position: { x: -345, z: 93 } });
+    const bridge = drawMinimap(context(), { world, position: at(-345, 93) });
     assert.ok(bridge.counts.waterShapes >= 1, 'the Caloss is drawn from its rendered banks');
-    const village = drawMinimap(context(), { world, position: { x: 5, z: 29 } });
+    const village = drawMinimap(context(), { world, position: at(5, 29) });
     assert.ok(village.counts.waterShapes >= 1, 'the coast is drawn from its rendered shoreline');
-    const hills = drawMinimap(context(), { world, position: { x: -91, z: 411 } });
+    const hills = drawMinimap(context(), { world, position: at(-91, 411) });
     assert.equal(hills.counts.waterShapes, 0, 'the inland hills have no water to draw');
   } finally {
     for (const geometry of geometryCount) geometry.dispose();

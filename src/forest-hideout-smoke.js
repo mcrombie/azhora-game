@@ -1,3 +1,30 @@
+/**
+ * STALE: this smoke still describes the goblin camp as it was in Drent, and
+ * `npm run test:hideout` fails on it. Nothing here is a consequence of the world
+ * scale; it went stale when the camp moved (commit "Move the goblin camp out of
+ * Drent to north Luscia as a Lumber Town side quest with the garrison"). Its
+ * coordinates are all derived from `forest-hideout.js` and
+ * `forest-hideout-world.js`, so they follow the camp's cluster correctly; it is
+ * the *flow* that no longer exists.
+ *
+ * What a rewrite has to change:
+ *  - The errand belongs to Lumber Town's garrison, not to Tamsin. `talkTamsin`
+ *    becomes `talkCaptain` on `QUEST.recipientId` ('garrison-captain', Captain
+ *    Decimus Varo), and the traveler must first hear of the camp from
+ *    `QUEST.informantId` ('garrison-casso') through `ask-hideout-work`.
+ *  - The choice ids `talk-hideout-return` and `hideout-village-thanks` are gone;
+ *    the garrison uses `march-on-hideout`, `stand-down-hideout` and
+ *    `return-hideout-supplies` (see `garrisonConversation`).
+ *  - The reward is thirty copper (`QUEST.reward`), not three pawpaws, and the
+ *    prompt reads "Lift the town's stolen stores", not "Recover the village
+ *    supplies".
+ *  - The fight needs quest stage 10, not 5: `prepareHideout(1)`/`prepareHideout(5)`
+ *    and every `questStage === 5` assertion move to the post-tutorial stage, and
+ *    the early-visit check should expect the "Finish your business in Tidehaven"
+ *    reason rather than the old three-goblin one.
+ *  - The camp stands in north Luscia, so the walk to it starts on the Luscia
+ *    road, not on the Greenway.
+ */
 import { canStand } from './game-state.js';
 import { FOREST_HIDEOUT_QUEST as QUEST } from './forest-hideout.js';
 import { FOREST_HIDEOUT as CAMP } from './forest-hideout-world.js';

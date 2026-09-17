@@ -7,7 +7,10 @@
  * stands. No THREE, no DOM: `world.js` renders what is described here, and the
  * charts, the checkpoint rules and the smokes read the same numbers.
  *
- * North is -Z, east is +X, one authored hex is 56 m (HEX_WORLD_TRANSFORM).
+ * North is -Z, east is +X, one authored hex is METRES_PER_HEX metres
+ * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
+ * authored 56 m frame the content was designed in and converted here, at the
+ * boundary, by `at()` for a place and `road()` for a road vertex.
  * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
@@ -15,6 +18,7 @@ import {
   HEX_WORLD_TRANSFORM, REGION_BIOMES, PLAYABLE_REGIONS, METRES_PER_HEX, ATLAS_HEX_SIZE, ATLAS_HEX_WIDTH,
   regionCells, regionOutline, worldBoundsFor, routeAnchors, borderMidpoint, pointInPolygon,
 } from './region-layout.js';
+import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE } from './world-scale.js';
 
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
@@ -34,6 +38,13 @@ const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
 const lerp = (a, b, t) => a + (b - a) * t;
 const point = (x, z) => Object.freeze({ x, z });
+/** An authored point (56 m per hex), in world metres: rigid inside its cluster. */
+const at = (x, z) => { const p = toWorld(x, z); return point(p.x, p.z); };
+/** An authored road vertex. Only Tidehaven's own trail is rigid; see world-scale.js. */
+const road = (x, z) => { const p = toWorldRoad(x, z); return point(p.x, p.z); };
+/** An authored point carried by a named cluster, wherever it lies. */
+const inCluster = (id, x, z) => { const p = toWorldIn(id, x, z); return point(p.x, p.z); };
+export { AUTHORED_METRES_PER_HEX, WORLD_SCALE };
 
 // ---------------------------------------------------------------------------
 // Hexes, land and coast
@@ -71,7 +82,7 @@ export function isLandHex(x, z) { const h = hexAt(x, z); return landHexes.has(ke
  * the south. Drent's coast faces east, so the whole settlement is carried over
  * as one piece, turned a quarter turn: local -Z (inland) becomes world -X.
  */
-export const VILLAGE = Object.freeze({ x: -20, z: 29, yaw: Math.PI / 2 });
+export const VILLAGE = Object.freeze({ ...at(-20, 29), yaw: Math.PI / 2 });
 export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - lx });
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 
@@ -81,12 +92,12 @@ export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x })
  * It sits in the wilderness of north Luscia, turned half a circle so its trail leaves the main
  * road just west of Sava's rise: local (60, -118), the camp's centre, is world (-456, 154).
  */
-export const HIDEOUT_SITE = Object.freeze({ x: -396, z: 36, yaw: Math.PI });
+export const HIDEOUT_SITE = Object.freeze({ ...inCluster('goblin-camp', -396, 36), yaw: Math.PI });
 export const hideoutToWorld = (lx, lz) => ({ x: HIDEOUT_SITE.x - lx, z: HIDEOUT_SITE.z - lz });
 export const worldToHideout = (x, z) => ({ x: HIDEOUT_SITE.x - x, z: HIDEOUT_SITE.z - z });
 /** Ground the Luscia scatter keeps clear for the camp and its trail. */
 export const HIDEOUT_CLEARINGS = Object.freeze([
-  Object.freeze({ x: -456, z: 154, r: 16 }), Object.freeze({ x: -466, z: 159, r: 6 }),
+  Object.freeze({ ...at(-456, 154), r: 16 }), Object.freeze({ ...at(-466, 159), r: 6 }),
   ...[[1, -117], [14, -112], [29, -111], [45, -109], [53, -111]].map(([lx, lz]) => Object.freeze({ ...hideoutToWorld(lx, lz), r: 5 })),
 ]);
 /** The local box the original Eastreena terrain and scatter occupy. */
@@ -215,8 +226,8 @@ export const SEA_LEVEL = 0.06;
 export const CALOSS = Object.freeze({
   crossing: point(ANCHORS.calossCrossing.x, ANCHORS.calossCrossing.z),
   halfWidth: 7.4,
-  points: Object.freeze([point(-556, -2), point(-482, 36), point(-424, 52), point(-386, 70),
-    point(-345, 92.9), point(-306, 122), point(-266, 142), point(-222, 163), point(-182, 188)]),
+  points: Object.freeze([at(-556, -2), at(-482, 36), at(-424, 52), at(-386, 70),
+    at(-345, 92.9), at(-306, 122), at(-266, 142), at(-222, 163), at(-182, 188)]),
 });
 
 /** Distance to the Caloss centre line, and the fraction of the way along it. */
@@ -237,37 +248,38 @@ export function calossDistance(x, z) {
 /** From Tidehaven's landing, through the forest, across the Caloss and west to the Moros. */
 export const MAIN_ROAD = Object.freeze([
   // Tidehaven's own trail, point for point, turned onto Drent's coast.
-  point(5, 29), point(-11, 29), point(-25, 29), point(-40, 30.6), point(-54, 27.3),
-  point(-67, 29), point(-80, 30.5), point(-92, 29), point(-106, 40), point(-128, 34), point(-148, 21), point(-163, 26),
-  point(-176, 29), point(-196, 25), point(-214, 30), point(-236, 30), point(-258, 39),
-  point(-278, 52), point(-300, 64), point(-322, 78), point(-345, 92.9), point(-362, 107),
-  point(-374, 124), point(-382, 142), point(-390, 162), point(-386, 182.9), point(-396, 202),
-  point(-404, 222), point(-408, 228), point(-414, 242), point(-427, 259.4), point(-446, 276), point(-468, 292),
-  point(-492, 308), point(-518, 326), point(-549.2, 348.1), point(-596, 352), point(-648, 348),
-  point(-700, 352), point(-752, 348), point(-772, 350),
+  road(5, 29), road(-11, 29), road(-25, 29), road(-40, 30.6), road(-54, 27.3),
+  road(-67, 29), road(-80, 30.5), road(-92, 29), road(-106, 40), road(-128, 34), road(-148, 21), road(-163, 26),
+  road(-176, 29), road(-196, 25), road(-214, 30), road(-236, 30), road(-258, 39),
+  road(-278, 52), road(-300, 64), road(-322, 78), road(-345, 92.9), road(-362, 107),
+  road(-374, 124), road(-382, 142), road(-390, 162), road(-386, 182.9), road(-396, 202),
+  road(-404, 222), road(-408, 228), road(-414, 242), road(-427, 259.4), road(-446, 276), road(-468, 292),
+  road(-492, 308), road(-518, 326), road(-549.2, 348.1), road(-596, 352), road(-648, 348),
+  road(-700, 352), road(-752, 348), road(-772, 350),
 ]);
 
 /** The branch that leaves the Lauvel for Elod's border post and the town beyond. */
 export const SUVAL_ROAD = Object.freeze([
-  point(-390, 162), point(-360, 178), point(-330, 196), point(-300, 216), point(-272, 240),
-  point(-250, 262), point(-231, 283.6), point(-204, 298), point(-176, 308), point(-150, 318),
-  point(-118, 332), point(-86, 346), point(-56, 358), point(-28, 368.5),
+  road(-390, 162), road(-360, 178), road(-330, 196), road(-300, 216), road(-272, 240),
+  road(-250, 262), road(-231, 283.6), road(-204, 298), road(-176, 308), road(-150, 318),
+  road(-118, 332), road(-86, 346), road(-56, 358), road(-28, 368.5),
 ]);
 
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
-export const ONWARD_ROAD = Object.freeze(MAIN_ROAD.slice(MAIN_ROAD.findIndex(p => p.x === -176)));
+const CALOSS_GATE_VERTEX = road(-176, 29);
+export const ONWARD_ROAD = Object.freeze(MAIN_ROAD.slice(MAIN_ROAD.findIndex(p => p.x === CALOSS_GATE_VERTEX.x && p.z === CALOSS_GATE_VERTEX.z)));
 /** The whole walkable road network, for the traversal smoke and the charts. */
-export const ROAD_JUNCTION = point(-390, 162);
+export const ROAD_JUNCTION = road(-390, 162);
 
 // ---------------------------------------------------------------------------
 // Places along the road
 // ---------------------------------------------------------------------------
 /** Tidehaven's forest gate. Beyond it the road runs on to the Caloss. */
-export const CALOSS_GATE = Object.freeze({ x: -176, z: 29, name: 'The Caloss Gate', barrierX: -182,
+export const CALOSS_GATE = Object.freeze({ ...at(-176, 29), name: 'The Caloss Gate', barrierX: at(-182, 29).x,
   regionName: 'The Avrel clearing', open: true });
-export const FERNWAY_REST = Object.freeze({ x: -128, z: 34, name: 'Fernway Rest' });
+export const FERNWAY_REST = Object.freeze({ ...at(-128, 34), name: 'Fernway Rest' });
 /** Drent's one farm clearing, cut out of the forest where the Avrel families work. */
-export const AVREL_CLEARING = Object.freeze({ x: -236, z: 30, radius: 38 });
+export const AVREL_CLEARING = Object.freeze({ ...at(-236, 30), radius: 38 });
 
 /**
  * Lumber Town, the market town at the centre of Luscia, between the field at
@@ -276,7 +288,7 @@ export const AVREL_CLEARING = Object.freeze({ x: -236, z: 30, radius: 38 });
  * the road toward the Moros, `b` metres across it to the east.
  */
 export const LUMBER_TOWN = Object.freeze({
-  name: 'Lumber Town', square: point(-408, 228), radius: 30,
+  name: 'Lumber Town', square: at(-408, 228), radius: 30,
   along: point(-0.4472, 0.8944), across: point(0.8944, 0.4472),
 });
 /** A point in Lumber Town's frame. */
@@ -285,9 +297,9 @@ export const townPoint = (a, b) => point(
   LUMBER_TOWN.square.z + LUMBER_TOWN.along.z * a + LUMBER_TOWN.across.z * b);
 
 export const regionNpcPositions = Object.freeze({
-  'meadow-courier': point(-230, 17),      // Corvan, Legion quartermaster, at the farm clearing
-  'crossing-keeper': point(-357, 106),    // Hollis, at the Caloss bridge
-  'ridge-keeper': point(-372, 131),       // Sava, at her shrine on the Luscia side
+  'meadow-courier': at(-230, 17),         // Corvan, Legion quartermaster, at the farm clearing
+  'crossing-keeper': at(-357, 106),       // Hollis, at the Caloss bridge
+  'ridge-keeper': at(-372, 131),          // Sava, at her shrine on the Luscia side
   'relay-clerk': townPoint(5, -6),        // Iven, at the Legion relay post on Lumber Town's square
   // Lumber Town's people, around the square and the timber yard.
   'town-innkeeper': townPoint(-8, 4),
@@ -302,77 +314,78 @@ export const regionNpcPositions = Object.freeze({
   'garrison-casso': townPoint(14, -8),
   'garrison-brill': townPoint(-8, -6),
   // The field at the Lauvel and the burned hamlet, north-east of the town.
-  'lauvel-picket': point(-392, 186),      // Talvus, on the picket line
-  'burial-searcher': point(-387, 198),    // Ilva, at the burial line
-  'hamlet-drover': point(-344, 208),      // Garran, at the burned hamlet
+  'lauvel-picket': at(-392, 186),         // Talvus, on the picket line
+  'burial-searcher': at(-387, 198),       // Ilva, at the burial line
+  'hamlet-drover': at(-344, 208),         // Garran, at the burned hamlet
 });
 
 export const journeySites = Object.freeze({
-  'cart-parcel-1': Object.freeze({ id: 'cart-parcel-1', x: -252, z: 8, name: 'Cloth parcel', type: 'parcel', region: 2 }),
-  'cart-parcel-2': Object.freeze({ id: 'cart-parcel-2', x: -259, z: 20, name: 'Provision parcel', type: 'parcel', region: 2 }),
-  'cart-parcel-3': Object.freeze({ id: 'cart-parcel-3', x: -246, z: 2, name: 'Wax-sealed parcel', type: 'parcel', region: 2 }),
-  'bridge-repair': Object.freeze({ id: 'bridge-repair', x: -345, z: 92.9, name: 'The Caloss bridge', type: 'bridge', region: 3 }),
-  'beacon-west': Object.freeze({ id: 'beacon-west', x: -392, z: 132, name: 'First waymarker', type: 'beacon', region: 4 }),
-  'beacon-east': Object.freeze({ id: 'beacon-east', x: -364, z: 150, name: 'Second waymarker', type: 'beacon', region: 4 }),
-  'beacon-north': Object.freeze({ id: 'beacon-north', x: -404, z: 172, name: 'Third waymarker', type: 'beacon', region: 4 }),
-  'bridge-debris-1': Object.freeze({ id: 'bridge-debris-1', x: -330, z: 76, name: 'Dry driftwood', type: 'sticks', quantity: 2, region: 3 }),
-  'bridge-debris-2': Object.freeze({ id: 'bridge-debris-2', x: -366, z: 112, name: 'Fallen branches', type: 'sticks', quantity: 2, region: 3 }),
-  'meadow-fruit': Object.freeze({ id: 'meadow-fruit', x: -258, z: 46, name: 'Pawpaw windfalls', type: 'fruit', quantity: 2, region: 2 }),
-  'river-fruit': Object.freeze({ id: 'river-fruit', x: -330, z: 130, name: 'Riverside pawpaws', type: 'fruit', quantity: 2, region: 3 }),
-  'ridge-fruit': Object.freeze({ id: 'ridge-fruit', x: -412, z: 152, name: 'Sheltered pawpaws', type: 'fruit', quantity: 2, region: 4 }),
-  'meadow-sticks': Object.freeze({ id: 'meadow-sticks', x: -216, z: 12, name: 'Dry branches', type: 'sticks', quantity: 2, region: 2 }),
-  'ridge-sticks': Object.freeze({ id: 'ridge-sticks', x: -356, z: 128, name: 'Wind-fallen branches', type: 'sticks', quantity: 2, region: 4 }),
+  'cart-parcel-1': Object.freeze({ id: 'cart-parcel-1', ...at(-252, 8), name: 'Cloth parcel', type: 'parcel', region: 2 }),
+  'cart-parcel-2': Object.freeze({ id: 'cart-parcel-2', ...at(-259, 20), name: 'Provision parcel', type: 'parcel', region: 2 }),
+  'cart-parcel-3': Object.freeze({ id: 'cart-parcel-3', ...at(-246, 2), name: 'Wax-sealed parcel', type: 'parcel', region: 2 }),
+  'bridge-repair': Object.freeze({ id: 'bridge-repair', ...at(-345, 92.9), name: 'The Caloss bridge', type: 'bridge', region: 3 }),
+  'beacon-west': Object.freeze({ id: 'beacon-west', ...at(-392, 132), name: 'First waymarker', type: 'beacon', region: 4 }),
+  'beacon-east': Object.freeze({ id: 'beacon-east', ...at(-364, 150), name: 'Second waymarker', type: 'beacon', region: 4 }),
+  'beacon-north': Object.freeze({ id: 'beacon-north', ...at(-404, 172), name: 'Third waymarker', type: 'beacon', region: 4 }),
+  'bridge-debris-1': Object.freeze({ id: 'bridge-debris-1', ...at(-330, 76), name: 'Dry driftwood', type: 'sticks', quantity: 2, region: 3 }),
+  'bridge-debris-2': Object.freeze({ id: 'bridge-debris-2', ...at(-366, 112), name: 'Fallen branches', type: 'sticks', quantity: 2, region: 3 }),
+  'meadow-fruit': Object.freeze({ id: 'meadow-fruit', ...at(-258, 46), name: 'Pawpaw windfalls', type: 'fruit', quantity: 2, region: 2 }),
+  'river-fruit': Object.freeze({ id: 'river-fruit', ...at(-330, 130), name: 'Riverside pawpaws', type: 'fruit', quantity: 2, region: 3 }),
+  'ridge-fruit': Object.freeze({ id: 'ridge-fruit', ...at(-412, 152), name: 'Sheltered pawpaws', type: 'fruit', quantity: 2, region: 4 }),
+  'meadow-sticks': Object.freeze({ id: 'meadow-sticks', ...at(-216, 12), name: 'Dry branches', type: 'sticks', quantity: 2, region: 2 }),
+  'ridge-sticks': Object.freeze({ id: 'ridge-sticks', ...at(-356, 128), name: 'Wind-fallen branches', type: 'sticks', quantity: 2, region: 4 }),
 });
 
 export const regionRepairBenches = Object.freeze([
-  Object.freeze({ id: 'meadow-repair', x: -220, z: 40, name: 'Avrel clearing repair bench' }),
-  Object.freeze({ id: 'crossing-repair', x: -368, z: 96, name: 'Caloss crossing repair bench' }),
-  Object.freeze({ id: 'ridge-repair', x: -384, z: 138, name: 'Sava’s shrine repair bench' }),
+  Object.freeze({ id: 'meadow-repair', ...at(-220, 40), name: 'Avrel clearing repair bench' }),
+  Object.freeze({ id: 'crossing-repair', ...at(-368, 96), name: 'Caloss crossing repair bench' }),
+  Object.freeze({ id: 'ridge-repair', ...at(-384, 138), name: 'Sava’s shrine repair bench' }),
 ]);
 
+const fire = (x, z) => { const p = toWorld(x, z); return { fireX: p.x, fireZ: p.z }; };
 export const regionFirePits = Object.freeze([
-  Object.freeze({ id: 'meadow-fire', x: -212, z: 40, fireX: -212, fireZ: 41.5 }),
-  Object.freeze({ id: 'crossing-fire', x: -370, z: 118, fireX: -371.4, fireZ: 118.6 }),
-  Object.freeze({ id: 'ridge-fire', x: -398, z: 146, fireX: -399.4, fireZ: 146.6 }),
+  Object.freeze({ id: 'meadow-fire', ...at(-212, 40), ...fire(-212, 41.5) }),
+  Object.freeze({ id: 'crossing-fire', ...at(-370, 118), ...fire(-371.4, 118.6) }),
+  Object.freeze({ id: 'ridge-fire', ...at(-398, 146), ...fire(-399.4, 146.6) }),
 ]);
 
 /** The marked fishing bank on the Caloss, upstream of the bridge. */
-export const CALOSS_BANK = Object.freeze({ spot: point(-306, 104), cast: point(-300, 114) });
+export const CALOSS_BANK = Object.freeze({ spot: at(-306, 104), cast: at(-300, 114) });
 
 export const regionLandmarks = Object.freeze([
-  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', x: -236, z: 30, description: 'The one farm clearing cut out of Drent’s forest: crop rows, a canvas field camp, and the Legion’s supply post.' }),
-  Object.freeze({ id: 'fallen-cart', name: 'The Tumbled Cart', x: -243, z: 19, description: 'A courier’s wheel gave way on the farm track. Scattered parcels lie among the stubble.' }),
-  Object.freeze({ id: 'old-mill', name: 'The Clearing Mill', x: -227, z: 57, description: 'Slow canvas sails turn above the Avrel grain rows and a stone-lined well.' }),
-  Object.freeze({ id: 'reedwater', name: 'Caloss Crossing', x: -334, z: 84, description: 'The road drops to the Caloss. Drent ends on this bank; Luscia begins on the far one.' }),
-  Object.freeze({ id: 'reed-bridge', name: 'The Caloss Bridge', x: -345, z: 92.9, description: 'An old timber bridge crosses the border river. Its sound eastern walkway remains passable.' }),
-  Object.freeze({ id: 'reedwater-bank', name: 'The Quiet Bank', x: -306, z: 104, description: 'A rod rest and a low stool mark a sheltered place to fish the slow water.' }),
-  Object.freeze({ id: 'river-camp', name: 'The Reedcutters’ Camp', x: -372, z: 116, description: 'Drying reeds, tied boats, and a small raised shelter stand above the Luscian bank.' }),
-  Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', x: -377, z: 138, description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
-  Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', x: -386, z: 152, description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
-  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', x: -401, z: 196, description: 'The Legion’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
-  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', x: -408, z: 228, radius: 26, description: 'Luscia’s market town: a square of stalls and a well, an inn, the timber yard above the sawpits, and the Legion’s relay post on the corner.' }),
+  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', ...at(-236, 30), description: 'The one farm clearing cut out of Drent’s forest: crop rows, a canvas field camp, and the Legion’s supply post.' }),
+  Object.freeze({ id: 'fallen-cart', name: 'The Tumbled Cart', ...at(-243, 19), description: 'A courier’s wheel gave way on the farm track. Scattered parcels lie among the stubble.' }),
+  Object.freeze({ id: 'old-mill', name: 'The Clearing Mill', ...at(-227, 57), description: 'Slow canvas sails turn above the Avrel grain rows and a stone-lined well.' }),
+  Object.freeze({ id: 'reedwater', name: 'Caloss Crossing', ...at(-334, 84), description: 'The road drops to the Caloss. Drent ends on this bank; Luscia begins on the far one.' }),
+  Object.freeze({ id: 'reed-bridge', name: 'The Caloss Bridge', ...at(-345, 92.9), description: 'An old timber bridge crosses the border river. Its sound eastern walkway remains passable.' }),
+  Object.freeze({ id: 'reedwater-bank', name: 'The Quiet Bank', ...at(-306, 104), description: 'A rod rest and a low stool mark a sheltered place to fish the slow water.' }),
+  Object.freeze({ id: 'river-camp', name: 'The Reedcutters’ Camp', ...at(-372, 116), description: 'Drying reeds, tied boats, and a small raised shelter stand above the Luscian bank.' }),
+  Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', ...at(-377, 138), description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
+  Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', ...at(-386, 152), description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
+  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The Legion’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
+  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town: a square of stalls and a well, an inn, the timber yard above the sawpits, and the Legion’s relay post on the corner.' }),
   // Story hooks placed as scenery for the chapter that follows.
-  Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', x: -386, z: 182.9, description: 'Broken carts, a fallen banner and a burial line: ten days ago the Legion met a rebel army here.' }),
-  Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', x: -348, z: 212, description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
-  Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', x: -427, z: 259.4, description: 'A signpost, a cattle grid and the last copse. West of here the grass runs to the horizon.' }),
-  Object.freeze({ id: 'legion-camp', name: 'The Legion Camp', x: -549.2, z: 348.1, description: 'A palisade, ordered tents, a horse line and the Legate’s standard on the open Moros.' }),
-  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', x: -368, z: 308, description: 'The small stockade the Legion and the republic both want: a ditch, a rampart and an empty gate.' }),
-  Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', x: -224, z: 292, description: 'A barrier across the road, two guards, and a shelter belonging to neither army.' }),
-  Object.freeze({ id: 'old-waystation', name: 'The Roofless Waystation', x: -154, z: 328, description: 'A leaning stone arch and a few paving slabs outlast a forgotten roadside shelter.' }),
-  Object.freeze({ id: 'elod-gate', name: 'Elod', x: -28, z: 368.5, description: 'The stone gate of Elod, a few slate roofs, and the Stills glittering beyond the town.' }),
-  Object.freeze({ id: 'bandit-lookout', name: 'The Hill Lookout', x: -74, z: 498, description: 'A ring of ridge stones above the southern hills. Somebody watches the road from here, but not today.' }),
+  Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the Legion met a rebel army here.' }),
+  Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', ...at(-348, 212), description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
+  Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', ...at(-427, 259.4), description: 'A signpost, a cattle grid and the last copse. West of here the grass runs to the horizon.' }),
+  Object.freeze({ id: 'legion-camp', name: 'The Legion Camp', ...at(-549.2, 348.1), description: 'A palisade, ordered tents, a horse line and the Legate’s standard on the open Moros.' }),
+  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small stockade the Legion and the republic both want: a ditch, a rampart and an empty gate.' }),
+  Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'A barrier across the road, two guards, and a shelter belonging to neither army.' }),
+  Object.freeze({ id: 'old-waystation', name: 'The Roofless Waystation', ...at(-154, 328), description: 'A leaning stone arch and a few paving slabs outlast a forgotten roadside shelter.' }),
+  Object.freeze({ id: 'elod-gate', name: 'Elod', ...at(-28, 368.5), description: 'The stone gate of Elod, a few slate roofs, and the Stills glittering beyond the town.' }),
+  Object.freeze({ id: 'bandit-lookout', name: 'The Hill Lookout', ...at(-74, 498), description: 'A ring of ridge stones above the southern hills. Somebody watches the road from here, but not today.' }),
 ]);
 
 /** Scenery-and-stand hooks the next chapter will use. Positions only. */
 export const STORY_SITES = Object.freeze({
-  lauvelField: point(-386, 182.9), burnedHamlet: point(-348, 212), morosGate: point(-427, 259.4),
-  legionCamp: point(-549.2, 348.1), morosStockade: point(-368, 308), horseHitch: point(-566, 320),
-  suvalBorderPost: point(-224, 292), waystation: point(-154, 328), elodGate: point(-28, 368.5),
-  banditLookout: point(-74, 498),
+  lauvelField: at(-386, 182.9), burnedHamlet: at(-348, 212), morosGate: at(-427, 259.4),
+  legionCamp: at(-549.2, 348.1), morosStockade: at(-368, 308), horseHitch: at(-566, 320),
+  suvalBorderPost: at(-224, 292), waystation: at(-154, 328), elodGate: at(-28, 368.5),
+  banditLookout: at(-74, 498),
 });
 
 /** The end of the built world, west of the Legion camp. */
-export const FRONTIER = Object.freeze({ x: -776, z: 350, barrierX: -782, name: 'The Moros Horizon',
+export const FRONTIER = Object.freeze({ ...at(-776, 350), barrierX: at(-782, 350).x, name: 'The Moros Horizon',
   regionName: 'The open road west across the Moros' });
 
 // ---------------------------------------------------------------------------
@@ -385,20 +398,20 @@ function outlineBounds(loops) {
 }
 
 const REGION_TEXT = {
-  Drent: { subtitle: 'The forest coast and Tidehaven', spawn: point(-15, 29),
+  Drent: { subtitle: 'The forest coast and Tidehaven', spawn: at(-15, 29),
     description: 'All of Drent is broadleaf forest: ferns, sorrel and deer, with Tidehaven on the eastern shore and one farm clearing inland.',
     palette: { ground: '#4d7a3e', accent: '#c9d3a0', fog: '#b6c6ad' },
     npcIds: ['meadow-courier', 'commons-miller'], landmarks: ['sunmeadow', 'fallen-cart', 'old-mill', 'mill-commons'] },
-  Luscia: { subtitle: 'Across the Caloss', spawn: point(-362, 110),
+  Luscia: { subtitle: 'Across the Caloss', spawn: at(-362, 110),
     description: 'Rolling grass and thinning copses beyond the border river: the shrines of the valley, Lumber Town on the road, and the field at the Lauvel.',
     palette: { ground: '#8fa35a', accent: '#dfc77d', fog: '#bdc9b5' },
     npcIds: ['crossing-keeper', 'ridge-keeper', 'relay-clerk', 'reed-worker', 'town-innkeeper', 'timber-stall', 'town-sawyer'],
     landmarks: ['reedwater', 'reed-bridge', 'reedwater-bank', 'river-camp', 'landing-workshop', 'threefold', 'beacon-ridge', 'north-relay', 'lauvel-field', 'lumber-town', 'burned-hamlet'] },
-  'Moros Plain': { subtitle: 'The Legion’s open country', spawn: point(-452, 278),
+  'Moros Plain': { subtitle: 'The Legion’s open country', spawn: at(-452, 278),
     description: 'Flat treeless grassland under an enormous sky. The Legion camp is visible from a long way off, and horses graze the line.',
     palette: { ground: '#b9b36c', accent: '#e4d59a', fog: '#cfd3b4' },
     npcIds: [], landmarks: ['moros-gate', 'legion-camp', 'moros-stockade'] },
-  'East Suval': { subtitle: 'Stone hills and Elod', spawn: point(-214, 294),
+  'East Suval': { subtitle: 'Stone hills and Elod', spawn: at(-214, 294),
     description: 'Grey stone country: heather, ridge rock, a guarded border post that belongs to neither army, and the town of Elod above the Stills.',
     palette: { ground: '#9b9d85', accent: '#e1d1a7', fog: '#bbc6bf' },
     npcIds: ['shelter-keeper'], landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout'] },

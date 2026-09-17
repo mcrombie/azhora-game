@@ -1,4 +1,11 @@
+import { toWorld, scaleLength } from './world-scale.js';
+
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+// Geography in world metres. Tidehaven's shore band is unchanged with the
+// village; the river and the camp moved with their regions, and their earshot
+// grew with the road that approaches them.
+const CROSSING=toWorld(-345,93), CAMP=toWorld(-500,312);
+const RIVER_EARSHOT=scaleLength(86), CAMP_EARSHOT=scaleLength(140), BRIDGE_DECK=13;
 const EFFECTS=Object.freeze({
   swing:[180,70,.13,.10],hit:[240,85,.12,.17],'practice-hit':[330,110,.10,.11],
   dodge:[430,150,.17,.05],'player-hit':[105,48,.20,.20],windup:[180,260,.18,.05],
@@ -11,8 +18,8 @@ export function roadAudioProfile({position={},region=1}={}) {
   const id=[1,2,3,4].includes(region?.id??region)?(region?.id??region):1;
   const x=Number.isFinite(position.x)?position.x:0,z=Number.isFinite(position.z)?position.z:0;
   // Drent's coast is east (+X); the Caloss crosses the Drent-Luscia border.
-  const shore=clamp((x+42)/54,0,1),water=clamp(1-Math.hypot(x+345,z-93)/86,0,1);
-  const wood=(id===1&&Math.abs(z-29)<3&&x>=4)||(id===2&&Math.hypot(x+345,z-93)<13);
+  const shore=clamp((x+42)/54,0,1),water=clamp(1-Math.hypot(x-CROSSING.x,z-CROSSING.z)/RIVER_EARSHOT,0,1);
+  const wood=(id===1&&Math.abs(z-29)<3&&x>=4)||(id===2&&Math.hypot(x-CROSSING.x,z-CROSSING.z)<BRIDGE_DECK);
   return {region:id,surface:wood?'wood':id===4?'stone':'earth',
     sea:id===1?.22*shore:0,forest:id===1?.065*(1-shore*.7):0,
     field:id===3?.055:0,river:(id===1||id===2)?.14*water:0,ridge:id===4?.105:0};
@@ -119,9 +126,9 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
     callCountdown-=step;
     if(callCountdown<=0) {
       let heard=false;
-      if(region===3&&Math.hypot(position.x+500,position.z-312)<140)
+      if(region===3&&Math.hypot(position.x-CAMP.x,position.z-CAMP.z)<CAMP_EARSHOT)
         heard=tone([235,182,.48,.016],{turn:270});
-      else if((region===1&&position.x< -30)||(region===2&&Math.hypot(position.x+345,position.z-93)<86))
+      else if((region===1&&position.x< -30)||(region===2&&Math.hypot(position.x-CROSSING.x,position.z-CROSSING.z)<RIVER_EARSHOT))
         heard=tone([1450+rand()*280,1360,.29,.018],{type:'sine',turn:2190+rand()*160});
       if(heard)calls++;
       callCountdown=region===3?12+rand()*6:8+rand()*7;

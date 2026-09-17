@@ -78,8 +78,12 @@ test('Drent keeps every original collectible, and the goblin camp in north Lusci
     assert.ok(reached, `Disconnected destination ${target.id || ''} at ${target.x},${target.z}`);
   }
   // The camp's own ground: flood from the main road and reach the trail, the scouts and the sacks.
+  // The box follows the camp, so it holds wherever the world scale puts it.
   const road = world.paths[0].reduce((best, p) => Math.hypot(p.x - camp.trail[0].x, p.z - camp.trail[0].z) < Math.hypot(best.x - camp.trail[0].x, best.z - camp.trail[0].z) ? p : best);
-  const ox = -500, oz = 100, w = 140, h = 100, seen = new Int8Array(w * h), frontier = [];
+  const campPoints = [...camp.trail, camp.approach, camp.supplies, ...camp.enemies, road];
+  const ox = Math.floor(Math.min(...campPoints.map(p => p.x)) - 20), oz = Math.floor(Math.min(...campPoints.map(p => p.z)) - 20);
+  const w = Math.ceil(Math.max(...campPoints.map(p => p.x)) + 20) - ox, h = Math.ceil(Math.max(...campPoints.map(p => p.z)) + 20) - oz;
+  const seen = new Int8Array(w * h), frontier = [];
   const first = Math.round(road.z - oz) * w + Math.round(road.x - ox); seen[first] = 1; frontier.push(first);
   for (let cursor = 0; cursor < frontier.length; cursor++) {
     const index = frontier[cursor], ix = index % w, iz = Math.floor(index / w);

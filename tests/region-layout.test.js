@@ -52,7 +52,8 @@ test('rebuilt regions take their outlines and cells from the authored hexes at t
   }
   const drent = regionOutline(survey, 'Drent')[0];
   const width = Math.max(...drent.map(p => p.x)) - Math.min(...drent.map(p => p.x));
-  assert.ok(width > 380 && width < 560, `Drent is ${width.toFixed(0)} m wide: larger than today’s 190 m Eastreena`);
+  // Sizes are stated in hexes, so the check survives a change of world scale.
+  assert.ok(width > 6.8 * METRES_PER_HEX && width < 10 * METRES_PER_HEX, `Drent is ${width.toFixed(0)} m wide: larger than today’s Eastreena strip`);
   assert.equal(regionOutline(survey, 'Nowhere').length, 0);
 });
 
@@ -67,7 +68,7 @@ test('points resolve to regions and cells, and the world bounds enclose all four
   assert.equal(cellAtWorld(survey, 5000, 5000), null);
   const bounds = worldBoundsFor(survey);
   for (const [, point] of Object.entries(anchors)) assert.ok(point.x > bounds.minX && point.x < bounds.maxX && point.z > bounds.minZ && point.z < bounds.maxZ);
-  assert.ok(bounds.maxX - bounds.minX < 1400 && bounds.maxZ - bounds.minZ < 1400, 'the four regions fit a walkable world');
+  assert.ok(bounds.maxX - bounds.minX < 25 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 25 * METRES_PER_HEX, 'the four regions fit a walkable world');
 });
 
 test('route anchors follow the brief: Tidehaven on the coast, the Caloss on the Luscia border, the Moros west, Elod north-east', () => {

@@ -7,6 +7,8 @@
  * a corner of the battle; the day as a whole is decided by the campaign's odds.
  * Pure: no DOM, no three.
  */
+import { toWorld, toWorldZIn } from './world-scale.js';
+
 export const BORDER_VERSION = 1;
 export const BORDER_ENVOY_CHAPTER = 'suval-envoy';
 export const BORDER_BATTLE_CHAPTER = 'border-battle';
@@ -17,18 +19,21 @@ export const BORDER_OUTCOMES = Object.freeze(['victory', 'defeat']);
 
 /** People who appear at the stockade only while this chapter needs them. */
 export const BORDER_NPCS = Object.freeze([
-  Object.freeze({ id: 'coalition-envoy', name: 'Envoy Telis Orren', role: 'Envoy of the Republic and the Coalition', modelRole: 'rise-custodian', color: 0x3f5f86, x: -382, z: 308, yaw: -Math.PI / 2, shows: 'envoy' }),
-  Object.freeze({ id: 'envoy-guard-north', name: 'Coalition spearman', role: 'Suvali company, under the truce flag', modelRole: 'suvali-guard', color: 0x55636f, x: -380, z: 303.5, yaw: -Math.PI / 2, shows: 'envoy' }),
-  Object.freeze({ id: 'envoy-guard-south', name: 'Coalition spearman', role: 'Izoli marine, under the truce flag', modelRole: 'suvali-guard', color: 0x4a5f7a, x: -380, z: 312.5, yaw: -Math.PI / 2, shows: 'envoy' }),
-  Object.freeze({ id: 'battle-tribune', name: 'Tribune Gallus Orso', role: 'Tribune of the Legion’s left', modelRole: 'legion-officer', color: 0x832d2b, x: -396, z: 325, yaw: 0, shows: 'empire' }),
-  Object.freeze({ id: 'coalition-captain', name: 'Captain Arlen Voss', role: 'Captain of the Lauvel companies', modelRole: 'suvali-guard', color: 0x3f5f86, x: -396, z: 325, yaw: 0, shows: 'coalition' }),
+  Object.freeze({ id: 'coalition-envoy', name: 'Envoy Telis Orren', role: 'Envoy of the Republic and the Coalition', modelRole: 'rise-custodian', color: 0x3f5f86, ...toWorld(-382, 308), yaw: -Math.PI / 2, shows: 'envoy' }),
+  Object.freeze({ id: 'envoy-guard-north', name: 'Coalition spearman', role: 'Suvali company, under the truce flag', modelRole: 'suvali-guard', color: 0x55636f, ...toWorld(-380, 303.5), yaw: -Math.PI / 2, shows: 'envoy' }),
+  Object.freeze({ id: 'envoy-guard-south', name: 'Coalition spearman', role: 'Izoli marine, under the truce flag', modelRole: 'suvali-guard', color: 0x4a5f7a, ...toWorld(-380, 312.5), yaw: -Math.PI / 2, shows: 'envoy' }),
+  Object.freeze({ id: 'battle-tribune', name: 'Tribune Gallus Orso', role: 'Tribune of the Legion’s left', modelRole: 'legion-officer', color: 0x832d2b, ...toWorld(-396, 325), yaw: 0, shows: 'empire' }),
+  Object.freeze({ id: 'coalition-captain', name: 'Captain Arlen Voss', role: 'Captain of the Lauvel companies', modelRole: 'suvali-guard', color: 0x3f5f86, ...toWorld(-396, 325), yaw: 0, shows: 'coalition' }),
 ]);
 
 /** The corner of the field the traveler fights for: open ground west of the stockade. */
-export const BORDER_ARENA = Object.freeze({ center: Object.freeze({ x: -392, z: 308 }), checkpoint: Object.freeze({ x: -392, z: 321 }), retreatAxis: 'z', retreatLine: 329 });
+export const BORDER_ARENA = Object.freeze({ center: Object.freeze(toWorld(-392, 308)), checkpoint: Object.freeze(toWorld(-392, 321)),
+  retreatAxis: 'z', retreatLine: toWorldZIn('border-stockade', 329) });
 
-const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9]];
-const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 324]];
+const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9]]
+  .map(([x, z, entry]) => { const p = toWorld(x, z); return [p.x, p.z, entry]; });
+const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 324]]
+  .map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; });
 
 /** The encounter for a side: six of the other side's soldiers in two waves, and the allies who stand with the traveler. */
 export function borderEncounter(side, allies = []) {

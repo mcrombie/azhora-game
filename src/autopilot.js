@@ -18,7 +18,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   interactEvery: .8,      // seconds between F presses
   swingEvery: .3,         // seconds between swing attempts
   stuckAfter: 1.6,        // seconds without progress before a detour
-  idleLimit: 150,         // seconds without quest progress before giving up
+  idleLimit: 260,         // seconds without quest progress before giving up: a 1.7 km road takes a while between steps
   runBeyond: 6,           // metres from the goal beyond which the autopilot runs
 });
 
@@ -56,6 +56,28 @@ export function nearestVertex(path, point) {
 }
 
 /**
+ * The nearest point on a polyline: where it is, how far, which leg it sits on,
+ * and how far along the whole line it lies. Road vertices are a hundred metres
+ * and more apart, so "near the road" has to be measured against the road itself
+ * and not against its corners.
+ */
+export function nearestOnPath(path, point) {
+  let best = { index: 0, distance: Infinity, x: path[0]?.x ?? 0, z: path[0]?.z ?? 0, along: 0 }, travelled = 0;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i], dx = b.x - a.x, dz = b.z - a.z, square = dx * dx + dz * dz;
+    const length = Math.sqrt(square);
+    const t = square ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / square)) : 0;
+    const x = a.x + dx * t, z = a.z + dz * t, gap = Math.hypot(point.x - x, point.z - z);
+    if (gap < best.distance) best = { index: i - 1, distance: gap, x, z, along: travelled + length * t };
+    travelled += length;
+  }
+  return best;
+}
+
+/** How far from the main road's own line a point still counts as being on it. */
+export const ROAD_CORRIDOR = 14;
+
+/**
  * Where to head next. Long trips follow the main trail (the first authored
  * path, which runs from the landing up the whole northern road); short hops and
  * the last stretch go straight, sliding around anything in the way.
@@ -64,7 +86,9 @@ export function nextWaypoint(position, target, world, memory = {}) {
   const trail = world.paths?.[0] ?? [];
   if (trail.length > 1) {
     const here = nearestVertex(trail, position), there = nearestVertex(trail, target);
-    const alongTrail = Math.abs(there.index - here.index) >= 2 && here.distance < 14 && there.distance < 14;
+    const onRoad = nearestOnPath(trail, position), goal = nearestOnPath(trail, target);
+    const alongTrail = Math.abs(there.index - here.index) >= 2
+      && onRoad.distance < ROAD_CORRIDOR && goal.distance < ROAD_CORRIDOR;
     if (alongTrail) {
       const step = Math.sign(there.index - here.index);
       let index = here.index;
@@ -73,11 +97,23 @@ export function nextWaypoint(position, target, world, memory = {}) {
       index = step > 0 ? Math.min(index, there.index) : Math.max(index, there.index);
       if (index !== there.index) return { point: trail[index], onTrail: true };
     }
-    // The destination sits on the road but the traveler has strayed off it —
-    // onto a river bank, say. Walk back to the road before trying again, rather
-    // than grinding against whatever stands between here and there.
-    if (!alongTrail && there.distance < 7 && here.distance > 2.5 && here.distance < 26 && !clearLine(position, target, world))
-      return { point: trail[here.index], onTrail: true };
+    // Both ends are on the road, but the straight line between them is not
+    // walkable: the Caloss lies across it and the only way over is the bridge,
+    // or the traveler has strayed onto a bank. Follow the road toward the
+    // destination's own place on it rather than grinding at the water.
+    if (!alongTrail && goal.distance < ROAD_CORRIDOR && onRoad.distance < ROAD_CORRIDOR * 2
+      && distance(position, target) > 6 && !clearLine(position, target, world)) {
+      // Step back onto the road by the shortest way first. Standing on a bank
+      // beside the bridge, walking at the far vertex only grinds at the water;
+      // the way back to the road runs the other way, round the end of the deck.
+      if (onRoad.distance > 1.5 && clearLine(position, onRoad, world))
+        return { point: { x: onRoad.x, z: onRoad.z }, onTrail: true };
+      const forward = goal.along > onRoad.along;
+      const clamp = index => Math.max(0, Math.min(trail.length - 1, index));
+      let index = clamp(forward ? onRoad.index + 1 : onRoad.index);
+      if (distance(trail[index], position) < 1.4) index = clamp(index + (forward ? 1 : -1));
+      return { point: trail[index], onTrail: true };
+    }
   }
   return { point: target, onTrail: false };
 }
@@ -117,8 +153,11 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 export function chooseReply(choices, snapshot) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
-  const wanted = new Set([...(snapshot.journey?.actions ?? []), ...(snapshot.luscia?.actions ?? [])]
-    .filter(action => action.enabled).map(action => action.id));
+  // Every chapter that can put a reply in front of the traveler, not just the
+  // road and Luscia: without the Moros camp here the autopilot reaches the camp
+  // gate, finds nothing it recognises, says goodbye and walks away again.
+  const wanted = new Set([snapshot.journey, snapshot.luscia, snapshot.moros, snapshot.border, snapshot.aftermath]
+    .flatMap(chapter => chapter?.actions ?? []).filter(action => action.enabled).map(action => action.id));
   for (const id of CHOICE_PRIORITY) {
     if (id === 'hollis-repair-wood' && (snapshot.inventory?.sticks ?? 0) >= 3) continue;
     if (enabled.some(choice => choice.id === id) && (wanted.has(id) || id === 'hollis-repair-wood')) return id;
