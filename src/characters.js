@@ -202,6 +202,100 @@ function makeSword(parent) {
   return sword;
 }
 
+
+// Weapons the hired swords carry. Each is a small group of flat-shaded parts, hung from
+// the right-hand grip, planted like a staff, or slung on the back.
+function makeMace(parent) {
+  const mace = new THREE.Group(); mace.name = 'Iron mace'; parent.add(mace);
+  const iron = material(0x7d7f78, { metalness: 0.45, roughness: 0.6 }), wood = material(0x5a4634);
+  part(mace, new THREE.CylinderGeometry(0.02, 0.026, 0.62, 6), wood, [0, 0.22, 0]);
+  round(mace, iron, [0, 0.6, 0], [0.075, 0.09, 0.075]);
+  for (let i = 0; i < 6; i++) { const flange = box(mace, iron, [Math.sin(i / 6 * Math.PI * 2) * 0.075, 0.6, Math.cos(i / 6 * Math.PI * 2) * 0.075], [0.028, 0.13, 0.02]); flange.rotation.y = i / 6 * Math.PI * 2; }
+  box(mace, iron, [0, -0.09, 0], [0.05, 0.03, 0.05]);
+  return mace;
+}
+function makeDagger(parent) {
+  const dagger = new THREE.Group(); dagger.name = 'Long dagger'; parent.add(dagger);
+  const iron = material(0x9a9c95, { metalness: 0.5, roughness: 0.55 }), grip = material(0x3d2f24);
+  const blade = part(dagger, new THREE.ConeGeometry(0.028, 0.34, 4), iron, [0, 0.27, 0]); blade.scale.z = 0.35;
+  box(dagger, iron, [0, 0.09, 0], [0.11, 0.018, 0.03]);
+  part(dagger, UNIT_CYLINDER, grip, [0, 0.01, 0], [0.02, 0.13, 0.02]);
+  return dagger;
+}
+function makeAxe(parent) {
+  const axe = new THREE.Group(); axe.name = 'Bearded axe'; parent.add(axe);
+  const iron = material(0x8a8c85, { metalness: 0.45, roughness: 0.6 }), wood = material(0x6a5238);
+  part(axe, new THREE.CylinderGeometry(0.02, 0.026, 0.72, 6), wood, [0, 0.26, 0]);
+  const head = box(axe, iron, [-0.075, 0.55, 0], [0.19, 0.16, 0.025]); head.rotation.z = -0.15;
+  box(axe, iron, [-0.13, 0.46, 0], [0.09, 0.1, 0.02]);
+  return axe;
+}
+function makeGreatsword(parent) {
+  const sword = new THREE.Group(); sword.name = 'Greatsword'; parent.add(sword);
+  const iron = material(0x92958c, { metalness: 0.48, roughness: 0.67 }), grip = material(0x493a2c), dark = material(0x62675f, { metalness: 0.48, roughness: 0.67 });
+  const blade = part(sword, new THREE.ConeGeometry(0.05, 1.05, 4), iron, [0, 0.66, 0]); blade.scale.z = 0.22;
+  box(sword, dark, [0, 0.12, 0], [0.3, 0.03, 0.045]);
+  part(sword, UNIT_CYLINDER, grip, [0, -0.04, 0], [0.028, 0.28, 0.028]);
+  round(sword, dark, [0, -0.2, 0], [0.04, 0.04, 0.04]);
+  return sword;
+}
+function makeSpearProp(parent, name, length, tipLength = 0.22) {
+  // Planted like a staff: the group hangs from the right wrist and the animator keeps it upright.
+  const spear = new THREE.Group(); spear.name = name; parent.add(spear);
+  const shaft = material(0x6d5439), iron = material(0x9a9d96, { metalness: 0.46, roughness: 0.6 }), dark = material(0x62655f, { metalness: 0.46, roughness: 0.6 });
+  ribbon(spear, shaft, [0, -0.82, 0], [0, length - 0.82, 0], 0.034, 0.034);
+  ribbon(spear, dark, [0, length - 0.82, 0], [0, length - 0.76, 0], 0.028, 0.028);
+  part(spear, new THREE.ConeGeometry(0.028, tipLength, 4), iron, [0, length - 0.76 + tipLength / 2, 0]);
+  round(spear, dark, [0, -0.83, 0], [0.024, 0.03, 0.024]);
+  return spear;
+}
+function makeStaffProp(parent) {
+  const staff = new THREE.Group(); staff.name = 'Quarterstaff'; parent.add(staff);
+  const wood = material(0x7a6040), band = material(0x4d3a2a);
+  ribbon(staff, wood, [0, -0.82, 0], [0, 1.0, 0], 0.036, 0.036);
+  for (const y of [-0.7, 0.9]) part(staff, UNIT_CYLINDER, band, [0, y, 0], [0.024, 0.04, 0.024]);
+  return staff;
+}
+function makeBow(body) {
+  // Slung across the back with a quiver; the hands stay free.
+  const bow = new THREE.Group(); bow.name = 'Hunting bow'; bow.position.set(0.06, 1.05, -0.2); bow.rotation.set(0.1, 0, -0.55); body.add(bow);
+  const wood = material(0x6f5236), string = material(0xd8cfb4), leather = material(0x5b4130);
+  const limb = new THREE.CylinderGeometry(0.014, 0.02, 0.62, 6);
+  const upper = part(bow, limb, wood, [0.07, 0.32, 0]); upper.rotation.z = -0.28;
+  const lower = part(bow, limb, wood, [0.07, -0.32, 0]); lower.rotation.z = 0.28;
+  part(bow, UNIT_CYLINDER, leather, [0, 0, 0], [0.022, 0.12, 0.022]);
+  ribbon(bow, string, [0.16, 0.6, 0], [0.16, -0.6, 0], 0.008, 0.006);
+  const quiver = new THREE.Group(); quiver.name = 'Quiver'; quiver.position.set(-0.2, 0.95, -0.17); quiver.rotation.z = 0.35; body.add(quiver);
+  part(quiver, new THREE.CylinderGeometry(0.05, 0.04, 0.42, 7), leather, [0, 0, 0]);
+  for (const [x, z] of [[-0.02, 0.01], [0.02, -0.015], [0, 0.02]]) ribbon(quiver, wood, [x, 0.15, z], [x, 0.36, z], 0.008, 0.008);
+  return bow;
+}
+function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = false, width = 0.43, height = 0.62 } = {}) {
+  const shield = new THREE.Group(); shield.name = isRound ? 'Round shield' : 'Legion shield';
+  shield.position.set(0.13, -0.16, 0); shield.rotation.x = -0.6; parent.add(shield);
+  const shieldMat = material(face), rimMat = material(rim), iron = material(0x9a9d96, { metalness: 0.46, roughness: 0.6 });
+  if (isRound) {
+    part(shield, new THREE.CylinderGeometry(width, width, 0.028, 12), shieldMat, [0, 0, 0]);
+    part(shield, new THREE.TorusGeometry(width, 0.018, 4, 14), rimMat, [0, 0.012, 0]).rotation.x = Math.PI / 2;
+  } else {
+    for (const side of [-1, 1]) { const half = box(shield, shieldMat, [side * width / 4, 0.012, 0], [width / 2, 0.028, height]); half.rotation.z = side * 0.24; }
+    for (const z of [-height / 2, height / 2]) box(shield, rimMat, [0, 0.02, z], [width, 0.034, 0.024]);
+  }
+  round(shield, iron, [0, -0.03, 0], [0.065, 0.022, 0.065]);
+  return shield;
+}
+/** The held weapon a mercenary draws, by the roster's weapon word; spears, staves and bows are not held. */
+function mercenaryHeldWeapons(mount, weapon) {
+  switch (weapon) {
+    case 'mace': return { 'iron-mace': makeMace(mount) };
+    case 'dagger': return { 'long-dagger': makeDagger(mount) };
+    case 'axe': return { 'bearded-axe': makeAxe(mount) };
+    case 'greatsword': return { greatsword: makeGreatsword(mount) };
+    case 'sword': case 'sword-shield': return { 'simple-sword': makeSword(mount) };
+    default: return {};
+  }
+}
+
 function makeFishingRod(parent) {
   const rod = new THREE.Group(); rod.name = 'Simple hazel fishing rod'; parent.add(rod);
   const wood = material(0x86653e), tipWood = material(0xaa8756), cord = material(0xccc3a0);
@@ -543,7 +637,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role), armed = false } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role), armed = false, look = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -555,6 +649,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
   const isLegionary = role === 'legion-soldier', isOfficer = role === 'legion-officer', isSuvaliGuard = role === 'suvali-guard';
   const isSoldier = isLegionary || isOfficer || isSuvaliGuard;
+  // A hired sword from abroad: the traveler's kind of cloth and sword, a leather jerkin,
+  // and a look (hair, beard, cap) chosen by the roster rather than the role.
+  const isMercenary = role === 'mercenary';
+  if (isMercenary) hat = Boolean(look?.cap);
   const group = new THREE.Group();
   group.name = `character-${role}`;
   const body = new THREE.Group();
@@ -569,7 +667,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const bootMat = material(0x49392c);
   const soleMat = material(0x302b24);
   const trousers = material(isSoldier ? (isSuvaliGuard ? 0x4a4a45 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -608,6 +706,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   part(body, hem, cloth, [0, isShelterKeeper ? .64 : isMiller ? .718 : isDoomsayer ? .563 : isCook ? 0.585 : isCourier || isClerk ? .753 : isTraveler ? 0.881 : 0.814, 0], [1, 1, isCook || isDoomsayer ? 0.79 : 0.72]);
   const torsoShape = new THREE.CylinderGeometry(isCook ? 0.226 : 0.252, isCook ? 0.2 : 0.217, 0.395, 8);
   part(body, torsoShape, cloth, [0, 1.12, 0], [1, 1, 0.68]);
+  if (isMercenary) {
+    part(body, new THREE.CylinderGeometry(0.262, 0.228, 0.34, 8), leather, [0, 1.105, 0], [1, 1, 0.7]);
+    for (const y of [1.2, 1.1, 1.0]) box(body, bootMat, [0, y, 0.187], [0.05, 0.02, 0.012]);
+  }
   part(body, UNIT_CYLINDER, leather, [0, 0.935, 0], [0.23, 0.073, 0.16]);
   box(body, gold, [0, 0.938, 0.166], [0.076, 0.059, 0.024]);
   box(body, leather, [0, 0.939, 0.181], [0.043, 0.031, 0.009]);
@@ -637,7 +739,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     pivot.rotation.z = side * 0.085;
     body.add(pivot);
     arms.push(pivot);
-    if (isTraveler || isRoadWorker || isSoldier) {
+    if (isTraveler || isRoadWorker || isSoldier || isMercenary) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -654,7 +756,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
-    } else if (isTraveler || isRoadWorker || isSoldier) {
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary) {
       round(elbow, cloth, [0, -0.055, 0.003], [0.068, 0.083, 0.071]);
       part(elbow, UNIT_CYLINDER, linen, [0, -0.116, 0.006], [0.068, 0.037, 0.073]);
       round(elbow, skinMat, [0, -0.154, 0.006], [0.057, 0.039, 0.06]);
@@ -692,6 +794,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   for (const side of [-1, 1]) {
     const mouthCorner = box(head, leather, [side * 0.029, 0.12, 0.168], [0.016, 0.008, 0.01]);
     mouthCorner.rotation.z = side * 0.45;
+  }
+  if (isMercenary && look?.beard) {
+    round(head, hairMat, [0, 0.085, 0.13], [0.118, 0.075, 0.09]);
+    round(head, hairMat, [0, 0.05, 0.105], [0.09, 0.06, 0.07]);
   }
   if (isTraveler) {
     // Uneven brown locks read clearly from the follow camera without a cap.
@@ -1130,30 +1236,28 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     }
     if (isLegionary) {
       // A curved rectangular shield rides on the left forearm, boss outward.
-      const shield = new THREE.Group();
-      shield.name = 'Legion shield';
-      // Held in front of the body: the face is perpendicular to the forearm
-      // and tipped so it stands vertical in the at-attention pose.
-      shield.position.set(0.13, -0.16, 0);
-      shield.rotation.x = -0.6;
-      elbows[0].add(shield);
-      const shieldMat = material(0x35507a), rim = material(0xcbb98e);
-      for (const side of [-1, 1]) {
-        const half = box(shield, shieldMat, [side * 0.105, 0.012, 0], [0.215, 0.028, 0.62]);
-        half.rotation.z = side * 0.24;
-      }
-      for (const z of [-0.31, 0.31]) box(shield, rim, [0, 0.02, z], [0.43, 0.034, 0.024]);
-      round(shield, iron, [0, -0.03, 0], [0.065, 0.022, 0.065]);
+      // Held in front of the body, perpendicular to the forearm and tipped vertical at attention.
+      const shield = makeShield(elbows[0]);
       box(shield, gold, [0, -0.026, 0.17], [0.05, 0.008, 0.14]);
     }
+  } else if (isMercenary) {
+    // A hired sword's kit follows the roster: spears and the staff stand planted, the bow rides on the back.
+    const kit = look?.weapon;
+    if (kit === 'spear') staff = makeSpearProp(wrists[1], 'Ash spear', 2.0);
+    else if (kit === 'pike') staff = makeSpearProp(wrists[1], 'Long spear', 2.85, 0.28);
+    else if (kit === 'spears') { staff = makeSpearProp(wrists[1], 'Medium spear', 1.8); const javelin = makeSpearProp(body, 'Short spear', 1.25, 0.16); javelin.position.set(-0.18, 1.02, -0.19); javelin.rotation.set(0.12, 0, -0.42); }
+    else if (kit === 'staff') staff = makeStaffProp(wrists[1]);
+    else if (kit === 'bow') makeBow(body);
+    else if (kit === 'sword-shield') makeShield(elbows[0], { face: 0x6b4a2a, rim: 0x3f3128, round: true, width: 0.3 });
   }
 
   const idleOffset = isMiller ? 1.35 : isReedWorker ? 3.55 : isShelterKeeper ? 5.15 : isWoodcutter ? 2.1 : isCourier ? .8 : isBridgeKeeper ? 2.8 : isCustodian ? 4.4 : isClerk ? 5.6 : isCook ? 2.35 : isDoomsayer ? 1.1 : isPondFisher ? 3.8 : role === 'harbormaster' ? 1.8 : role === 'fisher' ? 3.1 : role === 'warden' ? 4.7 : 0;
   const chest = addChestPivot(body, legs, 0.935);
   // A soldier called to fight draws his sword instead of planting his spear.
   const fights = isSoldier && armed;
-  const weapon = isTraveler ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip') : null;
-  const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon) } : fights ? { 'simple-sword': makeSword(weapon) } : {};
+  const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip') : null;
+  const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
+    : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon) : fights ? { 'simple-sword': makeSword(weapon) } : {};
   const fishingGrip = isTraveler || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
   const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
@@ -1199,6 +1303,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     return rodTipWorld.set(.056, 1.625, 0).applyMatrix4(fishingRod.matrixWorld);
   }
   if (isTraveler || fights) setWeapon('simple-sword');
+  if (isMercenary) setWeapon(Object.keys(weapons)[0] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
   return { group, animate, setArmed, setWeapon, setFishing, fishingTip };
 }

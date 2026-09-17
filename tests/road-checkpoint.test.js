@@ -88,6 +88,7 @@ test('invalid data never overwrites an existing checkpoint', () => {
     { ...data, health: Infinity }, { ...data, health: 101 },
     { ...data, heardDoom: 1 }, { ...data, lysaComplete: 'yes' },
     { ...data, mapTutorial: 9 }, { ...data, mapTutorial: 1.5 }, { ...data, mapTutorial: '2' },
+    { ...data, playSeconds: -1 }, { ...data, playSeconds: 'soon' }, { ...data, playSeconds: Infinity },
     { ...data, weapons: { ...data.weapons, equippedId: 'acorn' } },
   ];
   for (const invalid of malformed) {
