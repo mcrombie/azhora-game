@@ -18,7 +18,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   interactEvery: .8,      // seconds between F presses
   swingEvery: .3,         // seconds between swing attempts
   stuckAfter: 1.6,        // seconds without progress before a detour
-  idleLimit: 150,         // seconds without quest progress before giving up
+  idleLimit: 260,         // seconds without quest progress before giving up: a 1.7 km road takes a while between steps
   runBeyond: 6,           // metres from the goal beyond which the autopilot runs
 });
 

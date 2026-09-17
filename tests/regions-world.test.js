@@ -7,6 +7,7 @@ import {
   regions, regionAt, northernRoad, regionNpcPositions, journeySites, regionRepairBenches,
   SUVAL_ROAD, CALOSS, FRONTIER, ANCHORS, WORLD_BOUNDS, insideRegion,
 } from '../src/regions.js';
+import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world-scale.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -27,7 +28,7 @@ test('The four authored regions carry the atlas into the world, with Drent on th
   // Drent is far larger than the 190 m strip it replaces, and every region has
   // a real polygon, not a Z band.
   const drent = regions[0];
-  assert.ok(drent.bounds.maxX - drent.bounds.minX > 380, 'Drent is wider than the old Eastreena');
+  assert.ok(drent.bounds.maxX - drent.bounds.minX > 6.8 * METRES_PER_HEX, 'Drent is wider than the old Eastreena');
   for (const region of regions) {
     assert.ok(region.outline.length >= 1 && region.outline[0].length >= 6, `${region.name} has an outline`);
     assert.ok(region.border[0].length === region.outline[0].length * 4, `${region.name} has a softened chart border`);
@@ -54,8 +55,12 @@ test('The whole road out of Drent is walkable in both directions, including the 
   walk(northernRoad); walk([...northernRoad].reverse());
   walk(SUVAL_ROAD); walk([...SUVAL_ROAD].reverse());
   for (const point of [...northernRoad, ...SUVAL_ROAD]) assert.ok(canStand(point.x, point.z, world, .5), `road point ${point.x}, ${point.z}`);
-  // East Suval's stone country stands well above the Caloss hollow.
-  assert.ok(world.heightAt(ANCHORS.suvalHills.x, ANCHORS.suvalHills.z) > world.heightAt(CALOSS.crossing.x, CALOSS.crossing.z) + 5,
+  // East Suval's stone country stands well above the Caloss hollow. Relief is a
+  // wave field, so this weighs the hills as a whole rather than one sample that
+  // may land in a dip.
+  const hills = [[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40]]
+    .map(([dx, dz]) => world.heightAt(ANCHORS.suvalHills.x + dx, ANCHORS.suvalHills.z + dz));
+  assert.ok(hills.reduce((sum, y) => sum + y, 0) / hills.length > world.heightAt(CALOSS.crossing.x, CALOSS.crossing.z) + 5,
     'East Suval rises above the border river');
   assert.equal(world.regionAt(ANCHORS.morosGate.x, ANCHORS.morosGate.z).id, 3);
 });
@@ -66,14 +71,17 @@ test('Every NPC, activity, pickup, repair bench and firepit has a clear reachabl
   for (const target of objectives) assert.ok(canStand(target.x, target.z, world, .48), `Blocked objective ${target.id || ''} at ${target.x}, ${target.z}`);
   // Flood the actual road corridor. This catches props enclosing a pickup even
   // when the exact standing point is collision-free.
+  // The corridor is measured in authored metres and grows with the world, so a
+  // riverside pickup that was 40 m off the road is still judged the same way.
   const step = 2, road = [...world.paths[0], ...SUVAL_ROAD];
+  const reach = 34 * WORLD_SCALE, halo = 16 * WORLD_SCALE;
   const corridor = (x, z) => {
     for (let i = 1; i < road.length; i++) {
       const a = road[i - 1], b = road[i], dx = b.x - a.x, dz = b.z - a.z;
       const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz)));
-      if (Math.hypot(x - a.x - dx * t, z - a.z - dz * t) < 34) return true;
+      if (Math.hypot(x - a.x - dx * t, z - a.z - dz * t) < reach) return true;
     }
-    return objectives.some(target => Math.hypot(x - target.x, z - target.z) < 16);
+    return objectives.some(target => Math.hypot(x - target.x, z - target.z) < halo);
   };
   const key = (x, z) => `${Math.round(x / step)},${Math.round(z / step)}`;
   const start = { x: road[0].x, z: road[0].z };
@@ -90,7 +98,7 @@ test('Every NPC, activity, pickup, repair bench and firepit has a clear reachabl
     assert.ok(queue.some(cell => Math.hypot(cell.x - target.x, cell.z - target.z) < 2.1), `Unreachable ${target.id || ''} at ${target.x}, ${target.z}`);
   for (const fire of world.firePits.filter(f => f.x < -180)) for (const npc of Object.values(regionNpcPositions))
     assert.ok(Math.hypot(fire.x - npc.x, fire.z - npc.z) > 3.3, `Fire ${fire.id} conflicts with an NPC prompt`);
-  for (const point of [{ x: -253, z: 8 }, { x: -256, z: 18 }]) assert.ok(canStand(point.x, point.z, world, .6), 'Raider spawn must remain clear');
+  for (const point of [toWorld(-253, 8), toWorld(-256, 18)]) assert.ok(canStand(point.x, point.z, world, .6), 'Raider spawn must remain clear');
 });
 
 test('The river bank retargets fishing while preserving the original pond API', () => {
@@ -175,8 +183,9 @@ test('District scenery batches reduce submitted geometry without excessive extra
     return { draws, triangles: Math.round(triangles) };
   };
   const samples = [];
-  for (const [name, x, z] of [['village', -15, 29], ['gate', -176, 29], ['clearing', -236, 30],
+  for (const [name, ax, az] of [['village', -15, 29], ['gate', -176, 29], ['clearing', -236, 30],
     ['caloss', -345, 93], ['lauvel', -386, 183], ['moros', -500, 312]]) {
+    const { x, z } = toWorld(ax, az);
     const y = world.heightAt(x, z);
     for (const [facing, yaw] of [['west', Math.PI / 2], ['east', -Math.PI / 2]]) {
       const camera = new THREE.PerspectiveCamera(54, 1.5, .1, 650), focus = new THREE.Vector3(x, y + 1.5, z);

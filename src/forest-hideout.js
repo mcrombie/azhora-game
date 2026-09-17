@@ -1,15 +1,17 @@
+import { toWorld, toWorldXIn } from './world-scale.js';
+
 /** An optional, contained fight for Lumber Town's stolen stores, at a goblin camp in north Luscia. Drent, a level 0 province, has none. */
 export const FOREST_HIDEOUT_QUEST = Object.freeze({
   id: 'forest-hideout', siteId: 'bramble-scout-camp', name: 'Bramble Scout Camp',
-  approach: Object.freeze({ x: -441, z: 145 }),
-  supplies: Object.freeze({ id: 'forest-hideout-supplies', x: -466, z: 159 }),
+  approach: Object.freeze(toWorld(-441, 145)),
+  supplies: Object.freeze({ id: 'forest-hideout-supplies', ...toWorld(-466, 159) }),
   recipientId: 'garrison-captain', informantId: 'garrison-casso', minimumQuestStage: 10,
   reward: Object.freeze({ id: 'copper-piece', quantity: 30 }),
-  encounter: Object.freeze({ id: 'forest-hideout', center: Object.freeze({ x: -456, z: 154 }),
-    checkpoint: Object.freeze({ x: -441, z: 145 }), retreatAxis: 'x', retreatLine: -433,
+  encounter: Object.freeze({ id: 'forest-hideout', center: Object.freeze(toWorld(-456, 154)),
+    checkpoint: Object.freeze(toWorld(-441, 145)), retreatAxis: 'x', retreatLine: toWorldXIn('goblin-camp', -433),
     enemies: Object.freeze([
-      Object.freeze({ id: 'forest-scout-west', x: -453, z: 157, hp: 65, entry: .2 }),
-      Object.freeze({ id: 'forest-scout-east', x: -459, z: 160, hp: 65, entry: 1.4 }),
+      Object.freeze({ id: 'forest-scout-west', ...toWorld(-453, 157), hp: 65, entry: .2 }),
+      Object.freeze({ id: 'forest-scout-east', ...toWorld(-459, 160), hp: 65, entry: 1.4 }),
     ]),
   }),
 });

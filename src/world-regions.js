@@ -3,7 +3,13 @@ import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
   STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions, HIDEOUT_CLEARINGS } from './region-world.js';
 import { calossSurface } from './world-terrain.js';
+import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
+
+/** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
+const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
+/** The same, spread straight into a prop helper's (x, z) arguments. */
+const xz = (x, z) => { const p = toWorld(x, z); return [p.x, p.z]; };
 
 /**
  * Scenery for the four rebuilt regions, in world metres.
@@ -17,12 +23,12 @@ import { regionalFeatureClear } from './regional-places.js';
 /** Clearings the biome scatter must leave alone: yards, camps and quest ground. */
 export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: AVREL_CLEARING.x, z: AVREL_CLEARING.z, r: AVREL_CLEARING.radius }),
-  Object.freeze({ x: -222, z: 62, r: 13 }),                                  // the clearing mill
+  Object.freeze({ ...at(-222, 62), r: 13 }),                                 // the clearing mill
   Object.freeze({ x: CALOSS.crossing.x, z: CALOSS.crossing.z, r: 26 }),      // the bridge approach
-  Object.freeze({ x: -372, z: 116, r: 14 }),                                 // the reedcutters' camp
-  Object.freeze({ x: -306, z: 104, r: 9 }),                                  // the quiet bank
-  Object.freeze({ x: -374, z: 134, r: 15 }),                                 // Sava's shrine
-  Object.freeze({ x: -401, z: 196, r: 15 }),                                 // the Lauvel relay
+  Object.freeze({ ...at(-372, 116), r: 14 }),                                // the reedcutters' camp
+  Object.freeze({ ...at(-306, 104), r: 9 }),                                 // the quiet bank
+  Object.freeze({ ...at(-374, 134), r: 15 }),                                // Sava's shrine
+  Object.freeze({ ...at(-401, 196), r: 15 }),                                // the Lauvel relay
   Object.freeze({ x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z, r: 30 }),
   Object.freeze({ x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z, r: 18 }),
   Object.freeze({ x: LUMBER_TOWN.square.x, z: LUMBER_TOWN.square.z, r: 36 }),               // Lumber Town
@@ -60,8 +66,12 @@ export function regionClear(x, z, margin = 0) {
   return near(x, z, CALOSS_BANK.spot, 5 + margin);
 }
 
+// A hex now covers WORLD_SCALE^2 times the ground, so fewer of them make a
+// batch of roughly the old size: culling stays as fine-grained as it was.
+const BLOCK_HEXES = Math.max(1, Math.round(6 / (WORLD_SCALE * WORLD_SCALE)));
+
 /** Groups of nearby hexes, so each batch of scatter has a small bounding sphere. */
-function cellBlocks(name, size = 6) {
+function cellBlocks(name, size = BLOCK_HEXES) {
   const cells = [...REGION_CELLS[name]].sort((a, b) => a.z - b.z || a.x - b.x);
   const blocks = [];
   for (let i = 0; i < cells.length; i += size) blocks.push(cells.slice(i, i + size));
@@ -108,16 +118,20 @@ export function createRegionScenery(kit) {
   const grassMaterial = material('#ffffff', { side: THREE.DoubleSide });
   const stoneMaterial = material('#8b9187');
 
+  /** Ground cover is per hex too, so its density survives the bigger hex. */
+  const tuftsPerHex = biome => Math.round((biome.undergrowth === 'none' ? 34 : 26) * WORLD_SCALE * WORLD_SCALE);
+
   function scatterBlock(name, block, biome, parent) {
     const trees = [], rocks = [], tufts = [];
     const dense = biome.undergrowth === 'dense';
     for (const cell of block) {
       // Copses in Luscia, an even canopy in Drent: seeded clusters per cell.
       const clusters = biome.treesPerHex && biome.id === 'sparse-woodland' ? 3 : 0;
-      const seeds = Array.from({ length: clusters }, () => ({ x: cell.x + range(-22, 22), z: cell.z + range(-24, 24) }));
+      const seeds = Array.from({ length: clusters }, () => ({ x: cell.x + range(-22 * WORLD_SCALE, 22 * WORLD_SCALE), z: cell.z + range(-24 * WORLD_SCALE, 24 * WORLD_SCALE) }));
       for (let i = 0; i < biome.treesPerHex; i++) {
         const anchor = clusters ? seeds[i % clusters] : cell;
-        const spread = clusters ? 9 : METRES_PER_HEX * .48;
+        // A copse grows with the hex it stands in, so its trees keep their spacing.
+        const spread = clusters ? 9 * WORLD_SCALE : METRES_PER_HEX * .48;
         const x = anchor.x + range(-spread, spread), z = anchor.z + range(-spread * 1.1, spread * 1.1);
         if (regionNameAt(x, z) !== name || kit.insideVillage(x, z)) continue;
         if (regionClear(x, z, 2.5) || kit.roadDistance(x, z) < 4.2 || kit.riverDistance(x, z) < 12) continue;
@@ -126,12 +140,12 @@ export function createRegionScenery(kit) {
         trees.push({ x, z, s: range(.78, 1.3), pine: random() < (dense ? .3 : .16), h: range(7, 11.5), rot: range(0, 6.28) });
       }
       for (let i = 0; i < biome.rocksPerHex; i++) {
-        const x = cell.x + range(-26, 26), z = cell.z + range(-28, 28);
+        const x = cell.x + range(-26 * WORLD_SCALE, 26 * WORLD_SCALE), z = cell.z + range(-28 * WORLD_SCALE, 28 * WORLD_SCALE);
         if (regionNameAt(x, z) !== name || kit.insideVillage(x, z) || regionClear(x, z, 2) || kit.roadDistance(x, z) < 3.4) continue;
         rocks.push({ x, z, s: range(.55, biome.id === 'stone-hills' ? 3.1 : 1.3), rot: range(0, 6.28) });
       }
-      for (let i = 0; i < (biome.undergrowth === 'none' ? 34 : 26); i++) {
-        const x = cell.x + range(-27, 27), z = cell.z + range(-30, 30);
+      for (let i = 0; i < tuftsPerHex(biome); i++) {
+        const x = cell.x + range(-27 * WORLD_SCALE, 27 * WORLD_SCALE), z = cell.z + range(-30 * WORLD_SCALE, 30 * WORLD_SCALE);
         if (regionNameAt(x, z) !== name || kit.insideVillage(x, z) || kit.roadDistance(x, z) < 2.1) continue;
         if (groundHeight(x, z) < 1.2) continue;
         tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28) });
@@ -321,10 +335,11 @@ export function createRegionScenery(kit) {
     post(material('#6a8058'), x, y + height / 2, z, .026, height, luscia);
     if (i % 3 === 0) pebble(material('#7b9084'), x + .4, groundHeight(x + .4, z) + .12, z, .42, .22, .34, luscia);
   }
-  leanTo(-372, 116, '#82917c', .6, luscia); crate(-376, 112, .78, groundHeight(-376, 112), luscia);
-  barrel(-368, 111, .8, luscia);
-  leanTo(-362, 98, '#7e9780', -.7, luscia);
-  for (const [x, z] of [[-386, 108], [-330, 118], [-318, 90]]) {
+  leanTo(...xz(-372, 116), '#82917c', .6, luscia);
+  const reedCrate = at(-376, 112); crate(reedCrate.x, reedCrate.z, .78, groundHeight(reedCrate.x, reedCrate.z), luscia);
+  barrel(...xz(-368, 111), .8, luscia);
+  leanTo(...xz(-362, 98), '#7e9780', -.7, luscia);
+  for (const { x, z } of [at(-386, 108), at(-330, 118), at(-318, 90)]) {
     const y = groundHeight(x, z);
     post(wood, x - 1.5, y + 1.25, z, .085, 2.5, luscia); post(wood, x + 1.5, y + 1.25, z, .085, 2.5, luscia);
     box(wood, x, y + 2.3, z, 3.2, .11, .13, luscia);
@@ -346,10 +361,11 @@ export function createRegionScenery(kit) {
   // -------------------------------------------------------------------------
   const drent = district('Drent');
   wornPatch(AVREL_CLEARING.x, AVREL_CLEARING.z, AVREL_CLEARING.radius * .8, '#9f8d57', .9);
-  cottage(-222, 52, 5.2, 4.4, 2.9, '#9c7753', '#d8c59c', .35, drent);
-  leanTo(-224, 14, '#c3aa72', .3, drent);
-  barrel(-220, 10, .9, drent); crate(-221.4, 12, .7, groundHeight(-221.4, 12), drent);
-  for (const [fx, fz, width, depth] of [[-262, 58, 22, 20], [-206, 56, 18, 16], [-268, 12, 18, 18]]) {
+  cottage(...xz(-222, 52), 5.2, 4.4, 2.9, '#9c7753', '#d8c59c', .35, drent);
+  leanTo(...xz(-224, 14), '#c3aa72', .3, drent);
+  barrel(...xz(-220, 10), .9, drent);
+  const farmCrate = at(-221.4, 12); crate(farmCrate.x, farmCrate.z, .7, groundHeight(farmCrate.x, farmCrate.z), drent);
+  for (const [{ x: fx, z: fz }, width, depth] of [[at(-262, 58), 22, 20], [at(-206, 56), 18, 16], [at(-268, 12), 18, 18]]) {
     wornPatch(fx, fz, width * .6, '#9f8d57', depth / width);
     for (let x = -width / 2; x < width / 2; x += 2.4) for (let z = -depth / 2; z < depth / 2; z += 1.6) {
       const px = fx + x + .6, pz = fz + z, y = groundHeight(px, pz);
@@ -363,7 +379,7 @@ export function createRegionScenery(kit) {
       hay.rotation.z = Math.PI / 2;
     }
   }
-  const mill = { x: -222, z: 62 }, millY = groundHeight(mill.x, mill.z);
+  const mill = at(-222, 62), millY = groundHeight(mill.x, mill.z);
   mesh(new THREE.CylinderGeometry(1.7, 2.6, 8.2, 10), material('#bcb59a'), mill.x, millY + 4.1, mill.z, 1, 1, 1, drent);
   mesh(new THREE.ConeGeometry(2.8, 2.4, 10), material('#746858'), mill.x, millY + 9.3, mill.z, 1, 1, 1, drent);
   box(darkWood, mill.x, millY + 1.2, mill.z + 2.35, 1.15, 2.3, .12, drent);
@@ -381,7 +397,8 @@ export function createRegionScenery(kit) {
   pebble(darkWood, 0, 0, .04, .35, .35, .2, millSails);
   const cart = new THREE.Group();
   cart.name = 'Tumbled courier cart';
-  cart.position.set(-248, groundHeight(-248, 14) + .75, 14);
+  const cartSpot = at(-248, 14);
+  cart.position.set(cartSpot.x, groundHeight(cartSpot.x, cartSpot.z) + .75, cartSpot.z);
   cart.rotation.set(.14, -.6, -.16); drent.add(cart);
   box(woodLight, 0, 0, 0, 2.4, .2, 3.1, cart);
   for (const side of [-1, 1]) {
@@ -392,9 +409,9 @@ export function createRegionScenery(kit) {
     box(wood, side * .7, -.05, 2.8, .11, .13, 2.5, cart);
   }
   crate(0, -.5, .8, .13, cart); barrel(-.65, .6, .65, cart, .15);
-  colliders.push({ x: -248, z: 14, r: 2.3, kind: 'cart' });
+  colliders.push({ x: cartSpot.x, z: cartSpot.z, r: 2.3, kind: 'cart' });
   // Corvan's Legion supply post: a canvas awning, a standard and a stack of stores.
-  const postPoint = { x: -232, z: 22 }, postY = groundHeight(postPoint.x, postPoint.z);
+  const postPoint = at(-232, 22), postY = groundHeight(postPoint.x, postPoint.z);
   wornPatch(postPoint.x, postPoint.z, 4.6, '#b2a881');
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(wood, postPoint.x + sx * 2.1, postY + 1.4, postPoint.z + sz * 1.6, .1, 2.8, drent);
   mesh(roofGeometry(5.0, 4.0, .9), material('#b8a374'), postPoint.x, postY + 2.75, postPoint.z, 1, 1, 1, drent);
@@ -409,7 +426,7 @@ export function createRegionScenery(kit) {
   // -------------------------------------------------------------------------
   // Luscia: the shrine, the relay, the field at the Lauvel and a burned hamlet
   // -------------------------------------------------------------------------
-  const shrine = { x: -374, z: 134 }, shrineY = groundHeight(shrine.x, shrine.z);
+  const shrine = at(-374, 134), shrineY = groundHeight(shrine.x, shrine.z);
   wornPatch(shrine.x, shrine.z, 5.2, '#b1ae96');
   for (const side of [-1, 1]) box(material('#b0afa0'), shrine.x + side * 1.5, shrineY + 1.05, shrine.z, .5, 2.1, .6, luscia);
   box(material('#a6a99a'), shrine.x, shrineY + 2.3, shrine.z, 3.8, .45, .8, luscia);
@@ -417,8 +434,9 @@ export function createRegionScenery(kit) {
   const basin = post(material('#96a89c'), shrine.x, shrineY + .6, shrine.z + .9, .52, .5, luscia);
   basin.name = 'Shrine basin';
   colliders.push({ x: shrine.x, z: shrine.z, r: 1.4, kind: 'shrine' });
-  cottage(-408, 200, 6.7, 5.1, 3.0, '#6d7875', '#c7c4ac', .15, luscia);
-  leanTo(-396, 192, '#aaa48a', .2, luscia); barrel(-393, 189, .9, luscia); crate(-395, 187, .9, groundHeight(-395, 187), luscia);
+  cottage(...xz(-408, 200), 6.7, 5.1, 3.0, '#6d7875', '#c7c4ac', .15, luscia);
+  leanTo(...xz(-396, 192), '#aaa48a', .2, luscia); barrel(...xz(-393, 189), .9, luscia);
+  const relayCrate = at(-395, 187); crate(relayCrate.x, relayCrate.z, .9, groundHeight(relayCrate.x, relayCrate.z), luscia);
   // The Lauvel: broken carts, a fallen banner, a burial line and a Legion picket.
   const field = STORY_SITES.lauvelField;
   wornPatch(field.x, field.z, 22, '#9c9a6e', 1.1);

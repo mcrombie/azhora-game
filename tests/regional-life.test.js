@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { toWorld } from '../src/world-scale.js';
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
@@ -266,18 +267,20 @@ test('regional perspective follows the intended local arc and all authored activ
   assert.match(d.latest().lines.join(' '), /Northern goblin attacks/);
   assert.match(d.latest().lines.join(' '), /imperial levies/);
   assert.equal(d.story.state.testimonyAccepted, false);
+  // The authored coordinates have not changed; only the world scale that
+  // converts them, so the expectations are derived the way the content is.
   assert.deepEqual(REGIONAL_LIFE_NPCS.map(({ id, modelRole, x, z }) => ({ id, modelRole, x, z })), [
-    { id: 'commons-miller', modelRole: 'commons-miller', x: -233, z: 59 },
-    { id: 'reed-worker', modelRole: 'reed-worker', x: -380, z: 120 },
-    { id: 'shelter-keeper', modelRole: 'shelter-keeper', x: -152, z: 322 },
+    { id: 'commons-miller', modelRole: 'commons-miller', ...toWorld(-233, 59) },
+    { id: 'reed-worker', modelRole: 'reed-worker', ...toWorld(-380, 120) },
+    { id: 'shelter-keeper', modelRole: 'shelter-keeper', ...toWorld(-152, 322) },
   ]);
   assert.deepEqual(REGIONAL_LIFE_SITES.filter(site => ['mill-hoist', 'net-float-west', 'net-float-east', 'shelter-ledger'].includes(site.id))
     .map(({ id, x, z }) => ({ id, x, z })), [
-    { id: 'mill-hoist', x: -243, z: 67 }, { id: 'net-float-west', x: -389, z: 126 },
-    { id: 'net-float-east', x: -392, z: 128 }, { id: 'shelter-ledger', x: -158, z: 326 },
+    { id: 'mill-hoist', ...toWorld(-243, 67) }, { id: 'net-float-west', ...toWorld(-389, 126) },
+    { id: 'net-float-east', ...toWorld(-392, 128) }, { id: 'shelter-ledger', ...toWorld(-158, 326) },
   ]);
   assert.deepEqual(REGIONAL_LIFE_SITES.filter(site => ['mill-commons', 'landing-workshop'].includes(site.id))
     .map(({ id, x, z }) => ({ id, x, z })), [
-    { id: 'mill-commons', x: -238, z: 63 }, { id: 'landing-workshop', x: -385, z: 124 },
+    { id: 'mill-commons', ...toWorld(-238, 63) }, { id: 'landing-workshop', ...toWorld(-385, 124) },
   ]);
 });

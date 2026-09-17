@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
+import { toWorld } from './world-scale.js';
 
 const TAU = Math.PI * 2;
 const sphere = new THREE.IcosahedronGeometry(1, 1);
@@ -7,7 +8,10 @@ const box = new THREE.BoxGeometry(1, 1, 1);
 const cone = new THREE.ConeGeometry(1, 1, 5);
 const cylinder = new THREE.CylinderGeometry(1, 1, 1, 5);
 const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .94, flatShading: true });
-const zones = [
+// Ranges and grazing spots in authored metres. Each flock is a world-scale
+// cluster, so it walks to its region's new place keeping its own spread: the
+// same animals over the same ground, not a thinner flock over a bigger field.
+const AUTHORED_ZONES = [
   { id: 'sunmeadow-sheep', species: 'sheep', region: 2, minX: -448, maxX: -412, minZ: 306, maxZ: 344,
     sites: [[-440,312],[-432,320],[-422,314],[-438,330],[-428,336],[-418,326]], radius: .43 },
   { id: 'reedwater-birds', species: 'bank-bird', region: 3, minX: -300, maxX: -268, minZ: 78, maxZ: 106,
@@ -15,6 +19,11 @@ const zones = [
   { id: 'threefold-hares', species: 'rock-hare', region: 4, minX: -132, maxX: -84, minZ: 356, maxZ: 402,
     sites: [[-124,366],[-96,390]], radius: .23 },
 ];
+const zones = AUTHORED_ZONES.map(zone => {
+  const low = toWorld(zone.minX, zone.minZ), high = toWorld(zone.maxX, zone.maxZ);
+  return { ...zone, minX: low.x, maxX: high.x, minZ: low.z, maxZ: high.z,
+    sites: zone.sites.map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; }) };
+});
 /** The three authored flock ranges, so tests and reviews read the same numbers. */
 export const ROAD_LIFE_ZONES = Object.freeze(zones.map(zone => Object.freeze({ ...zone, sites: Object.freeze(zone.sites.map(site => Object.freeze([...site]))) })));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));

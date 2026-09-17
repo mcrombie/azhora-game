@@ -3,11 +3,15 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { canStand, moveCharacter } from '../src/game-state.js';
 import { sourceModule } from './module-loader.js';
+import { toWorld, WORLD_SCALE } from '../src/world-scale.js';
+
+/** Authored metres, converted the way the content itself is. */
+const at = (x, z) => toWorld(x, z);
 
 const { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS,
   regionalFeatureClear, createRegionalPlaces } = await sourceModule('../src/regional-places.js');
 const targets = [...REGIONAL_PLACES, ...Object.values(REGIONAL_NPC_POSITIONS), ...Object.values(REGIONAL_ACTIVITY_SITES),
-  { id: 'mill-tally-inspect', x: -238, z: 63 }, { id: 'workshop-inspect', x: -385, z: 124 }];
+  { id: 'mill-tally-inspect', ...at(-238, 63) }, { id: 'workshop-inspect', ...at(-385, 124) }];
 function fixture() {
   const scene = new THREE.Scene(), world = { bounds: { minX: -844, maxX: 144, minZ: -209, maxZ: 655 }, colliders: [],
     heightAt: (x, z) => 5 + Math.sin(x * .04) * .3 + Math.sin(z * .02) * .6 };
@@ -38,12 +42,13 @@ test('Working places preserve NPC, activity, and curved approach clearances', ()
 test('Regional clearance protects only the three new workyards and approaches', () => {
   for (const p of targets) assert.ok(regionalFeatureClear(p.x, p.z));
   for (const path of REGIONAL_PATHS) for (const p of path) assert.ok(regionalFeatureClear(p.x, p.z));
-  for (const p of [{ x: -15, z: 29 }, { x: -80, z: 34 }, { x: -306, z: 104 }, { x: -345, z: 93 }, { x: -549, z: 348 }, { x: -91, z: 411 }])
+  for (const p of [at(-15, 29), at(-80, 34), at(-306, 104), at(-345, 93), at(-549, 348), at(-91, 411)])
     assert.equal(regionalFeatureClear(p.x, p.z), false);
   assert.equal(regionalFeatureClear(Number.NaN, 62), false);
   assert.equal(regionalFeatureClear(-236, Number.POSITIVE_INFINITY), false);
-  assert.ok(regionalFeatureClear(-248, 71, 5), 'large scatter margins should not be cut off by broad-phase bounds');
-  assert.equal(regionalFeatureClear(-248, 71), false);
+  const beyond = at(-248, 71);
+  assert.ok(regionalFeatureClear(beyond.x, beyond.z, 5 * WORLD_SCALE), 'large scatter margins should not be cut off by broad-phase bounds');
+  assert.equal(regionalFeatureClear(beyond.x, beyond.z), false);
 });
 
 test('Actual regional roads connect every new activity without removing existing journey resources', async () => {
@@ -56,7 +61,7 @@ test('Actual regional roads connect every new activity without removing existing
     assert.ok(canStand(target.x, target.z, world, .48), `Old regional destination obstructed: ${target.id || ''}`);
   // Connect each new spur to the old road, using the old mill/ruin approach
   // where appropriate. The bridge's deliberately broken strip is elsewhere.
-  const connectors = [[{ x: -230, z: 38 }, { x: -230, z: 50 }], [{ x: -374, z: 124 }], [{ x: -176, z: 308 }, { x: -150, z: 318 }]];
+  const connectors = [[at(-230, 38), at(-230, 50)], [at(-374, 124)], [at(-176, 308), at(-150, 318)]];
   for (const [i, connector] of connectors.entries()) {
     const curve = new THREE.CatmullRomCurve3([...connector, ...REGIONAL_PATHS[i].slice(1)].map(p => new THREE.Vector3(p.x, 0, p.z)));
     for (const p of curve.getPoints(300)) assert.ok(canStand(p.x, p.z, world, .48), `Disconnected regional spur ${i}`);

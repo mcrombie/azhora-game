@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
+import { WORLD_SCALE } from './world-scale.js';
 
 const TAU=Math.PI*2;
 const botanicalMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.98,side:THREE.DoubleSide,flatShading:true});
@@ -86,13 +87,15 @@ export function createRoadVerges(scene,world) {
       &&points.every(p=>Math.hypot(x-p.x,z-p.z)>=4.8);
   }
   const batches=[],samples=[];
+  // Counts follow the road's length, so a longer road is not a barer one.
+  const along = count => Math.round(count * WORLD_SCALE);
   for(const config of [
-    {kind:'clover-flowers',region:2,from:.04,to:.34,count:156},
-    {kind:'bank-leaves',region:3,from:.34,to:.66,count:144},
-    {kind:'heather-scrub',region:4,from:.66,to:.99,count:150},
+    {kind:'clover-flowers',region:2,from:.04,to:.34,count:along(156)},
+    {kind:'bank-leaves',region:3,from:.34,to:.66,count:along(144)},
+    {kind:'heather-scrub',region:4,from:.66,to:.99,count:along(150)},
   ]) {
     const plants=[];
-    for(let patch=0;plants.length<config.count&&patch<1400;patch++) {
+    for(let patch=0;plants.length<config.count&&patch<Math.round(1400*WORLD_SCALE);patch++) {
       const anchor=alongRoad(config.from+random()*(config.to-config.from));
       const side=(random()<.5?-1:1)*(6+random()*21);
       const x=anchor.x+anchor.nx*side,z=anchor.z+anchor.nz*side;

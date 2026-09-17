@@ -1,12 +1,14 @@
-/** Optional local lives along the road. This module never advances the main journey. */
+import { toWorld } from './world-scale.js';
+
+/** Optional local lives along the road. This module never advances the main journey. Stands are authored metres. */
 export const REGIONAL_LIFE_NPCS = Object.freeze([
-  Object.freeze({ id: 'commons-miller', name: 'Enna', role: 'Commons miller', modelRole: 'commons-miller', color: 0xa18452, x: -233, z: 59, region: 1 }),
-  Object.freeze({ id: 'reed-worker', name: 'Merren', role: 'Reed worker and boatkeeper', modelRole: 'reed-worker', color: 0x5f8078, x: -380, z: 120, region: 2 }),
-  Object.freeze({ id: 'shelter-keeper', name: 'Oda', role: 'Waystation shelter keeper', modelRole: 'shelter-keeper', color: 0x827b6d, x: -152, z: 322, region: 4 }),
+  Object.freeze({ id: 'commons-miller', name: 'Enna', role: 'Commons miller', modelRole: 'commons-miller', color: 0xa18452, ...toWorld(-233, 59), region: 1 }),
+  Object.freeze({ id: 'reed-worker', name: 'Merren', role: 'Reed worker and boatkeeper', modelRole: 'reed-worker', color: 0x5f8078, ...toWorld(-380, 120), region: 2 }),
+  Object.freeze({ id: 'shelter-keeper', name: 'Oda', role: 'Waystation shelter keeper', modelRole: 'shelter-keeper', color: 0x827b6d, ...toWorld(-152, 322), region: 4 }),
 ]);
 
 const site = (id, name, x, z, region, storyId, prompt, lines) => Object.freeze({
-  id, name, x, z, region, storyId, prompt, lines: Object.freeze(lines),
+  id, name, ...toWorld(x, z), region, storyId, prompt, lines: Object.freeze(lines),
 });
 export const REGIONAL_LIFE_SITES = Object.freeze([
   site('mill-commons', 'The Mill Commons', -238, 63, 1, 'village-share', 'Read the common mill tally', [

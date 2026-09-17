@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {toWorld} from '../src/world-scale.js';
 import {createRoadAudio,roadAudioProfile} from '../src/road-audio.js';
 
 class FakeParam {
@@ -50,11 +51,11 @@ test('ambient profiles distinguish shore, forest, fields, river proximity and ex
   const coast=roadAudioProfile({position:{x:9,z:29},region:1});
   const forest=roadAudioProfile({position:{x:-120,z:34},region:1});
   assert.ok(coast.sea>forest.sea);assert.ok(forest.forest>coast.forest);
-  const plain=roadAudioProfile({position:{x:-520,z:320},region:3});assert.ok(plain.field>0);assert.equal(plain.river,0);
-  const river=roadAudioProfile({position:{x:-345,z:93},region:2});
-  const bank=roadAudioProfile({position:{x:-400,z:170},region:2});assert.ok(river.river>bank.river);
+  const plain=roadAudioProfile({position:toWorld(-520,320),region:3});assert.ok(plain.field>0);assert.equal(plain.river,0);
+  const river=roadAudioProfile({position:toWorld(-345,93),region:2});
+  const bank=roadAudioProfile({position:toWorld(-400,170),region:2});assert.ok(river.river>bank.river);
   assert.equal(coast.surface,'wood');assert.equal(river.surface,'wood');
-  assert.equal(roadAudioProfile({position:{x:-380,z:150},region:2}).surface,'earth');
+  assert.equal(roadAudioProfile({position:toWorld(-380,150),region:2}).surface,'earth');
   const ridge=roadAudioProfile({region:{id:4}});assert.ok(ridge.ridge>0);assert.equal(ridge.surface,'stone');
   for(const value of Object.values(roadAudioProfile({position:{x:NaN,z:Infinity},region:99})))
     if(typeof value==='number')assert.ok(Number.isFinite(value));
@@ -90,7 +91,7 @@ test('regional crossfades reuse the ambient graph, and stopped one-shots release
 
 test('soft regional calls are scheduled by active updates and freeze while paused or muted',()=>{
   const {audio,devices,frame}=fixture();audio.toggle();
-  const meadow={position:{x:-500,y:2,z:312},speed:0,region:3,playing:true};
+  const meadow={position:{...toWorld(-500,312),y:2},speed:0,region:3,playing:true};
   for(let i=0;i<60;i++)frame(.1,meadow);
   assert.equal(audio.state().calls,1);
   const count=audio.state().calls;

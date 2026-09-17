@@ -9,19 +9,24 @@ import {
   calossDistance, landDistance,
 } from './region-world.js';
 import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, smooth, lerp } from './world-terrain.js';
+import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { createRegionScenery } from './world-regions.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
  *
  * Shapes, sizes and positions come from the authored atlas through
- * `region-world.js`; north is -Z and one authored hex is 56 m. Tidehaven, the
+ * `region-world.js`; north is -Z and one authored hex is METRES_PER_HEX metres.
+ * The literals outside Tidehaven are still written in the authored 56 m frame
+ * and converted by `at()` at the point of use (see `world-scale.js`). Tidehaven, the
  * Greenway tutorial and the woodland places were built with the sea to the
  * south, so they are carried over whole inside `villageRoot`, a group turned a
  * quarter turn onto Drent's east-facing coast. Everything inside that group
  * still speaks the village's own local metres; everything else is world metres.
  */
 export function createWorld(scene, { spatialBatches = true } = {}) {
+  /** An authored (56 m per hex) point in world metres; Tidehaven's own frame never uses it. */
+  const at = (x, z) => { const p = toWorld(x, z); return { x: p.x, z: p.z }; };
   let seed = 341937;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
@@ -273,8 +278,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     }
     return out;
   }
-  const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, -252, 62);
-  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, -110, 172);
+  // Vertex spacing is unchanged; the grid simply covers more ground. The fine
+  // 2.5 m band still holds Tidehaven, which did not move, and the Avrel
+  // clearing, which did.
+  const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, Math.min(-252, AVREL_CLEARING.x - 60), 62);
+  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, -110, Math.max(172, AVREL_CLEARING.z + 60));
   const columns = terrainXs.length, rows = terrainZs.length;
   const terrainPositions = new Float32Array(columns * rows * 3);
   const terrainColors = new Float32Array(columns * rows * 3);
@@ -317,7 +325,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   } else {
     // Share one vertex buffer between tiles; only index ranges and bounds differ,
     // so a camera facing Drent can discard the Moros without changing the ground.
-    const tilesX = 7, tilesZ = 7;
+    // More ground, same tile footprint: a camera in Drent still discards the Moros.
+    const tilesX = Math.round(7 * WORLD_SCALE), tilesZ = Math.round(7 * WORLD_SCALE);
     const spanX = Math.ceil((columns - 1) / tilesX), spanZ = Math.ceil((rows - 1) / tilesZ);
     const bounds = new THREE.Box3(), vertex = new THREE.Vector3();
     const positionAttribute = terrainGeometry.attributes.position;
@@ -368,9 +377,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // A foam line traced along the actual coast, from Drent's north cape to the
   // southern bay, so the shore reads as a place and not a plane edge.
   const shorePoints = [];
-  for (let z = -170; z <= 330; z += 5) {
+  const shoreFrom = at(240, -170), shoreTo = at(-320, 330);
+  for (let z = shoreFrom.z; z <= shoreTo.z; z += 5) {
     let best = null;
-    for (let x = 240; x > -320; x -= 2.5) {
+    for (let x = shoreFrom.x; x > shoreTo.x; x -= 3) {
       const distance = landDistance(x, z);
       if (distance >= 0) { best = x + clamp(distance, 0, 2.5); break; }
     }
@@ -987,17 +997,17 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Roads, in world metres
   // ---------------------------------------------------------------------------
   const roadSpurs = [
-    [{ x: -236, z: 30 }, { x: -248, z: 16 }, { x: -252, z: 8 }],
-    [{ x: -230, z: 38 }, { x: -230, z: 50 }],
-    [{ x: -330, z: 88 }, { x: -318, z: 96 }, { x: CALOSS_BANK.spot.x, z: CALOSS_BANK.spot.z }],
-    [{ x: -362, z: 107 }, { x: -370, z: 114 }, { x: -374, z: 118 }],
-    [{ x: -378, z: 132 }, { x: -392, z: 132 }],
-    [{ x: -372, z: 142 }, { x: -364, z: 150 }],
-    [{ x: -394, z: 168 }, { x: -404, z: 172 }],
-    [{ x: -392, z: 176 }, { x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z }],
-    [{ x: -398, z: 202 }, { x: -376, z: 208 }, { x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z }],
-    [{ x: -446, z: 276 }, { x: -420, z: 292 }, { x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z }],
-    [{ x: -556, z: 334 }, { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
+    [at(-236, 30), at(-248, 16), at(-252, 8)],
+    [at(-230, 38), at(-230, 50)],
+    [at(-330, 88), at(-318, 96), { x: CALOSS_BANK.spot.x, z: CALOSS_BANK.spot.z }],
+    [at(-362, 107), at(-370, 114), at(-374, 118)],
+    [at(-378, 132), at(-392, 132)],
+    [at(-372, 142), at(-364, 150)],
+    [at(-394, 168), at(-404, 172)],
+    [at(-392, 176), { x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z }],
+    [at(-398, 202), at(-376, 208), { x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z }],
+    [at(-446, 276), at(-420, 292), { x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z }],
+    [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4);
@@ -1057,7 +1067,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [-418, 250, 'The Moros Gate', .4], [-500, 318, 'The Legion Camp', .5],
     [-244, 274, 'Elod’s Border Post', 1.1], [-120, 330, 'Elod', 1.2],
   ]) {
-    let px = x, py = z, guard = 0;
+    const spot = at(x, z);
+    let px = spot.x, py = spot.z, guard = 0;
     while (roadDistance(px, py) < 2.4 && guard++ < 14) { px += Math.sign(x + 300) * .8; py += 1.1; }
     trailSign(px, py, 1, label, yaw, 'Tidehaven', world);
   }
@@ -1123,10 +1134,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // ---------------------------------------------------------------------------
   // Distant country and the inland horizon
   // ---------------------------------------------------------------------------
+  // The Elagos summits keep their height; only their footprint and their
+  // distance grow, so the horizon reads the same from a bigger Drent.
   const distantSummits = [
-    { x: -690, z: -120, topY: 58, width: 34, depth: 29, lean: -3, phase: .2 },
-    { x: -760, z: -40, topY: 66, width: 37, depth: 31, lean: 2, phase: 1.1 },
-    { x: -800, z: 60, topY: 54, width: 30, depth: 26, lean: -1.5, phase: 2.4 },
+    { ...at(-690, -120), topY: 58, width: 34 * WORLD_SCALE, depth: 29 * WORLD_SCALE, lean: -3, phase: .2 },
+    { ...at(-760, -40), topY: 66, width: 37 * WORLD_SCALE, depth: 31 * WORLD_SCALE, lean: 2, phase: 1.1 },
+    { ...at(-800, 60), topY: 54, width: 30 * WORLD_SCALE, depth: 26 * WORLD_SCALE, lean: -1.5, phase: 2.4 },
   ];
   const summitMaterial = material('#7c8b83', { flatShading: true });
   for (const [index, summit] of distantSummits.entries()) {
@@ -1149,8 +1162,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   const mountainMat = material('#849b83');
   for (let i = 0; i < 10; i++) {
-    const x = -880 - (i % 5) * 46, z = -160 + i * 92;
-    const mountain = mesh(new THREE.ConeGeometry(1, 1, 7), mountainMat, x, 6, z, range(30, 48), range(12, 26), range(30, 50), world);
+    const { x, z } = at(-880 - (i % 5) * 46, -160 + i * 92);
+    const mountain = mesh(new THREE.ConeGeometry(1, 1, 7), mountainMat, x, 6, z,
+      range(30, 48) * WORLD_SCALE, range(12, 26), range(30, 50) * WORLD_SCALE, world);
     mountain.rotation.y = range(0, 6.28); mountain.castShadow = false;
   }
 

@@ -7,6 +7,8 @@ import { createJourney } from '../src/journey.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
 import * as campaignModule from '../src/campaign.js';
+import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-scale.js';
+import { WORLD_BOUNDS as PLAYABLE_BOUNDS } from '../src/regions.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -23,7 +25,7 @@ function fixture() {
   const journey = createJourney({ inventory, weapons });
   journey.start(); journey.act('meet-courier'); journey.act('collect-cart-parcel-2');
   const data = {
-    version: 1, questStage: 10, journey: journey.snapshot(),
+    version: 1, worldScale: METRES_PER_HEX, questStage: 10, journey: journey.snapshot(),
     inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
     weapons: weapons.snapshot(), journeyGathered: ['meadow-fruit'], meadowCleared: false,
     position: { x: 3, z: -190 }, heardDoom: true, lysaComplete: true, health: 74,
@@ -83,8 +85,8 @@ test('invalid data never overwrites an existing checkpoint', () => {
     { ...data, journeyGathered: ['unknown-site'] },
     { ...data, journeyGathered: ['cart-parcel-1'] },
     { ...data, journeyGathered: ['meadow-fruit', 'meadow-fruit'] },
-    { ...data, position: { x: 900, z: -200 } },
-    { ...data, position: { x: -300, z: 900 } },
+    { ...data, position: { x: PLAYABLE_BOUNDS.maxX + 10, z: -200 } },
+    { ...data, position: { x: -300, z: PLAYABLE_BOUNDS.maxZ + 10 } },
     { ...data, position: { x: NaN, z: 200 } },
     { ...data, health: Infinity }, { ...data, health: 101 },
     { ...data, heardDoom: 1 }, { ...data, lysaComplete: 'yes' },
@@ -98,6 +100,40 @@ test('invalid data never overwrites an existing checkpoint', () => {
     assert.equal(checkpoint.save(invalid).ok, false);
     assert.equal(storage.getItem(ROAD_CHECKPOINT_KEY), stored);
   }
+});
+
+test('a checkpoint taken in the 56 m world resumes where its ground moved to', () => {
+  // The Avrel clearing is a rigid cluster: the traveler comes back standing in
+  // the same corner of the same farmyard, not in the forest it used to be in.
+  const clearing = fixture();
+  const oldSave = { ...clearing.data, position: { x: -236, z: 30 } };
+  delete oldSave.worldScale;
+  assert.equal(clearing.checkpoint.save(oldSave).ok, true);
+  const restored = clearing.checkpoint.read().data;
+  assert.equal(restored.worldScale, METRES_PER_HEX);
+  assert.deepEqual(restored.position, { ...toWorld(-236, 30) });
+  assert.notEqual(restored.position.x, -236, 'the clearing itself moved with its region');
+
+  // Tidehaven is anchored, so a save taken in the village is untouched.
+  const village = fixture();
+  const inVillage = { ...village.data, position: { x: 0, z: 16 } };
+  delete inVillage.worldScale;
+  assert.deepEqual(village.checkpoint.save(inVillage).data.position, { x: 0, z: 16 });
+
+  // A save from the far west of the old Moros still lands inside the new bounds.
+  const moros = fixture();
+  const onThePlain = { ...moros.data, position: { x: -770, z: 350 } };
+  delete onThePlain.worldScale;
+  assert.equal(moros.checkpoint.save(onThePlain).ok, true);
+  assert.deepEqual(moros.checkpoint.read().data.position, { ...toWorld(-770, 350) });
+
+  // A save already at this scale is left exactly where it stands, and a scale
+  // this build has never used is refused rather than guessed at.
+  const current = fixture();
+  assert.equal(current.checkpoint.save({ ...current.data, worldScale: AUTHORED_METRES_PER_HEX, position: { x: -236, z: 30 } }).ok, true);
+  assert.deepEqual(current.checkpoint.read().data.position, { ...toWorld(-236, 30) });
+  assert.equal(current.checkpoint.save({ ...current.data, worldScale: 72 }).ok, false);
+  assert.equal(current.checkpoint.save({ ...current.data, worldScale: 'big' }).ok, false);
 });
 
 test('corrupt JSON, unknown schema and oversized storage values are preserved and reported without throwing', () => {

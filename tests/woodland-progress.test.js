@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {METRES_PER_HEX} from '../src/world-scale.js';
 import { createRoadCheckpoint } from '../src/road-checkpoint.js';
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
@@ -12,7 +13,7 @@ function fixture() {
   const weapons=createWeapons({inventory}),camp=createCampcraft({inventory,weapons}),story=createForestStory({inventory,weapons});
   let raw=null;const checkpoint=createRoadCheckpoint({storage:{getItem:()=>raw,setItem:(_,value)=>raw=value}});
   const data={version:1,questStage:1,journey:createJourney().snapshot(),inventory:[{id:'simple-sword',quantity:1}],
-    weapons:weapons.snapshot(),journeyGathered:[],meadowCleared:false,position:{x:0,z:16},heardDoom:false,health:81,
+    weapons:weapons.snapshot(),journeyGathered:[],meadowCleared:false,worldScale:METRES_PER_HEX,position:{x:0,z:16},heardDoom:false,health:81,
     woodland:{version:1,acornStatus:'available',practiceHits:0,practiceDodges:0,acorns:[],sticks:[],fruits:[],discoveries:['harbor'],camp:camp.checkpoint()},
     forestStory:story.snapshot()};
   return {inventory,weapons,camp,story,checkpoint,data};

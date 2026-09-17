@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { toWorld } from './world-scale.js';
 
-const point = (x, z) => Object.freeze({ x, z });
+/** An authored (56 m per hex) point in world metres. */
+const point = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
 // Three working places along the rebuilt road: the Avrel clearing mill in
 // Drent, the reedcutters' landing on the Luscia bank of the Caloss, and the
 // roofless waystation in East Suval.
@@ -8,17 +10,17 @@ export const REGIONAL_NPC_POSITIONS = Object.freeze({
   'commons-miller': point(-233, 59), 'reed-worker': point(-380, 120), 'shelter-keeper': point(-152, 322),
 });
 export const REGIONAL_ACTIVITY_SITES = Object.freeze({
-  'mill-hoist': Object.freeze({ id: 'mill-hoist', name: 'The grain hoist', x: -243, z: 67, region: 2 }),
-  'net-float-west': Object.freeze({ id: 'net-float-west', name: 'First float line', x: -389, z: 126, region: 3 }),
-  'net-float-east': Object.freeze({ id: 'net-float-east', name: 'Second float line', x: -392, z: 128, region: 3 }),
-  'shelter-ledger': Object.freeze({ id: 'shelter-ledger', name: 'The shelter ledger', x: -158, z: 326, region: 4 }),
+  'mill-hoist': Object.freeze({ id: 'mill-hoist', name: 'The grain hoist', ...point(-243, 67), region: 2 }),
+  'net-float-west': Object.freeze({ id: 'net-float-west', name: 'First float line', ...point(-389, 126), region: 3 }),
+  'net-float-east': Object.freeze({ id: 'net-float-east', name: 'Second float line', ...point(-392, 128), region: 3 }),
+  'shelter-ledger': Object.freeze({ id: 'shelter-ledger', name: 'The shelter ledger', ...point(-158, 326), region: 4 }),
 });
 export const REGIONAL_PLACES = Object.freeze([
-  Object.freeze({ id: 'mill-commons', name: 'The Mill Commons', x: -236, z: 62, radius: 10, region: 2,
+  Object.freeze({ id: 'mill-commons', name: 'The Mill Commons', ...point(-236, 62), radius: 10, region: 2,
     center: point(-240, 65), description: 'Grain sacks, a worn tally board, and a flour-dusted bench gather beneath the turning mill sails.' }),
-  Object.freeze({ id: 'landing-workshop', name: 'The Landing Workshop', x: -380, z: 120, radius: 11, region: 3,
+  Object.freeze({ id: 'landing-workshop', name: 'The Landing Workshop', ...point(-380, 120), radius: 11, region: 3,
     center: point(-385, 124), description: 'A little boat rests on wooden stocks. Cork floats and drying nets hang above baskets of cut reeds.' }),
-  Object.freeze({ id: 'waystation-shelter', name: 'The Waystation Shelter', x: -152, z: 322, radius: 10, region: 4,
+  Object.freeze({ id: 'waystation-shelter', name: 'The Waystation Shelter', ...point(-152, 322), radius: 10, region: 4,
     center: point(-156, 324), description: 'Patched canvas gives the roofless stones a purpose again: dry bedrolls, drinking water, and a book of travelers’ accounts.' }),
 ]);
 export const REGIONAL_PATHS = Object.freeze([
@@ -27,6 +29,15 @@ export const REGIONAL_PATHS = Object.freeze([
   Object.freeze([point(-150, 318), point(-152, 322), point(-156, 324), point(-158, 326)]),
 ]);
 const clearancePaths = [...REGIONAL_PATHS];
+// The broad phase is derived from the three workyards themselves, so it follows
+// them wherever the world scale puts them.
+const CLEARANCE_BOX = (() => {
+  const all = [...REGIONAL_PLACES.map(site => ({ ...site.center, r: site.radius })),
+    ...Object.values(REGIONAL_NPC_POSITIONS).map(p => ({ ...p, r: 2.3 })),
+    ...clearancePaths.flat().map(p => ({ ...p, r: 1.8 }))];
+  return { minX: Math.min(...all.map(p => p.x - p.r)), maxX: Math.max(...all.map(p => p.x + p.r)),
+    minZ: Math.min(...all.map(p => p.z - p.r)), maxZ: Math.max(...all.map(p => p.z + p.r)) };
+})();
 function segmentDistance(x, z, a, b) {
   const dx = b.x - a.x, dz = b.z - a.z;
   const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1)));
@@ -37,7 +48,8 @@ export function regionalFeatureClear(x, z, margin = 0) {
   if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
   const extra = Number.isFinite(margin) ? Math.max(0, margin) : 0;
   // Broad phase: the three workyards all lie inside this band of the road.
-  if (x > -140 + extra || x < -400 - extra || z < 45 - extra || z > 340 + extra) return false;
+  if (x > CLEARANCE_BOX.maxX + extra || x < CLEARANCE_BOX.minX - extra
+    || z < CLEARANCE_BOX.minZ - extra || z > CLEARANCE_BOX.maxZ + extra) return false;
   if (REGIONAL_PLACES.some(site => Math.hypot(x - site.center.x, z - site.center.z) < site.radius + extra)) return true;
   if (Object.values(REGIONAL_NPC_POSITIONS).some(p => Math.hypot(x - p.x, z - p.z) < 2.3 + extra)) return true;
   return clearancePaths.some(path => path.some((b, i) => i && segmentDistance(x, z, path[i - 1], b) < 1.8 + extra));

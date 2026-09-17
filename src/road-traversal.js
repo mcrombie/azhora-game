@@ -89,10 +89,13 @@ export async function runRoadTraversal(h) {
 
   async function walkTo(target, label) {
     let nearest = Math.hypot(position().x - target.x, position().z - target.z);
-    let lastProgress = performance.now(), deadline = lastProgress + 30000;
+    // The road's longest leg is now a couple of hundred metres, so the limit is
+    // the run time that leg needs with room to spare, never less than 30 s.
+    const budgetMs = Math.max(30000, nearest / 7.2 * 1000 * 2.5 + 10000);
+    let lastProgress = performance.now(), deadline = lastProgress + budgetMs;
     while (Math.hypot(position().x - target.x, position().z - target.z) > .8) {
       const now = performance.now();
-      assert(now < deadline, `30-second limit reaching ${label} (${position().x.toFixed(2)}, ${position().z.toFixed(2)})`);
+      assert(now < deadline, `${Math.round(budgetMs / 1000)}-second limit reaching ${label} (${position().x.toFixed(2)}, ${position().z.toFixed(2)})`);
       assert(now - lastProgress < 5000, `stuck on the way to ${label}; ${nearest.toFixed(2)} m remains`);
       const dx = target.x - position().x, dz = target.z - position().z;
       setYaw(Math.atan2(-dx, -dz)); holdRun();

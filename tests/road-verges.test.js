@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import {sourceModule as load} from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import {canStand} from '../src/game-state.js';
+import {WORLD_SCALE} from '../src/world-scale.js';
+
+// Verge counts follow the road's length, so both the count and the triangle
+// budget are stated per authored metre of road.
+const along=count=>Math.round(count*WORLD_SCALE), budget=Math.round(20000*WORLD_SCALE);
 
 const {createRoadVerges}=await load('../src/road-verges.js');
 
@@ -14,8 +19,8 @@ test('botanical patches are deterministic, small, collision-free and clear of ro
     fishingSpots:[{fishingSpot:{x:14,z:-393}}]};
   const before=JSON.stringify(world.colliders),scene=new THREE.Scene(),a=createRoadVerges(scene,world).state();
   const b=createRoadVerges(new THREE.Scene(),world).state();assert.deepEqual(a,b);
-  assert.equal(scene.children.length,3);assert.ok(a.triangles<=20000);
-  assert.deepEqual(a.batches.map(b=>b.count),[156,144,150]);
+  assert.equal(scene.children.length,3);assert.ok(a.triangles<=budget);
+  assert.deepEqual(a.batches.map(b=>b.count),[along(156),along(144),along(150)]);
   const points=[...Object.values(world.journeySites),...Object.values(world.npcPositions),...world.repairBenches,...world.firePits,world.fishingSpots[0].fishingSpot];
   for(const plant of a.plants){
     assert.ok(plant.z< -170);assert.ok(Math.abs(plant.x)>=4);assert.ok(canStand(plant.x,plant.z,world,.7));
@@ -31,7 +36,7 @@ test('botanical patches are deterministic, small, collision-free and clear of ro
 test('all actual-world verge patches avoid water, solid terrain and interaction standing areas',async()=>{
   const {createWorld}=await load('../src/world.js');const scene=new THREE.Scene(),world=createWorld(scene);
   const count=world.colliders.length,verges=createRoadVerges(scene,world).state();
-  assert.ok(verges.batches.every(batch=>batch.count>100));assert.ok(verges.triangles<=20000);
+  assert.ok(verges.batches.every(batch=>batch.count>100));assert.ok(verges.triangles<=budget);
   const points=[...Object.values(world.journeySites),...Object.values(world.npcPositions),...world.repairBenches,...world.firePits,...world.fishingSpots.map(s=>s.fishingSpot)];
   for(const plant of verges.plants){assert.ok(canStand(plant.x,plant.z,world,.7));assert.ok(points.every(p=>Math.hypot(p.x-plant.x,p.z-plant.z)>=4.8));}
   assert.equal(world.colliders.length,count);

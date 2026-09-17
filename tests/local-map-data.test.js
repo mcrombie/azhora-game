@@ -2,39 +2,44 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildLocalMapModel, localMapPoint, localMapBearing } from '../src/local-map-data.js';
 import { regionAt, regions, WORLD_BOUNDS } from '../src/regions.js';
+import { toWorld } from '../src/world-scale.js';
+
+// The fixture is written in authored metres, like the content it stands in for,
+// and converted here so every probe lands in the region it is meant to.
+const at = (x, z) => toWorld(x, z);
 
 function fixture() {
   return { bounds: { ...WORLD_BOUNDS }, regionAt, regions,
     landmarks: [
-      { id: 'village', name: 'Tidehaven Village', description: 'A salt-weathered village.', x: -15, z: 29 },
-      { id: 'secret-shrine', name: 'Mosskeeper Shrine', description: 'The hidden memorial inscription.', x: -107, z: 66 },
-      { id: 'mill', name: 'The Clearing Mill', description: 'The canvas sails turn.', x: -235, z: 51 },
-      { id: 'bridge', name: 'The Caloss Bridge', description: 'Cross here.', x: -345, z: 93 },
-      { id: 'relay', name: 'The Lauvel Relay', description: 'Send the report onward.', x: -401, z: 196 },
+      { id: 'village', name: 'Tidehaven Village', description: 'A salt-weathered village.', ...at(-15, 29) },
+      { id: 'secret-shrine', name: 'Mosskeeper Shrine', description: 'The hidden memorial inscription.', ...at(-107, 66) },
+      { id: 'mill', name: 'The Clearing Mill', description: 'The canvas sails turn.', ...at(-235, 51) },
+      { id: 'bridge', name: 'The Caloss Bridge', description: 'Cross here.', ...at(-345, 93) },
+      { id: 'relay', name: 'The Lauvel Relay', description: 'Send the report onward.', ...at(-401, 196) },
     ], paths: [
-      [{ x: 5, z: 29 }, { x: -176, z: 29 }, { x: -345, z: 93 }, { x: -549, z: 348 }],
-      [{ x: -400, z: 60 }, { x: 200, z: 60 }],
-      [{ x: -15, z: 29 }, { x: -107, z: 66 }],
-      [{ x: 60, z: 500 }, { x: 60, z: 560 }],
+      [at(5, 29), at(-176, 29), at(-345, 93), at(-549, 348)],
+      [at(-400, 60), at(200, 60)],
+      [at(-15, 29), at(-107, 66)],
+      [at(60, 500), at(60, 560)],
     ], colliders: [
-      { kind: 'house', x: -8, z: 34, width: 5.2, depth: 4.7, angle: .64 },
-      { kind: 'house', x: 120, z: 620, width: 5.2, depth: 4.4, angle: .35 },
-      { kind: 'tree', x: -6, z: 9, r: 1 },
-    ], pond: { x: -97, z: 2, radius: 5.4 }, mapWaters: [
-      { id: 'coast-water', kind: 'polygon', points: [{ x: 30, z: -160 }, { x: 140, z: -160 }, { x: 140, z: 300 }, { x: 30, z: 300 }] },
-      { id: 'willowmere-water', kind: 'circle', x: -97, z: 2, radius: 5.4 },
-      { id: 'river-water', kind: 'polygon', points: [{ x: -580, z: 120 }, { x: -520, z: 120 }, { x: -520, z: 200 }, { x: -580, z: 200 }] },
+      { kind: 'house', ...at(-8, 34), width: 5.2, depth: 4.7, angle: .64 },
+      { kind: 'house', ...at(120, 620), width: 5.2, depth: 4.4, angle: .35 },
+      { kind: 'tree', ...at(-6, 9), r: 1 },
+    ], pond: { ...at(-97, 2), radius: 5.4 }, mapWaters: [
+      { id: 'coast-water', kind: 'polygon', points: [at(30, -160), at(140, -160), at(140, 300), at(30, 300)] },
+      { id: 'willowmere-water', kind: 'circle', ...at(-97, 2), radius: 5.4 },
+      { id: 'river-water', kind: 'polygon', points: [at(-580, 120), at(-520, 120), at(-520, 200), at(-580, 200)] },
     ] };
 }
 
-const model = (world, options = {}) => buildLocalMapModel({ world, position: { x: -15, z: 29 }, ...options });
+const model = (world, options = {}) => buildLocalMapModel({ world, position: at(-15, 29), ...options });
 function deepFreeze(object) {
   if (!object || typeof object !== 'object' || Object.isFrozen(object)) return object;
   Object.freeze(object); Object.values(object).forEach(deepFreeze); return object;
 }
 
 test('the chart selects all four actual regions with eight metres of padding and never relocates the player', () => {
-  const world = fixture(), position = { x: -14, z: 30, heading: .5 };
+  const world = fixture(), position = { ...at(-14, 30), heading: .5 };
   for (const region of regions) {
     const chart = model(world, { position, regionId: String(region.id) });
     assert.equal(chart.region.id, region.id); assert.equal(chart.currentRegionId, 1);
@@ -43,9 +48,9 @@ test('the chart selects all four actual regions with eight metres of padding and
     assert.deepEqual(chart.player, position); assert.notEqual(chart.player, position);
     assert.deepEqual(chart.regions.map(item => item.id), [1, 2, 3, 4]);
   }
-  assert.equal(model(world, { position: { x: -386, z: 183 } }).region.id, 2);
-  assert.equal(model(world, { position: { x: -386, z: 183 }, regionId: 700 }).region.id, 2);
-  assert.equal(model(world, { position: { x: -549, z: 348 } }).currentRegionId, regionAt(-549, 348).id);
+  assert.equal(model(world, { position: at(-386, 183) }).region.id, 2);
+  assert.equal(model(world, { position: at(-386, 183), regionId: 700 }).region.id, 2);
+  assert.equal(model(world, { position: at(-549, 348) }).currentRegionId, regionAt(at(-549, 348).x, at(-549, 348).z).id);
   assert.equal(model(world, { position, heading: Math.PI / 2 }).player.heading, Math.PI / 2);
 });
 
@@ -72,19 +77,19 @@ test('explicit quest hints reveal stable places without marking them discovered 
 });
 
 test('named NPC hints and main objectives share stable locations without duplicating the goal in the place list', () => {
-  const world = fixture(), knownLocations = [{ id: 'warden', name: 'Eren', x: -86, z: 29, description: 'The Greenway watch.' }];
-  const chart = model(world, { knownLocations, goal: { name: 'Eren · Report the goblins', x: -86, z: 29 }, trackedId: 'warden' });
+  const world = fixture(), knownLocations = [{ id: 'warden', name: 'Eren', ...at(-86, 29), description: 'The Greenway watch.' }];
+  const chart = model(world, { knownLocations, goal: { name: 'Eren · Report the goblins', ...at(-86, 29) }, trackedId: 'warden' });
   assert.equal(chart.goal.id, 'warden'); assert.equal(chart.goal.trackable, true);
   assert.equal(chart.landmarks.filter(p => p.x === -86 && p.z === 29).length, 1);
   assert.equal(chart.tracked.id, 'warden'); assert.equal(chart.tracked.name, 'Eren');
-  const next = model(world, { knownLocations, goal: { name: 'The road to the Caloss', x: -160, z: 27 }, trackedId: 'warden' });
+  const next = model(world, { knownLocations, goal: { name: 'The road to the Caloss', ...at(-160, 27) }, trackedId: 'warden' });
   assert.equal(next.goal.id, 'main-objective'); assert.equal(next.goal.trackable, false); assert.equal(next.tracked.id, 'warden');
   assert.equal(model(world, { goal: next.goal, trackedId: 'main-objective' }).tracked, null);
 });
 
 test('an explicit landmark objective reveals just that landmark and cross-region tracking remains stable', () => {
   const world = fixture();
-  const chart = model(world, { regionId: 2, goal: { id: 'secret-shrine', name: 'Visit the shrine', x: -107, z: 66 }, trackedId: 'secret-shrine' });
+  const chart = model(world, { regionId: 2, goal: { id: 'secret-shrine', name: 'Visit the shrine', ...at(-107, 66) }, trackedId: 'secret-shrine' });
   assert.equal(chart.goal.id, 'secret-shrine'); assert.equal(chart.tracked.name, 'Mosskeeper Shrine');
   assert.equal(chart.landmarks.some(p => p.id === 'secret-shrine'), false);
   assert.equal(chart.landmarks.find(p => p.id === 'mill').known, false);
@@ -93,10 +98,10 @@ test('an explicit landmark objective reveals just that landmark and cross-region
 
 test('the model preserves actual full paths across map edges without fabricating joins or routes', () => {
   const world = fixture();
-  world.paths.push([{ x: 90, z: 0 }, null, { x: -90, z: 0 }]);
+  world.paths.push([at(90, 0), null, at(-90, 0)]);
   const chart = model(world);
   assert.deepEqual(chart.paths, world.paths.slice(0, 3));
-  assert.equal(chart.paths[1][0].x, -400); assert.equal(chart.paths[1][1].x, 200);
+  assert.equal(chart.paths[1][0].x, at(-400, 60).x); assert.equal(chart.paths[1][1].x, at(200, 60).x);
   assert.notEqual(chart.paths[0], world.paths[0]); assert.notEqual(chart.paths[0][0], world.paths[0][0]);
   assert.equal(model(world, { regionId: 4 }).paths.length, 1);
 });
@@ -104,21 +109,21 @@ test('the model preserves actual full paths across map edges without fabricating
 test('water and building descriptors come from actual local geometry and are filtered by chart bounds', () => {
   const world = fixture(), village = model(world), river = model(world, { regionId: 2 });
   assert.deepEqual(village.waters.map(w => w.id), ['coast-water', 'willowmere-water']);
-  assert.deepEqual(village.buildings, [{ x: -8, z: 34, width: 5.2, depth: 4.7, angle: .64 }]);
+  assert.deepEqual(village.buildings, [{ ...at(-8, 34), width: 5.2, depth: 4.7, angle: .64 }]);
   assert.deepEqual(river.waters, [world.mapWaters[2]]); assert.equal(river.buildings.length, 0);
   delete world.mapWaters;
-  assert.deepEqual(model(world).waters, [{ id: 'willowmere-water', kind: 'circle', x: -97, z: 2, radius: 5.4 }]);
+  assert.deepEqual(model(world).waters, [{ id: 'willowmere-water', kind: 'circle', ...at(-97, 2), radius: 5.4 }]);
   assert.equal(model(world, { regionId: 2 }).waters.length, 0, 'missing water metadata must not manufacture a river');
 });
 
 test('chart creation neither mutates world facts nor lets callers change facts through returned objects', () => {
-  const world = deepFreeze(fixture()), position = Object.freeze({ x: -15, z: 29 });
+  const world = deepFreeze(fixture()), position = Object.freeze(at(-15, 29));
   const before = JSON.stringify(world), discoveries = new Set(['village']);
   const chart = model(world, { position, discoveries, trackedId: 'village' });
   chart.landmarks[0].name = 'changed'; chart.paths[0][0].x = 400; chart.waters[0].points[0].x = 300;
   chart.region.bounds.minX = 999; chart.regions[0].bounds.minX = 800; chart.tracked.name = 'also changed';
   assert.equal(JSON.stringify(world), before); assert.deepEqual([...discoveries], ['village']);
-  assert.deepEqual(position, { x: -15, z: 29 }); assert.equal(chart.bounds.minX, regions[0].bounds.minX - 8);
+  assert.deepEqual(position, at(-15, 29)); assert.equal(chart.bounds.minX, regions[0].bounds.minX - 8);
   assert.equal(model(world, { discoveries }).landmarks.find(p => p.id === 'village').name, 'Tidehaven Village');
 });
 
@@ -173,9 +178,10 @@ test('the real world exports immutable shoreline, pond, and unbroken Caloss char
   assert.throws(() => { river.points[0].x = 99; }, TypeError);
   const village = model(world), crossing = model(world, { regionId: 2 });
   assert.equal(village.buildings.length, 11, 'nine Tidehaven cottages, the woodland watch, and the Avrel clearing farm');
-  assert.ok(!village.paths.some(path => path.some(p => Math.abs(p.x + 138) < .01 && Math.abs(p.z + 31) < .01)),
+  const oldCamp = at(-138, -31), campCentre = at(-456, 154);
+  assert.ok(!village.paths.some(path => path.some(p => Math.abs(p.x - oldCamp.x) < .01 && Math.abs(p.z - oldCamp.z) < .01)),
     'Drent is a level 0 province: no goblin camp trail remains on its chart');
-  assert.ok(crossing.paths.some(path => path.some(p => Math.abs(p.x + 456) < .01 && Math.abs(p.z - 154) < .01)),
+  assert.ok(crossing.paths.some(path => path.some(p => Math.abs(p.x - campCentre.x) < .01 && Math.abs(p.z - campCentre.z) < .01)),
     'the goblin camp trail appears on Luscia’s chart');
   assert.equal(crossing.waters.find(w => w.id === 'caloss-water').points.length, river.points.length);
   assert.equal(village.landmarks.every(place => !place.known && place.name === 'Unexplored place'), true);

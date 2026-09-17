@@ -3,6 +3,7 @@ import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
 import { MERCENARY_ROSTER } from './mercenaries.js';
 import { journeySites, WORLD_BOUNDS as PLAYABLE_BOUNDS } from './regions.js';
+import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from './world-scale.js';
 import { validateWoodlandProgress, copyWoodlandProgress } from './woodland-progress.js';
 import { createForestStory, validateForestStorySnapshot } from './forest-story.js';
 import { createForestHideoutQuest, validateForestHideoutSnapshot } from './forest-hideout.js';
@@ -65,7 +66,16 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
           || !Number.isInteger(weapon.durability) || weapon.durability < 0 || weapon.durability > WEAPON_TYPES[weapon.id].maxDurability) return failed('The saved company is invalid.');
       }
     }
-    const p = data.position;
+    // A checkpoint written before the world grew carries no worldScale; it was
+    // taken at AUTHORED_METRES_PER_HEX, so its position is moved the same way
+    // the ground under it moved before the bounds are judged.
+    if (Object.hasOwn(data, 'worldScale')
+      && data.worldScale !== METRES_PER_HEX && data.worldScale !== AUTHORED_METRES_PER_HEX)
+      return failed('The saved checkpoint was taken in a world this build cannot place you in.');
+    const saved = data.position;
+    const migrate = !Object.hasOwn(data, 'worldScale') || data.worldScale === AUTHORED_METRES_PER_HEX;
+    const p = saved && Number.isFinite(saved.x) && Number.isFinite(saved.z) && migrate
+      ? toWorld(saved.x, saved.z) : saved;
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)
       || p.x <= WORLD_BOUNDS.minX || p.x >= WORLD_BOUNDS.maxX
       || p.z <= WORLD_BOUNDS.minZ || p.z >= WORLD_BOUNDS.maxZ) return failed('The saved position lies outside the playable road.');
@@ -102,7 +112,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     // Store only the known schema. Fresh objects keep callers from modifying a
     // validated value through a previously retained array or nested reference.
     const result = {
-      version: ROAD_CHECKPOINT_VERSION, questStage: data.questStage, journey: journey.snapshot(),
+      version: ROAD_CHECKPOINT_VERSION, worldScale: METRES_PER_HEX, questStage: data.questStage, journey: journey.snapshot(),
       inventory: [...stock].map(([id, quantity]) => ({ id, quantity })),
       weapons: { version: 1, equippedId: data.weapons.equippedId,
         sword: { ...data.weapons.sword }, stick: { ...data.weapons.stick }, ...(data.weapons.extra ? { extra: { ...data.weapons.extra } } : {}) },

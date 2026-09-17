@@ -4,9 +4,13 @@
  * stand where the road is watched, and each has a word for a mercenary. With
  * the picket sergeant at the Lauvel they make twelve Empire soldiers.
  */
+import { toWorld } from './world-scale.js';
+
+// Stands are written in the authored 56 m frame and converted here; each post
+// belongs to the gate, clearing or camp it watches, and moves with it.
 const post = (id, name, rank, x, z, yaw, lines) => Object.freeze({
   id: `post-${id}`, name, rank, role: rank === 'officer' ? 'Legate of the Moros muster' : 'Ambroni Legion soldier',
-  modelRole: rank === 'officer' ? 'legion-officer' : 'legion-soldier', x, z, yaw, lines: Object.freeze(lines),
+  modelRole: rank === 'officer' ? 'legion-officer' : 'legion-soldier', ...toWorld(x, z), yaw, lines: Object.freeze(lines),
 });
 
 export const LEGION_POSTS = Object.freeze([

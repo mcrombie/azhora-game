@@ -11,9 +11,11 @@ export const MOROS_HORSE_TOKEN = 'horse-token';
 export const MOROS_GATE_ID = 'post-camp-gate-north';
 export const MOROS_LEGATE_ID = 'post-camp-legate';
 
-/** The horse line south of the tent lines: where the token is spent. */
+import { toWorld } from './world-scale.js';
+
+/** The horse line south of the tent lines: where the token is spent. Authored metres. */
 export const MOROS_SITES = Object.freeze({
-  'legion-horse-line': Object.freeze({ id: 'legion-horse-line', name: 'The Legion horse line', x: -563, z: 323, prompt: 'Claim your Legion horse' }),
+  'legion-horse-line': Object.freeze({ id: 'legion-horse-line', name: 'The Legion horse line', ...toWorld(-563, 323), prompt: 'Claim your Legion horse' }),
 });
 export const MOROS_SITE_ACTIONS = Object.freeze({ 'legion-horse-line': 'claim-legion-horse' });
 
