@@ -42,6 +42,13 @@
 .dialogue-actions {display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:20px;}
 .dialogue-actions small {font-size:11px;color:#c4ccae;}#dialogue-next {margin:0;}
 #journal-steps {padding:0;list-style:none;margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;font-size:12px;line-height:1.5;color:#b5bfa5;}
+#atlas-legend {margin:10px 0 0;font-size:12px;color:#cfdbc2;}
+#atlas-legend h4 {margin:0 0 6px;font-family:Adventure,Georgia,serif;font-size:15px;font-weight:400;color:#ffe7ac;}
+#atlas-legend ul {margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px;}
+#atlas-legend li {line-height:1.5;}
+#atlas-legend li b {font-weight:600;color:#f2dfb9;}
+#atlas-legend li small {display:block;color:#a9b5a4;font-size:11px;line-height:1.45;}
+#atlas-legend i.swatch {display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline;}
 #opening .opening-subtitle {margin:-2px 0 28px;font-size:14px;letter-spacing:.34em;text-transform:uppercase;}
 #journal-steps .done {color:#c8d9a5;}#journal-steps .current {color:#ffe0a0;}
 #defeat {width:min(560px,calc(100vw - 60px));}#defeat p {margin-bottom:16px;}#retry {display:block;background:#f3daa0;color:#273e36;border-radius:3px;padding:15px 22px;width:100%;margin-top:24px;font-size:15px;font-weight:600;}#retry span {float:right;}#defeat>small {display:block;text-align:center;margin-top:13px;font-size:12px;color:#c4c9a9;}

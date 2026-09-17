@@ -48,6 +48,8 @@ import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel } from './skills.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createDrentBirds } from './drent-birds.js';
+import { createMapFog } from './map-fog.js';
+import { buildStatusList } from './build-status.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -183,6 +185,9 @@ function init() {
   const campEvents=[];
   const campcraft=createCampcraft({inventory,weapons,fireIds:world.firePits.map(f=>f.id),onEvent:event=>campEvents.push(event)});
   const worldMap=createWorldMap();
+  // The chart is fogged: its hexes are charted as the traveler walks, and named ground is recorded (src/map-fog.js).
+  const mapFog=createMapFog({onEvent:event=>{if(event.type!=='subregion-found')return;toast(event.name,`CHARTED · ${event.region.toUpperCase()}`);refreshChart();if(questStage>=1)saveRoad(false);}});
+  let chartRevealed=false,fogClock=0;
   const woodlandLife=createWoodlandLife(scene,world);
   const woodlandSites=woodlandLife.state();
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
@@ -421,7 +426,7 @@ function init() {
   }
   function journalTab(tab){
     if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
-    if(tab==='world')worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(player.group.position.x,player.group.position.z));
+    if(tab==='world'){worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(player.group.position.x,player.group.position.z));refreshChart();}
     show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills')refreshSkillsSheet();
     for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-trails','trails'],['tab-skills','skills']])$(id).classList.toggle('active',tab===name);
     $('journal').classList.toggle('map-open',tab==='world');$('journal').classList.toggle('trail-open',tab==='trails');
@@ -492,6 +497,27 @@ function init() {
       small.textContent=`${holder.name}. ${info.threats.length?info.threats.map(threat=>threat.name).join(', ')+'. ':'No wild threats. '}${info.role}`;
       li.append(small);list.append(li);
     }
+  }
+  // The chart, and the legend under it: charted ground for the traveler, or how far each region is built for the developer.
+  function refreshChart(){
+    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList()});
+    const legend=$('atlas-legend'),view=mapFog.view();legend.replaceChildren();
+    const el=(tag,text,cls)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+    const list=document.createElement('ul');
+    if(chartRevealed){
+      legend.append(el('h4','Developer · how far each region is built'));
+      for(const region of buildStatusList()){
+        const item=document.createElement('li'),swatch=el('i','','swatch');swatch.style.background=region.colour;
+        item.append(swatch,el('b',`${region.id} · ${region.label}`));
+        item.append(el('small',region.work?`${region.detail} Left to do: ${region.work}`:region.detail));
+        list.append(item);
+      }
+    } else {
+      legend.append(el('h4',`Charted ground · ${view.foundCount} of ${view.total} named areas · ${view.cellCount} hexes`));
+      if(!view.foundCount)list.append(el('li','Nothing is charted yet. The chart fills in as you walk.'));
+      for(const area of view.found){const item=document.createElement('li');item.append(el('b',`${area.name} · ${area.region}`),el('small',area.note));list.append(item);}
+    }
+    legend.append(list);
   }
   function refreshJournal() {
     refreshCampaign();
@@ -628,7 +654,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),chart:mapFog.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -651,6 +677,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    mapFog.restore(saved.chart??createMapFog().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -1071,6 +1098,10 @@ function init() {
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  $('test-reveal-chart').onclick=()=>{
+    chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
+    refreshChart();toast(chartRevealed?'The whole chart is showing, tinted by how far each region is built.':'The chart is fogged again. It fills in as you walk.','DEVELOPER · THE CHART');
+  };
   $('test-birds').onclick=()=>{testTravel('village');const s=world.birdGarden.stand,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Ansel to learn birding. B observes a bird; K shows your skills.','TESTING · BIRDING');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
   $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
@@ -1387,6 +1418,7 @@ function init() {
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
+      fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing')mapFog.reveal(player.group.position.x,player.group.position.z);}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
@@ -1487,7 +1519,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,birding:birding.snapshot(),skills:skills.view(),birds:drentBirds.state(),lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,birding:birding.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
