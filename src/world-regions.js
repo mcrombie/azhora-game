@@ -283,9 +283,12 @@ export function createRegionScenery(kit) {
     // to the world axes and an axis-aligned box would swallow the whole lane.
     // They reach from the deck's own edge out to where the water blockers begin
     // again, so there is no standable ledge of river beside the deck for a
-    // traveler to wander onto and be trapped on.
+    // traveler to wander onto and be trapped on. Over the banks the deck is a
+    // step off ordinary ground and needs no rail: a wall there would only pen a
+    // traveler who walked round the end of it.
     for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .6) {
       const spot = bridgePoint(along, side * 3.03);
+      if (kit.riverDistance(spot.x, spot.z) > CALOSS.halfWidth) continue;
       colliders.push({ x: spot.x, z: spot.z, r: .6, kind: 'bridge-rail' });
     }
   }
