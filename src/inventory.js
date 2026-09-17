@@ -20,6 +20,16 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A wooden token bearing the mark of the Greenway Watch.',
     description: 'Eren has vouched for your passage through the northern forest. Carry this token and Mara’s message to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
   }),
+  'horse-token': Object.freeze({
+    name: 'Legion horse token', type: 'Quest item', icon: 'token',
+    brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
+    description: 'The relay clerk in Lumber Town pays in what the Legion owes him. The horse lines at the camp on the Moros keep the mounts; present this token there and they will hand one over. Riding is not built yet; the token is what the next chapter begins with.',
+  }),
+  'silver-coin': Object.freeze({
+    name: 'Silver coins', type: 'Currency', icon: 'token', stackable: true,
+    brief: 'Small worn coins. The Legion pays in chits; these are the exception.',
+    description: 'Ambroni silver, thin and much handled. Wages, a bed at an inn, bread from a market stall, or a coin for Smiths on Lumber Town’s square.',
+  }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,
     brief: 'Little oak nuts gathered from the forest floor. Lysa collects them for her kitchen.',
