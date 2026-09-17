@@ -130,11 +130,11 @@ export function createPuethScenery(kit) {
   // -------------------------------------------------------------------------
   const P = TESSEN_POST, yardY = groundHeight(P.yard.x, P.yard.z);
   wornPatch(P.yard.x, P.yard.z, 8.5, '#a39a78', 1.1);
-  const stake = material('#6a5540');
+  const stake = material('#6a5540'), stakeTip = new THREE.ConeGeometry(.16, .42, 5);
   const palisade = (x, z) => {
     const y = groundHeight(x, z), h = 2.6 + ((x * 7.1 + z * 3.3) % 1 + 1) % 1 * .45;
     post(stake, x, y + h / 2, z, .16, h, group);
-    const tip = mesh(new THREE.ConeGeometry(.16, .42, 5), stake, x, y + h + .2, z, 1, 1, 1, group); tip.castShadow = true;
+    mesh(stakeTip, stake, x, y + h + .2, z, 1, 1, 1, group);
   };
   for (let t = -1; t <= 1.0001; t += .1) {
     for (const [x, z] of [[P.yard.x - P.halfX, P.yard.z + t * P.halfZ], [P.yard.x + t * P.halfX, P.yard.z - P.halfZ], [P.yard.x + t * P.halfX, P.yard.z + P.halfZ]]) palisade(x, z);

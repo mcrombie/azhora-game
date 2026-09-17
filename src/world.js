@@ -198,7 +198,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       surfaceY: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z),
       fishingSpot: { ...CALOSS_BANK.spot },
       castPoint: { x: CALOSS_BANK.cast.x, y: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z) + .035, z: CALOSS_BANK.cast.z } },
-    // A bank on the Tessen, upstream of the bridge on the Pueth side.
+    // A bank on the Tessen, downstream of the bridge on the Pueth side.
     { id: 'tessen-bank', name: 'Tessen bank', x: -80, z: -201.5, surfaceY: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5),
       fishingSpot: { x: -80, z: -201.5 }, castPoint: { x: -80, y: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5) + .035, z: -193.5 } },
   ];
