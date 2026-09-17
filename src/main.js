@@ -35,6 +35,8 @@ import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
+import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
+import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
@@ -98,6 +100,10 @@ function init() {
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
   // Rimeholt's people, in Pueth.
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
+  // Cobble's people and the Empire's four men on its quay, in Peblos.
+  npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
+  // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
+  world.npcPositions[FERRY_NPC.id]={x:FERRY_LANDINGS.drent.stand.x,z:FERRY_LANDINGS.drent.stand.z};npcData.push({...FERRY_NPC,yaw:FERRY_LANDINGS.drent.stand.yaw});
   // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
   npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
   const garrisonIds=new Set(HIDEOUT_GARRISON.map(npc=>npc.id));
@@ -215,6 +221,22 @@ function init() {
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
+  // The crossing to Peblos: the fare, the developer override, and the short scene either way (src/ferry.js).
+  const ferry=createFerry({
+    purse:()=>inventory.count(COPPER_ITEM),
+    pay:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;},
+    free:()=>testingEnabled,
+    mounted:()=>riding.mounted,
+    position:()=>({x:player.group.position.x,z:player.group.position.z}),
+    place:(x,z,heading)=>{player.group.position.set(x,world.heightAt(x,z),z);player.group.rotation.y=heading;yaw=heading;grounded=true;verticalSpeed=0;settleCamera();},
+    carry:(x,z)=>{player.group.position.set(x,.78,z);},
+    setMode:value=>{mode=value;stopInput();},
+    veil:(value,caption)=>{const sheet=$('crossing');sheet.classList.toggle('hidden',value<=0);sheet.style.opacity=String(value);$('crossing-caption').textContent=value>.6?caption:'';},
+    boat:(x,z,heading)=>world.placeFerryBoat(x,z,heading),
+    stand:(side,point)=>{world.npcPositions[FERRY_NPC.id]={x:point.x,z:point.z};const boatman=npcById.get(FERRY_NPC.id);if(boatman){boatman.actor.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);boatman.actor.group.rotation.y=point.yaw;}},
+    save:()=>{if(!testingEnabled&&questStage>=1)saveRoad(false);},
+    toast,
+  });
   const inAftermathFight=()=>!!aftermath.spec&&combat.state.encounterId===aftermath.spec.encounterId;
   // Places change hands: garrisons (anyone with a stake, see occupation.js) are out only while their side holds their region.
   let heldControl=null,stakedNpcs=null,occupationClock=0;
@@ -654,7 +676,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),chart:mapFog.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -678,6 +700,7 @@ function init() {
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());
+    ferry.restore(saved.ferry??createFerry().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -689,7 +712,8 @@ function init() {
     // A saved position is only honoured when it still stands on one of the four
     // authored regions; older saves from the straight 700 m road resume at a spawn.
     const onPlayableGround=canStand(saved.position.x,saved.position.z,world)
-      &&world.regions.some(region=>insideRegion(region.name,saved.position.x,saved.position.z));
+      &&(world.regions.some(region=>insideRegion(region.name,saved.position.x,saved.position.z))
+        ||quayHeight(saved.position.x,saved.position.z)!==null);
     const point=onPlayableGround?saved.position:questStage<10?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
     player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
     mode='playing';testingEnabled=false;document.body.classList.add('playing');show('opening',false);show('testing-badge',false);show('modal-backdrop',false);
@@ -816,6 +840,10 @@ function init() {
     choices.push({id:'pat-dog',label:'Pat it and go.',action:closeDialogue});
     openDialogue(npc,[line],null,'Leave the dog',{choices});
   }
+  function ferryAct(result){
+    if(!result?.ok){if(result?.reason)toast(result.reason,'THE CROSSING');return;}
+    toast(result.fare?`${result.fare} copper to Corran. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'No fare while testing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
+  }
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
     const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS});
@@ -850,6 +878,8 @@ function init() {
     if(npc.dog){dogConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
+    if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
+    if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
@@ -1098,6 +1128,15 @@ function init() {
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  $('test-peblos').onclick=()=>{
+    if(!testingEnabled)prepareTesting();
+    if(riding.mounted)stepDown(true);
+    const landing=FERRY_LANDINGS.peblos.ashore;
+    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
+    yaw=landing.yaw;pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
+    ferry.settle();settleCamera();closeModal();
+    toast('Cobble, on the main island. Corran waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
+  };
   $('test-reveal-chart').onclick=()=>{
     chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
     refreshChart();toast(chartRevealed?'The whole chart is showing, tinted by how far each region is built.':'The chart is fogged again. It fills in as you walk.','DEVELOPER · THE CHART');
@@ -1420,6 +1459,8 @@ function init() {
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing')mapFog.reveal(player.group.position.x,player.group.position.z);}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
+      // The boat, its man and the crossing: he waits on whichever shore the traveler is on.
+      if(ferry.state.crossing)ferry.frame(dt);else if(mode==='playing'&&!reviewFrozen)ferry.settle();
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
