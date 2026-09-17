@@ -21,6 +21,13 @@ Start from the scaled world (`docs/world-scale-report.md`; one authored hex is 1
 - The autopilot (`borderGoal`) walks to Solis, keeps the Empire's contract, walks back and fights. `src/autoplay-smoke.js` expectations follow.
 - The mercenary company does not go to Solis.
 
+## Ground the next chapter needs
+
+`src/aftermath-chapter.js` (already written, pure, tested) is the chapter after the battle: the Empire's sellsword clears the market square of Solis or holds the Legion camp's gate; the Republic's storms the border stockade or holds the gate of Solis. Its people and fights are placed by site and arena ids that the host resolves. Do not wire it; do leave it the ground it needs, exported from your Solis module as `SOLIS_AFTERMATH`:
+
+- `sites`: a standable, reachable point for `solis-gate` (outside the main gate, beside the road, where a commander waits) and `solis-hall` (inside or on the steps of the council hall, where the envoy or the Tribune receives a report).
+- `arenas`: `solis-square` (the market square) and `solis-approach` (the road outside the main gate), each `{ center: { x, z }, retreatAxis: 'x' | 'z' }`. The combat rules only allow a retreat toward **+axis**, the enemy enters from 12 to 19 m on the −axis side of the centre within 9 m across, the allies form up 10 to 14 m on the +axis side, and the retreat line is 21 m out. So each arena needs a clear, collider-free, fairly level rectangle about 24 m across and 44 m along its axis, with the + end toward where the traveler comes from (the gate for the square, the city for the approach). Put stalls, the fountain and carts around the square's edges, not in that rectangle. Add a test that every offset `aftermathEncounter` produces on both arenas is standable.
+
 ## Rules
 
 - Work in your own worktree and branch. Another agent is fleshing out the existing towns and the signs at the same time: it owns `src/world-regions.js`'s existing places and the sign code in `src/world.js`. Put West Suval's scenery and Solis in new modules with a single call from the world builder, add your NPCs through your own module with one hook in `src/main.js` (CRLF, very long lines, do not reformat), and keep edits to shared files small and local.
