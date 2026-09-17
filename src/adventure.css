@@ -36,6 +36,7 @@
 .combat-control {display:none;}body.armed .combat-control {display:inline;}
 #controls {gap:13px;font-size:11px;bottom:26px;}#controls kbd {font-size:10px;}
 #interaction {bottom:31%;z-index:2;}
+#ride-prompt {bottom:31%;}
 #toast {top:23%;max-width:500px;width:45vw;font-size:23px;padding:12px 18px;border-radius:4px;background:radial-gradient(ellipse,#20453990,transparent 75%);}
 .in-combat #toast {top:22%;}
 .dialogue-actions {display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:20px;}

@@ -7,6 +7,7 @@ import { createJourney } from '../src/journey.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
 import { createAftermathChapter } from '../src/aftermath-chapter.js';
+import { createRiding } from '../src/riding.js';
 import * as campaignModule from '../src/campaign.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-scale.js';
 import { WORLD_BOUNDS as PLAYABLE_BOUNDS } from '../src/regions.js';
@@ -285,4 +286,15 @@ test('the chapter after the border battle is saved with the road, and a contradi
   assert.deepEqual(checkpoint.read().data.aftermath, aftermath.snapshot());
   for (const bad of [null, 'solis-sweep', { ...aftermath.snapshot(), variant: 'border-battle' }, { ...aftermath.snapshot(), revision: 0 }, { ...aftermath.snapshot(), cleared: false, complete: true }])
     assert.equal(checkpoint.save({ ...data, aftermath: bad }).ok, false);
+});
+
+test('the traveler’s horse is saved with the road, and a horse that makes no sense is refused', () => {
+  const { data, checkpoint } = fixture();
+  const riding = createRiding();
+  assert.equal(checkpoint.save({ ...data, riding: riding.snapshot() }).ok, true, 'no horse yet');
+  riding.grant({ x: data.position.x + 2, z: data.position.z + 1 }, .4); riding.teach();
+  assert.equal(checkpoint.save({ ...data, riding: riding.snapshot() }).ok, true);
+  assert.deepEqual(checkpoint.read().data.riding, riding.snapshot());
+  for (const bad of [null, 'bay', { ...riding.snapshot(), horse: null }, { ...riding.snapshot(), mounted: true }, { ...riding.snapshot(), horse: { x: 1, z: NaN, yaw: 0 } }])
+    assert.equal(checkpoint.save({ ...data, riding: bad }).ok, false);
 });

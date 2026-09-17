@@ -9,6 +9,8 @@ import { AFTERMATH_VARIANTS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, aftermathE
 import { AFTERMATH_SITES, AFTERMATH_ARENAS, aftermathBuilt } from '../src/aftermath-sites.js';
 import { LEGION_POSTS } from '../src/legion-posts.js';
 import { legionPostStake } from '../src/occupation.js';
+import { RIDE } from '../src/riding.js';
+import { LUMBER_TOWN_STABLE } from '../src/region-world.js';
 import { HIDEOUT_GARRISON, FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
 
 test('everyone the later chapters place on the ground stands on walkable ground in the right region', async () => {
@@ -59,4 +61,29 @@ test('the day after the battle has ground under it wherever its places are built
   }
   // The Moros variants are playable today.
   assert.ok(aftermathBuilt(AFTERMATH_VARIANTS['moros-fallback']) && aftermathBuilt(AFTERMATH_VARIANTS['moros-outpost']));
+});
+
+test('the roads can be ridden end to end, and the stable yard has room for a man and a horse', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  // A mounted traveler is wider than a walker: the whole main road, the Caloss bridge included, must take the mount's footprint.
+  const road = world.paths[0];
+  for (let i = 1; i < road.length; i++) {
+    const a = road[i - 1], b = road[i], steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
+    for (let step = 0; step <= steps; step++) {
+      const t = step / steps, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
+      assert.ok(canStand(x, z, world, RIDE.radius), `a rider is stopped on the road at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+    }
+  }
+  const { stand, hitch } = LUMBER_TOWN_STABLE;
+  assert.ok(canStand(stand.x, stand.z, world, .45), 'the ostler has footing');
+  assert.ok(canStand(hitch.x, hitch.z, world, RIDE.radius), 'the horse has footing at the hitch');
+  assert.ok(Math.hypot(stand.x - hitch.x, stand.z - hitch.z) > 2.5, 'the ostler is not standing in the horse');
+  for (const spot of [stand, hitch]) {
+    assert.equal(world.regionAt(spot.x, spot.z)?.name, 'Luscia');
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) assert.ok(canStand(spot.x + Math.sin(angle) * 3, spot.z + Math.cos(angle) * 3, world, .45), 'the yard is clear for 3 m round');
+    for (const [id, place] of Object.entries(world.npcPositions)) assert.ok(Math.hypot(place.x - spot.x, place.z - spot.z) >= 4, `${id} is not crowded by the stable yard`);
+  }
+  // Mounting from beside the hitch and stepping down again both find room.
+  assert.ok(Math.hypot(stand.x - hitch.x, stand.z - hitch.z) < 12, 'the horse is handed over within sight of the ostler');
 });

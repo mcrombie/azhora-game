@@ -295,6 +295,14 @@ export const LUMBER_TOWN = Object.freeze({
 export const townPoint = (a, b) => point(
   LUMBER_TOWN.square.x + LUMBER_TOWN.along.x * a + LUMBER_TOWN.across.x * b,
   LUMBER_TOWN.square.z + LUMBER_TOWN.along.z * a + LUMBER_TOWN.across.z * b);
+/**
+ * The stable yard at the town's south-west end, beside the road to the Moros: where the ostler stands and where the
+ * traveler's horse is hitched when it is handed over (src/ostler.js, src/riding.js). Keep 6 m round each clear.
+ */
+export const LUMBER_TOWN_STABLE = Object.freeze({
+  stand: Object.freeze({ ...townPoint(23, 8), yaw: Math.atan2(-LUMBER_TOWN.across.x, -LUMBER_TOWN.across.z) }),   // facing the road
+  hitch: Object.freeze({ ...townPoint(26.5, 10.5), yaw: Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z) }),  // head toward the Moros
+});
 
 export const regionNpcPositions = Object.freeze({
   'meadow-courier': at(-230, 17),         // Corvan, Legion quartermaster, at the farm clearing

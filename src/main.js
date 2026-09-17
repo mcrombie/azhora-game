@@ -39,6 +39,9 @@ import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter,
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
+import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
+import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
+import { LUMBER_TOWN_STABLE } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
@@ -95,6 +98,8 @@ function init() {
   // The day after the battle: a commander, and whoever sends the traveler on, appear where that day's work is.
   for(const person of AFTERMATH_NPCS){world.npcPositions[person.id]={x:AFTERMATH_SITES['camp-gate'].x,z:AFTERMATH_SITES['camp-gate'].z};npcData.push({...person,hidden:true,site:null});}
   const aftermathNpcIds=new Set(AFTERMATH_NPCS.map(person=>person.id));
+  // The ostler of Lumber Town hands over the Legion's horse and teaches riding.
+  world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -182,7 +187,10 @@ function init() {
   const campaign=createCampaign();
   // Luscia: the chapter at the Lauvel, Lumber Town's people, and Smiths on its square.
   const luscia=createLusciaChapter({inventory});
-  const moros=createMorosChapter({inventory});
+  const riding=createRiding();
+  let mountHeading=0,rideCamera=0;
+  const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
+  const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
   const inAftermathFight=()=>!!aftermath.spec&&combat.state.encounterId===aftermath.spec.encounterId;
@@ -192,6 +200,31 @@ function init() {
   // The Legion's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
+  function placeOwnHorse(){const horse=riding.horse;if(!horse){ownHorse.group.visible=false;return;}ownHorse.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);ownHorse.group.rotation.y=horse.yaw;}
+  // G: into the saddle or out of it. A fight, a fall or a scene puts the rider down whether there is room or not.
+  function stepDown(forced=false){
+    const result=forced?riding.unseat(footing):riding.dismount(footing);if(!result.ok){toast(result.reason,'IN THE SADDLE');return false;}
+    player.group.position.set(result.position.x,world.heightAt(result.position.x,result.position.z),result.position.z);grounded=true;verticalSpeed=0;placeOwnHorse();
+    targetDistance=Math.max(4,targetDistance-RIDE.camera.back);return true;
+  }
+  function toggleMount(){
+    if(mode!=='playing'||!riding.owned)return;
+    if(riding.mounted){stepDown();return;}
+    const result=riding.mount(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'});
+    if(!result.ok){toast(result.reason,'YOUR HORSE');return;}
+    mountHeading=result.yaw;const sx=result.position.x+Math.sin(mountHeading)*RIDE.seat.forward,sz=result.position.z+Math.cos(mountHeading)*RIDE.seat.forward;player.group.position.set(sx,world.heightAt(sx,sz)+RIDE.seat.up,sz);player.group.rotation.y=mountHeading;
+    targetDistance=Math.min(19,targetDistance+RIDE.camera.back);stopInput();audio?.effect('success');
+  }
+  function whistleHorse(){
+    if(mode!=='playing'||!riding.owned||riding.mounted)return;
+    const result=riding.whistle(player.group.position);toast(result.ok?(result.far?'A long whistle. He will find you.':'You whistle, and somewhere a bridle jingles.'):result.reason,'YOUR HORSE');
+  }
+  function ridingAct(action){
+    const hitch=LUMBER_TOWN_STABLE.hitch;
+    if(action==='fetch-horse'){riding.place(hitch,hitch.yaw);placeOwnHorse();toast('A stable boy goes out with a halter. Your horse is back in the yard.','LUMBER TOWN · THE STABLE YARD');saveRoad(false);return {ok:true};}
+    const result=redeemHorse({inventory,riding,hitch});if(!result.ok){toast(result.reason,'THE STABLE YARD');return result;}
+    placeOwnHorse();inventory.refresh();refreshQuest();audio?.effect('success');toast('A bay gelding, saddled, and yours. G mounts and dismounts · Shift canters · H whistles him up.','THE LEGION’S HORSE');saveRoad(false);return result;
+  }
   const beggar=createBeggar({waypoints:TOWN_BEGGAR_ROUTE});
   const LUSCIA_NPC_IDS=new Set(LUSCIA_NPCS.map(person=>person.id));
   const smiths=npcData.find(person=>person.id===BEGGAR_NPC.id);
@@ -260,6 +293,7 @@ function init() {
       if(moros.state.complete&&campaign.view().chapterId==='suval-envoy'&&!border.state.started)border.start();
       if(border.state.started){const chapter=border.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       if(luscia.state.complete&&campaign.view().chapterId==='moros-camp'&&!moros.state.started)moros.start();
+      if(horseWaiting({inventory,riding})&&moros.view().stage==='report-at-gate'){$('quest-title').textContent=OSTLER_OBJECTIVE.title;$('quest-detail').textContent=OSTLER_OBJECTIVE.detail;$('quest-step').textContent=OSTLER_OBJECTIVE.kicker;return;}
       if(moros.state.started){const chapter=moros.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       if(luscia.state.started){const chapter=luscia.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       $('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
@@ -491,9 +525,10 @@ function init() {
   function morosAct(action){
     const result=moros.act(action);if(!result.ok){toast(result.reason||'Report at the camp gate first.','THE LEGION ON THE PLAIN');return result;}
     refreshQuest();inventory.refresh();audio?.effect('success');
+    if(result.reward?.id==='legion-horse'&&!riding.owned){const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     const view=moros.view();
-    toast(action==='join-muster'?'Your name is on the Legate’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?'A bay gelding in Legion red, saddled and yours. Riding comes later; for now it waits on the line.':view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(action==='join-muster'?'Your name is on the Legate’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Legion red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the Legion’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
@@ -520,7 +555,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -541,7 +576,7 @@ function init() {
     playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;settleMercenaries();
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
-    moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());
+    moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -713,6 +748,7 @@ function init() {
     if(npc.dog){dogConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
+    if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
@@ -893,6 +929,7 @@ function init() {
     if(mode==='dialogue'){nextSpeech();return;}
     if(mode!=='playing')return;
     if(currentNPC){conversation(currentNPC);return;}
+    if(riding.mounted){toast('Step down first. Press G.','IN THE SADDLE');return;}
     if(combat.state.phase!=='active'&&currentHideoutSite){
       if(currentHideoutSite==='supplies')hideoutAct('recover-hideout-supplies');else hideoutConversation(hideoutContext);
       return;
@@ -942,11 +979,12 @@ function init() {
     }
   }
   function attack(){if(mode==='playing'&&grounded){
+    if(riding.mounted){toast('He will carry you to a fight, not through one. Press G to step down.','IN THE SADDLE');return;}
     if(!weapons.profile().usable){toast('Repair your sword at any repair bench, or equip a gathered stick in I.','NO USABLE WEAPON');return;}
     combat.attack(player.group.rotation.y);canvas.focus();
   }}
   function dodge(){
-    if(mode!=='playing'||!grounded)return;
+    if(mode!=='playing'||!grounded||riding.mounted)return;
     const {forward,side}=getMovementInput(keys);
     const dx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,dz=-Math.cos(yaw)*forward-Math.sin(yaw)*side;
     combat.dodge(Math.hypot(dx,dz)>.01?{x:dx,z:dz}:{x:-Math.sin(player.group.rotation.y),z:-Math.cos(player.group.rotation.y)});
@@ -955,6 +993,7 @@ function init() {
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(2);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=-.95;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
+  $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','EASTREENA · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
   for(const id of [2,3,4])$('test-region-'+id).onclick=()=>testTravel(id);
@@ -984,6 +1023,7 @@ function init() {
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
     border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
+    riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
     aftermath:{stage:aftermath.view().stage,variant:aftermath.view().variant,complete:aftermath.view().complete,built:aftermathBuilt(aftermath.spec),destinationIds:aftermath.view().destinationIds,actions:aftermath.availableActions()},
     interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
   const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>document.querySelector(`[data-choice="${id}"]`)?.click(),interact:()=>interact(),
@@ -1033,10 +1073,12 @@ function init() {
     if(e.code==='KeyL'){e.preventDefault();if(mode==='journal'&&$('tab-trails').classList.contains('active'))closeModal();else openLocalMap();return;}
     if(e.code==='KeyF'){interact();return;}
     if(e.code==='KeyR'){attack();return;}
+    if(e.code===RIDING_KEYS.mount){toggleMount();return;}
+    if(e.code===RIDING_KEYS.whistle){whistleHorse();return;}
     if(e.code==='ControlLeft'||e.code==='ControlRight'){dodge();return;}
     if(mode==='playing'){
       keys.add(e.code);
-      if(e.code==='Space'&&grounded&&combat.state.player.action==='idle'){verticalSpeed=6.3;grounded=false;}
+      if(e.code==='Space'&&grounded&&!riding.mounted&&combat.state.player.action==='idle'){verticalSpeed=6.3;grounded=false;}
     }
   });
   document.addEventListener('keyup',e=>keys.delete(e.code));
@@ -1064,7 +1106,7 @@ function init() {
     if(questStage===8)return world.northTrail;
     if(questStage===9)return world.border;
     if(questStage===10){
-      const candidates=[...journey.view().destinationIds,...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds].map(id=>{const point=world.journeySites?.[id]||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
+      const candidates=[...journey.view().destinationIds,...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])].map(id=>{const point=world.journeySites?.[id]||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
       const p=player.group.position;
       return candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
     }
@@ -1208,7 +1250,12 @@ function init() {
         const before=player.group.position.clone();
         const {forward,side}=autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
         const p=combat.state.player;
-        if(magnitude>0) {
+        if(riding.mounted&&combat.state.phase==='active')stepDown(true);
+        if(riding.mounted){
+          const canter=!!(autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')));
+          if(magnitude>0){const wx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,wz=-Math.cos(yaw)*forward-Math.sin(yaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,world,RIDE.radius);}
+          player.group.rotation.y=mountHeading;p.yaw=mountHeading;
+        } else if(magnitude>0) {
           const speed=((autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))?7.2:4.2)*combat.movementScale();
           const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt;
           moveCharacter(player.group.position,dx,dz,world);
@@ -1218,8 +1265,9 @@ function init() {
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
-        else player.group.position.y=floor;
+        else player.group.position.y=floor+(riding.mounted?RIDE.seat.up:0);
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
+        if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
         if(questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
         if(questStage===8&&Math.hypot(player.group.position.x-world.northTrail.x,player.group.position.z-world.northTrail.z)<5)updateQuest('reach-north-trail');
@@ -1238,7 +1286,13 @@ function init() {
       const weaponPose=combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
-      player.animate(walkTime,movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable,fishing:mode==='fishing'});
+      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted,fishing:mode==='fishing',riding:riding.mounted?{pace:movement}:null});
+      if(riding.owned){
+        if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
+        placeOwnHorse();const away=riding.distanceTo(player.group.position);ownHorse.group.visible=away<220;
+        if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
+        show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
+      } else show('ride-prompt',false);
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
@@ -1257,7 +1311,7 @@ function init() {
           if(escorting){const back=player.group.rotation.y+Math.PI+(i-1)*.75,reach=2.9+i*.35;world.npcPositions[g.id]={x:player.group.position.x+Math.sin(back)*reach,z:player.group.position.z+Math.cos(back)*reach};npc.pace=3.6;}
           else{world.npcPositions[g.id]=garrisonHome[g.id];npc.pace=2.4;}}}
       if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
-      const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds]:[];
+      const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;
@@ -1295,7 +1349,7 @@ function init() {
       currentLusciaSite=mode==='playing'&&luscia.view().stage==='find-satchel'?Object.values(LUSCIA_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<2.7)||null:null;
       currentMorosSite=mode==='playing'&&moros.view().stage==='claim-horse'?Object.values(MOROS_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<3)||null:null;
       // The horses on the line breathe, graze and swish only while the traveler is near enough to see them.
-      if(Math.hypot(p.x+560,p.z-320)<150){ownHorse.group.visible=moros.state.horseClaimed;horseLine[0].actor.group.visible=!moros.state.horseClaimed;for(const [i,horse] of horseLine.entries())if(horse.actor.group.visible)horse.actor.animate(elapsed+i*1.7,0,true,horse.grazing?{grazing:Math.sin(elapsed*.11+i)>0}:{});if(ownHorse.group.visible)ownHorse.animate(elapsed,0,true,{grazing:false});}
+      {const near=Math.hypot(p.x-horseLine[0].x,p.z-horseLine[0].z)<160;for(const [i,horse] of horseLine.entries()){horse.actor.group.visible=near;if(near)horse.actor.animate(elapsed+i*1.7,0,true,horse.grazing?{grazing:Math.sin(elapsed*.11+i)>0}:{});}}
       currentHideoutSite=null;
       if(mode==='playing'){
         const state=forestHideout.state,config=FOREST_HIDEOUT_QUEST;
@@ -1314,8 +1368,9 @@ function init() {
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Recover the village supplies':'Inspect Bramble Scout Camp · optional';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
+      rideCamera=THREE.MathUtils.lerp(rideCamera,riding.mounted?1:0,1-Math.exp(-4*dt));
       const viewDistance=distance+combatCamera*1.2,viewPitch=THREE.MathUtils.lerp(pitch,Math.max(pitch,.56),combatCamera);
-      cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5-combatCamera*.22,0));
+      cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5-combatCamera*.22+rideCamera*(RIDE.camera.up-RIDE.seat.up*.35),0));
       if(mode==='opening'){cameraTarget.set(15+Math.sin(elapsed*.09)*2,12.5,57);cameraFocus.set(0,3.5,14);}
       else {
         if(reviewTarget)cameraFocus.copy(reviewTarget);
