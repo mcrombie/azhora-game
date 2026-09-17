@@ -9,7 +9,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer } from './mercenaries.js';
+import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
 import { createWoodlandLife } from './woodland-life.js';
@@ -312,11 +312,17 @@ function init() {
     toast(`${point.name} is marked in teal. Follow the paths; the marker shows its direction.`, 'LOCAL TRAIL · L TO REVIEW');updateHUD();return true;
   }
   function clearTrailPin(){trackedPlaceId=null;trailMarker.visible=false;updateHUD();}
+  // Where the traveler stands in the hired company: who has landed, who has mustered, and the traveler's place on the road.
+  function companyStanding(){
+    const s=company.summary(playSeconds),rank=company.travelerRank(playSeconds,distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}));
+    const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
+    return ` · the company: ${s.arrived} of ${s.total} landed, ${s.mustered} at the muster, you stand ${ordinal(rank)} on the road`;
+  }
   function refreshCampaign(){
     const view=campaign.view(),control=campaign.mapControl();
     $('campaign-chapter-title').textContent=`${view.title}${view.region?` · ${view.region}`:''}${view.levelName?` · level ${view.level} ${view.levelName}`:''}`;
     $('campaign-chapter-detail').textContent=view.detail;
-    $('campaign-standing').textContent=`${view.sideName}${view.exposed?' · your double-dealing is known':''} · Empire trust ${Math.round(view.trust.empire)} · Coalition trust ${Math.round(view.trust.coalition)}${view.horse?' · a Legion horse':''}`;
+    $('campaign-standing').textContent=`${view.sideName}${view.exposed?' · your double-dealing is known':''} · Empire trust ${Math.round(view.trust.empire)} · Coalition trust ${Math.round(view.trust.coalition)}${view.horse?' · a Legion horse':''}${companyStanding()}`;
     const list=$('campaign-regions');list.replaceChildren();
     for(const id of CAMPAIGN_JOURNAL_REGIONS){
       const info=describeRegion(id,atlasRegions,atlasAdjacency);if(!info)continue;
