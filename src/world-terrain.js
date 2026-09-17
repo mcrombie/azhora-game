@@ -21,7 +21,7 @@ export function villageWeight(lx, lz) {
 
 /**
  * Tidehaven's original ground, in the village's own local metres. This is the
- * shipped Eastreena field with the old northern-district terms removed: beyond
+ * village's original field with the old northern-district terms removed: beyond
  * the settlement the authored hexes take over.
  */
 export function villageBase(x, z) {

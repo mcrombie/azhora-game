@@ -43,7 +43,7 @@ This is the brief for the pass that follows the region rebuild (`docs/region-reb
 ## Drent touch-ups
 
 - The Caloss signpost on the south-west road gets its text.
-- Corvan's lines refer to the farm clearing in the forest rather than Sunmeadow. Search for `Sunmeadow`, `Eastreena`, `Reedwater` and `Threefold` across `src/` and `tests/` and replace the ones the rebuild left (some names may survive as landmark titles by design; the report says which).
+- Corvan's lines refer to the farm clearing in the forest rather than Sunmeadow. Search for `Sunmeadow`, `Reedwater` and `Threefold` across `src/` and `tests/` and replace the ones the rebuild left (some names may survive as landmark titles by design; the report says which).
 
 ## Queued after the Luscia chapter lands
 

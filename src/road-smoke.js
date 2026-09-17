@@ -206,7 +206,7 @@ export async function runRoadSmoke(h) {
     await visit('crossing-keeper');
     choose('hollis-fishing'); await finishDialogue();
     assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the river fishing lesson did not return to Hollis');
-    assert(inventory.count('fishing-rod') === rodsBefore, 'Hollis duplicated the fishing rod already carried from Eastreena');
+    assert(inventory.count('fishing-rod') === rodsBefore, 'Hollis duplicated the fishing rod already carried from Tidehaven');
     assert(JSON.stringify(journey.snapshot()) === beforeFishingLesson, 'the fishing tangent advanced the road quest');
     choose('leave-road-neighbor'); await frames(2);
     const river = world.fishingSpots.find(spot => spot.id === 'reedwater');

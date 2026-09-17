@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { projectTrailPoint, trailMapSVG, trailMapSelection, trailMapViewBounds } from '../src/trail-map.js';
 
 function model() {
-  return { region: { id: 1, name: 'Eastreena' }, currentRegionId: 1, bounds: { minX: -100, maxX: 100, minZ: -170, maxZ: 50 },
+  return { region: { id: 1, name: 'Drent' }, currentRegionId: 1, bounds: { minX: -100, maxX: 100, minZ: -170, maxZ: 50 },
     player: { x: 0, z: 29, heading: Math.PI / 2 },
     paths: [[{ x: 0, z: 40 }, { x: 0, z: -80 }, { x: 7, z: -155 }]],
     waters: [{ kind: 'circle', x: 27, z: -77, radius: 5.4 }, { kind: 'polygon', points: [{ x: -100, z: 29 }, { x: 100, z: 29 }, { x: 100, z: 50 }, { x: -100, z: 50 }] }],

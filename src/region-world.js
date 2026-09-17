@@ -71,6 +71,15 @@ function axialRound(q, r) {
 export function hexCentre(q, r) {
   return TRANSFORM.atlasToWorld(ATLAS_HEX_WIDTH * (q + r / 2) - SURVEY_ORIGIN.x, ATLAS_HEX_SIZE * 1.5 * r - SURVEY_ORIGIN.y);
 }
+/** The six corners of a hex in atlas pixels, for drawing the chart's own grid over it. */
+export function hexAtlasCorners(q, r) {
+  const cx = ATLAS_HEX_WIDTH * (q + r / 2) - SURVEY_ORIGIN.x, cy = ATLAS_HEX_SIZE * 1.5 * r - SURVEY_ORIGIN.y;
+  return Array.from({ length: 6 }, (_, i) => {
+    const angle = Math.PI / 180 * (60 * i - 30);
+    return { x: cx + ATLAS_HEX_SIZE * Math.cos(angle), y: cy + ATLAS_HEX_SIZE * Math.sin(angle) };
+  });
+}
+
 /** True where the authored atlas claims land; everything else inside the world is the Stills. */
 export function isLandHex(x, z) { const h = hexAt(x, z); return landHexes.has(key(h.q, h.r)); }
 
@@ -87,7 +96,7 @@ export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - l
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 
 // The goblin camp (HIDEOUT_SITE, hideoutToWorld) stands in southern Pueth now: see src/pueth-world.js.
-/** The local box the original Eastreena terrain and scatter occupy. */
+/** The local box Tidehaven's original terrain and woodland scatter occupy. */
 export const VILLAGE_LOCAL_BOX = Object.freeze({ minX: -112, maxX: 112, minZ: -168, maxZ: 60 });
 
 // ---------------------------------------------------------------------------

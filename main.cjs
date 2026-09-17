@@ -247,7 +247,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         fs.writeFileSync(path.join(artifactDir,'road-return.png'),(await win.webContents.capturePage()).toPNG());
         console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
-      const screenshot = await win.webContents.capturePage(); fs.writeFileSync(path.join(artifactDir,'eastreena.png'), screenshot.toPNG());
+      const screenshot = await win.webContents.capturePage(); fs.writeFileSync(path.join(artifactDir,'story-start.png'), screenshot.toPNG());
       await win.webContents.executeJavaScript(`window.__AZHORA__.review('map')`);
       await new Promise(resolve=>setTimeout(resolve,600));
       fs.writeFileSync(path.join(artifactDir,'world-builder-atlas.png'),(await win.webContents.capturePage()).toPNG());

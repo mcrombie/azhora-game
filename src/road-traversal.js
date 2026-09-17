@@ -179,8 +179,8 @@ export async function runRoadTraversal(h) {
     await walkTo(initial, 'the Drent starting point');
     stopRun();
     const finalState = await readState();
-    const returnedToEastreena = world.regionAt(position().x, position().z).id === 1;
-    assert(returnedToEastreena, 'the return journey did not re-enter Drent');
+    const returnedToDrent = world.regionAt(position().x, position().z).id === 1;
+    assert(returnedToDrent, 'the return journey did not re-enter Drent');
     assert([2, 3].every(id => enteredRegions.has(id)), 'the trip skipped Luscia or the Moros');
     assert(!enteredRegions.has(4), 'the trip entered East Suval, which is closed');
     assert(frontierEnd < 0 || frontierHeld, 'the Suval branch was not walked to Elod’s shut gate');
@@ -195,7 +195,7 @@ export async function runRoadTraversal(h) {
       traversalChecks, walkedMeters: Math.round(walkedMeters * 10) / 10,
       elapsedSeconds: Math.round((performance.now() - runStarted) / 100) / 10,
       heldRunSeconds: Math.round(heldKeyMs / 100) / 10,
-      recordedFrames, returnedToEastreena, frontierBlocked: true, eastSuvalClosed: frontierHeld,
+      recordedFrames, returnedToDrent, frontierBlocked: true, eastSuvalClosed: frontierHeld,
       regionSamples: [...regionSamples.values()].map(sample => ({
         id: sample.id, name: sample.name, frames: sample.frames, observations: sample.observations,
         minFrameMs: Math.round(sample.minFrameMs * 10) / 10,

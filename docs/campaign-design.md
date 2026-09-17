@@ -94,7 +94,7 @@ The existing four districts are now local slices of Drent and the Luscia border.
 
 | District | Was | Now |
 | --- | --- | --- |
-| 1 Eastreena | a coast of East Izol | Tidehaven on the Stills, Drent's sheltered sound behind the Pebbles |
+| 1 The first shore | a coast of East Izol | Tidehaven on the Stills, Drent's sheltered sound behind the Pebbles |
 | 2 Sunmeadow Plain | fields of East Izol | the Avrel valley clearings inside Drent's forested upland (lore: Drent's valley floors are farmed, the upland between rivers forested) |
 | 3 Reedwater Crossing | a river hollow | the Caloss, Drent's southwestern edge; Luscia begins on the far bank |
 | 4 Threefold Rise | the road toward Izolveth | the Luscian Hills; the relay where Iven files the report |

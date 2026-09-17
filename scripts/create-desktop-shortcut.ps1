@@ -4,7 +4,7 @@ $iconPath = Join-Path $gameRoot 'assets/azhora-coast.ico'
 & (Join-Path $PSScriptRoot 'create-icon.ps1') | Out-Null
 
 $desktopPath = [Environment]::GetFolderPath('Desktop')
-$shortcutPath = Join-Path $desktopPath 'Azhora - Eastreena.lnk'
+$shortcutPath = Join-Path $desktopPath 'Azhora.lnk'
 $nodePath = (Get-Command node.exe).Source
 $powershellPath = (Get-Command powershell.exe).Source
 $launcherPath = Join-Path $gameRoot 'scripts/launch.cjs'
@@ -16,7 +16,7 @@ $shortcut.TargetPath = $powershellPath
 $shortcut.Arguments = '-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -Command "& ''' + $nodeLiteral + ''' ''' + $launcherLiteral + '''"'
 $shortcut.WorkingDirectory = $gameRoot
 $shortcut.IconLocation = "$iconPath,0"
-$shortcut.Description = 'Play Azhora: A shore called Eastreena'
+$shortcut.Description = 'Play Azhora: An Adventure Game'
 $shortcut.WindowStyle = 7
 $shortcut.Save()
 

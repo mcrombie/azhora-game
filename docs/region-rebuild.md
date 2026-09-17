@@ -4,7 +4,7 @@ The playable world is rebuilt so that each region's shape, size and position mat
 
 ## What changes and what stays
 
-Today the world is one straight road along -Z: Eastreena (forest coast), Sunmeadow Plain (fields), Reedwater Crossing (river), Threefold Rise (stone). It is about 700 m long and 190 m wide, hand-placed in `src/world.js` with coordinates repeated in `regions.js`, `local-map-data.js`, `minimap.js`, `road-checkpoint.js` (`WORLD_BOUNDS`), the smokes and the tests.
+Today the world is one straight road along -Z: the forest coast at Tidehaven, Sunmeadow Plain (fields), Reedwater Crossing (river), Threefold Rise (stone). It is about 700 m long and 190 m wide, hand-placed in `src/world.js` with coordinates repeated in `regions.js`, `local-map-data.js`, `minimap.js`, `road-checkpoint.js` (`WORLD_BOUNDS`), the smokes and the tests.
 
 After the rebuild:
 

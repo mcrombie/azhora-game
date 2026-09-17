@@ -6,7 +6,7 @@ import { canStand } from './game-state.js';
 // one that the player needs for the village errand. Fallen branches have their
 // own pickup sites, so taking a stick never removes an acorn or a squirrel prop.
 export function createWoodlandLife(scene, world) {
-  const root = new THREE.Group(); root.name = 'Eastreena woodland life'; scene.add(root);
+  const root = new THREE.Group(); root.name = 'Tidehaven woods life'; scene.add(root);
   const sphere = new THREE.IcosahedronGeometry(1, 1);
   const lowSphere = new THREE.IcosahedronGeometry(1, 0);
   const cone = new THREE.ConeGeometry(1, 1, 5);

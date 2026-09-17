@@ -12,6 +12,7 @@
 #atlas-viewport{position:relative;flex:1;min-height:170px;width:100%;overflow:hidden;border:1px solid #b8985f77;border-radius:3px;background:#2b2219;touch-action:none;cursor:grab;isolation:isolate}
 #atlas-viewport.dragging{cursor:grabbing}
 #atlas-viewport:focus-visible{outline:2px solid #f6d895;outline-offset:3px}
+#world-map #atlas-overlay{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none;user-select:none}
 #world-map #atlas-image{position:absolute;top:0;left:0;max-width:none;max-height:none;margin:0;display:block;transform-origin:0 0;user-select:none;pointer-events:none;background:none;will-change:transform}
 #atlas-loading{position:absolute;inset:0;display:grid;place-content:center;color:#e5d6aa;font-size:14px;background:#2b2219;padding:24px;z-index:2}
 #atlas-loading[hidden]{display:none}

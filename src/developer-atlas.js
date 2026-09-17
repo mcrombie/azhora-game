@@ -24,7 +24,7 @@ const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
 const local = (region, name, travelTarget, insetY, regionId, atlas) => Object.freeze({
-  id: `region-${region}`, name, region, regionId, scene: 'eastreena',
+  id: `region-${region}`, name, region, regionId, scene: 'playable-world',
   travelTarget, atlas, placement: 'authored-region',
   inset: Object.freeze({ x: 50, y: insetY }), status: 'Playable local region',
 });
