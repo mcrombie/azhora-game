@@ -123,6 +123,20 @@ test('replies prefer the quest action, ask Hollis for wood only when short, and 
   assert.ok(CHOICE_PRIORITY.includes('deliver-report'));
 });
 
+test('the computer travels at a run and walks only the last stride', () => {
+  const world = fakeWorld();
+  const pilot = createAutopilot({ world, read: () => snapshot({ questStage: 1, position: far }), act: () => {} });
+  let far = { x: 0, z: 30 };
+  pilot.start();
+  const step = position => { far = position; return pilot.step(.05).move; };
+  assert.equal(step({ x: 4, z: 40 }).run, true, 'a long leg is run');
+  assert.equal(step({ x: 4, z: 26 }).run, true, 'still running a few strides out');
+  const last = step({ x: 4.6, z: 21.4 });
+  assert.equal(last.run, false, 'the last stride up to Mara is walked');
+  assert.ok(Math.hypot(last.forward, last.side) > .9, 'and it is still walking toward her');
+  pilot.stop();
+});
+
 test('the fight policy dodges tells, strikes in reach, closes the gap, and waits on stamina', () => {
   const base = { position: { x: 0, z: 0 }, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } };
   const goblin = (x, z, action = 'idle', progress = 0) => ({ id: 'g', x, z, action, progress, active: true, hp: 50 });

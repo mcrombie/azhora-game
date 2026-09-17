@@ -19,7 +19,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   swingEvery: .3,         // seconds between swing attempts
   stuckAfter: 1.6,        // seconds without progress before a detour
   idleLimit: 260,         // seconds without quest progress before giving up: a 1.7 km road takes a while between steps
-  runBeyond: 6,           // metres from the goal beyond which the autopilot runs
+  runBeyond: 3.2,         // metres from the goal beyond which the autopilot runs: it travels at a run and walks only the last stride up to someone
 });
 
 /** Quest replies the autopilot will pick, most important first. */
