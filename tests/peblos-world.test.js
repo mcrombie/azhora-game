@@ -80,7 +80,7 @@ test('Peblos is a playable region true to the atlas: nine hexes in six islands o
   assert.ok(REGION_BIOMES.Peblos.treesPerHex < REGION_BIOMES.Drent.treesPerHex / 15);
   assert.ok(REGION_BIOMES.Peblos.rocksPerHex > REGION_BIOMES.Drent.rocksPerHex * 4);
   assert.ok(world.peblosMetrics.pines > 0 && world.peblosMetrics.pines < 30, 'a few wind-bent pines, not a wood');
-  assert.ok(world.peblosMetrics.rocks > world.peblosMetrics.pines * 20, 'grey rock is the island’s own scatter');
+  assert.ok(world.peblosMetrics.rocks > world.peblosMetrics.pines * 10, 'grey rock, not timber, is the islands’ own scatter');
 });
 
 test('The Stills lie between Drent and the islands: every island is ringed by open sea, and nothing between them is standable', () => {

@@ -436,10 +436,10 @@ export function createPeblosScenery(kit) {
     for (const cell of island.cells) {
       const hills = cell.terrain === 'hills';
       const sample = () => ({ x: cell.x + range(-52, 52), z: cell.z + range(-58, 58) });
-      for (let i = 0; i < (hills ? PINES * 3 : 0); i++) {
+      for (let i = 0; i < (hills ? PINES * 6 : 0); i++) {
         const { x, z } = sample();
-        if (islandAt(x, z) !== island || landDistance(x, z) < 34 || groundHeight(x, z) < 8) continue;
-        if (clear(x, z, 3) || pines.some(p => Math.hypot(p.x - x, p.z - z) < 9)) continue;
+        if (islandAt(x, z) !== island || landDistance(x, z) < 24 || groundHeight(x, z) < 6.5) continue;
+        if (clear(x, z, 3) || pines.some(p => Math.hypot(p.x - x, p.z - z) < 8)) continue;
         pines.push({ x, z, s: range(.8, 1.15), h: range(5.5, 8), rot: range(0, 6.28), lean: range(.12, .26) });
       }
       for (let i = 0; i < GORSE; i++) {
