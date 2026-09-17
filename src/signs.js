@@ -28,6 +28,8 @@ export const SIGN_LABELS = Object.freeze([
   // Drent
   'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel',
   'Charcoal Burners', 'The Forester’s Hut', 'The Wayside Shrine', 'The Timber Landing', 'Drent',
+  // The three Renas: the razed town, the village that was East Rena, the village that was West Rena (src/rena.js)
+  'The Ruins of Rena', 'Applegarth', 'Rena', 'East Rena', 'Westerina',
   // Luscia
   'Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Return to bridge',
   'The Lauvel', 'The Burned Hamlet', 'Lumber Town', 'The Stable Yard', 'Notices',
