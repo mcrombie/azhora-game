@@ -206,7 +206,7 @@ Run once each at the end, in this order.
 | `npm test` | 377 tests, 377 pass | - |
 | `npm run test:game` | pass (`smoke.json` `ok: true`) | Three faults, below |
 | `npm run test:road` | pass (`road-traversal.json` `ok: true`) | Nothing |
-| `npm run test:autoplay` | AUTOPLAY_RESULT | Three things, below |
+| `npm run test:autoplay` | **not green**; see below | Four things, three fixed |
 
 **`test:game`** found three things, one of them the scaling's own:
 
@@ -246,6 +246,46 @@ Run once each at the end, in this order.
    autopilot reached the Legion camp's gate with everything behind it done and
    ran out of time. The budget is now thirty minutes. Not a fault, but worth
    knowing that this smoke is a long one now.
+4. *The autopilot could not answer the chapters after the road.* `chooseReply`
+   counted a reply as wanted only when the road or the Luscia chapter offered it;
+   the Moros camp, the border and the day after were never consulted, although
+   their replies have been in `CHOICE_PRIORITY` since they were written. The
+   autopilot walked to the camp gate, opened the sentry's conversation, said
+   goodbye and walked away, over and over. Nothing to do with the world scale:
+   those chapters have never been reachable by the autopilot. Fixed, with a unit
+   test that every chapter's replies are answered.
+
+### Where `test:autoplay` stands
+
+It is **not green**, and the last run was not repeated: the coordinator called
+time so the branch could be merged, and riding is about to change how the
+autopilot travels anyway.
+
+Four runs were made. The first stalled in the river; the second stalled in the
+same pocket; the third reached the Legion camp's gate with the road, the bridge,
+the waymarkers, Iven's report and the whole Luscia chapter behind it and then
+looped on the sentry's conversation until the clock ran out; the fourth, with the
+reply fix in, got as far as the driftwood again and stalled on the Drent bank
+with two of the three sticks it needs.
+
+What is left, in the order it bites:
+
+- **One leg still stalls.** Standing at the first driftwood pile on the Drent
+  bank with two sticks, the nearest uncollected pile is the second one, across
+  the water. The autopilot now walks back to the road from the bank correctly
+  (a deterministic replay of its own stepper over the real world clears
+  `debris-1 -> the bridge`, `debris-1 -> Hollis`, `debris-2 -> the bridge` and
+  every trip that starts from the road), but `debris-1 -> debris-2` still grinds
+  at the channel. The cheap fix is in `planGoal`: order the driftwood by distance
+  **along the road** rather than in a straight line, so the pile on this bank is
+  preferred. It was not made because it was not verifiable inside the time left.
+- **Beyond that, nothing past the camp gate has ever been autoplayed**, so the
+  Moros camp, the border battle and the day after are untested by this smoke even
+  with the reply fix in place.
+
+`npm run test:game` and `npm run test:road` both pass, so the road, the bridge,
+the fights, the saves and the whole story walkthrough are covered; what is not
+covered is the computer playing them unattended.
 
 `src/forest-hideout-smoke.js` is **not** rewritten. It describes the goblin camp
 as a Drent errand of Tamsin's at quest stage 5 paid in pawpaws; the camp moved to
@@ -330,6 +370,13 @@ but the place named on the board is now half again as far away.
   across and East Suval's 120 m, so the bigger regions have more hills rather
   than bigger ones. That reads well on foot, but it is a choice, and a region
   pass may want longer wavelengths for the Moros in particular.
+- **The Legion horse line's animation still uses authored coordinates.**
+  `main.js` wakes and animates the four horses with
+  `Math.hypot(p.x + 560, p.z - 320) < 150`, which is the hitch's 56 m position;
+  at 100 m per hex the horses stand at about `(-993, 571)` and that test never
+  passes, so they never graze. The horses themselves are placed from
+  `world.storySites.horseHitch` and stand in the right place. Left alone on
+  purpose: the riding patch replaces that line.
 - **`ANCHORS.suvalBorder`** is 11 authored metres from Elod's border post, and
   the post is a cluster while the anchor scales plainly, so the two are about
   20 m apart now. Nothing but this report reads the anchor; if West Suval's road
