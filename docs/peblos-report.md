@@ -288,8 +288,8 @@ new frame. No cluster was added, and nothing in `world-scale.js` changed.
 
 ## Tests
 
-`npm test`: **458 tests, 458 pass**, 315 s. Two new files, both in
-`package.json`'s list.
+`npm test`: **458 tests, 458 pass** — 187 s on an idle machine, 315 s with the
+Electron smokes running beside it. Two new files, both in `package.json`'s list.
 
 `tests/peblos-world.test.js` (8): the region against the atlas, nine hexes in six
 islands with the main one named and every outer one carrying its landmark; every
