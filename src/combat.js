@@ -18,7 +18,10 @@ const ENEMY_RECOVERY = 1.35;
 const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
+  // A trained man with a blade: a shorter tell than a goblin's and a steadier pace.
+  soldier: Object.freeze({ tell: .82, attack: .56, contact: .24, recovery: 1.25, damage: 16, speed: 2.0, engage: 2.1, reach: 2.15, lunge: 1.4 }),
 });
+const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
 const ALLY_KINDS = Object.freeze({
   legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90 }),
@@ -53,11 +56,12 @@ function encounterConfig(config) {
     if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || !point(enemy)) return null;
     const kind = enemy.kind ?? 'goblin';
     if (!Object.hasOwn(ENEMY_KINDS, kind)) return null;
+    if (enemy.look !== undefined && !SOLDIER_LOOKS.includes(enemy.look)) return null;
     const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
       || Math.abs(enemy[across] - config.center[across]) > 12 || enemy[axis] < config.center[axis] - 21
       || enemy[axis] > config.center[axis] + 18 || enemy[axis] >= line) return null;
-    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind });
+    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind, ...(enemy.look ? { look: enemy.look } : {}) });
   }
   const allies = [];
   if (config.allies !== undefined) {
@@ -65,10 +69,11 @@ function encounterConfig(config) {
     for (const ally of config.allies) {
       if (!ally || !identifier(ally.id) || seen.has(ally.id) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
         || (ally.name !== undefined && typeof ally.name !== 'string')
+        || (ally.model !== undefined && (!ally.model || typeof ally.model !== 'object' || Array.isArray(ally.model)))
         || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
         || Math.abs(ally[across] - config.center[across]) > 12 || ally[axis] < config.center[axis] - 21
         || ally[axis] > config.center[axis] + 18 || ally[axis] >= line) return null;
-      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}) });
+      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}) });
     }
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
@@ -192,7 +197,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     restorePlayer();
     enemyTimers.clear();
     lastEncounter = next;
-    state.enemies = next.enemies.map(enemy => makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, enemy.hp));
+    state.enemies = next.enemies.map(enemy => ({ ...makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, enemy.hp), ...(enemy.look ? { look: enemy.look } : {}) }));
     allyTimers.clear();
     state.allies = next.allies.map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
@@ -471,7 +476,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   // strike with the same tell-then-swing rhythm. Enemies treat them as targets.
   function makeAlly(spec, index) {
     const profile = ALLY_KINDS[spec.kind];
-    const ally = { id: spec.id, name: spec.name, kind: spec.kind, ...safePoint(spec.x, spec.z), yaw: 0,
+    const ally = { id: spec.id, name: spec.name, kind: spec.kind, ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
       hp: spec.hp ?? profile.hp, maxHp: spec.hp ?? profile.hp, action: 'idle', progress: 0, speed: 0, active: true };
     allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
     return ally;

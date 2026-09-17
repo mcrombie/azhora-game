@@ -37,7 +37,7 @@ export function createCombatView(scene, world, camera) {
     if(e.type==='ally-hit'||e.type==='ally-down'){burst(e.x,e.z,e.type==='ally-down'?14:6);}
   }
   function createEnemy(enemy,index) {
-    const actor=enemy.kind==='wolf'?createWolf({variant:index}):createGoblin({variant:index});scene.add(actor.group);
+    const actor=enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):createGoblin({variant:index});scene.add(actor.group);
     const tell=new THREE.Group();scene.add(tell);
     const sector=new THREE.Mesh(new THREE.CircleGeometry(2.3,32,-.85,1.7),new THREE.MeshBasicMaterial({color:0xeab34f,transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     // In local coordinates +Y of the disc becomes +Z on the ground.
@@ -45,13 +45,13 @@ export function createCombatView(scene, world, camera) {
     const edge=new THREE.Mesh(new THREE.RingGeometry(2.22,2.32,32,1,-.85,1.7),new THREE.MeshBasicMaterial({color:0xf6c867,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     edge.rotation.copy(sector.rotation);tell.add(edge);
     const badge=document.createElement('div');badge.className='enemy-badge';
-    const name=document.createElement('span');name.textContent=enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):index===0?'Bramble scout':'Bramble raider';
+    const name=document.createElement('span');name.textContent=enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='soldier'?(enemy.look==='legion'?'Legionary':'Coalition soldier'):index===0?'Bramble scout':'Bramble raider';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
   }
   function createAlly(ally) {
-    const actor=createCharacter({role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
+    const actor=createCharacter(ally.model?{...ally.model,armed:true}:{role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
     const badge=document.createElement('div');badge.className='enemy-badge ally';
     const name=document.createElement('span');name.textContent=ally.name||'Legionary';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
@@ -80,11 +80,11 @@ export function createCombatView(scene, world, camera) {
   }
   function update(dt,time,state,position,visible=true) {
     updateAllies(dt,time,state,visible);
-    const ids=new Set(state.enemies.filter(e=>e.kind==='goblin'||e.kind==='wolf').map(e=>e.id));
+    const ids=new Set(state.enemies.filter(e=>e.kind==='goblin'||e.kind==='wolf'||e.kind==='soldier').map(e=>e.id));
     for(const [id,item] of actors)if(!ids.has(id)){item.actor.group.visible=false;item.tell.visible=false;item.badge.hidden=true;}
     let index=0;
     for(const enemy of state.enemies) {
-      if(enemy.kind!=='goblin'&&enemy.kind!=='wolf')continue;
+      if(enemy.kind!=='goblin'&&enemy.kind!=='wolf'&&enemy.kind!=='soldier')continue;
       const item=actors.get(enemy.id)||createEnemy(enemy,index);index++;
       const dead=enemy.hp<=0;
       item.deadTime=dead?item.deadTime+dt:0;

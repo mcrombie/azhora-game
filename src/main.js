@@ -34,6 +34,7 @@ import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
@@ -84,6 +85,9 @@ function init() {
   // Lumber Town's garrison: they stand on the square, and march and fight beside the traveler on the goblin camp.
   npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
   const garrisonIds=new Set(HIDEOUT_GARRISON.map(npc=>npc.id));
+  // The envoy's party and the line commanders stand at the border stockade only while the story needs them.
+  for(const person of BORDER_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person,hidden:true});}
+  const borderNpcIds=new Set(BORDER_NPCS.map(person=>person.id));
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -172,6 +176,7 @@ function init() {
   // Luscia: the chapter at the Lauvel, Lumber Town's people, and Smiths on its square.
   const luscia=createLusciaChapter({inventory});
   const moros=createMorosChapter({inventory});
+  const border=createBorderChapter();
   let currentMorosSite=null;
   // The Legion's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const x=-566+1.8+i*3.6,z=320-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
@@ -239,6 +244,8 @@ function init() {
     if(questStage===10){
       journey.start();const quest=journey.view();
       if(quest.complete&&campaign.view().chapterId==='luscia-aftermath')luscia.start();
+      if(moros.state.complete&&campaign.view().chapterId==='suval-envoy'&&!border.state.started)border.start();
+      if(border.state.started){const chapter=border.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       if(luscia.state.complete&&campaign.view().chapterId==='moros-camp'&&!moros.state.started)moros.start();
       if(moros.state.started){const chapter=moros.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       if(luscia.state.started){const chapter=luscia.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
@@ -428,10 +435,33 @@ function init() {
     saveRoad(false);
     return result;
   }
+  // The fork and the border battle. Allies are whoever of the hired company has mustered, filled out with legionaries;
+  // on the Republic's side they are the valley companies. The traveler's corner must be held; the day goes by the campaign's odds.
+  function borderAllies(side){
+    if(side==='coalition')return [1,2,3,4].map(n=>({id:`valley-company-${n}`,name:n===1?'Valley sergeant':'Valley company',kind:n===1?'officer':'legionary',model:{role:'suvali-guard',tunic:n%2?0x3f5f86:0x55636f}}));
+    const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=MERCENARY_ROSTER.find(m=>m.id===p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
+    for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Legionary',kind:'legionary'});
+    return mustered;
+  }
+  function borderAct(action){
+    const result=border.act(action);if(!result.ok){toast(result.reason,'THE BORDER');return result;}
+    if(result.side&&!result.startEncounter){const chosen=campaign.chooseSide(result.side);if(!chosen.ok)toast(chosen.reason,'THE BORDER');}
+    if(result.startEncounter){
+      saveRoad(false);
+      const side=border.view().side;
+      if(!combat.startEncounter(borderEncounter(side,borderAllies(side)))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      stopInput();toast(side==='empire'?'The Coalition comes on in two waves. Hold your corner of the field.':'The Legion comes on in two waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
+      return result;
+    }
+    refreshQuest();audio?.effect('success');
+    toast(action==='take-legate-terms'?'The Legate’s terms, sealed. The envoy waits at the border stockade.':result.side==='empire'?'You keep the Empire’s contract. The Envoy’s answer is no.':'You stand with the Republic. The Legate will have no answer.',action==='take-legate-terms'?'JOURNAL UPDATED':'YOUR SIDE IS CHOSEN');
+    saveRoad(false);
+    return result;
+  }
   function morosAct(action){
     const result=moros.act(action);if(!result.ok){toast(result.reason||'Report at the camp gate first.','THE LEGION ON THE PLAIN');return result;}
     refreshQuest();inventory.refresh();audio?.effect('success');
-    if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp')campaign.completeChapter('moros-camp');
+    if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     const view=moros.view();
     toast(action==='join-muster'?'Your name is on the Legate’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?'A bay gelding in Legion red, saddled and yours. Riding comes later; for now it waits on the line.':view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
@@ -460,7 +490,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot()});
+    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -481,7 +511,7 @@ function init() {
     playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;settleMercenaries();
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
-    moros.restore(saved.moros??createMorosChapter().snapshot());
+    moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -653,6 +683,8 @@ function init() {
     if(npc.dog){dogConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
+    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
+    if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Legate’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
@@ -919,6 +951,7 @@ function init() {
     mapTutorial:mapTutorial.step,
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
+    border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
     interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
   const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>document.querySelector(`[data-choice="${id}"]`)?.click(),interact:()=>interact(),
     attack:({yaw:aim})=>{if(mode==='playing'&&grounded&&weapons.profile().usable)combat.attack(aim);},dodge:({x,z})=>{if(mode==='playing'&&grounded)combat.dodge({x,z});},
@@ -998,7 +1031,7 @@ function init() {
     if(questStage===8)return world.northTrail;
     if(questStage===9)return world.border;
     if(questStage===10){
-      const candidates=[...journey.view().destinationIds,...luscia.view().destinationIds,...moros.view().destinationIds].map(id=>{const point=world.journeySites?.[id]||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
+      const candidates=[...journey.view().destinationIds,...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds].map(id=>{const point=world.journeySites?.[id]||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
       const p=player.group.position;
       return candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
     }
@@ -1019,16 +1052,22 @@ function init() {
           const result=forestHideout.markCleared(hideoutEncounter.id);syncHideout();
           if(result.ok){toast(result.message,'BRAMBLE SCOUT CAMP · CLEARED');saveRoad(false);}
         }
+        else if(combat.state.encounterId===BORDER_ENCOUNTER_ID){
+          // The traveler held their corner. The day itself is decided by the campaign's odds for the chosen side.
+          const odds=campaign.battleOdds('border-battle'),verdict=border.resolveBattle(BORDER_ENCOUNTER_ID,odds?.chance??50,Math.random()*100);
+          if(verdict.ok){campaign.completeChapter('border-battle',verdict.outcome);refreshQuest();toast(border.view().detail,verdict.outcome==='victory'?'THE BORDER BATTLE · WON':'THE BORDER BATTLE · LOST');saveRoad(false);}
+        }
         else if(combat.state.encounterId===LUSCIA_WOLVES.id){const cleared=luscia.clearWolves(LUSCIA_WOLVES.id);if(cleared.ok){toast('The pack breaks for the copses. Carry the courier\u2019s satchel back to Iven.','THE LAUVEL · WOLVES DRIVEN OFF');saveRoad(false);}}
         else{updateQuest('victory');toast('The Greenway is safe.','THREE RAIDERS DRIVEN OFF');}
       }
       if(e.type==='retreat'){
         if(combat.state.encounterId==='meadow-raiders')toast('Rest near Corvan’s camp; the raiders remain by the cart.','SUNMEADOW · A CHANCE TO RECOVER');
-        else if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);toast('The camp can wait. Return to its approach when you are ready.','BACK TO THE GREENWAY');saveRoad(false);}
+        else if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);toast('The camp can wait. Return to its approach when you are ready.','BACK TO THE ROAD');saveRoad(false);}
+        else if(combat.state.encounterId===BORDER_ENCOUNTER_ID){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line holds without you for now. Tell your commander when you are ready.','THE BORDER BATTLE');}
         else{updateQuest('retreat');toast('Catch your breath in the village.','RETURN TO THE BELL WHEN READY');}
       }
       if(e.type==='defeat'){
-        $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':'Full health · Restart at the woodland bell';
+        $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':combat.state.encounterId===BORDER_ENCOUNTER_ID?'Full health · Rejoin the line south of the stockade':'Full health · Restart at the woodland bell';
         if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);$('defeat-checkpoint').textContent='Full health · Retry from the Bramble Scout Camp approach';}
         mode='defeated';stopInput();show('dialogue',false);show('modal-backdrop',true);show('journal',false);show('pause',false);show('defeat',true);$('retry').focus();
       }
@@ -1070,7 +1109,7 @@ function init() {
     show('border-status',mode==='playing'&&player.group.position.z<world.bounds.minZ+18);
     $('practice-hits').textContent=`${Math.min(2,practiceHits)} / 2 hits`;$('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
     show('encounter-status',active&&mode==='playing');
-    $('raiders-left').textContent=combat.state.enemies.filter(e=>['goblin','wolf'].includes(e.kind)&&e.hp>0).length;
+    $('raiders-left').textContent=combat.state.enemies.filter(e=>e.kind!=='dummy'&&e.hp>0).length;
     const goal=destination();
     const pin=trackedPlace(),pinDistance=pin?Math.hypot(pin.x-player.group.position.x,pin.z-player.group.position.z):Infinity;
     show('trail-pin',!!pin&&mode==='playing'&&!active);
@@ -1084,7 +1123,7 @@ function init() {
       $('region-kicker').textContent=regionKicker(region);
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
-    $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':'DEFEND THE GREENWAY';
+    $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':'DEFEND THE GREENWAY';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
@@ -1169,6 +1208,7 @@ function init() {
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.
       {const escorting=forestHideout.state.escort,fighting=['active','defeated'].includes(combat.state.phase)&&combat.state.encounterId===hideoutEncounter.id&&combat.state.allies.length>0;
         for(const [i,g] of HIDEOUT_GARRISON.entries()){const npc=npcById.get(g.id),ally=fighting?combat.state.allies.find(a=>a.id===g.id):null;
@@ -1178,7 +1218,7 @@ function init() {
           if(escorting){const back=player.group.rotation.y+Math.PI+(i-1)*.75,reach=2.9+i*.35;world.npcPositions[g.id]={x:player.group.position.x+Math.sin(back)*reach,z:player.group.position.z+Math.cos(back)*reach};npc.pace=3.6;}
           else{world.npcPositions[g.id]=garrisonHome[g.id];npc.pace=2.4;}}}
       if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
-      const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds]:[];
+      const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds]:[];
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;
@@ -1259,7 +1299,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

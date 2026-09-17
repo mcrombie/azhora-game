@@ -25,7 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'side-empire', 'sound-advance',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -209,8 +209,19 @@ export function planGoal(snapshot, world) {
  * the burial line (the ordinary fight policy handles those), and back again.
  */
 /** The Legion on the plain: the camp gate, the Legate's muster, the horse line. */
+/** The Legate's terms, the envoy at the stockade, and the line. The autopilot keeps the Empire's contract. */
+export function borderGoal(snapshot, world) {
+  const border = snapshot.border;
+  if (border?.complete) return { kind: 'done', intent: 'The border battle is fought', reason: 'The border battle is fought and the war moves on. What follows is the next chapter, and it is not built yet.' };
+  if (!border?.destinationIds?.length) return { kind: 'wait', intent: 'Waiting on the line' };
+  const id = border.destinationIds[0];
+  if (world.npcPositions?.[id]) return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Going to ${world.npcNames?.[id] ?? id}` };
+  return { kind: 'wait', intent: 'Looking for the next step at the border' };
+}
+
 export function morosGoal(snapshot, world) {
   const moros = snapshot.moros;
+  if (moros?.complete && snapshot.border) return borderGoal(snapshot, world);
   if (moros?.complete)
     return { kind: 'done', intent: 'On the Legate’s muster', reason: 'You are on the Legate’s muster with a horse on the line. The road to Solis is the next chapter, and it is not built yet.' };
   if (!moros?.destinationIds?.length) return { kind: 'wait', intent: 'Waiting for orders from the Moros' };
