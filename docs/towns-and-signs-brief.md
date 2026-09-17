@@ -7,6 +7,16 @@ Start from the scaled world (`docs/world-scale-report.md`; hand-placed coordinat
 - Look at every kind of sign in the game: the village trail signs (`trailSign` in `src/world.js`), the road and border signposts in the regions, the Caloss signpost, the Moros gate, waymarkers. Capture them with the review screenshots (`npm run review:*`, see `CLAUDE.md`) or a scratch render, and compare with the village's buildings and props.
 - Give the game one sign language: weathered timber posts and boards in the same woods and proportions as the village's carpentry, low-poly and flat-shaded like everything else, lettering that is readable at the follow camera's distance and consistent in colour and size, the same board shapes for the same meanings (a pointed board for a direction, a square board for a place name, a small plaque for a notice, a painted stone for a border). No glossy, emissive or default-material parts, no text that faces away from the road. Apply it everywhere and delete one-off variants.
 
+## What the new scale left behind
+
+`docs/world-scale-report.md` (read its last two sections) found, and you should fix:
+
+- **Every place is now small for its region**: Lumber Town is a 30 m square in a 700 m region, the Legion's outpost a 30 by 26 m palisade on an 850 m plain. Grow them as you develop them (a cluster's radius in `src/world-scale.js` can grow with its place; keep existing quest stands where they are and re-run `tests/world-scale.test.js`). The outpost in particular must become a real fort: the user compares Solis's walls to it.
+- **Empty road**: the village holds the first 181 m of the main road, then nothing until the Avrel clearing at 429 m, including a 174 m straight from the Caloss Gate; the Moros gate to the outpost is 270 m of bare plain. Give these stretches wayside life in keeping with each region (in Drent: a charcoal burners' clearing, a forester's hut, a wayside shrine, a felled-timber landing; on the Moros: a milestone line, a shepherd's fold, a Legion picket with a windbreak, cart ruts and a dead campfire), each a small landmark with discovery text. Drent is level 0: nothing there may attack.
+- **Three workyards are drawn outside the world**: `createRegionalPlaces` still places the Mill Commons, the Landing Workshop and the Waystation Shelter scenery at pre-rebuild coordinates ((-38,-273), (-30,-451), (-34,-581)), so their people, colliders and reserved ground exist where they should but the scenery does not. Draw them where their people stand.
+- The flocks keep their spread, so each region can carry two or three of them now.
+- `npm run test:autoplay` is known not to be green (it reaches the outpost's gate; see the report) and takes up to half an hour: do not run it.
+
 ## Places to develop
 
 Keep each place's centre and its existing quest-critical stands, sites and colliders where they are; add around them. Every building gets a collider; every new NPC stand is standable, reachable and at least 4 m from quest NPCs; roads and trails stay clear.
