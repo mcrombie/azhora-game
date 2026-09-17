@@ -88,7 +88,7 @@ test('Visible bundle and fallen wayboard change independently without blocking i
 });
 
 test('Woodland art uses eight bounded static batches with finite geometry', () => {
-  const root = scene.getObjectByName('Eastreena woodland places'), meshes = [];
+  const root = scene.getObjectByName('Tidehaven woods places'), meshes = [];
   root.traverse(object => { if (object.isMesh) meshes.push(object); });
   const metrics = world.forestPlaceMetrics();
   assert.equal(meshes.length, 8);

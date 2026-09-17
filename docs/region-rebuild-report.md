@@ -174,7 +174,7 @@ saved on the old road north of `z = -209` — anything past the old Sunmeadow
 Plain — is rejected with the existing "The saved position lies outside the
 playable road" message. Nothing crashes.
 
-A save taken in the old Eastreena still validates, because its coordinates fall
+A save taken on the old forest coast still validates, because its coordinates fall
 inside the new bounds. `continueRoad()` now honours a saved position only when it
 both stands and lies inside one of the four authored outlines; otherwise the
 traveler resumes at `world.spawn` (tutorial) or at the spawn of the region their

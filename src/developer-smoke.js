@@ -138,7 +138,7 @@ export async function runDeveloperSmoke(h) {
     const routeStops = [...document.querySelectorAll('#ghost-local-route [data-dev-destination]')];
     assert(routeStops.length === DEV_WORLD_DESTINATIONS.filter(destination => destination.region).length, 'Drent is missing a local playable destination');
     await click(routeStops.find(node => node.dataset.devDestination === 'region-4'));
-    assert(developer.state().scene === 'eastreena' && developer.state().destination === 'region-4', 'local region4 marker did not return to the playable world scene');
+    assert(developer.state().scene === 'playable-world' && developer.state().destination === 'region-4', 'local region4 marker did not return to the playable world scene');
     // East Suval lies south of Luscia on the atlas: large positive z, east of the Moros.
     assert(developer.state().flight.position.z > 200 && developer.state().flight.position.z < 460 && developer.state().flight.position.x > -320 && developer.state().flight.position.x < 150,
       'East Suval local destination uses the wrong world coordinates');

@@ -71,7 +71,7 @@ azhora.wwmap  →  scripts/export-developer-atlas.mjs  →  assets/azhora-dev-re
 
 World units are metres, one authored hex is 56 m, world -Z is atlas north and +X is east (`HEX_WORLD_TRANSFORM`). Region ids are 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval. `game-state.js` owns collision (`canStand`, `moveCharacter`) against `world.colliders` and `world.heightAt`. The autopilot follows `world.paths[0]`, which must remain the main road.
 
-The four regions are built (`docs/region-rebuild.md` is the brief, `docs/region-rebuild-report.md` the build report). A few old district names (Sunmeadow, Reedwater, Threefold) survive as landmark titles. The game is titled **Azhora** with the subtitle **An Adventure Game** (window, opening screen, desktop shortcut, package); the working name Eastreena survives only in internal object names and comments and must never appear in a title or on screen. Pre-rebuild versions of the rewritten files are in git history (the initial commit), not in the tree.
+The four regions are built (`docs/region-rebuild.md` is the brief, `docs/region-rebuild-report.md` the build report). A few old district names (Sunmeadow, Reedwater, Threefold) survive as landmark titles. The game is titled **Azhora** with the subtitle **An Adventure Game** (window, opening screen, desktop shortcut, package); Eastreena is at most a side name for the opening village (Tidehaven): never use it for Drent, the woods, the old first district, the prologue or the game. Pre-rebuild versions of the rewritten files are in git history (the initial commit), not in the tree.
 
 ### Story and campaign layers
 

@@ -5,9 +5,6 @@ $iconPath = Join-Path $gameRoot 'assets/azhora-coast.ico'
 
 $desktopPath = [Environment]::GetFolderPath('Desktop')
 $shortcutPath = Join-Path $desktopPath 'Azhora.lnk'
-# The shortcut once carried a working title; replace it rather than leave two icons.
-$oldShortcut = Join-Path $desktopPath 'Azhora - Eastreena.lnk'
-if (Test-Path -LiteralPath $oldShortcut) { Remove-Item -LiteralPath $oldShortcut }
 $nodePath = (Get-Command node.exe).Source
 $powershellPath = (Get-Command powershell.exe).Source
 $launcherPath = Join-Path $gameRoot 'scripts/launch.cjs'

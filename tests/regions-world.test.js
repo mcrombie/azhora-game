@@ -31,7 +31,7 @@ test('The authored playable regions carry the atlas into the world, with Drent o
   // Drent is far larger than the 190 m strip it replaces, and every region has
   // a real polygon, not a Z band.
   const drent = regions[0];
-  assert.ok(drent.bounds.maxX - drent.bounds.minX > 6.8 * METRES_PER_HEX, 'Drent is wider than the old Eastreena');
+  assert.ok(drent.bounds.maxX - drent.bounds.minX > 6.8 * METRES_PER_HEX, 'Drent is wider than the old first-district strip');
   for (const region of regions) {
     assert.ok(region.outline.length >= 1 && region.outline[0].length >= 6, `${region.name} has an outline`);
     assert.ok(region.border[0].length === region.outline[0].length * 4, `${region.name} has a softened chart border`);

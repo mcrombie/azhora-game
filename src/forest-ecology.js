@@ -155,11 +155,11 @@ function animalAndWoodShapes() {
   ico.dispose(); round.dispose(); cylinder.dispose(); box.dispose(); return shapes;
 }
 
-/** Quiet ecology for Eastreena only. Animals are scenery and never block movement. */
+/** Quiet ecology for the woods about Tidehaven only. Animals are scenery and never block movement. */
 export function createForestEcology(scene, world, { exclusionSites = [] } = {}) {
   let seed = 0x46f03a19, updates = 0, disposed = false;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
-  const root = new THREE.Group(); root.name = 'Eastreena forest ecology'; scene.add(root);
+  const root = new THREE.Group(); root.name = 'Tidehaven woods ecology'; scene.add(root);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .96, flatShading: true, side: THREE.DoubleSide });
   const shapes = animalAndWoodShapes();
   for (const kind of ['fern', 'wood-sorrel', 'wood-anemone', 'wood-violet']) shapes[kind] = botanicalGeometry(kind);
@@ -230,7 +230,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
   }
   const deerGroups = [], deer = [];
   for (const [i, home] of [{ x: -80, z: 50 }, { x: -132, z: -15 }, { x: -153, z: 70 }].entries()) {
-    const group = new THREE.Group(); group.name = `Eastreena deer ${i + 1}`; root.add(group);
+    const group = new THREE.Group(); group.name = `Tidehaven woods deer ${i + 1}`; root.add(group);
     const animals = [];
     for (let n = 0; n < (i === 2 ? 2 : 1); n++) {
       const p = nearClear(home.x + n * 2.4, home.z + n * 1.8); if (!p) continue;
@@ -244,7 +244,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
   }
   // Fixed bird anchors have their own life cycle and consume none of the
   // existing scatter RNG, so adding birds cannot move plants or collectibles.
-  const birdGroup = new THREE.Group(); birdGroup.name = 'Eastreena woodland thrushes'; root.add(birdGroup);
+  const birdGroup = new THREE.Group(); birdGroup.name = 'Tidehaven woods thrushes'; root.add(birdGroup);
   const birds = [];
   for (const [index, home] of [{ x: -73, z: 51 }, { x: -76, z: 4 }, { x: -108, z: -1 },
     { x: -132, z: 53 }, { x: -161, z: 69 }].entries()) {
@@ -261,7 +261,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
   const insects = [], insectGroups = [];
   const flowerSites = samples.filter(p => p.kind === 'wood-anemone' || p.kind === 'wood-violet');
   for (const species of ['butterfly', 'dragonfly']) {
-    const group = new THREE.Group(); group.name = `Eastreena ${species} glades`; root.add(group); const animals = [];
+    const group = new THREE.Group(); group.name = `Tidehaven woods ${species} glades`; root.add(group); const animals = [];
     const count = species === 'butterfly' ? 14 : world.pond ? 4 : 0;
     for (let i = 0; i < count; i++) {
       const bee = species === 'butterfly' && i >= 8;

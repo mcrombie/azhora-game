@@ -74,7 +74,7 @@ export function tintForestGround(color, x, z) {
 // One vertex-colored static mesh per place gives each clearing its own culling
 // bounds while sharing one material. There is no runtime scenery animation.
 export function createForestPlaces(scene, world) {
-  const root = new THREE.Group(); root.name = 'Eastreena woodland places'; scene.add(root);
+  const root = new THREE.Group(); root.name = 'Tidehaven woods places'; scene.add(root);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .98, flatShading: true, side: THREE.DoubleSide });
   const shapes = {
     box: new THREE.BoxGeometry(1, 1, 1),

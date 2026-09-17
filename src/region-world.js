@@ -87,7 +87,7 @@ export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - l
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 
 // The goblin camp (HIDEOUT_SITE, hideoutToWorld) stands in southern Pueth now: see src/pueth-world.js.
-/** The local box the original Eastreena terrain and scatter occupy. */
+/** The local box Tidehaven's original terrain and woodland scatter occupy. */
 export const VILLAGE_LOCAL_BOX = Object.freeze({ minX: -112, maxX: 112, minZ: -168, maxZ: 60 });
 
 // ---------------------------------------------------------------------------
