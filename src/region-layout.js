@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'Elagos']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -52,6 +52,10 @@ export const REGION_BIOMES = Object.freeze({
   Peblos: Object.freeze({ id: 'salt-islands', name: 'The Peblos islands', ground: '#76855f', canopy: '#4d6a4f', treesPerHex: perHex(2), rocksPerHex: perHex(9), undergrowth: 'salt-grass',
     relief: { amplitude: 3.4, wavelength: 95 }, clearings: ['harbour', 'headland'], ownScatter: true,
     note: 'Low barrier islands south-east of Drent: salt grass, thrift and gorse, grey rock at the waterline, pale sand in the coves, and a few wind-bent pines on the higher ground. No forest anywhere.' }),
+  // Elagos is the lake country: its water is authored in src/elagos-world.js, and the scatter keeps out of it through ELAGOS_CLEARINGS.
+  Elagos: Object.freeze({ id: 'lake-shelf', name: 'The Lake Lands', ground: '#7d9560', canopy: '#3f6446', treesPerHex: perHex(11), rocksPerHex: perHex(2), undergrowth: 'light',
+    relief: { amplitude: 2.6, wavelength: 165 }, clearings: ['ambron', 'nemmel', 'ice-road', 'lake-shrine'],
+    note: 'The northern shelf: cold clear lakes in a rolling green country, dense-grained lake timber in stands rather than forest, hay meadow and barley on the lake margins, and Ambron on the narrows. High ground: everything drops from here to the Moros.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

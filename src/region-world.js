@@ -11,7 +11,7 @@
  * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
  * authored 56 m frame the content was designed in and converted here, at the
  * boundary, by `at()` for a place and `road()` for a road vertex.
- * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval, 6 Pueth, 7 Peblos.
+ * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval, 6 Pueth, 7 Peblos, 8 Elagos.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
 import {
@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, Elagos: 8 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -117,6 +117,12 @@ export const REGION_TERRAIN = Object.freeze({
   Peblos: Object.freeze({ base: 6.4, amp: 2.6, wave: 95, ground: REGION_BIOMES.Peblos.ground, byTerrain: Object.freeze({
     hills: Object.freeze({ base: 10.5, amp: 4.6, wave: 85, ground: '#6f7c63' }),
     plains: Object.freeze({ base: 3.4, amp: 1.2, wave: 120, ground: '#7c8862' }),
+  }) }),
+  // Elagos is the northern shelf: it stands high above everything round it, and the ground falls to the Moros at its southern border.
+  // Its lakes are cut back out of this ground by src/world-terrain.js from the water in src/elagos-world.js.
+  Elagos: Object.freeze({ base: 19.8, amp: 2.6, wave: 165, ground: REGION_BIOMES.Elagos.ground, byTerrain: Object.freeze({
+    forest: Object.freeze({ base: 20.6, amp: 3.0, wave: 150, ground: '#6d8a58' }),
+    lake: Object.freeze({ base: 18.6, amp: 1.4, wave: 200, ground: '#84986a' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -306,9 +312,27 @@ export const SOLIS_ROAD = Object.freeze([
  */
 export const COBBLE_TERRACE = Object.freeze({ id: 'cobble', x: 334, z: 428, halfX: 11, halfZ: 13, feather: 24, level: 3, slopeX: .1, slopeZ: .03, shore: true });
 
+/**
+ * Ambron, the walled city on the Lake Ela narrows: the seat of the empire and
+ * the toll that pays for it. Like Solis it is laid out in its own frame, square
+ * to the world: `ambronPoint(a, b)` is `a` metres east and `b` metres south of
+ * the head of the causeway, which stands in the middle of the water.
+ *
+ * The channel of the Ela-south runs north to south straight through the city at
+ * a = 0, so the walls enclose ground on both banks and every barge going south
+ * passes under the city's chain. The east bank is the old city and stands
+ * higher; the west bank is the timber strand and stands nearly at the water.
+ */
+export const AMBRON = Object.freeze({ name: 'Ambron', centre: point(-1274, 286), halfA: 92, halfB: 68, channelHalf: 23 });
+export const ambronPoint = (a, b) => point(AMBRON.centre.x + a, AMBRON.centre.z + b);
+/** The made ground the city stands on: level, tilting up to the old east bank. */
+export const AMBRON_TERRACE = Object.freeze({ id: 'ambron', x: AMBRON.centre.x, z: AMBRON.centre.z,
+  halfX: AMBRON.halfA + 12, halfZ: AMBRON.halfB + 12, feather: 30, level: 17.2, slopeX: .012, slopeZ: 0 });
+
 export const TERRAIN_PADS = Object.freeze([
   Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
   COBBLE_TERRACE,
+  AMBRON_TERRACE,
 ]);
 
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
@@ -483,6 +507,12 @@ const REGION_TEXT = {
     npcIds: ['cobble-netmistress', 'cobble-boatwright', 'cobble-lobsterman', 'cobble-salter', 'cobble-oldhand', 'cobble-keeper', 'cobble-runner',
       'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
+  // Elagos is authored in world metres too (src/elagos-world.js); its spawn is the haul road below Ambron's Plain Gate.
+  Elagos: { subtitle: 'The Lake Lands and Ambron', spawn: point(-1221, 386),
+    description: 'The northern shelf, and the lakes that made an empire: Ela running north out of sight, Brul and Ossen and the Thelas chain beyond it, and Ambron astride the narrows where all of that water goes south. Everything that floats out of the Lake Lands pays the chain.',
+    palette: { ground: '#7d9560', accent: '#cfe0e4', fog: '#b4c6c4' },
+    npcIds: ['ambron-toll-clerk', 'ambron-legate', 'ambron-committee', 'ambron-gate-optio'],
+    landmarks: ['ambron', 'ambron-chain', 'ambron-causeway', 'ambron-plain-gate', 'lake-ela', 'nemmel', 'ice-road-stone', 'drowned-causeway', 'lake-shrine', 'the-stair', 'thelas-link', 'lake-brul', 'lake-ossen'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

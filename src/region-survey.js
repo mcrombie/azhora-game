@@ -59,6 +59,18 @@ export const PLAYABLE_SURVEY = Object.freeze({
       bounds: Object.freeze({"x":1829.046,"y":2568,"width":180.134,"height":128}), centerX: 1941.437, centerY: 2645.333,
       cells: Object.freeze([{q:17,r:107,terrain:'hills'},{q:17,r:108,terrain:'hills'},{q:13,r:109,terrain:'plains'},{q:15,r:109,terrain:'plains'},{q:11,r:110,terrain:'plains'},
         {q:16,r:110,terrain:'hills'},{q:13,r:111,terrain:'plains'},{q:15,r:111,terrain:'hills'},{q:16,r:111,terrain:'hills'}]) }),
+    Object.freeze({ id: "Elagos", name: "Elagos",
+      bounds: Object.freeze({"x":1441.067,"y":2448,"width":193.99,"height":224}), centerX: 1544.184, centerY: 2567.256,
+      cells: Object.freeze([{q:4,r:102,terrain:'grassland'},{q:5,r:102,terrain:'grassland'},{q:6,r:102,terrain:'grassland'},{q:3,r:103,terrain:'grassland'},{q:5,r:103,
+        terrain:'grassland'},{q:6,r:103,terrain:'grassland'},{q:2,r:104,terrain:'grassland'},{q:3,r:104,terrain:'grassland'},{q:4,r:104,terrain:'grassland'},
+        {q:5,r:104,terrain:'lake'},{q:6,r:104,terrain:'grassland'},{q:1,r:105,terrain:'grassland'},{q:2,r:105,terrain:'lake'},{q:3,r:105,terrain:'grassland'},
+        {q:4,r:105,terrain:'grassland'},{q:5,r:105,terrain:'grassland'},{q:0,r:106,terrain:'grassland'},{q:1,r:106,terrain:'grassland'},{q:2,r:106,
+        terrain:'grassland'},{q:3,r:106,terrain:'grassland'},{q:4,r:106,terrain:'lake'},{q:5,r:106,terrain:'grassland'},{q:-1,r:107,terrain:'grassland'},{q:0,
+        r:107,terrain:'lake'},{q:1,r:107,terrain:'grassland'},{q:2,r:107,terrain:'forest'},{q:3,r:107,terrain:'grassland'},{q:4,r:107,terrain:'grassland'},
+        {q:-2,r:108,terrain:'grassland'},{q:-1,r:108,terrain:'grassland'},{q:0,r:108,terrain:'lake'},{q:1,r:108,terrain:'forest'},{q:2,r:108,
+        terrain:'grassland'},{q:3,r:108,terrain:'forest'},{q:-2,r:109,terrain:'forest'},{q:-1,r:109,terrain:'grassland'},{q:0,r:109,terrain:'grassland'},{q:1,
+        r:109,terrain:'grassland'},{q:2,r:109,terrain:'grassland'},{q:-2,r:110,terrain:'grassland'},{q:-1,r:110,terrain:'forest'},{q:0,r:110,
+        terrain:'forest'},{q:1,r:110,terrain:'grassland'}]) }),
   ]),
 });
 
