@@ -11,6 +11,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
+import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
 import { createWoodlandLife } from './woodland-life.js';
 import { createForestEcology } from './forest-ecology.js';
 import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './forest-story.js';
@@ -78,6 +79,8 @@ function init() {
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
   const mercenaryIds=new Set(MERCENARY_ROSTER.map(m=>m.id));
   const company=createMercenaryCompany({road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn});
+  // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
+  for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   let playSeconds=0;
   const mercenaryWeapons=new Map();
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
@@ -85,7 +88,7 @@ function init() {
   for(const npc of npcData) {
     npc.actor=createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
-    npc.actor.group.rotation.y=npc.id==='harbormaster'?-Math.PI/2:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
+    npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:npc.id==='harbormaster'?-Math.PI/2:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
     if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
@@ -541,6 +544,7 @@ function init() {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
+    if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
     if(journeyNpcIds.has(npc.id)){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
       provideBridgeWood:()=>{const needed=Math.max(0,3-inventory.count('forest-stick'));const ok=!needed||inventory.add('forest-stick',needed);if(ok&&needed){toast('Three sound branches are ready for the bridge.','HOLLIS’S REPAIR TIMBER');saveRoad(false);}return {ok,reason:ok?'':'There is no room for the repair timber.'};},
