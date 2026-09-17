@@ -693,9 +693,19 @@ export function createWestSuvalScenery(kit) {
     push({ x: mile.x, z: mile.z, r: .38, kind: 'milestone' });
   }
 
-  // What changes hands is not batched by the world, so merge each such group by material here:
-  // a struck camp is a few draw calls, not a few hundred.
-  for (const entry of holdings) mergeGroup(entry.group);
+  // Solis uses many small tints. Rather than leave the world's batching one draw per tint, merge
+  // everything here into vertex-coloured meshes: the city and camp, the country along the road,
+  // and each group that changes hands. A struck camp is one draw call, not a hundred.
+  const moving = new Set([...holdings.map(entry => entry.group)]);
+  district.traverse(object => { if (object !== district && movingGroups.has(object)) moving.add(object); });
+  const city = new THREE.Group(), country = new THREE.Group();
+  city.name = 'Solis, merged'; country.name = 'West Suval country, merged';
+  mergeByColour(district, moving, city, country, mesh => {
+    const centre = mesh.geometry.boundingSphere.center.clone().applyMatrix4(mesh.matrixWorld);
+    return Math.hypot(centre.x - SOLIS.centre.x, centre.z - SOLIS.centre.z) < 220;
+  });
+  for (const group of [city, country]) { district.add(group); movingGroups.add(group); }
+  for (const entry of holdings) mergeByColour(entry.group, new Set(), entry.group, entry.group, () => true);
 
   let holder = null;
   /** Show whoever holds Solis: 'coalition', 'empire' or 'routed' (the Coalition broke and the Legion is not in yet). */
@@ -717,24 +727,44 @@ export function createWestSuvalScenery(kit) {
   return { metrics, setHolder, holder: () => holder, district };
 }
 
-/** Merge a group's static meshes into one mesh per material, in the group's own frame. */
-function mergeGroup(group) {
-  group.updateMatrixWorld(true);
-  const inverse = group.matrixWorld.clone().invert(), byMaterial = new Map(), matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3();
-  group.traverse(object => { if (object.isMesh && object !== group) { if (!byMaterial.has(object.material)) byMaterial.set(object.material, []); byMaterial.get(object.material).push(object); } });
-  const position = new THREE.Vector3(), normal = new THREE.Vector3();
-  for (const [mat, objects] of byMaterial) {
-    if (objects.length < 2) continue;
+/**
+ * Merge every mesh under `source` (skipping `skip` subtrees) into vertex-coloured
+ * meshes, one per kind of surface (metal, roughness, sidedness), added to
+ * `near` or `far` as `isNear(mesh)` says. Positions are in `source`'s frame,
+ * which in the world is the world's own.
+ */
+const colourMaterials = new Map();
+function mergeByColour(source, skip, near, far, isNear) {
+  source.updateMatrixWorld(true);
+  const inverse = source.matrixWorld.clone().invert(), buckets = new Map(), meshes = [];
+  const visit = object => {
+    if (object !== source && skip.has(object)) return;
+    if (object.isMesh && !object.isInstancedMesh && object.material && !Array.isArray(object.material)) meshes.push(object);
+    for (const child of [...object.children]) visit(child);
+  };
+  visit(source);
+  for (const object of meshes) {
+    if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
+    const mat = object.material, target = isNear(object) ? near : far;
+    const key = `${target.uuid}|${mat.metalness ?? 0}|${mat.roughness ?? 1}|${mat.side}|${mat.transparent}`;
+    if (!buckets.has(key)) buckets.set(key, { target, mat, objects: [] });
+    buckets.get(key).objects.push(object);
+  }
+  const matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), position = new THREE.Vector3(), normal = new THREE.Vector3(), colour = new THREE.Color();
+  for (const { target, mat, objects } of buckets.values()) {
     let vertices = 0, indexCount = 0;
     for (const object of objects) { vertices += object.geometry.attributes.position.count; indexCount += object.geometry.index?.count ?? object.geometry.attributes.position.count; }
-    const positions = new Float32Array(vertices * 3), normals = new Float32Array(vertices * 3), indices = new Uint32Array(indexCount);
+    const positions = new Float32Array(vertices * 3), normals = new Float32Array(vertices * 3), colours = new Float32Array(vertices * 3), indices = new Uint32Array(indexCount);
     let vertexOffset = 0, indexOffset = 0;
     for (const object of objects) {
       const geometry = object.geometry, p = geometry.attributes.position, n = geometry.attributes.normal;
+      object.updateMatrixWorld(true);
       matrix.multiplyMatrices(inverse, object.matrixWorld); normalMatrix.getNormalMatrix(matrix);
+      colour.copy(object.material.color ?? colour.setRGB(1, 1, 1));
       for (let i = 0; i < p.count; i++) {
         position.fromBufferAttribute(p, i).applyMatrix4(matrix).toArray(positions, (vertexOffset + i) * 3);
         if (n) normal.fromBufferAttribute(n, i).applyMatrix3(normalMatrix).normalize().toArray(normals, (vertexOffset + i) * 3);
+        colours[(vertexOffset + i) * 3] = colour.r; colours[(vertexOffset + i) * 3 + 1] = colour.g; colours[(vertexOffset + i) * 3 + 2] = colour.b;
       }
       if (geometry.index) for (let i = 0; i < geometry.index.count; i++) indices[indexOffset++] = vertexOffset + geometry.index.getX(i);
       else for (let i = 0; i < p.count; i++) indices[indexOffset++] = vertexOffset + i;
@@ -744,7 +774,12 @@ function mergeGroup(group) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
     geometry.setIndex(new THREE.BufferAttribute(indices, 1)); geometry.computeBoundingSphere();
-    const merged = new THREE.Mesh(geometry, mat); merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
+    const materialKey = `${mat.metalness ?? 0}|${mat.roughness ?? 1}|${mat.side}`;
+    if (!colourMaterials.has(materialKey)) colourMaterials.set(materialKey, new THREE.MeshStandardMaterial({ vertexColors: true, metalness: mat.metalness ?? 0, roughness: mat.roughness ?? 1, side: mat.side }));
+    const merged = new THREE.Mesh(geometry, colourMaterials.get(materialKey)); merged.castShadow = true; merged.receiveShadow = true;
+    merged.name = 'West Suval merged scenery';
+    target.add(merged);
   }
 }
