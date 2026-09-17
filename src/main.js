@@ -163,7 +163,7 @@ function init() {
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,arrivalProgress=0;
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
-  const cameraFocus=new THREE.Vector3(),cameraTarget=new THREE.Vector3();
+  const cameraFocus=new THREE.Vector3(),cameraTarget=new THREE.Vector3(),cameraColliders=[];
   camera.position.set(16,14,59);camera.lookAt(0,3,13);
   let mapClock=0,frameCount=0,shake=0,combatClock=0,combatCamera=0;
   const frameDeltas=[],map=$('minimap').getContext('2d');
@@ -1585,7 +1585,7 @@ function init() {
       else {
         if(reviewTarget)cameraFocus.copy(reviewTarget);
         let actualDistance=viewDistance;
-        for(const c of world.colliders){const vx=c.x-cameraFocus.x,vz=c.z-cameraFocus.z,along=vx*Math.sin(yaw)+vz*Math.cos(yaw),across=Math.abs(vx*Math.cos(yaw)-vz*Math.sin(yaw));const r=c.r??Math.max(c.hx,c.hz);if(along>0&&along<viewDistance+2&&across<r+.6&&cameraFocus.y<world.heightAt(c.x,c.z)+(c.kind==='house'?6:7))actualDistance=Math.min(actualDistance,Math.max(3.1,along-r-.6));}
+        for(const c of world.nearColliders(cameraFocus.x,cameraFocus.z,viewDistance+4,cameraColliders)){const vx=c.x-cameraFocus.x,vz=c.z-cameraFocus.z,along=vx*Math.sin(yaw)+vz*Math.cos(yaw),across=Math.abs(vx*Math.cos(yaw)-vz*Math.sin(yaw));const r=c.r??Math.max(c.hx,c.hz);if(along>0&&along<viewDistance+2&&across<r+.6&&cameraFocus.y<world.heightAt(c.x,c.z)+(c.kind==='house'?6:7))actualDistance=Math.min(actualDistance,Math.max(3.1,along-r-.6));}
         cameraTarget.set(cameraFocus.x+Math.sin(yaw)*actualDistance*Math.cos(viewPitch),cameraFocus.y+Math.sin(viewPitch)*actualDistance,cameraFocus.z+Math.cos(yaw)*actualDistance*Math.cos(viewPitch));cameraTarget.y=Math.max(cameraTarget.y,world.heightAt(cameraTarget.x,cameraTarget.z)+1.2);
       }
       camera.position.lerp(cameraTarget,1-Math.exp(-5*dt));

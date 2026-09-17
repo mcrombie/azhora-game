@@ -23,6 +23,7 @@ import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-s
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
 import { createRegionScenery, regionClear } from './world-regions.js';
+import { createColliderGrid } from './collider-grid.js';
 import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './pueth-world.js';
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
@@ -1453,10 +1454,22 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const worldBorder = villageToWorld(border.x, border.z);
   const worldRepairBench = villageToWorld(repairBench.x, repairBench.z);
 
+  // Collision asks this grid, not the whole list. The list only ever changes by a
+  // push or a splice (a recovered sack, a repaired beacon, a camp struck), each of
+  // which changes its length, so the length is what tells the index it is stale.
+  let colliderIndex = null, indexedFor = -1;
+  const colliderGrid = () => {
+    if (!colliderIndex || indexedFor !== colliders.length) { colliderIndex = createColliderGrid(colliders); indexedFor = colliders.length; }
+    return colliderIndex;
+  };
   return {
     heightAt,
     mapWaters,
     colliders,
+    /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
+    nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
+    reindexColliders: () => { colliderIndex = null; },
+    colliderIndexState: () => ({ ...colliderGrid(), near: undefined }),
     training: { ...worldTraining, object: training.object, y: training.y },
     repairBench: { ...worldRepairBench, name: repairBench.name },
     repairBenches: [{ ...worldRepairBench, name: repairBench.name }, ...regionRepairBenches, OUTPOST_BENCH],

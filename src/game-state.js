@@ -13,10 +13,15 @@ export function getMovementInput(keys) {
 export function canStand(x, z, world, radius = 0.34) {
   const b = world.bounds;
   if (x < b.minX + radius || x > b.maxX - radius || z < b.minZ + radius || z > b.maxZ - radius) return false;
-  if (world.heightAt(x, z) < 0.45) return false;
-  return !world.colliders.some(c => c.r !== undefined
-    ? Math.hypot(x-c.x,z-c.z) < c.r+radius
-    : Math.abs(x-c.x) < c.hx+radius && Math.abs(z-c.z) < c.hz+radius);
+  // The shapes that could reach this point, from the world's grid (src/collider-grid.js);
+  // a world without one — a test's stand-in — is asked for its whole list, as before.
+  const near = world.nearColliders ? world.nearColliders(x, z, radius) : world.colliders;
+  for (let i = 0; i < near.length; i++) {
+    const c = near[i];
+    if (c.r !== undefined) { const dx = x - c.x, dz = z - c.z, reach = c.r + radius; if (dx * dx + dz * dz < reach * reach) return false; }
+    else if (Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius) return false;
+  }
+  return world.heightAt(x, z) >= 0.45;
 }
 // `radius` is the mover's footprint: a person by default, wider for a rider on a horse.
 export function moveCharacter(position, dx, dz, world, radius) {

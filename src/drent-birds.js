@@ -403,7 +403,7 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
     for (const mesh of Object.values(meshes)) mesh.instanceMatrix.needsUpdate = true;
   }
 
-  const DRAW_RANGE = 90;
+  const DRAW_RANGE = 90, sightLine = [];
   function update(dt, player, { feederHung = false } = {}) {
     if (disposed || !Number.isFinite(dt) || dt <= 0 || !player) return;
     const step = Math.min(dt, .1);
@@ -421,7 +421,10 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
   /** Whether a straight look from `eye` to the bird passes through a building or a wall. */
   function blocked(eye, bird) {
     const dx = bird.x - eye.x, dz = bird.z - eye.z, length = Math.hypot(dx, dz) || 1;
-    for (const c of world.colliders) {
+    const between = world.nearColliders
+      ? world.nearColliders((eye.x + bird.x) / 2, (eye.z + bird.z) / 2, length / 2 + 4, sightLine)
+      : world.colliders;
+    for (const c of between) {
       const size = c.r ?? Math.max(c.hx, c.hz);
       if (!(size > 1.4)) continue;
       const t = clamp(((c.x - eye.x) * dx + (c.z - eye.z) * dz) / (length * length), 0, 1), px = eye.x + dx * t, pz = eye.z + dz * t;
