@@ -52,6 +52,7 @@ import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FI
 import { createDrentBirds } from './drent-birds.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
+import { newestStart } from './story-starts.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -398,6 +399,27 @@ function init() {
     else if(questStage===7)toast('Message inspected. Close your satchel to continue.','I OR ESC · BACK TO THE WORLD');
     else toast(questSteps[questStage].title,questStage===10?'TIDEHAVEN SECURED · THE FOREST ROAD LIES AHEAD':'JOURNAL UPDATED');
     if(questStage>=1&&!testingEnabled)saveRoad(false);
+  }
+  // The opening screen's other way in: stand where the newest built chapter begins, with the road behind you.
+  // Nothing is saved from this start, so a saved adventure is never overwritten (src/story-starts.js).
+  function beginNewestChapter(){
+    const entry=newestStart(),stand=entry&&world.npcPositions[entry.beside];
+    if(!entry||!stand||!['opening','playing','pause','journal','testing'].includes(mode))return false;
+    campaign.restore(createCampaign().snapshot());for(const id of entry.completed)campaign.completeChapter(id);
+    questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=true;meadowCleared=true;
+    for(const id of ['harbor-letter','road-token','tinderbox'])inventory.grant(id);
+    const purse=inventory.count(COPPER_ITEM);if(purse<entry.purse)inventory.add(COPPER_ITEM,entry.purse-purse);
+    combat.startPractice(world.training);combat.finishPractice();weapons.repair();
+    journey.start();syncJourney();if(!border.state.started)border.start();
+    const spot={x:stand.x+3.4,z:stand.z+3.4};
+    player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;
+    yaw=Math.atan2(-(stand.x-spot.x),-(stand.z-spot.z));pitch=.35;distance=targetDistance=8;
+    if(entry.horse&&!riding.owned){const hitch={x:spot.x+2.6,z:spot.z-2.2};if(riding.grant(hitch,yaw).ok){riding.teach();placeOwnHorse();}}
+    mapFog.reveal(spot.x,spot.z);
+    mode='playing';document.body.classList.add('playing');show('opening',false);show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('testing-badge',true);
+    refreshQuest();refreshChart();inventory.refresh();stopInput();settleCamera();canvas.focus();
+    toast(`${entry.title}. Nothing is saved from this start; your saved adventure is untouched.`,entry.kicker);
+    return true;
   }
   function begin() {
     if(mode!=='opening')return;
@@ -1116,6 +1138,7 @@ function init() {
   for(const id of [2,3,4])$('test-region-'+id).onclick=()=>testTravel(id);
   for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]])$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};
   $('save-road').onclick=()=>saveRoad();$('continue-road').onclick=continueRoad;
+  {const newest=newestStart();show('opening-newest',!!newest);if(newest){$('opening-newest').textContent=`Start at the newest chapter · ${newest.title}`;$('opening-newest').onclick=beginNewestChapter;}}
   show('continue-road',checkpointAvailable.ok&&!!checkpointAvailable.data);
   if(!checkpointAvailable.ok)$('road-checkpoint-status').textContent=checkpointAvailable.reason;
   $('journal-button').onclick=()=>{if(mode==='journal')closeModal();else{modal('journal');mapTab(false);}};

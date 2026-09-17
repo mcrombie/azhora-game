@@ -1,0 +1,29 @@
+/**
+ * Somewhere to begin besides the beginning. The main quest is built in order, so
+ * the newest stretch of it is always the least played: this table says where that
+ * stretch starts, what the traveler must already have done to stand there, and
+ * what they carry when they do. The opening screen offers the newest one.
+ *
+ * Keep this honest as the arc grows: when a later chapter is built, add it here
+ * and move `newest` on to it. Pure: no DOM, no three.
+ */
+export const STORY_START_VERSION = 1;
+
+const start = entry => Object.freeze({ horse: true, purse: 40, ...entry });
+
+export const STORY_STARTS = Object.freeze([
+  start({
+    id: 'solis-parley',
+    title: 'The parley at Solis',
+    kicker: 'THE NEWEST CHAPTER · WEST SUVAL',
+    blurb: 'Carry the Legate’s terms through the Gate of Sun Horses, hear what the Republic offers a sellsword, choose your side, and march to the battle on the border.',
+    // The road out of Drent, Luscia and the muster on the Moros are behind the traveler.
+    completed: Object.freeze(['drent-road', 'luscia-aftermath', 'moros-camp']),
+    chapter: 'suval-envoy',
+    beside: 'post-camp-legate',
+    newest: true,
+  }),
+]);
+
+export const newestStart = () => STORY_STARTS.find(entry => entry.newest) ?? null;
+export const storyStart = id => STORY_STARTS.find(entry => entry.id === id) ?? null;
