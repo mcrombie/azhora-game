@@ -228,7 +228,10 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
     ['admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: true }] } }],
     ['join-muster', { moros: { actions: [{ id: 'join-muster', enabled: true }] } }],
     ['take-legate-terms', { border: { actions: [{ id: 'take-legate-terms', enabled: true }] } }],
+    ['enter-solis', { border: { actions: [{ id: 'enter-solis', enabled: true }] } }],
     ['side-empire', { border: { actions: [{ id: 'side-empire', enabled: true }] } }],
+    ['march-out', { border: { actions: [{ id: 'march-out', enabled: true }] } }],
+    ['reach-line', { border: { actions: [{ id: 'reach-line', enabled: true }] } }],
     ['sound-advance', { border: { actions: [{ id: 'sound-advance', enabled: true }] } }],
     ['begin-assault', { aftermath: { actions: [{ id: 'begin-assault', enabled: true }] } }],
     ['close-aftermath', { aftermath: { actions: [{ id: 'close-aftermath', enabled: true }] } }],
@@ -239,4 +242,22 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
   }
   // A reply the chapter has disabled is still not chosen.
   assert.equal(reply('admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: false }] } }), 'leave-it');
+});
+
+test('the autopilot carries the terms to Solis, keeps the Empire’s contract, reports to the Legate and marches to the line', async () => {
+  const { createBorderChapter } = await import('../src/border-chapter.js');
+  const border = createBorderChapter(); border.start();
+  const world = { npcPositions: { 'post-camp-legate': { x: 1, z: 1 }, 'solis-gate-captain': { x: 2, z: 2 }, 'coalition-envoy': { x: 3, z: 3 }, 'battle-tribune': { x: 4, z: 4 } }, npcNames: {} };
+  const walked = [];
+  for (let turn = 0; turn < 8 && !border.view().fighting; turn++) {
+    const view = border.view(), goal = borderGoal({ border: { stage: view.stage, complete: view.complete, destinationIds: view.destinationIds, actions: border.availableActions() } }, world);
+    assert.equal(goal.kind, 'talk', `at ${view.stage} the autopilot has someone to see`);
+    walked.push(goal.npcId);
+    const actions = border.availableActions();
+    const reply = chooseReply([...actions, { id: 'leave-border', label: 'Not yet.', enabled: true }], { journey: { actions: [] }, inventory: { sticks: 0 }, border: { actions } });
+    assert.equal(border.act(reply).ok, true, `${reply} moves the chapter on`);
+  }
+  assert.deepEqual(walked, ['post-camp-legate', 'solis-gate-captain', 'coalition-envoy', 'post-camp-legate', 'battle-tribune']);
+  assert.equal(border.view().side, 'empire');
+  assert.equal(border.view().stage, 'fighting');
 });

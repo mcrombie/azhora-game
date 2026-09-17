@@ -18,6 +18,7 @@ const drentAnchor = point(1870.615, 2560, 14, 106);
 const lusciaAnchor = point(1679.6, 2636.2, 7, 109);
 const morosAnchor = point(1598.8, 2717.9, 1, 112);
 const suvalAnchor = point(1825.4, 2748.9, 11, 113);
+const westSuvalAnchor = point(1732.05, 2800, 4, 116);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -26,11 +27,13 @@ const local = (region, name, travelTarget, insetY, regionId, atlas) => Object.fr
   travelTarget, atlas, placement: 'authored-region',
   inset: Object.freeze({ x: 50, y: insetY }), status: 'Playable local region',
 });
+// Stops on the schematic route are spread evenly, however many regions are playable.
+const LOCAL_STOPS = [
+  [1, 'Drent', 'drent', drentAnchor], [2, 'Luscia', 'luscia', lusciaAnchor], [3, 'Moros Plain', 'moros', morosAnchor],
+  [4, 'East Suval', 'suval', suvalAnchor], [5, 'West Suval', 'west-suval', westSuvalAnchor],
+];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
-  local(1, 'Drent', 'drent', 88, 'Drent', drentAnchor),
-  local(2, 'Luscia', 'luscia', 64, 'Luscia', lusciaAnchor),
-  local(3, 'Moros Plain', 'moros', 40, 'Moros Plain', morosAnchor),
-  local(4, 'East Suval', 'suval', 16, 'East Suval', suvalAnchor),
+  ...LOCAL_STOPS.map(([region, name, travelTarget, anchor], index) => local(region, name, travelTarget, 88 - 72 * index / (LOCAL_STOPS.length - 1), name, anchor)),
   Object.freeze({ id: 'cape-thalmagar', name: 'Cape Thalmagar', regionId: 'Cape Thalmagar',
     scene: 'cape-thalmagar', travelTarget: 'cape-thalmagar', atlas: capeAnchor,
     placement: 'provisional-fortress-within-authored-region', status: 'Fortress prototype' }),

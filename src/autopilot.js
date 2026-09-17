@@ -25,7 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'side-empire', 'sound-advance', 'begin-assault', 'close-aftermath',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'enter-solis', 'side-empire', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -258,7 +258,7 @@ export function aftermathGoal(snapshot, world) {
   return { kind: 'wait', intent: 'Holding with the company' };
 }
 
-/** The Legate's terms, the envoy at the stockade, and the line. The autopilot keeps the Empire's contract. */
+/** The Legate's terms, the gate and the envoy at Solis, the report and the march, and the line. The autopilot keeps the Empire's contract. */
 export function borderGoal(snapshot, world) {
   const border = snapshot.border;
   if (border?.complete && snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
