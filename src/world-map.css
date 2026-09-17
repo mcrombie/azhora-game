@@ -21,6 +21,14 @@
 @media(max-height:750px){#journal.map-open{padding:19px 25px}#journal.map-open>h2{font-size:28px;margin:3px 0 6px}#journal.map-open>.tabs{margin-bottom:9px}.atlas-toolbar{margin-bottom:9px}#world-map .atlas-help{margin-top:8px}}
 
 /* The traveler's marker on the chart: positioned in atlas pixels, never scaled with the image. */
+#atlas-places{position:absolute;top:0;left:0;width:0;height:0;z-index:2;pointer-events:none}
+.atlas-place{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none}
+.atlas-place i{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#f4e3b4;border:1.5px solid #4a3a28;box-shadow:0 1px 3px #0005}
+.atlas-place span{display:none;position:absolute;left:8px;top:calc(-8px + var(--nudge,0px));white-space:nowrap;font:13px Adventure,Georgia,serif;color:#33271a;background:#f3e6c4e6;border:1px solid #5e463066;border-radius:3px;padding:0 5px}
+.atlas-place.named span{display:block}
+.atlas-place.place i{left:-3px;top:-3px;width:6px;height:6px;background:#cfd9c4;border-color:#4a5a44}
+.atlas-place.place span{left:7px;top:calc(-7px + var(--nudge,0px));font-size:11px;background:#eee7d2d9;color:#3a3a2c}
+.atlas-place[hidden]{display:none}
 #atlas-traveler{position:absolute;top:0;left:0;z-index:3;pointer-events:none;transform-origin:0 0}
 #atlas-traveler i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#c9472f;border:3px solid #fff2cc;box-shadow:0 0 0 2px #3d2b1a,0 0 14px #c9472f99;animation:atlas-traveler-pulse 1.6s ease-in-out infinite}
 #atlas-traveler span{position:absolute;left:13px;top:-9px;white-space:nowrap;font:italic 12px Georgia,'Palatino Linotype',serif;color:#3d2b1a;background:#f2e6c4ee;border:1px solid #5e4630;border-radius:3px;padding:1px 6px}

@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { regionAt } from '../src/regions.js';
-import { hexAt } from '../src/region-world.js';
+import { hexAt, hexCentre } from '../src/region-world.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { SUBREGIONS, SIGHT, createMapFog, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
+import { SUBREGIONS, createMapFog, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
 import { BUILD_STATES, buildStatusList, regionBuildStatus } from '../src/build-status.js';
 
 const TIDEHAVEN = { x: -6, z: 29 }, LUMBER_TOWN = { x: -729, z: 384 };
@@ -15,8 +15,14 @@ test('the chart starts blank and is charted hex by hex as the traveler walks', (
   const first = fog.reveal(TIDEHAVEN.x, TIDEHAVEN.z);
   const home = hexAt(TIDEHAVEN.x, TIDEHAVEN.z);
   assert.ok(fog.knows(home.q, home.r), 'the ground underfoot is charted');
-  assert.ok(first.cells.length >= 3 && first.cells.length <= 12, `a stand charts its own hex and its neighbours (${first.cells.length})`);
+  assert.deepEqual(first.cells, [`${home.q},${home.r}`], 'only the hex the traveler stands in');
+  assert.equal(fog.knows(home.q + 1, home.r), false, 'the hex next door is not charted from here');
+  assert.equal(fog.knows(home.q, home.r + 1), false);
   assert.equal(fog.knowsPoint(LUMBER_TOWN.x, LUMBER_TOWN.z), false, 'and nothing far away');
+  // Walking into the next hex charts that one too.
+  const neighbour = hexCentre(home.q + 1, home.r);
+  assert.equal(fog.reveal(neighbour.x, neighbour.z).cells.length, 1);
+  assert.equal(fog.knows(home.q + 1, home.r), true);
   assert.deepEqual(fog.reveal(TIDEHAVEN.x, TIDEHAVEN.z).cells, [], 'standing still charts nothing new');
   // Everything charted is within sight of where the traveler stood.
   for (const key of fog.cells) {
@@ -55,7 +61,6 @@ test('every named area stands in the region it claims, and none of them swallow 
     const gap = Math.hypot(area.x - other.x, area.z - other.z);
     assert.ok(gap > Math.max(area.radius, other.radius) * .6, `${area.id} and ${other.id} are ${gap.toFixed(0)} m apart`);
   }
-  assert.ok(SIGHT > 100 && SIGHT < 400);
 });
 
 test('the chart survives a save, and nonsense is refused', () => {

@@ -16,6 +16,47 @@ export function createWorldMap() {
   const overlay = document.createElementNS(SVG_NS, 'svg');
   overlay.id = 'atlas-overlay'; overlay.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(overlay, traveler ?? null);
+  // Charted places are marked in screen space, like the traveler's own mark, so
+  // their labels stay the same size however far the chart is zoomed.
+  const placeLayer = document.createElement('div');
+  placeLayer.id = 'atlas-places'; placeLayer.setAttribute('aria-hidden', 'true');
+  viewport.insertBefore(placeLayer, traveler ?? null);
+  let places = [];
+  // Areas are named as soon as the chart is more than glanced at; the smaller places
+  // inside them wait until the traveler has zoomed in far enough to read them.
+  const placeShown = place => place.kind === 'area' || zoom >= 4;
+  const placeNamed = place => place.kind === 'area' ? zoom >= 1.8 : zoom >= 7;
+  function drawPlaces() {
+    placeLayer.replaceChildren();
+    for (const place of places) {
+      const mark = document.createElement('div');
+      mark.className = `atlas-place ${place.kind}`;
+      const dot = document.createElement('i'), label = document.createElement('span');
+      label.textContent = place.name; mark.append(dot, label);
+      place.mark = mark; placeLayer.append(mark);
+    }
+    positionPlaces();
+  }
+  // Marks are placed top to bottom; a label that would sit on the one above it is
+  // nudged down, and dropped altogether if there is no room. The dots never move.
+  function positionPlaces() {
+    const scale = fitScale * zoom, taken = [];
+    const shown = places.filter(place => place.mark && placeShown(place))
+      .map(place => ({ place, x: offsetX + place.x * scale, y: offsetY + place.y * scale }))
+      .sort((a, b) => a.y - b.y);
+    for (const place of places) if (place.mark) place.mark.hidden = !placeShown(place);
+    for (const item of shown) {
+      let nudge = 0, named = placeNamed(item.place);
+      const clashes = offset => taken.some(box => Math.abs(box.y - (item.y + offset)) < 14 && Math.abs(box.x - item.x) < 150);
+      if (named) {
+        while (nudge <= 42 && clashes(nudge)) nudge += 14;
+        if (clashes(nudge)) named = false; else taken.push({ x: item.x, y: item.y + nudge });
+      }
+      item.place.mark.classList.toggle('named', named);
+      item.place.mark.style.setProperty('--nudge', `${nudge}px`);
+      item.place.mark.style.transform = `translate(${item.x}px,${item.y}px)`;
+    }
+  }
 
   const node = (name, attributes = {}) => {
     const element = document.createElementNS(SVG_NS, name);
@@ -42,14 +83,14 @@ export function createWorldMap() {
     }
     const defs = node('defs'), mask = node('mask', { id: 'atlas-charted', maskUnits: 'userSpaceOnUse' });
     mask.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#fff' }));
-    const charted = node('g', { fill: '#000', stroke: '#000', 'stroke-width': '7', 'stroke-linejoin': 'round', filter: 'url(#atlas-soft)' });
+    const charted = node('g', { fill: '#000', stroke: '#000', 'stroke-width': '1.5', 'stroke-linejoin': 'round', filter: 'url(#atlas-soft)' });
     for (const key of chart.cells) {
       const [q, r] = key.split(',').map(Number);
       if (Number.isFinite(q) && Number.isFinite(r)) charted.append(node('polygon', { points: polygonPoints(q, r) }));
     }
     mask.append(charted);
     const soften = node('filter', { id: 'atlas-soft', x: '-20%', y: '-20%', width: '140%', height: '140%' });
-    soften.append(node('feGaussianBlur', { stdDeviation: '6' }));
+    soften.append(node('feGaussianBlur', { stdDeviation: '2.4' }));
     defs.append(soften, mask); overlay.append(defs);
     overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#2b3a36', 'fill-opacity': '.96', mask: 'url(#atlas-charted)' }));
   }
@@ -61,6 +102,7 @@ export function createWorldMap() {
     offsetY = h <= height ? (height - h) / 2 : Math.max(height - h, Math.min(0, offsetY));
     image.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
     overlay.style.transform = image.style.transform;
+    positionPlaces();
     // The traveler's marker sits in atlas pixels and follows every pan and zoom without scaling itself.
     if (traveler) {
       const shown = !!travelerPoint && Number.isFinite(travelerPoint.x) && Number.isFinite(travelerPoint.y);
@@ -148,8 +190,9 @@ export function createWorldMap() {
     console.error(error); return null;
   });
   /** What the traveler has charted, and whether the developer is looking past the fog. */
-  function setChart({ cells = chart.cells, reveal = chart.reveal, status = chart.status } = {}) {
+  function setChart({ cells = chart.cells, reveal = chart.reveal, status = chart.status, marks = null } = {}) {
     chart = { cells: [...cells], reveal: !!reveal, status };
+    if (marks) { places = marks.map(place => ({ ...place })); drawPlaces(); }
     drawOverlay(); render();
   }
   function setTraveler(point) { travelerPoint = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null; render(); }
@@ -161,5 +204,6 @@ export function createWorldMap() {
   $('atlas-traveler-button').onclick = () => focusTraveler();
   return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, open: () => requestAnimationFrame(resize),
     state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source, traveler: travelerPoint ? { ...travelerPoint } : null,
-      chart: { charted: chart.cells.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length }})};
+      chart: { charted: chart.cells.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
+        marks: places.length, marked: [...placeLayer.querySelectorAll('.atlas-place:not([hidden])')].length }})};
 }

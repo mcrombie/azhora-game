@@ -526,8 +526,20 @@ function init() {
     }
   }
   // The chart, and the legend under it: charted ground for the traveler, or how far each region is built for the developer.
+  // What the chart marks: the named ground the traveler has charted, and the places they have found inside it.
+  function chartMarks(){
+    const view=mapFog.view(),atlas=(x,z)=>HEX_WORLD_TRANSFORM.worldToAtlas(x,z);
+    const areas=chartRevealed?view.subregions:view.found;
+    // A place that is the named area itself, by name or by standing at its middle, is marked once.
+    const plain=name=>name.replace(/^the\s+/i,'').toLowerCase();
+    const named=new Set(areas.map(area=>plain(area.name)));
+    const found=world.landmarks.filter(place=>(chartRevealed||(discoveries.has(place.id)&&mapFog.knowsPoint(place.x,place.z)))
+      &&!named.has(plain(place.name))&&!areas.some(area=>Math.hypot(area.x-place.x,area.z-place.z)<30));
+    return [...areas.map(area=>({id:area.id,name:area.name,kind:'area',...atlas(area.x,area.z)})),
+      ...found.map(place=>({id:place.id,name:place.name,kind:'place',...atlas(place.x,place.z)}))];
+  }
   function refreshChart(){
-    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList()});
+    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList(),marks:chartMarks()});
     const legend=$('atlas-legend'),view=mapFog.view();legend.replaceChildren();
     const el=(tag,text,cls)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
     const list=document.createElement('ul');

@@ -42,7 +42,7 @@
 .dialogue-actions {display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:20px;}
 .dialogue-actions small {font-size:11px;color:#c4ccae;}#dialogue-next {margin:0;}
 #journal-steps {padding:0;list-style:none;margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:9px 16px;font-size:12px;line-height:1.5;color:#b5bfa5;}
-#atlas-legend {margin:10px 0 0;font-size:12px;color:#cfdbc2;}
+#atlas-legend {margin:10px 0 0;font-size:12px;color:#cfdbc2;max-height:178px;overflow:auto;}
 #atlas-legend h4 {margin:0 0 6px;font-family:Adventure,Georgia,serif;font-size:15px;font-weight:400;color:#ffe7ac;}
 #atlas-legend ul {margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 18px;}
 #atlas-legend li {line-height:1.5;}

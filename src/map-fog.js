@@ -1,16 +1,15 @@
 /**
- * What the traveler has charted. The world chart starts blank but for the ground
- * around the landing: the hexes of the authored atlas are uncovered as the
- * traveler walks, and the country between them is named by subregions — small
+ * What the traveler has charted. The world chart starts blank: a hex of the
+ * authored atlas is uncovered only when the traveler has walked into it, and the country between them is named by subregions — small
  * authored areas (a point and a reach, usually a hex or three) that are recorded
  * in the journal the first time the traveler reaches one. Eastreena, the port
  * village the game opens in, is the first. Pure: no DOM, no three.
  */
-import { hexAt, hexCentre } from './region-world.js';
+import { hexAt } from './region-world.js';
 
 export const MAP_FOG_VERSION = 1;
-/** How far the traveler charts from where they stand, in metres. */
-export const SIGHT = 170;
+/** The chart records ground the traveler has actually stood on: one authored hex at a time. */
+export const CHART_GRAIN = 'hex';
 
 const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name, region, x, z, radius, note });
 
@@ -80,14 +79,8 @@ export function createMapFog({ onEvent = () => {} } = {}) {
   /** Chart the ground about a point. Returns what was new. */
   function reveal(x, z) {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return { cells: [], subregions: [] };
-    const home = hexAt(x, z), newCells = [];
-    for (let dq = -3; dq <= 3; dq++) for (let dr = -3; dr <= 3; dr++) {
-      const q = home.q + dq, r = home.r + dr, key = `${q},${r}`;
-      if (cells.has(key)) continue;
-      const centre = hexCentre(q, r);
-      if (Math.hypot(centre.x - x, centre.z - z) > SIGHT) continue;
-      cells.add(key); newCells.push(key);
-    }
+    const home = hexAt(x, z), key = `${home.q},${home.r}`, newCells = [];
+    if (!cells.has(key)) { cells.add(key); newCells.push(key); }
     const newAreas = [];
     for (const item of subregionsAt(x, z)) {
       if (found.includes(item.id)) continue;
