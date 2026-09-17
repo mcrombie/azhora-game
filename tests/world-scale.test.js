@@ -192,9 +192,13 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
     'Hollis still keeps the Caloss bridge');
   assert.ok(Math.hypot(regionNpcPositions['relay-clerk'].x - LUMBER_TOWN.square.x, regionNpcPositions['relay-clerk'].z - LUMBER_TOWN.square.z) < LUMBER_TOWN.radius,
     'Iven still keeps his desk on Lumber Town’s square');
-  // The goblin camp's trail still starts where it leaves the road.
-  const trailStart = world.forestHideout.trail[0], junction = scalePoint(-397, 153);
-  assert.ok(Math.hypot(trailStart.x - junction.x, trailStart.z - junction.z) < 1e-6, 'the camp trail is hinged on the road');
+  // The goblin camp moved to Pueth: its side trail leaves the road north of the Tessen and meets the camp's own trail.
+  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/pueth-world.js');
+  const distanceToRoad = (point, road) => Math.min(...road.slice(1).map((b, i) => { const a = road[i], dx = b.x - a.x, dz = b.z - a.z;
+    const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / (dx * dx + dz * dz))); return Math.hypot(point.x - a.x - dx * t, point.z - a.z - dz * t); }));
+  assert.ok(distanceToRoad(HIDEOUT_APPROACH_TRAIL[0], world.puethRoute) < 1e-6, 'the camp\u2019s side trail is hinged on the road north');
+  const trailStart = world.forestHideout.trail[0], trailEnd = HIDEOUT_APPROACH_TRAIL.at(-1);
+  assert.ok(Math.hypot(trailStart.x - trailEnd.x, trailStart.z - trailEnd.z) < 1e-6, 'the side trail ends where the camp\u2019s own trail begins');
 });
 
 test('the only way over the Caloss is the bridge, and the road leads back to it', async () => {

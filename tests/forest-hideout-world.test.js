@@ -40,7 +40,7 @@ test('Clearance and terrain tint are confined to the new camp and its eastern fo
   assert.ok(forestHideoutClear(84, -124.8, true, 9), 'The broad-phase bounds must include large canopies above the supply corner');
 });
 
-test('Drent keeps every original collectible, and the goblin camp in north Luscia connects to the main road', async () => {
+test('Drent keeps every original collectible, and the goblin camp in southern Pueth connects to the road north', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), life = createWoodlandLife(scene, world), original = life.state();
@@ -64,7 +64,7 @@ test('Drent keeps every original collectible, and the goblin camp in north Lusci
       if (cells[next] === 1) queue.push(next);
     }
   }
-  assert.equal(world.regionAt(camp.center.x, camp.center.z).name, 'Luscia', 'the camp stands in Luscia, not in level 0 Drent');
+  assert.equal(world.regionAt(camp.center.x, camp.center.z).name, 'Pueth', 'the camp stands in Pueth, not in level 0 Drent');
   const targets = [...original.acorns, ...original.sticks, ...original.fruits, ...world.forestPlaces,
     ...Object.values(world.npcPositions).filter(p => p.x > -170 && p.x < 12 && p.z > -58 && p.z < 92)];
   for (const target of targets) {
@@ -77,10 +77,11 @@ test('Drent keeps every original collectible, and the goblin camp in north Lusci
     }
     assert.ok(reached, `Disconnected destination ${target.id || ''} at ${target.x},${target.z}`);
   }
-  // The camp's own ground: flood from the main road and reach the trail, the scouts and the sacks.
-  // The box follows the camp, so it holds wherever the world scale puts it.
-  const road = world.paths[0].reduce((best, p) => Math.hypot(p.x - camp.trail[0].x, p.z - camp.trail[0].z) < Math.hypot(best.x - camp.trail[0].x, best.z - camp.trail[0].z) ? p : best);
-  const campPoints = [...camp.trail, camp.approach, camp.supplies, ...camp.enemies, road];
+  // The camp's own ground: flood from the road north, along the side trail, and reach the camp's trail, the scouts and the sacks.
+  // The box follows the camp and its side trail, so it holds wherever they are put.
+  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/pueth-world.js');
+  const road = HIDEOUT_APPROACH_TRAIL[0];
+  const campPoints = [...camp.trail, camp.approach, camp.supplies, ...camp.enemies, ...HIDEOUT_APPROACH_TRAIL];
   const ox = Math.floor(Math.min(...campPoints.map(p => p.x)) - 20), oz = Math.floor(Math.min(...campPoints.map(p => p.z)) - 20);
   const w = Math.ceil(Math.max(...campPoints.map(p => p.x)) + 20) - ox, h = Math.ceil(Math.max(...campPoints.map(p => p.z)) + 20) - oz;
   const seen = new Int8Array(w * h), frontier = [];
@@ -101,7 +102,7 @@ test('Drent keeps every original collectible, and the goblin camp in north Lusci
       const ix = Math.round(target.x - ox) + dx, iz = Math.round(target.z - oz) + dz;
       if (ix >= 0 && ix < w && iz >= 0 && iz < h && seen[iz * w + ix] === 1) reached = true;
     }
-    assert.ok(reached, `the camp at ${target.x},${target.z} cannot be reached from the main road`);
+    assert.ok(reached, `the camp at ${target.x},${target.z} cannot be reached from the road north`);
   }
 });
 

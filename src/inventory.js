@@ -48,7 +48,17 @@ export const INVENTORY_ITEMS = Object.freeze({
   'horse-token': Object.freeze({
     name: 'Legion horse token', type: 'Quest item', icon: 'token',
     brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
-    description: 'The relay clerk in Lumber Town pays in what the Legion owes him. The horse lines at the camp on the Moros keep the mounts; present this token there and they will hand one over. Riding is not built yet; the token is what the next chapter begins with.',
+    description: 'The relay clerk in Lumber Town pays in what the Legion owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the Legion’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
+  }),
+  'hummingbird-feeder': Object.freeze({
+    name: 'Ansel’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
+    brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',
+    description: 'Ansel’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
+  }),
+  'sugar-water-feeder': Object.freeze({
+    name: 'Filled hummingbird feeder', type: 'Quest item', icon: 'feeder',
+    brief: 'Ansel’s feeder, full of Lysa’s sugar water. Carry it upright.',
+    description: 'Hang it on the hook among the red flowers in Ansel’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
   }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,
@@ -281,6 +291,7 @@ const iconPaths = {
   sword: '<path d="m13 23 14-19 5-1-1 6-16 16M15 21 28 7M9 20l9 8M12 25l-6 7-3-3 6-7M4 28l4 4"/>',
   stick: '<path d="m10 32 5-14 8-14 4 1-8 15-5 13ZM18 15l-6-5-2 2 6 7M21 12l8-3 1 2-10 5M12 28l3 1M15 21l3 1"/>',
   token: '<circle cx="18" cy="19" r="12"/><circle cx="18" cy="19" r="8.5"/><path d="m18 10-5 9h3v6h4v-6h3ZM14 7l-2-5m10 5 2-5"/>',
+  feeder: '<path d="M16 3h4M18 3v4M14 7h8v5l2 3v6H12v-6l2-3Z"/><path d="M6 24c0-2 5-3 12-3s12 1 12 3-5 4-12 4-12-2-12-4ZM9 27c1 3 4 5 9 5s8-2 9-5"/><circle cx="10" cy="24" r="1.4"/><circle cx="26" cy="24" r="1.4"/><circle cx="18" cy="26" r="1.4"/>',
   acorn: '<path d="M8 17c0 10 6 15 10 16 4-1 10-6 10-16M7 16c0-6 5-10 11-10s11 4 11 10Z M18 6c-1-3 0-4 3-5M11 11l4 4m1-7 6 7m1-6 4 4M11 22c1 3 2 5 4 6"/>',
   pawpaw: '<path d="M14 12C8 11 3 20 5 27c2 8 9 9 14 3 4-5 5-12 1-15-2-2-4-1-6-3ZM10 18c-3 4-3 9 0 12M17 13l2-7M18 9C22 3 28 2 33 3c-2 7-7 12-15 10M20 11l10-6"/>',
   tinderbox: '<rect x="5" y="20" width="26" height="12" rx="2"/><path d="m5 20 4-5h7m8 0h4l3 5M6 24h24M16 24v3h4v-3M18 18c-6-3-1-6-1-10 3 2 1 4 4 4 1-3 1-5-1-8 7 5 7 12 1 14"/>',

@@ -19,6 +19,7 @@ const lusciaAnchor = point(1679.6, 2636.2, 7, 109);
 const morosAnchor = point(1598.8, 2717.9, 1, 112);
 const suvalAnchor = point(1825.4, 2748.9, 11, 113);
 const westSuvalAnchor = point(1732.05, 2800, 4, 116);
+const puethAnchor = point(1773.62, 2440, 13, 101);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -27,13 +28,17 @@ const local = (region, name, travelTarget, insetY, regionId, atlas) => Object.fr
   travelTarget, atlas, placement: 'authored-region',
   inset: Object.freeze({ x: 50, y: insetY }), status: 'Playable local region',
 });
-// Stops on the schematic route are spread evenly, however many regions are playable.
-const LOCAL_STOPS = [
-  [1, 'Drent', 'drent', drentAnchor], [2, 'Luscia', 'luscia', lusciaAnchor], [3, 'Moros Plain', 'moros', morosAnchor],
-  [4, 'East Suval', 'suval', suvalAnchor], [5, 'West Suval', 'west-suval', westSuvalAnchor],
+// The schematic spaces however many playable regions there are evenly down its line.
+const LOCALS = [
+  [1, 'Drent', 'drent', 'Drent', drentAnchor],
+  [2, 'Luscia', 'luscia', 'Luscia', lusciaAnchor],
+  [3, 'Moros Plain', 'moros', 'Moros Plain', morosAnchor],
+  [4, 'East Suval', 'suval', 'East Suval', suvalAnchor],
+  [5, 'West Suval', 'west-suval', 'West Suval', westSuvalAnchor],
+  [6, 'Pueth', 'pueth', 'Pueth', puethAnchor],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
-  ...LOCAL_STOPS.map(([region, name, travelTarget, anchor], index) => local(region, name, travelTarget, 88 - 72 * index / (LOCAL_STOPS.length - 1), name, anchor)),
+  ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),
   Object.freeze({ id: 'cape-thalmagar', name: 'Cape Thalmagar', regionId: 'Cape Thalmagar',
     scene: 'cape-thalmagar', travelTarget: 'cape-thalmagar', atlas: capeAnchor,
     placement: 'provisional-fortress-within-authored-region', status: 'Fortress prototype' }),
@@ -139,7 +144,7 @@ export function developerAtlasMarkup(atlas, { selectedRegionId = '' } = {}) {
   }).join('');
   // Shared marker for the local districts; separate pins would imply map-scale
   // positions that World Builder does not contain. The host can show the inset.
-  const pins = [DEV_WORLD_DESTINATIONS[0], DEV_WORLD_DESTINATIONS[4]].map(destination =>
+  const pins = [DEV_WORLD_DESTINATIONS[0], DEV_WORLD_DESTINATIONS.find(destination => destination.id === 'cape-thalmagar')].map(destination =>
     `<g class="dev-atlas-pin" pointer-events="none" transform="translate(${destination.atlas.x} ${destination.atlas.y})"><circle r="12" fill="#ffe4a2" stroke="#1d3430" stroke-width="3"/><circle r="4" fill="#1d3430"/></g>`).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${atlas.width} ${atlas.height}" class="dev-atlas-svg" role="group" aria-label="Developer atlas: select an authored Azhora region"><image href="./assets/azhora-world-map.svg" width="${atlas.width}" height="${atlas.height}" pointer-events="none"/>${paths}${pins}</svg>`;
 }

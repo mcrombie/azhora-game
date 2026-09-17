@@ -694,6 +694,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isCourier = role === 'field-courier', isBridgeKeeper = role === 'bridge-keeper';
   const isCustodian = role === 'rise-custodian', isClerk = role === 'relay-clerk';
   const isWoodcutter = role === 'forest-woodcutter';
+  const isBirdWatcher = role === 'bird-watcher';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
   const isLegionary = role === 'legion-soldier', isOfficer = role === 'legion-officer', isSuvaliGuard = role === 'suvali-guard';
@@ -1039,7 +1040,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     fringe.rotation.z = -0.18;
   }
 
-  if (hat && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper) {
+  if (hat && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper && !isBirdWatcher) {
     // A soft, rounded country cap, with a short leather peak and folded crown.
     const cap = new THREE.Group();
     cap.position.set(-0.018, 0.371, -0.028);
@@ -1529,6 +1530,20 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // A tiny wooden kitchen spoon in a pocket makes her role legible.
     ribbon(body, leather, [0.111, 0.67, 0.23], [0.139, 0.839, 0.225], 0.018, 0.014);
     round(body, bagMat, [0.141, 0.842, 0.225], [0.031, 0.044, 0.014]);
+  } else if (isBirdWatcher) {
+    // Tidehaven's bird-watcher: a soft felt brim against the glare with a cardinal's red feather in the band,
+    // a brass spyglass on a cord, and a notebook in his belt.
+    const felt = material(0x6b5b45), band = material(0x4a3a2a), feather = material(0xc3262b), brass = material(0xc8a250, { metalness: 0.35, roughness: 0.45 });
+    part(head, new THREE.CylinderGeometry(0.2, 0.37, 0.05, 12), felt, [0, 0.35, -0.014]);
+    round(head, felt, [0, 0.4, -0.02], [0.205, 0.12, 0.195]);
+    part(head, UNIT_CYLINDER, band, [0, 0.372, -0.018], [0.212, 0.03, 0.2]);
+    ribbon(head, feather, [0.18, 0.38, -0.07], [0.27, 0.56, -0.19], 0.04, 0.008);
+    round(head, hairMat, [0, 0.07, 0.1], [0.13, 0.07, 0.11]);
+    ribbon(body, leather, [-0.11, 1.33, 0.1], [0.07, 1.14, 0.2], 0.014, 0.01);
+    part(body, UNIT_CYLINDER, brass, [0.085, 1.06, 0.205], [0.028, 0.17, 0.028]);
+    part(body, UNIT_CYLINDER, brass, [0.085, 0.965, 0.205], [0.034, 0.03, 0.034]);
+    box(body, leather, [-0.13, 0.9, 0.175], [0.085, 0.11, 0.022]);
+    box(body, whites, [-0.128, 0.905, 0.187], [0.07, 0.095, 0.006]);
   } else if (role === 'harbormaster') {
     // An apron and salt-grey beard distinguish the older keeper of the pier.
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);

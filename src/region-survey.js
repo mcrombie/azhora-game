@@ -47,6 +47,14 @@ export const PLAYABLE_SURVEY = Object.freeze({
         {q:5,r:115,terrain:'plains'},{q:6,r:115,terrain:'hills'},{q:2,r:116,terrain:'grassland'},{q:3,r:116,terrain:'grassland'},{q:4,r:116,
         terrain:'grassland'},{q:5,r:116,terrain:'plains'},{q:6,r:116,terrain:'plains'},{q:3,r:117,terrain:'grassland'},{q:4,r:117,terrain:'grassland'},{q:5,
         r:117,terrain:'plains'},{q:6,r:117,terrain:'hills'},{q:4,r:118,terrain:'grassland'},{q:5,r:118,terrain:'grassland'},{q:4,r:119,terrain:'grassland'}]) }),
+    Object.freeze({ id: "Pueth", name: "Pueth",
+      bounds: Object.freeze({"x":1676.626,"y":2400,"width":235.559,"height":152}), centerX: 1803.386, centerY: 2456,
+      cells: Object.freeze([{q:11,r:100,terrain:'grassland'},{q:12,r:100,terrain:'hills'},{q:13,r:100,terrain:'hills'},{q:14,r:100,terrain:'hills'},{q:15,r:100,terrain:'hills'},
+        {q:16,r:100,terrain:'hills'},{q:10,r:101,terrain:'grassland'},{q:11,r:101,terrain:'grassland'},{q:12,r:101,terrain:'grassland'},{q:13,r:101,
+        terrain:'grassland'},{q:14,r:101,terrain:'grassland'},{q:15,r:101,terrain:'grassland'},{q:16,r:101,terrain:'hills'},{q:10,r:102,terrain:'grassland'},
+        {q:11,r:102,terrain:'grassland'},{q:12,r:102,terrain:'grassland'},{q:13,r:102,terrain:'grassland'},{q:14,r:102,terrain:'grassland'},{q:15,r:102,
+        terrain:'grassland'},{q:16,r:102,terrain:'hills'},{q:17,r:102,terrain:'plains'},{q:14,r:103,terrain:'grassland'},{q:15,r:103,terrain:'grassland'},
+        {q:16,r:103,terrain:'plains'},{q:15,r:104,terrain:'plains'},{q:16,r:104,terrain:'plains'},{q:15,r:105,terrain:'plains'}]) }),
   ]),
 });
 

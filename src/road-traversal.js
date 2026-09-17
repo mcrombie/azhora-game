@@ -12,16 +12,27 @@ export async function runRoadTraversal(h) {
   const position = () => player?.group?.position || player?.position || player;
   const copyPosition = () => ({ x: position().x, z: position().z });
   const initial = copyPosition();
-  // Out along the main road to the Legion camp, with the Suval branch walked
-  // from its junction as far as Elod's shut gate: Drent, Luscia and the Moros are
-  // entered on foot, and East Suval, which is closed, is not.
+  // Out along the main road to the Legion camp, with the Suval branch walked from its
+  // junction as far as Elod's shut gate and the road north into Pueth walked too: every
+  // region is entered on foot but East Suval, which is closed.
   const junction = (world.suvalRoute ?? [])[0];
   const mainRoad = world.routeJourney.map(point => ({ x: point.x, z: point.z }));
   const suvalRoad = (world.suvalRoute ?? []).map(point => ({ x: point.x, z: point.z }));
   const branchAt = junction ? mainRoad.findIndex(point => Math.hypot(point.x - junction.x, point.z - junction.z) < 1) : -1;
-  const road = branchAt >= 0
+  let road = branchAt >= 0
     ? [...mainRoad.slice(0, branchAt + 1), ...suvalRoad.slice(1), ...suvalRoad.slice(0, -1).reverse(), ...mainRoad.slice(branchAt + 1)]
     : mainRoad;
+  // The road north into Pueth leaves the main road between two of its vertices: walk out to its end and back first.
+  const puethRoad = (world.puethRoute ?? []).map(point => ({ x: point.x, z: point.z }));
+  if (puethRoad.length > 1) {
+    const start = puethRoad[0];
+    const onLeg = road.findIndex((a, i) => {
+      const b = road[i + 1]; if (!b) return false;
+      const dx = b.x - a.x, dz = b.z - a.z, t = Math.max(0, Math.min(1, ((start.x - a.x) * dx + (start.z - a.z) * dz) / (dx * dx + dz * dz)));
+      return Math.hypot(start.x - a.x - dx * t, start.z - a.z - dz * t) < .5;
+    });
+    if (onLeg >= 0) road = [...road.slice(0, onLeg + 1), ...puethRoad, ...puethRoad.slice(0, -1).reverse(), ...road.slice(onLeg + 1)];
+  }
   assert(road.every(point => Number.isFinite(point.x) && Number.isFinite(point.z)), 'road contains invalid coordinates');
   assert(canStand(initial.x, initial.z, world), 'starting position is blocked');
 
@@ -114,7 +125,8 @@ export async function runRoadTraversal(h) {
 
   // East Suval is closed: the branch ends before Elod's shut gate. At its end the
   // traveler holds on into the gate, and must be neither let through nor let into the region.
-  const frontierEnd = branchAt >= 0 ? branchAt + suvalRoad.length - 1 : -1;
+  // Found in the finished route, since other branches may be spliced in before it.
+  const frontierEnd = branchAt >= 0 ? road.indexOf(suvalRoad.at(-1)) : -1;
   let frontierHeld = false;
   async function pushAtFrontier() {
     const frontier = world.closedFrontier;
@@ -172,6 +184,8 @@ export async function runRoadTraversal(h) {
     assert([2, 3].every(id => enteredRegions.has(id)), 'the trip skipped Luscia or the Moros');
     assert(!enteredRegions.has(4), 'the trip entered East Suval, which is closed');
     assert(frontierEnd < 0 || frontierHeld, 'the Suval branch was not walked to Elod’s shut gate');
+    const puethEnd = world.puethRoute?.at(-1), puethRegion = puethEnd ? world.regionAt(puethEnd.x, puethEnd.z) : null;
+    assert(!puethRegion || enteredRegions.has(puethRegion.id), 'the trip skipped the road north into Pueth');
     assert(walkedMeters > 1000, `only ${walkedMeters.toFixed(1)} m was recorded for the full return journey`);
     assert(walkedMeters <= heldKeyMs / 1000 * 7.2 + 1, 'distance exceeds the real time spent holding run');
     assert(!Number.isFinite(initialRenderFrame) || finalState.frames > initialRenderFrame + 1000,

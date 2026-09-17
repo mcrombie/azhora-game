@@ -62,8 +62,10 @@ export const CLUSTERS = Object.freeze([
   cluster('caloss-bank', [-306, 122], 26, { note: 'The quiet fishing bank. Its centre is a river vertex, so the stool and the cast keep their place on the water.' }),
   cluster('reedcutters-landing', [-381, 119], 17, { note: 'The reedcutters’ camp, Merren’s landing workshop and the two net floats.' }),
   cluster('savas-shrine', [-374, 134], 15, { note: 'Sava’s shrine, her stand and the shrine repair bench.' }),
+  // The Bramble Scout Camp has moved to Pueth (authored in world metres, src/pueth-world.js). Its old ground in
+  // north Luscia keeps its cluster so a 56 m checkpoint taken there still resumes where it was taken: in Luscia's woods.
   cluster('goblin-camp', [-432, 156], 38, { pivot: [-397, 153],
-    note: 'The Bramble Scout Camp in north Luscia, hinged on the point where its trail leaves the main road.' }),
+    note: 'Where the Bramble Scout Camp stood in north Luscia, hinged on its old trail junction. Empty woods now; kept so 56 m checkpoints taken there resume in place.' }),
   cluster('lauvel-relay', [-401, 196], 12, { note: 'The Legion’s old relay hut off the road above Lumber Town.' }),
   cluster('lauvel-field', [-386, 182.9], 24, { note: 'The field at the Lauvel: wrecks, the burial line, the pickets and the wolves.' }),
   cluster('burned-hamlet', [-348, 212], 16, { note: 'Four roofless walls, a chimney and Garran.' }),
