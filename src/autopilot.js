@@ -156,8 +156,12 @@ export function planGoal(snapshot, world) {
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
   if (mode === 'dialogue') return { kind: 'dialogue', intent: 'Talking' };
   if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading Mara’s message' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
+  // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
+  if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };
   if (snapshot.combat.phase === 'active') return { kind: 'fight', intent: 'Fighting' };
+  if (snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
+  if (snapshot.mapTutorial === 2) return { kind: 'open-trails', intent: 'Reading the local trails' };
   if (!snapshot.weapon.usable) {
     if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
     const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
@@ -281,6 +285,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'inspect-letter': if (timers.interact >= config.interactEvery) { actions.push({ type: 'select-item', id: 'harbor-letter' }); timers.interact = 0; } break;
       case 'open-inventory': if (timers.interact >= config.interactEvery) { actions.push({ type: 'open-inventory' }); timers.interact = 0; } break;
       case 'close-inventory': if (timers.interact >= config.interactEvery) { actions.push({ type: 'close-inventory' }); timers.interact = 0; } break;
+      case 'open-chart': case 'open-trails': case 'close-journal': if (timers.interact >= config.interactEvery) { actions.push({ type: goal.kind }); timers.interact = 0; } break;
       case 'equip': actions.push({ type: 'equip', id: goal.item }); break;
       case 'eat': if (timers.interact >= config.interactEvery) { actions.push({ type: 'eat', id: goal.item }); timers.interact = 0; } break;
       case 'fight': {

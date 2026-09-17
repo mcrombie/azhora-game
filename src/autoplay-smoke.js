@@ -73,11 +73,12 @@ export async function runAutoplaySmoke(h) {
   assert(final.questStage === 10, 'the tutorial was not completed');
   assert(final.journeyView.complete, 'the road was not completed');
   assert(final.campaign?.chapterId === 'luscia-aftermath', 'the campaign did not advance to Luscia');
+  assert(final.mapTutorial === 3, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
   assert(world.regionAt(final.position[0], final.position[2]).id === 2, 'the traveler did not end beside the Lauvel relay in Luscia');
   assert(tookOver && restarted, 'the hand-over was never exercised');
   assert(fights >= 2, `only ${fights} fights were seen`);
-  checks += 7;
+  checks += 8;
   return {
     ok: true, checks, fights, retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxMetresPerRenderedFrame: Math.round(maxJump * 100) / 100,
     elapsedSeconds: Math.round((performance.now() - started) / 100) / 10, milestones, stopReason: autopilot.stopReason,

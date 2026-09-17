@@ -8,6 +8,7 @@ import { createWeapons } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
+import { createMapTutorial } from './map-tutorial.js';
 import { createWoodlandLife } from './woodland-life.js';
 import { createForestEcology } from './forest-ecology.js';
 import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './forest-story.js';
@@ -151,6 +152,7 @@ function init() {
   let checkpointFailureShown=false;
   let currentAcorn=null,currentStick=null,currentFruit=null,nearRepair=false,currentFire=null,nearFishing=false,currentFishingSpot=null;
   let testingEnabled=false,pendingTesting=false,heardDoom=false;
+  const mapTutorial=createMapTutorial();let regionCardTimer,mapTutorialTimer;
   let trackedPlaceId=null;
   const trailMap=createTrailMap({mount:$('trail-map'),getModel:localMapModel,onTrack:trackPlace,onClear:clearTrailPin});
   const developer=createDeveloperMode({renderer,normalScene:scene,world,player,onExit:()=>{mode='playing';stopInput();settleCamera();canvas.focus();}});
@@ -161,6 +163,27 @@ function init() {
     developer.open();return true;
   }
 
+  // Regions are provinces of Azhora. Entering one shows a title card with its level and ruler,
+  // autosaves, and on the first province beyond Drent starts the map tutorial.
+  const regionInfoCache=new Map();
+  function regionInfo(name){if(!regionInfoCache.has(name))regionInfoCache.set(name,describeRegion(name)??null);return regionInfoCache.get(name);}
+  function regionKicker(region){const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
+  function enterRegion(region){
+    const info=regionInfo(region.name);
+    $('region-card-name').textContent=region.name;$('region-card-subtitle').textContent=region.subtitle||'';
+    $('region-card-detail').textContent=info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
+    $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
+    if(questStage>=1)saveRoad(false);
+    if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
+  }
+  function renderMapTutorial(){
+    const view=mapTutorial.view(),panel=$('map-tutorial');clearTimeout(mapTutorialTimer);
+    if(!view.card){panel.classList.add('hidden');return;}
+    $('map-tutorial-kicker').textContent=view.card.kicker;$('map-tutorial-title').textContent=view.card.title;$('map-tutorial-text').textContent=view.card.text;
+    $('map-tutorial-hint').hidden=!view.card.key;if(view.card.key)$('map-tutorial-key').textContent=view.card.key;
+    panel.classList.remove('hidden');
+    if(view.done)mapTutorialTimer=setTimeout(()=>panel.classList.add('hidden'),7000);
+  }
   function toast(title,kicker='ALONG THE WAY') {
     $('toast').replaceChildren();const small=document.createElement('small');small.textContent=kicker;
     $('toast').append(small,document.createTextNode(title));$('toast').classList.add('visible');
@@ -170,12 +193,12 @@ function init() {
     if(questStage===10){
       journey.start();const quest=journey.view();
       $('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
-      $('quest-step').textContent=quest.complete?'FOUR REGIONS · ROAD RESTORED':`REGION ${quest.region} · THE ROAD OUT OF DRENT`;
+      $('quest-step').textContent=quest.complete?'THE ROAD OUT OF DRENT · RESTORED':`THE ROAD OUT OF DRENT · ${quest.regionName.toUpperCase()}`;
       return;
     }
     const quest=questSteps[questStage];$('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
     $('lesson-title').textContent=quest.lesson;$('lesson-hint').textContent=quest.hint;
-    $('quest-step').textContent=questStage===10?'REGION ONE · COMPLETE':`FIRST SHORE · ${questStage+1} / ${questSteps.length-1}`;
+    $('quest-step').textContent=questStage===10?'TIDEHAVEN · COMPLETE':`FIRST SHORE · ${questStage+1} / ${questSteps.length-1}`;
   }
   function updateQuest(event) {
     const previous=questStage;questStage=advanceQuest(questStage,event);
@@ -188,7 +211,7 @@ function init() {
     if(questStage===2)toast('Mara’s message','ADDED TO SATCHEL · I TO OPEN');
     else if(questStage===6)toast('Eren’s travel token','ADDED TO SATCHEL · PRESS I');
     else if(questStage===7)toast('Message inspected. Close your satchel to continue.','I OR ESC · BACK TO THE WORLD');
-    else toast(questSteps[questStage].title,questStage===10?'REGION ONE COMPLETE · THE PLAIN LIES AHEAD':'JOURNAL UPDATED');
+    else toast(questSteps[questStage].title,questStage===10?'TIDEHAVEN SECURED · THE FOREST ROAD LIES AHEAD':'JOURNAL UPDATED');
     if(questStage>=1&&!testingEnabled)saveRoad(false);
   }
   function begin() {
@@ -221,6 +244,7 @@ function init() {
     show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('defeat',false);mode='playing';stopInput();lastModalFocus?.focus();canvas.focus();
   }
   function journalTab(tab){
+    if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
     if(tab==='world')worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(player.group.position.x,player.group.position.z));
     show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');
     for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-trails','trails']])$(id).classList.toggle('active',tab===name);
@@ -326,7 +350,7 @@ function init() {
     syncJourney();refreshQuest();inventory.refresh();audio?.effect('success');
     const complete=journey.view().complete;
     if(complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
-    toast(complete?'The road is restored. Iven will send your report ahead; Luscia waits across the Caloss.':journey.view().title,complete?'FOUR REGIONS EXPLORED':'JOURNAL UPDATED');
+    toast(complete?'The road is restored. Iven will send your report ahead; Luscia waits across the Caloss.':journey.view().title,complete?'THE ROAD IS RESTORED':'JOURNAL UPDATED');
     if(!testingEnabled)saveRoad(false);
     return result;
   }
@@ -338,7 +362,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot()});
+    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),mapTutorial:mapTutorial.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -355,6 +379,7 @@ function init() {
     acornQuest=createAcornQuest({status:saved.woodland?.acornStatus||(saved.lysaComplete?'complete':'available')});
     forestStory.restore(saved.forestStory);forestHideout.restore(saved.forestHideout);regionalLife.restore(saved.regionalLife);
     campaign.restore(saved.campaign??createCampaign().snapshot());if(journey.view().complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
+    mapTutorial.restore(saved.mapTutorial??0);renderMapTutorial();
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -730,11 +755,13 @@ function init() {
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     journey:{started:journey.state.started,stage:journey.view().stage,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
+    mapTutorial:mapTutorial.step,
     interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
   const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>document.querySelector(`[data-choice="${id}"]`)?.click(),interact:()=>interact(),
     attack:({yaw:aim})=>{if(mode==='playing'&&grounded&&weapons.profile().usable)combat.attack(aim);},dodge:({x,z})=>{if(mode==='playing'&&grounded)combat.dodge({x,z});},
     'open-inventory':()=>{if(mode==='playing')toggleInventory();},'close-inventory':()=>{if(mode==='inventory')inventory.close();},'select-item':({id})=>inventory.select(id),
-    equip:({id})=>{if(combat.state.player.action==='idle'&&weapons.equip(id))inventory.refresh();},eat:({id})=>consumables.consume(id)};
+    equip:({id})=>{if(combat.state.player.action==='idle'&&weapons.equip(id))inventory.refresh();},eat:({id})=>consumables.consume(id),
+    'open-chart':()=>{if(mode==='playing'){modal('journal');journalTab('world');}},'open-trails':()=>{if(mode==='playing')openLocalMap();},'close-journal':()=>{if(mode==='journal')closeModal();}};
   const autopilot=createAutopilot({world:autopilotWorld,read:autopilotRead,act:autopilotActs});
   let autopilotIntent='';
   autopilot.onEvent(event=>{show('autoplay-badge',event.type==='start');$('autoplay-button').textContent=event.type==='start'?'Stop autoplay · P':'Autoplay the road · P';
@@ -889,8 +916,8 @@ function init() {
     const region=world.regionAt?.(player.group.position.x,player.group.position.z);
     if(region){
       $('region-name').textContent=region.name;$('map-caption').textContent=region.name.toUpperCase();
-      $('region-kicker').textContent=region.id===1?'THE FIRST SHORE · DRENT':`AZHORA · REGION ${region.id}`;
-      if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;toast(region.subtitle,`REGION ${region.id} · ${region.name.toUpperCase()}`);}
+      $('region-kicker').textContent=regionKicker(region);
+      if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
     $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':'DEFEND THE GREENWAY';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
@@ -1040,7 +1067,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

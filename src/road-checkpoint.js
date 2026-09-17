@@ -7,6 +7,7 @@ import { createForestStory, validateForestStorySnapshot } from './forest-story.j
 import { createForestHideoutQuest, validateForestHideoutSnapshot } from './forest-hideout.js';
 import { createRegionalLife, validateRegionalLifeSnapshot } from './regional-life.js';
 import { createCampaign } from './campaign.js';
+import { validateMapTutorial } from './map-tutorial.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
 export const ROAD_CHECKPOINT_VERSION = 1;
@@ -47,6 +48,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       return failed('The saved gathering sites are invalid.');
     if (typeof data.meadowCleared !== 'boolean' || typeof data.heardDoom !== 'boolean'
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
+    if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
     const p = data.position;
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)
       || p.x <= WORLD_BOUNDS.minX || p.x >= WORLD_BOUNDS.maxX
@@ -88,6 +90,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'forestHideout')) { const hideout = createForestHideoutQuest(); hideout.restore(data.forestHideout); result.forestHideout = hideout.snapshot(); }
     if (Object.hasOwn(data, 'regionalLife')) { const life = createRegionalLife(); life.restore(data.regionalLife); result.regionalLife = life.snapshot(); }
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
+    if (Object.hasOwn(data, 'mapTutorial')) result.mapTutorial = data.mapTutorial;
     return { ok: true, data: result, reason: '' };
   }
 

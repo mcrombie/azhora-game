@@ -45,6 +45,11 @@ This is the brief for the pass that follows the region rebuild (`docs/region-reb
 - The Caloss signpost on the south-west road gets its text.
 - Corvan's lines refer to the farm clearing in the forest rather than Sunmeadow. Search for `Sunmeadow`, `Eastreena`, `Reedwater` and `Threefold` across `src/` and `tests/` and replace the ones the rebuild left (some names may survive as landmark titles by design; the report says which).
 
+## Queued after the Luscia chapter lands
+
+- **Lumber Town, Smiths and the rebel contact** are being built with the chapter (see `docs/luscia-chapter-report.md` when it exists): the town at Luscia's centre is the main quest's report destination; Smiths is a harmless beggar who follows and asks for a coin; a seemingly ordinary townsperson reveals herself as a republican only through a specific line of questioning and starts the Coalition's Luscia arc.
+- **Move the goblin camp out of Drent.** Drent is level 0 and has no goblin camp. The Bramble Scout Camp (the optional hideout in `src/forest-hideout*.js`, Tamsin's stolen supplies) moves to the wilderness in Luscia's north. It becomes a side quest taken at Lumber Town: a soldier there tells the traveler about the camp; the captain and his soldiers offer to attack it together and go along to fight once the traveler says they are ready. That needs allied combatants in `src/combat.js` (Legion soldiers who fight goblins beside the player) and companion movement in main.js. The Greenway ambush and the Avrel clearing raiders stay: they are the combat tutorial, not a camp.
+
 ## Report
 
 Write `docs/content-pass-report.md`: what was added per region, ids used, tests added, anything left as a stub and why. Keep the README's district table and region blurbs current.

@@ -185,3 +185,14 @@ test('a stalled walk turns into a sidestep and a long stall gives control back',
   for (let i = 0; i < 40; i++) pilot.step(.1);
   assert.equal(pilot.active, false); assert.match(pilot.stopReason, /control/);
 });
+
+test('the map tutorial steers the autopilot through the chart and the trails, then out of the journal', () => {
+  const world = fakeWorld();
+  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 1, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-chart');
+  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 2, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-trails');
+  assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 2 }), world).kind, 'close-journal', 'a learned lesson closes the journal');
+  assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 0 }), world).kind, 'wait', 'a journal the player opened is left alone');
+  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 3, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'a finished tutorial no longer interrupts the road');
+  assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'no tutorial means the usual first goal');
+  assert.equal(planGoal(snapshot({ mapTutorial: 1, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight', 'a fight comes before any reading');
+});

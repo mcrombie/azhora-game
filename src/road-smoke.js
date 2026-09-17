@@ -225,7 +225,7 @@ export async function runRoadSmoke(h) {
     assert(journey.view().complete, 'Iven did not finish the road report');
     assert(JSON.stringify(journey.state.completedRegions) === '[2,3,4]', 'all three new regions were not completed');
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the relay consumed the onward quest items');
-    assert(query('#quest-step')?.textContent.includes('FOUR REGIONS'), 'the completed road HUD is missing');
+    assert(query('#quest-step')?.textContent.includes('RESTORED'), 'the completed road HUD is missing');
     assert(!state().testingEnabled, 'the road required a testing override');
     return { roadChecks: checks, roadRegions: 3, roadNPCs: 4, roadParcels: 3, roadWaymarkers: 3,
       roadBridgeWalked: Math.round(bridgeWalked), roadBattleSwings: battleSwings, roadBattleDodges: battleDodges,
