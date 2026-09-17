@@ -20,7 +20,7 @@
  * dressed stone: a closed circuit, a wall walk behind a parapet, a tower at every
  * corner and either side of each gate, two gates, and a ditch outside.
  */
-import { SOLIS, solisPoint, SOLIS_ROAD, regionNameAt } from './region-world.js';
+import { SOLIS, solisPoint, SOLIS_ROAD, regionNameAt, insideRegion, landDistance } from './region-world.js';
 import { toWorld } from './world-scale.js';
 
 const freeze = Object.freeze;
@@ -304,7 +304,7 @@ export const WEST_SUVAL_BORDER = (() => {
 
 export const WEST_SUVAL_PLACES = freeze({
   fold: freeze({ id: 'shepherds-fold', name: 'The Shepherds’ Fold', ...anchor(-392, 433),
-    description: 'A ring of dry-stone walls on the open down, a hut roofed with turf, and a thorn tree the flock has rubbed smooth. The shepherds have taken the sheep inland until the armies go.' }),
+    description: 'A ring of dry-stone walls on the open down, a hut roofed with turf, and a thorn tree the flock has rubbed smooth. The shepherds have taken the flock inland until the armies go; wolves came down to the fold twice this month and nobody could spare a man to sit up with the sheep.' }),
   watchtower: freeze({ id: 'old-watchtower', name: 'The Broken Watchtower', ...anchor(-330, 387),
     description: 'The stump of a round tower of the old kingdom, older than the Empire’s road. A sun-horse is still cut over the door. From its rubble the sea shows silver to the south.' }),
   well: freeze({ id: 'wayside-well', name: 'The Wayside Well', ...anchor(-338, 455),
@@ -378,6 +378,49 @@ export const SOLIS_STANDS = freeze({
   'envoy-guard-south': stand(19.6, 6.6, WEST),
   'solis-captain': stand(8, -54, NORTH),
 });
+
+/**
+ * Solis for the autopilot: a walled place entered only by its gates. `contains`
+ * is the town inside the walls, so the ditch and the bank under the wall count
+ * as outside; each gate's `outer` point stands before its causeway and its
+ * `inner` point in the street behind the passage.
+ */
+const ENCLOSURE_REACH = { a: SOLIS_CIRCUIT.halfA - FORT.thickness / 2, b: SOLIS_CIRCUIT.halfB - FORT.thickness / 2 };
+export const SOLIS_ENCLOSURE = freeze({
+  id: 'solis', name: 'Solis',
+  contains: (x, z) => Math.abs(x - SOLIS.centre.x) < ENCLOSURE_REACH.a && Math.abs(z - SOLIS.centre.z) < ENCLOSURE_REACH.b,
+  gates: freeze(SOLIS_GATES.map(gate => {
+    const outer = facePoint(gate.face, gate.along, FORT.ditchOffset + 7), inner = facePoint(gate.face, gate.along, -9);
+    return freeze({ id: gate.id, outer: local(outer.a, outer.b), inner: local(inner.a, inner.b) });
+  })),
+});
+
+/** The Court of Oaths is walled on three sides: the envoy inside it is reached through its colonnade. */
+export const COURT_ENCLOSURE = freeze({
+  id: 'court-of-oaths', name: COURT_OF_OATHS.name,
+  contains: (x, z) => {
+    const a = x - SOLIS.centre.x, b = z - SOLIS.centre.z;
+    return a > COURT_OF_OATHS.front && a < COURT_OF_OATHS.back && b > COURT_OF_OATHS.north && b < COURT_OF_OATHS.south;
+  },
+  gates: freeze([freeze({ id: 'colonnade', outer: local(COURT_OF_OATHS.front - 5, 2), inner: local(COURT_OF_OATHS.front + 2.5, 2) })]),
+});
+/** Walled places for the autopilot, outermost first. */
+export const SOLIS_ENCLOSURES = freeze([SOLIS_ENCLOSURE, COURT_ENCLOSURE]);
+
+/**
+ * The sea off West Suval's coast for the charts: on each row, from the western
+ * edge of the chart to the first of West Suval's own shore (islands offshore
+ * are not the coast).
+ */
+export const WEST_SUVAL_SEA = (() => {
+  const west = -900, rows = [];
+  for (let z = 930; z <= 1210; z += 8) {
+    let x = west;
+    while (x < -200 && !(landDistance(x, z) >= 0 && insideRegion('West Suval', x, z))) x += 4;
+    if (x < -200) rows.push(point(x, z));
+  }
+  return freeze([point(west, rows[0].z), ...rows, point(west, rows.at(-1).z)]);
+})();
 
 /**
  * Who holds Solis on the ground right now: `control` is the occupation map

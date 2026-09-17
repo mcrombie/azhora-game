@@ -238,3 +238,26 @@ test('the country between the border and Solis has places to find, and they stan
   for (const word of ['Gate of Sun Horses', 'Court of Oaths', 'bronze horses', 'white cliffs', 'terraces']) assert.match(text, new RegExp(word));
   assert.doesNotMatch(text, /Maro|Arelle|Solan|Maera|wedding|siege/, 'nothing of the novella’s people or plot');
 });
+
+test('the autopilot finds its way into Solis by the Gate of Sun Horses, to the envoy and back out again', async () => {
+  const { nextWaypoint, freeDirection } = await import('../src/autopilot.js');
+  const { SOLIS_ENCLOSURE, SOLIS_ENCLOSURES } = await import('../src/west-suval.js');
+  const ground = { ...nearSolis, paths: world.paths, enclosures: SOLIS_ENCLOSURES };
+  const walk = (from, to) => {
+    const position = { ...from };
+    for (let frame = 0; frame < 9000; frame++) {
+      if (Math.hypot(position.x - to.x, position.z - to.z) < 1.5) return { arrived: true, position };
+      const waypoint = nextWaypoint(position, to, ground);
+      const direction = freeDirection(position, waypoint.point, ground);
+      moveCharacter(position, direction.x * .12, direction.z * .12, ground);
+    }
+    return { arrived: false, position };
+  };
+  const outside = P(-40, -110), envoy = SOLIS_STANDS['coalition-envoy'], quay = SOLIS_STANDS['solis-porter'];
+  assert.equal(SOLIS_ENCLOSURE.contains(outside.x, outside.z), false);
+  assert.equal(SOLIS_ENCLOSURE.contains(envoy.x, envoy.z), true);
+  for (const [from, to, label] of [[outside, envoy, 'in to the envoy'], [envoy, outside, 'back out to the road'], [envoy, quay, 'out by the quay gate']]) {
+    const result = walk(from, to);
+    assert.ok(result.arrived, `the autopilot could not walk ${label}; it stopped at ${result.position.x.toFixed(1)}, ${result.position.z.toFixed(1)}`);
+  }
+});

@@ -261,3 +261,18 @@ test('the autopilot carries the terms to Solis, keeps the Empire’s contract, r
   assert.equal(border.view().side, 'empire');
   assert.equal(border.view().stage, 'fighting');
 });
+
+test('walled places are entered and left by their gates, innermost first on the way out', async () => {
+  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const box = (id, half, gates) => ({ id, contains: (x, z) => Math.abs(x) < half && Math.abs(z) < half, gates });
+  const town = box('town', 50, [{ id: 'north', outer: { x: 0, z: -60 }, inner: { x: 0, z: -40 } }, { id: 'west', outer: { x: -60, z: 0 }, inner: { x: -40, z: 0 } }]);
+  const hall = { id: 'hall', contains: (x, z) => x > 20 && x < 40 && Math.abs(z) < 10, gates: [{ id: 'door', outer: { x: 15, z: 0 }, inner: { x: 25, z: 0 } }] };
+  const world = { enclosures: [town, hall] };
+  assert.equal(enclosureWaypoint({ x: 0, z: -200 }, { x: 5, z: 5 }, { enclosures: [] }), null, 'no walls, no detour');
+  assert.equal(enclosureWaypoint({ x: 1, z: 1 }, { x: 5, z: 5 }, world), null, 'both inside: walk straight');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -200 }, { x: 5, z: 5 }, world).point, { x: 0, z: -60 }, 'from the north, make for the north gate');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -58 }, { x: 5, z: 5 }, world).point, { x: 0, z: -40 }, 'in the gate’s corridor, go through');
+  assert.deepEqual(enclosureWaypoint({ x: -200, z: 3 }, { x: -30, z: 0 }, world).point, { x: -60, z: 0 }, 'the cheaper gate');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: -30 }, { x: 30, z: 0 }, world).point, { x: 15, z: 0 }, 'inside the town, make for the hall’s door');
+  assert.deepEqual(enclosureWaypoint({ x: 30, z: 0 }, { x: 0, z: -200 }, world).point, { x: 25, z: 0 }, 'leave the hall before the town');
+});

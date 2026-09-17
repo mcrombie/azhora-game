@@ -121,7 +121,7 @@ const TOWNSFOLK = Object.freeze({
 });
 
 const GARRISON = Object.freeze({
-  'solis-gate-guard-west': ['Suvali, from the downs. I am on the gate so the Izoli do not have to learn which farmers to let in.'],
+  'solis-gate-guard-west': ['Suvali, from the downs. Bandits took a wine cart on the south road last week and the wolves have had two lambs from the fold by the road. The war gets the blame for both.'],
   'solis-gate-guard-east': ['Izoli marine. We came ashore under that gate a week ago. The children threw flowers at the horses and then at us.'],
   'solis-quay-guard': ['Nobody takes a boat out without the council’s pass. The fishermen are furious. The fish are delighted.'],
   'solis-legion-gate-west': ['Solis is under the Legion’s protection. Keep to the street and keep your hands where they can be seen.'],

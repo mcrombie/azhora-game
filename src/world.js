@@ -12,7 +12,7 @@ import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint,
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { createRegionScenery } from './world-regions.js';
 import { SOLIS_ROAD } from './region-world.js';
-import { WEST_SUVAL_LANDMARKS } from './west-suval.js';
+import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 
 /**
@@ -1375,6 +1375,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     Object.freeze({ id: 'coast-water', kind: 'polygon', points: Object.freeze([...seaEdge,
       mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
     Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
+    Object.freeze({ id: 'west-suval-water', kind: 'polygon', points: WEST_SUVAL_SEA }),
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
       ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
       ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
@@ -1402,6 +1403,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     solisRoute: SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })),
     westSuvalMetrics: westSuval.metrics,
     setSolisHolder: westSuval.setHolder,
+    enclosures: SOLIS_ENCLOSURES,
     solisHolder: westSuval.holder,
     roadSigns,
     frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
