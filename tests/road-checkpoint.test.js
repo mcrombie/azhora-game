@@ -5,6 +5,7 @@ import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
+import { createLusciaChapter } from '../src/luscia-chapter.js';
 import * as campaignModule from '../src/campaign.js';
 
 function memoryStorage() {
@@ -204,4 +205,35 @@ test('campaign progress rides along in the checkpoint, may not outrun the road, 
   const finished = { ...data, journey: road.snapshot(), inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })), weapons: weapons.snapshot(), campaign: campaign.snapshot() };
   assert.equal(checkpoint.save(finished).ok, true);
   assert.equal(checkpoint.read().data.campaign.chapterId, 'luscia-aftermath');
+});
+test('the Luscia chapter is optional in a save and can never stand ahead of the road or the campaign that carry it', () => {
+  const { checkpoint, data, inventory, weapons, storage } = fixture();
+  const luscia = createLusciaChapter({ inventory });
+  luscia.start(); luscia.act('accept-lauvel-search');
+  assert.equal(checkpoint.save({ ...data, luscia: luscia.snapshot() }).ok, false, 'the Lauvel cannot open before the road is finished');
+  const road = createJourney({ inventory, weapons });
+  road.start(); road.act('meet-courier'); for (const id of [1, 2, 3]) road.act(`collect-cart-parcel-${id}`); road.act('return-courier');
+  road.act('meet-crossing-keeper'); road.act('repair-bridge'); road.act('return-crossing-keeper');
+  road.act('meet-ridge-keeper'); for (const id of ['west', 'east', 'north']) road.act(`restore-beacon-${id}`); road.act('deliver-report');
+  const { createCampaign } = campaignModule;
+  const campaign = createCampaign();
+  campaign.completeChapter('drent-road');
+  const carried = () => inventory.items().map(id => ({ id, quantity: inventory.count(id) }));
+  const finished = { ...data, journey: road.snapshot(), inventory: carried(), weapons: weapons.snapshot(), campaign: campaign.snapshot() };
+  assert.equal(checkpoint.save(finished).ok, true, 'a save from before this chapter existed still loads');
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'luscia'), false);
+  assert.equal(checkpoint.save({ ...finished, luscia: luscia.snapshot() }).ok, true);
+  assert.deepEqual(checkpoint.read().data.luscia, luscia.snapshot());
+  const stored = storage.getItem(ROAD_CHECKPOINT_KEY);
+  luscia.act('take-courier-satchel'); luscia.act('return-courier-satchel');
+  assert.equal(checkpoint.save({ ...finished, inventory: carried(), luscia: luscia.snapshot() }).ok, false,
+    'a finished chapter without the campaign that recorded its horse is rejected');
+  assert.equal(storage.getItem(ROAD_CHECKPOINT_KEY), stored, 'rejected saves leave the stored checkpoint alone');
+  campaign.completeChapter('luscia-aftermath');
+  const paid = { ...finished, inventory: carried(), campaign: campaign.snapshot(), luscia: luscia.snapshot() };
+  assert.equal(checkpoint.save(paid).ok, true);
+  assert.equal(checkpoint.read().data.campaign.chapterId, 'moros-camp');
+  assert.equal(checkpoint.read().data.inventory.some(item => item.id === 'horse-token'), true);
+  for (const bad of [null, {}, 'luscia', { ...luscia.snapshot(), revision: 0 }, { ...luscia.snapshot(), briefed: false }])
+    assert.equal(checkpoint.save({ ...paid, luscia: bad }).ok, false);
 });

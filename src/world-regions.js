@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
-  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, regionNameAt, journeySites, regionNpcPositions,
+  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions,
 } from './region-world.js';
 import { calossSurface } from './world-terrain.js';
 import { regionalFeatureClear } from './regional-places.js';
@@ -26,6 +26,7 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: -401, z: 196, r: 15 }),                                 // the Lauvel relay
   Object.freeze({ x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z, r: 30 }),
   Object.freeze({ x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z, r: 18 }),
+  Object.freeze({ x: LUMBER_TOWN.square.x, z: LUMBER_TOWN.square.z, r: 36 }),               // Lumber Town
   Object.freeze({ x: STORY_SITES.morosGate.x, z: STORY_SITES.morosGate.z, r: 14 }),
   Object.freeze({ x: STORY_SITES.legionCamp.x, z: STORY_SITES.legionCamp.z, r: 46 }),
   Object.freeze({ x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z, r: 20 }),
@@ -448,6 +449,87 @@ export function createRegionScenery(kit) {
     mesh(roofGeometry(3.4, 2.8, .8), material('#9d9377'), x, y + 1.8, z, 1, 1, 1, luscia);
     colliders.push({ x, z, r: 1.6, kind: 'legion-picket' });
   }
+  // -------------------------------------------------------------------------
+  // Lumber Town: Luscia's market town, with the main road through its square
+  // -------------------------------------------------------------------------
+  const square = LUMBER_TOWN.square, squareY = groundHeight(square.x, square.z);
+  const roadAngle = Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z);
+  // A house set back on the east side faces west across the road, and the reverse.
+  const faceRoad = b => Math.atan2(-Math.sign(b) * LUMBER_TOWN.across.x, -Math.sign(b) * LUMBER_TOWN.across.z);
+  wornPatch(square.x, square.z, 15, '#a89b78', 1);
+  for (const [a, b, radius] of [[-16, 6, 7], [4, 17, 9], [10, 20, 6], [8, -8, 6]])
+    { const spot = townPoint(a, b); wornPatch(spot.x, spot.z, radius, '#a3987a', 1); }
+  // Ten buildings: the inn, five houses, the town store, the relay post, the
+  // sawmill shed and the log store above the sawpits.
+  for (const [a, b, width, depth, height, roof, wall] of [
+    [-11, 10, 8.4, 6.6, 3.5, '#6f7a70', '#cdc4a6'],   // the Sawyer's Rest
+    [-19, 8, 6.0, 5.0, 3.0, '#71786b', '#c9c2a4'],
+    [-15, -10, 5.8, 4.8, 3.0, '#6b7469', '#d0c7a8'],
+    [11, -12, 6.2, 5.0, 3.1, '#767c6d', '#c6bfa2'],
+    [15, 9, 5.8, 5.2, 3.0, '#6d7568', '#ccc3a5'],
+    [20, -9, 6.0, 4.8, 3.0, '#737a6c', '#c8c0a3'],
+    [-4, -12, 5.4, 4.4, 2.8, '#6a7165', '#c4bd9f'],   // the town store
+  ]) {
+    const spot = townPoint(a, b);
+    cottage(spot.x, spot.z, width, depth, height, roof, wall, faceRoad(b) + (a % 2 ? .08 : -.06), luscia);
+  }
+  // The well on the square: a stone ring, a frame and a bucket.
+  const well = townPoint(-2, 5), wellY = groundHeight(well.x, well.z);
+  for (let i = 0; i < 8; i++) {
+    const angle = i / 8 * Math.PI * 2;
+    box(rockMat, well.x + Math.sin(angle) * .95, wellY + .45, well.z + Math.cos(angle) * .95, .5, .9, .5, luscia);
+  }
+  for (const side of [-1, 1]) post(wood, well.x + LUMBER_TOWN.across.x * side * 1.1, wellY + 1.5, well.z + LUMBER_TOWN.across.z * side * 1.1, .1, 2.2, luscia);
+  box(woodLight, well.x, wellY + 2.6, well.z, 2.6, .16, .5, luscia).rotation.y = roadAngle;
+  barrel(well.x + 1.4, well.z + 1.2, .8, luscia, groundHeight(well.x + 1.4, well.z + 1.2));
+  colliders.push({ x: well.x, z: well.z, r: 1.4, kind: 'town-well' });
+  // Three market stalls: posts, a canvas roof and a counter.
+  for (const [a, b, tint] of [[3, 7, '#b8a582'], [7, 5, '#a9b0a0'], [-5, 7, '#c0ab83']]) {
+    const spot = townPoint(a, b), y = groundHeight(spot.x, spot.z);
+    const stall = new THREE.Group(); stall.position.set(spot.x, y, spot.z); stall.rotation.y = roadAngle; luscia.add(stall);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(wood, sx * 1.5, 1.1, sz * 1.0, .09, 2.2, stall);
+    mesh(roofGeometry(3.6, 2.6, .7), material(tint), 0, 2.2, 0, 1, 1, 1, stall);
+    box(woodLight, 0, .85, .9, 3.0, .14, .7, stall);
+    for (let i = 0; i < 3; i++) box(material(i % 2 ? '#8e7f5f' : '#a08a63'), -.8 + i * .8, 1.02, .9, .55, .2, .5, stall);
+    colliders.push({ x: spot.x, z: spot.z, r: 1.5, kind: 'market-stall' });
+  }
+  // The Legion's relay post on the corner of the square.
+  const relayPost = townPoint(9, -10), relayY = groundHeight(relayPost.x, relayPost.z);
+  leanTo(relayPost.x, relayPost.z, '#a89d84', roadAngle, luscia);
+  const desk = townPoint(6.6, -8.2), deskY = groundHeight(desk.x, desk.z);
+  box(woodLight, desk.x, deskY + .78, desk.z, 2.0, .14, .9, luscia).rotation.y = roadAngle;
+  colliders.push({ x: desk.x, z: desk.z, r: 1.0, kind: 'relay-desk' });
+  post(wood, relayPost.x + 3.0, relayY + 2.0, relayPost.z, .1, 4.0, luscia);
+  const relayStandard = box(material('#8c3f38'), relayPost.x + 3.3, relayY + 3.4, relayPost.z, .62, .9, .05, luscia);
+  relayStandard.name = 'Legion relay standard';
+  colliders.push({ x: relayPost.x + 3.0, z: relayPost.z, r: .3, kind: 'relay-standard' });
+  crate(townPoint(11, -7).x, townPoint(11, -7).z, .85, groundHeight(townPoint(11, -7).x, townPoint(11, -7).z), luscia);
+  // The timber yard: an open sawmill shed, the sawpit and stacked logs.
+  const shed = townPoint(4, 17), shedY = groundHeight(shed.x, shed.z);
+  const shedGroup = new THREE.Group(); shedGroup.position.set(shed.x, shedY, shed.z); shedGroup.rotation.y = roadAngle; luscia.add(shedGroup);
+  for (const sx of [-1, 0, 1]) for (const sz of [-1, 1]) post(wood, sx * 4.2, 1.6, sz * 3.2, .16, 3.2, shedGroup);
+  mesh(roofGeometry(10.4, 8.0, 2.2), material('#8d8168'), 0, 3.2, 0, 1, 1, 1, shedGroup);
+  box(woodLight, 0, .95, -2.6, 8.6, .2, 1.1, shedGroup);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    colliders.push({ x: shed.x + (sx * 4.2 * Math.cos(roadAngle) + sz * 3.2 * Math.sin(roadAngle)),
+      z: shed.z - (sx * 4.2 * Math.sin(roadAngle)) + sz * 3.2 * Math.cos(roadAngle), r: .5, kind: 'sawmill-post' });
+  for (const [a, b, count] of [[10, 16, 4], [-2, 18, 3], [8, 21, 3]]) {
+    const stack = townPoint(a, b), stackY = groundHeight(stack.x, stack.z);
+    for (let i = 0; i < count; i++) {
+      const log = mesh(cylinder, darkWood, stack.x, stackY + .42 + Math.floor(i / 2) * .72, stack.z + (i % 2 ? .8 : -.05), .36, 4.6, .36, luscia);
+      log.rotation.set(0, roadAngle, Math.PI / 2);
+    }
+    colliders.push({ x: stack.x, z: stack.z, r: 2.4, kind: 'log-stack' });
+  }
+  const sawpit = townPoint(2, 12);
+  wornPatch(sawpit.x, sawpit.z, 3.2, '#8d8163', 1);
+  for (const side of [-1, 1]) post(wood, sawpit.x + LUMBER_TOWN.along.x * side * 1.8, groundHeight(sawpit.x, sawpit.z) + .85, sawpit.z + LUMBER_TOWN.along.z * side * 1.8, .12, 1.7, luscia);
+  // Fences and a paddock behind the eastern houses.
+  for (const [a, b, length] of [[-24, 13, 11], [-9, 16, 9], [18, -13, 8]]) {
+    const spot = townPoint(a, b);
+    fence(spot.x, spot.z, length, roadAngle + Math.PI / 2, luscia);
+  }
+
   // A burned hamlet: four roofless walls and a standing chimney.
   const hamlet = STORY_SITES.burnedHamlet;
   wornPatch(hamlet.x, hamlet.z, 11, '#8a7f63', 1);

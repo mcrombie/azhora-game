@@ -25,6 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
+  'accept-lauvel-search', 'return-courier-satchel',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -116,7 +117,8 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 export function chooseReply(choices, snapshot) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
-  const wanted = new Set(snapshot.journey?.actions?.filter(action => action.enabled).map(action => action.id) ?? []);
+  const wanted = new Set([...(snapshot.journey?.actions ?? []), ...(snapshot.luscia?.actions ?? [])]
+    .filter(action => action.enabled).map(action => action.id));
   for (const id of CHOICE_PRIORITY) {
     if (id === 'hollis-repair-wood' && (snapshot.inventory?.sticks ?? 0) >= 3) continue;
     if (enabled.some(choice => choice.id === id) && (wanted.has(id) || id === 'hollis-repair-wood')) return id;
@@ -187,7 +189,7 @@ export function planGoal(snapshot, world) {
     default: break;
   }
   if (!journey?.started) return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };
-  if (journey.complete) return { kind: 'done', intent: 'The road out of Drent is done' };
+  if (journey.complete) return lusciaGoal(snapshot, world);
   if (journey.stage === 'repair-bridge' && (snapshot.inventory.sticks ?? 0) < 3) {
     const site = nearestOf((world.stickSites ?? []).filter(site => !site.collected), snapshot.position);
     if (site) return { kind: 'use', target: site, radius: 1.5, siteId: site.id, intent: 'Gathering driftwood' };
@@ -199,6 +201,24 @@ export function planGoal(snapshot, world) {
   if (world.journeySites?.[id]) return { kind: 'use', target: world.journeySites[id], radius: 1.5, siteId: id, intent: `Heading to ${world.journeySites[id].name ?? id}` };
   if (id === 'border') return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };
   return { kind: 'wait', intent: 'Looking for the next step' };
+}
+
+/**
+ * The Luscia chapter, once the road out of Drent is filed: the clerk on Lumber
+ * Town's square, the courier's satchel at the Lauvel, the wolves that come off
+ * the burial line (the ordinary fight policy handles those), and back again.
+ */
+export function lusciaGoal(snapshot, world) {
+  const luscia = snapshot.luscia;
+  if (!luscia?.destinationIds?.length || luscia.complete)
+    return { kind: 'done', intent: luscia?.complete ? 'The field at the Lauvel is settled' : 'The road out of Drent is done',
+      reason: luscia?.complete ? 'The field at the Lauvel is settled and the Legion owes you a horse. The Moros camp is the next chapter, and it is not built yet.' : null };
+  const id = luscia.destinationIds[0];
+  if (world.npcPositions?.[id])
+    return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Speaking with ${world.npcNames?.[id] ?? id}` };
+  const site = world.lusciaSites?.[id];
+  if (site) return { kind: 'use', target: site, radius: 1.5, siteId: id, intent: `Searching ${site.name ?? id}` };
+  return { kind: 'wait', intent: 'Looking for the next step in Luscia' };
 }
 
 function nearestOf(points, position) {
@@ -274,7 +294,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'begin': actions.push({ type: 'begin' }); timers.idle = 0; break;
       case 'retry': actions.push({ type: 'retry' }); timers.idle = 0; break;
       case 'wait': break;
-      case 'done': stop('The road out of Drent is finished. Luscia is the next chapter, and it is not built yet.'); return null;
+      case 'done': stop(goal.reason || 'The road out of Drent is finished. Luscia is the next chapter, and it is not built yet.'); return null;
       case 'dialogue': {
         const dialogue = snapshot.dialogue;
         if (dialogue?.choices?.length) {

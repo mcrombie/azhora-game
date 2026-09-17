@@ -227,7 +227,7 @@ export const MAIN_ROAD = Object.freeze([
   point(-176, 29), point(-196, 25), point(-214, 30), point(-236, 30), point(-258, 39),
   point(-278, 52), point(-300, 64), point(-322, 78), point(-345, 92.9), point(-362, 107),
   point(-374, 124), point(-382, 142), point(-390, 162), point(-386, 182.9), point(-396, 202),
-  point(-404, 222), point(-414, 242), point(-427, 259.4), point(-446, 276), point(-468, 292),
+  point(-404, 222), point(-408, 228), point(-414, 242), point(-427, 259.4), point(-446, 276), point(-468, 292),
   point(-492, 308), point(-518, 326), point(-549.2, 348.1), point(-596, 352), point(-648, 348),
   point(-700, 352), point(-752, 348), point(-772, 350),
 ]);
@@ -254,11 +254,38 @@ export const FERNWAY_REST = Object.freeze({ x: -128, z: 34, name: 'Fernway Rest'
 /** Drent's one farm clearing, cut out of the forest where the Avrel families work. */
 export const AVREL_CLEARING = Object.freeze({ x: -236, z: 30, radius: 38 });
 
+/**
+ * Lumber Town, the market town at the centre of Luscia, between the field at
+ * the Lauvel and the Moros gate. The main road runs through its square, and
+ * everything in the town is placed in the square's own frame: `a` metres along
+ * the road toward the Moros, `b` metres across it to the east.
+ */
+export const LUMBER_TOWN = Object.freeze({
+  name: 'Lumber Town', square: point(-408, 228), radius: 30,
+  along: point(-0.4472, 0.8944), across: point(0.8944, 0.4472),
+});
+/** A point in Lumber Town's frame. */
+export const townPoint = (a, b) => point(
+  LUMBER_TOWN.square.x + LUMBER_TOWN.along.x * a + LUMBER_TOWN.across.x * b,
+  LUMBER_TOWN.square.z + LUMBER_TOWN.along.z * a + LUMBER_TOWN.across.z * b);
+
 export const regionNpcPositions = Object.freeze({
   'meadow-courier': point(-230, 17),      // Corvan, Legion quartermaster, at the farm clearing
   'crossing-keeper': point(-357, 106),    // Hollis, at the Caloss bridge
   'ridge-keeper': point(-372, 131),       // Sava, at her shrine on the Luscia side
-  'relay-clerk': point(-401, 196),        // Iven, at the Lauvel relay
+  'relay-clerk': townPoint(5, -6),        // Iven, at the Legion relay post on Lumber Town's square
+  // Lumber Town's people, around the square and the timber yard.
+  'town-innkeeper': townPoint(-8, 4),
+  'town-carter': townPoint(-2, 9),
+  'town-elder': townPoint(-16, 2),
+  'timber-stall': townPoint(8, 7),
+  'town-sawyer': townPoint(4, 13),
+  'town-yardhand': townPoint(0, 14),
+  'town-beggar': townPoint(0, -4),        // Smiths, who wanders the square
+  // The field at the Lauvel and the burned hamlet, north-east of the town.
+  'lauvel-picket': point(-392, 186),      // Talvus, on the picket line
+  'burial-searcher': point(-387, 198),    // Ilva, at the burial line
+  'hamlet-drover': point(-344, 208),      // Garran, at the burned hamlet
 });
 
 export const journeySites = Object.freeze({
@@ -303,7 +330,8 @@ export const regionLandmarks = Object.freeze([
   Object.freeze({ id: 'river-camp', name: 'The Reedcutters’ Camp', x: -372, z: 116, description: 'Drying reeds, tied boats, and a small raised shelter stand above the Luscian bank.' }),
   Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', x: -377, z: 138, description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
   Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', x: -386, z: 152, description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
-  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', x: -401, z: 196, description: 'The relay clerk copies reports where the road turns west for the Moros and south for Suval.' }),
+  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', x: -401, z: 196, description: 'The Legion’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
+  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', x: -408, z: 228, radius: 26, description: 'Luscia’s market town: a square of stalls and a well, an inn, the timber yard above the sawpits, and the Legion’s relay post on the corner.' }),
   // Story hooks placed as scenery for the chapter that follows.
   Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', x: -386, z: 182.9, description: 'Broken carts, a fallen banner and a burial line: ten days ago the Legion met a rebel army here.' }),
   Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', x: -348, z: 212, description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
@@ -343,10 +371,10 @@ const REGION_TEXT = {
     palette: { ground: '#4d7a3e', accent: '#c9d3a0', fog: '#b6c6ad' },
     npcIds: ['meadow-courier', 'commons-miller'], landmarks: ['sunmeadow', 'fallen-cart', 'old-mill', 'mill-commons'] },
   Luscia: { subtitle: 'Across the Caloss', spawn: point(-362, 110),
-    description: 'Rolling grass and thinning copses beyond the border river, the shrines of the valley, and the field at the Lauvel.',
+    description: 'Rolling grass and thinning copses beyond the border river: the shrines of the valley, Lumber Town on the road, and the field at the Lauvel.',
     palette: { ground: '#8fa35a', accent: '#dfc77d', fog: '#bdc9b5' },
-    npcIds: ['crossing-keeper', 'ridge-keeper', 'relay-clerk', 'reed-worker'],
-    landmarks: ['reedwater', 'reed-bridge', 'reedwater-bank', 'river-camp', 'landing-workshop', 'threefold', 'beacon-ridge', 'north-relay', 'lauvel-field', 'burned-hamlet'] },
+    npcIds: ['crossing-keeper', 'ridge-keeper', 'relay-clerk', 'reed-worker', 'town-innkeeper', 'timber-stall', 'town-sawyer'],
+    landmarks: ['reedwater', 'reed-bridge', 'reedwater-bank', 'river-camp', 'landing-workshop', 'threefold', 'beacon-ridge', 'north-relay', 'lauvel-field', 'lumber-town', 'burned-hamlet'] },
   'Moros Plain': { subtitle: 'The Legion’s open country', spawn: point(-452, 278),
     description: 'Flat treeless grassland under an enormous sky. The Legion camp is visible from a long way off, and horses graze the line.',
     palette: { ground: '#b9b36c', accent: '#e4d59a', fog: '#cfd3b4' },
