@@ -281,9 +281,12 @@ export function createRegionScenery(kit) {
     box(wood, side * 2.6, deckY + .71, 0, .1, .1, HALF_SPAN * 2 - 1, bridge);
     // Thin rails: a line of small colliders, because the deck runs at an angle
     // to the world axes and an axis-aligned box would swallow the whole lane.
+    // They reach from the deck's own edge out to where the water blockers begin
+    // again, so there is no standable ledge of river beside the deck for a
+    // traveler to wander onto and be trapped on.
     for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .6) {
-      const spot = bridgePoint(along, side * 2.8);
-      colliders.push({ x: spot.x, z: spot.z, r: .35, kind: 'bridge-rail' });
+      const spot = bridgePoint(along, side * 3.03);
+      colliders.push({ x: spot.x, z: spot.z, r: .6, kind: 'bridge-rail' });
     }
   }
   const repairedDeck = new THREE.Group();
@@ -313,7 +316,8 @@ export function createRegionScenery(kit) {
     return Math.abs(dx * bridgeSide.x + dz * bridgeSide.z);
   }
   // Water blocks the channel everywhere but the bridge lane. Small, dense
-  // blockers near the crossing keep the lane exactly as wide as the deck.
+  // blockers near the crossing keep the lane exactly as wide as the deck; the
+  // rails above close the strip between the deck's edge and where they resume.
   for (let i = 1; i < riverSamples.length; i++) {
     const a = riverSamples[i - 1], b = riverSamples[i];
     const length = Math.hypot(b.x - a.x, b.z - a.z);

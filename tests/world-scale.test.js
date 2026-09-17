@@ -197,6 +197,43 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
   assert.ok(Math.hypot(trailStart.x - junction.x, trailStart.z - junction.z) < 1e-6, 'the camp trail is hinged on the road');
 });
 
+test('the only way over the Caloss is the bridge, and the road leads back to it', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const { nextWaypoint, freeDirection } = await import('../src/autopilot.js');
+  const { moveCharacter } = await import('../src/game-state.js');
+  const world = createWorld(new THREE.Scene());
+  const road = world.paths[0];
+  const at = road.reduce((best, point, index) => Math.hypot(point.x - CALOSS.crossing.x, point.z - CALOSS.crossing.z)
+    < Math.hypot(road[best].x - CALOSS.crossing.x, road[best].z - CALOSS.crossing.z) ? index : best, 0);
+  const deck = road[at], onward = road[at + 1];
+  const unit = { x: (onward.x - deck.x) / Math.hypot(onward.x - deck.x, onward.z - deck.z),
+    z: (onward.z - deck.z) / Math.hypot(onward.x - deck.x, onward.z - deck.z) };
+  // There is no standable ledge of river beside the deck for a traveler to
+  // wander onto and be trapped on: the rails reach from the deck's own edge out
+  // to where the water blockers resume.
+  const rails = world.colliders.filter(collider => collider.kind === 'bridge-rail');
+  assert.ok(rails.length > 40, 'the deck has rails along both sides');
+  for (const rail of rails) {
+    const length = Math.hypot(rail.x - CALOSS.crossing.x, rail.z - CALOSS.crossing.z) || 1;
+    const out = { x: (rail.x - CALOSS.crossing.x) / length, z: (rail.z - CALOSS.crossing.z) / length };
+    for (const step of [.3, .6]) assert.equal(canStand(rail.x + out.x * step, rail.z + out.z * step, world), false,
+      `there is standable ground ${step} m outside a bridge rail at ${rail.x.toFixed(1)}, ${rail.z.toFixed(1)}`);
+  }
+  // And the driftwood on the far bank can be fetched from the near one: the
+  // autopilot follows the road back over the bridge rather than at the water.
+  const target = world.journeySites['bridge-debris-1'];
+  const position = { x: deck.x + unit.x * 12, z: deck.z + unit.z * 12 };
+  assert.ok(canStand(position.x, position.z, world), 'the road just past the bridge is walkable');
+  let arrived = false;
+  for (let frame = 0; frame < 3000 && !arrived; frame++) {
+    if (Math.hypot(position.x - target.x, position.z - target.z) < 1.5) { arrived = true; break; }
+    const waypoint = nextWaypoint(position, target, world);
+    const direction = freeDirection(position, waypoint.point, world);
+    moveCharacter(position, direction.x * .12, direction.z * .12, world);
+  }
+  assert.ok(arrived, `the autopilot could not fetch driftwood across the Caloss; it stopped at ${position.x.toFixed(1)}, ${position.z.toFixed(1)}`);
+});
+
 test('the cluster table names every hand-placed place, and none of them overlap by accident', () => {
   const table = clusterTable();
   assert.equal(table.length, CLUSTERS.length);
