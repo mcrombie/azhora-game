@@ -217,3 +217,26 @@ test('after the border battle the autopilot rallies, reports, and stops where th
   assert.match(done.reason, /pay and your orders/);
   for (const id of ['begin-assault', 'close-aftermath']) assert.ok(CHOICE_PRIORITY.includes(id), `${id} is a reply the autopilot will choose`);
 });
+
+test('the autopilot answers every chapter that can put a reply in front of it, not only the road', () => {
+  // A chapter's reply is only chosen when the chapter itself offers it, so a
+  // snapshot that leaves the chapter out must leave the autopilot walking away.
+  const reply = (id, chapter) => chooseReply([{ id, label: 'Get on with it', enabled: true },
+    { id: 'leave-it', label: 'Not now.', enabled: true }],
+  { journey: { actions: [] }, inventory: { sticks: 0 }, ...chapter });
+  for (const [id, chapter] of [
+    ['admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: true }] } }],
+    ['join-muster', { moros: { actions: [{ id: 'join-muster', enabled: true }] } }],
+    ['take-legate-terms', { border: { actions: [{ id: 'take-legate-terms', enabled: true }] } }],
+    ['side-empire', { border: { actions: [{ id: 'side-empire', enabled: true }] } }],
+    ['sound-advance', { border: { actions: [{ id: 'sound-advance', enabled: true }] } }],
+    ['begin-assault', { aftermath: { actions: [{ id: 'begin-assault', enabled: true }] } }],
+    ['close-aftermath', { aftermath: { actions: [{ id: 'close-aftermath', enabled: true }] } }],
+    ['return-courier-satchel', { luscia: { actions: [{ id: 'return-courier-satchel', enabled: true }] } }],
+  ]) {
+    assert.equal(reply(id, chapter), id, `${id} is answered when its chapter offers it`);
+    assert.equal(reply(id, {}), 'leave-it', `${id} is left alone when no chapter offers it`);
+  }
+  // A reply the chapter has disabled is still not chosen.
+  assert.equal(reply('admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: false }] } }), 'leave-it');
+});

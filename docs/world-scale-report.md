@@ -19,7 +19,7 @@ This is the build report for `docs/world-scale-brief.md`.
 | Moros Plain | ≈476 × 259 m | **850 × 462 m** |
 | East Suval | ≈336 × 356 m | **600 × 635 m** |
 | `WORLD_BOUNDS` | x −844 … 144, z −209 … 655 | **x −1460 … 210, z −349 … 1099** |
-| Main road | 939 m | **1 677 m** |
+| Main road | 946 m | **1 677 m** |
 | Suval branch | 422 m | **754 m** |
 | Tidehaven's coast hex | (0, 29) | **(0, 29)** — the fixed point |
 
@@ -154,7 +154,24 @@ plus its shadow pass (draw calls / triangles):
 
 ### Frame time
 
-FRAME_TIME_PLACEHOLDER
+The traversal smoke holds the run key along the whole road and back, recording
+the wall-clock interval per rendered frame in each region. It walked **6 012.6 m**
+in 836.9 s over 40 946 frames (the same trip was 3 209 m before), entered all
+four regions, and was stopped by the frontier rope.
+
+| Region | Mean frame, 56 m | Mean frame, 100 m | Change | Walked |
+| --- | --- | --- | --- | --- |
+| Drent | 26.1 ms | **24.5 ms** | -6 % | 906 m |
+| Luscia | 21.2 ms | **20.8 ms** | -2 % | 2 144 m |
+| East Suval | 20.8 ms | **19.2 ms** | -8 % | 1 514 m |
+| Moros Plain | 20.5 ms | **19.2 ms** | -6 % | 1 448 m |
+
+Every region is faster than the 56 m world's figures in
+`docs/region-rebuild-report.md`, well inside the brief's 20 % budget. The reason
+is that scatter density per square metre is unchanged, so the same number of
+trees stands in front of the camera; the extra ground is beyond the fog, and
+smaller scatter blocks and more terrain tiles cull it before it is submitted.
+The story smoke reports a 23 ms average with 391 draw calls.
 
 ## Saves
 
@@ -182,7 +199,63 @@ hexes or per authored metre of road, so they survive the next change of scale.
 
 ## Smokes
 
-SMOKE_PLACEHOLDER
+Run once each at the end, in this order.
+
+| Smoke | Result | What it found |
+| --- | --- | --- |
+| `npm test` | 377 tests, 377 pass | - |
+| `npm run test:game` | pass (`smoke.json` `ok: true`) | Three faults, below |
+| `npm run test:road` | pass (`road-traversal.json` `ok: true`) | Nothing |
+| `npm run test:autoplay` | AUTOPLAY_RESULT | Three things, below |
+
+**`test:game`** found three things, one of them the scaling's own:
+
+1. *The Avrel raid never started.* Its trigger in `main.js` still tested a
+   hard-coded `(-250, 12)`; it now asks the encounter where it is.
+2. *The Caloss bridge could not be crossed in a straight line.* The deck
+   followed the outgoing leg of the road, and the road bends about six degrees
+   at the crossing. At 56 m a traveler walking straight from one bank to the
+   other cut the corner by 1.4 m and stayed on the deck; at 100 m the same cut
+   is 2.4 m and meets the rail. The deck now lies along the chord between the
+   vertices on either bank, which is also the road curve's own tangent at the
+   crossing, and the smoke walks the road through the crossing instead of
+   cutting the corner.
+3. Two things the recent chapters left stale, not the scale's doing: the smoke's
+   quest-HUD check did not know that finishing the Luscia chapter hands the
+   banner to the Moros chapter, and its wolf-retreat point mixed a chapter
+   coordinate with a literal `z`.
+
+**`test:autoplay`** found three:
+
+1. *The autopilot walked into the Caloss.* It decided "the destination is on the
+   road" by measuring to the nearest road **vertex**. Vertices are now a hundred
+   metres and more apart, so a pile of driftwood six metres off the road read as
+   23 m from it and the autopilot went straight at it, into the water.
+   `nearestOnPath` measures to the road's own line, and when both ends are on the
+   road but the straight line is blocked the autopilot now follows the road
+   toward the destination's own place on it - back over the bridge.
+2. *A standable ledge of river beside the deck.* Water blockers are suppressed
+   within 3.6 m of the bridge lane so the lane is exactly as wide as the deck,
+   but the rail colliders only reached 3.15 m. The 0.45 m of river between them
+   was standable, and a traveler who drifted off the end of the deck was trapped
+   on it with the rail in the way - which is where autoplay ended up, twice. The
+   rails now cover the whole strip over the water, and stop at the banks, where a
+   wall would only pen somebody who walked round the end of the deck.
+3. *The clock.* The deadline was fifteen minutes, set when the main quest ended
+   at Iven's relay. With a 1.7 km road and four chapters added since, the
+   autopilot reached the Legion camp's gate with everything behind it done and
+   ran out of time. The budget is now thirty minutes. Not a fault, but worth
+   knowing that this smoke is a long one now.
+
+`src/forest-hideout-smoke.js` is **not** rewritten. It describes the goblin camp
+as a Drent errand of Tamsin's at quest stage 5 paid in pawpaws; the camp moved to
+north Luscia as a Lumber Town garrison side quest before this branch, and
+`npm run test:hideout` has been failing since. Its coordinates all come from the
+camp's own modules, so they follow the new scale correctly - it is the flow that
+is gone. The file's header now lists exactly what a rewrite has to change
+(Captain Varo and Casso instead of Tamsin, the new choice ids, thirty copper
+instead of three pawpaws, quest stage 10 instead of 5, the Luscia road instead of
+the Greenway).
 
 ## The merge with main
 
@@ -201,8 +274,63 @@ both sides of its two conflicts.
 
 For the towns-and-signs pass and the West Suval brief:
 
-SPARSE_PLACEHOLDER
+**The road out of Tidehaven is the emptiest ground in the game.** The village
+still occupies the first 181 m of road, unchanged. Then there is nothing at all
+until the Avrel clearing at 429 m - 248 m of forest road, including a single
+**174 m straight** from the Caloss Gate to the first bend, because the gate is
+pinned to the village and the next vertex is not. It wants a place on it: a
+charcoal burner's clearing, a wayside shrine, a bend with a view.
+
+**The Moros gate to the Legion camp is 270 m of empty plain**, the longest gap
+between two landmarks on the road. The plain is meant to be empty, but 270 m of
+flat grass with the camp's standard in view the whole way is a long walk with
+nothing to do.
+
+**Every place is now small for its region.** Nothing is cramped - each one kept
+the distances it was authored with - but the proportions changed underneath
+them. Lumber Town is a 30 m square with eleven buildings in a 700 m region; the
+Legion camp is a 30 by 26 m palisade for a legion on an 850 m plain; the Avrel
+clearing is 38 m of radius in a 950 m Drent; Elod is a gate and three houses in a
+600 m region. This is the towns-and-signs pass's whole subject, and it is now
+obvious by eye.
+
+**Things beside the road stand further back than they did**, because the road
+grew and they did not: the quiet fishing bank is 66 m off the road (was 37), the
+burned hamlet 84 m (was 47), the clearing mill 27 m (was 15), the riverside
+pawpaws 75 m (was 40). None of them is wrong - a riverbank is where the river is
+- but the spurs that reach them are now long enough to want a reason.
+
+**The flocks are small in their fields.** Six sheep keep their own 36 by 38 m
+patch of a 462 m plain, three bank birds a 32 by 28 m stretch of the Caloss, two
+hares a corner of East Suval. Keeping their spread was right - a flock is a
+flock - but at this scale each region could carry two or three of them rather
+than one.
+
+**Signposts sit further from what they point at.** They were placed a fixed few
+metres off the road, and the road is the same width, so they read as they did;
+but the place named on the board is now half again as far away.
 
 ## Known gaps
 
-GAPS_PLACEHOLDER
+- **The Caloss bridge still rewards steering.** The deck is 27 m of a road that
+  bends six degrees at the crossing; a traveler who aims straight at the far bank
+  from this one meets the rail. Adding the deck's two ends to `MAIN_ROAD` as road
+  vertices would remove the corner for good, and is the right job for whoever
+  touches the crossing next.
+- **The three working places have no scenery where their people stand.**
+  `createRegionalPlaces` in `src/regional-places.js` still draws its mill yard,
+  boat yard and shelter at pre-rebuild coordinates - `(-38, -273)`, `(-30, -451)`,
+  `(-34, -581)` - which were outside the world before this branch and are outside
+  it still. The Mill Commons, the Landing Workshop and the Waystation Shelter
+  have their metadata, their NPCs, their activity sites and their reserved ground
+  in the right places; only the geometry is somewhere else. Nothing to do with
+  the scale, and it deserves its own fix.
+- **`src/forest-hideout-smoke.js`** describes the old Tidehaven flow; see above.
+- **Terrain relief keeps its own wavelengths.** Drent's hills are still 90 m
+  across and East Suval's 120 m, so the bigger regions have more hills rather
+  than bigger ones. That reads well on foot, but it is a choice, and a region
+  pass may want longer wavelengths for the Moros in particular.
+- **`ANCHORS.suvalBorder`** is 11 authored metres from Elod's border post, and
+  the post is a cluster while the anchor scales plainly, so the two are about
+  20 m apart now. Nothing but this report reads the anchor; if West Suval's road
+  starts from it, start from the post instead.

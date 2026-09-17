@@ -148,8 +148,11 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 export function chooseReply(choices, snapshot) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
-  const wanted = new Set([...(snapshot.journey?.actions ?? []), ...(snapshot.luscia?.actions ?? [])]
-    .filter(action => action.enabled).map(action => action.id));
+  // Every chapter that can put a reply in front of the traveler, not just the
+  // road and Luscia: without the Moros camp here the autopilot reaches the camp
+  // gate, finds nothing it recognises, says goodbye and walks away again.
+  const wanted = new Set([snapshot.journey, snapshot.luscia, snapshot.moros, snapshot.border, snapshot.aftermath]
+    .flatMap(chapter => chapter?.actions ?? []).filter(action => action.enabled).map(action => action.id));
   for (const id of CHOICE_PRIORITY) {
     if (id === 'hollis-repair-wood' && (snapshot.inventory?.sticks ?? 0) >= 3) continue;
     if (enabled.some(choice => choice.id === id) && (wanted.has(id) || id === 'hollis-repair-wood')) return id;
