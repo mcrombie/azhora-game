@@ -11,6 +11,9 @@ import {
 } from '../src/rena.js';
 import { RENA_NPCS } from '../src/rena-people.js';
 import { LORN_ID, HESTA_ID } from '../src/rena-letters.js';
+import { LEGION_POSTS } from '../src/legion-posts.js';
+import { JOURNEY_NPCS } from '../src/journey-content.js';
+import { TOWN_LIFE_NPCS } from '../src/town-life.js';
 import { SUBREGIONS, subregion, subregionsAt } from '../src/map-fog.js';
 import { regionNameAt, insideRegion, landDistance, MAIN_ROAD, VILLAGE, worldToVillage } from '../src/region-world.js';
 import { validateWoodlandProgress } from '../src/woodland-progress.js';
@@ -151,10 +154,13 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
     assert.deepEqual({ x: world.npcPositions[npc.id].x, z: world.npcPositions[npc.id].z }, { x: stand.x, z: stand.z }, `${npc.id} stands where the world puts it`);
     assert.ok(canStand(stand.x, stand.z, world, .45), `${npc.id} has footing`);
     assert.equal(regionNameAt(stand.x, stand.z), 'Drent', `${npc.id} is in Drent`);
-    for (const [id, other] of Object.entries(world.npcPositions)) {
-      if (id === npc.id) continue;
+    // Everyone already standing anywhere: the world's own stands, and the ones main.js adds from their modules.
+    const standing = [...Object.entries(world.npcPositions).map(([id, p]) => ({ id, ...p })),
+      ...LEGION_POSTS, ...TOWN_LIFE_NPCS, ...JOURNEY_NPCS.map(person => ({ ...person, ...world.npcPositions[person.id] }))];
+    for (const other of standing) {
+      if (other.id === npc.id || !Number.isFinite(other.x)) continue;
       const gap = Math.hypot(other.x - stand.x, other.z - stand.z);
-      assert.ok(gap >= (ours.has(id) ? 3 : 4), `${npc.id} crowds ${id} (${gap.toFixed(1)} m)`);
+      assert.ok(gap >= (ours.has(other.id) ? 3 : 4), `${npc.id} crowds ${other.id} (${gap.toFixed(1)} m)`);
     }
   }
   // Lorn is in Tidehaven and Hesta is at Applegarth, so the road between them is a real walk.
@@ -163,6 +169,27 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
   assert.ok(Math.abs(local.x) < 112 && local.z < 60, 'Lorn stands inside Tidehaven’s own ground');
   assert.ok(Math.hypot(hesta.x - APPLEGARTH.centre.x, hesta.z - APPLEGARTH.centre.z) < APPLEGARTH.radius, 'Hesta stands in Applegarth');
   assert.ok(Math.hypot(lorn.x - hesta.x, lorn.z - hesta.z) > 450, 'they live a long way apart');
+});
+
+test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in front of a Legion post', async () => {
+  // A stand inside a habitat takes perches away from the birds that live there
+  // (habitatSpots drops any spot within 1.6 m of a stand), and the traveler
+  // cannot talk to a post he cannot walk up to.
+  const { BIRD_HABITATS, habitatSpots } = await sourceModule('../src/drent-birds.js');
+  for (const npc of RENA_NPCS) {
+    const stand = RENA_STANDS[npc.id];
+    for (const habitat of BIRD_HABITATS) {
+      const centre = habitatSpots(habitat, world).center;
+      const gap = Math.hypot(centre.x - stand.x, centre.z - stand.z) - habitat.radius;
+      assert.ok(gap > 1.6, `${npc.id} stands in the ${habitat.id} birds’ ground (${gap.toFixed(1)} m clear)`);
+    }
+  }
+  // And nothing this pass builds — props included — blocks a Legion post's stand.
+  const ours = world.colliders.filter(collider => NEW_KINDS.test(collider.kind ?? ''));
+  for (const post of LEGION_POSTS) {
+    assert.ok(canStand(post.x, post.z, world, .45), `${post.name} stands on solid ground`);
+    for (const collider of ours) assert.ok(gapTo(collider, post.x, post.z) > .6, `${collider.kind} crowds ${post.name}`);
+  }
 });
 
 test('every new stand can be walked to from a road', () => {

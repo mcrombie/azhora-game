@@ -111,15 +111,15 @@ export const RENA_RUINS = Object.freeze({
    * west, so the plots nearest the gate are lowest.
    */
   plots: Object.freeze([
-    ['plot-1', -26, 9.5, 8.5, 6.5, 0.5], ['plot-2', -26, -9.5, 7.5, 6.0, 0.4],
-    ['plot-3', -15, 10.5, 9.0, 7.0, 0.9], ['plot-4', -14, -10.0, 8.0, 6.5, 0.7],
-    ['plot-5', -2, 11.0, 7.0, 6.0, 1.2], ['plot-6', -3, -10.5, 8.5, 7.0, 1.1],
-    ['plot-7', 10, 10.0, 8.0, 6.5, 1.5], ['plot-8', 9, -11.0, 9.5, 7.0, 1.3],
-    ['plot-9', 22, 9.0, 7.0, 5.5, 1.0], ['plot-10', 21, -9.5, 7.5, 6.0, 0.8],
-    ['plot-11', 31, -10.5, 6.5, 5.5, 0.6],
+    ['plot-1', -26, 9.5, 8.5, 6.5, 1.0], ['plot-2', -26, -9.5, 7.5, 6.0, 0.55],
+    ['plot-3', -15, 10.5, 9.0, 7.0, 1.7], ['plot-4', -14, -10.0, 8.0, 6.5, 1.3],
+    ['plot-5', -2, 11.0, 7.0, 6.0, 2.1], ['plot-6', -3, -10.5, 8.5, 7.0, 1.9],
+    ['plot-7', 10, 10.0, 8.0, 6.5, 2.4], ['plot-8', 9, -11.0, 9.5, 7.0, 2.2],
+    ['plot-9', 22, 9.0, 7.0, 5.5, 1.6], ['plot-10', 21, -9.5, 7.5, 6.0, 1.4],
+    ['plot-11', 31, -10.5, 6.5, 5.5, 0.65],
   ].map(([id, a, b, w, d, h]) => Object.freeze({ id, a, b, ...renaPoint(a, b), width: w, depth: d, height: h }))),
   /** The stump of the hall: three courses of a great room, the hearth still in the floor, the roof in the nettles. */
-  hall: Object.freeze({ ...renaPoint(4, 22), a: 4, b: 22, width: 16, depth: 11, height: 2.1,
+  hall: Object.freeze({ ...renaPoint(4, 22), a: 4, b: 22, width: 16, depth: 11, height: 3.0,
     hearth: renaPoint(4, 20.5), fallen: Object.freeze([renaPoint(-2, 27), renaPoint(3, 29), renaPoint(9, 27.5)]) }),
   /** The market place: the street widens here, and the well at the north side of it still holds water. */
   well: Object.freeze({ ...renaPoint(-7, 5.5), radius: 1.5, waterDepth: 1.1 }),
@@ -188,10 +188,13 @@ export const APPLEGARTH_WORKS = Object.freeze({
  * door. The rest are Applegarth's, Tidehaven's and the Greenway's.
  */
 export const RENA_STANDS = Object.freeze({
-  // Tidehaven, in the carried-over village's own frame: nothing here moves an existing stand.
-  'rena-lorn': Object.freeze({ ...villageToWorld(-6.5, 20), yaw: Math.PI / 2 }),
-  'tide-carter': Object.freeze({ ...villageToWorld(-24, 6), yaw: -1.1 }),
-  'tide-boy': Object.freeze({ ...villageToWorld(-30, 0), yaw: 2.2 }),
+  // Tidehaven, in the carried-over village's own frame: nothing here moves an
+  // existing stand, nothing stands within reach of a Legion post, and nothing
+  // sits inside a bird's home ground (src/drent-birds.js, BIRD_HABITATS), which
+  // would take its perches away.
+  'rena-lorn': Object.freeze({ ...villageToWorld(-2, 26), yaw: -2.36 }),        // on the shingle, facing up the beach
+  'tide-carter': Object.freeze({ ...villageToWorld(4, 4), yaw: -1.1 }),
+  'tide-boy': Object.freeze({ ...villageToWorld(1, 8), yaw: 2.2 }),
   'greenway-forager': Object.freeze({ ...villageToWorld(6, -46), yaw: -1.9 }),
   // Applegarth.
   'rena-hesta': Object.freeze({ ...applePoint(-7, 6), yaw: OLD_ROAD_YAW - Math.PI / 2 }),

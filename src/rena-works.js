@@ -69,23 +69,39 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
     const w = width / 2, d = depth / 2;
     const doorAt = width * .12;
     b.frame(x, ground, z, yaw, () => {
-      const run = (from, to, along, fixed, axis, gap) => {
-        const length = Math.abs(to - from), n = Math.max(2, Math.round(length / 1.1));
-        for (let i = 0; i <= n; i++) {
-          const t = from + (to - from) * i / n;
-          if (gap !== null && Math.abs(t - gap) < 1.1) continue;
-          // Corners stand, middles slump: the wall is lowest halfway along each run.
-          const slump = 1 - .55 * Math.sin(Math.PI * i / n);
-          const stone = i % 3 ? tint : STONE, cap = i % 2 ? STONE_PALE : MOSS;
-          const px = axis === 'x' ? t : fixed, pz = axis === 'x' ? fixed : t;
-          b.rock(stone, px, height * slump * .4, pz, .62, height * slump * .5, .55, i * 1.7 + along);
-          if (slump > .7) b.rock(cap, px, height * slump * .82, pz, .44, height * slump * .22, .42, i * .9);
+      /**
+       * One wall: coursed blocks of dressed stone, lowest where it has fallen in
+       * and highest at the corners, with rubble along its foot and moss on top.
+       */
+      const run = (from, to, fixed, axis, gap) => {
+        const length = Math.abs(to - from), n = Math.max(2, Math.round(length / .95)), step = (to - from) / n;
+        for (let i = 0; i < n; i++) {
+          const mid = from + step * (i + .5);
+          if (gap !== null && Math.abs(mid - gap) < 1.35) continue;
+          const slump = 1 - .42 * Math.sin(Math.PI * (i + .5) / n);
+          const top = Math.max(.3, height * slump), seg = Math.abs(step) * .96;
+          const sx = axis === 'x' ? seg : .52, sz = axis === 'x' ? .52 : seg;
+          const px = axis === 'x' ? mid : fixed, pz = axis === 'x' ? fixed : mid;
+          const courses = Math.max(1, Math.round(top / .36));
+          for (let c = 0; c < courses; c++) {
+            const ch = top / courses;
+            b.block((i + c) % 3 ? tint : STONE, px, c * ch, pz, sx * (c % 2 ? 1 : .97), ch * .93, sz * (c % 2 ? .97 : 1));
+          }
+          b.rock(MOSS, px, top + .04, pz, sx * .34, .11, sz * .34, i * 1.3);
+          // Rubble fallen off the outside of the wall.
+          if (i % 2) b.rock(STONE_PALE, px + (axis === 'x' ? .2 : Math.sign(fixed) * .78), .12, pz + (axis === 'x' ? Math.sign(fixed) * .78 : .2), .42, .26, .38, i * .7);
         }
       };
-      run(-w, w, 0, -d, 'x', door ? doorAt : null);   // the street side, with its doorway
-      run(-w, w, 1.3, d, 'x', null);
-      run(-d, d, 2.1, -w, 'z', null);
-      run(-d, d, .6, w, 'z', null);
+      run(-w, w, -d, 'x', door ? doorAt : null);   // the street side, with its doorway
+      run(-w, w, d, 'x', null);
+      run(-d, d, -w, 'z', null);
+      run(-d, d, w, 'z', null);
+      // The corners of a stone house stand longest: squared piers a little above the walls.
+      if (height >= 1.2) for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+        b.block(STONE_DARK, cx * w, 0, cz * d, .66, height * ((cx + cz) % 2 ? 1.28 : 1.05), .66);
+      // The doorway's own jambs, which is how you can tell it was a door.
+      if (door && height >= 1.2) for (const side of [-1, 1])
+        b.block(STONE, doorAt + side * 1.25, 0, -d, .34, height * 1.15, .58);
       // The hearth stone, which is what a burnt house leaves.
       b.rock(CHAR, w * .5, .08, d * .45, .8, .12, .7, 1.1);
     });
@@ -102,21 +118,26 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
 
   /** An orchard tree: kept ones are round and low, wild ones leggy, mossed and half down. */
   function appleTree(b, x, z, { wild = false, scale = 1 } = {}) {
-    const ground = y(x, z), lean = wild ? ((x * 7 + z * 3) % 10) / 34 : 0;
-    const height = (wild ? 3.9 : 3.1) * scale;
-    b.cylinder(wild ? '#6a5a45' : BARK, x, ground, z, .2 * scale, height * .55, 0);
-    for (let k = 0; k < 3; k++) {
-      const a = k * 2.1 + x * .3;
-      b.beam(wild ? '#6a5a45' : BARK, [x, ground + height * .5, z],
-        [x + Math.sin(a) * 1.5 * scale, ground + height * (wild ? .95 : .82), z + Math.cos(a) * 1.5 * scale], .13 * scale);
+    const ground = y(x, z), lean = ((x * 7 + z * 3) % 10) / 22 - .22;
+    // An untended apple grows out rather than up, and half of them are on the floor.
+    const height = (wild ? 2.9 : 3.1) * scale, trunk = height * (wild ? .38 : .55);
+    b.cylinder(wild ? '#6a5a45' : BARK, x, ground, z, (wild ? .27 : .2) * scale, trunk, 0);
+    const limbs = wild ? 5 : 3;
+    for (let k = 0; k < limbs; k++) {
+      const a = k * (6.283 / limbs) + x * .3, reach = (wild ? 2.1 : 1.5) * scale;
+      b.beam(wild ? '#6a5a45' : BARK, [x, ground + trunk * .8, z],
+        [x + Math.sin(a) * reach, ground + height * (wild ? .86 : .82), z + Math.cos(a) * reach], .12 * scale);
+      if (wild) b.rock('#5f7346', x + Math.sin(a) * reach, ground + height * .92, z + Math.cos(a) * reach, .95 * scale, .62 * scale, .95 * scale, a);
     }
-    b.rock(wild ? '#5f7346' : APPLE, x, ground + height * (wild ? 1.0 : .92), z, (wild ? 1.5 : 1.9) * scale, (wild ? 1.1 : 1.35) * scale, (wild ? 1.5 : 1.9) * scale, x + lean);
-    if (wild && (Math.floor(Math.abs(x) + Math.abs(z)) % 4) === 0) {
-      // One in four is down: a trunk lying in the grass with its root plate up.
-      b.beam('#5b4c3a', [x + 1, ground + .4, z - .6], [x + 3.4 * scale, ground + .3, z + 1.6 * scale], .34, .34);
+    b.rock(wild ? '#65784c' : APPLE, x, ground + height * (wild ? .88 : .92), z, (wild ? 1.9 : 1.9) * scale, (wild ? .95 : 1.35) * scale, (wild ? 1.9 : 1.9) * scale, x + lean);
+    if (wild) b.rock(MOSS, x, ground + trunk * .5, z, .34 * scale, .3 * scale, .34 * scale, x);
+    if (wild && (Math.floor(Math.abs(x) + Math.abs(z)) % 3) === 0) {
+      // One in three is down: a trunk lying in the grass with its root plate up.
+      b.beam('#5b4c3a', [x + .9, ground + .42, z - .6], [x + 3.6 * scale, ground + .26, z + 1.7 * scale], .36, .36);
+      b.rock('#6a5a45', x + 3.8 * scale, ground + .5, z + 1.9 * scale, .9, .85, .3, x);
       circle(x + 2.2, z + .5, .5, 'rena-deadfall');
     }
-    circle(x, z, .34 * scale, wild ? 'rena-orchard-tree' : 'orchard-tree');
+    circle(x, z, (wild ? .42 : .34) * scale, wild ? 'rena-orchard-tree' : 'orchard-tree');
   }
 
   const fenceLine = (b, a, c, kind, tint = WOOD_LIGHT, height = 1.15) => {
@@ -166,7 +187,7 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
     // The street: worn ground the whole length of the ruins, with broken kerb stones down both sides.
     for (let a = R.street.from; a <= R.street.to; a += 6) {
       const p = renaPoint(a, 0);
-      b.patch('#9d9878', heightAt, p.x, p.z, 7.4, 7.4, OLD_ROAD_YAW, .05, 2);
+      b.patch('#8c8a68', heightAt, p.x, p.z, 6.2, 6.2, OLD_ROAD_YAW, .05, 2);
       for (const side of [-1, 1]) {
         const k = renaPoint(a, side * 4.1);
         if ((a + side * 3) % 4 === 0) continue;   // the kerb is missing in places
@@ -176,12 +197,24 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
     // The burnt gate: one pier standing, one down, the lintel in the grass between them.
     {
       const g = R.gate, sy = y(g.standing.x, g.standing.z);
-      b.block(SOOT, g.standing.x, sy, g.standing.z, g.width, g.height, g.width, OLD_ROAD_YAW);
-      b.block(CHAR, g.standing.x, sy + g.height, g.standing.z, g.width * 1.15, .3, g.width * 1.15, OLD_ROAD_YAW);
+      // The standing pier: dressed stone in courses, scorched black on the side the fire came up.
+      const courses = Math.round(g.height / .45);
+      for (let c = 0; c < courses; c++) {
+        const ch = g.height / courses, wide = g.width * (1 - c * .04);
+        b.block(c % 3 === 2 ? STONE_DARK : STONE, g.standing.x, sy + c * ch, g.standing.z, wide, ch * .95, wide, OLD_ROAD_YAW);
+        b.block(SOOT, g.standing.x - OLD_ROAD_ACROSS.x * wide * .5, sy + c * ch, g.standing.z - OLD_ROAD_ACROSS.z * wide * .5, wide * .35, ch * .95, wide * .96, OLD_ROAD_YAW);
+      }
+      b.block(STONE_PALE, g.standing.x, sy + g.height, g.standing.z, g.width * 1.2, .24, g.width * 1.2, OLD_ROAD_YAW);
+      b.rock(MOSS, g.standing.x, sy + g.height + .3, g.standing.z, g.width * .4, .16, g.width * .4, 1.1);
       footprint(g.standing.x, g.standing.z, OLD_ROAD_YAW, g.width + .2, g.width + .2, 'rena-gate-pier');
+      // Its twin, down to one course, with the rest of it lying away from the road.
       const fy = y(g.fallen.x, g.fallen.z);
-      b.block(SOOT, g.fallen.x, fy + .5, g.fallen.z, g.width, 1.0, g.width, OLD_ROAD_YAW);
-      b.beam(SOOT, [g.fallen.x, fy + .5, g.fallen.z], [g.fallen.x - OLD_ROAD_ACROSS.x * 2.6, fy + .35, g.fallen.z - OLD_ROAD_ACROSS.z * 2.6], 1.3, 1.1);
+      b.block(STONE, g.fallen.x, fy, g.fallen.z, g.width, .85, g.width, OLD_ROAD_YAW);
+      b.block(SOOT, g.fallen.x, fy + .85, g.fallen.z, g.width * .92, .18, g.width * .92, OLD_ROAD_YAW);
+      for (let i = 1; i <= 3; i++) {
+        const fx = g.fallen.x - OLD_ROAD_ACROSS.x * (i * 1.25), fz = g.fallen.z - OLD_ROAD_ACROSS.z * (i * 1.25);
+        b.block(i % 2 ? STONE_DARK : STONE, fx, y(fx, fz) + .05, fz, g.width * .9, .62, g.width * .9, OLD_ROAD_YAW + i * .12);
+      }
       footprint(g.fallen.x, g.fallen.z, OLD_ROAD_YAW, g.width + .2, g.width + .2, 'rena-gate-pier');
       const lintelYaw = OLD_ROAD_YAW + Math.PI / 2 + .12, ly = y(g.lintel.x, g.lintel.z);
       b.box(STONE_DARK, g.lintel.x, ly + .35, g.lintel.z, 4.2, .7, .9, lintelYaw);
@@ -204,23 +237,29 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
     // The market place: the broken cross and the well that still holds water.
     {
       const c = R.cross, cy = y(c.x, c.z);
-      b.block(STONE, c.x, cy, c.z, 1.6, .35, 1.6, OLD_ROAD_YAW);
-      b.block(STONE_DARK, c.x, cy + .35, c.z, 1.1, .28, 1.1, OLD_ROAD_YAW);
-      b.block(STONE_PALE, c.x, cy + .63, c.z, .42, 1.15, .42, OLD_ROAD_YAW + .3);
-      circle(c.x, c.z, .95, 'rena-cross');
+      b.block(STONE, c.x, cy, c.z, 1.9, .34, 1.9, OLD_ROAD_YAW);
+      b.block(STONE_DARK, c.x, cy + .34, c.z, 1.35, .3, 1.35, OLD_ROAD_YAW);
+      b.block(STONE_PALE, c.x, cy + .64, c.z, .9, .3, .9, OLD_ROAD_YAW + .12);
+      // The shaft, snapped off at head height and left where it broke.
+      b.block(STONE_PALE, c.x, cy + .94, c.z, .44, 1.85, .44, OLD_ROAD_YAW + .3);
+      b.rock(MOSS, c.x, cy + 2.82, c.z, .3, .18, .3, 2.2);
+      b.beam(STONE, [c.x + 1.2, cy + .25, c.z + .7], [c.x + 2.9, cy + .2, c.z + 1.6], .42, .42);
+      circle(c.x, c.z, 1.1, 'rena-cross');
     }
     well(b, R.well.x, R.well.z, { radius: R.well.radius });
     // The bank the graves were dug behind, and the row of markers.
     {
-      const [a, c] = R.graveBank, n = Math.max(2, Math.round(Math.hypot(c.x - a.x, c.z - a.z) / 2.2));
+      const [a, c] = R.graveBank, n = Math.max(2, Math.round(Math.hypot(c.x - a.x, c.z - a.z) / 1.6));
       for (let i = 0; i <= n; i++) {
         const px = a.x + (c.x - a.x) * i / n, pz = a.z + (c.z - a.z) * i / n;
-        b.rock(MOSS, px, y(px, pz) + .28, pz, 1.35, .5, .9, i * .8);
+        b.rock('#6d7a4e', px, y(px, pz) + .34, pz, 1.5, .7, 1.25, i * .8);
+        b.rock(MOSS, px, y(px, pz) + .82, pz, 1.0, .22, .85, i * 1.4);
       }
     }
     for (const [i, g] of R.graves.entries()) {
-      const gy = y(g.x, g.z), lean = ((i * 37) % 11) / 30 - .18;
-      b.box(i % 4 ? STONE : STONE_DARK, g.x, gy + .34, g.z, .5, .68, .17, OLD_ROAD_YAW, lean, 0);
+      const gy = y(g.x, g.z), lean = ((i * 37) % 11) / 22 - .25;
+      b.box(i % 4 ? STONE_PALE : STONE, g.x, gy + .56, g.z, .58, 1.06, .2, OLD_ROAD_YAW + (i % 5) * .05, lean, 0);
+      b.rock(MOSS, g.x, gy + .1, g.z, .42, .16, .34, i);
       circle(g.x, g.z, .3, 'rena-grave');
     }
     // The orchard, eighty years untended.
@@ -348,20 +387,22 @@ export function buildRenaWorks({ parent, heightAt, colliders, signs, roadDistanc
   // -------------------------------------------------------------------------
   {
     const b = createSceneryBuilder('Lorn’s crab pots');
+    // Everything he works with lies inland of him and south of the village
+    // trail, so no pot ever ends up on the road the traveler walks in on.
     const stand = RENA_STANDS['rena-lorn'];
     const at = (dx, dz) => ({ x: stand.x + dx, z: stand.z + dz });
-    const stool = at(-.2, 1.6), py = y(stool.x, stool.z);
+    const stool = at(-.4, 1.7), py = y(stool.x, stool.z);
     b.cylinder(WOOD, stool.x, py, stool.z, .26, .42);
     b.cylinder(WOOD_LIGHT, stool.x, py + .42, stool.z, .34, .08);
     circle(stool.x, stool.z, .3, 'lorn-stool');
     // Two finished pots and one half made, and a bundle of withies to work from.
-    for (const [i, spot] of [at(-2.4, .6), at(-2.6, -1.1), at(-1.9, 2.6)].entries()) {
+    for (const [i, spot] of [at(-2.4, 2.6), at(-1.2, 3.6), at(-3.4, 3.4)].entries()) {
       const g = y(spot.x, spot.z);
       b.cylinder(i === 2 ? '#9a8355' : '#a98a52', spot.x, g, spot.z, .52, .48, i);
       if (i !== 2) b.cone('#a98a52', spot.x, g + .48, spot.z, .5, .34, i);
       circle(spot.x, spot.z, .55, 'lorn-pot');
     }
-    const withies = at(-3.4, 1.8), wy = y(withies.x, withies.z);
+    const withies = at(-4.2, 1.9), wy = y(withies.x, withies.z);
     for (let i = 0; i < 7; i++) b.beam('#b09a63', [withies.x - .3 + i * .09, wy + .1, withies.z - .9], [withies.x + .3 + i * .07, wy + .16, withies.z + .9], .04);
     circle(withies.x, withies.z, .5, 'lorn-withies');
     b.finish(parent, { castShadow: false });
