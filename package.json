@@ -1,8 +1,9 @@
 {
-  "name": "azhora-eastreena",
+  "name": "azhora",
+  "productName": "Azhora",
   "version": "0.1.0",
   "private": true,
-  "description": "A playable 3D prologue on the shores of Azhora",
+  "description": "Azhora: An Adventure Game",
   "type": "module",
   "main": "main.cjs",
   "scripts": {

@@ -31,7 +31,7 @@ const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 export const REGION_BIOMES = Object.freeze({
   Drent: Object.freeze({ id: 'dense-forest', name: 'Drent forest', ground: '#4d7a3e', canopy: '#2f5a2c', treesPerHex: perHex(42), rocksPerHex: perHex(1), undergrowth: 'dense',
     relief: { amplitude: 2.6, wavelength: 90 }, clearings: ['village', 'farm'],
-    note: 'All of Drent is green forest: broadleaf canopy, ferns and sorrel, the village and one farm clearing cut out of it. Larger than today’s Eastreena.' }),
+    note: 'All of Drent is green forest: broadleaf canopy, ferns and sorrel, the village and one farm clearing cut out of it.' }),
   Luscia: Object.freeze({ id: 'sparse-woodland', name: 'Luscian woods and meadows', ground: '#8fa35a', canopy: '#5f8a48', treesPerHex: perHex(9), rocksPerHex: perHex(1), undergrowth: 'light',
     relief: { amplitude: 4.5, wavelength: 140 }, clearings: ['battlefield', 'hamlet'],
     note: 'Rolling grass with copses of trees that thin toward the Moros; the Lauvel battlefield and a burned hamlet.' }),

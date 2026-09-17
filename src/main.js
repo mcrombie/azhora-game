@@ -714,7 +714,7 @@ function init() {
     returnToNeighbor:()=>forestConversation(npcData.find(n=>n.id===FOREST_STORY_NPC.id),forestContext)};
   function forestAct(action){
     const result=forestStory.act(action);
-    if(!result.ok){toast(result.reason||'Take a closer look first.','EASTREENA WOODS');return result;}
+    if(!result.ok){toast(result.reason||'Take a closer look first.','DRENT’S WOODS');return result;}
     syncForest();inventory.refresh();
     if(result.changed){
       const detail=action.startsWith('inspect-')?'A woodland note has been added to your journal.':action==='recover-work-bundle'?'Red cord, a stitched T. Bring the bundle back to Tamsin.':action==='return-work-bundle'?'Tamsin has her tools. Two cooked fish for the road.':action==='accept-woodcutter-errand'?'The Old Charcoal Hearth is now named on your local map. Press L, select it, and choose Mark trail.':action==='restore-memorial'?'The wayboard stands upright again.':forestStory.view().task?.detail;
@@ -1074,7 +1074,7 @@ function init() {
   $('test-birds').onclick=()=>{testTravel('village');const s=world.birdGarden.stand,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Ansel to learn birding. B observes a bird; K shows your skills.','TESTING · BIRDING');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
   $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
-  $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','EASTREENA · WOODLAND TRAILS');};
+  $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
   for(const id of [2,3,4])$('test-region-'+id).onclick=()=>testTravel(id);
   for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]])$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};

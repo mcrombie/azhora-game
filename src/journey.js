@@ -118,9 +118,9 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   }
 
   function start() {
-    if (state.started) return fail('The journey beyond Eastreena has already begun.');
+    if (state.started) return fail('The road out of Drent has already begun.');
     if (!inventory?.has?.('harbor-letter') || !inventory?.has?.('road-token'))
-      return fail('Carry Mara’s message and Eren’s travel token before leaving Eastreena.');
+      return fail('Carry Mara’s message and Eren’s travel token before leaving Tidehaven.');
     state.started = true;
     return emit('start-journey');
   }
@@ -128,7 +128,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   function act(actionId) {
     const choice = availableActions().find(candidate => candidate.id === actionId);
     if (!choice) return fail(state.reportDelivered ? 'These local errands are complete. The onward road is still being prepared.'
-      : !state.started ? 'Finish the first shore and begin the road beyond Eastreena.'
+      : !state.started ? 'Finish the first shore and begin the road out of Drent.'
         : `Your current task: ${view().detail}`);
     if (!choice.enabled) return fail(choice.reason);
     let reward = null, completedRegion = null;
