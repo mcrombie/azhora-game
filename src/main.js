@@ -4,12 +4,12 @@ import { createCharacter, makeQuestMarker } from './characters.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
-import { createWeapons } from './weapons.js';
+import { createWeapons, WEAPON_TYPES } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon } from './mercenaries.js';
+import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { createWoodlandLife } from './woodland-life.js';
 import { createForestEcology } from './forest-ecology.js';
@@ -78,7 +78,9 @@ function init() {
   const mercenaryIds=new Set(MERCENARY_ROSTER.map(m=>m.id));
   const company=createMercenaryCompany({road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn});
   let playSeconds=0;
-  for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon},hidden:placement.phase==='coming',placement});}
+  const mercenaryWeapons=new Map();
+  const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
+  for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});}
   for(const npc of npcData) {
     npc.actor=createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
@@ -227,7 +229,7 @@ function init() {
   function begin() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
-    playSeconds=0;settleMercenaries();
+    playSeconds=0;settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     world.ringBell?.(elapsed);audio?.effect('bell');
     setTimeout(()=>show('opening',false),700);canvas.focus();
@@ -373,7 +375,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds});
+    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons)});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -392,6 +394,7 @@ function init() {
     campaign.restore(saved.campaign??createCampaign().snapshot());if(journey.view().complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
     mapTutorial.restore(saved.mapTutorial??0);renderMapTutorial();
     playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;settleMercenaries();
+    mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -512,9 +515,26 @@ function init() {
   function mercenaryConversation(npc){
     const kit=mercenaryWeapon(npc.id);
     const choices=[{id:'merc-style',label:`How do you fight? (${kit.style})`,action:()=>openDialogue(npc,mercenaryStyleLines(npc.id),null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})},
-      {id:'merc-trade',label:'Would you trade weapons?',action:()=>openDialogue(npc,[kit.tradeLine],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})},
+      {id:'merc-trade',label:'Would you trade weapons?',action:()=>offerTrade(npc)},
       {id:'leave-mercenary',label:'Good road to you.',action:closeDialogue}];
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
+  }
+  function offerTrade(npc){
+    const held=mercenaryHeld(npc),offer=tradeOffer(npc.id,held.id,weapons.equippedId);
+    if(!offer.accepts||combat.state.player.action!=='idle'){openDialogue(npc,[offer.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)});return;}
+    const mine=weapons.profile().name.toLowerCase(),his=INVENTORY_ITEMS[held.id].name.toLowerCase();
+    openDialogue(npc,[offer.line],null,'Back to our conversation',{choices:[{id:'trade-accept',label:`Swap your ${mine} for his ${his}`,action:()=>tradeWeapons(npc,held)},{id:'trade-decline',label:'Keep your own.',action:()=>mercenaryConversation(npc)}]});
+  }
+  function tradeWeapons(npc,held){
+    const giveId=weapons.equippedId,given=weapons.status(giveId);
+    if(!given?.owned||!inventory.has(giveId)){closeDialogue();return;}
+    const takeDurability=held.durability??WEAPON_TYPES[held.id].maxDurability;
+    const gone=weapons.take(giveId);inventory.remove(giveId,1);
+    if(!inventory.add(held.id,1)){inventory.add(giveId,1);weapons.setCondition(giveId,gone);closeDialogue();return;}
+    weapons.setCondition(held.id,takeDurability);weapons.equip(held.id);inventory.refresh();
+    mercenaryWeapons.set(npc.id,{id:giveId,durability:gone});npc.actor.setWeapon(giveId);
+    toast(`${npc.name} takes your ${given.name.toLowerCase()} and hands over his ${INVENTORY_ITEMS[held.id].name.toLowerCase()}.`,'WEAPONS TRADED');saveRoad(false);
+    openDialogue(npc,['Done. Mind it; it has seen more than you have.'],null,'Back to the road');
   }
   function conversation(npc) {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;

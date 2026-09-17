@@ -137,3 +137,25 @@ test('firewood spending rejects invalid quantities or refused removal without ch
   assert.equal(inventory.count('forest-stick'), 2);
   assert.equal(weapons.profile().durability, 5);
 });
+
+test('traded weapons are carried, worn, repaired and saved as extras; a handed-away weapon reads as gone', () => {
+  const { weapons, stock } = fixture({ 'simple-sword': 1, 'iron-mace': 1 });
+  assert.equal(weapons.equip('iron-mace'), true);
+  assert.deepEqual(weapons.profile().damage, [30, 32, 44]);
+  weapons.contact(); weapons.contact();
+  assert.equal(weapons.status('iron-mace').durability, 28);
+  const snapshot = weapons.snapshot();
+  assert.deepEqual(snapshot.extra, { 'iron-mace': 28 });
+  const gone = weapons.take('simple-sword');
+  assert.equal(gone, 24); stock.set('simple-sword', 0);
+  assert.equal(weapons.status('simple-sword').owned, false);
+  assert.equal(weapons.setCondition('iron-mace', 31), false, 'condition cannot exceed the weapon');
+  assert.equal(weapons.setCondition('iron-mace', 5), true);
+  assert.equal(weapons.repair(), true); assert.equal(weapons.status('iron-mace').durability, 30);
+  const other = fixture({ 'simple-sword': 1, 'iron-mace': 1 });
+  assert.equal(other.weapons.restore({ ...snapshot }), true);
+  assert.equal(other.weapons.status('iron-mace').durability, 28);
+  assert.equal(other.weapons.restore({ ...snapshot, extra: { 'iron-mace': 99 } }), false, 'an impossible condition is refused');
+  assert.equal(other.weapons.restore({ ...snapshot, extra: {} }), false, 'a carried weapon must be listed');
+  assert.equal(other.weapons.restore({ ...snapshot, extra: { greatsword: 3, 'iron-mace': 28 } }), false, 'an uncarried weapon must not be listed');
+});

@@ -89,6 +89,8 @@ test('invalid data never overwrites an existing checkpoint', () => {
     { ...data, heardDoom: 1 }, { ...data, lysaComplete: 'yes' },
     { ...data, mapTutorial: 9 }, { ...data, mapTutorial: 1.5 }, { ...data, mapTutorial: '2' },
     { ...data, playSeconds: -1 }, { ...data, playSeconds: 'soon' }, { ...data, playSeconds: Infinity },
+    { ...data, mercenaryWeapons: [] }, { ...data, mercenaryWeapons: { nobody: { id: 'iron-mace', durability: 3 } } },
+    { ...data, mercenaryWeapons: { 'merc-oru': { id: 'hunting-bow', durability: 3 } } }, { ...data, mercenaryWeapons: { 'merc-oru': { id: 'iron-mace', durability: 99 } } },
     { ...data, weapons: { ...data.weapons, equippedId: 'acorn' } },
   ];
   for (const invalid of malformed) {

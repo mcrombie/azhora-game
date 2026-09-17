@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, createMercenaryCompany, mercenaryProgress, mercenaryLines, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
+import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
@@ -93,4 +93,28 @@ test('mercenaries speak in two lines and know where they stand', () => {
   assert.match(mercenaryLines('merc-oru', { phase: 'mustered' })[1], /counts heads/);
   assert.match(mercenaryLines('merc-pell', { phase: 'stopped' })[1], /catch you up/);
   assert.deepEqual(mercenaryLines('nobody', null), []);
+});
+
+test('every man has a fighting style he can explain, and the held kits map to inventory weapons', () => {
+  const weapons = MERCENARY_ROSTER.map(m => m.weapon);
+  assert.deepEqual(weapons, ['sword', 'bow', 'mace', 'dagger', 'axe', 'spear', 'spears', 'pike', 'sword-shield', 'greatsword', 'staff']);
+  for (const m of MERCENARY_ROSTER) {
+    assert.equal(mercenaryStyleLines(m.id).length, 2, `${m.name} explains his style in two lines`);
+    assert.ok(m.style && m.tradeLine, m.name);
+    if (m.trades) assert.ok(KIT_WEAPON_ITEM[m.weapon], `${m.name} trades a held weapon`);
+  }
+  assert.deepEqual(mercenaryStyleLines('nobody'), []);
+});
+
+test('trades: held iron for the traveler’s iron, never for a stick, never like for like, never from the men who need their kit', () => {
+  assert.equal(tradeOffer('merc-oru', 'iron-mace', 'simple-sword').accepts, true);
+  assert.match(tradeOffer('merc-oru', 'iron-mace', 'simple-sword').line, /mace/);
+  assert.equal(tradeOffer('merc-oru', 'iron-mace', 'iron-mace').accepts, false, 'like for like');
+  assert.equal(tradeOffer('merc-oru', 'iron-mace', 'forest-stick').accepts, false, 'no trade for a stick');
+  assert.equal(tradeOffer('merc-tesk', null, 'simple-sword').accepts, false, 'the archer keeps his bow');
+  assert.equal(tradeOffer('merc-cassel', null, 'simple-sword').accepts, false, 'the spearman keeps his spear');
+  assert.equal(tradeOffer('merc-brannock', 'simple-sword', 'simple-sword').accepts, false);
+  assert.equal(tradeOffer('merc-brannock', 'simple-sword', 'bearded-axe').accepts, true, 'Brannock will try an axe');
+  assert.equal(tradeOffer('merc-kest', 'greatsword', 'long-dagger').accepts, true);
+  assert.deepEqual(tradeOffer('nobody', 'x', 'y'), { accepts: false, line: '' });
 });

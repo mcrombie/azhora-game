@@ -1,6 +1,7 @@
 import { INVENTORY_ITEMS } from './inventory.js';
 import { createJourney } from './journey.js';
-import { validateWeaponSnapshot } from './weapons.js';
+import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
+import { MERCENARY_ROSTER } from './mercenaries.js';
 import { journeySites, WORLD_BOUNDS as PLAYABLE_BOUNDS } from './regions.js';
 import { validateWoodlandProgress, copyWoodlandProgress } from './woodland-progress.js';
 import { createForestStory, validateForestStorySnapshot } from './forest-story.js';
@@ -35,8 +36,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
         || (!INVENTORY_ITEMS[item.id].stackable && item.quantity !== 1)) return failed('The saved satchel contains an invalid item or quantity.');
       stock.set(item.id, item.quantity);
     }
-    const required = ['simple-sword', ...(data.questStage >= 2 ? ['harbor-letter'] : []), ...(data.questStage >= 6 ? ['road-token'] : [])];
-    if (!required.every(id => stock.has(id)))
+    // A traded sword is fine, an unarmed traveler is not.
+    const required = [...(data.questStage >= 2 ? ['harbor-letter'] : []), ...(data.questStage >= 6 ? ['road-token'] : [])];
+    if (!required.every(id => stock.has(id)) || !Object.keys(WEAPON_TYPES).some(id => stock.has(id)))
       return failed('The road checkpoint is missing your sword, message, or travel token.');
     const inventory = { has: id => stock.has(id) };
     const journey = createJourney();
@@ -50,6 +52,14 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
     if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
+    if (Object.hasOwn(data, 'mercenaryWeapons')) {
+      const held = data.mercenaryWeapons;
+      if (!held || typeof held !== 'object' || Array.isArray(held)) return failed('The saved company is invalid.');
+      for (const [id, weapon] of Object.entries(held)) {
+        if (!MERCENARY_ROSTER.some(m => m.id === id) || !weapon || !TRADEABLE_WEAPONS.includes(weapon.id)
+          || !Number.isInteger(weapon.durability) || weapon.durability < 0 || weapon.durability > WEAPON_TYPES[weapon.id].maxDurability) return failed('The saved company is invalid.');
+      }
+    }
     const p = data.position;
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)
       || p.x <= WORLD_BOUNDS.minX || p.x >= WORLD_BOUNDS.maxX
@@ -80,7 +90,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       version: ROAD_CHECKPOINT_VERSION, questStage: data.questStage, journey: journey.snapshot(),
       inventory: [...stock].map(([id, quantity]) => ({ id, quantity })),
       weapons: { version: 1, equippedId: data.weapons.equippedId,
-        sword: { ...data.weapons.sword }, stick: { ...data.weapons.stick } },
+        sword: { ...data.weapons.sword }, stick: { ...data.weapons.stick }, ...(data.weapons.extra ? { extra: { ...data.weapons.extra } } : {}) },
       journeyGathered: [...data.journeyGathered], meadowCleared: data.meadowCleared,
       position: { x: p.x, z: p.z }, heardDoom: data.heardDoom,
     };
@@ -93,6 +103,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
     if (Object.hasOwn(data, 'mapTutorial')) result.mapTutorial = data.mapTutorial;
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
+    if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     return { ok: true, data: result, reason: '' };
   }
 

@@ -285,15 +285,14 @@ function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = 
   return shield;
 }
 /** The held weapon a mercenary draws, by the roster's weapon word; spears, staves and bows are not held. */
-function mercenaryHeldWeapons(mount, weapon) {
-  switch (weapon) {
-    case 'mace': return { 'iron-mace': makeMace(mount) };
-    case 'dagger': return { 'long-dagger': makeDagger(mount) };
-    case 'axe': return { 'bearded-axe': makeAxe(mount) };
-    case 'greatsword': return { greatsword: makeGreatsword(mount) };
-    case 'sword': case 'sword-shield': return { 'simple-sword': makeSword(mount) };
-    default: return {};
-  }
+const KIT_HELD = Object.freeze({ mace: 'iron-mace', dagger: 'long-dagger', axe: 'bearded-axe', greatsword: 'greatsword', sword: 'simple-sword', 'sword-shield': 'simple-sword' });
+function mercenaryHeldWeapons(mount, weapon, trades = false) {
+  const held = KIT_HELD[weapon];
+  if (!held) return {};
+  // A man who trades may end up holding any of the swapped weapons; build them all, show one.
+  const builders = { 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger, 'bearded-axe': makeAxe, greatsword: makeGreatsword };
+  if (!trades) return { [held]: builders[held](mount) };
+  return Object.fromEntries(Object.entries(builders).map(([id, build]) => [id, build(mount)]));
 }
 
 function makeFishingRod(parent) {
@@ -1257,7 +1256,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const fights = isSoldier && armed;
   const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip') : null;
   const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
-    : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon) : fights ? { 'simple-sword': makeSword(weapon) } : {};
+    : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) } : {};
   const fishingGrip = isTraveler || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
   const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
@@ -1303,7 +1302,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     return rodTipWorld.set(.056, 1.625, 0).applyMatrix4(fishingRod.matrixWorld);
   }
   if (isTraveler || fights) setWeapon('simple-sword');
-  if (isMercenary) setWeapon(Object.keys(weapons)[0] ?? null);
+  if (isMercenary) setWeapon(KIT_HELD[look?.weapon] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
   return { group, animate, setArmed, setWeapon, setFishing, fishingTip };
 }

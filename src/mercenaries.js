@@ -12,7 +12,7 @@ const merc = (id, name, origin, arrival, departs, pace, look, lines) => Object.f
 
 /** Each man fights his own way; his weapon is modelled, and he will explain it. `trades` says whether he swaps his weapon for the traveler's sword. */
 export const MERCENARY_STYLES = Object.freeze({
-  brannock: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['You and I carry the same blade, so listen: three cuts in a row, each heavier, and the third lands hardest. Keep your stamina for a step aside when the amber tell shows; a swing you cannot finish is worse than none.', 'Iron wears. Find a bench and mend it before the edge goes, and carry a stick for when it does. That is the whole art, and men die for want of it.']), tradeLine: 'Same blade as mine. There is no trade in that.' }),
+  brannock: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['You and I carry the same blade, so listen: three cuts in a row, each heavier, and the third lands hardest. Keep your stamina for a step aside when the amber tell shows; a swing you cannot finish is worse than none.', 'Iron wears. Find a bench and mend it before the edge goes, and carry a stick for when it does. That is the whole art, and men die for want of it.']), tradeLine: 'A trade? If you carry something other than my own blade, I will try it. Yours for mine.' }),
   tesk: Object.freeze({ weapon: 'bow', style: 'The bow', trades: false, styleLines: Object.freeze(['I do not wait for the amber tell; I put an arrow in it at thirty paces. A bow needs room and light. In the woods I am a man with a stick.', 'Against archers, close the ground fast and never walk straight at them. Every archer you meet will try to keep a field between you.']), tradeLine: 'Trade the bow? A sword cannot reach thirty paces. No.' }),
   oru: Object.freeze({ weapon: 'mace', style: 'The mace', trades: true, styleLines: Object.freeze(['A mace does not cut; it breaks. Slow to raise, and there is no third strike in me, but one blow through a helmet ends the argument.', 'When a maceman winds up, do not block; be somewhere else. It comes down slower than a sword and it does not stop.']), tradeLine: 'My mace for your sword? I miss having an edge. Straight swap, if you mean it.' }),
   halvard: Object.freeze({ weapon: 'dagger', style: 'The dagger', trades: true, styleLines: Object.freeze(['Short reach, no reach at all, and I like it that way. I step inside a swing where the long weapons are useless and put the point in twice before they recover.', 'A dagger is beaten by keeping your distance. Nobody keeps their distance.']), tradeLine: 'Your sword for my dagger? You would be trading down, and I would be trading up. I accept.' }),
@@ -20,7 +20,7 @@ export const MERCENARY_STYLES = Object.freeze({
   cassel: Object.freeze({ weapon: 'spear', style: 'The spear', trades: false, styleLines: Object.freeze(['Two paces of ash between me and anything with teeth. Thrust, recover, thrust; I never let a goblin inside the point.', 'If a spearman gets his point on you, go left or right, not back. Back is where he wants you.']), tradeLine: 'The spear stays with me. A spearman without a spear is a farmer.' }),
   pell: Object.freeze({ weapon: 'spears', style: 'Two spears, one to throw', trades: false, styleLines: Object.freeze(['Two spears: a medium one for the line and a short one I throw. The throw is the trick. The first thing you see of a fight with me is a spear in your leg.', 'When a man carries more than one spear, count them. He will not close until he has thrown the short one.']), tradeLine: 'I need both spears, and you would not know what to do with either.' }),
   yorvo: Object.freeze({ weapon: 'pike', style: 'The long spear', trades: false, styleLines: Object.freeze(['Nothing reaches me before I reach it. The long spear rules open ground and is worthless in a doorway.', 'On the Moros there are no doorways. If you ever face a wall of these, get to the side of it; the front is a hedge of points.']), tradeLine: 'Trade a pike for a sword? Then who holds the line? No.' }),
-  anselm: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['Sword and shield: I take the first blow on the boards and answer over the rim. Slower than you, harder to kill.', 'Against a shield, feint high and cut the legs. Legion soldiers fight this way; remember it if the contract ever turns.']), tradeLine: 'Your sword for mine? Like for like is no trade. Keep yours.' }),
+  anselm: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['Sword and shield: I take the first blow on the boards and answer over the rim. Slower than you, harder to kill.', 'Against a shield, feint high and cut the legs. Legion soldiers fight this way; remember it if the contract ever turns.']), tradeLine: 'I would try another edge, if it is not a sword like mine. Yours for mine, then.' }),
   kest: Object.freeze({ weapon: 'greatsword', style: 'The greatsword', trades: true, styleLines: Object.freeze(["Two hands, one edge, and everything within a cart's width. The great blade is slow to start and impossible to stop; I clear ground with it.", 'Get inside the arc or stay well out. The middle is where people die.']), tradeLine: 'The great blade for your little one? I have wanted to rest my back for a month. Swap, and welcome.' }),
   fennick: Object.freeze({ weapon: 'staff', style: 'The quarterstaff', trades: false, styleLines: Object.freeze(['A staff. Laugh; the goblins did. It has two ends, it strikes twice as often as your sword, and nobody hangs you for carrying one.', 'It will not cut, so I aim for hands and knees. A man who cannot hold his weapon has lost.']), tradeLine: 'You would want my staff? No. It is the only thing I own that has never broken.' }),
 });
@@ -153,6 +153,22 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, rost
   }
 
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
+}
+
+/** The inventory weapon a held kit corresponds to; bows, spears and staves are not held weapons. */
+export const KIT_WEAPON_ITEM = Object.freeze({ sword: 'simple-sword', 'sword-shield': 'simple-sword', mace: 'iron-mace', dagger: 'long-dagger', axe: 'bearded-axe', greatsword: 'greatsword' });
+
+/**
+ * Whether a mercenary swaps the weapon in his hand for the traveler's, and what he says.
+ * Nobody trades for a stick, and nobody trades like for like.
+ */
+export function tradeOffer(id, heldWeaponId, travelerWeaponId) {
+  const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
+  if (!mercenary) return { accepts: false, line: '' };
+  if (!mercenary.trades || !heldWeaponId) return { accepts: false, line: mercenary.tradeLine };
+  if (!Object.values(KIT_WEAPON_ITEM).includes(travelerWeaponId)) return { accepts: false, line: 'A stick? I am a mercenary, not a shepherd. Come back with iron.' };
+  if (heldWeaponId === travelerWeaponId) return { accepts: false, line: 'Same as mine. There is no trade in that.' };
+  return { accepts: true, line: mercenary.tradeLine };
 }
 
 /** How a mercenary fights, in his own words; also a guide to facing that weapon. */

@@ -15,6 +15,26 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Fallen branches make short-lived weapons. Weaker and shorter than your sword.',
     description: 'Press F near a fallen stick to gather it. Each stick lasts 6 landed strikes and deals less damage with less reach than your sword. Misses cause no wear. A broken stick is used up; if you carry another, it becomes ready automatically. Switching weapons preserves a partly used stick.',
   }),
+  'iron-mace': Object.freeze({
+    name: 'Iron mace', type: 'Weapon', icon: 'sword',
+    brief: 'A flanged iron head on a short ash haft. Slow to raise; it breaks what it lands on.',
+    description: 'Traded from a hired sword. The same three-swing rhythm as a sword with more weight behind each blow and the same reach. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
+  'long-dagger': Object.freeze({
+    name: 'Long dagger', type: 'Weapon', icon: 'sword',
+    brief: 'A hand-and-a-half of iron. Quick, close, and light in the swing.',
+    description: 'Traded from a hired sword. Short reach and lighter blows, so you fight inside an enemy’s swing. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
+  'bearded-axe': Object.freeze({
+    name: 'Bearded axe', type: 'Weapon', icon: 'sword',
+    brief: 'A hooked axe head on a long haft. Heavy, and it bites deep on the second swing.',
+    description: 'Traded from a hired sword. Heavier blows than a sword with a little more reach, at the cost of wear. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
+  greatsword: Object.freeze({
+    name: 'Greatsword', type: 'Weapon', icon: 'sword',
+    brief: 'A two-handed blade as long as a man is tall. Reach and weight, slow to stop.',
+    description: 'Traded from a hired sword. The longest reach of any blade and the heaviest blows. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',
@@ -447,13 +467,13 @@ export function createInventory({
       condition.setAttribute('aria-valuetext', `${weapon.durability} of ${weapon.maxDurability}${weapon.usable ? '' : ', broken'}`);
       const conditionText = element('p', 'inventory-condition-text', `${weapon.durability} of ${weapon.maxDurability} condition${weapon.usable ? '' : ' \u00b7 Broken'}`);
       detail.append(conditionText, condition);
-      if (!weapon.usable) detail.append(element('p', 'inventory-equipment-note', id === 'simple-sword'
-        ? 'Broken: your sword cannot attack. Keep it and repair it for free at the village workbench beside the straw practice post. Press F at the bench.'
-        : 'This stick is spent. Gather another in the forest with F, or equip your sword.'));
-      else detail.append(element('p', 'inventory-equipment-note', id === 'simple-sword'
+      if (!weapon.usable) detail.append(element('p', 'inventory-equipment-note', id !== 'forest-stick'
+        ? `Broken: your ${item.name.toLowerCase()} cannot attack. Keep it and repair it for free at the village workbench beside the straw practice post. Press F at the bench.`
+        : 'This stick is spent. Gather another in the forest with F, or equip another weapon.'));
+      else detail.append(element('p', 'inventory-equipment-note', id !== 'forest-stick'
         ? 'Repair before it breaks: press F at the free village workbench beside the straw practice post.'
         : `${state.count(id)} carried, including the stick in use. The village workbench can mend a partly worn stick; a broken one is consumed.`));
-      const equipButton = element('button', 'inventory-dismiss inventory-equip', weapon.equipped ? 'Equipped' : `Equip ${id === 'forest-stick' ? 'stick' : 'sword'}`);
+      const equipButton = element('button', 'inventory-dismiss inventory-equip', weapon.equipped ? 'Equipped' : `Equip ${id === 'forest-stick' ? 'stick' : id === 'simple-sword' ? 'sword' : item.name.toLowerCase()}`);
       equipButton.type = 'button';
       equipButton.dataset.equip = id;
       equipButton.disabled = weapon.equipped || !weapon.usable || weapon.equipBlocked;
