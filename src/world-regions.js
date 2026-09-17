@@ -247,13 +247,18 @@ export function createRegionScenery(kit) {
   // The bridge lane: the one walkable line across the water.
   const crossing = CALOSS.crossing;
   const roadHeading = (() => {
-    let best = null, bestDistance = Infinity;
-    for (let i = 1; i < MAIN_ROAD.length; i++) {
-      const a = MAIN_ROAD[i - 1], b = MAIN_ROAD[i];
-      const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2, distance = Math.hypot(mx - crossing.x, mz - crossing.z);
-      if (distance < bestDistance) { bestDistance = distance; best = { x: b.x - a.x, z: b.z - a.z }; }
+    // The deck lies along the road's real line across the water: the chord
+    // between the vertices on either bank, not one of the two legs. The road
+    // bends a few degrees at the crossing, and at 100 m per hex those legs are
+    // long enough that a traveler walking straight from one bank to the other
+    // would meet the rail instead of the deck if the deck followed either leg.
+    let at = 0, bestDistance = Infinity;
+    for (let i = 0; i < MAIN_ROAD.length; i++) {
+      const distance = Math.hypot(MAIN_ROAD[i].x - crossing.x, MAIN_ROAD[i].z - crossing.z);
+      if (distance < bestDistance) { bestDistance = distance; at = i; }
     }
-    return Math.atan2(best.x, best.z);
+    const before = MAIN_ROAD[Math.max(0, at - 1)], after = MAIN_ROAD[Math.min(MAIN_ROAD.length - 1, at + 1)];
+    return Math.atan2(after.x - before.x, after.z - before.z);
   })();
   const bridgeSurface = calossSurface(crossing.x, crossing.z);
   const deckY = bridgeSurface + 1.22;

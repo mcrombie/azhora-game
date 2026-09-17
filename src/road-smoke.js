@@ -42,7 +42,10 @@ export async function runRoadSmoke(h) {
     choose(id);
     await frames(2);
     assert(getMode() === 'playing', `${id} did not return control to the player`);
-    assert([journey.view().title, state().luscia?.title].includes(query('#quest-title')?.textContent), `quest HUD did not reflect ${id}`);
+    // Finishing a chapter hands the HUD to the next one, so any of the chapters
+    // the host can put on the banner counts as the quest having moved on.
+    const banner = [journey.view().title, state().luscia?.title, state().moros?.title, state().border?.title, state().aftermath?.title];
+    assert(banner.includes(query('#quest-title')?.textContent), `quest HUD did not reflect ${id}; the banner reads ${query('#quest-title')?.textContent}`);
   }
 
   async function checkDestination(id) {
@@ -180,11 +183,16 @@ export async function runRoadSmoke(h) {
     const approach = road[Math.max(0, nearest - 1)], beyond = road[Math.min(road.length - 1, nearest + 1)];
     await arrive(approach.x, approach.z);
     const bridgeStart = { x: position.x, z: position.z };
-    setYaw(Math.atan2(-(beyond.x - position.x), -(beyond.z - position.z)));
-    press('KeyW'); press('ShiftLeft');
-    await until(() => Math.hypot(position.x - beyond.x, position.z - beyond.z) < 1.6,
-      'The repaired bridge blocked actual forward movement');
-    release('KeyW'); release('ShiftLeft');
+    // Walk the road, not the chord between the two banks. The road bends at the
+    // crossing, so a traveler who aims straight at the far bank from this one
+    // cuts the corner and meets the rail; the deck lies along the road itself.
+    for (const target of [road[nearest], beyond]) {
+      setYaw(Math.atan2(-(target.x - position.x), -(target.z - position.z)));
+      press('KeyW'); press('ShiftLeft');
+      await until(() => Math.hypot(position.x - target.x, position.z - target.z) < 1.6,
+        'The repaired bridge blocked actual forward movement');
+      release('KeyW'); release('ShiftLeft');
+    }
     const bridgeWalked = Math.hypot(position.x - bridgeStart.x, position.z - bridgeStart.z);
     assert(bridgeWalked > 25 && canStand(position.x, position.z, world), 'the bridge was not crossed on foot');
     const woodBefore = inventory.count('forest-stick');
@@ -251,7 +259,7 @@ export async function runRoadSmoke(h) {
     assert(combat.state.encounterId === LUSCIA_WOLVES.id && combat.state.phase === 'active', 'no encounter followed the satchel');
     assert(combat.state.enemies.length === 2 && combat.state.enemies.every(enemy => enemy.kind === 'wolf'), 'the pack was not two wolves');
     // Backing east onto the open grass breaks off the fight, and keeps the satchel.
-    await arrive(LUSCIA_WOLVES.retreatLine + 4, 178);
+    await arrive(LUSCIA_WOLVES.retreatLine + 4, LUSCIA_WOLVES.center.z + 1);
     await until(() => combat.state.phase !== 'active', 'the wolves did not break off east of the field');
     assert(state().luscia?.stage === 'return-satchel', 'breaking off the fight lost the satchel');
     await visit('relay-clerk'); await chooseRoad('return-courier-satchel');

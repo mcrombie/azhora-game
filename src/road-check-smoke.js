@@ -1,4 +1,5 @@
 import { canStand } from './game-state.js';
+import { toWorld } from './world-scale.js';
 
 const detached = value => JSON.parse(JSON.stringify(value));
 const canonical = value => Array.isArray(value) ? value.map(canonical)
@@ -41,7 +42,8 @@ export async function runRoadCheckSmoke(h) {
     assert(!inventory.has('fishing-rod'), 'rod-teaching fixture must start without a rod');
     if (!journey.state.started) assert(journey.start().ok, 'fresh journey could not begin');
     assert(journey.view().stage === 'meet-courier', 'fixture already advanced the new road');
-    await moveTo(0, -178);
+    // Authored metres: open Drent forest north of the village, clear of everyone.
+    await moveTo(...(({ x, z }) => [x, z])(toWorld(0, -178)));
 
     accepted('meet-courier');
     accepted('collect-cart-parcel-1');
