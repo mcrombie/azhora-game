@@ -30,11 +30,11 @@ test('everyone the later chapters place on the ground stands on walkable ground 
   for (const site of Object.values(MOROS_SITES)) assert.ok(canStand(site.x, site.z, world, .45), `${site.name} can be reached`);
   for (const soldier of HIDEOUT_GARRISON) {
     const stand = world.npcPositions[soldier.id];
-    assert.ok(stand && canStand(stand.x, stand.z, world, .45), `${soldier.name} has a stand in Lumber Town`);
-    assert.equal(world.regionAt(stand.x, stand.z)?.name, 'Luscia');
+    assert.ok(stand && canStand(stand.x, stand.z, world, .45), `${soldier.name} has a stand at the Tessen road post`);
+    assert.equal(world.regionAt(stand.x, stand.z)?.name, 'Pueth');
   }
   const camp = FOREST_HIDEOUT_QUEST.encounter;
-  assert.equal(world.regionAt(camp.center.x, camp.center.z)?.name, 'Luscia', 'the goblin camp is in Luscia');
+  assert.equal(world.regionAt(camp.center.x, camp.center.z)?.name, 'Pueth', 'the goblin camp is in southern Pueth');
   for (const point of [FOREST_HIDEOUT_QUEST.approach, FOREST_HIDEOUT_QUEST.supplies, ...camp.enemies]) assert.ok(canStand(point.x, point.z, world, .45), `camp point ${point.x},${point.z} has footing`);
 });
 

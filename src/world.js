@@ -4,17 +4,19 @@ import { regions, regionAt, regionNpcPositions, journeySites, regionFirePits, re
 import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
 import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
-  VILLAGE, villageToWorld, worldToVillage, HIDEOUT_SITE, hideoutToWorld, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
+  VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
   calossDistance, landDistance,
 } from './region-world.js';
-import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, smooth, lerp } from './world-terrain.js';
+import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, puethRiverSurface, smooth, lerp } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
-import { createRegionScenery } from './world-regions.js';
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
+import { createRegionScenery, regionClear } from './world-regions.js';
+import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './pueth-world.js';
+import { createPuethScenery } from './pueth-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -97,7 +99,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     colliders.push(collider);
     return collider;
   }
-  // The goblin camp is authored in its own local metres too; it stands in north Luscia, turned half a circle.
+  // The goblin camp is authored in its own local metres too; it stands in the woods of southern Pueth (src/pueth-world.js).
   const hideoutRoot = new THREE.Group();
   hideoutRoot.name = 'Goblin camp site';
   hideoutRoot.position.set(HIDEOUT_SITE.x, 0, HIDEOUT_SITE.z);
@@ -172,18 +174,23 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const pondWorld = villageToWorld(pond.x, pond.z);
 
   let bridgeDeck = null;
-  function onBridge(x, z) {
-    if (!bridgeDeck) return false;
-    const dx = x - bridgeDeck.crossing.x, dz = z - bridgeDeck.crossing.z;
-    const along = dx * bridgeDeck.axis.x + dz * bridgeDeck.axis.z;
-    const across = dx * bridgeDeck.side.x + dz * bridgeDeck.side.z;
-    return Math.abs(along) <= bridgeDeck.halfSpan + .4 && Math.abs(across) <= 2.55;
+  const bridgeDecks = [];
+  /** The bridge deck under a point, if any: the Caloss's, or the Tessen's in Pueth. */
+  function deckAt(x, z) {
+    for (const deck of bridgeDecks) {
+      const dx = x - deck.crossing.x, dz = z - deck.crossing.z;
+      const along = dx * deck.axis.x + dz * deck.axis.z;
+      const across = dx * deck.side.x + dz * deck.side.z;
+      if (Math.abs(along) <= deck.halfSpan + .4 && Math.abs(across) <= 2.55) return deck;
+    }
+    return null;
   }
   function heightAt(x, z) {
     const local = worldToVillage(x, z);
     // The pier deck, exactly as Tidehaven always had it.
     if (Math.abs(local.x) < 2.2 && local.z >= 22 && local.z <= 48) return 1.8;
-    if (onBridge(x, z)) return bridgeDeck.deckY + .09;
+    const deck = deckAt(x, z);
+    if (deck) return deck.deckY + .09;
     return groundHeight(x, z);
   }
 
@@ -195,6 +202,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       surfaceY: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z),
       fishingSpot: { ...CALOSS_BANK.spot },
       castPoint: { x: CALOSS_BANK.cast.x, y: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z) + .035, z: CALOSS_BANK.cast.z } },
+    // A bank on the Tessen, downstream of the bridge on the Pueth side.
+    { id: 'tessen-bank', name: 'Tessen bank', x: -80, z: -201.5, surfaceY: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5),
+      fishingSpot: { x: -80, z: -201.5 }, castPoint: { x: -80, y: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5) + .035, z: -193.5 } },
   ];
   let activeFishingSpot = fishingSpots[0];
 
@@ -219,7 +229,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       const left = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(width / 2 * (1 + Math.sin(i * .61) * .025));
       for (const sign of [-1, 1]) {
         const x = p.x + left.x * sign, z = p.z + left.z * sign;
-        positions.push(x, (onBridge(x, z) ? bridgeDeck.deckY + .05 : groundHeight(x, z)) + .045, z);
+        const deck = deckAt(x, z);
+        positions.push(x, (deck ? deck.deckY + .05 : groundHeight(x, z)) + .045, z);
       }
       if (i) { const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1); }
     }
@@ -286,7 +297,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // 2.5 m band still holds Tidehaven, which did not move, and the Avrel
   // clearing, which did.
   const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, Math.min(-252, AVREL_CLEARING.x - 60), 62);
-  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, -110, Math.max(172, AVREL_CLEARING.z + 60));
+  // The fine band reaches north over the Tessen bridge and its road post, so the river's cut and the embankment read true.
+  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, Math.min(-110, TESSEN_BRIDGE.crossing.z - 45), Math.max(172, AVREL_CLEARING.z + 60));
   const columns = terrainXs.length, rows = terrainZs.length;
   const terrainPositions = new Float32Array(columns * rows * 3);
   const terrainColors = new Float32Array(columns * rows * 3);
@@ -786,7 +798,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const roadSigns = [];
   const roadSignLabels = ['The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge',
     'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Tidehaven', 'Return to bridge',
-    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel',
+    'The Moros Gate', 'The Legion Camp', 'Elod’s Border Post', 'Elod', 'The Lauvel', 'The Tessen Bridge', 'Rimeholt',
     ...forestPlaceDefinitions.map(site => site.name), 'Village road'];
   const signRowHeight = 56;
   const signAtlas = (() => {
@@ -1016,14 +1028,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
-  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2);
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    movingGroups, roadDistance, riverDistance: calossDistance,
+    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14)),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
     insideVillage: (x, z) => {
@@ -1031,7 +1043,15 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40;
     },
   });
-  bridgeDeck = regionScenery.bridge;
+  bridgeDeck = regionScenery.bridge; bridgeDecks.push(bridgeDeck);
+  // Pueth: its rivers, the Tessen bridge and road post, Rimeholt and its own scatter.
+  const puethScenery = createPuethScenery({
+    root: world, material, mesh, box, post, pebble, rope, cottage, fence, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
+    roadDistance, riverMaterial: regionScenery.riverMaterial, regionClear,
+    insideVillage: (x, z) => { const local = worldToVillage(x, z); return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40; },
+  });
+  bridgeDecks.push(puethScenery.bridge);
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: (x, z, label, yaw, returnLabel) => trailSign(x, z, 1, label, yaw, returnLabel, world) });
@@ -1066,6 +1086,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const path of forestPlacePaths) addLocalPath(path, 1.85);
   for (const path of REGIONAL_PATHS) addPath(path, 1.85);
   addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
+  addPath(PUETH_ROAD, 4.2);
+  addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
 
   // Signposts along the new road.
   for (const [x, z, label, yaw] of [
@@ -1382,6 +1404,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
       ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
       ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
+    ...Object.entries(puethScenery.riverSamples).map(([id, samples]) => Object.freeze({ id: `${id}-water`, kind: 'polygon', points: Object.freeze([
+      ...samples.map(s => mapPoint(s.x - s.nx * s.half, s.z - s.nz * s.half)),
+      ...[...samples].reverse().map(s => mapPoint(s.x + s.nx * s.half, s.z + s.nz * s.half))]) })),
   ]);
 
   const worldSpawn = villageToWorld(0, 43), worldBoat = villageToWorld(-4.8, 43);
@@ -1408,6 +1433,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     setSolisHolder: westSuval.setHolder,
     enclosures: SOLIS_ENCLOSURES,
     solisHolder: westSuval.holder,
+    puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
+    puethMetrics: puethScenery.metrics,
     roadSigns,
     frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
     storySites: STORY_SITES,
@@ -1432,7 +1459,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       supplies: hideoutToWorld(FOREST_HIDEOUT.supplies.x, FOREST_HIDEOUT.supplies.z),
       trail: FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)),
       enemies: FOREST_HIDEOUT.enemies.map(p => hideoutToWorld(p.x, p.z)),
-      retreatAxis: 'x', retreatX: hideoutToWorld(FOREST_HIDEOUT.approach.x, FOREST_HIDEOUT.approach.z).x + 8,
+      retreatAxis: 'z', retreatLine: hideoutToWorld(37, FOREST_HIDEOUT.approach.z).z,
     },
     forestHideoutMetrics: forestHideout.metrics,
     setForestHideoutState: forestHideout.setState,
@@ -1489,7 +1516,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS,
     },
     landmarks: [
       { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
@@ -1502,8 +1529,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       { id: 'border', name: border.name, ...worldBorder, description: 'An old field gate stands open where the Tidehaven wood gives way to the Avrel clearing and the road to the Caloss.' },
       ...forestPlaceDefinitions.map(site => ({ ...site, ...villageToWorld(site.x, site.z) })),
       { ...FOREST_HIDEOUT, ...hideoutToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
-        description: 'Torn pennants mark a side trail west of the rise. A goblin camp squats in the scrub beyond, with sacks taken from Lumber Town’s stores.' },
+        description: 'Scraps of blue cloth mark a side trail east from the Tessen road post. A goblin camp squats in the birch beyond, with sacks taken from the post’s stores.' },
       ...regionLandmarks,
+      ...PUETH_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
     ],

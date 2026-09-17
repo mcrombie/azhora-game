@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
-  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions, HIDEOUT_CLEARINGS } from './region-world.js';
+  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions } from './region-world.js';
+import { HIDEOUT_CLEARINGS, PUETH_CLEARINGS } from './pueth-world.js';
 import { calossSurface } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
@@ -42,6 +43,8 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: STORY_SITES.banditLookout.x, z: STORY_SITES.banditLookout.z, r: 10 }),
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, north Luscia
   ...WEST_SUVAL_CLEARINGS,                                                    // Solis, its camp and the road's places (src/west-suval.js)
+  ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, southern Pueth
+  ...PUETH_CLEARINGS,                                                         // the Tessen bridge and post, Rimeholt, Pueth's landmarks
 ]);
 
 
@@ -706,6 +709,7 @@ export function createRegionScenery(kit) {
   // -------------------------------------------------------------------------
   for (const name of REGION_ORDER) {
     const biome = REGION_BIOMES[name], parent = district(name);
+    if (biome.ownScatter) continue;   // Pueth scatters its own woods (src/pueth-scenery.js)
     for (const block of cellBlocks(name)) scatterBlock(name, block, biome, parent);
   }
 

@@ -14,11 +14,10 @@ import { REGION_IDS } from '../src/region-world.js';
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
 
-test('The authored regions carry the atlas into the world, with Drent on the coast', () => {
-  // Every playable region, in the registry's order, whatever the count: regions are added in parallel.
+test('The authored playable regions carry the atlas into the world, with Drent on the coast', () => {
   assert.deepEqual(regions.map(r => r.name), [...PLAYABLE_REGIONS]);
-  assert.deepEqual(regions.map(r => r.id), PLAYABLE_REGIONS.map(name => REGION_IDS[name]));
-  assert.deepEqual(regions.slice(0, 4).map(r => r.id), [1, 2, 3, 4]);
+  assert.deepEqual(regions.map(r => r.id), PLAYABLE_REGIONS.map(name => REGION_IDS[name]), 'every region has its own id, in registry order');
+  assert.deepEqual(regions.slice(0, 4).map(r => r.id), [1, 2, 3, 4], 'the first four keep the ids saves and charts know');
   for (const [name, anchor] of [['Drent', ANCHORS.drentHeart], ['Luscia', ANCHORS.lauvelField],
     ['Moros Plain', ANCHORS.legionCamp], ['East Suval', ANCHORS.suvalHills]]) {
     assert.equal(regionAt(anchor.x, anchor.z).name, name, `${name} claims its own heart`);

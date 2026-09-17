@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -44,6 +44,10 @@ export const REGION_BIOMES = Object.freeze({
   'West Suval': Object.freeze({ id: 'coastal-downs', name: 'West Suval downs', ground: '#a9a95c', canopy: '#76834f', treesPerHex: perHex(4), rocksPerHex: perHex(2), undergrowth: 'long-grass',
     relief: { amplitude: 3.6, wavelength: 210 }, clearings: ['solis', 'coalition-camp', 'shepherds-fold', 'watchtower', 'wayside-well'],
     note: 'Rolling coastal grassland: long tawny grass, scattered thorn and olive trees, low field walls of pale stone, and downs that rise toward the white cliffs above Solis. Not the Moros’s flat treeless sky, not East Suval’s grey rock.' }),
+  // Pueth builds its own scatter (src/pueth-scenery.js): its woods thin from the Tessen northward, which a per-hex count cannot say.
+  Pueth: Object.freeze({ id: 'cold-woodland', name: 'Pueth birch woods and bare hills', ground: '#7f9175', canopy: '#44604c', treesPerHex: perHex(20), rocksPerHex: perHex(3), undergrowth: 'light',
+    relief: { amplitude: 4, wavelength: 130 }, clearings: ['road-post', 'town'], ownScatter: true,
+    note: 'Cold timber country north of Drent: birch and fir among the last broadleaf by the Tessen, open valley grass in the middle, bare-shouldered hills toward Feradom.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);
@@ -230,6 +234,57 @@ export function routeAnchors(survey, transform = HEX_WORLD_TRANSFORM) {
     elod: (() => { const cell = northMost(suval.filter(cell => cell.x >= eastMost(suval).x - transform.metresPerHex * 2)); return { x: cell.x, z: cell.z }; })(),
     suvalHills: centroid(suval),
   };
+}
+
+/**
+ * The atlas's river edges as watercourses in world metres. Edges that share a
+ * hex corner join into one open polyline, breaking where three meet, and each
+ * polyline is softened by Chaikin corner cutting, as the journal chart draws
+ * them (scripts/export-world-map.mjs). `edges` are `{ a: [q, r], b: [q, r], size }`.
+ */
+export function riverCourses(survey, edges, transform = HEX_WORLD_TRANSFORM, { soften = 2 } = {}) {
+  const pieces = edges.map(edge => {
+    const direction = AXIAL_NEIGHBORS.findIndex(([dq, dr]) => dq === edge.b[0] - edge.a[0] && dr === edge.b[1] - edge.a[1]);
+    if (direction < 0) throw new Error(`River edge ${edge.a}|${edge.b} does not join two neighbouring hexes.`);
+    const corners = atlasCorners(cellCenter(survey, { q: edge.a[0], r: edge.a[1] })), slot = NEIGHBOR_TO_EDGE[direction];
+    return { edge, ends: [corners[slot], corners[(slot + 1) % 6]] };
+  });
+  const byCorner = new Map();
+  for (const piece of pieces) for (const end of piece.ends) {
+    const key = cornerKey(end);
+    if (!byCorner.has(key)) byCorner.set(key, []);
+    byCorner.get(key).push(piece);
+  }
+  const used = new Set(), courses = [];
+  const extend = (line, members) => {
+    for (;;) {
+      const at = byCorner.get(cornerKey(line.at(-1))) ?? [];
+      const next = at.filter(piece => !used.has(piece));
+      if (at.length > 2 || next.length !== 1) return;
+      used.add(next[0]); members.push(next[0].edge);
+      line.push(cornerKey(next[0].ends[0]) === cornerKey(line.at(-1)) ? next[0].ends[1] : next[0].ends[0]);
+    }
+  };
+  for (const piece of pieces) {
+    if (used.has(piece)) continue;
+    used.add(piece);
+    const line = [piece.ends[0], piece.ends[1]], members = [piece.edge];
+    extend(line, members); line.reverse(); extend(line, members);
+    let points = line;
+    for (let pass = 0; pass < soften; pass++) {
+      const next = [points[0]];
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i], b = points[i + 1];
+        next.push({ x: a.x * .75 + b.x * .25, y: a.y * .75 + b.y * .25 }, { x: a.x * .25 + b.x * .75, y: a.y * .25 + b.y * .75 });
+      }
+      next.push(points.at(-1));
+      points = next;
+    }
+    const sizes = [...new Set(members.map(edge => edge.size))];
+    courses.push({ size: sizes.length === 1 ? sizes[0] : sizes, edges: members,
+      points: points.map(point => { const world = transform.atlasToWorld(point.x, point.y); return { x: world.x, z: world.z }; }) });
+  }
+  return courses;
 }
 
 /** Compass label for a camera yaw, honouring the transform's true north. */
