@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { borderGoal, aftermathGoal } from '../src/autopilot.js';
 import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, freeDirection, moveInput, nearestVertex, CHOICE_PRIORITY } from '../src/autopilot.js';
 
 /** A small flat world with the same collision rules as the game. */
@@ -195,4 +196,24 @@ test('the map tutorial steers the autopilot through the chart and the trails, th
   assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 3, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'a finished tutorial no longer interrupts the road');
   assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'no tutorial means the usual first goal');
   assert.equal(planGoal(snapshot({ mapTutorial: 1, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight', 'a fight comes before any reading');
+});
+
+test('after the border battle the autopilot rallies, reports, and stops where the ground or the story ends', () => {
+  const world = { npcPositions: { 'aftermath-tribune': { x: -518.5, z: 326.5 }, 'post-camp-legate': { x: -543.2, z: 361.1 } }, npcNames: { 'aftermath-tribune': 'Tribune Gallus Orso' } };
+  const border = { complete: true, destinationIds: [] };
+  const at = aftermath => borderGoal({ border, aftermath }, world);
+  assert.equal(borderGoal({ border }, world).kind, 'done', 'a host without the chapter still stops at the battle');
+  assert.equal(at({ variant: null, stage: 'not-started', complete: false, built: false, destinationIds: [] }).kind, 'done');
+  const rally = at({ variant: 'moros-fallback', stage: 'rally', complete: false, built: true, destinationIds: ['aftermath-tribune'] });
+  assert.deepEqual([rally.kind, rally.npcId, rally.target], ['talk', 'aftermath-tribune', world.npcPositions['aftermath-tribune']]);
+  assert.match(rally.intent, /Gallus Orso/);
+  assert.equal(at({ variant: 'moros-fallback', stage: 'fighting', complete: false, built: true, destinationIds: [] }).kind, 'wait', 'the fight policy has the fight');
+  assert.equal(at({ variant: 'moros-fallback', stage: 'report', complete: false, built: true, destinationIds: ['post-camp-legate'] }).npcId, 'post-camp-legate');
+  const unbuilt = at({ variant: 'solis-sweep', stage: 'rally', complete: false, built: false, destinationIds: ['aftermath-tribune'] });
+  assert.equal(unbuilt.kind, 'done');
+  assert.match(unbuilt.reason, /not built yet/);
+  const done = aftermathGoal({ aftermath: { variant: 'moros-fallback', stage: 'complete', complete: true, built: true, destinationIds: [] } }, world);
+  assert.equal(done.kind, 'done');
+  assert.match(done.reason, /pay and your orders/);
+  for (const id of ['begin-assault', 'close-aftermath']) assert.ok(CHOICE_PRIORITY.includes(id), `${id} is a reply the autopilot will choose`);
 });
