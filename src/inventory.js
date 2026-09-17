@@ -35,6 +35,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A two-handed blade as long as a man is tall. Reach and weight, slow to stop.',
     description: 'Traded from a hired sword. The longest reach of any blade and the heaviest blows. Each landed strike wears it by 1 condition; the village workbench mends it.',
   }),
+  'copper-piece': Object.freeze({
+    name: 'Copper pieces', type: 'Money', icon: 'token', stackable: true,
+    brief: 'Ambroni copper. Ten make a silver piece, a hundred a gold.',
+    description: 'The Empire’s small coin, good in any market that answers to Ambron. Traders and beggars take it; the Legion pays in it.',
+  }),
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',

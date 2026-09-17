@@ -1469,16 +1469,17 @@ export function createGoblin({ variant = 0 } = {}) {
 }
 
 /** A grey wolf: long muzzle, high shoulders, a low-slung trot. Paws rest at y=0, forward is +Z. */
-export function createWolf({ variant = 0 } = {}) {
+export function createWolf({ variant = 0, dog = false } = {}) {
   const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
   const group = new THREE.Group();
-  group.name = `wolf-${variation}`;
+  group.name = `${dog ? 'dog' : 'wolf'}-${variation}`;
+  if (dog) group.scale.setScalar(.82);
   const body = new THREE.Group();
   body.name = 'Weight and hips';
   group.add(body);
-  const coat = material([0x6f6a60, 0x7a7266, 0x5f5b55][variation]);
-  const coatLight = material([0x9c968a, 0xa39b8c, 0x8b877f][variation]);
-  const coatDark = material([0x4a4740, 0x514c44, 0x3d3b37][variation]);
+  const coat = material((dog ? [0xb98a5a, 0xd8c7a8, 0x6b4d33] : [0x6f6a60, 0x7a7266, 0x5f5b55])[variation]);
+  const coatLight = material((dog ? [0xe2cfa8, 0xf0e6d2, 0x9e7b57] : [0x9c968a, 0xa39b8c, 0x8b877f])[variation]);
+  const coatDark = material((dog ? [0x8a6238, 0xb9a583, 0x4a3323] : [0x4a4740, 0x514c44, 0x3d3b37])[variation]);
   const noseMat = material(0x1f1c1a), eyeMat = material(0xd9b24a), dark = material(0x24211d);
   const tooth = material(0xe6dcc4), tongue = material(0x9c4a49), pad = material(0x3a332d);
   // One spine pivot carries haunches, barrel and withers, and pitches for the lunge.
@@ -1512,12 +1513,13 @@ export function createWolf({ variant = 0 } = {}) {
   round(jaw, coatLight, [0, -0.02, 0.11], [0.058, 0.033, 0.12]);
   round(jaw, tongue, [0, -0.005, 0.09], [0.028, 0.012, 0.07]);
   for (const side of [-1, 1]) {
-    const ear = part(head, UNIT_HAIR_LOCK, coatDark, [side * 0.072, 0.125, -0.03], [0.04, 0.075, 0.03]);
-    ear.rotation.z = side * -0.25;
+    // A dog's ears hang; a wolf's stand.
+    const ear = part(head, UNIT_HAIR_LOCK, coatDark, [side * (dog ? 0.09 : 0.072), dog ? 0.06 : 0.125, dog ? -0.01 : -0.03], dog ? [0.03, 0.09, 0.05] : [0.04, 0.075, 0.03]);
+    ear.rotation.z = side * (dog ? 0.45 : -0.25);
     part(head, UNIT_HAIR_LOCK, coatLight, [side * 0.072, 0.12, -0.02], [0.02, 0.045, 0.012]);
     round(head, eyeMat, [side * 0.06, 0.045, 0.105], [0.022, 0.018, 0.012]);
     round(head, dark, [side * 0.06, 0.045, 0.115], [0.009, 0.01, 0.006]);
-    for (const [z, length] of [[0.19, 0.03], [0.23, 0.022]]) {
+    if (!dog) for (const [z, length] of [[0.19, 0.03], [0.23, 0.022]]) {
       const fang = part(head, new THREE.ConeGeometry(0.008, length, 4), tooth, [side * 0.034, -0.052, z]);
       fang.rotation.z = Math.PI;
     }
@@ -1547,13 +1549,16 @@ export function createWolf({ variant = 0 } = {}) {
     box(knee, pad, [0, -0.325, 0.035], [0.08, 0.012, 0.13]);
   }
   batchRigidParts(group, [body, spine, neck, head, jaw, tail, ...legs, ...knees]);
-  const { animate } = makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset: variation * 2.3 + 0.4 });
+  const { animate } = makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset: variation * 2.3 + 0.4, dog });
   return { group, animate, setArmed: () => {} };
 }
 
+/** A friendly village dog: the wolf's rig with hanging ears, a lighter coat, no fangs and a tail that will not stop. */
+export function createDog(options = {}) { return createWolf({ ...options, dog: true }); }
+
 // A quadruped gait and the same action vocabulary as the two-legged animator:
 // idle, windup (a crouch), attack (a lunge with the jaws), hurt, dead.
-function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset = 0 }) {
+function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset = 0, dog = false }) {
   let stridePhase = offset, lastTime, movementBlend = 0;
   const lerp = THREE.MathUtils.lerp;
   function animate(time, speed = 0, grounded = true, pose = {}) {
@@ -1578,7 +1583,9 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
     let spineX = alert * 0.05 + movementBlend * 0.04, spineZ = 0;
     let neckX = -0.35 - alert * 0.3 + breath * 0.01, headX = 0.15 + alert * 0.1;
     let headY = Math.sin(seconds * 0.5 + offset) * 0.35 * idle * (1 - alert * 0.7);
-    let jawX = 0, tailX = 0.4 - alert * 0.9, tailY = Math.sin(seconds * 3.1 + offset) * 0.25 * idle * (1 - alert);
+    // A dog carries its tail high and wags it; a wolf drops it when alert.
+    let jawX = 0, tailX = dog ? -0.55 : 0.4 - alert * 0.9, tailY = dog ? Math.sin(seconds * 7 + offset) * 0.55 : Math.sin(seconds * 3.1 + offset) * 0.25 * idle * (1 - alert);
+    if (dog && pose.sitting) { spineX = -0.25; neckX = -0.25; headX = 0.05; }
     let bodyY = 0, bodyZ = 0;
     if (action === 'windup') {
       const crouch = THREE.MathUtils.smoothstep(progress, 0, 0.8);

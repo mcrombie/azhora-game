@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
-import { createCharacter, makeQuestMarker } from './characters.js';
+import { createCharacter, createDog, makeQuestMarker } from './characters.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -12,6 +12,8 @@ import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
+import { COPPER_ITEM, PEDDLER, STARTING_PURSE, describeSum, peddlerOffers } from './economy.js';
+import { VILLAGE_DOG, createVillageDog } from './village-dog.js';
 import { createWoodlandLife } from './woodland-life.js';
 import { createForestEcology } from './forest-ecology.js';
 import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './forest-story.js';
@@ -71,7 +73,7 @@ function init() {
   const testingQuery=new URLSearchParams(location.search);
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});player=createCharacter();scene.add(player.group);
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
-  const npcData=[{id:'harbormaster',name:'Mara',role:'Harbormaster',color:0x4b8291},{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper',color:0x647b4d},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  const npcData=[{id:'harbormaster',name:'Mara',role:'Harbormaster',color:0x4b8291},{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
   npcData.push({...FOREST_STORY_NPC});
@@ -79,6 +81,13 @@ function init() {
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
   const mercenaryIds=new Set(MERCENARY_ROSTER.map(m=>m.id));
   const company=createMercenaryCompany({road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn});
+  // A friendly dog sniffs about the green, comes to see who has landed, and eats what it is given.
+  const villageDog=createVillageDog();
+  world.npcPositions[VILLAGE_DOG.id]={x:VILLAGE_DOG.haunts[0].x,z:VILLAGE_DOG.haunts[0].z};
+  npcData.push({id:VILLAGE_DOG.id,name:VILLAGE_DOG.name,role:VILLAGE_DOG.role,dog:true});
+  // Wendel the peddler sells staples for copper on Tidehaven's green and explains the coin.
+  world.npcPositions[PEDDLER.id]={x:PEDDLER.stand.x,z:PEDDLER.stand.z};
+  npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   let playSeconds=0;
@@ -86,7 +95,7 @@ function init() {
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
   for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});}
   for(const npc of npcData) {
-    npc.actor=createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
+    npc.actor=npc.dog?createDog({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
     npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:npc.id==='harbormaster'?-Math.PI/2:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
     if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
@@ -125,6 +134,7 @@ function init() {
     }
   });
   inventory.grant('simple-sword');
+  inventory.add(COPPER_ITEM,STARTING_PURSE);
   weapons=createWeapons({inventory,onEvent(event){
     if(event.type==='weapon-worn')toast(`${event.name} is wearing thin. Repair it at the nearest repair bench.`,`${event.durability} HITS LEFT · I TO CHECK EQUIPMENT`);
     if(event.type==='weapon-broken')toast(event.id==='simple-sword'?'Your sword broke. Find a repair bench, or equip a stick.':event.remaining?'Your stick snapped. Another carried stick is ready.':'Your last stick snapped. Equip your sword or gather another.', 'WEAPON BROKEN');
@@ -529,6 +539,25 @@ function init() {
       {id:'leave-mercenary',label:'Good road to you.',action:closeDialogue}];
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
   }
+  function dogConversation(npc,line=villageDog.greeting()){
+    const foods=inventory.items().filter(id=>INVENTORY_ITEMS[id].type==='Food');
+    const choices=foods.map(id=>({id:`feed-${id}`,label:`Give it ${INVENTORY_ITEMS[id].name.toLowerCase()}`,action:()=>{
+      const outcome=villageDog.feed({itemId:id,isFood:true});
+      if(outcome.ate&&inventory.remove(id,1)){inventory.refresh();saveRoad(false);}
+      openDialogue(npc,[outcome.line],null,'Leave the dog');}}));
+    choices.push({id:'pat-dog',label:'Pat it and go.',action:closeDialogue});
+    openDialogue(npc,[line],null,'Leave the dog',{choices});
+  }
+  function peddlerConversation(npc,opening=true){
+    const purse=inventory.count(COPPER_ITEM);
+    const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS});
+    const choices=offers.map(offer=>({id:`buy-${offer.id}`,label:offer.label,enabled:offer.enabled,reason:offer.reason,action:()=>{
+      if(!inventory.remove(COPPER_ITEM,offer.price)||!inventory.add(offer.id,1)){inventory.add(COPPER_ITEM,offer.price);peddlerConversation(npc,false);return;}
+      inventory.refresh();toast(`${offer.name} for ${offer.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM WENDEL');saveRoad(false);peddlerConversation(npc,false);}}));
+    choices.push({id:'leave-peddler',label:'Nothing today.',action:closeDialogue});
+    const lines=opening?[...PEDDLER.lines]:[`You carry ${describeSum(purse)}. Anything else?`];
+    openDialogue(npc,lines,null,'Back to the road',{choices});
+  }
   function offerTrade(npc){
     const held=mercenaryHeld(npc),offer=tradeOffer(npc.id,held.id,weapons.equippedId);
     if(!offer.accepts||combat.state.player.action!=='idle'){openDialogue(npc,[offer.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)});return;}
@@ -550,6 +579,8 @@ function init() {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
+    if(npc.dog){dogConversation(npc);return;}
+    if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
     if(journeyNpcIds.has(npc.id)){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
@@ -1056,6 +1087,7 @@ function init() {
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
       currentNPC=null;let nearest=3.3;
       for(const npc of npcData) {
         if(npc.hidden){npc.actor.group.visible=false;npc.marker.visible=false;continue;}
@@ -1066,9 +1098,9 @@ function init() {
         const alarm=combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         const destX=home.x+(alarm?(npc.id==='warden'?3:npc.id==='harbormaster'?4:-3):0),destZ=home.z+(alarm?2:0);
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
-        if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*2.4),bx=pos.x,bz=pos.z;moveCharacter(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,world);pos.y=world.heightAt(pos.x,pos.z);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
-        npc.actor.animate(walkTime+2,pace,true,{alert:alarm});
-        const d=pos.distanceTo(player.group.position);if(d<nearest){nearest=d;currentNPC=npc;}
+        if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(npc.pace||2.4)),bx=pos.x,bz=pos.z;moveCharacter(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,world);pos.y=world.heightAt(pos.x,pos.z);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
+        npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1});
+        const d=pos.distanceTo(player.group.position)+(npc.dog?1.5:0);if(d<nearest){nearest=d;currentNPC=npc;}
         npc.marker.visible=(questStage===1&&npc.id==='harbormaster')||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
         if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
         if(npc.id===FOREST_STORY_NPC.id)npc.marker.visible=(!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned))&&questStage>=1&&combat.state.phase!=='active';
@@ -1096,7 +1128,7 @@ function init() {
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
       show('interaction',mode==='playing'&&(!!currentNPC||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
-      if(currentNPC)$('interaction-label').textContent='Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
+      if(currentNPC)$('interaction-label').textContent=currentNPC.dog?'Greet the dog':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
       if(currentRegionalSite&&!currentNPC)$('interaction-label').textContent=currentRegionalSite.prompt;
@@ -1517,7 +1549,7 @@ function init() {
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
         if(view==='walk'){questStage=10;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
-        if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
+        if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
