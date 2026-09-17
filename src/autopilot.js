@@ -19,13 +19,14 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   swingEvery: .3,         // seconds between swing attempts
   stuckAfter: 1.6,        // seconds without progress before a detour
   idleLimit: 260,         // seconds without quest progress before giving up: a 1.7 km road takes a while between steps
+  side: 'empire',         // which way the fork at Solis is taken
   runBeyond: 3.2,         // metres from the goal beyond which the autopilot runs: it travels at a run and walks only the last stride up to someone
 });
 
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'enter-solis', 'side-empire', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'enter-solis', 'side-empire', 'side-coalition', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -205,7 +206,7 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 }
 
 /** Which reply to give in the open conversation, if any. */
-export function chooseReply(choices, snapshot) {
+export function chooseReply(choices, snapshot, { side = 'empire' } = {}) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
   // Every chapter that can put a reply in front of the traveler, not just the
@@ -213,7 +214,10 @@ export function chooseReply(choices, snapshot) {
   // gate, finds nothing it recognises, says goodbye and walks away again.
   const wanted = new Set([snapshot.journey, snapshot.luscia, snapshot.moros, snapshot.border, snapshot.aftermath]
     .flatMap(chapter => chapter?.actions ?? []).filter(action => action.enabled).map(action => action.id));
+  // One side or the other, never both: the fork at Solis is the one reply that is a choice.
+  const refused = side === 'coalition' ? 'side-empire' : 'side-coalition';
   for (const id of CHOICE_PRIORITY) {
+    if (id === refused) continue;
     if (id === 'hollis-repair-wood' && (snapshot.inventory?.sticks ?? 0) >= 3) continue;
     if (enabled.some(choice => choice.id === id) && (wanted.has(id) || id === 'hollis-repair-wood')) return id;
   }
@@ -313,9 +317,18 @@ export function planGoal(snapshot, world) {
  */
 /** The Legion on the plain: the camp gate, the Legate's muster, the horse line. */
 /** The day after the battle: rally to the commander, fight (the ordinary fight policy handles it), and report. */
+/** Once the day after is done, the chapter closes on the traveler's own side's ground. */
+export function homeGoal(snapshot, world) {
+  const seat = world.sideSeat?.(snapshot.campaign?.side);
+  if (!seat) return { kind: 'done', intent: 'The war moves on', reason: 'The day after the border battle is done and you have your pay and your orders. What follows is the next chapter, and it is not built yet.' };
+  const gap = distance(snapshot.position, seat);
+  if (gap <= (seat.reach ?? 110) - 12) return { kind: 'done', intent: `Standing in ${seat.name}`, reason: `You are back in ${seat.name} with your pay and your orders. What follows is the next chapter, and it is not built yet.` };
+  return { kind: 'walk', target: seat, radius: Math.max(8, (seat.reach ?? 110) - 20), intent: `Making for ${seat.name}` };
+}
+
 export function aftermathGoal(snapshot, world) {
   const aftermath = snapshot.aftermath;
-  if (aftermath.complete) return { kind: 'done', intent: 'Paid, with orders for the road', reason: 'The day after the border battle is done and you have your pay and your orders. What follows is the next chapter, and it is not built yet.' };
+  if (aftermath.complete) return homeGoal(snapshot, world);
   if (!aftermath.built) return { kind: 'done', intent: 'The border battle is fought', reason: 'The border battle is fought and the war moves on. The ground for what follows is not built yet.' };
   const id = aftermath.destinationIds?.[0];
   if (id && world.npcPositions?.[id]) return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Going to ${world.npcNames?.[id] ?? id}` };
@@ -437,7 +450,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'dialogue': {
         const dialogue = snapshot.dialogue;
         if (dialogue?.choices?.length) {
-          if (timers.dialogue >= config.choicePace) { const id = chooseReply(dialogue.choices, snapshot); if (id) { actions.push({ type: 'choose', id }); timers.dialogue = 0; timers.idle = 0; } }
+          if (timers.dialogue >= config.choicePace) { const id = chooseReply(dialogue.choices, snapshot, { side: config.side }); if (id) { actions.push({ type: 'choose', id }); timers.dialogue = 0; timers.idle = 0; } }
         } else if (timers.dialogue >= config.dialoguePace) { actions.push({ type: 'continue' }); timers.dialogue = 0; timers.idle = 0; }
         break;
       }

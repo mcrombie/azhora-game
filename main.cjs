@@ -15,7 +15,8 @@ const developerChecksOnly = smoke && process.argv.includes('--developer-checks')
 const autoplayChecksOnly = smoke && process.argv.includes('--autoplay-checks');
 // `--autoplay-from=<story start>` plays one leg of the arc instead of the whole road.
 const autoplayFrom = (process.argv.find(argument => argument.startsWith('--autoplay-from=')) || '').split('=')[1] || '';
-const autoplayOptions = JSON.stringify(autoplayFrom ? { from: autoplayFrom } : {});
+const autoplaySide = (process.argv.find(argument => argument.startsWith('--autoplay-side=')) || '').split('=')[1] || '';
+const autoplayOptions = JSON.stringify({ ...(autoplayFrom ? { from: autoplayFrom } : {}), ...(autoplaySide ? { side: autoplaySide } : {}) });
 const hideoutChecksOnly = smoke && process.argv.includes('--hideout-checks');
 const hideoutReviewOnly = smoke && process.argv.includes('--hideout-review');
 const localMapChecksOnly = smoke && process.argv.includes('--local-map-checks');

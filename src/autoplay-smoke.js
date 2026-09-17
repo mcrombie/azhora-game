@@ -8,7 +8,8 @@ export async function runAutoplaySmoke(h) {
   // The road is 1.7 km at 100 m per authored hex and the main quest now runs on
   // past it through Luscia, the Moros camp, the border and the day after, so the
   // autopilot needs far longer on its feet than the road alone used to take.
-  const { autopilot, start, stop, readState, frames, press, release, player, world, beginAt, from = '', deadlineMs = (from ? 20 : 45) * 60 * 1000 } = h;
+  const { autopilot, start, stop, readState, frames, press, release, player, world, beginAt, from = '', side = 'empire',
+    deadlineMs = (from ? 25 : 45) * 60 * 1000 } = h;
   const assert = (condition, message) => { if (!condition) throw new Error(`Autoplay smoke: ${message}`); };
   const position = () => ({ x: player.group.position.x, z: player.group.position.z });
   const started = performance.now();
@@ -19,7 +20,7 @@ export async function runAutoplaySmoke(h) {
   let previousFrames = readState().frames, previousAction = null;
 
   const note = (label, extra = {}) => milestones.push({ label, seconds: Math.round((performance.now() - started) / 100) / 10, ...extra });
-  autopilot.configure({ dialoguePace: .35, choicePace: .3 });
+  autopilot.configure({ dialoguePace: .35, choicePace: .3, side });
   autopilot.onEvent(event => note(`autopilot ${event.type}`, event.reason ? { reason: event.reason } : {}));
 
   if (from) {
@@ -81,6 +82,7 @@ export async function runAutoplaySmoke(h) {
     }
     if (!autopilot.active) {
       if (from) assert(state.border?.complete, `autoplay stopped early on the ${from} leg: ${autopilot.stopReason} (border ${state.border?.stage})`);
+      if (from) assert(state.chapter >= 3, `chapter two did not close on the ${side} side: ${autopilot.stopReason} (chapter ${state.chapter}, aftermath ${state.aftermath?.stage})`);
       else assert(state.journeyView?.complete && state.luscia?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
       break;
     }
@@ -101,6 +103,11 @@ export async function runAutoplaySmoke(h) {
   }
   assert(final.campaign?.chapterId !== 'moros-camp' && final.campaign?.chapterId !== 'luscia-aftermath', `the campaign stopped at ${final.campaign?.chapterId} instead of going on past the Moros camp`);
   assert(final.border?.complete, 'the border battle was not fought');
+  assert(final.border?.side === side, `the ${side} side was asked for and ${final.border?.side} was taken`);
+  // Chapter two closes on the traveler's own side's ground: the outpost on the Moros, or Solis.
+  assert(final.chapter >= 3, `chapter two did not close (chapter ${final.chapter})`);
+  assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 5 : 3),
+    `the ${side} side ended in region ${world.regionAt(final.position[0], final.position[2]).id}`);
   assert(wentToSolis, 'the Legate’s terms were never carried to Solis');
   assert(/border battle/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
@@ -108,7 +115,7 @@ export async function runAutoplaySmoke(h) {
   assert([3, 5].includes(world.regionAt(final.position[0], final.position[2]).id), 'the traveler did not end on the Moros Plain or in West Suval');
   checks += from ? 6 : 12;
   return {
-    ok: true, from: from || 'the opening screen', checks, fights, wolfFight, chapter: final.luscia?.stage, campaign: final.campaign?.chapterId,
+    ok: true, from: from || 'the opening screen', side, chapter: final.chapter, checks, fights, wolfFight, lusciaStage: final.luscia?.stage, campaign: final.campaign?.chapterId,
     retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxMetresPerRenderedFrame: Math.round(maxJump * 100) / 100,
     elapsedSeconds: Math.round((performance.now() - started) / 100) / 10, milestones, stopReason: autopilot.stopReason,
   };

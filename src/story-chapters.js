@@ -9,6 +9,23 @@
  */
 export const STORY_CHAPTER_VERSION = 1;
 
+/**
+ * Where each side stands when the fighting is done: the Legion keeps the outpost
+ * at the centre of the Moros, the Republic keeps Solis. The battle may leave the
+ * traveler on the other side's ground — a won field is the loser's place — so the
+ * chapter is not closed until they have made their way back to their own.
+ */
+export const SIDE_SEATS = Object.freeze({
+  empire: Object.freeze({ id: 'outpost', name: 'the Legion\u2019s outpost on the Moros', x: -980.7, z: 598.8, reach: 110 }),
+  coalition: Object.freeze({ id: 'solis', name: 'Solis', x: -520, z: 950, reach: 140 }),
+});
+export const sideSeat = side => SIDE_SEATS[side] ?? null;
+/** Whether a point stands on that side's own ground. */
+export const atSideSeat = (side, point) => {
+  const seat = sideSeat(side);
+  return !!seat && !!point && Math.hypot(point.x - seat.x, point.z - seat.z) <= seat.reach;
+};
+
 const chapter = entry => Object.freeze({ ...entry, steps: Object.freeze(entry.steps) });
 
 export const STORY_CHAPTERS = Object.freeze([
@@ -40,9 +57,10 @@ export const STORY_CHAPTERS = Object.freeze([
       'Report to Legate Verro at the outpost on the Moros',
       'Carry the terms into Solis and hear the Republic’s offer',
       'Choose your side, march to the border, and fight the battle',
-      'The morning after: rally, clear the ground, and take your pay where your side stands',
+      'The morning after: rally, clear the ground, and take your pay',
+      'Make your way back to your own side\u2019s ground and stand in it',
     ],
-    done: state => !!state.aftermath?.complete,
+    done: state => !!state.aftermath?.complete && !!state.home,
   }),
   chapter({
     // Which war you joined decides where you go: the Empire's one city that holds a

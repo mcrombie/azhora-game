@@ -55,7 +55,7 @@ import { createDrentBirds } from './drent-birds.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
-import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount } from './story-chapters.js';
+import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './story-chapters.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -390,7 +390,7 @@ function init() {
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);
   }
   // The main quest as the player reads it: numbered chapters (src/story-chapters.js).
-  const storyState=()=>({questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side});
+  const storyState=()=>({questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side,home:atSideSeat(campaign.view().side,player.group.position)});
   let chapterShown=0;
   function refreshChapter(){
     const state=storyState(),progress=chapterProgress(state),current=progress.current;
@@ -1233,13 +1233,14 @@ function init() {
   const autopilotWorld={bounds:world.bounds,colliders:world.colliders,nearColliders:(x,z,reach,out)=>world.nearColliders(x,z,reach,out),heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
-    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border};
+    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border,
+    sideSeat:side=>sideSeat(side)};
   const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,position:{x:player.group.position.x,z:player.group.position.z},
     combat:{phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,action:e.action,progress:e.progress,active:e.active,hp:e.hp}))},
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     journey:{started:journey.state.started,stage:journey.view().stage,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
-    mapTutorial:mapTutorial.step,campaign:{chapterId:campaign.view().chapterId},
+    mapTutorial:mapTutorial.step,campaign:{chapterId:campaign.view().chapterId,side:campaign.view().side},
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
     border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},

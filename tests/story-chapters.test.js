@@ -5,6 +5,7 @@ import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoa
 const reported = { luscia: { briefed: true } };
 const fought = { ...reported, border: { complete: true } };
 const settled = { ...fought, aftermath: { complete: true } };
+const home = { ...settled, home: true };
 
 test('the main quest reads as three chapters, each closing on a moment the player remembers', () => {
   assert.equal(chapterCount, 3);
@@ -31,7 +32,8 @@ test('chapter one ends on reporting for duty at Lumber Town', () => {
 
 test('chapter two runs from the report to your own side’s ground, and says whose', () => {
   assert.equal(chapterProgress(fought).number, 2, 'the battle alone does not close it');
-  assert.equal(chapterProgress(settled).number, 3, 'the day after does');
+  assert.equal(chapterProgress(settled).number, 2, 'nor does the day after, until you are back on your own ground');
+  assert.equal(chapterProgress({ ...settled, home: true }).number, 3, 'standing in it closes the chapter');
   const empire = chapterProgress({ ...fought, side: 'empire' });
   assert.match(chapterGoal(empire.current, { side: 'empire' }), /outpost on the Moros/);
   assert.match(chapterGoal(empire.current, { side: 'coalition' }), /Solis/);
@@ -39,7 +41,7 @@ test('chapter two runs from the report to your own side’s ground, and says who
 });
 
 test('chapter three is the side you chose: Ambron for the Empire, the Republic for Izol', () => {
-  const empire = { ...settled, side: 'empire' }, republic = { ...settled, side: 'coalition' };
+  const empire = { ...home, side: 'empire' }, republic = { ...home, side: 'coalition' };
   assert.equal(chapterTitle(chapterProgress(empire).current, empire), 'The Kingdom of Ambron');
   assert.equal(chapterTitle(chapterProgress(republic).current, republic), 'The Republic of Izol');
   assert.match(chapterGoal(chapterProgress(empire).current, empire), /Ambron on the Lake Ela narrows/);
@@ -48,6 +50,6 @@ test('chapter three is the side you chose: Ambron for the Empire, the Republic f
   assert.match(republicGoal, /Izolveth in West Izol/);
   assert.match(republicGoal, /keeps no capital/);
   // The ground beyond the day after is not built, so the story stops there for now.
-  assert.equal(chapterProgress(settled).complete, false);
-  assert.equal(chapterProgress(settled).current.number, 3);
+  assert.equal(chapterProgress(home).complete, false);
+  assert.equal(chapterProgress(home).current.number, 3);
 });
