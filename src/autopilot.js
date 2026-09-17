@@ -108,15 +108,23 @@ export const ROAD_CORRIDOR = 14;
  * path, which runs from the landing up the whole northern road); short hops and
  * the last stretch go straight, sliding around anything in the way.
  */
-/** The road that best serves a walk from `position` to `target`: both ends near it, the nearest such. */
+/**
+ * The road that serves a walk to `target`: the one the destination itself stands
+ * on, nearest first, and only then the one the traveler happens to be near. The
+ * destination does not move, so the choice does not flicker as the traveler walks
+ * — picking by both ends at once had it turning round between two roads that run
+ * close together, and walking back and forth across a border.
+ */
 export function bestTrail(paths = [], position, target) {
-  let best = paths?.[0] ?? [], bestCost = Infinity;
+  let best = paths?.[0] ?? [], bestTo = Infinity, bestFrom = Infinity;
   for (const path of paths ?? []) {
     if (!path || path.length < 2) continue;
-    const from = nearestOnPath(path, position), to = nearestOnPath(path, target);
+    const to = nearestOnPath(path, target);
     if (to.distance >= ROAD_CORRIDOR) continue;
-    const cost = from.distance + to.distance;
-    if (cost < bestCost) { best = path; bestCost = cost; }
+    const from = nearestOnPath(path, position);
+    if (to.distance < bestTo - .5 || (Math.abs(to.distance - bestTo) <= .5 && from.distance < bestFrom)) {
+      best = path; bestTo = to.distance; bestFrom = from.distance;
+    }
   }
   return best;
 }

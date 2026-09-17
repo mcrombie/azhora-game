@@ -15,7 +15,7 @@ export async function runAutoplaySmoke(h) {
   const started = performance.now();
   const milestones = [];
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
-  let lastChapterStage = '', wolfFight = false, wentToSolis = false;
+  let lastChapterStage = '', wolfFight = false, wentToSolis = false, lastIntent = '';
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
   let previousFrames = readState().frames, previousAction = null;
 
@@ -65,6 +65,11 @@ export async function runAutoplaySmoke(h) {
     if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight'); fights++; }
     if (state.mode === 'defeated') retries++;
     if (state.mode === 'dialogue') lines++;
+    // What it believed it was doing, and where: a stall is only readable with this.
+    if (autopilot.intent && autopilot.intent !== lastIntent) {
+      lastIntent = autopilot.intent;
+      note(`intent ${autopilot.intent}`, { at: `${now.x.toFixed(0)},${now.z.toFixed(0)}`, border: state.border?.stage });
+    }
 
     // Untrusted input, such as a harness key press, must not stop autoplay.
     if (!from && state.questStage === 3 && autopilot.active && !tookOver) {
@@ -81,7 +86,7 @@ export async function runAutoplaySmoke(h) {
       restarted = true; checks++;
     }
     if (!autopilot.active) {
-      if (from) assert(state.border?.complete, `autoplay stopped early on the ${from} leg: ${autopilot.stopReason} (border ${state.border?.stage})`);
+      if (from) assert(state.border?.complete, `autoplay stopped early on the ${from} leg: ${autopilot.stopReason} (border ${state.border?.stage}, intent "${autopilot.intent}", at ${now.x.toFixed(0)},${now.z.toFixed(0)}, last: ${milestones.slice(-6).map(m => m.label).join(' | ')})`);
       if (from) assert(state.chapter >= 3, `chapter two did not close on the ${side} side: ${autopilot.stopReason} (chapter ${state.chapter}, aftermath ${state.aftermath?.stage})`);
       else assert(state.journeyView?.complete && state.luscia?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
       break;

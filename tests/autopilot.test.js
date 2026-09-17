@@ -144,6 +144,9 @@ test('the computer follows whichever road serves the leg, not only the first one
   world.paths = [...world.paths, spur];
   const from = { x: 402, z: -44 }, to = { x: 498, z: -276 };
   assert.deepEqual(bestTrail(world.paths, from, to), spur, 'the spur serves this leg');
+  // The choice follows the destination, not the traveler, so it cannot flip as they walk.
+  for (const where of [{ x: 0, z: 20 }, { x: 200, z: -100 }, { x: 460, z: -150 }, { x: 499, z: -270 }])
+    assert.deepEqual(bestTrail(world.paths, where, to), spur, `the same road serves from ${where.x},${where.z}`);
   assert.deepEqual(bestTrail(world.paths, { x: 0, z: 20 }, { x: 0, z: -150 }), world.paths[0], 'the main road still serves its own');
   const step = nextWaypoint(from, to, world);
   assert.equal(step.onTrail, true);
