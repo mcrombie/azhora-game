@@ -1,10 +1,10 @@
 // These are local districts and people invented for the playable road out of Drent into Luscia.
 // The large-scale geography remains the authored World Builder geography.
 export const JOURNEY_NPCS = [
-  {id:'meadow-courier',name:'Corvan',role:'Ambroni Legion quartermaster',modelRole:'field-courier',color:0xa76c45},
+  {id:'meadow-courier',name:'Corvan',role:'Ambroni Legion quartermaster',modelRole:'legion-officer',color:0x832d2b},
   {id:'crossing-keeper',name:'Hollis',role:'Crossing keeper',modelRole:'bridge-keeper',color:0x6b8c83},
   {id:'ridge-keeper',name:'Sava',role:'Keeper of the rise',modelRole:'rise-custodian',color:0x697589},
-  {id:'relay-clerk',name:'Iven',role:'Imperial relay clerk',modelRole:'relay-clerk',color:0x8f7f59},
+  {id:'relay-clerk',name:'Iven',role:'Imperial relay clerk',modelRole:'legion-soldier',color:0x8f3b30},
 ];
 
 export const SITE_ACTIONS = {
