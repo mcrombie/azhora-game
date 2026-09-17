@@ -18,6 +18,13 @@ const ROAD_CLOTH = Object.freeze({
   'reed-worker': 0x5f8078,
   'shelter-keeper': 0x827b6d,
 });
+// Soldiers of the Ambroni Legion wear a red under-tunic beneath banded iron;
+// Suval's border guards wear slate wool and studded leather instead.
+const SOLDIER_CLOTH = Object.freeze({
+  'legion-soldier': 0x8f3b30,
+  'legion-officer': 0x832d2b,
+  'suvali-guard': 0x55636f,
+});
 
 function material(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.91, flatShading: true, ...extra });
@@ -441,8 +448,35 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestX = .07 + breath * .012; chestZ = Math.sin(seconds * .25 + offset) * .016;
         headX = -.042 + nod * .083; headY = Math.sin(seconds * .31 + offset) * .12;
         knee[0] = .10; knee[1] = .12; hip[0] = -.033; hip[1] = -.025;
+      } else if (role === 'legion-soldier') {
+        // At attention: the spear planted by the right foot, the shield hung
+        // from the left forearm, a slow shift of weight and a look down the road.
+        const shift = Math.sin(seconds * .27 + offset);
+        arm[1] = -.09 + breath * .012; elbow[1] = -.12; armOut[1] = .09;
+        arm[0] = -.14; elbow[0] = -.98; armOut[0] = -.14;
+        chestX = -.01 + breath * .008; chestZ = shift * .012;
+        headX = -.02; headY = Math.sin(seconds * .31 + offset) * .22;
+        hip[0] = -.02 + shift * .014; hip[1] = -.02 - shift * .014;
+        knee[0] = .06 + Math.max(0, shift) * .03; knee[1] = .06 + Math.max(0, -shift) * .03;
+      } else if (role === 'legion-officer') {
+        // One hand rests on the sword hilt; the other makes the occasional
+        // short point of a man used to being obeyed.
+        const point = Math.pow(Math.max(0, Math.sin(seconds * .5 + offset)), 4);
+        arm[0] = .16; elbow[0] = -.58; armOut[0] = -.3;
+        arm[1] = -.34 - point * .55; elbow[1] = -.92 - point * .2; armOut[1] = .16 + point * .08;
+        chestX = -.035 + breath * .008; chestY += Math.sin(seconds * .44 + offset) * .05;
+        headX = -.035 + point * .03; headY = Math.sin(seconds * .36 + offset) * .14;
+        hip[0] = -.028; hip[1] = -.018; knee[0] = .07; knee[1] = .05;
+      } else if (role === 'suvali-guard') {
+        // Bored on the border: leaning a little on the spear, weight on one leg.
+        const settle = Math.sin(seconds * .24 + offset);
+        arm[1] = -.22 + breath * .01; elbow[1] = -.5; armOut[1] = .2;
+        arm[0] = -.06; elbow[0] = -.3; armOut[0] = -.06;
+        chestX = .05; chestZ = -.06 + settle * .015;
+        headX = .03; headY = Math.sin(seconds * .29 + offset) * .28;
+        hip[0] = -.03 + settle * .01; hip[1] = -.05; knee[0] = .17; knee[1] = .05;
       }
-      if (role === 'commons-miller' || role === 'reed-worker' || role === 'shelter-keeper')
+      if (['commons-miller', 'reed-worker', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role))
         for (let i = 0; i < 2; i++) ankle[i] = -hip[i] * .52 - knee[i] * .67;
       if (pose.fishing) {
         const patience = Math.sin(seconds * 1.8 + offset) * .023;
@@ -509,7 +543,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper'].includes(role) } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard'].includes(role) } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -519,6 +553,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isWoodcutter = role === 'forest-woodcutter';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
+  const isLegionary = role === 'legion-soldier', isOfficer = role === 'legion-officer', isSuvaliGuard = role === 'suvali-guard';
+  const isSoldier = isLegionary || isOfficer || isSuvaliGuard;
   const group = new THREE.Group();
   group.name = `character-${role}`;
   const body = new THREE.Group();
@@ -526,13 +562,13 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
 
   const cloth = material(tunic);
   const clothLight = material(new THREE.Color(tunic).lerp(new THREE.Color(0xe4d3a1), 0.18));
-  const linen = material(isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
+  const linen = material(isSoldier ? 0xcdbf9f : isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
   const skinMat = material(skin);
   const noseMat = material(new THREE.Color(skin).lerp(new THREE.Color(0xd99476), 0.22));
   const leather = material(0x664833);
   const bootMat = material(0x49392c);
   const soleMat = material(0x302b24);
-  const trousers = material(isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const trousers = material(isSoldier ? (isSuvaliGuard ? 0x4a4a45 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
   const hairMat = material(isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
@@ -601,7 +637,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     pivot.rotation.z = side * 0.085;
     body.add(pivot);
     arms.push(pivot);
-    if (isTraveler || isRoadWorker) {
+    if (isTraveler || isRoadWorker || isSoldier) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -618,7 +654,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
-    } else if (isTraveler || isRoadWorker) {
+    } else if (isTraveler || isRoadWorker || isSoldier) {
       round(elbow, cloth, [0, -0.055, 0.003], [0.068, 0.083, 0.071]);
       part(elbow, UNIT_CYLINDER, linen, [0, -0.116, 0.006], [0.068, 0.037, 0.073]);
       round(elbow, skinMat, [0, -0.154, 0.006], [0.057, 0.039, 0.06]);
@@ -643,7 +679,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   for (const side of [-1, 1]) {
     round(head, skinMat, [side * 0.194, 0.186, 0], [0.047, 0.062, 0.044]);
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
-    if (!isTraveler && !isCook) box(head, hairMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
+    if (!isTraveler && !isCook && !isSoldier) box(head, hairMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
     round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, 0.031, 0.016]);
     round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
@@ -724,7 +760,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     }
   }
 
-  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker) {
+  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker && !isSoldier) {
     // Shoulder strap continues on the back. The pouch hangs clear of the arm.
     ribbon(body, leather, [-0.158, 1.32, 0.121], [0.218, 0.846, 0.17], 0.054);
     ribbon(body, leather, [-0.158, 1.32, -0.121], [0.218, 0.846, -0.138], 0.054);
@@ -1019,6 +1055,97 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     const cloakMesh = part(body, cloak, cloakMat, [0, 1.012, -0.018], [1, 1, 0.85]);
     cloakMesh.material.side = THREE.DoubleSide;
     round(body, gold, [-0.152, 1.266, 0.129], [0.031, 0.031, 0.013]);
+  } else if (isSoldier) {
+    // Legion issue: banded iron over a red tunic, a helmet with cheek guards
+    // and a neck guard, greaves, a sheathed sword at the hip and a planted
+    // spear. Officers add a crest and a cloak and keep a hand on the hilt;
+    // Suval's border guards wear a studded jerkin and a plain iron cap.
+    const iron = material(isSuvaliGuard ? 0x7b7d78 : 0x9a9d96, { metalness: 0.46, roughness: 0.6 });
+    const ironDark = material(0x62655f, { metalness: 0.46, roughness: 0.6 });
+    const strap = material(0x4d3a2a);
+    const armor = new THREE.Group();
+    armor.name = isSuvaliGuard ? 'Suvali studded jerkin' : 'Legion banded cuirass';
+    body.add(armor);
+    if (isSuvaliGuard) {
+      part(armor, new THREE.CylinderGeometry(0.262, 0.236, 0.40, 8), strap, [0, 1.115, 0], [1, 1, 0.7]);
+      for (let row = 0; row < 3; row++) for (let i = -2; i <= 2; i++) round(armor, iron, [i * 0.072, 1.245 - row * 0.1, 0.176 - Math.abs(i) * 0.022], [0.016, 0.016, 0.01]);
+    } else {
+      // Five overlapping bands, each a little wider than the one below it.
+      for (let i = 0; i < 5; i++) part(armor, UNIT_CYLINDER, i % 2 ? ironDark : iron, [0, 1.275 - i * 0.068, 0], [0.272 - i * 0.008, 0.062, 0.19 - i * 0.005]);
+      for (const side of [-1, 1]) {
+        round(armor, iron, [side * 0.245, 1.318, 0], [0.135, 0.058, 0.15]);
+        round(armor, ironDark, [side * 0.285, 1.262, 0], [0.09, 0.05, 0.14]);
+      }
+      box(armor, gold, [0, 1.19, 0.198], [0.06, 0.13, 0.012]);
+    }
+    // Leather pteruges hang from the belt around the front and sides.
+    for (let i = 0; i < 7; i++) {
+      const angle = (i - 3) * 0.38;
+      const strip = box(armor, i % 2 ? strap : leather, [Math.sin(angle) * 0.235, 0.86, Math.cos(angle) * 0.19], [0.058, 0.17, 0.014]);
+      strip.rotation.y = angle;
+    }
+    // The sword stays sheathed at the left hip: scabbard, guard and grip.
+    const scabbard = box(armor, leather, [-0.26, 0.84, -0.03], [0.05, 0.42, 0.06]);
+    scabbard.rotation.z = 0.12;
+    box(armor, ironDark, [-0.283, 1.06, -0.03], [0.12, 0.02, 0.04]);
+    part(armor, UNIT_CYLINDER, strap, [-0.29, 1.11, -0.03], [0.018, 0.09, 0.018]);
+    for (const knee of knees) box(knee, iron, [0, -0.135, 0.104], [0.15, 0.2, 0.03]);
+    part(elbows[1], UNIT_CYLINDER, strap, [0, -0.1, 0.004], [0.077, 0.09, 0.079]);
+    const helmet = new THREE.Group();
+    helmet.name = isSuvaliGuard ? 'Suvali iron cap' : isOfficer ? 'Legion crested helmet' : 'Legion helmet';
+    head.add(helmet);
+    round(helmet, iron, [0, 0.27, -0.015], [0.222, 0.2, 0.205]);
+    part(helmet, UNIT_CYLINDER, ironDark, [0, 0.245, 0], [0.228, 0.036, 0.208]);
+    if (isSuvaliGuard) {
+      part(helmet, UNIT_CYLINDER, ironDark, [0, 0.228, 0], [0.27, 0.014, 0.25]);
+    } else {
+      for (const side of [-1, 1]) {
+        const cheek = box(helmet, iron, [side * 0.19, 0.17, 0.05], [0.04, 0.15, 0.12]);
+        cheek.rotation.z = side * 0.08;
+      }
+      const neckGuard = box(helmet, iron, [0, 0.16, -0.21], [0.3, 0.03, 0.12]);
+      neckGuard.rotation.x = -0.35;
+      box(helmet, ironDark, [0, 0.31, 0.19], [0.14, 0.05, 0.02]);
+    }
+    if (isOfficer) {
+      const crestMat = material(0xa53a2c);
+      const crest = new THREE.Group();
+      crest.name = 'Officer crest';
+      helmet.add(crest);
+      box(crest, crestMat, [0, 0.43, -0.03], [0.045, 0.1, 0.3]);
+      round(crest, crestMat, [0, 0.46, 0.05], [0.03, 0.06, 0.09]);
+      const cloakMat = material(0x7d2a24, { side: THREE.DoubleSide });
+      part(body, new THREE.CylinderGeometry(0.2, 0.34, 0.72, 8, 1, true, Math.PI / 2, Math.PI), cloakMat, [0, 0.95, -0.03], [1, 1, 0.85]);
+      for (const side of [-1, 1]) round(body, gold, [side * 0.16, 1.3, 0.13], [0.03, 0.03, 0.012]);
+    } else {
+      // The spear stays planted beside the right foot while the body breathes.
+      staff = new THREE.Group();
+      staff.name = isSuvaliGuard ? 'Suvali guard spear' : 'Legion spear';
+      wrists[1].add(staff);
+      const shaft = material(0x6d5439);
+      ribbon(staff, shaft, [0, -0.82, 0], [0, 1.18, 0], 0.036, 0.036);
+      ribbon(staff, ironDark, [0, 1.18, 0], [0, 1.24, 0], 0.03, 0.03);
+      part(staff, new THREE.ConeGeometry(0.03, 0.24, 4), iron, [0, 1.36, 0]);
+      round(staff, ironDark, [0, -0.83, 0], [0.024, 0.03, 0.024]);
+    }
+    if (isLegionary) {
+      // A curved rectangular shield rides on the left forearm, boss outward.
+      const shield = new THREE.Group();
+      shield.name = 'Legion shield';
+      // Held in front of the body: the face is perpendicular to the forearm
+      // and tipped so it stands vertical in the at-attention pose.
+      shield.position.set(0.13, -0.16, 0);
+      shield.rotation.x = -0.6;
+      elbows[0].add(shield);
+      const shieldMat = material(0x35507a), rim = material(0xcbb98e);
+      for (const side of [-1, 1]) {
+        const half = box(shield, shieldMat, [side * 0.105, 0.012, 0], [0.215, 0.028, 0.62]);
+        half.rotation.z = side * 0.24;
+      }
+      for (const z of [-0.31, 0.31]) box(shield, rim, [0, 0.02, z], [0.43, 0.034, 0.024]);
+      round(shield, iron, [0, -0.03, 0], [0.065, 0.022, 0.065]);
+      box(shield, gold, [0, -0.026, 0.17], [0.05, 0.008, 0.14]);
+    }
   }
 
   const idleOffset = isMiller ? 1.35 : isReedWorker ? 3.55 : isShelterKeeper ? 5.15 : isWoodcutter ? 2.1 : isCourier ? .8 : isBridgeKeeper ? 2.8 : isCustodian ? 4.4 : isClerk ? 5.6 : isCook ? 2.35 : isDoomsayer ? 1.1 : isPondFisher ? 3.8 : role === 'harbormaster' ? 1.8 : role === 'fisher' ? 3.1 : role === 'warden' ? 4.7 : 0;
@@ -1233,6 +1360,301 @@ export function createGoblin({ variant = 0 } = {}) {
   batchRigidParts(group, pivots);
   const { animate, setArmed } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, goblin: true, offset: variation * 1.91 + 0.7 });
   return { group, animate, setArmed };
+}
+
+/** A grey wolf: long muzzle, high shoulders, a low-slung trot. Paws rest at y=0, forward is +Z. */
+export function createWolf({ variant = 0 } = {}) {
+  const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
+  const group = new THREE.Group();
+  group.name = `wolf-${variation}`;
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  group.add(body);
+  const coat = material([0x6f6a60, 0x7a7266, 0x5f5b55][variation]);
+  const coatLight = material([0x9c968a, 0xa39b8c, 0x8b877f][variation]);
+  const coatDark = material([0x4a4740, 0x514c44, 0x3d3b37][variation]);
+  const noseMat = material(0x1f1c1a), eyeMat = material(0xd9b24a), dark = material(0x24211d);
+  const tooth = material(0xe6dcc4), tongue = material(0x9c4a49), pad = material(0x3a332d);
+  // One spine pivot carries haunches, barrel and withers, and pitches for the lunge.
+  const spine = new THREE.Group();
+  spine.name = 'Spine';
+  spine.position.set(0, 0.62, 0);
+  body.add(spine);
+  round(spine, coat, [0, 0.02, -0.24], [0.185, 0.19, 0.25]);
+  round(spine, coat, [0, 0.06, 0.02], [0.175, 0.195, 0.32]);
+  round(spine, coatLight, [0, -0.06, 0.02], [0.145, 0.125, 0.28]);
+  round(spine, coatDark, [0, 0.13, 0], [0.125, 0.095, 0.34]);
+  round(spine, coat, [0, 0.1, 0.3], [0.19, 0.21, 0.19]);
+  const neck = new THREE.Group();
+  neck.name = 'Neck';
+  neck.position.set(0, 0.16, 0.38);
+  spine.add(neck);
+  round(neck, coat, [0, 0.03, 0.08], [0.14, 0.14, 0.17]);
+  round(neck, coatLight, [0, -0.07, 0.09], [0.11, 0.1, 0.13]);
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 0.1, 0.18);
+  neck.add(head);
+  round(head, coat, [0, 0.02, 0.02], [0.125, 0.115, 0.145]);
+  round(head, coat, [0, -0.02, 0.16], [0.072, 0.066, 0.14]);
+  round(head, coatLight, [0, -0.055, 0.15], [0.062, 0.042, 0.12]);
+  round(head, noseMat, [0, 0.005, 0.295], [0.03, 0.025, 0.028]);
+  const jaw = new THREE.Group();
+  jaw.name = 'Jaw';
+  jaw.position.set(0, -0.05, 0.08);
+  head.add(jaw);
+  round(jaw, coatLight, [0, -0.02, 0.11], [0.058, 0.033, 0.12]);
+  round(jaw, tongue, [0, -0.005, 0.09], [0.028, 0.012, 0.07]);
+  for (const side of [-1, 1]) {
+    const ear = part(head, UNIT_HAIR_LOCK, coatDark, [side * 0.072, 0.125, -0.03], [0.04, 0.075, 0.03]);
+    ear.rotation.z = side * -0.25;
+    part(head, UNIT_HAIR_LOCK, coatLight, [side * 0.072, 0.12, -0.02], [0.02, 0.045, 0.012]);
+    round(head, eyeMat, [side * 0.06, 0.045, 0.105], [0.022, 0.018, 0.012]);
+    round(head, dark, [side * 0.06, 0.045, 0.115], [0.009, 0.01, 0.006]);
+    for (const [z, length] of [[0.19, 0.03], [0.23, 0.022]]) {
+      const fang = part(head, new THREE.ConeGeometry(0.008, length, 4), tooth, [side * 0.034, -0.052, z]);
+      fang.rotation.z = Math.PI;
+    }
+  }
+  const tail = new THREE.Group();
+  tail.name = 'Tail';
+  tail.position.set(0, 0.08, -0.44);
+  spine.add(tail);
+  ribbon(tail, coat, [0, 0, 0], [0, -0.1, -0.26], 0.07, 0.07);
+  round(tail, coatLight, [0, -0.11, -0.28], [0.05, 0.05, 0.07]);
+  // Four legs: an upper pivot at the body and a lower one at the wrist or hock.
+  const legs = [], knees = [];
+  for (const [name, side, z] of [['Left Fore', -1, 0.28], ['Right Fore', 1, 0.28], ['Left Hind', -1, -0.28], ['Right Hind', 1, -0.28]]) {
+    const hip = new THREE.Group();
+    hip.name = `${name} Hip`;
+    hip.position.set(side * 0.115, 0.6, z);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, coat, [0, -0.1, z > 0 ? 0 : -0.02], [0.068, 0.16, z > 0 ? 0.08 : 0.11]);
+    const knee = new THREE.Group();
+    knee.name = `${name} Knee`;
+    knee.position.set(0, -0.26, 0);
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, coat, [0, -0.12, 0.01], [0.045, 0.16, 0.05]);
+    round(knee, coatDark, [0, -0.3, 0.035], [0.05, 0.035, 0.08]);
+    box(knee, pad, [0, -0.325, 0.035], [0.08, 0.012, 0.13]);
+  }
+  batchRigidParts(group, [body, spine, neck, head, jaw, tail, ...legs, ...knees]);
+  const { animate } = makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset: variation * 2.3 + 0.4 });
+  return { group, animate, setArmed: () => {} };
+}
+
+// A quadruped gait and the same action vocabulary as the two-legged animator:
+// idle, windup (a crouch), attack (a lunge with the jaws), hurt, dead.
+function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset = 0 }) {
+  let stridePhase = offset, lastTime, movementBlend = 0;
+  const lerp = THREE.MathUtils.lerp;
+  function animate(time, speed = 0, grounded = true, pose = {}) {
+    const seconds = Number.isFinite(time) ? time : 0;
+    const dt = lastTime === undefined ? 1 / 60 : THREE.MathUtils.clamp(seconds - lastTime, 0, 0.1);
+    lastTime = seconds;
+    const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
+    const action = pose.action || 'idle';
+    const progress = THREE.MathUtils.clamp(Number.isFinite(pose.progress) ? pose.progress : 0, 0, 1);
+    const alert = pose.alert ? 1 : 0;
+    const damping = 1 - Math.exp(-(action === 'attack' || action === 'hurt' ? 26 : 14) * dt);
+    movementBlend = lerp(movementBlend, grounded && action !== 'dead' ? THREE.MathUtils.clamp(pace / 1.4, 0, 1) : 0, 1 - Math.exp(-10 * dt));
+    stridePhase += dt * (5.2 + Math.min(pace, 7) * 1.9);
+    const idle = 1 - movementBlend, breath = Math.sin(seconds * 2.4 + offset);
+    // A trot: diagonal pairs move together, left fore with right hind.
+    const hip = [], knee = [];
+    for (let i = 0; i < 4; i++) {
+      const phase = stridePhase + (i === 0 || i === 3 ? 0 : Math.PI), fore = i < 2;
+      hip[i] = Math.sin(phase) * (fore ? 0.55 : 0.6) * movementBlend + (fore ? -0.03 : 0.28) * idle;
+      knee[i] = (fore ? 0.08 : -0.4) * idle + Math.max(0, Math.sin(phase + 0.6)) * (fore ? 0.9 : 0.5) * movementBlend - (fore ? 0 : 0.35) * movementBlend;
+    }
+    let spineX = alert * 0.05 + movementBlend * 0.04, spineZ = 0;
+    let neckX = -0.35 - alert * 0.3 + breath * 0.01, headX = 0.15 + alert * 0.1;
+    let headY = Math.sin(seconds * 0.5 + offset) * 0.35 * idle * (1 - alert * 0.7);
+    let jawX = 0, tailX = 0.4 - alert * 0.9, tailY = Math.sin(seconds * 3.1 + offset) * 0.25 * idle * (1 - alert);
+    let bodyY = 0, bodyZ = 0;
+    if (action === 'windup') {
+      const crouch = THREE.MathUtils.smoothstep(progress, 0, 0.8);
+      spineX = -0.12 * crouch; bodyY = -0.1 * crouch; neckX = -0.15 - crouch * 0.25; headX = 0.35 * crouch; jawX = 0.35 * crouch; tailX = -0.5;
+      for (let i = 0; i < 4; i++) { hip[i] = i < 2 ? 0.35 * crouch : 0.28 + 0.25 * crouch; knee[i] = i < 2 ? -0.3 * crouch : -0.4 - 0.3 * crouch; }
+    } else if (action === 'attack') {
+      const lunge = samplePose(progress, [[0, 0], [0.3, 1], [0.6, 0.8], [1, 0]]);
+      spineX = 0.28 * lunge; bodyY = 0.16 * lunge; neckX = -0.2 + lunge * 0.3; headX = -0.1; tailX = -0.3;
+      jawX = samplePose(progress, [[0, 0.4], [0.35, 0.05], [0.6, 0.45], [1, 0]]);
+      for (let i = 0; i < 4; i++) { hip[i] = i < 2 ? -0.9 * lunge : 0.28 + 0.5 * lunge; knee[i] = i < 2 ? 0.2 : -0.4 - 0.3 * lunge; }
+    } else if (action === 'hurt') {
+      const recoil = Math.sin(Math.min(progress * 1.55, 1) * Math.PI);
+      spineX = -0.14 * recoil; spineZ = 0.18 * recoil; neckX = -0.6 * recoil; headX = 0.4 * recoil; jawX = 0.3 * recoil; tailX = -0.6;
+    } else if (action === 'dead') {
+      const fall = THREE.MathUtils.smoothstep(progress, 0, 0.8);
+      bodyZ = (offset > 2 ? -1 : 1) * fall * 1.45; bodyY = 0.12 * fall; neckX = -0.1; headX = 0.3; jawX = 0.2; tailX = -0.2;
+      for (let i = 0; i < 4; i++) { hip[i] = i < 2 ? -0.4 : 0.5; knee[i] = i < 2 ? 0.3 : -0.6; }
+    }
+    const rotate = (object, x, y, z) => {
+      object.rotation.x = lerp(object.rotation.x, x, damping);
+      object.rotation.y = lerp(object.rotation.y, y, damping);
+      object.rotation.z = lerp(object.rotation.z, z, damping);
+    };
+    rotate(spine, spineX, 0, spineZ);
+    rotate(neck, neckX, 0, -spineZ * 0.5);
+    rotate(head, headX, headY, 0);
+    rotate(jaw, jawX, 0, 0);
+    rotate(tail, tailX, tailY, 0);
+    for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
+    rotate(body, 0, Math.sin(stridePhase) * 0.02 * movementBlend, bodyZ);
+    const bob = breath * 0.004 * idle + Math.abs(Math.cos(stridePhase)) * 0.03 * movementBlend;
+    body.position.y = lerp(body.position.y, bodyY + bob, 1 - Math.exp(-22 * dt));
+  }
+  return { animate };
+}
+
+/**
+ * A riding horse for the Legion's lines and the road: bay, chestnut or grey,
+ * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
+ * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
+ */
+export function createHorse({ variant = 0, saddled = false } = {}) {
+  const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
+  const group = new THREE.Group();
+  group.name = `horse-${variation}${saddled ? '-saddled' : ''}`;
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  group.add(body);
+  const coat = material([0x6b4a32, 0x9a5a34, 0xb9b3a6][variation]);
+  const coatLight = material([0x7d5a3f, 0xad6f45, 0xcac5ba][variation]);
+  const points = material([0x2f241c, 0x4a3324, 0x8c877d][variation]);
+  const mane = material([0x2a201a, 0x3d2a1e, 0xd9d4c9][variation]);
+  const hoof = material(0x3a3129), eyeMat = material(0x1d1815), leather = material(0x5b4130), blanket = material(0x8f3b30), brass = material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
+  const spine = new THREE.Group();
+  spine.name = 'Spine';
+  spine.position.set(0, 1.0, 0);
+  body.add(spine);
+  round(spine, coat, [0, 0.02, -0.5], [0.29, 0.33, 0.42]);
+  round(spine, coat, [0, 0.04, 0.02], [0.3, 0.34, 0.62]);
+  round(spine, coatLight, [0, -0.12, 0.05], [0.24, 0.2, 0.5]);
+  round(spine, coat, [0, 0.12, 0.5], [0.27, 0.34, 0.34]);
+  round(spine, coat, [0, 0.3, 0.4], [0.16, 0.14, 0.24]);
+  const neck = new THREE.Group();
+  neck.name = 'Neck';
+  neck.position.set(0, 0.22, 0.55);
+  spine.add(neck);
+  const neckCore = part(neck, new THREE.CylinderGeometry(0.11, 0.17, 0.62, 8), coat, [0, 0.26, 0.2]);
+  neckCore.rotation.x = 0.66;
+  for (let i = 0; i < 6; i++) {
+    const t = i / 5;
+    const lock = part(neck, UNIT_HAIR_LOCK, mane, [(i % 2 ? .02 : -.02), 0.08 + t * 0.46, -0.02 + t * 0.34], [0.05, 0.12, 0.09]);
+    lock.rotation.x = -0.5;
+  }
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 0.44, 0.4);
+  neck.add(head);
+  round(head, coat, [0, 0.02, 0.02], [0.13, 0.17, 0.2]);
+  const face = part(head, new THREE.CylinderGeometry(0.075, 0.115, 0.42, 8), coat, [0, -0.15, 0.2]);
+  face.rotation.x = 0.95;
+  round(head, coatLight, [0, -0.3, 0.33], [0.085, 0.07, 0.1]);
+  round(head, points, [0, -0.28, 0.4], [0.06, 0.04, 0.05]);
+  for (const side of [-1, 1]) {
+    const ear = part(head, UNIT_HAIR_LOCK, coat, [side * 0.075, 0.2, -0.04], [0.035, 0.09, 0.03]);
+    ear.rotation.z = side * -0.2;
+    ear.name = `${side < 0 ? 'Left' : 'Right'} Ear`;
+    round(head, eyeMat, [side * 0.11, 0.03, 0.12], [0.02, 0.025, 0.018]);
+  }
+  const forelock = part(head, UNIT_HAIR_LOCK, mane, [0, 0.16, 0.1], [0.07, 0.05, 0.11]);
+  forelock.rotation.x = 0.4;
+  const tail = new THREE.Group();
+  tail.name = 'Tail';
+  tail.position.set(0, 0.18, -0.86);
+  spine.add(tail);
+  ribbon(tail, mane, [0, 0, 0], [0, -0.62, -0.18], 0.09, 0.09);
+  ribbon(tail, mane, [0.03, -0.3, -0.1], [0.06, -0.78, -0.22], 0.06, 0.06);
+  const legs = [], knees = [];
+  for (const [name, side, z] of [['Left Fore', -1, 0.46], ['Right Fore', 1, 0.46], ['Left Hind', -1, -0.5], ['Right Hind', 1, -0.5]]) {
+    const hip = new THREE.Group();
+    hip.name = `${name} Hip`;
+    hip.position.set(side * 0.19, 0.95, z);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, coat, [0, -0.2, z > 0 ? 0 : -0.04], [0.1, 0.3, z > 0 ? 0.11 : 0.17]);
+    const knee = new THREE.Group();
+    knee.name = `${name} Knee`;
+    knee.position.set(0, -0.48, 0);
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, coat, [0, -0.02, 0], [0.07, 0.08, 0.075]);
+    part(knee, new THREE.CylinderGeometry(0.048, 0.06, 0.36, 7), variation === 2 ? coat : points, [0, -0.22, 0.01]);
+    part(knee, new THREE.CylinderGeometry(0.075, 0.065, 0.1, 7), hoof, [0, -0.42, 0.02]);
+  }
+  let saddle = null;
+  if (saddled) {
+    // A Legion saddle: a red blanket, a leather seat, girth and a bridle.
+    saddle = new THREE.Group();
+    saddle.name = 'Saddle';
+    spine.add(saddle);
+    box(saddle, blanket, [0, 0.27, 0.18], [0.66, 0.06, 0.62]);
+    round(saddle, leather, [0, 0.36, 0.14], [0.2, 0.09, 0.3]);
+    round(saddle, leather, [0, 0.44, -0.04], [0.16, 0.07, 0.09]);
+    round(saddle, leather, [0, 0.45, 0.34], [0.15, 0.08, 0.08]);
+    part(saddle, UNIT_CYLINDER, leather, [0, 0.02, 0.14], [0.33, 0.05, 0.36]);
+    for (const side of [-1, 1]) {
+      ribbon(saddle, leather, [side * 0.28, 0.3, 0.16], [side * 0.34, -0.06, 0.18], 0.04, 0.02);
+      round(saddle, brass, [side * 0.35, -0.08, 0.18], [0.05, 0.03, 0.06]);
+    }
+    ribbon(head, leather, [-0.09, -0.24, 0.26], [0.09, -0.24, 0.26], 0.03, 0.015);
+    ribbon(head, leather, [-0.12, 0.04, 0.02], [-0.11, -0.25, 0.26], 0.025, 0.015);
+    ribbon(head, leather, [0.12, 0.04, 0.02], [0.11, -0.25, 0.26], 0.025, 0.015);
+  }
+  const pivots = [body, spine, neck, head, tail, ...legs, ...knees];
+  if (saddle) pivots.push(saddle);
+  batchRigidParts(group, pivots);
+  const { animate } = makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset: variation * 2.7 + 1.1 });
+  return { group, animate, setArmed: () => {}, saddled };
+}
+
+// A four-beat walk and a patient idle: a breath, the occasional dip of the head
+// to the grass, a tail swish and a shift of weight from one hind leg to the other.
+function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset = 0 }) {
+  let stridePhase = offset, lastTime, movementBlend = 0;
+  const lerp = THREE.MathUtils.lerp;
+  function animate(time, speed = 0, grounded = true, pose = {}) {
+    const seconds = Number.isFinite(time) ? time : 0;
+    const dt = lastTime === undefined ? 1 / 60 : THREE.MathUtils.clamp(seconds - lastTime, 0, 0.1);
+    lastTime = seconds;
+    const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
+    const damping = 1 - Math.exp(-9 * dt);
+    movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 1.2, 0, 1) : 0, 1 - Math.exp(-8 * dt));
+    stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1);
+    const idle = 1 - movementBlend, breath = Math.sin(seconds * 1.3 + offset);
+    const graze = pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
+    const shift = Math.sin(seconds * .21 + offset) * idle;
+    const hip = [], knee = [];
+    for (let i = 0; i < 4; i++) {
+      // Walk order: left hind, left fore, right hind, right fore, a quarter cycle apart.
+      const phase = stridePhase - [Math.PI / 2, 3 * Math.PI / 2, 0, Math.PI][i], fore = i < 2;
+      hip[i] = Math.sin(phase) * (fore ? 0.42 : 0.4) * movementBlend + (fore ? 0 : 0.2) * idle + (i === 2 ? shift : i === 3 ? -shift : 0) * 0.05;
+      knee[i] = (fore ? 0.02 : -0.32) * idle + (fore ? Math.max(0, Math.sin(phase + 0.7)) * 0.75 : -0.32 + Math.max(0, Math.sin(phase + 0.7)) * 0.4) * movementBlend
+        + (i === 2 && shift > 0 ? shift * 0.12 : i === 3 && shift < 0 ? -shift * 0.12 : 0);
+    }
+    const spineX = movementBlend * 0.02 + graze * 0.05, spineZ = shift * 0.012;
+    const neckX = -0.05 + breath * 0.01 + graze * 0.75 + movementBlend * 0.08;
+    const headX = 0.1 + graze * 0.55 + Math.sin(stridePhase) * 0.06 * movementBlend;
+    const headY = Math.sin(seconds * 0.43 + offset) * 0.18 * idle * (1 - graze);
+    const tailX = -0.15 + Math.sin(seconds * 0.9 + offset) * 0.05, tailY = Math.sin(seconds * 2.3 + offset) * 0.3 * idle + Math.sin(stridePhase * 2) * 0.05 * movementBlend;
+    const rotate = (object, x, y, z) => {
+      object.rotation.x = lerp(object.rotation.x, x, damping);
+      object.rotation.y = lerp(object.rotation.y, y, damping);
+      object.rotation.z = lerp(object.rotation.z, z, damping);
+    };
+    rotate(spine, spineX, 0, spineZ);
+    rotate(neck, neckX, 0, -spineZ);
+    rotate(head, headX, headY, 0);
+    rotate(tail, tailX, tailY, 0);
+    for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
+    rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
+    body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend, 1 - Math.exp(-20 * dt));
+  }
+  return { animate };
 }
 
 /** Animated by the caller so all markers share one scene clock. */
