@@ -65,6 +65,9 @@ accident.
 4. **Ruzo's claim is the senior one** — he is the eldest son's son. That he will not press it
    is the lever the whole succession balances on.
 
+The Republic's own half of this history — Izol's war on Selemis, and the three generals who hold
+the island between them — is in `izol-and-the-triumvirate.md`, and is its equal in authority.
+
 ## Still open
 
 - Does the razed holy city in Isareos have a name? The lore does not give one.
