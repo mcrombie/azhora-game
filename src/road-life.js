@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
 import { toWorld } from './world-scale.js';
+import { MOROS_WAYSIDE } from './wayside.js';
+import { avrel, crossing } from './places.js';
 
 const TAU = Math.PI * 2;
 const sphere = new THREE.IcosahedronGeometry(1, 1);
@@ -19,12 +21,26 @@ const AUTHORED_ZONES = [
   { id: 'threefold-hares', species: 'rock-hare', region: 4, minX: -132, maxX: -84, minZ: 356, maxZ: 402,
     sites: [[-124,366],[-96,390]], radius: .23 },
 ];
-const zones = AUTHORED_ZONES.map(zone => {
+// The bigger regions carry more than one flock each: sheep by the shepherd's fold
+// on the Moros, a few on the Avrel farmsteads' grazing, and bank birds by the
+// ferryman's jetty. These are laid out in world metres round the places they belong to.
+const around = (centre, halfX, halfZ, offsets) => ({ minX: centre.x - halfX, maxX: centre.x + halfX, minZ: centre.z - halfZ, maxZ: centre.z + halfZ,
+  sites: offsets.map(([dx, dz]) => [centre.x + dx, centre.z + dz]) });
+const fold = MOROS_WAYSIDE.find(place => place.id === 'shepherds-fold');
+const WORLD_ZONES = [
+  { id: 'moros-fold-sheep', prefix: 'fold-sheep', species: 'sheep', region: 2, radius: .43,
+    ...around(fold, 22, 18, [[-11, -4], [-9, 5], [10, -6], [12, 4], [2, -12]]) },
+  { id: 'avrel-sheep', prefix: 'avrel-sheep', species: 'sheep', region: 1, radius: .43,
+    ...around(avrel(26, -37), 10, 5, [[-6, -2], [-2, 2], [3, -1], [7, 2]]) },
+  { id: 'ferry-birds', prefix: 'ferry-bird', species: 'bank-bird', region: 3, radius: .2,
+    ...around(crossing(28, 44), 12, 10, [[-6, -3], [2, 4], [7, -2]]) },
+];
+const zones = [...AUTHORED_ZONES.map(zone => {
   const low = toWorld(zone.minX, zone.minZ), high = toWorld(zone.maxX, zone.maxZ);
   return { ...zone, minX: low.x, maxX: high.x, minZ: low.z, maxZ: high.z,
     sites: zone.sites.map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; }) };
-});
-/** The three authored flock ranges, so tests and reviews read the same numbers. */
+}), ...WORLD_ZONES];
+/** Every flock range, so tests and reviews read the same numbers. The first three are the authored ones. */
 export const ROAD_LIFE_ZONES = Object.freeze(zones.map(zone => Object.freeze({ ...zone, sites: Object.freeze(zone.sites.map(site => Object.freeze([...site]))) })));
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const angleDelta = (a, b) => Math.atan2(Math.sin(a-b), Math.cos(a-b));
@@ -117,7 +133,7 @@ export function createRoadLife(scene, world) {
     const animals=[];
     for(let i=0;i<zone.sites.length;i++) {
       const home=clearPoint(...zone.sites[i],zone);if(!home)continue;
-      const animal={id:`${zone.species}-${i+1}`,species:zone.species,region:zone.region,...home,y:world.heightAt(home.x,home.z),
+      const animal={id:`${zone.prefix??zone.species}-${i+1}`,species:zone.species,region:zone.region,...home,y:world.heightAt(home.x,home.z),
         home:{...home},yaw:(i*1.83+.5)%TAU,action:zone.species==='sheep'?'graze':'idle',timer:1.5+i*.63,
         clock:i*.37,speed:0,lift:0,index:i,zone,flight:null};
       animals.push(animal);creatures.push(animal);

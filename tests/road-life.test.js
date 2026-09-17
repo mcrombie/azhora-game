@@ -8,17 +8,18 @@ const {createRoadLife,ROAD_LIFE_ZONES}=await sourceModule('../src/road-life.js')
 const [SHEEP,BIRDS,HARES]=ROAD_LIFE_ZONES;
 const middle=zone=>({x:(zone.minX+zone.maxX)/2,z:(zone.minZ+zone.maxZ)/2});
 const fixture=(colliders=[])=>{
-  const scene=new THREE.Scene(),world={bounds:{minX:-844,maxX:144,minZ:-209,maxZ:655},heightAt:()=>2,colliders};
+  const scene=new THREE.Scene(),world={bounds:{minX:-1460,maxX:210,minZ:-349,maxZ:1099},heightAt:()=>2,colliders};
   return {scene,world,life:createRoadLife(scene,world)};
 };
 
-test('the three districts receive distinct small flocks in nine shared instanced meshes',()=>{
+test('the regions carry several small flocks, each in its own three shared instanced meshes',()=>{
   const {scene,life}=fixture(),state=life.snapshot();
-  assert.deepEqual(state.groups.map(g=>g.count),[6,3,2]);
+  assert.deepEqual(state.groups.map(g=>g.count),[6,3,2,5,4,3]);
+  assert.equal(new Set(state.creatures.map(c=>c.id)).size,state.creatures.length,'every animal has its own id');
   assert.deepEqual(state.creatures.map(c=>c.species).filter((v,i,a)=>a.indexOf(v)===i),['sheep','bank-bird','rock-hare']);
   let meshes=0;
   scene.traverse(object=>{if(object.isMesh){meshes++;assert.ok(object.isInstancedMesh);}});
-  assert.equal(meshes,9);
+  assert.equal(meshes,18);
   const copy=life.snapshot();copy.creatures[0].x=12345;
   assert.notEqual(life.snapshot().creatures[0].x,12345,'review state cannot mutate simulation positions');
 });
@@ -85,10 +86,10 @@ test('all animated instance transforms stay finite and preserve positive scale a
     for(const key of ['x','y','z','groundY','yaw','speed','clock'])assert.ok(Number.isFinite(creature[key]));
 });
 
-test('all eleven creatures spawn on clear land in the actual extended world',async()=>{
+test('every creature spawns on clear land in the actual extended world',async()=>{
   const {createWorld}=await sourceModule('../src/world.js');
   const scene=new THREE.Scene(),world=createWorld(scene),life=createRoadLife(scene,world);
-  assert.equal(life.snapshot().creatures.length,11);
+  assert.equal(life.snapshot().creatures.length,23);
   for(const creature of life.snapshot().creatures)
     assert.ok(canStand(creature.x,creature.z,world,creature.species==='sheep'?.43:creature.species==='bank-bird'?.2:.23),creature.id);
   for(const player of [middle(SHEEP),middle(BIRDS),middle(HARES)])

@@ -9,7 +9,9 @@ import { toWorld, WORLD_SCALE } from '../src/world-scale.js';
 const at = (x, z) => toWorld(x, z);
 
 const { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS,
-  regionalFeatureClear, createRegionalPlaces } = await sourceModule('../src/regional-places.js');
+  regionalFeatureClear, createRegionalPlaces, YARD_FRAMES, place } = await sourceModule('../src/regional-places.js');
+/** Standing beside the boatyard, where the float lines stir in the air. */
+const WORKSHOP = YARD_FRAMES.workshop.world;
 const targets = [...REGIONAL_PLACES, ...Object.values(REGIONAL_NPC_POSITIONS), ...Object.values(REGIONAL_ACTIVITY_SITES),
   { id: 'mill-tally-inspect', ...at(-238, 63) }, { id: 'workshop-inspect', ...at(-385, 124) }];
 function fixture() {
@@ -98,11 +100,28 @@ test('Seven finite batches stay under the triangle budget; idle animation pauses
   collect(); art.setState({ millLowered: true, netWestFreed: true, netEastFreed: true, testimonyRecorded: true }); collect();
   assert.equal(resources.size, 12, 'Both geometry states and their shared material must be tracked');
   const before = art.visuals.netWest.position.z;
-  art.update(.1, { x: -30, z: -450 }, false); assert.equal(art.visuals.netWest.position.z, before);
+  art.update(.1, WORKSHOP, false); assert.equal(art.visuals.netWest.position.z, before);
   art.update(.1, { x: 0, z: 0 }, true); assert.equal(art.visuals.netWest.position.z, before);
-  art.update(.1, { x: -30, z: -450 }, true); assert.notEqual(art.visuals.netWest.position.z, before);
-  const moving = art.visuals.netWest.position.z; art.update(Infinity, { x: -30, z: -450 }, true); assert.equal(art.visuals.netWest.position.z, moving);
-  art.dispose(); art.dispose(); art.setState({ millLowered: false }); art.update(.1, { x: -30, z: -450 }, true);
+  art.update(.1, WORKSHOP, true); assert.notEqual(art.visuals.netWest.position.z, before);
+  const moving = art.visuals.netWest.position.z; art.update(Infinity, WORKSHOP, true); assert.equal(art.visuals.netWest.position.z, moving);
+  art.dispose(); art.dispose(); art.setState({ millLowered: false }); art.update(.1, WORKSHOP, true);
   assert.equal(scene.children.length, 0); assert.deepEqual(world.colliders, [outside]);
   assert.equal(released.size, resources.size); assert.ok([...released.values()].every(count => count === 1));
+});
+
+test('each workyard is drawn where its people stand, with its working prop beside the site that works it', () => {
+  const { scene, art } = fixture();
+  const names = { 'mill-commons': 'Mill Commons workyard', 'landing-workshop': 'Landing Workshop boatyard and net frames', 'waystation-shelter': 'Waystation canvas shelter' };
+  for (const site of REGIONAL_PLACES) {
+    const mesh = scene.getObjectByName(names[site.id]);
+    mesh.geometry.computeBoundingSphere();
+    const centre = mesh.geometry.boundingSphere.center;
+    assert.ok(Math.hypot(centre.x - site.center.x, centre.z - site.center.z) < site.radius, `${site.name} is drawn on its own ground`);
+  }
+  for (const [frame, [x, z], id] of [[YARD_FRAMES.mill, [-31, -282], 'mill-hoist'], [YARD_FRAMES.workshop, [-30, -451.3], 'net-float-west'],
+    [YARD_FRAMES.workshop, [-35, -451.3], 'net-float-east'], [YARD_FRAMES.shelter, [-32, -578], 'shelter-ledger']]) {
+    const spot = place(frame, x, z), site = REGIONAL_ACTIVITY_SITES[id];
+    assert.ok(Math.hypot(spot.x - site.x, spot.z - site.z) < 3, `${id} is worked beside its prop`);
+  }
+  art.dispose();
 });

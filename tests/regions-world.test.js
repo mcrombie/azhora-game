@@ -53,8 +53,13 @@ test('The whole road out of Drent is walkable in both directions, including the 
     }
   };
   walk(northernRoad); walk([...northernRoad].reverse());
-  walk(SUVAL_ROAD); walk([...SUVAL_ROAD].reverse());
-  for (const point of [...northernRoad, ...SUVAL_ROAD]) assert.ok(canStand(point.x, point.z, world, .5), `road point ${point.x}, ${point.z}`);
+  // East Suval is closed: the branch is walked as far as Elod's shut gate, and the gate does not open.
+  walk(world.suvalRoute); walk([...world.suvalRoute].reverse());
+  for (const point of [...northernRoad, ...world.suvalRoute]) assert.ok(canStand(point.x, point.z, world, .5), `road point ${point.x}, ${point.z}`);
+  const { approach, gate, into } = world.closedFrontier, pushing = { ...approach };
+  moveCharacter(pushing, gate.x + into.x * 12 - pushing.x, gate.z + into.z * 12 - pushing.z, world);
+  assert.ok((pushing.x - gate.x) * into.x + (pushing.z - gate.z) * into.z < -1, 'the frontier gate is shut');
+  assert.ok(SUVAL_ROAD.length > world.suvalRoute.length, 'the branch road itself still runs on into East Suval');
   // East Suval's stone country stands well above the Caloss hollow. Relief is a
   // wave field, so this weighs the hills as a whole rather than one sample that
   // may land in a dip.

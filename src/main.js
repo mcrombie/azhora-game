@@ -13,6 +13,8 @@ import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLin
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
+import { TOWN_LIFE_NPCS, TOWN_LIFE_IDS, townLifeLines, createWallWatch } from './town-life.js';
+import { createBorderWatch, CLOSED_BORDER_TITLE } from './closed-border.js';
 import { COPPER_ITEM, PEDDLER, STARTING_PURSE, describeSum, peddlerOffers } from './economy.js';
 import { VILLAGE_DOG, createVillageDog } from './village-dog.js';
 import { createWoodlandLife } from './woodland-life.js';
@@ -114,6 +116,8 @@ function init() {
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
+  // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
+  for(const entry of TOWN_LIFE_NPCS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({...entry});}
   let playSeconds=0;
   const mercenaryWeapons=new Map();
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
@@ -125,6 +129,7 @@ function init() {
     if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
+  const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
@@ -755,6 +760,7 @@ function init() {
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Legate’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
+    if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
     if(npc.id===BEGGAR_NPC.id){beggarConversation(npc,{beggar,inventory,openDialogue,closeDialogue,act:townAct});return;}
     if(TOWN_NPC_IDS.includes(npc.id)){townConversation(npc,{campaign,inventory,openDialogue,closeDialogue,act:townAct});return;}
@@ -1266,6 +1272,7 @@ function init() {
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
         else player.group.position.y=floor+(riding.mounted?RIDE.seat.up:0);
+        {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,CLOSED_BORDER_TITLE);}}
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
@@ -1300,6 +1307,7 @@ function init() {
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
+      for(const prop of world.stakedProps||[])prop.object.visible=isOut(prop,heldControl);wallWatch.update(player.group.position,heldControl,walkTime);
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
       {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
       // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.

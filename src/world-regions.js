@@ -5,6 +5,10 @@ import {
 import { calossSurface } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
+import { OUTPOST_CLEARING, STOCKADE_CLEARING } from './outpost.js';
+import { WAYSIDE_CLEARINGS } from './wayside.js';
+import { PLACE_CLEARINGS } from './places.js';
+import { FRONTIER_CLEARINGS } from './frontier.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -32,9 +36,12 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z, r: 30 }),
   Object.freeze({ x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z, r: 18 }),
   Object.freeze({ x: LUMBER_TOWN.square.x, z: LUMBER_TOWN.square.z, r: 36 }),               // Lumber Town
-  Object.freeze({ x: STORY_SITES.morosGate.x, z: STORY_SITES.morosGate.z, r: 14 }),
-  Object.freeze({ x: STORY_SITES.legionCamp.x, z: STORY_SITES.legionCamp.z, r: 46 }),
-  Object.freeze({ x: STORY_SITES.morosStockade.x, z: STORY_SITES.morosStockade.z, r: 20 }),
+  Object.freeze({ x: STORY_SITES.morosGate.x, z: STORY_SITES.morosGate.z, r: 18 }),
+  OUTPOST_CLEARING,                                                           // the Ambroni outpost and its ditch
+  STOCKADE_CLEARING,                                                          // the forward stockade and its ditch
+  ...WAYSIDE_CLEARINGS,                                                       // wayside places on the empty road
+  ...PLACE_CLEARINGS,                                                         // the built-up places of Drent and Luscia
+  ...FRONTIER_CLEARINGS,                                                      // Elod's closed frontier
   Object.freeze({ x: STORY_SITES.suvalBorderPost.x, z: STORY_SITES.suvalBorderPost.z, r: 18 }),
   Object.freeze({ x: STORY_SITES.waystation.x, z: STORY_SITES.waystation.z, r: 15 }),
   Object.freeze({ x: STORY_SITES.elodGate.x, z: STORY_SITES.elodGate.z, r: 26 }),
@@ -437,13 +444,9 @@ export function createRegionScenery(kit) {
   // Corvan's Legion supply post: a canvas awning, a standard and a stack of stores.
   const postPoint = at(-232, 22), postY = groundHeight(postPoint.x, postPoint.z);
   wornPatch(postPoint.x, postPoint.z, 4.6, '#b2a881');
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(wood, postPoint.x + sx * 2.1, postY + 1.4, postPoint.z + sz * 1.6, .1, 2.8, drent);
-  mesh(roofGeometry(5.0, 4.0, .9), material('#b8a374'), postPoint.x, postY + 2.75, postPoint.z, 1, 1, 1, drent);
+  // The lean-to over the table and the flag beside it are drawn with the Avrel farmsteads (place-works.js).
   box(woodLight, postPoint.x - 1.2, postY + .78, postPoint.z - .8, 2.0, .14, .9, drent);
   colliders.push({ x: postPoint.x - 1.2, z: postPoint.z - .8, hx: 1.05, hz: .5, kind: 'legion-table' });
-  post(wood, postPoint.x + 3.2, postY + 2.0, postPoint.z, .1, 4.0, drent);
-  const standard = box(material('#8c3f38'), postPoint.x + 3.5, postY + 3.4, postPoint.z, .62, .9, .05, drent);
-  standard.name = 'Legion standard';
   crate(postPoint.x - 3.0, postPoint.z + 1.6, .82, groundHeight(postPoint.x - 3.0, postPoint.z + 1.6), drent);
   barrel(postPoint.x - 3.4, postPoint.z + .2, .85, drent);
 
@@ -592,40 +595,9 @@ export function createRegionScenery(kit) {
   // Moros Plain: the gate, the Legion camp and the contested stockade
   // -------------------------------------------------------------------------
   const moros = district('Moros Plain');
-  const gate = STORY_SITES.morosGate, gateY = groundHeight(gate.x, gate.z), gateNormal = roadNormal(gate.x, gate.z);
-  for (const side of [-1, 1]) {
-    const x = gate.x + gateNormal.x * side * 5.4, z = gate.z + gateNormal.z * side * 5.4, y = groundHeight(x, z);
-    box(rockMat, x, y + .34, z, .8, .68, .76, moros);
-    post(wood, x, y + 1.3, z, .19, 2.6, moros);
-    post(woodLight, x, y + 2.64, z, .23, .13, moros);
-    colliders.push({ x, z, r: .4, kind: 'moros-gate-post' });
-  }
-  const camp = STORY_SITES.legionCamp;
-  wornPatch(camp.x, camp.z, 34, '#b0a674', 1);
-  for (let i = 0; i < 46; i++) {
-    const angle = i / 46 * Math.PI * 2, x = camp.x + Math.sin(angle) * 30, z = camp.z + Math.cos(angle) * 26;
-    if (kit.roadDistance(x, z) < 4.5) continue;   // the road runs straight through the camp gates
-    const y = groundHeight(x, z);
-    post(wood, x, y + 1.3, z, .17, 2.6, moros);
-    if (i % 2 === 0) colliders.push({ x, z, r: .9, kind: 'palisade' });
-  }
-  for (let row = 0; row < 3; row++) for (let i = 0; i < 4; i++) {
-    const x = camp.x - 16 + i * 10, z = camp.z - 12 + row * 10, y = groundHeight(x, z);
-    if (kit.roadDistance(x, z) < 6.5) continue;   // the camp road runs between the tent lines
-    const tent = new THREE.Group(); tent.position.set(x, y, z); moros.add(tent);
-    mesh(roofGeometry(4.4, 5.6, 1.9), material(row === 0 ? '#cdbf96' : '#c3b489'), 0, .6, 0, 1, 1, 1, tent);
-    box(wood, 0, .3, 0, .14, .6, 5.8, tent);
-    colliders.push({ x, z, hx: 2.2, hz: 2.9, kind: 'legion-tent' });
-  }
-  const command = { x: camp.x + 6, z: camp.z + 20 }, commandY = groundHeight(command.x, command.z);
-  mesh(roofGeometry(9, 11, 3.1), material('#d8cba1'), command.x, commandY + 1.2, command.z, 1, 1, 1, moros);
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) post(wood, command.x + sx * 4.2, commandY + .6, command.z + sz * 5.2, .13, 1.2, moros);
-  colliders.push({ x: command.x, z: command.z, hx: 4.5, hz: 5.6, kind: 'command-tent' });
-  post(wood, command.x + 6, commandY + 2.6, command.z, .12, 5.2, moros);
-  const legateStandard = box(material('#8c3f38'), command.x + 6.4, commandY + 4.6, command.z, .8, 1.15, .06, moros);
-  legateStandard.name = 'Legate standard';
-  colliders.push({ x: command.x + 6, z: command.z, r: .35, kind: 'legion-standard' });
-  // A horse line, ready for a mechanic that is not built yet.
+  // The Moros gate, the outpost's walls, tents and standard and the forward stockade are built by
+  // `moros-works.js` to the shared fortification standard; the horse line stays here with its horses.
+  // The Legion's horse line, where the traveler's horse is claimed.
   const hitch = STORY_SITES.horseHitch, hitchY = groundHeight(hitch.x, hitch.z);
   for (let i = 0; i <= 6; i++) post(wood, hitch.x + i * 2.4, hitchY + .65, hitch.z, .1, 1.3, moros);
   box(woodLight, hitch.x + 7.2, hitchY + 1.15, hitch.z, 16.8, .12, .12, moros);
@@ -635,15 +607,6 @@ export function createRegionScenery(kit) {
     if (kit.roadDistance(x, z) < 4) continue;
     // The horses themselves are animated models placed by the game; only their footprint lives here.
     colliders.push({ x, z, r: 1.15, kind: 'horse' });
-  }
-  const stockade = STORY_SITES.morosStockade;
-  wornPatch(stockade.x, stockade.z, 12, '#a49a70', 1);
-  for (let i = 0; i < 26; i++) {
-    const angle = i / 26 * Math.PI * 2, x = stockade.x + Math.sin(angle) * 10, z = stockade.z + Math.cos(angle) * 9;
-    if (kit.roadDistance(x, z) < 3.4) continue;
-    const y = groundHeight(x, z);
-    post(darkWood, x, y + 1.1, z, .19, 2.2, moros);
-    colliders.push({ x, z, r: .55, kind: 'stockade' });
   }
 
   // -------------------------------------------------------------------------

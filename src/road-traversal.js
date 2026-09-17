@@ -13,7 +13,8 @@ export async function runRoadTraversal(h) {
   const copyPosition = () => ({ x: position().x, z: position().z });
   const initial = copyPosition();
   // Out along the main road to the Legion camp, with the Suval branch walked
-  // from its junction, so every one of the four regions is entered on foot.
+  // from its junction as far as Elod's shut gate: Drent, Luscia and the Moros are
+  // entered on foot, and East Suval, which is closed, is not.
   const junction = (world.suvalRoute ?? [])[0];
   const mainRoad = world.routeJourney.map(point => ({ x: point.x, z: point.z }));
   const suvalRoad = (world.suvalRoute ?? []).map(point => ({ x: point.x, z: point.z }));
@@ -111,8 +112,29 @@ export async function runRoadTraversal(h) {
     traversalChecks++;
   }
 
+  // East Suval is closed: the branch ends before Elod's shut gate. At its end the
+  // traveler holds on into the gate, and must be neither let through nor let into the region.
+  const frontierEnd = branchAt >= 0 ? branchAt + suvalRoad.length - 1 : -1;
+  let frontierHeld = false;
+  async function pushAtFrontier() {
+    const frontier = world.closedFrontier;
+    assert(frontier?.gate && frontier?.into, 'the closed frontier is not described by the world');
+    setYaw(Math.atan2(-frontier.into.x, -frontier.into.z)); holdRun();
+    for (let frame = 0; frame < 45; frame++) {
+      const { current } = await recordFrame({ allowStationary: true });
+      assert(world.regionAt(current.x, current.z).id !== 4, 'walked into closed East Suval');
+      const past = (current.x - frontier.gate.x) * frontier.into.x + (current.z - frontier.gate.z) * frontier.into.z;
+      assert(past < 0, `passed Elod's shut gate (${past.toFixed(2)} m beyond it)`);
+    }
+    stopRun(); frontierHeld = true; traversalChecks++;
+    previousState = await readState(); intervalStarted = performance.now(); previousPosition = copyPosition();
+  }
+
   try {
-    for (let i = 0; i < road.length; i++) await walkTo(road[i], `outbound road point ${i + 1}`);
+    for (let i = 0; i < road.length; i++) {
+      await walkTo(road[i], `outbound road point ${i + 1}`);
+      if (i === frontierEnd) await pushAtFrontier();
+    }
 
     // The visible rope stands a little inside the hard map bounds at the western
     // end of the Moros. Push into that real collider, then hold west for 20
@@ -147,7 +169,9 @@ export async function runRoadTraversal(h) {
     const finalState = await readState();
     const returnedToEastreena = world.regionAt(position().x, position().z).id === 1;
     assert(returnedToEastreena, 'the return journey did not re-enter Drent');
-    assert([2, 3, 4].every(id => enteredRegions.has(id)), 'the trip skipped one of Luscia, the Moros or East Suval');
+    assert([2, 3].every(id => enteredRegions.has(id)), 'the trip skipped Luscia or the Moros');
+    assert(!enteredRegions.has(4), 'the trip entered East Suval, which is closed');
+    assert(frontierEnd < 0 || frontierHeld, 'the Suval branch was not walked to Elod’s shut gate');
     assert(walkedMeters > 1000, `only ${walkedMeters.toFixed(1)} m was recorded for the full return journey`);
     assert(walkedMeters <= heldKeyMs / 1000 * 7.2 + 1, 'distance exceeds the real time spent holding run');
     assert(!Number.isFinite(initialRenderFrame) || finalState.frames > initialRenderFrame + 1000,
@@ -157,7 +181,7 @@ export async function runRoadTraversal(h) {
       traversalChecks, walkedMeters: Math.round(walkedMeters * 10) / 10,
       elapsedSeconds: Math.round((performance.now() - runStarted) / 100) / 10,
       heldRunSeconds: Math.round(heldKeyMs / 100) / 10,
-      recordedFrames, returnedToEastreena, frontierBlocked: true,
+      recordedFrames, returnedToEastreena, frontierBlocked: true, eastSuvalClosed: frontierHeld,
       regionSamples: [...regionSamples.values()].map(sample => ({
         id: sample.id, name: sample.name, frames: sample.frames, observations: sample.observations,
         minFrameMs: Math.round(sample.minFrameMs * 10) / 10,
