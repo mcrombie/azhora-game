@@ -51,7 +51,7 @@ export async function runLocalMapSmoke(h) {
 
     await tap('KeyL'); opened();
     assert(trailMap.state().currentRegionId === 1 && trailMap.state().regionId === 1, 'L did not start on the player region');
-    assert($('trail-map').querySelectorAll('[data-trail-region]').length === 4, 'the chart does not expose all four local regions');
+    assert($('trail-map').querySelectorAll('[data-trail-region]').length === (world.regions?.length ?? 4), 'the chart does not expose every local region');
     assert($('trail-map').querySelectorAll('.trail-water').length >= 2, 'the village chart omitted the authored coast or pond');
     assert(!$('trail-map').textContent.includes(bee.name), 'the undiscovered Bee Fold name leaked into map text');
     const unknownMarker = $('trail-map').querySelector('[data-trail-place="bee-fold"]');

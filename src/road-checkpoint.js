@@ -90,7 +90,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateForestStorySnapshot(data.forestStory)) return failed('The saved woodland stories are invalid.');
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
-    if (data.forestHideout?.accepted && data.questStage < 10) return failed('The goblin camp lies in Luscia, beyond your business in Tidehaven.');
+    if (data.forestHideout?.accepted && data.questStage < 10) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
     if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1))
       return failed('The saved combat lessons are incomplete.');
     if (data.questStage < 10 && (data.meadowCleared || data.journeyGathered.length))

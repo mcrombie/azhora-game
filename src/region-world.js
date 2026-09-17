@@ -11,7 +11,7 @@
  * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
  * authored 56 m frame the content was designed in and converted here, at the
  * boundary, by `at()` for a place and `road()` for a road vertex.
- * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval.
+ * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 Pueth.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
 import {
@@ -23,8 +23,8 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4 });
-export const REGION_NAME_BY_ID = Object.freeze({ 1: 'Drent', 2: 'Luscia', 3: 'Moros Plain', 4: 'East Suval' });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, Pueth: 5 });
+export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
 export const WORLD_BOUNDS = Object.freeze(worldBoundsFor(SURVEY));
@@ -52,8 +52,8 @@ export { AUTHORED_METRES_PER_HEX, WORLD_SCALE };
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);
 const key = (q, r) => `${q},${r}`;
 const landHexes = new Set(LAND_HEXES.map(([q, r]) => key(q, r)));
-const cellRegion = new Map();
-for (const id of REGION_ORDER) for (const cell of SURVEY.regions.find(r => r.name === id).cells) cellRegion.set(key(cell.q, cell.r), id);
+const cellRegion = new Map(), cellTerrain = new Map();
+for (const id of REGION_ORDER) for (const cell of SURVEY.regions.find(r => r.name === id).cells) { cellRegion.set(key(cell.q, cell.r), id); cellTerrain.set(key(cell.q, cell.r), cell.terrain); }
 
 /** Axial hex containing a world point. */
 export function hexAt(x, z) {
@@ -86,20 +86,7 @@ export const VILLAGE = Object.freeze({ ...at(-20, 29), yaw: Math.PI / 2 });
 export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - lx });
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 
-/**
- * The goblin camp keeps the local layout it was authored with (a trail of six points into a
- * clearing) but no longer stands in Drent, which is a level 0 province with no goblin camp.
- * It sits in the wilderness of north Luscia, turned half a circle so its trail leaves the main
- * road just west of Sava's rise: local (60, -118), the camp's centre, is world (-456, 154).
- */
-export const HIDEOUT_SITE = Object.freeze({ ...inCluster('goblin-camp', -396, 36), yaw: Math.PI });
-export const hideoutToWorld = (lx, lz) => ({ x: HIDEOUT_SITE.x - lx, z: HIDEOUT_SITE.z - lz });
-export const worldToHideout = (x, z) => ({ x: HIDEOUT_SITE.x - x, z: HIDEOUT_SITE.z - z });
-/** Ground the Luscia scatter keeps clear for the camp and its trail. */
-export const HIDEOUT_CLEARINGS = Object.freeze([
-  Object.freeze({ ...at(-456, 154), r: 16 }), Object.freeze({ ...at(-466, 159), r: 6 }),
-  ...[[1, -117], [14, -112], [29, -111], [45, -109], [53, -111]].map(([lx, lz]) => Object.freeze({ ...hideoutToWorld(lx, lz), r: 5 })),
-]);
+// The goblin camp (HIDEOUT_SITE, hideoutToWorld) stands in southern Pueth now: see src/pueth-world.js.
 /** The local box the original Eastreena terrain and scatter occupy. */
 export const VILLAGE_LOCAL_BOX = Object.freeze({ minX: -112, maxX: 112, minZ: -168, maxZ: 60 });
 
@@ -111,26 +98,36 @@ export const REGION_TERRAIN = Object.freeze({
   Luscia: Object.freeze({ base: 8.6, amp: 4.5, wave: 140, ground: REGION_BIOMES.Luscia.ground }),
   'Moros Plain': Object.freeze({ base: 6.4, amp: .9, wave: 260, ground: REGION_BIOMES['Moros Plain'].ground }),
   'East Suval': Object.freeze({ base: 17, amp: 11, wave: 120, ground: REGION_BIOMES['East Suval'].ground }),
+  // A cell's atlas terrain may refine its region's ground: Pueth's hills stand high and bare, its coastal plains low.
+  Pueth: Object.freeze({ base: 7.2, amp: 3.2, wave: 130, ground: REGION_BIOMES.Pueth.ground, byTerrain: Object.freeze({
+    hills: Object.freeze({ base: 19, amp: 9, wave: 115, ground: '#8f9585' }),
+    plains: Object.freeze({ base: 5.6, amp: 1.8, wave: 170, ground: '#8c9a78' }),
+  }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
+/** The terrain a hex cell stands on: its region's profile, refined by the cell's atlas terrain where the region says so. */
+const cellProfile = (name, terrain) => REGION_TERRAIN[name].byTerrain?.[terrain] ?? REGION_TERRAIN[name];
 
 /** Biome weights around a world point: the containing hex and its six neighbours. */
 export function terrainMix(x, z) {
   const home = hexAt(x, z);
   let total = 0, base = 0, amp = 0, wave = 0;
-  const weights = { Drent: 0, Luscia: 0, 'Moros Plain': 0, 'East Suval': 0, outland: 0 };
+  const weights = Object.fromEntries(Object.keys(REGION_TERRAIN).map(name => [name, 0]));
+  const grounds = {};
   for (const [dq, dr] of [[0, 0], ...AXIAL_NEIGHBORS]) {
     const q = home.q + dq, r = home.r + dr, centre = hexCentre(q, r);
     const weight = Math.max(0, 1 - Math.hypot(x - centre.x, z - centre.z) / (METRES_PER_HEX * 1.28));
     if (!weight) continue;
     const name = cellRegion.get(key(q, r)) ?? 'outland';
-    const terrain = REGION_TERRAIN[name];
+    const terrain = cellProfile(name, cellTerrain.get(key(q, r)));
     total += weight; base += terrain.base * weight; amp += terrain.amp * weight; wave += terrain.wave * weight;
     weights[name] += weight;
+    grounds[terrain.ground] = (grounds[terrain.ground] ?? 0) + weight;
   }
-  if (!total) return { base: REGION_TERRAIN.outland.base, amp: REGION_TERRAIN.outland.amp, wave: REGION_TERRAIN.outland.wave, weights };
+  if (!total) return { base: REGION_TERRAIN.outland.base, amp: REGION_TERRAIN.outland.amp, wave: REGION_TERRAIN.outland.wave, weights, grounds };
   for (const name of Object.keys(weights)) weights[name] /= total;
-  return { base: base / total, amp: amp / total, wave: wave / total, weights };
+  for (const ground of Object.keys(grounds)) grounds[ground] /= total;
+  return { base: base / total, amp: amp / total, wave: wave / total, weights, grounds };
 }
 
 export function relief(x, z, amp, wave) {
@@ -317,10 +314,7 @@ export const regionNpcPositions = Object.freeze({
   'town-sawyer': townPoint(4, 13),
   'town-yardhand': townPoint(0, 14),
   'town-beggar': townPoint(0, -4),        // Smiths, who wanders the square
-  // The garrison: the Captain and Casso by the relay post, Brill watching the north road into the square.
-  'garrison-captain': townPoint(10, -6),
-  'garrison-casso': townPoint(14, -8),
-  'garrison-brill': townPoint(-8, -6),
+  // Captain Varo's garrison keeps the Tessen road post in Pueth now (src/pueth-world.js).
   // The field at the Lauvel and the burned hamlet, north-east of the town.
   'lauvel-picket': at(-392, 186),         // Talvus, on the picket line
   'burial-searcher': at(-387, 198),       // Ilva, at the burial line
@@ -423,6 +417,12 @@ const REGION_TEXT = {
     description: 'Grey stone country: heather, ridge rock, a guarded border post that belongs to neither army, and the town of Elod above the Stills.',
     palette: { ground: '#9b9d85', accent: '#e1d1a7', fog: '#bbc6bf' },
     npcIds: ['shelter-keeper'], landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout'] },
+  // Pueth is authored in world metres (src/pueth-world.js); its spawn is the Tessen road post.
+  Pueth: { subtitle: 'Across the Tessen', spawn: point(-137, -214),
+    description: 'Cold timber country north of Drent: birch and fir by the Tessen, open valley grass, bare hills toward Feradom, and Rimeholt on the road north.',
+    palette: { ground: '#7f9175', accent: '#d9dccb', fog: '#b9c4c4' },
+    npcIds: ['garrison-captain', 'garrison-casso', 'garrison-brill', 'rimeholt-reeve', 'rimeholt-innkeeper', 'rimeholt-foreman', 'rimeholt-carter', 'rimeholt-trapper', 'rimeholt-sentry'],
+    landmarks: ['tessen-bridge', 'tessen-post', 'tessen-shallows', 'bramble-scout-camp', 'birch-landing', 'rimeholt', 'grey-shoulder', 'cold-hearth', 'ordel-mouth', 'feradom-road'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

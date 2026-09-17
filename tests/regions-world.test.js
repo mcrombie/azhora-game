@@ -8,13 +8,15 @@ import {
   SUVAL_ROAD, CALOSS, FRONTIER, ANCHORS, WORLD_BOUNDS, insideRegion,
 } from '../src/regions.js';
 import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world-scale.js';
+import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
 
-test('The four authored regions carry the atlas into the world, with Drent on the coast', () => {
-  assert.deepEqual(regions.map(r => r.id), [1, 2, 3, 4]);
-  assert.deepEqual(regions.map(r => r.name), ['Drent', 'Luscia', 'Moros Plain', 'East Suval']);
+test('The authored playable regions carry the atlas into the world, with Drent on the coast', () => {
+  assert.deepEqual(regions.map(r => r.name), [...PLAYABLE_REGIONS]);
+  assert.equal(new Set(regions.map(r => r.id)).size, PLAYABLE_REGIONS.length, 'every region has its own id');
+  assert.deepEqual(regions.slice(0, 4).map(r => r.id), [1, 2, 3, 4], 'the first four keep the ids saves and charts know');
   for (const [name, anchor] of [['Drent', ANCHORS.drentHeart], ['Luscia', ANCHORS.lauvelField],
     ['Moros Plain', ANCHORS.legionCamp], ['East Suval', ANCHORS.suvalHills]]) {
     assert.equal(regionAt(anchor.x, anchor.z).name, name, `${name} claims its own heart`);

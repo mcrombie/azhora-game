@@ -34,6 +34,7 @@ import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from './journey-conte
 import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
+import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
@@ -89,7 +90,9 @@ function init() {
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
-  // Lumber Town's garrison: they stand on the square, and march and fight beside the traveler on the goblin camp.
+  // Rimeholt's people, in Pueth.
+  npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
+  // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
   npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
   const garrisonIds=new Set(HIDEOUT_GARRISON.map(npc=>npc.id));
   // The envoy's party and the line commanders stand at the border stockade only while the story needs them.
@@ -622,7 +625,7 @@ function init() {
       // Save the accepted errand before the battle; active combat is never saved.
       saveRoad(false);
       // With the garrison at the traveler's shoulder, the three soldiers join the fight as allies.
-      const allies=forestHideout.state.escort?HIDEOUT_GARRISON.map(g=>{const at=npcById.get(g.id).actor.group.position,c=hideoutEncounter.center;return {id:g.id,name:g.name,kind:g.kind,x:Math.max(c.x-20,Math.min(hideoutEncounter.retreatLine-1,at.x)),z:Math.max(c.z-11,Math.min(c.z+11,at.z))};}).filter(a=>Math.hypot(a.x-hideoutEncounter.center.x,a.z-hideoutEncounter.center.z)<40):[];
+      const allies=forestHideout.state.escort?HIDEOUT_GARRISON.map(g=>{const at=npcById.get(g.id).actor.group.position,c=hideoutEncounter.center,ax=hideoutEncounter.retreatAxis==='z'?'z':'x',cr=ax==='x'?'z':'x';return {id:g.id,name:g.name,kind:g.kind,[ax]:Math.max(c[ax]-20,Math.min(hideoutEncounter.retreatLine-1,at[ax])),[cr]:Math.max(c[cr]-11,Math.min(c[cr]+11,at[cr]))};}).filter(a=>Math.hypot(a.x-hideoutEncounter.center.x,a.z-hideoutEncounter.center.z)<40):[];
       if(!combat.startEncounter(allies.length?{...hideoutEncounter,allies}:hideoutEncounter)){
         forestHideout.endEncounter(hideoutEncounter.id);return {ok:false,changed:false,reason:'The encounter could not start.'};
       }
@@ -747,6 +750,7 @@ function init() {
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
+    if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
@@ -779,7 +783,7 @@ function init() {
       else if(questStage===5)lines=['The bell has gone quiet. You stood your ground for people you had only just met. Thank you. Tell Eren at the watch that all three raiders are gone.'];
       else lines=['Eren is at the Greenway Watch, farther north. If you hear the bell, watch for goblins. Give their sticks room, then strike while they recover.'];
     } else if(npc.id==='fisher') {
-      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.']:['The bell means goblins. They came down the woodland road this morning; Mara needs a hand before anyone can travel north.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
+      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The Legion keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning; Mara needs a hand before anyone can travel north.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
       lines=['Three raiders down. Good work. Their rotten sticks made them an easier fight, but remember what kept you standing: watch the windup, dodge to the side, and counter while the stick is down. Leave yourself enough stamina to escape.',
         'Now for a traveler’s other essentials. Keep Mara’s message and this travel token in your satchel. Press I to open it. Hover over an item for a hint, then select the message to read it. I or Escape closes the satchel.',
@@ -788,7 +792,7 @@ function init() {
         'Follow the forest road to Fernway Rest, then keep going until the trees open on the Avrel farm clearing. That gate is called the Caloss Gate. The open road leads on toward the Caloss. Find Quartermaster Corvan at the Legion post. The Ambroni Empire hired you from abroad; he will tell you what service means here.'];
       event='meet-waykeeper';action='Take the token';
     } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select Mara’s message and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
-    else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.'];
+    else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the Legion post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
     else if(questStage<2)lines=['Speak to Mara beside the landing before you head inland. She has a small errand and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
     else lines=['There is movement near the woodland bell, south of here. Approach along the main road, and keep an eye on the trees.'];
@@ -991,7 +995,7 @@ function init() {
   }
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
-  $('test-hideout').onclick=()=>{testTravel(2);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=-.95;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
   $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','EASTREENA · WOODLAND TRAILS');};
@@ -1166,7 +1170,7 @@ function init() {
     $('inventory-count').textContent=inventory.items().length;
     $('inventory-button').classList.toggle('needs-attention',questStage===6||questStage===7);
     const hideoutTask=forestHideout.view().task;
-    const hereId=world.regionAt(player.group.position.x,player.group.position.z)?.id,campTask=hideoutTask&&!hideoutTask.complete&&hereId===2?hideoutTask:null;
+    const hereId=world.regionAt(player.group.position.x,player.group.position.z)?.id,campTask=hideoutTask&&!hideoutTask.complete&&hereId===world.regionAt(hideoutEncounter.center.x,hideoutEncounter.center.z)?.id?hideoutTask:null;
     const forestTask=campTask||forestStory.view().task,showForestTask=forestTask&&!forestTask.complete&&(campTask?true:hereId===1);
     const localRegion=world.regionAt(player.group.position.x,player.group.position.z)?.id;
     const regionalTask=regionalLife.view().tasks.find(task=>task.region===localRegion&&!task.complete);
@@ -1181,7 +1185,7 @@ function init() {
     $('side-quest-progress').textContent=inventory.count('acorn')>=acornQuest.target?'Return to Lysa by the western cottage.':`Acorns in your satchel · ${inventory.count('acorn')} / 5`;
     $('side-quest-title').textContent=showForestTask?forestTask.title:'A little kindness';
     if(showForestTask)$('side-quest-progress').textContent=forestTask.destinationIds.includes('charcoal-hearth')?'Take the western path to the Old Charcoal Hearth.':"Return the red-tied bundle to Tamsin. J · Woodland notes";
-    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the town’s stores to Captain Varo. J · Details':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':forestHideout.state.escort?'Lead the garrison up the pennant trail west of the rise.':'Follow the pennant trail west of the rise, or ask Captain Varo to march. J · Details';
+    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the stolen stores to Captain Varo at the Tessen post. J · Details':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':forestHideout.state.escort?'Lead the garrison along the blue-rag trail east of the Tessen post.':'Follow the blue-rag trail east of the Tessen post, or ask Captain Varo to march. J · Details';
     if(regionalTask){$('side-quest-title').textContent=regionalTask.title;$('side-quest-progress').textContent=regionalTask.detail;}
     show('border-status',mode==='playing'&&player.group.position.z<world.bounds.minZ+18);
     $('practice-hits').textContent=`${Math.min(2,practiceHits)} / 2 hits`;$('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
@@ -1413,7 +1417,7 @@ function init() {
     const hideoutHooks=()=>({...forestHooks(),forestHideout,hideoutAct,hideoutWatch,handleCombatEvents,attack,
       prepareHideout:(stage=5)=>{forestHooks().prepareVillage();questStage=stage;journey.restore(createJourney().snapshot());reviewFrozen=false;reviewTarget=null;forestHideout.restore();syncHideout();
         if(stage>=2)inventory.grant('harbor-letter');if(stage>=6)inventory.grant('road-token');if(stage>=3){practiceHits=2;practiceDodges=1;}weapons.repair();
-        const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=-.95;refreshQuest();settleCamera();},
+        const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;refreshQuest();settleCamera();},
       hideoutEncounter});
     const localMapHooks=()=>({...forestHooks(),trailMap,localMapModel,trackPlace,clearTrailPin,trackedPlace,openLocalMap,discoverySet:discoveries,
       normalSnapshot:()=>({questStage,position:player.group.position.toArray(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journey:journey.snapshot(),forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),discoveries:[...discoveries].sort(),health:combat.state.player.hp,checkpoint:checkpoint.read().data}),
@@ -1473,7 +1477,7 @@ function init() {
       async reviewHideout(view){
         hideoutHooks().prepareHideout();reviewFrozen=true;show('dialogue',false);show('modal-backdrop',false);player.group.visible=true;
         let p={x:-129,z:-27};yaw=-1.85;pitch=.5;distance=targetDistance=14;
-        if(view==='hideout-approach'){p=FOREST_HIDEOUT_QUEST.approach;yaw=-1.01;pitch=.27;distance=targetDistance=6.5;}
+        if(view==='hideout-approach'){p=FOREST_HIDEOUT_QUEST.approach;yaw=-.06;pitch=.27;distance=targetDistance=6.5;}
         if(view==='hideout-supplies'){p=FOREST_HIDEOUT_QUEST.supplies;yaw=-.25;pitch=.38;distance=targetDistance=6;}
         player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);player.group.rotation.y=Math.PI+yaw;
         if(view==='hideout-overview')reviewTarget=new THREE.Vector3(hideoutEncounter.center.x,world.heightAt(hideoutEncounter.center.x,hideoutEncounter.center.z)+1,hideoutEncounter.center.z);

@@ -8,6 +8,7 @@ import {
   VILLAGE, villageToWorld, worldToVillage, villageShoreLocalZ, landDistance, terrainMix, relief,
   REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS,
 } from './region-world.js';
+import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-world.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
@@ -84,12 +85,79 @@ export function calossSurface(x, z) {
 
 export const CALOSS_BANK_DISTANCE = 13.5;
 
-/** Ground with the river channel cut, before any deck or pier override. */
+/**
+ * Pueth's rivers (src/pueth-world.js) cross hills the Caloss never meets, so
+ * their water is never raised above the ground: sampled along the course, the
+ * surface may only fall toward the sea, and where a rise stands in its way the
+ * river cuts down through it and its valley widens with the depth of the cut.
+ */
+export const PUETH_RIVER_PROFILES = new Map(PUETH_RIVERS.map(river => {
+  const ground = river.samples.map(sample => regionBase(sample.x, sample.z));
+  // The relief's small hummocks are not the river's business: it follows the lie of the land over about 50 m.
+  const samples = river.samples.map((sample, index) => {
+    const window = ground.slice(Math.max(0, index - 6), index + 7);
+    return { x: sample.x, z: sample.z, index, surface: window.reduce((sum, value) => sum + value, 0) / window.length - 1.35 };
+  });
+  const fall = () => { for (let i = 1; i < samples.length; i++) samples[i].surface = Math.min(samples[i].surface, samples[i - 1].surface); };
+  fall();
+  for (let pass = 0; pass < 3; pass++) for (let i = 1; i < samples.length - 1; i++)
+    samples[i].surface = (samples[i - 1].surface + samples[i].surface * 2 + samples[i + 1].surface) / 4;
+  fall();
+  for (const sample of samples) sample.surface = Math.max(sample.surface, SEA_LEVEL + .05);
+  return [river.id, samples];
+}));
+
+/** The nearest profile sample of one of Pueth's rivers. */
+export function puethRiverSample(river, x, z) {
+  let best = null, bestDistance = Infinity;
+  for (const sample of PUETH_RIVER_PROFILES.get(river.id)) {
+    const distance = (sample.x - x) ** 2 + (sample.z - z) ** 2;
+    if (distance < bestDistance) { bestDistance = distance; best = sample; }
+  }
+  return best;
+}
+export const puethRiverSurface = (river, x, z) => puethRiverSample(river, x, z).surface;
+/** A small river starts narrow at its authored source and reaches its width over its first 60 m. */
+export const puethRiverHalfWidth = (river, sample) => river.halfWidth * clamp(.45 + sample.index * 4 / 60 * .55, .45, 1);
+const PUETH_VALLEY_REACH = 44;
+
+/**
+ * The Tessen bridge's deck, and the embankment that carries the road up to it:
+ * on the banks the road rises or falls to the deck over 20 m, so the way over is
+ * one even line and never a step down into the cut.
+ */
+export const TESSEN_DECK_Y = (() => {
+  const { crossing } = TESSEN_BRIDGE;
+  const surface = puethRiverSurface(TESSEN, crossing.x, crossing.z);
+  return surface + 1.6;
+})();
+function bridgeEmbankment(x, z, ground) {
+  const b = TESSEN_BRIDGE, dx = x - b.crossing.x, dz = z - b.crossing.z;
+  const along = Math.abs(dx * b.axis.x + dz * b.axis.z), across = Math.abs(dx * b.side.x + dz * b.side.z);
+  if (along > b.halfSpan + 22 || across > 14 || along < b.halfSpan - 1.5) return ground;
+  const weight = (1 - smooth(b.halfSpan + 2, b.halfSpan + 22, along)) * (1 - smooth(4, 14, across));
+  return lerp(ground, TESSEN_DECK_Y - .04, weight);
+}
+
+/** Ground with the river channels cut, before any deck or pier override. */
 export function groundWithRiver(x, z) {
   const bedrock = bedrockHeight(x, z), distance = calossDistance(x, z);
-  if (distance >= CALOSS_BANK_DISTANCE) return bedrock;
-  const bed = calossSurface(x, z) - 1.1;
-  return lerp(Math.min(bed, bedrock), bedrock, smooth(6.6, CALOSS_BANK_DISTANCE, distance));
+  let ground = bedrock;
+  if (distance < CALOSS_BANK_DISTANCE) {
+    const bed = calossSurface(x, z) - 1.1;
+    ground = lerp(Math.min(bed, bedrock), bedrock, smooth(6.6, CALOSS_BANK_DISTANCE, distance));
+  }
+  const near = nearestPuethRiver(x, z, PUETH_VALLEY_REACH);
+  if (near.distance < PUETH_VALLEY_REACH) {
+    const sample = puethRiverSample(near.river, x, z), half = puethRiverHalfWidth(near.river, sample);
+    const depth = clamp(bedrock - sample.surface, 0, 12), valley = half + 4 + depth * 2.4;
+    if (near.distance < valley) {
+      const cut = lerp(Math.min(sample.surface - .9, bedrock), bedrock, smooth(half * .8, valley, near.distance));
+      ground = Math.min(ground, cut);
+    }
+    if (near.river === TESSEN) ground = bridgeEmbankment(x, z, ground);
+  }
+  return ground;
 }
 
 /** Terrain tint before scenery tints, matching the biome and the shore. */
@@ -98,9 +166,10 @@ export function groundTint(color, x, z, THREE) {
   const target = new THREE.Color(0, 0, 0);
   const swatch = new THREE.Color();
   let total = 0;
-  for (const [name, weight] of Object.entries(mix.weights)) {
+  // Colours by weight, so a cell whose atlas terrain refines its region's ground (Pueth's hills) is tinted as itself.
+  for (const [ground, weight] of Object.entries(mix.grounds ?? {})) {
     if (!weight) continue;
-    swatch.set(REGION_TERRAIN[name].ground);
+    swatch.set(ground);
     target.r += swatch.r * weight; target.g += swatch.g * weight; target.b += swatch.b * weight; total += weight;
   }
   if (total) { target.r /= total; target.g /= total; target.b /= total; }

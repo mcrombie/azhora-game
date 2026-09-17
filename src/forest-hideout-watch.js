@@ -6,7 +6,8 @@ export function createForestHideoutWatch(scene, world, encounter) {
     const actor = createGoblin({ variant: index });
     actor.group.name = `Bramble camp lookout ${index + 1}`;
     actor.group.position.set(home.x, world.heightAt(home.x, home.z), home.z);
-    actor.group.rotation.y = index ? -.6 : -1.05;
+    // Each lookout faces the approach, a little off true so the pair does not stare in step.
+    actor.group.rotation.y = Math.atan2(encounter.checkpoint.x - home.x, encounter.checkpoint.z - home.z) + (index ? .45 : -.35);
     scene.add(actor.group);
     return { actor, home, phase: index * 2.3 };
   });

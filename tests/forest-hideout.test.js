@@ -215,7 +215,8 @@ test('Casso tells of the camp, the Captain marches on request, and the stores ar
   assert.equal(choice('march-on-hideout'), undefined);
   garrisonConversation(casso, ui.context);
   choice('ask-hideout-work').action();
-  assert.match(ui.screens.at(-1).lines.join(' '), /torn pennants/);
+  assert.match(ui.screens.at(-1).lines.join(' '), /blue cloth/);
+  assert.match(ui.screens.at(-1).lines.join(' '), /Tessen[\s\S]*Tidehaven/, 'Casso ties the camp to the raid over the river');
   ui.screens.at(-1).options.onComplete();
   assert.equal(quest.state.inspected, true, 'his account marks the camp on the chart');
   garrisonConversation(captain, ui.context);

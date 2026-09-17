@@ -38,7 +38,7 @@ function deepFreeze(object) {
   Object.freeze(object); Object.values(object).forEach(deepFreeze); return object;
 }
 
-test('the chart selects all four actual regions with eight metres of padding and never relocates the player', () => {
+test('the chart selects every actual region with eight metres of padding and never relocates the player', () => {
   const world = fixture(), position = { ...at(-14, 30), heading: .5 };
   for (const region of regions) {
     const chart = model(world, { position, regionId: String(region.id) });
@@ -46,7 +46,7 @@ test('the chart selects all four actual regions with eight metres of padding and
     assert.deepEqual(chart.bounds, { minX: region.bounds.minX - 8, maxX: region.bounds.maxX + 8,
       minZ: region.bounds.minZ - 8, maxZ: region.bounds.maxZ + 8 });
     assert.deepEqual(chart.player, position); assert.notEqual(chart.player, position);
-    assert.deepEqual(chart.regions.map(item => item.id), [1, 2, 3, 4]);
+    assert.deepEqual(chart.regions.map(item => item.id), regions.map(item => item.id).sort((a, b) => a - b));
   }
   assert.equal(model(world, { position: at(-386, 183) }).region.id, 2);
   assert.equal(model(world, { position: at(-386, 183), regionId: 700 }).region.id, 2);
@@ -178,11 +178,13 @@ test('the real world exports immutable shoreline, pond, and unbroken Caloss char
   assert.throws(() => { river.points[0].x = 99; }, TypeError);
   const village = model(world), crossing = model(world, { regionId: 2 });
   assert.equal(village.buildings.length, 11, 'nine Tidehaven cottages, the woodland watch, and the Avrel clearing farm');
-  const oldCamp = at(-138, -31), campCentre = at(-456, 154);
-  assert.ok(!village.paths.some(path => path.some(p => Math.abs(p.x - oldCamp.x) < .01 && Math.abs(p.z - oldCamp.z) < .01)),
-    'Drent is a level 0 province: no goblin camp trail remains on its chart');
-  assert.ok(crossing.paths.some(path => path.some(p => Math.abs(p.x - campCentre.x) < .01 && Math.abs(p.z - campCentre.z) < .01)),
-    'the goblin camp trail appears on Luscia’s chart');
+  const oldCamp = at(-138, -31), lusciaCamp = at(-456, 154), campCentre = world.forestHideout.center;
+  const hasPoint = (chart, point) => chart.paths.some(path => path.some(p => Math.abs(p.x - point.x) < .01 && Math.abs(p.z - point.z) < .01));
+  assert.ok(!hasPoint(village, oldCamp), 'Drent is a level 0 province: no goblin camp trail remains on its chart');
+  assert.ok(!hasPoint(crossing, lusciaCamp), 'Luscia’s wolves have its woods to themselves: the camp trail has left its chart');
+  const pueth = model(world, { regionId: regions.find(region => region.name === 'Pueth').id });
+  assert.ok(hasPoint(pueth, campCentre), 'the goblin camp trail appears on Pueth’s chart');
+  assert.ok(pueth.waters.some(w => w.id === 'tessen-water') && pueth.waters.some(w => w.id === 'ordel-water'), 'Pueth’s chart carries both its rivers');
   assert.equal(crossing.waters.find(w => w.id === 'caloss-water').points.length, river.points.length);
   assert.equal(village.landmarks.every(place => !place.known && place.name === 'Unexplored place'), true);
 });

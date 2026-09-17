@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createDeveloperAtlasData, DEV_WORLD_DESTINATIONS, DEV_ATLAS_PROVENANCE,
   hitAtlasRegion, developerRegionSelection, developerAtlasMarkup, developerLocalRouteMarkup } from '../src/developer-atlas.js';
+import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 
 const read = relative => readFile(new URL(relative, import.meta.url), 'utf8');
 const metadata = JSON.parse(await read('../assets/azhora-world-map.json'));
@@ -49,8 +50,8 @@ test('developer export is derived from unchanged World Builder source using the 
 
 test('local destinations stand on their own authored regions, with a separate schematic route', () => {
   const locals = DEV_WORLD_DESTINATIONS.filter(destination => destination.region);
-  assert.deepEqual(locals.map(destination => destination.region), [1, 2, 3, 4]);
-  assert.deepEqual(locals.map(destination => destination.regionId), ['Drent', 'Luscia', 'Moros Plain', 'East Suval']);
+  assert.deepEqual(locals.map(destination => destination.regionId), [...PLAYABLE_REGIONS]);
+  assert.deepEqual(locals.map(destination => destination.region), PLAYABLE_REGIONS.map((_, index) => index + 1));
   for (const destination of locals) {
     assert.equal(destination.placement, 'authored-region');
     assert.equal(hitAtlasRegion(atlas, destination.atlas.x, destination.atlas.y)?.id, destination.regionId,
@@ -58,8 +59,8 @@ test('local destinations stand on their own authored regions, with a separate sc
     assert.ok(destination.atlas.u > 0 && destination.atlas.u < 1);
     assert.ok(destination.atlas.v > 0 && destination.atlas.v < 1);
   }
-  assert.equal(new Set(locals.map(destination => destination.atlas)).size, 4, 'each region has its own anchor');
-  assert.equal(new Set(locals.map(destination => destination.inset.y)).size, 4);
+  assert.equal(new Set(locals.map(destination => destination.atlas)).size, PLAYABLE_REGIONS.length, 'each region has its own anchor');
+  assert.equal(new Set(locals.map(destination => destination.inset.y)).size, PLAYABLE_REGIONS.length);
   assert.match(DEV_ATLAS_PROVENANCE.localityNote, /provisional/);
   assert.match(DEV_ATLAS_PROVENANCE.localityNote, /not to world-map scale/);
 });
@@ -123,7 +124,7 @@ test('map markup provides all exact region targets, labels and keyboard access w
   assert.match(markup, /open terrain survey; gameplay not built/);
   assert.doesNotMatch(markup, /onclick=/);
   const inset = developerLocalRouteMarkup({ selectedId: 'region-2' });
-  assert.equal((inset.match(/data-dev-destination=/g) ?? []).length, 4);
+  assert.equal((inset.match(/data-dev-destination=/g) ?? []).length, PLAYABLE_REGIONS.length);
   assert.match(inset, /schematic, not to world-map scale/);
 });
 

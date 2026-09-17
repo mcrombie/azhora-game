@@ -1,29 +1,40 @@
-import { toWorld, toWorldXIn } from './world-scale.js';
+import { hideoutToWorld, HIDEOUT_RETREAT_AXIS, GARRISON_STANDS } from './pueth-world.js';
 
-/** An optional, contained fight for Lumber Town's stolen stores, at a goblin camp in north Luscia. Drent, a level 0 province, has none. */
+/** A point of the camp's own authored layout (src/forest-hideout-world.js), where the camp now stands. */
+const camp = (lx, lz) => Object.freeze(hideoutToWorld(lx, lz));
+
+/**
+ * An optional, contained fight at a goblin camp in the birch woods of southern Pueth, north of
+ * the Tessen: the bramble goblins who have been wading the river to raid Tidehaven. Drent, a level
+ * 0 province, has none. It opens at quest stage 10, when the tutorial's road reaches the Caloss
+ * Gate: the road north leaves the main road just past that gate, so the quest is offered as soon
+ * as the traveler can reach the Tessen post by road, and never before; the fight itself is north of
+ * the river, so nothing attacks the traveler in Drent.
+ */
 export const FOREST_HIDEOUT_QUEST = Object.freeze({
-  id: 'forest-hideout', siteId: 'bramble-scout-camp', name: 'Bramble Scout Camp',
-  approach: Object.freeze(toWorld(-441, 145)),
-  supplies: Object.freeze({ id: 'forest-hideout-supplies', ...toWorld(-466, 159) }),
+  id: 'forest-hideout', siteId: 'bramble-scout-camp', name: 'Bramble Scout Camp', region: 'Pueth',
+  approach: camp(45, -109),
+  supplies: Object.freeze({ id: 'forest-hideout-supplies', ...hideoutToWorld(70, -123) }),
   recipientId: 'garrison-captain', informantId: 'garrison-casso', minimumQuestStage: 10,
   reward: Object.freeze({ id: 'copper-piece', quantity: 30 }),
-  encounter: Object.freeze({ id: 'forest-hideout', center: Object.freeze(toWorld(-456, 154)),
-    checkpoint: Object.freeze(toWorld(-441, 145)), retreatAxis: 'x', retreatLine: toWorldXIn('goblin-camp', -433),
+  // The camp's local frame retreats along its own -x, back down its trail: in the world that is south.
+  encounter: Object.freeze({ id: 'forest-hideout', center: camp(60, -118),
+    checkpoint: camp(45, -109), retreatAxis: HIDEOUT_RETREAT_AXIS, retreatLine: hideoutToWorld(37, -118)[HIDEOUT_RETREAT_AXIS],
     enemies: Object.freeze([
-      Object.freeze({ id: 'forest-scout-west', ...toWorld(-453, 157), hp: 65, entry: .2 }),
-      Object.freeze({ id: 'forest-scout-east', ...toWorld(-459, 160), hp: 65, entry: 1.4 }),
+      Object.freeze({ id: 'forest-scout-west', ...hideoutToWorld(57, -121), hp: 65, entry: .2 }),
+      Object.freeze({ id: 'forest-scout-east', ...hideoutToWorld(63, -124), hp: 65, entry: 1.4 }),
     ]),
   }),
 });
 
 /**
- * Lumber Town's garrison. Legionary Casso tells a hired sword about the camp; Captain Varo
- * and his two men march with the traveler and fight beside them once the traveler says so.
+ * The Legion's road post at the Tessen bridge. Legionary Casso tells a hired sword about the camp;
+ * Captain Varo and his two men march with the traveler and fight beside them once the traveler says so.
  */
 export const HIDEOUT_GARRISON = Object.freeze([
-  Object.freeze({ id: 'garrison-captain', name: 'Captain Decimus Varo', role: 'Captain of the Lumber Town garrison', modelRole: 'legion-officer', color: 0x832d2b, kind: 'officer' }),
-  Object.freeze({ id: 'garrison-casso', name: 'Legionary Casso', role: 'Ambroni Legion soldier', modelRole: 'legion-soldier', color: 0x8f3b30, kind: 'legionary' }),
-  Object.freeze({ id: 'garrison-brill', name: 'Legionary Brill', role: 'Ambroni Legion soldier', modelRole: 'legion-soldier', color: 0x8f3b30, kind: 'legionary' }),
+  Object.freeze({ id: 'garrison-captain', name: 'Captain Decimus Varo', role: 'Captain of the Tessen road post', modelRole: 'legion-officer', color: 0x832d2b, kind: 'officer', yaw: GARRISON_STANDS['garrison-captain'].yaw }),
+  Object.freeze({ id: 'garrison-casso', name: 'Legionary Casso', role: 'Ambroni Legion soldier', modelRole: 'legion-soldier', color: 0x8f3b30, kind: 'legionary', yaw: GARRISON_STANDS['garrison-casso'].yaw }),
+  Object.freeze({ id: 'garrison-brill', name: 'Legionary Brill', role: 'Ambroni Legion soldier', modelRole: 'legion-soldier', color: 0x8f3b30, kind: 'legionary', yaw: GARRISON_STANDS['garrison-brill'].yaw }),
 ]);
 
 const flags = ['inspected', 'accepted', 'cleared', 'recovered', 'returned'];
@@ -63,13 +74,13 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
   function view() {
     const current = stage();
     const text = {
-      undiscovered: ['A trail off the Luscia road', 'Torn pennants mark a side trail west of the rise.', []],
-      observed: ['Supplies beyond the brambles', 'Two goblins guard sacks stolen from Lumber Town. This is an optional fight: Captain Varo and his men will march with you if you ask, or you can go alone.', ['bramble-scout-camp']],
+      undiscovered: ['A trail off the Tessen road', 'Scraps of blue cloth mark a side trail east from the Legion post at the Tessen bridge.', []],
+      observed: ['Stores beyond the birches', 'Two goblins guard sacks taken in the raid on Tidehaven. This is an optional fight: Captain Varo and his men will march with you if you ask, or you can go alone.', ['bramble-scout-camp']],
       'ready-to-retry': ['The supplies can wait', 'You left the camp before the job was done. Return to the approach when you want to challenge the two goblins again.', ['bramble-scout-camp']],
-      fighting: ['Drive the scouts from their camp', 'Defeat the two goblins. Watch their attack tells and dodge into space; retreat east toward the road if you need to recover.', ['bramble-scout-camp']],
-      'recover-supplies': ['Bring the supplies out', 'The scouts are gone. Press F beside the stolen sacks at the far side of the camp to recover Lumber Town’s stores.', ['forest-hideout-supplies']],
-      'return-supplies': ['Stores worth a march', 'Bring the recovered stores to Captain Varo on Lumber Town’s square. They are tracked here in your journal, not as a satchel item.', ['garrison-captain']],
-      complete: ['Back where they belong', 'Captain Varo has the grain, salt and rope back under lock. He paid thirty copper from the garrison chest and wrote your name in his report.', []],
+      fighting: ['Drive the scouts from their camp', 'Defeat the two goblins. Watch their attack tells and dodge into space; fall back south down the trail if you need to recover.', ['bramble-scout-camp']],
+      'recover-supplies': ['Bring the stores out', 'The scouts are gone. Press F beside the stolen sacks at the far side of the camp to recover Tidehaven’s stores.', ['forest-hideout-supplies']],
+      'return-supplies': ['Stores worth a march', 'Bring the recovered stores to Captain Varo at the Tessen road post. They are tracked here in your journal, not as a satchel item.', ['garrison-captain']],
+      complete: ['Back where they belong', 'Captain Varo has Tidehaven’s grain, salt and rope under lock for the next cart south. He paid thirty copper from the post’s chest and wrote your name in his report.', []],
     };
     const [title, detail, destinations] = text[current];
     return { optional: true, title, detail, stage: current, active,
@@ -97,7 +108,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
   function hear() {
     if (state.inspected) return { ok: true, changed: false, reason: '' };
     state.inspected = true;
-    return emit('hear-of-hideout', 'Legionary Casso told you of a goblin camp north of the rise. Captain Varo will march when you are ready.');
+    return emit('hear-of-hideout', 'Legionary Casso told you of a goblin camp in the birch east of the Tessen post. Captain Varo will march when you are ready.');
   }
 
   function march() {
@@ -105,12 +116,12 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     if (state.cleared) return fail('The camp is already broken.');
     if (active) return fail('The fight is already underway.');
     escort = true;
-    return { ok: true, changed: false, reason: '', escort: true, message: 'Captain Varo, Casso and Brill fall in behind you. Lead them up the trail west of the rise.' };
+    return { ok: true, changed: false, reason: '', escort: true, message: 'Captain Varo, Casso and Brill fall in behind you. Lead them along the blue-rag trail east of the post.' };
   }
 
   function standDown() {
     escort = false;
-    return { ok: true, changed: false, reason: '', escort: false, message: 'The garrison returns to the square.' };
+    return { ok: true, changed: false, reason: '', escort: false, message: 'The garrison returns to the post.' };
   }
 
   function begin({ questStage = 0 } = {}) {
@@ -121,7 +132,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     active = true;
     if (!state.accepted) {
       state.accepted = true;
-      return { ...emit('challenge-hideout', 'You chose to recover Lumber Town’s stolen stores.'), startEncounter: true };
+      return { ...emit('challenge-hideout', 'You chose to recover the stores taken from Tidehaven.'), startEncounter: true };
     }
     // Retrying grants nothing and does not manufacture extra save revisions.
     return { ok: true, changed: false, reason: '', startEncounter: true,
@@ -144,10 +155,10 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
   }
 
   function recover() {
-    if (!state.cleared || active) return fail('Drive the two scouts away before lifting the town’s stores.');
+    if (!state.cleared || active) return fail('Drive the two scouts away before lifting the stolen stores.');
     if (state.recovered) return fail('You have already recovered these supplies.');
     state.recovered = true;
-    return emit('recover-hideout-supplies', 'The town’s stores are secured. Return them to Captain Varo; your journal keeps track of the bundle.');
+    return emit('recover-hideout-supplies', 'Tidehaven’s stores are secured. Return them to Captain Varo; your journal keeps track of the bundle.');
   }
 
   function turnIn() {
@@ -156,7 +167,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     const { id, quantity } = FOREST_HIDEOUT_QUEST.reward;
     if (!inventory?.add?.(id, quantity)) return fail('The Captain could not pay you. You still have the stores; speak again.');
     state.returned = true; escort = false;
-    return emit('return-hideout-supplies', 'Lumber Town has its stores again. Captain Varo paid thirty copper.', { reward: { id, quantity } });
+    return emit('return-hideout-supplies', 'Tidehaven’s stores go south with the next cart. Captain Varo paid thirty copper.', { reward: { id, quantity } });
   }
 
   function availableActions(siteId, { questStage = 0 } = {}) {
@@ -164,7 +175,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     if (state.inspected && !state.cleared && !active) result.push(action('challenge-hideout',
       state.accepted ? 'Challenge the two scouts again' : 'Challenge the two scouts · optional fight', 'bramble-scout-camp',
       readyForFight(questStage) ? '' : 'Finish your business in Tidehaven first.'));
-    if (state.cleared && !state.recovered) result.push(action('recover-hideout-supplies', 'Lift the town’s stolen stores', 'forest-hideout-supplies'));
+    if (state.cleared && !state.recovered) result.push(action('recover-hideout-supplies', 'Lift the stolen stores', 'forest-hideout-supplies'));
     if (state.recovered && !state.returned) result.push(action('return-hideout-supplies', 'Return the stores · accept 30 copper', 'garrison-captain'));
     return siteId === undefined ? result : result.filter(option => option.siteId === siteId);
   }
@@ -201,28 +212,28 @@ export function hideoutConversation(context) {
   const state = hideoutQuest.state;
   let lines;
   if (state.returned) lines = [
-    'The little camp is deserted. The torn pennants still show the trail, but the sacks are back in Lumber Town and the lowered camp pennant hangs still.',
-    'A small nuisance removed from the scrub. The town will notice the grain and rope more than it notices the quiet.',
+    'The little camp is deserted. The blue scraps still show the trail, but the sacks are on their way back to Tidehaven and the lowered camp pennant hangs still.',
+    'A small nuisance removed from the birch. The post will notice the quiet more than anybody.',
   ];
   else if (state.recovered) lines = [
-    'The scouts are gone, and you have secured the town’s stores. The empty place beside the shelter marks what they took.',
-    'Captain Varo can see the grain and rope back under lock. The bundle is tracked in your journal until you return it.',
+    'The scouts are gone, and you have secured the stolen stores. The empty place beside the shelter marks what they took.',
+    'Captain Varo will see the grain and rope back to Tidehaven. The bundle is tracked in your journal until you return it.',
   ];
   else if (state.cleared) lines = [
-    'The two scouts have fled. Beyond the shelter are sacks and a crate with Lumber Town’s store mark burned into the boards.',
-    'Walk to the stores at the far side of the camp and press F to lift them. Bring them to Captain Varo on the town square.',
+    'The two scouts have fled. Beyond the shelter are sacks and a crate wrapped in Tidehaven cloth.',
+    'Walk to the stores at the far side of the camp and press F to lift them. Bring them to Captain Varo at the Tessen road post.',
   ];
   else lines = [
-    state.escort ? 'Two goblins have made a rough camp in the scrub. Captain Varo and his two men wait at your shoulder, swords out, for your word.' : 'Two goblins have made a rough camp in the scrub. Among their scraps are the town’s grain sacks and a coil of sound rope. Torn pennants mark their route from the road.',
+    state.escort ? 'Two goblins have made a rough camp in the birch. Captain Varo and his two men wait at your shoulder, swords out, for your word.' : 'Two goblins have made a rough camp in the birch. Among their scraps are grain sacks and a coil of rope wrapped in Tidehaven cloth. Scraps of the same cloth mark their route from the road.',
     readyForFight(questStage)
-      ? 'You can leave them unchallenged. If you choose to recover the supplies, prepare your weapon and food first, then challenge the two scouts. Watch their amber attack tells and leave yourself room to dodge. Retreat east toward the road if you need a rest.'
+      ? 'You can leave them unchallenged. If you choose to recover the stores, prepare your weapon and food first, then challenge the two scouts. Watch their amber attack tells and leave yourself room to dodge. Fall back south down the trail if you need a rest.'
       : 'For now, keep your distance. Finish your business in Tidehaven before choosing another battle. This camp is optional; its stores can wait.',
   ];
   const choices = hideoutQuest.availableActions('bramble-scout-camp', { questStage })
     .filter(option => option.id !== 'inspect-hideout').map(option => ({ ...option,
       action: () => { closeDialogue(); act(option.id); } }));
   choices.push({ id: 'leave-hideout', label: state.cleared ? 'Back to the trail.' : 'Leave the camp unchallenged.', action: closeDialogue });
-  openDialogue({ id: FOREST_HIDEOUT_QUEST.siteId, name: FOREST_HIDEOUT_QUEST.name, role: 'An optional encounter in north Luscia' },
+  openDialogue({ id: FOREST_HIDEOUT_QUEST.siteId, name: FOREST_HIDEOUT_QUEST.name, role: 'An optional encounter in southern Pueth' },
     lines, null, 'Back to the trail', { choices });
   return true;
 }
@@ -238,33 +249,33 @@ export function garrisonConversation(npc, context) {
   const leave = { id: 'leave-garrison', label: 'As you were.', action: closeDialogue };
   if (npc.id === 'garrison-captain') {
     const choices = [];
-    let lines = ['Decimus Varo, captain of what the Legion can spare for a timber town: two men and a relay clerk. You are one of the hired swords. Good. I have more work than soldiers.'];
-    if (!state.inspected) lines.push('Speak to Casso if you want something to do. He has been watching the north scrub for a week and will not stop talking about it.');
-    else if (state.returned) lines = ['The stores are back under lock and the scrub is quiet. I put your name in my report to the Legate, mercenary. It will not make you rich, but he reads them.'];
+    let lines = ['Decimus Varo, captain of this post: two men, a beacon, and a bridge the Legion wants held. You are one of the hired swords. Good. I have more work than soldiers.'];
+    if (!state.inspected) lines.push('Speak to Casso if you want something to do. He has been counting goblin tracks along the Tessen for a week and will not stop talking about it.');
+    else if (state.returned) lines = ['The stores go south with the next cart and the birch is quiet. I put your name in my report to the Legate, mercenary. It will not make you rich, but he reads them.'];
     else if (state.recovered) {
-      lines = ['Those are the town’s sacks. Grain, salt, and the rope the sawyers have been swearing about. You did what my orders would not let me do alone.', 'Thirty copper from the garrison chest, and my thanks. Hand them over and I will see them back to the store.'];
+      lines = ['Those are Tidehaven’s sacks. Grain, salt, and the rope they cut from the landing. You did what my orders would not let me do alone.', 'Thirty copper from the post’s chest, and my thanks. Hand them over. They go south with the next cart.'];
       choices.push({ id: 'return-hideout-supplies', label: 'Return the stores · accept 30 copper', action: () => { closeDialogue(); act('return-hideout-supplies'); } });
-    } else if (state.cleared) lines = ['The camp is broken, then. The sacks will be at the far side of it, by their shelter. Bring them in and the town eats this month.'];
+    } else if (state.cleared) lines = ['The camp is broken, then. The sacks will be at the far side of it, by their shelter. Bring them in and Tidehaven gets back what it lost.'];
     else if (state.escort) {
-      lines = ['We are with you. Lead on: the trail leaves the road west of the rise, under torn pennants. When you challenge them, we go in beside you.'];
+      lines = ['We are with you. Lead on: the trail leaves the road north of the bridge, east under blue rags. When you challenge them, we go in beside you.'];
       choices.push({ id: 'stand-down-hideout', label: 'Stand the men down for now.', action: () => { closeDialogue(); act('stand-down-hideout'); } });
     } else {
-      lines.push('Casso told you about the camp. Two goblins, maybe more, and they have been at the town’s stores. I cannot leave the town with two men, but with a third sword I can. Say when you are ready and we march with you and fight beside you.');
+      lines.push('Casso told you about the camp. Two goblins, maybe more, and they are the ones who went over the Tessen and hit Tidehaven. My orders are the bridge. I cannot leave it with two men, but with a third sword I can. Say when you are ready and we march with you and fight beside you.');
       choices.push({ id: 'march-on-hideout', label: 'I am ready. March on the camp.', action: () => { closeDialogue(); act('march-on-hideout'); } });
     }
-    openDialogue(npc, lines, null, 'Back to the square', { choices: [...choices, leave] });
+    openDialogue(npc, lines, null, 'Back to the post', { choices: [...choices, leave] });
     return true;
   }
   if (npc.id === FOREST_HIDEOUT_QUEST.informantId) {
     if (!state.inspected) {
-      openDialogue(npc, ['Casso. Garrison, such as it is. You are one of the hired swords, so you can go where I cannot.'], null, 'Back to the square', { choices: [
+      openDialogue(npc, ['Casso. Tessen post, such as it is. You are one of the hired swords, so you can go where I cannot.'], null, 'Back to the post', { choices: [
         { id: 'ask-hideout-work', label: 'Any work for a hired sword?', action: () => openDialogue(npc, [
-          'North of here, past the rise where the shrine-keeper lives, a side trail leaves the road under torn pennants. Goblins have a camp at the end of it. Bramble goblins, down out of Pueth.',
-          'They have been at the town’s stores twice: grain, salt, a coil of good rope. The Captain wants them gone but will not leave the town with two men. Tell him when you are ready and all three of us go with you.',
+          'East of here, in the birch between the road and the sea, a side trail leaves the road under scraps of blue cloth. Goblins have a camp at the end of it. Bramble goblins.',
+          'They do not use the bridge. They wade the Tessen at its mouth when the water is low and go down the shore to Tidehaven. The raid on the landing was them, and the sacks they took are in that camp. The Captain wants them gone but will not leave the bridge with two men. Tell him when you are ready and all three of us go with you.',
         ], null, 'Back to Casso', { onComplete: () => { act('hear-of-hideout'); again(); } }) }, leave] });
-    } else openDialogue(npc, [state.cleared ? 'Quiet up there now. I walked the trail this morning to be sure. The Captain will want those sacks.' : state.escort ? 'On your word, then. I would rather fight them on their ground than on ours.' : 'The Captain is waiting on you. Say the word to him and we march.'], null, 'Back to the square', { choices: [leave] });
+    } else openDialogue(npc, [state.cleared ? 'Quiet over there now. I walked the trail this morning to be sure. The Captain will want those sacks.' : state.escort ? 'On your word, then. Better their birch than Tidehaven’s beach.' : 'The Captain is waiting on you. Say the word to him and we march.'], null, 'Back to the post', { choices: [leave] });
     return true;
   }
-  openDialogue(npc, [state.escort ? 'Brill. I follow the Captain, and today the Captain follows you. Do not make me regret the walk.' : state.returned ? 'First full ration in a month. I will remember who fetched it.' : 'Brill. I watch the north road and count what comes down it. Lately it is goblins.'], null, 'Back to the square', { choices: [leave] });
+  openDialogue(npc, [state.escort ? 'Brill. I follow the Captain, and today the Captain follows you. Do not make me regret the walk.' : state.returned ? 'The beacon stays cold another month. I will remember who saw to that.' : 'Brill. I watch the north road and count what comes down it. Timber carts, mostly. Lately, goblin tracks.'], null, 'Back to the post', { choices: [leave] });
   return true;
 }

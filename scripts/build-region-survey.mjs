@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval'];
+export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'Pueth'];
 // Axial window around the playable regions, in atlas hex coordinates. Wide
 // enough that every coast and inland horizon inside the world bounds is honest.
 export const WINDOW = { minQ: -14, maxQ: 34, minR: 92, maxR: 124 };

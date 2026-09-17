@@ -1,3 +1,5 @@
+import { DEV_WORLD_DESTINATIONS } from './developer-atlas.js';
+
 const canonical = value => Array.isArray(value) ? value.map(canonical)
   : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
 const same = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
@@ -134,7 +136,7 @@ export async function runDeveloperSmoke(h) {
 
     await tap('KeyM'); await click(regionPath('Drent'));
     const routeStops = [...document.querySelectorAll('#ghost-local-route [data-dev-destination]')];
-    assert(routeStops.length === 4, 'Drent is missing the four local playable destinations');
+    assert(routeStops.length === DEV_WORLD_DESTINATIONS.filter(destination => destination.region).length, 'Drent is missing a local playable destination');
     await click(routeStops.find(node => node.dataset.devDestination === 'region-4'));
     assert(developer.state().scene === 'eastreena' && developer.state().destination === 'region-4', 'local region4 marker did not return to the playable world scene');
     // East Suval lies south of Luscia on the atlas: large positive z, east of the Moros.
