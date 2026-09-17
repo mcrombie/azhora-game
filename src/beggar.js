@@ -58,7 +58,10 @@ export function createBeggar({ waypoints = [], options = {} } = {}) {
     // than keep pushing at the stone. The host walks him and cannot plan a way.
     if (detour > 0 && here) {
       const dx = position.x - here.x, dz = position.z - here.z, length = Math.hypot(dx, dz) || 1;
-      return { x: here.x - dz / length * detourSide * config.sidestep, z: here.z + dx / length * detourSide * config.sidestep };
+      // Aim diagonally: half toward the traveler, half to one side, so the detour carries him past
+      // the obstacle instead of only along it. Recomputed each frame, it slides him round a curve.
+      const ux = dx / length, uz = dz / length;
+      return { x: here.x + (ux - uz * detourSide) * config.sidestep, z: here.z + (uz + ux * detourSide) * config.sidestep };
     }
     let dx = home.x - position.x, dz = home.z - position.z;
     // Standing on his own patch, he steps off to one side rather than onto the traveler.
