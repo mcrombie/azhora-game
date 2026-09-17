@@ -70,6 +70,8 @@ export const CLUSTERS = Object.freeze([
   cluster('lumber-town', [-408, 228], 34, { note: 'Lumber Town’s square, its houses, the timber yard and the garrison.' }),
   cluster('moros-gate', [-427, 259.4], 16, { note: 'The gate posts and the two legionaries who watch them.' }),
   cluster('legion-camp', [-549.2, 348.1], 46, { note: 'The palisade, the tent lines, the command tent, the horse line and the camp’s posts.' }),
+  cluster('legion-camp-approach', [-521.9, 310.15], 24, { pivot: [-549.2, 348.1],
+    note: 'The open ground outside the camp’s north-east gate, where the day after the border battle is fought. It hangs from the camp, so the retreat still runs south through the gate.' }),
   cluster('border-stockade', [-380, 308], 34, { note: 'The contested stockade and the border battle’s arena, as one place.' }),
   cluster('suval-border-post', [-224, 292], 20, { note: 'Elod’s border post, its pillars, barrier and stores.' }),
   cluster('waystation', [-154, 328], 16, { note: 'The roofless waystation and Oda’s shelter.' }),

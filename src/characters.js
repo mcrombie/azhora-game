@@ -25,6 +25,24 @@ const SOLDIER_CLOTH = Object.freeze({
   'legion-officer': 0x832d2b,
   'suvali-guard': 0x55636f,
 });
+// Builds for the hired company. Height and girth scale the whole standing body,
+// and `shoulders` moves the arm joints in or out, so two men of the same cloth
+// still read apart at thumbnail size. Every value stays inside 0.9 to 1.12 so
+// the rig, the colliders and the follow camera keep fitting the men who use them.
+export const MERCENARY_BUILDS = Object.freeze({
+  ordinary: Object.freeze({ height: 1, girth: 1, shoulders: 0 }),
+  broad: Object.freeze({ height: 1.0, girth: 1.08, shoulders: 0.05 }),
+  rangy: Object.freeze({ height: 1.06, girth: 0.93, shoulders: 0 }),
+  bull: Object.freeze({ height: 0.96, girth: 1.12, shoulders: 0.055 }),
+  wiry: Object.freeze({ height: 0.97, girth: 0.92, shoulders: -0.02 }),
+  square: Object.freeze({ height: 0.99, girth: 1.05, shoulders: 0.035 }),
+  'tall-lean': Object.freeze({ height: 1.08, girth: 0.94, shoulders: -0.01 }),
+  'short-stocky': Object.freeze({ height: 0.92, girth: 1.07, shoulders: 0.02 }),
+  towering: Object.freeze({ height: 1.12, girth: 1.0, shoulders: 0.012 }),
+  heavy: Object.freeze({ height: 1.02, girth: 1.1, shoulders: 0.045 }),
+  'raw-boned': Object.freeze({ height: 1.05, girth: 1.06, shoulders: 0.04 }),
+  slight: Object.freeze({ height: 0.94, girth: 0.9, shoulders: -0.03 }),
+});
 
 function material(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.91, flatShading: true, ...extra });
@@ -55,6 +73,16 @@ function ribbon(parent, mat, from, to, width = 0.052, depth = 0.022) {
   const mesh = box(parent, mat, start.clone().add(end).multiplyScalar(0.5).toArray(), [width, direction.length(), depth]);
   mesh.quaternion.setFromUnitVectors(UP, direction.normalize());
   return mesh;
+}
+
+// One named, empty-after-batching marker per piece of a hired sword's look.
+// Meshes inside it are folded into the joint's batch; the name survives, so a
+// test (and a reader) can ask which headgear, hair, beard or garment a man wears.
+function lookGroup(parent, kind, value) {
+  const group = new THREE.Group();
+  group.name = `mercenary-${kind}-${value}`;
+  parent.add(group);
+  return group;
 }
 
 // Keep every animated joint, but bake its cloth/skin/wood colors into vertices.
@@ -651,7 +679,16 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   // A hired sword from abroad: the traveler's kind of cloth and sword, a leather jerkin,
   // and a look (hair, beard, cap) chosen by the roster rather than the role.
   const isMercenary = role === 'mercenary';
-  if (isMercenary) hat = Boolean(look?.cap);
+  // The whole of a hired sword's appearance is roster data: build, headgear,
+  // hair, facial hair, garment and small marks. Nothing here is keyed on his id.
+  const mercBuild = isMercenary ? MERCENARY_BUILDS[look?.build] ?? MERCENARY_BUILDS.ordinary : null;
+  const headgear = isMercenary ? look?.headgear ?? (look?.cap ? 'soft-cap' : 'bare') : '';
+  const hairStyle = isMercenary ? look?.hairStyle ?? 'cropped' : '';
+  const facialHair = isMercenary ? look?.facialHair ?? (look?.beard ? 'full' : 'clean') : '';
+  const garment = isMercenary ? look?.garment ?? 'jerkin' : '';
+  const marks = isMercenary && Array.isArray(look?.marks) ? look.marks : [];
+  const bareForearms = isMercenary && (garment === 'bare-forearms' || garment === 'sleeveless');
+  if (isMercenary) hat = headgear === 'soft-cap';
   const group = new THREE.Group();
   group.name = `character-${role}`;
   const body = new THREE.Group();
@@ -665,12 +702,25 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const leather = material(0x664833);
   const bootMat = material(0x49392c);
   const soleMat = material(0x302b24);
-  const trousers = material(isSoldier ? (isSuvaliGuard ? 0x4a4a45 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  // A hired sword's legs take their colour from his own cloth, so eleven men do
+  // not stand in eleven different tunics above one shared pair of olive trousers.
+  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
   const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
   const bagMat = material(0xa17a4b);
+  // Shared stock for the hired company: shaved scalps and jaws, campaign iron,
+  // fur bought against a cold nobody warned them about, felt, ink and old scars.
+  const stubbleMat = isMercenary ? material(new THREE.Color(skin).lerp(hairMat.color, 0.6)) : null;
+  const mercIron = isMercenary ? material(0x8b8d86, { metalness: 0.44, roughness: 0.6 }) : null;
+  const mercIronDark = isMercenary ? material(0x5f625c, { metalness: 0.44, roughness: 0.6 }) : null;
+  const mercFur = isMercenary ? material(0x8e8066) : null;
+  const mercFurDark = isMercenary ? material(0x6a5c46) : null;
+  const mercFelt = isMercenary ? material(0x473b30) : null;
+  const mercStrap = isMercenary ? material(0x4b3a2b) : null;
+  const mercInk = isMercenary ? material(new THREE.Color(skin).multiplyScalar(0.4)) : null;
+  const mercScar = isMercenary ? material(new THREE.Color(skin).lerp(new THREE.Color(0x9a5442), 0.5)) : null;
 
   // Separate hips, knees and ankles keep the planted foot quiet while the
   // trailing heel lifts. The limbs share geometry, never a skinned-mesh shader.
@@ -706,8 +756,14 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const torsoShape = new THREE.CylinderGeometry(isCook ? 0.226 : 0.252, isCook ? 0.2 : 0.217, 0.395, 8);
   part(body, torsoShape, cloth, [0, 1.12, 0], [1, 1, 0.68]);
   if (isMercenary) {
-    part(body, new THREE.CylinderGeometry(0.262, 0.228, 0.34, 8), leather, [0, 1.105, 0], [1, 1, 0.7]);
-    for (const y of [1.2, 1.1, 1.0]) box(body, bootMat, [0, y, 0.187], [0.05, 0.02, 0.012]);
+    // The plain laced jerkin is the company's only shared piece, and the two men
+    // in a quilted coat or a sleeveless cut do not wear even that.
+    if (garment !== 'gambeson') {
+      part(body, new THREE.CylinderGeometry(0.262, 0.228, 0.34, 8), leather, [0, 1.105, 0], [1, 1, 0.7]);
+      for (const y of [1.2, 1.1, 1.0]) box(body, bootMat, [0, y, 0.187], [0.05, 0.02, 0.012]);
+    }
+    // A heavy man carries the weight on his shoulders, a slight one does not.
+    if (mercBuild.shoulders >= 0.03) for (const side of [-1, 1]) round(body, cloth, [side * 0.185, 1.298, -0.005], [0.145, 0.085, 0.148]);
   }
   part(body, UNIT_CYLINDER, leather, [0, 0.935, 0], [0.23, 0.073, 0.16]);
   box(body, gold, [0, 0.938, 0.166], [0.076, 0.059, 0.024]);
@@ -734,11 +790,16 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const wrists = [];
   for (const side of [-1, 1]) {
     const pivot = new THREE.Group();
-    pivot.position.set(side * (isCook ? 0.233 : 0.258), 1.265, 0);
+    pivot.position.set(side * (isCook ? 0.233 : 0.258 + (mercBuild ? mercBuild.shoulders : 0)), 1.265, 0);
     pivot.rotation.z = side * 0.085;
     body.add(pivot);
     arms.push(pivot);
-    if (isTraveler || isRoadWorker || isSoldier || isMercenary) {
+    if (isMercenary && garment === 'sleeveless') {
+      // Cut off at the shoulder: bare arms and a leather shoulder cap.
+      round(pivot, leather, [side * 0.006, -0.012, 0], [0.1, 0.055, 0.103]);
+      round(pivot, skinMat, [side * 0.01, -0.058, 0], [0.09, 0.094, 0.095]);
+      part(pivot, new THREE.CylinderGeometry(0.086, 0.07, 0.2, 8), skinMat, [side * 0.018, -0.147, 0], [1, 1, 1.03]);
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -751,9 +812,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     elbow.position.set(side * 0.019, -0.245, 0);
     pivot.add(elbow);
     elbows.push(elbow);
-    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker) {
+    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms) {
       // Rolled sleeves show bare working forearms, not bracers or armor.
-      part(elbow, UNIT_CYLINDER, linen, [0, -.017, .003], [.085, .067, .088]);
+      part(elbow, UNIT_CYLINDER, garment === 'sleeveless' ? skinMat : linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
     } else if (isTraveler || isRoadWorker || isSoldier || isMercenary) {
       round(elbow, cloth, [0, -0.055, 0.003], [0.068, 0.083, 0.071]);
@@ -774,13 +835,17 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const head = new THREE.Group();
   head.position.set(0, 1.365, 0);
   body.add(head);
+  // A shaved head keeps the skull, and a shaved side keeps the temple, in the
+  // half-tone between skin and hair rather than going bare or going hairy.
+  const crownMat = isMercenary && hairStyle === 'none' ? stubbleMat : hairMat;
+  const templeMat = isMercenary && ['none', 'shaved-sides', 'topknot'].includes(hairStyle) ? stubbleMat : hairMat;
   part(head, UNIT_CYLINDER, skinMat, [0, -0.035, 0], [0.069, 0.14, 0.069]);
-  round(head, hairMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
+  round(head, crownMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
   round(head, skinMat, [0, 0.181, 0.015], [isCook ? 0.187 : 0.195, 0.228, 0.18]);
   for (const side of [-1, 1]) {
     round(head, skinMat, [side * 0.194, 0.186, 0], [0.047, 0.062, 0.044]);
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
-    if (!isTraveler && !isCook && !isSoldier) box(head, hairMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
+    if (!isTraveler && !isCook && !isSoldier) box(head, templeMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
     round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, 0.031, 0.016]);
     round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
@@ -794,13 +859,56 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     const mouthCorner = box(head, leather, [side * 0.029, 0.12, 0.168], [0.016, 0.008, 0.01]);
     mouthCorner.rotation.z = side * 0.45;
   }
-  if (isMercenary && look?.beard) {
-    round(head, hairMat, [0, 0.085, 0.13], [0.118, 0.075, 0.09]);
-    round(head, hairMat, [0, 0.05, 0.105], [0.09, 0.06, 0.07]);
+  if (isMercenary) {
+    // Seven ways to wear a jaw. Everything hangs in the head's own batch.
+    const jaw = lookGroup(head, 'beard', facialHair);
+    const moustache = () => {
+      box(jaw, hairMat, [0, 0.147, 0.181], [0.132, 0.027, 0.033]);
+      for (const side of [-1, 1]) {
+        const droop = round(jaw, hairMat, [side * 0.073, 0.13, 0.172], [0.028, 0.05, 0.03]);
+        droop.rotation.z = side * 0.22;
+      }
+    };
+    const chops = () => { for (const side of [-1, 1]) box(jaw, hairMat, [side * 0.166, 0.158, 0.05], [0.05, 0.155, 0.12]); };
+    if (facialHair === 'stubble') {
+      round(jaw, stubbleMat, [0, 0.108, 0.128], [0.162, 0.098, 0.106]);
+      for (const side of [-1, 1]) box(jaw, stubbleMat, [side * 0.166, 0.163, 0.045], [0.046, 0.135, 0.115]);
+    } else if (facialHair === 'moustache') {
+      moustache();
+    } else if (facialHair === 'trimmed') {
+      round(jaw, hairMat, [0, 0.096, 0.133], [0.132, 0.084, 0.1]);
+      moustache(); chops();
+    } else if (facialHair === 'bushy') {
+      round(jaw, hairMat, [0, 0.08, 0.126], [0.172, 0.122, 0.128]);
+      round(jaw, hairMat, [0, 0.022, 0.108], [0.14, 0.096, 0.104]);
+      moustache(); chops();
+    } else if (facialHair === 'braided') {
+      round(jaw, hairMat, [0, 0.082, 0.128], [0.134, 0.098, 0.1]);
+      for (const [y, z, size] of [[-0.018, 0.134, 0.052], [-0.104, 0.126, 0.044], [-0.186, 0.116, 0.035]]) round(jaw, hairMat, [0, y, z], [size, size * 1.1, size]);
+      const band = part(jaw, new THREE.TorusGeometry(0.046, 0.012, 4, 8), leather, [0, -0.056, 0.131]);
+      band.rotation.x = Math.PI / 2;
+      moustache(); chops();
+    } else if (facialHair === 'forked') {
+      round(jaw, hairMat, [0, 0.078, 0.126], [0.154, 0.108, 0.112]);
+      for (const side of [-1, 1]) {
+        const fork = round(jaw, hairMat, [side * 0.058, -0.022, 0.116], [0.056, 0.092, 0.056]);
+        fork.rotation.z = side * 0.2;
+        round(jaw, hairMat, [side * 0.076, -0.115, 0.108], [0.038, 0.058, 0.038]);
+      }
+      moustache(); chops();
+    } else if (facialHair !== 'clean') {
+      round(jaw, hairMat, [0, 0.085, 0.13], [0.125, 0.082, 0.094]);
+      round(jaw, hairMat, [0, 0.033, 0.11], [0.104, 0.072, 0.08]);
+      moustache(); chops();
+    }
   }
   if (isTraveler) {
     // Uneven brown locks read clearly from the follow camera without a cap.
     // Shared low-poly geometry is folded into the existing rigid head batches.
+    // The marker group is the traveler's alone: no hired sword may carry it.
+    const tousled = new THREE.Group();
+    tousled.name = 'Traveler tousled hair';
+    head.add(tousled);
     const sunlitHair = material(0x9b7955);
     const locks = [
       // Tousled crown, then a broken fringe that leaves the eyes visible.
@@ -822,8 +930,70 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       [[0.104, 0.265, -0.193], [0.114, 0.137, 0.073], [-0.1, 0, 0.26], false],
     ];
     for (const [position, scale, rotation, sunlit] of locks) {
-      const lock = part(head, UNIT_HAIR_LOCK, sunlit ? sunlitHair : hairMat, position, scale);
+      const lock = part(tousled, UNIT_HAIR_LOCK, sunlit ? sunlitHair : hairMat, position, scale);
       lock.rotation.set(...rotation);
+    }
+  } else if (isMercenary) {
+    // Ten heads of hair, none of them the traveler's tousled brown.
+    const crop = lookGroup(head, 'hair', hairStyle);
+    const fringe = (height, width) => {
+      const swept = round(crop, hairMat, [-0.028, height, 0.076], [width, 0.056, 0.126]);
+      swept.rotation.z = -0.13;
+    };
+    const nape = () => round(crop, hairMat, [0, 0.096, -0.188], [0.152, 0.108, 0.094]);
+    if (hairStyle === 'cropped') { fringe(0.328, 0.194); nape(); }
+    else if (hairStyle === 'receding') {
+      // A high forehead: hair left only at the temples and the back of the head.
+      for (const side of [-1, 1]) {
+        const temple = round(crop, hairMat, [side * 0.158, 0.312, 0.032], [0.088, 0.072, 0.128]);
+        temple.rotation.z = side * 0.32;
+      }
+      nape();
+    } else if (hairStyle === 'long-tied') {
+      fringe(0.33, 0.184);
+      round(crop, hairMat, [0, 0.198, -0.222], [0.116, 0.116, 0.1]);
+      const tie = part(crop, new THREE.TorusGeometry(0.052, 0.013, 4, 8), linen, [0, 0.174, -0.27]);
+      tie.rotation.y = Math.PI / 2;
+      for (const [y, z, size] of [[0.088, -0.298, 0.062], [-0.022, -0.312, 0.054], [-0.126, -0.302, 0.042]]) round(crop, hairMat, [0.008, y, z], [size, size * 1.18, size]);
+    } else if (hairStyle === 'shaved-sides') {
+      const crest = box(crop, hairMat, [0, 0.372, -0.024], [0.116, 0.086, 0.35]);
+      crest.rotation.x = 0.05;
+      for (const [z, size] of [[0.12, 0.05], [0.02, 0.058], [-0.09, 0.052], [-0.185, 0.04]]) {
+        const spike = part(crop, UNIT_HAIR_LOCK, hairMat, [0, 0.412, z], [size, size * 0.9, size * 1.1]);
+        spike.rotation.set(0.2, 0.4, 0);
+      }
+    } else if (hairStyle === 'topknot') {
+      round(crop, hairMat, [0, 0.33, -0.058], [0.072, 0.062, 0.072]);
+      const band = part(crop, new THREE.TorusGeometry(0.05, 0.013, 4, 8), leather, [0, 0.362, -0.056]);
+      band.rotation.x = Math.PI / 2;
+      round(crop, hairMat, [0, 0.42, -0.06], [0.085, 0.09, 0.085]);
+      round(crop, hairMat, [0.012, 0.478, -0.075], [0.046, 0.055, 0.046]);
+    } else if (hairStyle === 'curls') {
+      for (const [x, y, z] of [[-0.12, 0.34, 0.07], [0.02, 0.365, 0.086], [0.136, 0.332, 0.056], [-0.176, 0.3, -0.05],
+        [0.18, 0.298, -0.058], [-0.07, 0.35, -0.11], [0.07, 0.345, -0.118], [-0.1, 0.13, -0.174], [0.1, 0.128, -0.176]]) {
+        const curl = part(crop, UNIT_HAIR_LOCK, hairMat, [x, y, z], [0.084, 0.078, 0.082]);
+        curl.rotation.set(x, y, z);
+      }
+    } else if (hairStyle === 'mane') {
+      fringe(0.346, 0.212);
+      for (const [x, y, z, sx, sy, sz] of [[-0.196, 0.15, -0.055, 0.086, 0.175, 0.15], [0.196, 0.145, -0.06, 0.088, 0.18, 0.148],
+        [0, 0.108, -0.212, 0.2, 0.17, 0.09], [-0.12, 0.028, -0.155, 0.09, 0.1, 0.09], [0.126, 0.02, -0.16, 0.088, 0.095, 0.088]]) round(crop, hairMat, [x, y, z], [sx, sy, sz]);
+      for (const [x, y, z] of [[-0.15, 0.335, 0.03], [0.155, 0.33, 0.024], [0, 0.375, -0.09]]) {
+        const tuft = part(crop, UNIT_HAIR_LOCK, hairMat, [x, y, z], [0.09, 0.08, 0.086]);
+        tuft.rotation.set(0.3, x, z);
+      }
+    } else if (hairStyle === 'lank') {
+      fringe(0.332, 0.202);
+      for (const side of [-1, 1]) {
+        const fall = box(crop, hairMat, [side * 0.186, 0.13, -0.035], [0.07, 0.34, 0.21]);
+        fall.rotation.z = side * 0.05;
+      }
+      box(crop, hairMat, [0, 0.118, -0.182], [0.3, 0.36, 0.085]);
+    } else if (hairStyle === 'braid') {
+      fringe(0.33, 0.19); nape();
+      for (const [y, z, size] of [[0.148, 0.126, 0.052], [0.044, 0.15, 0.047], [-0.062, 0.162, 0.041], [-0.164, 0.166, 0.033]]) round(crop, hairMat, [-0.152, y, z], [size, size * 1.2, size]);
+      const knot = part(crop, new THREE.TorusGeometry(0.031, 0.01, 4, 8), linen, [-0.152, -0.208, 0.166]);
+      knot.rotation.y = Math.PI / 2;
     }
   } else if (isCook) {
     // A tied chestnut bun, swept fringe, and loose temple curls distinguish
@@ -850,7 +1020,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     const cap = new THREE.Group();
     cap.position.set(-0.018, 0.371, -0.028);
     cap.rotation.z = -0.11;
-    head.add(cap);
+    (isMercenary ? lookGroup(head, 'headgear', headgear) : head).add(cap);
     round(cap, cloth, [0, 0.019, 0], [0.234, 0.116, 0.207]);
     round(cap, clothLight, [-0.073, 0.068, -0.027], [0.17, 0.094, 0.157]);
     part(cap, UNIT_CYLINDER, clothLight, [0, -0.031, 0], [0.226, 0.044, 0.189]);
@@ -865,7 +1035,81 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     }
   }
 
-  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker && !isSoldier) {
+  if (isMercenary && headgear !== 'soft-cap') {
+    // Six other ways to cover a head, and two ways to leave one uncovered.
+    const worn = lookGroup(head, 'headgear', headgear);
+    if (headgear === 'bandana') {
+      // Bleached sailcloth, knotted at the back: a Selemi habit kept inland.
+      const sail = material(0xd8ccae), sailFold = material(0xb5a98c);
+      part(worn, UNIT_CYLINDER, sail, [0, 0.312, -0.012], [0.228, 0.078, 0.197]);
+      round(worn, sailFold, [0, 0.36, -0.032], [0.212, 0.072, 0.188]);
+      round(worn, sail, [-0.176, 0.298, -0.132], [0.052, 0.046, 0.046]);
+      ribbon(worn, sail, [-0.19, 0.293, -0.147], [-0.252, 0.163, -0.182], 0.036, 0.02);
+      ribbon(worn, sailFold, [-0.183, 0.288, -0.142], [-0.138, 0.148, -0.232], 0.03, 0.018);
+    } else if (headgear === 'wide-brim') {
+      // A port man's drooping felt brim: rain in Izoli, sun on the Moros.
+      part(worn, new THREE.CylinderGeometry(0.2, 0.404, 0.07, 10), mercFelt, [0, 0.352, -0.014]);
+      round(worn, mercFelt, [0, 0.392, -0.02], [0.216, 0.128, 0.202]);
+      part(worn, UNIT_CYLINDER, leather, [0, 0.368, -0.018], [0.224, 0.034, 0.209]);
+      round(worn, mercFelt, [0, 0.462, -0.03], [0.1, 0.05, 0.095]);
+    } else if (headgear === 'iron-skullcap') {
+      // Old campaign iron: a riveted cap with a nasal bar and a leather liner.
+      round(worn, mercIron, [0, 0.292, -0.018], [0.229, 0.188, 0.216]);
+      part(worn, UNIT_CYLINDER, mercIronDark, [0, 0.253, -0.008], [0.238, 0.032, 0.224]);
+      box(worn, mercIronDark, [0, 0.262, 0.192], [0.034, 0.152, 0.03]);
+      for (let i = 0; i < 5; i++) {
+        const angle = (i - 2) * 0.6;
+        round(worn, mercIronDark, [Math.sin(angle) * 0.216, 0.268, Math.cos(angle) * 0.202 - 0.018], [0.018, 0.018, 0.012]);
+      }
+    } else if (headgear === 'fur-cap') {
+      // Pyrosi hill fur, worn low, with the flaps tied up off the ears.
+      part(worn, UNIT_CYLINDER, mercFur, [0, 0.338, -0.02], [0.247, 0.1, 0.224]);
+      round(worn, mercFurDark, [0, 0.398, -0.03], [0.208, 0.098, 0.188]);
+      for (let i = 0; i < 8; i++) {
+        const angle = i / 8 * Math.PI * 2;
+        const tuft = part(worn, UNIT_HAIR_LOCK, i % 2 ? mercFur : mercFurDark, [Math.sin(angle) * 0.238, 0.336 + (i % 3) * 0.014, Math.cos(angle) * 0.214 - 0.02], [0.062, 0.058, 0.056]);
+        tuft.rotation.set(angle, angle * 0.5, Math.sin(angle) * 0.3);
+      }
+      for (const side of [-1, 1]) round(worn, mercFur, [side * 0.226, 0.268, -0.024], [0.05, 0.08, 0.072]);
+    } else if (headgear === 'hood') {
+      // A cowl pushed back off the brow, so the face still carries the talking.
+      const hoodMat = material(new THREE.Color(tunic).multiplyScalar(0.66));
+      const hoodFold = material(new THREE.Color(tunic).multiplyScalar(0.84));
+      round(worn, hoodMat, [0, 0.244, -0.082], [0.278, 0.302, 0.262]);
+      round(worn, hoodFold, [0, 0.4, -0.16], [0.16, 0.096, 0.13]);
+      for (const side of [-1, 1]) {
+        const cheekFold = round(worn, hoodFold, [side * 0.218, 0.212, 0.042], [0.05, 0.238, 0.094]);
+        cheekFold.rotation.z = side * 0.1;
+      }
+      round(body, hoodMat, [0, 1.296, -0.06], [0.3, 0.104, 0.226]);
+      for (const side of [-1, 1]) {
+        const shoulderFold = round(body, hoodFold, [side * 0.196, 1.278, -0.02], [0.14, 0.07, 0.14]);
+        shoulderFold.rotation.z = side * -0.14;
+      }
+    }
+  }
+
+  if (isMercenary) for (const mark of marks) {
+    // Small marks, one draw each, put where a face carries them at a distance.
+    const marked = lookGroup(head, 'mark', mark);
+    if (mark === 'scar') {
+      // Brow to jaw, hinged at the cheekbone so both halves stay proud of a
+      // face that curves away from them; a straight chord would sink inside it.
+      ribbon(marked, mercScar, [0.132, 0.317, 0.125], [0.128, 0.216, 0.158], 0.032, 0.018);
+      ribbon(marked, mercScar, [0.128, 0.216, 0.158], [0.108, 0.109, 0.175], 0.03, 0.017);
+    } else if (mark === 'earring') {
+      const ring = part(marked, new THREE.TorusGeometry(0.031, 0.01, 4, 8), gold, [-0.219, 0.108, 0.006]);
+      ring.rotation.y = Math.PI / 2;
+    } else if (mark === 'tattoo') {
+      for (let i = 0; i < 3; i++) ribbon(marked, mercInk, [-0.15, 0.262 - i * 0.042, 0.11], [-0.196, 0.232 - i * 0.042, 0.048], 0.02, 0.011);
+    } else if (mark === 'eye-patch') {
+      round(marked, mercStrap, [-0.068, 0.228, 0.183], [0.066, 0.056, 0.032]);
+      ribbon(marked, mercStrap, [-0.102, 0.252, 0.158], [-0.166, 0.302, -0.05], 0.024, 0.013);
+      ribbon(marked, mercStrap, [-0.092, 0.204, 0.162], [-0.176, 0.236, -0.05], 0.021, 0.012);
+    }
+  }
+
+  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker && !isSoldier && !isMercenary) {
     // Shoulder strap continues on the back. The pouch hangs clear of the arm.
     ribbon(body, leather, [-0.158, 1.32, 0.121], [0.218, 0.846, 0.17], 0.054);
     ribbon(body, leather, [-0.158, 1.32, -0.121], [0.218, 0.846, -0.138], 0.054);
@@ -1086,6 +1330,130 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     box(papers, leather, [0, .052, .015], [.17, .018, .033]);
     ribbon(wrists[1], charcoal, [0, -.052, -.045], [.018, .173, .056], .013, .013);
     const capPatch = box(head, linen, [-.098, .426, .126], [.09, .06, .019]); capPatch.rotation.z = -.18;
+  } else if (isMercenary) {
+    // Eleven garments, one each: what a man wore when he took the Empire's coin.
+    const worn = lookGroup(body, 'garment', garment);
+    if (garment === 'gambeson') {
+      // A fen veteran's quilted coat, stitched in rows, a blanket at the back.
+      const quilt = material(new THREE.Color(tunic).lerp(new THREE.Color(0xcdbb92), 0.34));
+      const quiltDark = material(new THREE.Color(tunic).multiplyScalar(0.7));
+      part(worn, new THREE.CylinderGeometry(0.272, 0.243, 0.47, 8), quilt, [0, 1.07, 0], [1, 1, 0.72]);
+      for (let i = 0; i < 5; i++) part(worn, UNIT_CYLINDER, quiltDark, [0, 1.268 - i * 0.094, 0], [0.276 - i * 0.003, 0.014, 0.201]);
+      part(worn, UNIT_CYLINDER, quilt, [0, 1.312, 0], [0.163, 0.076, 0.134]);
+      box(worn, quiltDark, [0, 1.09, 0.196], [0.03, 0.42, 0.016]);
+      const roll = part(worn, UNIT_CYLINDER, linen, [0, 1.005, -0.2], [0.086, 0.36, 0.088]);
+      roll.rotation.z = Math.PI / 2;
+      for (const x of [-0.13, 0.13]) ribbon(worn, mercStrap, [x, 1.1, -0.208], [x, 0.9, -0.226], 0.032, 0.022);
+    } else if (garment === 'archer') {
+      // A bracer on the bow arm, a chest strap for the quiver, arrows at the hip.
+      part(elbows[0], UNIT_CYLINDER, mercStrap, [0, -0.118, 0.006], [0.088, 0.08, 0.092]);
+      for (const y of [-0.084, -0.152]) part(elbows[0], UNIT_CYLINDER, leather, [0, y, 0.006], [0.091, 0.013, 0.095]);
+      ribbon(worn, mercStrap, [-0.198, 1.33, -0.07], [0.204, 0.9, 0.128], 0.058, 0.022);
+      ribbon(worn, mercStrap, [-0.198, 1.33, -0.07], [0.188, 0.93, -0.126], 0.05, 0.02);
+      box(worn, leather, [0.216, 0.888, 0.062], [0.086, 0.096, 0.15]);
+      for (const z of [0.02, 0.06, 0.1]) ribbon(worn, linen, [0.218, 0.93, z], [0.226, 1.024, z - 0.02], 0.014, 0.014);
+    } else if (garment === 'fur-mantle') {
+      // An islander bought a fur in the first cold market he walked past.
+      part(worn, new THREE.CylinderGeometry(0.202, 0.332, 0.26, 10), mercFur, [0, 1.198, -0.03], [1, 1, 0.85]);
+      for (let i = 0; i < 9; i++) {
+        const angle = i / 9 * Math.PI * 2;
+        const tuft = part(worn, UNIT_HAIR_LOCK, i % 2 ? mercFur : mercFurDark, [Math.sin(angle) * 0.3, 1.078 + (i % 3) * 0.022, Math.cos(angle) * 0.256], [0.094, 0.104, 0.062]);
+        tuft.rotation.z = Math.sin(angle) * 0.26;
+      }
+      ribbon(worn, mercStrap, [-0.142, 1.3, 0.116], [0.15, 1.294, 0.112], 0.024, 0.016);
+      round(worn, gold, [0.154, 1.296, 0.126], [0.031, 0.031, 0.015]);
+    } else if (garment === 'sash') {
+      // A knife-fighter's wide sash, worn shoulder to hip, with three sheaths.
+      const sashMat = material(0x8f4a3e), sashFold = material(0x6d382e);
+      ribbon(worn, sashMat, [-0.208, 1.308, 0.108], [0.196, 0.9, 0.144], 0.115, 0.05);
+      ribbon(worn, sashFold, [-0.208, 1.308, -0.1], [0.196, 0.9, -0.126], 0.11, 0.046);
+      round(worn, sashFold, [0.198, 0.898, 0.13], [0.062, 0.058, 0.05]);
+      for (const [x, z] of [[0.21, 0.1], [0.23, 0.02]]) {
+        const tail = box(worn, sashMat, [x, 0.79, z], [0.07, 0.19, 0.03]);
+        tail.rotation.z = 0.12;
+      }
+      for (let i = 0; i < 3; i++) {
+        const x = -0.14 + i * 0.11;
+        const sheath = box(worn, leather, [x, 0.852, 0.186], [0.042, 0.142 + i * 0.022, 0.034]);
+        sheath.rotation.z = 0.14 - i * 0.12;
+        box(worn, bootMat, [x, 0.935, 0.192], [0.03, 0.044, 0.028]);
+      }
+    } else if (garment === 'bare-forearms') {
+      // Sleeves rolled above the elbow, a second belt and a port man's pouch.
+      for (const elbow of elbows) part(elbow, UNIT_CYLINDER, clothLight, [0, 0.018, 0.003], [0.094, 0.052, 0.098]);
+      part(worn, UNIT_CYLINDER, leather, [0, 0.862, 0], [0.242, 0.048, 0.174]);
+      box(worn, bagMat, [-0.218, 0.83, 0.078], [0.118, 0.152, 0.094]);
+      box(worn, leather, [-0.218, 0.9, 0.078], [0.126, 0.03, 0.1]);
+      ribbon(worn, mercStrap, [-0.2, 0.94, 0.056], [-0.222, 0.83, 0.078], 0.03, 0.02);
+      for (const x of [-0.06, 0.07]) box(worn, bootMat, [x, 0.866, 0.176], [0.024, 0.06, 0.016]);
+    } else if (garment === 'short-cloak') {
+      // A hill-country half cloak, pinned at the right shoulder, thrown back.
+      const cloakMat = material(new THREE.Color(tunic).multiplyScalar(0.6));
+      const cloakFold = material(new THREE.Color(tunic).multiplyScalar(0.78));
+      const mantle = part(worn, new THREE.CylinderGeometry(0.192, 0.296, 0.22, 9), cloakMat, [0, 1.242, -0.04], [1, 1, 0.8]);
+      mantle.rotation.z = 0.06;
+      round(worn, cloakFold, [0.212, 1.296, -0.018], [0.142, 0.082, 0.15]);
+      const panel = box(worn, cloakMat, [-0.055, 1.0, -0.192], [0.36, 0.43, 0.046]);
+      panel.rotation.z = 0.07;
+      box(worn, cloakFold, [-0.055, 0.788, -0.19], [0.352, 0.05, 0.052]);
+      round(worn, gold, [0.17, 1.292, 0.096], [0.036, 0.036, 0.017]);
+    } else if (garment === 'scarf') {
+      // Wound twice against the fens' damp, over a bag too full to close.
+      const scarfMat = material(0xac8548), scarfFold = material(0x83633a);
+      part(worn, UNIT_CYLINDER, scarfMat, [0, 1.33, 0.012], [0.166, 0.08, 0.14]);
+      part(worn, UNIT_CYLINDER, scarfFold, [0, 1.264, 0.016], [0.178, 0.06, 0.152]);
+      const tail = box(worn, scarfMat, [-0.092, 1.136, 0.204], [0.13, 0.34, 0.034]);
+      tail.rotation.z = -0.1;
+      const shortTail = box(worn, scarfFold, [0.076, 1.192, 0.206], [0.108, 0.22, 0.032]);
+      shortTail.rotation.z = 0.15;
+      for (const y of [0.988, 1.086]) box(worn, scarfFold, [-0.094, y, 0.222], [0.124, 0.026, 0.016]);
+      box(worn, bagMat, [-0.256, 0.828, 0], [0.192, 0.262, 0.272]);
+      round(worn, leather, [-0.256, 0.948, 0], [0.112, 0.06, 0.152]);
+      ribbon(worn, leather, [0.156, 1.318, 0.114], [-0.224, 0.868, 0.158], 0.055);
+      ribbon(worn, leather, [0.156, 1.318, -0.114], [-0.224, 0.868, -0.13], 0.055);
+    } else if (garment === 'wrapped-kilt') {
+      // An islander keeps the wrapped kilt over the trousers he had to buy.
+      const kiltMat = material(new THREE.Color(tunic).lerp(new THREE.Color(0xdccba0), 0.42));
+      const kiltBand = material(new THREE.Color(tunic).multiplyScalar(0.68));
+      part(worn, new THREE.CylinderGeometry(0.246, 0.302, 0.42, 9), kiltMat, [0, 0.752, 0], [1, 1, 0.78]);
+      for (let i = 0; i < 7; i++) {
+        const angle = (i - 3) * 0.42;
+        ribbon(worn, kiltBand, [Math.sin(angle) * 0.252, 0.94, Math.cos(angle) * 0.2], [Math.sin(angle) * 0.3, 0.552, Math.cos(angle) * 0.238], 0.024, 0.016);
+      }
+      part(worn, UNIT_CYLINDER, kiltBand, [0, 0.93, 0], [0.26, 0.042, 0.202]);
+      round(worn, kiltMat, [-0.226, 0.898, 0.088], [0.072, 0.062, 0.052]);
+      const hangingEnd = box(worn, kiltMat, [-0.244, 0.756, 0.104], [0.092, 0.23, 0.032]);
+      hangingEnd.rotation.z = -0.06;
+      const coil = part(worn, new THREE.TorusGeometry(0.082, 0.023, 4, 10), linen, [0.226, 0.858, 0.022]);
+      coil.rotation.set(0, 0.35, 0.22);
+    } else if (garment === 'single-pauldron') {
+      // One iron plate over the shield shoulder: the only armor he kept.
+      round(arms[0], mercIron, [-0.022, -0.028, 0], [0.148, 0.106, 0.158]);
+      part(arms[0], UNIT_CYLINDER, mercIronDark, [-0.028, -0.086, 0], [0.138, 0.026, 0.147]);
+      round(arms[0], mercIron, [-0.046, -0.112, 0], [0.122, 0.062, 0.132]);
+      ribbon(worn, mercStrap, [-0.206, 1.306, 0.052], [0.118, 1.072, 0.166], 0.05, 0.02);
+      ribbon(worn, mercStrap, [-0.206, 1.306, -0.052], [0.128, 1.06, -0.15], 0.044, 0.018);
+      box(worn, leather, [0.204, 0.848, 0.118], [0.046, 0.19, 0.052]);
+      box(worn, bootMat, [0.208, 0.952, 0.122], [0.036, 0.062, 0.042]);
+    } else if (garment === 'sleeveless') {
+      // Cut the sleeves off and belt the waist: room for a two-handed swing.
+      part(worn, UNIT_CYLINDER, leather, [0, 0.988, 0], [0.256, 0.118, 0.186]);
+      for (const x of [-0.14, 0, 0.14]) box(worn, bootMat, [x, 0.988, 0.184], [0.03, 0.15, 0.014]);
+      part(worn, UNIT_CYLINDER, bootMat, [0, 1.05, 0], [0.25, 0.022, 0.182]);
+    } else if (garment === 'bedroll') {
+      // Everything he owns is on his back, and none of it has broken yet.
+      const roll = part(worn, UNIT_CYLINDER, linen, [0, 1.1, -0.214], [0.096, 0.39, 0.098]);
+      roll.rotation.z = Math.PI / 2;
+      for (const x of [-0.386, 0.386]) {
+        const end = part(worn, UNIT_CYLINDER, clothLight, [x, 1.1, -0.214], [0.088, 0.022, 0.09]);
+        end.rotation.z = Math.PI / 2;
+      }
+      for (const x of [-0.16, 0.16]) ribbon(worn, mercStrap, [x, 1.302, 0.1], [x * 1.2, 1.01, -0.215], 0.038, 0.018);
+      part(worn, UNIT_CYLINDER, linen, [0, 0.902, 0], [0.242, 0.03, 0.174]);
+      round(worn, linen, [0.148, 0.848, 0.144], [0.036, 0.05, 0.03]);
+      round(worn, bootMat, [0.212, 0.826, 0.098], [0.048, 0.054, 0.048]);
+      part(worn, UNIT_CYLINDER, bootMat, [0.212, 0.858, 0.098], [0.05, 0.014, 0.05]);
+    }
   }
   if (isDoomsayer) {
     // A deep cloth hood shades the eyes; his uneven grey beard and repaired
@@ -1270,6 +1638,13 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   body.name = 'Weight and hips';
   head.name = 'Head';
   batchRigidParts(group, pivots);
+  if (mercBuild) {
+    // Build rides on the hips, not on the root, so the combat view's own
+    // group scale (it shrinks the fallen) never flattens a man's proportions.
+    // The head is scaled back the other way, so a tall man is not a long face.
+    body.scale.set(mercBuild.girth, mercBuild.height, mercBuild.girth);
+    head.scale.set(1 / Math.sqrt(mercBuild.girth), 1 / mercBuild.height, 1 / Math.sqrt(mercBuild.girth));
+  }
   const { animate: animatePose, setArmed } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot, offset: idleOffset, role });
   let fishing = isPondFisher, selectedWeapon = null;
   const rodTipWorld = new THREE.Vector3();

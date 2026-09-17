@@ -6,6 +6,7 @@ import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
+import { createAftermathChapter } from '../src/aftermath-chapter.js';
 import * as campaignModule from '../src/campaign.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-scale.js';
 import { WORLD_BOUNDS as PLAYABLE_BOUNDS } from '../src/regions.js';
@@ -272,4 +273,16 @@ test('the Luscia chapter is optional in a save and can never stand ahead of the 
   assert.equal(checkpoint.read().data.inventory.some(item => item.id === 'horse-token'), true);
   for (const bad of [null, {}, 'luscia', { ...luscia.snapshot(), revision: 0 }, { ...luscia.snapshot(), briefed: false }])
     assert.equal(checkpoint.save({ ...paid, luscia: bad }).ok, false);
+});
+
+test('the chapter after the border battle is saved with the road, and a contradictory one is refused', () => {
+  const { data, checkpoint } = fixture();
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before the chapter existed still loads');
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'aftermath'), false);
+  const aftermath = createAftermathChapter();
+  aftermath.start('moros-fallback'); aftermath.act('begin-assault'); aftermath.winEncounter('aftermath-moros-fallback');
+  assert.equal(checkpoint.save({ ...data, aftermath: aftermath.snapshot() }).ok, true);
+  assert.deepEqual(checkpoint.read().data.aftermath, aftermath.snapshot());
+  for (const bad of [null, 'solis-sweep', { ...aftermath.snapshot(), variant: 'border-battle' }, { ...aftermath.snapshot(), revision: 0 }, { ...aftermath.snapshot(), cleared: false, complete: true }])
+    assert.equal(checkpoint.save({ ...data, aftermath: bad }).ok, false);
 });

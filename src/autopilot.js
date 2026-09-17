@@ -25,7 +25,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'side-empire', 'sound-advance',
+  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'side-empire', 'sound-advance', 'begin-assault', 'close-aftermath',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -209,9 +209,20 @@ export function planGoal(snapshot, world) {
  * the burial line (the ordinary fight policy handles those), and back again.
  */
 /** The Legion on the plain: the camp gate, the Legate's muster, the horse line. */
+/** The day after the battle: rally to the commander, fight (the ordinary fight policy handles it), and report. */
+export function aftermathGoal(snapshot, world) {
+  const aftermath = snapshot.aftermath;
+  if (aftermath.complete) return { kind: 'done', intent: 'Paid, with orders for the road', reason: 'The day after the border battle is done and you have your pay and your orders. What follows is the next chapter, and it is not built yet.' };
+  if (!aftermath.built) return { kind: 'done', intent: 'The border battle is fought', reason: 'The border battle is fought and the war moves on. The ground for what follows is not built yet.' };
+  const id = aftermath.destinationIds?.[0];
+  if (id && world.npcPositions?.[id]) return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Going to ${world.npcNames?.[id] ?? id}` };
+  return { kind: 'wait', intent: 'Holding with the company' };
+}
+
 /** The Legate's terms, the envoy at the stockade, and the line. The autopilot keeps the Empire's contract. */
 export function borderGoal(snapshot, world) {
   const border = snapshot.border;
+  if (border?.complete && snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
   if (border?.complete) return { kind: 'done', intent: 'The border battle is fought', reason: 'The border battle is fought and the war moves on. What follows is the next chapter, and it is not built yet.' };
   if (!border?.destinationIds?.length) return { kind: 'wait', intent: 'Waiting on the line' };
   const id = border.destinationIds[0];

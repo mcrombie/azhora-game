@@ -84,7 +84,7 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
       fighting: [3, 'Hold your corner of the field', 'Six of theirs come on in two waves. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
       complete: [4, won ? 'The field is yours' : 'The field is lost', (empire
         ? (won ? 'The Coalition broke and fell back on Solis. The Legion rides after them into West Suval.' : 'The Legion lost the field and pulled back across the plain; the Coalition holds the stockade.')
-        : (won ? 'The Legion broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')) + ' What follows is not built yet.', 'THE BORDER BATTLE · FOUGHT', []],
+        : (won ? 'The Legion broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return { stage: current, step, steps: 3, title, detail, kicker, side: state.side, outcome: state.outcome,
