@@ -287,9 +287,9 @@ export function createRegionScenery(kit) {
     // step off ordinary ground and needs no rail: a wall there would only pen a
     // traveler who walked round the end of it.
     for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .6) {
-      const spot = bridgePoint(along, side * 3.03);
+      const spot = bridgePoint(along, side * 2.8);
       if (kit.riverDistance(spot.x, spot.z) > CALOSS.halfWidth) continue;
-      colliders.push({ x: spot.x, z: spot.z, r: .6, kind: 'bridge-rail' });
+      colliders.push({ x: spot.x, z: spot.z, r: .35, kind: 'bridge-rail' });
     }
   }
   const repairedDeck = new THREE.Group();
@@ -312,12 +312,14 @@ export function createRegionScenery(kit) {
   }
   colliders.push(...damagedColliders);
 
-  /** How far a point lies from the bridge lane's centre line, or Infinity past its ends. */
-  function laneDistance(x, z) {
+  const LANE_HALF = 2.3;
+  /** Which side of the bridge lane's centre line a point lies, and how far, or Infinity past its ends. */
+  function laneOffset(x, z) {
     const dx = x - crossing.x, dz = z - crossing.z;
     if (Math.abs(dx * bridgeAxis.x + dz * bridgeAxis.z) > HALF_SPAN + 3) return Infinity;
-    return Math.abs(dx * bridgeSide.x + dz * bridgeSide.z);
+    return dx * bridgeSide.x + dz * bridgeSide.z;
   }
+  const laneDistance = (x, z) => Math.abs(laneOffset(x, z));
   // Water blocks the channel everywhere but the bridge lane. Small, dense
   // blockers near the crossing keep the lane exactly as wide as the deck; the
   // rails above close the strip between the deck's edge and where they resume.
@@ -330,8 +332,18 @@ export function createRegionScenery(kit) {
     for (let k = 0; k < count; k++) {
       const t = k / count, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
       for (const offset of offsets) {
-        const px = x + a.nx * offset, pz = z + a.nz * offset;
-        if (laneDistance(px, pz) <= radius + 2.3) continue;
+        let px = x + a.nx * offset, pz = z + a.nz * offset;
+        // A blocker that would reach into the lane is pushed out until its edge
+        // sits on the lane's edge, rather than dropped. Dropping it left a strip
+        // of standable river beside the deck, between the lane's cleared width
+        // and wherever the next blocker happened to fall, and a traveler who
+        // wandered onto that strip was penned there by the rail.
+        const lane = laneOffset(px, pz);
+        if (Number.isFinite(lane) && Math.abs(lane) < radius + LANE_HALF) {
+          if (Math.abs(lane) + radius <= LANE_HALF) continue;
+          const push = radius + LANE_HALF - Math.abs(lane), away = Math.sign(lane) || 1;
+          px += bridgeSide.x * away * push; pz += bridgeSide.z * away * push;
+        }
         colliders.push({ x: px, z: pz, r: radius, kind: 'river-water' });
       }
     }

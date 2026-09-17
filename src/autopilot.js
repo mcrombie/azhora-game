@@ -103,6 +103,11 @@ export function nextWaypoint(position, target, world, memory = {}) {
     // destination's own place on it rather than grinding at the water.
     if (!alongTrail && goal.distance < ROAD_CORRIDOR && onRoad.distance < ROAD_CORRIDOR * 2
       && distance(position, target) > 6 && !clearLine(position, target, world)) {
+      // Step back onto the road by the shortest way first. Standing on a bank
+      // beside the bridge, walking at the far vertex only grinds at the water;
+      // the way back to the road runs the other way, round the end of the deck.
+      if (onRoad.distance > 1.5 && clearLine(position, onRoad, world))
+        return { point: { x: onRoad.x, z: onRoad.z }, onTrail: true };
       const forward = goal.along > onRoad.along;
       const clamp = index => Math.max(0, Math.min(trail.length - 1, index));
       let index = clamp(forward ? onRoad.index + 1 : onRoad.index);
