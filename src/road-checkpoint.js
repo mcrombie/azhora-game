@@ -7,6 +7,7 @@ import { createForestStory, validateForestStorySnapshot } from './forest-story.j
 import { createForestHideoutQuest, validateForestHideoutSnapshot } from './forest-hideout.js';
 import { createRegionalLife, validateRegionalLifeSnapshot } from './regional-life.js';
 import { createCampaign } from './campaign.js';
+import { createLusciaChapter } from './luscia-chapter.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
 export const ROAD_CHECKPOINT_VERSION = 1;
@@ -71,6 +72,16 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       if (campaign.view().chapterId !== 'drent-road' && !journey.state.complete) return failed('The saved campaign outran the road out of Drent.');
     }
 
+    // The Luscia chapter is optional too, and may not stand ahead of the road
+    // that opens it or of the campaign that records its reward.
+    const luscia = createLusciaChapter();
+    if (Object.hasOwn(data, 'luscia')) {
+      if (!luscia.restore(data.luscia)) return failed('The saved Luscia chapter is invalid.');
+      if (luscia.state.started && !journey.state.complete) return failed('The saved Luscia chapter outran the road out of Drent.');
+      if (luscia.state.complete && !campaign.snapshot().completed.includes('luscia-aftermath'))
+        return failed('The saved Luscia chapter is ahead of the campaign.');
+    }
+
     // Store only the known schema. Fresh objects keep callers from modifying a
     // validated value through a previously retained array or nested reference.
     const result = {
@@ -88,6 +99,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'forestHideout')) { const hideout = createForestHideoutQuest(); hideout.restore(data.forestHideout); result.forestHideout = hideout.snapshot(); }
     if (Object.hasOwn(data, 'regionalLife')) { const life = createRegionalLife(); life.restore(data.regionalLife); result.regionalLife = life.snapshot(); }
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
+    if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();
     return { ok: true, data: result, reason: '' };
   }
 

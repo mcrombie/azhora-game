@@ -25,6 +25,9 @@ import { createAcornQuest } from './acorn-quest.js';
 import { createJourney } from './journey.js';
 import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from './journey-content.js';
 import { createRoadCheckpoint } from './road-checkpoint.js';
+import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
+import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
+import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createCampaign } from './campaign.js';
 import { createAutopilot } from './autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -69,6 +72,7 @@ function init() {
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
   const npcData=[{id:'harbormaster',name:'Mara',role:'Harbormaster',color:0x4b8291},{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper',color:0x647b4d},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
+  npcData.push(...LUSCIA_NPCS,...TOWN_NPCS,BEGGAR_NPC);
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   for(const npc of npcData) {
@@ -133,6 +137,11 @@ function init() {
   let acornQuest=createAcornQuest();
   const journey=createJourney({inventory,weapons});
   const campaign=createCampaign();
+  // Luscia: the chapter at the Lauvel, Lumber Town's people, and Smiths on its square.
+  const luscia=createLusciaChapter({inventory});
+  const beggar=createBeggar({waypoints:TOWN_BEGGAR_ROUTE});
+  const LUSCIA_NPC_IDS=new Set(LUSCIA_NPCS.map(person=>person.id));
+  const smiths=npcData.find(person=>person.id===BEGGAR_NPC.id);
   // Regions the journal explains while the road is still Drent's: the start, its neighbors, and the main-quest path.
   const CAMPAIGN_JOURNAL_REGIONS=['Drent','Luscia','Pueth','Elagos','Peblos','Moros Plain','West Suval','East Suval'];
   let atlasRegions=null,atlasAdjacency=null;
@@ -141,6 +150,7 @@ function init() {
   let currentJourneySite=null,currentRegionId=1;
   let currentForestSite=null;
   let currentRegionalSite=null;
+  let currentLusciaSite=null;
   let currentHideoutSite=null;
   let meadowCleared=false;
   const greenwayEncounter={id:'tidehaven-raiders',center:{x:-56,z:29},checkpoint:{x:-45,z:29},retreatAxis:'x',retreatLine:-36,enemies:[{id:'goblin-scout',x:-56,z:30.3,hp:75,entry:.2},{id:'goblin-scrapper',x:-60,z:27.7,hp:75,entry:1.5},{id:'goblin-lookout',x:-64,z:29,hp:75,entry:2.8}]};
@@ -169,6 +179,8 @@ function init() {
   function refreshQuest() {
     if(questStage===10){
       journey.start();const quest=journey.view();
+      if(quest.complete&&campaign.view().chapterId==='luscia-aftermath')luscia.start();
+      if(luscia.state.started){const chapter=luscia.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
       $('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
       $('quest-step').textContent=quest.complete?'FOUR REGIONS · ROAD RESTORED':`REGION ${quest.region} · THE ROAD OUT OF DRENT`;
       return;
@@ -325,10 +337,39 @@ function init() {
     const result=journey.act(action);if(!result.ok){toast(result.reason||'Speak with the road keeper first.','THE DRENT ROAD');return result;}
     syncJourney();refreshQuest();inventory.refresh();audio?.effect('success');
     const complete=journey.view().complete;
-    if(complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
+    if(complete&&campaign.view().chapterId==='drent-road'){campaign.completeChapter('drent-road');inventory.add('silver-coin',3);inventory.refresh();refreshQuest();}
     toast(complete?'The road is restored. Iven will send your report ahead; Luscia waits across the Caloss.':journey.view().title,complete?'FOUR REGIONS EXPLORED':'JOURNAL UPDATED');
     if(!testingEnabled)saveRoad(false);
     return result;
+  }
+  function lusciaAct(action){
+    const result=luscia.act(action);if(!result.ok){toast(result.reason||'Speak with Iven at the relay post first.','THE FIELD AT THE LAUVEL');return result;}
+    refreshQuest();inventory.refresh();audio?.effect('success');
+    if(result.startEncounter===LUSCIA_WOLVES.id){
+      saveRoad(false);
+      if(combat.startEncounter(LUSCIA_WOLVES)){stopInput();toast('Two wolves come off the burial line. Give their lunges room, or back east onto the open grass.','THE LAUVEL · WOLVES');audio?.effect('bell');}
+      return result;
+    }
+    if(action==='return-courier-satchel'&&campaign.view().chapterId==='luscia-aftermath')campaign.completeChapter('luscia-aftermath');
+    const view=luscia.view();
+    toast(view.complete?'The rolls are filed. A Legion horse token and four silver for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    saveRoad(false);
+    return result;
+  }
+  function townAct(action){
+    if(action==='join-luscia-rebels'){
+      const result=campaign.resolveArc(REBEL_CONTACT.region,REBEL_CONTACT.side);
+      toast(result.ok?'Hara sends your name south. Luscia\u2019s rangers are the republic\u2019s business now.':result.reason||'She says nothing more.','THE REPUBLIC\u2019S CONTACT');
+      if(result.ok)saveRoad(false);
+      return result;
+    }
+    if(action==='give-smiths-coin'){
+      if(!inventory.remove('silver-coin',1))return {ok:false,reason:'You have no silver to give.'};
+      beggar.satisfy();inventory.refresh();toast('Smiths thanks you twice and shuffles back to his corner of the square.','A SILVER COIN');saveRoad(false);
+      return {ok:true,reason:''};
+    }
+    if(action==='dismiss-smiths'){beggar.dismiss();return {ok:true,reason:''};}
+    return {ok:false,reason:''};
   }
   function saveRoad(notify=true){
     if(testingEnabled){if(notify)toast('Testing sessions leave your road checkpoint unchanged.','CHECKPOINT');return false;}
@@ -338,7 +379,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot()});
+    const result=checkpoint.save({version:1,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -355,6 +396,7 @@ function init() {
     acornQuest=createAcornQuest({status:saved.woodland?.acornStatus||(saved.lysaComplete?'complete':'available')});
     forestStory.restore(saved.forestStory);forestHideout.restore(saved.forestHideout);regionalLife.restore(saved.regionalLife);
     campaign.restore(saved.campaign??createCampaign().snapshot());if(journey.view().complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
+    luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -475,6 +517,9 @@ function init() {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
+    if(npc.id===BEGGAR_NPC.id){beggarConversation(npc,{beggar,inventory,openDialogue,closeDialogue,act:townAct});return;}
+    if(TOWN_NPC_IDS.includes(npc.id)){townConversation(npc,{campaign,inventory,openDialogue,closeDialogue,act:townAct});return;}
+    if(LUSCIA_NPC_IDS.has(npc.id)||(npc.id==='relay-clerk'&&luscia.state.started)){lusciaConversation(npc,{luscia,inventory,openDialogue,closeDialogue,act:lusciaAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext)});return;}
     if(npc.modelRole){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
       provideBridgeWood:()=>{const needed=Math.max(0,3-inventory.count('forest-stick'));const ok=!needed||inventory.add('forest-stick',needed);if(ok&&needed){toast('Three sound branches are ready for the bridge.','HOLLIS’S REPAIR TIMBER');saveRoad(false);}return {ok,reason:ok?'':'There is no room for the repair timber.'};},
       teachFishing:()=>{const owned=inventory.has('fishing-rod');const result=campcraft.teachFishing();if(!owned)toast('A spare rod for your journey. Find the marked bank east of the bridge.','FISHING ROD · ADDED TO SATCHEL');return result;}});return;}
@@ -651,6 +696,7 @@ function init() {
     }
     if(combat.state.phase!=='active'&&currentForestSite){forestSiteConversation(currentForestSite.id,forestContext);return;}
     if(combat.state.phase!=='active'&&currentRegionalSite){regionalLifeSiteConversation(currentRegionalSite.id,regionalContext);return;}
+    if(combat.state.phase!=='active'&&currentLusciaSite){lusciaAct(LUSCIA_SITE_ACTIONS[currentLusciaSite.id]);return;}
     if(combat.state.phase!=='active'&&currentJourneySite){interactJourneySite(currentJourneySite);return;}
     if(combat.state.phase!=='active'&&currentFire){
       if(combat.state.player.action!=='idle'){toast('Finish your movement before tending the fire.');return;}
@@ -722,7 +768,7 @@ function init() {
   $('sound').onclick=()=>{audio??=createAudio();$('sound').textContent=audio.toggle()?'Sound on':'Sound off';};
   // Autoplay: the computer plays the road with ordinary inputs; any trusted key or click takes control back.
   const autopilotWorld={bounds:world.bounds,colliders:world.colliders,heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
-    npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,
+    npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
     repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border};
   const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,position:{x:player.group.position.x,z:player.group.position.z},
@@ -730,7 +776,8 @@ function init() {
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     journey:{started:journey.state.started,stage:journey.view().stage,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
-    interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
+    luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
+    interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
   const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>document.querySelector(`[data-choice="${id}"]`)?.click(),interact:()=>interact(),
     attack:({yaw:aim})=>{if(mode==='playing'&&grounded&&weapons.profile().usable)combat.attack(aim);},dodge:({x,z})=>{if(mode==='playing'&&grounded)combat.dodge({x,z});},
     'open-inventory':()=>{if(mode==='playing')toggleInventory();},'close-inventory':()=>{if(mode==='inventory')inventory.close();},'select-item':({id})=>inventory.select(id),
@@ -808,7 +855,7 @@ function init() {
     if(questStage===8)return world.northTrail;
     if(questStage===9)return world.border;
     if(questStage===10){
-      const candidates=journey.view().destinationIds.map(id=>{const point=world.journeySites?.[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
+      const candidates=[...journey.view().destinationIds,...luscia.view().destinationIds].map(id=>{const point=world.journeySites?.[id]||LUSCIA_SITES[id]||world.npcPositions[id]||(id==='border'?world.border:null);return point?{...point,name:point.name||npcData.find(n=>n.id===id)?.name||'The road ahead'}:null;}).filter(Boolean);
       const p=player.group.position;
       return candidates.sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0]||null;
     }
@@ -829,6 +876,7 @@ function init() {
           const result=forestHideout.markCleared(hideoutEncounter.id);syncHideout();
           if(result.ok){toast(result.message,'BRAMBLE SCOUT CAMP · CLEARED');saveRoad(false);}
         }
+        else if(combat.state.encounterId===LUSCIA_WOLVES.id){const cleared=luscia.clearWolves(LUSCIA_WOLVES.id);if(cleared.ok){toast('The pack breaks for the copses. Carry the courier\u2019s satchel back to Iven.','THE LAUVEL · WOLVES DRIVEN OFF');saveRoad(false);}}
         else{updateQuest('victory');toast('The Greenway is safe.','THREE RAIDERS DRIVEN OFF');}
       }
       if(e.type==='retreat'){
@@ -837,7 +885,7 @@ function init() {
         else{updateQuest('retreat');toast('Catch your breath in the village.','RETURN TO THE BELL WHEN READY');}
       }
       if(e.type==='defeat'){
-        $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':'Full health · Restart at the woodland bell';
+        $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':'Full health · Restart at the woodland bell';
         if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);$('defeat-checkpoint').textContent='Full health · Retry from the Bramble Scout Camp approach';}
         mode='defeated';stopInput();show('dialogue',false);show('modal-backdrop',true);show('journal',false);show('pause',false);show('defeat',true);$('retry').focus();
       }
@@ -878,7 +926,7 @@ function init() {
     show('border-status',mode==='playing'&&player.group.position.z<world.bounds.minZ+18);
     $('practice-hits').textContent=`${Math.min(2,practiceHits)} / 2 hits`;$('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
     show('encounter-status',active&&mode==='playing');
-    $('raiders-left').textContent=combat.state.enemies.filter(e=>e.kind==='goblin'&&e.hp>0).length;
+    $('raiders-left').textContent=combat.state.enemies.filter(e=>['goblin','wolf'].includes(e.kind)&&e.hp>0).length;
     const goal=destination();
     const pin=trackedPlace(),pinDistance=pin?Math.hypot(pin.x-player.group.position.x,pin.z-player.group.position.z):Infinity;
     show('trail-pin',!!pin&&mode==='playing'&&!active);
@@ -892,7 +940,7 @@ function init() {
       $('region-kicker').textContent=region.id===1?'THE FIRST SHORE · DRENT':`AZHORA · REGION ${region.id}`;
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;toast(region.subtitle,`REGION ${region.id} · ${region.name.toUpperCase()}`);}
     }
-    $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':'DEFEND THE GREENWAY';
+    $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':'DEFEND THE GREENWAY';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
@@ -973,17 +1021,21 @@ function init() {
       player.animate(walkTime,movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable,fishing:mode==='fishing'});
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
+      const lusciaDestinations=questStage===10&&luscia.state.started?luscia.view().destinationIds:[];
+      const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
+      if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;
       for(const npc of npcData) {
-        const pos=npc.actor.group.position,home=world.npcPositions[npc.id];
+        const pos=npc.actor.group.position,home=npc.id===BEGGAR_NPC.id&&beggarStep?beggarStep.target:world.npcPositions[npc.id];
         const alarm=combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         const destX=home.x+(alarm?(npc.id==='warden'?3:npc.id==='harbormaster'?4:-3):0),destZ=home.z+(alarm?2:0);
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*2.4),bx=pos.x,bz=pos.z;moveCharacter(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,world);pos.y=world.heightAt(pos.x,pos.z);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         npc.actor.animate(walkTime+2,pace,true,{alert:alarm});
-        const d=pos.distanceTo(player.group.position);if(d<nearest){nearest=d;currentNPC=npc;}
+        const d=pos.distanceTo(player.group.position)+(npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest){nearest=d;currentNPC=npc;}
         npc.marker.visible=(questStage===1&&npc.id==='harbormaster')||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
         if(npc.modelRole)npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
+        if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
         if(npc.id===FOREST_STORY_NPC.id)npc.marker.visible=(!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned))&&questStage>=1&&combat.state.phase!=='active';
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);npc.marker.rotation.y=elapsed*.7;
         if(mode==='dialogue'&&activeDialogue?.npc===npc){const p=player.group.position;npc.actor.group.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);}
@@ -1000,6 +1052,7 @@ function init() {
       currentFire=mode==='playing'?world.firePits.find(fire=>Math.hypot(p.x-fire.x,p.z-fire.z)<2.1):null;
       currentForestSite=mode==='playing'?FOREST_STORY_SITES.find(site=>Math.hypot(p.x-site.x,p.z-site.z)<2.7)||null:null;
       currentRegionalSite=mode==='playing'?REGIONAL_LIFE_SITES.filter(site=>Math.hypot(p.x-site.x,p.z-site.z)<2.3).sort((a,b)=>Math.hypot(p.x-a.x,p.z-a.z)-Math.hypot(p.x-b.x,p.z-b.z))[0]||null:null;
+      currentLusciaSite=mode==='playing'&&luscia.view().stage==='find-satchel'?Object.values(LUSCIA_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<2.7)||null:null;
       currentHideoutSite=null;
       if(mode==='playing'){
         const state=forestHideout.state,config=FOREST_HIDEOUT_QUEST;
@@ -1008,11 +1061,12 @@ function init() {
       }
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
-      show('interaction',mode==='playing'&&(!!currentNPC||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      show('interaction',mode==='playing'&&(!!currentNPC||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
       if(currentNPC)$('interaction-label').textContent='Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
       if(currentRegionalSite&&!currentNPC)$('interaction-label').textContent=currentRegionalSite.prompt;
+      if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Recover the village supplies':'Inspect Bramble Scout Camp · optional';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
@@ -1040,7 +1094,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

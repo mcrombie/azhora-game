@@ -11,6 +11,7 @@ export async function runAutoplaySmoke(h) {
   const started = performance.now();
   const milestones = [];
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
+  let lastChapterStage = '', wolfFight = false;
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
   let previousFrames = readState().frames, previousAction = null;
 
@@ -45,6 +46,8 @@ export async function runAutoplaySmoke(h) {
     if (state.questStage !== lastStage) { note(`quest stage ${state.questStage}`, { region: state.region }); lastStage = state.questStage; }
     if (state.region !== lastRegion) { note(`region ${state.region}`); lastRegion = state.region; }
     if (state.journeyView?.stage && state.journeyView.stage !== lastJourneyStage) { note(`road ${state.journeyView.stage}`); lastJourneyStage = state.journeyView.stage; }
+    if (state.luscia?.stage && state.luscia.stage !== lastChapterStage) { note(`luscia ${state.luscia.stage}`); lastChapterStage = state.luscia.stage; }
+    if (state.enemies?.some(enemy => String(enemy.id).startsWith('lauvel-wolf'))) wolfFight = true;
     if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight'); fights++; }
     if (state.mode === 'defeated') retries++;
     if (state.mode === 'dialogue') lines++;
@@ -64,22 +67,27 @@ export async function runAutoplaySmoke(h) {
       restarted = true; checks++;
     }
     if (!autopilot.active) {
-      assert(state.journeyView?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
+      assert(state.journeyView?.complete && state.luscia?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
       break;
     }
-    assert(performance.now() - started < deadlineMs, `autoplay did not finish the road within ${Math.round(deadlineMs / 1000)} s (stage ${state.questStage}, road ${state.journeyView?.stage}, intent “${autopilot.intent}”)`);
+    assert(performance.now() - started < deadlineMs, `autoplay did not finish the road within ${Math.round(deadlineMs / 1000)} s (stage ${state.questStage}, road ${state.journeyView?.stage}, luscia ${state.luscia?.stage}, intent “${autopilot.intent}”)`);
   }
   const final = readState();
   assert(final.questStage === 10, 'the tutorial was not completed');
   assert(final.journeyView.complete, 'the road was not completed');
-  assert(final.campaign?.chapterId === 'luscia-aftermath', 'the campaign did not advance to Luscia');
+  assert(final.luscia?.complete, 'the field at the Lauvel was not finished');
+  assert(final.campaign?.chapterId === 'moros-camp', `the campaign stopped at ${final.campaign?.chapterId} instead of the Moros camp`);
+  assert(final.campaign?.horse === true, 'the chapter did not pay the Legion horse');
+  assert(wolfFight, 'no wolf came off the burial line');
+  assert(/Moros camp/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
-  assert(world.regionAt(final.position[0], final.position[2]).id === 2, 'the traveler did not end beside the Lauvel relay in Luscia');
+  assert(world.regionAt(final.position[0], final.position[2]).id === 2, "the traveler did not end at Iven's relay post in Luscia");
   assert(tookOver && restarted, 'the hand-over was never exercised');
-  assert(fights >= 2, `only ${fights} fights were seen`);
-  checks += 7;
+  assert(fights >= 3, `only ${fights} fights were seen`);
+  checks += 11;
   return {
-    ok: true, checks, fights, retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxMetresPerRenderedFrame: Math.round(maxJump * 100) / 100,
+    ok: true, checks, fights, wolfFight, chapter: final.luscia?.stage, campaign: final.campaign?.chapterId,
+    retries, dialogueFrames: lines, walkedMeters: Math.round(walked * 10) / 10, maxMetresPerRenderedFrame: Math.round(maxJump * 100) / 100,
     elapsedSeconds: Math.round((performance.now() - started) / 100) / 10, milestones, stopReason: autopilot.stopReason,
   };
 }
