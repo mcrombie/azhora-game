@@ -12,15 +12,26 @@ export async function runRoadTraversal(h) {
   const position = () => player?.group?.position || player?.position || player;
   const copyPosition = () => ({ x: position().x, z: position().z });
   const initial = copyPosition();
-  // Out along the main road to the Legion camp, with the Suval branch walked
-  // from its junction, so every one of the four regions is entered on foot.
+  // Out along the main road to the Legion camp, with the Suval branch and the
+  // road north into Pueth walked from their junctions, so every region is entered on foot.
   const junction = (world.suvalRoute ?? [])[0];
   const mainRoad = world.routeJourney.map(point => ({ x: point.x, z: point.z }));
   const suvalRoad = (world.suvalRoute ?? []).map(point => ({ x: point.x, z: point.z }));
   const branchAt = junction ? mainRoad.findIndex(point => Math.hypot(point.x - junction.x, point.z - junction.z) < 1) : -1;
-  const road = branchAt >= 0
+  let road = branchAt >= 0
     ? [...mainRoad.slice(0, branchAt + 1), ...suvalRoad.slice(1), ...suvalRoad.slice(0, -1).reverse(), ...mainRoad.slice(branchAt + 1)]
     : mainRoad;
+  // The road north into Pueth leaves the main road between two of its vertices: walk out to its end and back first.
+  const puethRoad = (world.puethRoute ?? []).map(point => ({ x: point.x, z: point.z }));
+  if (puethRoad.length > 1) {
+    const start = puethRoad[0];
+    const onLeg = road.findIndex((a, i) => {
+      const b = road[i + 1]; if (!b) return false;
+      const dx = b.x - a.x, dz = b.z - a.z, t = Math.max(0, Math.min(1, ((start.x - a.x) * dx + (start.z - a.z) * dz) / (dx * dx + dz * dz)));
+      return Math.hypot(start.x - a.x - dx * t, start.z - a.z - dz * t) < .5;
+    });
+    if (onLeg >= 0) road = [...road.slice(0, onLeg + 1), ...puethRoad, ...puethRoad.slice(0, -1).reverse(), ...road.slice(onLeg + 1)];
+  }
   assert(road.every(point => Number.isFinite(point.x) && Number.isFinite(point.z)), 'road contains invalid coordinates');
   assert(canStand(initial.x, initial.z, world), 'starting position is blocked');
 
@@ -148,6 +159,8 @@ export async function runRoadTraversal(h) {
     const returnedToEastreena = world.regionAt(position().x, position().z).id === 1;
     assert(returnedToEastreena, 'the return journey did not re-enter Drent');
     assert([2, 3, 4].every(id => enteredRegions.has(id)), 'the trip skipped one of Luscia, the Moros or East Suval');
+    const puethEnd = world.puethRoute?.at(-1), puethRegion = puethEnd ? world.regionAt(puethEnd.x, puethEnd.z) : null;
+    assert(!puethRegion || enteredRegions.has(puethRegion.id), 'the trip skipped the road north into Pueth');
     assert(walkedMeters > 1000, `only ${walkedMeters.toFixed(1)} m was recorded for the full return journey`);
     assert(walkedMeters <= heldKeyMs / 1000 * 7.2 + 1, 'distance exceeds the real time spent holding run');
     assert(!Number.isFinite(initialRenderFrame) || finalState.frames > initialRenderFrame + 1000,

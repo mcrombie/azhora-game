@@ -1369,7 +1369,7 @@ function init() {
       if(currentRegionalSite&&!currentNPC)$('interaction-label').textContent=currentRegionalSite.prompt;
       if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentMorosSite&&!currentNPC)$('interaction-label').textContent=currentMorosSite.prompt;
-      if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Recover the village supplies':'Inspect Bramble Scout Camp · optional';
+      if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Inspect Bramble Scout Camp · optional';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
       rideCamera=THREE.MathUtils.lerp(rideCamera,riding.mounted?1:0,1-Math.exp(-4*dt));
@@ -1415,7 +1415,7 @@ function init() {
         mode='playing';document.body.classList.add('playing');show('opening',false);show('loading',false);
         player.group.position.set(FOREST_STORY_NPC.x+1.5,world.heightAt(FOREST_STORY_NPC.x+1.5,FOREST_STORY_NPC.z+1),FOREST_STORY_NPC.z+1);refreshQuest();settleCamera();}});
     const hideoutHooks=()=>({...forestHooks(),forestHideout,hideoutAct,hideoutWatch,handleCombatEvents,attack,
-      prepareHideout:(stage=5)=>{forestHooks().prepareVillage();questStage=stage;journey.restore(createJourney().snapshot());reviewFrozen=false;reviewTarget=null;forestHideout.restore();syncHideout();
+      prepareHideout:(stage=10)=>{forestHooks().prepareVillage();questStage=stage;journey.restore(createJourney().snapshot());if(stage>=10)journey.start();reviewFrozen=false;reviewTarget=null;forestHideout.restore();syncHideout();
         if(stage>=2)inventory.grant('harbor-letter');if(stage>=6)inventory.grant('road-token');if(stage>=3){practiceHits=2;practiceDodges=1;}weapons.repair();
         const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;refreshQuest();settleCamera();},
       hideoutEncounter});
@@ -1485,9 +1485,9 @@ function init() {
         if(view==='hideout-cleared'){forestHideout.inspect();forestHideout.begin({questStage});forestHideout.markCleared(hideoutEncounter.id);syncHideout();reviewTarget=new THREE.Vector3(hideoutEncounter.center.x,world.heightAt(hideoutEncounter.center.x,hideoutEncounter.center.z)+1,hideoutEncounter.center.z);}
         if(view==='hideout-tamsin'){
           forestHideout.inspect();forestHideout.begin({questStage});forestHideout.markCleared(hideoutEncounter.id);forestHideout.recover();syncHideout();
-          const npc=npcData.find(n=>n.id===FOREST_STORY_NPC.id),home=world.npcPositions[npc.id];
+          const npc=npcData.find(n=>n.id===FOREST_HIDEOUT_QUEST.recipientId),home=world.npcPositions[npc.id];
           player.group.position.set(home.x+1.2,world.heightAt(home.x+1.2,home.z+.6),home.z+.6);yaw=.5;pitch=.3;distance=targetDistance=5;
-          forestConversation(npc,forestContext);
+          garrisonConversation(npc,hideoutContext);
         }
         if(view==='forest-thrush'){
           const bird=forestEcology.state().birds[0];player.group.position.set(bird.x,world.heightAt(bird.x,bird.z+8),bird.z+8);player.group.visible=false;
