@@ -26,6 +26,9 @@ const TEMPLATES = (() => {
     cylinder4: plain(new THREE.CylinderGeometry(1, 1, 1, 4)),
     cone: plain(new THREE.ConeGeometry(1, 1, 6)),
     cone4: plain(new THREE.ConeGeometry(1, 1, 4)),
+    // Open-ended pieces for things whose ends are never seen: a stake's buried foot and its covered top.
+    shaft4: plain(new THREE.CylinderGeometry(1, 1, 1, 4, 1, true)),
+    point4: plain(new THREE.ConeGeometry(1, 1, 4, 1, true)),
     rock: plain(new THREE.IcosahedronGeometry(1, 0)),
   };
 })();
@@ -65,6 +68,15 @@ export function createSceneryBuilder(name = 'Hand-built place') {
     cylinder(tint, x, y, z, radius, h, yaw = 0, sides = 7) { place(sides === 4 ? 'cylinder4' : 'cylinder', tint, x, y + h / 2, z, radius, h, radius, yaw); },
     cone(tint, x, y, z, radius, h, yaw = 0, sides = 6) { place(sides === 4 ? 'cone4' : 'cone', tint, x, y + h / 2, z, radius, h, radius, yaw); },
     rock(tint, x, y, z, sx, sy, sz, yaw = 0) { place('rock', tint, x, y, z, sx, sy, sz, yaw); },
+    /**
+     * A squared, sharpened stake standing on (x, y, z): `width` across, `h` to the
+     * shoulder, a four-sided point above. Twelve triangles, for palisades of hundreds.
+     */
+    stake(tint, x, y, z, width, h, yaw = 0, point = .42) {
+      const r = width / Math.SQRT2;
+      place('shaft4', tint, x, y + h / 2, z, r, h, r, yaw + Math.PI / 4);
+      place('point4', tint, x, y + h + point / 2, z, r * 1.02, point, r * 1.02, yaw + Math.PI / 4);
+    },
     /** A square timber from a to b ([x, y, z]), `w` thick. */
     beam(tint, a, b, w = .16, h = w) {
       const dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], length = Math.hypot(dx, dy, dz);

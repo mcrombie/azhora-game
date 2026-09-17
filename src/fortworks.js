@@ -45,8 +45,7 @@ export function drawCircuit(circuit, { parent, heightAt, colliders, style = 'tim
           const count = Math.max(1, Math.round(span / .38));
           for (let s = 0; s < count; s++) {
             const z = -span / 2 + (s + .5) * span / count, h = S.wallHeight - 1.2 + ((s * 7 + k * 3) % 5 - 2) * .06;
-            b.block(s % 2 ? C.stake : C.stakeDark, X(.95), 1.2, z, .36, h - .35, .34);
-            b.cone(s % 2 ? C.stake : C.stakeDark, X(.95), 1.2 + h - .35, z, .25, .42, Math.PI / 4, 4);
+            b.stake(s % 2 ? C.stake : C.stakeDark, X(.95), 1.2, z, .36, h - .35);
           }
           b.box(C.rail, X(.7), 2.35, 0, .14, .2, span);
           b.box(C.rail, X(.7), S.wallHeight - .75, 0, .14, .2, span);
@@ -62,8 +61,9 @@ export function drawCircuit(circuit, { parent, heightAt, colliders, style = 'tim
         // The wall walk: a plank deck on posts, a fighting platform behind the parapet.
         b.box(C.deck, X(-.1), S.walkHeight, 0, 1.75, .14, span + .02);
         if (style === 'timber') {
-          const posts = Math.max(1, Math.round(span / 2.4));
-          for (let s = 0; s <= posts; s++) {
+          // One post every few metres; the next piece of wall supplies the post at this piece's far end.
+          const posts = Math.max(1, Math.round(span / 3.2));
+          for (let s = 0; s < posts; s++) {
             const z = -span / 2 + s * span / posts;
             b.beam(C.rail, [X(-.85), 1.7, z], [X(-.85), S.walkHeight, z], .16);
             b.beam(C.rail, [X(-.85), S.walkHeight - .1, z], [X(.75), S.walkHeight - .1, z], .12);
@@ -156,7 +156,7 @@ export function drawCircuit(circuit, { parent, heightAt, colliders, style = 'tim
       b.sheet(C.ditchSide, V(oa, .01), V(ob, .01), V(o1), V(o0));
       // A low spoil lip on the inner edge.
       b.beam(C.earth, V(i0, .15), V(i1, .15), .5, .3);
-      const stakes = Math.max(1, Math.round(length / steps / 1.6));
+      const stakes = Math.max(1, Math.round(length / steps / 2.6));
       for (let s = 0; s < stakes; s++) {
         const p = lerp(m0, m1, (s + .5) / stakes), q = { x: p.x + (o0.x - i0.x) * .12, z: p.z + (o0.z - i0.z) * .12 };
         b.beam(C.spike, V(p), [q.x, y(q) + .9, q.z], .09);

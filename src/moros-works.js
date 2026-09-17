@@ -238,8 +238,7 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
       // Wings of palisade either side, running out from the posts across the old copse line.
       for (let k = 0; k < 20; k++) {
         const w = at(0, side * (6.3 + k * .42)), wy = y(w.x, w.z), h = 2.6 + (k % 3) * .12;
-        g.block(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, .34, yaw);
-        g.cone('#634833', w.x, wy + h, w.z, .25, .35, yaw + Math.PI / 4, 4);
+        g.stake(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, yaw, .35);
       }
       const w0 = at(0, side * 6.1), w1 = at(0, side * 14.5);
       g.beam('#58422f', [w0.x, y(w0.x, w0.z) + 1.6, w0.z], [w1.x, y(w1.x, w1.z) + 1.6, w1.z], .12, .18);

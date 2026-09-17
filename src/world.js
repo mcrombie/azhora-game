@@ -779,7 +779,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const markerX = 31, markerZ = -59, markerY = localGround(markerX, markerZ);
   const standingStone = pebble(material('#899b8f'), markerX, markerY + 1.7, markerZ, 1.3, 2.1, .8); standingStone.rotation.z = -.1;
   vpush({ x: markerX, z: markerZ, r: 1.25 });
-  const inset = box(material('#96c5b1', { emissive: '#569e89', emissiveIntensity: .24 }), markerX, markerY + 1.9, markerZ + .68, .13, .76, .08); inset.rotation.z = .42;
+  // The waystone's old road mark, picked out in paint like every other marker (no glow).
+  const inset = box(material('#96c5b1'), markerX, markerY + 1.9, markerZ + .68, .13, .76, .08); inset.rotation.z = .42;
 
   // ---------------------------------------------------------------------------
   // Road signs, shared between Tidehaven and the regions

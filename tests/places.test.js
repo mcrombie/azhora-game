@@ -8,6 +8,7 @@ import { WAYSIDE_PLACES, DRENT_WAYSIDE, MOROS_WAYSIDE, MOROS_MILESTONES } from '
 import { FRONTIER_LANDMARKS } from '../src/frontier.js';
 import { OUTPOST_BENCH, OUTPOST_FIRE } from '../src/outpost.js';
 import { LUMBER_TOWN_STABLE, regionNameAt, insideRegion } from '../src/region-world.js';
+import { validateWoodlandProgress } from '../src/woodland-progress.js';
 
 const scene = new THREE.Scene();
 const { createWorld } = await sourceModule('../src/world.js');
@@ -50,6 +51,10 @@ test('the outpost’s smithy bench and mess fire are registered like every other
   assert.ok(world.firePits.some(fire => fire.id === OUTPOST_FIRE.id));
   for (const spot of [OUTPOST_BENCH, OUTPOST_FIRE]) assert.ok(canStand(spot.x, spot.z, world, .48), `${spot.id} has room to work`);
   assert.equal(regionNameAt(OUTPOST_BENCH.x, OUTPOST_BENCH.z), 'Moros Plain');
+  // A checkpoint taken with the mess fire burning, after discovering every place there is, still saves.
+  const camp = { version: 1, taught: false, catches: 0, fires: Object.fromEntries(world.firePits.map(fire => [fire.id, fire.id === OUTPOST_FIRE.id ? 30 : 0])) };
+  const progress = { version: 1, acornStatus: 'available', practiceHits: 0, practiceDodges: 0, acorns: [], sticks: [], fruits: [], discoveries: world.landmarks.map(landmark => landmark.id), camp };
+  assert.ok(validateWoodlandProgress(progress, new Map()), 'the saved woodland progress accepts the outpost’s fire and every landmark');
 });
 
 test('the empty roads have wayside places, each a landmark with discovery text in its own region, and nothing in Drent to fight', () => {

@@ -477,8 +477,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
         b.beam('#6f5238', [tip.x, y(tip.x, tip.z), tip.z], [tip.x, y(tip.x, tip.z) + 1.9, tip.z], .14);
         for (let k = 0; k < 28; k++) {
           const w = side(s * (6 + k * .42)), wy = y(w.x, w.z), h = 2.7 + (k % 3) * .12;
-          b.block(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, .34, yaw);
-          b.cone('#634833', w.x, wy + h, w.z, .25, .35, yaw + Math.PI / 4, 4);
+          b.stake(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, yaw, .35);
         }
         lineColliders(side(s * 6), side(s * 17.8), .32, 'town-palisade');
       }
