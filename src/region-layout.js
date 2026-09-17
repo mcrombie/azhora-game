@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -41,6 +41,9 @@ export const REGION_BIOMES = Object.freeze({
   'East Suval': Object.freeze({ id: 'stone-hills', name: 'East Suval hills', ground: '#9b9d85', canopy: '#6c7f5a', treesPerHex: perHex(3), rocksPerHex: perHex(7), undergrowth: 'heather',
     relief: { amplitude: 11, wavelength: 120 }, clearings: ['border-post', 'elod'],
     note: 'Grey stone country like today’s Threefold Rise: waymarkers, ridge rock, heather, Elod’s guarded border post in the north.' }),
+  'West Suval': Object.freeze({ id: 'coastal-downs', name: 'West Suval downs', ground: '#a9a95c', canopy: '#76834f', treesPerHex: perHex(4), rocksPerHex: perHex(2), undergrowth: 'long-grass',
+    relief: { amplitude: 3.6, wavelength: 210 }, clearings: ['solis', 'coalition-camp', 'shepherds-fold', 'watchtower', 'wayside-well'],
+    note: 'Rolling coastal grassland: long tawny grass, scattered thorn and olive trees, low field walls of pale stone, and downs that rise toward the white cliffs above Solis. Not the Moros’s flat treeless sky, not East Suval’s grey rock.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

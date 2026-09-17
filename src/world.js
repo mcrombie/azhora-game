@@ -11,6 +11,9 @@ import {
 import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, smooth, lerp } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { createRegionScenery } from './world-regions.js';
+import { SOLIS_ROAD } from './region-world.js';
+import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
+import { createWestSuvalScenery } from './west-suval-world.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -1010,7 +1013,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
-  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4);
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
@@ -1026,8 +1029,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     },
   });
   bridgeDeck = regionScenery.bridge;
+  // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
+  const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
+    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: (x, z, label, yaw, returnLabel) => trailSign(x, z, 1, label, yaw, returnLabel, world) });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
+  addPath(SOLIS_ROAD, 4.2);
   for (const spur of roadSpurs) addPath(spur, 2.2);
   // Tidehaven's own lanes and woodland spurs stay in the village's frame.
   function addLocalPath(points, width) {
@@ -1368,6 +1375,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     Object.freeze({ id: 'coast-water', kind: 'polygon', points: Object.freeze([...seaEdge,
       mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
     Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
+    Object.freeze({ id: 'west-suval-water', kind: 'polygon', points: WEST_SUVAL_SEA }),
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
       ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
       ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
@@ -1392,6 +1400,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     journeySites,
     routeJourney: ONWARD_ROAD.map(p => ({ x: p.x, z: p.z })),
     suvalRoute: SUVAL_ROAD.map(p => ({ x: p.x, z: p.z })),
+    solisRoute: SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })),
+    westSuvalMetrics: westSuval.metrics,
+    setSolisHolder: westSuval.setHolder,
+    enclosures: SOLIS_ENCLOSURES,
+    solisHolder: westSuval.holder,
     roadSigns,
     frontier: { x: FRONTIER.x, z: FRONTIER.z, name: FRONTIER.name, regionName: FRONTIER.regionName },
     storySites: STORY_SITES,
@@ -1487,6 +1500,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         description: 'Torn pennants mark a side trail west of the rise. A goblin camp squats in the scrub beyond, with sacks taken from Lumber Town’s stores.' },
       ...regionLandmarks,
       ...REGIONAL_PLACES,
+      ...WEST_SUVAL_LANDMARKS,
     ],
     paths,
     update(time, dt) {

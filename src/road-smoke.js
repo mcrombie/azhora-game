@@ -1,5 +1,6 @@
 import { canStand } from './game-state.js';
 import { LUSCIA_SITES, LUSCIA_WOLVES } from './luscia-chapter.js';
+import { OSTLER_OBJECTIVE } from './ostler.js';
 
 /** Browser smoke coverage for the actual F prompts, dialogue buttons and combat. */
 export async function runRoadSmoke(h) {
@@ -43,8 +44,9 @@ export async function runRoadSmoke(h) {
     await frames(2);
     assert(getMode() === 'playing', `${id} did not return control to the player`);
     // Finishing a chapter hands the HUD to the next one, so any of the chapters
-    // the host can put on the banner counts as the quest having moved on.
-    const banner = [journey.view().title, state().luscia?.title, state().moros?.title, state().border?.title, state().aftermath?.title];
+    // the host can put on the banner counts as the quest having moved on. Iven's
+    // horse token puts the ostler's errand on the banner before the Moros chapter's.
+    const banner = [journey.view().title, state().luscia?.title, state().moros?.title, state().border?.title, state().aftermath?.title, OSTLER_OBJECTIVE.title];
     assert(banner.includes(query('#quest-title')?.textContent), `quest HUD did not reflect ${id}; the banner reads ${query('#quest-title')?.textContent}`);
   }
 

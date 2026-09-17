@@ -5,6 +5,7 @@ import {
 import { calossSurface } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
+import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -40,6 +41,7 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: STORY_SITES.elodGate.x, z: STORY_SITES.elodGate.z, r: 26 }),
   Object.freeze({ x: STORY_SITES.banditLookout.x, z: STORY_SITES.banditLookout.z, r: 10 }),
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, north Luscia
+  ...WEST_SUVAL_CLEARINGS,                                                    // Solis, its camp and the road's places (src/west-suval.js)
 ]);
 
 
@@ -137,7 +139,7 @@ export function createRegionScenery(kit) {
         if (regionClear(x, z, 2.5) || kit.roadDistance(x, z) < 4.2 || kit.riverDistance(x, z) < 12) continue;
         if (groundHeight(x, z) < 1.4) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (dense ? 3.1 : 5.2))) continue;
-        trees.push({ x, z, s: range(.78, 1.3), pine: random() < (dense ? .3 : .16), h: range(7, 11.5), rot: range(0, 6.28) });
+        trees.push({ x, z, s: range(.78, 1.3), pine: random() < (dense ? .3 : biome.id === 'coastal-downs' ? 0 : .16), h: range(7, 11.5), rot: range(0, 6.28) });
       }
       for (let i = 0; i < biome.rocksPerHex; i++) {
         const x = cell.x + range(-26 * WORLD_SCALE, 26 * WORLD_SCALE), z = cell.z + range(-28 * WORLD_SCALE, 28 * WORLD_SCALE);
