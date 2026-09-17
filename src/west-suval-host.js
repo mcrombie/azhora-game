@@ -7,8 +7,8 @@
  *  - Registration puts Solis's people into the host's NPC list. Their occupation
  *    stakes (`holds`/`region`) are honoured by the host's occupation pass.
  *  - The frame shows who holds Solis on the ground (the camp, banners and
- *    standards through `world.setSolisHolder`), keeps both garrisons in while the
- *    Legion is still clearing the square, and walks the border chapter's column
+ *    standards through `world.setSolisHolder`), stands both garrisons down while
+ *    the Legion is still clearing the square, and walks the border chapter's column
  *    at the traveler's back during the march: the file of legionaries or the
  *    valley companies, and on the Empire's side the hired company's mustered men.
  *    A marcher left far behind is moved up out of sight; one fighting as a combat
@@ -25,7 +25,7 @@ export function createWestSuvalHost({ world, npcData }) {
     world.npcPositions[person.id] = { x: person.x, z: person.z };
     npcData.push({ ...person });
   }
-  let holder = null, arrivalAsked = false;
+  let holder = null, arrivalAsked = false, lastColumn = [];
   const garrison = npcData.filter(npc => SOLIS_NPC_IDS.has(npc.id) && npc.holds);
 
   /** Talk to someone from Solis. Returns false for anyone else. */
@@ -47,11 +47,18 @@ export function createWestSuvalHost({ world, npcData }) {
     const view = border.view();
     // Anyone the combat view draws as an ally on the line is not drawn twice.
     if (encounterId === BORDER_ENCOUNTER_ID) for (const id of fightingAllies) { const npc = npcById.get(id); if (npc) npc.hidden = true; }
-    if (view.stage !== 'march') { arrivalAsked = false; return { holder, marching: false }; }
+    if (view.stage !== 'march') {
+      arrivalAsked = false;
+      for (const npc of lastColumn) npc.escorting = false;
+      lastColumn = [];
+      return { holder, marching: false };
+    }
 
     const cast = new Set(border.cast());
     const column = [...BORDER_MARCHERS.filter(id => cast.has(id)), ...(view.side === 'empire' ? mustered : [])]
       .map(id => npcById.get(id)).filter(Boolean);
+    for (const npc of lastColumn) if (!column.includes(npc)) npc.escorting = false;
+    lastColumn = column;
     const traveler = player.group.position, heading = player.group.rotation.y;
     column.forEach((npc, index) => {
       const slot = marchSlot(index, traveler, heading), at = npc.actor.group.position;

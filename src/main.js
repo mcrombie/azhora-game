@@ -93,7 +93,7 @@ function init() {
   // Lumber Town's garrison: they stand on the square, and march and fight beside the traveler on the goblin camp.
   npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
   const garrisonIds=new Set(HIDEOUT_GARRISON.map(npc=>npc.id));
-  // The envoy's party and the line commanders stand at the border stockade only while the story needs them.
+  // The envoy's party waits at Solis, and the line commanders and marching columns come out, only while the story needs them.
   for(const person of BORDER_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person,hidden:true});}
   const borderNpcIds=new Set(BORDER_NPCS.map(person=>person.id));
   // West Suval: Solis's people, both garrisons and the camp's captains; the march to the border (src/west-suval-host.js).
