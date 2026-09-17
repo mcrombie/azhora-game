@@ -11,7 +11,7 @@
  * (HEX_WORLD_TRANSFORM). Every hand-placed literal below is still written in the
  * authored 56 m frame the content was designed in and converted here, at the
  * boundary, by `at()` for a place and `road()` for a road vertex.
- * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval, 6 Pueth.
+ * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval, 5 West Suval, 6 Pueth, 7 Peblos.
  */
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from './region-survey.js';
 import {
@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -112,6 +112,11 @@ export const REGION_TERRAIN = Object.freeze({
   Pueth: Object.freeze({ base: 7.2, amp: 3.2, wave: 130, ground: REGION_BIOMES.Pueth.ground, byTerrain: Object.freeze({
     hills: Object.freeze({ base: 19, amp: 9, wave: 115, ground: '#8f9585' }),
     plains: Object.freeze({ base: 5.6, amp: 1.8, wave: 170, ground: '#8c9a78' }),
+  }) }),
+  // Peblos is islands: its hills are the rock spines that hold each one above the Stills, its plains the low sand and turf between.
+  Peblos: Object.freeze({ base: 6.4, amp: 2.6, wave: 95, ground: REGION_BIOMES.Peblos.ground, byTerrain: Object.freeze({
+    hills: Object.freeze({ base: 10.5, amp: 4.6, wave: 85, ground: '#6f7c63' }),
+    plains: Object.freeze({ base: 3.4, amp: 1.2, wave: 120, ground: '#7c8862' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -294,8 +299,16 @@ export const SOLIS_ROAD = Object.freeze([
  * rising gently from the quay to the Court of Oaths, so its walls keep one
  * height and its square is level enough to fight across.
  */
+/**
+ * Cobble's harbour terrace on Peblos: the shelf of made ground the village and
+ * its quay stand on, between the beach of its bay and the rock behind. Low, so
+ * the quay is two metres above the water and not a cliff over it.
+ */
+export const COBBLE_TERRACE = Object.freeze({ id: 'cobble', x: 334, z: 428, halfX: 11, halfZ: 13, feather: 24, level: 3, slopeX: .1, slopeZ: .03, shore: true });
+
 export const TERRAIN_PADS = Object.freeze([
   Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
+  COBBLE_TERRACE,
 ]);
 
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
@@ -463,6 +476,13 @@ const REGION_TEXT = {
     palette: { ground: '#7f9175', accent: '#d9dccb', fog: '#b9c4c4' },
     npcIds: ['garrison-captain', 'garrison-casso', 'garrison-brill', 'rimeholt-reeve', 'rimeholt-innkeeper', 'rimeholt-foreman', 'rimeholt-carter', 'rimeholt-trapper', 'rimeholt-sentry'],
     landmarks: ['tessen-bridge', 'tessen-post', 'tessen-shallows', 'bramble-scout-camp', 'birch-landing', 'rimeholt', 'grey-shoulder', 'cold-hearth', 'ordel-mouth', 'feradom-road'] },
+  // Peblos is authored in world metres too (src/peblos-world.js); its spawn is the quay the boatman lands at.
+  Peblos: { subtitle: 'The islands off the Drent coast', spawn: point(316, 428),
+    description: 'Low barrier islands south-east of Drent, an hour under oars from Tidehaven: salt grass and thrift, grey rock at the waterline, gulls, and one fishing village on the quay at Cobble.',
+    palette: { ground: '#76855f', accent: '#e7e0c0', fog: '#bdcdc9' },
+    npcIds: ['cobble-netmistress', 'cobble-boatwright', 'cobble-lobsterman', 'cobble-salter', 'cobble-oldhand', 'cobble-keeper', 'cobble-runner',
+      'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
+    landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

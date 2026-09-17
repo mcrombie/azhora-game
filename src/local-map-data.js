@@ -67,6 +67,19 @@ function watersFor(world, bounds) {
   return result;
 }
 
+/**
+ * Land inside the sea: an island's outline, drawn over the chart's water so the
+ * Pebbles read as ground and not as more of the Stills (`world.mapLands`).
+ */
+function landsFor(world, bounds) {
+  const result = [];
+  for (const land of Array.isArray(world.mapLands) ? world.mapLands : []) {
+    if (!validId(land?.id) || !Array.isArray(land.points) || land.points.length < 3 || !land.points.every(finitePoint)) continue;
+    if (overlaps(pointBounds(land.points), bounds)) result.push({ id: land.id, kind: 'polygon', points: land.points.map(copyPoint) });
+  }
+  return result;
+}
+
 function regionModels(world) {
   const sources = new Map([authoredRegionAt(0, 0), ...authoredRegions].map(region => [region.id, region]));
   for (const region of Array.isArray(world.regions) ? world.regions : []) {
@@ -137,7 +150,8 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
     player: { ...copyPoint(position), ...(Number.isFinite(heading) ? { heading }
       : Number.isFinite(position.heading) ? { heading: position.heading } : {}) },
     goal: mainGoal, paths: visiblePaths(world.paths, bounds), landmarks: [...markers.values()].filter(marker => inside(marker, bounds)),
-    buildings, waters: watersFor(world, bounds), tracked: trackedMarker?.trackable ? { ...trackedMarker } : null };
+    buildings, waters: watersFor(world, bounds), lands: landsFor(world, bounds),
+    tracked: trackedMarker?.trackable ? { ...trackedMarker } : null };
 }
 
 /** Fit a north-up chart without stretching metres differently on its two axes. */

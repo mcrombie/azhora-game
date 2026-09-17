@@ -55,3 +55,6 @@
 @media(max-width:1200px){#controls {gap:9px;font-size:10px;left:28px;}#controls .control-jump,#controls .control-map{display:none;}#vitals {left:28px;width:175px;}#lesson {width:43vw;bottom:92px;padding:13px 16px;}#lesson p{font-size:12px;}#bottom-right{right:24px;}#quest{width:230px;}}
 @media(max-height:750px){#location{top:22px;}#location h1{font-size:36px;}#quest{top:145px;}#quest h2{font-size:22px;}#quest p{font-size:12px;}#quest .quest-rule{margin:12px 0 8px;}#lesson{bottom:77px;}#vitals{bottom:77px;}#dialogue{bottom:60px;padding:20px 28px;}#dialogue p{font-size:15px;}#interaction{bottom:34%;}#toast{top:25%;font-size:20px;}#encounter-status{top:82px;}}
 @media(max-width:1100px){#border-status{right:24px;bottom:225px;max-width:210px;padding:13px 16px;}#border-status h3{font-size:21px;}#bottom-right{gap:8px;}#bottom-right button{padding:9px 10px;}}
+/* The crossing to Peblos: the boat pulls out, the view fades, the traveler steps onto the other quay (src/ferry.js). */
+#crossing {position:fixed;inset:0;z-index:30;pointer-events:none;background:#0a1f24;display:grid;place-items:end center;padding-bottom:16vh;opacity:0;}
+#crossing p {font-family:Adventure,Georgia,serif;font-size:22px;letter-spacing:.02em;color:#f2e6c4;text-shadow:0 3px 18px #07171b;max-width:560px;text-align:center;}

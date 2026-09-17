@@ -32,6 +32,8 @@ export const BUILD_STATUS = Object.freeze({
     'The downs are scatter. The city has no interiors and no trade; the coast south of the quay is unbuilt.'),
   Pueth: status('early', 'The Tessen crossing with its bridge and Legion road post, the bramble woods and the goblin camp, Rimeholt on the Feradom road, and the two rivers the atlas authored.',
     'Rimeholt is a first version. The hills, the east and the coast are terrain and landmarks only; no quests of its own.'),
+  Peblos: status('early', 'The boat from Tidehaven’s pier and back for three copper, Cobble on the main island with its quay, its ten roofs, its seven islanders and the Empire’s four men, the headland light, the seal cove and the drowned field.',
+    'The five outer islands are terrain, scatter and one landmark each, with no way to reach them. No quest, no naval station, no sea cave, no pirates, and nothing to buy or sell on the quay.'),
   'East Suval': status('edge', 'Elod’s border post on the stone road: a ditch, a shut gate and its guard in light black armour.',
     'Everything behind the gate. The region cannot be entered.'),
 });

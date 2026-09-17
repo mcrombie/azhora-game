@@ -99,6 +99,18 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
       ctx.lineWidth = water.id === 'coast-water' ? 5 : 2.5; ctx.stroke(); ctx.fill(); counts.waterShapes++;
     }
   }
+  // Islands are land inside that water, so they are painted back over it.
+  for (const land of Array.isArray(world.mapLands) ? world.mapLands : []) {
+    const points = (land.points || []).map(point => project(point)).filter(Boolean);
+    if (points.length < 3 || points.every(p => p.x < 0) || points.every(p => p.x > size)
+      || points.every(p => p.y < 0) || points.every(p => p.y > size)) continue;
+    ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+    ctx.fillStyle = groundColors[world.regions?.find(region => region.name === land.region)?.id] || MINIMAP_PALETTE.groundFallback;
+    ctx.strokeStyle = MINIMAP_PALETTE.coastEdge; ctx.lineWidth = 3; ctx.stroke(); ctx.fill();
+    counts.landShapes = (counts.landShapes ?? 0) + 1;
+  }
   // A fallback for small isolated test worlds without rendered water metadata:
   // trace the actual height-field/sea intersection instead of a straight coast.
   // Pond and river have their own elevated surfaces and come from water colliders.

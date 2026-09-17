@@ -3,6 +3,7 @@ import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
   STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions } from './region-world.js';
 import { HIDEOUT_CLEARINGS, PUETH_CLEARINGS } from './pueth-world.js';
+import { PEBLOS_CLEARINGS } from './peblos-world.js';
 import { calossSurface } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
@@ -52,6 +53,7 @@ export const REGION_CLEARINGS = Object.freeze([
   ...WEST_SUVAL_CLEARINGS,                                                    // Solis, its camp and the road's places (src/west-suval.js)
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, southern Pueth
   ...PUETH_CLEARINGS,                                                         // the Tessen bridge and post, Rimeholt, Pueth's landmarks
+  ...PEBLOS_CLEARINGS,                                                        // Cobble, its quay, and every landmark in the Pebbles
 ]);
 
 

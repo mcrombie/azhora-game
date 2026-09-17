@@ -14,9 +14,20 @@ const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
 export const lerp = (a, b, t) => a + (b - a) * t;
 
-/** How much of a world point belongs to the carried-over Tidehaven height field. */
+/**
+ * How much of a world point belongs to the carried-over Tidehaven height field.
+ *
+ * It fades along the village's own three directions: sideways (`lx`), inland to
+ * the north (`lz` negative), and — since the Pebbles were built out in the water
+ * east of the pier — seaward as well. Without that last fade the village's field
+ * ran east for ever inside a 248 m band, and its `outer` term raised sandbanks
+ * out of the Stills a hundred metres offshore and over the north of Longstone.
+ * The seaward fade begins past the pier's end (local z 48) and is complete at
+ * local z 96, 76 m east of Tidehaven, where the village's field and the ordinary
+ * sea floor already agree to within a tenth of a metre.
+ */
 export function villageWeight(lx, lz) {
-  return (1 - smooth(84, 124, Math.abs(lx))) * (1 - smooth(-148, -196, lz));
+  return (1 - smooth(84, 124, Math.abs(lx))) * (1 - smooth(-148, -196, lz)) * (1 - smooth(56, 96, lz));
 }
 
 /**
@@ -42,14 +53,20 @@ export function regionBase(x, z) {
   return padded(x, z, lerp(beach, inland, smooth(2, 40, distance)));
 }
 
-/** Built ground (`TERRAIN_PADS`) replaces the relief it stands on and fades back into it at its edge. */
+/**
+ * Built ground (`TERRAIN_PADS`) replaces the relief it stands on and fades back
+ * into it at its edge. A pad marked `shore` is made ground at the water: it
+ * levels the land it stands on and lets go where the natural ground is already
+ * below the tideline, so a quayside terrace cannot reclaim the bay in front of it.
+ */
 function padded(x, z, natural) {
   let height = natural;
   for (const pad of TERRAIN_PADS) {
     const outside = Math.max(Math.abs(x - pad.x) - pad.halfX, Math.abs(z - pad.z) - pad.halfZ, 0);
     if (outside >= pad.feather) continue;
     const plane = pad.level + (x - pad.x) * pad.slopeX + (z - pad.z) * pad.slopeZ;
-    height = lerp(plane, height, smooth(0, pad.feather, outside));
+    const strength = (1 - smooth(0, pad.feather, outside)) * (pad.shore ? smooth(-.2, 1.7, natural) : 1);
+    height = lerp(height, plane, strength);
   }
   return height;
 }
