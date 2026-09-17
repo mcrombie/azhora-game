@@ -53,6 +53,8 @@ import { createSkills, skillLevel } from './skills.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createDrentBirds } from './drent-birds.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
+import { MYCOLOGIST, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
+import { createMushrooms } from './mushrooms.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
@@ -136,6 +138,8 @@ function init() {
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // Ansel watches birds from his garden on the eastern side of Tidehaven, and teaches the traveler to (src/birding.js).
   world.npcPositions[BIRD_WATCHER.id]={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z};npcData.push({...BIRD_WATCHER,yaw:world.birdGarden.stand.yaw});
+  // Odger Pell dries mushrooms at the edge of the Greenway, a few steps outside the village (src/mycology.js).
+  world.npcPositions[MYCOLOGIST.id]={x:-50,z:25};npcData.push({...MYCOLOGIST,yaw:Math.PI*.42});
   // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
@@ -210,6 +214,10 @@ function init() {
   const birding=createBirding({skills});
   // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
   const fishing=createFishing({skills});
+  // Mycology: Pell's three questions, and the mushrooms standing in Drent's woods (src/mushrooms.js).
+  const mycology=createMycology({skills});
+  const mushrooms=createMushrooms(scene,world,{avoid:Object.values(world.npcPositions)});
+  let currentMushroom=null;
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0;
   const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
@@ -291,6 +299,23 @@ function init() {
     }
     return {ok:false,reason:''};
   }
+  function mycologyAct(action){
+    if(action!=='learn-mycology')return {ok:false,reason:''};
+    mycology.meet();refreshSkillsSheet();audio?.effect('success');
+    openDialogue(npcById.get(MYCOLOGIST.id),[...MYCOLOGY_LESSON],null,'Back to the road');
+    toast('Mycology · level 1. Wood or ground, gills or folds, and what it smells of.','NEW SKILL · K FOR YOUR SKILLS');saveRoad(false);return {ok:true,reason:''};
+  }
+  function gatherMushroom(){
+    if(!currentMushroom)return;
+    if(!mycology.met){toast('An unfamiliar mushroom. Odger Pell, at the edge of the Greenway, would name it for you.','A MUSHROOM');return;}
+    const found=mycology.find(currentMushroom.species,inventory);
+    if(!found.ok){toast(found.reason,'A MUSHROOM');return;}
+    mushrooms.gather(currentMushroom.id,{take:found.species.edible});
+    currentMushroom=null;inventory.refresh();refreshSkillsSheet();audio?.effect('success');
+    if(found.first)showSkillCard({kicker:`FIRST FIND · MYCOLOGY +${found.xp}${found.levelled?` · LEVEL ${found.level}`:''}`,name:found.species.name,note:found.species.note,skill:MYCOLOGY_SKILL});
+    else toast(found.taken?`${found.species.name} · ${found.count} found. In your satchel.`:`${found.species.name} · ${found.count} found. Left where it stands.`,found.species.warning?'NOTED, AND LEFT ALONE':'MUSHROOMS');
+    saveRoad(false);
+  }
   function observeBird(){
     if(mode!=='playing'||!birding.met||combat.state.phase==='active')return;
     const target=currentBird;if(!target){toast('No bird in view. Find one, keep your distance, and face it.','BIRDING · B');return;}
@@ -320,6 +345,11 @@ function init() {
       const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level}`:'NOT YET LEARNED'),el('h3','',skill.name));
       if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
       card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+      if(skill.id==='mycology'&&skill.learned){
+        const view=mycology.view(),list=el('ul','bird-list');
+        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+        card.append(el('h3','',`Mushrooms named · ${view.foundCount} / ${view.total}`),list);
+      }
       if(skill.id==='fishing'&&skill.learned){
         const view=fishing.view(),list=el('ul','bird-list');
         for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
@@ -756,7 +786,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -779,7 +809,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);
     ferry.restore(saved.ferry??createFerry().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
@@ -962,6 +992,7 @@ function init() {
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
+    if(npc.id===MYCOLOGIST.id){mycologistConversation(npc,{mycology,openDialogue,closeDialogue,act:mycologyAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
@@ -1153,6 +1184,7 @@ function init() {
     if(currentNPC){conversation(currentNPC);return;}
     if(riding.mounted){toast('Step down first. Press G.','IN THE SADDLE');return;}
     if(combat.state.phase!=='active'&&currentFeederHook){birdingAct('hang-feeder');return;}
+    if(combat.state.phase!=='active'&&currentMushroom){gatherMushroom();return;}
     if(combat.state.phase!=='active'&&currentHideoutSite){
       if(currentHideoutSite==='supplies')hideoutAct('recover-hideout-supplies');else hideoutConversation(hideoutContext);
       return;
@@ -1252,6 +1284,8 @@ function init() {
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
     repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border,
+    // Walled places have gates, and the autopilot only knows that if it is told (src/autopilot.js).
+    enclosures:world.enclosures,
     sideSeat:side=>sideSeat(side)};
   const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,position:{x:player.group.position.x,z:player.group.position.z},
     combat:{phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,action:e.action,progress:e.progress,active:e.active,hp:e.hp}))},
@@ -1596,6 +1630,7 @@ function init() {
       currentAcorn=mode==='playing'?woodlandLife.nearestAcorn(player.group.position,2):null;
       currentStick=mode==='playing'?woodlandLife.nearestStick(player.group.position,2):null;
       currentFruit=mode==='playing'?woodlandLife.nearestFruit(player.group.position,2):null;
+      currentMushroom=mode==='playing'&&combat.state.phase!=='active'?mushrooms.nearest(player.group.position,2.2):null;
       const p=player.group.position,nearestPickup=[currentAcorn,currentStick,currentFruit].filter(Boolean).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];
       if(currentAcorn!==nearestPickup)currentAcorn=null;if(currentStick!==nearestPickup)currentStick=null;if(currentFruit!==nearestPickup)currentFruit=null;
       nearRepair=(world.repairBenches||[world.repairBench]).some(bench=>Math.hypot(p.x-bench.x,p.z-bench.z)<2.1);
@@ -1617,7 +1652,7 @@ function init() {
       }
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
-      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
       if(currentNPC)$('interaction-label').textContent=currentNPC.dog?'Greet the dog':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -1625,6 +1660,7 @@ function init() {
       if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentMorosSite&&!currentNPC)$('interaction-label').textContent=currentMorosSite.prompt;
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
+      if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Inspect Bramble Scout Camp · optional';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
@@ -1653,7 +1689,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),fishing:fishing.snapshot(),skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

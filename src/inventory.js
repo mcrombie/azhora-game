@@ -50,6 +50,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
     description: 'The relay clerk in Lumber Town pays in what the Legion owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the Legion’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
   }),
+  mushrooms: Object.freeze({
+    name: 'Gathered mushrooms', type: 'Food', icon: 'leaf', stackable: true, eatName: 'mushrooms',
+    brief: 'What Odger Pell would approve of: named, edible, and picked clean. Restores up to 18 health.',
+    description: 'Restores up to 18 health. Chanterelles, oysters, a hen off an oak root — whatever the wood gave up that was worth carrying. Odger Pell taught you which those are; the two that are not stay where they stand.',
+  }),
   'hummingbird-feeder': Object.freeze({
     name: 'Ansel’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
     brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',

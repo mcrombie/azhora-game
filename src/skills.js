@@ -20,6 +20,13 @@ export const SKILLS = Object.freeze({
     // The ten fish of Drent, Luscia and Pueth together are worth 200: level 6.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
+  mycology: Object.freeze({
+    id: 'mycology', name: 'Mycology',
+    blurb: 'Wood or ground, gills or folds, and what it smells of. Every kind of mushroom you name for the first time teaches you something — including the two you must never eat.',
+    teacher: 'Odger Pell, at the edge of the Greenway outside Tidehaven',
+    // The eleven mushrooms of Drent's woods together are worth 225: level 6.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));

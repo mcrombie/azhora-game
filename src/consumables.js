@@ -27,6 +27,7 @@ export const FOODS = Object.freeze({
   'ewe-cheese': define(30, 'You have no ewe’s cheese. The shepherds of the Avrel clearing press it from their flock’s milk.'),
   'honey-cake': define(35, 'You have no honey cakes. Lysa’s little cakes need acorn meal and bee-fold honey.'),
   'smoked-sausage': define(40, 'You have no smoked sausage. Drent households hang forest-hog sausages in the chimney smoke all winter.'),
+  mushrooms: define(18, 'You have no mushrooms. Odger Pell, at the edge of the Greenway, teaches which ones are supper.'),
   'roast-duck': define(45, 'You have no roast duck. The fowlers at Willowmere Pond take birds in the reeds.'),
   'mutton-pie': define(50, 'You have no mutton pie. A farm kitchen with a sheep to spare and a hot oven makes one.'),
 
