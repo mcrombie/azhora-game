@@ -58,7 +58,8 @@ export function createPuethScenery(kit) {
       const offsets = close ? [-4.5, -3, -1.5, 0, 1.5, 3, 4.5] : [-half * .62, 0, half * .62];
       const radius = close ? 1.1 : Math.max(1.5, half * .62);
       const count = close ? 3 : 1;
-      for (let k = 0; k < count; k++) {
+      // The last piece also blocks its far end, so the river's mouth is water to the shore.
+      for (let k = 0; k < count + (i === river.samples.length - 1 ? 1 : 0); k++) {
         const t = k / count, x = a.x + (c.x - a.x) * t, z = a.z + (c.z - a.z) * t;
         for (const offset of offsets) {
           if (Math.abs(offset) > half + .6) continue;
