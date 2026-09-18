@@ -80,6 +80,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'What Odger Pell would approve of: named, edible, and picked clean. Restores up to 18 health.',
     description: 'Restores up to 18 health. Chanterelles, oysters, a hen off an oak root — whatever the wood gave up that was worth carrying. Odger Pell taught you which those are; the two that are not stay where they stand.',
   }),
+  'ardry-letter': Object.freeze({
+    name: 'A letter for the other Ardry', type: 'Quest item', icon: 'letter',
+    brief: 'A folded sheet, carried between Lorn Ardry on the Tidehaven shingle and his sister Hesta at Applegarth.',
+    description: 'One of the letters the Ardrys are writing to each other after eleven years. They are not sealed, and both of them have said you may read them: open your journal with J to do it. Deliver it to the one it is addressed to.',
+  }),
   'hummingbird-feeder': Object.freeze({
     name: 'Ansel’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
     brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',

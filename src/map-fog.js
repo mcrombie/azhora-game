@@ -2,7 +2,7 @@
  * What the traveler has charted. The world chart starts blank: a hex of the
  * authored atlas is uncovered only when the traveler has walked into it, and the country between them is named by subregions — small
  * authored areas (a point and a reach, usually a hex or three) that are recorded
- * in the journal the first time the traveler reaches one. Eastreena, the port
+ * in the journal the first time the traveler reaches one. Tidehaven, the port
  * village the game opens in, is the first. Pure: no DOM, no three.
  */
 import { hexAt } from './region-world.js';
@@ -16,12 +16,15 @@ const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name,
 /** The named ground of Azhora, as the traveler's own chart records it. */
 export const SUBREGIONS = Object.freeze([
   // Drent
-  area('eastreena', 'Eastreena', 'Drent', -6, 29, 55, 'Tidehaven and its landing: the port village on Drent’s east coast, where the road begins.'),
+  // The id stays `eastreena` so older charts keep loading; the name on the chart is the one the village uses now.
+  area('eastreena', 'Tidehaven', 'Drent', -6, 29, 55, 'The port village on Drent’s east coast, where the road begins. It was East Rena once — Eastreena — when there was a Rena to be east of, and the old people still call it that.'),
   area('the-greenway', 'The Greenway', 'Drent', -70, 29, 45, 'The old footpath inland under the broadleaf canopy, the waykeeper’s watch and the charcoal burners’ ground.'),
   area('willowmere', 'Willowmere', 'Drent', -97, 9, 30, 'A quiet forest pool east of the road, with a fishing ledge and a stone firepit.'),
   area('fernway', 'Fernway Rest', 'Drent', -128, 34, 45, 'A shaded bench and an old cairn where the woodland paths meet.'),
   area('caloss-gate', 'The Caloss Gate', 'Drent', -176, 29, 50, 'The field gate where Tidehaven’s wood gives way to the open road west.'),
   area('avrel', 'The Avrel Clearing', 'Drent', -421, 40, 75, 'Farm clearings in Drent’s forested upland: the mill commons, the Legion’s post and the road on to the Caloss.'),
+  area('rena', 'The Ruins of Rena', 'Drent', -395, -70, 55, 'Rena was the principal town of Drent until it was pulled down after a battle eighty years ago: street lines under the grass, a burnt gate, the stump of the hall, and a well that still holds water.'),
+  area('applegarth', 'Applegarth', 'Drent', -568, -32, 45, 'The orchard village at the west end of the old Rena road. It was West Rena, then Westerina, and its bound stone has never been recut.'),
   area('caloss-bank', 'The Caloss Bank', 'Drent', -546, 177, 70, 'Drent’s side of the river: reed beds, a quiet fishing bank and the road down to the bridge.'),
   // Luscia
   area('caloss-crossing', 'The Caloss Crossing', 'Luscia', -610, 139, 55, 'The bridge over the Caloss and the crossing keeper’s hut. Luscia begins on the far bank.'),

@@ -28,6 +28,8 @@ import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSE
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
 import { createPeblosScenery } from './peblos-scenery.js';
+import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './rena.js';
+import { buildRenaWorks } from './rena-works.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -1039,6 +1041,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   ];
   // Measure every road before any scenery, so nothing is planted across one.
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
+  measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
@@ -1075,6 +1078,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
   buildFrontierWorks({ parent: world, heightAt: groundHeight, colliders, signs });
   buildPlaceWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
+  // The three Renas: the razed town at Drent's centre, Applegarth, and Rena's own wayside (src/rena-works.js).
+  buildRenaWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);
@@ -1108,6 +1113,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
   addPath(PUETH_ROAD, 4.2);
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
+  addPath(RENA_ROAD, 2.6);
 
   // Fingerposts along the new road: each points at its place, and back the way the traveler came.
   /** A point 40 m back along the nearest road, toward where that road starts. */
@@ -1489,6 +1495,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     enclosures: [...SOLIS_ENCLOSURES, enclosureOf(OUTPOST_CIRCUIT, 'outpost', 'The Ambroni outpost'), enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade')],
     solisHolder: westSuval.holder,
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
+    renaRoute: RENA_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
     peblosMetrics: peblosScenery.metrics,
     peblosQuay: COBBLE_QUAY,
@@ -1575,7 +1582,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS,
     },
     landmarks: [
       { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
@@ -1595,6 +1602,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
       ...PEBLOS_LANDMARKS,
+      ...RENA_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
     ],

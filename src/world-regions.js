@@ -12,6 +12,7 @@ import { WAYSIDE_CLEARINGS } from './wayside.js';
 import { PLACE_CLEARINGS } from './places.js';
 import { FRONTIER_CLEARINGS } from './frontier.js';
 import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
+import { RENA_CLEARINGS } from './rena.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -54,6 +55,7 @@ export const REGION_CLEARINGS = Object.freeze([
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, southern Pueth
   ...PUETH_CLEARINGS,                                                         // the Tessen bridge and post, Rimeholt, Pueth's landmarks
   ...PEBLOS_CLEARINGS,                                                        // Cobble, its quay, and every landmark in the Pebbles
+  ...RENA_CLEARINGS,                                                          // the ruins of Rena, Applegarth, the old road and Rena's wayside
 ]);
 
 
