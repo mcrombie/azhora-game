@@ -22,6 +22,7 @@ import { createMycology, validateMycologySnapshot } from './mycology.js';
 import { createHerbology, validateHerbologySnapshot } from './herbology.js';
 import { createPipe, validatePipeSnapshot } from './pipeweed.js';
 import { createJimson, validateJimsonSnapshot } from './jimson-quest.js';
+import { validateRefugeesSnapshot } from './refugees.js';
 import { createFerry, validateFerrySnapshot } from './ferry.js';
 import { createRenaLetters, validateRenaLettersSnapshot } from './rena-letters.js';
 import { createLusciaChapter } from './luscia-chapter.js';
@@ -79,6 +80,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateHerbologySnapshot(data.herbology)) return failed('The saved plant notes are invalid.');
     if (!validatePipeSnapshot(data.pipe)) return failed('The saved pipe is invalid.');
     if (!validateJimsonSnapshot(data.jimson)) return failed('The saved errand for Toft is invalid.');
+    if (!validateRefugeesSnapshot(data.refugees)) return failed('The saved road for the Lauvel refugees is invalid.');
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
     if (!validateRenaLettersSnapshot(data.renaLetters)) return failed('The saved letters between the Ardrys are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
@@ -163,6 +165,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'herbology')) { const herbology = createHerbology(); herbology.restore(data.herbology); result.herbology = herbology.snapshot(); }
     if (Object.hasOwn(data, 'pipe')) { const pipe = createPipe(); pipe.restore(data.pipe); result.pipe = pipe.snapshot(); }
     if (Object.hasOwn(data, 'jimson')) { const jimson = createJimson(); jimson.restore(data.jimson); result.jimson = jimson.snapshot(); }
+    if (Object.hasOwn(data, 'refugees')) result.refugees = data.refugees;
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }
     if (Object.hasOwn(data, 'renaLetters')) { const letters = createRenaLetters(); letters.restore(data.renaLetters); result.renaLetters = letters.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
