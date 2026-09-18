@@ -11,7 +11,8 @@ export const BIRDING_SKILL = 'birding';
 export const BIRDING_KEY = 'KeyB';
 export const SKILLS_KEY = 'KeyK';
 
-export const BIRD_WATCHER = Object.freeze({ id: 'bird-watcher', name: 'Ansel', role: 'Bird-watcher', modelRole: 'bird-watcher', color: 0x5d6a47 });
+// Drawn from Michael's sketch: cream collared shirt, spiky hair, and a red-tailed hawk on his glove (src/ansel-hawk.js).
+export const BIRD_WATCHER = Object.freeze({ id: 'bird-watcher', name: 'Ansel', role: 'Birder', modelRole: 'bird-watcher', color: 0xe4d8bd });
 
 export const FEEDER_ITEM = 'hummingbird-feeder';
 export const FILLED_FEEDER_ITEM = 'sugar-water-feeder';
@@ -283,6 +284,14 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
 }
 
 /** Ansel's conversation. `act` runs 'learn-birding' and 'take-feeder' in the host. */
+/** What Ansel says of his red-tailed hawk (she flies in src/hawk-flight.js). */
+export const RED_TAIL_LINES = Object.freeze([
+  'A red-tailed hawk. You know her by the tail: brick red on top, once they are past their first year. Before that it is brown and barred like everything else in the wood.',
+  'That scream you hear in every story with a hawk or an eagle in it? That is a red-tail. The eagles get the credit for it.',
+  'I did not train her to hunt for me. She hunts for herself, off the fence posts along the road: voles, mice, the odd snake. She comes back to the glove because it is warm and I keep the crows off her.',
+  'When the sun has warmed the green she goes up and circles. She is not showing off. She is riding the warm air up so she does not have to flap. Watch her for a while; you will learn more about the wind than any sailor can tell you.',
+]);
+
 export function birdWatcherConversation(npc, context) {
   const { birding, openDialogue, closeDialogue, act } = context;
   if (npc.id !== BIRD_WATCHER.id) return false;
@@ -292,6 +301,7 @@ export function birdWatcherConversation(npc, context) {
     openDialogue(npc, [
       'Slowly. Slowly. There, you have not flushed it. That was the wren on the barrels behind you, and now it is looking at you instead of singing.',
       'Ansel. I watch birds. The village thinks that means I stand about. It means I stand about with my eyes open.',
+      'The one on my glove is a red-tail. She came to me as a fledgling with a broken wing, and when it mended she did not go home. I keep a list of every bird I have seen in Drent: one hundred and six. The last was a bittern in the Caloss reeds, and I lay in the mud an hour for it.',
       'You have the look of someone who walks a long way. You will pass more birds in a month than most people here see in their lives. Would you like to know how to see them?',
     ], null, 'Back to the road', { choices: [
       { id: 'learn-birding', label: 'Show me.', action: () => { closeDialogue(); act('learn-birding'); } },
@@ -323,6 +333,7 @@ export function birdWatcherConversation(npc, context) {
       { id: 'take-feeder', label: 'I will take the feeder to Lysa.', action: () => { closeDialogue(); act('take-feeder'); } },
       { id: 'decline-feeder', label: 'Maybe later.', action: again },
     ] }) }] : []),
+    { id: 'ask-hawk', label: 'About the hawk on your glove.', action: () => openDialogue(npc, [...RED_TAIL_LINES], null, 'Back to our conversation', { onComplete: again }) },
     { id: 'birding-lesson', label: 'Tell me again how it is done.', action: () => openDialogue(npc, [...BIRDING_LESSON], null, 'Back to our conversation', { onComplete: again }) },
     leave,
   ];

@@ -645,6 +645,8 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       clothPivot.rotation.y = THREE.MathUtils.lerp(clothPivot.rotation.y, -chestY * 0.15, settle);
       clothPivot.rotation.z = THREE.MathUtils.lerp(clothPivot.rotation.z, Math.sin(seconds * 1.35 + offset) * 0.018 + step * movementBlend * 0.035, settle);
     }
+    // A falconer carries the bird on the left fist: upper arm in at the side, forearm level and forward.
+    if (pose.falconer) { arm[0] = -0.28; elbow[0] = -1.35; armOut[0] = -0.1; }
     for (let i = 0; i < 2; i++) {
       const side = i ? 1 : -1;
       rotate(legs[i], hip[i], 0, side * stance);
@@ -732,8 +734,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -1534,19 +1536,47 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     ribbon(body, leather, [0.111, 0.67, 0.23], [0.139, 0.839, 0.225], 0.018, 0.014);
     round(body, bagMat, [0.141, 0.842, 0.225], [0.031, 0.044, 0.014]);
   } else if (isBirdWatcher) {
-    // Tidehaven's bird-watcher: a soft felt brim against the glare with a cardinal's red feather in the band,
-    // a brass spyglass on a cord, and a notebook in his belt.
-    const felt = material(0x6b5b45), band = material(0x4a3a2a), feather = material(0xc3262b), brass = material(0xc8a250, { metalness: 0.35, roughness: 0.45 });
-    part(head, new THREE.CylinderGeometry(0.2, 0.37, 0.05, 12), felt, [0, 0.35, -0.014]);
-    round(head, felt, [0, 0.4, -0.02], [0.205, 0.12, 0.195]);
-    part(head, UNIT_CYLINDER, band, [0, 0.372, -0.018], [0.212, 0.03, 0.2]);
-    ribbon(head, feather, [0.18, 0.38, -0.07], [0.27, 0.56, -0.19], 0.04, 0.008);
-    round(head, hairMat, [0, 0.07, 0.1], [0.13, 0.07, 0.11]);
+    // Tidehaven's bird-watcher, drawn from Michael's sketch (page 231, the Future Panic doodles): a big
+    // rounded head under thick upright spiky hair, a long hooked nose, a cream collared shirt buttoned
+    // down the front with a breast pocket. He keeps a brass spyglass on a cord and a notebook, and wears
+    // a falconer's gauntlet on the left arm, where his red-tailed hawk rides.
+    head.scale.setScalar(1.08);
+    const spike = new THREE.ConeGeometry(1, 1, 5);
+    for (const [x, y, z, lean, twist, length] of [
+      [0, 0.44, 0.02, -0.05, 0, 0.19], [-0.08, 0.43, 0.06, -0.28, 0.3, 0.17], [0.08, 0.43, 0.06, -0.28, -0.3, 0.17],
+      [-0.13, 0.4, -0.02, -0.1, 0.55, 0.16], [0.13, 0.4, -0.02, -0.1, -0.55, 0.16], [0, 0.42, -0.1, 0.35, 0, 0.17],
+      [-0.09, 0.4, -0.12, 0.4, 0.4, 0.15], [0.09, 0.4, -0.12, 0.4, -0.4, 0.15], [-0.17, 0.33, -0.08, 0.2, 0.9, 0.13],
+      [0.17, 0.33, -0.08, 0.2, -0.9, 0.13], [-0.04, 0.4, 0.13, -0.55, 0.15, 0.14], [0.05, 0.4, 0.14, -0.6, -0.2, 0.13],
+      [0, 0.34, -0.2, 0.9, 0, 0.13],
+    ]) {
+      const lock = part(head, spike, hairMat, [x, y, z], [0.055, length, 0.05]);
+      lock.rotation.set(lean, 0, twist);
+    }
+    // The long triangular nose, a little hooked at the tip.
+    const bridge = round(head, noseMat, [0, 0.175, 0.222], [0.032, 0.078, 0.045]);
+    bridge.rotation.x = -0.32;
+    round(head, noseMat, [0, 0.139, 0.248], [0.029, 0.025, 0.026]);
+    // Collar points, the placket's buttons and the breast pocket.
+    const shirtShade = material(0xcfc2a2), button = material(0x8a7a60);
+    for (const side of [-1, 1]) {
+      const point = box(body, shirtShade, [side * 0.06, 1.3, 0.155], [0.09, 0.075, 0.02]);
+      point.rotation.set(-0.35, 0, side * 0.55);
+    }
+    for (let k = 0; k < 6; k++) round(body, button, [0, 1.25 - k * 0.07, 0.19 - k * 0.002], [0.012, 0.012, 0.008]);
+    box(body, shirtShade, [0.1, 1.14, 0.182], [0.085, 0.09, 0.012]);
+    round(body, button, [0.1, 1.175, 0.19], [0.009, 0.009, 0.006]);
+    // The spyglass on its cord and the notebook, as before.
     ribbon(body, leather, [-0.11, 1.33, 0.1], [0.07, 1.14, 0.2], 0.014, 0.01);
+    const brass = material(0xc8a250, { metalness: 0.35, roughness: 0.45 });
     part(body, UNIT_CYLINDER, brass, [0.085, 1.06, 0.205], [0.028, 0.17, 0.028]);
     part(body, UNIT_CYLINDER, brass, [0.085, 0.965, 0.205], [0.034, 0.03, 0.034]);
     box(body, leather, [-0.13, 0.9, 0.175], [0.085, 0.11, 0.022]);
     box(body, whites, [-0.128, 0.905, 0.187], [0.07, 0.095, 0.006]);
+    // The falconer's gauntlet: thick leather from mid-forearm over the left hand.
+    const gauntlet = material(0x7a5431);
+    part(elbows[0], UNIT_CYLINDER, gauntlet, [0, -0.19, 0.004], [0.078, 0.2, 0.08]);
+    part(elbows[0], UNIT_CYLINDER, material(0x5e3f24), [0, -0.1, 0.004], [0.085, 0.022, 0.087]);
+    round(wrists[0], gauntlet, [0, -0.055, 0.01], [0.062, 0.075, 0.055]);
   } else if (role === 'harbormaster') {
     // An apron and salt-grey beard distinguish the older keeper of the pier.
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);
