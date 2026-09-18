@@ -192,12 +192,16 @@ uses, and the one that produces the brief's Solis figure. Camera at eye height,
 | Sorrow Beach | 80 | 147 k |
 
 **At its gate Elod costs 201 draws against Solis's 247**, which is the
-comparison the brief asked for. Standing *inside* the city looking along it
+comparison the brief asked for. (The brief's "about 95 at its gate" for Solis
+could not be reproduced by any method here — the nearest is the camera pass
+alone at a narrower field — so both cities were measured the same way, in the
+same run, and the ratio is what matters.) Standing *inside* the city looking along it
 costs 524–531, which is Lumber Town's order of magnitude (404) and less than the
 Drent road views; most of that is not Elod but the 650 m far plane picking up
 other regions' batches down a 600 m coastline. The house palette was cut from
 twenty-five tints to four walls and three roofs part-way through for exactly
-this reason, which took 35 draws off every view in the city.
+this reason, which took about thirty draws off every view in the city and looks
+the same.
 
 The renderer's own count from the review run (1440 × 960, shadows, HUD, which
 counts several passes and is not comparable with the table above), for scale
@@ -216,8 +220,7 @@ Scene cost: **26 buildings**, 40 wall runs, **60 instanced scatter batches**
 (rocks, scrub, tufts and trees, two hexes to a batch, so a camera on the quay
 submits nothing of the southern hills), 840 rocks, 3 465 scrub cushions, 4 137
 grass tufts, 127 olives and junipers, 13 runs of field wall. Colliders: the
-world went from about 8 500 to **9 790**, of which **1 067** stand in East
-Suval — 334 of those are the sea wall (see below), 264 ridge rock, 127 trees,
+built world carries **9 790**, of which **1 067** stand in East Suval — 334 of those are the sea wall (see below), 264 ridge rock, 127 trees,
 107 city wall.
 
 ---

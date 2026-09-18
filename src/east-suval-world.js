@@ -231,7 +231,12 @@ export function createEastSuvalScenery(kit) {
     const courtTop = platformTop + T.courtWall;
     for (const side of [-1, 1])
       box(ashlar, T.x, platformTop + T.courtWall / 2, T.z + side * (T.halfZ - .55), T.halfX * 2, T.courtWall, 1.1, group);
-    box(ashlar, T.x - T.halfX + .55, platformTop + T.courtWall / 2, T.z, 1.1, T.courtWall, T.halfZ * 2 - 1.1, group);
+    // The west wall, with the one doorway the court is entered by, under the porch.
+    for (const side of [-1, 1]) {
+      const span = (T.halfZ * 2 - 1.1 - 2.6) / 2;
+      box(ashlar, T.x - T.halfX + .55, platformTop + T.courtWall / 2, T.z + side * (1.3 + span / 2), 1.1, T.courtWall, span, group);
+    }
+    box(ashlar, T.x - T.halfX + .55, platformTop + T.courtWall - .8, T.z, 1.1, 1.6, 2.6, group);
     for (const side of [-1, 1])
       box(ashlarPale, T.x, courtTop + .16, T.z + side * (T.halfZ - .55), T.halfX * 2 + .3, .32, 1.4, group);
     // The east wall: ten metres of ashlar with one opening, and nothing in it.
