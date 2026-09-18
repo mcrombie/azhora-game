@@ -256,7 +256,7 @@ Rendered through the game's own renderer with `node scripts/launch.cjs
 | --- | --- |
 | `npm test` | **519 tests, 519 pass**, including the ten new ones in `tests/east-suval.test.js` and every existing test in `tests/closed-border.test.js` and `tests/elodi-guard.test.js`, untouched. |
 | `npm run test:game` | **pass** — `smoke.json` `ok: true`, 1 741 frames, 436 draw calls, 875 k triangles, no errors. The 68 ms average frame was measured while this machine was also rendering review shots and is not a comparison with anything. |
-| `npm run test:road` | see below |
+| `npm run test:road` | **pass** — `road-traversal.json` `ok: true`, 4 720 traversal checks, 7 558 m walked in 22 200 frames through Drent, Pueth, Luscia and the Moros and back, **`frontierBlocked: true`, `eastSuvalClosed: true`**, returned to Drent, no errors. The first attempt was cut off at 25 minutes by a `timeout` I had wrapped round it (exit 143 is SIGTERM), not by a failure; the rerun took 1 365 s on a machine that another worktree's Electron run was also using, so the 58–67 ms mean frames are not a benchmark. The traversal never enters East Suval, which is the point. |
 | `npm run test:autoplay` | **not run**, as the brief instructs. |
 
 The ten new tests cover: the region against the atlas (hex count, terrain mix,
