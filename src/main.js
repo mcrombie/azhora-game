@@ -2140,13 +2140,15 @@ function init() {
           const spot=({'amod-terraces':{x:-676,z:-472,yaw:1.52,pitch:.12,d:9},
             'amod-bridge':{x:-756,z:-486,yaw:1.45,pitch:.16,d:11},
             'amod-ostel':{x:-782,z:-492,yaw:1.23,pitch:.12,d:13},
-            'amod-street':{x:-806,z:-498,yaw:2.2,pitch:.22,d:8},
-            'amod-valley':{x:-830,z:-540,yaw:2.6,pitch:.2,d:12},
+            'amod-street':{x:-800,z:-512,yaw:2.05,pitch:.17,d:14},
+            'amod-valley':{x:-836,z:-534,yaw:2.45,pitch:.16,d:15},
             'amod-ogre':{x:-684,z:-470,yaw:1.9,pitch:.08,d:17,look:{x:-681,z:-471,y:3.2}}})[view];
           if(spot){
             player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
             yaw=spot.yaw;pitch=spot.pitch;distance=targetDistance=spot.d;player.group.rotation.y=Math.PI+yaw;
             if(spot.look){reviewFrozen=true;reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+spot.look.y,spot.look.z);}
+            // Amod is eight hundred metres from where the camera was; it must be put there, not flown there.
+            grounded=true;verticalSpeed=0;settleCamera();
           }
         }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}

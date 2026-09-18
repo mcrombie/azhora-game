@@ -2300,7 +2300,7 @@ export function createOgre({ scale = 3.55 } = {}) {
   part(body, UNIT_CYLINDER, cloth, [0, 0.56, 0], [0.3, 0.13, 0.28]);
   ribbon(body, leather, [-0.33, 0.66, 0.2], [0.33, 0.62, 0.19], 0.085, 0.04);
   box(body, patch, [-0.1, 0.63, 0.25], [0.12, 0.1, 0.05]);
-  part(body, UNIT_HAIR_LOCK, hide, [0, 1.02, -0.02], [0.78, 0.36, 0.42]);
+  part(body, UNIT_HAIR_LOCK, hide, [0, 1.0, -0.06], [0.78, 0.33, 0.4]);
   for (const side of [-1, 1]) {
     part(body, UNIT_HAIR_LOCK, hide, [side * 0.31, 1.1, -0.02], [0.33, 0.27, 0.35]);
     // Sacking over one shoulder; old ridged scars across the other.
@@ -2338,9 +2338,9 @@ export function createOgre({ scale = 3.55 } = {}) {
   // Almost no neck: the head is set forward off the chest, and looks up at you.
   const head = new THREE.Group();
   head.name = 'Head';
-  head.position.set(0, 1.16, 0.15);
+  head.position.set(0, 1.19, 0.24);
   body.add(head);
-  part(head, UNIT_HAIR_LOCK, hide, [0, 0.08, -0.04], [0.34, 0.3, 0.33]);
+  part(head, UNIT_HAIR_LOCK, hide, [0, 0.08, -0.04], [0.37, 0.33, 0.35]);
   part(head, UNIT_HAIR_LOCK, belly, [0, -0.07, 0.11], [0.32, 0.19, 0.27]);   // the jaw, undershot
   part(head, UNIT_HAIR_LOCK, hide, [0, 0.19, -0.02], [0.33, 0.12, 0.3]);     // the shelf of brow
   for (const side of [-1, 1]) {

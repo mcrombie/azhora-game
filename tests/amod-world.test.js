@@ -216,3 +216,27 @@ test('the pass stones, the toll stone and the ogre stand together on the road in
   for (const place of [VESSEN, TIR_OSTEL]) assert.equal(regionNameAt(place.x, place.z), 'Amod');
   assert.ok(VESSEN.z < -560 && TIR_OSTEL.z < -520, 'both sit up the valley, away from the Elagos border');
 });
+
+test('in the built world, everyone in Amod has ground to stand on and the ogre has room to fight', async () => {
+  const THREE = await import('../vendor/three.module.js');
+  const { canStand } = await import('../src/game-state.js');
+  const { OGRE_ENCOUNTER } = await import('../src/amod-ogre.js');
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  for (const [id, stand] of Object.entries(AMOD_NPC_POSITIONS))
+    assert.ok(canStand(stand.x, stand.z, world, .34), `${id} has room to stand at ${stand.x.toFixed(1)},${stand.z.toFixed(1)}`);
+  for (const point of [OGRE_ENCOUNTER.checkpoint, OGRE_ENCOUNTER.center, ...OGRE_ENCOUNTER.enemies])
+    assert.ok(canStand(point.x, point.z, world, .45), `the fight at the pass stones has footing at ${point.x},${point.z}`);
+  // The whole road is walkable, and the arch carries it over the water.
+  for (let i = 1; i < AMOD_ROAD.length; i++) {
+    const a = AMOD_ROAD[i - 1], b = AMOD_ROAD[i], steps = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 3);
+    for (let k = 0; k <= steps; k++) {
+      const x = a.x + (b.x - a.x) * k / steps, z = a.z + (b.z - a.z) * k / steps;
+      assert.ok(canStand(x, z, world, .34), `the road is open at ${x.toFixed(1)},${z.toFixed(1)}`);
+    }
+  }
+  const deck = world.heightAt(TARVEL_BRIDGE.crossing.x, TARVEL_BRIDGE.crossing.z);
+  assert.ok(Math.abs(deck - TARVEL_DECK_Y) < .2, `the traveler walks on the deck (${deck.toFixed(2)})`);
+  assert.ok(world.amodMetrics.ribs > 1000, `the hillsides are walled (${world.amodMetrics.ribs} ribs)`);
+  assert.ok(world.landmarks.some(place => place.id === 'ostel') && world.landmarks.some(place => place.id === 'amod-toll-stone'));
+});

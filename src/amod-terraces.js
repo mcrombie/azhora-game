@@ -51,6 +51,33 @@ export function amodShaping(x, z) {
 }
 
 /**
+ * The ground `amod-scenery.js` draws for itself, finely enough to show a 1.45 m
+ * riser: the shaped ground and its whole feather, and a margin past that where
+ * the terraces have already let go. The world's own terrain grid is 7 m apart
+ * out here, which would smear every step into a ramp, and asking the world grid
+ * for a fine band instead costs vertices across the whole of Azhora, because a
+ * rectilinear grid's fine columns run from one edge of the world to the other.
+ */
+export const AMOD_PATCH = Object.freeze({
+  minX: AMOD_TERRACE_GROUND.minX - FEATHER - 8, maxX: AMOD_TERRACE_GROUND.maxX + FEATHER + 8,
+  minZ: AMOD_TERRACE_GROUND.minZ - FEATHER - 8, maxZ: AMOD_TERRACE_GROUND.maxZ + FEATHER + 8,
+});
+/** Deeper than the most a 7 m triangle can cut across a riser, so the coarse grid never shows through. */
+const SINK = 1.7;
+
+/**
+ * How far the world's coarse terrain is lowered under the patch: all the way over
+ * the shaped ground, and back to nothing across the last stretch of the feather,
+ * where there are no steps left for it to cut across and the two grids agree.
+ */
+export function amodTerrainSink(x, z) {
+  const p = AMOD_PATCH;
+  const inside = Math.min(x - p.minX, p.maxX - x, z - p.minZ, p.maxZ - z);
+  if (inside <= 0) return 0;
+  return SINK * smooth(4, 20, inside);
+}
+
+/**
  * The natural ground of a point, before anything here shapes it. Amod is far
  * enough inland that `regionBase` is its inland term alone and no terrain pad
  * reaches it, so this is the same number `world-terrain.js` would produce — and
@@ -234,8 +261,13 @@ function dromelBench(x, z, ground) {
 // ---------------------------------------------------------------------------
 /** One terrace step. A wall this high is a wall you can see over and not climb absently. */
 export const TERRACE_RISE = 1.45;
-/** How much of each step is level tread; the rest is the face of the wall below it. */
-const TREAD = .74;
+/**
+ * How much of each step is level tread; the rest is the face of the wall below it.
+ * On a one-in-fourteen slope this makes a band twenty metres long with a two-metre
+ * riser at its lower edge, which is a bank you can see across a field. Widen the
+ * tread much beyond this and the ground stops reading as a stair at all.
+ */
+const TREAD = .88;
 
 /** A height, snapped to the stair. Pure, and the one function the ribs are found from. */
 export function terraceHeight(height) {

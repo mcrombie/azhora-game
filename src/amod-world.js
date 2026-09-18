@@ -20,9 +20,9 @@
  *    so the stream only has to be cut into a slope that already falls.
  *  - Towns stand on shoulders above valley floors, and their streets follow
  *    contour rather than compass. **Ostel** is laid out in its own frame for
- *    exactly that reason: `along` is the contour, `across` is the fall line, and
- *    the road from Pueth climbs the shoulder diagonally, turns to run the street,
- *    and leaves north-west over the Tarvel toward Kelmod and Mavren.
+ *    exactly that reason: `along` is the contour, `across` is the fall line. The
+ *    road from Pueth crosses the Tarvel on a single arch, climbs onto the shoulder,
+ *    turns to run the street, and leaves north-west toward Kelmod and Mavren.
  *  - Water is the law. Every gate, channel and springhouse here belongs to a
  *    named right in the water court's book, and the dispute at the Dromel Gate is
  *    an ordinary week's work, not an event.
@@ -36,10 +36,10 @@ const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 // Ostel's frame: the contour and the fall line
 // ---------------------------------------------------------------------------
 /**
- * The shoulder above the Tarvel falls east toward Pueth at about one in twelve,
- * so the contour runs north-west and south-east across it. `ostelPoint(a, b)` is
- * `a` metres along the contour toward the burial terrace and `b` metres down the
- * fall line toward the road in from Pueth.
+ * Ostel's shoulder is a narrow bench west of the Tarvel: level for twenty metres,
+ * then falling east into the stream's cut. The contour therefore runs north-west
+ * and south-east along it. `ostelPoint(a, b)` is `a` metres along the contour
+ * toward the burial terrace and `b` metres down the fall line toward the water.
  */
 export const OSTEL = Object.freeze({
   id: 'ostel', name: 'Ostel', centre: point(-814, -504), radius: 32,
@@ -82,7 +82,7 @@ export const AMOD_ROAD = Object.freeze([
   // Into the town: the road turns onto the street and runs the contour.
   ostelPoint(-14, 8), ostelPoint(-2, 6), ostelPoint(10, 5), ostelPoint(20, 4),
   // Out again, north-west, toward Kelmod and Mavren.
-  point(-842, -526), point(-864, -530), point(-884, -532),
+  point(-842, -526), point(-864, -530), point(-881, -532),
 ]);
 
 /** Where the built road stops. Beyond it the Kelmod road runs on, unbuilt. */
@@ -92,8 +92,9 @@ export const KELMOD_ROAD_END = Object.freeze({ id: 'kelmod-road', name: 'The Kel
 // The Tarvel, the stream of Ostel's valley
 // ---------------------------------------------------------------------------
 /**
- * Source to mouth, running south out of the Lotharn foot the way every Amodian
- * valley stream does. Ostel's water court records every diversion off it; the
+ * Source to mouth, running south-east out of the Lotharn foot toward the low
+ * country, as every Amodian valley stream does. Ostel's water court records every
+ * diversion off it; the
  * Dromel is the high channel, taken off at the head and carried along the
  * contour to the western terraces, and it is the one the valley argues about.
  */
@@ -145,24 +146,26 @@ export const TARVEL_HEAD = Object.freeze({ id: 'tarvel-head', name: 'The Tarvel 
  * Amodian houses are vertical: an undercroft of stone for animals and store, a
  * household above it, a drying loft under a steep roof. `storeys` is a real count,
  * not a scale factor, and the walls are the local pale stone rather than timber.
+ * The town is one quarry and one kiln, so four wall tones and three roof tones do
+ * for all of it — which is also what lets `world.js` batch it into a few draws.
  * `[id, a, b, width, depth, storeys, roof, wall, note]` in the town's own frame.
  */
 export const OSTEL_BUILDINGS = Object.freeze([
   ['road-house', -13, 14, 9.8, 7.4, 3, '#7d5a43', '#b9ae92', 'The Struck Measure: beds, soup, and the toll book of the Pueth road.'],
-  ['court-house', 6, -4, 8.4, 6.8, 2, '#6f5744', '#c2b79a', 'The water court: one room, a long table, a cupboard of rolls, and a door that is never locked.'],
-  ['press-house', -14, -12, 9.2, 7.8, 2, '#6b5640', '#b4a98d', 'The press, and the smell of last autumn under the floor.'],
-  ['cellar-house', -20, -19, 6.6, 6.2, 2, '#745841', '#ada285', 'Cellar doors cut back into the shoulder; the wine keeps its cold without ice.'],
-  ['stone-shed', 22, 7, 9.0, 6.4, 1, '#6a5742', '#b7ac90', 'The stonecutters’ shed, open on the yard side.'],
-  ['smithy', 12, 9, 6.8, 5.8, 2, '#5f4e3c', '#ab9f84', 'Hooks, hinges, channel knives and the small metal that keeps water gates honest.'],
-  ['granary', 14, -12, 6.2, 5.6, 3, '#705742', '#bdb295', 'Raised on staddle stones, with a ladder that is taken away at night.'],
-  ['house-1', -3, -9, 6.0, 5.4, 3, '#77593f', '#b6ab8f', ''],
-  ['house-2', -6, -2, 5.8, 5.2, 3, '#6d5540', '#c0b598', ''],
-  ['house-3', 3, -16, 6.2, 5.4, 3, '#7a5c43', '#b1a68a', ''],
-  ['house-4', -22, -3, 5.6, 5.0, 2, '#6c5440', '#bab08f', ''],
-  ['house-5', 22, -9, 5.8, 5.2, 2, '#745942', '#b4a98d', ''],
-  ['house-6', -8, -20, 6.0, 5.2, 3, '#6f5741', '#bcb194', ''],
-  ['house-7', -25, 6, 5.6, 5.0, 2, '#785b42', '#b0a589', ''],
-  ['house-8', 1, 10, 5.8, 5.4, 2, '#6b5440', '#b8ad91', ''],
+  ['court-house', 6, -4, 8.4, 6.8, 2, '#6f5744', '#c0b598', 'The water court: one room, a long table, a cupboard of rolls, and a door that is never locked.'],
+  ['press-house', -14, -12, 9.2, 7.8, 2, '#745841', '#b1a68a', 'The press, and the smell of last autumn under the floor.'],
+  ['cellar-house', -20, -19, 6.6, 6.2, 2, '#7d5a43', '#ada285', 'Cellar doors cut back into the shoulder; the wine keeps its cold without ice.'],
+  ['stone-shed', 22, 10, 9.0, 6.4, 1, '#6f5744', '#b9ae92', 'The stonecutters’ shed, open on the yard side.'],
+  ['smithy', 12, 9, 6.8, 5.8, 2, '#745841', '#c0b598', 'Hooks, hinges, channel knives and the small metal that keeps water gates honest.'],
+  ['granary', 14, -12, 6.2, 5.6, 3, '#7d5a43', '#b1a68a', 'Raised on staddle stones, with a ladder that is taken away at night.'],
+  ['house-1', -3, -9, 6.0, 5.4, 3, '#6f5744', '#ada285', ''],
+  ['house-2', -6, -2, 5.8, 5.2, 3, '#745841', '#b9ae92', ''],
+  ['house-3', 3, -16, 6.2, 5.4, 3, '#7d5a43', '#c0b598', ''],
+  ['house-4', -22, -3, 5.6, 5.0, 2, '#6f5744', '#b1a68a', ''],
+  ['house-5', 22, -9, 5.8, 5.2, 2, '#745841', '#ada285', ''],
+  ['house-6', -8, -20, 6.0, 5.2, 3, '#7d5a43', '#b9ae92', ''],
+  ['house-7', -25, 6, 5.6, 5.0, 2, '#6f5744', '#c0b598', ''],
+  ['house-8', 1, 10, 5.8, 5.4, 2, '#745841', '#b1a68a', ''],
 ].map(([id, a, b, width, depth, storeys, roof, wall, note]) => Object.freeze({
   id, a, b, ...ostelPoint(a, b), width, depth, storeys, roof, wall, note })));
 
@@ -180,9 +183,9 @@ export const OSTEL_STANDS = Object.freeze({
   'ostel-court-clerk': ostelPoint(7, 1),              // on the water court's step
   'ostel-roadhouse': ostelPoint(-10, 9.5),            // in the road house door, on the street side
   // The carts stop in the open yard uphill of the street; the house is across the road from it.
-  'ostel-accountant': ostelPoint(-19, 4),             // at the toll table
+  'ostel-accountant': ostelPoint(-20, 5.5),           // at the toll table
   'ostel-clerk': ostelPoint(-21, 6),                  // Ambron's man, apart, being told nothing
-  'ostel-carter': ostelPoint(-22, 0),
+  'ostel-carter': ostelPoint(-23, 2),
   'ostel-muleteer-1': ostelPoint(-28, 3),
   'ostel-muleteer-2': ostelPoint(-27, -8),
   'ostel-stonecutter': ostelPoint(25, 14),            // in the yard among the blocks
@@ -229,6 +232,8 @@ export const AMOD_LANDMARKS = Object.freeze([
     description: 'A pass stone worn smooth on top, with a wooden bowl set beside it. An ogre sits here and takes a toll off the road. Ostel’s road house has entered it in the book for two generations, because it is cheaper than the alternative.' }),
   Object.freeze({ id: 'amod-first-terrace', name: 'The First Terrace', ...point(-694, -483),
     description: 'The first wall the road passes: chest-high dry stone, its courses lapped and relapped in four different centuries. Somebody is rebuilding the western end, and has been since spring.' }),
+  Object.freeze({ id: 'amod-pueth-view', name: 'The View Back into Pueth', ...point(-716, -496),
+    description: 'From the top of the first terraces the road you came up is laid out below: the pass stones, the ogre on his stone, and beyond them Pueth’s birch and wet grass going down to the Feradom road. Nobody in Amod stops here. It is not a view they need.' }),
   Object.freeze({ id: 'amod-culvert', name: 'The Ostel Culvert', ...point(-712, -479),
     description: 'A stone culvert takes a field channel under the road. It is being cleared with a long hook, as it is cleared after every storm and before every one anybody expects.' }),
   Object.freeze({ id: 'ostel', name: 'Ostel', ...OSTEL.centre, radius: OSTEL.radius,
@@ -258,7 +263,7 @@ export const AMOD_CLEARINGS = Object.freeze([
   Object.freeze({ x: DROMEL_GATE.x, z: DROMEL_GATE.z, r: 9 }),
   Object.freeze({ x: TOLL_STONE.x, z: TOLL_STONE.z, r: 16 }),
   Object.freeze({ x: TARVEL_BRIDGE.crossing.x, z: TARVEL_BRIDGE.crossing.z, r: 11 }),
-  ...AMOD_LANDMARKS.filter(place => ['amod-pass-stones', 'amod-first-terrace', 'amod-culvert', 'kelmod-road'].includes(place.id))
+  ...AMOD_LANDMARKS.filter(place => ['amod-pass-stones', 'amod-first-terrace', 'amod-pueth-view', 'amod-culvert', 'kelmod-road'].includes(place.id))
     .map(place => Object.freeze({ x: place.x, z: place.z, r: 9 })),
 ]);
 

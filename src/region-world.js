@@ -164,8 +164,18 @@ export function relief(x, z, amp, wave) {
 // Signed distance to the coast, from the authored land hexes
 // ---------------------------------------------------------------------------
 const COAST_CELL = 4, COAST_MARGIN = 96;
+/**
+ * The lattice the coast is sampled on keeps one fixed phase — the one the seven
+ * regions before Amod gave it. Growing the world at an edge then adds cells there
+ * and moves no existing coastline by a fraction of a cell. Without this, adding a
+ * region anywhere shifted every shore by a few centimetres, which was enough to
+ * flip a seeded "is this stone above the tideline" test on the Solis downs and
+ * reshuffle every field wall and olive tree after it.
+ */
+const COAST_PHASE = Object.freeze({ x: -1556.0019279391274, z: -704.3502691896258 });
+const snapToCoast = (value, phase) => phase + Math.floor((value - phase) / COAST_CELL + 1e-9) * COAST_CELL;
 const coast = (() => {
-  const minX = WORLD_BOUNDS.minX - COAST_MARGIN, minZ = WORLD_BOUNDS.minZ - COAST_MARGIN;
+  const minX = snapToCoast(WORLD_BOUNDS.minX - COAST_MARGIN, COAST_PHASE.x), minZ = snapToCoast(WORLD_BOUNDS.minZ - COAST_MARGIN, COAST_PHASE.z);
   const columns = Math.ceil((WORLD_BOUNDS.maxX + COAST_MARGIN - minX) / COAST_CELL) + 1;
   const rows = Math.ceil((WORLD_BOUNDS.maxZ + COAST_MARGIN - minZ) / COAST_CELL) + 1;
   const land = new Uint8Array(columns * rows);
@@ -491,7 +501,7 @@ const REGION_TEXT = {
     description: 'Foothills south of the Lotharn, ribbed from the stream beds to the chestnut woods with dry-stone terraces that the same families have rebuilt for eight hundred years. Water is the law here and the water courts keep it; there is no crown, only the Terrace Compact. Ostel is the first town on the road in, dry-slope stone and hard white wine.',
     palette: { ground: '#9aa169', accent: '#e0cf9a', fog: '#c6c7ac' },
     npcIds: ['ostel-measure-keeper', 'ostel-stonecutter', 'ostel-roadhouse', 'ostel-accountant', 'ostel-clerk', 'ostel-vintner'],
-    landmarks: ['amod-pass-stones', 'amod-toll-stone', 'amod-first-terrace', 'amod-culvert', 'ostel', 'ostel-spring', 'tir-ostel', 'vessen', 'dromel-gate', 'tarvel-head'] },
+    landmarks: ['amod-pass-stones', 'amod-toll-stone', 'amod-first-terrace', 'amod-pueth-view', 'amod-culvert', 'tarvel-bridge', 'ostel', 'ostel-spring', 'tir-ostel', 'vessen', 'dromel-gate', 'tarvel-head', 'kelmod-road'] },
   // Peblos is authored in world metres too (src/peblos-world.js); its spawn is the quay the boatman lands at.
   Peblos: { subtitle: 'The islands off the Drent coast', spawn: point(316, 428),
     description: 'Low barrier islands south-east of Drent, an hour under oars from Tidehaven: salt grass and thrift, grey rock at the waterline, gulls, and one fishing village on the quay at Cobble.',

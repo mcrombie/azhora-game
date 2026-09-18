@@ -4,9 +4,10 @@ import { WORLD_SCALE } from './world-scale.js';
 import {
   OSTEL, ostelPoint, OSTEL_BUILDINGS, OSTEL_SPRING, OSTEL_STONE_YARD, OSTEL_TOLL_TABLE, OSTEL_STANDS,
   TARVEL, TARVEL_BRIDGE, DROMEL_CHANNEL, DROMEL_GATE, TARVEL_HEAD, VESSEN, TIR_OSTEL,
-  TOLL_STONE, OGRE_STAND, AMOD_LANDMARKS, AMOD_SIGNS, KELMOD_ROAD_END, tarvelDistance,
+  TOLL_STONE, OGRE_STAND, AMOD_LANDMARKS, AMOD_SIGNS, KELMOD_ROAD_END, AMOD_ROAD, tarvelDistance,
 } from './amod-world.js';
-import { AMOD_TERRACE_GROUND, TARVEL_PROFILE, TARVEL_DECK_Y, DROMEL_PROFILE, TERRACE_RISE, terraceLevel, amodShaping } from './amod-terraces.js';
+import { AMOD_PATCH, TARVEL_PROFILE, TARVEL_DECK_Y, DROMEL_PROFILE, terraceLevel, amodShaping } from './amod-terraces.js';
+import { groundTint } from './world-terrain.js';
 
 /**
  * Amod's scenery, in world metres.
@@ -29,9 +30,28 @@ import { AMOD_TERRACE_GROUND, TARVEL_PROFILE, TARVEL_DECK_Y, DROMEL_PROFILE, TER
  * instanced.
  */
 export function createAmodScenery(kit) {
-  const { root, material, mesh, box, post, pebble, rope, fence, barrel, crate, wornPatch, trailSign,
-    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    roadDistance, riverMaterial, regionClear } = kit;
+  const { root, material, mesh, box, post, pebble, barrel, crate, wornPatch, trailSign,
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, roofGeometry, cylinder, round,
+    riverMaterial, regionClear } = kit;
+  /**
+   * Distance to the edge of the Amod road. The world's own `roadDistance` walks
+   * every four-metre piece of every road in Azhora for every question, and this
+   * module asks it tens of thousands; the only road within reach of anything here
+   * is this one, so it is asked directly.
+   */
+  const roadDistance = (() => {
+    const pieces = [];
+    for (let i = 1; i < AMOD_ROAD.length; i++) pieces.push([AMOD_ROAD[i - 1], AMOD_ROAD[i]]);
+    return (x, z) => {
+      let best = Infinity;
+      for (const [a, b] of pieces) {
+        const dx = b.x - a.x, dz = b.z - a.z;
+        const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz)));
+        best = Math.min(best, Math.hypot(x - a.x - dx * t, z - a.z - dz * t));
+      }
+      return best - 2.1;
+    };
+  })();
   let seed = 812207;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
@@ -43,7 +63,7 @@ export function createAmodScenery(kit) {
   // batcher can merge a town of thirty buildings into a handful of draws.
   const dryStone = material('#a9a289'), paleStone = material('#bcb59c'), darkStone = material('#8e8874');
   const dressedStone = material('#c6bda2'), slate = material('#6f6f68'), mortar = material('#9d9682');
-  const terracotta = material('#8a5f43'), plaster = material('#c3b795'), shutter = material('#6a6b52');
+  const terracotta = material('#8a5f43'), shutter = material('#6a6b52');
 
   // -------------------------------------------------------------------------
   // The Tarvel: water in a cut bed, and blockers everywhere but the arch
@@ -72,7 +92,9 @@ export function createAmodScenery(kit) {
     for (const sample of outline) {
       const acrossBridge = Math.abs((sample.x - b.crossing.x) * b.axis.x + (sample.z - b.crossing.z) * b.axis.z);
       if (acrossBridge < b.halfSpan + 1.6) continue;
-      colliders.push({ x: sample.x, z: sample.z, r: Math.max(1.2, sample.half * .8), kind: 'river-water', river: TARVEL.id });
+      // `river-water` so the minimap and the water tests treat it as water; `stream`, not
+      // `river`, because `river` names one of Pueth's two authored rivers and this is not one.
+      colliders.push({ x: sample.x, z: sample.z, r: Math.max(1.2, sample.half * .8), kind: 'river-water', stream: TARVEL.id });
       metrics.waterColliders++;
     }
     // Bank stones and a few rushes where the water is slow.
@@ -119,23 +141,49 @@ export function createAmodScenery(kit) {
   }
 
   // -------------------------------------------------------------------------
-  // The terrace ribs: a wall on every riser the ground already has
+  // The terraced ground, and a wall on every riser it has
   // -------------------------------------------------------------------------
   /**
-   * Walk the shaped ground on a two-metre lattice and compare the terrace each
-   * sample stands on with its neighbour's. Where they differ the ground is a
-   * riser, and a riser is a wall: a rib goes in across the change, so the ribs
-   * come out following the contours because the contours are where the ground
-   * steps. The segments overlap a little, which is what makes them read as one
-   * long wall rather than a row of stones.
+   * One lattice, sampled once, does two jobs. It is the fine ground Amod draws for
+   * itself (the world's own grid is 7 m apart here and is sunk out of sight under
+   * this one by `amodTerrainSink`), and it is where the risers are found: compare
+   * the terrace each sample stands on with its neighbour's, and where they differ
+   * the ground is a riser and a riser is a wall. The ribs come out following the
+   * contours because the contours are where the ground steps; they overlap a
+   * little, which is what makes them read as one long wall rather than a row of
+   * stones.
    */
   {
-    const STEP = 2.1, RIB = 2.9;
-    const g = AMOD_TERRACE_GROUND;
-    const columns = Math.ceil((g.maxX - g.minX) / STEP) + 1, rows = Math.ceil((g.maxZ - g.minZ) / STEP) + 1;
+    const STEP = 2.4, RIB = 3.6;
+    const p = AMOD_PATCH;
+    const columns = Math.ceil((p.maxX - p.minX) / STEP) + 1, rows = Math.ceil((p.maxZ - p.minZ) / STEP) + 1;
     const heights = new Float32Array(columns * rows);
-    for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++)
-      heights[j * columns + i] = groundHeight(g.minX + i * STEP, g.minZ + j * STEP);
+    const positions = new Float32Array(columns * rows * 3), colours = new Float32Array(columns * rows * 3);
+    let jitter = 7331;
+    const shade = () => { jitter = (Math.imul(jitter, 1664525) + 1013904223) >>> 0; return .955 + jitter / 4294967296 * .09; };
+    for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
+      const x = p.minX + i * STEP, z = p.minZ + j * STEP, index = j * columns + i;
+      const y = groundHeight(x, z);
+      heights[index] = y;
+      positions.set([x, y, z], index * 3);
+      groundTint(color, x, z, THREE).multiplyScalar(shade());
+      colours.set([color.r, color.g, color.b], index * 3);
+    }
+    const indices = [];
+    for (let j = 0; j < rows - 1; j++) for (let i = 0; i < columns - 1; i++) {
+      const a = j * columns + i;
+      indices.push(a, a + columns, a + 1, a + 1, a + columns, a + columns + 1);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+    geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+    // The world's terrain material, nudged forward in depth: at the patch's rim the
+    // two grids meet at the same height, and this one should win that tie.
+    const ground = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    ground.name = 'Amod terraced ground'; ground.receiveShadow = true; group.add(ground);
+    metrics.batches++;
+
     const ribs = [];
     // Ostel stands on the terraces, so its own clearing must not erase them; what a
     // rib may not stand in is a building, a yard, a stand, the road or the water.
@@ -150,9 +198,9 @@ export function createAmodScenery(kit) {
       ...AMOD_LANDMARKS.filter(place => ['amod-pass-stones', 'amod-first-terrace', 'amod-culvert', 'kelmod-road'].includes(place.id))
         .map(place => ({ x: place.x, z: place.z, r: 9 })),
     ];
-    const ribbable = (x, z) => amodShaping(x, z) > .6 && regionNameAt(x, z) === 'Amod'
-      && roadDistance(x, z) > 3.6 && tarvelDistance(x, z) > 4.5
-      && !keepOut.some(spot => Math.hypot(spot.x - x, spot.z - z) < spot.r);
+    const ribbable = (x, z) => amodShaping(x, z) > .6 && !keepOut.some(spot => Math.hypot(spot.x - x, spot.z - z) < spot.r)
+      && tarvelDistance(x, z) > 4.5 && roadDistance(x, z) > 3.6 && regionNameAt(x, z) === 'Amod';
+    const sample = (a, b) => heights[Math.min(rows - 1, Math.max(0, b)) * columns + Math.min(columns - 1, Math.max(0, a))];
     for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
       const here = heights[j * columns + i], level = terraceLevel(here);
       for (const [di, dj] of [[1, 0], [0, 1]]) {
@@ -160,18 +208,24 @@ export function createAmodScenery(kit) {
         if (ni >= columns || nj >= rows) continue;
         const there = heights[nj * columns + ni];
         if (terraceLevel(there) === level) continue;
-        const x = g.minX + (i + di / 2) * STEP, z = g.minZ + (j + dj / 2) * STEP;
+        const x = p.minX + (i + di / 2) * STEP, z = p.minZ + (j + dj / 2) * STEP;
         if (!ribbable(x, z)) continue;
-        // The wall stands across the change, so it lies along the contour.
-        const down = there < here ? [di, dj] : [-di, -dj];
+        // The wall lies along the contour, which means square across the fall line.
+        // Taking that from the height field rather than from the lattice is what
+        // keeps the ribs curving with the hill instead of turning right angles.
+        const gx = (sample(i + 1, j) - sample(i - 1, j)) / (2 * STEP);
+        const gz = (sample(i, j + 1) - sample(i, j - 1)) / (2 * STEP);
+        const down = Math.hypot(gx, gz) > .01 ? [-gx, -gz] : (there < here ? [di, dj] : [-di, -dj]);
         ribs.push({ x, z, top: Math.max(here, there), bottom: Math.min(here, there), yaw: Math.atan2(down[0], down[1]) });
       }
     }
     if (ribs.length) {
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const batch = new THREE.InstancedMesh(geometry, material('#ffffff'), ribs.length);
+      const box1 = new THREE.BoxGeometry(1, 1, 1);
+      const batch = new THREE.InstancedMesh(box1, material('#ffffff'), ribs.length);
       ribs.forEach((rib, index) => {
-        const height = Math.max(.7, rib.top - rib.bottom + .55);
+        // Buried deep enough that a rib lying across ground that keeps falling at its
+        // ends still has its foot in the hill rather than in the air.
+        const height = Math.max(1.6, rib.top - rib.bottom + 1.7);
         dummy.position.set(rib.x, rib.top + .2 - height / 2, rib.z);
         dummy.rotation.set(0, rib.yaw, 0);
         dummy.scale.set(RIB, height, .62);
@@ -278,7 +332,17 @@ export function createAmodScenery(kit) {
     // chestnuts and the herbs go and what makes an Amodian roof so steep.
     if (building.storeys >= 3) for (let slat = 0; slat < 4; slat++)
       box(woodLight, 0, roofBase + .45 + slat * .4, building.depth / 2 + .48 - slat * .18, building.width * .5, .1, .12, yard);
-    colliders.push({ x: building.x, z: building.z, hx: building.width * .55, hz: building.depth * .55, kind: 'house' });
+    // The world's box colliders are square to the world and this town is not, so a
+    // house is blocked out by a row of circles down its long side instead: an
+    // axis-aligned box round a turned building would swallow its own doorstep.
+    const long = Math.max(building.width, building.depth), short = Math.min(building.width, building.depth);
+    const axis = building.width >= building.depth
+      ? { x: Math.cos(yard.rotation.y), z: -Math.sin(yard.rotation.y) } : { x: Math.sin(yard.rotation.y), z: Math.cos(yard.rotation.y) };
+    const reach = (long - short) / 2, count = Math.max(1, Math.ceil(reach / (short * .4)) + 1);
+    for (let k = 0; k < count; k++) {
+      const t = count === 1 ? 0 : -reach + 2 * reach * k / (count - 1);
+      colliders.push({ x: building.x + axis.x * t, z: building.z + axis.z * t, r: short / 2 + .2, kind: 'house' });
+    }
     metrics.buildings++;
     return yard;
   }
@@ -368,7 +432,7 @@ export function createAmodScenery(kit) {
   // -------------------------------------------------------------------------
   for (const [dx, dz, width, storeys] of [[0, 0, 6.0, 2], [8, 5, 5.4, 2], [-6, 7, 5.6, 3]]) {
     terraceHouse({ id: `vessen-${dx}`, x: VESSEN.x + dx, z: VESSEN.z + dz, b: 8,
-      width, depth: width * .88, storeys, roof: '#6f5741', wall: '#b6ab8f' });
+      width, depth: width * .88, storeys, roof: '#6f5744', wall: '#b1a68a' });   // Ostel's own quarry and kiln
   }
   {
     const x = VESSEN.x - 9, z = VESSEN.z - 6, y = groundHeight(x, z);
@@ -434,15 +498,19 @@ export function createAmodScenery(kit) {
     colliders.push({ x: spot.x, z: spot.z, r: 1.2, kind: 'culvert' });
   }
   {
-    // The Kelmod road: a fingerpost and the wall where the built world stops.
+    // The Kelmod road: where the built world stops, a field wall runs north and south
+    // across the way west, with a pole laid over the gap the road would go through.
+    // The road runs east and west here, so the wall and its collider run along z.
     const k = KELMOD_ROAD_END, y = groundHeight(k.x, k.z);
-    for (let i = -6; i <= 6; i++) {
-      const x = k.x + i * 2.4, z = k.z + i * .3;
-      if (roadDistance(x, z) < 4) continue;
-      box(dryStone, x, groundHeight(x, z) + .5, z, 2.5, 1.0, .6, group);
+    for (let i = -8; i <= 8; i++) {
+      const x = k.x + i * .15, z = k.z + i * 2.4;
+      if (Math.abs(z - k.z) < 2.8) continue;
+      const stone = box(dryStone, x, groundHeight(x, z) + .5, z, .6, 1.0, 2.5, group);
+      stone.rotation.y = .04 * i;
     }
-    post(wood, k.x + 4, y + 1.3, k.z + 3, .1, 2.6, group);
-    colliders.push({ x: k.x, z: k.z, hx: k.halfWidth, hz: .2, kind: 'frontier' });
+    for (const side of [-1, 1]) post(wood, k.x, groundHeight(k.x, k.z + side * 2.6) + .7, k.z + side * 2.6, .1, 1.4, group);
+    box(woodLight, k.x, y + 1.05, k.z, .14, .14, 5.4, group).name = 'Kelmod road bar';
+    colliders.push({ x: k.x, z: k.z, hx: .2, hz: k.halfWidth, kind: 'frontier' });
   }
   for (const sign of AMOD_SIGNS) trailSign(sign.x, sign.z, 1, sign.label, sign.yaw, sign.returnLabel, root);
 
