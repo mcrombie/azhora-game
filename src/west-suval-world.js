@@ -734,7 +734,7 @@ export function createWestSuvalScenery(kit) {
  * which in the world is the world's own.
  */
 const colourMaterials = new Map();
-function mergeByColour(source, skip, near, far, isNear) {
+export function mergeByColour(source, skip, near, far, isNear) {
   source.updateMatrixWorld(true);
   const inverse = source.matrixWorld.clone().invert(), buckets = new Map(), meshes = [];
   const visit = object => {

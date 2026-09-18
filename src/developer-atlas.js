@@ -21,6 +21,7 @@ const suvalAnchor = point(1825.4, 2748.9, 11, 113);
 const westSuvalAnchor = point(1732.05, 2800, 4, 116);
 const puethAnchor = point(1773.62, 2440, 13, 101);
 const peblosAnchor = point(1981.47, 2656, 16, 110);
+const westIzolAnchor = point(1929.999, 3072, 5, 127);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -38,6 +39,7 @@ const LOCALS = [
   [5, 'West Suval', 'west-suval', 'West Suval', westSuvalAnchor],
   [6, 'Pueth', 'pueth', 'Pueth', puethAnchor],
   [7, 'Peblos', 'peblos', 'Peblos', peblosAnchor],
+  [8, 'West Izol', 'west-izol', 'West Izol', westIzolAnchor],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
   ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),

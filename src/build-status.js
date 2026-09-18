@@ -34,6 +34,8 @@ export const BUILD_STATUS = Object.freeze({
     'Rimeholt is a first version. The hills, the east and the coast are terrain and landmarks only; no quests of its own.'),
   Peblos: status('early', 'The boat from Tidehaven’s pier and back for three copper, Cobble on the main island with its quay, its ten roofs, its seven islanders and the Empire’s four men, the headland light, the seal cove and the drowned field.',
     'The five outer islands are terrain, scatter and one landmark each, with no way to reach them. No quest, no naval station, no sea cave, no pirates, and nothing to buy or sell on the quay.'),
+  'West Izol': status('early', 'Izolveth on its cut terrace: the Long Quay, two moles and a boom, five ships, the warehouses and the ropewalk, the meeting house and the Stone of Izol, twenty-five people, the Coalition’s camp and drill ground above the town, Ardveth, the boatyard at Kelvath Cove, the Sea Gate and the Sightstone.',
+    'No chapter: the Republic branch of Chapter 3 is where the choice among the three generals belongs, and none of it is wired. No voyage in or out, no interiors, no trade, no quest, and the interior south and east of the Long Pasture is terrain, scatter and one landmark.'),
   'East Suval': status('edge', 'Elod’s border post on the stone road: a ditch, a shut gate and its guard in light black armour.',
     'Everything behind the gate. The region cannot be entered.'),
 });
