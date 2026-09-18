@@ -67,6 +67,12 @@ export const SUBREGIONS = Object.freeze([
   area('lake-ela', 'Lake Ela', 'Elagos', -1345, 100, 110, 'Cold, clear and old, running north-west out of sight, with one outlet at its south-eastern tip.'),
   area('nemmel', 'Nemmel', 'Elagos', -1258, 126, 42, 'A fishing hamlet on Ela’s eastern shore: six roofs, drying frames, and a smoke shed that works all year.'),
   area('the-link', 'The Link', 'Elagos', -1272, 15, 56, 'The Thelas chain’s drain into Ela, crossed on three slabs of lake-stone, with the portage path beside it.'),
+  // Amod: the east end of the terrace country, charted from the road in and the shoulder above it.
+  area('amod-pass-stones', 'The Amod Pass Stones', 'Amod', -676, -470, 40, 'Four standing stones on the border, an ogre who takes a toll off the road, and the first terrace wall beyond them.'),
+  area('ostel-bridge', 'The Ostel Bridge', 'Amod', -772, -488, 34, 'One stone arch over the Tarvel, with an offering shelf on the upstream parapet and the town’s shoulder rising beyond it.'),
+  area('ostel', 'Ostel', 'Amod', -814, -504, 44, 'The eastern dry-slope town on its shoulder: stonecutters, hard white wine, a water court and the road house that keeps the toll book.'),
+  area('tir-ostel', 'Tir Ostel', 'Amod', -844, -560, 30, 'Ostel’s burial terrace above the town, where the dead lie facing down the watercourse.'),
+  area('vessen', 'Vessen', 'Amod', -874, -594, 34, 'Three roofs and a springhouse on the western flank, the high channel above them, and the gate two households argue about.'),
   // Peblos: the islands, which are charted from the water as much as from the land.
   area('cobble', 'Cobble', 'Peblos', 336, 432, 45, 'The one village in the Pebbles: a stone quay, drying racks, ten roofs on a shelf of rock, and the Empire’s tally shed.'),
   area('peblos-headland', 'The Cobble Headland', 'Peblos', 402, 366, 42, 'The northern cape of the main island, with the unlit headland light on its crown.'),

@@ -34,7 +34,10 @@ test('Elagos is the ninth playable region, true to the atlas', () => {
   // A biome of its own, and the highest ground in the playable world: everything falls away from the shelf.
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length, 'every region has its own biome');
   const shelf = REGION_TERRAIN.Elagos;
-  for (const name of PLAYABLE_REGIONS) if (name !== 'Elagos') assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
+  // Everything falls away from the shelf except Amod, the Lotharn foothills, which the
+  // lore puts uphill of it: Amod's terraces descend into the lake country.
+  for (const name of PLAYABLE_REGIONS) if (name !== 'Elagos' && name !== 'Amod') assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
+  assert.ok(REGION_TERRAIN.Amod.base > shelf.base, 'Amod stands above the shelf and drains into it');
   // Where it lies: north-west of Luscia, west of Drent, north of the Moros.
   const centre = loops => { const points = loops.flat(); return { x: points.reduce((s, p) => s + p.x, 0) / points.length, z: points.reduce((s, p) => s + p.z, 0) / points.length }; };
   const here = centre(REGION_OUTLINES.Elagos), moros = centre(REGION_OUTLINES['Moros Plain']), drent = centre(REGION_OUTLINES.Drent);

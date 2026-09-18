@@ -27,6 +27,7 @@ import { createGeology, validateGeologySnapshot } from './geology.js';
 import { createTalkingTree, validateTalkingTreeSnapshot } from './talking-tree.js';
 import { createFerry, validateFerrySnapshot } from './ferry.js';
 import { createRenaLetters, validateRenaLettersSnapshot } from './rena-letters.js';
+import { createOgreToll, validateOgreSnapshot } from './amod-ogre.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
@@ -88,6 +89,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateTalkingTreeSnapshot(data.oldTree)) return failed('The saved state of the Old Tree is invalid.');
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
     if (!validateRenaLettersSnapshot(data.renaLetters)) return failed('The saved letters between the Ardrys are invalid.');
+    if (!validateOgreSnapshot(data.ogreToll)) return failed('The saved toll at the Amod pass stones is invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
       const held = data.mercenaryWeapons;
@@ -175,6 +177,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }
     if (Object.hasOwn(data, 'renaLetters')) { const letters = createRenaLetters(); letters.restore(data.renaLetters); result.renaLetters = letters.snapshot(); }
+    if (Object.hasOwn(data, 'ogreToll')) { const toll = createOgreToll(); toll.restore(data.ogreToll); result.ogreToll = toll.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();

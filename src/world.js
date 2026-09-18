@@ -38,6 +38,9 @@ import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WA
 import { AMBRON_ENCLOSURE, ambronDeckHeight } from './ambron.js';
 import { ELAGOS_NPC_POSITIONS } from './ambron-people.js';
 import { createElagosScenery } from './elagos-scenery.js';
+import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './amod-world.js';
+import { amodTerrainSink } from './amod-terraces.js';
+import { createAmodScenery } from './amod-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -339,7 +342,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const meadowTint = new THREE.Color(), beachColor = new THREE.Color('#d5c99a'), villageColor = new THREE.Color();
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
     const x = terrainXs[i], z = terrainZs[j], index = j * columns + i;
-    terrainPositions.set([x, groundHeight(x, z), z], index * 3);
+    // Amod's terraces are drawn by their own fine patch (src/amod-scenery.js); the coarse grid is sunk out of sight beneath it.
+    terrainPositions.set([x, groundHeight(x, z) - amodTerrainSink(x, z), z], index * 3);
     groundTint(color, x, z, THREE);
     const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
     if (weight > 0) {
@@ -1057,7 +1061,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
-  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(AMOD_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
   for (const path of IZOL_PATHS) measurePath(path.points, path.width);
   measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, 2.6);
@@ -1067,7 +1071,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14)),
+    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z)),
     waterClear: (x, z) => inElagosWater(x, z, 2.5),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
@@ -1085,6 +1089,13 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     insideVillage: (x, z) => { const local = worldToVillage(x, z); return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40; },
   });
   bridgeDecks.push(puethScenery.bridge);
+  // Amod: the Tarvel and its terraces, Ostel on its shoulder, the burial ground, the pass stones and the region's own scatter.
+  const amodScenery = createAmodScenery({
+    root: world, material, mesh, box, post, pebble, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, roofGeometry, cylinder, round,
+    riverMaterial: regionScenery.riverMaterial, regionClear,
+  });
+  bridgeDecks.push(amodScenery.bridge);
   // Peblos: Cobble and its quay, the island places, the outer islands' landmarks and the ferryman's boat.
   const peblosScenery = createPeblosScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
@@ -1146,6 +1157,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const path of REGIONAL_PATHS) addPath(path, 1.85);
   addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
   addPath(PUETH_ROAD, 4.2);
+  addPath(AMOD_ROAD, 4.2);
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
   addPath(RENA_ROAD, 2.6);
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
@@ -1545,6 +1557,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     peblosMetrics: peblosScenery.metrics,
     izolMetrics: izol.metrics,
     izolQuay: IZOL_QUAY,
+    amodMetrics: amodScenery.metrics,
     peblosQuay: COBBLE_QUAY,
     eastSuvalMetrics: eastSuval.metrics,
     elodQuay: ELOD_QUAY,
@@ -1634,7 +1647,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS, ...ELAGOS_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS, ...ELAGOS_NPC_POSITIONS, ...AMOD_NPC_POSITIONS,
       ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
     landmarks: [
@@ -1654,6 +1667,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...FRONTIER_LANDMARKS,
       ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
+      ...AMOD_LANDMARKS,
       ...PEBLOS_LANDMARKS,
       ...RENA_LANDMARKS,
       ...EAST_SUVAL_PLACES,

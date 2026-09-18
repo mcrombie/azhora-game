@@ -68,8 +68,9 @@ test('points resolve to regions and cells, and the world bounds enclose all four
   assert.equal(cellAtWorld(survey, 5000, 5000), null);
   const bounds = worldBoundsFor(survey);
   for (const [, point] of Object.entries(anchors)) assert.ok(point.x > bounds.minX && point.x < bounds.maxX && point.z > bounds.minZ && point.z < bounds.maxZ);
-  // West Izol lies far south of the mainland regions, so the world is taller than it is wide.
-  assert.ok(bounds.maxX - bounds.minX < 25 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 30 * METRES_PER_HEX, 'the playable regions fit a walkable world');
+  // West Izol lies far south of the mainland regions and Amod climbs north toward the
+  // Lotharn, so the world is taller than it is wide: about 31 hexes north to south.
+  assert.ok(bounds.maxX - bounds.minX < 25 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX, 'the playable regions fit a walkable world');
 });
 
 test('route anchors follow the brief: Tidehaven on the coast, the Caloss on the Luscia border, the Moros west, Elod north-east', () => {

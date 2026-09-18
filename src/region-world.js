@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -134,6 +134,16 @@ export const REGION_TERRAIN = Object.freeze({
     forest: Object.freeze({ base: 20.6, amp: 3.0, wave: 150, ground: '#6d8a58' }),
     lake: Object.freeze({ base: 18.6, amp: 1.4, wave: 200, ground: '#84986a' }),
   }) }),
+  // Amod is the slope itself. The atlas puts hills and one mountain along its northern rows and grassland along
+  // its southern ones, so the plain hex blend already tips the whole country southward, out of the Lotharn and
+  // down toward Elagos: a traveler walking west out of Pueth climbs, and every valley drains past them.
+  // The relief here is deliberately quiet: Amod's shape is the hex tilt, the stream valleys and the
+  // terraces themselves (src/amod-terraces.js), not noise. A loud sine field puts one-in-three pitches
+  // under a road that an Amodian would never have laid, and no channel could hold grade across it.
+  Amod: Object.freeze({ base: 24, amp: 2.4, wave: 190, ground: REGION_BIOMES.Amod.ground, byTerrain: Object.freeze({
+    hills: Object.freeze({ base: 44, amp: 6.5, wave: 160, ground: '#94986c' }),
+    mountain: Object.freeze({ base: 78, amp: 14, wave: 130, ground: '#8a8c80' }),
+  }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
 /** The terrain a hex cell stands on: its region's profile, refined by the cell's atlas terrain where the region says so. */
@@ -170,8 +180,18 @@ export function relief(x, z, amp, wave) {
 // Signed distance to the coast, from the authored land hexes
 // ---------------------------------------------------------------------------
 const COAST_CELL = 4, COAST_MARGIN = 96;
+/**
+ * The lattice the coast is sampled on keeps one fixed phase — the one the seven
+ * regions before Amod gave it. Growing the world at an edge then adds cells there
+ * and moves no existing coastline by a fraction of a cell. Without this, adding a
+ * region anywhere shifted every shore by a few centimetres, which was enough to
+ * flip a seeded "is this stone above the tideline" test on the Solis downs and
+ * reshuffle every field wall and olive tree after it.
+ */
+const COAST_PHASE = Object.freeze({ x: -1556.0019279391274, z: -704.3502691896258 });
+const snapToCoast = (value, phase) => phase + Math.floor((value - phase) / COAST_CELL + 1e-9) * COAST_CELL;
 const coast = (() => {
-  const minX = WORLD_BOUNDS.minX - COAST_MARGIN, minZ = WORLD_BOUNDS.minZ - COAST_MARGIN;
+  const minX = snapToCoast(WORLD_BOUNDS.minX - COAST_MARGIN, COAST_PHASE.x), minZ = snapToCoast(WORLD_BOUNDS.minZ - COAST_MARGIN, COAST_PHASE.z);
   const columns = Math.ceil((WORLD_BOUNDS.maxX + COAST_MARGIN - minX) / COAST_CELL) + 1;
   const rows = Math.ceil((WORLD_BOUNDS.maxZ + COAST_MARGIN - minZ) / COAST_CELL) + 1;
   const land = new Uint8Array(columns * rows);
@@ -541,6 +561,12 @@ const REGION_TEXT = {
     palette: { ground: '#7f9175', accent: '#d9dccb', fog: '#b9c4c4' },
     npcIds: ['garrison-captain', 'garrison-casso', 'garrison-brill', 'rimeholt-reeve', 'rimeholt-innkeeper', 'rimeholt-foreman', 'rimeholt-carter', 'rimeholt-trapper', 'rimeholt-sentry'],
     landmarks: ['tessen-bridge', 'tessen-post', 'tessen-shallows', 'bramble-scout-camp', 'birch-landing', 'rimeholt', 'grey-shoulder', 'cold-hearth', 'ordel-mouth', 'feradom-road'] },
+  // Amod is authored in world metres (src/amod-world.js); its spawn is the pass stones on the road in from Pueth.
+  Amod: { subtitle: 'The terrace country', spawn: point(-676, -474),
+    description: 'Foothills south of the Lotharn, ribbed from the stream beds to the chestnut woods with dry-stone terraces that the same families have rebuilt for eight hundred years. Water is the law here and the water courts keep it; there is no crown, only the Terrace Compact. Ostel is the first town on the road in, dry-slope stone and hard white wine.',
+    palette: { ground: '#9aa169', accent: '#e0cf9a', fog: '#c6c7ac' },
+    npcIds: ['ostel-measure-keeper', 'ostel-stonecutter', 'ostel-roadhouse', 'ostel-accountant', 'ostel-clerk', 'ostel-vintner'],
+    landmarks: ['amod-pass-stones', 'amod-toll-stone', 'amod-first-terrace', 'amod-pueth-view', 'amod-culvert', 'tarvel-bridge', 'ostel', 'ostel-spring', 'tir-ostel', 'vessen', 'dromel-gate', 'tarvel-head', 'kelmod-road'] },
   // Peblos is authored in world metres too (src/peblos-world.js); its spawn is the quay the boatman lands at.
   Peblos: { subtitle: 'The islands off the Drent coast', spawn: point(316, 428),
     description: 'Low barrier islands south-east of Drent, an hour under oars from Tidehaven: salt grass and thrift, grey rock at the waterline, gulls, and one fishing village on the quay at Cobble.',

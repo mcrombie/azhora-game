@@ -10,6 +10,7 @@ import {
 } from './region-world.js';
 import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-world.js';
 import { elagosGround } from './elagos-world.js';
+import { amodGround } from './amod-terraces.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
@@ -235,7 +236,10 @@ export function groundWithRiver(x, z) {
   // Elagos's lakes and the Ela-south are basins and reaches with their own
   // levels, not courses cut from the atlas: src/elagos-world.js shapes the
   // ground round them, and answers everywhere else with the ground it was given.
-  return elagosGround(x, z, ground);
+  // Amod's east end is a made landscape: the Tarvel's valley, the terrace stair,
+  // the Dromel's bench and the road's (src/amod-terraces.js). It reshapes the
+  // relief it is handed and leaves everything outside its own ground untouched.
+  return amodGround(x, z, elagosGround(x, z, ground));
 }
 
 /** Terrain tint before scenery tints, matching the biome and the shore. */
