@@ -700,6 +700,10 @@ function init() {
     const stand=entry&&world.npcPositions[entry.beside];
     if(!entry||!stand||!['opening','playing','pause','journal','testing'].includes(mode))return false;
     campaign.restore(createCampaign().snapshot());for(const id of entry.completed)campaign.completeChapter(id);
+    // Everything before the start happened, including the report for duty in Lumber Town:
+    // without it the chapter count stays on Chapter 1 however well Chapter 2 is played.
+    if(entry.completed.includes('luscia-aftermath')){const done=luscia.snapshot();luscia.restore({version:done.version,revision:5,started:true,briefed:true,satchelTaken:true,wolvesCleared:true,returned:true});}
+    if(entry.completed.includes('moros-camp')){const done=moros.snapshot();moros.restore({version:done.version,revision:4,started:true,admitted:true,mustered:true,horseClaimed:true});}
     questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=true;meadowCleared=true;
     for(const id of ['harbor-letter','road-token','tinderbox'])inventory.grant(id);
     const purse=inventory.count(COPPER_ITEM);if(purse<entry.purse)inventory.add(COPPER_ITEM,entry.purse-purse);

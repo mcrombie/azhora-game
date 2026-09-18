@@ -170,6 +170,17 @@ test('a game begun at a later chapter is played from there, not from the road be
   // Without the campaign it would have nothing left on the road and give up.
   const blind = planGoal({ ...staged, campaign: undefined }, world);
   assert.equal(blind.kind, 'done');
+
+  // Once the side is chosen the campaign moves on to the battle, and the traveler still has
+  // the envoy's answer to carry back. The Luscia and Moros chapters are finished behind them
+  // and must not stop the walk: the Empire run once gave up here in Drent.
+  const reporting = planGoal({ ...staged, position: { x: 200, z: 150 },
+    campaign: { chapterId: 'border-battle', side: 'empire' },
+    luscia: { complete: true, destinationIds: [] }, moros: { complete: true, destinationIds: [] },
+    border: { stage: 'report', complete: false, destinationIds: ['post-camp-legate'], actions: [], objectiveId: 'post-camp-legate' },
+  }, world);
+  assert.equal(reporting.kind, 'talk', `the report still has to be made, not ${reporting.intent}`);
+  assert.equal(reporting.npcId, 'post-camp-legate');
 });
 
 test('the fight policy dodges tells, strikes in reach, closes the gap, and waits on stamina', () => {

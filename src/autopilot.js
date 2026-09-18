@@ -290,7 +290,8 @@ export function planGoal(snapshot, world) {
   const chapter = snapshot.campaign?.chapterId;
   if (chapter && questStage >= 10) {
     if (snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
-    if (chapter === 'suval-envoy' && snapshot.border) return borderGoal(snapshot, world);
+    // The envoy, the report, the march and the battle are one chapter of the border's.
+    if ((chapter === 'suval-envoy' || chapter === 'border-battle') && snapshot.border) return borderGoal(snapshot, world);
     if (chapter === 'moros-camp' && snapshot.moros) return morosGoal(snapshot, world);
     if (chapter === 'luscia-aftermath' && snapshot.luscia) return lusciaGoal(snapshot, world);
   }
