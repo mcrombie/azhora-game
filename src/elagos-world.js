@@ -36,7 +36,7 @@
  * once into a signed distance field with the water's own level carried outward,
  * so `elagosGround` can answer any point in the world in one bilinear sample.
  */
-import { AMBRON, ambronPoint, MAIN_ROAD } from './region-world.js';
+import { AMBRON, ambronPoint, MAIN_ROAD, AMBRON_TERRACE } from './region-world.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
@@ -262,7 +262,12 @@ export function elagosGround(x, z, natural) {
   const water = elagosWater(x, z);
   if (!water) return natural;
   const { d, surface } = water;
-  if (d < 0) return Math.min(natural, lerp(surface, WATER_FLOOR, smooth(0, -12, d)));
+  // The bed drops below footing within five metres of the shore, so a lake is water
+  // and not shallows. The opaque surface hides the drop; the tests hold it to it.
+  if (d < 0) return Math.min(natural, lerp(surface, WATER_FLOOR, smooth(0, -5, d)));
+  // Inside Ambron's made ground the bank is a built quay, not a slope: the terrace
+  // stands to the water's edge and the quay wall is what holds it up.
+  if (Math.abs(x - AMBRON_TERRACE.x) < AMBRON_TERRACE.halfX && Math.abs(z - AMBRON_TERRACE.z) < AMBRON_TERRACE.halfZ) return natural;
   const bank = surface + 1.2 * smooth(0, 12, d);
   const depth = clamp(natural - bank, 0, 18);
   const valley = 8 + depth * 2.3;
@@ -365,6 +370,8 @@ export const ELAGOS_LANDMARKS = freeze([
     description: 'Seven arches on old lake-stone piers, carrying the main street from the old city over to the timber strand. The piers are older than the arches, and the arches are older than the parapet.' }),
   freeze({ id: 'ambron-plain-gate', name: 'The Plain Gate', ...ambronPoint(56, 74),
     description: 'Ambron’s southern gate, on the haul road up from the Moros. The toll board over the arch lists what is owed on grain, fish, timber, salt and hides, in Elagosi and in Mittoli.' }),
+  freeze({ id: 'physic-garden', name: 'The Physic Garden', ...ambronPoint(75, 39),
+    description: 'The Record House’s own beds, behind a low wall off Ela Street: nineteen plants under written labels, a loft the tower birds use, and a specimen wall holding one squared block of every stone Ambron has ever built with, in the order it came into the city.' }),
   freeze({ id: 'lake-ela', name: 'Lake Ela', ...LAKE_ELA.centre, radius: 96,
     description: 'Cold, clear and old. It runs north-west further than the eye follows, and the whole of it comes south through one gap forty-six metres wide.' }),
   freeze({ id: 'nemmel', name: NEMMEL.name, ...NEMMEL, radius: NEMMEL.radius,
@@ -414,11 +421,11 @@ export const ELAGOS_CLEARINGS = freeze([
 // Signposts, in the road's own language
 // ---------------------------------------------------------------------------
 export const ELAGOS_SIGNS = freeze([
-  freeze({ ...point(AMBRON_JUNCTION.x + 4, AMBRON_JUNCTION.z - 7), label: 'Ambron', returnLabel: 'The Legion Camp', yaw: 0 }),
-  freeze({ ...point(-1238, 462), label: 'Ambron', returnLabel: 'Moros Plain', yaw: 0 }),
-  freeze({ ...point(-1233, 410), label: 'The Stair', returnLabel: 'Ambron', yaw: 0 }),
-  freeze({ ...point(-1228, 198), label: 'Nemmel', returnLabel: 'Ambron', yaw: 0 }),
-  freeze({ ...point(-1278, 70), label: 'The Lake Shrine', returnLabel: 'Nemmel', yaw: 0 }),
+  freeze({ ...point(AMBRON_JUNCTION.x + 8, AMBRON_JUNCTION.z - 11), label: 'Ambron', returnLabel: 'The Legion Camp', yaw: 0 }),
+  freeze({ ...point(-1246, 461), label: 'Ambron', returnLabel: 'Moros Plain', yaw: 0 }),
+  freeze({ ...point(-1234, 409), label: 'The Stair', returnLabel: 'Ambron', yaw: 0 }),
+  freeze({ ...point(-1231, 195), label: 'Nemmel', returnLabel: 'Ambron', yaw: 0 }),
+  freeze({ ...point(-1269, 66), label: 'The Lake Shrine', returnLabel: 'Nemmel', yaw: 0 }),
 ]);
 
 // ---------------------------------------------------------------------------

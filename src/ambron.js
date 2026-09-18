@@ -96,7 +96,7 @@ export const CHANNEL = freeze({ half: AMBRON.channelHalf, surface: 14.6,
  * the water. Its deck is level between the piers and ramps down to the made
  * ground of each bank, so a traveler walks straight across.
  */
-export const CAUSEWAY = freeze({ b: 0, halfWidth: 4.2, deckY: 18.6, level: 30, foot: 46, piers: freeze([-18, -9, 0, 9, 18]) });
+export const CAUSEWAY = freeze({ b: 0, halfWidth: 4.2, deckY: 17.7, level: 24, foot: 32, piers: freeze([-18, -9, 0, 9, 18]) });
 
 /** The deck of the causeway under a world point, or null: `world.heightAt` asks this. */
 export function ambronDeckHeight(x, z) {
@@ -184,7 +184,7 @@ export const AMBRON_BUILDINGS = freeze([
   building({ id: 'strand-store', a: -45, b: 52, w: 14, d: 18, h: 6, layer: 'new', kind: 'warehouse', door: 'east' }),
   building({ id: 'ropewalk', name: 'The Ropewalk', a: -75, b: -50, w: 20, d: 26, h: 5, layer: 'patched', kind: 'shed', door: 'east' }),
   building({ id: 'poor-row-1', a: -75, b: -22, w: 20, d: 20, h: 5, layer: 'patched', kind: 'row', door: 'east' }),
-  building({ id: 'boatyard', name: 'The Lake Boatyard', a: -73, b: 22, w: 16, d: 20, h: 6.5, layer: 'new', kind: 'shed', door: 'east' }),
+  building({ id: 'boatyard', name: 'The Lake Boatyard', a: -71, b: 22, w: 14, d: 20, h: 6.5, layer: 'new', kind: 'shed', door: 'east' }),
   building({ id: 'poor-row-2', a: -75, b: 52, w: 20, d: 18, h: 4.8, layer: 'patched', kind: 'row', door: 'east' }),
 ]);
 
@@ -209,6 +209,20 @@ export const AMBRON_OUTSIDE = freeze([
 export const AMBRON_STALLS = freeze([[36, -18], [36, -12], [36, 2], [44, -18], [50, -18], [44, 2], [50, 2]]
   .map(([a, b], index) => freeze({ id: `stall-${index + 1}`, a, b })));
 export const AMBRON_WELL = freeze({ a: 47, b: -16, r: 1.9 });
+/**
+ * The Physic Garden of the Record House: the city's own beds of plants, kept by the
+ * botanist, with a stone-cutter's specimen wall along its north side and a dovecote
+ * and pigeon loft over its gate. Ambron has a specialist for everything; this is
+ * where four of them work. Walled on three sides, open to Ela Street in the west.
+ */
+export const PHYSIC_GARDEN = freeze({
+  minA: 64, maxA: 86, minB: 34, maxB: 44,
+  beds: freeze([[68, 36.2], [68, 41.8], [74, 36.2], [74, 41.8], [80, 36.2], [80, 41.8]].map(([a, b]) => freeze({ a, b }))),
+  // Three trees, in the corners, clear of the walk down the middle between the beds.
+  trees: freeze([[65.4, 35.4], [84.4, 36.4], [84.4, 41.6]].map(([a, b]) => freeze({ a, b }))),
+  specimenWall: freeze({ a: 76, b: 34.6 }), dovecote: freeze({ a: 85, b: 39 }),
+});
+
 /** The lake gauge cut into the east quay: a limewashed post with the flood years on it. */
 export const AMBRON_GAUGE = freeze({ a: 24.5, b: 20 });
 /** Where the sledges and ice-road stakes are stacked all summer, against the granary wall. */
@@ -232,8 +246,16 @@ export function ambronColliders() {
   for (const stall of AMBRON_STALLS) out.push(box(stall.a - 1.5, stall.a + 1.5, stall.b - 1.1, stall.b + 1.1, 'market-stall'));
   out.push(freeze({ ...P(AMBRON_WELL.a, AMBRON_WELL.b), r: AMBRON_WELL.r + .2, kind: 'ambron-well' }));
   out.push(box(AMBRON_CHAIN.capstan.a - 2.4, AMBRON_CHAIN.capstan.a + 2.4, AMBRON_CHAIN.capstan.b - 2.4, AMBRON_CHAIN.capstan.b + 2.4, 'ambron-capstan'));
-  // The causeway's parapets: the deck is the only walkable line over the water.
-  for (const side of [-1, 1]) out.push(box(-CAUSEWAY.level, CAUSEWAY.level, CAUSEWAY.b + side * (CAUSEWAY.halfWidth + .3) - .25, CAUSEWAY.b + side * (CAUSEWAY.halfWidth + .3) + .25, 'causeway-parapet'));
+  // The physic garden's three walls; its fourth side is open to the street.
+  out.push(box(PHYSIC_GARDEN.minA, PHYSIC_GARDEN.maxA, PHYSIC_GARDEN.minB - .3, PHYSIC_GARDEN.minB + .3, 'garden-wall'));
+  out.push(box(PHYSIC_GARDEN.minA, PHYSIC_GARDEN.maxA, PHYSIC_GARDEN.maxB - .3, PHYSIC_GARDEN.maxB + .3, 'garden-wall'));
+  out.push(box(PHYSIC_GARDEN.maxA - .3, PHYSIC_GARDEN.maxA + .3, PHYSIC_GARDEN.minB, PHYSIC_GARDEN.maxB, 'garden-wall'));
+  for (const bed of PHYSIC_GARDEN.beds) out.push(box(bed.a - 2.2, bed.a + 2.2, bed.b - 1.5, bed.b + 1.5, 'garden-bed'));
+  for (const tree of PHYSIC_GARDEN.trees) out.push(freeze({ ...P(tree.a, tree.b), r: .4, kind: 'garden-tree' }));
+  // The causeway's parapets: the deck is the only walkable line over the water. They
+  // reach a metre past each quay face and no further, so the quays stay walkable.
+  const parapet = CHANNEL.half + 1;
+  for (const side of [-1, 1]) out.push(box(-parapet, parapet, CAUSEWAY.b + side * (CAUSEWAY.halfWidth + .3) - .25, CAUSEWAY.b + side * (CAUSEWAY.halfWidth + .3) + .25, 'causeway-parapet'));
   return freeze(out);
 }
 
@@ -247,13 +269,13 @@ const stand = (a, b, yaw) => freeze({ ...P(a, b), a, b, yaw });
 export const AMBRON_STANDS = freeze({
   // The toll, at the chain and over it
   'ambron-toll-clerk': stand(43, 43, NORTH),
-  'ambron-tally-boy': stand(33.5, 50, EAST),
+  'ambron-tally-boy': stand(33, 43, EAST),
   'ambron-chainman': stand(29, 50, NORTH),
   'ambron-bargemaster': stand(31, 36, WEST),
   'ambron-bargewoman': stand(31, 22, WEST),
   // The empire's own
-  'ambron-legate': stand(59, 18, EAST),
-  'ambron-adjutant': stand(59, 28, EAST),
+  'ambron-legate': stand(57, 18, EAST),
+  'ambron-adjutant': stand(57, 27, EAST),
   'ambron-scrivener': stand(59, -50, EAST),
   'ambron-gate-optio': stand(56, 60, SOUTH),
   'ambron-gate-legionary': stand(60.5, 62, SOUTH),
@@ -273,6 +295,13 @@ export const AMBRON_STANDS = freeze({
   'ambron-raftsman': stand(-31, 20, EAST),
   'ambron-sawyer': stand(-36, -26, WEST),
   'ambron-ropewalker': stand(-63, -34, EAST),
+  // The specialists: Ambron keeps one of everybody, and these five teach what
+  // Drent's own people teach (src/ambron-people.js).
+  'ambron-aviarist': stand(63, -42, SOUTH),
+  'ambron-fishmaster': stand(33, 16, WEST),
+  'ambron-mushroomer': stand(40, 1, NORTH),
+  'ambron-botanist': stand(70, 39, WEST),
+  'ambron-stonecutter': stand(-36, -46, WEST),
   // The ones the toll does not reach
   'ambron-beggar': stand(25.5, 6, EAST),
   'ambron-widow': stand(-63, 44, EAST),

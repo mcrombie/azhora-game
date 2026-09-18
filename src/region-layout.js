@@ -53,8 +53,8 @@ export const REGION_BIOMES = Object.freeze({
     relief: { amplitude: 3.4, wavelength: 95 }, clearings: ['harbour', 'headland'], ownScatter: true,
     note: 'Low barrier islands south-east of Drent: salt grass, thrift and gorse, grey rock at the waterline, pale sand in the coves, and a few wind-bent pines on the higher ground. No forest anywhere.' }),
   // Elagos is the lake country: its water is authored in src/elagos-world.js, and the scatter keeps out of it through ELAGOS_CLEARINGS.
-  Elagos: Object.freeze({ id: 'lake-shelf', name: 'The Lake Lands', ground: '#7d9560', canopy: '#3f6446', treesPerHex: perHex(11), rocksPerHex: perHex(2), undergrowth: 'light',
-    relief: { amplitude: 2.6, wavelength: 165 }, clearings: ['ambron', 'nemmel', 'ice-road', 'lake-shrine'],
+  Elagos: Object.freeze({ id: 'lake-shelf', name: 'The Lake Lands', ground: '#7d9560', canopy: '#3f6446', treesPerHex: perHex(7), rocksPerHex: perHex(2), undergrowth: 'light',
+    relief: { amplitude: 2.6, wavelength: 165 }, clearings: ['ambron', 'nemmel', 'ice-road', 'lake-shrine'], blockHexes: 6,
     note: 'The northern shelf: cold clear lakes in a rolling green country, dense-grained lake timber in stands rather than forest, hay meadow and barley on the lake margins, and Ambron on the narrows. High ground: everything drops from here to the Moros.' }),
 });
 

@@ -52,6 +52,13 @@ export const SUBREGIONS = Object.freeze([
   area('cold-hearth', 'The Cold Hearth', 'Pueth', -40, -418, 55, 'A ring of stones in the open valley, black with old fires.'),
   area('grey-shoulder', 'The Grey Shoulder', 'Pueth', -268, -500, 65, 'Bare hills above the valley, where the birch gives out and the wind does not.'),
   area('feradom-road', 'The Feradom Road', 'Pueth', -424, -522, 60, 'The barrier at the edge of Pueth. Feradom lies beyond it, and the road is shut.'),
+  // Elagos
+  area('the-stair', 'The Stair', 'Elagos', -1256, 400, 52, 'Where the lake water falls to the Moros in four steps of shelved rock, and the ox capstan that hauls a laden barge back up it.'),
+  area('ambron', 'Ambron', 'Elagos', -1274, 300, 130, 'The city on the narrows: four ages of wall on one line, the causeway over the water, the quays on both banks, and the chain every barge in the Lake Lands waits for.'),
+  area('the-narrows', 'The Narrows', 'Elagos', -1274, 176, 60, 'Where Lake Ela pinches to forty-six metres before it goes south. Everything the Lake Lands sells passes this gap.'),
+  area('lake-ela', 'Lake Ela', 'Elagos', -1345, 100, 110, 'Cold, clear and old, running north-west out of sight, with one outlet at its south-eastern tip.'),
+  area('nemmel', 'Nemmel', 'Elagos', -1258, 126, 42, 'A fishing hamlet on Ela’s eastern shore: six roofs, drying frames, and a smoke shed that works all year.'),
+  area('the-link', 'The Link', 'Elagos', -1272, 15, 56, 'The Thelas chain’s drain into Ela, crossed on three slabs of lake-stone, with the portage path beside it.'),
   // Peblos: the islands, which are charted from the water as much as from the land.
   area('cobble', 'Cobble', 'Peblos', 336, 432, 45, 'The one village in the Pebbles: a stone quay, drying racks, ten roofs on a shelf of rock, and the Empire’s tally shed.'),
   area('peblos-headland', 'The Cobble Headland', 'Peblos', 402, 366, 42, 'The northern cape of the main island, with the unlit headland light on its crown.'),

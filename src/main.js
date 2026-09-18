@@ -38,6 +38,7 @@ import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LU
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
+import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
@@ -106,6 +107,8 @@ function init() {
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
   // Cobble's people and the Empire's four men on its quay, in Peblos.
   npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
+  // Ambron's people and the lake country's, in Elagos (src/ambron-people.js).
+  npcData.push(...ELAGOS_NPCS.map(npc=>({...npc})));
   // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
   world.npcPositions[FERRY_NPC.id]={x:FERRY_LANDINGS.drent.stand.x,z:FERRY_LANDINGS.drent.stand.z};npcData.push({...FERRY_NPC,yaw:FERRY_LANDINGS.drent.stand.yaw});
   // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
@@ -285,6 +288,24 @@ function init() {
     if(action==='hang-feeder'){
       const result=birding.hangFeeder(inventory);if(!result.ok){toast(result.reason,'ANSEL’S HUMMINGBIRDS');return result;}
       inventory.refresh();world.setFeederHung(true);audio?.effect('success');toast('The feeder is hung. Step back, keep still and wait.','ANSEL’S HUMMINGBIRDS');saveRoad(false);return result;
+    }
+    return {ok:false,reason:''};
+  }
+  // Ambron's specialists: whichever skill a traveler learns in the city, and the
+  // botanist's errand back to Drent. `elagosFlags` is the city's own small memory;
+  // the talking tree itself is Drent's, and reads the same flag name.
+  const elagosFlags=new Set();
+  function elagosAct(action){
+    if(action===TALKING_TREE_QUEST){
+      const repeat=elagosFlags.has(action);elagosFlags.add(action);
+      if(!repeat){toast('A tree in Drent that looks back, and the last of them. Stand where it can see you, and do not hurry.','THE BOTANIST OF AMBRON');saveRoad(false);}
+      return {ok:true,repeat};
+    }
+    if(action?.startsWith('learn-')){
+      const id=action.slice(6),learned=skills.view().find(entry=>entry.id===id);
+      refreshSkillsSheet();
+      if(learned?.learned){audio?.effect('success');toast(`${learned.name} · level ${learned.level}. Ambron teaches what the road does, in its own way.`,'NEW SKILL · K FOR YOUR SKILLS');}
+      saveRoad(false);return {ok:true};
     }
     return {ok:false,reason:''};
   }
@@ -947,6 +968,7 @@ function init() {
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
+    if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:id=>skills.learn(id),act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
@@ -1215,7 +1237,7 @@ function init() {
   $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
-  for(const id of [2,3,4])$('test-region-'+id).onclick=()=>testTravel(id);
+  for(const id of [2,3,4,8])$('test-region-'+id).onclick=()=>testTravel(id);
   for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]])$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};
   $('save-road').onclick=()=>saveRoad();$('continue-road').onclick=continueRoad;
   {const newest=newestStart();show('opening-newest',!!newest);if(newest){$('opening-newest').textContent=`Start at the newest chapter · ${newest.title}`;$('opening-newest').onclick=beginNewestChapter;}}

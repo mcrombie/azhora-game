@@ -71,17 +71,29 @@ export const AMBRON_NPCS = freeze([
   person('ambron-raftsman', 'Hanno Veld', 'Raftsman of the Thelas chain', 'forest-woodcutter', 0x6b6448),
   person('ambron-sawyer', 'Pell Dressan', 'Sawyer', 'forest-woodcutter', 0x655c46),
   person('ambron-ropewalker', 'Vess Annil', 'Ropemaker', 'reed-worker', 0x70664e),
+  // The specialists. Ambron keeps one of everybody, and a skill a traveler met once
+  // in a Drent village can be met again here, in the form a city gives it.
+  person('ambron-aviarist', 'Ottilie Sarn', 'Keeper of the tower birds', 'rise-custodian', 0x5f6b58),
+  person('ambron-fishmaster', 'Rhue Bassel', 'Master of the fish quay', 'bridge-keeper', 0x4f6470),
+  person('ambron-mushroomer', 'Gannet Ivo', 'Mushroom seller', 'reed-worker', 0x6f6448),
+  person('ambron-botanist', 'Sennaia Orm', 'Botanist of the Physic Garden', 'rise-custodian', 0x577058),
+  person('ambron-stonecutter', 'Marek Dunn', 'Stone-cutter and quarry assessor', 'commons-miller', 0x6a665c),
   // The ones the toll does not reach
   person('ambron-beggar', 'Old Ketto', 'Water-steps beggar', 'doomsayer', 0x4c4a44),
   person('ambron-widow', 'Sennet Ollo', 'Of the strand rows', 'rise-custodian', 0x5b5650),
 ]);
 
 export const ELAGOS_COUNTRY_NPCS = freeze([
-  outsider('nemmel-netmaker', 'Thessa Ollan', 'Net-maker of Nemmel', 'rise-custodian', 0x5e6c6a, { x: NEMMEL.x + 6, z: NEMMEL.z + 4 }, -Math.PI / 2),
+  outsider('nemmel-netmaker', 'Thessa Ollan', 'Net-maker of Nemmel', 'rise-custodian', 0x5e6c6a, { x: NEMMEL.x + 6, z: NEMMEL.z }, -Math.PI / 2),
   outsider('stair-ganger', 'Bolm Harrick', 'Ganger of the Stair capstan', 'commons-miller', 0x6c6148, { x: THE_STAIR.capstan.x + 3, z: THE_STAIR.capstan.z + 2 }, -Math.PI / 2),
 ]);
 
 export const ELAGOS_NPCS = freeze([...AMBRON_NPCS, ...ELAGOS_COUNTRY_NPCS]);
+/** Where every one of them stands, in world metres, for `world.npcPositions`. */
+export const ELAGOS_NPC_POSITIONS = freeze(Object.fromEntries([
+  ...Object.entries(AMBRON_STANDS).map(([id, at]) => [id, freeze({ x: at.x, z: at.z })]),
+  ...ELAGOS_COUNTRY_NPCS.map(npc => [npc.id, freeze({ x: npc.x, z: npc.z })]),
+]));
 export const ELAGOS_NPC_IDS = freeze(ELAGOS_NPCS.map(npc => npc.id));
 const ids = new Set(ELAGOS_NPC_IDS);
 export const isElagosNpc = id => ids.has(id);
@@ -204,6 +216,31 @@ export const ELAGOS_AMBIENT = freeze({
     'They will tell you the toll pays for everything. It pays for the wall, the soldiers, the granary and the road. It does not come down here. There is no step in the accounts for the water steps.',
     'Boats come up and boats go down and every one of them has paid somebody. I have watched it for eleven years and I have never once seen a copper go the other way.',
   ]),
+  'ambron-aviarist': freeze([
+    'Ottilie Sarn. I keep the tower birds — the loft on the Record House, and every wild thing that uses this city as a cliff.',
+    'Ambron is a cliff, to a bird. Towers to nest on, a lake to feed in, and nobody throwing stones because the Legate fines you for it. There is more on these roofs than in half the woods of Drent.',
+    'The lake brings everything through twice a year. In a good spring I do not sleep.',
+  ]),
+  'ambron-fishmaster': freeze([
+    'Rhue Bassel. Master of the quay, which means I say what a fish is worth and everybody disagrees with me before they pay it.',
+    'Brul at the north end, Ossen at the south, Ela in the middle, and whatever the river brings down. Four waters on one quay and every one of them tastes different.',
+    'The empire takes its share before I ever see it. My prices are what is left.',
+  ]),
+  'ambron-mushroomer': freeze([
+    'Gannet Ivo. Mushrooms. Eleven kinds on the board and I will tell you what every one of them is before I tell you the price.',
+    'I walk out to the birch stands above the Ossen shore twice a week and I am back before the gate shuts. In a wet autumn I do not need to go past the wall.',
+    'Half the people who buy from me could pick their own. They buy from me because they are not sure, and being not sure is exactly the right way to feel about a mushroom.',
+  ]),
+  'ambron-botanist': freeze([
+    'Sennaia Orm. The Physic Garden, and the pressed sheets behind it, and the argument about what things are called, which is my whole profession.',
+    'Nineteen beds. Every one of them is a plant somebody wrote down wrong, and I am the one who has to settle it.',
+    'The empire pays for this garden because of the medicine and keeps it because of the record. The record is the part that will outlast the empire.',
+  ]),
+  'ambron-stonecutter': freeze([
+    'Marek Dunn. Stone. I cut it, and when the city buys any I say what it is worth.',
+    'That wall in the garden is mine: every stone Ambron has ever built with, squared and set in the order it came into the city. Four ages, and you can put your hand on all of them in twenty paces.',
+    'It all came off the ice. Every boulder in this country was carried here and dropped, and the men who quarry it are only finding where the ice put it down.',
+  ]),
   'ambron-widow': freeze([
     'Sennet Ollo. My husband hauled on the capstan at the Stair until it took his hand, and then for two years until it took the rest of him.',
     'The rows here go up in the fat years and stand empty in the thin ones, and the rent is the same in both. The city gets bigger and smaller like a lung. We live in the part that does the breathing.',
@@ -221,11 +258,159 @@ export const ELAGOS_AMBIENT = freeze({
   ]),
 });
 
-/** A plain conversation for one of Elagos's people. */
+
+// ---------------------------------------------------------------------------
+// The specialists
+// ---------------------------------------------------------------------------
+/**
+ * The flag the botanist sets when she sends the traveler back to Drent to find
+ * the last talking tree. The tree itself, and whatever talking to it turns out
+ * to mean, belong to Drent: this is only where the traveler is told about it.
+ */
+export const TALKING_TREE_QUEST = 'talking-tree-told';
+
+/**
+ * Ambron's specialists, one for every skill the country teaches.
+ *
+ * The rule the user set is that a skill belongs to anybody who practises it, not
+ * to one villager: what Ansel teaches from his garden in Tidehaven, the keeper of
+ * the tower birds teaches from a city roof, and the traveler may meet either
+ * first. So each of these can teach its skill outright, and each says something
+ * else to somebody who has already learned it.
+ *
+ * `skill` is the id in `src/skills.js`. Only birding exists on this branch; the
+ * other four are being built elsewhere this session, so the teaching goes through
+ * the host's `teachSkill`, and a skill the host does not know about yet simply
+ * teaches nothing while the conversation still plays. Nothing here re-implements
+ * a skill: the host calls the real factory.
+ */
+const specialist = entry => freeze({ ...entry, lesson: freeze(entry.lesson), known: freeze(entry.known) });
+
+export const AMBRON_SPECIALISTS = freeze({
+  'ambron-aviarist': specialist({
+    skill: 'birding', offer: 'How do you learn to see them?',
+    lesson: [
+      'Stand still and let them forget you. That is the whole art and it takes a year to believe it.',
+      'You do not chase. You take a place with your back to something, and you wait, and the birds come back to the ground you scared them off. A tower is the best place in the world to learn it, because the birds are below you and they have no idea.',
+      'Then you look properly. Size against something you know, the shape at rest, what the wings do, and the call. Write the call down badly; a bad note you made yourself beats a good one somebody else made.',
+    ],
+    known: [
+      'You have been taught, I can see it — you looked up before you looked at me.',
+      'Then you will want the count. Nine and forty kinds off this roof since the ice went out, and eleven of them only passing. The lake brings everything through twice a year.',
+      'Whoever taught you, they taught you the same thing I would. There is only one way to look at a bird and every one of us found it by standing still.',
+    ],
+  }),
+  'ambron-fishmaster': specialist({
+    skill: 'fishing', offer: 'Could you teach me to take one myself?',
+    lesson: [
+      'Forty years on this quay and I have never once bought a fish I could not have caught. Yes. Sit down.',
+      'Cold water, so everything is slow. Slow bait, slow hand, and a long wait. You are not tempting a fish, you are outlasting one.',
+      'Read the water before you wet a line: where it turns, where the weed stops, where the bottom changes colour. The fish are on the edge of a change, always, and the edge is what you are looking for.',
+    ],
+    known: [
+      'You have the hands for it. Somebody down the country taught you and taught you right.',
+      'Then you know the half of it. The lake half is the other: deep, cold and dark, and a Brul boat will take six days over a fish you would have given up on in an hour.',
+      'Bring me what you take and I will tell you what it is worth. That is all a fish market is: a man who knows what a thing is worth telling a man who caught it.',
+    ],
+  }),
+  'ambron-mushroomer': specialist({
+    skill: 'mycology', offer: 'Teach me to tell one from another.',
+    lesson: [
+      'You want to learn mushrooms in a city. Good. In a village they teach you six and tell you the rest will kill you.',
+      'Gills, ring, cup, print. Take the cap off and stand it on paper overnight and the spores will tell you the family in the morning, which is more than the cap ever will.',
+      'And the tree. Half of what a mushroom is, is the tree it came up under. Birch, beech, pine, dung — write the tree down with the mushroom or you have written nothing.',
+      'One more thing, and it is the only one that matters. There is no trick. There is no silver spoon and no peeling test. There is knowing what you are holding, or putting it down.',
+    ],
+    known: [
+      'You have the eye. You looked at the gills before you looked at the price.',
+      'Eleven kinds on my board today, and three of them I would not sell to a man who did not ask me what they were.',
+      'The lake country grows them differently. Wetter, later, and the birch stands give things the beech woods never do.',
+    ],
+  }),
+  'ambron-botanist': specialist({
+    skill: 'botany', offer: 'What is it you do here?',
+    lesson: [
+      'Sennaia Orm. This garden is the Record House’s, which means it is the empire’s, which means in practice that it is mine.',
+      'Every plant in it is here because somebody wrote it down wrong and I am settling the argument. Nineteen beds, and the pressed sheets of four hundred years in the room behind you.',
+      'The way to learn it is not the flower. It is the leaf, the stem in section, where the leaves sit on the stem, and what the thing does in autumn. A flower is three weeks of the year and a liar for all of them.',
+      'Start with the trees, because a tree stands still and will let you come back to it. Everything else is easier once a tree has taught you to look twice.',
+    ],
+    known: [
+      'You have been taught. Somebody south of here, by the way you stand off the bed rather than over it.',
+      'Then use the sheets. Four hundred years of pressed plants, and about a third of them named by people who never saw the living thing.',
+      'The lake margin runs two or three weeks longer than the plain. Everything you learned down there flowers late here and sets seed in a hurry.',
+    ],
+  }),
+  'ambron-stonecutter': specialist({
+    skill: 'geology', offer: 'How do you read a stone?',
+    lesson: [
+      'Marek Dunn. I cut it and I price it, and the pricing is the harder half.',
+      'You break it fresh. The face of a stone that has stood in weather is a liar; the inside is the stone. Then hardness, how it breaks, what it does to a wet finger, and whether it fizzes.',
+      'And where it was lying. Everything in this country was carried here by ice and put down where the ice stopped, so a stone in a field is a stone from somewhere else, and the somewhere else is the interesting part.',
+      'The wall behind me is the whole lesson: every stone Ambron has ever built with, cut square, in the order it came into the city.',
+    ],
+    known: [
+      'You have handled stone. You turned it to the light before I could tell you to.',
+      'Then read my wall and tell me which course is the oldest. Everybody guesses the darkest one and everybody is wrong.',
+      'Four ages of wall on one line out there, and every age brought its own quarry. You can date this city by what it is made of, if you know what it is made of.',
+    ],
+  }),
+});
+
+export const SPECIALIST_IDS = freeze(Object.keys(AMBRON_SPECIALISTS));
+export const isAmbronSpecialist = id => Object.hasOwn(AMBRON_SPECIALISTS, id);
+
+/** What the city botanist knows about the talking trees, and what she asks. */
+export const TALKING_TREE_LINES = freeze({
+  ask: 'Is there anything you cannot name?',
+  told: freeze([
+    'One. And I can name it perfectly well; what I cannot do is talk to it.',
+    'There were talking trees. Not a story — the sheets in that room have three of them recorded and one of them has a reply written down, in a hand that stopped writing halfway through a word.',
+    'They went the way the old woods went. Not felled, particularly. Just fewer, and then two, and then one. The last one anybody has stood in front of is in Drent, in the old forest, and it has been there longer than this city has had a wall.',
+    'It looks at you. That is the first thing everybody writes. It looks at you, and after a while it stops, and the face is not there any more, and you are standing in front of a tree.',
+    'I am too old for the road and I will not send a clerk. Go and find it. Stand where it can see you and do not hurry, because hurrying is what the ones who wrote nothing down all had in common. What you say to it, and how, is not something anybody has been able to put on paper. You will know it when the tree does.',
+  ]),
+  again: freeze([
+    'You have the road and the tree. There is nothing else I can give you but patience, and you will have to bring your own.',
+    'If it answers you, come back and say so, and I will put it in the sheets under my own name and let them argue with me.',
+  ]),
+});
+
+/**
+ * A specialist's conversation: what they do, an offer to teach it to a traveler
+ * who has not learned it, and something else for one who has. `context.teachSkill`
+ * is the host's own learning call; `context.birding` is the birding module, which
+ * has its own `meet()`. `context.act(id)` lets the host toast and save.
+ */
+function specialistConversation(npc, context) {
+  const entry = AMBRON_SPECIALISTS[npc.id];
+  const { openDialogue, closeDialogue, skills, birding, act = () => ({ ok: true }) } = context;
+  const knows = entry.skill === 'birding' ? Boolean(birding?.met || skills?.known?.('birding')) : Boolean(skills?.known?.(entry.skill));
+  const again = () => specialistConversation(npc, context);
+  const leave = { id: `leave-${npc.id}`, label: 'Good water to you.', action: closeDialogue };
+  const choices = [];
+  if (!knows) choices.push({ id: `learn-${entry.skill}`, label: entry.offer, action: () => {
+    // Birding has its own module and its own first meeting; the rest go through the host.
+    if (entry.skill === 'birding' && birding?.meet) birding.meet();
+    else context.teachSkill?.(entry.skill) ?? skills?.learn?.(entry.skill);
+    act(`learn-${entry.skill}`);
+    openDialogue(npc, [...entry.lesson], null, 'Back to the street', { onComplete: again, choices: [leave] });
+  } });
+  if (npc.id === 'ambron-botanist') choices.push({ id: TALKING_TREE_QUEST, label: TALKING_TREE_LINES.ask, action: () => {
+    const first = act(TALKING_TREE_QUEST);
+    openDialogue(npc, [...(first?.repeat ? TALKING_TREE_LINES.again : TALKING_TREE_LINES.told)], null, 'Back to the street',
+      { onComplete: again, choices: [leave] });
+  } });
+  openDialogue(npc, [...(knows ? entry.known : ELAGOS_AMBIENT[npc.id])], null, 'Back to the street', { choices: [...choices, leave] });
+  return true;
+}
+
+/** A plain conversation for one of Elagos's people, or a lesson from one of its specialists. */
 export function elagosConversation(npc, context) {
   const { openDialogue, closeDialogue } = context;
   const lines = ELAGOS_AMBIENT[npc?.id];
   if (!lines) return false;
+  if (isAmbronSpecialist(npc.id)) return specialistConversation(npc, context);
   const legion = npc.modelRole === 'legion-soldier' || npc.modelRole === 'legion-officer';
   const inCity = Boolean(AMBRON_STANDS[npc.id]);
   openDialogue(npc, [...lines], null, legion ? 'Step back' : inCity ? 'Back to the street' : 'Back to the road',

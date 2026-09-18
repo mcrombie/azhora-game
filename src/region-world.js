@@ -512,7 +512,7 @@ const REGION_TEXT = {
     description: 'The northern shelf, and the lakes that made an empire: Ela running north out of sight, Brul and Ossen and the Thelas chain beyond it, and Ambron astride the narrows where all of that water goes south. Everything that floats out of the Lake Lands pays the chain.',
     palette: { ground: '#7d9560', accent: '#cfe0e4', fog: '#b4c6c4' },
     npcIds: ['ambron-toll-clerk', 'ambron-legate', 'ambron-committee', 'ambron-gate-optio'],
-    landmarks: ['ambron', 'ambron-chain', 'ambron-causeway', 'ambron-plain-gate', 'lake-ela', 'nemmel', 'ice-road-stone', 'drowned-causeway', 'lake-shrine', 'the-stair', 'thelas-link', 'lake-brul', 'lake-ossen'] },
+    landmarks: ['ambron', 'ambron-chain', 'ambron-causeway', 'ambron-plain-gate', 'physic-garden', 'lake-ela', 'nemmel', 'ice-road-stone', 'drowned-causeway', 'lake-shrine', 'the-stair', 'thelas-link', 'lake-brul', 'lake-ossen'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {
