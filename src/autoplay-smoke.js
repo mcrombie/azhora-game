@@ -114,7 +114,9 @@ export async function runAutoplaySmoke(h) {
   assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 5 : 3),
     `the ${side} side ended in region ${world.regionAt(final.position[0], final.position[2]).id}`);
   assert(wentToSolis, 'the Legate’s terms were never carried to Solis');
-  assert(/border battle/i.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
+  // Chapter two ends when the traveler stands on their own side's ground again, and the
+  // autopilot stops there: "You are back in the Legion's outpost…" or "…back in Solis…".
+  assert(/You are back in /.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
   // The day after the battle is fought on the Moros (the outpost) or at Solis, as the battle went.
   assert([3, 5].includes(world.regionAt(final.position[0], final.position[2]).id), 'the traveler did not end on the Moros Plain or in West Suval');
