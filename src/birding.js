@@ -341,7 +341,7 @@ export const LAKOTA_WINE_PITCH = Object.freeze([
 ]);
 
 export function birdWatcherConversation(npc, context) {
-  const { birding, openDialogue, closeDialogue, act, archaeology = null, wine = null } = context;
+  const { birding, openDialogue, closeDialogue, act, archaeology = null, wine = null, cooking = null } = context;
   if (npc.id !== BIRD_WATCHER.id) return false;
   const again = () => birdWatcherConversation(npc, context);
   const leave = { id: 'leave-bird-watcher', label: birding.met ? 'Good watching.' : 'Another time.', action: closeDialogue };
@@ -391,6 +391,8 @@ export function birdWatcherConversation(npc, context) {
       { id: 'accept-wine', label: 'I will look for Vaervelm Caelazh.', action: () => { closeDialogue(); act('learn-wine'); } },
       { id: 'decline-wine', label: 'Maybe after the war.', action: again },
     ] }) }] : []),
+    ...(cooking ? [{ id: 'feeling-bad', label: 'Honestly, Lakota? It has been a bad day.', action: () => { closeDialogue(); act('hot-chocolate'); } }] : []),
+    ...(cooking && cooking.cups > 0 && !cooking.knows('hot-chocolate') ? [{ id: 'ask-recipe', label: 'How do you make that hot chocolate?', action: () => { closeDialogue(); act('learn-hot-chocolate'); } }] : []),
     { id: 'lakota-mind', label: 'What else is on your mind?', action: () => {
       const topics = () => openDialogue(npc, ['Birds, mostly. But since you ask.'], null, 'Back to our conversation', { choices: [
         ...LAKOTA_TOPICS.map(topic => ({ id: `topic-${topic.id}`, label: topic.label, action: () => openDialogue(npc, [...topic.lines], null, 'Back', { onComplete: topics }) })),

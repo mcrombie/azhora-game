@@ -10,6 +10,7 @@ export const FOODS = Object.freeze({
   // Gathered and cooked on the road today.
   pawpaw: define(25, 'You have no pawpaw fruit. Gather some in the forest.'),
   'cooked-fish': define(40, 'You have no cooked fish. Cook a fresh catch at a lit firepit.'),
+  'hot-chocolate': define(45, 'You have no hot chocolate. Once Lakota has taught you, make it at a lit fire from chocolate and a jug of milk.'),
 
   // Foraged in Drent’s broadleaf forest and along its hedges.
   'wood-sorrel': define(10, 'You have no wood sorrel. It grows in the shade of Drent’s broadleaf woods.'),

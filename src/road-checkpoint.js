@@ -26,6 +26,7 @@ import { validateRefugeesSnapshot } from './refugees.js';
 import { validateFallenSnapshot } from './bystanders.js';
 import { validateArchaeologySnapshot } from './archaeology.js';
 import { validateWineSnapshot } from './wine.js';
+import { validateCookingSnapshot } from './cooking.js';
 import { createGeology, validateGeologySnapshot } from './geology.js';
 import { createTalkingTree, validateTalkingTreeSnapshot } from './talking-tree.js';
 import { createFerry, validateFerrySnapshot } from './ferry.js';
@@ -91,6 +92,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateFallenSnapshot(data.fallen)) return failed('The saved list of the dead is invalid.');
     if (!validateArchaeologySnapshot(data.archaeology)) return failed('The saved notes from the digs are invalid.');
     if (!validateWineSnapshot(data.wine)) return failed('The saved tasting notes are invalid.');
+    if (!validateCookingSnapshot(data.cooking)) return failed('The saved recipes are invalid.');
     if (!validateGeologySnapshot(data.geology)) return failed('The saved stone notes are invalid.');
     if (!validateTalkingTreeSnapshot(data.oldTree)) return failed('The saved state of the Old Tree is invalid.');
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
@@ -182,6 +184,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'fallen')) result.fallen = { version: 1, ids: [...data.fallen.ids] };
     if (Object.hasOwn(data, 'archaeology')) result.archaeology = { ...data.archaeology, found: { ...data.archaeology.found } };
     if (Object.hasOwn(data, 'wine')) result.wine = { ...data.wine, tasted: { ...data.wine.tasted } };
+    if (Object.hasOwn(data, 'cooking')) result.cooking = { ...data.cooking, known: [...data.cooking.known], made: { ...data.cooking.made } };
     if (Object.hasOwn(data, 'geology')) { const geology = createGeology(); geology.restore(data.geology); result.geology = geology.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }

@@ -130,6 +130,21 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A simple meal cooked over a fire. Restores up to 40 health.',
     description: 'Restores up to 40 health. A fish cooked over the campfire, ready for the road. Open your satchel with I, select it, and choose Eat. Each meal uses one cooked fish. At full health, no food is consumed.',
   }),
+  'hot-chocolate': Object.freeze({
+    name: 'Hot chocolate', type: 'Food', icon: 'mug', stackable: true, eatName: 'hot chocolate', useVerb: 'Drink',
+    brief: 'Lakota’s recipe, made at a fire: chocolate, milk, chilli and honey. Restores up to 45 health.',
+    description: 'Restores up to 45 health. A cake of chocolate grated into warm milk and stirred till it coats the spoon, with a pinch of chilli. Lakota says to drink it somewhere you can see the sky.',
+  }),
+  chocolate: Object.freeze({
+    name: 'Chocolate', type: 'Ingredient', icon: 'chocolate', stackable: true,
+    brief: 'A dark cake of chocolate from the southern ships. Grate it into warm milk at a fire.',
+    description: 'A cake of pressed chocolate, bitter and dark, brought north by the southern traders. Once Lakota has taught you his recipe, one cake and one jug of milk at a lit fire make a cup of hot chocolate.',
+  }),
+  milk: Object.freeze({
+    name: 'Jug of milk', type: 'Ingredient', icon: 'jug', stackable: true,
+    brief: 'Fresh milk from the Avrel farms. Warm it at a fire; never let it boil.',
+    description: 'A stoppered clay jug of cow’s milk from the farms of the Avrel clearing. With a cake of chocolate and Lakota’s recipe, it makes hot chocolate at a lit fire.',
+  }),
   // The wider larder: foods of Drent and its trade. Healing values live in src/consumables.js.
   // Foraged in Drent’s broadleaf forest and along its hedges.
   'wood-sorrel': Object.freeze({
@@ -362,6 +377,9 @@ const iconPaths = {
   fig: '<path d="M18 7c-1 5-8 7-8 15 0 5 4 9 8 9s8-4 8-9c0-8-7-10-8-15Z"/><path d="M18 7c0-2 1-3 2-5M12 16l6 5 6-5M14 25c1 2 2 3 4 4"/>',
   pear: '<path d="M18 8c-2 4-8 7-9 14-1 6 3 10 9 10s10-4 9-10c-1-7-7-10-9-14Z"/><path d="M18 8c0-2 1-4 3-5M12 22c0 4 2 7 5 8"/>',
   slab: '<path d="M6 13c6-2 18-2 24 0v13c-6 2-18 2-24 0Z"/><path d="M6 19c6-2 18-2 24 0M12 14v11m12-11v11"/>',
+  mug: '<path d="M7 13h18v12c0 4-3 6-6 6h-6c-3 0-6-2-6-6Z"/><path d="M25 16h3c3 0 4 2 4 4s-1 4-4 4h-3M7 17h18M12 10c-2-2 1-3 0-6m6 6c-2-2 1-3 0-6"/>',
+  chocolate: '<rect x="6" y="9" width="24" height="19" rx="2"/><path d="M6 15.3h24M6 21.6h24M14 9v19M22 9v19M26 9l4 4"/>',
+  jug: '<path d="M13 5h8M14 5v4c-5 3-7 8-7 13 0 6 4 9 10 9s10-3 10-9c0-5-2-10-7-13V5"/><path d="M27 15c4 0 5 3 5 5s-2 5-5 5M9 19h18"/>',
 };
 
 /** Every icon the satchel can draw; item definitions are checked against it in tests. */

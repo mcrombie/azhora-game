@@ -55,6 +55,13 @@ export const SKILLS = Object.freeze({
     // The eight wines of Vaervelm Caelazh are worth 120, and the visit 25 more: level 5.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
+  cooking: Object.freeze({
+    id: 'cooking', name: 'Cooking',
+    blurb: 'What you can make at a lit fire, and why it works. Every dish made for the first time teaches you something.',
+    teacher: 'Lakota in Tidehaven, whose hot chocolate is the first recipe',
+    // Hot chocolate is worth 20 and the fish 10: level 2 with both.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));
