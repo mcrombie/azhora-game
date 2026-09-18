@@ -477,9 +477,18 @@ function init() {
   // botanist's errand back to Drent. `elagosFlags` is the city's own small memory;
   // the talking tree itself is Drent's, and reads the same flag name.
   const elagosFlags=new Set();
+  // Any specialist can teach a skill, not only Tidehaven's. Each skill keeps its
+  // own first meeting, so a lesson in Ambron has to go through the same module
+  // the Drent teacher uses, or the level would rise and nothing could be found.
+  function teachFromAmbron(id){
+    const lessons={birding:()=>birding.meet(),botany:()=>botany.meet(),mycology:()=>mycology.meet(),geology:()=>geology.meet(),
+      fishing:()=>{if(!inventory.has('fishing-rod'))inventory.grant('fishing-rod');inventory.refresh();return fishing.learn();}};
+    return lessons[id]?lessons[id]():skills.learn(id);
+  }
   function elagosAct(action){
     if(action===TALKING_TREE_QUEST){
-      const repeat=elagosFlags.has(action);elagosFlags.add(action);
+      // The errand is the Old Tree's own state, so it is saved with the tree.
+      const repeat=oldTree.stage==='told';oldTree.tell();elagosFlags.add(action);
       if(!repeat){toast('A tree in Drent that looks back, and the last of them. Stand where it can see you, and do not hurry.','THE BOTANIST OF AMBRON');saveRoad(false);}
       return {ok:true,repeat};
     }
@@ -1179,7 +1188,7 @@ function init() {
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
     if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
     if(izol.converse(npc,{control:heldControl??campaign.mapControl(),openDialogue,closeDialogue}))return;
-    if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:id=>skills.learn(id),act:elagosAct}))return;
+    if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
