@@ -20,39 +20,165 @@ export const FEEDER_STAGES = Object.freeze(['none', 'lent', 'filled', 'hung']);
 const species = (id, entry) => Object.freeze({ id, ...entry });
 export const BIRD_SPECIES = Object.freeze({
   cardinal: species('cardinal', {
-    name: 'Cardinal', xp: 15, spook: 6.5,
+    name: 'Cardinal', xp: 15, spook: 6.5, group: 'village',
     note: 'Red all over, with a pointed crest and a black mask around a thick orange bill. The hen is buff-brown with red in her crest, wings and tail. A pair keeps to the hedges and fences and is rarely far apart.',
     hint: 'A flash of red along the fences and the garden on the western side of the village.',
     lore: 'The red one is the cock. The brown one with red in her wings is his hen, and she sings as well as he does, which nobody believes until they hear her.',
   }),
   wren: species('wren', {
-    name: 'Wren', xp: 20, spook: 5,
+    name: 'Wren', xp: 20, spook: 5, group: 'village',
     note: 'Small and round, rusty brown above and warm buff below, with a long white stripe over the eye and a tail cocked straight up. A song far too loud for the size of it.',
     hint: 'Something small and very loud on the barrels behind the cottages east of the square.',
     lore: 'The wren sings as if it owns the village. It owns the barrels, at least. It will nest in a hat if you leave one on a peg.',
   }),
   titmouse: species('titmouse', {
-    name: 'Titmouse', xp: 15, spook: 5.5,
+    name: 'Titmouse', xp: 15, spook: 5.5, group: 'village',
     note: 'Soft grey above and pale below, with peach along the flanks, a pointed grey crest, a black spot above a stubby bill, and big dark eyes.',
     hint: 'A grey bird with a crest, calling where the village meets the woods along the eastern fence.',
     lore: 'Titmice call the same two notes over and over, and they are the first to scold an owl. Where you find one, you usually find a few.',
   }),
   crow: species('crow', {
-    name: 'Crow', xp: 10, spook: 10,
+    name: 'Crow', xp: 10, spook: 10, group: 'field',
     note: 'Black from bill to feet, big, with a heavy bill. Crows walk rather than hop, work a field together and keep one of their number looking up.',
     hint: 'Black birds walking the field behind the western cottages.',
     lore: 'Crows know faces. Be civil to them. Tobin shouted at one once, and they still follow him down to the boats.',
   }),
   hummingbird: species('hummingbird', {
-    name: 'Hummingbird', xp: 30, spook: 3,
+    name: 'Hummingbird', xp: 30, spook: 3, group: 'garden',
     note: 'Hardly longer than a thumb: a green back, a pale belly and a bill like a needle. The cock has a throat that flashes ruby when the light catches it. It hovers at a flower as if hung on a thread.',
     hint: 'Ansel says they come only to flowers and to sugar water.',
     lore: 'They come a long way to get here and they will fight anything for a feeder, even each other. Mostly each other.',
   }),
+  robin: species('robin', {
+    name: 'Robin', xp: 12, spook: 7, group: 'village',
+    note: 'Grey-brown above and brick-orange from throat to belly, with a white ring round the eye and a bright yellow bill. It runs three steps on the grass, stops dead, and puts its head to one side.',
+    hint: 'On the open grass of the green, running and stopping and running again.',
+    lore: 'That head-tilt is not listening. It is looking: one eye down at the turf for the worm it already knows is there.',
+  }),
+  chickadee: species('chickadee', {
+    name: 'Chickadee', xp: 15, spook: 4, group: 'village',
+    note: 'Tiny, with a black cap pulled down over white cheeks, a black bib, grey wings and buff flanks. It never sits still for longer than it takes to look at it.',
+    hint: 'The smallest thing in the hedge by the garden, and the boldest.',
+    lore: 'They will come nearer than any other bird here. Stand still with your hand out and one of them will do the arithmetic and decide you are furniture.',
+  }),
+  mockingbird: species('mockingbird', {
+    name: 'Mockingbird', xp: 20, spook: 6, group: 'village',
+    note: 'Plain grey above, pale below, long-tailed and long-legged, with white flashes that open in the wing when it flies. It sings other birds\u2019 songs one after another, three times each.',
+    hint: 'Singing from the top of a post by the square, and not singing anything of its own.',
+    lore: 'Count the repeats. Three of a wren, three of a cardinal, three of a cart axle it heard on Tuesday. They sing half the night in spring and nobody thanks them for it.',
+  }),
+  'mourning-dove': species('mourning-dove', {
+    name: 'Mourning dove', xp: 12, spook: 8, group: 'village',
+    note: 'Soft fawn, small-headed, with a long pointed tail and black spots on the wing. Its wings whistle when it goes up, which is the only loud thing about it.',
+    hint: 'On the cottage roofs and the track, walking with its head going.',
+    lore: 'That mournful hooing gets mistaken for an owl every year by somebody. The whistle is the wings, not the bird.',
+  }),
+  'blue-jay': species('blue-jay', {
+    name: 'Blue jay', xp: 15, spook: 8, group: 'village',
+    note: 'Blue above and pale below, with a crest, a black necklace across the throat, and white bars and spots in the blue of the wing and tail. Loud, and aware of being loud.',
+    hint: 'Blue and shouting where the village gives way to the wood.',
+    lore: 'They imitate a hawk to clear a feeder, then eat at it alone. They also bury acorns by the hundred and forget enough of them to plant a wood.',
+  }),
+  goldfinch: species('goldfinch', {
+    name: 'Goldfinch', xp: 20, spook: 6, group: 'field',
+    note: 'The cock is hot yellow with a black cap and black wings barred white; the hen is a dull olive. They fly in deep bounds and call on every rise of it.',
+    hint: 'Yellow birds working the thistles at the edge of the western field.',
+    lore: 'They nest later than anything else here because they wait for thistledown to line it with. Patience, or fussiness, depending who you ask.',
+  }),
+  catbird: species('catbird', {
+    name: 'Catbird', xp: 20, spook: 5, group: 'village',
+    note: 'Slate grey all over with a neat black cap and, when it turns, a patch of rust under the tail. Heard far more often than seen.',
+    hint: 'Something mewing like a cat from inside the thicket behind the cottages.',
+    lore: 'It is a bird. It is always a bird. Every year somebody goes looking for a kitten in that bramble and comes back thoughtful.',
+  }),
+  'downy-woodpecker': species('downy-woodpecker', {
+    name: 'Downy woodpecker', xp: 20, spook: 5, group: 'wood',
+    note: 'Small, chequered black and white, with a short stubby bill and a white stripe down the back. The cock has a red patch on the back of his head; the hen has none.',
+    hint: 'Working the smaller branches in the Greenway wood, tapping as it goes.',
+    lore: 'The little one with the short bill is the downy. There is a bigger one with a longer bill that looks the same and is not, and people argue about it in this village more than you would think.',
+  }),
+  'red-bellied-woodpecker': species('red-bellied-woodpecker', {
+    name: 'Red-bellied woodpecker', xp: 20, spook: 6, group: 'wood',
+    note: 'A ladder of black and white bars across the back, pale below, with a red cap that runs down the back of the neck. Climbs in jerks and calls a rolling churr.',
+    hint: 'Barred black and white on the big trunks of the Greenway, with red on its head.',
+    lore: 'The red belly it is named for is a faint wash you will see about twice in your life. Whoever named it was holding a dead one.',
+  }),
+  'pileated-woodpecker': species('pileated-woodpecker', {
+    name: 'Pileated woodpecker', xp: 30, spook: 9, group: 'wood',
+    note: 'As big as a crow, black with white stripes up the neck and a flaming red crest. It chops long rectangular holes in dead wood and you can hear the blows from a field away.',
+    hint: 'Deep in the Greenway, where something is hitting a dead tree like a man with an axe.',
+    lore: 'Find a hole the shape of a brick and you have found where one has been. They take carpenter ants out of standing timber and leave the tree the better for it.',
+  }),
+  nuthatch: species('nuthatch', {
+    name: 'Nuthatch', xp: 20, spook: 4, group: 'wood',
+    note: 'Blue-grey above, white below, with a black cap and a long straight bill, going down the trunk head first as if that were the obvious way to do it.',
+    hint: 'On the trunks in the Greenway, upside down.',
+    lore: 'Going down head first it sees what the birds going up have missed. The whole trade is in the direction.',
+  }),
+  'wood-thrush': species('wood-thrush', {
+    name: 'Wood thrush', xp: 25, spook: 7, group: 'wood',
+    note: 'Warm rusty head and back, white below with heavy round black spots. Quiet on the leaf litter, and then not quiet at all.',
+    hint: 'On the floor of the Greenway wood, turning leaves over.',
+    lore: 'It sings two notes at once \u2014 it has the throat for it \u2014 and there is no better sound in this country at dusk. Ansel has been known to stop work for it.',
+  }),
+  'barred-owl': species('barred-owl', {
+    name: 'Barred owl', xp: 35, spook: 12, group: 'wood',
+    note: 'Big, round-headed and earless, streaked brown and cream, with black eyes rather than yellow ones. It sits against a trunk in daylight and is usually found by the noise the little birds make about it.',
+    hint: 'The titmice and the jays are mobbing something in the Greenway, and it is not you.',
+    lore: 'Who cooks for you. Who cooks for you all. Say it aloud in the wood at dusk and you may get an answer, which people find less charming than they expect.',
+  }),
+  bluebird: species('bluebird', {
+    name: 'Bluebird', xp: 20, spook: 7, group: 'field',
+    note: 'Deep blue above, rust across the throat and breast, white under the tail. It sits on a fence, drops straight into the grass, and goes back up with something.',
+    hint: 'On the field fences out past the Caloss gate, facing the grass.',
+    lore: 'They want short grass and a hole to nest in, and they have less of both every year. Put up a box with the right sized hole and you will have them for life.',
+  }),
+  'red-winged-blackbird': species('red-winged-blackbird', {
+    name: 'Red-winged blackbird', xp: 15, spook: 6, group: 'water',
+    note: 'The cock is black with a scarlet shoulder edged yellow, which he opens like a flag when he sings; the hen is brown and streaked and looks like another bird entirely.',
+    hint: 'Shouting from the reeds at Willowmere, on the top of a cattail.',
+    lore: 'He has a marsh three yards wide and he will fight a heron over it. The brown one on the nest is the reason.',
+  }),
+  heron: species('heron', {
+    name: 'Heron', xp: 25, spook: 14, group: 'water',
+    note: 'Tall as a child, blue-grey, with a dagger of a bill and a black plume behind the eye. It stands in the shallows without moving, and in flight it folds its neck back and trails its legs.',
+    hint: 'Standing in the shallow end of Willowmere, not moving at all.',
+    lore: 'Everything about it is waiting. When it finally goes, it is so fast that people who watched the whole thing still miss it.',
+  }),
+  kingfisher: species('kingfisher', {
+    name: 'Kingfisher', xp: 25, spook: 11, group: 'water',
+    note: 'Big-headed and short-tailed, blue-grey above and white below, with a ragged crest and a heavy black bill. It rattles as it goes along the water, hovers, and drops.',
+    hint: 'A rattle going down the river at the Caloss bank, faster than you can turn round.',
+    lore: 'It hangs over the water, folds, and goes in like a thrown knife. The hen is the brighter of the two, which is the wrong way round for most birds here.',
+  }),
+  mallard: species('mallard', {
+    name: 'Mallard', xp: 12, spook: 8, group: 'water',
+    note: 'The drake has a bottle-green head, a white ring, a chestnut breast and a curl of black at the tail; the duck is streaked brown with a blue patch in the wing. Both tip up to feed and neither is embarrassed about it.',
+    hint: 'On Willowmere, tipped up with their tails in the air.',
+    lore: 'Feed them bread and you will do them no good at all. Feed them nothing and they will still be there tomorrow.',
+  }),
+  gull: species('gull', {
+    name: 'Gull', xp: 12, spook: 7, group: 'water',
+    note: 'Grey wings, white body, a dark hood in summer and a smudge behind the eye out of it, with red at the bill and a laughing call that gives it its name.',
+    hint: 'On the landing, waiting for the boats like everybody else.',
+    lore: 'They follow the boats in and they know the sound of a gutting knife from the other end of the village. Nothing here is wasted, which is mostly their doing.',
+  }),
+  'turkey-vulture': species('turkey-vulture', {
+    name: 'Turkey vulture', xp: 15, spook: 14, group: 'field',
+    note: 'Black-brown and huge, with a small bare red head, wings held up in a shallow V and silver-lined underneath, and a way of rocking on the air without ever flapping. On the ground it stands with its wings spread out to dry.',
+    hint: 'Standing in the Avrel fields with its wings open, out past the farmsteads.',
+    lore: 'It finds its work by smell, which almost no bird can do. Ugly at ten paces and the best flier in this country at a hundred.',
+  }),
 });
 
-/** The birds of Drent in the order the journal lists them. */
-export const DRENT_BIRDS = Object.freeze(['cardinal', 'wren', 'titmouse', 'crow', 'hummingbird']);
+/**
+ * The birds of Drent in the order the journal lists them: the four Ansel starts
+ * anyone on, then the rest of this country's common birds, then the hummingbird,
+ * which has to be earned.
+ */
+export const DRENT_BIRDS = Object.freeze(Object.keys(BIRD_SPECIES));
+/** Where each kind is looked for, which is how the journal groups them. */
+export const BIRD_GROUPS = Object.freeze(['village', 'wood', 'field', 'water', 'garden']);
 const WILD = DRENT_BIRDS.filter(id => id !== 'hummingbird');
 
 /** How far off a bird can be observed; practice lets the traveler see well from farther away. */

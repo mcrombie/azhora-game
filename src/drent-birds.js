@@ -56,6 +56,24 @@ export const BIRD_FORMS = Object.freeze({
   titmouse: Object.freeze({ neck: [0, .137, .055], shoulder: [.043, .12, .03], droop: .32, flap: 32, gait: 'hop', scale: 1 }),
   crow: Object.freeze({ neck: [0, .325, .15], shoulder: [.085, .265, .06], droop: .3, flap: 13, gait: 'walk', scale: .95 }),
   hummingbird: Object.freeze({ neck: [0, .012, .04], shoulder: [.017, .012, .012], droop: .5, flap: 58, gait: 'hover', scale: 1 }),
+  // The rest are built to the common plan, so their joints are the common plan's,
+  // scaled to the size each one is actually drawn at.
+  ...Object.fromEntries(Object.entries({
+    robin: [1.05, 'hop', 28], chickadee: [.72, 'hop', 40], mockingbird: [1.1, 'hop', 26],
+    'mourning-dove': [1.12, 'walk', 22], 'blue-jay': [1.25, 'hop', 22], goldfinch: [.78, 'hop', 38],
+    catbird: [1, 'hop', 28], 'downy-woodpecker': [.8, 'hop', 34], 'red-bellied-woodpecker': [1.05, 'hop', 26],
+    'pileated-woodpecker': [1.55, 'hop', 17], nuthatch: [.78, 'hop', 36], 'wood-thrush': [1.05, 'hop', 27],
+    bluebird: [.9, 'hop', 32], 'red-winged-blackbird': [1, 'hop', 27], kingfisher: [1.1, 'hop', 25],
+  }).map(([id, [size, gait, flap]]) => [id, Object.freeze({
+    neck: [0, .165 * size, .07 * size], shoulder: [.05 * size, .145 * size, .04 * size], droop: .36, flap, gait, scale: 1,
+  })])),
+  // The four that are not built to it at all.
+  'barred-owl': Object.freeze({ neck: [0, .3, .015], shoulder: [.088, .235, .015], droop: .26, flap: 12, gait: 'hop', scale: 1 }),
+  heron: Object.freeze({ neck: [0, .8, .01], shoulder: [.082, .55, 0], droop: .24, flap: 9, gait: 'walk', scale: 1 }),
+  'mallard-drake': Object.freeze({ neck: [0, .185, .055], shoulder: [.068, .14, -.01], droop: .3, flap: 18, gait: 'walk', scale: 1 }),
+  'mallard-duck': Object.freeze({ neck: [0, .185, .055], shoulder: [.068, .14, -.01], droop: .3, flap: 18, gait: 'walk', scale: 1 }),
+  gull: Object.freeze({ neck: [0, .235, .045], shoulder: [.07, .19, -.005], droop: .3, flap: 15, gait: 'walk', scale: 1 }),
+  'turkey-vulture': Object.freeze({ neck: [0, .4, .055], shoulder: [.115, .3, 0], droop: .24, flap: 8, gait: 'walk', scale: 1 }),
 });
 
 function birdShapes() {
@@ -142,10 +160,204 @@ function birdShapes() {
     ]),
     wing: mergedGeometry([S(0x6f7c74, [.046, 0, 0], [.046, .003, .013])]),
   };
+
+  /**
+   * The rest of this country's perching birds are built to one plan and given
+   * their own size, proportions, colours and whatever they wear on the head: a
+   * cap, a bib, a mask, a crest, an eye-ring, a necklace. It is the same bird
+   * underneath, which is true of the real ones as well.
+   */
+  function perching(t, p = {}) {
+    const s = p.size ?? 1, tail = (p.tail ?? 1) * s, tip = p.tailUp ?? -.45;
+    const billLen = (p.billLen ?? .044) * s, billThick = (p.billThick ?? .02) * s;
+    const body = [
+      S(t.body, [0, .115 * s, -.005 * s], [.062 * s, .066 * s, .1 * s * (p.slim ?? 1)], [-.3, 0, 0]),
+      S(t.breast, [0, .11 * s, .045 * s], [.055 * s, .06 * s, .058 * s]),
+      S(t.belly ?? t.breast, [0, .08 * s, 0], [.05 * s, .045 * s, .07 * s]),
+      S(t.back, [0, .132 * s, -.065 * s], [.05 * s, .04 * s, .065 * s], [-.3, 0, 0]),
+      S(t.tail, [0, .072 * s, -.165 * tail], [.03 * s, .011 * s, .088 * tail], [tip, 0, 0]),
+      S(t.tail, [0, .08 * s, -.125 * tail], [.026 * s, .016 * s, .045 * tail], [tip, 0, 0]),
+      ...legs(t.leg ?? 0xa77b6b, .02 * s, (p.legs ?? .05) * s, .012 * s, .006 * s),
+    ];
+    // Bars across the back, as the ladder-backed woodpeckers wear them.
+    if (p.bars) for (let i = 0; i < 4; i++) body.push(S(p.bars, [0, (.148 - i * .012) * s, (-.02 - i * .028) * s], [.046 * s, .006 * s, .008 * s], [-.3, 0, 0]));
+    // Round black spots down a white breast: the thrush, and nothing else here.
+    if (p.spots) for (let i = 0; i < 12; i++) body.push(S(p.spots, [((i % 4) - 1.5) * .022 * s, (.132 - Math.floor(i / 4) * .026) * s, .064 * s], [.011 * s, .011 * s, .007 * s]));
+    if (p.shoulder) body.push(...both(side => S(p.shoulder, [side * .05 * s, .132 * s, .016 * s], [.02 * s, .013 * s, .032 * s])));
+    if (p.shoulderEdge) body.push(...both(side => S(p.shoulderEdge, [side * .05 * s, .124 * s, .034 * s], [.018 * s, .01 * s, .012 * s])));
+
+    const head = [S(t.head ?? t.body, [0, .02 * s, .01 * s], [.045 * s, .045 * s, .048 * s])];
+    if (p.cap) head.push(S(p.cap, [0, .042 * s, .002 * s], [.042 * s, .026 * s, .046 * s]));
+    if (p.nape) head.push(S(p.nape, [0, .03 * s, -.03 * s], [.032 * s, .026 * s, .026 * s]));
+    if (p.cheek) head.push(...both(side => S(p.cheek, [side * .032 * s, .012 * s, .016 * s], [.016 * s, .018 * s, .03 * s])));
+    if (p.brow) head.push(...both(side => S(p.brow, [side * .027 * s, .034 * s, .012 * s], [.012 * s, .008 * s, .034 * s], [0, side * .22, 0])));
+    if (p.mask) head.push(...both(side => S(p.mask, [side * .028 * s, .02 * s, .026 * s], [.016 * s, .014 * s, .024 * s])));
+    if (p.bib) head.push(S(p.bib, [0, -.016 * s, .034 * s], [.026 * s, .022 * s, .022 * s]));
+    if (p.necklace) head.push(S(p.necklace, [0, -.026 * s, .022 * s], [.042 * s, .012 * s, .034 * s]));
+    if (p.crest) head.push(C(p.crestColor ?? t.body, [0, (.055 + p.crest * .5) * s, -.014 * s], [.024 * s, p.crest * s, .03 * s], [p.crestBack ?? -.55, 0, 0]));
+    if (p.eyering) head.push(...both(side => S(p.eyering, [side * .03 * s, .026 * s, .03 * s], [.011 * s, .011 * s, .009 * s])));
+    head.push(...both(side => S(0x0d0b0b, [side * .03 * s, .026 * s, .031 * s], [.007 * s, .007 * s, .007 * s])));
+    head.push(C(t.bill, [0, .01 * s, .05 * s + billLen], [billThick, billLen * 2, billThick * .85], [HALF_PI + (p.billTilt ?? 0), 0, 0]));
+
+    const wing = [S(t.wing, [.07 * s, 0, 0], [.075 * s, .01 * s, .046 * s]), S(t.primaries ?? t.wing, [.132 * s, 0, -.004 * s], [.046 * s, .008 * s, .03 * s])];
+    if (p.wingBar) wing.push(S(p.wingBar, [.1 * s, .006 * s, -.012 * s], [.03 * s, .004 * s, .012 * s]));
+    if (p.wingPatch) wing.push(S(p.wingPatch, [.055 * s, .006 * s, -.018 * s], [.026 * s, .005 * s, .016 * s]));
+    return { body: mergedGeometry(body), head: mergedGeometry(head), wing: mergedGeometry(wing) };
+  }
+
+  // A barred owl: a round head with no ear tufts, a pale disc round black eyes,
+  // an upright streaked body, and feathered legs that hardly show.
+  function owl(t) {
+    return {
+      body: mergedGeometry([
+        S(t.body, [0, .175, -.01], [.105, .135, .105], [-.08, 0, 0]), S(t.breast, [0, .155, .06], [.09, .11, .06]),
+        ...Array.from({ length: 6 }, (_, i) => S(t.streak, [((i % 3) - 1) * .042, .2 - Math.floor(i / 3) * .05, .085], [.01, .03, .008])),
+        S(t.back, [0, .26, -.055], [.085, .06, .07], [-.2, 0, 0]),
+        S(t.tail, [0, .06, -.115], [.042, .014, .085], [-.2, 0, 0]),
+        ...legs(t.leg, .028, .045, .01, .011),
+      ]),
+      head: mergedGeometry([
+        S(t.body, [0, .035, 0], [.086, .082, .078]),
+        ...both(side => S(t.disc, [side * .036, .03, .054], [.038, .044, .022])),
+        ...both(side => S(0x0c0a0a, [side * .034, .036, .068], [.019, .019, .012])),
+        C(t.bill, [0, .002, .07], [.013, .036, .013], [HALF_PI + .35, 0, 0]),
+      ]),
+      wing: mergedGeometry([S(t.wing, [.105, 0, 0], [.115, .014, .08]), S(t.primaries, [.21, 0, -.008], [.075, .01, .055])]),
+    };
+  }
+
+  // A heron: long legs, a long neck carried in an S, a dagger of a bill, and a
+  // plume off the back of the head. Drawn standing in the shallows.
+  function heron(t) {
+    return {
+      body: mergedGeometry([
+        S(t.body, [0, .52, -.02], [.09, .105, .2], [-.12, 0, 0]), S(t.breast, [0, .49, .07], [.075, .09, .08]),
+        S(t.back, [0, .59, -.08], [.075, .05, .16], [-.12, 0, 0]),
+        S(t.tail, [0, .5, -.22], [.05, .016, .1], [-.18, 0, 0]),
+        S(t.neck, [0, .64, .03], [.028, .06, .032]), S(t.neck, [0, .73, .01], [.026, .06, .028]),
+        ...legs(t.leg, .03, .46, .01, .009),
+      ]),
+      head: mergedGeometry([
+        S(t.head, [0, .01, .01], [.03, .03, .05]),
+        S(t.crown, [0, .03, -.005], [.026, .016, .04]),
+        S(t.plume, [0, .028, -.05], [.008, .007, .05], [.25, 0, 0]),
+        ...both(side => S(0x1a1a16, [side * .02, .016, .028], [.006, .006, .006])),
+        C(t.bill, [0, .004, .12], [.014, .14, .012], [HALF_PI, 0, 0]),
+      ]),
+      wing: mergedGeometry([S(t.wing, [.13, 0, 0], [.14, .016, .105]), S(t.primaries, [.27, 0, -.01], [.1, .012, .07])]),
+    };
+  }
+
+  // A duck: a boat of a body low to the ground, a flat bill, short legs set back.
+  function duck(t) {
+    return {
+      body: mergedGeometry([
+        S(t.body, [0, .115, -.01], [.085, .075, .175], [-.06, 0, 0]), S(t.breast, [0, .115, .075], [.075, .07, .07]),
+        S(t.back, [0, .16, -.03], [.07, .04, .13], [-.06, 0, 0]),
+        S(t.tail, [0, .15, -.19], [.04, .018, .07], [.25, 0, 0]),
+        ...(t.curl ? [S(t.curl, [0, .175, -.2], [.012, .016, .022], [.6, 0, 0])] : []),
+        ...legs(t.leg, .03, .045, -.02, .009),
+      ]),
+      head: mergedGeometry([
+        S(t.head, [0, .03, .01], [.048, .05, .055]), S(t.head, [0, 0, 0], [.036, .04, .04]),
+        ...(t.collar ? [S(t.collar, [0, -.022, .004], [.038, .012, .042])] : []),
+        ...both(side => S(0x0c0a0a, [side * .034, .042, .03], [.007, .007, .007])),
+        S(t.bill, [0, .018, .078], [.024, .012, .05]), S(t.bill, [0, .016, .105], [.02, .009, .018]),
+      ]),
+      wing: mergedGeometry([S(t.wing, [.09, 0, -.01], [.1, .012, .07]), S(t.primaries, [.185, 0, -.02], [.07, .009, .045]),
+        ...(t.speculum ? [S(t.speculum, [.075, .008, -.03], [.03, .005, .018])] : [])]),
+    };
+  }
+
+  // A gull: white, grey-winged, standing tall on dark legs, hooded in summer,
+  // with a heavy red bill it is not shy about using.
+  function gull(t) {
+    return {
+      body: mergedGeometry([
+        S(t.body, [0, .175, -.01], [.075, .08, .15], [-.14, 0, 0]), S(t.breast, [0, .17, .06], [.065, .07, .065]),
+        S(t.back, [0, .215, -.045], [.062, .04, .11], [-.14, 0, 0]),
+        S(t.tail, [0, .155, -.165], [.042, .014, .075], [-.2, 0, 0]),
+        ...legs(t.leg, .026, .095, .005, .009),
+      ]),
+      head: mergedGeometry([
+        S(t.hood, [0, .025, .012], [.044, .044, .05]),
+        ...both(side => S(t.eyeArc, [side * .03, .036, .028], [.012, .008, .016])),
+        ...both(side => S(0x0b0a0a, [side * .03, .03, .032], [.007, .007, .007])),
+        S(t.bill, [0, .006, .066], [.014, .013, .04]), S(t.billTip, [0, .002, .096], [.012, .011, .014]),
+      ]),
+      wing: mergedGeometry([S(t.wing, [.11, 0, -.005], [.125, .013, .07]), S(t.primaries, [.235, 0, -.02], [.09, .01, .04])]),
+    };
+  }
+
+  // A turkey vulture: a heavy black body, a small bare red head on a bare neck,
+  // and a wing far too big for the field it is standing in.
+  function vulture(t) {
+    return {
+      body: mergedGeometry([
+        S(t.body, [0, .25, -.02], [.125, .13, .225], [-.2, 0, 0]), S(t.breast, [0, .235, .085], [.105, .11, .095]),
+        S(t.back, [0, .32, -.06], [.1, .06, .16], [-.2, 0, 0]),
+        S(t.tail, [0, .18, -.29], [.07, .018, .145], [-.3, 0, 0]),
+        S(t.neck, [0, .35, .06], [.035, .05, .038]),
+        ...legs(t.leg, .04, .105, .015, .014),
+      ]),
+      head: mergedGeometry([
+        S(t.head, [0, .012, .015], [.036, .038, .042]), S(t.head, [0, -.02, .006], [.028, .03, .03]),
+        ...both(side => S(0x0e0c0c, [side * .026, .022, .03], [.007, .007, .007])),
+        C(t.bill, [0, .004, .058], [.016, .05, .016], [HALF_PI + .1, 0, 0]),
+        S(t.billTip, [0, .002, .078], [.012, .012, .014]),
+      ]),
+      wing: mergedGeometry([S(t.wing, [.17, 0, 0], [.185, .018, .125]), S(t.primaries, [.36, 0, -.015], [.14, .012, .075]),
+        ...Array.from({ length: 5 }, (_, i) => S(t.primaries, [.44 + i * .012, 0, -.055 + i * .028], [.05, .01, .014]))]),
+    };
+  }
+
   const shapes = {
     'cardinal-male': cardinal({ body: 0xc8201e, breast: 0xd62a22, belly: 0xb81d1d, back: 0xa51b1a, tail: 0x8e1716, crest: 0xcc2320, mask: 0x120d0d, bill: 0xf0743c, wing: 0x9e1a19, primaries: 0x7f1514 }),
     'cardinal-female': cardinal({ body: 0xb0906f, breast: 0xc4a07c, belly: 0xc9ad8b, back: 0x9c8264, tail: 0xa2453a, crest: 0xa8553f, mask: 0x4a3d36, bill: 0xe77a45, wing: 0x9a5c46, primaries: 0xa6483a }),
     wren, titmouse, crow, hummingbird,
+    // The rest of this country's common birds.
+    robin: perching({ body: 0x625c52, back: 0x57524a, breast: 0xbf5420, belly: 0xdcd6c9, tail: 0x494640,
+      wing: 0x5d574f, primaries: 0x474440, bill: 0xe3b23a, leg: 0x5c4a3a }, { size: 1.12, legs: .062, eyering: 0xf0ece2 }),
+    chickadee: perching({ body: 0x8e9196, back: 0x82868c, breast: 0xf1eee6, belly: 0xe6d9c4, tail: 0x74787e,
+      wing: 0x878b91, primaries: 0x6d7177, bill: 0x1d1c1c, leg: 0x4c4f53 }, { size: .72, legs: .042, cap: 0x18171a, cheek: 0xf5f2ea, bib: 0x1a1a1c }),
+    mockingbird: perching({ body: 0x9a9992, back: 0x8b8a83, breast: 0xdedbd2, belly: 0xe7e4db, tail: 0x5f5e59,
+      wing: 0x7e7d77, primaries: 0x53524e, bill: 0x2a2826, leg: 0x5f5c56 }, { size: 1.1, tail: 1.5, legs: .07, wingPatch: 0xf2f0e9 }),
+    'mourning-dove': perching({ body: 0xb09a80, back: 0xa08a71, breast: 0xc9b298, belly: 0xd6c4ab, tail: 0x8f7c66,
+      wing: 0xa4907a, primaries: 0x7d6c58, bill: 0x2b2724, leg: 0xbd6f63 }, { size: 1.12, tail: 1.7, slim: 1.06, legs: .05, cap: 0xa8907a }),
+    'blue-jay': perching({ body: 0x3f74b8, back: 0x35659f, breast: 0xdfe3e8, belly: 0xeceff2, tail: 0x2f5d94,
+      wing: 0x3c6fae, primaries: 0x27507f, bill: 0x1c1c1e, leg: 0x3b3a38 }, { size: 1.25, legs: .06, crest: .07, crestColor: 0x3a6cab, necklace: 0x16181c, wingBar: 0xf3f5f7 }),
+    goldfinch: perching({ body: 0xdcc32a, back: 0xd3ba25, breast: 0xefe04a, belly: 0xf2e86a, tail: 0x1d1c1a,
+      wing: 0x1f1e1c, primaries: 0x131312, bill: 0xe8934a, leg: 0xc79a6a }, { size: .78, legs: .042, cap: 0x141414, wingBar: 0xf2efe6 }),
+    catbird: perching({ body: 0x5a5a5e, back: 0x525257, breast: 0x66666a, belly: 0x616165, tail: 0x2e2e31,
+      wing: 0x545458, primaries: 0x3d3d41, bill: 0x1b1b1d, leg: 0x36363a }, { size: 1, tail: 1.35, legs: .055, cap: 0x1a1a1c }),
+    'downy-woodpecker': perching({ body: 0x1e1d1c, back: 0x232220, breast: 0xf3f0e8, belly: 0xeceae1, tail: 0x1a1918,
+      wing: 0x232220, primaries: 0x161514, bill: 0x3a3936, leg: 0x4a4844 }, { size: .8, legs: .04, tail: .8, tailUp: -.2, bars: 0xf2efe7, nape: 0xc4362c, brow: 0xf4f1e9, billLen: .03 }),
+    'red-bellied-woodpecker': perching({ body: 0x2a2926, back: 0x2c2b28, breast: 0xd9d3c4, belly: 0xd2c9b4, tail: 0x24231f,
+      wing: 0x2c2b28, primaries: 0x1b1a18, bill: 0x2e2d2a, leg: 0x504d47 }, { size: 1.05, legs: .045, tail: .85, tailUp: -.2, bars: 0xf0ede3, cap: 0xc23c2c, nape: 0xc23c2c, billLen: .05 }),
+    'pileated-woodpecker': perching({ body: 0x191817, back: 0x1d1c1a, breast: 0x201f1d, belly: 0x1a1918, tail: 0x141312,
+      wing: 0x1e1d1b, primaries: 0x121110, bill: 0x33322e, leg: 0x3f3d39 }, { size: 1.55, legs: .06, tail: .9, tailUp: -.2, crest: .085, crestColor: 0xc02a20, cheek: 0xf1eee5, brow: 0xf1eee5, billLen: .06 }),
+    nuthatch: perching({ body: 0x8c99a6, back: 0x7f8c99, breast: 0xf2efe7, belly: 0xe9e4d8, tail: 0x5d6772,
+      wing: 0x86939f, primaries: 0x67727d, bill: 0x26262a, leg: 0x5a5751 }, { size: .78, legs: .04, tail: .55, cap: 0x16161a, billLen: .05 }),
+    'wood-thrush': perching({ body: 0x9e6b3e, back: 0x8d5e35, breast: 0xf0ece1, belly: 0xeae5d8, tail: 0x7c5330,
+      wing: 0x94643a, primaries: 0x74502e, bill: 0x3a3733, leg: 0xc0a884 }, { size: .92, legs: .058, spots: 0x2a2724, nape: 0xa9703f, eyering: 0xf1eee6 }),
+    bluebird: perching({ body: 0x3f63b0, back: 0x3859a0, breast: 0xb4612f, belly: 0xe6e2d6, tail: 0x33518f,
+      wing: 0x3d60aa, primaries: 0x2c4c85, bill: 0x1f1f21, leg: 0x3a3936 }, { size: .9, legs: .05 }),
+    'red-winged-blackbird': perching({ body: 0x141416, back: 0x18181a, breast: 0x161618, belly: 0x141416, tail: 0x0f0f11,
+      wing: 0x171719, primaries: 0x101012, bill: 0x232326, leg: 0x2a2a2d }, { size: 1, legs: .055, shoulder: 0xb8261f, shoulderEdge: 0xe0b83a }),
+    kingfisher: perching({ body: 0x5b7f97, back: 0x4e7189, breast: 0xf0efe9, belly: 0xe9e7de, tail: 0x466578,
+      wing: 0x557a92, primaries: 0x3f5f73, bill: 0x1e1e20, leg: 0x4e4b46 }, { size: 1.1, legs: .035, tail: .7, crest: .055, crestColor: 0x4e7189, crestBack: -.15, necklace: 0x5b7f97, billLen: .075, billThick: .017 }),
+    'barred-owl': owl({ body: 0x8d7c63, breast: 0xe8e0cf, streak: 0x6b5a45, back: 0x7d6d56, tail: 0x6f6049,
+      disc: 0xdfd6c2, bill: 0xd8c37a, leg: 0xb6a88e, wing: 0x84745c, primaries: 0x5f5241 }),
+    heron: heron({ body: 0x8d99a4, breast: 0xc3cbd2, back: 0x7f8b97, tail: 0x6f7b87, neck: 0xb6bcc0, head: 0xd9dde0,
+      crown: 0xe8ebec, plume: 0x1b1d20, bill: 0xd8c25a, leg: 0x4a4b46, wing: 0x7b8793, primaries: 0x515b66 }),
+    'mallard-drake': duck({ body: 0x8e8677, breast: 0x7a4a33, back: 0x9b9384, tail: 0xf0ede4, head: 0x1e6b4a,
+      collar: 0xf2efe6, bill: 0xd9c04a, leg: 0xd97b3c, wing: 0x8a8273, primaries: 0x6d6659, speculum: 0x3a4fa0, curl: 0x1a1a1a }),
+    'mallard-duck': duck({ body: 0x9a8461, breast: 0xb49a72, back: 0x8a755a, tail: 0xa89570, head: 0x9c8763,
+      bill: 0xb08a4a, leg: 0xd97b3c, wing: 0x93805f, primaries: 0x76664c, speculum: 0x3a4fa0 }),
+    gull: gull({ body: 0xf2f1ec, breast: 0xf5f4ef, back: 0x9aa3a8, tail: 0xf0efe9, hood: 0x2a2a2e, eyeArc: 0xf2f1ec,
+      bill: 0xa8322c, billTip: 0xc0392f, leg: 0x2f2f33, wing: 0x97a0a6, primaries: 0x2b2b2e }),
+    'turkey-vulture': vulture({ body: 0x2a2521, breast: 0x241f1c, back: 0x322b26, tail: 0x1e1a17, neck: 0x8a4a3a,
+      head: 0xb4564a, bill: 0xe4dcc8, billTip: 0xd8cfb8, leg: 0xb8a894, wing: 0x2e2823, primaries: 0x1b1714 }),
   };
   round.dispose(); cone.dispose(); cyl.dispose(); cube.dispose();
   return shapes;
@@ -211,6 +423,21 @@ function fencePosts(x, z, length, rotation, top = 1.32) {
   return posts;
 }
 
+/** Perches in the world's own metres: branch height about a wood or a bank. */
+function branches(x, z, count, radius, top = 2.6) {
+  const perches = [];
+  for (let i = 0; i < count; i++) {
+    const a = i * 2.39996;
+    perches.push({ x: x + Math.sin(a) * radius, z: z + Math.cos(a) * radius, base: { x, z }, top: top + (i % 3) * .5 });
+  }
+  return perches;
+}
+
+/**
+ * Where each kind lives. The first four are authored in Tidehaven's local metres,
+ * as the village is; everything past them is out in the country and is authored
+ * in world metres, which is what `world: true` means.
+ */
 export const BIRD_HABITATS = Object.freeze([
   { id: 'west-fences', species: 'cardinal', birds: ['cardinal-male', 'cardinal-female'], center: { x: -23.5, z: 2.5 }, radius: 5.5,
     perches: [...fencePosts(-23, 5, 6, -.12), ...fencePosts(-26.5, 1, 7, .12 + Math.PI / 2)] },
@@ -220,21 +447,67 @@ export const BIRD_HABITATS = Object.freeze([
     perches: fencePosts(18, -29, 6, -.08) },
   { id: 'west-field', species: 'crow', birds: ['crow', 'crow', 'crow'], center: { x: -21, z: -21.5 }, radius: 8,
     perches: fencePosts(-18, -23, 7, .1) },
+  // Tidehaven, in the village's own metres.
+  { id: 'green-robins', species: 'robin', birds: ['robin', 'robin'], center: { x: -6, z: 18 }, radius: 6, perches: [] },
+  { id: 'garden-chickadees', species: 'chickadee', birds: ['chickadee', 'chickadee'], center: { x: 31, z: -10 }, radius: 4,
+    perches: fencePosts(31, -8, 4, -.1) },
+  { id: 'square-mockingbird', species: 'mockingbird', birds: ['mockingbird'], center: { x: 9, z: 9 }, radius: 4.5,
+    perches: fencePosts(10, 10, 3, .1) },
+  { id: 'roof-doves', species: 'mourning-dove', birds: ['mourning-dove', 'mourning-dove'], center: { x: -9, z: 17 }, radius: 5,
+    perches: fencePosts(-10, 19, 4, .1) },
+  { id: 'wood-edge-jays', species: 'blue-jay', birds: ['blue-jay', 'blue-jay'], center: { x: 13, z: -34 }, radius: 6,
+    perches: fencePosts(13, -32, 5, -.08) },
+  { id: 'bramble-catbird', species: 'catbird', birds: ['catbird'], center: { x: 25, z: -7 }, radius: 4, perches: [] },
+  { id: 'west-thistles', species: 'goldfinch', birds: ['goldfinch', 'goldfinch'], center: { x: -28, z: -16 }, radius: 5,
+    perches: fencePosts(-27, -14, 4, .1) },
+
+  // The Greenway wood, the pond, the river, the fields and the shore: world metres.
+  { id: 'greenway-downy', species: 'downy-woodpecker', birds: ['downy-woodpecker', 'downy-woodpecker'], world: true,
+    center: { x: -78, z: 33 }, radius: 7, perches: branches(-78, 33, 5, 5, 2.4) },
+  { id: 'greenway-redbelly', species: 'red-bellied-woodpecker', birds: ['red-bellied-woodpecker'], world: true,
+    center: { x: -104, z: 24 }, radius: 7, perches: branches(-104, 24, 4, 5.5, 3.1) },
+  { id: 'greenway-nuthatch', species: 'nuthatch', birds: ['nuthatch', 'nuthatch'], world: true,
+    center: { x: -92, z: 40 }, radius: 6, perches: branches(-92, 40, 5, 4.5, 2.2) },
+  { id: 'greenway-thrush', species: 'wood-thrush', birds: ['wood-thrush', 'wood-thrush'], world: true,
+    center: { x: -120, z: 22 }, radius: 8, perches: branches(-120, 22, 4, 6, 2) },
+  { id: 'greenway-pileated', species: 'pileated-woodpecker', birds: ['pileated-woodpecker'], world: true,
+    center: { x: -138, z: 36 }, radius: 8, perches: branches(-138, 36, 4, 5, 3.6) },
+  { id: 'greenway-owl', species: 'barred-owl', birds: ['barred-owl'], world: true,
+    center: { x: -146, z: 40 }, radius: 7, perches: branches(-146, 40, 3, 4.5, 3.4) },
+  { id: 'willowmere-reeds', species: 'red-winged-blackbird', birds: ['red-winged-blackbird', 'red-winged-blackbird'], world: true,
+    center: { x: -92, z: 16 }, radius: 6, perches: branches(-92, 16, 4, 4.5, 1.5) },
+  { id: 'willowmere-shallows', species: 'heron', birds: ['heron'], world: true,
+    center: { x: -99, z: 18 }, radius: 7, perches: [] },
+  { id: 'willowmere-ducks', species: 'mallard', birds: ['mallard-drake', 'mallard-duck', 'mallard-duck'], world: true,
+    center: { x: -95, z: 5 }, radius: 6, perches: [] },
+  { id: 'caloss-kingfisher', species: 'kingfisher', birds: ['kingfisher'], world: true,
+    center: { x: -540, z: 174 }, radius: 7, perches: branches(-540, 174, 4, 5, 2.8) },
+  { id: 'gate-bluebirds', species: 'bluebird', birds: ['bluebird', 'bluebird'], world: true,
+    center: { x: -176, z: 34 }, radius: 8, perches: branches(-176, 34, 5, 6, 1.3) },
+  { id: 'avrel-vultures', species: 'turkey-vulture', birds: ['turkey-vulture', 'turkey-vulture'], world: true,
+    center: { x: -408, z: 60 }, radius: 9, perches: [] },
+  { id: 'landing-gulls', species: 'gull', birds: ['gull', 'gull', 'gull'], world: true,
+    center: { x: -8, z: 49 }, radius: 8, perches: [] },
 ].map(h => Object.freeze({ ...h, birds: Object.freeze(h.birds), perches: Object.freeze(h.perches.map(p => Object.freeze(p))) })));
 
-const variantSpecies = variant => variant.startsWith('cardinal') ? 'cardinal' : variant;
+// Two of the kinds are drawn twice, because the cock and the hen do not look
+// remotely alike. Everything else is its own species.
+const VARIANT_SPECIES = Object.freeze({ 'cardinal-male': 'cardinal', 'cardinal-female': 'cardinal',
+  'mallard-drake': 'mallard', 'mallard-duck': 'mallard' });
+const variantSpecies = variant => VARIANT_SPECIES[variant] ?? variant;
 
 /** Standable ground about a habitat, and its perches, in world metres. Deterministic. */
 export function habitatSpots(habitat, world, avoid = []) {
-  const center = villageToWorld(habitat.center.x, habitat.center.z), ground = [];
+  const place = habitat.world ? (x, z) => ({ x, z }) : villageToWorld;
+  const center = place(habitat.center.x, habitat.center.z), ground = [];
   for (let ring = 0; ring < 3; ring++) for (let n = 0; n < 8; n++) {
     const a = n * TAU / 8 + ring * .7, r = habitat.radius * (.25 + ring * .3), local = { x: habitat.center.x + Math.cos(a) * r, z: habitat.center.z + Math.sin(a) * r };
-    const p = villageToWorld(local.x, local.z), y = world.heightAt(p.x, p.z);
+    const p = place(local.x, local.z), y = world.heightAt(p.x, p.z);
     if (!canStand(p.x, p.z, world, .2) || y < .6 || avoid.some(q => flat(p, q) < 1.6)) continue;
     ground.push({ x: p.x, y, z: p.z, perch: false });
   }
   const perches = habitat.perches.map(post => {
-    const p = villageToWorld(post.x, post.z), base = villageToWorld(post.base.x, post.base.z);
+    const p = place(post.x, post.z), base = place(post.base.x, post.base.z);
     return { x: p.x, y: world.heightAt(base.x, base.z) + post.top, z: p.z, perch: true };
   });
   return { center: { ...center, y: world.heightAt(center.x, center.z) }, ground, perches };
@@ -403,7 +676,10 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
     for (const mesh of Object.values(meshes)) mesh.instanceMatrix.needsUpdate = true;
   }
 
-  const DRAW_RANGE = 90, sightLine = [];
+  // Birds are small and the farthest one can be observed from is 30 m, so past
+  // about twice that a flock is three draw calls of nothing. With twenty-five
+  // kinds in Drent that distance is the whole of the cost control.
+  const DRAW_RANGE = 62, sightLine = [];
   function update(dt, player, { feederHung = false } = {}) {
     if (disposed || !Number.isFinite(dt) || dt <= 0 || !player) return;
     const step = Math.min(dt, .1);

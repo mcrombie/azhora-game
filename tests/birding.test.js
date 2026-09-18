@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
 import { createSkills } from '../src/skills.js';
 import {
-  BIRD_SPECIES, DRENT_BIRDS, BIRD_WATCHER, FEEDER_ITEM, FILLED_FEEDER_ITEM, BIRDING_LESSON,
+  BIRD_SPECIES, DRENT_BIRDS, BIRD_GROUPS, BIRD_WATCHER, FEEDER_ITEM, FILLED_FEEDER_ITEM, BIRDING_LESSON,
   createBirding, observeRange, validateBirdingSnapshot, birdWatcherConversation, lysaFeederChoice,
 } from '../src/birding.js';
 
@@ -12,8 +12,13 @@ function fixture() {
   return { skills, birding, inventory };
 }
 
-test('Drent has five birds, each worth experience the first time, and together they reach level 4', () => {
-  assert.deepEqual(DRENT_BIRDS, ['cardinal', 'wren', 'titmouse', 'crow', 'hummingbird']);
+test('Drent has the country’s common birds, each worth experience the first time', () => {
+  // The four Ansel starts anyone on come first, and the hummingbird is last
+  // because it has to be earned.
+  assert.equal(DRENT_BIRDS.length, 25);
+  assert.deepEqual(DRENT_BIRDS.slice(0, 5), ['cardinal', 'wren', 'titmouse', 'crow', 'hummingbird']);
+  for (const id of DRENT_BIRDS) assert.ok(BIRD_GROUPS.includes(BIRD_SPECIES[id].group), `${id} says where it is looked for`);
+  assert.equal(DRENT_BIRDS.filter(id => BIRD_SPECIES[id].group === 'garden').join(), 'hummingbird');
   for (const id of DRENT_BIRDS) {
     const bird = BIRD_SPECIES[id];
     assert.ok(bird.xp > 0 && bird.spook > 0 && bird.note && bird.hint && bird.lore, id);
@@ -27,17 +32,21 @@ test('Drent has five birds, each worth experience the first time, and together t
   assert.deepEqual([first.first, first.xp, first.count, first.levelled], [true, 15, 1, false]);
   const again = birding.observe('cardinal');
   assert.deepEqual([again.first, again.xp, again.count], [false, 0, 2]);
-  assert.equal(birding.observe('robin').ok, false);
+  assert.equal(birding.observe('a-pterodactyl').ok, false);
   const levels = ['wren', 'titmouse', 'crow', 'hummingbird'].map(id => birding.observe(id));
   assert.equal(levels.filter(result => result.levelled).length, 3, 'levels 2, 3 and 4 along the way');
   assert.deepEqual([skills.level('birding'), skills.view()[0].xp, birding.seenCount()], [4, 90, 5]);
+  // Every bird in the country is worth most of the table, and not all of it.
+  for (const id of DRENT_BIRDS) birding.observe(id);
+  assert.ok(skills.level('birding') >= 8 && skills.level('birding') <= 10, `the lot of them reach level ${skills.level('birding')}`);
 });
 
 test('the observation range grows with practice and has a limit', () => {
   assert.equal(observeRange(1), 18);
   assert.equal(observeRange(4), 24);
   assert.equal(observeRange(10), 30);
-  assert.ok(observeRange(1) > Math.max(...DRENT_BIRDS.map(id => BIRD_SPECIES[id].spook)) + 4, 'a bird can be seen well outside its distance');
+  // The wariest bird in the country still lets you look at it from inside your range.
+  assert.ok(observeRange(1) > Math.max(...DRENT_BIRDS.map(id => BIRD_SPECIES[id].spook)) + 3, 'a bird can be seen well outside its distance');
 });
 
 test('the feeder errand: Ansel lends it, Lysa fills it, the traveler hangs it, and the hummingbird ends it', () => {
@@ -76,7 +85,7 @@ test('birding survives a save, and nonsense is refused', () => {
   assert.equal(copy.restore(birding.snapshot()), true);
   assert.deepEqual(copy.snapshot(), { version: 1, met: true, seen: { crow: 2 }, feeder: 'lent' });
   assert.equal(validateBirdingSnapshot(undefined), true, 'older saves have no birds');
-  for (const bad of [null, { version: 1, met: 'yes', seen: {}, feeder: 'none' }, { version: 1, met: true, seen: { robin: 1 }, feeder: 'none' },
+  for (const bad of [null, { version: 1, met: 'yes', seen: {}, feeder: 'none' }, { version: 1, met: true, seen: { 'a-pterodactyl': 1 }, feeder: 'none' },
     { version: 1, met: true, seen: { crow: 0 }, feeder: 'none' }, { version: 1, met: true, seen: {}, feeder: 'broken' }, { version: 2, met: true, seen: {}, feeder: 'none' }])
     assert.equal(validateBirdingSnapshot(bad), false, JSON.stringify(bad));
 });

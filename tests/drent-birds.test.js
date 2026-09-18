@@ -45,28 +45,69 @@ test('every habitat has open ground and real perches, in Drent, clear of the roa
       assert.ok(canStand(p.x, p.z, world, .2), `${habitat.id} ground is open`);
       assert.ok(stands.every(s => flat(s, p) >= 1.6), `${habitat.id} ground is not under someone’s feet`);
     }
-    assert.ok(spots.perches.length >= 4, habitat.id);
+    // Some of them never leave the ground here: the heron in the shallows, the
+    // ducks, the vultures in the stubble, the gulls on the landing.
+    if (habitat.perches.length) assert.ok(spots.perches.length >= 3, `${habitat.id} keeps its perches`);
     for (const p of spots.perches) {
       const rise = p.y - world.heightAt(p.x, p.z);
-      assert.ok(rise > .6 && rise < 1.6, `${habitat.id} perch at ${rise.toFixed(2)} m sits on top of a fence or barrel`);
+      // In the village a perch is the top of a fence post or a barrel; out in
+      // the country it is a branch, and a branch is higher.
+      const ceiling = habitat.world ? 5 : 1.6;
+      assert.ok(rise > .6 && rise < ceiling, `${habitat.id} perch at ${rise.toFixed(2)} m is not on top of anything`);
     }
   }
-  assert.deepEqual([...species].sort(), ['cardinal', 'crow', 'titmouse', 'wren']);
+  assert.equal(species.size, 24, 'every bird in Drent but the hummingbird has somewhere to live');
+  for (const id of ['cardinal', 'crow', 'heron', 'mallard', 'gull', 'barred-owl', 'turkey-vulture', 'kingfisher']) {
+    assert.ok(species.has(id), `${id} lives nowhere`);
+  }
 });
 
 test('Drent’s birds look different from one another: colour, size and silhouette', async () => {
   const { createBirdShapes, BIRD_FORMS } = await fixture();
   const shapes = createBirdShapes(), variants = Object.keys(BIRD_FORMS);
-  assert.deepEqual(variants.sort(), ['cardinal-female', 'cardinal-male', 'crow', 'hummingbird', 'titmouse', 'wren']);
+  assert.equal(variants.length, 27, 'twenty-five kinds, with the cardinal and the mallard drawn twice');
+  for (const variant of variants) assert.ok(shapes[variant]?.body && shapes[variant].head && shapes[variant].wing, `${variant} is drawn`);
+  const average = (variant, parts) => {
+    const sum = [0, 0, 0]; let n = 0;
+    for (const part of parts) {
+      const colors = shapes[variant][part].attributes.color.array;
+      for (let i = 0; i < colors.length; i += 3) for (let c = 0; c < 3; c++) sum[c] += colors[i + c];
+      n += colors.length / 3;
+    }
+    return sum.map(c => c / n);
+  };
   const signature = variant => {
-    const colors = shapes[variant].body.attributes.color.array, sum = [0, 0, 0];
-    for (let i = 0; i < colors.length; i += 3) for (let c = 0; c < 3; c++) sum[c] += colors[i + c];
-    const n = colors.length / 3, box = new THREE.Box3().setFromBufferAttribute(shapes[variant].body.attributes.position);
-    return { r: sum[0] / n, g: sum[1] / n, b: sum[2] / n, length: (box.max.z - box.min.z) * (BIRD_FORMS[variant].scale ?? 1) };
+    // The plumage, and the plumage with the head counted in: what a bird wears on
+    // its head is half of telling one from another, which is why a crest and a
+    // face are drawn at all. A crow and a pileated woodpecker are the same black
+    // bird until you look at the head.
+    const box = new THREE.Box3().setFromBufferAttribute(shapes[variant].body.attributes.position);
+    const scale = BIRD_FORMS[variant].scale ?? 1, body = average(variant, ['body']);
+    return { r: body[0], g: body[1], b: body[2], body, all: average(variant, ['body', 'head']),
+      length: (box.max.z - box.min.z) * scale, height: (box.max.y - box.min.y) * scale };
   };
   const s = Object.fromEntries(variants.map(v => [v, signature(v)]));
-  for (const a of variants) for (const b of variants) if (a < b)
-    assert.ok(Math.hypot(s[a].r - s[b].r, s[a].g - s[b].g, s[a].b - s[b].b) > .03, `${a} and ${b} are coloured differently`);
+  // Two black birds are allowed to be black. What is not allowed is for any two
+  // of them to be the same colour and the same size, which is the same as saying
+  // a player could not tell them apart.
+  const apart = (x, y) => Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]);
+  for (const a of variants) for (const b of variants) if (a < b) {
+    const colour = Math.max(apart(s[a].body, s[b].body), apart(s[a].all, s[b].all));
+    const size = Math.max(s[a].length, s[b].length) / Math.max(1e-6, Math.min(s[a].length, s[b].length));
+    const height = Math.max(s[a].height, s[b].height) / Math.max(1e-6, Math.min(s[a].height, s[b].height));
+    assert.ok(colour > .03 || size > 1.2 || height > 1.2, `${a} and ${b} are the same colour, size and shape`);
+  }
+  assert.ok(s.goldfinch.r > 2 * s.goldfinch.b, 'the goldfinch is yellow');
+  // A bluebird is blue on the back and rust on the breast, so the blue only wins
+  // the average; the jay, which is blue nearly all over, wins it by more.
+  assert.ok(s.bluebird.b > s.bluebird.r && s.bluebird.b > s.bluebird.g, 'the bluebird is blue');
+  assert.ok(s['blue-jay'].b > 1.5 * s['blue-jay'].r, 'the jay is bluer still');
+  assert.ok(s['cardinal-male'].r > 8 * s['cardinal-male'].b, 'the cock cardinal is red all over');
+  assert.ok(s.gull.r > .5 && s.gull.g > .5 && s.gull.b > .5, 'the gull is white');
+  // A heron is not much longer than a robin. It is three times as tall, which is
+  // the whole of what a heron is.
+  assert.ok(s.heron.height > 2 * s.robin.height, 'a heron stands far taller than a robin');
+  assert.ok(s.chickadee.length < s.robin.length, 'a chickadee is smaller than a robin');
   assert.ok(s['cardinal-male'].r > 2 * s['cardinal-male'].g, 'the cock cardinal is red');
   assert.ok(Math.max(s.crow.r, s.crow.g, s.crow.b) < .03, 'the crow is black');
   assert.ok(s.hummingbird.g > s.hummingbird.r, 'the hummingbird is green');
@@ -81,18 +122,28 @@ test('birds go about their business at home, and fly off when the traveler comes
   let seed = 7; const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const birds = createDrentBirds(new THREE.Scene(), world, { garden: world.birdGarden, avoid: Object.values(world.npcPositions), random });
   const home = Object.fromEntries(BIRD_HABITATS.map(h => [h.id, { habitat: h, spots: habitatSpots(h, world) }]));
-  const watcher = { x: world.spawn.x, z: world.spawn.z };
-  for (let t = 0; t < 90; t += .05) birds.update(.05, watcher);
-  let perched = 0, actions = new Set();
-  for (const bird of birds.state().birds.filter(b => b.species !== 'hummingbird')) {
-    const { habitat, spots } = home[bird.habitat];
-    actions.add(bird.action); if (bird.perched) perched++;
-    assert.ok(flat(bird, spots.center) < habitat.radius + 4, `${bird.id} stays about home (${flat(bird, spots.center).toFixed(1)} m)`);
-    assert.ok(Number.isFinite(bird.y) && bird.y >= world.heightAt(bird.x, bird.z) - .05, `${bird.id} is above ground`);
+  // Watched from near enough to be drawn and far enough not to spook anything:
+  // once about the village, once out in the Greenway wood, so both the birds
+  // authored in village metres and the ones authored in world metres are run.
+  const actions = new Set();
+  let watched = 0;
+  for (const watcher of [{ x: world.spawn.x - 34, z: world.spawn.z + 18 }, { x: -108, z: 34 }]) {
+    for (let t = 0; t < 60; t += .05) birds.update(.05, watcher);
+    for (const bird of birds.state().birds.filter(b => b.species !== 'hummingbird')) {
+      if (flat(bird, watcher) > 62) continue;
+      const { habitat, spots } = home[bird.habitat];
+      actions.add(bird.action); watched++;
+      const own = [...spots.ground, ...spots.perches].reduce((best, p) => Math.min(best, flat(bird, p)), Infinity);
+      assert.ok(own < 3, `${bird.id} has wandered off its own ground (${own.toFixed(1)} m from the nearest of its places)`);
+      assert.ok(flat(bird, spots.center) < habitat.radius + 12, `${bird.id} is a long way from home (${flat(bird, spots.center).toFixed(1)} m)`);
+      assert.ok(Number.isFinite(bird.y) && bird.y >= world.heightAt(bird.x, bird.z) - .05, `${bird.id} is above ground`);
+    }
   }
+  assert.ok(watched >= 12, `only ${watched} birds were near enough to be watched`);
   assert.ok(actions.size >= 2, `they do more than one thing (${[...actions]})`);
 
   const crow = birds.state().birds.find(b => b.species === 'crow' && b.action !== 'flight');
+  assert.ok(crow, 'a crow to walk up to');
   const near = { x: crow.x + 3, z: crow.z };
   birds.update(.05, near);
   assert.equal(birds.state().birds.find(b => b.id === crow.id).action, 'flight', 'a crow will not let you near');
