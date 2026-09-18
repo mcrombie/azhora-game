@@ -40,7 +40,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
  * enough to show it. Outside this box plus `FEATHER` the region is ordinary
  * foothill relief, which is what the unbuilt west of Amod should be.
  */
-export const AMOD_TERRACE_GROUND = Object.freeze({ minX: -900, maxX: -644, minZ: -644, maxZ: -420 });
+export const AMOD_TERRACE_GROUND = Object.freeze({ minX: -908, maxX: -644, minZ: -644, maxZ: -420 });
 const FEATHER = 34;
 
 /** How much of a point belongs to the shaped ground: 1 inside, falling to 0 across the feather. */
@@ -92,15 +92,17 @@ function nearestSample(samples, x, z) {
 
 /**
  * The Tarvel's water surface, source to mouth: the lie of the land over about
- * fifty metres, a metre and a quarter down, forced to fall, and dug an extra
- * half metre under the bridge so the arch has something to span.
+ * fifty metres, four metres down, and forced to fall. Four metres is what makes
+ * it a valley rather than a wet line on a hillside — it is the reason Ostel can
+ * stand on a shoulder above its own water, and the reason the road needs an arch.
  */
+const TARVEL_CUT = 4;
 export const TARVEL_PROFILE = (() => {
   const samples = resample(TARVEL.points, SPACING);
   const ground = samples.map(sample => naturalBase(sample.x, sample.z));
   const surfaces = samples.map((sample, index) => {
     const window = ground.slice(Math.max(0, index - 5), index + 6);
-    return window.reduce((sum, value) => sum + value, 0) / window.length - 1.55;
+    return window.reduce((sum, value) => sum + value, 0) / window.length - TARVEL_CUT;
   });
   for (let i = 1; i < surfaces.length; i++) surfaces[i] = Math.min(surfaces[i], surfaces[i - 1] - .012 * SPACING);
   for (let pass = 0; pass < 3; pass++) for (let i = 1; i < surfaces.length - 1; i++)
@@ -127,7 +129,9 @@ function tarvelValley(x, z, ground) {
 // ---------------------------------------------------------------------------
 // The road's bench: smoothed, then held to one in nine
 // ---------------------------------------------------------------------------
-const MAX_GRADE = .11;
+// One in ten and a half on the profile, which measures out at a little under one
+// in nine on the ground once the bench is sampled at the corners of the road.
+const MAX_GRADE = .095;
 const ROAD_HALF = 3.4, ROAD_FEATHER = 13;
 
 export const AMOD_ROAD_PROFILE = (() => {
@@ -196,16 +200,27 @@ const CHANNEL_HALF = 1.1, CHANNEL_FEATHER = 6.5, CHANNEL_FALL = .0034;
  */
 export const DROMEL_PROFILE = (() => {
   const samples = resample(DROMEL_CHANNEL, SPACING);
-  const start = tarvelSurface(DROMEL_CHANNEL[0].x, DROMEL_CHANNEL[0].z) - .35;
-  return Object.freeze(samples.map((sample, index) => {
+  // Taken off just under the Tarvel's own surface at the intake: a channel cannot
+  // start above the water it is fed from, whatever the ground beside it is doing.
+  const start = tarvelSurface(DROMEL_CHANNEL[0].x, DROMEL_CHANNEL[0].z) - .3;
+  let level = samples.map((sample, index) => {
     const wanted = start - index * SPACING * CHANNEL_FALL;
     const natural = naturalBase(sample.x, sample.z);
-    return Object.freeze({ x: sample.x, z: sample.z, index, level: clamp(wanted, natural - 2.4, natural + 2.0) });
-  }));
+    return clamp(wanted, natural - 4.5, natural + 3.6);
+  });
+  // The clamp can leave a step where the hillside bulges; smooth it out and then
+  // insist again that the water goes downhill, which is the whole of the work.
+  for (let pass = 0; pass < 8; pass++) {
+    const next = level.slice();
+    for (let i = 1; i < level.length - 1; i++) next[i] = (level[i - 1] + level[i] * 2 + level[i + 1]) / 4;
+    level = next;
+  }
+  for (let i = 1; i < level.length; i++) level[i] = Math.min(level[i], level[i - 1] - CHANNEL_FALL * SPACING);
+  return Object.freeze(samples.map((sample, index) => Object.freeze({ x: sample.x, z: sample.z, index, level: level[index] })));
 })();
 
 function dromelBench(x, z, ground) {
-  if (x < -890 || x > -830 || z < -640 || z > -505) return ground;
+  if (x < -900 || x > -850 || z < -640 || z > -510) return ground;
   const near = nearestSample(DROMEL_PROFILE, x, z);
   if (near.distance > CHANNEL_FEATHER) return ground;
   const level = DROMEL_PROFILE[near.index].level;
@@ -245,13 +260,19 @@ function terracing(x, z) {
  * `natural` is the region's own blended relief; everything here only reshapes it.
  */
 export function amodGround(x, z, natural) {
-  const shaping = amodShaping(x, z);
-  if (shaping <= 0) return natural;
-  let height = tarvelValley(x, z, natural);
-  const stair = terracing(x, z);
-  if (stair > 0) height = lerp(height, terraceHeight(height), stair);
-  height = dromelBench(x, z, height);
+  // The bench runs the whole road, including the two hundred and fifty metres of
+  // it that are still in Pueth: the Amodians who keep this road keep all of it,
+  // and its profile starts at the junction's own height, so the fork is level.
   const bench = amodRoadBench(x, z);
+  const shaping = amodShaping(x, z);
+  if (shaping <= 0 && !bench) return natural;
+  let height = natural;
+  if (shaping > 0) {
+    height = tarvelValley(x, z, natural);
+    const stair = terracing(x, z);
+    if (stair > 0) height = lerp(height, terraceHeight(height), stair);
+    height = dromelBench(x, z, height);
+  }
   if (bench && bench.weight > 0) height = lerp(height, bench.level, bench.weight);
   return bridgeSpan(x, z, height);
 }

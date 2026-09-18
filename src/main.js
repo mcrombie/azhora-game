@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
-import { createCharacter, createDog, createHorse, makeQuestMarker, setShadowCasting } from './characters.js';
+import { createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting } from './characters.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -37,6 +37,9 @@ import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
+import { AMOD_NPCS, AMOD_NPC_IDS, amodConversation } from './amod-people.js';
+import { createOgreToll, OGRE_NPC, OGRE_ENCOUNTER, OGRE_TOLL, OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, OGRE_VICTORY, OGRE_RETURNED } from './amod-ogre.js';
+import { OGRE_STAND } from './amod-world.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
@@ -107,6 +110,9 @@ function init() {
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
   // Rimeholt's people, in Pueth.
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
+  // Ostel's people, in Amod, and the ogre who holds the road in from Pueth.
+  npcData.push(...AMOD_NPCS.map(npc=>({...npc})));
+  world.npcPositions[OGRE_NPC.id]={x:OGRE_STAND.x,z:OGRE_STAND.z};npcData.push({...OGRE_NPC});
   // Cobble's people and the Empire's four men on its quay, in Peblos.
   npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
   // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
@@ -149,7 +155,7 @@ function init() {
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
   for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});}
   for(const npc of npcData) {
-    npc.actor=npc.dog?createDog({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
+    npc.actor=npc.ogre?createOgre():npc.dog?createDog({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
     npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:npc.id==='harbormaster'?-Math.PI/2:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
     if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
@@ -239,6 +245,9 @@ function init() {
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
+  // The toll at the Amod pass stones (src/amod-ogre.js). The purse is the host's;
+  // the module never has to know what a copper piece is.
+  const ogreToll=createOgreToll({spendToll:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;}});
   // The crossing to Peblos: the fare, the developer override, and the short scene either way (src/ferry.js).
   const ferry=createFerry({
     purse:()=>inventory.count(COPPER_ITEM),
@@ -786,7 +795,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -810,7 +819,7 @@ function init() {
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);
-    ferry.restore(saved.ferry??createFerry().snapshot());
+    ferry.restore(saved.ferry??createFerry().snapshot());ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
       woodlandLife.restoreCollected(saved.woodland.acorns);woodlandLife.restoreCollectedSticks(saved.woodland.sticks);woodlandLife.restoreCollectedFruit(saved.woodland.fruits);
@@ -934,6 +943,38 @@ function init() {
     openDialogue(npc,[line],null,'Back to the road',{choices});
   }
   // Hired swords talk about the road, and any of them will explain how he fights: a guide to the weapons ahead.
+  /**
+   * Mallec at the pass stones. Everything is peaceable except one choice, which
+   * says what it is and then asks a second time. The fight cannot be started by
+   * walking into him, only from here.
+   */
+  function ogreConversation(npc) {
+    const told=ogreToll.state;ogreToll.meet();
+    const back={id:'ogre-leave',label:told.beaten?'Leave him to his stone.':'Walk on.',action:()=>{if(!told.beaten)ogreToll.decline();closeDialogue();}};
+    if(told.beaten){openDialogue(npc,[...OGRE_RETURNED],null,'Back to the road',{choices:[...OGRE_TOPIC_IDS.map(id=>topicChoice(npc,id)),back]});return;}
+    const purse=inventory.count(COPPER_ITEM);
+    const choices=[
+      {id:'ogre-pay',label:purse>=OGRE_TOLL?`Pay the toll. (${OGRE_TOLL} copper)`:`Pay the toll. (${OGRE_TOLL} copper \u2014 you have ${purse})`,
+        enabled:purse>=OGRE_TOLL,action:()=>{const result=ogreToll.pay();if(!result.ok){toast(result.reason,'THE TOLL STONE');return;}
+          inventory.refresh();saveRoad(false);openDialogue(npc,['Good. Go on.','Mind the wall past the culvert. They are rebuilding it and the stones are loose and it is nobody\u2019s fault but it is still loose.'],null,'Back to the road',{choices:[back]});}},
+      ...OGRE_TOPIC_IDS.map(id=>topicChoice(npc,id)),
+      {id:OGRE_CHALLENGE.id,label:OGRE_CHALLENGE.label,action:()=>confirmChallenge(npc)},
+      back];
+    const lines=told.beaten?[...OGRE_RETURNED]:told.declined?[...ogreGreeting('declined')]:told.met?[...ogreGreeting('again')]:[...ogreGreeting('first')];
+    openDialogue(npc,lines,null,'Back to the road',{choices});
+  }
+  function topicChoice(npc,id){return {id,label:ogreTopicLabel(id),action:()=>openDialogue(npc,ogreTopicLines(id),null,'Back to our conversation',{onComplete:()=>ogreConversation(npc)})};}
+  function confirmChallenge(npc){
+    openDialogue(npc,[...OGRE_CHALLENGE.warning],null,'Back to our conversation',{choices:[
+      {id:'ogre-challenge-confirm',label:OGRE_CHALLENGE.confirmLabel,action:()=>{closeDialogue();startOgreFight();}},
+      {id:'ogre-challenge-decline',label:OGRE_CHALLENGE.declineLabel,action:()=>openDialogue(npc,[...OGRE_CHALLENGE.withdrawn],null,'Back to the road',{onComplete:()=>ogreConversation(npc)})}]});
+  }
+  function startOgreFight(){
+    const result=ogreToll.challenge();if(!result.ok){toast(result.reason,'THE TOLL STONE');return;}
+    saveRoad(false);
+    if(combat.startEncounter(OGRE_ENCOUNTER)){stopInput();toast('He is slow, and he does not stop when you are hit. Wait for the arc to settle before you move, and move across him, never back.','THE TOLL STONE \u00b7 MALLEC');audio?.effect('bell');}
+    else ogreToll.endEncounter(OGRE_ENCOUNTER.id);
+  }
   function mercenaryConversation(npc){
     const kit=mercenaryWeapon(npc.id);
     const choices=[{id:'merc-style',label:`How do you fight? (${kit.style})`,action:()=>openDialogue(npc,mercenaryStyleLines(npc.id),null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})},
@@ -987,6 +1028,8 @@ function init() {
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
+    if(npc.id===OGRE_NPC.id){ogreConversation(npc);return;}
+    if(AMOD_NPC_IDS.includes(npc.id)&&amodConversation(npc,{openDialogue,closeDialogue,ogreBeaten:ogreToll.state.beaten}))return;
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
@@ -1408,6 +1451,11 @@ function init() {
           if(verdict.ok){campaign.completeChapter('border-battle',verdict.outcome);refreshQuest();toast(border.view().detail,verdict.outcome==='victory'?'THE BORDER BATTLE · WON':'THE BORDER BATTLE · LOST');saveRoad(false);}
         }
         else if(inAftermathFight()){const won=aftermath.winEncounter(combat.state.encounterId);if(won.ok){refreshQuest();toast(aftermath.spec.toasts.won,aftermath.spec.title.toUpperCase());saveRoad(false);}}
+        else if(combat.state.encounterId===OGRE_ENCOUNTER.id){
+          const won=ogreToll.winEncounter(OGRE_ENCOUNTER.id);
+          if(won.ok){const mallec=npcById.get(OGRE_NPC.id);if(mallec)openDialogue(mallec,[...OGRE_VICTORY],null,'Back to the road');
+            toast('Mallec sits down on his own stone. Tell the road house at Ostel, and tell the court.','THE TOLL STONE \u00b7 THE ROAD IS OPEN');saveRoad(false);}
+        }
         else if(combat.state.encounterId===LUSCIA_WOLVES.id){const cleared=luscia.clearWolves(LUSCIA_WOLVES.id);if(cleared.ok){toast('The pack breaks for the copses. Carry the courier\u2019s satchel back to Iven.','THE LAUVEL · WOLVES DRIVEN OFF');saveRoad(false);}}
         else{updateQuest('victory');toast('The Greenway is safe.','THREE RAIDERS DRIVEN OFF');}
       }
@@ -1415,12 +1463,15 @@ function init() {
         if(combat.state.encounterId==='meadow-raiders')toast('Rest near Corvan’s camp; the raiders remain by the cart.','SUNMEADOW · A CHANCE TO RECOVER');
         else if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);toast('The camp can wait. Return to its approach when you are ready.','BACK TO THE ROAD');saveRoad(false);}
         else if(combat.state.encounterId===BORDER_ENCOUNTER_ID){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line holds without you for now. Tell your commander when you are ready.','THE BORDER BATTLE');}
+        else if(combat.state.encounterId===OGRE_ENCOUNTER.id){ogreToll.endEncounter(OGRE_ENCOUNTER.id);toast('You are out of his reach and he has not followed. He never follows.','THE TOLL STONE');saveRoad(false);}
         else if(inAftermathFight()){const banner=aftermath.spec.title.toUpperCase();aftermath.endEncounter(combat.state.encounterId);toast('Your commander holds the ground without you for now. Give the word again when you are ready.',banner);}
         else{updateQuest('retreat');toast('Catch your breath in the village.','RETURN TO THE BELL WHEN READY');}
       }
       if(e.type==='defeat'){
         $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':combat.state.encounterId===BORDER_ENCOUNTER_ID?'Full health · Rejoin the line south of the stockade':inAftermathFight()?'Full health · Form up with your company again':'Full health · Restart at the woodland bell';
         if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);$('defeat-checkpoint').textContent='Full health · Retry from the Bramble Scout Camp approach';}
+        // He does not finish people who have stopped: a defeat here is the ordinary one, on the Pueth side of the stones.
+        if(combat.state.encounterId===OGRE_ENCOUNTER.id){ogreToll.endEncounter(OGRE_ENCOUNTER.id);$('defeat-checkpoint').textContent='Full health · Stand up again east of the pass stones';}
         mode='defeated';stopInput();show('dialogue',false);show('modal-backdrop',true);show('journal',false);show('pause',false);show('defeat',true);$('retry').focus();
       }
     }
@@ -1477,7 +1528,7 @@ function init() {
       $('region-kicker').textContent=regionKicker(region);
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
-    $('encounter-title').textContent=combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():'DEFEND THE GREENWAY';
+    $('encounter-title').textContent=combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():'DEFEND THE GREENWAY';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
@@ -2082,6 +2133,22 @@ function init() {
         if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
+        // Amod, for review by eye: the terraces from the Pueth road, the bridge, Ostel from below,
+        // the street, and Mallec standing beside a person so the scale can be judged rather than asserted.
+        if(view.startsWith('amod-')){
+          questStage=10;combat.finishPractice();player.setArmed(true);
+          const spot=({'amod-terraces':{x:-676,z:-472,yaw:1.52,pitch:.12,d:9},
+            'amod-bridge':{x:-756,z:-486,yaw:1.45,pitch:.16,d:11},
+            'amod-ostel':{x:-782,z:-492,yaw:1.23,pitch:.12,d:13},
+            'amod-street':{x:-806,z:-498,yaw:2.2,pitch:.22,d:8},
+            'amod-valley':{x:-830,z:-540,yaw:2.6,pitch:.2,d:12},
+            'amod-ogre':{x:-684,z:-470,yaw:1.9,pitch:.08,d:17,look:{x:-681,z:-471,y:3.2}}})[view];
+          if(spot){
+            player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+            yaw=spot.yaw;pitch=spot.pitch;distance=targetDistance=spot.d;player.group.rotation.y=Math.PI+yaw;
+            if(spot.look){reviewFrozen=true;reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+spot.look.y,spot.look.z);}
+          }
+        }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}

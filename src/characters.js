@@ -2239,6 +2239,154 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
  * in a fight the crowd is close together and a cast shadow apiece buys little.
  * `groundShadow()` is the dark patch that stands in for one.
  */
+/**
+ * Mallec, the ogre who holds the Amod road (src/amod-ogre.js). Three times a
+ * person's size, which is the whole point of him: the scale has to read from the
+ * far end of the road and read worse when you are standing under it.
+ *
+ * The rig keeps the goblin's joint offsets, because the analytic foot solver in
+ * `makeAnimator` is written against them, and everything else departs from them
+ * on purpose — shoulders wider than his torso is tall, arms that reach past his
+ * knees, short bowed legs, no neck to speak of, and a head set forward and low
+ * so he looks up at you from under a shelf of bone. The figure is scaled inside
+ * an outer group, so the caller can go on setting the group's scale for a death
+ * fade without flattening him.
+ *
+ * He carries a road-mender's beam with a dressed terrace stone lashed into the
+ * end. He did not make it. He found it, the way he found the job.
+ */
+export function createOgre({ scale = 3.55 } = {}) {
+  const group = new THREE.Group();
+  group.name = 'ogre';
+  const figure = new THREE.Group();
+  figure.name = 'Ogre figure';
+  figure.scale.setScalar(scale);
+  group.add(figure);
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  figure.add(body);
+
+  const hide = material(0x7c7a62), belly = material(0x8e8a6e), grime = material(0x5f5f4a);
+  const scar = material(0x9a8f72), cloth = material(0x4e4636), patch = material(0x6b5f47);
+  const leather = material(0x3f382c), horn = material(0xcfc4a0), dark = material(0x231f1a);
+  const eyeWhite = material(0xc9b47a), stoneMat = material(0xa9a289);
+  const legs = [], knees = [], ankles = [], arms = [], elbows = [], wrists = [];
+
+  // Short, thick, bowed legs. The joint heights are the goblin's; the meat is not.
+  for (const side of [-1, 1]) {
+    const hip = new THREE.Group();
+    hip.position.set(side * 0.2, 0.5, -0.02);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, hide, [side * 0.02, -0.09, 0], [0.135, 0.15, 0.14]);
+    const knee = new THREE.Group();
+    knee.position.y = -0.215;
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, hide, [0, -0.05, 0.01], [0.115, 0.115, 0.12]);
+    part(knee, UNIT_CYLINDER, cloth, [0, -0.12, 0.01], [0.126, 0.055, 0.126]);
+    const ankle = new THREE.Group();
+    ankle.position.y = -0.18;
+    knee.add(ankle);
+    ankles.push(ankle);
+    round(ankle, hide, [0, -0.03, 0.06], [0.15, 0.072, 0.18]);
+    box(ankle, grime, [0, -0.077, 0.062], [0.29, 0.036, 0.3]);
+    for (const toe of [-0.088, 0, 0.088]) round(ankle, belly, [toe, -0.03, 0.2], [0.05, 0.05, 0.055]);
+    ribbon(ankle, leather, [-0.14, -0.015, 0.03], [0.14, -0.005, 0.055], 0.05, 0.03);
+  }
+
+  // A barrel of a gut, and above it a shoulder yoke that is the widest thing on him.
+  part(body, UNIT_HAIR_LOCK, belly, [0, 0.72, 0.03], [0.53, 0.44, 0.47]);
+  part(body, UNIT_CYLINDER, cloth, [0, 0.56, 0], [0.3, 0.13, 0.28]);
+  ribbon(body, leather, [-0.33, 0.66, 0.2], [0.33, 0.62, 0.19], 0.085, 0.04);
+  box(body, patch, [-0.1, 0.63, 0.25], [0.12, 0.1, 0.05]);
+  part(body, UNIT_HAIR_LOCK, hide, [0, 1.02, -0.02], [0.78, 0.36, 0.42]);
+  for (const side of [-1, 1]) {
+    part(body, UNIT_HAIR_LOCK, hide, [side * 0.31, 1.1, -0.02], [0.33, 0.27, 0.35]);
+    // Sacking over one shoulder; old ridged scars across the other.
+    if (side < 0) for (let i = 0; i < 3; i++) ribbon(body, scar, [-0.22 - i * 0.05, 1.12, 0.14], [-0.34 - i * 0.04, 0.9, 0.1], 0.016, 0.008);
+    else ribbon(body, cloth, [0.1, 1.16, 0.06], [0.36, 0.78, 0.1], 0.13, 0.05);
+  }
+  // Ribs and lumps: at arm's length he stops being a silhouette and starts being skin.
+  for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+    const lump = part(body, UNIT_HAIR_LOCK, grime, [side * (0.2 + i * 0.03), 0.82 - i * 0.055, 0.28], [0.06, 0.045, 0.02]);
+    lump.rotation.z = side * 0.3;
+  }
+
+  // Long arms, hung forward, ending in hands the size of a person's chest.
+  for (const side of [-1, 1]) {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side * 0.42, 1.09, 0.01);
+    body.add(shoulder);
+    arms.push(shoulder);
+    round(shoulder, hide, [side * 0.02, -0.13, 0], [0.135, 0.22, 0.145]);
+    const elbow = new THREE.Group();
+    elbow.position.set(side * 0.02, -0.33, 0);
+    shoulder.add(elbow);
+    elbows.push(elbow);
+    round(elbow, hide, [0, -0.13, 0], [0.108, 0.2, 0.115]);
+    part(elbow, UNIT_HAIR_LOCK, grime, [side * 0.05, -0.1, 0.07], [0.03, 0.06, 0.02]);
+    const wrist = new THREE.Group();
+    wrist.position.set(0, -0.34, 0.02);
+    elbow.add(wrist);
+    wrists.push(wrist);
+    round(wrist, hide, [0, -0.04, 0.02], [0.155, 0.13, 0.145]);
+    for (let f = 0; f < 3; f++) round(wrist, belly, [(f - 1) * 0.07, -0.14, 0.07], [0.036, 0.075, 0.042]);
+    round(wrist, belly, [-side * 0.1, -0.06, 0.06], [0.05, 0.07, 0.05]);
+  }
+
+  // Almost no neck: the head is set forward off the chest, and looks up at you.
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 1.16, 0.15);
+  body.add(head);
+  part(head, UNIT_HAIR_LOCK, hide, [0, 0.08, -0.04], [0.34, 0.3, 0.33]);
+  part(head, UNIT_HAIR_LOCK, belly, [0, -0.07, 0.11], [0.32, 0.19, 0.27]);   // the jaw, undershot
+  part(head, UNIT_HAIR_LOCK, hide, [0, 0.19, -0.02], [0.33, 0.12, 0.3]);     // the shelf of brow
+  for (const side of [-1, 1]) {
+    const socket = part(head, UNIT_HAIR_LOCK, dark, [side * 0.1, 0.1, 0.16], [0.075, 0.05, 0.03]);
+    socket.rotation.z = side * 0.14;
+    round(head, eyeWhite, [side * 0.1, 0.1, 0.185], [0.032, 0.02, 0.012]);
+    round(head, dark, [side * 0.097, 0.101, 0.196], [0.011, 0.014, 0.005]);
+    // Two lower tusks, one of them broken off short.
+    const tusk = part(head, new THREE.ConeGeometry(0.03, side < 0 ? 0.13 : 0.06, 5), horn, [side * 0.11, -0.03, 0.2]);
+    tusk.rotation.set(-0.35, 0, side * 0.12);
+    // One ear notched, and the other not.
+    const ear = part(head, UNIT_HAIR_LOCK, hide, [side * 0.31, 0.09, -0.03], [0.1, 0.13, 0.05]);
+    ear.rotation.z = side * -0.4;
+    if (side > 0) part(head, UNIT_HAIR_LOCK, dark, [0.35, 0.14, -0.03], [0.035, 0.05, 0.06]);
+  }
+  part(head, UNIT_HAIR_LOCK, belly, [0, 0.02, 0.21], [0.075, 0.09, 0.09]);   // the nose
+  round(head, dark, [-0.03, -0.005, 0.245], [0.017, 0.013, 0.012]);
+  round(head, dark, [0.03, -0.005, 0.245], [0.017, 0.013, 0.012]);
+  part(head, UNIT_HAIR_LOCK, dark, [0, -0.045, 0.22], [0.2, 0.026, 0.02]);   // the mouth line
+  for (let i = 0; i < 4; i++) {
+    const tuft = part(head, UNIT_HAIR_LOCK, grime, [(i - 1.5) * 0.06, 0.26, -0.06], [0.03, 0.07, 0.05]);
+    tuft.rotation.z = (i - 1.5) * 0.24;
+  }
+  // The toll bowl, on a cord at his hip. He is never without it.
+  const bowl = part(body, UNIT_CYLINDER, patch, [0.32, 0.56, 0.16], [0.09, 0.05, 0.09]);
+  bowl.rotation.z = 0.3;
+
+  const chest = addChestPivot(body, legs, 0.7);
+  // The beam: a road-mender's timber with a dressed terrace stone lashed in the end.
+  const weapon = makeWeaponMount(wrists[1], 'Ogre beam grip');
+  const beam = new THREE.Group();
+  beam.name = 'Road beam';
+  weapon.add(beam);
+  part(beam, UNIT_CYLINDER, material(0x6b5136), [0, -0.42, 0.02], [0.05, 0.98, 0.05]);
+  part(beam, UNIT_BOX, stoneMat, [0, -0.93, 0.02], [0.2, 0.24, 0.17]);
+  for (const band of [-0.83, -1.02]) ribbon(beam, leather, [-0.11, band, 0.02], [0.11, band, 0.02], 0.022, 0.02);
+
+  const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles, weapon];
+  for (const [kind, joints] of Object.entries({ Shoulder: arms, Elbow: elbows, Wrist: wrists, Hip: legs, Knee: knees, Ankle: ankles })) {
+    joints.forEach((joint, i) => { joint.name = `${i ? 'Right' : 'Left'} ${kind}`; });
+  }
+  batchRigidParts(group, pivots);
+  const { animate, setArmed } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, goblin: true, offset: 2.4 });
+  return { group, animate, setArmed, figure, scale };
+}
+
 export function setShadowCasting(actor, casting) {
   const group = actor?.group ?? actor;
   if (!group?.traverse) return false;

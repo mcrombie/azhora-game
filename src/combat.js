@@ -20,6 +20,18 @@ const ENEMY_KINDS = Object.freeze({
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
   // A trained man with a blade: a shorter tell than a goblin's and a steadier pace.
   soldier: Object.freeze({ tell: .82, attack: .56, contact: .24, recovery: 1.25, damage: 16, speed: 2.0, engage: 2.1, reach: 2.15, lunge: 1.4 }),
+  // Mallec, the ogre on the Amod road (src/amod-ogre.js): a different order of
+  // creature, not a large goblin. Three optional fields carry the difference and
+  // every other kind goes on ignoring them:
+  //   `arc`      how wide the strike lands, so backing straight up is not a defence
+  //              and a dodge has to go sideways and be timed;
+  //   `standoff` how far out he stops, so his bulk stays out of the traveler's lap;
+  //   `stagger`  false, so a hit does not interrupt him. That is the single biggest
+  //              change from every fight in the game so far: there is no free second
+  //              bought with a swing, and the fight is lost to greed rather than to
+  //              surprise. The long tell keeps him readable while it does it.
+  ogre: Object.freeze({ tell: 1.18, attack: .44, contact: .2, recovery: 1.3, damage: 52, speed: 1.25, engage: 4.3, reach: 4.7, lunge: 6.4,
+    arc: Math.PI * .4, aimLock: .55, standoff: 2.6, stagger: false, knockback: .2 }),
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
@@ -286,15 +298,21 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage: 0 });
       return;
     }
+    const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
     enemy.hp = Math.max(0, enemy.hp - damage);
-    enemy.action = enemy.hp ? 'hurt' : 'dead';
     enemy.active = enemy.hp > 0;
-    enemy.progress = 0;
-    enemy.speed = 0;
-    timers.actionTime = 0;
-    timers.cooldown = ENEMY_RECOVERY;
-    nextAttackerAt = Math.max(nextAttackerAt, time + .35);
-    moveCharacter(enemy, Math.sin(yaw) * .43, Math.cos(yaw) * .43, world);
+    // A kind marked `stagger: false` takes the hit and keeps swinging: its tell is
+    // not interrupted, its recovery is not restarted and nothing here buys the
+    // traveler a free second. Death still lands the same way for everyone.
+    if (profile.stagger !== false || !enemy.hp) {
+      enemy.action = enemy.hp ? 'hurt' : 'dead';
+      enemy.progress = 0;
+      enemy.speed = 0;
+      timers.actionTime = 0;
+      timers.cooldown = ENEMY_RECOVERY;
+      nextAttackerAt = Math.max(nextAttackerAt, time + .35);
+      moveCharacter(enemy, Math.sin(yaw) * (profile.knockback ?? .43), Math.cos(yaw) * (profile.knockback ?? .43), world);
+    }
     emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
     if (!enemy.hp) emit('enemy-defeated', { id: enemy.id, x: enemy.x, z: enemy.z });
     if (state.phase === 'active' && state.enemies.every(target => !target.active)) {
@@ -419,6 +437,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (enemy.action === 'windup') {
       enemy.progress = clamp(timers.actionTime / profile.tell, 0, 1);
       // Aim is locked for the whole tell; a sidestep or dodge can beat the actual strike.
+      // A kind with an `aimLock` instead keeps turning until that much of the tell has
+      // gone by, and only then commits: a dodge thrown the moment the arc appears is
+      // followed round, and the strike is beaten by waiting for the commitment and
+      // moving late. A long tell is what makes that readable rather than unfair.
+      if (profile.aimLock && enemy.progress < profile.aimLock) {
+        const tracked = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
+        const aim = tracked ?? position;
+        enemy.yaw += angleDifference(Math.atan2(aim.x - enemy.x, aim.z - enemy.z), enemy.yaw) * Math.min(1, dt * 5);
+      }
       if (timers.actionTime >= profile.tell) {
         enemy.action = 'attack';
         enemy.progress = 0;
@@ -429,13 +456,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (enemy.action === 'attack') {
       enemy.progress = clamp(timers.actionTime / profile.attack, 0, 1);
-      if (timers.actionTime <= profile.contact) moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
+      // A committed lunge carries the strike forward, but stops short of standing
+      // inside whoever it is aimed at: a creature with reach does not need to.
+      if (timers.actionTime <= profile.contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
+        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
       if (!timers.hitApplied && timers.actionTime >= profile.contact) {
         timers.hitApplied = true;
         // The strike lands on whoever the tell was aimed at: the traveler, or an ally still standing.
         const aimedAlly = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
         const struckPoint = aimedAlly ?? position;
-        if (distance(enemy, struckPoint) <= profile.reach && facing(enemy, struckPoint, enemy.yaw, Math.PI * .25)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
+        if (distance(enemy, struckPoint) <= profile.reach && facing(enemy, struckPoint, enemy.yaw, profile.arc ?? Math.PI * .25)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
       }
       if (timers.actionTime >= profile.attack && state.phase === 'active') {
         enemy.action = 'idle';
@@ -460,7 +490,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       emit('windup', { id: enemy.id, targetId: timers.targetId });
       return;
     }
-    const desiredDistance = someoneAttacking ? 2.7 : 1.8;
+    const desiredDistance = Math.max(someoneAttacking ? 2.7 : 1.8, profile.standoff ?? 0);
     if (dist > desiredDistance) {
       const target = {
         x: clamp(aim.x, lastEncounter.center.x - 8, lastEncounter.center.x + 8),
