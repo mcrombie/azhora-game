@@ -131,7 +131,7 @@ export const EAST_SUVAL_AMBIENT = Object.freeze({
   ]),
   'elod-exile': Object.freeze([
     'Prian. I sold oil in Solis for forty years. I had a house with a yellow door and a contract with the Bronze Mare and a boy who kept my ledgers.',
-    'The Blood Prince came through the wall on a Thursday. He was supposed to be relieving the siege — he was on the same side as half the men he killed. He burned the quarter my house was in and then he went north and burned a holy city as well, in Isareos, with the prince he came to save in it.',
+    'The Blood Prince came over the wall an hour before first light. He was supposed to be relieving the siege — he was on the same side as half the men he killed. He burned the quarter my house was in and then he went north and burned a holy city as well, in Isareos, with the prince he came to save in it.',
     'And these people sit on their rock and say it is not their war. It was not Solis’s war either, and I have the ash in my clothes still.',
     'No — that is unfair and I know it. They fed me. They feed me now. But you cannot burn a city with neutrality and you cannot put one out with it either.',
   ]),
