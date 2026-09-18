@@ -457,4 +457,4 @@ knob with two Presences in the haze behind it. What the shots changed:
   three mountains on Drent's north-western horizon — are named *"Three Presences
   summit n"*. The Three Presences are Izol's. Nobody sees the name, but the next
   person to search for them will find the wrong mountains first.
-- The branch is three commits on `west-izol` and has not been pushed.
+- The work is on `west-izol` (from `ab4e030`) and has not been pushed.
