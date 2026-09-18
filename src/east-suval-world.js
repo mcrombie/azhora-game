@@ -457,7 +457,7 @@ export function createEastSuvalScenery(kit) {
     for (let i = 0; i < 5; i++) pebble(material('#7d6a4e'), L.x + range(-.4, .4), top + 1.5, L.z + range(-.4, .4), .24, .18, .3, group);
     push({ x: L.x, z: L.z, r: 2.7, kind: 'north-light' });
     // The keeper's hut, his oil jars, and the path he has worn between the two.
-    const hut = { id: 'light-hut', x: NORTH_LIGHT.keeperHut.x, z: NORTH_LIGHT.keeperHut.z, width: 6.0, depth: 4.8, height: 3.0, yaw: -Math.PI / 2, roof: '#5f6a6b', wall: '#ddd7c2' };
+    const hut = { id: 'light-hut', x: NORTH_LIGHT.keeperHut.x, z: NORTH_LIGHT.keeperHut.z, width: 6.0, depth: 4.8, height: 3.0, yaw: -Math.PI / 2, roof: '#646c6c', wall: '#cec6ae' };
     elodiHouse(hut);
     for (const [ox, oz] of [[-67, 544], [-66.4, 545.6]]) barrel(ox, oz, .85, group);
     wornPatch((L.x + hut.x) / 2, (L.z + hut.z) / 2, 5.5, '#b3ab8e');
@@ -470,7 +470,7 @@ export function createEastSuvalScenery(kit) {
   {
     const S = SORROW_BEACH;
     wornPatch(S.x + 5, S.z, 15, '#b8af95', 1.2);
-    for (const hut of S.huts) elodiHouse({ ...hut, roof: '#5d6462', wall: '#c3bca6' });
+    for (const hut of S.huts) elodiHouse({ ...hut, roof: '#5c6566', wall: '#c2bba3' });
     // Boats hauled bodily up the shingle, keel up.
     for (const spot of S.boats) {
       const y = gy(spot.x, spot.z), yaw = range(1.2, 1.9);
@@ -516,7 +516,7 @@ export function createEastSuvalScenery(kit) {
       }
       metrics.fieldWalls++;
     }
-    for (const hut of V.huts) elodiHouse({ ...hut, roof: '#6a6f68', wall: '#c9c2a9' });
+    for (const hut of V.huts) elodiHouse({ ...hut, roof: '#6b6f68', wall: '#c6bea6' });
     cistern({ ...V.cistern, radius: 2.7 });
     {
       // The press: a stone bed, a great beam and the weight stone on its end.
