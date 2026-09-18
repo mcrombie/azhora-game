@@ -2,7 +2,7 @@
  * The birds about Tidehaven that the traveler can learn to see: a pair of
  * cardinals on the western fences, a wren on the barrels east of the square,
  * titmice where the village meets the woods, crows in the field behind the
- * western cottages, and a hummingbird that comes only to the feeder in Ansel's
+ * western cottages, and a hummingbird that comes only to the feeder in Lakota's
  * garden. Each kind has its own model (body, head and wings, instanced per kind)
  * and its own habits: songbirds hop and peck and fly up to a fence post, crows
  * walk, the hummingbird darts in, hovers at the feeder and darts away. All of them

@@ -1,16 +1,16 @@
 /**
- * Ansel's red-tailed hawk. She rides his gauntlet, and every so often she goes
+ * Lakota's red-tailed hawk. She rides his gauntlet, and every so often she goes
  * up: a few hard wingbeats off the fist, then wide slow circles over the green,
  * riding the warm air rather than flapping, and at last a long glide back down
- * to his glove. While the traveler is talking with Ansel she comes in early and
- * stays put. A pure behaviour: the game says where the glove is and where Ansel
+ * to his glove. While the traveler is talking with Lakota she comes in early and
+ * stays put. A pure behaviour: the game says where the glove is and where Lakota
  * stands; this says where she is, which way she faces, and how her wings are.
  */
 export const RED_TAIL = Object.freeze({
   perch: [22, 42],      // seconds on the glove between flights
   soar: [28, 50],       // seconds aloft
   height: [13, 20],     // metres above the ground she circles at
-  radius: [9, 15],      // metres out from Ansel she circles
+  radius: [9, 15],      // metres out from Lakota she circles
   speed: 6.5,           // metres a second on the circle
   launch: 1.8,          // seconds from fist to circle
   landing: 3.4,         // seconds from circle to fist
@@ -30,7 +30,7 @@ export function createHawkFlight({ random = Math.random } = {}) {
   }
 
   /**
-   * `glove` is where she stands on Ansel's fist; `anchor` is Ansel's feet;
+   * `glove` is where she stands on Lakota's fist; `anchor` is Lakota's feet;
    * `called` is true while the traveler is talking with him.
    */
   function update(dt, { glove, anchor, called = false }) {

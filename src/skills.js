@@ -9,7 +9,7 @@ export const SKILLS = Object.freeze({
   birding: Object.freeze({
     id: 'birding', name: 'Birding',
     blurb: 'Finding birds, keeping your distance, and looking at them properly. Every kind of bird you see for the first time teaches you something.',
-    teacher: 'Ansel, the bird-watcher of Tidehaven',
+    teacher: 'Lakota, the birder of Tidehaven',
     // Experience needed for levels 1 to 10. Drent's five birds together are worth 90: level 4.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
@@ -39,6 +39,20 @@ export const SKILLS = Object.freeze({
     blurb: 'Wood or ground, gills or folds, and what it smells of. Every kind of mushroom you name for the first time teaches you something — including the two you must never eat.',
     teacher: 'Odger Pell, at the edge of the Greenway outside Tidehaven',
     // The eleven mushrooms of Drent's woods together are worth 225: level 6.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
+  archaeology: Object.freeze({
+    id: 'archaeology', name: 'Archaeology',
+    blurb: 'Reading what people and older things left in the ground, where it lies, and leaving it there. Old towns and older bones: every find written up for the first time teaches you something.',
+    teacher: 'Lakota, the birder of Tidehaven, who digs as well as he watches',
+    // Rena's seven finds are worth 125, and the report to Lakota 40 more: level 4.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
+  wine: Object.freeze({
+    id: 'wine', name: 'Wine',
+    blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted properly for the first time teaches you something about the grape and the ground.',
+    teacher: 'Lakota in Tidehaven, and Livia Seravo at Paradise Springs in West Suval',
+    // The seven wines of Paradise Springs are worth 100, and the visit 25 more: level 3.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
 });

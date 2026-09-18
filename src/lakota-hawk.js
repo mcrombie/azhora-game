@@ -1,5 +1,5 @@
 /**
- * The red-tailed hawk that rides Ansel's glove (her flight: src/hawk-flight.js).
+ * The red-tailed hawk that rides Lakota's glove (her flight: src/hawk-flight.js).
  * Brown back, a cream breast crossed by a dark belly band, the brick-red tail an
  * adult earns in her second year, a hooked dark beak over a yellow cere, yellow
  * feet. About half a metre long, a metre and a quarter across the wings. The

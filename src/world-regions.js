@@ -13,6 +13,7 @@ import { WAYSIDE_CLEARINGS } from './wayside.js';
 import { PLACE_CLEARINGS } from './places.js';
 import { FRONTIER_CLEARINGS } from './frontier.js';
 import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
+import { WINERY, WINERY_LAYOUT } from './winery.js';
 import { RENA_CLEARINGS } from './rena.js';
 import { ELAGOS_CLEARINGS } from './elagos-world.js';
 
@@ -54,6 +55,11 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ x: STORY_SITES.banditLookout.x, z: STORY_SITES.banditLookout.z, r: 10 }),
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, north Luscia
   ...WEST_SUVAL_CLEARINGS,                                                    // Solis, its camp and the road's places (src/west-suval.js)
+  Object.freeze({ x: WINERY.centre.x, z: WINERY.centre.z, r: WINERY.radius }),  // Paradise Springs, its vines and its spring (src/winery.js)
+  ...WINERY_LAYOUT.lane.slice(1).flatMap((to, i) => {                          // and the lane to it across the downs
+    const from = WINERY_LAYOUT.lane[i], steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 6);
+    return Array.from({ length: steps + 1 }, (_, k) => Object.freeze({ x: from.x + (to.x - from.x) * k / steps, z: from.z + (to.z - from.z) * k / steps, r: 4 }));
+  }),
   ...HIDEOUT_CLEARINGS,                                                       // the goblin camp and its trail, southern Pueth
   ...PUETH_CLEARINGS,                                                         // the Tessen bridge and post, Rimeholt, Pueth's landmarks
   ...PEBLOS_CLEARINGS,                                                        // Cobble, its quay, and every landmark in the Pebbles

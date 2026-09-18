@@ -1,5 +1,5 @@
 /**
- * Ansel's garden on the eastern side of Tidehaven: a hook for the hummingbird
+ * Lakota's garden on the eastern side of Tidehaven: a hook for the hummingbird
  * feeder among red bee balm, a stone bird bath, and the bench where he keeps his
  * notebook. Authored in Tidehaven's local metres, like the rest of the village;
  * built from world.js's own helpers so it batches with the village. The feeder on
@@ -81,7 +81,7 @@ export function buildBirdGarden(h) {
   post(water, L.bath.x, by + .835, L.bath.z, .37, .02);
   vpush({ x: L.bath.x, z: L.bath.z, r: .46 });
 
-  // Ansel's bench, with his notebook and a pencil on it.
+  // Lakota's bench, with his notebook and a pencil on it.
   const sy = localGround(L.bench.x, L.bench.z);
   box(wood, L.bench.x, sy + .46, L.bench.z, .42, .07, 1.5);
   for (const dz of [-.6, .6]) box(wood, L.bench.x, sy + .22, L.bench.z + dz, .36, .44, .08);
@@ -92,7 +92,7 @@ export function buildBirdGarden(h) {
 
   // The feeder itself: a cord from the hook, a pale glass bottle, and a red dish with yellow flower ports.
   const feeder = new THREE.Group();
-  feeder.name = 'Ansel’s hummingbird feeder';
+  feeder.name = 'Lakota’s hummingbird feeder';
   feeder.position.set(L.hook.x, hy + 2.02 - FEEDER_DROP, L.hook.z + L.arm);
   root.add(feeder); movingGroups.add(feeder);
   const glass = material('#cfe3dc', { transparent: true, opacity: .55, roughness: .15 });

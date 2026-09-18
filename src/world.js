@@ -21,6 +21,7 @@ import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } 
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
+import { createWineryScenery } from './winery-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
 import { createRegionScenery, regionClear } from './world-regions.js';
 import { createColliderGrid } from './collider-grid.js';
@@ -709,7 +710,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pebble(material('#5f9150'), px, localGround(px, pz) + .25, pz, .3, .27, .32);
     }
   }
-  // Ansel's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
+  // Lakota's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
   const birdGarden = buildBirdGarden({ root: villageRoot, material, mesh, box, post, pebble, localGround, vpush, movingGroups });
   const wellX = -5.7, wellZ = 1.5, wellY = localGround(wellX, wellZ);
   const wellRing = new THREE.TorusGeometry(1, .26, 5, 12); wellRing.rotateX(Math.PI / 2);
@@ -1112,6 +1113,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
+  // Paradise Springs (src/winery-world.js): Lakota's old winery in the north-east of West Suval.
+  createWineryScenery({ root: world, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs });
   // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
   // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.
   const izol = createIzolScenery({ root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign: roadsideSign,

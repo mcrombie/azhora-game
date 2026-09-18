@@ -16,12 +16,12 @@ async function fixture() {
   return built;
 }
 
-test('Ansel’s garden is in Tidehaven: his stand, the feeder hook and the hover point are all reachable', async () => {
+test('Lakota’s garden is in Tidehaven: his stand, the feeder hook and the hover point are all reachable', async () => {
   const { world } = await fixture();
   const garden = world.birdGarden;
   assert.equal(world.regionAt(garden.center.x, garden.center.z)?.name, 'Drent');
-  assert.ok(canStand(garden.stand.x, garden.stand.z, world, .45), 'Ansel stands on open ground');
-  for (const [id, p] of Object.entries(world.npcPositions)) assert.ok(flat(p, garden.stand) > 8, `Ansel stands clear of ${id}`);
+  assert.ok(canStand(garden.stand.x, garden.stand.z, world, .45), 'Lakota stands on open ground');
+  for (const [id, p] of Object.entries(world.npcPositions)) assert.ok(flat(p, garden.stand) > 8, `Lakota stands clear of ${id}`);
   assert.ok(flat(garden.stand, world.spawn) < 90, 'the garden is in the village, not out in the woods');
   // The traveler can get close enough to the hook to hang the feeder, from open ground.
   let reachable = 0;

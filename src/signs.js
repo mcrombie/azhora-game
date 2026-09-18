@@ -24,6 +24,8 @@ import { forestPlaceDefinitions } from './forest-places.js';
 export const SIGN_LABELS = Object.freeze([
   // Tidehaven and the Greenway
   'Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
+  // West Suval's winery (src/winery.js)
+  'Paradise Springs',
   ...forestPlaceDefinitions.map(site => site.name),
   // Drent
   'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel',

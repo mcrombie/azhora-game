@@ -13,7 +13,7 @@ function fixture() {
 }
 
 test('Drent has the country’s common birds, each worth experience the first time', () => {
-  // The four Ansel starts anyone on come first, and the hummingbird is last
+  // The four Lakota starts anyone on come first, and the hummingbird is last
   // because it has to be earned.
   assert.equal(DRENT_BIRDS.length, 25);
   assert.deepEqual(DRENT_BIRDS.slice(0, 5), ['cardinal', 'wren', 'titmouse', 'crow', 'hummingbird']);
@@ -25,7 +25,7 @@ test('Drent has the country’s common birds, each worth experience the first ti
   }
   assert.ok(BIRD_SPECIES.crow.spook > BIRD_SPECIES.cardinal.spook && BIRD_SPECIES.hummingbird.spook < BIRD_SPECIES.wren.spook, 'crows are warier than songbirds; hummingbirds hardly care');
   const { skills, birding } = fixture();
-  assert.equal(birding.observe('cardinal').ok, false, 'nothing counts before Ansel has taught you');
+  assert.equal(birding.observe('cardinal').ok, false, 'nothing counts before Lakota has taught you');
   assert.equal(birding.meet().first, true);
   assert.equal(skills.level('birding'), 1);
   const first = birding.observe('cardinal');
@@ -49,10 +49,10 @@ test('the observation range grows with practice and has a limit', () => {
   assert.ok(observeRange(1) > Math.max(...DRENT_BIRDS.map(id => BIRD_SPECIES[id].spook)) + 3, 'a bird can be seen well outside its distance');
 });
 
-test('the feeder errand: Ansel lends it, Lysa fills it, the traveler hangs it, and the hummingbird ends it', () => {
+test('the feeder errand: Lakota lends it, Lysa fills it, the traveler hangs it, and the hummingbird ends it', () => {
   const { birding, inventory } = fixture();
   for (const id of [FEEDER_ITEM, FILLED_FEEDER_ITEM]) assert.ok(INVENTORY_ITEMS[id], `${id} is a satchel item`);
-  assert.equal(birding.lendFeeder(inventory).ok, false, 'not before meeting Ansel');
+  assert.equal(birding.lendFeeder(inventory).ok, false, 'not before meeting Lakota');
   birding.meet();
   assert.equal(birding.task(), null);
   assert.equal(birding.fillFeeder(inventory).ok, false);
@@ -90,7 +90,7 @@ test('birding survives a save, and nonsense is refused', () => {
     assert.equal(validateBirdingSnapshot(bad), false, JSON.stringify(bad));
 });
 
-test('Ansel teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
+test('Lakota teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
   const { birding, inventory } = fixture(), opened = [], acted = [];
   const context = { birding, openDialogue: (npc, lines, _, __, options) => opened.push({ lines, choices: options?.choices ?? [] }), closeDialogue: () => {}, act: id => acted.push(id) };
   assert.equal(birdWatcherConversation({ id: 'someone-else' }, context), false);

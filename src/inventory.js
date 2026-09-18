@@ -91,14 +91,14 @@ export const INVENTORY_ITEMS = Object.freeze({
     description: 'One of the letters the Ardrys are writing to each other after eleven years. They are not sealed, and both of them have said you may read them: open your journal with J to do it. Deliver it to the one it is addressed to.',
   }),
   'hummingbird-feeder': Object.freeze({
-    name: 'Ansel’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
+    name: 'Lakota’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
     brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',
-    description: 'Ansel’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
+    description: 'Lakota’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
   }),
   'sugar-water-feeder': Object.freeze({
     name: 'Filled hummingbird feeder', type: 'Quest item', icon: 'feeder',
-    brief: 'Ansel’s feeder, full of Lysa’s sugar water. Carry it upright.',
-    description: 'Hang it on the hook among the red flowers in Ansel’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
+    brief: 'Lakota’s feeder, full of Lysa’s sugar water. Carry it upright.',
+    description: 'Hang it on the hook among the red flowers in Lakota’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
   }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,
