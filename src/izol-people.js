@@ -140,11 +140,11 @@ export const IZOL_AMBIENT = freeze({
   'izol-master-gannet': freeze([
     'Corrin Ames, and that is the Gannet, and before you ask: yes, she will cross in that.',
     'In seventy-eight I was carrying grain. In seventy-nine I was carrying spearmen into a harbour I had traded in for twenty years, and I watched the boom go down at Selemis from the deck of my own boat. You do not get over a thing like that. You take another cargo.',
-    'Doreth’s man wants her for the Selemis run. He can want. I signed one charter at the Stone and I am in no hurry to sign a second.',
+    'Doreth’s man wants her for the Selemis run. He can want. I swore one charter at the Stone and I am in no hurry to swear a second.',
   ]),
   'izol-master-serrow': freeze([
     'Dols Brack. Serrow, out of Solne. Chartered until the war ends, which is a length of time no man would agree to twice.',
-    'I signed it at the Stone, in her name. So I will sail it out, and I will not be cheerful about it, and on this island those two things do not argue with each other.',
+    'I swore it at the Stone, in her name. So I will sail it out, and I will not be cheerful about it, and on this island those two things do not argue with each other.',
     'If you want to know what the Republic is, it is this: I cannot get out of a bad bargain because of a rock, and I would not care to live anywhere that let me.',
   ]),
   'izol-svaleen-merchant': freeze([

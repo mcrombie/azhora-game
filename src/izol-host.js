@@ -25,7 +25,7 @@ export function createIzolHost({ world, npcData }) {
     npcData.push({ ...person });
   }
   const ids = new Set(IZOL_NPC_IDS);
-  let stance = null;
+  let stance = null, lastSolis;
 
   /** Talk to somebody from West Izol. Returns false for anybody else. */
   function converse(npc, { control, openDialogue, closeDialogue }) {
@@ -35,8 +35,12 @@ export function createIzolHost({ world, npcData }) {
 
   /** Once a frame, after the host's occupation pass. Cheap when nothing has changed. */
   function frame({ npcById, control }) {
+    // Nothing is allocated on a frame where Chapter 2's outcome has not changed.
+    const solis = control?.['West Suval'];
+    if (stance && solis === lastSolis) return stance;
+    lastSolis = solis;
     const next = generalsStance(control ?? {});
-    if (stance && stance.kellvethHome === next.kellvethHome) return stance;
+    if (stance && stance.kellvethHome === next.kellvethHome) { stance = next; return stance; }
     stance = next;
     for (const id of CONDITIONAL_NPC_IDS) {
       const npc = npcById?.get(id);

@@ -45,7 +45,7 @@ export function createIzolScenery(kit) {
   const iron = material('#43464a');
   const canvasMat = material('#cfc6a6'), sailMat = material('#e6dcbd'), netMat = material('#7a7f62');
   const pitch = material('#3b3631'), shadow = material('#32363a');
-  const paving = material('#8d8d84'), pavingPale = material('#9c9c91');
+  const paving = material('#83847b'), pavingPale = material('#95968b');
   const cordage = material('#b6a67c'), fishMat = material('#c3bba2'), redCloth = material('#9c4038');
 
   // -------------------------------------------------------------------------
@@ -169,11 +169,14 @@ export function createIzolScenery(kit) {
       for (const side of [-1, 1]) {
         box(shadow, p.x + side * w * .27, base + 2.9, p.z - d / 2 - .04, .55, .75, .06, district);
         box(graniteWarm, p.x + side * w * .27, base + 2.48, p.z - d / 2 - .06, .72, .12, .1, district);
-        // Small deep windows on the gable walls: this coast does not glaze anything it does not have to.
+        // Small deep windows on the gable walls and one at the back: this coast does not
+        // glaze anything it does not have to, but no wall on it is entirely blind.
         for (const along of [-d * .22, d * .22]) {
           box(shadow, p.x + side * (w / 2 + .04), base + 2.9, p.z + along, .06, .7, .5, district);
           box(graniteWarm, p.x + side * (w / 2 + .06), base + 2.52, p.z + along, .1, .12, .66, district);
         }
+        box(shadow, p.x + side * w * .25, base + 2.8, p.z + d / 2 + .04, .5, .62, .06, district);
+        box(graniteWarm, p.x + side * w * .25, base + 2.45, p.z + d / 2 + .06, .66, .12, .1, district);
       }
     }
     push({ x: p.x, z: p.z, hx: w / 2 + .2, hz: d / 2 + .2, kind: 'izol-building' });
@@ -496,6 +499,21 @@ export function createIzolScenery(kit) {
     }
     box(material('#3d4a4c'), ci.x, cb + .45, ci.z, 2.3, .05, 2.3, district);
     push({ x: ci.x, z: ci.z, r: 1.8, kind: 'cistern' });
+    // Peat and driftwood against the back walls, and two hand-barrows left where they were set down.
+    for (const stack of W.peatStacks) {
+      const y = gy(stack.x, stack.z);
+      for (let c = 0; c < 4; c++) for (let i = 0; i < 3; i++)
+        box(c % 2 ? material('#5a4a38') : material('#6a5843'), stack.x - .7 + i * .7, y + .16 + c * .3, stack.z + (c % 2 ? .1 : -.1),
+          .66, .3, 1.4 - (c % 2 ? .2 : 0), district).rotation.y = c % 2 ? .04 : -.04;
+      push({ x: stack.x, z: stack.z, hx: 1.2, hz: .8, kind: 'peat-stack' });
+    }
+    for (const barrow of W.barrows) {
+      const y = gy(barrow.x, barrow.z);
+      box(woodLight, barrow.x, y + .55, barrow.z, 1.0, .14, 1.9, district);
+      for (const side of [-1, 1]) box(wood, barrow.x + side * .5, y + .35, barrow.z - .3, .1, .5, 1.3, district);
+      post(darkWood, barrow.x, y + .3, barrow.z + .7, .3, .14, district).rotation.z = Math.PI / 2;
+      push({ x: barrow.x, z: barrow.z, r: .8, kind: 'hand-barrow' });
+    }
     // The army's tally table outside the commissary.
     const ta = W.tally, tby = gy(ta.x, ta.z);
     box(woodLight, ta.x, tby + .86, ta.z, 2.2, .12, 1.0, district);
@@ -512,7 +530,7 @@ export function createIzolScenery(kit) {
     box(woodLight, entry.x, base + 1.7, entry.z, 2.2, .95, .1, district);
     box(cream, entry.x, base + 1.7, entry.z - .06, 1.7, .6, .02, district);
     post(wood, entry.x + 1.4, base + 1.9, entry.z, .07, 3.8, district);
-    box(material(g.banner), entry.x + 1.4, base + 3.4, entry.z - .5, .05, .8, 1.0, district).name = `${g.name} pennon`;
+    box(material(g.banner), entry.x + 1.9, base + 3.4, entry.z, .95, .8, .05, district).name = `${g.name} pennon`;
     push({ x: entry.x, z: entry.z, hx: 1.1, hz: .3, kind: 'recruiting-board' });
     metrics.props++;
   }
@@ -783,10 +801,28 @@ export function createIzolScenery(kit) {
 
   const per = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
   const PINES = per(2), GORSE = per(14), THORN = per(4), ROCKS = per(30), TUFTS = per(64);
-  const cells = [...REGION_CELLS['West Izol']].sort((a, b) => a.z - b.z || a.x - b.x);
-  // Three hexes to a block: a batch per kind per block, and the town sees a handful of them.
-  const blocks = [];
-  for (let i = 0; i < cells.length; i += 3) blocks.push(cells.slice(i, i + 3));
+  /**
+   * Three hexes to a block, and the three chosen for being near each other rather
+   * than for being next in a list: a batch's bounding sphere is what a camera culls
+   * by, and a block strung along a row of hexes has a sphere 300 m wide that reaches
+   * into frustums three hundred metres away from anything actually in it.
+   */
+  const blocks = (() => {
+    const left = [...REGION_CELLS['West Izol']].sort((a, b) => a.z - b.z || a.x - b.x), out = [];
+    while (left.length) {
+      const seed = left.shift(), group = [seed];
+      while (group.length < 3 && left.length) {
+        let best = 0, bestDistance = Infinity;
+        left.forEach((cell, index) => {
+          const distance = Math.hypot(cell.x - seed.x, cell.z - seed.z);
+          if (distance < bestDistance) { bestDistance = distance; best = index; }
+        });
+        group.push(left.splice(best, 1)[0]);
+      }
+      out.push(group);
+    }
+    return out;
+  })();
 
   for (const block of blocks) {
     const pines = [], gorse = [], thorn = [], rocks = [], tufts = [];

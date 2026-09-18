@@ -263,6 +263,9 @@ export const IZOLVETH_WORKING = freeze({
   crates: freeze([P(5, -38), P(2, -37), P(-12, -39), P(-15, -38)]),
   tarPot: P(19, -6),
   cistern: P(-2, 6),
+  /** Peat and driftwood stacked against the back walls of the upper town: there is no firewood on Izol. */
+  peatStacks: freeze([P(-21, 26), P(-9, 27), P(15, 27), P(27, 25)]),
+  barrows: freeze([P(-12, 18), P(19, 8)]),
   /** The army's tally table outside the commissary: the friction, made visible. */
   tally: P(13, -38),
 });
@@ -424,7 +427,7 @@ export const IZOL_PATHS = freeze([
 
 /** Fingerposts, in the island's plain style. */
 export const IZOL_SIGNS = freeze([
-  freeze({ ...P(8, 39), label: 'The Hearth Road', returnLabel: 'Izolveth', yaw: 0 }),
+  freeze({ ...P(15, 41), label: 'The Hearth Road', returnLabel: 'Izolveth', yaw: 0 }),
   freeze({ ...point(148, 1845), label: 'The camp', returnLabel: 'Izolveth', yaw: -1.5 }),
   freeze({ ...point(16, 1790), label: 'Ardveth', returnLabel: 'Izolveth', yaw: Math.PI / 2 }),
   freeze({ ...point(106, 1786), label: 'Kelvath Cove', returnLabel: 'Izolveth', yaw: -Math.PI / 2 }),
