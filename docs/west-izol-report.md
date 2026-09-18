@@ -88,8 +88,8 @@ army; West Izol level 0, control `izoli`, no threats; `COALITION_MEMBERS`.
 | The three peaks are not named individually | The lore names them only as a set. The highland representative is "from the shoulder of the near Presence", and nobody translates the tribes' own names for them. |
 
 **Not invented, and deliberately left open:** the name of the 978 sea battle (the
-doc lists it as open; people here say "seventy-eight" and "the year we broke their
-fleet"), the Hearthstone itself (not built; out of the region).
+doc lists it as open; the one master who was there says "in seventy-eight" and "in
+seventy-nine" and names nothing), the Hearthstone itself (not built; out of the region).
 
 ## Izolveth
 
