@@ -44,8 +44,14 @@ export function validateWeaponSnapshot(data, inventory) {
   return true;
 }
 
-export function createWeapons({ inventory, onEvent = () => {} }) {
-  let equipped = 'simple-sword';
+/**
+ * Temporary, for testing and development: no weapon wears, so none breaks. Condition, the
+ * satchel's readout and the repair benches all still work; set this back to true to restore wear.
+ */
+export const WEAPON_WEAR = false;
+
+export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEAR }) {
+  let equipped = 'simple-sword', wears = wear;
   const condition = Object.fromEntries(Object.entries(WEAPON_TYPES).map(([id, type]) => [id, type.maxDurability]));
 
   function status(id) {
@@ -77,6 +83,7 @@ export function createWeapons({ inventory, onEvent = () => {} }) {
     const before = status(id);
     if (!before?.usable) return null;
     const type = WEAPON_TYPES[id];
+    if (!wears) return { type: 'weapon-used', id, name: type.name, durability: condition[id], maxDurability: type.maxDurability };
     condition[id]--;
     let eventType = 'weapon-used';
     if (condition[id] === 0) eventType = 'weapon-broken';
@@ -143,6 +150,9 @@ export function createWeapons({ inventory, onEvent = () => {} }) {
 
   return {
     profile, equip, contact, repair, status, spendSticks, restore, setCondition, take,
+    /** Smokes that check wear itself turn it back on. */
+    setWear(on) { wears = Boolean(on); },
+    get wears() { return wears; },
     get equippedId() { return equipped; },
     snapshot: () => ({ version: 1, equippedId: equipped, sword: status('simple-sword'), stick: status('forest-stick'),
       extra: Object.fromEntries(EXTRA_WEAPONS.filter(id => inventory.has(id)).map(id => [id, condition[id]])) }),

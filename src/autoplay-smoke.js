@@ -45,14 +45,16 @@ export async function runAutoplaySmoke(h) {
     const renderedFrames = Number.isFinite(state.frames) && Number.isFinite(previousFrames)
       ? Math.max(1, state.frames - previousFrames) : 6;
     previousFrames = state.frames;
-    // A dodge is an ordinary player action that lunges 3.05 m of its own.
-    const dodging = state.combat?.action === 'dodge' || previousAction === 'dodge';
+    // A dodge is an ordinary player action that lunges 3.05 m of its own, and a hit shoves the player .55 m.
+    const action = state.playerAction ?? null;
+    const dodging = action === 'dodge' || previousAction === 'dodge';
+    const hurt = action === 'hurt' || previousAction === 'hurt';
     if (state.mode === 'playing' && previousMode === 'playing') {
       maxJump = Math.max(maxJump, stepDistance / renderedFrames);
-      assert(stepDistance <= renderedFrames * 7.2 * .05 + .24 + (dodging ? 3.05 : 0),
+      assert(stepDistance <= renderedFrames * 7.2 * .05 + .24 + (dodging ? 3.05 : 0) + (hurt ? .55 : 0),
         `autoplay moved ${stepDistance.toFixed(2)} m over ${renderedFrames} rendered frame(s)`);
     }
-    previousAction = state.combat?.action ?? null;
+    previousAction = action;
     if (state.mode === 'playing' && previousMode === 'playing') walked += stepDistance;
     previous = now; previousMode = state.mode;
     if (state.questStage !== lastStage) { note(`quest stage ${state.questStage}`, { region: state.region }); lastStage = state.questStage; }

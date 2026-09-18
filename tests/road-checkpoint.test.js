@@ -22,7 +22,7 @@ function fixture() {
   const inventory = createInventoryState();
   for (const id of ['simple-sword', 'harbor-letter', 'road-token', 'tinderbox']) inventory.grant(id);
   inventory.add('forest-stick', 5); inventory.add('pawpaw', 2);
-  const weapons = createWeapons({ inventory });
+  const weapons = createWeapons({ wear: true, inventory });
   weapons.contact(); weapons.equip('forest-stick'); weapons.contact(); weapons.contact();
   const journey = createJourney({ inventory, weapons });
   journey.start(); journey.act('meet-courier'); journey.act('collect-cart-parcel-2');
@@ -175,7 +175,7 @@ test('weapons restore worn equipment after inventory restoration, without events
   const { inventory, weapons } = fixture();
   const worn = weapons.snapshot();
   const events = [];
-  const restored = createWeapons({ inventory, onEvent: event => events.push(event) });
+  const restored = createWeapons({ wear: true, inventory, onEvent: event => events.push(event) });
   assert.equal(restored.restore(worn), true);
   assert.deepEqual(restored.snapshot(), worn);
   assert.equal(restored.profile().durability, 4);
@@ -211,7 +211,7 @@ test('a spent and selected last stick restores empty, and a later pickup starts 
   const { inventory, weapons, checkpoint, data } = fixture();
   weapons.spendSticks(5);
   const empty = weapons.snapshot();
-  const restored = createWeapons({ inventory });
+  const restored = createWeapons({ wear: true, inventory });
   assert.equal(restored.restore(empty), true);
   assert.equal(restored.profile().usable, false);
   assert.equal(restored.equippedId, 'forest-stick');

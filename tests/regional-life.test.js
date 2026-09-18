@@ -133,7 +133,7 @@ test('each testimony form is deliberate, immutable after writing, and delivered 
 test('interleaved local stories preserve the main story, equipment, and letter exactly', () => {
   const { story, inventory } = fixture();
   for (const id of ['simple-sword', 'harbor-letter', 'road-token']) inventory.grant(id);
-  const weapons = createWeapons({ inventory }), journey = createJourney({ inventory, weapons });
+  const weapons = createWeapons({ wear: true, inventory }), journey = createJourney({ inventory, weapons });
   journey.start(); journey.act('meet-courier'); weapons.contact('simple-sword');
   const mainBefore = journey.snapshot(), weaponBefore = weapons.snapshot();
   act(story, 'accept-witness-account', 'accept-net-help', 'accept-mill-share', 'free-net-float-east',

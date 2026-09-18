@@ -55,6 +55,7 @@ export async function runRoadCheckSmoke(h) {
     autosaveChecks++;
 
     assert(weapons.equip('simple-sword'), 'fixture sword could not be equipped');
+    weapons.setWear(true);
     const initialWear = weapons.status('simple-sword').durability;
     for (let i = 0; i < 5; i++) weapons.contact('simple-sword');
     const swordWear = weapons.status('simple-sword').durability;

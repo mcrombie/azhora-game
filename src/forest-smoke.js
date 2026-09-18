@@ -176,6 +176,7 @@ export async function runForestSmoke(h) {
     assert(getMode() === 'playing' && readState().questStage === 2, 'Mara did not resume the original tutorial after the woodland detour');
     assert(inventory.has('harbor-letter') && !inventory.has('road-token'), 'early save granted the wrong story equipment');
     assert(weapons.equip('simple-sword'), 'sword could not be readied for the saved tutorial');
+    weapons.setWear(true);
     const wear = weapons.status('simple-sword').durability; weapons.contact('simple-sword');
     assert(weapons.status('simple-sword').durability === wear - 1, 'weapon wear fixture failed');
     assert(saveRoad(false), 'stage-two adventure save was rejected');

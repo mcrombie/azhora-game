@@ -8,7 +8,7 @@ import { createForestStory, validateForestStorySnapshot, FOREST_STORY_NPC, FORES
 function fixture({ sticks = 0 } = {}) {
   const inventory = createInventoryState();
   if (sticks) inventory.add('forest-stick', sticks);
-  const weapons = createWeapons({ inventory });
+  const weapons = createWeapons({ wear: true, inventory });
   const events = [];
   const story = createForestStory({ inventory, weapons, onEvent: event => events.push(event) });
   return { inventory, weapons, events, story };

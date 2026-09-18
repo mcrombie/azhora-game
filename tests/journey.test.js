@@ -8,7 +8,7 @@ function fixture({ ready = true, initialItems = {} } = {}) {
   const inventory = createInventoryState();
   if (ready) { inventory.grant('harbor-letter'); inventory.grant('road-token'); }
   for (const [id, quantity] of Object.entries(initialItems)) inventory.add(id, quantity);
-  const weapons = createWeapons({ inventory });
+  const weapons = createWeapons({ wear: true, inventory });
   const events = [];
   const journey = createJourney({ inventory, weapons, onEvent: event => events.push(event) });
   return { inventory, weapons, events, journey };
@@ -110,7 +110,7 @@ test('failed rewards keep completed work ready for a safe retry without duplicat
   let allowReward = false;
   const journey = createJourney({
     inventory: { ...inventory, add: (...args) => allowReward && inventory.add(...args) },
-    weapons: createWeapons({ inventory }),
+    weapons: createWeapons({ wear: true, inventory }),
   });
   journey.start(); journey.act('meet-courier');
   for (const id of PARCEL_IDS) journey.act(`collect-${id}`);

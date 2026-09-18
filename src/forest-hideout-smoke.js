@@ -136,6 +136,7 @@ export async function runHideoutSmoke(h) {
       'stage-ten fixture did not reset optional progress');
     assert(weapons.profile().id === 'simple-sword' && weapons.profile().usable, 'fixture sword is not ready');
     mainBefore = detached(journey.snapshot());
+    weapons.setWear(true);
     const stockBefore = stock(inventory), swordBefore = weapons.status('simple-sword').durability;
 
     // The Captain sends a hired sword to Casso; Casso tells of the camp; the Captain marches.

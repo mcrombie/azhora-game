@@ -102,7 +102,7 @@ test('swords remain unique while forest sticks form a stack and break one at a t
   assert.equal(satchel.add('simple-sword', 2), false);
   assert.equal(satchel.add('forest-stick', 2), true);
   assert.equal(satchel.add('forest-stick'), true);
-  const weapons = createWeapons({inventory: satchel});
+  const weapons = createWeapons({wear: true, inventory: satchel});
   assert.equal(weapons.equip('forest-stick'), true);
   satchel.select('forest-stick');
   for (let i = 0; i < 6; i++) weapons.contact();

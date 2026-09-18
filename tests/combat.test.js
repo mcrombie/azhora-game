@@ -210,7 +210,7 @@ function equippedFixture() {
     count: id => stock.get(id) ?? 0,
     remove(id, amount) { stock.set(id, (stock.get(id) ?? 0) - amount); return true; },
   };
-  const weapons = createWeapons({ inventory });
+  const weapons = createWeapons({ wear: true, inventory });
   const result = fixture({ combat: {
     getWeapon: () => weapons.profile(), onWeaponContact: id => weapons.contact(id),
   } });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWeapons } from '../src/weapons.js';
+import { createWeapons, WEAPON_WEAR } from '../src/weapons.js';
 
 function fixture(items = { 'simple-sword': 1 }) {
   const stock = new Map(Object.entries(items));
@@ -14,7 +14,7 @@ function fixture(items = { 'simple-sword': 1 }) {
     },
   };
   const events = [];
-  const weapons = createWeapons({ inventory, onEvent: event => events.push(event) });
+  const weapons = createWeapons({ wear: true, inventory, onEvent: event => events.push(event) });
   return { weapons, inventory, stock, events };
 }
 
@@ -158,4 +158,24 @@ test('traded weapons are carried, worn, repaired and saved as extras; a handed-a
   assert.equal(other.weapons.restore({ ...snapshot, extra: { 'iron-mace': 99 } }), false, 'an impossible condition is refused');
   assert.equal(other.weapons.restore({ ...snapshot, extra: {} }), false, 'a carried weapon must be listed');
   assert.equal(other.weapons.restore({ ...snapshot, extra: { greatsword: 3, 'iron-mace': 28 } }), false, 'an uncarried weapon must not be listed');
+});
+
+test('for now weapons never wear, but a bench still mends and wear can be switched back on', () => {
+  assert.equal(WEAPON_WEAR, false);
+  const stock = new Map([['simple-sword', 1], ['forest-stick', 1]]);
+  const inventory = { has: id => (stock.get(id) ?? 0) > 0, count: id => stock.get(id) ?? 0, remove: () => true };
+  const events = [];
+  const weapons = createWeapons({ inventory, onEvent: event => events.push(event) });
+  assert.equal(weapons.wears, false);
+  for (let i = 0; i < 200; i++) weapons.contact();
+  weapons.equip('forest-stick');
+  for (let i = 0; i < 50; i++) weapons.contact();
+  assert.equal(weapons.status('simple-sword').durability, 24);
+  assert.equal(weapons.status('forest-stick').durability, 6);
+  assert.deepEqual(events, [], 'nothing wears thin or breaks');
+  assert.equal(weapons.setCondition('simple-sword', 3), true);
+  assert.equal(weapons.repair(), true, 'the bench still mends');
+  assert.equal(weapons.status('simple-sword').durability, 24);
+  weapons.setWear(true); weapons.equip('simple-sword'); weapons.contact();
+  assert.equal(weapons.status('simple-sword').durability, 23);
 });
