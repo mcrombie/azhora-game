@@ -7,6 +7,7 @@ import {
   facePoint, wallRuns, ditchRuns, fortColliders, stairColliders, campPicketColliders, campTentColliders,
 } from './west-suval.js';
 import { createWineAtticScenery } from './wine-attic-world.js';
+import { SEA_WALL_NICHE } from './puck.js';
 
 /**
  * The scenery of West Suval: Solis and its walls, the Coalition's camp, and the
@@ -321,6 +322,18 @@ export function createWestSuvalScenery(kit) {
     push({ ...P(a, b), hx: w / 2 + .15, hz: d / 2 + .15, kind: 'solis-building', id: entry.id });
   }
   SOLIS_BUILDINGS.filter(entry => entry.kind !== 'temple' && entry.kind !== 'wine-attic').forEach(townHouse);
+  // The niche in the sea wall where the Prime Minister's cask for Puck is left every tenth night (src/puck.js).
+  {
+    const n = SEA_WALL_NICHE, base = gy(n.x, n.z), face = n.x - .45, seal = material('#3f6b3a');
+    box(shadow, face + .03, base + .95, n.z, .06, 1.05, 1.25, district);
+    box(stoneWhite, face + .07, base + 1.52, n.z, .14, .16, 1.5, district);
+    for (const side of [-1, 1]) box(stoneWhite, face + .07, base + .95, n.z + side * .66, .14, 1.2, .16, district);
+    box(stoneDark, face + .22, base + .38, n.z, .45, .1, 1.3, district);
+    const cask = mesh(cylinder, woodLight, face + .26, base + .63, n.z, .22, .5, .22, district); cask.rotation.x = Math.PI / 2;
+    for (const end of [-1, 1]) { const hoop = mesh(cylinder, darkWood, face + .26, base + .63, n.z + end * .18, .228, .04, .228, district); hoop.rotation.x = Math.PI / 2; }
+    mesh(round, seal, face + .26, base + .85, n.z, .05, .02, .05, district);
+    push({ x: face + .26, z: n.z, r: .36, kind: 'solis-niche-cask' });
+  }
   // Tharganhom, the Wine Attic, up its stair on the main street (src/wine-attic-world.js).
   if (SOLIS_BUILDINGS.some(entry => entry.kind === 'wine-attic')) {
     createWineAtticScenery({ parent: district, material, mesh, box, post, round, barrel, groundHeight, push, signs });
