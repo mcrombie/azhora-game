@@ -115,8 +115,8 @@ test('the errand names where to go next, and stops naming it when it is done', (
   const letters = createRenaLetters(), inventory = satchel();
   assert.equal(letters.task(), null, 'nothing is asked of a traveler who has not met them');
   letters.meet(LORN_ID);
-  assert.equal(letters.task().stage, 'waiting');
-  assert.equal(letters.task().target, LORN_ID);
+  assert.equal(letters.task(), null, 'and nothing after meeting him: he has not asked yet');
+  assert.match(letters.view().detail, /has been meaning to/);
   letters.take(LORN_ID, inventory);
   assert.equal(letters.task().stage, 'carrying');
   assert.equal(letters.task().target, HESTA_ID);
@@ -228,8 +228,11 @@ test('the two who remember offer the errand in conversation, and everyone else h
   assert.match(first.lines.join(' '), /eighty-seven|Eighty-seven/);
   const topicIds = first.choices.map(choice => choice.id);
   for (const id of ['ask-rena', 'ask-razing', 'ask-names', 'ask-other']) assert.ok(topicIds.includes(id), id);
-  first.onComplete();
+  // The meeting is recorded by opening the conversation, not by finishing it: a
+  // dialogue that offers choices never completes, so an onComplete would be lost.
   assert.equal(letters.hasMet(LORN_ID), true);
+  assert.equal(first.onComplete, undefined, 'the first meeting does not hang anything on completion');
+  assert.equal(first.choices.some(choice => choice.id === 'take-ardry-letter'), false, 'no letter until he has said there is a sister');
 
   // Meeting done: he offers the first letter, and the choice takes it.
   assert.equal(ardryConversation(lorn, context), true);
@@ -241,7 +244,7 @@ test('the two who remember offer the errand in conversation, and everyone else h
   assert.equal(ardryConversation(lorn, context), true);
   assert.equal(opened.at(-1).choices.some(choice => choice.id === 'give-ardry-letter'), false);
   ardryConversation(hesta, context);
-  opened.at(-1).onComplete?.();
+  assert.equal(letters.hasMet(HESTA_ID), true, 'walking up to her counts as meeting her');
   ardryConversation(hesta, context);
   const hand = opened.at(-1).choices.find(choice => choice.id === 'give-ardry-letter');
   assert.ok(hand, 'she can be given it');

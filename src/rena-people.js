@@ -139,10 +139,14 @@ export function ardryConversation(npc, context) {
   const other = self === LORN_ID ? HESTA_ID : LORN_ID;
   const leave = { id: 'leave-ardry', label: letters.complete ? 'I will look in again.' : 'Good day.', action: closeDialogue };
 
+  // The first meeting is the introduction and the four topics, and no letter: the
+  // errand is found by asking whether anybody else remembers. The meeting is
+  // recorded as the conversation opens, because a dialogue that offers choices
+  // is never "completed" — the host shows its choices on the last line instead.
   if (!letters.hasMet(self)) {
+    act('meet-ardry', self);
     openDialogue(npc, [...(self === LORN_ID ? LORN_OPENING : HESTA_OPENING)], null, 'Back to the road', {
       choices: [...topics(npc, context, again), leave],
-      onComplete: () => act('meet-ardry', self),
     });
     return true;
   }

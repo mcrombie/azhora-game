@@ -193,9 +193,16 @@ export function createRenaLetters({ onEvent = () => {} } = {}) {
     : hasMet(id) ? 'acquainted' : 'unfamiliar');
   const friendshipLabel = id => ({ fond: 'Fond of you', friendly: 'Glad to see you', acquainted: 'Acquaintance', unfamiliar: 'A stranger' })[friendship(id)];
 
+  /**
+   * Under way: a letter has been taken. Meeting them is not the errand — the old
+   * man only asks once he has told you there is a sister — so nothing is put on
+   * the traveler's banner before then.
+   */
+  const started = () => state.leg > 0 || state.carrying;
+
   /** The side-quest banner while the errand is under way. */
   function task() {
-    if (complete() || !hasMet(LORN_ID)) return null;
+    if (complete() || !started()) return null;
     const held = carried();
     if (held) return { id: RENA_LETTERS_ID, title: RENA_LETTERS_TITLE, stage: 'carrying', target: held.to,
       detail: `Carry ${ARDRY_NAMES[held.from]}’s letter to ${ARDRY_NAMES[held.to]} at ${ARDRY_PLACES[held.to]}. J · Read it` };
@@ -215,8 +222,8 @@ export function createRenaLetters({ onEvent = () => {} } = {}) {
       detail: complete()
         ? 'Lorn Ardry and Hesta Ardry have caught up. Eighty years, six letters and one doorpost stone: there is nothing left that either of them is keeping back.'
         : held ? `You are carrying ${ARDRY_NAMES[held.from]}’s letter to ${ARDRY_NAMES[held.to]} at ${ARDRY_PLACES[held.to]}.`
-        : pending() ? `${ARDRY_NAMES[pending().from]} at ${ARDRY_PLACES[pending().from]} is writing the next one.`
-        : 'Ask the old man on the Tidehaven shingle about Rena.',
+        : started() ? `${ARDRY_NAMES[pending().from]} at ${ARDRY_PLACES[pending().from]} is writing the next one.`
+        : 'Lorn Ardry mends pots on the Tidehaven shingle. He has a sister at Applegarth he has not written to in eleven years, and he has been meaning to.',
       standing: `${ARDRY_NAMES[LORN_ID]}: ${friendshipLabel(LORN_ID)} · ${ARDRY_NAMES[HESTA_ID]}: ${friendshipLabel(HESTA_ID)}`,
       pages: pages.map(entry => ({
         id: entry.id, heading: `${ARDRY_NAMES[entry.from]} to ${ARDRY_NAMES[entry.to]} · ${entry.subject}`,
