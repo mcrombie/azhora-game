@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -59,6 +59,10 @@ export const REGION_BIOMES = Object.freeze({
   'West Izol': Object.freeze({ id: 'izoli-rock', name: 'The West Izol headlands', ground: '#7e8b62', canopy: '#4c6647', treesPerHex: perHex(2), rocksPerHex: perHex(9), undergrowth: 'sea-turf',
     relief: { amplitude: 5.2, wavelength: 115 }, clearings: ['izolveth', 'harbour', 'fishing-village', 'boatyard'], ownScatter: true,
     note: 'The western half of the island of Izol: old hard rock, iron-brown at the water and slate-grey at height, cropped sea turf and gorse on the softer slopes, thorn and wind-bent pine in the hollows, and one alluvial flat at the river mouth where Izolveth stands.' }),
+  // Elagos is the lake country: its water is authored in src/elagos-world.js, and the scatter keeps out of it through ELAGOS_CLEARINGS.
+  Elagos: Object.freeze({ id: 'lake-shelf', name: 'The Lake Lands', ground: '#7d9560', canopy: '#3f6446', treesPerHex: perHex(7), rocksPerHex: perHex(2), undergrowth: 'light',
+    relief: { amplitude: 2.6, wavelength: 165 }, clearings: ['ambron', 'nemmel', 'ice-road', 'lake-shrine'], blockHexes: 6,
+    note: 'The northern shelf: cold clear lakes in a rolling green country, dense-grained lake timber in stands rather than forest, hay meadow and barley on the lake margins, and Ambron on the narrows. High ground: everything drops from here to the Moros.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

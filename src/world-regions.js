@@ -13,6 +13,7 @@ import { PLACE_CLEARINGS } from './places.js';
 import { FRONTIER_CLEARINGS } from './frontier.js';
 import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
 import { RENA_CLEARINGS } from './rena.js';
+import { ELAGOS_CLEARINGS } from './elagos-world.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -56,6 +57,7 @@ export const REGION_CLEARINGS = Object.freeze([
   ...PUETH_CLEARINGS,                                                         // the Tessen bridge and post, Rimeholt, Pueth's landmarks
   ...PEBLOS_CLEARINGS,                                                        // Cobble, its quay, and every landmark in the Pebbles
   ...RENA_CLEARINGS,                                                          // the ruins of Rena, Applegarth, the old road and Rena's wayside
+  ...ELAGOS_CLEARINGS,                                                        // Ambron, the lake country's places, and every stretch of Elagosi water
 ]);
 
 
@@ -153,7 +155,10 @@ export function createRegionScenery(kit) {
         if (regionClear(x, z, 2.5) || kit.roadDistance(x, z) < 4.2 || kit.riverDistance(x, z) < 12) continue;
         if (groundHeight(x, z) < 1.4) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (dense ? 3.1 : 5.2))) continue;
-        trees.push({ x, z, s: range(.78, 1.3), pine: random() < (dense ? .3 : biome.id === 'coastal-downs' ? 0 : .16), h: range(7, 11.5), rot: range(0, 6.28) });
+        // Two biomes carry no conifer at all: the tawny Suval downs, and the Lake Lands,
+        // whose timber stands are the broadleaf the lake fleet is built from.
+        const noPines = biome.id === 'coastal-downs' || biome.id === 'lake-shelf';
+        trees.push({ x, z, s: range(.78, 1.3), pine: !noPines && random() < (dense ? .3 : .16), h: range(7, 11.5), rot: range(0, 6.28) });
       }
       for (let i = 0; i < biome.rocksPerHex; i++) {
         const x = cell.x + range(-26 * WORLD_SCALE, 26 * WORLD_SCALE), z = cell.z + range(-28 * WORLD_SCALE, 28 * WORLD_SCALE);
@@ -163,6 +168,8 @@ export function createRegionScenery(kit) {
       for (let i = 0; i < tuftsPerHex(biome); i++) {
         const x = cell.x + range(-27 * WORLD_SCALE, 27 * WORLD_SCALE), z = cell.z + range(-30 * WORLD_SCALE, 30 * WORLD_SCALE);
         if (regionNameAt(x, z) !== name || kit.insideVillage(x, z) || kit.roadDistance(x, z) < 2.1) continue;
+        // Grass grows on any ground above the tideline, which in the Lake Lands includes the bed of a lake.
+        if (kit.waterClear?.(x, z)) continue;
         if (groundHeight(x, z) < 1.2) continue;
         tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28) });
       }
@@ -659,7 +666,9 @@ export function createRegionScenery(kit) {
   for (const name of REGION_ORDER) {
     const biome = REGION_BIOMES[name], parent = district(name);
     if (biome.ownScatter) continue;   // Pueth scatters its own woods (src/pueth-scenery.js)
-    for (const block of cellBlocks(name)) scatterBlock(name, block, biome, parent);
+    // A region may ask for bigger scatter blocks: Elagos is the largest of them, and
+    // its stands of lake timber read the same from two blocks as from six.
+    for (const block of cellBlocks(name, biome.blockHexes)) scatterBlock(name, block, biome, parent);
   }
 
   // The frontier: the end of the built world, west of the Legion camp.

@@ -34,6 +34,10 @@ import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LAND
 import { createEastSuvalScenery } from './east-suval-world.js';
 import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, izolDeckHeight } from './izol-world.js';
 import { createIzolScenery } from './izol-scenery.js';
+import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './elagos-world.js';
+import { AMBRON_ENCLOSURE, ambronDeckHeight } from './ambron.js';
+import { ELAGOS_NPC_POSITIONS } from './ambron-people.js';
+import { createElagosScenery } from './elagos-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -217,6 +221,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     if (izolDeck !== null) return izolDeck;
     const deck = deckAt(x, z);
     if (deck) return deck.deckY + .09;
+    // Ambron's causeway, over the narrows and down to the made ground of each bank.
+    const causeway = ambronDeckHeight(x, z);
+    if (causeway !== null) return causeway;
     return groundHeight(x, z);
   }
 
@@ -1053,6 +1060,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
   for (const path of IZOL_PATHS) measurePath(path.points, path.width);
+  measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, 2.6);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
@@ -1060,6 +1068,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
     movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14)),
+    waterClear: (x, z) => inElagosWater(x, z, 2.5),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
     insideVillage: (x, z) => {
@@ -1095,6 +1104,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.
   const izol = createIzolScenery({ root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign: roadsideSign,
     groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, roofGeometry, cylinder, round, movingGroups });
+  // Elagos and Ambron (src/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
+  const elagos = createElagosScenery({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
+  bridgeDecks.push(elagos.bridge);
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
   const stakedProps = [];
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
@@ -1137,6 +1149,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
   addPath(RENA_ROAD, 2.6);
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
+  addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, 2.6);
 
   // Fingerposts along the new road: each points at its place, and back the way the traveler came.
   /** A point 40 m back along the nearest road, toward where that road starts. */
@@ -1470,6 +1483,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     ...Object.entries(puethScenery.riverSamples).map(([id, samples]) => Object.freeze({ id: `${id}-water`, kind: 'polygon', points: Object.freeze([
       ...samples.map(s => mapPoint(s.x - s.nx * s.half, s.z - s.nz * s.half)),
       ...[...samples].reverse().map(s => mapPoint(s.x + s.nx * s.half, s.z + s.nz * s.half))]) })),
+    ...ELAGOS_CHART_WATERS,
   ]);
 
   // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
@@ -1520,8 +1534,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     westSuvalMetrics: westSuval.metrics,
     setSolisHolder: westSuval.setHolder,
     // Walled places the autopilot leaves and enters by their gates: Solis and its court, the outpost, the stockade.
-    enclosures: [...SOLIS_ENCLOSURES, enclosureOf(OUTPOST_CIRCUIT, 'outpost', 'The Ambroni outpost'), enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade')],
+    enclosures: [...SOLIS_ENCLOSURES, AMBRON_ENCLOSURE, enclosureOf(OUTPOST_CIRCUIT, 'outpost', 'The Ambroni outpost'), enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade')],
     solisHolder: westSuval.holder,
+    elagosRoute: AMBRON_ROAD.map(p => ({ x: p.x, z: p.z })),
+    lakeRoute: LAKE_ROAD.map(p => ({ x: p.x, z: p.z })),
+    elagosMetrics: elagos.metrics,
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
     renaRoute: RENA_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
@@ -1617,7 +1634,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS, ...ELAGOS_NPC_POSITIONS,
       ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
     landmarks: [
@@ -1643,6 +1660,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...IZOL_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
+      ...ELAGOS_LANDMARKS,
     ],
     paths,
     update(time, dt) {
@@ -1654,6 +1672,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       waterMaterial.uniforms.time.value = time;
       pondMaterial.uniforms.time.value = time;
       regionScenery.riverMaterial.uniforms.time.value = time;
+      elagos.waterMaterial.uniforms.time.value = time;
       regionScenery.millSails.rotation.z = time * .115;
       for (const [i, camp] of [...campfires.values()].entries()) if (camp.fire.lit) {
         camp.flames.scale.set(1 + Math.sin(time * 8 + i) * .04, .94 + Math.sin(time * 11 + i) * .10, 1);

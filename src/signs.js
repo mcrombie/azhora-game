@@ -46,6 +46,8 @@ export const SIGN_LABELS = Object.freeze([
   'The Tessen Bridge', 'Rimeholt',
   // West Izol
   'Izolveth', 'The Hearth Road', 'Ardveth', 'Kelvath Cove', 'The camp',
+  // Elagos
+  'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine',
   // Milestones on the Moros
   'I', 'II', 'III',
 ]);

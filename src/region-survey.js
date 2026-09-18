@@ -66,6 +66,18 @@ export const PLAYABLE_SURVEY = Object.freeze({
         terrain:'plains'},{q:6,r:127,terrain:'plains'},{q:7,r:127,terrain:'hills'},{q:4,r:128,terrain:'grassland'},{q:5,r:128,terrain:'plains'},{q:6,r:128,
         terrain:'plains'},{q:7,r:128,terrain:'plains'},{q:4,r:129,terrain:'grassland'},{q:5,r:129,terrain:'grassland'},{q:6,r:129,terrain:'grassland'},{q:7,
         r:129,terrain:'grassland'},{q:7,r:130,terrain:'grassland'}]) }),
+    Object.freeze({ id: "Elagos", name: "Elagos",
+      bounds: Object.freeze({"x":1441.067,"y":2448,"width":193.99,"height":224}), centerX: 1544.184, centerY: 2567.256,
+      cells: Object.freeze([{q:4,r:102,terrain:'grassland'},{q:5,r:102,terrain:'grassland'},{q:6,r:102,terrain:'grassland'},{q:3,r:103,terrain:'grassland'},{q:5,r:103,
+        terrain:'grassland'},{q:6,r:103,terrain:'grassland'},{q:2,r:104,terrain:'grassland'},{q:3,r:104,terrain:'grassland'},{q:4,r:104,terrain:'grassland'},
+        {q:5,r:104,terrain:'lake'},{q:6,r:104,terrain:'grassland'},{q:1,r:105,terrain:'grassland'},{q:2,r:105,terrain:'lake'},{q:3,r:105,terrain:'grassland'},
+        {q:4,r:105,terrain:'grassland'},{q:5,r:105,terrain:'grassland'},{q:0,r:106,terrain:'grassland'},{q:1,r:106,terrain:'grassland'},{q:2,r:106,
+        terrain:'grassland'},{q:3,r:106,terrain:'grassland'},{q:4,r:106,terrain:'lake'},{q:5,r:106,terrain:'grassland'},{q:-1,r:107,terrain:'grassland'},{q:0,
+        r:107,terrain:'lake'},{q:1,r:107,terrain:'grassland'},{q:2,r:107,terrain:'forest'},{q:3,r:107,terrain:'grassland'},{q:4,r:107,terrain:'grassland'},
+        {q:-2,r:108,terrain:'grassland'},{q:-1,r:108,terrain:'grassland'},{q:0,r:108,terrain:'lake'},{q:1,r:108,terrain:'forest'},{q:2,r:108,
+        terrain:'grassland'},{q:3,r:108,terrain:'forest'},{q:-2,r:109,terrain:'forest'},{q:-1,r:109,terrain:'grassland'},{q:0,r:109,terrain:'grassland'},{q:1,
+        r:109,terrain:'grassland'},{q:2,r:109,terrain:'grassland'},{q:-2,r:110,terrain:'grassland'},{q:-1,r:110,terrain:'forest'},{q:0,r:110,
+        terrain:'forest'},{q:1,r:110,terrain:'grassland'}]) }),
   ]),
 });
 

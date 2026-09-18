@@ -9,6 +9,7 @@ import {
   REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS, TERRAIN_PADS, MAIN_ROAD,
 } from './region-world.js';
 import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-world.js';
+import { elagosGround } from './elagos-world.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
@@ -231,7 +232,10 @@ export function groundWithRiver(x, z) {
     }
     if (near.river === TESSEN) ground = bridgeEmbankment(x, z, ground);
   }
-  return ground;
+  // Elagos's lakes and the Ela-south are basins and reaches with their own
+  // levels, not courses cut from the atlas: src/elagos-world.js shapes the
+  // ground round them, and answers everywhere else with the ground it was given.
+  return elagosGround(x, z, ground);
 }
 
 /** Terrain tint before scenery tints, matching the biome and the shore. */
