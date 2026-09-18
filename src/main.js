@@ -55,6 +55,10 @@ import { createDrentBirds } from './drent-birds.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
 import { MYCOLOGIST, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
 import { createMushrooms } from './mushrooms.js';
+import { HERBALIST, HERBALIST_STAND, HERBOLOGY_SKILL, HERBOLOGY_LESSON, JIMSON_ITEM, createHerbology, herbalistConversation } from './herbology.js';
+import { createDrentFlora } from './drent-flora.js';
+import { PIPE_SMOKER, PIPE_ITEM, LEAF_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, pipeSmokerConversation } from './pipeweed.js';
+import { TOFT, TOFT_STAND, JIMSON_PODS_WANTED, createJimson, toftConversation } from './jimson-quest.js';
 import { createMapFog } from './map-fog.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
@@ -140,6 +144,11 @@ function init() {
   world.npcPositions[BIRD_WATCHER.id]={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z};npcData.push({...BIRD_WATCHER,yaw:world.birdGarden.stand.yaw});
   // Odger Pell dries mushrooms at the edge of the Greenway, a few steps outside the village (src/mycology.js).
   world.npcPositions[MYCOLOGIST.id]={x:-50,z:25};npcData.push({...MYCOLOGIST,yaw:Math.PI*.42});
+  // Nell Harrow's drying shed on the western outskirts, Toft on his barrel in the
+  // village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
+  world.npcPositions[HERBALIST.id]={x:HERBALIST_STAND.x,z:HERBALIST_STAND.z};npcData.push({...HERBALIST,yaw:HERBALIST_STAND.yaw});
+  world.npcPositions[TOFT.id]={x:TOFT_STAND.x,z:TOFT_STAND.z};npcData.push({...TOFT,yaw:TOFT_STAND.yaw});
+  world.npcPositions[PIPE_SMOKER.id]={x:WEATHERHEAD.stand.x,z:WEATHERHEAD.stand.z};npcData.push({...PIPE_SMOKER,yaw:Math.PI*.55});
   // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
@@ -176,8 +185,19 @@ function init() {
   const inventory=createInventory({
     getWeaponStatus:id=>weapons?.status(id)?{...weapons.status(id),equipBlocked:combat.state.player.action!=='idle'}:null,
     onEquip(id){if(combat.state.player.action!=='idle')return false;return weapons.equip(id);},
-    getConsumableStatus:id=>consumables?.status(id),
-    onConsume:id=>consumables.consume(id),
+    getConsumableStatus(id){
+      // Pipe weed is not food, so consumables knows nothing about it: it uses the
+      // same panel with its own verb, and wants Cabe's lesson and a pipe in hand.
+      if(id!==LEAF_ITEM)return consumables?.status(id);
+      const player=combat.state.player,status={owned:inventory.has(LEAF_ITEM),canUse:false,healing:PIPE_HEAL,health:player.hp,maxHealth:player.maxHp,reason:''};
+      if(!status.owned)status.reason='You have no pipe weed. The barns on the Avrel ground cure what the fields grow.';
+      else if(!pipe.taught)status.reason='You have the leaf and no idea what to do with it. Somebody sits out on the Weatherhead who does.';
+      else if(!inventory.has(PIPE_ITEM))status.reason='No pipe. Cabe Tolliver had a spare.';
+      else if(combat.state.phase==='defeated'||player.action!=='idle')status.reason='Not in the middle of this. Sit down somewhere first.';
+      else status.canUse=true;
+      return status;
+    },
+    onConsume:id=>id===LEAF_ITEM?smokePipe():consumables.consume(id),
     onInspect(id){
       if(mode==='inventory'&&id==='harbor-letter'&&inventory.has('harbor-letter')&&inventory.has('road-token')){
         updateQuest('inspect-letter');
@@ -218,6 +238,12 @@ function init() {
   const mycology=createMycology({skills});
   const mushrooms=createMushrooms(scene,world,{avoid:Object.values(world.npcPositions)});
   let currentMushroom=null;
+  // Herbology: Nell's four questions, Drent's plants, the pipe and Toft's errand.
+  const herbology=createHerbology({skills});
+  const pipe=createPipe();
+  const jimson=createJimson();
+  const flora=createDrentFlora(scene,world,{avoid:Object.values(world.npcPositions)});
+  let currentPlant=null,jimsonClock=0;
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0;
   const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
@@ -299,6 +325,44 @@ function init() {
     }
     return {ok:false,reason:''};
   }
+  function herbologyAct(action){
+    if(action!=='learn-herbology')return {ok:false,reason:''};
+    herbology.meet();refreshSkillsSheet();audio?.effect('success');
+    openDialogue(npcById.get(HERBALIST.id),[...HERBOLOGY_LESSON],null,'Back to the road');
+    toast('Herbology \u00b7 level 1. Look at the leaf, look at where it stands, and look at what it is next to.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return {ok:true,reason:''};
+  }
+  function pipeAct(action){
+    if(action!=='learn-pipe')return {ok:false,reason:''};
+    const learned=pipe.learn(inventory);inventory.refresh();audio?.effect('success');
+    if(learned.first)toast('A clay pipe and a twist of Cabe\u2019s own. Use the pipe weed in your satchel to smoke a bowl.','THE WEATHERHEAD');
+    saveRoad(false);return {ok:true,reason:''};
+  }
+  function jimsonAct(action){
+    if(action==='accept-jimson'){if(!jimson.accept())return {ok:false,reason:''};refreshQuest();toast('Three spiked pods. There is one behind Nell Harrow\u2019s shed, one out past the Caloss gate, and one away in Pueth.','TOFT\u2019S KNEE');saveRoad(false);return {ok:true,reason:''};}
+    if(action==='give-jimson'){if(!jimson.turnIn(inventory))return {ok:false,reason:''};inventory.refresh();refreshQuest();audio?.effect('success');toast('He takes them inside without meeting your eye, and pays you in pipe weed.','TOFT\u2019S KNEE');saveRoad(false);return {ok:true,reason:''};}
+    if(action==='settle-jimson'){if(!jimson.settle())return {ok:false,reason:''};refreshQuest();saveRoad(false);return {ok:true,reason:''};}
+    return {ok:false,reason:''};
+  }
+  function jimsonNight(){audio?.effect('discovery');toast('Word is all over the landing: Toft Ellery spent last night telling a mooring post what he thinks of his brother. He is sitting very still this morning.','TOFT\u2019S KNEE');saveRoad(false);}
+  function smokePipe(){
+    const result=pipe.smoke(inventory);
+    if(!result.ok)return {ok:false,healed:0,reason:result.reason};
+    const healed=combat.heal(result.heal);inventory.refresh();
+    toast(result.line,'A BOWL OF IT');saveRoad(false);
+    return {ok:true,healed,reason:''};
+  }
+  function gatherPlant(){
+    if(!currentPlant)return;
+    if(!herbology.met){toast('A plant, and no name for it. Nell Harrow, on the outskirts of the village, has a name for everything here.','SOMETHING GROWING');return;}
+    if(!jimson.canPick(currentPlant.stand)){toast('Nell is standing ten paces away with her arms folded. Ask her what it is before you put a hand on it.','HER GROUND, HER PLANT');return;}
+    const found=herbology.find(currentPlant.species,inventory);
+    if(!found.ok){toast(found.reason,'SOMETHING GROWING');return;}
+    flora.gather(currentPlant.id,{take:found.taken});
+    currentPlant=null;inventory.refresh();refreshSkillsSheet();audio?.effect('success');
+    if(found.first)showSkillCard({kicker:`FIRST FIND \u00b7 HERBOLOGY +${found.xp}${found.levelled?` \u00b7 LEVEL ${found.level}`:''}`,name:found.species.name,note:found.species.note,skill:HERBOLOGY_SKILL});
+    else toast(found.taken?`${found.species.name} \u00b7 ${found.count} found. In your satchel.`:`${found.species.name} \u00b7 ${found.count} found. Left where it stands.`,found.species.warning?'NOTED, AND LEFT ALONE':'HERBS');
+    saveRoad(false);
+  }
   function mycologyAct(action){
     if(action!=='learn-mycology')return {ok:false,reason:''};
     mycology.meet();refreshSkillsSheet();audio?.effect('success');
@@ -345,6 +409,11 @@ function init() {
       const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level}`:'NOT YET LEARNED'),el('h3','',skill.name));
       if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
       card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+      if(skill.id==='herbology'&&skill.learned){
+        const view=herbology.view(),list=el('ul','bird-list');
+        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}${entry.warning?' \u00b7 leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+        card.append(el('h3','',`Plants named \u00b7 ${view.foundCount} / ${view.total}`),list);
+      }
       if(skill.id==='mycology'&&skill.learned){
         const view=mycology.view(),list=el('ul','bird-list');
         for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
@@ -786,7 +855,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),herbology:herbology.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -809,7 +878,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);herbology.restore(saved.herbology??createHerbology().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     syncForest();syncHideout();syncRegionalLife();
     if(saved.woodland){
@@ -993,6 +1062,9 @@ function init() {
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===MYCOLOGIST.id){mycologistConversation(npc,{mycology,openDialogue,closeDialogue,act:mycologyAct});return;}
+    if(npc.id===HERBALIST.id){herbalistConversation(npc,{herbology,jimson,openDialogue,closeDialogue,act:herbologyAct});return;}
+    if(npc.id===PIPE_SMOKER.id){pipeSmokerConversation(npc,{pipe,herbology,openDialogue,closeDialogue,act:pipeAct});return;}
+    if(npc.id===TOFT.id){toftConversation(npc,{jimson,inventory,openDialogue,closeDialogue,act:jimsonAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
@@ -1185,6 +1257,7 @@ function init() {
     if(riding.mounted){toast('Step down first. Press G.','IN THE SADDLE');return;}
     if(combat.state.phase!=='active'&&currentFeederHook){birdingAct('hang-feeder');return;}
     if(combat.state.phase!=='active'&&currentMushroom){gatherMushroom();return;}
+    if(combat.state.phase!=='active'&&currentPlant){gatherPlant();return;}
     if(combat.state.phase!=='active'&&currentHideoutSite){
       if(currentHideoutSite==='supplies')hideoutAct('recover-hideout-supplies');else hideoutConversation(hideoutContext);
       return;
@@ -1631,6 +1704,8 @@ function init() {
       currentStick=mode==='playing'?woodlandLife.nearestStick(player.group.position,2):null;
       currentFruit=mode==='playing'?woodlandLife.nearestFruit(player.group.position,2):null;
       currentMushroom=mode==='playing'&&combat.state.phase!=='active'?mushrooms.nearest(player.group.position,2.2):null;
+      currentPlant=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom?flora.nearest(player.group.position,2.2):null;
+      if(mode==='playing'){if(jimson.tick(Math.min(1,Math.max(0,elapsed-jimsonClock))))jimsonNight();jimsonClock=elapsed;}
       const p=player.group.position,nearestPickup=[currentAcorn,currentStick,currentFruit].filter(Boolean).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];
       if(currentAcorn!==nearestPickup)currentAcorn=null;if(currentStick!==nearestPickup)currentStick=null;if(currentFruit!==nearestPickup)currentFruit=null;
       nearRepair=(world.repairBenches||[world.repairBench]).some(bench=>Math.hypot(p.x-bench.x,p.z-bench.z)<2.1);
@@ -1652,7 +1727,7 @@ function init() {
       }
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
-      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
       if(currentNPC)$('interaction-label').textContent=currentNPC.dog?'Greet the dog':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -1660,6 +1735,7 @@ function init() {
       if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentMorosSite&&!currentNPC)$('interaction-label').textContent=currentMorosSite.prompt;
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
+      if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=herbology.met?(herbology.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
       if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Inspect Bramble Scout Camp · optional';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
@@ -1689,7 +1765,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,herbology:herbology.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plantSites:flora.state().sites.length,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

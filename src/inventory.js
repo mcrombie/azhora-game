@@ -50,6 +50,31 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
     description: 'The relay clerk in Lumber Town pays in what the Legion owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the Legion’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
   }),
+  herbs: Object.freeze({
+    name: 'Gathered herbs', type: 'Food', icon: 'leaf', stackable: true, eatName: 'herbs',
+    brief: 'Yarrow, plantain, elder, whatever the verge gave up. Restores up to 12 health.',
+    description: 'Restores up to 12 health. A handful of what grows on either side of the road, named and picked the way Nell Harrow teaches: leaves for a wound, flowers for a fever, a root or two worth boiling. It is not a meal. It is what keeps a walk from turning into an illness.',
+  }),
+  tuckahoe: Object.freeze({
+    name: 'Tuckahoe root', type: 'Food', icon: 'leaf', stackable: true, eatName: 'tuckahoe',
+    brief: 'Heavy roots out of the river mud. Roasted a day, they are bread. Restores up to 30 health.',
+    description: 'Restores up to 30 health. Dug from the tidal shallows where the arrowhead leaves stand, then roasted a whole day in a covered pit until the burn is out of it. The river people of this coast ate it in the years the harvest failed, and it does not care whether the harvest failed.',
+  }),
+  'pipe-weed': Object.freeze({
+    name: 'Pipe weed', type: 'Gathered material', icon: 'leaf', stackable: true, eatName: 'a bowl', useVerb: 'Smoke',
+    brief: 'Drent leaf, cured brown in the barn and rubbed for the bowl.',
+    description: 'Cut in the late summer, hung until it smells like a church, rubbed out fine. Half the good ground in Drent is under it. You need a pipe, and Cabe Tolliver on the Weatherhead will show you what to do with one.',
+  }),
+  pipe: Object.freeze({
+    name: 'Clay pipe', type: 'Tool', icon: 'token',
+    brief: 'Cabe’s spare: a white clay bowl on a long stem, burnt dark at the rim.',
+    description: 'Fill it with pipe weed and sit still for ten minutes. It will not fix your leg and it will not make you clever; it makes ten minutes into something, which on a road like this one is not nothing.',
+  }),
+  'jimson-pods': Object.freeze({
+    name: 'Jimson pods', type: 'Gathered material', icon: 'acorn', stackable: true,
+    brief: 'Hard green eggs stuck all over with spikes. Toft Ellery wants three. For his knee.',
+    description: 'The seed pods of the jimson weed, which grows on trodden waste ground nobody keeps. A garrison up the river boiled the leaves for greens once and spent eleven days chasing people who were not there. Nell Harrow will tell you to leave them alone, and Nell Harrow is right.',
+  }),
   mushrooms: Object.freeze({
     name: 'Gathered mushrooms', type: 'Food', icon: 'leaf', stackable: true, eatName: 'mushrooms',
     brief: 'What Odger Pell would approve of: named, edible, and picked clean. Restores up to 18 health.',
@@ -529,13 +554,15 @@ export function createInventory({
       health.setAttribute('aria-label', 'Your health');
       health.setAttribute('aria-valuetext', `${consumable.health} of ${consumable.maxHealth} health`);
       const foodName = item.eatName || item.name.toLowerCase();
-      const consumeButton = element('button', 'inventory-dismiss inventory-consume', `Eat ${foodName} \u00b7 +${consumable.healing} health`);
+      // Most of the satchel is eaten. A pipe is not, so an item may name its own verb.
+      const verb = item.useVerb || 'Eat';
+      const consumeButton = element('button', 'inventory-dismiss inventory-consume', `${verb} ${foodName} \u00b7 +${consumable.healing} health`);
       consumeButton.type = 'button';
       consumeButton.dataset.consume = id;
       consumeButton.disabled = !consumable.canUse;
-      consumeButton.setAttribute('aria-label', `Eat one ${foodName} to restore up to ${consumable.healing} health`);
+      consumeButton.setAttribute('aria-label', `${verb} one ${foodName} to restore up to ${consumable.healing} health`);
       const note = element('p', 'inventory-consumable-note', consumable.canUse
-        ? `Eat one ${foodName}. Any remaining food stays in your satchel.`
+        ? `${verb} one ${foodName}. Any remaining stays in your satchel.`
         : consumable.reason);
       note.id = 'inventory-consumable-note';
       consumeButton.setAttribute('aria-describedby', note.id);
