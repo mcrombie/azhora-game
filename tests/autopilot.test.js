@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { borderGoal, aftermathGoal } from '../src/autopilot.js';
-import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, CHOICE_PRIORITY } from '../src/autopilot.js';
+import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, clearLine, CHOICE_PRIORITY } from '../src/autopilot.js';
 
 /** A small flat world with the same collision rules as the game. */
 function fakeWorld() {
@@ -409,6 +409,31 @@ test('from the Court of Oaths the Empire’s traveler walks all the way back to 
     moveCharacter(position, dir.x * 7.2 * .05, dir.z * 7.2 * .05, adapter);
   }
   assert.ok(arrived, `stuck at ${position.x.toFixed(0)},${position.z.toFixed(0)}, ${best.toFixed(0)} m from the outpost`);
+});
+
+test('a wrecked cart between the traveler and the satchel is walked round, not routed round by the road', async () => {
+  // An autoplay run stood ten metres from the courier's satchel with the Lauvel wreck in the
+  // straight line, took that for the river, and paced the road until it gave up.
+  const THREE = await import('../vendor/three.module.js');
+  const { sourceModule } = await import('./module-loader.js');
+  const { createWorld } = await sourceModule('../src/world.js');
+  const { moveCharacter } = await import('../src/game-state.js');
+  const { LUSCIA_SITES } = await import('../src/luscia-chapter.js');
+  const world = createWorld(new THREE.Scene());
+  const adapter = { bounds: world.bounds, colliders: world.colliders, nearColliders: (x, z, r, out) => world.nearColliders(x, z, r, out),
+    heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };
+  const satchel = LUSCIA_SITES['courier-satchel'], position = { x: -688.2, z: 299.8 };
+  assert.ok(!clearLine(position, satchel, adapter), 'the wreck stands in the straight line');
+  let side = 1, arrived = false;
+  for (let step = 0; step < 400 && !arrived; step++) {
+    if (Math.hypot(satchel.x - position.x, satchel.z - position.z) < 2.4) { arrived = true; break; }
+    const waypoint = nextWaypoint(position, satchel, adapter);
+    assert.ok(!waypoint.onTrail, `sent to the road at ${position.x.toFixed(1)},${position.z.toFixed(1)}`);
+    const dir = freeDirection(position, waypoint.point, adapter, side);
+    if (!dir || (!dir.x && !dir.z)) { side = -side; continue; }
+    moveCharacter(position, dir.x * 7.2 * .05, dir.z * 7.2 * .05, adapter);
+  }
+  assert.ok(arrived, `never reached the satchel; stopped at ${position.x.toFixed(1)},${position.z.toFixed(1)}`);
 });
 
 test('a broken blade is mended before the next fight, and a fight with one is left to mend it', () => {

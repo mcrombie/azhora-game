@@ -223,8 +223,11 @@ export function nextWaypoint(position, target, world, memory = {}) {
     // walkable: the Caloss lies across it and the only way over is the bridge,
     // or the traveler has strayed onto a bank. Follow the road toward the
     // destination's own place on it rather than grinding at the water.
+    // A cart or a post in the way of a place a few steps off is walked round, not
+    // routed round: only water or a drop between them sends a near leg to the road.
     if (!alongTrail && goal.distance < ROAD_CORRIDOR && onRoad.distance < ROAD_CORRIDOR * 2
-      && distance(position, target) > 6 && !clearLine(position, target, world)) {
+      && distance(position, target) > 6 && !clearLine(position, target, world)
+      && (distance(position, target) > NEAR_DETOUR || !clearLine(position, target, bareGround(world)))) {
       // Step back onto the road by the shortest way first. Standing on a bank
       // beside the bridge, walking at the far vertex only grinds at the water;
       // the way back to the road runs the other way, round the end of the deck.
@@ -282,6 +285,14 @@ export function enclosureWaypoint(position, target, world) {
 }
 
 /** Whether a straight walk from `from` to `to` stays on standable ground. */
+/** Within this, a line blocked only by things standing on the ground is walked round. */
+const NEAR_DETOUR = 30;
+
+/** The ground alone, without what stands on it: water shows, carts and posts do not. */
+function bareGround(world) {
+  return { bounds: world.bounds, colliders: [], heightAt: (x, z) => world.heightAt(x, z) };
+}
+
 export function clearLine(from, to, world, radius = .42) {
   const steps = Math.max(1, Math.ceil(distance(from, to) / .6));
   for (let step = 1; step <= steps; step++) {
