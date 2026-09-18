@@ -55,7 +55,8 @@ export function masonryAt(a, b) {
 const PAVING = Object.freeze({ 'lake-stone': MASONRY.lake.paving, imperial: MASONRY.imperial.paving, patched: MASONRY.patched.paving, new: MASONRY.new.paving });
 
 export function createElagosScenery({ parent, heightAt, colliders, signs, roadDistance }) {
-  const district = new THREE.Group(); district.name = 'Elagos scenery'; parent.add(district);
+  // Named apart from world-regions.js's own 'Elagos scenery' group, which holds the region's scatter.
+  const district = new THREE.Group(); district.name = 'Ambron and the lakes of Elagos'; parent.add(district);
   const metrics = { buildings: 0, towers: AMBRON_CIRCUIT.towers.length, waterMeshes: 0, colliders: 0, props: 0, vertices: 0 };
   let seed = 0x1e1a9051;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
@@ -182,7 +183,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     return shades.get(key);
   }
   /** A ground-hugging paved ribbon along a world polyline. */
-  function ribbon(b, tint, points, width, lift = .05) {
+  function ribbon(b, tint, points, width, lift = .065) {
     for (let i = 1; i < points.length; i++) {
       const a = points[i - 1], c = points[i], length = Math.hypot(c.x - a.x, c.z - a.z);
       if (length < .01) continue;
@@ -361,7 +362,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
   // The quays: a paved apron on each bank, a kerb at the water, steps down, bollards and cranes.
   for (const quay of AMBRON_QUAYS) {
     const inner = quay.side > 0 ? quay.to : quay.from, edge = quay.side > 0 ? quay.from : quay.to;
-    pavedField(town, MASONRY.lake.paving, Math.min(quay.from, quay.to), Math.max(quay.from, quay.to), quay.minB, quay.maxB, .05);
+    pavedField(town, MASONRY.lake.paving, Math.min(quay.from, quay.to), Math.max(quay.from, quay.to), quay.minB, quay.maxB, .035);
     void inner;
     // The quay face: a wall of lake-stone from the paving down past the waterline.
     for (let b = quay.minB; b < quay.maxB; b += 6) {
@@ -395,14 +396,22 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     }
   }
 
+  /**
+   * Roofs by age, as the walls are: turf-grey slate on the oldest houses by the
+   * water, the empire's dark tile, the shingle and thatch of the thin years, and
+   * pale new slate where the south-east was rebuilt.
+   */
+  const ROOFS = Object.freeze({ 'lake-stone': ['#5a5d53', '#4f5249'], imperial: ['#7b5f4c', '#6c5343', '#835f47'],
+    patched: ['#5f5a4e', '#8a7a58', '#6a6150'], new: ['#6d7277', '#626870'] });
   /** A house of Ambron: lake-stone footing, walls of its own age, a steep roof against the snow. */
-  function houseOf(entry) {
+  function houseOf(entry, index) {
     const M = masonryAt(entry.a, entry.b), base = cityGround(entry.a) - .3;
+    const wall = shade(M.face, index * 3 + 1), roofs = ROOFS[entry.layer] ?? ROOFS.imperial, roofTint = roofs[index % roofs.length];
     const spot = P(entry.a, entry.b);
     const steep = entry.kind === 'row' || entry.kind === 'house' || entry.kind === 'hall';
     town.frame(spot.x, base, spot.z, 0, () => {
       town.block(MASONRY.lake.dark, 0, 0, 0, entry.w + .5, 1.1, entry.d + .5);
-      town.block(M.face, 0, 1.1, 0, entry.w, entry.h, entry.d);
+      town.block(wall, 0, 1.1, 0, entry.w, entry.h, entry.d);
       town.box(M.mortar, 0, 1.1 + entry.h * .45, 0, entry.w + .05, .1, entry.d + .05);
       const roofTop = 1.1 + entry.h;
       if (entry.kind === 'granary') {
@@ -414,7 +423,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
         town.sheet(SHINGLE, [-entry.w / 2 - .4, roofTop + 2.2, -entry.d / 2 - .4], [entry.w / 2 + .4, roofTop + 2.2, -entry.d / 2 - .4],
           [entry.w / 2 + .4, roofTop + .3, entry.d / 2 + .4], [-entry.w / 2 - .4, roofTop + .3, entry.d / 2 + .4]);
       } else {
-        town.roof(entry.kind === 'seat' ? TILE : steep ? SHINGLE : TILE_DARK, 0, roofTop, 0, entry.w + 1.1, entry.d + 1.1,
+        town.roof(roofTint, 0, roofTop, 0, entry.w + 1.1, entry.d + 1.1,
           steep ? Math.min(entry.w, entry.d) * .42 : Math.min(entry.w, entry.d) * .3, entry.w >= entry.d ? Math.PI / 2 : 0, M.dark);
       }
       // Shuttered windows, and a door on the named face.
@@ -427,9 +436,12 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
           const u = (k + .5) / count - .5;
           const wx = sz ? u * entry.w : sx * (entry.w / 2 + .04), wz = sz ? sz * (entry.d / 2 + .04) : u * entry.d;
           if (Math.abs(wx - face[0] * entry.w / 2) < 1.6 && Math.abs(wz - face[1] * entry.d / 2) < 1.6) continue;
-          town.block('#241f1b', wx, 1.1 + entry.h * .48, wz, sz ? .9 : .06, 1.15, sz ? .06 : .9);
-          town.block(['#5c6d6a', '#6a6350', '#57604f'][(entry.id.length + k) % 3], wx + (sz ? .62 : 0), 1.1 + entry.h * .46, wz + (sz ? 0 : .62),
-            sz ? .42 : .1, 1.2, sz ? .1 : .42);
+          // Two storeys of windows on anything tall enough for them.
+          for (const level of entry.h > 7 ? [.3, .66] : [.48]) {
+            town.block('#241f1b', wx, 1.1 + entry.h * level, wz, sz ? .9 : .06, 1.15, sz ? .06 : .9);
+            town.block(['#5c6d6a', '#6a6350', '#57604f', '#7a5a44'][(entry.id.length + k + index) % 4], wx + (sz ? .62 : 0), 1.1 + entry.h * level - .02, wz + (sz ? 0 : .62),
+              sz ? .42 : .1, 1.2, sz ? .1 : .42);
+          }
         }
       }
       if (entry.kind === 'house' || entry.kind === 'row') town.block('#9c8574', entry.w * .28, roofTop, entry.d * .2, .8, 2.8, .8);
@@ -437,7 +449,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     });
     metrics.buildings++;
   }
-  for (const entry of AMBRON_BUILDINGS) houseOf(entry);
+  AMBRON_BUILDINGS.forEach(houseOf);
 
   // The Legate-General's Seat: a colonnade and a standard over the plaza.
   {
