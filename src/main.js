@@ -167,7 +167,7 @@ function init() {
   npcData.push({id:VILLAGE_DOG.id,name:VILLAGE_DOG.name,role:VILLAGE_DOG.role,dog:true});
   // The harbour cat naps in the sun, prowls its places, and comes to the traveler only on its own terms.
   // Who has died in a raid, and who has already been caught in one (src/bystanders.js).
-  const fallen=createFallen(),raidSeen=new Set(),raid={ids:[],fell:false};
+  const fallen=createFallen(),raidSeen=new Set(),raid={ids:[],fell:false,outcome:[]};
   let refugeeHold=0;   // seconds the refugees have stood waiting for a fight ahead of them to end
   // A cat hops the crates and the rails: it plans and walks by everything but the props (catWorld, below).
   const villageCat=createVillageCat({clear:(from,to)=>clearLine(from,to,catWorld,.25)});
@@ -656,7 +656,10 @@ function init() {
     panel.classList.remove('hidden');
     if(view.done)mapTutorialTimer=setTimeout(()=>panel.classList.add('hidden'),7000);
   }
+  // Every message and every conversation, kept for a review run to read back (see --opening-review).
+  const reviewLog={toasts:[],lines:[]};
   function toast(title,kicker='ALONG THE WAY') {
+    reviewLog.toasts.push({at:Math.round(playSeconds),kicker,title});if(reviewLog.toasts.length>600)reviewLog.toasts.shift();
     $('toast').replaceChildren();const small=document.createElement('small');small.textContent=kicker;
     $('toast').append(small,document.createTextNode(title));$('toast').classList.add('visible');
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);
@@ -1321,7 +1324,10 @@ function init() {
     } else if(npc.id==='fisher') {
       lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The Legion keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning; Mara needs a hand before anyone can travel north.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
-      lines=['Three raiders down. Good work. Their rotten sticks made them an easier fight, but remember what kept you standing: watch the windup, dodge to the side, and counter while the stick is down. Leave yourself enough stamina to escape.',
+      const said={dead:name=>`We lost ${name} out there. That is on the goblins, not on you, but I will not pretend it is nothing.`,wounded:name=>`${name} is badly hurt, but breathing. The healer is with them now.`,
+        hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
+      const aftermath=raid.outcome.map(o=>said[o.fate](o.name)).join(' ');
+      lines=[...(aftermath?[`Before anything else: ${aftermath}`]:[]),'Three raiders down. Good work. Their rotten sticks made them an easier fight, but remember what kept you standing: watch the windup, dodge to the side, and counter while the stick is down. Leave yourself enough stamina to escape.',
         'Now for a traveler’s other essentials. Keep Mara’s message and this travel token in your satchel. Press I to open it. Hover over an item for a hint, then select the message to read it. I or Escape closes the satchel.',
         'Select a weapon in your satchel to see its condition and choose Equip. A broken sword cannot strike until repaired; a broken stick is used up. Fallen branches make weak spare weapons. The free repair bench is back in the village, beside the straw post.',
         'If those sticks left you hurting, look for ripe pawpaws under the little trees with long leaves. F gathers the fruit. Open I, select a pawpaw, and choose Eat to recover up to 25 health. Lysa can tell you more about them.',
@@ -1441,6 +1447,7 @@ function init() {
     settleCamera();
   }
   function openDialogue(npc,lines,event=null,action='Back to the road',options={}){
+    reviewLog.lines.push({at:Math.round(playSeconds),who:npc.name,lines:lines.slice(0,8),choices:(options.choices||[]).map(c=>c.label)});if(reviewLog.lines.length>600)reviewLog.lines.shift();
     activeDialogue={npc,lines,index:0,event,action,...options};mode='dialogue';stopInput();show('interaction',false);show('dialogue',true);
     $('speaker').textContent=npc.name;$('speaker-role').textContent=npc.role.toUpperCase();updateSpeech();
     ($('dialogue-choices').querySelector('button:not(:disabled)')||$('dialogue-next')).focus();
@@ -1714,8 +1721,10 @@ function init() {
     if(!(caught.length&&combat.startEncounter({...greenwayEncounter,allies:caught})))combat.startEncounter(greenwayEncounter);
     raid.ids=combat.state.allies.map(a=>a.id);for(const id of raid.ids)raidSeen.add(id);raid.fell=false;
     world.ringBell?.(elapsed);audio?.effect('bell');
-    const names=combat.state.allies.map(a=>a.name);
-    toast(names.length?`Goblins on the Greenway! ${names.join(' and ')} ${names.length>1?'are':'is'} caught in the open.`:'Goblins on the Greenway!','THE VILLAGE BELL');
+    const listed=names=>names.length<2?names.join(''):`${names.slice(0,-1).join(', ')} and ${names.at(-1)}`;
+    const running=combat.state.allies.filter(a=>a.kind==='bystander').map(a=>a.name),fighting=combat.state.allies.filter(a=>a.kind==='villager').map(a=>a.name);
+    const caughtLine=[running.length?`${listed(running)} ${running.length>1?'are':'is'} caught in the open.`:'',fighting.length?`${listed(fighting)} ${fighting.length>1?'take up what they have':'takes up an axe'} and ${fighting.length>1?'stand':'stands'} with you.`:''].filter(Boolean).join(' ');
+    toast(caughtLine?`Goblins on the Greenway! ${caughtLine}`:'Goblins on the Greenway!','THE VILLAGE BELL');
   }
   function handleCombatEvents() {
     for(const e of combatEvents.splice(0)) {
@@ -1724,6 +1733,8 @@ function init() {
         if(e.type==='ally-down'&&fallen.fall(e.id)){npc.fallen=true;raid.fell=true;toast(`The goblins cut ${npc.name} down.`,'KILLED ON THE GREENWAY');}
         if(e.type==='ally-wounded')toast(`${npc.name} is down, badly hurt, but breathing.`,'THE GREENWAY');
         if(e.type==='ally-escaped')toast(`${npc.name} got clear of the fight.`,'THE GREENWAY');}
+      // How each villager came through the Greenway, for Eren to speak of.
+      if(e.type==='victory'&&combat.state.encounterId===greenwayEncounter.id)raid.outcome=combat.state.allies.map(a=>({name:a.name,fate:a.hp<=0?(a.wounded?'wounded':'dead'):a.escaped?'escaped':a.hp<a.maxHp?'hurt':'unhurt'}));
       if(['victory','retreat','defeat'].includes(e.type)&&raid.fell){raid.fell=false;saveRoad(false);}
       if(e.type==='practice-hit'&&questStage===2)practiceHits++;
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
@@ -2174,6 +2185,10 @@ function init() {
       },
       runForestChecks:()=>runForestSmoke(forestHooks()),verifyForestReload:expected=>verifyForestReload(forestHooks(),expected),
       runRoadChecks:()=>runRoadCheckSmoke(focusedRoadHooks()),
+      beginAutoplay:()=>startAutopilot(),reviewLog:()=>reviewLog,
+      reviewPeek:()=>{const p=player.group.position;return {t:Math.round(playSeconds*10)/10,mode,questStage,region:world.regionAt(p.x,p.z)?.name??null,intent:autopilot.intent,active:autopilot.active,phase:combat.state.phase,encounter:combat.state.encounterId,hp:combat.state.player.hp,
+        allies:combat.state.allies.map(a=>({id:a.id,name:a.name,hp:a.hp,escaped:!!a.escaped,wounded:!!a.wounded,frozen:a.frozen>0})),fallen:fallen.ids,x:Math.round(p.x*10)/10,z:Math.round(p.z*10)/10,journey:journey.view().stage,chapter:campaign.view().chapterId,
+        dialogue:mode==='dialogue'?activeDialogue?.npc?.name??null:null,prompt:$('interaction').classList.contains('hidden')?null:$('interaction-label').textContent};},
       runAutoplayChecks:(options={})=>runAutoplaySmoke({...focusedRoadHooks(),autopilot,start:startAutopilot,stop:stopAutopilot,readState:state,beginAt:id=>beginStoryStart(storyStart(id)),...options}),
       autoplay:()=>({active:autopilot.active,intent:autopilot.intent,stopReason:autopilot.stopReason}),
       verifyReload:expected=>verifyRoadReload({...focusedRoadHooks(),continueRoad:()=>{$('continue-road').click();return mode==='playing';}},expected),

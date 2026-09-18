@@ -13,14 +13,16 @@
 /** A villager standing this near a fight's centre is caught in it. */
 export const CAUGHT = 20;
 
-/** Who fights rather than runs. Tamsin keeps a felling axe by her. */
-export const FIGHTERS = Object.freeze(['forest-woodcutter']);
+/** Who fights rather than runs, and with what. Tamsin keeps a felling axe at her belt. */
+export const FIGHTERS = Object.freeze({ 'forest-woodcutter': 'bearded-axe' });
 
 /**
- * Who is knocked down but never killed: people a quest or the main story still
- * needs. Everyone else caught in a fight can die.
+ * Who is knocked down but never killed: people a quest, a skill or the main story
+ * still needs: the story's own people, the specialists who teach a skill, and those
+ * who trade or send the traveler on an errand. Everyone else caught in a fight can die.
  */
-export const SPARED = Object.freeze(['forest-woodcutter', 'harbormaster', 'warden', 'acorn-cook', 'doomsayer', 'fisher', 'pond-fisher', 'tide-carter', 'tide-boy', 'rena-lorn']);
+export const SPARED = Object.freeze(['forest-woodcutter', 'harbormaster', 'warden', 'acorn-cook', 'doomsayer', 'fisher', 'pond-fisher', 'tide-carter', 'tide-boy', 'rena-lorn',
+  'mycologist', 'botanist', 'geologist', 'bird-watcher', 'pipe-smoker', 'jimson-toft', 'peddler']);
 
 /**
  * The ground a fight is fought on, as src/combat.js checks it: where an ally may
@@ -79,10 +81,10 @@ export function bystandersFor(encounter, people, { fallen = [], clear = () => tr
     .sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z))
     .slice(0, limit)
     .map(person => {
-      const at = clampTo(start, person), fighter = FIGHTERS.includes(person.id);
+      const at = clampTo(start, person), fighter = Object.hasOwn(FIGHTERS, person.id);
       const spec = { id: person.id, name: person.name, kind: fighter ? 'villager' : 'bystander', x: at.x, z: at.z,
         spared: SPARED.includes(person.id), armed: fighter };
-      if (person.model) spec.model = person.model;
+      if (person.model || fighter) spec.model = { ...person.model, ...(fighter ? { wields: FIGHTERS[person.id] } : {}) };
       if (!fighter) {
         const refuge = refugeFor(at, encounter.enemies, encounter, clear);
         if (refuge) spec.refuge = refuge;

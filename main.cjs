@@ -9,6 +9,8 @@ const traverseOnly = smoke && process.argv.includes('--traverse-road');
 const roadChecksOnly = smoke && process.argv.includes('--road-checks');
 const roadReviewOnly = smoke && process.argv.includes('--road-review');
 const catReviewOnly = smoke && process.argv.includes('--cat-review');
+// `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
+const openingReviewOnly = smoke && process.argv.includes('--opening-review');
 const forestReviewOnly = smoke && process.argv.includes('--forest-review');
 const forestChecksOnly = smoke && process.argv.includes('--forest-checks');
 const developerReviewOnly = smoke && process.argv.includes('--developer-review');
@@ -110,7 +112,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -223,6 +225,36 @@ if (ownsInstance) app.whenReady().then(async () => {
         fs.writeFileSync(path.join(artifactDir,'forest-smoke.json'),JSON.stringify({...report,...reloaded,errors},null,2));
         fs.writeFileSync(path.join(artifactDir,'forest-reloaded.png'),(await win.webContents.capturePage()).toPNG());
         console.log(JSON.stringify({...report,...reloaded,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(openingReviewOnly){
+        const dir=path.join(artifactDir,'opening');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>25000?reject(new Error("no game")):setTimeout(poll,100);poll();})');
+        await new Promise(resolve=>setTimeout(resolve,1500));
+        await win.webContents.executeJavaScript('window.__AZHORA__.beginAutoplay()');
+        const shots=[],started=Date.now(),limit=Number((process.argv.find(a=>a.startsWith('--review-minutes='))||'=9').split('=')[1])*60000;
+        let last=null,lastShot=0,lastToast=0,still=0,lastPos=null,n=0;
+        while(Date.now()-started<limit){
+          await new Promise(resolve=>setTimeout(resolve,400));
+          const peek=await win.webContents.executeJavaScript('window.__AZHORA__.reviewPeek()');
+          const log=await win.webContents.executeJavaScript('window.__AZHORA__.reviewLog().toasts.length');
+          const moved=lastPos?Math.hypot(peek.x-lastPos.x,peek.z-lastPos.z):1;lastPos={x:peek.x,z:peek.z};still=moved<.05&&peek.mode==='playing'?still+.4:0;
+          const reasons=[];
+          if(!last||peek.intent!==last.intent)reasons.push('intent');if(last&&peek.phase!==last.phase)reasons.push('fight '+peek.phase);
+          if(last&&peek.region!==last.region)reasons.push('region');if(last&&peek.questStage!==last.questStage)reasons.push('stage');
+          if(log>lastToast){reasons.push('message');lastToast=log;}if(peek.dialogue&&peek.dialogue!==last?.dialogue)reasons.push('talk');
+          if(still>=6&&still<6.4)reasons.push('standing still');
+          if(Date.now()-lastShot>(peek.phase==='active'?2500:9000))reasons.push('time');
+          if(reasons.length){const file=`${String(++n).padStart(3,'0')}.png`;
+            fs.writeFileSync(path.join(dir,file),(await win.webContents.capturePage()).resize({width:960}).toPNG());
+            shots.push({file,why:reasons.join(', '),...peek});lastShot=Date.now();}
+          last=peek;
+          if(!peek.active&&peek.mode==='playing'&&Date.now()-started>20000)break;
+          if(peek.region&&peek.region!=='Drent'&&peek.questStage===10)break;
+        }
+        const log=await win.webContents.executeJavaScript('window.__AZHORA__.reviewLog()');
+        fs.writeFileSync(path.join(dir,'review.json'),JSON.stringify({shots,log,errors},null,2));
+        console.log(JSON.stringify({shots:shots.length,toasts:log.toasts.length,talks:log.lines.length,errors},null,2));app.exit(0);return;
       }
       if(catReviewOnly){
         // The harbour cat held in each of its poses, close up, for a visual check of the model.

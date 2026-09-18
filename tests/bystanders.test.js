@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { createCombat } from '../src/combat.js';
 import { GREENWAY_RAID } from '../src/opening-fights.js';
 import { CAUGHT, SPARED, bystandersFor, createFallen, fightGround, validateFallenSnapshot } from '../src/bystanders.js';
+import * as THREE from '../vendor/three.module.js';
+import { sourceModule } from './module-loader.js';
 
 const open = { bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, colliders: [], heightAt: () => 1.5 };
 const MARN = { id: 'greenway-forager', name: 'Marn', x: -66, z: 23 };
@@ -25,6 +27,7 @@ test('villagers near a raid are caught in it: the one with an axe fights, the on
   const [marn, tamsin] = allies, { start, step } = fightGround(GREENWAY_RAID);
   assert.equal(marn.spared, false, 'Marn can die');
   assert.equal(tamsin.spared, true, 'Tamsin carries a story and is only knocked down');
+  assert.equal(tamsin.model.wields, 'bearded-axe', 'she fights with her felling axe');
   assert.ok(tamsin.z <= start.maxZ && tamsin.z < TAMSIN.z, 'Tamsin, just outside, is brought onto the fight’s ground');
   assert.ok(marn.refuge.x >= step.minX && marn.refuge.z >= step.minZ, 'Marn runs for the edge of it');
   assert.ok(Math.hypot(marn.refuge.x - MARN.x, marn.refuge.z - MARN.z) < 20);
@@ -104,4 +107,18 @@ test('the dead are remembered with the road save; those the story needs never ar
   assert.equal(validateFallenSnapshot({ version: 1, ids: ['warden'] }), false, 'a spared name on the list is refused');
   assert.equal(validateFallenSnapshot({ version: 1, ids: ['a', 'a'] }), false);
   assert.equal(validateFallenSnapshot({ version: 2, ids: [] }), false);
+});
+
+test('the specialists who teach a skill, and those who trade or send the traveler on errands, are never killed', () => {
+  for (const id of ['mycologist', 'botanist', 'geologist', 'bird-watcher', 'pipe-smoker', 'jimson-toft', 'peddler']) assert.ok(SPARED.includes(id), `${id} could die`);
+  const [odger] = bystandersFor(GREENWAY_RAID, [{ id: 'mycologist', name: 'Odger Pell', x: -50, z: 25 }]);
+  assert.equal(odger.spared, true);
+});
+
+test('a villager who fights holds the weapon they took up', async () => {
+  const { createCharacter } = await sourceModule('../src/characters.js');
+  const tamsin = createCharacter({ role: 'forest-woodcutter', armed: true, wields: 'bearded-axe' });
+  assert.ok(tamsin.group.getObjectByName('Bearded axe'), 'the axe is in her hand');
+  assert.equal(createCharacter({ role: 'forest-woodcutter' }).group.getObjectByName('Bearded axe'), undefined, 'and only when she fights');
+  assert.ok(THREE.REVISION);
 });

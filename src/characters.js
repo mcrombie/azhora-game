@@ -686,7 +686,10 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard'].includes(role), armed = false, look = null } = {}) {
+/** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
+const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
+
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard'].includes(role), armed = false, look = null, wields = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -1702,9 +1705,13 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const chest = addChestPivot(body, legs, 0.935);
   // A soldier called to fight draws his sword instead of planting his spear.
   const fights = isSoldier && armed;
-  const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip') : null;
+  // A villager caught in a fight takes up what is to hand: Tamsin's felling axe comes off her belt.
+  const villagerHolds = !isTraveler && !isMercenary && !fights && VILLAGER_WEAPONS[wields] ? wields : null;
+  const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip')
+    : villagerHolds ? makeWeaponMount(wrists[1], 'Villager weapon grip') : null;
   const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
-    : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) } : {};
+    : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) }
+    : villagerHolds ? { [villagerHolds]: VILLAGER_WEAPONS[villagerHolds](weapon) } : {};
   const fishingGrip = isTraveler || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
   const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
