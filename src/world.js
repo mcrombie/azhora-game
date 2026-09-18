@@ -28,6 +28,8 @@ import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSE
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
 import { createPeblosScenery } from './peblos-scenery.js';
+import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LANDING, quayHeight as elodQuayHeight } from './east-suval.js';
+import { createEastSuvalScenery } from './east-suval-world.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -203,6 +205,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Cobble's quay, out over the water of the bay in Peblos.
     const quay = quayHeight(x, z);
     if (quay !== null) return quay;
+    // Elod's quayside, along the waterline under the city's revetment.
+    const elodQuay = elodQuayHeight(x, z);
+    if (elodQuay !== null) return elodQuay;
     const deck = deckAt(x, z);
     if (deck) return deck.deckY + .09;
     return groundHeight(x, z);
@@ -1067,6 +1072,13 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
     groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups,
   });
+  // East Suval (src/east-suval-world.js): Elod on its rock, the places along its
+  // coast and its dry valleys, and the region's own limestone scatter.
+  const eastSuval = createEastSuvalScenery({
+    root: world, material, mesh, box, post, pebble, rope, barrel, crate, wornPatch, sign: roadsideSign,
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
+    roadDistance,
+  });
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
@@ -1492,6 +1504,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     puethMetrics: puethScenery.metrics,
     peblosMetrics: peblosScenery.metrics,
     peblosQuay: COBBLE_QUAY,
+    eastSuvalMetrics: eastSuval.metrics,
+    elodQuay: ELOD_QUAY,
+    // Where a boat would put a traveler down if the sea route were ever switched
+    // on (src/east-suval.js, ELOD_SEA_ROUTE). Nothing sails there yet.
+    elodLanding: ELOD_LANDING,
     placeFerryBoat: peblosScenery.placeFerryBoat,
     mapLands,
     roadSigns,
@@ -1576,6 +1593,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
       ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS,
+      ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
     landmarks: [
       { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
@@ -1595,6 +1613,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
       ...PEBLOS_LANDMARKS,
+      ...EAST_SUVAL_PLACES,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
     ],

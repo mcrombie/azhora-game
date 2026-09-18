@@ -34,8 +34,10 @@ export const BUILD_STATUS = Object.freeze({
     'Rimeholt is a first version. The hills, the east and the coast are terrain and landmarks only; no quests of its own.'),
   Peblos: status('early', 'The boat from Tidehaven’s pier and back for three copper, Cobble on the main island with its quay, its ten roofs, its seven islanders and the Empire’s four men, the headland light, the seal cove and the drowned field.',
     'The five outer islands are terrain, scatter and one landmark each, with no way to reach them. No quest, no naval station, no sea cave, no pirates, and nothing to buy or sell on the quay.'),
-  'East Suval': status('edge', 'Elod’s border post on the stone road: a ditch, a shut gate and its guard in light black armour.',
-    'Everything behind the gate. The region cannot be entered.'),
+  // Still 'edge' on purpose: the country behind the gate is built, but the gate
+  // is shut for Chapters 1-2 and the only ways in are the developer tools.
+  'East Suval': status('edge', 'Elod’s border post on the stone road: a ditch, a shut gate and its guard in light black armour. Behind it the country is now built — the city of Elod with its Sea-Road Gate, the walled precinct and the Threshold, the ordinary city, the harbour quarter and its quay, twenty-one Elodi and foreigners with something to say, the North Light, Sorrow Beach, Sevenwalls and the dry hills.',
+    'A way in. The border stays closed for the main quest, so nothing behind it can be reached except by the F8 tools: the sea passage into the harbour quarter is stubbed (src/east-suval.js, ELOD_SEA_ROUTE) and the Threshold’s admission terms lead nowhere. No quest, no trade, no interiors.'),
 });
 
 const known = new Set(Object.keys(BUILD_STATUS));

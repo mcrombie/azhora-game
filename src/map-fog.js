@@ -42,7 +42,12 @@ export const SUBREGIONS = Object.freeze([
   // East Suval
   area('suval-border-post', 'Elod’s Border Post', 'East Suval', -400, 499, 60, 'East Suval’s frontier: a shut stone gate, a ditch, and soldiers in light black armour.'),
   area('waystation', 'The Roofless Waystation', 'East Suval', -274, 560, 55, 'A shelter without a roof on the stone road, kept by whoever passes.'),
-  area('elod', 'Elod', 'East Suval', -50, 635, 70, 'The stone town beyond the border. East Suval is closed: nobody passes the gate.'),
+  area('elod', 'Elod', 'East Suval', -50, 635, 52, 'The Elodi city on its shelf of pale rock: the Sea-Road Gate, the walled precinct of the Threshold, and the ordinary city stepping down toward the water.'),
+  area('elod-harbour', 'The Harbour Quarter', 'East Suval', -8, 631, 32, 'Elod’s quay, its breakwater and the strangers’ hostel: the only ground in the city a foreigner is free on, because trade requires it.'),
+  area('north-light', 'The North Light', 'East Suval', -68, 538, 44, 'The stone light on the northern point, whitewashed to the sill. The Confederation allots the coast; Elod keeps this stretch of it lit and argues about none of the rest.'),
+  area('sorrow-beach', 'Sorrow Beach', 'East Suval', 82, 800, 48, 'Seven roofs on the exposed east coast, boats dragged up the shingle, and a standing stone with names cut on it in three hands.'),
+  area('sevenwalls', 'Sevenwalls', 'East Suval', -205, 690, 55, 'A dry valley inland: four terraces with no stream between them, a covered cistern and an olive press older than the houses.'),
+  area('suval-dry-hills', 'The Dry Hills', 'East Suval', -146, 858, 62, 'The bare southern ridges above Elod: limestone bones, a shepherds’ cistern and a fold, and an old ring of ridge stones that watches the road.'),
   // Pueth
   area('tessen-crossing', 'The Tessen Crossing', 'Pueth', -105, -217, 60, 'The timber bridge over the Tessen and the Legion’s road post on the Pueth bank.'),
   area('bramble-woods', 'The Bramble Woods', 'Pueth', 55, -190, 60, 'Birch and thorn off the road north, and the goblin camp that has been crossing the river into Drent.'),

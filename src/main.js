@@ -38,6 +38,7 @@ import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LU
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
+import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
@@ -109,6 +110,8 @@ function init() {
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
   // Cobble's people and the Empire's four men on its quay, in Peblos.
   npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
+  // Elod's people, the frontier guard behind its shut gate, and the keepers of the outlying places, in East Suval.
+  npcData.push(...EAST_SUVAL_PEOPLE.map(npc=>({...npc})));
   // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
   world.npcPositions[FERRY_NPC.id]={x:FERRY_LANDINGS.drent.stand.x,z:FERRY_LANDINGS.drent.stand.z};npcData.push({...FERRY_NPC,yaw:FERRY_LANDINGS.drent.stand.yaw});
   // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
@@ -989,6 +992,7 @@ function init() {
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
+    if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
@@ -1255,6 +1259,15 @@ function init() {
     yaw=landing.yaw;pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
     ferry.settle();settleCamera();closeModal();
     toast('Cobble, on the main island. Corran waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
+  };
+  $('test-elod').onclick=()=>{
+    if(!testingEnabled)prepareTesting();
+    if(riding.mounted)stepDown(true);
+    const landing=world.elodLanding.ashore;
+    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
+    yaw=landing.yaw;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;
+    settleCamera();closeModal();
+    toast('Elod’s quay, as if you had come in by sea. The border on the road is still shut; the Inner Gate will still refuse you.','TESTING · EAST SUVAL');
   };
   $('test-reveal-chart').onclick=()=>{
     chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';

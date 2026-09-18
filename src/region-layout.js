@@ -38,9 +38,12 @@ export const REGION_BIOMES = Object.freeze({
   'Moros Plain': Object.freeze({ id: 'open-plain', name: 'Moros Plain', ground: '#b9b36c', canopy: null, treesPerHex: 0, rocksPerHex: 0, undergrowth: 'none',
     relief: { amplitude: .9, wavelength: 260 }, clearings: ['legion-camp'],
     note: 'Absolutely flat grassland, an enormous sky, and the Legion camp visible from a long way off. Horse country.' }),
-  'East Suval': Object.freeze({ id: 'stone-hills', name: 'East Suval hills', ground: '#9b9d85', canopy: '#6c7f5a', treesPerHex: perHex(3), rocksPerHex: perHex(7), undergrowth: 'heather',
-    relief: { amplitude: 11, wavelength: 120 }, clearings: ['border-post', 'elod'],
-    note: 'Grey stone country like today’s Threefold Rise: waymarkers, ridge rock, heather, Elod’s guarded border post in the north.' }),
+  // East Suval scatters its own country (src/east-suval-world.js): what grows on
+  // this blade of limestone depends on how far the ground is from the sea and how
+  // high it stands, which a single count per hex cannot say.
+  'East Suval': Object.freeze({ id: 'stone-hills', name: 'East Suval hills', ground: '#9b9d85', canopy: '#6c7f5a', treesPerHex: perHex(3), rocksPerHex: perHex(26), undergrowth: 'aromatic-scrub',
+    relief: { amplitude: 11, wavelength: 120 }, clearings: ['border-post', 'elod'], ownScatter: true,
+    note: 'The stone blade of the peninsula: pale limestone ridges, thin soil, aromatic cushion scrub, dry terraces and field walls, Elod on its shelf above an exposed eastern sea, and the shut frontier in the north.' }),
   'West Suval': Object.freeze({ id: 'coastal-downs', name: 'West Suval downs', ground: '#a9a95c', canopy: '#76834f', treesPerHex: perHex(4), rocksPerHex: perHex(2), undergrowth: 'long-grass',
     relief: { amplitude: 3.6, wavelength: 210 }, clearings: ['solis', 'coalition-camp', 'shepherds-fold', 'watchtower', 'wayside-well'],
     note: 'Rolling coastal grassland: long tawny grass, scattered thorn and olive trees, low field walls of pale stone, and downs that rise toward the white cliffs above Solis. Not the Moros’s flat treeless sky, not East Suval’s grey rock.' }),
