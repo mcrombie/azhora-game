@@ -69,6 +69,14 @@ export const SUBREGIONS = Object.freeze([
   area('pilots-stone', 'The Pilot’s Stone', 'Peblos', 50, 289, 55, 'The nearest Pebble to Drent, and the mark the pilots steer by out of Tidehaven.'),
   area('wrack-island', 'Wrack Island', 'Peblos', 150, 462, 55, 'Shingle, thrift, and the ribs of the Sea-Mare standing out of it.'),
   area('saltings', 'The Saltings', 'Peblos', -100, 375, 55, 'The westernmost Pebble: salt pans in the turf and one standing stone.'),
+  // West Izol: the western half of the island of Izol, across the Izoli Channel.
+  area('izolveth', 'Izolveth', 'West Izol', 58, 1776, 62, 'The largest town on the island and not its capital: a quay, two moles, a ropewalk, and a meeting house at the top of the cut that is plainly not a palace.'),
+  area('izol-headland', 'The Harbour Headland', 'West Izol', 150, 1668, 46, 'The rock that shelters Izolveth\u2019s harbour, with the Sea Gate in the cleft at its head and the channel on three sides.'),
+  area('izolveth-camp', 'The Camp Above Izolveth', 'West Izol', 180, 1886, 56, 'Tent lines and a drill ground on the pasture above the town, under seven banners and three generals.'),
+  area('ardveth', 'Ardveth', 'West Izol', -90, 1818, 58, 'Six roofs and a shingle beach in the next cove but one, facing the open channel.'),
+  area('kelvath', 'Kelvath Cove', 'West Izol', 252, 1750, 50, 'A slip, a saw pit and a hull on the stocks with no planking on her, in a cove easier to reach by sea than by land.'),
+  area('sightstone', 'The Sightstone', 'West Izol', 382, 1806, 60, 'The shoulder of the Hearth Road where all three Presences stand up at once. The Hearthstone itself is further in.'),
+  area('long-pasture', 'The Long Pasture', 'West Izol', 272, 1956, 62, 'The low inland grass where the highland flocks come down, with a dry-stone fold and a cairn.'),
 ]);
 
 export const SUBREGION_IDS = Object.freeze(SUBREGIONS.map(item => item.id));

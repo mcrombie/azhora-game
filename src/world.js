@@ -32,6 +32,8 @@ import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './rena.js';
 import { buildRenaWorks } from './rena-works.js';
 import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LANDING, quayHeight as elodQuayHeight } from './east-suval.js';
 import { createEastSuvalScenery } from './east-suval-world.js';
+import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, izolDeckHeight } from './izol-world.js';
+import { createIzolScenery } from './izol-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -210,6 +212,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Elod's quayside, along the waterline under the city's revetment.
     const elodQuay = elodQuayHeight(x, z);
     if (elodQuay !== null) return elodQuay;
+    // Izolveth's quay and the two moles that close its harbour, in West Izol.
+    const izolDeck = izolDeckHeight(x, z);
+    if (izolDeck !== null) return izolDeck;
     const deck = deckAt(x, z);
     if (deck) return deck.deckY + .09;
     return groundHeight(x, z);
@@ -1047,6 +1052,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Measure every road before any scenery, so nothing is planted across one.
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
+  for (const path of IZOL_PATHS) measurePath(path.points, path.width);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
@@ -1085,6 +1091,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
+  // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
+  // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.
+  const izol = createIzolScenery({ root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign: roadsideSign,
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, roofGeometry, cylinder, round, movingGroups });
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
   const stakedProps = [];
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
@@ -1126,6 +1136,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(PUETH_ROAD, 4.2);
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
   addPath(RENA_ROAD, 2.6);
+  for (const path of IZOL_PATHS) addPath(path.points, path.width);
 
   // Fingerposts along the new road: each points at its place, and back the way the traveler came.
   /** A point 40 m back along the nearest road, toward where that road starts. */
@@ -1452,6 +1463,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
     Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
     Object.freeze({ id: 'west-suval-water', kind: 'polygon', points: WEST_SUVAL_SEA }),
+    Object.freeze({ id: 'west-izol-water', kind: 'polygon', points: IZOL_SEA }),
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([
       ...regionScenery.riverSamples.map(s => mapPoint(s.x - s.nx * CALOSS.halfWidth, s.z - s.nz * CALOSS.halfWidth)),
       ...[...regionScenery.riverSamples].reverse().map(s => mapPoint(s.x + s.nx * CALOSS.halfWidth, s.z + s.nz * CALOSS.halfWidth))]) }),
@@ -1461,10 +1473,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   ]);
 
   // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
-  const mapLands = Object.freeze(PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
+  const mapLands = Object.freeze([...PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
     ?.filter(loop => loop.some(p => island.cells.some(cell => Math.hypot(cell.x - p.x, cell.z - p.z) < 90)))
     .map((loop, index) => Object.freeze({ id: `${island.id}-land-${index}`, kind: 'polygon', region: 'Peblos',
-      points: Object.freeze(loop.map(p => mapPoint(p.x, p.z))) })) ?? []));
+      points: Object.freeze(loop.map(p => mapPoint(p.x, p.z))) })) ?? []),
+    // West Izol is an island too: its own outline is painted back over the chart's water.
+    ...(regions.find(region => region.name === 'West Izol')?.border ?? []).map((loop, index) => Object.freeze({
+      id: `west-izol-land-${index}`, kind: 'polygon', region: 'West Izol', points: Object.freeze(loop.map(p => mapPoint(p.x, p.z))) })),
+  ]);
   const worldSpawn = villageToWorld(0, 43), worldBoat = villageToWorld(-4.8, 43);
   const worldTraining = villageToWorld(training.x, training.z);
   const worldEncounter = villageToWorld(encounter.x, encounter.z);
@@ -1510,6 +1526,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     renaRoute: RENA_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
     peblosMetrics: peblosScenery.metrics,
+    izolMetrics: izol.metrics,
+    izolQuay: IZOL_QUAY,
     peblosQuay: COBBLE_QUAY,
     eastSuvalMetrics: eastSuval.metrics,
     elodQuay: ELOD_QUAY,
@@ -1599,7 +1617,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS,
       ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
     landmarks: [
@@ -1622,6 +1640,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...PEBLOS_LANDMARKS,
       ...RENA_LANDMARKS,
       ...EAST_SUVAL_PLACES,
+      ...IZOL_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
     ],

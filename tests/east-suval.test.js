@@ -68,9 +68,10 @@ test('East Suval is the atlas’s own twenty-three hexes: a blade of limestone w
   assert.ok(world.eastSuvalMetrics.rocks > world.eastSuvalMetrics.trees * 5, 'limestone, not timber, is this region’s scatter');
   assert.ok(world.eastSuvalMetrics.scrub > 1000, 'aromatic cushion scrub everywhere');
   assert.ok(world.eastSuvalMetrics.fieldWalls > 5, 'dry-stone field walls wherever anybody has tried to farm');
-  // Nothing about the region's extent changed: the world did not grow for it.
-  assert.ok(WORLD_BOUNDS.maxX > 540 && WORLD_BOUNDS.maxX < 580, 'the world still ends where Peblos put it');
-  assert.ok(WORLD_BOUNDS.maxZ > 1260 && WORLD_BOUNDS.maxZ < 1290);
+  // East Suval did not grow the world. West Izol did, south and east, so all
+  // that is left to hold here is that Elod's corner is still inside it.
+  assert.ok(WORLD_BOUNDS.maxX > 540, 'the world reaches at least as far east as Peblos put it');
+  assert.ok(WORLD_BOUNDS.maxZ > 1260);
 });
 
 test('the east coast is the sea the atlas drew: water east of Elod, and no bar a traveler can walk out on', () => {

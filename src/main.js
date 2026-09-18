@@ -41,6 +41,8 @@ import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './rena-letters.js'
 import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
 import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
+import { createIzolHost } from './izol-host.js';
+import { izolDeckHeight } from './izol-world.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
@@ -134,6 +136,8 @@ function init() {
   const borderNpcIds=new Set(BORDER_NPCS.map(person=>person.id));
   // West Suval: Solis's people, both garrisons and the camp's captains; the march to the border (src/west-suval-host.js).
   const westSuval=createWestSuvalHost({world,npcData});
+  // Izolveth, its harbour people, the three generals' men and the camp above the town (src/izol-host.js).
+  const izol=createIzolHost({world,npcData});
   // The day after the battle: a commander, and whoever sends the traveler on, appear where that day's work is.
   for(const person of AFTERMATH_NPCS){world.npcPositions[person.id]={x:AFTERMATH_SITES['camp-gate'].x,z:AFTERMATH_SITES['camp-gate'].z};npcData.push({...person,hidden:true,site:null});}
   const aftermathNpcIds=new Set(AFTERMATH_NPCS.map(person=>person.id));
@@ -985,7 +989,7 @@ function init() {
     // authored regions; older saves from the straight 700 m road resume at a spawn.
     const onPlayableGround=canStand(saved.position.x,saved.position.z,world)
       &&(world.regions.some(region=>insideRegion(region.name,saved.position.x,saved.position.z))
-        ||quayHeight(saved.position.x,saved.position.z)!==null);
+        ||quayHeight(saved.position.x,saved.position.z)!==null||izolDeckHeight(saved.position.x,saved.position.z)!==null);
     const point=onPlayableGround?saved.position:questStage<10?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
     player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
     mode='playing';testingEnabled=false;document.body.classList.add('playing');show('opening',false);show('testing-badge',false);show('modal-backdrop',false);
@@ -1153,6 +1157,7 @@ function init() {
     if(RENA_NPC_IDS.includes(npc.id)&&renaConversation(npc,{letters:renaLetters,inventory,openDialogue,closeDialogue,act:renaAct}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
     if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
+    if(izol.converse(npc,{control:heldControl??campaign.mapControl(),openDialogue,closeDialogue}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
@@ -1437,6 +1442,13 @@ function init() {
     yaw=landing.yaw;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;
     settleCamera();closeModal();
     toast('Elod’s quay, as if you had come in by sea. The border on the road is still shut; the Inner Gate will still refuse you.','TESTING · EAST SUVAL');
+  };
+  $('test-izolveth').onclick=()=>{
+    testTravel(8);
+    const landing=world.izolQuay.landing;
+    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
+    yaw=0;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;settleCamera();
+    toast('The Long Quay at Izolveth, on the island of Izol. The largest town on the island, and not its capital.','TESTING · WEST IZOL');
   };
   $('test-reveal-chart').onclick=()=>{
     chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
@@ -1772,6 +1784,7 @@ function init() {
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       for(const prop of world.stakedProps||[])prop.object.visible=isOut(prop,heldControl);wallWatch.update(player.group.position,heldControl,walkTime);
       westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
+      izol.frame({npcById,control:heldControl});
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
       {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
       // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.

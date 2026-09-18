@@ -74,7 +74,10 @@ test('Peblos is a playable region true to the atlas: nine hexes in six islands o
   for (const loop of REGION_OUTLINES.Peblos) for (const point of loop)
     assert.ok(point.x > WORLD_BOUNDS.minX && point.x < WORLD_BOUNDS.maxX && point.z > WORLD_BOUNDS.minZ && point.z < WORLD_BOUNDS.maxZ,
       'the world bounds hold every island');
-  assert.ok(WORLD_BOUNDS.maxX > 540 && WORLD_BOUNDS.maxX < 580, 'the world grew east to hold the islands and no further');
+  // The world reaches east past the islands now: West Izol stands further east again.
+  assert.ok(WORLD_BOUNDS.maxX > 540, 'the world grew east to hold the islands');
+  assert.ok(Math.max(...REGION_OUTLINES.Peblos.flat().map(point => point.x)) > WORLD_BOUNDS.maxX - 120,
+    'and the outermost Pebble is still near its eastern edge');
   // Low, rocky, wind-cut: no forest, far fewer trees than Drent, and rock instead.
   assert.equal(REGION_BIOMES.Peblos.ownScatter, true);
   assert.ok(REGION_BIOMES.Peblos.treesPerHex < REGION_BIOMES.Drent.treesPerHex / 15);
@@ -210,8 +213,10 @@ test('Every place in Peblos stands on its own island, above the tide, and is cha
   for (const island of OUTER_ISLANDS)
     assert.ok(areas.some(area => islandAt(area.x, area.z) === island), `${island.name} is not charted`);
   // The islands are drawn back over the chart's water, or the Pebbles read as more of the Stills.
-  assert.equal(world.mapLands.length, PEBLOS_ISLANDS.length);
-  for (const land of world.mapLands) {
+  // West Izol is drawn back the same way, so count only the Pebbles' own outlines.
+  const pebbleLands = world.mapLands.filter(land => land.region === 'Peblos');
+  assert.equal(pebbleLands.length, PEBLOS_ISLANDS.length);
+  for (const land of pebbleLands) {
     assert.equal(land.region, 'Peblos');
     assert.ok(land.points.length > 5 && land.points.every(point => Number.isFinite(point.x) && Number.isFinite(point.z)));
   }

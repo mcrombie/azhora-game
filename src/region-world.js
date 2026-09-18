@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -121,6 +121,12 @@ export const REGION_TERRAIN = Object.freeze({
   Peblos: Object.freeze({ base: 6.4, amp: 2.6, wave: 95, ground: REGION_BIOMES.Peblos.ground, byTerrain: Object.freeze({
     hills: Object.freeze({ base: 10.5, amp: 4.6, wave: 85, ground: '#6f7c63' }),
     plains: Object.freeze({ base: 3.4, amp: 1.2, wave: 120, ground: '#7c8862' }),
+  }) }),
+  // West Izol is rock: dark and iron-brown at the water, slate-grey at height, with good pasture on the softer
+  // slopes and one river flat where the town stands. The atlas's own terrain says which is which.
+  'West Izol': Object.freeze({ base: 12.5, amp: 4.4, wave: 115, ground: REGION_BIOMES['West Izol'].ground, byTerrain: Object.freeze({
+    hills: Object.freeze({ base: 21, amp: 7.5, wave: 130, ground: '#8a8b84' }),
+    plains: Object.freeze({ base: 8, amp: 1.6, wave: 150, ground: '#94a06e' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -319,9 +325,23 @@ export const COBBLE_TERRACE = Object.freeze({ id: 'cobble', x: 334, z: 428, half
  */
 export const ELOD_TERRACE = Object.freeze({ id: 'elod-precinct', x: -37, z: 632, halfX: 10, halfZ: 20, feather: 9, level: 15, slopeX: 0, slopeZ: 0 });
 
+/**
+ * West Izol's made ground. Izol is rock: the coast is a run of hex-pointed
+ * headlands with a small cove between each pair, and none of those coves has a
+ * platform behind it. Every settled place on the island therefore stands on
+ * ground somebody cut, which is why the Izoli have protocols for quarrying.
+ * Izolveth's own terrace climbs from the quay at the water to the meeting house
+ * at the back of the town; the other three are shelves the size of what stands
+ * on them.
+ */
+export const IZOLVETH_TERRACE = Object.freeze({ id: 'izolveth', x: 58, z: 1782, halfX: 32, halfZ: 44, feather: 17, level: 7.6, slopeX: 0, slopeZ: .108, shore: true });
+export const IZOL_CAMP_GROUND = Object.freeze({ id: 'izol-camp', x: 176, z: 1886, halfX: 42, halfZ: 28, feather: 22, level: 8.4, slopeX: 0, slopeZ: 0 });
+export const ARDVETH_SHELF = Object.freeze({ id: 'ardveth', x: -88, z: 1818, halfX: 16, halfZ: 14, feather: 16, level: 3.8, slopeX: .06, slopeZ: 0, shore: true });
+export const KELVATH_SHELF = Object.freeze({ id: 'kelvath', x: 250, z: 1748, halfX: 18, halfZ: 13, feather: 14, level: 3.4, slopeX: 0, slopeZ: .05, shore: true });
+
 export const TERRAIN_PADS = Object.freeze([
   Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
-  COBBLE_TERRACE,
+  COBBLE_TERRACE, IZOLVETH_TERRACE, IZOL_CAMP_GROUND, ARDVETH_SHELF, KELVATH_SHELF,
   ELOD_TERRACE,
 ]);
 
@@ -504,6 +524,11 @@ const REGION_TEXT = {
     npcIds: ['cobble-netmistress', 'cobble-boatwright', 'cobble-lobsterman', 'cobble-salter', 'cobble-oldhand', 'cobble-keeper', 'cobble-runner',
       'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
+  // West Izol is authored in world metres too (src/izol-world.js); its spawn is the quay a ship puts the traveler ashore on.
+  'West Izol': { subtitle: 'The western half of the island of Izol', spawn: point(56, 1725),
+    description: 'Rock, sea turf and headlands across the Izoli Channel: Izolveth on its river flat with the Coalition\u2019s army camped above it, the fishing cove at Ardveth, and the road inland toward the Three Presences. The confederation has no capital, and says so.',
+    palette: { ground: '#7e8b62', accent: '#d8d0ae', fog: '#b4c3c0' },
+    npcIds: [], landmarks: [] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

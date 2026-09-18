@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -55,6 +55,10 @@ export const REGION_BIOMES = Object.freeze({
   Peblos: Object.freeze({ id: 'salt-islands', name: 'The Peblos islands', ground: '#76855f', canopy: '#4d6a4f', treesPerHex: perHex(2), rocksPerHex: perHex(9), undergrowth: 'salt-grass',
     relief: { amplitude: 3.4, wavelength: 95 }, clearings: ['harbour', 'headland'], ownScatter: true,
     note: 'Low barrier islands south-east of Drent: salt grass, thrift and gorse, grey rock at the waterline, pale sand in the coves, and a few wind-bent pines on the higher ground. No forest anywhere.' }),
+  // West Izol scatters its own ground (src/izol-scenery.js): the rock gathers on the headlands and the turf in the hollows, which a per-hex count cannot say.
+  'West Izol': Object.freeze({ id: 'izoli-rock', name: 'The West Izol headlands', ground: '#7e8b62', canopy: '#4c6647', treesPerHex: perHex(2), rocksPerHex: perHex(9), undergrowth: 'sea-turf',
+    relief: { amplitude: 5.2, wavelength: 115 }, clearings: ['izolveth', 'harbour', 'fishing-village', 'boatyard'], ownScatter: true,
+    note: 'The western half of the island of Izol: old hard rock, iron-brown at the water and slate-grey at height, cropped sea turf and gorse on the softer slopes, thorn and wind-bent pine in the hollows, and one alluvial flat at the river mouth where Izolveth stands.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);
