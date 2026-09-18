@@ -201,10 +201,19 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     restorePlayer();
   }
 
-  function startEncounter(config) {
+  /**
+   * `atCheckpoint` starts the traveler where the fight forms up, as a retry does.
+   * A fight begun wherever the traveler happens to stand counts as a retreat on its
+   * first step when that is past its retreat line, or 45 m from its centre.
+   */
+  function startEncounter(config, { atCheckpoint = false } = {}) {
     if (state.phase === 'active' || (state.phase === 'won' && config === undefined)) return false;
     const next = encounterConfig(config === undefined ? DEFAULT_ENCOUNTER : config);
     if (!next) return false;
+    if (atCheckpoint) {
+      const checkpoint = safePoint(next.checkpoint.x, next.checkpoint.z);
+      position.x = checkpoint.x; position.z = checkpoint.z; position.y = world.heightAt(position.x, position.z);
+    }
     weaponReady = true;
     restorePlayer();
     enemyTimers.clear();

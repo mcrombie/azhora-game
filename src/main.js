@@ -935,7 +935,9 @@ function init() {
     if(result.startEncounter){
       saveRoad(false);
       const fight=aftermathEncounter(spec.id,aftermathArena(spec.arena),borderAllies(spec.side));
-      if(!fight||!combat.startEncounter(fight)){aftermath.endEncounter(spec.encounterId);toast('Your company is not formed up. Stand with your commander and give the word again.',banner);return {ok:false,reason:'The encounter could not start.'};}
+      // The company forms up on its own ground: the commander gives the word at the rally,
+      // which can stand beyond the fight's own retreat line (Solis's gate, for a fight in the square).
+      if(!fight||!combat.startEncounter(fight,{atCheckpoint:true})){aftermath.endEncounter(spec.encounterId);toast('Your company is not formed up. Stand with your commander and give the word again.',banner);return {ok:false,reason:'The encounter could not start.'};}
       stopInput();toast(spec.toasts.start,banner);audio?.effect('bell');
       return result;
     }

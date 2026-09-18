@@ -154,3 +154,23 @@ test('the commander gives the orders, the principal pays, and nobody else speaks
     assert.deepEqual([opened.at(-1).lines, opened.at(-1).choices], [spec.after, []]);
   }
 });
+
+test('every assault after the battle forms up inside its own ground, wherever its commander stands', async () => {
+  const { createCombat } = await import('../src/combat.js');
+  const { AFTERMATH_VARIANTS, aftermathEncounter } = await import('../src/aftermath-chapter.js');
+  const { aftermathArena, aftermathSite } = await import('../src/aftermath-sites.js');
+  const world = { bounds: { minX: -3000, maxX: 3000, minZ: -3000, maxZ: 3000 }, colliders: [], heightAt: () => 5 };
+  for (const [id, spec] of Object.entries(AFTERMATH_VARIANTS)) {
+    const fight = aftermathEncounter(id, aftermathArena(spec.arena));
+    const axis = fight.retreatAxis;
+    assert.ok(fight.retreatLine - fight.checkpoint[axis] >= 6, `${id}: the company forms up well inside its retreat line`);
+    assert.ok(Math.hypot(fight.checkpoint.x - fight.center.x, fight.checkpoint.z - fight.center.z) < 40, `${id}: and near the fight`);
+    // The word is given beside the commander at the rally, which for Solis is the city gate.
+    const rally = aftermathSite(spec.rallySite);
+    const position = { x: rally.x, y: 5, z: rally.z };
+    const combat = createCombat({ world, position });
+    assert.equal(combat.startEncounter(fight, { atCheckpoint: true }), true, id);
+    for (let step = 0; step < 60; step++) combat.update(1 / 60);
+    assert.equal(combat.state.phase, 'active', `${id}: ordered at the rally, the assault is still on a second later`);
+  }
+});

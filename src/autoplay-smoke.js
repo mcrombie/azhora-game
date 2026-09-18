@@ -17,7 +17,7 @@ export async function runAutoplaySmoke(h) {
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
   let lastChapterStage = '', wolfFight = false, wentToSolis = false, lastIntent = '';
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
-  let previousFrames = readState().frames, previousAction = null;
+  let previousFrames = readState().frames, previousAction = null, previousPhase = null;
 
   const note = (label, extra = {}) => milestones.push({ label, seconds: Math.round((performance.now() - started) / 100) / 10, ...extra });
   autopilot.configure({ dialoguePace: .35, choicePace: .3, side });
@@ -62,7 +62,10 @@ export async function runAutoplaySmoke(h) {
     if (state.enemies?.some(enemy => String(enemy.id).startsWith('lauvel-wolf'))) wolfFight = true;
     // The Legate's terms go to the envoy at Solis, in West Suval, before the border battle.
     if (state.region === 5 && state.border && !state.border.side) wentToSolis = true;
-    if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight'); fights++; }
+    if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight', { at: `${now.x.toFixed(0)},${now.z.toFixed(0)}` }); fights++; }
+    // How a fight ended, and where: a retreat and a win look alike from the intent alone.
+    if (previousPhase === 'active' && state.phase !== 'active') note(`fight ended ${state.phase}`, { at: `${now.x.toFixed(1)},${now.z.toFixed(1)}`, hp: state.hp });
+    previousPhase = state.phase;
     if (state.mode === 'defeated') retries++;
     if (state.mode === 'dialogue') lines++;
     // What it believed it was doing, and where: a stall is only readable with this.
@@ -91,7 +94,7 @@ export async function runAutoplaySmoke(h) {
       else assert(state.journeyView?.complete && state.luscia?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
       break;
     }
-    assert(performance.now() - started < deadlineMs, `autoplay did not finish the road within ${Math.round(deadlineMs / 1000)} s (stage ${state.questStage}, road ${state.journeyView?.stage}, luscia ${state.luscia?.stage}, intent “${autopilot.intent}”)`);
+    assert(performance.now() - started < deadlineMs, `autoplay did not finish the road within ${Math.round(deadlineMs / 1000)} s (stage ${state.questStage}, road ${state.journeyView?.stage}, luscia ${state.luscia?.stage}, intent “${autopilot.intent}”; last: ${milestones.slice(-12).map(m => m.at ? `${m.label} @${m.at}` : m.label).join(' | ')})`);
   }
   const final = readState();
   assert(final.questStage === 10, 'the tutorial was not completed');

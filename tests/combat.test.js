@@ -444,3 +444,24 @@ test('custom victory reports its identity once and starting or retrying does not
   assert.equal(weapons.profile().durability,durability);
   assert.equal(combat.state.enemies.length,2);
 });
+
+test('a fight can begin where it forms up, so one ordered from beyond its retreat line is not lost on its first step', () => {
+  const world = { bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, colliders: [], heightAt: () => 1.5 };
+  const arena = { id: 'far-arena', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: 13 }, retreatLine: 21, retreatAxis: 'z',
+    enemies: [{ id: 'far-foe', x: 0, z: -12, kind: 'soldier', hp: 70 }] };
+  // Standing beside a commander thirty metres off, past the line.
+  const orderedHere = () => ({ x: 4, y: 1.5, z: 30 });
+  const events = [];
+  const plain = createCombat({ world, position: orderedHere(), onEvent: e => events.push(e) });
+  assert.equal(plain.startEncounter(arena), true);
+  plain.update(1 / 60);
+  assert.equal(plain.state.phase, 'peaceful', 'begun where the traveler stood, the fight is a retreat at once');
+  assert.ok(events.some(e => e.type === 'retreat'));
+
+  const position = orderedHere();
+  const formed = createCombat({ world, position });
+  assert.equal(formed.startEncounter(arena, { atCheckpoint: true }), true);
+  assert.deepEqual([position.x, position.z], [0, 13], 'the traveler stands where the fight forms up');
+  for (let step = 0; step < 60; step++) formed.update(1 / 60);
+  assert.equal(formed.state.phase, 'active', 'and the fight is still on a second later');
+});
