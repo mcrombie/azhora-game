@@ -12,7 +12,7 @@
  * has learned something about himself in front of the whole village.
  * Pure: no DOM, no three.
  */
-import { JIMSON_ITEM } from './herbology.js';
+import { JIMSON_ITEM } from './botany.js';
 import { LEAF_ITEM } from './pipeweed.js';
 
 export const JIMSON_VERSION = 1;

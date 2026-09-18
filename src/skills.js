@@ -20,11 +20,18 @@ export const SKILLS = Object.freeze({
     // The ten fish of Drent, Luscia and Pueth together are worth 200: level 6.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
-  herbology: Object.freeze({
-    id: 'herbology', name: 'Herbology',
-    blurb: 'What grows on either side of the road and what it is for: stopping blood, bringing a fever down, filling a belly, or waiting for you to be careless. Every plant you name for the first time teaches you something.',
+  botany: Object.freeze({
+    id: 'botany', name: 'Botany',
+    blurb: 'Everything that grows, from the plantain on the path to the oldest oak in the wood: what it is, where it stands, and what it is for. Every plant and tree you name for the first time teaches you something.',
     teacher: 'Nell Harrow, on the outskirts of Tidehaven',
-    // The nineteen plants of Drent together are worth 355: level 8.
+    // Drent's plants and trees together are worth more than the table holds.
+    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+  }),
+  geology: Object.freeze({
+    id: 'geology', name: 'Geology',
+    blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
+    teacher: 'Silas Garrow, digging marl under the Weatherhead',
+    // The eleven finds of Drent's coast together are worth 210: level 6.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
   mycology: Object.freeze({
@@ -37,6 +44,10 @@ export const SKILLS = Object.freeze({
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));
+
+/** Skills that have been renamed: a save from before the rename keeps its experience. */
+export const SKILL_ALIASES = Object.freeze({ herbology: 'botany' });
+const canonical = id => SKILL_ALIASES[id] ?? id;
 
 /** Level, and progress toward the next one, for `xp` experience in skill `id`. */
 export function skillLevel(id, xp) {
@@ -53,7 +64,7 @@ export function validateSkillsSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== SKILLS_VERSION) return false;
   if (!data.skills || typeof data.skills !== 'object' || Array.isArray(data.skills)) return false;
-  return Object.entries(data.skills).every(([id, entry]) => Object.hasOwn(SKILLS, id) && entry && typeof entry === 'object'
+  return Object.entries(data.skills).every(([id, entry]) => Object.hasOwn(SKILLS, canonical(id)) && entry && typeof entry === 'object'
     && Number.isInteger(entry.xp) && entry.xp >= 0 && entry.xp <= 1e6);
 }
 
@@ -93,7 +104,7 @@ export function createSkills({ onEvent = () => {} } = {}) {
   function restore(data) {
     learned.clear();
     if (!validateSkillsSnapshot(data, { allowMissing: false })) return false;
-    for (const [id, entry] of Object.entries(data.skills)) learned.set(id, entry.xp);
+    for (const [id, entry] of Object.entries(data.skills)) learned.set(canonical(id), Math.max(entry.xp, learned.get(canonical(id)) ?? 0));
     return true;
   }
 

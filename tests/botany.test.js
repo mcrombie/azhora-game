@@ -4,12 +4,12 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { createSkills } from '../src/skills.js';
-import { PLANT_SPECIES, PLANT_IDS, HERBALIST, HERBALIST_STAND, HERBOLOGY_LESSON, HERB_ITEM, TUCKAHOE_ITEM, LEAF_ITEM, JIMSON_ITEM,
-  plant, createHerbology, validateHerbologySnapshot, herbalistConversation } from '../src/herbology.js';
+import { PLANT_SPECIES, PLANT_IDS, BOTANIST, BOTANIST_STAND, BOTANY_LESSON, HERB_ITEM, TUCKAHOE_ITEM, LEAF_ITEM, JIMSON_ITEM,
+  TREE_IDS, plant, createBotany, validateBotanySnapshot, botanistConversation } from '../src/botany.js';
 import { PIPE_SMOKER, PIPE_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, validatePipeSnapshot, pipeSmokerConversation } from '../src/pipeweed.js';
 import { TOFT, JIMSON_PODS_WANTED, JIMSON_NIGHT_DELAY, createJimson, validateJimsonSnapshot, toftConversation } from '../src/jimson-quest.js';
 
-const fixture = () => { const skills = createSkills(); return { skills, herbology: createHerbology({ skills }) }; };
+const fixture = () => { const skills = createSkills(); return { skills, botany: createBotany({ skills }) }; };
 const satchel = (start = {}) => {
   const bag = { ...start };
   return { bag,
@@ -31,13 +31,15 @@ async function country() {
 }
 
 test('every plant is one of this country’s, and says where it stands and what it is for', () => {
-  assert.equal(PLANT_IDS.length, 19);
+  assert.equal(PLANT_IDS.length, 34, 'nineteen plants and fifteen trees');
+  assert.equal(TREE_IDS.length, 15);
   for (const id of PLANT_IDS) {
     const species = PLANT_SPECIES[id];
     assert.ok(species.xp >= 10 && species.xp <= 40, id);
     assert.ok(species.note.length > 60 && species.lore.length > 40, id);
-    assert.ok(['verge', 'wood', 'damp', 'clearing', 'river', 'field', 'waste'].includes(species.habitat), id);
-    assert.ok(['wound', 'remedy', 'food', 'craft', 'trade', 'warning'].includes(species.use), id);
+    assert.ok(['verge', 'wood', 'damp', 'clearing', 'river', 'field', 'waste', 'tree'].includes(species.habitat), id);
+    assert.ok(['wound', 'remedy', 'food', 'craft', 'trade', 'warning', 'tree'].includes(species.use), id);
+    if (species.use === 'tree') assert.ok(species.where?.length > 5, `${id} says where in Drent it stands`);
   }
   assert.equal(plant('a-weed'), null);
   // The three the user asked for by name are here, and in the right country.
@@ -53,24 +55,24 @@ test('every plant is one of this country’s, and says where it stands and what 
 });
 
 test('nothing is named until Nell has named it, and the first of each kind pays', () => {
-  const { skills, herbology } = fixture();
-  const early = herbology.find('yarrow');
+  const { skills, botany } = fixture();
+  const early = botany.find('yarrow');
   assert.equal(early.ok, false);
   assert.ok(early.reason.includes('Nell Harrow'));
-  assert.equal(skills.known('herbology'), false);
+  assert.equal(skills.known('botany'), false);
 
-  herbology.meet();
-  assert.equal(skills.known('herbology'), true);
-  assert.equal(herbology.meet().first, false);
+  botany.meet();
+  assert.equal(skills.known('botany'), true);
+  assert.equal(botany.meet().first, false);
 
   const bag = satchel();
-  const first = herbology.find('yarrow', bag);
+  const first = botany.find('yarrow', bag);
   assert.equal(first.first, true);
   assert.equal(first.xp, PLANT_SPECIES.yarrow.xp);
   assert.equal(first.taken, true);
   assert.equal(bag.count(HERB_ITEM), 1);
 
-  const again = herbology.find('yarrow', bag);
+  const again = botany.find('yarrow', bag);
   assert.equal(again.first, false);
   assert.equal(again.xp, 0);
   assert.equal(again.count, 2);
@@ -78,20 +80,20 @@ test('nothing is named until Nell has named it, and the first of each kind pays'
 });
 
 test('what is poison is named and left standing; what is worth carrying goes to its own item', () => {
-  const { herbology } = fixture();
-  herbology.meet();
+  const { botany } = fixture();
+  botany.meet();
   const bag = satchel();
   for (const id of ['bloodroot', 'mayapple', 'pokeweed']) {
-    const found = herbology.find(id, bag);
+    const found = botany.find(id, bag);
     assert.equal(found.ok, true, id);
     assert.equal(found.taken, false, `${id} should stay where it is`);
     assert.equal(found.xp, PLANT_SPECIES[id].xp, `knowing ${id} is worth as much as eating one`);
   }
   assert.equal(bag.count(HERB_ITEM), 0, 'none of the three went in the satchel');
 
-  herbology.find('tuckahoe', bag);
-  herbology.find('tobacco', bag);
-  const pods = herbology.find('jimson-weed', bag);
+  botany.find('tuckahoe', bag);
+  botany.find('tobacco', bag);
+  const pods = botany.find('jimson-weed', bag);
   assert.equal(bag.count(TUCKAHOE_ITEM), 1);
   assert.equal(bag.count(LEAF_ITEM), 1);
   assert.equal(bag.count(JIMSON_ITEM), JIMSON_PODS_WANTED, 'one jimson plant carries the three pods Toft wants');
@@ -99,32 +101,32 @@ test('what is poison is named and left standing; what is worth carrying goes to 
 });
 
 test('the sheet only names what has been found, and every plant in Drent is worth several levels', () => {
-  const { skills, herbology } = fixture();
-  herbology.meet();
-  const blank = herbology.view();
+  const { skills, botany } = fixture();
+  botany.meet();
+  const blank = botany.view();
   assert.equal(blank.foundCount, 0);
   assert.equal(blank.total, PLANT_IDS.length);
   assert.ok(blank.entries.every(entry => entry.name === 'A plant you have not named'));
-  assert.ok(blank.entries.every(entry => entry.detail.startsWith('Grows on')), 'once taught, she tells you where to look');
-  for (const id of PLANT_IDS) herbology.find(id);
-  const full = herbology.view();
+  assert.ok(blank.entries.every(entry => /^(Grows on|Stands in) /.test(entry.detail)), 'once taught, she tells you where to look');
+  for (const id of PLANT_IDS) botany.find(id);
+  const full = botany.view();
   assert.equal(full.foundCount, PLANT_IDS.length);
-  assert.ok(skills.level('herbology') >= 7, 'the whole country should be worth most of the table');
+  assert.ok(skills.level('botany') >= 7, 'the whole country should be worth most of the table');
 });
 
 test('plant notes survive the road, and a bad note is refused', () => {
-  const { herbology } = fixture();
-  herbology.meet();
-  herbology.find('elder'); herbology.find('elder'); herbology.find('sumac');
-  herbology.askAboutJimson();
-  const saved = herbology.snapshot();
-  assert.equal(validateHerbologySnapshot(saved), true);
-  assert.equal(validateHerbologySnapshot(undefined), true);
-  assert.equal(validateHerbologySnapshot(undefined, { allowMissing: false }), false);
+  const { botany } = fixture();
+  botany.meet();
+  botany.find('elder'); botany.find('elder'); botany.find('sumac');
+  botany.askAboutJimson();
+  const saved = botany.snapshot();
+  assert.equal(validateBotanySnapshot(saved), true);
+  assert.equal(validateBotanySnapshot(undefined), true);
+  assert.equal(validateBotanySnapshot(undefined, { allowMissing: false }), false);
   for (const bad of [null, [], { version: 9, met: true, found: {} }, { version: 1, met: 1, found: {} },
     { version: 1, met: true, found: { 'not-a-plant': 1 } }, { version: 1, met: true, found: { elder: 0 } },
-    { version: 1, met: true, found: {}, askedAboutJimson: 'yes' }]) assert.equal(validateHerbologySnapshot(bad), false, JSON.stringify(bad));
-  const other = createHerbology({ skills: createSkills() });
+    { version: 1, met: true, found: {}, askedAboutJimson: 'yes' }]) assert.equal(validateBotanySnapshot(bad), false, JSON.stringify(bad));
+  const other = createBotany({ skills: createSkills() });
   assert.equal(other.restore(saved), true);
   assert.deepEqual(other.found, { elder: 2, sumac: 1 });
   assert.equal(other.askedAboutJimson, true);
@@ -133,35 +135,35 @@ test('plant notes survive the road, and a bad note is refused', () => {
 });
 
 test('Nell teaches once, and will only talk about the thing behind her shed when asked', () => {
-  const { herbology } = fixture();
+  const { botany } = fixture();
   const jimson = createJimson();
-  const npc = { id: HERBALIST.id };
+  const npc = { id: BOTANIST.id };
   let opened = null, acted = null, closed = 0;
-  const context = { herbology, jimson, act: id => { acted = id; }, closeDialogue: () => { closed++; },
+  const context = { botany, jimson, act: id => { acted = id; }, closeDialogue: () => { closed++; },
     openDialogue: (who, lines, _p, _d, options = {}) => { opened = { who, lines, ...options }; } };
 
-  assert.equal(herbalistConversation({ id: 'somebody-else' }, context), false);
-  assert.equal(herbalistConversation(npc, context), true);
-  opened.choices.find(choice => choice.id === 'learn-herbology').action();
+  assert.equal(botanistConversation({ id: 'somebody-else' }, context), false);
+  assert.equal(botanistConversation(npc, context), true);
+  opened.choices.find(choice => choice.id === 'learn-botany').action();
   assert.equal(closed, 1);
-  assert.equal(acted, 'learn-herbology');
+  assert.equal(acted, 'learn-botany');
 
-  herbology.meet();
-  herbalistConversation(npc, context);
+  botany.meet();
+  botanistConversation(npc, context);
   let ids = opened.choices.map(choice => choice.id);
-  assert.ok(!ids.includes('learn-herbology'));
-  assert.ok(ids.includes('herbology-jimson'), 'the plant behind the shed can be asked about straight away');
-  opened.choices.find(choice => choice.id === 'herbology-jimson').action();
+  assert.ok(!ids.includes('learn-botany'));
+  assert.ok(ids.includes('botany-jimson'), 'the plant behind the shed can be asked about straight away');
+  opened.choices.find(choice => choice.id === 'botany-jimson').action();
   assert.ok(opened.lines.join(' ').includes('jimson weed'));
-  assert.equal(herbology.askedAboutJimson, true);
+  assert.equal(botany.askedAboutJimson, true);
   assert.equal(jimson.heardFromNell, true, 'asking her is what unlocks her plant');
   opened.onComplete();
 
-  herbalistConversation(npc, context);
+  botanistConversation(npc, context);
   ids = opened.choices.map(choice => choice.id);
-  assert.ok(!ids.includes('herbology-jimson'), 'she does not explain it twice');
-  assert.ok(ids.includes('herbology-danger') && ids.includes('herbology-lesson'));
-  assert.ok(HERBOLOGY_LESSON.length === 3 && HERBOLOGY_LESSON.every(line => line.length > 80));
+  assert.ok(!ids.includes('botany-jimson'), 'she does not explain it twice');
+  assert.ok(ids.includes('botany-danger') && ids.includes('botany-lesson'));
+  assert.ok(BOTANY_LESSON.length === 3 && BOTANY_LESSON.every(line => line.length > 80));
 });
 
 test('Cabe’s pipe needs the lesson, the pipe and the leaf', () => {
@@ -311,7 +313,7 @@ test('the three jimson weeds are where the user put them, and the tuckahoe is at
   const jimsons = sites.filter(site => site.species === 'jimson-weed');
   assert.deepEqual(jimsons.map(site => site.stand).sort(), ['jimson-drent', 'jimson-nell', 'jimson-pueth']);
   const nell = jimsons.find(site => site.stand === 'jimson-nell');
-  const nellStand = HERBALIST_STAND;
+  const nellStand = BOTANIST_STAND;
   assert.ok(Math.hypot(nell.x - nellStand.x, nell.z - nellStand.z) < 12, 'hers grows behind her shed, where it can be noticed early');
   const pueth = jimsons.find(site => site.stand === 'jimson-pueth');
   assert.equal(world.regionAt(pueth.x, pueth.z)?.name, 'Pueth');
@@ -349,4 +351,37 @@ test('a gathered plant is gone, and stays gone across a save', async () => {
   assert.equal(flora.nearest(here, 2.2).id, first.id);
   flora.restoreGathered([first.id]);
   assert.deepEqual(flora.state().sites.filter(site => site.gathered).map(site => site.id), [first.id]);
+});
+
+test('a tree is named, never taken, and every tree in botany stands somewhere in Drent', async () => {
+  const { world } = await country();
+  const { createDrentTrees, SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/drent-trees.js');
+  const { skills, botany } = fixture();
+  botany.meet();
+  const bag = satchel();
+  const oak = botany.find('white-oak', bag);
+  assert.deepEqual([oak.first, oak.taken, oak.xp], [true, false, PLANT_SPECIES['white-oak'].xp]);
+  assert.deepEqual(bag.bag, {}, 'nobody puts an oak in a satchel');
+
+  const trees = createDrentTrees(new THREE.Scene(), world, { avoid: Object.values(world.npcPositions) });
+  const standing = trees.state().trees;
+  assert.equal(standing.length, SPECIMEN_TREES.length, 'every specimen tree found room to stand');
+  assert.deepEqual([...new Set(standing.map(tree => tree.species))].sort(), [...TREE_IDS].sort(), 'every tree botany names can be found');
+  for (const tree of standing) {
+    assert.equal(world.regionAt(tree.x, tree.z)?.name, 'Drent', tree.id);
+    // Somewhere within reach of the trunk is ground a person can stand on.
+    let reachable = false;
+    for (let a = 0; a < 16 && !reachable; a++) {
+      const x = tree.x + Math.cos(a * .39) * (TREE_REACH - .5), z = tree.z + Math.sin(a * .39) * (TREE_REACH - .5);
+      reachable = canStand(x, z, world, .45);
+    }
+    assert.ok(reachable, `${tree.id} cannot be walked up to`);
+    const road = Math.min(...world.paths.flatMap(path => path.map(p => Math.hypot(p.x - tree.x, p.z - tree.z))));
+    assert.ok(road > 2, `${tree.id} is standing in the road`);
+  }
+  const cypress = standing.find(tree => tree.species === 'bald-cypress');
+  assert.ok(!canStand(cypress.x, cypress.z, world, .6), 'the cypress stands in the river, where it belongs');
+  assert.equal(trees.nearest({ x: cypress.x + 1, z: cypress.z }).species, 'bald-cypress');
+  assert.equal(trees.colliders.length, standing.length, 'every trunk is solid');
+  trees.dispose();
 });

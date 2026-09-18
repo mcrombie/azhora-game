@@ -75,6 +75,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Hard green eggs stuck all over with spikes. Toft Ellery wants three. For his knee.',
     description: 'The seed pods of the jimson weed, which grows on trodden waste ground nobody keeps. A garrison up the river boiled the leaves for greens once and spent eleven days chasing people who were not there. Nell Harrow will tell you to leave them alone, and Nell Harrow is right.',
   }),
+  'stone-specimens': Object.freeze({
+    name: 'Stone specimens', type: 'Gathered material', icon: 'acorn', stackable: true,
+    brief: 'The finds worth carrying: a shark\u2019s tooth, a fossil scallop, a cobble of white quartz.',
+    description: 'What Silas Garrow taught you to pick up rather than kick along the road. Each one came from somewhere, and most of them from a long way off, a long time ago.',
+  }),
   mushrooms: Object.freeze({
     name: 'Gathered mushrooms', type: 'Food', icon: 'leaf', stackable: true, eatName: 'mushrooms',
     brief: 'What Odger Pell would approve of: named, edible, and picked clean. Restores up to 18 health.',

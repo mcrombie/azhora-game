@@ -19,10 +19,12 @@ import { createBirding, validateBirdingSnapshot } from './birding.js';
 import { createMapFog, validateMapFogSnapshot } from './map-fog.js';
 import { createFishing, validateFishingSnapshot } from './fishing-skill.js';
 import { createMycology, validateMycologySnapshot } from './mycology.js';
-import { createHerbology, validateHerbologySnapshot } from './herbology.js';
+import { createBotany, validateBotanySnapshot } from './botany.js';
 import { createPipe, validatePipeSnapshot } from './pipeweed.js';
 import { createJimson, validateJimsonSnapshot } from './jimson-quest.js';
 import { validateRefugeesSnapshot } from './refugees.js';
+import { createGeology, validateGeologySnapshot } from './geology.js';
+import { createTalkingTree, validateTalkingTreeSnapshot } from './talking-tree.js';
 import { createFerry, validateFerrySnapshot } from './ferry.js';
 import { createRenaLetters, validateRenaLettersSnapshot } from './rena-letters.js';
 import { createLusciaChapter } from './luscia-chapter.js';
@@ -77,10 +79,13 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateMapFogSnapshot(data.chart)) return failed('The saved chart is invalid.');
     if (!validateFishingSnapshot(data.fishing)) return failed('The saved fishing notes are invalid.');
     if (!validateMycologySnapshot(data.mycology)) return failed('The saved mushroom notes are invalid.');
-    if (!validateHerbologySnapshot(data.herbology)) return failed('The saved plant notes are invalid.');
+    // Botany was herbology before it took in the trees; an older save keeps its notes.
+    if (!validateBotanySnapshot(data.botany ?? data.herbology)) return failed('The saved plant notes are invalid.');
     if (!validatePipeSnapshot(data.pipe)) return failed('The saved pipe is invalid.');
     if (!validateJimsonSnapshot(data.jimson)) return failed('The saved errand for Toft is invalid.');
     if (!validateRefugeesSnapshot(data.refugees)) return failed('The saved road for the Lauvel refugees is invalid.');
+    if (!validateGeologySnapshot(data.geology)) return failed('The saved stone notes are invalid.');
+    if (!validateTalkingTreeSnapshot(data.oldTree)) return failed('The saved state of the Old Tree is invalid.');
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
     if (!validateRenaLettersSnapshot(data.renaLetters)) return failed('The saved letters between the Ardrys are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
@@ -162,10 +167,12 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'chart')) { const fog = createMapFog(); fog.restore(data.chart); result.chart = fog.snapshot(); }
     if (Object.hasOwn(data, 'fishing')) { const fishing = createFishing(); fishing.restore(data.fishing); result.fishing = fishing.snapshot(); }
     if (Object.hasOwn(data, 'mycology')) { const mycology = createMycology(); mycology.restore(data.mycology); result.mycology = mycology.snapshot(); }
-    if (Object.hasOwn(data, 'herbology')) { const herbology = createHerbology(); herbology.restore(data.herbology); result.herbology = herbology.snapshot(); }
+    if (Object.hasOwn(data, 'botany') || Object.hasOwn(data, 'herbology')) { const botany = createBotany(); botany.restore(data.botany ?? data.herbology); result.botany = botany.snapshot(); }
     if (Object.hasOwn(data, 'pipe')) { const pipe = createPipe(); pipe.restore(data.pipe); result.pipe = pipe.snapshot(); }
     if (Object.hasOwn(data, 'jimson')) { const jimson = createJimson(); jimson.restore(data.jimson); result.jimson = jimson.snapshot(); }
     if (Object.hasOwn(data, 'refugees')) result.refugees = data.refugees;
+    if (Object.hasOwn(data, 'geology')) { const geology = createGeology(); geology.restore(data.geology); result.geology = geology.snapshot(); }
+    if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }
     if (Object.hasOwn(data, 'renaLetters')) { const letters = createRenaLetters(); letters.restore(data.renaLetters); result.renaLetters = letters.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;

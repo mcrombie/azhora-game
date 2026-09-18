@@ -1,7 +1,7 @@
 /**
  * The Weatherhead, and the pipe.
  *
- * Drent grows tobacco — half its good ground is under it (`src/herbology.js`) —
+ * Drent grows tobacco — half its good ground is under it (`src/botany.js`) —
  * and what the barns cure is cut for the pipe. Cabe Tolliver sits on the
  * Weatherhead, the low head south of Tidehaven's landing, calls the weather for
  * the boats, and will teach anyone who walks out to him how to fill a bowl,
@@ -78,7 +78,7 @@ export function createPipe({ onEvent = () => {} } = {}) {
 
 /** Cabe's conversation. `act` runs 'learn-pipe' in the host. */
 export function pipeSmokerConversation(npc, context) {
-  const { pipe, herbology = null, openDialogue, closeDialogue, act } = context;
+  const { pipe, botany = null, openDialogue, closeDialogue, act } = context;
   if (npc.id !== PIPE_SMOKER.id) return false;
   const again = () => pipeSmokerConversation(npc, context);
   const leave = { id: 'leave-pipe-smoker', label: 'Fair winds.', action: closeDialogue };
@@ -105,7 +105,7 @@ export function pipeSmokerConversation(npc, context) {
       'The Avrel ground, mostly. Broad sticky leaves up a stalk taller than you, and the grower goes down the rows topping the flowers off so the leaf gets everything.',
       'Cut in the late summer, hung in the barn until it is brown and smells like a church, then rubbed. There are people in this country who will tell you it is the only honest crop and people who will tell you it has eaten every good field in Drent. They are both right, which is the trouble with it.',
     ], null, 'Back to our conversation', { onComplete: again }) },
-    ...(herbology?.met ? [{ id: 'pipe-jimson', label: 'Somebody told me you can smoke other things.', action: () => openDialogue(npc, [
+    ...(botany?.met ? [{ id: 'pipe-jimson', label: 'Somebody told me you can smoke other things.', action: () => openDialogue(npc, [
       'I know exactly what you have been told and exactly who told you. No.',
       'That white-trumpet weed off the waste ground is not tobacco and it is not a joke. A garrison up the river ate it for greens once and spent eleven days chasing people who were not there. One of them walked into the water. Nell will tell you the same and she says it kinder than I do.',
     ], null, 'Back to our conversation', { onComplete: again }) }] : []),

@@ -1,6 +1,6 @@
 /**
  * The plants of Drent: what Nell Harrow teaches the traveler to find
- * (`src/herbology.js`). Each kind grows where it should — yarrow and plantain on
+ * (`src/botany.js`). Each kind grows where it should — yarrow and plantain on
  * the trodden verge, jewelweed and boneset in wet shade, sassafras and ginseng
  * under the oaks, mullein and sumac in the old fields — and each is drawn once
  * and instanced where it stands. Four stands are authored rather than scattered,
@@ -10,7 +10,7 @@
  */
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
-import { PLANT_SPECIES, PLANT_IDS } from './herbology.js';
+import { PLANT_SPECIES, PLANT_IDS } from './botany.js';
 
 const TAU = Math.PI * 2;
 const PHI = 2.39996;
