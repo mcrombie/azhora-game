@@ -512,6 +512,33 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     push({ x: tally.x, z: tally.z, r: .5, kind: 'tally-board' });
   }
 
+
+  // The queue above the chain: barges moored two abreast along the east quay and a
+  // pair against the timber strand, laden and waiting their turn at the tally.
+  // Nothing moves south until it has paid, and on any day there are more of these
+  // than there are below the chain.
+  {
+    const loads = ['grain', 'fish', 'timber', 'grain', 'barrels', 'fish', 'grain'];
+    const barge = (a, b, load, yaw = 0) => {
+      const spot = P(a, b), water = CHANNEL.surface;
+      town.frame(spot.x, water, spot.z, yaw, () => {
+        town.block(WOOD_DARK, 0, -.5, 0, 3.4, 1.1, 13);
+        town.block(WOOD, 0, .45, 0, 3.6, .22, 13.4);
+        town.block(TAR, 0, -.2, -6.6, 2.6, .9, .6);
+        town.cylinder(WOOD, 0, .6, -3.8, .12, 3.4, 0, 7);
+        if (load === 'grain') for (let k = 0; k < 10; k++) town.rock(k % 2 ? '#c9b27a' : '#b99f67', (k % 2 - .5) * 1.4, 1.0, -4 + Math.floor(k / 2) * 1.9, .7, .45, .8, k);
+        else if (load === 'fish') for (let k = 0; k < 8; k++) town.block(k % 3 ? '#8a7c5a' : '#6f644a', (k % 2 - .5) * 1.3, .56, -3.6 + Math.floor(k / 2) * 2.2, 1.1, .9, 1.4);
+        else if (load === 'barrels') for (let k = 0; k < 8; k++) town.cylinder('#6a5438', (k % 2 - .5) * 1.3, .56, -3.4 + Math.floor(k / 2) * 2.1, .5, 1.1, 0, 7);
+        else for (let k = 0; k < 4; k++) town.beam(k % 2 ? BARK : WOOD_LIGHT, [(k % 2 - .5) * 1.2, .9 + Math.floor(k / 2) * .6, -5.5], [(k % 2 - .5) * 1.2, .9 + Math.floor(k / 2) * .6, 5.5], .6);
+      });
+      metrics.props++;
+    };
+    [-46, -28, 20, 36, 52].forEach((b, index) => barge(CHANNEL.half - 2.3 - (index % 2) * 3.9, b, loads[index], (index % 2 - .5) * .04));
+    [-34, 28].forEach((b, index) => barge(-CHANNEL.half + 2.4, b, loads[5 + index], .03));
+    // Below the chain, the water is empty but for one that has paid, waiting for the Stair.
+    barge(-6, 88, 'grain', .08);
+  }
+
   // The market: stalls, the well, and a cart with the barley still on it.
   for (const [index, stall] of AMBRON_STALLS.entries()) {
     const spot = P(stall.a, stall.b), ground = y(spot.x, spot.z);
