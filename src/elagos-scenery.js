@@ -683,11 +683,12 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
       // Seven arches: the spandrel falls away between the piers, so the causeway reads
       // as arches from the water and as a street from the deck.
       const pier = CAUSEWAY.piers.reduce((best, p) => Math.abs(p - mid) < Math.abs(best - mid) ? p : best, CAUSEWAY.piers[0]);
-      const gap = Math.min(4.5, Math.abs(mid - pier));
-      if (gap > .8) {
-        const rise = Math.sqrt(Math.max(0, 1 - ((gap - 4.5) / 4.5) ** 2)) * 2.1;
+      const halfSpan = (CAUSEWAY.piers[1] - CAUSEWAY.piers[0]) / 2, gap = Math.min(halfSpan, Math.abs(mid - pier));
+      if (gap > .6 && Math.abs(mid) < CHANNEL.half) {
+        // The intrados: highest at mid-span, springing from near the water at each pier.
+        const drop = (1 - Math.sqrt(Math.max(0, 1 - ((gap - halfSpan) / halfSpan) ** 2))) * 1.6;
         for (const side of [-1, 1])
-          cause.block(MASONRY.lake.dark, spot.x, level - 1.95 - rise, spot.z + side * (CAUSEWAY.halfWidth - .1), a1 - a0 + .05, .9 + rise, .7);
+          cause.block(MASONRY.lake.dark, spot.x, level - 1.35 - drop, spot.z + side * (CAUSEWAY.halfWidth - .1), a1 - a0 + .05, .3 + drop, .7);
       }
       for (const side of [-1, 1]) {
         cause.block(MASONRY.imperial.face, spot.x, level, spot.z + side * (CAUSEWAY.halfWidth + .05), a1 - a0 + .05, .95, .5);

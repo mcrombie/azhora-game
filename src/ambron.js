@@ -96,7 +96,8 @@ export const CHANNEL = freeze({ half: AMBRON.channelHalf, surface: 14.6,
  * the water. Its deck is level between the piers and ramps down to the made
  * ground of each bank, so a traveler walks straight across.
  */
-export const CAUSEWAY = freeze({ b: 0, halfWidth: 4.2, deckY: 17.7, level: 24, foot: 32, piers: freeze([-18, -9, 0, 9, 18]) });
+export const CAUSEWAY = freeze({ b: 0, halfWidth: 4.2, deckY: 17.7, level: 24, foot: 32,
+  piers: freeze([-1, -.6, -.2, .2, .6, 1].map(f => Math.round(f * AMBRON.channelHalf * 5 / 7 * 100) / 100)) });
 
 /** The deck of the causeway under a world point, or null: `world.heightAt` asks this. */
 export function ambronDeckHeight(x, z) {
