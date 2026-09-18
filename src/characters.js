@@ -549,7 +549,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         headX = -.03 + point * .05; headY = Math.sin(seconds * .45 + offset) * .18;
         hip[0] = -.03; hip[1] = -.02; knee[0] = .07; knee[1] = .06;
       } else if (role === 'wine-clerk') {
-        // Mirith reads: the book held low in both hands, head bent to it, a page turned now and then.
+        // Nika reads: the book held low in both hands, head bent to it, a page turned now and then.
         const page = Math.pow(Math.max(0, Math.sin(seconds * .31 + offset)), 12);
         arm[0] = -.36; elbow[0] = -1.2; armOut[0] = .14;
         arm[1] = -.36 - page * .1; elbow[1] = -1.2 + page * .25; armOut[1] = -.14 - page * .06;
@@ -715,7 +715,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isCustodian = role === 'rise-custodian', isClerk = role === 'relay-clerk';
   const isWoodcutter = role === 'forest-woodcutter';
   const isBirdWatcher = role === 'bird-watcher';
-  // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Mirith, who works the floor.
+  // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Nika, who works the floor.
   const isWineSeller = role === 'wine-seller', isWineClerk = role === 'wine-clerk';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
@@ -1079,7 +1079,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       corner.rotation.z = side * -0.5;
     }
   } else if (isWineClerk) {
-    // Mirith: a copper-red pixie crop, the fringe choppy and swept to her left,
+    // Nika: a copper-red pixie crop, the fringe choppy and swept to her left,
     // feathered at the ears and the nape; freckles, a pencil behind one ear and a
     // small silver ring in the other.
     round(head, hairMat, [0, 0.3, 0.005], [0.212, 0.125, 0.195]);
@@ -1662,7 +1662,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     ribbon(body, apron, [0.085, 1.17, 0.175], [0.1, 1.3, 0.07], 0.02);
     part(body, UNIT_CYLINDER, apron, [0, 0.97, 0], [0.215, 0.025, 0.16]);
     // The book she is reading, open in her hands.
-    const book = new THREE.Group(); book.name = 'Mirith’s book'; book.position.set(0, 1.0, 0.3); book.rotation.x = -0.9; body.add(book);
+    const book = new THREE.Group(); book.name = 'Nika’s book'; book.position.set(0, 1.0, 0.3); book.rotation.x = -0.9; body.add(book);
     for (const side of [-1, 1]) {
       const leaf = box(book, cover, [side * 0.062, 0, 0], [0.12, 0.012, 0.16]);
       leaf.rotation.z = side * -0.12;

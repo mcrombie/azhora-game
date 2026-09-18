@@ -11,9 +11,9 @@
  * keeps them from quarrelling, but only while it runs loose, which is to say
  * only while he is drunk. The old kings kept a Cup-Bearer to the Goblin. The
  * Empire abolished the office with everything else it did not understand. Now
- * Prime Minister Viviana Dorsael pays for his wine from a line in the harbour
- * accounts, and her secretary leaves it for him in a niche in the sea wall. If
- * Solis learned that its taxes keep Puck in wine, she would be finished by
+ * Prime Minister Leandro Dorsael pays for Puck's wine from a line in the harbour
+ * accounts, and his secretary leaves it for the goblin in a niche in the sea wall.
+ * If Solis learned that its taxes keep Puck in wine, he would be finished by
  * supper.
  *
  * The traveler can find the cask, get the truth from the secretary, and choose:
@@ -29,7 +29,7 @@ const P = solisPoint;
 
 /** `stay`: seconds at one haunt before he moves on. He goes at once if somebody hurries at him (`spook`) or swings at him (`swingSpook`). */
 export const PUCK = freeze({ id: 'puck', name: 'Puck', role: 'The wine goblin of Solis', stay: 95, spook: 2.6, swingSpook: 3.6, talk: 3.4 });
-export const PRIME_MINISTER = 'Prime Minister Viviana Dorsael';
+export const PRIME_MINISTER = 'Prime Minister Leandro Dorsael';
 export const SECRETARY = freeze({ id: 'solis-secretary', name: 'Tancredi Vel', role: 'Private secretary to the Prime Minister of Solis', modelRole: 'relay-clerk', color: 0x2f5a4a });
 /** At the door of the Prime Minister's offices, in the old counting house. */
 export const SECRETARY_STAND = freeze({ ...P(-7.4, 9.1), yaw: Math.PI });
@@ -124,8 +124,8 @@ export function createPuck({ random = Math.random } = {}) {
   function task() {
     const q = state.quest;
     if (q === 'heard') return { title: 'Puck, the wine goblin', stage: 'heard', detail: 'Everybody in Solis hates Puck, and nobody can catch him. Juan says the goblin has drunk half his stock. And yet Puck has never once gone thirsty. Somebody is feeding him. Ask about the city; watch where he drinks.' };
-    if (q === 'cask') return { title: 'Puck, the wine goblin', stage: 'cask', target: SECRETARY.id, detail: 'A cask of good wine in a niche in the sea wall, sealed in green wax with a sun-horse over a ledger: the seal of the Prime Minister’s office. Her secretary keeps the door of the old counting house.' };
-    if (q === 'told') return { title: 'Puck, the wine goblin', stage: 'decide', target: SECRETARY.id, detail: `${PRIME_MINISTER} keeps Puck in wine to keep the old spirits of Solis at peace, and it would end her if the city knew. Tancredi Vel is waiting to hear what you will do.` };
+    if (q === 'cask') return { title: 'Puck, the wine goblin', stage: 'cask', target: SECRETARY.id, detail: 'A cask of good wine in a niche in the sea wall, sealed in green wax with a sun-horse over a ledger: the seal of the Prime Minister’s office. His secretary keeps the door of the old counting house.' };
+    if (q === 'told') return { title: 'Puck, the wine goblin', stage: 'decide', target: SECRETARY.id, detail: `${PRIME_MINISTER} keeps Puck in wine to keep the old spirits of Solis at peace, and it would end him if the city knew. Tancredi Vel is waiting to hear what you will do.` };
     return null;
   }
   const sober = () => state.quest === 'exposed' && state.sober >= SOBER_SIGNS[0].at;
@@ -218,7 +218,7 @@ export const puckThanks = (wine, settled) => [
 // ---------------------------------------------------------------------------
 const SECRETARY_TRUTH = freeze([
   'He goes the colour of the counting house’s whitewash. He shuts the door behind you. He checks the door. He shuts it again.',
-  'Keep your voice down. Yes, it is her seal. Yes, the cask is for the goblin. No, she is not mad.',
+  'Keep your voice down. Yes, it is his seal. Yes, the cask is for the goblin. No, he is not mad.',
   'Solis stands where three old things meet: the spirits of the vines on the hills, the things under the sea wall, and the springs under the town. They have never liked each other. Before the walls and before the kings, something had to sit in the middle and keep them from quarrelling. That something is Puck.',
   'His magic does it, but only when it runs loose, which is to say only when he is drunk. Sober, it knots up tight inside him, and the three start in on each other. The fountain runs salt. The orange trees drop their fruit green. The bell under the sea wall starts knocking.',
   'The old kings had an office for it: Cup-Bearer to the Goblin, with a salary and a seal and a seat at the feasts. The Empire abolished it with everything else it did not understand, and we had the winter of the green oranges. Now the Prime Minister pays for his wine out of the harbour accounts, under sundries, and I carry it to the sea wall every tenth night.',
@@ -232,7 +232,7 @@ export function secretaryConversation(npc, context) {
   const decide = lines => openDialogue(npc, lines, null, 'Leave the counting house', { choices: [
     { id: 'puck-keep', label: 'Your secret is safe with me.', action: () => { closeDialogue(); act('puck-keep'); } },
     { id: 'puck-expose-ask', label: 'The city has a right to know.', action: () => openDialogue(npc, [
-      'Then you will tell them, and she will go, and the deliveries will stop, and you will hear the sea wall. You understand that?',
+      'Then you will tell them, and he will go, and the deliveries will stop, and you will hear the sea wall. You understand that?',
     ], null, 'Leave the counting house', { choices: [
       { id: 'puck-expose', label: 'Tell them anyway.', action: () => { closeDialogue(); act('puck-expose'); } },
       { id: 'puck-expose-no', label: 'No. Keep it.', action: () => { closeDialogue(); act('puck-keep'); } },
@@ -245,7 +245,7 @@ export function secretaryConversation(npc, context) {
     ] });
   } else if (q === 'told') decide(['You came back. Well? What are you going to do?']);
   else if (q === 'kept') openDialogue(npc, ['The deliveries are made, the sea wall is quiet, and nobody knows but us. Every tenth night.', 'Bring him a bottle yourself sometime. He is not particular, whatever Juan says.'], null, 'Leave the counting house');
-  else if (q === 'exposed') openDialogue(npc, [`${PRIME_MINISTER} resigned this morning. Her successor has stopped the deliveries, as I said he would.`, 'Listen to the sea wall tonight, and then tell me the city had a right to know. If you want to put it right, you know where the goblin drinks.'], null, 'Leave the counting house');
-  else openDialogue(npc, [`${SECRETARY.name}, private secretary to ${PRIME_MINISTER}. The Prime Minister is not receiving. The Prime Minister is never receiving.`, 'She governs, mostly. And worries, the rest of the time. Mostly the worrying. Good day.'], null, 'Leave the counting house');
+  else if (q === 'exposed') openDialogue(npc, [`${PRIME_MINISTER} resigned this morning. His successor has stopped the deliveries, as I said she would.`, 'Listen to the sea wall tonight, and then tell me the city had a right to know. If you want to put it right, you know where the goblin drinks.'], null, 'Leave the counting house');
+  else openDialogue(npc, [`${SECRETARY.name}, private secretary to ${PRIME_MINISTER}. The Prime Minister is not receiving. The Prime Minister is never receiving.`, 'He governs, mostly. And worries, the rest of the time. Mostly the worrying. Good day.'], null, 'Leave the counting house');
   return true;
 }

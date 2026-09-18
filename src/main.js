@@ -77,7 +77,7 @@ import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
 import { WINE_SKILL, WINE_LESSON, createWine, vintnerConversation, cellarHandConversation } from './wine.js';
 import { LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, createCooking } from './cooking.js';
-import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, MIRITH, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, mirithConversation } from './wine-attic.js';
+import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, NIKA, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, nikaConversation } from './wine-attic.js';
 import { ATTIC_WINES } from './attic-wines.js';
 import { PUCK, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, createPuck, puckConversation, secretaryConversation, puckThanks } from './puck.js';
 import { createPuckView } from './puck-model.js';
@@ -191,7 +191,7 @@ function init() {
   world.npcPositions[BIRD_WATCHER.id]={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z};npcData.push({...BIRD_WATCHER,yaw:world.birdGarden.stand.yaw});
   // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
   for(const person of [VINTNER,CELLAR_HAND]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
-  // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Mirith with her book (src/wine-attic.js).
+  // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
   for(const person of ATTIC_PEOPLE){const stand=ATTIC_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/puck.js).
   world.npcPositions[SECRETARY.id]={x:SECRETARY_STAND.x,z:SECRETARY_STAND.z};npcData.push({...SECRETARY,yaw:SECRETARY_STAND.yaw});
@@ -358,11 +358,11 @@ function init() {
       if(fed.settled)toast('Puck is drunk again, and Solis settles: the fountain runs sweet, and the sea wall is quiet.','PUCK, THE WINE GOBLIN');saveRoad(false);return;}
     if(action==='puck-confront'){puck.confront();saveRoad(false);return;}
     if(action==='puck-keep'){const kept=puck.keep();if(!kept.ok)return;inventory.add(COPPER_ITEM,kept.reward);inventory.refresh();audio?.effect('success');
-      openDialogue(secretary,['He lets out a breath he seems to have been holding for years.','Thank you. Truly. She will want to thank you herself, and she never will, so let me. Take this. From sundries.'],null,'Leave the counting house');
+      openDialogue(secretary,['He lets out a breath he seems to have been holding for years.','Thank you. Truly. He will want to thank you himself, and he never will, so let me. Take this. From sundries.'],null,'Leave the counting house');
       toast(`${kept.reward} copper, from sundries. The arrangement holds, and nobody knows but you, Tancredi Vel and ${PRIME_MINISTER}.`,'PUCK, THE WINE GOBLIN');saveRoad(false);return;}
     if(action==='puck-expose'){if(!puck.expose().ok)return;
       openDialogue(secretary,['He sits down, very slowly, behind his desk.','Then go and tell them. They will be delighted. They always are, at first.'],null,'Leave the counting house');
-      toast(`By evening all Solis knows that ${PRIME_MINISTER} has been keeping Puck in wine at the city\u2019s expense. She resigns before supper, and the deliveries stop.`,'THE GOBLIN SCANDAL');saveRoad(false);return;}
+      toast(`By evening all Solis knows that ${PRIME_MINISTER} has been keeping Puck in wine at the city\u2019s expense. He resigns before supper, and the deliveries stop.`,'THE GOBLIN SCANDAL');saveRoad(false);return;}
   }
   // The cask in the niche in the sea wall: F reads its seal.
   let currentCask=null;
@@ -370,20 +370,20 @@ function init() {
     openDialogue({id:'sea-wall-cask',name:'A cask in the sea wall',role:'Sealed in green wax'},[
       'A small cask of good Enbraleth, tucked into a niche in the patched sea wall where nobody would put anything by accident.',
       'The bung is sealed in green wax, and pressed into the wax is a seal: a sun-horse over a closed ledger. The seal of the Prime Minister\u2019s office.',
-      ...(found.first?['Somebody up the hill is feeding the goblin. Her secretary, Tancredi Vel, keeps the door of the old counting house.']:[])],null,'Leave it be');
-    if(found.first){toast('The Prime Minister\u2019s seal, on a cask left for Puck. Her secretary keeps the door of the old counting house.','PUCK, THE WINE GOBLIN');saveRoad(false);}}
+      ...(found.first?['Somebody up the hill is feeding the goblin. His secretary, Tancredi Vel, keeps the door of the old counting house.']:[])],null,'Leave it be');
+    if(found.first){toast('The Prime Minister\u2019s seal, on a cask left for Puck. His secretary keeps the door of the old counting house.','PUCK, THE WINE GOBLIN');saveRoad(false);}}
 
-  // Tharganhom: Juan's tastings and bottles, Mirith's stories.
+  // Tharganhom: Juan's tastings and bottles, Nika's stories.
   const atticContext=(extra={})=>({attic:wineAttic,wine,puck,purse:inventory.count(COPPER_ITEM),items:INVENTORY_ITEMS,openDialogue,closeDialogue,act:atticAct,...extra});
   function atticAct(action){
-    const juan=npcById.get(JUAN.id),mirith=npcById.get(MIRITH.id);
+    const juan=npcById.get(JUAN.id),nika=npcById.get(NIKA.id);
     if(action==='attic-welcome'){wineAttic.welcome();toast(`${WINE_ATTIC.name}, the Wine Attic. Juan pours a taste of anything on his shelves and sells every bottle. Nothing from West Suval.`,'SOLIS \u00b7 THE WINE ATTIC');saveRoad(false);return;}
     if(action==='attic-learn-wine'){wine.learn();refreshSkillsSheet();audio?.effect('success');
       openDialogue(juan,[...JUAN_LESSON],null,'Back to Juan',{onComplete:()=>juanConversation(juan,atticContext({back:true}))});
       toast('Wine \u00b7 level 1. Juan will pour a taste of anything on his shelves.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return;}
     if(action.startsWith('attic-taste-')){const id=action.slice(12),entry=ATTIC_WINES[id],result=wine.taste(id);if(!result.ok||!entry){toast(result.reason,WINE_ATTIC.name.toUpperCase());return;}
       refreshSkillsSheet();audio?.effect('success');
-      openDialogue(juan,[entry.pitch,entry.note],null,'Back to Juan',{onComplete:()=>juanTasting(juan,atticContext(),'Another? Go on. Nobody is counting. Mirith is counting.')});
+      openDialogue(juan,[entry.pitch,entry.note],null,'Back to Juan',{onComplete:()=>juanTasting(juan,atticContext(),'Another? Go on. Nobody is counting. Nika is counting.')});
       toast(result.first?`Wine +${result.xp}${result.levelled?` \u00b7 level ${result.level}`:''}. ${entry.name}, from ${entry.from}, tasted properly.`:`The ${entry.name}, again. Still good.`,result.first?'FIRST TASTING \u00b7 THARGANHOM':'THARGANHOM');
       if(result.first)saveRoad(false);return;}
     if(action.startsWith('attic-buy-')){const entry=ATTIC_WINES[action.slice(10)];if(!entry)return;
@@ -392,12 +392,12 @@ function init() {
       inventory.refresh();audio?.effect('success');toast(`A bottle of ${entry.name} for ${entry.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM JUAN');saveRoad(false);
       juanShop(juan,atticContext(),`The ${entry.name}. Beautiful choice. I wrapped it in yesterday\u2019s notices so nobody sees you have taste. Anything else?`);return;}
     if(action==='attic-puck'){if(puck.hear().first){refreshQuest?.();saveRoad(false);}return;}
-    if(action==='mirith-quiet'){wineAttic.quiet();return;}
-    if(action==='mirith-warm'){wineAttic.warmUp();saveRoad(false);atticAct('mirith-scary-extra-picker');return;}
-    const told=/^mirith-(life|scary)-(.+)$/.exec(action);
+    if(action==='nika-quiet'){wineAttic.quiet();return;}
+    if(action==='nika-warm'){wineAttic.warmUp();saveRoad(false);atticAct('nika-scary-extra-picker');return;}
+    const told=/^nika-(life|scary)-(.+)$/.exec(action);
     if(told){const heard=wineAttic.hear(told[1],told[2]);if(!heard.ok)return;
-      openDialogue(mirith,[...heard.entry.lines],null,'Back to Mirith',{onComplete:()=>mirithConversation(mirith,atticContext({back:true}))});
-      if(heard.first){toast(told[1]==='scary'?`\u201c${heard.entry.title}\u201d, one of Mirith\u2019s stories.`:'Mirith, talking. Juan will not believe it.',told[1]==='scary'?'A STORY FROM MIRITH':'MIRITH');saveRoad(false);}}
+      openDialogue(nika,[...heard.entry.lines],null,'Back to Nika',{onComplete:()=>nikaConversation(nika,atticContext({back:true}))});
+      if(heard.first){toast(told[1]==='scary'?`\u201c${heard.entry.title}\u201d, one of Nika\u2019s stories.`:'Nika, talking. Juan will not believe it.',told[1]==='scary'?'A STORY FROM NIKA':'NIKA');saveRoad(false);}}
   }
   function wineAct(action){
     const livia=npcById.get(VINTNER.id),back=()=>vintnerConversation(livia,wineContext());
@@ -1418,7 +1418,7 @@ function init() {
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
     if(npc.id===JUAN.id){if(wineAttic.met)wineAttic.visit();juanConversation(npc,atticContext());return;}
-    if(npc.id===MIRITH.id){wineAttic.visit();mirithConversation(npc,atticContext());return;}
+    if(npc.id===NIKA.id){wineAttic.visit();nikaConversation(npc,atticContext());return;}
     if(npc.id===PUCK.id){puckConversation(npc,puckContext());return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,puckContext());return;}
     if(npc.id===CELLAR_HAND.id){cellarHandConversation(npc,{openDialogue});return;}
@@ -2683,12 +2683,12 @@ function init() {
           const g=view==='puck-cask'?{x:SEA_WALL_NICHE.x,y:world.heightAt(SEA_WALL_NICHE.x,SEA_WALL_NICHE.z),z:SEA_WALL_NICHE.z}:puckView.group.position,face=view==='puck-cask'?SEA_WALL_NICHE.yaw:puckView.group.rotation.y;
           player.group.position.set(g.x+Math.sin(face)*5,world.heightAt(g.x+Math.sin(face)*5,g.z+Math.cos(face)*5),g.z+Math.cos(face)*5);
           reviewTarget=new THREE.Vector3(g.x,g.y+(view==='puck-cask'?.8:.75),g.z);yaw=face+.4;pitch=view==='puck-ridge'?.3:.12;distance=targetDistance=view==='puck-ridge'?7:2.3;}
-        if(['wine-attic','wine-attic-inside','wine-attic-juan','wine-attic-mirith'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
+        if(['wine-attic','wine-attic-inside','wine-attic-juan','wine-attic-nika'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
           const P=(a,b)=>({x:SOLIS.centre.x+a,z:SOLIS.centre.z+b});
           if(view==='wine-attic'||view==='wine-attic-inside'){const spot=view==='wine-attic'?{...P(-9,-11),look:P(2.2,-16.8),d:12,p:.2,up:2.6}:{...ATTIC_HEAD,look:P(13.5,-17.2),d:2.2,p:.08,up:1.25};
             player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+spot.up,spot.look.z);
             yaw=Math.atan2(spot.x-spot.look.x,spot.z-spot.look.z);pitch=spot.p;distance=targetDistance=spot.d;}
-          else{const npc=npcById.get(view==='wine-attic-juan'?JUAN.id:MIRITH.id),a=npc.actor.group,at=a.position,face=a.rotation.y;
+          else{const npc=npcById.get(view==='wine-attic-juan'?JUAN.id:NIKA.id),a=npc.actor.group,at=a.position,face=a.rotation.y;
             player.group.position.set(at.x+Math.sin(face)*2,at.y,at.z+Math.cos(face)*2);reviewTarget=new THREE.Vector3(at.x,at.y+(view==='wine-attic-juan'?1.45:1.15),at.z);yaw=face+.35;pitch=.08;distance=targetDistance=2.6;}}
         if(view==='lakota'||view==='lakota-aloft'){questStage=10;combat.finishPractice();const npc=npcById.get(BIRD_WATCHER.id),a=npc.actor.group,at=a.position,face=a.rotation.y;
           player.group.position.set(at.x+Math.sin(face+1.2)*4,world.heightAt(at.x,at.z),at.z+Math.cos(face+1.2)*4);player.group.visible=false;

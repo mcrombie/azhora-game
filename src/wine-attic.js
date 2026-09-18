@@ -9,7 +9,7 @@
  *
  * Juan keeps it: enormous, loud, beloved, a cooper's son from Sorveth who worked
  * the Iberos wine boats for twelve years and sells nothing from West Suval.
- * Mirith works the floor: small, red-haired, quiet, from Bouén, with the best
+ * Nika works the floor: small, red-haired, quiet, from Bouén, with the best
  * palate in Solis. Ask her what she is reading and she will talk.
  *
  * The attic floor is a deck, like a quay: `atticDeckHeight` lifts anybody on
@@ -43,10 +43,10 @@ const A = WINE_ATTIC, S = A.stair;
 const stairMid = (S.b0 + S.b1) / 2;
 export const atticPoint = (a, b) => P(a, b);
 
-/** Where Juan and Mirith stand, on the attic floor. Juan faces the stair head to greet whoever comes up it. */
+/** Where Juan and Nika stand, on the attic floor. Juan faces the stair head to greet whoever comes up it. */
 export const ATTIC_STANDS = freeze({
   'attic-juan': freeze({ ...P(9.7, -16.9), yaw: -Math.PI / 2 - .35 }),
-  'attic-mirith': freeze({ ...P(14.5, -18.9), yaw: -2.3 }),
+  'attic-nika': freeze({ ...P(14.5, -18.9), yaw: -2.3 }),
 });
 /** The stair's foot on the street and its head in the attic, for anyone who needs the way up. */
 export const ATTIC_FOOT = freeze(P(S.a0 - .4, stairMid));
@@ -114,17 +114,17 @@ export const ATTIC_ENCLOSURE = freeze({
 // The people
 // ---------------------------------------------------------------------------
 export const JUAN = freeze({ id: 'attic-juan', name: 'Juan', role: 'Keeper of Tharganhom, the Wine Attic', modelRole: 'wine-seller', color: 0x3b4450, skin: 0xbf8a5e });
-export const MIRITH = freeze({ id: 'attic-mirith', name: 'Mirith', role: 'At Tharganhom', modelRole: 'wine-clerk', color: 0x3f5a47, skin: 0xf0d2bc });
-export const ATTIC_PEOPLE = freeze([JUAN, MIRITH]);
+export const NIKA = freeze({ id: 'attic-nika', name: 'Nika', role: 'At Tharganhom', modelRole: 'wine-clerk', color: 0x3f5a47, skin: 0xf0d2bc });
+export const ATTIC_PEOPLE = freeze([JUAN, NIKA]);
 
 export const JUAN_WELCOME = freeze([
   'Hey! Hey hey hey. Come up, come up, mind the top step, it is a liar. Welcome to Tharganhom. The Wine Attic, in your tongue. Top of the house, top of the town, top of the — okay, it is an attic. But what an attic.',
-  'I am Juan. This is my place. That is Mirith in the corner. She knows more about wine than I do. Do not tell her I said that. She already knows.',
+  'I am Juan. This is my place. That is Nika in the corner. She knows more about wine than I do. Do not tell her I said that. She already knows.',
   'Now look. Rule of the house: nothing on these shelves is from West Suval. Nothing. You want Suval wine, you walk out that gate, you throw a rock, you hit a vineyard. Up here? Up here we travel. Enebreum, the lake country, Ascarth, Amod, all the way up to Bouén. So. Where do you want to go?',
 ]);
 const JUAN_AGAIN = freeze([
   'There they are! My favourite person who came up those stairs today. Do not tell the other ones.',
-  'Look who it is. Sit, sit. Mirith, look who it is. ... She is thrilled. That is her thrilled face.',
+  'Look who it is. Sit, sit. Nika, look who it is. ... She is thrilled. That is her thrilled face.',
   'Okay, okay. You are back. That means one of two things: you liked something, or you did not and you want to fight about it. Either way, I am pouring.',
   'Oye! Just in time. I opened something I should not have opened, and it is a crime to drink it alone.',
 ]);
@@ -135,7 +135,7 @@ export const JUAN_LESSON = freeze([
 ]);
 const JUAN_TOPICS = freeze({
   rule: [
-    'Okay, so, people ask me that. Here is the thing. Here is the thing. Livia Seravo out at Vaervelm Caelazh? Best Norton on the island. I would marry that Norton. But I sell hers, then the guy down the hill wants me to sell his, and the guy next to him —',
+    'Okay, so, people ask me that. Here is the thing. Here is the thing. Livia Seravo out at Vaervelm Caelazh? Best Norton in all Suval. I would marry that Norton. But I sell hers, then the guy down the hill wants me to sell his, and the guy next to him —',
     'Suddenly I am in a valley feud. I am not in a valley feud. Up here is nobody’s vineyard. The Legion comes in, the Coalition comes in, they sit at the same barrel. You know why that works? Because it is not their wine they are fighting about.',
   ],
   war: [
@@ -147,8 +147,8 @@ const JUAN_TOPICS = freeze({
     'I worked the wine boats up and down the Iberos for twelve years. Every port, every cellar, every guy with a cousin with a vineyard. I have tasted, conservatively, everything.',
     'Then I came home, and the only room in Solis I could afford was an attic. Nobody wants to carry cases up a staircase. You know who carries cases up a staircase? This guy. Look at me. I was built for it.',
   ],
-  mirith: [
-    'Mirith? Mirith has the best palate in Solis, and she says maybe four words a day. Three of them are about wine. The fourth one is usually “no”, and she is usually right.',
+  nika: [
+    'Nika? Nika has the best palate in Solis, and she says maybe four words a day. Three of them are about wine. The fourth one is usually “no”, and she is usually right.',
     'You want to get her talking, do not ask her about wine. Ask her what she is reading. Then get comfortable. Then maybe do not walk home alone, you know what I mean? The stories she has. Madre mía.',
   ],
   shelf: [
@@ -219,7 +219,7 @@ export function juanConversation(npc, context) {
     { id: 'attic-rule', label: 'Why nothing from West Suval?', action: () => talk(JUAN_TOPICS.rule) },
     { id: 'attic-war', label: 'How is business, with the war?', action: () => talk(JUAN_TOPICS.war) },
     { id: 'attic-juan', label: 'Tell me about yourself.', action: () => talk(JUAN_TOPICS.juan) },
-    { id: 'attic-about-mirith', label: 'What about Mirith?', action: () => talk(JUAN_TOPICS.mirith) },
+    { id: 'attic-about-nika', label: 'What about Nika?', action: () => talk(JUAN_TOPICS.nika) },
     { id: 'attic-shelf', label: 'What is the dusty bottle on the top shelf?', action: () => talk(JUAN_TOPICS.shelf) },
     ...(context.puck ? [{ id: 'attic-puck', label: 'Does anything ever go missing?', action: () => { act('attic-puck'); talk(context.puck.quest === 'exposed' ? JUAN_ON_PUCK.after : JUAN_ON_PUCK.before); } }] : []),
     { id: 'leave-juan', label: 'Thanks, Juan.', action: closeDialogue },
@@ -229,10 +229,10 @@ export function juanConversation(npc, context) {
 }
 
 // ---------------------------------------------------------------------------
-// Mirith's stories
+// Nika's stories
 // ---------------------------------------------------------------------------
 const story = (id, title, lines) => freeze({ id, title, lines: freeze(lines) });
-export const MIRITH_LIFE = freeze([
+export const NIKA_LIFE = freeze([
   story('fog', 'Where are you from?', [
     'Bouén. Right at the top of the world, where the Deep River current comes down cold and the fog sits on the vines from spring to harvest.',
     'You pick by feel up there. You cannot see the end of your own row. My grandmother could tell a ripe bunch by the smell of the fog around it. I thought she was lying until I could do it too.',
@@ -250,11 +250,11 @@ export const MIRITH_LIFE = freeze([
   ]),
   story('lighthouse', 'What did you do before this?', [
     'Kept a light, one winter. The keeper at the Point broke his leg on his own stair, and there was nobody else who would do it for what he paid.',
-    'Every four hours, up two hundred and eleven steps, trim the wick, clean the glass, down again. Four months. I read every book on the island twice.',
+    'Every four hours, up two hundred and eleven steps, trim the wick, clean the glass, down again. Four months. I read every book in the keeper’s house twice.',
     'You learn what quiet is up there. Not no sound, the wind never stops. Just nobody waiting for you to answer it. I think that is why I like the attic. It is a lighthouse that sells wine.',
   ]),
 ]);
-export const MIRITH_SCARY = freeze([
+export const NIKA_SCARY = freeze([
   story('extra-picker', 'The extra picker', [
     'At harvest in Bouén you pick in the fog, and at night the foreman counts the pickers in off the slope. Every name, out loud. The rule is older than the vineyard.',
     'The year I was nine, he counted forty-one. There were forty of us. He counted again: forty-one. Nobody would say which of us was the extra, and nobody could see well enough to tell.',
@@ -280,60 +280,60 @@ export const MIRITH_SCARY = freeze([
     'And then one knock back, right under the planks at my feet.',
   ]),
 ]);
-const MIRITH_QUIET = freeze(['Hi.', 'Mm.', 'Juan is the one who talks.', 'Hello.']);
-const MIRITH_WARM = freeze([
+const NIKA_QUIET = freeze(['Hi.', 'Mm.', 'Juan is the one who talks.', 'Hello.']);
+const NIKA_WARM = freeze([
   'Oh. You again. Good.',
   'Sit. The crate is fine. It is the Bouéni; it will not mind.',
   'I kept my place for you. In the book, I mean.',
 ]);
 
 /**
- * Mirith, in her corner with a book. Quiet until you ask what she is reading;
+ * Nika, in her corner with a book. Quiet until you ask what she is reading;
  * after that she talks to you, and her life and her stories are there to ask
- * for. `act` runs 'mirith-warm' and 'mirith-life-<id>' / 'mirith-scary-<id>'
+ * for. `act` runs 'nika-warm' and 'nika-life-<id>' / 'nika-scary-<id>'
  * in the host, which marks them heard and shows the lines.
  */
-export function mirithConversation(npc, context) {
+export function nikaConversation(npc, context) {
   const { attic, wine = null, back = false, openDialogue, closeDialogue, act } = context;
-  if (npc.id !== MIRITH.id) return false;
-  const again = () => mirithConversation(npc, { ...context, back: true });
+  if (npc.id !== NIKA.id) return false;
+  const again = () => nikaConversation(npc, { ...context, back: true });
   if (!attic.warm) {
-    const quiet = [back ? '...' : MIRITH_QUIET[attic.quietTalks % MIRITH_QUIET.length]];
-    if (!back) act('mirith-quiet');
+    const quiet = [back ? '...' : NIKA_QUIET[attic.quietTalks % NIKA_QUIET.length]];
+    if (!back) act('nika-quiet');
     openDialogue(npc, quiet, null, 'Leave her to it', { choices: [
-      { id: 'mirith-reading', label: 'What are you reading?', action: () => openDialogue(npc, [
+      { id: 'nika-reading', label: 'What are you reading?', action: () => openDialogue(npc, [
         'She looks up, surprised to be asked. “Stories. Old ones, from the passes and the north.”',
         '“The kind you tell with the lamp turned down.”',
       ], null, 'Leave her to it', { choices: [
-        { id: 'mirith-hear-one', label: 'I would like to hear one.', action: () => { closeDialogue(); act('mirith-warm'); } },
-        { id: 'mirith-not-now', label: 'Some other time.', action: closeDialogue },
+        { id: 'nika-hear-one', label: 'I would like to hear one.', action: () => { closeDialogue(); act('nika-warm'); } },
+        { id: 'nika-not-now', label: 'Some other time.', action: closeDialogue },
       ] }) },
-      { id: 'mirith-where', label: 'Where are you from?', action: () => openDialogue(npc, ['North.'], null, 'Leave her to it', { onComplete: again }) },
-      { id: 'mirith-juan', label: 'Is Juan always like this?', action: () => openDialogue(npc, ['Yes.', 'A very small smile, gone as soon as it came.'], null, 'Leave her to it', { onComplete: again }) },
-      { id: 'leave-mirith', label: 'I will let you read.', action: closeDialogue },
+      { id: 'nika-where', label: 'Where are you from?', action: () => openDialogue(npc, ['North.'], null, 'Leave her to it', { onComplete: again }) },
+      { id: 'nika-juan', label: 'Is Juan always like this?', action: () => openDialogue(npc, ['Yes.', 'A very small smile, gone as soon as it came.'], null, 'Leave her to it', { onComplete: again }) },
+      { id: 'leave-nika', label: 'I will let you read.', action: closeDialogue },
     ] });
     return true;
   }
   const untasted = wine?.met ? ATTIC_WINE_IDS.find(id => !wine.hasTasted(id)) : null;
-  const pick = (list, kind) => list.map(entry => ({ id: `mirith-${kind}-${entry.id}`, label: `${entry.title}${attic.heard(kind, entry.id) ? ' (again)' : ''}`,
-    action: () => { closeDialogue(); act(`mirith-${kind}-${entry.id}`); } }));
-  openDialogue(npc, [back ? 'Mm?' : MIRITH_WARM[attic.visits % MIRITH_WARM.length]], null, 'Back down the stair', { choices: [
-    { id: 'mirith-life', label: 'Tell me about yourself.', action: () => openDialogue(npc, ['What do you want to know?'], null, 'Back to Mirith', { choices: [...pick(MIRITH_LIFE, 'life'), { id: 'mirith-life-done', label: 'Another time.', action: again }] }) },
-    { id: 'mirith-scary', label: 'Tell me something frightening.', action: () => openDialogue(npc, ['She closes the book on her finger, and turns the lamp down a little.'], null, 'Back to Mirith', { choices: [...pick(MIRITH_SCARY, 'scary'), { id: 'mirith-scary-done', label: 'Maybe not tonight.', action: again }] }) },
-    { id: 'mirith-recommend', label: 'What should I drink?', action: () => openDialogue(npc, untasted
+  const pick = (list, kind) => list.map(entry => ({ id: `nika-${kind}-${entry.id}`, label: `${entry.title}${attic.heard(kind, entry.id) ? ' (again)' : ''}`,
+    action: () => { closeDialogue(); act(`nika-${kind}-${entry.id}`); } }));
+  openDialogue(npc, [back ? 'Mm?' : NIKA_WARM[attic.visits % NIKA_WARM.length]], null, 'Back down the stair', { choices: [
+    { id: 'nika-life', label: 'Tell me about yourself.', action: () => openDialogue(npc, ['What do you want to know?'], null, 'Back to Nika', { choices: [...pick(NIKA_LIFE, 'life'), { id: 'nika-life-done', label: 'Another time.', action: again }] }) },
+    { id: 'nika-scary', label: 'Tell me something frightening.', action: () => openDialogue(npc, ['She closes the book on her finger, and turns the lamp down a little.'], null, 'Back to Nika', { choices: [...pick(NIKA_SCARY, 'scary'), { id: 'nika-scary-done', label: 'Maybe not tonight.', action: again }] }) },
+    { id: 'nika-recommend', label: 'What should I drink?', action: () => openDialogue(npc, untasted
       ? [`The ${ATTIC_WINES[untasted].name}. You have not had it yet.`, 'Ask Juan. Let him do the speech. He likes the speech.']
-      : ['The fog white. Always the fog white.', 'Unless it is raining. Then the Enbraleth.'], null, 'Back to Mirith', { onComplete: again }) },
-    { id: 'leave-mirith-warm', label: 'Goodnight, Mirith.', action: closeDialogue },
+      : ['The fog white. Always the fog white.', 'Unless it is raining. Then the Enbraleth.'], null, 'Back to Nika', { onComplete: again }) },
+    { id: 'leave-nika-warm', label: 'Goodnight, Nika.', action: closeDialogue },
   ] });
   return true;
 }
-export const mirithStory = (kind, id) => (kind === 'life' ? MIRITH_LIFE : kind === 'scary' ? MIRITH_SCARY : []).find(entry => entry.id === id) ?? null;
+export const nikaStory = (kind, id) => (kind === 'life' ? NIKA_LIFE : kind === 'scary' ? NIKA_SCARY : []).find(entry => entry.id === id) ?? null;
 
 // ---------------------------------------------------------------------------
 // What the attic remembers of the traveler
 // ---------------------------------------------------------------------------
 export const WINE_ATTIC_VERSION = 1;
-const LIFE_IDS = MIRITH_LIFE.map(entry => entry.id), SCARY_IDS = MIRITH_SCARY.map(entry => entry.id);
+const LIFE_IDS = NIKA_LIFE.map(entry => entry.id), SCARY_IDS = NIKA_SCARY.map(entry => entry.id);
 
 export function validateWineAtticSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
@@ -355,7 +355,7 @@ export function createWineAttic() {
   /** Asked what she is reading, and wanting to hear one: she talks from now on. */
   function warmUp() { const first = !state.warm; state.warm = true; return { ok: true, first }; }
   function hear(kind, id) {
-    const entry = mirithStory(kind, id);
+    const entry = nikaStory(kind, id);
     if (!entry || !state.warm) return { ok: false };
     const set = kind === 'life' ? state.life : state.scary, first = !set.has(id);
     set.add(id);

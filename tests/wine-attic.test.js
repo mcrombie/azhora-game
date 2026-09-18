@@ -6,8 +6,8 @@ import { canStand } from '../src/game-state.js';
 import { SOLIS } from '../src/region-world.js';
 import { SOLIS_BUILDINGS, SOLIS_ENCLOSURES } from '../src/west-suval.js';
 import { ATTIC_WINES, ATTIC_WINE_IDS, ATTIC_BOTTLES } from '../src/attic-wines.js';
-import { WINE_ATTIC, ATTIC_STANDS, ATTIC_FOOT, ATTIC_HEAD, JUAN, MIRITH, MIRITH_LIFE, MIRITH_SCARY, JUAN_WELCOME, atticOffers,
-  createWineAttic, juanConversation, mirithConversation, validateWineAtticSnapshot } from '../src/wine-attic.js';
+import { WINE_ATTIC, ATTIC_STANDS, ATTIC_FOOT, ATTIC_HEAD, JUAN, NIKA, NIKA_LIFE, NIKA_SCARY, JUAN_WELCOME, atticOffers,
+  createWineAttic, juanConversation, nikaConversation, validateWineAtticSnapshot } from '../src/wine-attic.js';
 import { WINE_IDS, createWine, validateWineSnapshot } from '../src/wine.js';
 import { createSkills } from '../src/skills.js';
 import { INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
@@ -105,25 +105,25 @@ test('Juan welcomes you, teaches tasting if you need it, pours eight wines and s
   assert.equal(validateWineSnapshot({ ...wine.snapshot(), tasted: { 'wine-enbraleth': 1 } }), false);
 });
 
-test('Mirith says almost nothing, until you ask what she is reading', () => {
+test('Nika says almost nothing, until you ask what she is reading', () => {
   const attic = createWineAttic();
   const { log, context } = talker();
-  const talk = () => mirithConversation({ id: MIRITH.id }, { ...context, attic, wine: null });
+  const talk = () => nikaConversation({ id: NIKA.id }, { ...context, attic, wine: null });
   talk();
   assert.ok(log.opened.lines.join(' ').length < 40, 'quiet');
-  assert.ok(!ids(log).includes('mirith-life') && !ids(log).includes('mirith-scary'), 'no stories yet');
+  assert.ok(!ids(log).includes('nika-life') && !ids(log).includes('nika-scary'), 'no stories yet');
   assert.equal(attic.hear('scary', 'cooper').ok, false);
-  log.opened.options.choices.find(choice => choice.id === 'mirith-reading').action();
+  log.opened.options.choices.find(choice => choice.id === 'nika-reading').action();
   assert.match(log.opened.lines.join(' '), /Stories/);
-  log.opened.options.choices.find(choice => choice.id === 'mirith-hear-one').action();
-  assert.ok(log.acted.includes('mirith-warm'));
+  log.opened.options.choices.find(choice => choice.id === 'nika-hear-one').action();
+  assert.ok(log.acted.includes('nika-warm'));
   attic.warmUp();
   talk();
-  assert.ok(ids(log).includes('mirith-life') && ids(log).includes('mirith-scary'));
-  log.opened.options.choices.find(choice => choice.id === 'mirith-scary').action();
-  assert.deepEqual(ids(log).filter(id => id.startsWith('mirith-scary-') && id !== 'mirith-scary-done'), MIRITH_SCARY.map(entry => `mirith-scary-${entry.id}`));
-  assert.equal(MIRITH_LIFE.length, 4); assert.equal(MIRITH_SCARY.length, 4);
-  for (const entry of [...MIRITH_LIFE, ...MIRITH_SCARY]) assert.ok(entry.lines.length >= 3, `${entry.id} is a story, not a line`);
+  assert.ok(ids(log).includes('nika-life') && ids(log).includes('nika-scary'));
+  log.opened.options.choices.find(choice => choice.id === 'nika-scary').action();
+  assert.deepEqual(ids(log).filter(id => id.startsWith('nika-scary-') && id !== 'nika-scary-done'), NIKA_SCARY.map(entry => `nika-scary-${entry.id}`));
+  assert.equal(NIKA_LIFE.length, 4); assert.equal(NIKA_SCARY.length, 4);
+  for (const entry of [...NIKA_LIFE, ...NIKA_SCARY]) assert.ok(entry.lines.length >= 3, `${entry.id} is a story, not a line`);
   const heard = attic.hear('scary', 'cooper');
   assert.ok(heard.ok && heard.first);
   assert.equal(attic.hear('scary', 'cooper').first, false);
@@ -132,16 +132,16 @@ test('Mirith says almost nothing, until you ask what she is reading', () => {
   assert.equal(validateWineAtticSnapshot(saved), true);
   assert.equal(again.restore(saved), true);
   assert.ok(again.warm && again.heard('scary', 'cooper') && again.heard('life', 'fog'));
-  assert.equal(validateWineAtticSnapshot({ ...saved, warm: false }), false, 'no stories heard from a Mirith who never talked');
+  assert.equal(validateWineAtticSnapshot({ ...saved, warm: false }), false, 'no stories heard from a Nika who never talked');
   assert.equal(validateWineAtticSnapshot({ ...saved, scary: ['ghost'] }), false);
 });
 
-test('Juan is enormous and Mirith is small, and neither wears a hat', async () => {
+test('Juan is enormous and Nika is small, and neither wears a hat', async () => {
   const { createCharacter } = await sourceModule('../src/characters.js');
   const height = actor => new THREE.Box3().setFromObject(actor.group).getSize(new THREE.Vector3()).y;
-  const juan = createCharacter({ role: 'wine-seller', tunic: JUAN.color, skin: JUAN.skin }), mirith = createCharacter({ role: 'wine-clerk', tunic: MIRITH.color, skin: MIRITH.skin });
+  const juan = createCharacter({ role: 'wine-seller', tunic: JUAN.color, skin: JUAN.skin }), nika = createCharacter({ role: 'wine-clerk', tunic: NIKA.color, skin: NIKA.skin });
   const ordinary = createCharacter({ role: 'commons-miller' });
   assert.ok(height(juan) > height(ordinary) * 1.08, 'Juan towers');
-  assert.ok(height(mirith) < height(ordinary) * .97, 'Mirith is small');
-  assert.ok(mirith.group.getObjectByName('Mirith’s book'), 'and she has her book');
+  assert.ok(height(nika) < height(ordinary) * .97, 'Nika is small');
+  assert.ok(nika.group.getObjectByName('Nika’s book'), 'and she has her book');
 });

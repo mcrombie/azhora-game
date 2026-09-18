@@ -35,7 +35,7 @@ export const ATTIC_WINES = Object.freeze({
     pitch: 'Volcano wine. A real volcano. West Pyros, grown in ash from eruptions nobody wrote down. The priests here put out statements about how the Pyrosi drink it. The Pyrosi do not read the statements. I love those guys.' }),
   'bouen-fog-white': wine('bouen-fog-white', { name: 'Bouéni fog white', colour: 'white', from: 'the Bouén peninsula, in the cold north', xp: 20, price: 10, healing: 15,
     note: 'Water pale. Sea spray, lime and wet grass, faintly saline, with an acid so bright it hums.',
-    pitch: 'This one is Mirith’s. From Bouén, all the way up where the fog sits on the vines all summer. One cask a year reaches Solis. I buy the whole cask. She pretends she does not care. Look at her. She cares.' }),
+    pitch: 'This one is Nika’s. From Bouén, all the way up where the fog sits on the vines all summer. One cask a year reaches Solis. I buy the whole cask. She pretends she does not care. Look at her. She cares.' }),
 });
 export const ATTIC_WINE_IDS = Object.freeze(Object.keys(ATTIC_WINES));
 /** The satchel item for each bottle, and back. */
