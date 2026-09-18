@@ -11,6 +11,8 @@ const roadReviewOnly = smoke && process.argv.includes('--road-review');
 const catReviewOnly = smoke && process.argv.includes('--cat-review');
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
 const openingReviewOnly = smoke && process.argv.includes('--opening-review');
+// `--map-review` pictures the chart as a new player first opens it, and again later in the story.
+const mapReviewOnly = smoke && process.argv.includes('--map-review');
 const forestReviewOnly = smoke && process.argv.includes('--forest-review');
 const forestChecksOnly = smoke && process.argv.includes('--forest-checks');
 const developerReviewOnly = smoke && process.argv.includes('--developer-review');
@@ -112,7 +114,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -225,6 +227,22 @@ if (ownsInstance) app.whenReady().then(async () => {
         fs.writeFileSync(path.join(artifactDir,'forest-smoke.json'),JSON.stringify({...report,...reloaded,errors},null,2));
         fs.writeFileSync(path.join(artifactDir,'forest-reloaded.png'),(await win.webContents.capturePage()).toPNG());
         console.log(JSON.stringify({...report,...reloaded,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(mapReviewOnly){
+        const shoot=async name=>{await new Promise(resolve=>setTimeout(resolve,900));fs.writeFileSync(path.join(artifactDir,`${name}.png`),(await win.webContents.capturePage()).toPNG());
+          return {name,...await win.webContents.executeJavaScript('window.__AZHORA__.mapState()')};};
+        const views=[];
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>25000?reject(new Error("no game")):setTimeout(poll,100);poll();})');
+        await new Promise(resolve=>setTimeout(resolve,1500));
+        await win.webContents.executeJavaScript(`window.__AZHORA__.review('map')`);views.push(await shoot('map-first-open'));
+        // A few minutes' walking charted, then the chart opened again, then the whole continent.
+        await win.webContents.executeJavaScript(`document.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape'}));window.__AZHORA__.chartRoad(60)`);
+        await new Promise(resolve=>setTimeout(resolve,500));
+        await win.webContents.executeJavaScript(`window.__AZHORA__.review('map')`);views.push(await shoot('map-charted'));
+        await win.webContents.executeJavaScript(`document.getElementById('atlas-fit').click()`);views.push(await shoot('map-whole'));
+        fs.writeFileSync(path.join(artifactDir,'map-review.json'),JSON.stringify({views,errors},null,2));
+        console.log(JSON.stringify({views,errors},null,2));app.exit(0);return;
       }
       if(openingReviewOnly){
         const dir=path.join(artifactDir,'opening');fs.rmSync(dir,{recursive:true,force:true});fs.mkdirSync(dir,{recursive:true});

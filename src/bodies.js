@@ -26,7 +26,16 @@ export function bodyWorld(world, { ignore = [] } = {}) {
     heightAt: (x, z) => world.heightAt(x, z),
     nearColliders(x, z, reach = 0, out) {
       const near = world.nearColliders ? world.nearColliders(x, z, reach, out) : [...world.colliders];
-      if (ignore.length) { let kept = 0; for (let i = 0; i < near.length; i++) if (!ignore.includes(near[i].kind)) near[kept++] = near[i]; near.length = kept; }
+      // A prop the mover already stands inside (after a warp, a story start, a spawn) never
+      // holds it there, any more than a person it overlaps does: it can always walk out.
+      let kept = 0;
+      for (let i = 0; i < near.length; i++) {
+        const c = near[i];
+        if (ignore.includes(c.kind)) continue;
+        if (mover && c.kind === 'prop' && Math.hypot(c.x - mover.x, c.z - mover.z) < c.r + moverRadius) continue;
+        near[kept++] = c;
+      }
+      near.length = kept;
       for (let i = 0; i < bodies.length; i++) {
         const body = bodies[i];
         if (mover && (body.id === mover.id || Math.hypot(body.x - mover.x, body.z - mover.z) < body.r + moverRadius)) continue;

@@ -51,3 +51,15 @@ test('bodies leave the world’s own colliders alone and add nothing when nobody
   assert.equal(world.nearColliders(20, 20, .3).length, 1, 'a body far away is not near');
   assert.equal(stepAround({ x: 0, z: 0 }, 0, 0, world, .3), 0);
 });
+
+test('a traveler set down inside a prop can walk out of it, and a prop is solid to everyone else', () => {
+  const crate = { x: 0, z: 0, r: .35, kind: 'prop' };
+  const base = { ...open(), colliders: [crate] };
+  const traveler = { x: .1, z: 0 };
+  const world = bodyWorld(base).moving(traveler);
+  moveCharacter(traveler, 1.5, 0, world);
+  assert.ok(traveler.x > 1.5, `stuck in the crate at ${traveler.x.toFixed(2)}`);
+  const other = { x: -2, z: 0 };
+  moveCharacter(other, 3, 0, bodyWorld(base).moving(other));
+  assert.ok(other.x < -crate.r - BODY.traveler + .01, 'but a walker from outside bumps into it');
+});

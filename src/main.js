@@ -782,7 +782,7 @@ function init() {
   }
   function journalTab(tab){
     if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
-    if(tab==='world'){worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(player.group.position.x,player.group.position.z));refreshChart();}
+    if(tab==='world'){const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),{region:world.regionAt(p.x,p.z)?.name??null});refreshChart();}
     show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills')refreshSkillsSheet();
     for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-trails','trails'],['tab-skills','skills']])$(id).classList.toggle('active',tab===name);
     $('journal').classList.toggle('map-open',tab==='world');$('journal').classList.toggle('trail-open',tab==='trails');
@@ -2185,7 +2185,8 @@ function init() {
       },
       runForestChecks:()=>runForestSmoke(forestHooks()),verifyForestReload:expected=>verifyForestReload(forestHooks(),expected),
       runRoadChecks:()=>runRoadCheckSmoke(focusedRoadHooks()),
-      beginAutoplay:()=>startAutopilot(),reviewLog:()=>reviewLog,
+      beginAutoplay:()=>startAutopilot(),reviewLog:()=>reviewLog,startAt:id=>beginStoryStart(storyStart(id)),mapState:()=>worldMap.state(),
+      chartRoad:(count=40)=>{const road=world.paths[0];for(let i=0;i<Math.min(count,road.length);i++)mapFog.reveal(road[i].x,road[i].z);},
       reviewPeek:()=>{const p=player.group.position;return {t:Math.round(playSeconds*10)/10,mode,questStage,region:world.regionAt(p.x,p.z)?.name??null,intent:autopilot.intent,active:autopilot.active,phase:combat.state.phase,encounter:combat.state.encounterId,hp:combat.state.player.hp,
         allies:combat.state.allies.map(a=>({id:a.id,name:a.name,hp:a.hp,escaped:!!a.escaped,wounded:!!a.wounded,frozen:a.frozen>0})),fallen:fallen.ids,x:Math.round(p.x*10)/10,z:Math.round(p.z*10)/10,journey:journey.view().stage,chapter:campaign.view().chapterId,
         dialogue:mode==='dialogue'?activeDialogue?.npc?.name??null:null,prompt:$('interaction').classList.contains('hidden')?null:$('interaction-label').textContent};},
@@ -2223,6 +2224,8 @@ function init() {
         return {ok:true,...result,...state()};
       },
       async runSmoke(){
+        // This check is also the test of weapon wear, which play has switched off for now (WEAPON_WEAR).
+        weapons.setWear(true);
         const assert=(condition,message)=>{if(!condition)throw new Error(message);};
         const wait=ms=>new Promise(r=>setTimeout(r,ms));
         const until=async(condition,message)=>{const deadline=performance.now()+30000;while(!condition()){assert(performance.now()<deadline,message);await wait(40);}};
@@ -2251,7 +2254,8 @@ function init() {
         const walkSpeed=await speedWith(),tabSpeed=await speedWith('Tab'),shiftSpeed=await speedWith('ShiftLeft');
         assert(Math.abs(walkSpeed-4.2)<.01&&Math.abs(tabSpeed-7.2)<.01&&Math.abs(tabSpeed-shiftSpeed)<.01,'Tab/Shift running speed or walking speed is wrong');
         warp(0,9);press('KeyQ');await until(()=>player.group.position.x<-.35&&player.group.position.z<8.65,'Q forward-left failed');release('KeyQ');
-        const harbor=npcData[0];player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(-1,0,0));await frames();
+        // Beside Mara, on her open side: people and the harbour crates around her are solid now.
+        const harbor=npcData[0];player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
         const diagonalStart=player.group.position.clone();press('KeyE');assert(mode==='playing','E triggered dialogue');await until(()=>player.group.position.x>diagonalStart.x+.35&&player.group.position.z<diagonalStart.z-.35,'E forward-right failed');release('KeyE');
         player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(-1,0,0));await frames();tap('KeyF');assert(mode==='dialogue','F talk failed');finishDialogue();assert(questStage===2,'Message assignment failed');
         assert(inventory.has('harbor-letter')&&inventory.has('simple-sword'),'Items were not received before the goblin encounter');
@@ -2306,6 +2310,9 @@ function init() {
         assert(!$('world-map').classList.contains('hidden'),'Map failed');assert($('atlas-image').naturalWidth>0,'World map missing');
         assert(atlas?.hexCount===18700&&atlas.regionCount===131&&atlas.riverCount===572&&atlas.source.endsWith('azhora.wwmap'),'World Builder map source or geography changed');
         assert($('atlas-image').src.endsWith('azhora-world-map.svg'),'Journal still uses the sketch');
+        {const m=worldMap.state(),scale=Math.min(m.width/atlas.width,m.height/atlas.height)*m.zoom,tx=m.offsetX+m.traveler.x*scale,ty=m.offsetY+m.traveler.y*scale;
+          assert(m.zoom>3,'The chart did not open close enough to read');assert(Math.abs(tx-m.width/2)<m.width*.2&&Math.abs(ty-m.height/2)<m.height*.2,'The chart did not open on the traveler');
+          assert($('atlas-traveler').textContent.includes('Drent'),'The traveler mark does not say where they are');}
         $('atlas-in').click();assert(worldMap.state().zoom>1,'Map zoom button failed');
         const previousZoom=worldMap.state().zoom;$('atlas-viewport').dispatchEvent(new WheelEvent('wheel',{deltaY:-100,clientX:innerWidth/2,clientY:innerHeight/2,cancelable:true}));
         assert(worldMap.state().zoom>previousZoom,'Map wheel zoom failed');
@@ -2319,9 +2326,13 @@ function init() {
         for(const point of world.routeNorth){
           const segmentStart=player.group.position.clone(),deadline=performance.now()+30000;
           press('KeyW');press('ShiftLeft');
+          // People stand on the road and are solid: stalled against one, lean aside for a moment as a walker would.
+          let lastAt=player.group.position.clone(),stalled=0,lean=0,side=1;
           while(Math.hypot(point.x-player.group.position.x,point.z-player.group.position.z)>.75){
             assert(performance.now()<deadline,'Northern path blocked before '+point.x+','+point.z);
-            yaw=Math.atan2(player.group.position.x-point.x,player.group.position.z-point.z);await frames(1);
+            if(player.group.position.distanceTo(lastAt)<.02)stalled++;else stalled=0;lastAt.copy(player.group.position);
+            if(stalled>8&&!lean){lean=24;side=-side;}
+            yaw=Math.atan2(player.group.position.x-point.x,player.group.position.z-point.z)+(lean?side*.9:0);if(lean)lean--;await frames(1);
           }
           release('KeyW');release('ShiftLeft');northernDistance+=Math.hypot(player.group.position.x-segmentStart.x,player.group.position.z-segmentStart.z);
         }

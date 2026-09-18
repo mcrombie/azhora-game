@@ -9,11 +9,15 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const polygonPoints = (q, r) => hexAtlasCorners(q, r).map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
 
 const MAX_ZOOM = 64;
+/** How much of the chart a first look shows around the traveler, in atlas pixels: a region and its neighbours. */
+export const LOCAL_VIEW = 520;
 
 export function createWorldMap() {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
   let metadata, zoom = 1, fitScale = 1, offsetX = 0, offsetY = 0, width = 0, height = 0, dragging = null, travelerPoint = null;
+  // The chart opens on the traveler, close enough to read; once the traveler has chosen a zoom it keeps it.
+  let opened = false;
   let chart = { cells: [], reveal: false, status: [] };
   const overlay = document.createElementNS(SVG_NS, 'svg');
   overlay.id = 'atlas-overlay'; overlay.setAttribute('aria-hidden', 'true');
@@ -93,8 +97,13 @@ export function createWorldMap() {
     mask.append(charted);
     const soften = node('filter', { id: 'atlas-soft', x: '-20%', y: '-20%', width: '140%', height: '140%' });
     soften.append(node('feGaussianBlur', { stdDeviation: '2.4' }));
-    defs.append(soften, mask); overlay.append(defs);
-    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#2b3a36', 'fill-opacity': '.96', mask: 'url(#atlas-charted)' }));
+    // Uncharted ground is the blank of an old chart: pale parchment and a light hatch over it,
+    // the coast and the lie of the land still showing faintly through, not a dark hole.
+    const hatch = node('pattern', { id: 'atlas-unknown', patternUnits: 'userSpaceOnUse', width: 9, height: 9, patternTransform: 'rotate(35)' });
+    hatch.append(node('line', { x1: 0, y1: 0, x2: 0, y2: 9, stroke: '#7a6644', 'stroke-width': '.9', 'stroke-opacity': '.22' }));
+    defs.append(soften, mask, hatch); overlay.append(defs);
+    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#e8dcba', 'fill-opacity': '.5', mask: 'url(#atlas-charted)' }));
+    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: 'url(#atlas-unknown)', mask: 'url(#atlas-charted)' }));
   }
 
   function render() {
@@ -127,6 +136,7 @@ export function createWorldMap() {
   function fit() { zoom = 1; resize(); render(); }
   function zoomAt(next, x = width / 2, y = height / 2) {
     if (!metadata) return;
+    opened = true;
     const scale = fitScale * zoom;
     const mx = (x - offsetX) / scale, my = (y - offsetY) / scale;
     zoom = Math.max(1, Math.min(MAX_ZOOM, next));
@@ -197,14 +207,34 @@ export function createWorldMap() {
     if (marks) { places = marks.map(place => ({ ...place })); drawPlaces(); }
     drawOverlay(); render();
   }
-  function setTraveler(point) { travelerPoint = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null; render(); }
+  /** Where the traveler stands on the chart, and the name of the region, for the marker's label. */
+  function setTraveler(point, { region = null } = {}) {
+    travelerPoint = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null;
+    const label = traveler?.querySelector('span');
+    if (label) label.textContent = region ? `You are here · ${region}` : 'You are here';
+    render();
+  }
+  /** The zoom at which the chart shows a region and its neighbours around the traveler. */
+  const localZoom = () => Math.min(MAX_ZOOM, Math.max(1, Math.min(width / LOCAL_VIEW, height / LOCAL_VIEW) / fitScale));
+  function centreOnTraveler() {
+    offsetX = width / 2 - travelerPoint.x * fitScale * zoom; offsetY = height / 2 - travelerPoint.y * fitScale * zoom; render();
+  }
   function focusTraveler() {
     if (!metadata || !travelerPoint) return false;
-    zoom = Math.max(zoom, Math.min(MAX_ZOOM, Math.min(width / 520, height / 520) / fitScale));
-    offsetX = width / 2 - travelerPoint.x * fitScale * zoom; offsetY = height / 2 - travelerPoint.y * fitScale * zoom; render(); return true;
+    zoom = Math.max(zoom, localZoom());
+    centreOnTraveler(); return true;
   }
   $('atlas-traveler-button').onclick = () => focusTraveler();
-  return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, open: () => requestAnimationFrame(resize),
+  /** Opening the chart: always on the traveler; the first time, close enough to read the country round about. */
+  function open() {
+    ready.then(() => requestAnimationFrame(() => {
+      resize();
+      if (!metadata || !travelerPoint || !width || !height) return;
+      if (!opened) { zoom = localZoom(); opened = true; }
+      centreOnTraveler();
+    }));
+  }
+  return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, open,
     state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source, traveler: travelerPoint ? { ...travelerPoint } : null,
       chart: { charted: chart.cells.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
         marks: places.length, marked: [...placeLayer.querySelectorAll('.atlas-place:not([hidden])')].length }})};
