@@ -24,6 +24,7 @@ import { createWestSuvalScenery } from './west-suval-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
 import { createRegionScenery, regionClear } from './world-regions.js';
 import { createColliderGrid } from './collider-grid.js';
+import { OPENING_FIGHT_GROUND } from './opening-fights.js';
 import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './pueth-world.js';
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
@@ -1039,7 +1040,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     dummy.position.set(x, y + s * .21, z); dummy.rotation.set(range(-.2, .2), range(0, 6.28), range(-.2, .2));
     dummy.scale.set(s, s * range(.35, .75), s * range(.7, 1.3)); if (inBirdGarden(x, z)) dummy.scale.setScalar(0); dummy.updateMatrix(); rocks.setMatrixAt(i, dummy.matrix);
     rocks.setColorAt(i, color.setHSL(.17, .10, range(.44, .61)));
-    if (s > .85 && y > .4) vpush({ x, z, r: s * .76 });
+    if (s > .55 && y > .4) vpush({ x, z, r: s * .76 });
   }
   rocks.castShadow = true; rocks.receiveShadow = true; villageRoot.add(rocks);
 
@@ -1432,9 +1433,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const group of [arrivalBoat, fishingBoat, sack, bellSwing, ...[...campfires.values()].map(f => f.flames)]) movingGroups.add(group);
   const batches = new Map(), batchCenter = new THREE.Vector3();
   world.updateMatrixWorld(true);
+  const solidProp = standingProps(paths, heightAt, colliders);
   world.traverse(object => {
     if (!object.isMesh || object.isInstancedMesh || object.material.isShaderMaterial || object.material.transparent || object.geometry.attributes.color) return;
     for (let parent = object; parent && parent !== world; parent = parent.parent) if (movingGroups.has(parent)) return;
+    solidProp(object);
     if (!object.geometry.attributes.normal) return;
     if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
     batchCenter.copy(object.geometry.boundingSphere.center).applyMatrix4(object.matrixWorld);
@@ -1522,13 +1525,22 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     if (!colliderIndex || indexedFor !== colliders.length) { colliderIndex = createColliderGrid(colliders); indexedFor = colliders.length; }
     return colliderIndex;
   };
-  return {
+  const api = {
     heightAt,
     mapWaters,
     colliders,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
     reindexColliders: () => { colliderIndex = null; },
+    /** Leave props passable within `clear` metres of each point: a stand, a site, a bench. */
+    keepPropsClear(points, clear = .8) {
+      const spots = points.filter(p => p && Number.isFinite(p.x) && Number.isFinite(p.z));
+      for (let i = colliders.length - 1; i >= 0; i--) {
+        const c = colliders[i];
+        if (c.kind === 'prop' && spots.some(p => Math.hypot(c.x - p.x, c.z - p.z) < c.r + clear)) colliders.splice(i, 1);
+      }
+      colliderIndex = null;
+    },
     colliderIndexState: () => ({ ...colliderGrid(), near: undefined }),
     training: { ...worldTraining, object: training.object, y: training.y },
     repairBench: { ...worldRepairBench, name: repairBench.name },
@@ -1723,5 +1735,78 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         butterfly.l.rotation.z = Math.sin(time * 13 + i) * .95; butterfly.r.rotation.z = -Math.sin(time * 13 + i) * .95;
       });
     },
+  };
+  // A prop never swallows the spot where somebody stands or where the traveler is meant to go.
+  api.keepPropsClear([api.training, ...OPENING_FIGHT_GROUND, ...Object.values(api.npcPositions ?? {}), ...Object.values(api.storySites ?? {}), ...Object.values(api.journeySites ?? {}),
+    ...(api.forestPlaces ?? []), ...(api.fishingSpots ?? []).map(spot => spot.fishingSpot), ...(api.repairBenches ?? [])]);
+  return api;
+}
+
+/**
+ * Anything small that stands in a person's way is solid: posts and poles, crates
+ * and barrels, stall counters, fence rails, a board on its posts. Houses, walls and
+ * the larger pieces carry colliders of their own; bushes and grass are instanced
+ * and stay passable. A road's middle is never blocked. Returns the per-mesh check.
+ */
+export const PROP_SOLID = Object.freeze({ low: .6, high: 1.6, widest: 2.4, longest: 6, lane: 1.1, pole: .2, gap: 1.2 });
+function standingProps(paths, heightAt, colliders) {
+  const CELL = 16, cells = new Map(), key = (cx, cz) => `${cx},${cz}`;
+  for (const path of paths) for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i];
+    for (let cx = Math.floor(Math.min(a.x, b.x) / CELL); cx <= Math.floor(Math.max(a.x, b.x) / CELL); cx++)
+      for (let cz = Math.floor(Math.min(a.z, b.z) / CELL); cz <= Math.floor(Math.max(a.z, b.z) / CELL); cz++) {
+        const list = cells.get(key(cx, cz)); if (list) list.push([a, b]); else cells.set(key(cx, cz), [[a, b]]);
+      }
+  }
+  const toRoad = (x, z) => {
+    let best = Infinity;
+    for (let cx = Math.floor(x / CELL) - 1; cx <= Math.floor(x / CELL) + 1; cx++) for (let cz = Math.floor(z / CELL) - 1; cz <= Math.floor(z / CELL) + 1; cz++) {
+      for (const [a, b] of cells.get(key(cx, cz)) ?? []) {
+        const vx = b.x - a.x, vz = b.z - a.z, len = vx * vx + vz * vz || 1;
+        const t = Math.max(0, Math.min(1, ((x - a.x) * vx + (z - a.z) * vz) / len));
+        best = Math.min(best, Math.hypot(x - a.x - vx * t, z - a.z - vz * t));
+      }
+    }
+    return best;
+  };
+  const box = new THREE.Box3(), size = new THREE.Vector3(), mid = new THREE.Vector3(), axes = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  const add = (x, z, r) => { if (toRoad(x, z) > PROP_SOLID.lane + r && heightAt(x, z) >= .45) colliders.push({ x, z, r, kind: 'prop' }); };
+  // A thin pole in a doorway or a lane would close it: one that close to a wall stays passable.
+  const built = createColliderGrid(colliders.slice()), gapTo = (x, z, r) => {
+    let gap = Infinity;
+    for (const c of built.near(x, z, r + PROP_SOLID.gap + 1.5, [])) {
+      const d = c.r !== undefined ? Math.hypot(x - c.x, z - c.z) - c.r
+        : Math.hypot(Math.max(0, Math.abs(x - c.x) - c.hx), Math.max(0, Math.abs(z - c.z) - c.hz));
+      gap = Math.min(gap, d - r);
+    }
+    return gap;
+  };
+  return object => {
+    if (object.userData.passable) return;
+    const geometry = object.geometry;
+    if (!geometry.boundingBox) geometry.computeBoundingBox();
+    box.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld);
+    const x = (box.min.x + box.max.x) / 2, z = (box.min.z + box.max.z) / 2, ground = heightAt(x, z);
+    // Between the knees and the head: something a walking person would strike.
+    if (box.min.y - ground > PROP_SOLID.high || box.max.y - ground < PROP_SOLID.low) return;
+    // Its footprint in its own frame, so a rail or a sign's finger turned at an angle is still a rail.
+    geometry.boundingBox.getSize(size); geometry.boundingBox.getCenter(mid).applyMatrix4(object.matrixWorld);
+    object.matrixWorld.extractBasis(axes[0], axes[1], axes[2]);
+    const spans = axes.map((axis, i) => ({ x: axis.x * size.getComponent(i), z: axis.z * size.getComponent(i) }))
+      .map(v => ({ ...v, length: Math.hypot(v.x, v.z) })).sort((a, b) => b.length - a.length);
+    const long = spans[0].length, thick = spans[1].length + spans[2].length * .5;
+    if (long < .06) return;
+    if (long / Math.max(thick, .01) <= 2.5) {
+      const across = Math.max(box.max.x - box.min.x, box.max.z - box.min.z), r = Math.min(1, Math.max(.1, across / 2 * .85));
+      if (across <= PROP_SOLID.widest && (r >= PROP_SOLID.pole || gapTo(x, z, r) >= PROP_SOLID.gap)) add(x, z, r);
+      return;
+    }
+    // A rail, a plank, a board: a row of small circles along its length.
+    if (long > PROP_SOLID.longest) return;
+    const r = Math.max(.1, thick / 2 + .02), count = Math.max(2, Math.ceil(long / (r * 1.4)));
+    for (let i = 0; i < count; i++) {
+      const f = (i + .5) / count - .5;
+      add(mid.x + spans[0].x * f, mid.z + spans[0].z * f, r);
+    }
   };
 }

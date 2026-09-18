@@ -71,6 +71,14 @@ test('optional hideout checkpoints preserve unfinished supplies and reject impos
   assert.equal(inventory.count('pawpaw'), fruitBefore);
 });
 
+test('the dead of a raid are kept with the road, and a list naming someone who cannot die is refused', () => {
+  const { checkpoint, data } = fixture();
+  assert.equal(checkpoint.save({ ...data, fallen: { version: 1, ids: ['greenway-forager'] } }).ok, true);
+  assert.deepEqual(checkpoint.read().data.fallen, { version: 1, ids: ['greenway-forager'] });
+  assert.equal(checkpoint.save({ ...data, fallen: { version: 1, ids: ['forest-woodcutter'] } }).ok, false, 'Tamsin is only ever wounded');
+  assert.deepEqual(checkpoint.read().data.fallen, { version: 1, ids: ['greenway-forager'] }, 'the refused save changed nothing');
+});
+
 test('invalid data never overwrites an existing checkpoint', () => {
   const { checkpoint, data, storage } = fixture();
   checkpoint.save(data);

@@ -38,6 +38,11 @@ const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 const ALLY_KINDS = Object.freeze({
   legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90 }),
   officer: Object.freeze({ tell: .5, attack: .48, contact: .2, recovery: 1.7, damage: 22, speed: 2.2, engage: 1.95, reach: 2.2, hp: 110 }),
+  // Villagers caught in a fight (src/bystanders.js). One who has a tool to hand fights, slower and
+  // lighter than a soldier. One who has not freezes, then runs for its refuge, burdened, a little
+  // slower than a goblin: without help it is caught.
+  villager: Object.freeze({ tell: .62, attack: .5, contact: .22, recovery: 2.1, damage: 13, speed: 2.2, engage: 1.95, reach: 2.1, hp: 60 }),
+  bystander: Object.freeze({ flees: true, freeze: 7, speed: 1.3, hp: 45 }),
 });
 const DEFAULT_ENCOUNTER = Object.freeze({
   id: 'tidehaven-raiders', center: Object.freeze({ x: 0, z: -36 }),
@@ -83,9 +88,14 @@ function encounterConfig(config) {
         || (ally.name !== undefined && typeof ally.name !== 'string')
         || (ally.model !== undefined && (!ally.model || typeof ally.model !== 'object' || Array.isArray(ally.model)))
         || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
+        || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
+        || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
+        || (ally.refuge !== undefined && (!point(ally.refuge) || Math.abs(ally.refuge.x - config.center.x) > 12
+          || ally.refuge.z < config.center.z - 21 || ally.refuge.z > config.center.z + 18))
         || Math.abs(ally[across] - config.center[across]) > 12 || ally[axis] < config.center[axis] - 21
         || ally[axis] > config.center[axis] + 18 || ally[axis] >= line) return null;
-      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}) });
+      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
+        ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
@@ -223,17 +233,19 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     state.allies = next.allies.map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
     state.encounterId = next.id;
+    state.center = { x: next.center.x, z: next.center.z };
     nextAttackerAt = time + .6;
     return true;
   }
 
-  function resetEncounter() {
+  /** Start the last encounter over; `changes` replace parts of it (the raid's villagers are not caught twice). */
+  function resetEncounter(changes = {}) {
     state.phase = 'peaceful';
     const checkpoint = safePoint(lastEncounter.checkpoint.x, lastEncounter.checkpoint.z);
     position.x = checkpoint.x;
     position.z = checkpoint.z;
     position.y = world.heightAt(position.x, position.z);
-    return startEncounter(lastEncounter);
+    return startEncounter({ ...lastEncounter, ...changes });
   }
 
   function beginAttack(yaw) {
@@ -501,9 +513,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     const desiredDistance = Math.max(someoneAttacking ? 2.7 : 1.8, profile.standoff ?? 0);
     if (dist > desiredDistance) {
+      // After the traveler an enemy keeps to the middle of its ground; after a villager running
+      // for cover it follows as far as the villager can go.
+      const c = lastEncounter.center, wide = !!focus.ally?.refuge;
       const target = {
-        x: clamp(aim.x, lastEncounter.center.x - 8, lastEncounter.center.x + 8),
-        z: clamp(aim.z, lastEncounter.center.z - 16, lastEncounter.center.z + 16),
+        x: clamp(aim.x, c.x - (wide ? 12 : 8), c.x + (wide ? 12 : 8)),
+        z: clamp(aim.z, c.z - (wide ? 21 : 16), c.z + (wide ? 18 : 16)),
       };
       const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
@@ -516,7 +531,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function makeAlly(spec, index) {
     const profile = ALLY_KINDS[spec.kind];
     const ally = { id: spec.id, name: spec.name, kind: spec.kind, ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
-      hp: spec.hp ?? profile.hp, maxHp: spec.hp ?? profile.hp, action: 'idle', progress: 0, speed: 0, active: true };
+      hp: spec.hp ?? profile.hp, maxHp: spec.hp ?? profile.hp, action: 'idle', progress: 0, speed: 0, active: true,
+      ...(spec.refuge ? { refuge: { ...spec.refuge }, frozen: profile.freeze ?? 0, escaped: false } : {}),
+      ...(spec.spared ? { spared: true } : {}), ...(spec.armed !== undefined ? { armed: spec.armed } : {}) };
     allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
     return ally;
   }
@@ -541,13 +558,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     ally.hp = Math.max(0, ally.hp - damage);
     ally.action = ally.hp ? 'hurt' : 'dead';
     ally.active = ally.hp > 0;
+    // Struck, a frozen villager stops freezing and runs.
+    if (ally.frozen) ally.frozen = 0;
+    if (!ally.hp && ally.spared) ally.wounded = true;
     ally.progress = 0;
     ally.speed = 0;
     timers.actionTime = 0;
     timers.hitApplied = false;
     moveCharacter(ally, Math.sin(enemy.yaw) * .4, Math.cos(enemy.yaw) * .4, world);
     emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z });
-    if (!ally.hp) emit('ally-down', { id: ally.id, x: ally.x, z: ally.z });
+    if (!ally.hp) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z });
   }
 
   function steerAlly(ally, target, step) {
@@ -580,6 +600,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (state.phase !== 'active') { ally.action = 'idle'; ally.progress = 0; return; }
     const foes = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead');
+    if (profile.flees) { fleeAlly(ally, foes, profile, dt); return; }
     if (!foes.length) { ally.action = 'idle'; ally.progress = 0; return; }
     if (ally.action === 'windup') {
       ally.progress = clamp(timers.actionTime / profile.tell, 0, 1);
@@ -609,6 +630,29 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       return;
     }
     if (dist > 1.7) ally.speed = steerAlly(ally, target, Math.min(profile.speed * dt, Math.max(0, dist - 1.7))) / dt;
+  }
+
+  /** A villager with nothing to fight with: frozen at first, then running for its refuge. */
+  function fleeAlly(ally, foes, profile, dt) {
+    ally.action = 'idle'; ally.progress = 0;
+    if (ally.escaped) return;
+    const foe = foes.slice().sort((a, b) => distance(ally, a) - distance(ally, b))[0];
+    if (ally.frozen > 0) {
+      // Rooted to the spot, watching the nearest of them, until struck, reached, or it breaks and runs.
+      ally.frozen = distance(ally, position) < 5 ? 0 : ally.frozen - dt;
+      if (foe) ally.yaw += angleDifference(Math.atan2(foe.x - ally.x, foe.z - ally.z), ally.yaw) * Math.min(1, dt * 6);
+      return;
+    }
+    // A blade raised at it, close: it cowers instead of running, and the blow lands unless the traveler is there first.
+    if (state.enemies.some(enemy => enemy.active && enemy.action === 'windup' && enemyTimers.get(enemy.id)?.targetId === ally.id && distance(enemy, ally) < 3.2)) return;
+    const gap = distance(ally, ally.refuge);
+    if (gap < 1) {
+      ally.escaped = true; ally.active = false;
+      emit('ally-escaped', { id: ally.id, x: ally.x, z: ally.z });
+      return;
+    }
+    ally.yaw += angleDifference(Math.atan2(ally.refuge.x - ally.x, ally.refuge.z - ally.z), ally.yaw) * Math.min(1, dt * 10);
+    ally.speed = steerAlly(ally, ally.refuge, Math.min(profile.speed * dt, gap)) / dt;
   }
 
   function update(dt) {

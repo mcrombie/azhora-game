@@ -134,10 +134,12 @@ test('the harbour cat’s places are in Tidehaven, on open ground, clear of peop
   const { createWorld } = await sourceModule('../src/world.js');
   const { canStand } = await import('../src/game-state.js');
   const { clearLine } = await import('../src/autopilot.js');
-  const world = createWorld(new THREE.Scene());
-  const people = Object.values(world.npcPositions);
+  const { bodyWorld } = await import('../src/bodies.js');
+  // The cat hops crates and rails, as in the game: it plans by everything but the props.
+  const built = createWorld(new THREE.Scene()), world = bodyWorld(built, { ignore: ['prop'] });
+  const people = Object.values(built.npcPositions);
   for (const spot of VILLAGE_CAT.spots) {
-    assert.equal(world.regionAt(spot.x, spot.z)?.name, 'Drent', spot.id);
+    assert.equal(built.regionAt(spot.x, spot.z)?.name, 'Drent', spot.id);
     assert.ok(canStand(spot.x, spot.z, world, .3), `${spot.id} is not open ground`);
     assert.ok(people.every(p => Math.hypot(p.x - spot.x, p.z - spot.z) > 2.5), `${spot.id} is on top of somebody`);
   }
