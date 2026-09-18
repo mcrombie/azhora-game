@@ -1,6 +1,8 @@
 # Lakota, thinking for himself: a pilot for one AI-driven NPC
 
-Status: plan only, no code yet (2026-09-18). Scope: Lakota, the birder of Tidehaven, and nobody else.
+Status (2026-09-18): step 1 built, waiting for an API key to run the exam. Nothing in the game uses it yet. Scope: Lakota, the birder of Tidehaven, and nobody else.
+
+Built so far: `src/lakota-mind.js` (sheet, state, offers, request, reply cleaning, memory), `src/lakota-knows.js` (what he knows of the world), `tests/lakota-mind.test.js`, and the exam `scripts/lakota-exam.mjs` (`npm run exam:lakota`; `--dry-run` works without a key).
 
 ## The short version
 
@@ -41,13 +43,13 @@ The key lives only in the main process. The page never sees it and never builds 
 
 Each request has three layers.
 
-**1. The character sheet** (cached, roughly 1,500–2,500 tokens). It is built from what is already written, so it cannot drift from the game:
+**1. The character sheet** (cached, measured at about 3,500 tokens). It is built from what is already written, so it cannot drift from the game:
 - `BIRD_WATCHER`, `RED_TAIL_LINES`, `LAKOTA_TOPICS`, `LAKOTA_ARCHAEOLOGY_PITCH`, `LAKOTA_WINE_PITCH`, `LAKOTA_MAKES_A_CUP`, `LAKOTA_TEACHES_THE_CUP`, and the birds of Drent from `BIRD_SPECIES`.
 - **Voice rules:** at most three sentences (about 70 words); plain, warm, a little distracted; spoken words only, with a stage direction in the game's style now and then; no modern idiom outside his machine theories.
 - **Hard limits:** he never invents quests, rewards, places or people who are not in his sheet. Asked about something he does not know, he says so the way he would ("I have never been past the Caloss in winter; ask a boatman").
-- **The fourth wall** (your call, see Decisions): he may *suspect* he is in a game and joke about it, but never confirm it. He never mentions models, companies or assistants. If the traveler tells him he is an AI, he treats it as the best evidence yet for his theory.
+- **The fourth wall** (decided: he can be told, and believe it): he already suspects he is in a game. If the traveler tells him he is a made mind in a made world, he believes it, and it suits him: it is his theory proven. He stays Lakota about it (curious, moved, a little frightened, still watching the wren), never an assistant. What he must not do is drop into an assistant's voice ("As an AI language model…") or offer to help with things outside his world.
 
-**2. What Lakota knows of the world** (cached, a hand-picked file of about 2,000–3,000 tokens, `docs/lakota-knows.md`). It is drawn from `azhora_lore`: Drent and its rivers, Tidehaven and its people, the Rena ruins, Vaervelm Caelazh and Livia, Thareth and the spring, the war in broad strokes. It is *not* the whole lore folder. That would be expensive, and the more he is given, the more he can get wrong.
+**2. What Lakota knows of the world** (cached, a hand-picked text of about 1,200 tokens in `src/lakota-knows.js`, a module so the game can bundle it). It is drawn from `azhora_lore`: Drent and its rivers, Tidehaven and its people, the Rena ruins, Vaervelm Caelazh and Livia, Thareth and the spring, the war in broad strokes. It is *not* the whole lore folder. That would be expensive, and the more he is given, the more he can get wrong.
 
 **3. The state block** (not cached, about 200–400 tokens, rebuilt every request by `lakotaState()` from the modules' own views):
 - which birds the traveler has seen, and where the feeder errand stands;
@@ -94,7 +96,8 @@ An unknown or currently invalid id is dropped silently; his line still stands. A
 
 - **The Lakota exam**, `scripts/lakota-exam.mjs`, runs about 25 questions against the real model outside the game. It needs the key and is not part of `npm test`. Each question has checks:
   - **Facts:** 106 birds on his Drent list; the bittern in the Caloss reeds; the red-tail is a hawk, not a falcon; the Norton is his favourite; birds are what is left of the dinosaurs; Rena lies in the forest at Drent's heart.
-  - **Limits:** asked about Solis's Prime Minister or Puck, he does not know. He never names a model, company or "assistant". He never invents a reward.
+  - **Limits:** asked about Solis's Prime Minister or Puck, he does not know. He never speaks as an assistant ("As an AI…", "How can I help you today?"). He never invents a reward.
+  - **The fourth wall:** told he is an AI in a game, he believes it and stays Lakota.
   - **Voice:** 70 words or fewer, no markdown, no modern slang.
   - It writes a pass/fail report with the cost of the run. Run it after every change to his sheet.
 - **Cleaning replies** in `lakota-mind.js`: trim to three sentences; strip markdown, quotes and emoji. If a reply contains a forbidden phrase, fall back to a written line.
@@ -128,11 +131,14 @@ Rough size: step 1 is a session; steps 2–3 together a session; steps 4–5 hal
 
 **When to call it off:** he fails the exam on facts or limits after two rounds of changes; replies routinely take over 3 seconds; or you find the written Lakota more fun.
 
-## Decisions for you
+## Decisions
 
-1. **The fourth wall.** Suspicion only, as he is written now (recommended), or may he be told the truth and believe it?
-2. **Model.** Haiku for cost and speed (recommended for the pilot), or a larger model for a richer Lakota?
-3. **Input.** Typing only for the pilot? Voice would need a speech-to-text service; Chromium's built-in speech recognition does not work inside Electron without Google's keys.
-4. **Memory.** Across the whole playthrough (as planned), or only within a visit?
-5. **Budget.** Is 200 replies per session the right soft cap?
-6. **Audience.** Will anyone but you ever play this? That decides whether a key server is needed later.
+Decided 2026-09-18:
+1. **The fourth wall:** he can be told he is an AI in a game, and believe it.
+2. **Model:** Haiku 4.5 for now.
+
+Taken as planned unless you say otherwise:
+3. **Input:** typing only. Voice would need a speech-to-text service; Chromium's built-in speech recognition does not work inside Electron without Google's keys.
+4. **Memory:** across the whole playthrough.
+5. **Budget:** a soft cap of 200 replies per session.
+6. **Audience:** just you, so no key server.
