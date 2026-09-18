@@ -129,8 +129,79 @@ export function bestTrail(paths = [], position, target) {
   return best;
 }
 
+/**
+ * The roads as one network. `world.paths` are separate polylines — the main road,
+ * the Solis road, the stockade spur — that meet where one starts on another, so a
+ * journey like Solis to the Moros outpost runs along three of them. Vertices of
+ * different roads within JOIN of each other are the same junction.
+ */
+const JOIN = 7;
+const NETWORK_REACH = 60;
+const roadNetworks = new WeakMap();
+function roadNetwork(paths) {
+  let network = roadNetworks.get(paths);
+  if (network) return network;
+  const nodes = [], edges = [];
+  const link = (a, b) => { const w = distance(nodes[a], nodes[b]); edges[a].push([b, w]); edges[b].push([a, w]); };
+  for (const path of paths) {
+    let previous = -1;
+    for (const point of path) {
+      const index = nodes.push({ x: point.x, z: point.z }) - 1; edges.push([]);
+      if (previous >= 0) link(previous, index);
+      previous = index;
+    }
+  }
+  for (let a = 0; a < nodes.length; a++) for (let b = a + 1; b < nodes.length; b++)
+    if (distance(nodes[a], nodes[b]) < JOIN) link(a, b);
+  network = { nodes, edges };
+  roadNetworks.set(paths, network);
+  return network;
+}
+
+/**
+ * The road vertices from near `from` to the reachable road point nearest `to`,
+ * over every road, or null when `from` is far from any road or the network gets
+ * no closer. A track that stops short of the destination (the outpost's own lanes
+ * do not join the Moros road) still takes the traveler as near as the roads go.
+ */
+export function roadRoute(paths, from, to) {
+  const { nodes, edges } = roadNetwork(paths);
+  let start = -1, gap = NETWORK_REACH;
+  nodes.forEach((node, index) => { const d = distance(node, from); if (d < gap) { gap = d; start = index; } });
+  if (start < 0) return null;
+  const cost = new Float64Array(nodes.length).fill(Infinity), previous = new Int32Array(nodes.length).fill(-1), done = new Uint8Array(nodes.length);
+  cost[start] = 0;
+  for (;;) {
+    let current = -1;
+    for (let i = 0; i < nodes.length; i++) if (!done[i] && cost[i] < Infinity && (current < 0 || cost[i] < cost[current])) current = i;
+    if (current < 0) break;
+    done[current] = 1;
+    for (const [next, weight] of edges[current]) if (cost[current] + weight < cost[next]) { cost[next] = cost[current] + weight; previous[next] = current; }
+  }
+  let end = -1;
+  for (let i = 0; i < nodes.length; i++) if (cost[i] < Infinity && (end < 0 || distance(nodes[i], to) < distance(nodes[end], to))) end = i;
+  if (end < 0 || distance(nodes[end], to) >= distance(nodes[start], to) - 20) return null;
+  const route = [];
+  for (let i = end; i >= 0; i = previous[i]) route.unshift(nodes[i]);
+  return route;
+}
+
+/** The next route vertex to walk at: past the one we are beside, never one behind us. */
+function stepAlong(route, position) {
+  let index = 0, gap = Infinity;
+  route.forEach((point, i) => { const d = distance(point, position); if (d < gap) { gap = d; index = i; } });
+  if (index < route.length - 1 && (gap < 1.4 || isBehind(position, route[index], route[index + 1]))) index++;
+  return route[index];
+}
+
+/** Past this, a walled place's gate is somewhere to get to by road, not a heading. */
+const GATE_REACH = 45;
+
 export function nextWaypoint(position, target, world, memory = {}) {
   const gateway = enclosureWaypoint(position, target, world);
+  // Near a gate, walk at it and through it. A gate half a kilometre off (the outpost's,
+  // seen from Solis) is a destination: take the road there, as for any other place.
+  if (gateway && distance(position, gateway.point) > GATE_REACH) return nextWaypoint(position, gateway.point, world, memory);
   if (gateway) return gateway;
   // Whichever road serves this leg, not only the road out of Drent: the way from
   // the outpost to Solis runs along the stockade spur and the Solis road.
@@ -166,6 +237,15 @@ export function nextWaypoint(position, target, world, memory = {}) {
       return { point: trail[index], onTrail: true };
     }
   }
+  // Far off, and the way straight ahead is blocked: go by the road network, however
+  // many roads that takes. Nothing changes where the straight line already works.
+  if (distance(position, target) > 80) {
+    const heading = distance(position, target), ahead = { x: position.x + (target.x - position.x) / heading * 40, z: position.z + (target.z - position.z) / heading * 40 };
+    if (!clearLine(position, ahead, world)) {
+      const route = roadRoute(world.paths ?? [], position, target);
+      if (route && route.length > 1) return { point: stepAlong(route, position), onTrail: true };
+    }
+  }
   return { point: target, onTrail: false };
 }
 
@@ -183,7 +263,11 @@ export function enclosureWaypoint(position, target, world) {
   if (place) {
     const inside = place === leaving;
     let best = null, bestCost = Infinity;
-    for (const gate of place.gates) {
+    // A harbour gate is the way to the water, not the way inland: straight-line
+    // distance would send a traveler bound for the Moros out onto Solis's quay.
+    const outside = inside ? target : position;
+    const landward = place.gates.filter(gate => !gate.harbour || distance(gate.outer, outside) < 80);
+    for (const gate of landward.length ? landward : place.gates) {
       const near = inside ? gate.inner : gate.outer, far = inside ? gate.outer : gate.inner;
       const cost = distance(position, near) + distance(far, target);
       if (cost < bestCost) { bestCost = cost; best = { near, far }; }

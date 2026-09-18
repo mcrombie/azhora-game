@@ -353,3 +353,60 @@ test('a fort’s ditch is outside it: a traveler in front of the wall walks away
   assert.equal(stockade.contains(STOCKADE_CENTRE.x, STOCKADE_CENTRE.z), true);
   assert.equal(enclosureWaypoint(STOCKADE_CENTRE, solisGate, world)?.gate, true);
 });
+
+test('the roads are one network: a journey is routed across as many of them as it takes', async () => {
+  const { roadRoute } = await import('../src/autopilot.js');
+  // Three roads meeting end to end, like the Solis road, the stockade spur and the Moros road.
+  const paths = [
+    [{ x: 0, z: 0 }, { x: 100, z: 0 }],
+    [{ x: 100, z: 0 }, { x: 100, z: 100 }, { x: 100, z: 200 }],
+    [{ x: 103, z: 202 }, { x: 250, z: 202 }],
+    // A lane inside a camp that joins nothing: nearer the destination, and no use.
+    [{ x: 260, z: 230 }, { x: 262, z: 236 }],
+  ];
+  const route = roadRoute(paths, { x: 5, z: 3 }, { x: 255, z: 225 });
+  assert.ok(route, 'there is a way');
+  assert.deepEqual(route[0], { x: 0, z: 0 });
+  assert.ok(route.some(p => p.x === 100 && p.z === 100), 'it turns up the second road');
+  assert.deepEqual(route.at(-1), { x: 250, z: 202 }, 'as near as the connected roads go, not the lane that joins nothing');
+  assert.equal(roadRoute(paths, { x: -500, z: -500 }, { x: 255, z: 225 }), null, 'nowhere near a road: no route');
+});
+
+test('a harbour gate is the way to the water, not the way inland', async () => {
+  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const city = { id: 'city', contains: (x, z) => Math.abs(x) < 50 && Math.abs(z) < 50, gates: [
+    { id: 'land', outer: { x: 0, z: -60 }, inner: { x: 0, z: -40 } },
+    { id: 'quay', outer: { x: -60, z: 0 }, inner: { x: -40, z: 0 }, harbour: true },
+  ] };
+  const world = { enclosures: [city] };
+  // Bound somewhere a little nearer the quay in a straight line, but inland.
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: 0 }, { x: -400, z: -300 }, world).point, { x: 0, z: -40 }, 'inland: the land gate');
+  assert.deepEqual(enclosureWaypoint({ x: 0, z: 0 }, { x: -90, z: 5 }, world).point, { x: -40, z: 0 }, 'to the waterfront: the quay gate');
+});
+
+test('from the Court of Oaths the Empire’s traveler walks all the way back to the outpost', async () => {
+  // Twice an autoplay run jammed at Solis's north-west corner: out by the quay gate, or
+  // straight along the ditch toward the outpost. The walk now goes by the roads.
+  const THREE = await import('../vendor/three.module.js');
+  const { sourceModule } = await import('./module-loader.js');
+  const { createWorld } = await sourceModule('../src/world.js');
+  const { moveCharacter } = await import('../src/game-state.js');
+  const { aftermathSite } = await import('../src/aftermath-sites.js');
+  const { sideSeat } = await import('../src/story-chapters.js');
+  const world = createWorld(new THREE.Scene());
+  const adapter = { bounds: world.bounds, colliders: world.colliders, nearColliders: (x, z, r, out) => world.nearColliders(x, z, r, out),
+    heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };
+  const hall = aftermathSite('solis-hall'), home = sideSeat('empire');
+  const position = { x: hall.x, z: hall.z };
+  let side = 1, best = Infinity, stalled = 0, arrived = false;
+  for (let step = 0; step < 6000 && !arrived; step++) {
+    const gap = Math.hypot(home.x - position.x, home.z - position.z);
+    if (gap < home.reach - 12) { arrived = true; break; }
+    if (gap < best - .05) { best = gap; stalled = 0; } else if ((stalled += .05) > 12) break;
+    const waypoint = nextWaypoint(position, home, adapter);
+    const dir = freeDirection(position, waypoint.point, adapter, side);
+    if (!dir || (!dir.x && !dir.z)) { side = -side; continue; }
+    moveCharacter(position, dir.x * 7.2 * .05, dir.z * 7.2 * .05, adapter);
+  }
+  assert.ok(arrived, `stuck at ${position.x.toFixed(0)},${position.z.toFixed(0)}, ${best.toFixed(0)} m from the outpost`);
+});

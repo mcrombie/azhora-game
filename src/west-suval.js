@@ -391,7 +391,8 @@ export const SOLIS_ENCLOSURE = freeze({
   contains: (x, z) => Math.abs(x - SOLIS.centre.x) < ENCLOSURE_REACH.a && Math.abs(z - SOLIS.centre.z) < ENCLOSURE_REACH.b,
   gates: freeze(SOLIS_GATES.map(gate => {
     const outer = facePoint(gate.face, gate.along, FORT.ditchOffset + 7), inner = facePoint(gate.face, gate.along, -9);
-    return freeze({ id: gate.id, outer: local(outer.a, outer.b), inner: local(inner.a, inner.b) });
+    // The Quay Gate opens onto the harbour: the way out to anywhere inland is the Gate of Sun Horses.
+    return freeze({ id: gate.id, outer: local(outer.a, outer.b), inner: local(inner.a, inner.b), harbour: gate.id === 'quay' });
   })),
 });
 
