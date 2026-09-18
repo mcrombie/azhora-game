@@ -6,7 +6,7 @@
  */
 import {
   VILLAGE, villageToWorld, worldToVillage, villageShoreLocalZ, landDistance, terrainMix, relief,
-  REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS, TERRAIN_PADS,
+  REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS, TERRAIN_PADS, MAIN_ROAD,
 } from './region-world.js';
 import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-world.js';
 
@@ -80,9 +80,13 @@ export function bedrockHeight(x, z) {
 }
 
 /**
- * The Caloss runs downhill to the Stills. Sampling the bedrock once along the
- * authored border line, then forcing the profile to fall, keeps the bridge deck
- * level and the channel believable where the two banks differ in height.
+ * The Caloss runs downhill to the Stills. The bedrock is sampled once along the
+ * authored border line and the profile is then forced to fall toward the sea,
+ * the way Pueth's rivers are: where a rise stands in the way the water does not
+ * climb over it, the channel cuts down through it (`groundWithRiver`). Forcing
+ * it the other way — raising every reach to the highest ground downstream — held
+ * the whole middle Caloss flat at the height of a ridge near the mouth, up to
+ * five metres above its own bed, and floated the bridge deck with it.
  */
 export const CALOSS_PROFILE = (() => {
   const samples = [];
@@ -95,8 +99,8 @@ export const CALOSS_PROFILE = (() => {
       samples.push({ x, z, surface: regionBase(x, z) - 1.35 });
     }
   }
-  // Water never flows uphill: walk back from the sea and keep the running minimum.
-  for (let i = samples.length - 2; i >= 0; i--) samples[i].surface = Math.max(samples[i].surface, samples[i + 1].surface);
+  // Water never flows uphill: walk down from the source and never let it rise.
+  for (let i = 1; i < samples.length; i++) samples[i].surface = Math.min(samples[i].surface, samples[i - 1].surface);
   for (let pass = 0; pass < 3; pass++) for (let i = 1; i < samples.length - 1; i++)
     samples[i].surface = (samples[i - 1].surface + samples[i].surface * 2 + samples[i + 1].surface) / 4;
   for (const sample of samples) sample.surface = Math.max(sample.surface, SEA_LEVEL + .05);
@@ -160,6 +164,50 @@ export const TESSEN_DECK_Y = (() => {
   const surface = puethRiverSurface(TESSEN, crossing.x, crossing.z);
   return surface + 1.6;
 })();
+/** The Caloss channel alone: the bed cut into the bedrock, with no bridge in it. */
+function calossChannel(x, z, bedrock) {
+  const distance = calossDistance(x, z);
+  if (distance >= CALOSS_BANK_DISTANCE) return bedrock;
+  const bed = calossSurface(x, z) - 1.1;
+  return lerp(Math.min(bed, bedrock), bedrock, smooth(6.6, CALOSS_BANK_DISTANCE, distance));
+}
+
+/**
+ * The Caloss bridge. It lies along the road's real line across the water — the
+ * chord between the road's vertices on either bank — and its deck is set to meet
+ * the two banks, not measured up from the water: halfway between them, and never
+ * lower than a clear metre over the river. The road then ramps to it on both
+ * sides, as it does to the Tessen's, so the way over is one even line.
+ */
+export const CALOSS_BRIDGE = (() => {
+  const crossing = CALOSS.crossing;
+  let at = 0, bestDistance = Infinity;
+  for (let i = 0; i < MAIN_ROAD.length; i++) {
+    const distance = Math.hypot(MAIN_ROAD[i].x - crossing.x, MAIN_ROAD[i].z - crossing.z);
+    if (distance < bestDistance) { bestDistance = distance; at = i; }
+  }
+  const before = MAIN_ROAD[Math.max(0, at - 1)], after = MAIN_ROAD[Math.min(MAIN_ROAD.length - 1, at + 1)];
+  const heading = Math.atan2(after.x - before.x, after.z - before.z);
+  const axis = Object.freeze({ x: Math.sin(heading), z: Math.cos(heading) });
+  const side = Object.freeze({ x: Math.cos(heading), z: -Math.sin(heading) });
+  const halfSpan = 13.5;
+  const bankAt = sign => {
+    const x = crossing.x + axis.x * sign * (halfSpan + 2), z = crossing.z + axis.z * sign * (halfSpan + 2);
+    return calossChannel(x, z, bedrockHeight(x, z));
+  };
+  const water = calossSurface(crossing.x, crossing.z);
+  const deckY = Math.max(water + 1.1, (bankAt(-1) + bankAt(1)) / 2);
+  return Object.freeze({ crossing, heading, axis, side, halfSpan, deckY, water });
+})();
+
+function calossEmbankment(x, z, ground) {
+  const b = CALOSS_BRIDGE, dx = x - b.crossing.x, dz = z - b.crossing.z;
+  const along = Math.abs(dx * b.axis.x + dz * b.axis.z), across = Math.abs(dx * b.side.x + dz * b.side.z);
+  if (along > b.halfSpan + 18 || across > 12 || along < b.halfSpan - 1.5) return ground;
+  const weight = (1 - smooth(b.halfSpan + 1.5, b.halfSpan + 18, along)) * (1 - smooth(4, 12, across));
+  return lerp(ground, b.deckY - .04, weight);
+}
+
 function bridgeEmbankment(x, z, ground) {
   const b = TESSEN_BRIDGE, dx = x - b.crossing.x, dz = z - b.crossing.z;
   const along = Math.abs(dx * b.axis.x + dz * b.axis.z), across = Math.abs(dx * b.side.x + dz * b.side.z);
@@ -171,11 +219,8 @@ function bridgeEmbankment(x, z, ground) {
 /** Ground with the river channels cut, before any deck or pier override. */
 export function groundWithRiver(x, z) {
   const bedrock = bedrockHeight(x, z), distance = calossDistance(x, z);
-  let ground = bedrock;
-  if (distance < CALOSS_BANK_DISTANCE) {
-    const bed = calossSurface(x, z) - 1.1;
-    ground = lerp(Math.min(bed, bedrock), bedrock, smooth(6.6, CALOSS_BANK_DISTANCE, distance));
-  }
+  let ground = distance < CALOSS_BANK_DISTANCE ? calossChannel(x, z, bedrock) : bedrock;
+  ground = calossEmbankment(x, z, ground);
   const near = nearestPuethRiver(x, z, PUETH_VALLEY_REACH);
   if (near.distance < PUETH_VALLEY_REACH) {
     const sample = puethRiverSample(near.river, x, z), half = puethRiverHalfWidth(near.river, sample);

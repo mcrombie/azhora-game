@@ -4,7 +4,7 @@ import {
   STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions } from './region-world.js';
 import { HIDEOUT_CLEARINGS, PUETH_CLEARINGS } from './pueth-world.js';
 import { PEBLOS_CLEARINGS } from './peblos-world.js';
-import { calossSurface } from './world-terrain.js';
+import { calossSurface, CALOSS_BRIDGE } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
 import { regionalFeatureClear } from './regional-places.js';
 import { OUTPOST_CLEARING, STOCKADE_CLEARING } from './outpost.js';
@@ -262,22 +262,14 @@ export function createRegionScenery(kit) {
 
   // The bridge lane: the one walkable line across the water.
   const crossing = CALOSS.crossing;
-  const roadHeading = (() => {
-    // The deck lies along the road's real line across the water: the chord
-    // between the vertices on either bank, not one of the two legs. The road
-    // bends a few degrees at the crossing, and at 100 m per hex those legs are
-    // long enough that a traveler walking straight from one bank to the other
-    // would meet the rail instead of the deck if the deck followed either leg.
-    let at = 0, bestDistance = Infinity;
-    for (let i = 0; i < MAIN_ROAD.length; i++) {
-      const distance = Math.hypot(MAIN_ROAD[i].x - crossing.x, MAIN_ROAD[i].z - crossing.z);
-      if (distance < bestDistance) { bestDistance = distance; at = i; }
-    }
-    const before = MAIN_ROAD[Math.max(0, at - 1)], after = MAIN_ROAD[Math.min(MAIN_ROAD.length - 1, at + 1)];
-    return Math.atan2(after.x - before.x, after.z - before.z);
-  })();
-  const bridgeSurface = calossSurface(crossing.x, crossing.z);
-  const deckY = bridgeSurface + 1.22;
+  // The deck lies along the road's real line across the water: the chord
+  // between the vertices on either bank, not one of the two legs. The road bends
+  // a few degrees at the crossing, and at 100 m per hex those legs are long
+  // enough that a traveler walking straight over would meet the rail if the deck
+  // followed either leg. Its height meets the banks; the terrain ramps the road
+  // up or down to it (CALOSS_BRIDGE in src/world-terrain.js).
+  const roadHeading = CALOSS_BRIDGE.heading;
+  const deckY = CALOSS_BRIDGE.deckY;
   const bridge = new THREE.Group();
   bridge.name = 'The Caloss bridge';
   bridge.position.set(crossing.x, 0, crossing.z);
