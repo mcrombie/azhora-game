@@ -1,10 +1,17 @@
 /**
- * Paradise Springs, the winery in the north-east of West Suval where Lakota
- * worked before he came to Tidehaven. Drawn from the Virginia winery of the
- * same name: an old log cabin that was the first house on the land and is now
- * where the wine is poured, a great timber hall on a stone foot where it is
- * made, a flagstone terrace under the vines, and the spring the place is named
- * for. The rows run down the slope east of the hall.
+ * Vaervelm Caelazh, the winery in the north-east of West Suval where Lakota
+ * worked before he came to Tidehaven. The name is the Suval tongue, a coastal
+ * Mittoli, for Paradise Springs, the Virginia winery it is drawn from: *vaer*
+ * (good) + *velm* (green, fertile place), the good green place, which is what
+ * "paradise" first meant, a walled garden; and *cael* (water, to flow) + *-azh*
+ * (to endure), the water that endures, a spring that has never failed.
+ *
+ * An old log cabin that was the first house on the land and is now where the
+ * wine is poured, a great timber hall on a stone foot where it is made, a
+ * flagstone terrace, and the spring: water welling out of a limestone outcrop
+ * on the rise, where the Svaleen say one of Thareth's tears fell on the stone,
+ * into a stone basin, and away down the slope as a rill past the vines. Eight
+ * varieties grow in blocks of two rows down the slope east of the hall.
  *
  * Laid out in world metres around WINERY.centre: `a` metres east, `b` metres
  * south (north is -z). Pure: no three, no DOM. `src/winery-world.js` builds it.
@@ -12,12 +19,36 @@
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
 
-export const WINERY = freeze({ id: 'paradise-springs', name: 'Paradise Springs', region: 'West Suval', centre: point(-470, 700), radius: 48 });
+/**
+ * What grows here: real varieties the Virginia vineyards grow. `leaf` and `fruit`
+ * tint the rows; `vine` is what the traveler sees reading the plate at the block's head.
+ */
+export const VARIETIES = freeze({
+  viognier: freeze({ name: 'Viognier', colour: 'white', leaf: 0x6b9a3f, fruit: 0xcfc36a,
+    vine: 'Small golden grapes in loose, uneven clusters, and fewer of them than the rows around it: a stingy vine that makes a generous wine.' }),
+  chardonnay: freeze({ name: 'Chardonnay', colour: 'white', leaf: 0x67943c, fruit: 0xc7d07a,
+    vine: 'Tight clusters of round green-gold berries. It buds first of anything in the vineyard, and Livia watches the spring frosts for it.' }),
+  'vidal-blanc': freeze({ name: 'Vidal Blanc', colour: 'white', leaf: 0x729f45, fruit: 0xd9d488,
+    vine: 'Big, heavy clusters of pale berries on a sturdy vine that shrugs off a hard winter. Some are left hanging late, to shrivel and sweeten.' }),
+  'cabernet-franc': freeze({ name: 'Cabernet Franc', colour: 'red', leaf: 0x557f33, fruit: 0x4a2b56,
+    vine: 'Small blue-black berries, and leaves that smell green when you brush them. It ripens before the autumn storms, which is why it suits this hill.' }),
+  merlot: freeze({ name: 'Merlot', colour: 'red', leaf: 0x5a8535, fruit: 0x3f2552,
+    vine: 'Loose clusters of thin-skinned dark berries, softer to the touch than their neighbours. The birds find these first.' }),
+  'petit-verdot': freeze({ name: 'Petit Verdot', colour: 'red', leaf: 0x4f7a30, fruit: 0x2e1a3e,
+    vine: 'Tiny, thick-skinned, almost black berries, the last to ripen on the hill. Crush one and your fingers are purple for a day.' }),
+  tannat: freeze({ name: 'Tannat', colour: 'red', leaf: 0x4c7630, fruit: 0x2a1836,
+    vine: 'Dense clusters of inky berries with thick skins and big seeds: all the grip of the wine is already in the fruit.' }),
+  norton: freeze({ name: 'Norton', colour: 'red', leaf: 0x4a7a2d, fruit: 0x2b1b40,
+    vine: 'Small dark berries on a rangy vine that climbs anything it can reach. The native grape: it grew wild up the trees here before anyone planted a row.' }),
+});
+export const VARIETY_IDS = Object.freeze(Object.keys(VARIETIES));
+
+export const WINERY = freeze({ id: 'paradise-springs', name: 'Vaervelm Caelazh', meaning: 'Paradise Springs', region: 'West Suval', centre: point(-470, 700), radius: 58 });
 export const wineryPoint = (a, b) => point(WINERY.centre.x + a, WINERY.centre.z + b);
 
 export const WINERY_LAYOUT = freeze({
   /** The name board at the lane's end, facing the traveler coming up from the downs. */
-  sign: freeze({ ...wineryPoint(-34, 3), facing: -Math.PI / 2 }),
+  sign: freeze({ ...wineryPoint(-38, 3), facing: -Math.PI / 2 }),
   /** The log cabin: the first house on the land, now the tasting room. Porch on the south side, chimney at the west end. */
   cabin: freeze({ ...wineryPoint(-17, -7), width: 7.5, depth: 5.6, eaves: 3.1, ridge: 5.2, porch: 2.2 }),
   /** The hall: stone foot, timber above, a tall barn roof and a cupola; its great doors open south onto the terrace. */
@@ -27,15 +58,26 @@ export const WINERY_LAYOUT = freeze({
   tables: freeze([wineryPoint(-1.5, 2), wineryPoint(3.5, 3.2), wineryPoint(8.5, 2), wineryPoint(12.5, 3.4)]),
   /** Barrels resting on their chocks at the hall's east end. */
   barrels: freeze([wineryPoint(16.5, -6), wineryPoint(16.5, -4.9), wineryPoint(16.5, -3.8), wineryPoint(17.6, -5.45), wineryPoint(17.6, -4.35)]),
-  /** The spring: a stone-lipped pool below the cabin that has never been known to fail. */
-  spring: freeze({ ...wineryPoint(-19, 11), radius: 3.6 }),
-  /** The vines: rows down the slope east and south of the hall, in five-metre panels between posts. */
-  rows: freeze(Array.from({ length: 9 }, (_, i) => freeze({ a: 24 + i * 3, from: -18, to: 27 }))),
+  /**
+   * The spring. Water wells up at the foot of a limestone outcrop on the rise west
+   * of the cabin, into a stone basin, and runs off down the slope as a short rill
+   * into the hollow below, where it stands as a reedy pool. Every step of it runs
+   * downhill: the ground was measured for it.
+   */
+  spring: freeze({
+    source: wineryPoint(-31.5, 10), basin: freeze({ ...wineryPoint(-28.6, 11.2), radius: 1.9 }),
+    rill: freeze([wineryPoint(-26.2, 12.8), wineryPoint(-23.4, 14.6), wineryPoint(-20.8, 16.5), wineryPoint(-18.4, 18.5)]),
+    pool: freeze({ ...wineryPoint(-15.8, 20.6), radius: 2.4 }),
+  }),
+  /** The vines: eight varietal blocks of two rows each down the slope east of the hall, in five-metre panels between posts. */
+  rows: freeze(VARIETY_IDS.flatMap((variety, block) => [0, 1].map(k => freeze({ a: 22 + block * 5.6 + k * 2.6, from: -18, to: 27, variety })))),
+  /** At the head of each block, a painted plate with the grape's name. */
+  plates: freeze(VARIETY_IDS.map((variety, block) => freeze({ ...wineryPoint(22 + block * 5.6 + 1.3, -19.6), variety, facing: Math.PI }))),
   /** The lane west to the Solis road across the downs. */
-  lane: freeze([wineryPoint(-34, 3), point(-540, 706), point(-590, 712), point(-627, 716)]),
+  lane: freeze([wineryPoint(-38, 3), point(-540, 706), point(-590, 712), point(-627, 716)]),
 });
 
-export const VINTNER = freeze({ id: 'vintner', name: 'Livia Seravo', role: 'Vintner of Paradise Springs', modelRole: 'shelter-keeper', color: 0x7d3a45, skin: 0xc79a74 });
+export const VINTNER = freeze({ id: 'vintner', name: 'Livia Seravo', role: 'Vintner of Vaervelm Caelazh', modelRole: 'shelter-keeper', color: 0x7d3a45, skin: 0xc79a74 });
 export const CELLAR_HAND = freeze({ id: 'cellar-hand', name: 'Nico Arrend', role: 'Cellar hand', modelRole: 'reed-worker', color: 0x6a5a44, skin: 0xb88e66 });
 export const WINERY_STANDS = freeze({
   vintner: freeze({ ...wineryPoint(-15.5, .4), yaw: 0 }),

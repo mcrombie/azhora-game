@@ -51,8 +51,8 @@ export const SKILLS = Object.freeze({
   wine: Object.freeze({
     id: 'wine', name: 'Wine',
     blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted properly for the first time teaches you something about the grape and the ground.',
-    teacher: 'Lakota in Tidehaven, and Livia Seravo at Paradise Springs in West Suval',
-    // The seven wines of Paradise Springs are worth 100, and the visit 25 more: level 3.
+    teacher: 'Lakota in Tidehaven, and Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval',
+    // The eight wines of Vaervelm Caelazh are worth 120, and the visit 25 more: level 5.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
 });

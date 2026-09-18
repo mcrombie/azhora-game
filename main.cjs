@@ -277,7 +277,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         console.log(JSON.stringify({shots:shots.length,toasts:log.toasts.length,talks:log.lines.length,errors},null,2));app.exit(0);return;
       }
       if(wineryReviewOnly){
-        for(const view of ['winery','winery','winery-cabin','rena-track']){
+        for(const view of ['winery','winery','winery-cabin','winery-spring','winery-vines','rena-track']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
           fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
         }

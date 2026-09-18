@@ -301,7 +301,7 @@ export const LAKOTA_TOPICS = Object.freeze([
   Object.freeze({ id: 'dinosaurs', label: 'The great old lizards?', lines: Object.freeze([
     'Dinosaurs. I call them that; nobody else calls them anything, because nobody else has noticed them. Terrible lizards, bigger than a house, and gone before there was a sea where the sea is.',
     'Look at a heron’s foot. Three toes forward, scales up the shin, a claw on each. Now look at the track in the threshold slab at Rena. The birds are what is left of them. I would stake my list on it.',
-    'There is a jaw on Livia’s mantel at Paradise Springs that I dug out of the bottom of her vineyard. She thinks it is a cow. It is not a cow.',
+    'There is a jaw on Livia’s mantel at Vaervelm Caelazh that I dug out of the bottom of her vineyard. She thinks it is a cow. It is not a cow.',
   ]) }),
   Object.freeze({ id: 'digging', label: 'What is the best thing you ever dug up?', lines: Object.freeze([
     'A jaw, at the bottom of Livia’s vineyard, as long as my arm and full of teeth like steak knives. I carried it up the hill in my shirt and she made me wash it before it came in the cabin.',
@@ -335,7 +335,7 @@ export const LAKOTA_ARCHAEOLOGY_PITCH = Object.freeze([
   'Go and read five of them for me, write them up, and bring me your notes. Do not take anything. A thing out of the ground is a thing with its story cut off.',
 ]);
 export const LAKOTA_WINE_PITCH = Object.freeze([
-  'Wine. Before I came here I worked a cellar at Paradise Springs, in the north-east of West Suval: a log cabin that was the first house on the land, a great hall, a spring that never fails, and the best Norton on this coast.',
+  'Wine. Before I came here I worked a cellar at Vaervelm Caelazh, in the north-east of West Suval. Paradise Springs, in plain words: the good green place, where the water endures. A log cabin that was the first house on the land, a great hall, a spring that has never once failed, eight grapes on the slope, and the best Norton on this coast.',
   'Tasting is only looking properly again, with your nose and your mouth. Look at the colour. Swirl it. Smell it like you mean it. Then a small mouthful, held. There, you know how.',
   'Go and see Livia Seravo there. Take the lane east off the Solis road past the Suval Downs. And be careful: there is a war on around Solis, the Legion and the Coalition both, and neither side much minds whose field it is fought in. Keep your head down and your purse closed.',
 ]);
@@ -388,7 +388,7 @@ export function birdWatcherConversation(npc, context) {
       { id: 'decline-rena', label: 'Another time.', action: again },
     ] }) }] : []),
     ...(wine && !wine.met ? [{ id: 'learn-wine', label: 'Tell me about wine.', action: () => openDialogue(npc, [...LAKOTA_WINE_PITCH], null, 'Back to our conversation', { choices: [
-      { id: 'accept-wine', label: 'I will look for Paradise Springs.', action: () => { closeDialogue(); act('learn-wine'); } },
+      { id: 'accept-wine', label: 'I will look for Vaervelm Caelazh.', action: () => { closeDialogue(); act('learn-wine'); } },
       { id: 'decline-wine', label: 'Maybe after the war.', action: again },
     ] }) }] : []),
     { id: 'lakota-mind', label: 'What else is on your mind?', action: () => {

@@ -76,7 +76,7 @@ import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeolog
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
 import { WINE_SKILL, WINE_LESSON, createWine, vintnerConversation, cellarHandConversation } from './wine.js';
-import { VINTNER, CELLAR_HAND, WINERY_STANDS } from './winery.js';
+import { VINTNER, CELLAR_HAND, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
 import { createRenaDigs } from './rena-digs.js';
 import { TALKING_TREE, createTalkingTree, treeLines } from './talking-tree.js';
 import { buildTalkingTree } from './talking-tree-view.js';
@@ -311,7 +311,10 @@ function init() {
   const stones=createDrentStones(scene,world,{avoid:Object.values(world.npcPositions)});
   let currentStone=null;
   // Archaeology and wine, both taught by Lakota (src/archaeology.js, src/wine.js): his pegs at Rena, and Paradise Springs.
-  const archaeology=createArchaeology({skills}),wine=createWine({skills}),digs=createRenaDigs(scene,world);let currentDig=null;
+  const archaeology=createArchaeology({skills}),wine=createWine({skills}),digs=createRenaDigs(scene,world);let currentDig=null,currentVine=null;
+  // The painted plate at the head of each block of vines at the winery: F reads the vines themselves.
+  const vinePlateNear=p=>WINERY_LAYOUT.plates.find(plate=>Math.hypot(plate.x-p.x,plate.z-p.z)<2)??null;
+  function readVines(){if(!currentVine)return;const variety=VARIETIES[currentVine.variety];toast(`${variety.vine}${wine.met?` Livia pours its wine at the cabin.`:''}`,`${variety.name.toUpperCase()} \u00b7 ${variety.colour.toUpperCase()} GRAPES`);}
   function readDig(){
     if(!currentDig)return;
     const found=archaeology.find(currentDig.id);
@@ -325,9 +328,9 @@ function init() {
   const wineContext=()=>({wine,openDialogue,closeDialogue,act:wineAct});
   function wineAct(action){
     const livia=npcById.get(VINTNER.id),back=()=>vintnerConversation(livia,wineContext());
-    if(action==='visit-winery'){const result=wine.visit();if(result.first){refreshSkillsSheet();toast(result.xp?`Wine +${result.xp}. Lakota\u2019s old winery, and Livia Seravo on the porch.`:'Paradise Springs, in the north-east of West Suval.','PARADISE SPRINGS');saveRoad(false);}return result;}
+    if(action==='visit-winery'){const result=wine.visit();if(result.first){refreshSkillsSheet();toast(result.xp?`Wine +${result.xp}. Lakota\u2019s old winery, and Livia Seravo on the porch.`:`${WINERY.name}: Paradise Springs, in plain words.`,WINERY.name.toUpperCase());saveRoad(false);}return result;}
     if(action==='learn-wine-here'){wine.learn();refreshSkillsSheet();audio?.effect('success');openDialogue(livia,[...WINE_LESSON],null,'Back to the terrace',{onComplete:back});toast('Wine \u00b7 level 1. Ask Livia for a taste of anything she pours.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
-    if(action.startsWith('taste-')){const result=wine.taste(action.slice(6));if(!result.ok){toast(result.reason,'PARADISE SPRINGS');return result;}
+    if(action.startsWith('taste-')){const result=wine.taste(action.slice(6));if(!result.ok){toast(result.reason,WINERY.name.toUpperCase());return result;}
       refreshSkillsSheet();audio?.effect('success');
       openDialogue(livia,[`She pours the ${result.entry.name}. ${result.entry.note}`,result.entry.lore],null,'Back to the terrace',{onComplete:back});
       toast(result.first?`Wine +${result.xp}${result.levelled?` \u00b7 level ${result.level}`:''}. ${result.entry.name}, tasted properly.`:`${result.entry.name}, again. It is still good.`,result.first?'FIRST TASTING':'ANOTHER GLASS');saveRoad(false);return result;}
@@ -424,7 +427,7 @@ function init() {
         'Rena was richer than anybody here remembers, and it burned from the gate west. You have read a town. Most people never read anything but a letter.'],null,'Back to the road');
       toast(`Archaeology +${result.xp}${result.levelled?` \u00b7 level ${result.level}`:''}. Lakota has your notes on Rena.`,'THE RUINS OF RENA');saveRoad(false);return result;}
     if(action==='learn-wine'){wine.learn({recommend:true});refreshSkillsSheet();audio?.effect('success');
-      toast('Wine \u00b7 level 1. Find Paradise Springs, Lakota\u2019s old winery in the north-east of West Suval. Mind the war.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
+      toast(`Wine \u00b7 level 1. Find ${WINERY.name}, Paradise Springs, Lakota\u2019s old winery in the north-east of West Suval. Mind the war.`,'NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
     if(action==='learn-birding'){
       birding.meet();refreshSkillsSheet();audio?.effect('success');
       openDialogue(npcById.get(BIRD_WATCHER.id),[...BIRDING_LESSON],null,'Back to the road');
@@ -1538,6 +1541,7 @@ function init() {
     if(combat.state.phase!=='active'&&currentPlant){gatherPlant();return;}
     if(combat.state.phase!=='active'&&currentStone){gatherStone();return;}
     if(combat.state.phase!=='active'&&currentDig){readDig();return;}
+    if(combat.state.phase!=='active'&&currentVine){readVines();return;}
     if(combat.state.phase!=='active'&&nearOldTree&&!currentNPC){lookAtOldTree();return;}
     if(combat.state.phase!=='active'&&currentTree){lookAtTree();return;}
     if(combat.state.phase!=='active'&&currentHideoutSite){
@@ -2057,6 +2061,7 @@ function init() {
       currentPlant=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom?flora.nearest(player.group.position,2.2):null;
       currentStone=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant?stones.nearest(player.group.position,2.2):null;
       currentDig=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?digs.nearest(player.group.position):null;
+      currentVine=mode==='playing'&&combat.state.phase!=='active'&&!currentDig?vinePlateNear(player.group.position):null;
       currentTree=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?specimenTrees.nearest(player.group.position):null;
       nearOldTree=mode==='playing'&&Math.hypot(player.group.position.x-TALKING_TREE.x,player.group.position.z-TALKING_TREE.z)<TALKING_TREE.trunkRadius*1.6+2.4;
       if(mode==='playing'){oldTreeView.pose(oldTree.update(dt,{x:player.group.position.x,z:player.group.position.z}));specimenTrees.update(player.group.position);}
@@ -2084,8 +2089,8 @@ function init() {
       currentFishingSpot=(world.fishingSpots||[{...world.pond,name:'Willowmere Pond'}]).find(spot=>Math.hypot(p.x-spot.fishingSpot.x,p.z-spot.fishingSpot.z)<2.1)||null;
       nearFishing=!!currentFishingSpot;
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
-      if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;if(currentNPC?.cat)currentNPC=null;}
-      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentTree||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
+      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentTree||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
       if(currentNPC)$('interaction-label').textContent=currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -2095,6 +2100,7 @@ function init() {
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
       if(currentStone&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant)$('interaction-label').textContent=geology.met?(geology.hasFound(currentStone.species)?`Pick up the ${currentStone.name.toLowerCase()}`:'Look at this stone'):'A stone catches your eye';
       if(currentDig&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=archaeology.met?(archaeology.hasFound(currentDig.id)?`${currentDig.name} \u00b7 written up`:'Read this place'):'A surveyor\u2019s peg with a red ribbon';
+      if(currentVine&&!currentNPC&&!currentDig)$('interaction-label').textContent=`The ${VARIETIES[currentVine.variety].name} vines`;
       if(currentTree&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=botany.met?(botany.hasFound(currentTree.species)?`The ${currentTree.name.toLowerCase()}`:'Look at this tree'):'A tree worth looking at';
       if(nearOldTree&&!currentNPC)$('interaction-label').textContent=oldTree.awake?'It is looking at you':'The Old Tree';
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
@@ -2559,9 +2565,11 @@ function init() {
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}
         if(view.startsWith('cat-')){questStage=10;combat.finishPractice();const spot=VILLAGE_CAT.spots[1],at={x:spot.x+1.5,z:spot.z+1},npc=npcById.get(VILLAGE_CAT.id);reviewCat={posture:view.slice(4),at};npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.y=-.6;player.group.position.set(at.x+6,world.heightAt(at.x+6,at.z+6),at.z+6);player.group.visible=false;reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+.22,at.z);yaw=.25;pitch=.3;distance=targetDistance=1.7;}
         // Paradise Springs from the lane's end, Livia at the cabin, and the threshold slab at Rena.
-        if(['winery','winery-cabin','rena-track'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
+        if(['winery','winery-cabin','winery-spring','winery-vines','rena-track'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
           const spot=view==='winery'?{x:WINERY_STANDS.vintner.x-22,z:WINERY_STANDS.vintner.z+14,look:{x:WINERY_STANDS.vintner.x+14,z:WINERY_STANDS.vintner.z-6},d:34,p:.34}
             :view==='winery-cabin'?{x:WINERY_STANDS.vintner.x,z:WINERY_STANDS.vintner.z+5,look:{x:WINERY_STANDS.vintner.x,z:WINERY_STANDS.vintner.z-2},d:7,p:.18}
+            :view==='winery-spring'?{x:WINERY_LAYOUT.spring.pool.x+4,z:WINERY_LAYOUT.spring.pool.z+5,look:WINERY_LAYOUT.spring.basin,d:13,p:.42}
+            :view==='winery-vines'?{x:WINERY_LAYOUT.plates[3].x-1.5,z:WINERY_LAYOUT.plates[3].z-5,look:WINERY_LAYOUT.plates[3],d:5,p:.12}
             :{x:digs.sites.find(s=>s.id==='track').x,z:digs.sites.find(s=>s.id==='track').z+3,look:digs.sites.find(s=>s.id==='track'),d:3.2,p:.6};
           player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+1,spot.look.z);
           yaw=Math.atan2(spot.x-spot.look.x,spot.z-spot.look.z);pitch=spot.p;distance=targetDistance=spot.d;}

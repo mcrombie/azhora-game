@@ -7,7 +7,7 @@ import { createSkills } from '../src/skills.js';
 import { RENA } from '../src/rena.js';
 import { RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED, createArchaeology, validateArchaeologySnapshot } from '../src/archaeology.js';
 import { WINES, WINE_IDS, createWine, validateWineSnapshot, vintnerConversation } from '../src/wine.js';
-import { WINERY, WINERY_LAYOUT, WINERY_STANDS, VINTNER } from '../src/winery.js';
+import { WINERY, WINERY_LAYOUT, WINERY_STANDS, VINTNER, VARIETIES, VARIETY_IDS } from '../src/winery.js';
 import { BIRD_WATCHER, LAKOTA_TOPICS, LAKOTA_ARCHAEOLOGY_PITCH, LAKOTA_WINE_PITCH, birdWatcherConversation } from '../src/birding.js';
 import { SOLIS, SOLIS_ROAD } from '../src/region-world.js';
 
@@ -67,7 +67,7 @@ test('archaeology: Lakota sends you to Rena, you write up five of his pegged pla
   assert.ok(RENA_FINDS.track.kind === 'fossil' && /three toes/.test(RENA_FINDS.track.note), 'paleontology is part of it');
 });
 
-test('wine: learned from Lakota with a warning, then Paradise Springs to visit and seven wines to taste', () => {
+test('wine: learned from Lakota with a warning, then the winery to visit and a wine from each of its eight grapes to taste', () => {
   const skills = createSkills(), wine = createWine({ skills });
   assert.equal(wine.taste('norton').ok, false, 'drinking is not tasting');
   wine.learn({ recommend: true });
@@ -78,8 +78,8 @@ test('wine: learned from Lakota with a warning, then Paradise Springs to visit a
   assert.equal(wine.task(), null);
   for (const id of WINE_IDS) assert.ok(wine.taste(id).first);
   assert.equal(wine.taste('norton').xp, 0);
-  assert.equal(wine.tastedCount(), 7);
-  assert.ok(['viognier', 'petit-manseng', 'cabernet-franc', 'petit-verdot', 'norton'].every(id => WINES[id]), 'the country’s own wines');
+  assert.equal(wine.tastedCount(), 8);
+  assert.deepEqual(WINE_IDS, VARIETY_IDS, 'a wine from every grape they grow, and only those');
   assert.equal(validateWineSnapshot(wine.snapshot()), true);
   assert.equal(validateWineSnapshot({ ...wine.snapshot(), tasted: { claret: 1 } }), false);
   // Found without Lakota, Livia can teach it herself.
@@ -89,6 +89,7 @@ test('wine: learned from Lakota with a warning, then Paradise Springs to visit a
   assert.deepEqual(acted, ['visit-winery']);
   assert.ok(opened.options.choices.some(choice => choice.id === 'learn-wine-here'));
   assert.match(opened.lines.join(' '), /Paradise Springs/);
+  assert.match(opened.lines.join(' '), /Thareth/, 'the spring’s story');
 });
 
 test('Paradise Springs stands in the north-east of West Suval, open ground and people where they should be, a lane to the Solis road', async () => {
@@ -115,4 +116,29 @@ test('Paradise Springs stands in the north-east of West Suval, open ground and p
     for (let a = 0; a < 12 && !reachable; a++) reachable = canStand(find.x + Math.cos(a * .52) * 1.6, find.z + Math.sin(a * .52) * 1.6, world, .34);
     assert.ok(reachable, `${id} can be walked up to`);
   }
+});
+
+test('the winery’s name is Paradise Springs in the Suval tongue, and it grows the eight grapes asked for', () => {
+  assert.equal(WINERY.name, 'Vaervelm Caelazh');
+  assert.equal(WINERY.meaning, 'Paradise Springs');
+  const grapes = VARIETY_IDS.map(id => VARIETIES[id].name).sort();
+  assert.deepEqual(grapes, ['Cabernet Franc', 'Chardonnay', 'Merlot', 'Norton', 'Petit Verdot', 'Tannat', 'Vidal Blanc', 'Viognier']);
+  assert.deepEqual(VARIETY_IDS.filter(id => VARIETIES[id].colour === 'white'), ['viognier', 'chardonnay', 'vidal-blanc']);
+  for (const id of VARIETY_IDS) {
+    assert.equal(WINERY_LAYOUT.rows.filter(row => row.variety === id).length, 2, `${id} has its block of two rows`);
+    assert.equal(WINERY_LAYOUT.plates.filter(plate => plate.variety === id).length, 1, `${id} has a plate at the head of its block`);
+  }
+});
+
+test('there is a real spring: water out of the rock into a basin, and a rill that runs downhill to a pool', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const spring = WINERY_LAYOUT.spring;
+  const course = [spring.source, spring.basin, ...spring.rill, spring.pool];
+  const heights = course.map(p => world.heightAt(p.x, p.z));
+  for (let i = 1; i < heights.length; i++) assert.ok(heights[i] <= heights[i - 1] + .05, `the water runs uphill between ${i - 1} and ${i} (${heights[i - 1].toFixed(2)} to ${heights[i].toFixed(2)})`);
+  assert.ok(heights[0] - heights.at(-1) > .3, 'and falls on its way');
+  for (const p of course) assert.equal(world.regionAt(p.x, p.z)?.name, 'West Suval');
+  assert.ok(world.colliders.filter(c => c.kind === 'winery-spring').length >= 3, 'the outcrop, the basin and the pool are solid');
+  for (const plate of WINERY_LAYOUT.plates) assert.ok(canStand(plate.x, plate.z - 1.2, world, .3), `the ${plate.variety} plate can be read`);
 });

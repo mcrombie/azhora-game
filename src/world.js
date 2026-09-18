@@ -1114,7 +1114,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
   // Paradise Springs (src/winery-world.js): Lakota's old winery in the north-east of West Suval.
-  createWineryScenery({ root: world, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs });
+  const winery = createWineryScenery({ root: world, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs, movingGroups });
   // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
   // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.
   const izol = createIzolScenery({ root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign: roadsideSign,
@@ -1693,6 +1693,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     ],
     paths,
     update(time, dt) {
+      winery.update(time);
       worldTime = time;
       const bellAge = Number.isFinite(bellStarted) ? Math.max(0, time - bellStarted) : 6;
       const bellEnvelope = bellAge < 6 ? Math.exp(-bellAge * .7) : 0;

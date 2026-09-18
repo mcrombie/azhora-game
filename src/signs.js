@@ -24,8 +24,8 @@ import { forestPlaceDefinitions } from './forest-places.js';
 export const SIGN_LABELS = Object.freeze([
   // Tidehaven and the Greenway
   'Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
-  // West Suval's winery (src/winery.js)
-  'Paradise Springs',
+  // West Suval's winery, and the grapes on the plates at the head of its blocks (src/winery.js)
+  'Vaervelm Caelazh', 'Viognier', 'Chardonnay', 'Vidal Blanc', 'Cabernet Franc', 'Merlot', 'Petit Verdot', 'Tannat', 'Norton',
   ...forestPlaceDefinitions.map(site => site.name),
   // Drent
   'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel',
@@ -179,6 +179,17 @@ export function createSigns(kit) {
     return group;
   }
 
+  /** A painted plate on one short post: a vineyard block's grape, at the head of its rows. No collider of its own. */
+  function plate({ x, z, label, facing = 0, parent }) {
+    const y = groundFor(parent)(x, z);
+    const group = new THREE.Group(); group.name = `Plate: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
+    const width = Math.max(.7, labelMetres(label) + .16), top = 1.02, depth = .05;
+    squarePost(group, 0, 0, -.13, top - .12, .1);   // behind the board, so its cap does not show through the lettering
+    box(board, 0, top, 0, width, LETTER_STRIP + .1, depth, group);
+    letters(label, group, top, depth);
+    return group;
+  }
+
   /**
    * A small plaque with pinned papers. On its own post by default, or `mounted`
    * at a height on a wall or gate (no post, no collider).
@@ -247,5 +258,5 @@ export function createSigns(kit) {
     return group;
   }
 
-  return { direction, place, notice, border, milestone, records, lettering };
+  return { direction, place, notice, plate, border, milestone, records, lettering };
 }
