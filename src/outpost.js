@@ -96,7 +96,10 @@ export function outpostGateApproaches() {
  */
 export const enclosureOf = (circuit, id, name) => Object.freeze({
   id, name,
-  contains: (x, z) => circuit.outward(x, z) < 12,
+  // Inside means behind the wall line, as it does for Solis. The berm and the ditch
+  // are outside: a traveler who fought in front of the wall leaves by walking away,
+  // not by being marched through the masonry to the gate's inner end.
+  contains: (x, z) => circuit.outward(x, z) < 0,
   gates: Object.freeze(circuit.gates.map(gate => {
     // `passage` walks from beyond the ditch (`from`) to well inside the wall (`to`).
     const walk = circuit.passage(gate.id, 14);

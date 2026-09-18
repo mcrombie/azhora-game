@@ -336,3 +336,20 @@ test('walled places are entered and left by their gates, innermost first on the 
   assert.deepEqual(enclosureWaypoint({ x: 0, z: -30 }, { x: 30, z: 0 }, world).point, { x: 15, z: 0 }, 'inside the town, make for the hall’s door');
   assert.deepEqual(enclosureWaypoint({ x: 30, z: 0 }, { x: 0, z: -200 }, world).point, { x: 25, z: 0 }, 'leave the hall before the town');
 });
+
+test('a fort’s ditch is outside it: a traveler in front of the wall walks away instead of through it', async () => {
+  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const { STOCKADE_CIRCUIT, STOCKADE_CENTRE, enclosureOf } = await import('../src/outpost.js');
+  const stockade = enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade');
+  const world = { enclosures: [stockade] };
+  // Where the Empire's autoplay stood after winning the border battle: eight metres
+  // west of the stockade, beyond its wall and in its ditch.
+  const field = { x: STOCKADE_CENTRE.x - 16, z: STOCKADE_CENTRE.z + 4 };
+  const solisGate = { x: -521, z: 908 };
+  assert.ok(STOCKADE_CIRCUIT.outward(field.x, field.z) > 0, 'the field is outside the wall line');
+  assert.equal(stockade.contains(field.x, field.z), false);
+  assert.equal(enclosureWaypoint(field, solisGate, world), null, 'nothing to pass through on the way to Solis');
+  // Inside the yard it still leaves by the gate.
+  assert.equal(stockade.contains(STOCKADE_CENTRE.x, STOCKADE_CENTRE.z), true);
+  assert.equal(enclosureWaypoint(STOCKADE_CENTRE, solisGate, world)?.gate, true);
+});
