@@ -353,6 +353,26 @@ test('a gathered plant is gone, and stays gone across a save', async () => {
   assert.deepEqual(flora.state().sites.filter(site => site.gathered).map(site => site.id), [first.id]);
 });
 
+test('no specimen tree stands within reach of a quest step, a fire, a bench or a fishing bank', async () => {
+  const { world } = await country();
+  const { SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/drent-trees.js');
+  const { FOREST_STORY_SITES } = await sourceModule('../src/forest-story.js');
+  const { REGIONAL_LIFE_SITES } = await sourceModule('../src/regional-life.js');
+  // Each with the radius at which the game offers it on F.
+  const spots = [
+    ...Object.values(world.journeySites ?? {}).map(site => [site.id, site, 2.7]),
+    ...FOREST_STORY_SITES.map(site => [site.id, site, 2.7]),
+    ...REGIONAL_LIFE_SITES.map(site => [site.id, site, 2.3]),
+    ...world.firePits.map(fire => [fire.id, fire, 2.1]),
+    ...(world.repairBenches ?? [world.repairBench]).map((bench, i) => [`bench ${i}`, bench, 2.1]),
+    ...(world.fishingSpots ?? []).map(spot => [spot.name, spot.fishingSpot, 2.1]),
+  ];
+  assert.ok(spots.length > 10);
+  for (const tree of SPECIMEN_TREES) for (const [id, spot, reach] of spots) {
+    assert.ok(Math.hypot(tree.x - spot.x, tree.z - spot.z) > TREE_REACH + reach, `${tree.id} crowds ${id}`);
+  }
+});
+
 test('a tree is named, never taken, and every tree in botany stands somewhere in Drent', async () => {
   const { world } = await country();
   const { createDrentTrees, SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/drent-trees.js');
