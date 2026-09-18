@@ -8,6 +8,7 @@ const reviewOnly = smoke && process.argv.includes('--review-only');
 const traverseOnly = smoke && process.argv.includes('--traverse-road');
 const roadChecksOnly = smoke && process.argv.includes('--road-checks');
 const roadReviewOnly = smoke && process.argv.includes('--road-review');
+const catReviewOnly = smoke && process.argv.includes('--cat-review');
 const forestReviewOnly = smoke && process.argv.includes('--forest-review');
 const forestChecksOnly = smoke && process.argv.includes('--forest-checks');
 const developerReviewOnly = smoke && process.argv.includes('--developer-review');
@@ -109,7 +110,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -222,6 +223,15 @@ if (ownsInstance) app.whenReady().then(async () => {
         fs.writeFileSync(path.join(artifactDir,'forest-smoke.json'),JSON.stringify({...report,...reloaded,errors},null,2));
         fs.writeFileSync(path.join(artifactDir,'forest-reloaded.png'),(await win.webContents.capturePage()).toPNG());
         console.log(JSON.stringify({...report,...reloaded,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(catReviewOnly){
+        // The harbour cat held in each of its poses, close up, for a visual check of the model.
+        await win.webContents.executeJavaScript(`window.__AZHORA__.review('cat-stand');(async()=>{for(let i=0;i<150;i++)await new Promise(requestAnimationFrame);})()`);
+        for(const view of ['cat-stand','cat-sit','cat-nap','cat-groom','cat-crouch','cat-pounce','cat-eat','cat-rub','cat-low']){
+          await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<75;i++)await new Promise(requestAnimationFrame);})()`);
+          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+        }
+        console.log(JSON.stringify({catViews:9,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(roadReviewOnly){
         for(const view of ['sunmeadow','reedwater','road-sign','threefold','north-relay','waymarker-before','waymarker-after','elod','elod-harbour','elod-quay','elod-city','elod-inner-gate']){

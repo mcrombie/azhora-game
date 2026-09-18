@@ -2016,6 +2016,172 @@ export function createWolf({ variant = 0, dog = false } = {}) {
 /** A friendly village dog: the wolf's rig with hanging ears, a lighter coat, no fangs and a tail that will not stop. */
 export function createDog(options = {}) { return createWolf({ ...options, dog: true }); }
 
+/**
+ * A harbour cat: a small striped tabby with a white chest and white feet, a
+ * quarter of a metre at the shoulder. Paws rest at y=0, forward is +Z. Its
+ * poses come from `pose.posture`: nap, sit, groom, walk, crouch, pounce, eat,
+ * rub, low (see src/village-cat.js).
+ */
+export function createCat({ variant = 0 } = {}) {
+  const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 2;
+  const group = new THREE.Group();
+  group.name = `cat-${variation}`;
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  group.add(body);
+  const coat = material([0xc8843f, 0x8c8478][variation]);
+  const stripe = material([0x8a4f22, 0x4f4a44][variation]);
+  const light = material(0xf1e6d4), eyeMat = material(0x9dbb4a), dark = material(0x1c1a18), nose = material(0xc98b86);
+  const spine = new THREE.Group();
+  spine.name = 'Spine';
+  spine.position.set(0, 0.2, 0);
+  body.add(spine);
+  round(spine, coat, [0, 0.02, -0.14], [0.088, 0.088, 0.1]);
+  round(spine, coat, [0, 0.025, -0.02], [0.08, 0.085, 0.17]);
+  round(spine, coat, [0, 0.02, 0.1], [0.078, 0.082, 0.09]);
+  round(spine, light, [0, -0.025, 0.12], [0.06, 0.06, 0.06]);
+  round(spine, light, [0, -0.045, 0.0], [0.055, 0.035, 0.13]);
+  // Tabby bands: thin shells a hair wider than the barrel, so they wrap the back and flanks and the white belly covers their ends.
+  for (const [z, girth] of [[-0.17, 0.09], [-0.11, 0.086], [-0.05, 0.084], [0.01, 0.084], [0.07, 0.083]]) round(spine, stripe, [0, 0.045, z], [girth, 0.072, 0.014]);
+  const neck = new THREE.Group();
+  neck.name = 'Neck';
+  neck.position.set(0, 0.06, 0.16);
+  spine.add(neck);
+  round(neck, coat, [0, 0.02, 0.02], [0.05, 0.055, 0.055]);
+  round(neck, light, [0, -0.02, 0.035], [0.04, 0.04, 0.04]);
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 0.06, 0.05);
+  neck.add(head);
+  round(head, coat, [0, 0, 0], [0.066, 0.058, 0.06]);
+  round(head, coat, [0, -0.018, 0.018], [0.072, 0.042, 0.048]);
+  round(head, light, [0, -0.026, 0.05], [0.034, 0.024, 0.024]);
+  round(head, nose, [0, -0.012, 0.072], [0.009, 0.007, 0.005]);
+  round(head, stripe, [0, 0.05, 0.012], [0.03, 0.012, 0.03]);
+  const ear = new THREE.ConeGeometry(1, 1, 4);
+  for (const side of [-1, 1]) {
+    const outer = part(head, ear, coat, [side * 0.04, 0.065, -0.008], [0.026, 0.05, 0.016]);
+    outer.rotation.set(0, Math.PI / 4, -side * 0.28);
+    const inner = part(head, ear, nose, [side * 0.039, 0.062, -0.0], [0.014, 0.034, 0.008]);
+    inner.rotation.set(0, Math.PI / 4, -side * 0.28);
+    round(head, eyeMat, [side * 0.028, 0.012, 0.05], [0.014, 0.012, 0.008]);
+    round(head, dark, [side * 0.028, 0.012, 0.056], [0.0035, 0.011, 0.004]);
+    for (const tilt of [-0.12, 0.12]) {
+      const whisker = ribbon(head, light, [side * 0.02, -0.02, 0.06], [side * 0.075, -0.02 + tilt * 0.12, 0.07], 0.003, 0.003);
+      whisker.name = 'Whisker';
+    }
+  }
+  // Two tail pivots: the base carries it up or round the feet, the tip hooks and twitches.
+  const tail = new THREE.Group();
+  tail.name = 'Tail';
+  tail.position.set(0, 0.05, -0.22);
+  // Tilt first, then sweep: a tail laid round the feet is lowered and then swung aside.
+  tail.rotation.order = 'YXZ';
+  spine.add(tail);
+  for (let i = 0; i < 4; i++) round(tail, i % 2 ? stripe : coat, [0, 0, -0.025 - i * 0.042], [0.021, 0.021, 0.03]);
+  const tailTip = new THREE.Group();
+  tailTip.name = 'Tail Tip';
+  tailTip.position.set(0, 0, -0.17);
+  tailTip.rotation.order = 'YXZ';
+  tail.add(tailTip);
+  for (let i = 0; i < 4; i++) round(tailTip, i % 2 ? stripe : coat, [0, 0, -0.022 - i * 0.04], [0.019 - i * 0.002, 0.019 - i * 0.002, 0.028]);
+  round(tailTip, stripe, [0, 0, -0.175], [0.013, 0.013, 0.02]);
+  const legs = [], knees = [];
+  for (const [name, side, z] of [['Left Fore', -1, 0.12], ['Right Fore', 1, 0.12], ['Left Hind', -1, -0.13], ['Right Hind', 1, -0.13]]) {
+    const hip = new THREE.Group();
+    hip.name = `${name} Hip`;
+    hip.position.set(side * 0.05, 0.2, z);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, coat, [0, -0.045, z > 0 ? 0 : -0.01], [0.03, 0.065, z > 0 ? 0.032 : 0.045]);
+    const knee = new THREE.Group();
+    knee.name = `${name} Knee`;
+    knee.position.set(0, -0.1, 0);
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, coat, [0, -0.045, 0.004], [0.02, 0.055, 0.022]);
+    round(knee, light, [0, -0.088, 0.014], [0.023, 0.013, 0.03]);
+  }
+  batchRigidParts(group, [body, spine, neck, head, tail, tailTip, ...legs, ...knees]);
+  const { animate } = makeCatAnimator({ body, spine, neck, head, tail, tailTip, legs, knees, offset: variation * 1.7 + 0.3 });
+  return { group, animate, setArmed: () => {} };
+}
+
+// Every pose a cat holds still in, as spine, neck, head, tail and leg angles.
+// Legs are [left fore, right fore, left hind, right hind]; a positive hip swings the paw back.
+const CAT_STAND = Object.freeze({ spineX: 0, spineY: 0, spineZ: 0, neckX: 0.05, headX: 0, tailX: 0.75, tailY: 0, tipX: 0.55, hips: [0, 0, 0, 0], knees: [0, 0, 0, 0] });
+const CAT_SIT = Object.freeze({ spineX: -0.55, spineY: -0.02, spineZ: 0, neckX: 0.3, headX: 0.15, tailX: -0.35, tailY: 1.2, tipX: 0.25, tipY: 1.1,
+    hips: [0.3, 0.3, -1.05, -1.05], knees: [-0.25, -0.25, 2.1, 2.1] });
+const CAT_POSES = Object.freeze({
+  stand: CAT_STAND, walk: CAT_STAND,
+  sit: CAT_SIT,
+  groom: CAT_SIT,
+  nap: { spineX: 0, spineY: -0.1, spineZ: 0.3, neckX: 0.75, headX: 0.35, headY: 0.85, tailX: -0.85, tailY: -2.2, tipX: 0.55, tipY: -1.3,
+    hips: [-1.35, -1.35, -1.1, -1.1], knees: [2.5, 2.5, 2.3, 2.3] },
+  eat: { spineX: 0.12, spineY: -0.01, spineZ: 0, neckX: 1.0, headX: 0.35, tailX: 0.15, tailY: 0, tipX: 0.6, hips: [0.15, 0.15, 0.1, 0.1], knees: [-0.2, -0.2, 0.25, 0.25] },
+  crouch: { spineX: 0.05, spineY: -0.07, spineZ: 0, neckX: 0.3, headX: -0.3, tailX: -0.05, tailY: 0, tipX: 0.1,
+    hips: [-0.55, -0.55, -0.6, -0.6], knees: [1.1, 1.1, 1.2, 1.2] },
+  pounce: { spineX: -0.3, spineY: 0.03, spineZ: 0, neckX: -0.1, headX: -0.1, tailX: 0.15, tailY: 0, tipX: 0, hips: [-1.2, -1.2, 0.9, 0.9], knees: [0.3, 0.3, -0.2, -0.2] },
+  low: { spineX: 0.02, spineY: -0.05, spineZ: 0, neckX: 0.25, headX: -0.1, tailX: -0.3, tailY: 0, tipX: 0, hips: [-0.35, -0.35, -0.4, -0.4], knees: [0.7, 0.7, 0.8, 0.8] },
+  rub: { spineX: 0, spineY: -0.01, spineZ: 0.12, neckX: 0.15, headX: 0.1, headY: 0.35, tailX: 1.45, tailY: 0, tipX: 0.6, hips: [0, 0, 0, 0], knees: [0, 0, 0, 0] },
+});
+
+function makeCatAnimator({ body, spine, neck, head, tail, tailTip, legs, knees, offset = 0 }) {
+  let stridePhase = offset, lastTime, movementBlend = 0;
+  const lerp = THREE.MathUtils.lerp;
+  function animate(time, speed = 0, grounded = true, pose = {}) {
+    const seconds = Number.isFinite(time) ? time : 0;
+    const dt = lastTime === undefined ? 1 / 60 : THREE.MathUtils.clamp(seconds - lastTime, 0, 0.1);
+    lastTime = seconds;
+    const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
+    // A cat that is still sitting when it has to move gets up and walks.
+    let posture = CAT_POSES[pose.posture] ? pose.posture : 'stand';
+    if (pace > 0.15 && ['sit', 'nap', 'groom', 'eat'].includes(posture)) posture = 'walk';
+    const held = CAT_POSES[posture];
+    movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 0.9, 0, 1) : 0, 1 - Math.exp(-10 * dt));
+    stridePhase += dt * (6 + Math.min(pace, 7) * 2.6);
+    const still = 1 - movementBlend, breath = Math.sin(seconds * (posture === 'nap' ? 1.3 : 2.6) + offset);
+    const hip = [], knee = [];
+    for (let i = 0; i < 4; i++) {
+      // A walk: diagonal pairs together, left fore with right hind; the pounce and the crouch keep their legs.
+      const phase = stridePhase + (i === 0 || i === 3 ? 0 : Math.PI), fore = i < 2;
+      const swing = posture === 'pounce' ? 0 : movementBlend;
+      hip[i] = held.hips[i] + Math.sin(phase) * (fore ? 0.5 : 0.55) * swing;
+      knee[i] = held.knees[i] + Math.max(0, Math.sin(phase + 0.6)) * (fore ? 0.8 : 0.5) * swing - (fore ? 0 : 0.2) * swing;
+    }
+    let spineX = held.spineX, spineZ = held.spineZ, neckX = held.neckX + breath * 0.01, headX = held.headX;
+    let headY = (held.headY ?? 0) + (posture === 'sit' || posture === 'stand' ? Math.sin(seconds * 0.4 + offset) * 0.45 * still : 0);
+    let tailX = held.tailX, tailY = (held.tailY ?? 0), tipX = held.tipX, tipY = held.tipY ?? 0;
+    // The tail talks: a slow sway standing, a flick of the tip hunting, a quiver rubbing.
+    if (posture === 'stand' || posture === 'walk') { tailY += Math.sin(seconds * 1.3 + offset) * 0.3; tipY += Math.sin(seconds * 2.1 + offset) * 0.35; }
+    if (posture === 'crouch') tipY += Math.sin(seconds * 9 + offset) * 0.5;
+    if (posture === 'sit') tipX += Math.max(0, Math.sin(seconds * 0.9 + offset)) * 0.5;
+    if (posture === 'rub') { tipY += Math.sin(seconds * 14) * 0.08; spineZ *= Math.sin(seconds * 1.7); }
+    if (posture === 'groom') {
+      // One forepaw up to the face; the head works at it.
+      hip[0] = -1.15; knee[0] = 1.5;
+      neckX = 0.65; headX = 0.25 + Math.sin(seconds * 9) * 0.12; headY = 0.25;
+    }
+    if (posture === 'eat') headX += Math.max(0, Math.sin(seconds * 7)) * 0.12;
+    const spineY = held.spineY + breath * (posture === 'nap' ? 0.004 : 0.002) + Math.abs(Math.cos(stridePhase)) * 0.01 * movementBlend;
+    const damping = 1 - Math.exp(-(posture === 'pounce' || posture === 'low' ? 22 : 9) * dt);
+    const rotate = (object, x, y, z) => {
+      object.rotation.x = lerp(object.rotation.x, x, damping);
+      object.rotation.y = lerp(object.rotation.y, y, damping);
+      object.rotation.z = lerp(object.rotation.z, z, damping);
+    };
+    rotate(spine, spineX, 0, spineZ);
+    rotate(neck, neckX, 0, -spineZ * 0.5);
+    rotate(head, headX, headY, 0);
+    rotate(tail, tailX, tailY, 0);
+    rotate(tailTip, tipX, tipY, 0);
+    for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
+    spine.position.y = lerp(spine.position.y, 0.2 + spineY, damping);
+    body.position.y = lerp(body.position.y, 0, damping);
+  }
+  return { animate };
+}
+
 // A quadruped gait and the same action vocabulary as the two-legged animator:
 // idle, windup (a crouch), attack (a lunge with the jaws), hurt, dead.
 function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, offset = 0, dog = false }) {
