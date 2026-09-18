@@ -280,8 +280,13 @@ razing told with the congress, the Protector, the Torn and the quiet in it.
 | --- | --- |
 | `npm test` | **516 / 516**, 187 s |
 | `npm run test:game` | **pass** — `smoke.json` `ok: true`, 2 454 frames, 435 draw calls, 842 k triangles, `"errors": []` |
-| `npm run test:road` | see the line below |
-| `npm run test:autoplay` | **not run**, as instructed: the lead is repairing it |
+| `npm run test:road` | **pass** — `road-traversal.json` `ok: true`, **7 548.7 m** walked in 1 234 s over 31 541 frames, `returnedToDrent`, `frontierBlocked` and `eastSuvalClosed` all true, `"errors": []` |
+| `npm run test:autoplay` | **not run**, as instructed: the lead is repairing it, and the road out of Drent is the path it walks |
+
+Both smokes were run once each at the end, one at a time. Neither of them goes
+anywhere near this branch's ground: the traversal holds the run key along the main
+road and the branch roads, and the old Rena road leaves it at a fork the smoke
+walks straight past.
 
 ## Checked by eye
 
@@ -337,6 +342,28 @@ The story smoke reports **435 draw calls and 842 k triangles** at 33 ms average,
 against 475 / 836 k at 23 ms in `docs/towns-and-signs-report.md` — a different
 machine on a different day with other agents building on it, so the averages are
 not comparable; the draw calls and triangles are, and they have not grown.
+
+The traversal's own per-region figures from the run above:
+
+| Region (mean frame ms) | this branch | walked |
+| --- | --- | --- |
+| **Drent** | **38.1** | 2 007 m |
+| Pueth | 33.8 | 2 076 m |
+| Luscia | 38.2 | 2 018 m |
+| Moros Plain | 49.9 | 1 448 m |
+
+The absolute numbers are high against the 24–29 ms the earlier reports record,
+and the reason is the machine: three agents were building and running smokes on it
+while this ran. The comparison that is available within the run is the useful one.
+**Drent, the only region this branch touches, is level with Luscia and much faster
+than the Moros**, neither of which it touches at all — so the elevation is load,
+not content. That is also what the geometry says: the traversal never leaves the
+main road, and everything built here stands 100 m or more off it, beyond the fog,
+where the scatter blocks and terrain tiles cull it before it is submitted.
+
+What is **not** available is a clean back-to-back measurement of this branch
+against `main` on a quiet machine. `docs/towns-and-signs-report.md` ends with the
+same gap, and it is still the one measurement worth taking.
 
 ## What is stubbed, and what is left
 
