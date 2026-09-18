@@ -12,6 +12,7 @@
  * Pure: no DOM, no three.
  */
 import { VINTNER, CELLAR_HAND, WINERY, VARIETIES } from './winery.js';
+import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 
 export const WINE_VERSION = 1;
 export const WINE_SKILL = 'wine';
@@ -57,7 +58,7 @@ export function validateWineSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== WINE_VERSION) return false;
   if (typeof data.met !== 'boolean' || !['none', 'recommended', 'visited'].includes(data.quest)) return false;
   if (!data.tasted || typeof data.tasted !== 'object' || Array.isArray(data.tasted)) return false;
-  return Object.entries(data.tasted).every(([id, count]) => Object.hasOwn(WINES, id) && Number.isInteger(count) && count >= 1 && count <= 1e6);
+  return Object.entries(data.tasted).every(([id, count]) => (Object.hasOwn(WINES, id) || Object.hasOwn(ATTIC_WINES, id)) && Number.isInteger(count) && count >= 1 && count <= 1e6);
 }
 
 export function createWine({ skills, onEvent = () => {} } = {}) {
@@ -86,7 +87,8 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
   /** A wine tasted properly. */
   function taste(id) {
     if (!state.met) return { ok: false, reason: 'You drank it. It was nice. Ask how to taste it properly, and you will get more out of the next glass.' };
-    const entry = WINES[id];
+    // Livia's eight at the winery, or Juan's eight at Tharganhom in Solis.
+    const entry = WINES[id] ?? ATTIC_WINES[id];
     if (!entry) return { ok: false, reason: 'They do not pour that here.' };
     const first = !state.tasted[id];
     state.tasted[id] = (state.tasted[id] ?? 0) + 1;
@@ -103,10 +105,13 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
       detail: `Lakota’s old winery in the north-east of West Suval: ${WINERY.name}, Paradise Springs in plain words. Take the lane east off the Solis road past the Suval Downs. There is a war around Solis. Keep your head down.` };
   }
   function view() {
-    return { met: state.met, quest: state.quest, tastedCount: tastedCount(), total: WINE_IDS.length, task: task(),
-      entries: WINE_IDS.map(id => ({ id, tasted: !!state.tasted[id], colour: WINES[id].colour,
+    const attic = ATTIC_WINE_IDS.map(id => ({ id, tasted: !!state.tasted[id], colour: ATTIC_WINES[id].colour,
+      name: state.tasted[id] ? `${ATTIC_WINES[id].name}, from ${ATTIC_WINES[id].from}` : `A ${ATTIC_WINES[id].colour === 'sweet' ? 'sweet wine' : ATTIC_WINES[id].colour} on Juan’s shelves`,
+      detail: state.tasted[id] ? ATTIC_WINES[id].note : 'Juan pours it at Tharganhom, the Wine Attic in Solis.' }));
+    return { met: state.met, quest: state.quest, tastedCount: tastedCount(), total: WINE_IDS.length + ATTIC_WINE_IDS.length, task: task(),
+      entries: [...WINE_IDS.map(id => ({ id, tasted: !!state.tasted[id], colour: WINES[id].colour,
         name: state.tasted[id] ? WINES[id].name : `A ${WINES[id].colour} of Vaervelm Caelazh`,
-        detail: state.tasted[id] ? WINES[id].note : state.met ? `Livia pours it at ${WINERY.name}.` : 'Lakota, the birder in Tidehaven, knows wine.' })) };
+        detail: state.tasted[id] ? WINES[id].note : state.met ? `Livia pours it at ${WINERY.name}.` : 'Lakota, the birder in Tidehaven, knows wine.' })), ...attic] };
   }
 
   function snapshot() { return { version: WINE_VERSION, met: state.met, quest: state.quest, tasted: { ...state.tasted } }; }

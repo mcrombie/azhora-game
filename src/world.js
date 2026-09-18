@@ -20,6 +20,7 @@ import { PLACE_LANDMARKS } from './places.js';
 import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
+import { atticDeckHeight } from './wine-attic.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { createWineryScenery } from './winery-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
@@ -224,6 +225,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Izolveth's quay and the two moles that close its harbour, in West Izol.
     const izolDeck = izolDeckHeight(x, z);
     if (izolDeck !== null) return izolDeck;
+    // Tharganhom's stair and attic floor, on the main street of Solis.
+    const attic = atticDeckHeight(x, z, groundHeight);
+    if (attic !== null) return attic;
     const deck = deckAt(x, z);
     if (deck) return deck.deckY + .09;
     // Ambron's causeway, over the narrows and down to the made ground of each bank.
@@ -1112,7 +1116,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   });
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
-    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign });
+    wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign, signs, barrel });
   // Paradise Springs (src/winery-world.js): Lakota's old winery in the north-east of West Suval.
   const winery = createWineryScenery({ root: world, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs, movingGroups });
   // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,

@@ -43,7 +43,7 @@ export const SIGN_LABELS = Object.freeze([
   // Peblos
   'Peblos', 'Cobble', 'The Quay',
   // West Suval
-  'West Suval', 'Solis', 'The Gate of Sun Horses', 'The Coalition camp', 'The border stockade',
+  'West Suval', 'Solis', 'The Gate of Sun Horses', 'The Coalition camp', 'The border stockade', 'Tharganhom',
   // Pueth
   'The Tessen Bridge', 'Rimeholt',
   // West Izol
@@ -191,6 +191,20 @@ export function createSigns(kit) {
   }
 
   /**
+   * A name board hung by two short chains from a beam, at height `y` in the
+   * parent's frame: a shop's sign over its way in. No post, no collider.
+   */
+  function hanging({ x, y, z, label, facing = 0, parent }) {
+    const group = new THREE.Group(); group.name = `Hanging board: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
+    const length = labelMetres(label) + .5, height = LETTER_STRIP + .18, depth = .06;
+    box(board, 0, 0, 0, length, height, depth, group);
+    frame(group, 0, 0, length, height, depth);
+    letters(label, group, 0, depth);
+    for (const side of [-1, 1]) box(edge, side * (length / 2 - .14), height / 2 + .22, 0, .03, .36, .03, group);
+    return group;
+  }
+
+  /**
    * A small plaque with pinned papers. On its own post by default, or `mounted`
    * at a height on a wall or gate (no post, no collider).
    */
@@ -258,5 +272,5 @@ export function createSigns(kit) {
     return group;
   }
 
-  return { direction, place, notice, plate, border, milestone, records, lettering };
+  return { direction, place, notice, plate, hanging, border, milestone, records, lettering };
 }

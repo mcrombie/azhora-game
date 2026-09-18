@@ -6,6 +6,7 @@ import {
   COALITION_CAMP, WEST_SUVAL_BORDER, WEST_SUVAL_PLACES, WEST_SUVAL_CLEARINGS,
   facePoint, wallRuns, ditchRuns, fortColliders, stairColliders, campPicketColliders, campTentColliders,
 } from './west-suval.js';
+import { createWineAtticScenery } from './wine-attic-world.js';
 
 /**
  * The scenery of West Suval: Solis and its walls, the Coalition's camp, and the
@@ -16,7 +17,7 @@ import {
  */
 export function createWestSuvalScenery(kit) {
   const { root, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
-    wood, woodLight, darkWood, cream, movingGroups, sign, roadDistance } = kit;
+    wood, woodLight, darkWood, cream, movingGroups, sign, roadDistance, signs, barrel } = kit;
   const district = new THREE.Group(); district.name = 'West Suval scenery'; root.add(district);
   const metrics = { buildings: 0, towers: SOLIS_TOWERS.length, tents: 0, colliders: 0, props: 0 };
   let seed = 5150917;
@@ -319,7 +320,12 @@ export function createWestSuvalScenery(kit) {
     metrics.buildings++;
     push({ ...P(a, b), hx: w / 2 + .15, hz: d / 2 + .15, kind: 'solis-building', id: entry.id });
   }
-  SOLIS_BUILDINGS.filter(entry => entry.kind !== 'temple').forEach(townHouse);
+  SOLIS_BUILDINGS.filter(entry => entry.kind !== 'temple' && entry.kind !== 'wine-attic').forEach(townHouse);
+  // Tharganhom, the Wine Attic, up its stair on the main street (src/wine-attic-world.js).
+  if (SOLIS_BUILDINGS.some(entry => entry.kind === 'wine-attic')) {
+    createWineAtticScenery({ parent: district, material, mesh, box, post, round, barrel, groundHeight, push, signs });
+    metrics.buildings++;
+  }
 
   // The Empire's layer by the gate: the tax house's boarded plaque, the barracks' defaced eagle, notices in three hands.
   {

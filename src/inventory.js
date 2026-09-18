@@ -1,4 +1,6 @@
 /** The small, physical things carried through the first journey out of Drent. */
+import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
+
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
     name: "Mara’s message", type: 'Quest item', icon: 'letter',
@@ -145,6 +147,13 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Fresh milk from the Avrel farms. Warm it at a fire; never let it boil.',
     description: 'A stoppered clay jug of cow’s milk from the farms of the Avrel clearing. With a cake of chocolate and Lakota’s recipe, it makes hot chocolate at a lit fire.',
   }),
+  // Juan’s bottles from Tharganhom, the Wine Attic in Solis (src/attic-wines.js).
+  ...Object.fromEntries(ATTIC_WINE_IDS.map(id => {
+    const wine = ATTIC_WINES[id];
+    return [wine.item, Object.freeze({ name: `Bottle of ${wine.name}`, type: 'Food', icon: 'bottle', stackable: true, eatName: `a glass of ${wine.name}`, useVerb: 'Drink',
+      brief: `A ${wine.colour === 'sweet' ? 'sweet wine' : `${wine.colour} wine`} from ${wine.from}. Restores up to ${wine.healing} health.`,
+      description: `Restores up to ${wine.healing} health. ${wine.note} Bought from Juan at Tharganhom, the Wine Attic in Solis.` })];
+  })),
   // The wider larder: foods of Drent and its trade. Healing values live in src/consumables.js.
   // Foraged in Drent’s broadleaf forest and along its hedges.
   'wood-sorrel': Object.freeze({
@@ -379,6 +388,7 @@ const iconPaths = {
   slab: '<path d="M6 13c6-2 18-2 24 0v13c-6 2-18 2-24 0Z"/><path d="M6 19c6-2 18-2 24 0M12 14v11m12-11v11"/>',
   mug: '<path d="M7 13h18v12c0 4-3 6-6 6h-6c-3 0-6-2-6-6Z"/><path d="M25 16h3c3 0 4 2 4 4s-1 4-4 4h-3M7 17h18M12 10c-2-2 1-3 0-6m6 6c-2-2 1-3 0-6"/>',
   chocolate: '<rect x="6" y="9" width="24" height="19" rx="2"/><path d="M6 15.3h24M6 21.6h24M14 9v19M22 9v19M26 9l4 4"/>',
+  bottle: '<path d="M15 3h6v7c0 2 4 3 4 8v13c0 1-1 2-2 2H13c-1 0-2-1-2-2V18c0-5 4-6 4-8Z"/><path d="M14 6h8M11 21h14v7H11"/>',
   jug: '<path d="M13 5h8M14 5v4c-5 3-7 8-7 13 0 6 4 9 10 9s10-3 10-9c0-5-2-10-7-13V5"/><path d="M27 15c4 0 5 3 5 5s-2 5-5 5M9 19h18"/>',
 };
 

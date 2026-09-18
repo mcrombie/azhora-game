@@ -22,6 +22,7 @@
  */
 import { SOLIS, solisPoint, SOLIS_ROAD, regionNameAt, insideRegion, landDistance } from './region-world.js';
 import { toWorld } from './world-scale.js';
+import { WINE_ATTIC, ATTIC_ENCLOSURE } from './wine-attic.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
@@ -200,7 +201,9 @@ export const SOLIS_BUILDINGS = freeze([
   { id: 'house-ne-1', a: 29.5, b: -31, w: 9, d: 8, h: 5 },
   { id: 'house-ne-2', a: 40.5, b: -30.5, w: 8, d: 9, h: 5.8, garden: true },
   // The upper town: the old kingdom's royal terrace.
-  { id: 'house-e-1', a: 12, b: -17, w: 9, d: 7, h: 5 },
+  // Tharganhom, the Wine Attic (src/wine-attic.js): a shop up an outside stair, in the attic of an old house on the main street.
+  { id: 'wine-attic', name: WINE_ATTIC.name, a: (WINE_ATTIC.a0 + WINE_ATTIC.a1) / 2, b: (WINE_ATTIC.b0 + WINE_ATTIC.b1) / 2,
+    w: WINE_ATTIC.a1 - WINE_ATTIC.a0, d: WINE_ATTIC.b1 - WINE_ATTIC.b0, h: WINE_ATTIC.lift, kind: 'wine-attic', door: 'west' },
   { id: 'house-e-3', a: 41.5, b: -17, w: 7, d: 9, h: 6.2, garden: true },
   { id: 'house-e-5', a: 12, b: 16.5, w: 8, d: 6, h: 4.8 },
   { id: 'temple', name: 'The Temple of Sea and Sun', a: 16, b: 30, w: 16, d: 14, h: 7, layer: 'kingdom', kind: 'temple', door: 'north' },
@@ -406,7 +409,7 @@ export const COURT_ENCLOSURE = freeze({
   gates: freeze([freeze({ id: 'colonnade', outer: local(COURT_OF_OATHS.front - 5, 2), inner: local(COURT_OF_OATHS.front + 2.5, 2) })]),
 });
 /** Walled places for the autopilot, outermost first. */
-export const SOLIS_ENCLOSURES = freeze([SOLIS_ENCLOSURE, COURT_ENCLOSURE]);
+export const SOLIS_ENCLOSURES = freeze([SOLIS_ENCLOSURE, COURT_ENCLOSURE, ATTIC_ENCLOSURE]);
 
 /**
  * The sea off West Suval's coast for the charts: on each row, from the western

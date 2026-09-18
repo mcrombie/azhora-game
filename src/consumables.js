@@ -4,12 +4,16 @@
  * which supplies the satchel name, icon and description. `missing` is shown when the
  * traveler tries to eat something they do not carry, and says where it comes from.
  */
+import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
+
 const define = (healing, missing) => Object.freeze({ healing, missing });
 
 export const FOODS = Object.freeze({
   // Gathered and cooked on the road today.
   pawpaw: define(25, 'You have no pawpaw fruit. Gather some in the forest.'),
   'cooked-fish': define(40, 'You have no cooked fish. Cook a fresh catch at a lit firepit.'),
+  // Juan’s bottles, from Tharganhom in Solis.
+  ...Object.fromEntries(ATTIC_WINE_IDS.map(id => [ATTIC_WINES[id].item, define(ATTIC_WINES[id].healing, `You have no ${ATTIC_WINES[id].name}. Juan sells it at Tharganhom, the Wine Attic in Solis.`)])),
   'hot-chocolate': define(45, 'You have no hot chocolate. Once Lakota has taught you, make it at a lit fire from chocolate and a jug of milk.'),
 
   // Foraged in Drent’s broadleaf forest and along its hedges.
