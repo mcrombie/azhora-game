@@ -59,6 +59,14 @@ export const PLAYABLE_SURVEY = Object.freeze({
       bounds: Object.freeze({"x":1829.046,"y":2568,"width":180.134,"height":128}), centerX: 1941.437, centerY: 2645.333,
       cells: Object.freeze([{q:17,r:107,terrain:'hills'},{q:17,r:108,terrain:'hills'},{q:13,r:109,terrain:'plains'},{q:15,r:109,terrain:'plains'},{q:11,r:110,terrain:'plains'},
         {q:16,r:110,terrain:'hills'},{q:13,r:111,terrain:'plains'},{q:15,r:111,terrain:'hills'},{q:16,r:111,terrain:'hills'}]) }),
+    Object.freeze({ id: "Amod", name: "Amod",
+      bounds: Object.freeze({"x":1510.349,"y":2328,"width":193.99,"height":128}), centerX: 1607.343, centerY: 2397.538,
+      cells: Object.freeze([{q:7,r:97,terrain:'hills'},{q:11,r:97,terrain:'hills'},{q:6,r:98,terrain:'hills'},{q:7,r:98,terrain:'hills'},{q:8,r:98,terrain:'hills'},{q:9,r:98,
+        terrain:'hills'},{q:10,r:98,terrain:'hills'},{q:11,r:98,terrain:'grassland'},{q:5,r:99,terrain:'hills'},{q:6,r:99,terrain:'mountain'},{q:7,r:99,
+        terrain:'hills'},{q:8,r:99,terrain:'hills'},{q:9,r:99,terrain:'hills'},{q:10,r:99,terrain:'grassland'},{q:11,r:99,terrain:'grassland'},{q:5,r:100,
+        terrain:'grassland'},{q:6,r:100,terrain:'grassland'},{q:7,r:100,terrain:'hills'},{q:8,r:100,terrain:'grassland'},{q:9,r:100,terrain:'grassland'},
+        {q:10,r:100,terrain:'grassland'},{q:5,r:101,terrain:'grassland'},{q:6,r:101,terrain:'grassland'},{q:7,r:101,terrain:'grassland'},{q:8,r:101,
+        terrain:'grassland'},{q:9,r:101,terrain:'grassland'}]) }),
   ]),
 });
 

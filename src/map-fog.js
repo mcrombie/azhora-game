@@ -52,6 +52,12 @@ export const SUBREGIONS = Object.freeze([
   area('cold-hearth', 'The Cold Hearth', 'Pueth', -40, -418, 55, 'A ring of stones in the open valley, black with old fires.'),
   area('grey-shoulder', 'The Grey Shoulder', 'Pueth', -268, -500, 65, 'Bare hills above the valley, where the birch gives out and the wind does not.'),
   area('feradom-road', 'The Feradom Road', 'Pueth', -424, -522, 60, 'The barrier at the edge of Pueth. Feradom lies beyond it, and the road is shut.'),
+  // Amod: the east end of the terrace country, charted from the road in and the shoulder above it.
+  area('amod-pass-stones', 'The Amod Pass Stones', 'Amod', -668, -464, 36, 'Four standing stones on the border, an ogre who takes a toll off the road, and the first terrace wall beyond them.'),
+  area('ostel', 'Ostel', 'Amod', -750, -506, 52, 'The eastern dry-slope town on its shoulder: stonecutters, hard white wine, a water court and the road house that keeps the toll book.'),
+  area('tir-ostel', 'Tir Ostel', 'Amod', -766, -546, 30, 'Ostel’s burial terrace above the town, where the dead lie facing down the watercourse.'),
+  area('tarvel-valley', 'The Tarvel Valley', 'Amod', -820, -560, 44, 'The stream Ostel’s water court keeps, its bridge, the head where the high channel is taken off, and the gate two households argue about.'),
+  area('vessen', 'Vessen', 'Amod', -856, -590, 32, 'Three roofs and a springhouse on the western flank, sharing one water court with the hamlets above.'),
   // Peblos: the islands, which are charted from the water as much as from the land.
   area('cobble', 'Cobble', 'Peblos', 336, 432, 45, 'The one village in the Pebbles: a stone quay, drying racks, ten roofs on a shelf of rock, and the Empire’s tally shed.'),
   area('peblos-headland', 'The Cobble Headland', 'Peblos', 402, 366, 42, 'The northern cape of the main island, with the unlit headland light on its crown.'),

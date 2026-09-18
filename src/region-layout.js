@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'Amod']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -52,6 +52,11 @@ export const REGION_BIOMES = Object.freeze({
   Peblos: Object.freeze({ id: 'salt-islands', name: 'The Peblos islands', ground: '#76855f', canopy: '#4d6a4f', treesPerHex: perHex(2), rocksPerHex: perHex(9), undergrowth: 'salt-grass',
     relief: { amplitude: 3.4, wavelength: 95 }, clearings: ['harbour', 'headland'], ownScatter: true,
     note: 'Low barrier islands south-east of Drent: salt grass, thrift and gorse, grey rock at the waterline, pale sand in the coves, and a few wind-bent pines on the higher ground. No forest anywhere.' }),
+  // Amod scatters its own slopes (src/amod-scenery.js): what grows there is set by height above the valley floor
+  // and by which side of a terrace wall the ground is on, neither of which a per-hex count can say.
+  Amod: Object.freeze({ id: 'terrace-foothills', name: 'The Amod terraces', ground: '#9aa169', canopy: '#5d7540', treesPerHex: perHex(7), rocksPerHex: perHex(6), undergrowth: 'pale-grass',
+    relief: { amplitude: 9, wavelength: 150 }, clearings: ['ostel', 'spring-village', 'pass-stones'], ownScatter: true,
+    note: 'Foothill country south of the Lotharn: descending ridges, each throwing a valley southward, every slope ribbed with dry-stone terraces. Chestnut, oak and walnut above; orchards, vines and goats below. The east end is drier, stonier and more open, with pale grass between the walls.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

@@ -34,6 +34,8 @@ export const BUILD_STATUS = Object.freeze({
     'Rimeholt is a first version. The hills, the east and the coast are terrain and landmarks only; no quests of its own.'),
   Peblos: status('early', 'The boat from Tidehaven’s pier and back for three copper, Cobble on the main island with its quay, its ten roofs, its seven islanders and the Empire’s four men, the headland light, the seal cove and the drowned field.',
     'The five outer islands are terrain, scatter and one landmark each, with no way to reach them. No quest, no naval station, no sea cave, no pirates, and nothing to buy or sell on the quay.'),
+  Amod: status('early', 'The east end only: the road in from western Pueth, the pass stones and the ogre who takes a toll on them, terraces cut into the ground itself from the Tarvel up to the chestnut line, Ostel on its shoulder with its water court, press, cellars, stonecutters’ yard and seventeen people, the burial terrace above it, Vessen, and the Tarvel with its bridge, its head and the Dromel gate.',
+    'Everything west of the Ostel bridge: Kelmod, Sareth-am-Vel, Tir Amel and Mavren are names on signs. No chapter of its own, no trade, no interiors, and the water court hears no case the traveler can take part in.'),
   'East Suval': status('edge', 'Elod’s border post on the stone road: a ditch, a shut gate and its guard in light black armour.',
     'Everything behind the gate. The region cannot be entered.'),
 });

@@ -28,6 +28,9 @@ import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSE
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
 import { createPeblosScenery } from './peblos-scenery.js';
+import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './amod-world.js';
+import { AMOD_TERRACE_GROUND } from './amod-terraces.js';
+import { createAmodScenery } from './amod-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -297,11 +300,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // ---------------------------------------------------------------------------
   // Terrain: one graded grid over the whole world, finest around Tidehaven
   // ---------------------------------------------------------------------------
-  function axisSamples(min, max, fineMin, fineMax) {
+  function axisSamples(min, max, ...bands) {
     const out = [min];
     let value = min;
     while (value < max) {
-      const outside = Math.max(fineMin - value, value - fineMax, 0);
+      let outside = Infinity;
+      for (const [low, high] of bands) outside = Math.min(outside, Math.max(low - value, value - high, 0));
       value = Math.min(max, value + 2.5 + Math.min(4.6, outside / 20 * 4.6));
       out.push(value);
     }
@@ -310,9 +314,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Vertex spacing is unchanged; the grid simply covers more ground. The fine
   // 2.5 m band still holds Tidehaven, which did not move, and the Avrel
   // clearing, which did.
-  const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, Math.min(-252, AVREL_CLEARING.x - 60), 62);
+  // Amod's terrace stair is 1.45 m of rise at a time (src/amod-terraces.js): at the coarse
+  // spacing its risers fall between vertices and smear into ramps, so its built ground asks for the fine band too.
+  const terrainXs = axisSamples(WORLD_BOUNDS.minX - 80, WORLD_BOUNDS.maxX + 80, [Math.min(-252, AVREL_CLEARING.x - 60), 62],
+    [AMOD_TERRACE_GROUND.minX - 8, AMOD_TERRACE_GROUND.maxX + 8]);
   // The fine band reaches north over the Tessen bridge and its road post, so the river's cut and the embankment read true.
-  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80, Math.min(-110, TESSEN_BRIDGE.crossing.z - 45), Math.max(172, AVREL_CLEARING.z + 60));
+  const terrainZs = axisSamples(WORLD_BOUNDS.minZ - 80, WORLD_BOUNDS.maxZ + 80,
+    [Math.min(-110, TESSEN_BRIDGE.crossing.z - 45), Math.max(172, AVREL_CLEARING.z + 60)],
+    [AMOD_TERRACE_GROUND.minZ - 8, AMOD_TERRACE_GROUND.maxZ + 8]);
   const columns = terrainXs.length, rows = terrainZs.length;
   const terrainPositions = new Float32Array(columns * rows * 3);
   const terrainColors = new Float32Array(columns * rows * 3);
@@ -1038,14 +1047,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [at(-556, 334), { x: STORY_SITES.horseHitch.x, z: STORY_SITES.horseHitch.z }],
   ];
   // Measure every road before any scenery, so nothing is planted across one.
-  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
+  measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(AMOD_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   const regionScenery = createRegionScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14)),
+    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z)),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
     insideVillage: (x, z) => {
@@ -1062,6 +1071,13 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     insideVillage: (x, z) => { const local = worldToVillage(x, z); return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40; },
   });
   bridgeDecks.push(puethScenery.bridge);
+  // Amod: the Tarvel and its terraces, Ostel on its shoulder, the burial ground, the pass stones and the region's own scatter.
+  const amodScenery = createAmodScenery({
+    root: world, material, mesh, box, post, pebble, rope, fence, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
+    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
+    roadDistance, riverMaterial: regionScenery.riverMaterial, regionClear,
+  });
+  bridgeDecks.push(amodScenery.bridge);
   // Peblos: Cobble and its quay, the island places, the outer islands' landmarks and the ferryman's boat.
   const peblosScenery = createPeblosScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
@@ -1107,6 +1123,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const path of REGIONAL_PATHS) addPath(path, 1.85);
   addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
   addPath(PUETH_ROAD, 4.2);
+  addPath(AMOD_ROAD, 4.2);
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
 
   // Fingerposts along the new road: each points at its place, and back the way the traveler came.
@@ -1491,6 +1508,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
     peblosMetrics: peblosScenery.metrics,
+    amodMetrics: amodScenery.metrics,
     peblosQuay: COBBLE_QUAY,
     placeFerryBoat: peblosScenery.placeFerryBoat,
     mapLands,
@@ -1575,7 +1593,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS,
+      ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...AMOD_NPC_POSITIONS,
     },
     landmarks: [
       { id: 'harbor', name: 'Tidehaven Landing', ...villageToWorld(0, 29), description: 'Small fishing boats cross the Stills to this sheltered corner of Drent’s coast.' },
@@ -1594,6 +1612,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...FRONTIER_LANDMARKS,
       ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
+      ...AMOD_LANDMARKS,
       ...PEBLOS_LANDMARKS,
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
