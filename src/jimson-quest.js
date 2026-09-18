@@ -20,9 +20,11 @@ export const JIMSON_PODS_WANTED = 3;
 /** How long, in seconds of play, before the village finds out how his night went. */
 export const JIMSON_NIGHT_DELAY = 210;
 
+// Never the traveler's own model: nobody in this country is a copy of the person
+// playing it. Toft is a miller's build in a brown coat, with weather on him.
 export const TOFT = Object.freeze({
   id: 'jimson-toft', name: 'Toft Ellery', role: 'Of Tidehaven, with a knee',
-  modelRole: 'traveler', color: 0x7a6a55,
+  modelRole: 'commons-miller', color: 0x6d5f4a, skin: 0xc39a70,
 });
 
 /** His barrel in the village, in world metres. */

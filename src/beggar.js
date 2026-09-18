@@ -10,7 +10,9 @@
  * to his wandering and he does not beg again for a good while.
  */
 export const BEGGAR_NPC = Object.freeze({
-  id: 'town-beggar', name: 'Smiths', role: 'Of Lumber Town', modelRole: 'traveler', color: 0x6b6255,
+  // Not the traveler's own model: he is a woodcutter's build gone thin, in a coat
+  // that was somebody else's first.
+  id: 'town-beggar', name: 'Smiths', role: 'Of Lumber Town', modelRole: 'forest-woodcutter', color: 0x5d564b, skin: 0xb98f68,
 });
 
 export const BEGGAR_DEFAULTS = Object.freeze({
