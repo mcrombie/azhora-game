@@ -410,3 +410,24 @@ test('from the Court of Oaths the Empire’s traveler walks all the way back to 
   }
   assert.ok(arrived, `stuck at ${position.x.toFixed(0)},${position.z.toFixed(0)}, ${best.toFixed(0)} m from the outpost`);
 });
+
+test('a broken blade is mended before the next fight, and a fight with one is left to mend it', () => {
+  const world = fakeWorld();
+  world.repairBenches = [{ x: 40, z: -40 }];
+  world.npcPositions['aftermath-tribune'] = { x: 0, z: -10 };
+  const broken = { usable: false, condition: 0 };
+  const base = snapshot({ questStage: 10, position: { x: 0, z: 0 }, campaign: { chapterId: 'solis-sweep', side: 'empire' },
+    aftermath: { stage: 'rally', variant: 'solis-sweep', complete: false, built: true, destinationIds: ['aftermath-tribune'], actions: [] } });
+  // In the Solis assault the Empire's sword broke with two raiders left, and the autoplay
+  // swung it at them for twenty minutes.
+  const fighting = { ...base, weapon: broken, combat: { ...base.combat, phase: 'active', enemies: [{ id: 'raider', x: 2, z: 0, action: 'idle', hp: 70 }] } };
+  const fallBack = planGoal(fighting, world);
+  assert.equal(fallBack.kind, 'use', `it falls back to a bench, not ${fallBack.intent}`);
+  assert.deepEqual(fallBack.target, { x: 40, z: -40 });
+  const withStick = planGoal({ ...fighting, inventory: { ...fighting.inventory, sticks: 2 } }, world);
+  assert.deepEqual([withStick.kind, withStick.item], ['equip', 'forest-stick'], 'a spare stick will do');
+  // Out of the fight, the bench comes before the commander's next order.
+  const mended = planGoal({ ...base, weapon: broken }, world);
+  assert.equal(mended.kind, 'use', `the blade is mended first, not ${mended.intent}`);
+  assert.equal(planGoal({ ...base, weapon: { usable: true, condition: 20 } }, world).kind, 'talk', 'with a sound blade, back to the commander');
+});

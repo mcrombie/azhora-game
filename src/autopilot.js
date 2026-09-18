@@ -366,9 +366,25 @@ export function planGoal(snapshot, world) {
   // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
   if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };
-  if (snapshot.combat.phase === 'active') return { kind: 'fight', intent: 'Fighting' };
+  if (snapshot.combat.phase === 'active') {
+    // A broken blade swings at nothing, and a fight with nothing to hurt never ends.
+    // Take up a spare stick, or fall back out of the fight to have the blade mended:
+    // the chapter waits, and the commander gives the word again.
+    if (!snapshot.weapon.usable) {
+      if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
+      const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
+      if (bench) return { kind: 'use', target: bench, radius: 1.6, check: 'nearRepair', intent: 'Falling back to mend the blade' };
+    }
+    return { kind: 'fight', intent: 'Fighting' };
+  }
   if (snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
   if (snapshot.mapTutorial === 2) return { kind: 'open-trails', intent: 'Reading the local trails' };
+  // Mend a broken weapon before any chapter sends the traveler into its next fight.
+  if (!snapshot.weapon.usable) {
+    if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
+    const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
+    if (bench) return { kind: 'use', target: bench, radius: 1.6, check: 'nearRepair', intent: 'Finding a repair bench' };
+  }
   // The campaign says which chapter the traveler is on. Follow it: a game begun at a
   // later chapter (the opening screen offers one) has no earlier chapter to finish.
   const chapter = snapshot.campaign?.chapterId;
@@ -378,11 +394,6 @@ export function planGoal(snapshot, world) {
     if ((chapter === 'suval-envoy' || chapter === 'border-battle') && snapshot.border) return borderGoal(snapshot, world);
     if (chapter === 'moros-camp' && snapshot.moros) return morosGoal(snapshot, world);
     if (chapter === 'luscia-aftermath' && snapshot.luscia) return lusciaGoal(snapshot, world);
-  }
-  if (!snapshot.weapon.usable) {
-    if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
-    const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
-    if (bench) return { kind: 'use', target: bench, radius: 1.6, check: 'nearRepair', intent: 'Finding a repair bench' };
   }
   if (snapshot.combat.hp < 40) {
     if (snapshot.inventory.cookedFish > 0) return { kind: 'eat', item: 'cooked-fish', intent: 'Eating' };
