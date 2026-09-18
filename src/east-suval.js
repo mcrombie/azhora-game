@@ -44,10 +44,8 @@ const point = (x, z) => Object.freeze({ x, z });
  * the Threshold on the levelled shelf below it, the ordinary city south of
  * that, and the harbour quarter on the low ground at the waterline.
  */
-export const ELOD = Object.freeze({
-  id: 'elod', name: 'Elod', centre: point(-50, 635), radius: 62,
-  /** A point `a` metres east and `b` metres south of the Sea-Road Gate. */
-});
+export const ELOD = Object.freeze({ id: 'elod', name: 'Elod', centre: point(-50, 635), radius: 52 });
+/** A point `a` metres east and `b` metres south of the Sea-Road Gate. */
 export const elodPoint = (a, b) => point(ELOD.centre.x + a, ELOD.centre.z + b);
 
 /** The gate the branch road ends at: Elod's landward door, shut since 976. */
@@ -420,18 +418,18 @@ export const EAST_SUVAL_CLEARINGS = Object.freeze([
  * East Suval scatters itself rather than taking the generic per-hex counts,
  * because what grows here is decided by how far the ground is from the sea and
  * how high it stands, which a single number per hex cannot say: aromatic
- * cushion scrub everywhere, grey limestone bones on the ridges, wind-cut
- * juniper and a few olives in the hollows, thrift and sea-lavender on the
- * exposed coast, and dry-stone field walls wherever anybody has ever tried to
- * farm. Nothing here is forest. The tallest thing in the region is the
- * Threshold's east wall.
+ * cushion scrub everywhere — thyme, lavender and spurge — grey limestone bones
+ * thickest on the ridges and at the waterline, wind-cut juniper and a few olives
+ * in the hollows and nowhere else, and dry-stone field walls wherever anybody has
+ * ever tried to farm. Nothing here is forest. The tallest thing in the region is
+ * the Threshold's east wall.
  */
 export const EAST_SUVAL_SCATTER = Object.freeze({
   treesPerHex: 3,          // olives and juniper, in the hollows only
   rocksPerHex: 26,         // limestone bones, thickest on the high ground
   scrubPerHex: 54,         // thyme, lavender, spurge: the aromatic cushions
   tuftsPerHex: 64,
-  wallsPerHex: 1.1,        // runs of dry-stone field wall on the terraced ground
+  wallRuns: 9,             // runs of dry-stone field wall on the terraced ground
 });
 
 /** The hexes of East Suval, from the atlas, with their authored terrain. */

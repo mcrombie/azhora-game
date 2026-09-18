@@ -690,7 +690,7 @@ export function createEastSuvalScenery(kit) {
   }
 
   // Runs of dry-stone field wall on the terraced ground either side of the city.
-  for (let run = 0; run < 9; run++) {
+  for (let run = 0; run < EAST_SUVAL_SCATTER.wallRuns; run++) {
     const centre = run < 5
       ? { x: -120 - run * 34, z: 640 + run * 26 }
       : { x: -40 + (run - 5) * 26, z: 720 + (run - 5) * 34 };
