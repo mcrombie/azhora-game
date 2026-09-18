@@ -640,19 +640,9 @@ export function createRegionScenery(kit) {
     arch.rotation.z = -side * .14;
   }
   for (let i = 0; i < 5; i++) box(material('#a9aa99'), waystation.x - 1.6 + i * .8, ruinY + .055, waystation.z + 2.0, .65, .11, 1.0, suval);
-  const elod = STORY_SITES.elodGate, elodY = groundHeight(elod.x, elod.z);
-  wornPatch(elod.x, elod.z, 13, '#b5b387', .9);
-  const elodNormal = roadNormal(elod.x, elod.z);
-  for (const side of [-1, 1]) {
-    const x = elod.x + elodNormal.x * side * 5.4, z = elod.z + elodNormal.z * side * 5.4, y = groundHeight(x, z);
-    box(material('#a8a894'), x, y + 2.4, z, 2.0, 4.8, 2.0, suval);
-    colliders.push({ x, z, r: 1.5, kind: 'elod-gate' });
-  }
-  const lintel = box(material('#8f9081'), elod.x, elodY + 5.3, elod.z, 12.8, .9, 1.7, suval);
-  lintel.rotation.y = Math.atan2(elodNormal.x, elodNormal.z);
-  cottage(elod.x - 14, elod.z + 9, 6.2, 5.2, 3.3, '#6d7875', '#cfc9ae', .5, suval);
-  cottage(elod.x - 6, elod.z + 18, 5.6, 4.8, 3.0, '#5f6f70', '#c9c5aa', -.4, suval);
-  cottage(elod.x - 20, elod.z + 21, 5.9, 5.0, 3.2, '#77796c', '#d2cbb0', .9, suval);
+  // Elod itself — its gate, its walls, the Threshold and its harbour — is built
+  // by src/east-suval-world.js now; the three cottages and the bare lintel that
+  // stood here were the placeholder for it.
   const lookout = STORY_SITES.banditLookout, lookoutY = groundHeight(lookout.x, lookout.z);
   for (let i = 0; i < 7; i++) {
     const angle = i / 7 * Math.PI * 2, x = lookout.x + Math.sin(angle) * 4.2, z = lookout.z + Math.cos(angle) * 4.0;

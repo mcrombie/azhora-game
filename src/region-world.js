@@ -106,7 +106,11 @@ export const REGION_TERRAIN = Object.freeze({
   Drent: Object.freeze({ base: 4.6, amp: 2.6, wave: 90, ground: REGION_BIOMES.Drent.ground }),
   Luscia: Object.freeze({ base: 8.6, amp: 4.5, wave: 140, ground: REGION_BIOMES.Luscia.ground }),
   'Moros Plain': Object.freeze({ base: 6.4, amp: .9, wave: 260, ground: REGION_BIOMES['Moros Plain'].ground }),
-  'East Suval': Object.freeze({ base: 17, amp: 11, wave: 120, ground: REGION_BIOMES['East Suval'].ground }),
+  // The blade of the peninsula: pale limestone, thin soil. Its authored hills are
+  // the southern ridges, which stand higher and barer than the coastal ground.
+  'East Suval': Object.freeze({ base: 17, amp: 11, wave: 120, ground: REGION_BIOMES['East Suval'].ground, byTerrain: Object.freeze({
+    hills: Object.freeze({ base: 25, amp: 13, wave: 110, ground: '#8f9182' }),
+  }) }),
   'West Suval': Object.freeze({ base: 9.5, amp: REGION_BIOMES['West Suval'].relief.amplitude, wave: REGION_BIOMES['West Suval'].relief.wavelength, ground: REGION_BIOMES['West Suval'].ground }),
   // A cell's atlas terrain may refine its region's ground: Pueth's hills stand high and bare, its coastal plains low.
   Pueth: Object.freeze({ base: 7.2, amp: 3.2, wave: 130, ground: REGION_BIOMES.Pueth.ground, byTerrain: Object.freeze({
@@ -306,9 +310,19 @@ export const SOLIS_ROAD = Object.freeze([
  */
 export const COBBLE_TERRACE = Object.freeze({ id: 'cobble', x: 334, z: 428, halfX: 11, halfZ: 13, feather: 24, level: 3, slopeX: .1, slopeZ: .03, shore: true });
 
+/**
+ * Elod's inner precinct stands on a levelled shelf of the rock above its
+ * harbour: the natural ground there runs from twelve to nineteen metres and the
+ * platform takes it to fifteen, which is a cut face on the landward side and a
+ * revetment above the harbour. The feather is short on purpose — that revetment
+ * is meant to read as built, not as a hillside (see src/east-suval.js).
+ */
+export const ELOD_TERRACE = Object.freeze({ id: 'elod-precinct', x: -37, z: 632, halfX: 10, halfZ: 20, feather: 9, level: 15, slopeX: 0, slopeZ: 0 });
+
 export const TERRAIN_PADS = Object.freeze([
   Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
   COBBLE_TERRACE,
+  ELOD_TERRACE,
 ]);
 
 /** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
@@ -423,7 +437,8 @@ export const regionLandmarks = Object.freeze([
   Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small timber work the Legion and the republic both want: a ditch, a rampart with a fighting platform, corner towers and a truce flag.' }),
   Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'Elod’s old barrier across the road, behind the stone frontier that now shuts East Suval.' }),
   Object.freeze({ id: 'old-waystation', name: 'The Roofless Waystation', ...at(-154, 328), description: 'A leaning stone arch and a few paving slabs outlast a forgotten roadside shelter.' }),
-  Object.freeze({ id: 'elod-gate', name: 'Elod', ...at(-28, 368.5), description: 'The stone gate of Elod, a few slate roofs, and the Stills glittering beyond the town.' }),
+  Object.freeze({ id: 'elod-gate', name: 'The Sea-Road Gate of Elod', ...at(-28, 368.5), radius: 12,
+    description: 'Where the stone road ends: two piers of grey ashlar, a lintel with three lines of Koleth cut across it, and a gate that has been shut for three years. The cutting says what the road is for and not one word about who may use it. Beyond it the city steps down its rock to the water.' }),
   Object.freeze({ id: 'bandit-lookout', name: 'The Hill Lookout', ...at(-74, 498), description: 'A ring of ridge stones above the southern hills. Somebody watches the road from here, but not today.' }),
 ]);
 
@@ -463,10 +478,15 @@ const REGION_TEXT = {
     description: 'Flat treeless grassland under an enormous sky. The Legion camp is visible from a long way off, and horses graze the line.',
     palette: { ground: '#b9b36c', accent: '#e4d59a', fog: '#cfd3b4' },
     npcIds: [], landmarks: ['moros-gate', 'legion-camp', 'moros-stockade'] },
-  'East Suval': { subtitle: 'Stone hills and Elod', spawn: at(-214, 294),
-    description: 'Grey stone country: heather, ridge rock and the town of Elod above the Stills. Elod has closed its borders to stay out of the war; its black-clad pickets turn back anyone who tries to cross.',
+  // East Suval is closed (src/closed-border.js): its spawn is the city, which is
+  // where the developer tools and the testing panel set a tester down.
+  'East Suval': { subtitle: 'Stone hills and Elod', spawn: point(-56, 636),
+    description: 'Pale limestone and thin soil, aromatic scrub, dry terraces and field walls, and an eastern coast with harder weather than the west. Elod stands on its shelf above the water and has closed its country to stay out of the war; its black-clad pickets turn back anyone who tries to cross.',
     palette: { ground: '#9b9d85', accent: '#e1d1a7', fog: '#bbc6bf' },
-    npcIds: ['shelter-keeper'], landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout'] },
+    npcIds: ['shelter-keeper', 'elod-harbourmaster', 'elod-warden', 'elod-theologian', 'elod-priest', 'elod-factor', 'elod-scribe-master', 'suval-lightkeeper'],
+    landmarks: ['suval-border-post', 'old-waystation', 'waystation-shelter', 'elod-gate', 'bandit-lookout',
+      'the-threshold', 'elod-inner-gate', 'elod-sea-gate', 'elod-quay', 'elod-harbour-quarter',
+      'frontier-guard-house', 'north-light', 'sorrow-beach', 'sevenwalls', 'shepherds-cistern'] },
   'West Suval': { subtitle: 'The coast downs and Solis', spawn: road(-353, 407.5),
     description: 'Rolling coastal grass, thorn and olive, field walls of pale stone, and Solis on its terraces above the sea: once a kingdom’s capital, then the Empire’s, and for a few days now the Coalition’s.',
     palette: { ground: '#a9a95c', accent: '#e8cf8e', fog: '#c9d0bd' },

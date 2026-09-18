@@ -53,7 +53,7 @@ export function createDeveloperMode({renderer,normalScene,world,player,onExit=()
     if(!active||!destination)return false;held.clear();look=null;releaseScene();
     let start,bounds,target,subtitle;
     if(destination.scene==='playable-world'){
-      const points={drent:{x:-15,z:29},luscia:{x:-386,z:183},moros:{x:-500,z:312},suval:{x:-120,z:340},'west-suval':{x:-530,z:875},pueth:{x:-110,z:-170},peblos:{x:334,z:428}};
+      const points={drent:{x:-15,z:29},luscia:{x:-386,z:183},moros:{x:-500,z:312},suval:{x:-56,z:636},'west-suval':{x:-530,z:875},pueth:{x:-110,z:-170},peblos:{x:334,z:428}};
       const p=points[destination.travelTarget]||points.drent;start={x:p.x,y:world.heightAt(p.x,p.z)+8,z:p.z};target={x:p.x,y:start.y-2,z:p.z-30};bounds={...world.bounds,minY:-20,maxY:350};subtitle='Playable region · ghost inspection';
     }else{
       const dark=destination.scene==='cape-thalmagar';currentScene=makeScene(dark);

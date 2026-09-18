@@ -40,6 +40,7 @@ import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js'
 import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './rena-letters.js';
 import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
+import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
@@ -121,6 +122,8 @@ function init() {
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
   // Cobble's people and the Empire's four men on its quay, in Peblos.
   npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
+  // Elod's people, the frontier guard behind its shut gate, and the keepers of the outlying places, in East Suval.
+  npcData.push(...EAST_SUVAL_PEOPLE.map(npc=>({...npc})));
   // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
   world.npcPositions[FERRY_NPC.id]={x:FERRY_LANDINGS.drent.stand.x,z:FERRY_LANDINGS.drent.stand.z};npcData.push({...FERRY_NPC,yaw:FERRY_LANDINGS.drent.stand.yaw});
   // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
@@ -1149,6 +1152,7 @@ function init() {
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(RENA_NPC_IDS.includes(npc.id)&&renaConversation(npc,{letters:renaLetters,inventory,openDialogue,closeDialogue,act:renaAct}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
+    if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
@@ -1424,6 +1428,15 @@ function init() {
     yaw=landing.yaw;pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
     ferry.settle();settleCamera();closeModal();
     toast('Cobble, on the main island. Corran waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
+  };
+  $('test-elod').onclick=()=>{
+    if(!testingEnabled)prepareTesting();
+    if(riding.mounted)stepDown(true);
+    const landing=world.elodLanding.ashore;
+    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
+    yaw=landing.yaw;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;
+    settleCamera();closeModal();
+    toast('Elod’s quay, as if you had come in by sea. The border on the road is still shut; the Inner Gate will still refuse you.','TESTING · EAST SUVAL');
   };
   $('test-reveal-chart').onclick=()=>{
     chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
@@ -2279,7 +2292,7 @@ function init() {
         if(view==='cooking'){questStage=10;combat.finishPractice();inventory.grant('tinderbox');inventory.add('raw-fish',2);inventory.add('forest-stick',2);const fire=world.firePits[0];campcraft.light(fire.id);player.group.position.set(fire.x,world.heightAt(fire.x,fire.z),fire.z);yaw=.7;pitch=.5;distance=targetDistance=6.5;fireMenu(fire);}
         if(view==='cooked-fish'){questStage=10;combat.finishPractice();if(!inventory.has('cooked-fish'))inventory.add('cooked-fish',2);combat.state.player.hp=43;toggleInventory();inventory.select('cooked-fish');}
         if(view==='testing'){questStage=10;combat.finishPractice();modal('testing');}
-        const roadViews={sunmeadow:{x:-232,z:34,yaw:1.9,pitch:.26,distance:17},reedwater:{x:-330,z:84,yaw:2.2,pitch:.29,distance:14},threefold:{x:-378,z:130,yaw:2.6,pitch:.25,distance:17},'north-relay':{x:-398,z:190,yaw:2.8,pitch:.25,distance:12},'lauvel-field':{x:-386,z:176,yaw:3.0,pitch:.26,distance:20},'moros-gate':{x:-424,z:252,yaw:2.5,pitch:.24,distance:16},'legion-camp':{x:-520,z:330,yaw:2.3,pitch:.26,distance:26},'suval-border':{x:-232,z:288,yaw:1.4,pitch:.24,distance:14},elod:{x:-48,z:360,yaw:1.6,pitch:.24,distance:18}};
+        const roadViews={sunmeadow:{x:-232,z:34,yaw:1.9,pitch:.26,distance:17},reedwater:{x:-330,z:84,yaw:2.2,pitch:.29,distance:14},threefold:{x:-378,z:130,yaw:2.6,pitch:.25,distance:17},'north-relay':{x:-398,z:190,yaw:2.8,pitch:.25,distance:12},'lauvel-field':{x:-386,z:176,yaw:3.0,pitch:.26,distance:20},'moros-gate':{x:-424,z:252,yaw:2.5,pitch:.24,distance:16},'legion-camp':{x:-520,z:330,yaw:2.3,pitch:.26,distance:26},'suval-border':{x:-232,z:288,yaw:1.4,pitch:.24,distance:14},elod:{x:-78,z:638,yaw:-1.55,pitch:.3,distance:20},'elod-harbour':{x:-8,z:642,yaw:0,pitch:.26,distance:15},'elod-quay':{x:-14,z:620,yaw:-1.5,pitch:.24,distance:12},'elod-city':{x:-24,z:682,yaw:0,pitch:.3,distance:20},'elod-inner-gate':{x:-41,z:597,yaw:Math.PI,pitch:.22,distance:13}};
         roadViews['road-sign']={x:-326,z:80,yaw:2.1,pitch:.2,distance:5};
         if(roadViews[view]){const v=roadViews[view];questStage=10;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('road-token');journey.start();player.group.position.set(v.x,world.heightAt(v.x,v.z),v.z);player.group.rotation.y=Math.PI+v.yaw;yaw=v.yaw;pitch=v.pitch;distance=targetDistance=v.distance;reviewFrozen=true;}
         if(view==='waymarker-before'||view==='waymarker-after'){
