@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { SKILLS, SKILL_IDS, createSkills, skillLevel, validateSkillsSnapshot } from '../src/skills.js';
 
 test('levels are read from the thresholds, with progress toward the next', () => {
-  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking']);
+  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting']);
   for (const id of SKILL_IDS) assert.ok(SKILLS[id].teacher && SKILLS[id].blurb, `${id} says who teaches it`);
   const table = SKILLS.birding.thresholds;
   assert.ok(table.every((xp, i) => i === 0 ? xp === 0 : xp > table[i - 1]), 'thresholds rise');

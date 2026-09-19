@@ -63,7 +63,9 @@ import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
-import { createSkills, skillLevel } from './skills.js';
+import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './skills.js';
+import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
+import { createBowden } from './woodcutter-model.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createDrentBirds } from './drent-birds.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
@@ -85,7 +87,7 @@ import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversat
 import { JOHN, SALT_PORTS, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
 import { createJohn, createSultana } from './salt-ship.js';
 import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
-import { BRANDY, BRANDY_STAND, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
+import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
 import { VINTNER, CELLAR_HAND, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
 import { createRenaDigs } from './rena-digs.js';
 import { TALKING_TREE, createTalkingTree, treeLines } from './talking-tree.js';
@@ -200,6 +202,8 @@ function init() {
   for(const person of ATTIC_PEOPLE){const stand=ATTIC_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/ed.js).
   world.npcPositions[SECRETARY.id]={x:SECRETARY_STAND.x,z:SECRETARY_STAND.z};npcData.push({...SECRETARY,yaw:SECRETARY_STAND.yaw});
+  // Bowden Koop, King of the Koopwood, who teaches woodcutting in his lot north-west of the village (src/woodcutting.js).
+  world.npcPositions[BOWDEN.id]={x:BOWDEN_STAND.x,z:BOWDEN_STAND.z};npcData.push({...BOWDEN,yaw:BOWDEN_STAND.yaw,make:createBowden});
   // Brandy Frank, Tidehaven's dyer, in her yard on the lane up to Saltwind Lookout (src/brandy.js).
   world.npcPositions[BRANDY.id]={x:BRANDY_STAND.x,z:BRANDY_STAND.z};npcData.push({...BRANDY,yaw:BRANDY_STAND.yaw});
   // Talaelos, the players of Nylon (src/troupe.js): they camp in one region after another, and their homes move with the wagon.
@@ -310,7 +314,8 @@ function init() {
   const woodlandSites=woodlandLife.state();
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
-  const skills=createSkills();
+  const skills=createSkills({onEvent:skillEvent});
+  const wood=createWoodcutting({skills});
   const birding=createBirding({skills});
   // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
   const fishing=createFishing({skills});
@@ -395,6 +400,45 @@ function init() {
     if(action==='brandy-meet'){brandy.meet();toast('Brandy Frank, Tidehaven\u2019s dyer: the brightest colours in Drent, and not at all cheered up by them.','TIDEHAVEN');saveRoad(false);return;}
     if(action==='brandy-ribbon'){if(!brandy.giveRibbon().ok)return;inventory.add(RIBBON_ITEM,1);inventory.refresh();audio?.effect('success');
       openDialogue(npc,brandyRibbonLines(),null,'Back to the lane');toast('A ribbon in every colour Brandy has. It\u2019s in your satchel.','ADDED TO SATCHEL');saveRoad(false);}
+  }
+  // Bowden: the skill and the hatchet, his axes, the logs for his kiln, and his father's axe at level thirty.
+  function woodAct(action){
+    const npc=npcById.get(BOWDEN.id);
+    if(action==='bowden-meet'){wood.meet();toast('Bowden Koop, King of the Koopwood: woodcutter, charcoal-burner, and louder than both.','THE KOOPWOOD');saveRoad(false);return;}
+    if(action==='bowden-teach'){if(skills.learn(WOODCUTTING_SKILL).first){inventory.add('bronze-axe',1);inventory.refresh();refreshSkillsSheet();toast('Woodcutting, a new skill, and a bronze hatchet in your satchel. Stand at a tree in the Koopwood and press F.','NEW SKILL');saveRoad(false);}return;}
+    const buy=/^bowden-buy-(.+)$/.exec(action);
+    if(buy){const axe=AXES.find(a=>a.id===buy[1]);if(!axe||!axe.price||inventory.has(axe.id))return;
+      if(!inventory.remove(COPPER_ITEM,axe.price)){toast(`That is ${axe.price} copper.`,'THE KOOPWOOD');return;}
+      inventory.add(axe.id,1);inventory.refresh();audio?.effect('success');openDialogue(npc,bowdenLines.axe(axe),null,'Back to the road');saveRoad(false);return;}
+    if(action==='bowden-sell'){const offer=wood.offer(id=>inventory.count(id));if(!offer.logs)return;
+      for(const lot of offer.lots)inventory.remove(lot.item,lot.count);inventory.add(COPPER_ITEM,offer.total);wood.sold(offer.logs);inventory.refresh();audio?.effect('success');
+      openDialogue(npc,bowdenLines.sell(offer.logs,offer.total),null,'Back to the road');saveRoad(false);return;}
+    if(action==='bowden-kings-axe'){if(!wood.giveKingsAxe().ok)return;inventory.add('kings-axe',1);inventory.refresh();audio?.effect('success');
+      openDialogue(npc,[...bowdenLines.kingsAxe],null,'Back to the road');toast('The King\u2019s axe is in your satchel: the fastest axe in Drent.','ADDED TO SATCHEL');saveRoad(false);}
+  }
+  // Woodcutting in the Koopwood: F at a standing tree starts the swinging, and walking off stops it.
+  const woodlotTree=new Map(WOODLOT_TREES.map(t=>[t.id,t]));
+  let currentChop=null,chop=null;
+  const satchelHas=id=>inventory.has(id);
+  function startChop(t){
+    const can=wood.canChop(t.id,satchelHas);if(!can.ok){toast(can.reason,'WOODCUTTING');return;}
+    chop={id:t.id,next:SWING*.55};player.group.rotation.y=Math.atan2(t.x-player.group.position.x,t.z-player.group.position.z);
+    toast(`You swing your ${can.axe.name.toLowerCase()} at the ${can.kind.short}.`,'WOODCUTTING');
+  }
+  /** One frame of chopping: stops if the traveler walks off, is attacked or the tree is gone; a swing every SWING seconds. */
+  function chopping(dt,movement){
+    if(!chop)return;
+    const t=woodlotTree.get(chop.id),pp=player.group.position;
+    if(mode!=='playing'||combat.state.phase==='active'||riding.mounted||movement>.3||Math.hypot(t.x-pp.x,t.z-pp.z)>CHOP_REACH+.6||!wood.standing(chop.id)){chop=null;return;}
+    player.group.rotation.y=Math.atan2(t.x-pp.x,t.z-pp.z);chop.next-=dt;
+    if(chop.next>0)return;
+    chop.next+=SWING;world.woodlot.chip(chop.id);audio?.effect('hit');
+    const swing=wood.swing(chop.id,satchelHas);
+    if(!swing.ok){toast(swing.reason,'WOODCUTTING');chop=null;return;}
+    if(!swing.log)return;
+    inventory.add(swing.log,1);inventory.refresh();refreshSkillsSheet();
+    if(swing.felled){world.woodlot.fell(chop.id,pp);toast(`The ${swing.kind.short} comes down. You get some logs.`,'WOODCUTTING');chop=null;saveRoad(false);}
+    else toast('You get some logs.','WOODCUTTING');
   }
   // Talaelos: the wagon goes where the company goes; a scene puts three of them on its stage.
   const troupeWagon=createPageantWagon({open:true});scene.add(troupeWagon);
@@ -737,6 +781,16 @@ function init() {
     showSkillCard({kicker:`FIRST SIGHTING · BIRDING +${result.xp}${result.levelled?` · LEVEL ${result.level}`:''}`,name:result.species.name,note:result.species.note,skill:'birding'});
   }
   // The card a skill puts up when the traveler learns something new: a bird seen, a fish landed.
+  /** Every bit of experience shows as a drop by the map, RuneScape fashion, and a new level gets its banner. */
+  let levelUpTimer=0;
+  function skillEvent(event){
+    if(event.type!=='skill-gain'||typeof document==='undefined')return;
+    const drops=$('xp-drops');if(drops){const drop=document.createElement('div');drop.className='xp-drop';drop.textContent=`+${event.gained} ${SKILLS[event.id]?.name??event.id}`;drops.append(drop);setTimeout(()=>drop.remove(),1900);}
+    if(event.levelled){const opened=skillGuide(event.id,event.level).filter(entry=>entry.level>event.before&&entry.level<=event.level);
+      $('level-up-title').textContent=`${SKILLS[event.id].name} · level ${event.level}`;$('level-up-line').textContent=levelUpLine(event.id,event.level);
+      $('level-up-unlock').textContent=opened.length?`Now open: ${opened.map(entry=>entry.text).join(' · ')}`:'';
+      $('level-up').classList.add('visible');audio?.effect('success');clearTimeout(levelUpTimer);levelUpTimer=setTimeout(()=>$('level-up').classList.remove('visible'),5200);}
+  }
   function showSkillCard({kicker,name,note,skill}){
     const view=skills.view().find(entry=>entry.id===skill),level=skillLevel(skill,view?.xp??0);
     $('bird-card-kicker').textContent=kicker;
@@ -749,8 +803,10 @@ function init() {
   function refreshSkillsSheet(){
     const sheet=$('skills-sheet');sheet.replaceChildren();
     const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+    sheet.append(el('p','skill-total',`Total level ${skills.totalLevel()}`));
     for(const skill of skills.view()){
-      const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level}`:'NOT YET LEARNED'),el('h3','',skill.name));
+      const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),el('h3','',skill.name));
+      if(skill.guide.length){const guide=el('ul','skill-guide');for(const entry of skill.guide){const li=el('li',entry.open?'open':'locked');li.append(el('b','',String(entry.level)),el('span','',entry.text));guide.append(li);}card.append(guide);}
       if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
       card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
       if(skill.id==='geology'&&skill.learned){
@@ -1220,7 +1276,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1243,7 +1299,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1482,6 +1538,7 @@ function init() {
     if(npc.id===NIKA.id){wineAttic.visit();nikaConversation(npc,atticContext());return;}
     if(npc.id===ED.id){edConversation(npc,edContext());return;}
     if(TROUPE_IDS.has(npc.id)){troupeConversation(npc,troupeContext());return;}
+    if(npc.id===BOWDEN.id){wood.visit();bowdenConversation(npc,{wood,skills,purse:inventory.count(COPPER_ITEM),count:id=>inventory.count(id),has:id=>inventory.has(id),openDialogue,closeDialogue,act:woodAct});return;}
     if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,openDialogue,closeDialogue,act:saltAct});return;}
     if(npc.id===BRANDY.id){brandy.visit();brandyConversation(npc,{brandy,openDialogue,closeDialogue,act:brandyAct});return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,edContext());return;}
@@ -1699,6 +1756,7 @@ function init() {
     if(combat.state.phase!=='active'&&currentStone){gatherStone();return;}
     if(combat.state.phase!=='active'&&currentDig){readDig();return;}
     if(combat.state.phase!=='active'&&currentVine){readVines();return;}
+    if(combat.state.phase!=='active'&&currentChop&&!currentNPC){startChop(currentChop);return;}
     if(combat.state.phase!=='active'&&currentCask&&!currentNPC){readCask();return;}
     if(combat.state.phase!=='active'&&nearOldTree&&!currentNPC){lookAtOldTree();return;}
     if(combat.state.phase!=='active'&&currentTree){lookAtTree();return;}
@@ -2130,7 +2188,8 @@ function init() {
       }
       if(mode==='defeated'){combat.update(dt);combatClock+=dt;walkTime+=dt;}
       else if(['playing','fishing','opening','arriving'].includes(mode)&&!reviewFrozen)walkTime+=dt;
-      const weaponPose=combat.pose();
+      chopping(dt,movement);
+      const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
       player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted,fishing:mode==='fishing',riding:riding.mounted?{pace:movement}:null});
@@ -2232,6 +2291,12 @@ function init() {
         const pose=salt.pose(),seen=!!pose&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<340;
         if(seen!==(sultana.group.parent===scene)){if(seen)scene.add(sultana.group);else scene.remove(sultana.group);}
         if(seen){sultana.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);sultana.group.rotation.y=pose.yaw;sultana.update(elapsed,pose);}}
+      {// The Koopwood: the nearest standing tree in reach; stumps grow back; the lot moves only when somebody could see it.
+        const pp=player.group.position;let best=CHOP_REACH;currentChop=null;
+        if(mode==='playing'&&combat.state.phase!=='active'&&!chop)for(const t of WOODLOT_TREES){const d=Math.hypot(t.x-pp.x,t.z-pp.z);if(d<best&&wood.standing(t.id)){best=d;currentChop=t;}}
+        const near=Math.hypot(BOWDEN_STAND.x-pp.x,BOWDEN_STAND.z-pp.z)<260;
+        for(const id of wood.update(dt)){if(near)world.woodlot.regrow(id);else world.woodlot.set(id,true);}
+        if(near)world.woodlot.update(dt,elapsed);}
       currentCask=mode==='playing'&&combat.state.phase!=='active'&&Math.hypot(SEA_WALL_NICHE.x-player.group.position.x,SEA_WALL_NICHE.z-player.group.position.z)<SEA_WALL_NICHE.reach?SEA_WALL_NICHE:null;
       const nearBorder=Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9;
       currentAcorn=mode==='playing'?woodlandLife.nearestAcorn(player.group.position,2):null;
@@ -2270,7 +2335,7 @@ function init() {
       nearFishing=!!currentFishingSpot;
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
-      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -2282,6 +2347,7 @@ function init() {
       if(currentDig&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=archaeology.met?(archaeology.hasFound(currentDig.id)?`${currentDig.name} \u00b7 written up`:'Read this place'):'A surveyor\u2019s peg with a red ribbon';
       if(currentVine&&!currentNPC&&!currentDig)$('interaction-label').textContent=`The ${VARIETIES[currentVine.variety].name} vines`;
       if(currentCask&&!currentNPC)$('interaction-label').textContent='The cask in the sea wall';
+      if(currentChop&&!currentNPC){const k=TREE_KINDS[currentChop.kind],lv=skills.level(WOODCUTTING_SKILL);$('interaction-label').textContent=`Chop down the ${k.short}${lv<k.level?` \u00b7 Woodcutting ${k.level}`:''}`;}
       if(currentTree&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=botany.met?(botany.hasFound(currentTree.species)?`The ${currentTree.name.toLowerCase()}`:'Look at this tree'):'A tree worth looking at';
       if(nearOldTree&&!currentNPC)$('interaction-label').textContent=oldTree.awake?'It is looking at you':'The Old Tree';
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
@@ -2314,7 +2380,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
@@ -2784,6 +2850,20 @@ function init() {
           const look=close?{x:at.x,y:at.y+1.45,z:at.z}:{x:at.x-Math.sin(face)*2.2,y:at.y+.9,z:at.z-Math.cos(face)*2.2},d=close?2.4:10,turn=face+(close?.25:-.15);
           player.group.position.set(look.x+Math.sin(turn)*d,world.heightAt(look.x+Math.sin(turn)*d,look.z+Math.cos(turn)*d),look.z+Math.cos(turn)*d);
           reviewTarget=new THREE.Vector3(look.x,look.y,look.z);yaw=turn;pitch=close?.06:.42;distance=targetDistance=d;}
+        // The Koopwood: the lot from the road, Bowden, and the traveler cutting an oak.
+        if(['woodlot','bowden','bowden-close','bowden-back','chopping','woodlot-felled'].includes(view)){questStage=10;combat.finishPractice();
+          const b=npcById.get(BOWDEN.id).actor.group,at=b.position,face=b.rotation.y;let look,turn,d,p;
+          if(view==='woodlot'){look={x:at.x-Math.sin(face)*6,y:at.y+2.5,z:at.z-Math.cos(face)*6};turn=face+.45;d=22;p=.32;}
+          else if(view==='bowden'){look={x:at.x,y:at.y+1.25,z:at.z};turn=face+.5;d=4.4;p=.08;}
+          else if(view==='bowden-close'){look={x:at.x,y:at.y+1.85,z:at.z};turn=face+.35;d=2.3;p=.04;}
+          else if(view==='bowden-back'){look={x:at.x,y:at.y+1.4,z:at.z};turn=face+Math.PI-.6;d=3.8;p=.1;}
+          else{if(!skills.known(WOODCUTTING_SKILL))skills.learn(WOODCUTTING_SKILL);if(skills.level(WOODCUTTING_SKILL)<15){skills.gain(WOODCUTTING_SKILL,2411);clearTimeout(levelUpTimer);}if(!inventory.has('steel-axe'))inventory.add('steel-axe',1);
+            const t=woodlotTree.get('koopwood-oak-1');world.woodlot.set(t.id,true);const sx=t.x-1.6,sz=t.z+1.1;player.group.position.set(sx,world.heightAt(sx,sz),sz);player.group.visible=true;
+            if(view==='chopping'){chop={id:t.id,next:SWING*.3};look={x:t.x-.8,y:world.heightAt(t.x,t.z)+1.3,z:t.z+.55};turn=-2.1;d=5.2;p=.12;}
+            else{world.woodlot.fell(t.id,{x:sx,z:sz});look={x:t.x+1.5,y:world.heightAt(t.x,t.z)+1.6,z:t.z-1.2};turn=-2.4;d=9;p=.22;}}
+          if(view!=='chopping'&&view!=='woodlot-felled')player.group.visible=false;
+          if(!player.group.visible){const px=look.x+Math.sin(turn)*d,pz=look.z+Math.cos(turn)*d;player.group.position.set(px,world.heightAt(px,pz),pz);}
+          reviewTarget=new THREE.Vector3(look.x,look.y,look.z);yaw=turn;pitch=p;distance=targetDistance=d;}
         // John and the Sultana: him on the pier at Tidehaven, her at anchor off it, her coming in under sail, and him on the quay at Solis.
         if(['john','john-pier','sultana','sultana-sailing','john-solis'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
           const at=view==='john-solis'?'solis':'tidehaven';salt.berth(at);if(view==='sultana-sailing')salt.berth(at,'arriving',sailTime(salt.port)*.55);placeSalt();
@@ -2793,6 +2873,11 @@ function init() {
           else{const lead=view==='sultana'?0:9;look={x:ship.x+Math.sin(ship.yaw)*lead,y:3.4,z:ship.z+Math.cos(ship.yaw)*lead};turn=ship.yaw+(view==='sultana'?2.1:1.1);d=view==='sultana'?17:26;p=.12;}
           const px=look.x+Math.sin(turn)*d,pz=look.z+Math.cos(turn)*d;player.group.position.set(px,Math.max(SEA_LEVEL,world.heightAt(px,pz)),pz);
           reviewTarget=new THREE.Vector3(look.x,look.y,look.z);yaw=turn;pitch=p;distance=targetDistance=d;}
+        // Brandy's boards from the lane: the three cut like houses, and the yard behind them.
+        if(view==='brandy-houses'||view==='brandy-boards'){questStage=10;combat.finishPractice();player.group.visible=false;
+          const houses=view==='brandy-houses',at=yardPoint(houses?-.6:0,houses?3.4:-.5),y=world.heightAt(at.x,at.z),turn=BRANDY_YARD.yaw+(houses?.05:.15),d=houses?6.5:11;
+          const px=at.x+Math.sin(turn)*d,pz=at.z+Math.cos(turn)*d;player.group.position.set(px,world.heightAt(px,pz),pz);
+          reviewTarget=new THREE.Vector3(at.x,y+(houses?1.4:1.2),at.z);yaw=turn;pitch=houses?.08:.3;distance=targetDistance=d;}
         // Talaelos at its Avrel camp: the company, and a play in progress.
         if(view.startsWith('troupe-')){questStage=10;combat.finishPractice();player.group.visible=false;troupe.moveTo(view.startsWith('troupe-stop-')?view.slice(12):'avrel');
           if(view==='troupe-scene')troupe.beginScene();else troupe.cancelScene();placeTroupe(true);

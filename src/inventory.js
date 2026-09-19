@@ -117,6 +117,51 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Lysa\'s gift: a small box of flint, steel, and dry tinder for the road.',
     description: 'A reusable flint and steel in a worn little tin. Bring it and two forest sticks to a firepit to light a cooking fire. Lighting the fire uses the sticks; you keep the tinderbox. Lysa gave it to you in thanks for five acorns.',
   }),
+  'bronze-axe': Object.freeze({
+    name: 'Bronze hatchet', type: 'Tool', icon: 'axe',
+    brief: 'Bowden Koop’s starting hatchet. Terrible, he says. Woodcutting level 1.',
+    description: 'A small bronze hatchet pulled out of Bowden Koop’s chopping block. Stand at a tree in the Koopwood and press F to chop. The best axe you carry and have the level for is always the one you swing.',
+  }),
+  'iron-axe': Object.freeze({
+    name: 'Iron axe', type: 'Tool', icon: 'axe',
+    brief: 'A plain iron axe from Bowden’s rack. Cuts faster than bronze. Woodcutting level 1.',
+    description: 'An iron axe, a little faster through the wood than the bronze hatchet. Any woodcutter can swing it.',
+  }),
+  'steel-axe': Object.freeze({
+    name: 'Steel axe', type: 'Tool', icon: 'axe',
+    brief: 'A good steel axe from Bowden’s rack. Woodcutting level 6.',
+    description: 'A steel axe with a keen edge: noticeably faster through any tree. You need a Woodcutting level of 6 to use it.',
+  }),
+  'kings-axe': Object.freeze({
+    name: 'The King’s axe', type: 'Tool', icon: 'axe',
+    brief: 'Bowden Koop’s father’s axe, with a row of little spikes along the back. Woodcutting level 30.',
+    description: 'A long black haft and a broad, mirror-bright head with a line of little spikes along its back: the King of the Koopwood’s own axe, given to you when you reached Woodcutting level 30. The fastest axe in Drent.',
+  }),
+  'pine-logs': Object.freeze({
+    name: 'Pine logs', type: 'Gathered material', icon: 'logs', stackable: true,
+    brief: 'Loblolly pine from the Koopwood. Light, resinous, quick to burn.',
+    description: 'Logs of loblolly pine. One lights a fire at any fire ring, in place of two sticks, and Bowden Koop pays a copper apiece for them at his kiln.',
+  }),
+  'oak-logs': Object.freeze({
+    name: 'Oak logs', type: 'Gathered material', icon: 'logs', stackable: true,
+    brief: 'White oak: heavy, close-grained, slow to burn.',
+    description: 'Logs of white oak, cut at Woodcutting level 15. One lights a fire at any fire ring; Bowden pays two copper apiece.',
+  }),
+  'willow-logs': Object.freeze({
+    name: 'Willow logs', type: 'Gathered material', icon: 'logs', stackable: true,
+    brief: 'Black willow from beside the spring in the Koopwood.',
+    description: 'Logs of black willow, cut at Woodcutting level 30. One lights a fire at any fire ring; Bowden pays three copper apiece.',
+  }),
+  'maple-logs': Object.freeze({
+    name: 'Maple logs', type: 'Gathered material', icon: 'logs', stackable: true,
+    brief: 'Red maple, pale and hard.',
+    description: 'Logs of red maple, cut at Woodcutting level 45. One lights a fire at any fire ring; Bowden pays five copper apiece.',
+  }),
+  'walnut-logs': Object.freeze({
+    name: 'Walnut logs', type: 'Gathered material', icon: 'logs', stackable: true,
+    brief: 'Black walnut, dark and precious: the best wood in Drent.',
+    description: 'Logs of black walnut from Bowden’s old tree, cut at Woodcutting level 60. The best timber in Drent; Bowden pays nine copper apiece and pretends it hurts.',
+  }),
   'fishing-rod': Object.freeze({
     name: 'Fishing rod', type: 'Tool', icon: 'fishing-rod',
     brief: 'A simple wooden rod with a line and hook, given to you by the fishing teacher.',
@@ -398,6 +443,8 @@ const iconPaths = {
   slab: '<path d="M6 13c6-2 18-2 24 0v13c-6 2-18 2-24 0Z"/><path d="M6 19c6-2 18-2 24 0M12 14v11m12-11v11"/>',
   mug: '<path d="M7 13h18v12c0 4-3 6-6 6h-6c-3 0-6-2-6-6Z"/><path d="M25 16h3c3 0 4 2 4 4s-1 4-4 4h-3M7 17h18M12 10c-2-2 1-3 0-6m6 6c-2-2 1-3 0-6"/>',
   chocolate: '<rect x="6" y="9" width="24" height="19" rx="2"/><path d="M6 15.3h24M6 21.6h24M14 9v19M22 9v19M26 9l4 4"/>',
+  axe: '<path d="M11 33 24 9M21 6c4-1 9 1 10 5l-6 4c-1-3-3-4-6-4Z"/><path d="m19 11 5 3"/>',
+  logs: '<ellipse cx="9" cy="24" rx="4" ry="5"/><ellipse cx="9" cy="24" rx="1.5" ry="2"/><path d="M9 19h19c2 0 4 2 4 5s-2 5-4 5H9"/><ellipse cx="17" cy="12" rx="4" ry="5"/><ellipse cx="17" cy="12" rx="1.5" ry="2"/><path d="M17 7h11c2 0 3 2 3 5s-1 5-3 5h-6"/>',
   ribbon: '<path d="M18 16c-4-6-12-8-12-2s8 6 12 2Zm0 0c4-6 12-8 12-2s-8 6-12 2Z"/><path d="M16 17l-5 13 4-2 2 4 1-15M20 17l5 13-4-2-2 4-1-15"/>',
   bottle: '<path d="M15 3h6v7c0 2 4 3 4 8v13c0 1-1 2-2 2H13c-1 0-2-1-2-2V18c0-5 4-6 4-8Z"/><path d="M14 6h8M11 21h14v7H11"/>',
   jug: '<path d="M13 5h8M14 5v4c-5 3-7 8-7 13 0 6 4 9 10 9s10-3 10-9c0-5-2-10-7-13V5"/><path d="M27 15c4 0 5 3 5 5s-2 5-5 5M9 19h18"/>',

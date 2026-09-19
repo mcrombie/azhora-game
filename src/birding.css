@@ -20,3 +20,18 @@
 #skills-sheet .bird-list li{font-size:15px;color:#f2dfb9}
 #skills-sheet .bird-list li.unseen{color:#a9b5a4;font-style:italic}
 #skills-sheet .bird-list small{display:block;margin-top:4px;font-size:12px;line-height:1.65;color:#bfcbbb;font-style:normal}
+/* RuneScape's touches for every skill: experience drops by the map, a level-up banner, the total, and each skill's guide. */
+#xp-drops{position:absolute;right:40px;top:236px;width:220px;height:170px;pointer-events:none;overflow:visible}
+.xp-drop{position:absolute;right:0;bottom:0;font-family:Adventure,Georgia,serif;font-size:19px;color:#ffe7a4;text-shadow:0 2px 8px #0e2a24;white-space:nowrap;animation:xp-rise 1.9s ease-out forwards}
+@keyframes xp-rise{0%{transform:translateY(0);opacity:0}12%{opacity:1}75%{opacity:1}100%{transform:translateY(-130px);opacity:0}}
+#level-up{position:absolute;top:84px;left:50%;transform:translate(-50%,-10px);opacity:0;transition:opacity .6s,transform .6s;pointer-events:none;text-align:center;background:#173b31e6;border:1px solid #e5cb8588;border-radius:6px;padding:12px 26px 12px;box-shadow:0 10px 40px #0d242866;min-width:340px}
+#level-up.visible{opacity:1;transform:translate(-50%,0)}
+#level-up .eyebrow{color:#f3d27c;font-size:11px}
+#level-up h3{font-family:Adventure,Georgia,serif;font-weight:400;font-size:26px;margin:2px 0 4px;color:#fff1cf}
+#level-up p{font-size:13px;color:#e8e0c4}
+#level-up-unlock{color:#bfe3a8!important;margin-top:4px}
+#skills-sheet .skill-total{font-family:Adventure,Georgia,serif;font-size:20px;color:#ffe7ac;margin-bottom:14px}
+#skills-sheet .skill-guide{list-style:none;padding:0;margin:10px 0 6px;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+#skills-sheet .skill-guide li{font-size:13px;display:flex;gap:10px;align-items:baseline;color:#dfdfc6}
+#skills-sheet .skill-guide li b{min-width:22px;text-align:right;color:#f3d27c;font-weight:600}
+#skills-sheet .skill-guide li.locked{opacity:.45}

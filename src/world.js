@@ -22,6 +22,8 @@ import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { atticDeckHeight } from './wine-attic.js';
 import { createBrandyYard } from './brandy-yard.js';
+import { createWoodlot } from './woodlot-world.js';
+import { inKoopwood } from './woodcutting.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { createWineryScenery } from './winery-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
@@ -967,7 +969,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const { x, z, s, h, rot } = tree, y = localGround(x, z), th = h * s;
     // Hidden trees keep their index, so oak ids, acorns and squirrel homes never shuffle.
     tree.hidden = featureClear(x, z, true) || forestFeatureClear(x, z, true, th * .52)
-      || (spot => landDistance(spot.x, spot.z) < 3)(villageToWorld(x, z));
+      || (spot => landDistance(spot.x, spot.z) < 3 || inKoopwood(spot.x, spot.z, 2.5))(villageToWorld(x, z));   // and none in Bowden's woodlot but his own
     dummy.position.set(x, y + th * .41, z); dummy.rotation.set(range(-.025, .025), rot, range(-.025, .025));
     dummy.scale.set(s, th * .82, s); if (tree.hidden) dummy.scale.setScalar(0); dummy.updateMatrix(); trunkMesh.setMatrixAt(i, dummy.matrix);
     const axis = new THREE.Vector3(0, 1, 0).applyEuler(dummy.rotation);
@@ -1136,6 +1138,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   buildRenaWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   // Brandy Frank's dye yard, on the lane up to Saltwind Lookout (src/brandy-yard.js).
   createBrandyYard({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
+  // The Koopwood, Bowden Koop's woodlot, where woodcutting is learned (src/woodcutting.js, src/woodlot-world.js).
+  const woodlot = createWoodlot({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs, movingGroups });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);
@@ -1539,6 +1543,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     heightAt,
     mapWaters,
     colliders,
+    /** Bowden's woodlot, whose trees fall and grow back (src/woodlot-world.js). */
+    woodlot,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
     reindexColliders: () => { colliderIndex = null; },

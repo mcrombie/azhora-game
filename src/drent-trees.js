@@ -13,7 +13,8 @@ import { PLANT_SPECIES } from './botany.js';
 
 const TAU = Math.PI * 2, PHI = 2.39996;
 
-function mergedGeometry(pieces) {
+/** Pieces [geometry, colour, position, scale, rotation?] merged into one vertex-coloured geometry (the woodlot's willows use it too). */
+export function mergedGeometry(pieces) {
   const vertices = [], normals = [], colors = [], m = new THREE.Matrix4(), nm = new THREE.Matrix3();
   const p = new THREE.Vector3(), n = new THREE.Vector3(), q = new THREE.Quaternion(), e = new THREE.Euler();
   for (const [source, color, position, scale, rotation = [0, 0, 0]] of pieces) {

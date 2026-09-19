@@ -1,6 +1,8 @@
 const WAIT_SECONDS = 3;
 const BITE_SECONDS = 2.2;
 const FIRE_SECONDS = 120;
+/** A log from the Koopwood lights a fire as well as two sticks (src/woodcutting.js); the plainest wood goes first. */
+const FIRE_LOGS = ['pine-logs', 'oak-logs', 'willow-logs', 'maple-logs', 'walnut-logs'];
 
 /** Fishing and cooking share inventory, but never advance combat or quests. */
 export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireIds = ['village-fire', 'pond-fire'] }) {
@@ -72,7 +74,7 @@ export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireId
     else {
       if (lit) lightReason = 'This fire is already burning. Save your sticks for later.';
       else if (!inventory.has('tinderbox')) lightReason = 'Bring a tinderbox to light the fire.';
-      else if (inventory.count('forest-stick') < 2) lightReason = 'Gather two forest sticks to fuel the fire.';
+      else if (inventory.count('forest-stick') < 2 && !FIRE_LOGS.some(log => inventory.count(log) > 0)) lightReason = 'Gather two forest sticks to fuel the fire.';
       if (!lit) cookReason = 'Light the fire before cooking.';
       else if (!inventory.has('raw-fish')) cookReason = 'Catch a fish first. There is no raw fish in your satchel.';
     }
@@ -82,7 +84,8 @@ export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireId
   function light(id) {
     const current = fireStatus(id);
     if (!current.canLight) return { ok: false, reason: current.lightReason };
-    if (!weapons.spendSticks(2)) return { ok: false, reason: 'Two sticks are needed. No fire was lit; check your satchel.' };
+    const log = FIRE_LOGS.find(item => inventory.count(item) > 0) ?? null;   // a log before the sticks: the sticks are weapons too
+    if (log ? !inventory.remove(log, 1) : !weapons.spendSticks(2)) return { ok: false, reason: 'Two sticks are needed. No fire was lit; check your satchel.' };
     fires.get(id).fuel = FIRE_SECONDS;
     onEvent({ type: 'fire-lit', id, fuel: FIRE_SECONDS });
     return { ok: true, reason: '', fuel: FIRE_SECONDS };
