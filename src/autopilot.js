@@ -357,8 +357,11 @@ export function fightCommand(snapshot) {
     const tx = threat.x - position.x, tz = threat.z - position.z, length = Math.hypot(tx, tz) || 1;
     return { intent: 'Dodging a strike', move: null, yaw, actions: [{ type: 'dodge', x: -tz / length, z: tx / length }] };
   }
-  if (combat.action === 'idle' && gap <= 2.3 && combat.stamina >= 6)
-    return { intent: 'Striking', move: null, yaw, actions: [{ type: 'attack', yaw: Math.atan2(nearest.x - position.x, nearest.z - position.z) }] };
+  // A soldier on guard turns a blade: strike whoever is open (swinging at an ally, or getting over a swing), or wait for it.
+  const open = enemies.find(enemy => !enemy.guarded && distance(position, enemy) <= 2.3);
+  if (combat.action === 'idle' && open && combat.stamina >= 6)
+    return { intent: 'Striking', move: null, yaw: angleTo(position, open), actions: [{ type: 'attack', yaw: Math.atan2(open.x - position.x, open.z - position.z) }] };
+  if (combat.action === 'idle' && gap <= 2.3 && nearest.guarded) return { intent: 'Waiting for him to swing', move: null, yaw, actions: [] };
   if (gap > 2.0 && combat.action === 'idle') {
     const dx = nearest.x - position.x, dz = nearest.z - position.z;
     return { intent: 'Closing on a raider', move: moveInput(yaw, dx, dz, false), yaw, actions: [] };

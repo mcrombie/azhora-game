@@ -8,7 +8,7 @@ import {
 import { MOROS_PAY } from '../src/moros-chapter.js';
 import { regionNameAt } from '../src/region-world.js';
 
-test('the chapter runs terms, gate, envoy, report, march and battle; the side is chosen once and the day is decided by the odds', () => {
+test('the chapter runs terms, gate, envoy, report, march and battle; the side is chosen once, and winning the fight wins the day', () => {
   const events = [], border = createBorderChapter({ onEvent: event => events.push(event) });
   assert.equal(border.act('take-legate-terms').ok, false, 'nothing before the muster');
   assert.equal(border.start().ok, true);
@@ -42,13 +42,13 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   assert.deepEqual(border.cast(), ['battle-tribune'], 'the column fights as allies and is not drawn twice');
   assert.equal(border.endEncounter(BORDER_ENCOUNTER_ID).ok, true);
   assert.equal(border.view().stage, 'join-line', 'a retreat leaves the line waiting');
-  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID, 50, 10).ok, false, 'no fight, no verdict');
+  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID).ok, false, 'no fight, no verdict');
   border.act('sound-advance');
   assert.equal(border.resolveBattle('other', 50, 10).ok, false);
-  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID, 50, 10).outcome, 'victory');
+  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID).outcome, 'victory');
   assert.equal(border.view().complete, true);
   assert.match(border.view().detail, /Coalition broke/);
-  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID, 50, 10).ok, false);
+  assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID).ok, false);
   assert.deepEqual(events.map(event => event.actionId), ['start-chapter', 'take-legate-terms', 'enter-solis', 'side-empire', 'march-out', 'reach-line', 'resolve-border-battle']);
   const lost = createBorderChapter(); lost.start(); lost.act('take-legate-terms'); lost.act('enter-solis');
   const joined = lost.act('side-coalition');
@@ -59,9 +59,9 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   lost.act('march-out');
   assert.deepEqual(lost.cast(), ['coalition-captain', 'march-valley-1', 'march-valley-2', 'march-valley-3', 'march-valley-4'], 'Voss rides ahead and the valley companies march');
   lost.act('reach-line');
-  assert.equal(lost.resolveBattle(BORDER_ENCOUNTER_ID, 35, 80).outcome, 'defeat');
+  assert.equal(lost.resolveBattle(BORDER_ENCOUNTER_ID).outcome, 'victory', 'the Republic’s sellsword wins the day by winning the fight, whatever the odds');
   assert.deepEqual(lost.cast(), []);
-  assert.match(lost.view().detail, /thrown back toward Solis/);
+  assert.match(lost.view().detail, /The Legion broke/);
 });
 
 test('the Coalition’s offer is plainly better than the Empire’s pay, in copper and not in scrip', () => {
@@ -111,7 +111,7 @@ test('saves round-trip without a running fight; saves from the stockade version 
   assert.equal(validateBorderSnapshot(atLine.snapshot()), true);
   const fought = createBorderChapter();
   assert.equal(fought.restore(legacy({ ordered: true, side: 'coalition', outcome: 'defeat' }, 4)), true);
-  assert.equal(fought.view().stage, 'complete'); assert.equal(fought.view().outcome, 'defeat');
+  assert.equal(fought.view().stage, 'complete'); assert.equal(fought.view().outcome, 'victory', 'a recorded defeat was a won fight rolled as lost: it comes back a victory');
   assert.equal(validateBorderSnapshot(legacy({ ordered: true, side: 'empire' }, 4)), false);
   assert.equal(validateBorderSnapshot(undefined), true);
 });
@@ -121,14 +121,14 @@ test('each side’s encounter is a valid fight against the other side’s soldie
   for (const [side, look] of [['empire', 'coalition'], ['coalition', 'legion']]) {
     const allies = [{ id: 'merc-brannock', name: 'Brannock', kind: 'legionary' }, { id: 'ally-2', name: 'Legionary', kind: 'legionary' }, { id: 'ally-3', name: 'Tribune', kind: 'officer' }];
     const config = borderEncounter(side, allies);
-    assert.equal(config.enemies.length, 6);
+    assert.equal(config.enemies.length, 8);
     assert.ok(config.enemies.every(enemy => enemy.kind === 'soldier' && enemy.look === look));
     const position = { x: config.checkpoint.x, y: 2, z: config.checkpoint.z };
     const combat = createCombat({ world, position });
     assert.equal(combat.startEncounter(config), true, `${side} encounter validates`);
     assert.equal(combat.state.allies.length, 3);
-    assert.deepEqual(combat.state.enemies.map(enemy => enemy.look), Array(6).fill(look));
-    assert.ok(combat.state.enemies.filter(enemy => enemy.kind === 'soldier').length === 6);
+    assert.deepEqual(combat.state.enemies.map(enemy => enemy.look), Array(8).fill(look));
+    assert.ok(combat.state.enemies.filter(enemy => enemy.kind === 'soldier').length === 8);
   }
   assert.equal(borderEncounter('empire', Array.from({ length: 9 }, (_, i) => ({ id: `a${i}`, kind: 'legionary' }))).allies.length, 5, 'five stand with the traveler at most');
 });

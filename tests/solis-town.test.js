@@ -94,7 +94,7 @@ test('Envoy Telis Orren is never out twice: the border chapter’s before the fo
     assert.equal(envoyOut(), true, 'she waits in the Court of Oaths');
     border.act(`side-${side}`); check();
     assert.equal(envoyOut(), false, 'after the fork she is not in the hall');
-    border.act('march-out'); border.act('reach-line'); border.resolveBattle(BORDER_ENCOUNTER_ID, 50, outcome === 'victory' ? 0 : 99); check();
+    border.act('march-out'); border.act('reach-line'); border.resolveBattle(BORDER_ENCOUNTER_ID); check();
     const variant = Object.values(AFTERMATH_VARIANTS).find(spec => spec.side === side && spec.outcome === outcome);
     aftermath.start(variant.id); check();
     aftermath.act('begin-assault'); aftermath.winEncounter(variant.encounterId); check();

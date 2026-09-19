@@ -465,3 +465,52 @@ test('a fight can begin where it forms up, so one ordered from beyond its retrea
   for (let step = 0; step < 60; step++) formed.update(1 / 60);
   assert.equal(formed.state.phase, 'active', 'and the fight is still on a second later');
 });
+
+test('soldiers fight like soldiers: a shield on guard, mail, no flinching once the swing has begun, and two swinging at once', () => {
+  const world = { bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, colliders: [], heightAt: () => 1.5 };
+  const start = enemies => {
+    const position = { x: 0, y: 1.5, z: 13 }, events = [], combat = createCombat({ world, position, onEvent: e => events.push(e) });
+    assert.equal(combat.startEncounter({ id: 'drill', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: 13 }, retreatLine: 21, retreatAxis: 'z', enemies }, { atCheckpoint: true }), true);
+    return { combat, position, events };
+  };
+  // On guard and facing the blow, he takes it on his shield and is not rocked.
+  {
+    const { combat, position, events } = start([{ id: 'guard', x: 0, z: 0, kind: 'soldier', hp: 100 }]);
+    const soldier = combat.state.enemies[0];
+    position.x = 0; position.z = 2;
+    combat.update(.2);
+    assert.equal(combat.attack(Math.PI), true); combat.update(.25);
+    assert.ok(events.some(e => e.type === 'blocked'), 'the shield takes it');
+    assert.ok(soldier.hp >= 93 && soldier.hp < 100, `a little gets through (${soldier.hp} left)`);
+    assert.notEqual(soldier.action, 'hurt');
+    // He swings, and hits hard; struck while he recovers, he is hurt, less the mail.
+    advanceUntil(combat, () => soldier.action === 'attack', 5);
+    advanceUntil(combat, () => soldier.action === 'idle', 5);
+    assert.ok(combat.state.player.hp <= 100 - 20, 'a soldier’s blow is no goblin’s');
+    advanceUntil(combat, () => combat.state.player.action === 'idle', 2);
+    assert.ok(soldier.action === 'idle', 'still recovering from his swing');
+    const before = soldier.hp;
+    position.x = soldier.x; position.z = soldier.z + 1.6;
+    assert.equal(combat.attack(Math.PI), true); combat.update(.25);
+    assert.ok(before - soldier.hp >= 15 && before - soldier.hp <= 28, `the blow lands (${before - soldier.hp})`);
+    assert.equal(soldier.action, 'hurt');
+  }
+  // Struck while he winds up, he keeps coming: the swing is not stopped.
+  {
+    const { combat, position } = start([{ id: 'poised', x: 0, z: 0, kind: 'soldier', hp: 100 }]);
+    const soldier = combat.state.enemies[0];
+    position.x = 0; position.z = 1.8;
+    advanceUntil(combat, () => soldier.action === 'windup', 5);
+    combat.attack(Math.PI); combat.update(.22);
+    assert.ok(soldier.hp < 100, 'the blow lands');
+    assert.ok(['windup', 'attack'].includes(soldier.action), 'and his swing comes anyway');
+  }
+  // Two press at once, where goblins take turns.
+  {
+    const { combat, position } = start([{ id: 'left', x: -1, z: 0, kind: 'soldier', hp: 100 }, { id: 'right', x: 1, z: 0, kind: 'soldier', hp: 100 }]);
+    position.x = 0; position.z = 1.5;
+    let most = 0;
+    for (let i = 0; i < 300 && combat.state.phase === 'active'; i++) { combat.update(1 / 60); most = Math.max(most, combat.state.enemies.filter(e => ['windup', 'attack'].includes(e.action)).length); }
+    assert.equal(most, 2);
+  }
+});

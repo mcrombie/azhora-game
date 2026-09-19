@@ -289,7 +289,7 @@ test('the chapter after the border battle is saved with the road, and a contradi
   assert.equal(checkpoint.save(data).ok, true, 'a save from before the chapter existed still loads');
   assert.equal(Object.hasOwn(checkpoint.read().data, 'aftermath'), false);
   const aftermath = createAftermathChapter();
-  aftermath.start('moros-fallback'); aftermath.act('begin-assault'); aftermath.winEncounter('aftermath-moros-fallback');
+  aftermath.start('solis-sweep'); aftermath.act('begin-assault'); aftermath.winEncounter('aftermath-solis-sweep');
   assert.equal(checkpoint.save({ ...data, aftermath: aftermath.snapshot() }).ok, true);
   assert.deepEqual(checkpoint.read().data.aftermath, aftermath.snapshot());
   for (const bad of [null, 'solis-sweep', { ...aftermath.snapshot(), variant: 'border-battle' }, { ...aftermath.snapshot(), revision: 0 }, { ...aftermath.snapshot(), cleared: false, complete: true }])

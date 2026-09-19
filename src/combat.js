@@ -18,8 +18,15 @@ const ENEMY_RECOVERY = 1.35;
 const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
-  // A trained man with a blade: a shorter tell than a goblin's and a steadier pace.
-  soldier: Object.freeze({ tell: .82, attack: .56, contact: .24, recovery: 1.25, damage: 16, speed: 2.0, engage: 2.1, reach: 2.15, lunge: 1.4 }),
+  // A trained man with a blade and a shield, and nothing like a goblin. Four optional fields make the
+  // difference, and every other kind goes on ignoring them:
+  //   `guard`  on his guard (not swinging, not recovering from a swing, and facing the blow) he turns
+  //            that much of it on his shield, and is not rocked by it: strike when he has swung;
+  //   `armor`  mail takes that much off every blow that does land;
+  //   `poise`  once his swing has begun, a hit does not stop it: trade blows and he trades back;
+  //   `pack`   how many of them may be swinging at once: soldiers press together, goblins take turns.
+  soldier: Object.freeze({ tell: .7, attack: .5, contact: .22, recovery: 1.0, damage: 24, speed: 2.35, engage: 2.15, reach: 2.25, lunge: 1.7,
+    guard: .8, armor: .2, poise: true, pack: 2 }),
   // Mallec, the ogre on the Amod road (src/amod-ogre.js): a different order of
   // creature, not a large goblin. Three optional fields carry the difference and
   // every other kind goes on ignoring them:
@@ -320,12 +327,24 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       return;
     }
     const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
+    // A soldier on guard, facing the blow, turns most of it on his shield and is not rocked.
+    const guarded = profile.guard && enemy.action === 'idle' && timers.cooldown <= 0 && timers.entry <= 0
+      && Math.abs(angleDifference(enemy.yaw ?? 0, yaw + Math.PI)) < Math.PI / 3;   // on guard, and the blow comes at his shield
+    if (guarded) damage *= 1 - profile.guard;
+    damage = Math.max(1, Math.round(damage * (1 - (profile.armor ?? 0))));
     enemy.hp = Math.max(0, enemy.hp - damage);
     enemy.active = enemy.hp > 0;
+    if (guarded && enemy.hp) {
+      emit('blocked', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
+      emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
+      return;
+    }
     // A kind marked `stagger: false` takes the hit and keeps swinging: its tell is
     // not interrupted, its recovery is not restarted and nothing here buys the
-    // traveler a free second. Death still lands the same way for everyone.
-    if (profile.stagger !== false || !enemy.hp) {
+    // traveler a free second. Death still lands the same way for everyone. A kind
+    // with `poise` does the same once its swing has begun.
+    const committed = profile.poise && ['windup', 'attack'].includes(enemy.action);
+    if ((profile.stagger !== false && !committed) || !enemy.hp) {
       enemy.action = enemy.hp ? 'hurt' : 'dead';
       enemy.progress = 0;
       enemy.speed = 0;
@@ -445,6 +464,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const timers = enemyTimers.get(enemy.id);
     timers.actionTime += dt;
     timers.cooldown = Math.max(0, timers.cooldown - dt);
+    // A soldier is on guard while he is neither swinging nor getting over a swing; the view and the autopilot read it.
+    enemy.guarded = !!(ENEMY_KINDS[enemy.kind]?.guard && enemy.action === 'idle' && timers.cooldown <= 0 && timers.entry <= 0 && enemy.hp > 0);
     enemy.speed = 0;
     if (enemy.action === 'dead') { enemy.progress = clamp(timers.actionTime / .85, 0, 1); return; }
     if (enemy.action === 'hurt') {
@@ -501,8 +522,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const dist = distance(enemy, aim);
     const targetYaw = Math.atan2(aim.x - enemy.x, aim.z - enemy.z);
     enemy.yaw += angleDifference(targetYaw, enemy.yaw) * Math.min(1, dt * 7);
-    const someoneAttacking = state.enemies.some(other => other.active && ['windup', 'attack'].includes(other.action));
-    if (dist <= profile.engage && timers.cooldown <= 0 && !someoneAttacking && time >= nextAttackerAt) {
+    const swinging = state.enemies.filter(other => other.active && ['windup', 'attack'].includes(other.action)).length;
+    const someoneAttacking = swinging > 0;
+    // Most kinds take turns; soldiers (`pack`) press two at a time.
+    if (dist <= profile.engage && timers.cooldown <= 0 && swinging < (profile.pack ?? 1) && (time >= nextAttackerAt || swinging > 0)) {
       enemy.action = 'windup';
       enemy.yaw = targetYaw;
       enemy.progress = 0;

@@ -31,6 +31,8 @@ export function createCombatView(scene, world, camera) {
   }
   function event(e) {
     if(e.type==='hit'&&e.damage===0)return;
+    // A soldier's shield took it: say so on his badge, so the traveler learns to strike when he has swung.
+    if(e.type==='blocked'){const item=actors.get(e.targetId);if(item)item.blockedUntil=performance.now()+800;burst(e.x,e.z,5);shake=.02;return;}
     if(['hit','practice-hit','enemy-defeated'].includes(e.type)) {
       burst(e.x,e.z,e.type==='enemy-defeated'?22:10);
       shake=e.type==='enemy-defeated'?.075:.035;
@@ -131,7 +133,7 @@ export function createCombatView(scene, world, camera) {
       if(!item.badge.hidden){
         item.badge.style.transform=`translate(-50%,-100%) translate(${(projection.x*.5+.5)*innerWidth}px,${(-projection.y*.5+.5)*innerHeight}px)`;
         item.fill.style.width=`${Math.max(0,100*enemy.hp/enemy.maxHp)}%`;
-        item.intent.textContent=enemy.action==='windup'?'Winding up — dodge!':enemy.action==='hurt'?'Staggered':enemy.action==='attack'?'Swinging':' ';
+        item.intent.textContent=enemy.action==='windup'?'Winding up — dodge!':enemy.action==='hurt'?'Staggered':enemy.action==='attack'?'Swinging':(item.blockedUntil??0)>performance.now()?'Blocked — strike after he swings':enemy.guarded?'On guard':' ';
         item.badge.classList.toggle('warning',warning);
       }
     }

@@ -31,7 +31,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     side: 'empire', outcome: 'victory', region: 'West Suval', title: 'Solis, taken', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
     commanderId: 'aftermath-tribune', rallySite: 'solis-gate', arena: 'solis-square', principalId: 'aftermath-tribune', reportSite: 'solis-hall',
     rally: ['The hired company at the gate', 'The Coalition broke and ran for Solis. Tribune Gallus Orso has the hired company at the city’s gate. Follow the road south-east into West Suval and find him.'],
-    fight: ['Clear the market square', 'Five hold the market square behind an overturned cart. Clear them, with your company beside you. Fall back toward the gate if you must.'],
+    fight: ['Clear the market square', 'Seven hold the market square behind an overturned cart, the Republic’s best, with nowhere to run. Clear them, with your company beside you. Fall back toward the gate if you must.'],
     report: ['The Coalition’s chair', 'The square is quiet. Tribune Orso has taken the council hall. Report to him there.'],
     done: 'Solis is the Emperor’s, and West Suval with it. The Legate’s dispatch says a hired company went in first, and you carry it to Ambron.',
     orders: [
@@ -53,7 +53,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     side: 'empire', outcome: 'defeat', region: 'Moros Plain', title: 'The line at the Moros', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
     commanderId: 'aftermath-tribune', rallySite: 'camp-gate', arena: 'camp-approach', principalId: AFTERMATH_LEGATE_ID, reportSite: null,
     rally: ['Back across the plain', 'The Legion lost the field and is falling back across the plain to its camp. Tribune Gallus Orso holds the camp’s gate for the last of the wounded. Get back to him.'],
-    fight: ['Hold the gate', 'Five of the Coalition’s pursuit come at the gate. Hold it, with your company beside you, until the carts are in.'],
+    fight: ['Hold the gate', 'Seven of the Coalition’s pursuit come at the gate. Hold it, with your company beside you, until the carts are in.'],
     report: ['A field, not a war', 'The gate held and the carts are in. Legate Marcus Verro wants you at the command tent.'],
     done: 'The Coalition holds the border stockade; the Legion holds its camp. You carry the Legate’s dispatch to Ambron.',
     orders: [
@@ -75,7 +75,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
     commanderId: 'aftermath-captain', rallySite: 'outpost-approach', arena: 'outpost-gate', principalId: 'aftermath-envoy', reportSite: 'outpost-command',
     rally: ['The Legion’s outpost', 'The Legion broke and ran for its outpost at the centre of the Moros. Captain Arlen Voss means to take it before Verro can shut the gate and send for Ambron. Find him on the road outside its north-east gate.'],
-    fight: ['Storm the gate', 'Five legionaries hold the ground before the north-east gate while the Legate’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
+    fight: ['Storm the gate', 'Seven legionaries hold the ground before the north-east gate, shields locked, while the Legate’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
     report: ['The Republic’s flag', 'The gate is taken and the Legion has quit its outpost. Envoy Telis Orren has ridden up behind the army and taken the Legate’s tent. Report to her there.'],
     done: 'The Republic’s flag flies over the Legion’s outpost at the centre of the Moros, and Solis is safe behind it. The envoy sends you on to West Izol.',
     orders: [
@@ -97,7 +97,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
     commanderId: 'aftermath-captain', rallySite: 'solis-gate', arena: 'solis-approach', principalId: 'aftermath-envoy', reportSite: 'solis-hall',
     rally: ['The road back', 'The Coalition lost the field and fell back on Solis, and the Legion’s outriders are close behind. Captain Arlen Voss is at the city gate. Get back to him.'],
-    fight: ['Hold the gate of Solis', 'Five of the Legion’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
+    fight: ['Hold the gate of Solis', 'Seven of the Legion’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
     report: ['The council argues', 'The gate is shut and Solis still stands. Envoy Telis Orren is in the council hall. Report to her.'],
     done: 'The Legion holds the border, and Solis holds its walls. The envoy sends you on to West Izol, where the rest of the army waits.',
     orders: [
@@ -118,6 +118,8 @@ export const AFTERMATH_VARIANTS = Object.freeze({
 });
 
 export const AFTERMATH_IDS = Object.freeze(Object.keys(AFTERMATH_VARIANTS));
+/** The chapters that follow a lost border battle. Winning the fight wins the battle now, so no new game reaches them. */
+const FALLBACKS = Object.freeze(['moros-fallback', 'solis-fallback']);
 export const AFTERMATH_SITE_IDS = Object.freeze([...new Set(Object.values(AFTERMATH_VARIANTS).flatMap(spec => [spec.rallySite, spec.reportSite].filter(Boolean)))]);
 export const AFTERMATH_ARENA_IDS = Object.freeze(Object.values(AFTERMATH_VARIANTS).map(spec => spec.arena));
 
@@ -126,7 +128,7 @@ export const aftermathFor = (side, outcome) => AFTERMATH_IDS.find(id => AFTERMAT
 
 // An arena is a centre and a retreat axis; retreat is always toward +axis (the combat rule).
 // Offsets are [across, along, entry]: the enemy comes from the far end, the allies form up behind the traveler.
-const ENEMY_OFFSETS = [[-6, -12, .2], [6, -13, .9], [0, -16, 1.8], [-8, -18, 6], [8, -19, 7.5]];
+const ENEMY_OFFSETS = [[-6, -12, .2], [6, -13, .9], [0, -16, 1.8], [-8, -18, 6], [8, -19, 7.5], [-3, -19.5, 11], [3, -20, 12.5]];
 const ALLY_OFFSETS = [[-6, 10], [6, 10], [-9, 14], [9, 14]];
 const CHECKPOINT_ALONG = 13, RETREAT_ALONG = 21;
 
@@ -138,7 +140,7 @@ export function aftermathEncounter(variantId, arena, allies = []) {
     ? { x: arena.center.x + along, z: arena.center.z + across } : { x: arena.center.x + across, z: arena.center.z + along });
   return { id: spec.encounterId, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
     retreatAxis: arena.retreatAxis, retreatLine: arena.center[arena.retreatAxis] + RETREAT_ALONG,
-    enemies: ENEMY_OFFSETS.map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 70, kind: 'soldier', look: spec.foe })),
+    enemies: ENEMY_OFFSETS.map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 100, kind: 'soldier', look: spec.foe })),
     allies: allies.slice(0, ALLY_OFFSETS.length).map((ally, index) => ({ ...ally, ...place(...ALLY_OFFSETS[index]) })) };
 }
 
@@ -244,6 +246,9 @@ export function createAftermathChapter({ onEvent = () => {} } = {}) {
 
   function restore(data) {
     if (!validateAftermathSnapshot(data, { allowMissing: false })) return false;
+    // A fallback chapter came from a border battle that was won and rolled as lost (see settleBorderBattle
+    // in src/campaign.js): it starts over, and the host begins the conquest the campaign now points to.
+    if (FALLBACKS.includes(data.variant)) { state = initial(); active = false; return true; }
     state = { version: AFTERMATH_VERSION, revision: data.revision, variant: data.variant, cleared: data.cleared, complete: data.complete };
     active = false;
     return true;

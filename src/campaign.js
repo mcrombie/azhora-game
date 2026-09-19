@@ -32,7 +32,7 @@ export const CHAPTERS = Object.freeze({
     'Carry the Legate’s message southeast into West Suval, to the Coalition army at Solis: Izoli soldiers, Suvali companies, the renounced prince’s followers, Luscia’s own rebels, a handful of Pyrosi, and men from Selemis, Marosh and the southern islands. Deliver it, hear their offer, and decide whose sellsword you are.',
     { kind: 'fork', choices: SIDES }),
   'border-battle': chapter('border-battle', 'Moros Plain', 'The border battle',
-    'The Legion and the Coalition meet on the border of the Moros Plain and West Suval. Fight on the side you chose and survive. The side quests you finished tilt the odds; the fight is otherwise even.',
+    'The Legion and the Coalition meet on the border of the Moros Plain and West Suval. Fight on the side you chose: hold your corner of the field and your side wins the day. Their soldiers are trained men with shields; strike when they have swung.',
     { kind: 'battle', side: 'chosen', outcomes: { empire: { victory: 'solis-sweep', defeat: 'moros-fallback' }, coalition: { victory: 'moros-outpost', defeat: 'solis-fallback' } } }),
   // Empire branch
   'solis-sweep': chapter('solis-sweep', 'West Suval', 'Solis, taken',
@@ -181,6 +181,27 @@ function validateSnapshot(value) {
   if (value.horse !== value.completed.includes('luscia-aftermath')) return false;
   if (value.chapterId !== 'drent-road' && !value.completed.includes('drent-road')) return false;
   return true;
+}
+
+/**
+ * The border battle used to be rolled after the traveler had already won their
+ * corner of it, so a won fight could come out as a lost day and send the story
+ * down the fallback road. Every 'defeat' a save holds for it was a won fight:
+ * this puts such a save on the victory road. A traveler on the fallback chapter,
+ * or past it, goes to the conquest instead (the Empire's into Solis, the
+ * Republic's against the Legion's outpost); nothing beyond the fallback's next
+ * chapter is built, so nothing that could be played is lost.
+ */
+export const FALLBACK_CONQUEST = Object.freeze({ 'moros-fallback': 'solis-sweep', 'solis-fallback': 'moros-outpost' });
+export function settleBorderBattle(data) {
+  if (!isPlainObject(data) || !isPlainObject(data.battles) || data.battles['border-battle'] !== 'defeat' || !Array.isArray(data.completed)) return data;
+  const fixed = { ...data, battles: { ...data.battles, 'border-battle': 'victory' }, completed: [...data.completed] };
+  const fallback = Object.keys(FALLBACK_CONQUEST).find(id => id === data.chapterId || data.completed.includes(id));
+  if (!fallback) return fixed;
+  const at = fixed.completed.indexOf(fallback);
+  if (at >= 0) fixed.completed = fixed.completed.slice(0, at);
+  fixed.chapterId = FALLBACK_CONQUEST[fallback];
+  return fixed;
 }
 
 export function createCampaign({ onEvent = () => {} } = {}) {
@@ -354,7 +375,8 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     };
   }
 
-  function restore(data) {
+  function restore(saved) {
+    const data = settleBorderBattle(saved);
     if (!validateSnapshot(data)) return false;
     state = { version: CAMPAIGN_VERSION, revision: data.revision, side: data.side, chapterId: data.chapterId,
       completed: [...data.completed], battles: { ...data.battles }, attempts: { ...data.attempts }, survey: [...data.survey],

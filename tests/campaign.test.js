@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCampaign, CHAPTERS, REGIONAL_ARCS, CAMPAIGN_MISSIONS, LOTHARN_SURVEY_POINTS, campaignGraphIssues, validateCampaignSnapshot } from '../src/campaign.js';
+import { createCampaign, settleBorderBattle, CHAPTERS, REGIONAL_ARCS, CAMPAIGN_MISSIONS, LOTHARN_SURVEY_POINTS, campaignGraphIssues, validateCampaignSnapshot } from '../src/campaign.js';
 import { LEVEL_ONE_PROVINCES } from '../src/campaign-world.js';
 
 function fixture() {
@@ -196,4 +196,37 @@ test('snapshots restore exactly and inconsistent saves are rejected without chan
   const stale = campaign.snapshot();
   stale.completed = stale.completed.map(String); stale.arcs = { ...stale.arcs };
   assert.equal(createCampaign().restore(stale), true);
+});
+
+test('winning the border battle takes the other side’s ground, and a save that rolled a won fight as lost is put on the conquest', () => {
+  // The Empire's sellsword who wins takes Solis, and West Suval with it.
+  const empire = createCampaign(); reachTheFork(empire); empire.chooseSide('empire');
+  assert.equal(empire.completeChapter('border-battle', 'victory').ok, true);
+  assert.equal(empire.view().chapterId, 'solis-sweep');
+  empire.completeChapter('solis-sweep');
+  assert.equal(empire.mapControl()['West Suval'], 'empire', 'Solis is the Emperor’s');
+  // The Republic's takes the Legion's outpost, and the Moros with it.
+  const republic = createCampaign(); reachTheFork(republic); republic.chooseSide('coalition');
+  republic.completeChapter('border-battle', 'victory');
+  assert.equal(republic.view().chapterId, 'moros-outpost');
+  republic.completeChapter('moros-outpost');
+  assert.equal(republic.mapControl()['Moros Plain'], 'coalition', 'the outpost flies the Republic’s flag');
+  // A save from when the day was rolled: the fight was won, the day came out lost.
+  for (const [side, fallback, conquest] of [['empire', 'moros-fallback', 'solis-sweep'], ['coalition', 'solis-fallback', 'moros-outpost']]) {
+    const old = createCampaign(); reachTheFork(old); old.chooseSide(side); old.completeChapter('border-battle', 'defeat');
+    assert.equal(old.view().chapterId, fallback);
+    const onIt = old.snapshot();
+    old.completeChapter(fallback);
+    const pastIt = old.snapshot();
+    assert.notEqual(settleBorderBattle(onIt), onIt, 'a rolled defeat is settled');
+    for (const saved of [onIt, pastIt]) {
+      const loaded = createCampaign();
+      assert.equal(loaded.restore(saved), true);
+      assert.equal(loaded.view().chapterId, conquest, `${side}: on to the conquest`);
+      assert.ok(!loaded.view().completed.includes(fallback));
+      assert.equal(loaded.snapshot().battles['border-battle'], 'victory');
+    }
+  }
+  const won = createCampaign(); reachTheFork(won); won.chooseSide('empire'); won.completeChapter('border-battle', 'victory');
+  assert.equal(settleBorderBattle(won.snapshot()).chapterId, 'solis-sweep', 'a won save is left alone');
 });

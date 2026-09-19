@@ -46,7 +46,7 @@ test('an encounter fits the combat rules on either axis', () => {
     const config = aftermathEncounter(id, arena, allies(6));
     const axis = arena.retreatAxis, cross = axis === 'x' ? 'z' : 'x';
     assert.equal(config.id, `aftermath-${id}`);
-    assert.equal(config.enemies.length, 5);
+    assert.equal(config.enemies.length, 7);
     assert.equal(config.allies.length, 4, 'no more allies than places to stand');
     assert.equal(config.retreatLine, arena.center[axis] + 21);
     for (const enemy of config.enemies) {
@@ -57,7 +57,7 @@ test('an encounter fits the combat rules on either axis', () => {
     }
     for (const ally of config.allies) assert.ok(ally[axis] > arena.center[axis] && ally[axis] < config.retreatLine, 'allies form up behind the traveler, inside the line');
     assert.ok(config.checkpoint[axis] < config.retreatLine && config.checkpoint[axis] > arena.center[axis]);
-    assert.equal(new Set(config.enemies.map(enemy => enemy.id)).size, 5);
+    assert.equal(new Set(config.enemies.map(enemy => enemy.id)).size, 7);
   }
   assert.equal(aftermathEncounter('border-battle', ARENA_Z), null);
   assert.equal(aftermathEncounter('solis-sweep', { center: { x: 0, z: NaN }, retreatAxis: 'z' }), null);
@@ -172,5 +172,15 @@ test('every assault after the battle forms up inside its own ground, wherever it
     assert.equal(combat.startEncounter(fight, { atCheckpoint: true }), true, id);
     for (let step = 0; step < 60; step++) combat.update(1 / 60);
     assert.equal(combat.state.phase, 'active', `${id}: ordered at the rally, the assault is still on a second later`);
+  }
+});
+
+test('a fallback chapter saved from a won-but-rolled border battle starts over, so the conquest can begin', () => {
+  for (const fallback of ['moros-fallback', 'solis-fallback']) {
+    const old = createAftermathChapter(); old.start(fallback); old.act('begin-assault'); old.winEncounter(`aftermath-${fallback}`);
+    const loaded = createAftermathChapter();
+    assert.equal(loaded.restore(old.snapshot()), true);
+    assert.equal(loaded.state.variant, null, 'not started: the host starts the conquest the campaign points to');
+    assert.equal(loaded.start(fallback === 'moros-fallback' ? 'solis-sweep' : 'moros-outpost').ok, true);
   }
 });

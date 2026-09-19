@@ -10,7 +10,7 @@ const EFFECTS=Object.freeze({
   swing:[180,70,.13,.10],hit:[240,85,.12,.17],'practice-hit':[330,110,.10,.11],
   dodge:[430,150,.17,.05],'player-hit':[105,48,.20,.20],windup:[180,260,.18,.05],
   bell:[720,718,1.8,.12],success:[520,1040,.48,.08],'enemy-defeated':[260,90,.22,.10],
-  bite:[740,1120,.16,.055],
+  bite:[740,1120,.16,.055],blocked:[980,640,.09,.13],
 });
 
 /** Geography and surface selection remain usable without opening an audio device. */

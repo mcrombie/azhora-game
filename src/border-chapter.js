@@ -8,8 +8,10 @@
  * sellsword rides back to the Legate at the Legion's outpost on the Moros; the
  * Republic's finds Captain Voss at the Gate of Sun Horses. Each is asked whether
  * they are ready, and on yes a column marches with them to the border, where
- * the fight begins when it comes up; the day as a whole is decided by the
- * campaign's odds. Pure: no DOM, no three.
+ * the fight begins when it comes up. The day goes to whoever holds that corner
+ * of the field: win the fight and your side has won the battle; fall or fall
+ * back, and the line waits until you sound the advance again. Pure: no DOM, no
+ * three.
  */
 import { toWorld, toWorldZIn } from './world-scale.js';
 import { SOLIS_STANDS } from './west-suval.js';
@@ -26,6 +28,8 @@ export const BORDER_OUTCOMES = Object.freeze(['victory', 'defeat']);
 /** The Republic's coin on the table for a sellsword who signs: double the Legate's muster pay of 25. */
 export const COALITION_SIGNING = 50;
 export const COPPER_ID = 'copper-piece';
+/** How much killing a soldier on the field takes: mail and a shield, not a goblin's rags. */
+export const SOLDIER_HP = 100;
 
 const inSolis = id => ({ x: SOLIS_STANDS[id].x, z: SOLIS_STANDS[id].z, yaw: SOLIS_STANDS[id].yaw });
 /** Where the Legion's column falls in, beside the Legate's tent at the outpost. */
@@ -53,17 +57,18 @@ export const BORDER_ARENA = Object.freeze({ center: Object.freeze(toWorld(-392, 
 /** The column is up when the traveler comes this near the line's checkpoint. */
 export const BORDER_ARRIVAL_RADIUS = 16;
 
-const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9]]
+// Eight of the other side's soldiers in three waves: three, three, then two more who come up behind.
+const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9], [-396, 290, 13], [-388, 289.5, 14.5]]
   .map(([x, z, entry]) => { const p = toWorld(x, z); return [p.x, p.z, entry]; });
 const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 324]]
   .map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; });
 
-/** The encounter for a side: six of the other side's soldiers in two waves, and the allies who stand with the traveler. */
+/** The encounter for a side: eight of the other side's soldiers in three waves, and the allies who stand with the traveler. */
 export function borderEncounter(side, allies = []) {
   const foe = side === 'empire' ? 'coalition' : 'legion';
   return { id: BORDER_ENCOUNTER_ID, center: { ...BORDER_ARENA.center }, checkpoint: { ...BORDER_ARENA.checkpoint },
     retreatAxis: BORDER_ARENA.retreatAxis, retreatLine: BORDER_ARENA.retreatLine,
-    enemies: ENEMY_SPOTS.map(([x, z, entry], index) => ({ id: `border-foe-${index + 1}`, x, z, entry, hp: 70, kind: 'soldier', look: foe })),
+    enemies: ENEMY_SPOTS.map(([x, z, entry], index) => ({ id: `border-foe-${index + 1}`, x, z, entry, hp: SOLDIER_HP, kind: 'soldier', look: foe })),
     allies: allies.slice(0, ALLY_SPOTS.length).map((ally, index) => ({ ...ally, x: ALLY_SPOTS[index][0], z: ALLY_SPOTS[index][1] })) };
 }
 
@@ -137,7 +142,7 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
       'join-line': [5, empire() ? 'The Legion’s left' : 'The Republic’s right', empire()
         ? 'You kept the Empire’s contract. Tribune Gallus Orso commands the hired company on the Legion’s left, south-west of the stockade. Tell him when you are ready.'
         : 'You stand with the Republic. Captain Arlen Voss holds the Coalition’s right with the Lauvel companies, south-west of the stockade. Tell him when you are ready.', 'THE BORDER · 5 / 5 · THE BORDER BATTLE', [commander()]],
-      fighting: [5, 'Hold your corner of the field', 'Six of theirs come on in two waves. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
+      fighting: [5, 'Hold your corner of the field', 'Eight of theirs come on in three waves, shields up. Strike when they have swung; a soldier on guard turns a blade. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
       complete: [6, won ? 'The field is yours' : 'The field is lost', (empire()
         ? (won ? 'The Coalition broke and fell back on Solis. The Legion rides after them into West Suval.' : 'The Legion lost the field and pulled back across the plain; the Coalition holds the stockade.')
         : (won ? 'The Legion broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
@@ -224,13 +229,12 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     return { ok: true, reason: '' };
   }
 
-  /** The traveler held their corner; the day itself goes by the campaign's odds. `roll` is 0..100. */
-  function resolveBattle(encounterId, chance, roll) {
+  /** The traveler held their corner, and with it the day: their side has won the border battle. */
+  function resolveBattle(encounterId) {
     if (encounterId !== BORDER_ENCOUNTER_ID || !active || !state.side || state.outcome) return fail('There is no border battle to decide.');
-    if (!Number.isFinite(chance) || !Number.isFinite(roll)) return fail('The odds of the day are unknown.');
     active = false;
-    state.outcome = roll < chance ? 'victory' : 'defeat';
-    return emit('resolve-border-battle', { side: state.side, outcome: state.outcome, chance });
+    state.outcome = 'victory';
+    return emit('resolve-border-battle', { side: state.side, outcome: state.outcome });
   }
 
   function restore(data) {
@@ -238,9 +242,12 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     // A save from before the parley moved to Solis keeps its side: past the envoy it has been through the gate,
     // and it reports and marches again unless the battle is already fought.
     const legacy = !Object.hasOwn(data, 'entered');
+    // The day used to be rolled after the traveler had already won the fight, so a save can say 'defeat'
+    // for a battle its traveler won. Every recorded outcome was a won fight: it is a victory.
+    const outcome = data.outcome === null ? null : 'victory';
     state = { version: BORDER_VERSION, revision: 0, started: data.started, ordered: data.ordered,
       entered: legacy ? data.side !== null : data.entered, side: data.side,
-      ready: legacy ? data.outcome !== null : data.ready, marched: legacy ? data.outcome !== null : data.marched, outcome: data.outcome };
+      ready: legacy ? data.outcome !== null : data.ready, marched: legacy ? data.outcome !== null : data.marched, outcome };
     state.revision = legacy ? progress(state) : data.revision;
     active = false;
     return true;

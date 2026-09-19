@@ -1244,7 +1244,7 @@ function init() {
     return result;
   }
   // The fork and the border battle. Allies are whoever of the hired company has mustered, filled out with legionaries;
-  // on the Republic's side they are the valley companies. The traveler's corner must be held; the day goes by the campaign's odds.
+  // on the Republic's side they are the valley companies. Hold the traveler's corner and the day is won.
   function borderAllies(side){
     if(side==='coalition')return [1,2,3,4].map(n=>({id:`valley-company-${n}`,name:n===1?'Valley sergeant':'Valley company',kind:n===1?'officer':'legionary',model:{role:'suvali-guard',tunic:n%2?0x3f5f86:0x55636f}}));
     const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=MERCENARY_ROSTER.find(m=>m.id===p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
@@ -1926,7 +1926,7 @@ function init() {
     enclosures:world.enclosures,
     sideSeat:side=>sideSeat(side)};
   const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,position:{x:player.group.position.x,z:player.group.position.z},
-    combat:{phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,action:e.action,progress:e.progress,active:e.active,hp:e.hp}))},
+    combat:{phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,action:e.action,progress:e.progress,active:e.active,hp:e.hp,guarded:!!e.guarded}))},
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     journey:{started:journey.state.started,stage:journey.view().stage,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
@@ -2063,8 +2063,8 @@ function init() {
           if(result.ok){toast(result.message,'BRAMBLE SCOUT CAMP · CLEARED');saveRoad(false);}
         }
         else if(combat.state.encounterId===BORDER_ENCOUNTER_ID){
-          // The traveler held their corner. The day itself is decided by the campaign's odds for the chosen side.
-          const odds=campaign.battleOdds('border-battle'),verdict=border.resolveBattle(BORDER_ENCOUNTER_ID,odds?.chance??50,Math.random()*100);
+          // The traveler held their corner of the field, and with it the day.
+          const verdict=border.resolveBattle(BORDER_ENCOUNTER_ID);
           if(verdict.ok){campaign.completeChapter('border-battle',verdict.outcome);refreshQuest();toast(border.view().detail,verdict.outcome==='victory'?'THE BORDER BATTLE · WON':'THE BORDER BATTLE · LOST');saveRoad(false);}
         }
         else if(inAftermathFight()){const won=aftermath.winEncounter(combat.state.encounterId);if(won.ok){refreshQuest();toast(aftermath.spec.toasts.won,aftermath.spec.title.toUpperCase());saveRoad(false);}}
