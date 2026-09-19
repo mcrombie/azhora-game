@@ -5,8 +5,8 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { SOLIS_ENCLOSURE } from '../src/west-suval.js';
 import { ATTIC_WINES } from '../src/attic-wines.js';
-import { PUCK, PUCK_HAUNTS, SEA_WALL_NICHE, SECRETARY, SECRETARY_STAND, SOBER_SIGNS, SOBERING, KEEP_REWARD, PRIME_MINISTER,
-  createPuck, puckConversation, secretaryConversation, validatePuckSnapshot } from '../src/puck.js';
+import { ED, ED_HAUNTS, SEA_WALL_NICHE, SECRETARY, SECRETARY_STAND, SOBER_SIGNS, SOBERING, KEEP_REWARD, PRIME_MINISTER,
+  createEd, edConversation, secretaryConversation, validateEdSnapshot } from '../src/wine-chameleon.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -17,12 +17,12 @@ const talker = () => {
 };
 const ids = log => (log.opened.options?.choices ?? []).map(choice => choice.id);
 
-test('Puck’s haunts, the niche in the sea wall and the secretary’s door are all in Solis, where a person can stand', () => {
-  for (const place of [...PUCK_HAUNTS, SEA_WALL_NICHE, SECRETARY_STAND]) {
+test('Ed’s haunts, the niche in the sea wall and the secretary’s door are all in Solis, where a person can stand', () => {
+  for (const place of [...ED_HAUNTS, SEA_WALL_NICHE, SECRETARY_STAND]) {
     assert.equal(world.regionAt(place.x, place.z)?.name, 'West Suval');
     assert.ok(SOLIS_ENCLOSURE.contains(place.x, place.z), `${place.id ?? 'a place'} is inside the walls`);
   }
-  for (const haunt of PUCK_HAUNTS) assert.ok(canStand(haunt.x, haunt.z, world, .25), `${haunt.id} has room for a goblin`);
+  for (const haunt of ED_HAUNTS) assert.ok(canStand(haunt.x, haunt.z, world, .25), `${haunt.id} has room for a chameleon`);
   assert.ok(canStand(SECRETARY_STAND.x, SECRETARY_STAND.z, world, .3), 'the secretary has room');
   let reach = false;
   for (let a = 0; a < 12 && !reach; a++) reach = canStand(SEA_WALL_NICHE.x + Math.cos(a * .52) * 1.4, SEA_WALL_NICHE.z + Math.sin(a * .52) * 1.4, world, .3);
@@ -30,26 +30,26 @@ test('Puck’s haunts, the niche in the sea wall and the secretary’s door are 
 });
 
 test('he goes up in smoke if you run at him, swing at him or grab him, and never where he was', () => {
-  const puck = createPuck({ random: sequence([.1, .5, .9, .3]) });
-  const here = () => puck.haunt;
+  const ed = createEd({ random: sequence([.1, .5, .9, .3]) });
+  const here = () => ed.haunt;
   const near = (d, extra = {}) => ({ x: here().x + d, z: here().z, ...extra });
-  assert.deepEqual(puck.update(1, near(1.5)), [], 'walking up quietly is allowed');
+  assert.deepEqual(ed.update(1, near(1.5)), [], 'walking up quietly is allowed');
   const first = here().id;
-  const [chased] = puck.update(1, near(2, { hurrying: true }));
+  const [chased] = ed.update(1, near(2, { hurrying: true }));
   assert.equal(chased.type, 'poof'); assert.equal(chased.reason, 'chased'); assert.notEqual(here().id, first);
   const second = here().id;
-  const [swung] = puck.update(1, near(3, { swinging: true }));
+  const [swung] = ed.update(1, near(3, { swinging: true }));
   assert.equal(swung.reason, 'swung-at'); assert.notEqual(here().id, second);
-  const third = here().id, grabbed = puck.grab();
+  const third = here().id, grabbed = ed.grab();
   assert.equal(grabbed.reason, 'grabbed'); assert.notEqual(grabbed.to.id, third);
   // He stays while somebody is talking to him, and wanders once they have gone.
-  assert.deepEqual(puck.update(PUCK.stay + 1, near(2)), []);
-  assert.equal(puck.update(1, near(20))[0].reason, 'wandered');
-  assert.equal(puck.poofs, 4);
+  assert.deepEqual(ed.update(ED.stay + 1, near(2)), []);
+  assert.equal(ed.update(1, near(20))[0].reason, 'wandered');
+  assert.equal(ed.poofs, 4);
 });
 
 test('the arrangement: the cask, the secretary, and a choice', () => {
-  const kept = createPuck();
+  const kept = createEd();
   assert.equal(kept.task(), null);
   kept.meet();
   assert.equal(kept.quest, 'heard');
@@ -64,7 +64,7 @@ test('the arrangement: the cask, the secretary, and a choice', () => {
   assert.equal(kept.expose().ok, false, 'a kept secret stays kept');
   assert.deepEqual(kept.update(SOBERING * 2).filter(e => e.type === 'sober-sign'), [], 'and nothing goes wrong');
   // Exposed: the deliveries stop, he sobers, and the city feels it in order, once.
-  const told = createPuck(); told.meet(); told.findCask(); told.confront();
+  const told = createEd(); told.meet(); told.findCask(); told.confront();
   assert.ok(told.expose().ok);
   const signs = [];
   for (let t = 0; t < SOBERING * 1.2; t += 10) signs.push(...told.update(10).filter(e => e.type === 'sober-sign'));
@@ -75,39 +75,39 @@ test('the arrangement: the cask, the secretary, and a choice', () => {
   assert.ok(fed.ok && fed.first && fed.settled);
   assert.equal(told.sober(), false);
   assert.equal(told.feed('rye-loaf').ok, false, 'wine, long-legs');
-  const saved = told.snapshot(), again = createPuck();
-  assert.equal(validatePuckSnapshot(saved), true);
+  const saved = told.snapshot(), again = createEd();
+  assert.equal(validateEdSnapshot(saved), true);
   assert.ok(again.restore(saved) && again.quest === 'exposed' && again.gifts === 1);
-  assert.equal(validatePuckSnapshot({ ...kept.snapshot(), sober: .5 }), false, 'only an exposed Puck sobers');
-  assert.equal(validatePuckSnapshot({ ...saved, haunt: 'the moon' }), false);
+  assert.equal(validateEdSnapshot({ ...kept.snapshot(), sober: .5 }), false, 'only an exposed Ed sobers');
+  assert.equal(validateEdSnapshot({ ...saved, haunt: 'the moon' }), false);
 });
 
-test('talking to Puck: rhymes, the cask once you have seen it, a bottle if you have one, and the grab', () => {
-  const puck = createPuck(), { log, context } = talker();
+test('talking to Ed: rhymes, the cask once you have seen it, a bottle if you have one, and the grab', () => {
+  const ed = createEd(), { log, context } = talker();
   const bag = new Set();
-  const talk = () => puckConversation({ id: PUCK.id }, { ...context, puck, inventory: { has: id => bag.has(id) } });
+  const talk = () => edConversation({ id: ED.id }, { ...context, ed, inventory: { has: id => bag.has(id) } });
   talk();
-  assert.deepEqual(log.acted, ['puck-meet']);
+  assert.deepEqual(log.acted, ['ed-meet']);
   assert.match(log.opened.lines.join(' '), /long-legs/);
-  assert.ok(ids(log).includes('puck-grab') && !ids(log).includes('puck-cask') && !ids(log).includes('puck-gift'));
-  puck.meet(); puck.findCask(); bag.add(ATTIC_WINES['bouen-fog-white'].item);
+  assert.ok(ids(log).includes('ed-grab') && !ids(log).includes('ed-cask') && !ids(log).includes('ed-gift'));
+  ed.meet(); ed.findCask(); bag.add(ATTIC_WINES['bouen-fog-white'].item);
   talk();
-  assert.ok(ids(log).includes('puck-cask') && ids(log).includes('puck-gift'));
-  log.opened.options.choices.find(choice => choice.id === 'puck-grab').action();
-  assert.equal(log.acted.at(-1), 'puck-grab');
+  assert.ok(ids(log).includes('ed-cask') && ids(log).includes('ed-gift'));
+  log.opened.options.choices.find(choice => choice.id === 'ed-grab').action();
+  assert.equal(log.acted.at(-1), 'ed-grab');
 });
 
 test('Tancredi Vel tells the truth only to someone who has seen the seal', () => {
-  const puck = createPuck(), { log, context } = talker();
-  const talk = () => secretaryConversation({ id: SECRETARY.id }, { ...context, puck });
+  const ed = createEd(), { log, context } = talker();
+  const talk = () => secretaryConversation({ id: SECRETARY.id }, { ...context, ed });
   talk();
   assert.match(log.opened.lines.join(' '), /not receiving/);
-  assert.ok(!ids(log).includes('puck-show-seal'));
-  puck.meet(); puck.findCask();
+  assert.ok(!ids(log).includes('ed-show-seal'));
+  ed.meet(); ed.findCask();
   talk();
-  log.opened.options.choices.find(choice => choice.id === 'puck-show-seal').action();
-  assert.ok(log.acted.includes('puck-confront'));
+  log.opened.options.choices.find(choice => choice.id === 'ed-show-seal').action();
+  assert.ok(log.acted.includes('ed-confront'));
   const truth = log.opened.lines.join(' ');
-  for (const clue of [/three old things/, /only when he is drunk/, /Cup-Bearer to the Goblin/, /finished by supper/]) assert.match(truth, clue);
-  assert.deepEqual(ids(log), ['puck-keep', 'puck-expose-ask']);
+  for (const clue of [/three old things/, /only when he is drunk/, /Cup-Bearer to the Chameleon/, /finished by supper/]) assert.match(truth, clue);
+  assert.deepEqual(ids(log), ['ed-keep', 'ed-expose-ask']);
 });

@@ -7,7 +7,7 @@ import {
   facePoint, wallRuns, ditchRuns, fortColliders, stairColliders, campPicketColliders, campTentColliders,
 } from './west-suval.js';
 import { createWineAtticScenery } from './wine-attic-world.js';
-import { SEA_WALL_NICHE } from './puck.js';
+import { SEA_WALL_NICHE } from './wine-chameleon.js';
 
 /**
  * The scenery of West Suval: Solis and its walls, the Coalition's camp, and the
@@ -322,7 +322,7 @@ export function createWestSuvalScenery(kit) {
     push({ ...P(a, b), hx: w / 2 + .15, hz: d / 2 + .15, kind: 'solis-building', id: entry.id });
   }
   SOLIS_BUILDINGS.filter(entry => entry.kind !== 'temple' && entry.kind !== 'wine-attic').forEach(townHouse);
-  // The niche in the sea wall where the Prime Minister's cask for Puck is left every tenth night (src/puck.js).
+  // The niche in the sea wall where the Prime Minister's cask for Ed is left every tenth night (src/ed.js).
   {
     const n = SEA_WALL_NICHE, base = gy(n.x, n.z), face = n.x - .45, seal = material('#3f6b3a');
     box(shadow, face + .03, base + .95, n.z, .06, 1.05, 1.25, district);

@@ -317,7 +317,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         console.log(JSON.stringify({troupeViews:6,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(atticReviewOnly){
-        for(const view of ['wine-attic','wine-attic','wine-attic-inside','wine-attic-juan','wine-attic-nika','puck','puck-ridge','puck-cask']){
+        for(const view of ['wine-attic','wine-attic','wine-attic-inside','wine-attic-juan','wine-attic-nika','ed','ed-ridge','ed-cask']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
           fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
         }

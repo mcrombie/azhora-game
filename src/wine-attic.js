@@ -157,14 +157,14 @@ const JUAN_TOPICS = freeze({
   ],
 });
 
-/** Juan on Puck, the wine goblin (src/puck.js): before the scandal, and after. */
-const JUAN_ON_PUCK = freeze({
+/** Juan on Ed, the wine chameleon (src/ed.js): before the scandal, and after. */
+const JUAN_ON_ED = freeze({
   before: [
-    'Puck! Do not get me started. Okay, get me started. That goblin drinks my stock. A bottle here, a bottle there, once a whole case of the Dulannol, which, honestly? Respect.',
+    'Ed! Do not get me started. Okay, get me started. That chameleon drinks my stock. A bottle here, a bottle there, once a whole case of the Dulannol, which, honestly? Respect.',
     'You try to grab him: poof! Purple smoke, and he is on the roof, laughing. On my roof. Everybody in Solis hates him. I hate him. ... I also leave him a cup on the east beam every night. Do not tell anybody. It is a whole thing.',
   ],
   after: [
-    'Did you hear? The Prime Minister! Over the goblin! Paying for his wine out of the harbour money, the whole time, and nobody knew.',
+    'Did you hear? The Prime Minister! Over the chameleon! Paying for his wine out of the harbour money, the whole time, and nobody knew.',
     'And now the fountain tastes like the sea, and the oranges fall off the trees green, and everybody is suddenly very quiet about how much they hated him. I leave two cups on the beam now. Three. Mira, I leave him a bottle.',
   ],
 });
@@ -221,7 +221,7 @@ export function juanConversation(npc, context) {
     { id: 'attic-juan', label: 'Tell me about yourself.', action: () => talk(JUAN_TOPICS.juan) },
     { id: 'attic-about-nika', label: 'What about Nika?', action: () => talk(JUAN_TOPICS.nika) },
     { id: 'attic-shelf', label: 'What is the dusty bottle on the top shelf?', action: () => talk(JUAN_TOPICS.shelf) },
-    ...(context.puck ? [{ id: 'attic-puck', label: 'Does anything ever go missing?', action: () => { act('attic-puck'); talk(context.puck.quest === 'exposed' ? JUAN_ON_PUCK.after : JUAN_ON_PUCK.before); } }] : []),
+    ...(context.ed ? [{ id: 'attic-ed', label: 'Does anything ever go missing?', action: () => { act('attic-ed'); talk(context.ed.quest === 'exposed' ? JUAN_ON_ED.after : JUAN_ON_ED.before); } }] : []),
     { id: 'leave-juan', label: 'Thanks, Juan.', action: closeDialogue },
   ];
   openDialogue(npc, opening, null, 'Back down the stair', { choices });
