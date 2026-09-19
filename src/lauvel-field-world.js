@@ -99,5 +99,9 @@ export function createLauvelField({ parent, material, box, mesh, post, groundHei
     for (const at of [-.45, .1, .45]) piece(g, tube, cord, [0, .15, at], [.25, .03, .16], [Math.PI / 2, 0, 0]);   // the cords round him
     if (i % 3 === 0) piece(g, ball, material(['#c9b07a', '#b8b0d0', '#d8c0c0'][i % 3]), [.08, .3, .15], [.05, .04, .05]);   // a few flowers left on him
   });
+  // The world makes any small standing thing solid (src/world.js `standingProps`), which would turn
+  // every arrow in the turf into a post to walk round on the one field a chapter is fought over.
+  // Nothing here stops anybody: the only colliders on this ground are the spoil heaps, pushed above.
+  root.traverse(object => { if (object.isMesh) object.userData.passable = true; });
   return { root };
 }

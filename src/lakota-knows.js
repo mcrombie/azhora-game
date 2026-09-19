@@ -2,7 +2,7 @@
  * What Lakota knows of the world, for his free talk (src/lakota-mind.js).
  * Hand-picked from the game and azhora_lore, and deliberately short: the more
  * a model is told, the more it can get wrong. Only what a birder in Tidehaven
- * would know. Nothing of Solis's secrets, Puck, Tharganhom or the Prime
+ * would know. Nothing of Solis's secrets, Ed, Tharganhom or the Prime
  * Minister: he has never heard of them, and cannot give away what he was never
  * told. Pure data.
  */

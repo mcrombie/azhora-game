@@ -59,6 +59,10 @@ test('ambient profiles distinguish shore, forest, fields, river proximity and ex
   const ridge=roadAudioProfile({region:{id:4}});assert.ok(ridge.ridge>0);assert.equal(ridge.surface,'stone');
   for(const value of Object.values(roadAudioProfile({position:{x:NaN,z:Infinity},region:99})))
     if(typeof value==='number')assert.ok(Number.isFinite(value));
+  // A region built since the road (Pueth is 6) keeps its own id and borrows none of Drent's coast.
+  const pueth=roadAudioProfile({position:{x:-3,z:-340},region:6});
+  assert.equal(pueth.region,6); assert.equal(pueth.surface,'earth');
+  assert.deepEqual([pueth.sea,pueth.forest,pueth.field,pueth.river,pueth.ridge],[0,0,0,0,0]);
 });
 
 test('idle frames allocate no transient sources; walking makes paced surface footfalls and pause stops them',()=>{

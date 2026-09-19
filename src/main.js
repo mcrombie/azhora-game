@@ -1127,6 +1127,7 @@ function init() {
     if(forest.workAccepted||forest.bundleRecovered)knownNPCs.add('forest-woodcutter');
     if(hideout.inspected)knownNPCs.add('garrison-captain');
     if(acornQuest.status!=='available')knownNPCs.add('acorn-cook');
+    if(katy.stage!=='unmet')knownNPCs.add(KATY.id);
     if(heardDoom)knownNPCs.add('doomsayer');
     if(questStage===10)for(const id of journey.view().destinationIds)if(world.npcPositions[id])knownNPCs.add(id);
     for(const npc of JOURNEY_NPCS){const home=world.npcPositions[npc.id];if(discoveries.has(({2:'sunmeadow',3:'reedwater',4:'threefold'})[world.regionAt(home.x,home.z)?.id]))knownNPCs.add(npc.id);}
@@ -2043,7 +2044,7 @@ function init() {
     if(questStage===1)return{...npcById.get(BIRD_WATCHER.id).actor.group.position,name:'Lakota'};
     if(questStage===2)return{...world.training,name:'Practice post'};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
-    if(questStage===5)return{...npcData[2].actor.group.position,name:'Eren · Greenway Watch'};
+    if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
     if(questStage===8)return world.northTrail;
     if(questStage===9)return world.border;
     if(questStage===10){
@@ -2144,7 +2145,9 @@ function init() {
     const birdTask=localRegion===1?birding.task():null;
     const letterTask=localRegion===1?renaLetters.task():null;
     const edTask=world.regionAt(player.group.position.x,player.group.position.z)?.name==='West Suval'?ed.task():null;
-    show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask||!!birdTask||!!letterTask||!!edTask)&&!active);
+    // Katy's search has no place of its own: it is the last thing the panel offers, wherever the traveler is.
+    const katyTask=katy.looking?{title:'Looking for Batman',detail:'Watch the roads, and the sky at dusk. Tell Katy at Vaervelm Caelazh the moment you see him.'}:null;
+    show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask||!!birdTask||!!letterTask||!!edTask||!!katyTask)&&!active);
     const fishing=campcraft.state;
     $('fishing-location').textContent=(world.activeFishingSpot?.()?.name||'Willowmere Pond').toUpperCase();
     document.body.classList.toggle('fishing',mode==='fishing');show('fishing-panel',mode==='fishing');
@@ -2160,6 +2163,7 @@ function init() {
     if(birdTask&&acornQuest.status!=='active'&&!showForestTask&&!regionalTask){$('side-quest-title').textContent=birdTask.title;$('side-quest-progress').textContent=birdTask.detail;}
     if(letterTask&&acornQuest.status!=='active'&&!showForestTask&&!regionalTask&&!birdTask){$('side-quest-title').textContent=letterTask.title;$('side-quest-progress').textContent=letterTask.detail;}
     if(edTask&&!(acornQuest.status==='active'&&localRegion===1)&&!showForestTask&&!regionalTask&&!birdTask&&!letterTask){$('side-quest-title').textContent=edTask.title;$('side-quest-progress').textContent=edTask.detail;}
+    if(katyTask&&!(acornQuest.status==='active'&&localRegion===1)&&!showForestTask&&!regionalTask&&!birdTask&&!letterTask&&!edTask){$('side-quest-title').textContent=katyTask.title;$('side-quest-progress').textContent=katyTask.detail;}
     show('border-status',mode==='playing'&&player.group.position.z<world.bounds.minZ+18);
     $('practice-hits').textContent=`${Math.min(2,practiceHits)} / 2 hits`;$('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
     show('encounter-status',active&&mode==='playing');
@@ -2706,7 +2710,7 @@ function init() {
           await frames(2);assert(mode!=='defeated','Player lost the smoke fight');
         }
         assert(questStage===5,'Victory did not advance quest');
-        const warden=npcData[2];player.group.position.copy(warden.actor.group.position).add(new THREE.Vector3(1,0,0));await frames();tap('KeyF');finishDialogue();assert(questStage===6&&inventory.has('road-token'),'Eren did not introduce inventory or grant the token');
+        const warden=npcById.get('warden');player.group.position.copy(warden.actor.group.position).add(new THREE.Vector3(1,0,0));await frames();tap('KeyF');finishDialogue();assert(questStage===6&&inventory.has('road-token'),'Eren did not introduce inventory or grant the token');
         tap('KeyI');assert(mode==='inventory','Inventory lesson did not open');
         const letterButton=document.querySelector('[data-item-id="harbor-letter"]');
         letterButton.dispatchEvent(new PointerEvent('pointerenter'));await frames();
