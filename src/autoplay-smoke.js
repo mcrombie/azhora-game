@@ -125,7 +125,7 @@ export async function runAutoplaySmoke(h) {
   assert(final.border?.complete, 'the border battle was not fought');
   assert(final.border?.side === side, `the ${side} side was asked for and ${final.border?.side} was taken`);
   // Chapter two closes on the traveler's own side's ground: the outpost on the Moros, or Solis.
-  assert(final.chapter >= 3, `chapter two did not close (chapter ${final.chapter})`);
+  assert(final.chapter >= 3, `chapter two did not close (chapter ${final.chapter}, campaign ${final.campaign?.chapterId}, at ${final.position[0].toFixed(0)},${final.position[2].toFixed(0)}): ${autopilot.stopReason}; last: ${milestones.slice(-12).map(m => `${m.seconds}s ${m.label}`).join(' | ')}`);
   assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 5 : 3),
     `the ${side} side ended in region ${world.regionAt(final.position[0], final.position[2]).id}`);
   assert(wentToSolis, 'the Marshal’s terms were never carried to Solis');

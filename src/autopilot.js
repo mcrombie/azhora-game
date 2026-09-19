@@ -30,6 +30,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   whistleEvery: 8,        // seconds between whistles while the horse is on its way
   afootAfterStuck: 25,    // seconds on foot after a horse has been stuck, so a narrow gate is walked
   saddleRefused: 3,       // seconds of asking to mount or step down before trying something else
+  fetchPatience: 5,       // seconds of walking to the horse without getting closer (a wall between) before going on foot
 });
 
 /** Quest replies the autopilot will pick, most important first. */
@@ -528,14 +529,14 @@ function nearestOf(points, position) {
 export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
   let active = false, intent = '', reason = '', lastYaw = null, move = { forward: 0, side: 0, run: false };
-  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0 };
+  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
   let progressKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
-    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0 };
+    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
     progressKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
@@ -596,7 +597,13 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       return { type: 'mount', intent: 'Into the saddle' };
     }
     timers.mounting = 0;
-    if (toHorse <= config.fetchHorseWithin) return { type: 'fetch', intent: 'Going to the horse' };
+    if (toHorse <= config.fetchHorseWithin) {
+      // Near as the crow flies is not near with a wall between: give it up if the gap will not close.
+      if (toHorse < timers.fetchBest - .3) { timers.fetchBest = toHorse; timers.fetching = 0; } else timers.fetching += dt;
+      if (timers.fetching > config.fetchPatience) { timers.fetching = 0; timers.fetchBest = Infinity; timers.afoot = config.afootAfterStuck; return null; }
+      return { type: 'fetch', intent: 'Going to the horse' };
+    }
+    timers.fetching = 0; timers.fetchBest = Infinity;
     if (timers.whistle >= config.whistleEvery) { timers.whistle = 0; return { type: 'whistle', intent: 'Whistling for the horse' }; }
     return null;
   }

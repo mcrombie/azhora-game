@@ -156,6 +156,19 @@ test('a mount the game refuses is given up after a few seconds, and the leg is w
   pilot.stop();
 });
 
+test('a horse near as the crow flies but out of reach is given up, and the leg is walked', () => {
+  // An autoplay run in Solis spent four minutes walking into the barracks toward a horse on the other side of the wall.
+  const world = fakeWorld();
+  const pilot = createAutopilot({ world, act: {},
+    read: () => snapshot({ questStage: 1, position: { x: 0, z: -150 }, riding: { owned: true, mounted: false, horse: { x: 20, z: -150, yaw: 0 } } }) });
+  pilot.start();
+  const intents = [];
+  for (let t = 0; t < 9; t += .1) intents.push(pilot.step(.1).intent);
+  assert.equal(intents[0], 'Going to the horse', 'it goes for the horse first');
+  assert.notEqual(intents.at(-1), 'Going to the horse', 'and gives it up when it gets no nearer');
+  pilot.stop();
+});
+
 test('the computer follows whichever road serves the leg, not only the first one', () => {
   const world = fakeWorld();
   // A second road, far off the first: the way from the outpost to Solis is like this.
