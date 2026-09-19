@@ -466,6 +466,28 @@ test('a fight can begin where it forms up, so one ordered from beyond its retrea
   assert.equal(formed.state.phase, 'active', 'and the fight is still on a second later');
 });
 
+test('on an arena that runs east and west, defenders set out far along it still come on', () => {
+  // The Coalition's storm of the outpost gate: the fixed ground (x ±12 of the centre) left the rear
+  // defenders, 19 m along, outside it, and they stood where they were set for the whole fight.
+  const world = { bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, colliders: [], heightAt: () => 1.5 };
+  const arena = { id: 'east-west', center: { x: 0, z: 0 }, checkpoint: { x: 13, z: 0 }, retreatLine: 21, retreatAxis: 'x',
+    enemies: [{ id: 'rear-foe', x: -19, z: 3, kind: 'soldier', hp: 100 }] };
+  const position = { x: 13, y: 1.5, z: 0 };
+  const combat = createCombat({ world, position });
+  assert.equal(combat.startEncounter(arena), true);
+  for (let step = 0; step < 60 * 6; step++) combat.update(1 / 60);
+  const foe = combat.state.enemies[0];
+  assert.ok(foe.x > -15, `the rear defender came on (at ${foe.x.toFixed(1)})`);
+  // And a traveler well along the arena is closed on and struck at: the middle of the ground an
+  // enemy keeps to runs along the arena, not across it (the last defender at the outpost gate
+  // stood 2.5 m off the traveler, pinned 8 m from the centre, and never swung).
+  const events = [], deep = { x: -11, y: 1.5, z: 0 };
+  const lone = createCombat({ world, position: deep, onEvent: e => events.push(e) });
+  assert.equal(lone.startEncounter({ ...arena, enemies: [{ id: 'last-foe', x: -16, z: 2, kind: 'soldier', hp: 100 }] }), true);
+  for (let step = 0; step < 60 * 6 && !events.some(e => e.type === 'windup'); step++) lone.update(1 / 60);
+  assert.ok(events.some(e => e.type === 'windup'), 'the last defender swings at a traveler 11 m along');
+});
+
 test('soldiers fight like soldiers: a shield on guard, mail, no flinching once the swing has begun, and two swinging at once', () => {
   const world = { bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, colliders: [], heightAt: () => 1.5 };
   const start = enemies => {

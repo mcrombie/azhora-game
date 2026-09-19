@@ -29,6 +29,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   fetchHorseWithin: 30,   // a horse this near is walked to; a farther one is whistled up
   whistleEvery: 8,        // seconds between whistles while the horse is on its way
   afootAfterStuck: 25,    // seconds on foot after a horse has been stuck, so a narrow gate is walked
+  saddleRefused: 3,       // seconds of asking to mount or step down before trying something else
 });
 
 /** Quest replies the autopilot will pick, most important first. */
@@ -527,14 +528,14 @@ function nearestOf(points, position) {
 export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
   let active = false, intent = '', reason = '', lastYaw = null, move = { forward: 0, side: 0, run: false };
-  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0 };
+  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0 };
   let progressKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
-    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0 };
+    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0 };
     progressKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
@@ -573,15 +574,28 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     const riding = snapshot.riding;
     if (!riding?.owned || !riding.horse || snapshot.combat?.phase === 'active') return null;
     const gap = distance(snapshot.position, target);
+    timers.riding = Math.max(0, timers.riding - dt);
     if (riding.mounted) {
+      timers.mounting = 0;
       timers.saddleStuck = timers.stuck > 0 ? timers.saddleStuck + dt : 0;
       if (timers.saddleStuck > config.stuckAfter * 2) { timers.saddleStuck = 0; timers.afoot = config.afootAfterStuck; return { type: 'dismount', intent: 'Stepping down: the horse cannot get through' }; }
-      if (gap <= config.dismountWithin) return { type: 'dismount', intent: 'Stepping down' };
+      if (gap <= config.dismountWithin && timers.riding <= 0) {
+        // No room to step down here: ride on a little and try again, rather than sit asking.
+        if ((timers.dismounting += dt) > config.saddleRefused) { timers.dismounting = 0; timers.riding = 1.5; return null; }
+        return { type: 'dismount', intent: 'Stepping down' };
+      }
+      timers.dismounting = 0;
       return null;
     }
-    if (timers.afoot > 0 || gap < config.rideBeyond || snapshot.combat?.action !== 'idle') return null;
+    timers.dismounting = 0;
+    if (timers.afoot > 0 || gap < config.rideBeyond || snapshot.combat?.action !== 'idle') { timers.mounting = 0; return null; }
     const toHorse = distance(snapshot.position, riding.horse);
-    if (toHorse <= 2.4) return { type: 'mount', intent: 'Into the saddle' };
+    if (toHorse <= 2.4) {
+      // The game will not let him up here (no room, or something in the way): go on foot for a while.
+      if ((timers.mounting += dt) > config.saddleRefused) { timers.mounting = 0; timers.afoot = config.afootAfterStuck; return null; }
+      return { type: 'mount', intent: 'Into the saddle' };
+    }
+    timers.mounting = 0;
     if (toHorse <= config.fetchHorseWithin) return { type: 'fetch', intent: 'Going to the horse' };
     if (timers.whistle >= config.whistleEvery) { timers.whistle = 0; return { type: 'whistle', intent: 'Whistling for the horse' }; }
     return null;
@@ -589,7 +603,8 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
 
   function trackProgress(snapshot, key, gap, dt) {
     if (key !== progressKey) { progressKey = key; bestDistance = gap; timers.stuck = 0; timers.idle = 0; detour = 0; return; }
-    if (gap < bestDistance - .05) { bestDistance = gap; timers.stuck = 0; }
+    // Ground gained toward the goal is progress, however long the road: only standing still runs the idle clock.
+    if (gap < bestDistance - .05) { bestDistance = gap; timers.stuck = 0; timers.idle = 0; }
     else timers.stuck += dt;
     if (detour > 0) detour -= dt;
     else if (timers.stuck > config.stuckAfter) { detour = .9; detourSide = -detourSide; timers.stuck = 0; }

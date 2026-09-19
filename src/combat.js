@@ -63,6 +63,25 @@ const DEFAULT_ENCOUNTER = Object.freeze({
 
 // Copy and validate the entire request before changing health, timers or enemies.
 // Encounter bounds deliberately follow the same small arena as the first fight.
+/**
+ * The ground a fight's people may step on, as a box in world axes. A fight starts
+ * its people within 12 m of the centre across the arena and from 21 m toward the
+ * enemy's end to 18 m toward the way out along it, whichever axis it runs on and
+ * whichever way its retreat lies; the box holds all of that. It also still holds
+ * the old fixed ground (x ±12, z -21..+18 of the centre), which every fight before
+ * the east-west assaults was tuned on, so none of those plays any differently.
+ * (With the fixed ground alone, defenders set out along an east-west arena stood
+ * outside it and could never take a step.)
+ */
+export function fightBox(encounter) {
+  const axis = encounter.retreatAxis === 'x' ? 'x' : 'z', across = axis === 'x' ? 'z' : 'x', c = encounter.center;
+  const sign = encounter.retreatSign === -1 ? -1 : 1;
+  const [lo, hi] = sign > 0 ? [c[axis] - 21, c[axis] + 18] : [c[axis] - 18, c[axis] + 21];
+  const box = { [`min${axis.toUpperCase()}`]: lo, [`max${axis.toUpperCase()}`]: hi, [`min${across.toUpperCase()}`]: c[across] - 12, [`max${across.toUpperCase()}`]: c[across] + 12 };
+  return { minX: Math.min(box.minX, c.x - 12), maxX: Math.max(box.maxX, c.x + 12), minZ: Math.min(box.minZ, c.z - 21), maxZ: Math.max(box.maxZ, c.z + 18) };
+}
+const insideBox = (box, p) => p.x >= box.minX && p.x <= box.maxX && p.z >= box.minZ && p.z <= box.maxZ;
+
 function encounterConfig(config) {
   if (!config || typeof config !== 'object') return null;
   const point = value => value && Number.isFinite(value.x) && Number.isFinite(value.z);
@@ -102,8 +121,7 @@ function encounterConfig(config) {
         || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
         || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
         || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
-        || (ally.refuge !== undefined && (!point(ally.refuge) || Math.abs(ally.refuge.x - config.center.x) > 12
-          || ally.refuge.z < config.center.z - 21 || ally.refuge.z > config.center.z + 18))
+        || (ally.refuge !== undefined && (!point(ally.refuge) || !insideBox(fightBox({ ...config, retreatSign: sign }), ally.refuge)))
         || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
         || along(ally) > 18 || beyond(ally)) return null;
       seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
@@ -447,8 +465,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     for (const offset of offsets) {
       const x = enemy.x + Math.sin(yaw + offset) * step;
       const z = enemy.z + Math.cos(yaw + offset) * step;
-      const center = lastEncounter.center;
-      if (x < center.x - 12 || x > center.x + 12 || z < center.z - 21 || z > center.z + 18 || !canStand(x, z, world, .43)) continue;
+      if (!insideBox(fightBox(lastEncounter), { x, z }) || !canStand(x, z, world, .43)) continue;
       if (separation && state.enemies.some(other => {
         if (other === enemy || !other.active) return false;
         // A lunge can briefly overlap a neighbor: allow movement that opens that gap,
@@ -541,13 +558,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     const desiredDistance = Math.max(someoneAttacking ? 2.7 : 1.8, profile.standoff ?? 0);
     if (dist > desiredDistance) {
-      // After the traveler an enemy keeps to the middle of its ground; after a villager running
-      // for cover it follows as far as the villager can go.
-      const c = lastEncounter.center, wide = !!focus.ally?.refuge;
-      const target = {
-        x: clamp(aim.x, c.x - (wide ? 12 : 8), c.x + (wide ? 12 : 8)),
-        z: clamp(aim.z, c.z - (wide ? 21 : 16), c.z + (wide ? 18 : 16)),
-      };
+      // After the traveler an enemy keeps to the middle of its ground (8 m across the arena, 16 m
+      // along it, whichever way it runs); after a villager running for cover it follows as far as
+      // the villager can go.
+      const c = lastEncounter.center, wide = !!focus.ally?.refuge, alongX = lastEncounter.retreatAxis === 'x';
+      const box = wide ? fightBox(lastEncounter)
+        : { minX: c.x - (alongX ? 16 : 8), maxX: c.x + (alongX ? 16 : 8), minZ: c.z - (alongX ? 8 : 16), maxZ: c.z + (alongX ? 8 : 16) };
+      const target = { x: clamp(aim.x, box.minX, box.maxX), z: clamp(aim.z, box.minZ, box.maxZ) };
       const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
       enemy.speed = amount / dt;
@@ -603,8 +620,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     for (const offset of [0, .45, -.45, .9, -.9, 1.4, -1.4]) {
       const x = ally.x + Math.sin(yaw + offset) * step;
       const z = ally.z + Math.cos(yaw + offset) * step;
-      const center = lastEncounter.center;
-      if (x < center.x - 12 || x > center.x + 12 || z < center.z - 21 || z > center.z + 18 || !canStand(x, z, world, .43)) continue;
+      if (!insideBox(fightBox(lastEncounter), { x, z }) || !canStand(x, z, world, .43)) continue;
       if (distance({ x, z }, position) < .9) continue;
       if (state.allies.some(other => other !== ally && other.active && Math.hypot(other.x - x, other.z - z) < .9)) continue;
       if (state.enemies.some(other => other.active && Math.hypot(other.x - x, other.z - z) < 1.0)) continue;

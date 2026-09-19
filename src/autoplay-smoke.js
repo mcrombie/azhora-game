@@ -1,3 +1,5 @@
+import { RIDE } from './riding.js';
+
 /**
  * Rendered autoplay check: the computer plays the road from the boat to Iven's
  * relay using only ordinary inputs, while the harness watches for teleports,
@@ -17,7 +19,7 @@ export async function runAutoplaySmoke(h) {
   let checks = 0, lastStage = -1, lastRegion = null, lastJourneyStage = '', fights = 0, retries = 0, lines = 0, walked = 0;
   let lastChapterStage = '', wolfFight = false, wentToSolis = false, lastIntent = '';
   let previous = position(), previousMode = null, maxJump = 0, tookOver = false, restarted = false;
-  let previousFrames = readState().frames, previousAction = null, previousPhase = null;
+  let previousFrames = readState().frames, previousAction = null, previousPhase = null, previousMounted = false, previousRetries = readState().retries ?? 0;
 
   const note = (label, extra = {}) => milestones.push({ label, seconds: Math.round((performance.now() - started) / 100) / 10, ...extra });
   autopilot.configure({ dialoguePace: .35, choicePace: .3, side });
@@ -49,10 +51,18 @@ export async function runAutoplaySmoke(h) {
     const action = state.playerAction ?? null;
     const dodging = action === 'dodge' || previousAction === 'dodge';
     const hurt = action === 'hurt' || previousAction === 'hurt';
-    if (state.mode === 'playing' && previousMode === 'playing') {
+    // The autopilot rides on the long legs, and a cantering horse covers nearly twice a runner's ground.
+    const riding = !!state.mounted || previousMounted, top = riding ? RIDE.canter : 7.2, wasMounted = previousMounted;
+    previousMounted = !!state.mounted;
+    // Beaten and back up: the retry stands the traveler where the fight forms up, however far that is.
+    const gotUp = (state.retries ?? 0) !== previousRetries;
+    if (gotUp) retries += (state.retries ?? 0) - previousRetries;
+    previousRetries = state.retries ?? 0;
+    if (state.mode === 'playing' && previousMode === 'playing' && !gotUp) {
       maxJump = Math.max(maxJump, stepDistance / renderedFrames);
-      assert(stepDistance <= renderedFrames * 7.2 * .05 + .24 + (dodging ? 3.05 : 0) + (hurt ? .55 : 0),
-        `autoplay moved ${stepDistance.toFixed(2)} m over ${renderedFrames} rendered frame(s)`);
+      assert(stepDistance <= renderedFrames * top * .05 + .24 + (dodging ? 3.05 : 0) + (hurt ? .55 : 0),
+        `autoplay moved ${stepDistance.toFixed(2)} m over ${renderedFrames} rendered frame(s), from ${previous.x.toFixed(1)},${previous.z.toFixed(1)} to ${now.x.toFixed(1)},${now.z.toFixed(1)} `
+        + `(action ${previousAction}→${action}, mounted ${wasMounted}→${!!state.mounted}, intent "${autopilot.intent}", combat ${state.phase}; last: ${milestones.slice(-6).map(m => `${m.seconds}s ${m.label}`).join(' | ')})`);
     }
     previousAction = action;
     if (state.mode === 'playing' && previousMode === 'playing') walked += stepDistance;
@@ -68,7 +78,7 @@ export async function runAutoplaySmoke(h) {
     // How a fight ended, and where: a retreat and a win look alike from the intent alone.
     if (previousPhase === 'active' && state.phase !== 'active') note(`fight ended ${state.phase}`, { at: `${now.x.toFixed(1)},${now.z.toFixed(1)}`, hp: state.hp });
     previousPhase = state.phase;
-    if (state.mode === 'defeated') retries++;
+    if (state.mode === 'defeated' && previousMode !== 'defeated' && !gotUp) retries++;
     if (state.mode === 'dialogue') lines++;
     // What it believed it was doing, and where: a stall is only readable with this.
     if (autopilot.intent && autopilot.intent !== lastIntent) {
@@ -92,7 +102,7 @@ export async function runAutoplaySmoke(h) {
     }
     if (!autopilot.active) {
       if (from) assert(state.border?.complete, `autoplay stopped early on the ${from} leg: ${autopilot.stopReason} (border ${state.border?.stage}, intent "${autopilot.intent}", at ${now.x.toFixed(0)},${now.z.toFixed(0)}, last: ${milestones.slice(-6).map(m => m.label).join(' | ')})`);
-      if (from) assert(state.chapter >= 3, `chapter two did not close on the ${side} side: ${autopilot.stopReason} (chapter ${state.chapter}, aftermath ${state.aftermath?.stage})`);
+      if (from) assert(state.chapter >= 3, `chapter two did not close on the ${side} side: ${autopilot.stopReason} (chapter ${state.chapter}, campaign ${state.campaign?.chapterId}, at ${now.x.toFixed(0)},${now.z.toFixed(0)}, mounted ${!!state.mounted}; last: ${milestones.slice(-10).map(m => `${m.seconds}s ${m.label}`).join(' | ')})`);
       else assert(state.journeyView?.complete && state.luscia?.complete, `autoplay stopped early: ${autopilot.stopReason}`);
       break;
     }

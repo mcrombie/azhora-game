@@ -137,6 +137,25 @@ test('the computer travels at a run and walks only the last stride', () => {
   pilot.stop();
 });
 
+test('a mount the game refuses is given up after a few seconds, and the leg is walked', () => {
+  // An autoplay run stood in Solis asking the horse to take him, over and over, when there was no room to get up.
+  const world = fakeWorld(), asked = [];
+  const pilot = createAutopilot({ world, act: { mount: () => asked.push('mount') },
+    read: () => snapshot({ questStage: 1, position: { x: 0, z: -150 }, riding: { owned: true, mounted: false, horse: { x: .6, z: -150.4, yaw: 0 } } }) });
+  pilot.start();
+  let walking = 0;
+  for (let t = 0; t < 6; t += .1) {
+    const move = pilot.step(.1).move;
+    if (t > 4 && Math.hypot(move.forward, move.side) > .5) walking++;
+  }
+  assert.ok(asked.length >= 1, 'it asks to mount first');
+  const before = asked.length;
+  for (let t = 0; t < 3; t += .1) pilot.step(.1);
+  assert.equal(asked.length, before, 'and then stops asking while it walks');
+  assert.ok(walking > 5, 'and walks on toward Lakota');
+  pilot.stop();
+});
+
 test('the computer follows whichever road serves the leg, not only the first one', () => {
   const world = fakeWorld();
   // A second road, far off the first: the way from the outpost to Solis is like this.
