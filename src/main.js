@@ -61,7 +61,7 @@ import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from '
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { LUMBER_TOWN_STABLE, SOLIS } from './region-world.js';
+import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel } from './skills.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
@@ -82,6 +82,8 @@ import { ATTIC_WINES } from './attic-wines.js';
 import { ED, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, createEd, edConversation, secretaryConversation, edThanks } from './wine-chameleon.js';
 import { createEdView } from './chameleon-model.js';
 import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
+import { JOHN, SALT_PORTS, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
+import { createJohn, createSultana } from './salt-ship.js';
 import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
 import { BRANDY, BRANDY_STAND, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
 import { VINTNER, CELLAR_HAND, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
@@ -201,6 +203,9 @@ function init() {
   // Brandy Frank, Tidehaven's dyer, in her yard on the lane up to Saltwind Lookout (src/brandy.js).
   world.npcPositions[BRANDY.id]={x:BRANDY_STAND.x,z:BRANDY_STAND.z};npcData.push({...BRANDY,yaw:BRANDY_STAND.yaw});
   // Talaelos, the players of Nylon (src/troupe.js): they camp in one region after another, and their homes move with the wagon.
+  // John, the Sultan of the Salt Trade (src/salt-sultan.js): ashore on the quay of whichever port the Sultana lies in, and nowhere while she is at sea.
+  const salt=createSaltSultan();
+  {const s=salt.port.stand;world.npcPositions[JOHN.id]={x:s.x,z:s.z};npcData.push({...JOHN,yaw:s.yaw,hidden:!salt.ashore,make:createJohn});}
   const troupe=createTroupe();
   {const homes=troupe.homes();for(const p of TROUPE_PEOPLE){const h=homes[p.id];world.npcPositions[p.id]={x:h.x,z:h.z};
     npcData.push({id:p.id,name:p.name,role:p.role,yaw:h.yaw,troupe:true,dog:p.model==='understudy',horse:p.model==='critic',greet:p.model==='critic'?'Greet the mare':undefined,
@@ -238,7 +243,7 @@ function init() {
   // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
   const redTail=createRedTailHawk(),redTailFlight=createHawkFlight(),gloveAt=new THREE.Vector3();scene.add(redTail.group);
   // Everyone placed by now stands on open ground, and so does every place the traveler is sent.
-  world.keepPropsClear([...Object.values(world.npcPositions),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
+  world.keepPropsClear([...Object.values(world.npcPositions),...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
   const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
@@ -358,7 +363,7 @@ function init() {
       if(ED_GONE[event.reason])toast(ED_GONE[event.reason],'ED');else if(seen)toast(`Ed goes up in a puff of purple smoke. He will be at ${event.to.name} by now.`,'ED');return;}
     if(event.type==='sober-sign'){toast(event.line,event.title);audio?.effect('discovery');saveRoad(false);}
   }
-  const edContext=()=>({ed,inventory,openDialogue,closeDialogue,act:edAct});
+  const edContext=()=>({ed,salt,inventory,openDialogue,closeDialogue,act:edAct});
   function edAct(action){
     const secretary=npcById.get(SECRETARY.id);
     if(action==='ed-meet'){ed.meet();toast('Ed, the wine chameleon of Solis. Everybody hates him. Nobody has ever caught him.','ED');saveRoad(false);return;}
@@ -401,6 +406,14 @@ function init() {
       if(snap){npc.actor.group.position.set(h.x,world.heightAt(h.x,h.z)+h.lift,h.z);npc.actor.group.rotation.y=h.yaw;}}
   }
   placeTroupe(true);
+  // The Sultana: in the scene only while she is where the traveler could see her. John is ashore while she lies in port.
+  const sultana=createSultana();
+  function placeSalt(){const npc=npcById.get(JOHN.id),s=salt.port.stand;npc.hidden=!salt.ashore;world.npcPositions[JOHN.id]={x:s.x,z:s.z};
+    if(salt.ashore){npc.actor.group.position.set(s.x,world.heightAt(s.x,s.z),s.z);npc.actor.group.rotation.y=s.yaw;}}
+  function saltAct(action){
+    if(action==='john-meet'){salt.meet();toast('John, the Sultan of the Salt Trade, and his ship the Sultana: round the coast with a hold full of salt, from Tidehaven to Cobble, Izolveth and Solis, and back.','THE SALT TRADE');saveRoad(false);return;}
+    if(action==='john-ed'&&salt.tellOfEd().first)saveRoad(false);
+  }
   const troupeContext=()=>({troupe,purse:inventory.count(COPPER_ITEM),here:troupe.stop.where,openDialogue,closeDialogue,act:troupeAct});
   function troupeAct(action){
     const galeon=npcById.get('troupe-galeon');
@@ -1207,7 +1220,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1230,7 +1243,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1469,6 +1482,7 @@ function init() {
     if(npc.id===NIKA.id){wineAttic.visit();nikaConversation(npc,atticContext());return;}
     if(npc.id===ED.id){edConversation(npc,edContext());return;}
     if(TROUPE_IDS.has(npc.id)){troupeConversation(npc,troupeContext());return;}
+    if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,openDialogue,closeDialogue,act:saltAct});return;}
     if(npc.id===BRANDY.id){brandy.visit();brandyConversation(npc,{brandy,openDialogue,closeDialogue,act:brandyAct});return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,edContext());return;}
     if(npc.id===CELLAR_HAND.id){cellarHandConversation(npc,{openDialogue});return;}
@@ -2210,6 +2224,13 @@ function init() {
         const pp=player.group.position,s=troupe.stop;troupeWagon.visible=Math.hypot(s.x-pp.x,s.z-pp.z)<220;
         if(mode==='playing'){for(const event of troupe.update(dt,{x:pp.x,z:pp.z})){if(event.type==='heard')toast(event.line,'TALAELOS, THE PLAYERS OF NYLON');if(event.type==='moved'){placeTroupe(true);saveRoad(false);}}
           if(troupe.performing&&!reviewTarget&&troupe.cancelScene())placeTroupe(true);}}
+      {// The Sultana: seen coming in and putting out, heard from the quay; John steps ashore when she is in, and off when she sails.
+        const pp=player.group.position;
+        if(mode==='playing')for(const event of salt.update(dt,{x:pp.x,z:pp.z})){const said=saltToast(event);if(said)toast(said.line,said.title);if(event.type==='moored'||event.type==='gone')saveRoad(false);}
+        if(npcById.get(JOHN.id).hidden===salt.ashore)placeSalt();
+        const pose=salt.pose(),seen=!!pose&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<340;
+        if(seen!==(sultana.group.parent===scene)){if(seen)scene.add(sultana.group);else scene.remove(sultana.group);}
+        if(seen){sultana.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);sultana.group.rotation.y=pose.yaw;sultana.update(elapsed,pose);}}
       currentCask=mode==='playing'&&combat.state.phase!=='active'&&Math.hypot(SEA_WALL_NICHE.x-player.group.position.x,SEA_WALL_NICHE.z-player.group.position.z)<SEA_WALL_NICHE.reach?SEA_WALL_NICHE:null;
       const nearBorder=Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9;
       currentAcorn=mode==='playing'?woodlandLife.nearestAcorn(player.group.position,2):null;
@@ -2292,7 +2313,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
@@ -2755,6 +2776,15 @@ function init() {
           const look=close?{x:at.x,y:at.y+1.45,z:at.z}:{x:at.x-Math.sin(face)*2.2,y:at.y+.9,z:at.z-Math.cos(face)*2.2},d=close?2.4:10,turn=face+(close?.25:-.15);
           player.group.position.set(look.x+Math.sin(turn)*d,world.heightAt(look.x+Math.sin(turn)*d,look.z+Math.cos(turn)*d),look.z+Math.cos(turn)*d);
           reviewTarget=new THREE.Vector3(look.x,look.y,look.z);yaw=turn;pitch=close?.06:.42;distance=targetDistance=d;}
+        // John and the Sultana: him on the pier at Tidehaven, her at anchor off it, her coming in under sail, and him on the quay at Solis.
+        if(['john','john-pier','sultana','sultana-sailing','john-solis'].includes(view)){questStage=10;combat.finishPractice();player.group.visible=false;
+          const at=view==='john-solis'?'solis':'tidehaven';salt.berth(at);if(view==='sultana-sailing')salt.berth(at,'arriving',sailTime(salt.port)*.55);placeSalt();
+          const s=salt.port.stand,ship=salt.pose(),hy=world.heightAt(s.x,s.z);let look,turn,d,p;
+          if(view==='john'){look={x:s.x,y:hy+1.5,z:s.z};turn=s.yaw+.3;d=2.6;p=.06;}
+          else if(view==='john-pier'||view==='john-solis'){turn=Math.atan2(s.x-ship.x,s.z-ship.z)+.35;look={x:s.x-Math.sin(turn)*3,y:hy+2.2,z:s.z-Math.cos(turn)*3};d=9;p=.12;}
+          else{const lead=view==='sultana'?0:9;look={x:ship.x+Math.sin(ship.yaw)*lead,y:3.4,z:ship.z+Math.cos(ship.yaw)*lead};turn=ship.yaw+(view==='sultana'?2.1:1.1);d=view==='sultana'?17:26;p=.12;}
+          const px=look.x+Math.sin(turn)*d,pz=look.z+Math.cos(turn)*d;player.group.position.set(px,Math.max(SEA_LEVEL,world.heightAt(px,pz)),pz);
+          reviewTarget=new THREE.Vector3(look.x,look.y,look.z);yaw=turn;pitch=p;distance=targetDistance=d;}
         // Talaelos at its Avrel camp: the company, and a play in progress.
         if(view.startsWith('troupe-')){questStage=10;combat.finishPractice();player.group.visible=false;troupe.moveTo(view.startsWith('troupe-stop-')?view.slice(12):'avrel');
           if(view==='troupe-scene')troupe.beginScene();else troupe.cancelScene();placeTroupe(true);

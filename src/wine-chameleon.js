@@ -20,6 +20,8 @@
  * The traveler can find the cask, get the truth from the secretary, and choose:
  * keep the arrangement, or expose it. Exposed, the deliveries stop and Ed
  * sobers, and the city feels it, until somebody starts feeding him again.
+ * He also works, after a fashion, as Chief Taster to John, the Sultan of the
+ * Salt Trade (src/salt-sultan.js), who is paying him in salt.
  * Pure: no DOM, no three.
  */
 import { solisPoint } from './region-world.js';
@@ -158,6 +160,15 @@ const ED_SOBER = freeze([
   'He is sitting very still, gone a flat, dull grey all over, and for the first time he looks like something old.',
   '“No rhymes. Rhymes need wine. Everything in this city needs wine, and nobody will say it out loud.”',
 ]);
+/** Ed on his other job: Chief Taster to John, the Sultan of the Salt Trade (src/salt-sultan.js). */
+const ED_JOHN = freeze([
+  'Chief Taster to the Sultan of Salt! / I lick, I judge, I call a halt.',
+  'His tongue flicks out, a yard of it, and back. “That wall: Saltings white, the south pans, third week of summer. The man who raked it was in love. Hic.”',
+  'It is a terrible job for a chameleon. Salt makes you thirsty. That is, in fact, why I took it.',
+  'He says everything is pasta water. The sea. The soup. The Emperor. I told him that wine is not pasta water, and he looked at it and said, “Not yet.” I have not slept since.',
+]);
+const ED_JOHN_SOBER = freeze(['“John. Yes. I taste his salt for him. I can’t, just now. Everything tastes of nothing.”']);
+const ED_SULTAN_IN = 'The Sultan’s in! The Sultan’s here! / The accounts are… somewhere. Somewhere near.';
 const ED_TALK = freeze({
   who: [
     'Ed. Just Ed. The one they curse / when the wedding cask runs dry, or worse.',
@@ -176,16 +187,18 @@ const ED_TALK = freeze({
 
 /**
  * Ed, if the traveler comes up quietly. `inventory` shows what bottles the
- * traveler carries. `act` runs 'ed-meet', 'ed-grab' and 'ed-gift-<item>'.
+ * traveler carries, and `salt` whether the traveler has met John, his employer,
+ * and whether John is in Solis. `act` runs 'ed-meet', 'ed-grab' and 'ed-gift-<item>'.
  */
 export function edConversation(npc, context) {
-  const { ed, inventory = null, openDialogue, closeDialogue, act } = context;
+  const { ed, salt = null, inventory = null, openDialogue, closeDialogue, act } = context;
   if (npc.id !== ED.id) return false;
   const again = () => edConversation(npc, { ...context, back: true });
   const first = !ed.met;
   if (first) act('ed-meet');
   const sober = ed.sober();
   const opening = sober ? [...ED_SOBER] : first ? [...ED_FIRST] : context.back ? ['Hic. Where was I. Where are you.'] : [ED_AGAIN[ed.poofs % ED_AGAIN.length]];
+  if (!sober && !first && !context.back && salt?.inPort?.('solis')) opening.unshift(ED_SULTAN_IN);
   const talk = lines => openDialogue(npc, [...lines], null, 'Back to Ed', { onComplete: again });
   const bottles = Object.keys(ATTIC_BOTTLES).filter(item => inventory?.has?.(item));
   const q = ed.quest;
@@ -198,6 +211,7 @@ export function edConversation(npc, context) {
     { id: 'ed-who', label: 'Who are you?', action: () => talk(ED_TALK.who) },
     { id: 'ed-why', label: 'Why do you steal the wine?', action: () => talk(ED_TALK.why) },
     { id: 'ed-hated', label: 'Everybody in Solis hates you, you know.', action: () => talk(ED_TALK.hated) },
+    ...(salt?.met ? [{ id: 'ed-john', label: 'John says you’re his Chief Taster.', action: () => talk(sober ? ED_JOHN_SOBER : ED_JOHN) }] : []),
     ...(rank(q) >= rank('cask') ? [{ id: 'ed-cask', label: 'Who leaves you the cask in the sea wall?', action: () => talk(caskLines) }] : []),
     ...(bottles.length ? [{ id: 'ed-gift', label: 'Here. Have a bottle.', action: () => openDialogue(npc, ['His eyes go very wide and very bright.'], null, 'Back to Ed', { choices: [
       ...bottles.map(item => ({ id: `ed-gift-${item}`, label: `The ${ATTIC_WINES[ATTIC_BOTTLES[item]].name}.`, action: () => { closeDialogue(); act(`ed-gift-${item}`); } })),
