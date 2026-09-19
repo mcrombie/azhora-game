@@ -1206,7 +1206,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // The fall down her back: a flat sheet, a little wider at the shoulders, cut straight across.
     box(hair, hairMat, [0, 0.03, -0.155], [0.36, 0.5, 0.07]);
     box(hair, hairMat, [0, -0.33, -0.19], [0.34, 0.3, 0.05]);
-  } else if (!isElodiGuard) {
+  } else if (!isElodiGuard && !isAmbroni) {
+    // (Ambron's bascinet covers the brow; a forelock would poke out through it.)
     const fringe = round(head, hairMat, [-0.055, 0.334, 0.08], [0.143, 0.061, 0.123]);
     fringe.rotation.z = -0.18;
   }

@@ -16,6 +16,8 @@ const troupeReviewOnly = smoke && process.argv.includes('--troupe-review');
 const perfReviewOnly = smoke && process.argv.includes('--perf-review');
 /** Any review views, photographed in turn: --review-views=brandy,brandy-close */
 const reviewViews = smoke ? (process.argv.find(arg => arg.startsWith('--review-views=')) ?? '').slice(15).split(',').filter(Boolean) : [];
+/** `--review-clean` hides the HUD for the review pictures; `--review-jpeg` saves them as .jpg, a fraction of the size. */
+const reviewClean = process.argv.includes('--review-clean'), reviewJpeg = process.argv.includes('--review-jpeg');
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
 const openingReviewOnly = smoke && process.argv.includes('--opening-review');
 // `--map-review` pictures the chart as a new player first opens it, and again later in the story.
@@ -291,9 +293,11 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(reviewViews.length){
         const fatal=await win.webContents.executeJavaScript("(()=>{const f=document.getElementById('fatal');return f&&!f.classList.contains('hidden')?(f.dataset.stack||'fatal'):''})()");
         if(fatal){console.log('FATAL AT LOAD: '+fatal);app.exit(1);return;}
+        if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const s=document.createElement('style');s.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(s);})()`);
         for(const view of [reviewViews[0],...reviewViews]){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          const picture=await win.webContents.capturePage();
+          fs.writeFileSync(path.join(artifactDir,`${view}.${reviewJpeg?'jpg':'png'}`),reviewJpeg?picture.toJPEG(82):picture.toPNG());
           console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
         }
         console.log(JSON.stringify({views:reviewViews,errors},null,2));app.exit(errors.length?1:0);return;
