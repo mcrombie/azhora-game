@@ -3,8 +3,9 @@ import * as THREE from 'three';
 /**
  * Ed, the wine chameleon of Solis, as a figure: a big chameleon, tall and thin
  * the way they are, with a helmet crest, a spined back, turret eyes behind a
- * pair of dark wraparound sunglasses, gripping feet, and a tail curled round a
- * bottle that is never his. Drunk, his colours drift (greens, gold, a
+ * pair of dark sunglasses, a tie-dye toga of sorts slung over his back with a
+ * sash across one shoulder, gripping feet, and a tail curled round a bottle
+ * that is never his. Drunk, his colours drift (greens, gold, a
  * contented wine-purple) and he sways, hiccups and flicks his tongue; sober,
  * he goes a flat grey and keeps still.
  *
@@ -17,6 +18,20 @@ function add(parent, geometry, material, [x, y, z], [sx, sy, sz] = [1, 1, 1], [r
   const m = new THREE.Mesh(geometry, material);
   m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rx, ry, rz);
   m.castShadow = true; parent.add(m); return m;
+}
+/** A spiral of every colour, the way tie-dye comes out of the knot. Plain purple where there is no canvas (the tests). */
+function tieDye() {
+  if (typeof document === 'undefined') return mat(0x9a5bb8);
+  const size = 256, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const g = canvas.getContext('2d'), colours = ['#ff3fa4', '#ff8c1a', '#ffe135', '#7ed321', '#1ec8d8', '#8e44ec'];
+  g.fillStyle = '#ff3fa4'; g.fillRect(0, 0, size, size);
+  for (let r = size; r > 4; r -= 3) for (let a = 0; a < 6; a++) {
+    g.fillStyle = colours[(a + Math.floor(r / 22)) % colours.length];
+    const twist = r / 38;
+    g.beginPath(); g.moveTo(size / 2, size / 2); g.arc(size / 2, size / 2, r, a / 6 * Math.PI * 2 + twist, (a + 1) / 6 * Math.PI * 2 + twist); g.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(2, 1);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: .9, side: THREE.DoubleSide });
 }
 const DRUNK = [0x5fa84a, 0x3f9e7a, 0xb0a33a, 0x7a3f8f, 0x4f9f52].map(c => new THREE.Color(c)), SOBER = new THREE.Color(0x8a8f86);
 
@@ -31,6 +46,12 @@ export function createEdModel() {
   add(rig, ball, skin, [0, .42, 0], [.13, .23, .36]);
   add(rig, ball, belly, [0, .33, .02], [.1, .12, .3]);
   for (let k = 0; k < 9; k++) add(rig, cone, skin, [0, .64 - Math.abs(k - 4) * .012, -.3 + k * .075], [.022, .07, .022], [-.2, 0, 0]);
+  // A tie-dye toga of sorts: draped over his back and down his sides, a sash over the left shoulder, the end knotted and hanging.
+  const toga = tieDye();
+  add(rig, new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI * .62), toga, [0, .43, -.02], [.148, .245, .31]);
+  add(rig, new THREE.TorusGeometry(.2, .03, 6, 18), toga, [0, .44, .12], [.78, 1.15, 1], [0, Math.PI / 2, .6]);
+  add(rig, ball, toga, [.13, .3, .14], [.05, .05, .05]);
+  add(rig, new THREE.ConeGeometry(.06, .2, 6), toga, [.14, .2, .15], [1, 1, .5], [0, 0, .2]);
   // The head: a helmet crest swept back, a wide mouth, turret eyes, and the sunglasses over them.
   const head = new THREE.Group(); head.position.set(0, .5, .38); rig.add(head);
   add(head, ball, skin, [0, 0, .06], [.11, .13, .16]);
