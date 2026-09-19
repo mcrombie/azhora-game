@@ -85,7 +85,7 @@ import { LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, createCooking } from './coo
 import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, NIKA, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, nikaConversation } from './wine-attic.js';
 import { ATTIC_WINES } from './attic-wines.js';
 import { ED, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, createEd, edConversation, secretaryConversation, edThanks } from './wine-chameleon.js';
-import { createEdView } from './chameleon-model.js';
+import { createEdView, createEdModel } from './chameleon-model.js';
 import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
 import { JOHN, SALT_PORTS, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
 import { createJohn, createSultana } from './salt-ship.js';
@@ -2926,15 +2926,53 @@ function init() {
           const [a,b,turn,d,p,rise]={'solis-sack-gate':[16,-44,-2.68,36,.2,3],'solis-sack-east':[56,10,1.86,26,.3,7.5],'solis-sack-town':[-30,-28,.54,20,.55,7.5],'solis-sack-ruins':[-30,20,2.36,24,.6,7.5],'solis-sack-horses':[0,-50,Math.PI+.25,16,.12,8]}[view]??[0,0,0,20,.3,2];
           const at=solisPoint(a,b);player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+rise,at.z);
           yaw=turn;pitch=p;distance=targetDistance=d;}
+        // The whole cast shoulder to shoulder: those with a model of their own ('cast-line'), and the
+        // villagers who wear one of the shared bodies in their own colours ('cast-folk').
+        if(view==='cast-line'||view==='cast-folk'){questStage=10;combat.finishPractice();player.group.visible=false;
+          if(reviewLineup&&reviewLineup.userData.cast!==view){scene.remove(reviewLineup);reviewLineup=null;}
+          if(!reviewLineup){
+            const person=options=>()=>({actor:createCharacter(options),kind:'person'});
+            const cast=view==='cast-line'?[
+              person({role:'bird-watcher',tunic:BIRD_WATCHER.color}),
+              person({role:'rainbow-dyer',tunic:BRANDY.color,skin:BRANDY.skin}),
+              person({role:'bat-seeker',tunic:KATY.color,skin:KATY.skin}),
+              ()=>({actor:createBowden(),kind:'person'}),
+              person({role:'wine-seller',tunic:0x2f3f63,skin:0xb07a52}),
+              person({role:'wine-clerk',tunic:0x2f5b4a,skin:0xf0cbb0}),
+              ()=>({actor:createJohn(),kind:'person'}),
+              ()=>({actor:createEdModel(),kind:'ed'}),
+            ]:[
+              person({role:'commons-miller',tunic:TOFT.color,skin:TOFT.skin}),
+              person({role:'shelter-keeper',tunic:VINTNER.color,skin:VINTNER.skin}),
+              person({role:'reed-worker',tunic:CELLAR_HAND.color,skin:CELLAR_HAND.skin}),
+              person({role:'pipe-smoker',tunic:0x3d6b6a}),
+              person({role:'peddler',tunic:0x7a6242}),
+              person({role:'forest-woodcutter',tunic:0x6b5137}),
+              person({role:'legion-soldier',tunic:0x8f3b30}),
+              person({role:'acorn-cook',tunic:0xa08256}),
+              person({role:'doomsayer'}),
+            ];
+            reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';reviewLineup.userData.cast=view;
+            cast.forEach((build,i)=>{const {actor,kind}=build();actor.group.position.set((i-(cast.length-1)/2)*1.5,0,0);
+              actor.group.userData.actor=actor;actor.group.userData.kind=kind;reviewLineup.add(actor.group);});
+            scene.add(reviewLineup);}
+          // Open ground west of the village: nothing of the village stands in the line or in front of it.
+          const at={x:-70,z:38},ground=world.heightAt(at.x,at.z);
+          reviewLineup.position.set(at.x,ground,at.z);reviewLineup.rotation.y=0;reviewLineup.visible=true;
+          player.group.position.set(at.x,ground,at.z);
+          // Settle every pose: a character reads its idle over a second or two, and Ed keeps his own clock.
+          for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.kind==='ed'?g.userData.actor.animate(t,1/60,{}):g.userData.actor.animate(t,0,true,{});
+          reviewTarget=new THREE.Vector3(at.x,ground+1.05,at.z);yaw=.02;pitch=.04;distance=targetDistance=view==='cast-line'?10.8:12.2;}
         // The Empire's soldiers in a row, close up: a footman at attention, one with his sword drawn, an officer, and a Suvali guard beside them for scale.
         if(view==='soldiers'||view==='soldiers-back'){questStage=10;combat.finishPractice();player.group.visible=false;
-          if(!reviewLineup){reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';
-            [['legion-soldier',false],['legion-soldier',true],['legion-officer',false],['suvali-guard',false]].forEach(([role,armed],i)=>{const actor=createCharacter({role,armed});actor.group.position.set((i-1.5)*1.3,0,0);actor.group.userData.actor=actor;reviewLineup.add(actor.group);});
+          if(reviewLineup&&reviewLineup.userData.cast!=='soldiers'){scene.remove(reviewLineup);reviewLineup=null;}
+          if(!reviewLineup){reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';reviewLineup.userData.cast='soldiers';
+            [['legion-soldier',false],['legion-soldier',true],['legion-officer',false],['suvali-guard',false]].forEach(([role,armed],i)=>{const actor=createCharacter({role,armed});actor.group.position.set((i-1.5)*1.3,0,0);actor.group.userData.actor=actor;actor.group.userData.kind='person';reviewLineup.add(actor.group);});
             scene.add(reviewLineup);}
           const at={x:-35,z:24};reviewLineup.position.set(at.x,world.heightAt(at.x,at.z),at.z);reviewLineup.rotation.y=view==='soldiers'?0:Math.PI;reviewLineup.visible=true;
           for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.actor.animate(t,0,true,{});
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.05,at.z);yaw=.18;pitch=.08;distance=targetDistance=5.2;}
-        else if(reviewLineup)reviewLineup.visible=false;
+        else if(reviewLineup&&!view.startsWith('cast-'))reviewLineup.visible=false;
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}
