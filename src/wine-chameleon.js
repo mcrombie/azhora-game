@@ -1,6 +1,6 @@
 /**
- * Ed, the wine chameleon of Solis: clever, magic, permanently drunk, and never
- * without his sunglasses.
+ * Ed, the wine chameleon of Solis: clever, magic, permanently drunk, never
+ * without his sunglasses, and never without his pipe.
  * He steals wine from everyone in the city (Juan's shelves at Tharganhom, the
  * merchant's stall, the Bronze Mare's casks, the offering cups at the temple),
  * talks in slurred couplets, and goes up in a puff of purple smoke the moment
@@ -150,14 +150,16 @@ export function createEd({ random = Math.random } = {}) {
 const ED_FIRST = freeze([
   'Well, well: a long-legs come to stare / at Ed, the chameleon, sitting there.',
   'He lifts, with the curl of his tail, a bottle that is certainly not his. “Your health! Or mine. I am not particular. Hic.”',
+  'A long clay pipe droops from the corner of his mouth. He blows a smoke ring, then a smaller one through it, and looks enormously pleased with himself.',
 ]);
 const ED_AGAIN = freeze([
   'Back again? You must be fond / of chameleons, or of vagabond— / hic. Vagabondage. That is a word.',
   'Long-legs! Sit. No, stand. No, sit. / I have had a drink. Or three of it.',
   'Shh. The wine is sleeping. So am I. / So is the sea. Do not ask me why.',
+  '“Puff, puff. Not that kind of puff. I am not going anywhere. Yet.” He knocks his pipe out on the cobbles and fills it again.',
 ]);
 const ED_SOBER = freeze([
-  'He is sitting very still, gone a flat, dull grey all over, and for the first time he looks like something old.',
+  'He is sitting very still, gone a flat, dull grey all over, his pipe gone cold in his mouth, and for the first time he looks like something old.',
   '“No rhymes. Rhymes need wine. Everything in this city needs wine, and nobody will say it out loud.”',
 ]);
 /** Ed on his other job: Chief Taster to John, the Sultan of the Salt Trade (src/salt-sultan.js). */
@@ -174,6 +176,7 @@ const ED_TALK = freeze({
     'Ed. Just Ed. The one they curse / when the wedding cask runs dry, or worse.',
     'I was in Solis before the walls, before the kings, before the first fool planted the first vine and called it his. I am the oldest thief in the city. Show some respect. Hic.',
     'The glasses? Everything is too bright when you have had what I have had. Also, I look magnificent in them.',
+    'The pipe? Drent leaf, the good stuff, off a drying rack in Tidehaven that I have never been anywhere near. A chameleon has two vices, long-legs: the one in the bottle and the one in the bowl. And the glasses. Three. Three vices.',
   ],
   why: [
     'Steal? I borrow. I just never give it back. It is a very long borrow.',

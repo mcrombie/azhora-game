@@ -119,3 +119,13 @@ test('Ed’s figure survives any frame step, even the odd first frame’s (it on
   for (let k = 0; k < 500; k++) ed.animate(k * .1, -1);
   assert.match(ed.colour, /^[0-9a-f]{6}$/);
 });
+
+test('Ed smokes a long clay pipe: it smokes while he is drunk and goes out when he is sober', async () => {
+  const { createEdModel } = await sourceModule('../src/chameleon-model.js');
+  const ed = createEdModel();
+  assert.ok(ed.group.getObjectByName('Ed’s pipe'), 'a pipe');
+  for (let k = 0; k < 120; k++) ed.animate(k / 30, 1 / 30);
+  assert.ok(ed.smoking, 'smoke rises from the bowl');
+  for (let k = 0; k < 30; k++) ed.animate(4 + k / 30, 1 / 30, { sober: true });
+  assert.equal(ed.smoking, false, 'the pipe goes out');
+});

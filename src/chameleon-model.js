@@ -4,10 +4,11 @@ import * as THREE from 'three';
  * Ed, the wine chameleon of Solis, as a figure: a big chameleon, tall and thin
  * the way they are, with a helmet crest, a spined back, turret eyes behind a
  * pair of dark sunglasses, a tie-dye toga of sorts slung over his back with a
- * sash across one shoulder, gripping feet, and a tail curled round a bottle
- * that is never his. Drunk, his colours drift (greens, gold, a
- * contented wine-purple) and he sways, hiccups and flicks his tongue; sober,
- * he goes a flat grey and keeps still.
+ * sash across one shoulder, gripping feet, a tail curled round a bottle
+ * that is never his, and a long clay pipe drooping from the corner of his
+ * mouth. Drunk, his colours drift (greens, gold, a contented wine-purple), he
+ * sways, hiccups and flicks his tongue, his pipe smokes and he blows the odd
+ * smoke ring; sober, he goes a flat grey, keeps still, and the pipe goes out.
  *
  * `createEdView` puts him in the world at a haunt (src/wine-chameleon.js) and
  * makes the purple puff he leaves behind when he goes.
@@ -66,6 +67,15 @@ export function createEdModel() {
   }
   add(head, tube, frame, [0, .058, .205], [.006, .03, .006], [0, 0, Math.PI / 2]);           // the bridge
   const tongueTip = add(head, tube, tongue, [0, -.04, .2], [.012, .001, .012], [Math.PI / 2, 0, 0]);
+  // A long clay pipe, a churchwarden, from the corner of his mouth: the stem out and down, the bowl turned up at its end.
+  const clay = mat(0xe8e1d0, { roughness: .9 }), ember = mat(0x5a2a14, { emissive: 0xff6a1a, emissiveIntensity: .8 });
+  const pipe = new THREE.Group(); pipe.name = 'Ed’s pipe'; head.add(pipe);
+  const stemFrom = new THREE.Vector3(.055, -.065, .16), stemWay = new THREE.Vector3(.3, -.28, .9).normalize(), stemTo = stemFrom.clone().addScaledVector(stemWay, .3);
+  const stem = add(pipe, tube, clay, [(stemFrom.x + stemTo.x) / 2, (stemFrom.y + stemTo.y) / 2, (stemFrom.z + stemTo.z) / 2], [.011, .3, .011]);
+  stem.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), stemWay);
+  add(pipe, tube, clay, [stemTo.x, stemTo.y + .03, stemTo.z], [.032, .07, .032]);
+  add(pipe, tube, dark, [stemTo.x, stemTo.y + .066, stemTo.z], [.024, .004, .024]);
+  const coal = add(pipe, ball, ember, [stemTo.x, stemTo.y + .067, stemTo.z], [.02, .008, .02]);
   // Four short gripping legs, half a chameleon's usual length: he sits low, his belly all but on the ground.
   const DROP = .17, hips = [];
   for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
@@ -85,6 +95,43 @@ export function createEdModel() {
   for (const child of rig.children) if (!hips.includes(child)) child.position.y -= DROP;
   const bottle = new THREE.Group(); bottle.name = 'Ed’s bottle'; bottle.position.set(0, -.06, -.2); bottle.rotation.x = .5; tail.add(bottle);
   add(bottle, tube, glass, [0, 0, 0], [.04, .2, .04]); add(bottle, tube, glass, [0, .15, 0], [.014, .1, .014]); add(bottle, tube, wine, [0, -.04, 0], [.042, .07, .042]);
+
+  // Smoke: wisps that rise from the bowl and thin out, and now and then a ring blown from the mouth.
+  const puff = new THREE.IcosahedronGeometry(1, 1), smoke = [], at = new THREE.Vector3();
+  for (let k = 0; k < 7; k++) {
+    const m = new THREE.Mesh(puff, new THREE.MeshBasicMaterial({ color: 0xd9d4dc, transparent: true, opacity: 0, depthWrite: false }));
+    m.name = 'pipe smoke'; group.add(m); smoke.push({ m, age: k / 7, from: new THREE.Vector3(), side: (k % 3 - 1) * .5 });
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.05, .012, 6, 16), new THREE.MeshBasicMaterial({ color: 0xe3dee6, transparent: true, opacity: 0, depthWrite: false }));
+  ring.name = 'smoke ring'; group.add(ring);
+  const ringFrom = new THREE.Vector3();
+  let ringAge = Infinity, ringWait = 4;
+  const WISP = 3.2, RING = 2.4;
+  function smoking(time, dt, lit) {
+    if (!group.visible) return;
+    coal.material.emissiveIntensity = lit ? .5 + 1.4 * Math.pow(Math.max(0, Math.sin(time * .7)), 6) : 0;
+    coal.getWorldPosition(at); group.worldToLocal(at);            // brings the bowl's chain of joints up to date, and nothing else
+    for (const w of smoke) {
+      w.age += dt / WISP;
+      if (w.age >= 1) { w.age %= 1; w.from.copy(at); }
+      const t = w.age;
+      w.m.position.set(w.from.x + Math.sin(time * .8 + w.side * 4 + t * 3) * .05 * t + w.side * .04 * t, w.from.y + t * .55, w.from.z + t * .05);
+      w.m.scale.setScalar(.025 + t * .11);
+      w.m.material.opacity = lit ? .75 * Math.sin(Math.PI * Math.min(1, t * 1.4)) * (1 - t) : 0;
+      w.m.visible = lit && w.from.lengthSq() > 0;
+    }
+    // A ring every so often, blown from the front of the mouth, drifting forward and up and opening out.
+    ringWait -= dt;
+    if (lit && ringWait <= 0 && ringAge >= 1) { ringAge = 0; ringWait = 7 + Math.abs(Math.sin(time * 1.7)) * 6; head.localToWorld(ringFrom.set(0, -.05, .24)); group.worldToLocal(ringFrom); }
+    if (ringAge < 1) {
+      ringAge += dt / RING;
+      const t = Math.min(1, ringAge);
+      ring.position.set(ringFrom.x, ringFrom.y + t * .3, ringFrom.z + t * .35);
+      ring.scale.setScalar(1 + t * 2.2); ring.rotation.set(-.3, 0, t * .6);
+      ring.material.opacity = .6 * (1 - t);
+    }
+    ring.visible = ringAge < 1 && lit;
+  }
 
   let hiccup = 0, flick = 0, drift = Math.random() * 10;
   /** A sway, a hiccup, the odd flick of the tongue, colours drifting; a swig flushes him purple. Sober: grey and still. */
@@ -109,8 +156,9 @@ export function createEdModel() {
     if (sober) skin.color.lerp(SOBER, Math.min(1, dt * 2));
     else skin.color.copy(DRUNK[i]).lerp(DRUNK[next], drift % 1).lerp(DRUNK[3], swig * .7);
     bottle.rotation.x = .5 + swig * .9;
+    smoking(time, dt, !sober);
   }
-  return { group, animate, get colour() { return skin.color.getHexString(); } };
+  return { group, animate, get colour() { return skin.color.getHexString(); }, get smoking() { return smoke.some(w => w.m.visible && w.m.material.opacity > 0); } };
 }
 
 export function createEdView(scene, { heightAt }) {

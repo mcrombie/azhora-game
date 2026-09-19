@@ -294,6 +294,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         for(const view of [reviewViews[0],...reviewViews]){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
           fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
         }
         console.log(JSON.stringify({views:reviewViews,errors},null,2));app.exit(errors.length?1:0);return;
       }

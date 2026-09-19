@@ -2054,7 +2054,8 @@ function init() {
   }
   refreshQuest();
   function render(now) {
-    const rawDt=(now-lastTime)/1000,dt=Math.min(rawDt,.05);lastTime=now;elapsed+=dt;frameCount++;
+    // A frame's stamp can predate the clock (the first after a long load does, by seconds): never run time backwards.
+    const rawDt=Math.max(0,(now-lastTime)/1000),dt=Math.min(rawDt,.05);lastTime=Math.max(lastTime,now);elapsed+=dt;frameCount++;
     if(frameCount>20){frameDeltas.push(rawDt);if(frameDeltas.length>180)frameDeltas.shift();}
     try {
       if(developer.active){
@@ -2343,6 +2344,8 @@ function init() {
     const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
     window.__AZHORA__={state,
+      // Where the camera is and what it is doing: main.cjs --review-views prints it beside each picture.
+      camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),mode}),
       // Performance: what is drawn and how much there is (main.cjs --perf-review), and render timing once asked for.
       perf:()=>{let objects=0,meshes=0;scene.traverse(o=>{objects++;if(o.isMesh)meshes++;});const info=renderer.info;
         return{calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,programs:info.programs?.length??0,objects,meshes,
@@ -2758,6 +2761,11 @@ function init() {
             :{x:digs.sites.find(s=>s.id==='track').x,z:digs.sites.find(s=>s.id==='track').z+3,look:digs.sites.find(s=>s.id==='track'),d:3.2,p:.6};
           player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+1,spot.look.z);
           yaw=Math.atan2(spot.x-spot.look.x,spot.z-spot.look.z);pitch=spot.p;distance=targetDistance=spot.d;}
+        // Ed close, face on, at Aurel Mendo's stall: the glasses, the pipe and its smoke.
+        if(view==='ed-pipe'){questStage=10;combat.finishPractice();player.group.visible=false;
+          while(ed.haunt.id!=='merchant-stall')ed.grab();placeEd();const g=edView.group.position,face=edView.group.rotation.y;
+          player.group.position.set(g.x+Math.sin(face)*4,world.heightAt(g.x+Math.sin(face)*4,g.z+Math.cos(face)*4),g.z+Math.cos(face)*4);
+          reviewTarget=new THREE.Vector3(g.x+Math.sin(face)*.45,g.y+.5,g.z+Math.cos(face)*.45);yaw=face+1.25;pitch=.1;distance=targetDistance=2.3;}
         if(view==='ed'||view==='ed-ridge'||view==='ed-cask'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(view!=='ed-cask'){while(view==='ed-ridge'?!ed.haunt.perch:ed.haunt.id!=='fountain')ed.grab();placeEd();}
           const g=view==='ed-cask'?{x:SEA_WALL_NICHE.x,y:world.heightAt(SEA_WALL_NICHE.x,SEA_WALL_NICHE.z),z:SEA_WALL_NICHE.z}:edView.group.position,face=view==='ed-cask'?SEA_WALL_NICHE.yaw:edView.group.rotation.y;
