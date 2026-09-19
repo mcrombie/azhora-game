@@ -828,7 +828,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
   const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeper ? 0xb4441c : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -1210,8 +1210,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // a high forehead where they have given up. Nothing over the brow.
     const curls = [[-.145, .315, -.05, .1], [.145, .315, -.05, .1], [-.185, .25, .01, .08], [.185, .25, .01, .08],
       [0, .33, -.15, .125], [-.1, .3, -.16, .095], [.1, .3, -.16, .095], [0, .225, -.185, .1],
-      // Thinning, not gone: a light covering over the crown, well back from the brow.
-      [0, .35, -.05, .085], [-.07, .348, .01, .065], [.07, .348, .01, .065]];
+      // Thinner than it was, but it still comes forward over the top of his head.
+      [0, .352, -.04, .105], [-.08, .348, .03, .09], [.08, .348, .03, .09],
+      [0, .338, .085, .095], [-.075, .33, .072, .08], [.075, .33, .072, .08]];
     for (const [x, y, z, r] of curls) round(head, hairMat, [x, y, z], [r, r * .82, r * .9]);
     // The beard: jaw, chin and cheeks, with a moustache over the lip.
     const beard = [[0, .01, .175, .13, .1, .105], [-.115, .055, .15, .085, .09, .085], [.115, .055, .15, .085, .09, .085],
