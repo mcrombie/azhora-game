@@ -61,7 +61,7 @@ import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from '
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL } from './region-world.js';
+import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './skills.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
@@ -2892,6 +2892,12 @@ function init() {
           }
         }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
+        // Solis three years after the sack: the north wall from the road ('solis-sack-gate'), the east breach,
+        // the burnt houses inside the north wall, and the ruins of the lower town.
+        if(view.startsWith('solis-sack-')){questStage=10;combat.finishPractice();player.group.visible=false;
+          const [a,b,turn,d,p,rise]={'solis-sack-gate':[16,-44,-2.68,36,.2,3],'solis-sack-east':[56,10,1.86,26,.3,7.5],'solis-sack-town':[-30,-28,.54,20,.55,7.5],'solis-sack-ruins':[-30,20,2.36,24,.6,7.5],'solis-sack-horses':[0,-50,Math.PI+.25,16,.12,8]}[view]??[0,0,0,20,.3,2];
+          const at=solisPoint(a,b);player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+rise,at.z);
+          yaw=turn;pitch=p;distance=targetDistance=d;}
         // The Empire's soldiers in a row, close up: a footman at attention, one with his sword drawn, an officer, and a Suvali guard beside them for scale.
         if(view==='soldiers'||view==='soldiers-back'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(!reviewLineup){reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';

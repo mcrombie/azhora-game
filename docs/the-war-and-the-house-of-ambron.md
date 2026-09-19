@@ -78,6 +78,11 @@ the kit. (Decided 2026-09-19; the game used Legion, Legate, Tribune and Latin na
    ago it was stormed and burned. It wants burnt quarters, patched walls, a rebuilt gate,
    roofless houses kept as they fell, and people who talk about the fire as the thing that
    happened to them. This is a content pass on `src/west-suval-world.js` and `src/solis-town.js`.
+   **Built 2026-09-19** (`src/solis-sack.js`): the walls are only partly repaired (new stone
+   by the gate, burnt stretches with broken merlons, scaffolding, three breaches shut with
+   palisades), towers roofless or broken, the Gate of Sun Horses rebuilt with one bronze horse
+   left, eight houses burnt out or fallen and the rest re-roofed over smoke stains, and each of
+   the townsfolk remembers the fire. The temple was spared; nobody knows why.
 2. **Prince Maro** is a name the game does not use yet, and the reason the whole war started.
 3. **Chapter 3** sends the traveler from either side to treat with Valroy; he refuses and
    turns his army on **Drent**, taking the province over game time while the traveler watches,

@@ -14,7 +14,9 @@
  *  - the Empire in what it imposed: the army barracks and the tax house by the
  *    gate, a milestone and plaques, now defaced or boarded;
  *  - the Coalition in what is days old: the contingents' banners, a paymaster's
- *    table in the tax house door, notices in three hands, and the camp outside.
+ *    table in the tax house door, notices in three hands, and the camp outside;
+ *  - and under all three, the sack of 977 (`src/solis-sack.js`): burnt shells,
+ *    walls only partly rebuilt, breaches shut with palisades, a rebuilt gate.
  *
  * Fortifications follow the shared standard in docs/west-suval-brief.md, in
  * dressed stone: a closed circuit, a wall walk behind a parapet, a tower at every
@@ -238,7 +240,7 @@ export const SOLIS_STATUES = freeze([freeze({ a: 9.5, b: -6.5 }), freeze({ a: 9.
 export const PAYMASTER_TABLE = freeze({ a: -4.9, b: -30, halfA: .45, halfB: 1.1 });
 /** A hitching rail outside the Gate of Sun Horses, clear of the road and the fighting ground. */
 export const SOLIS_HITCH = freeze({ a: 17, b: -58, halfA: 3, halfB: .2 });
-/** The imperial milestone beside the road, its eagle chiselled off. */
+/** The imperial milestone beside the road, the tower of Ambron chiselled off it. */
 export const SOLIS_MILESTONE = freeze({ a: -15, b: -60 });
 
 /** Streets inside the walls, as world paths with their width. */
@@ -311,7 +313,7 @@ export const WEST_SUVAL_PLACES = freeze({
   watchtower: freeze({ id: 'old-watchtower', name: 'The Broken Watchtower', ...anchor(-330, 387),
     description: 'The stump of a round tower of the old kingdom, older than the Empire’s road. A sun-horse is still cut over the door. From its rubble the sea shows silver to the south.' }),
   well: freeze({ id: 'wayside-well', name: 'The Wayside Well', ...anchor(-338, 455),
-    description: 'A well head and a stone trough under two olive trees, and an imperial milestone beside them with its eagle scraped away. Someone has chalked “Solis, a morning” on the stone.' }),
+    description: 'A well head and a stone trough under two olive trees, and an imperial milestone beside them with the tower of Ambron scraped off it. Someone has chalked “Solis, a morning” on the stone.' }),
 });
 
 /** Every landmark West Suval adds, for the journal, the charts and discovery. */

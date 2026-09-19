@@ -7,6 +7,7 @@ import {
   facePoint, wallRuns, ditchRuns, fortColliders, stairColliders, campPicketColliders, campTentColliders,
 } from './west-suval.js';
 import { createWineAtticScenery } from './wine-attic-world.js';
+import { wallStateAt, towerState, buildingState, SUN_HORSE_GATE } from './solis-sack.js';
 import { SEA_WALL_NICHE } from './wine-chameleon.js';
 
 /**
@@ -20,10 +21,14 @@ export function createWestSuvalScenery(kit) {
   const { root, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, sign, roadDistance, signs, barrel } = kit;
   const district = new THREE.Group(); district.name = 'West Suval scenery'; root.add(district);
-  const metrics = { buildings: 0, towers: SOLIS_TOWERS.length, tents: 0, colliders: 0, props: 0 };
+  const metrics = { buildings: 0, ruins: 0, towers: SOLIS_TOWERS.length, tents: 0, colliders: 0, props: 0 };
   let seed = 5150917;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
+  // The sack's rubble and char (src/solis-sack.js) have their own dice, so nothing else in West Suval moves when they change.
+  let roughSeed = 977;
+  const roughRandom = () => { roughSeed = (Math.imul(roughSeed, 1664525) + 1013904223) >>> 0; return roughSeed / 4294967296; };
+  const rough = (a, b) => a + roughRandom() * (b - a);
   const P = solisPoint;
   const push = (...items) => { for (const item of items) colliders.push(item); metrics.colliders += items.length; return items; };
   const coneGeometry = new THREE.ConeGeometry(1, 1, 4, 1);
@@ -41,6 +46,35 @@ export function createWestSuvalScenery(kit) {
   const leaf = material('#5c7a3e'), leafDark = material('#46613a'), olive = material('#8a9a6c'), orange = material('#e08a2e');
   const legion = material('#8c3f38'), legionGold = material('#c9a24a'), republic = material('#5f8fd6'), canvas = material('#d9ceb0');
   const grassWorn = material('#b3a77a'), paving = material('#cbbd9c'), pavingLight = material('#d8ccb0');
+  // The sack of 977 (src/solis-sack.js): new stone and timber where the Empire rebuilt, soot and char where nobody did.
+  const stoneNew = material('#f4efe3'), stoneBurnt = material('#8f8474'), soot = material('#3b332c'), sootLight = material('#6e6358');
+  const charred = material('#2b241f'), timberNew = material('#a8845a'), tileNew = material('#cc6a4b'), iron = material('#56595b');
+  const rubble = [stone, stoneWarm, stoneDark, stoneBurnt];
+  // Whitewash that has been through a fire and three winters since.
+  const burntWalls = ['#c7b89c', '#b8a98f', '#cfc0a3'].map(tint => material(tint));
+  /** Soot up a face in uneven licks: `pieces` blocks across `span`, each a different height, hanging from `top`. */
+  function sootLicks(a, b, along, span, top, reach, pieces, parent = district) {
+    for (let k = 0; k < pieces; k++) {
+      const u = (k + .5) / pieces - .5, hgt = reach * rough(.35, 1), pa = along ? a + u * span : a, pb = along ? b : b + u * span;
+      block(k % 3 === 2 ? sootLight : soot, pa, pb, along ? span / pieces + .02 : .05, hgt, along ? .05 : span / pieces + .02, parent, top - hgt);
+    }
+  }
+  /** A spill of broken stone about a point in the frame: `count` pieces within `spread` metres, the largest first. */
+  function rubbleHeap(a, b, spread, count, size = .5, parent = district) {
+    for (let k = 0; k < count; k++) {
+      const u = roughRandom() * Math.PI * 2, r = Math.sqrt(roughRandom()) * spread, p = P(a + Math.cos(u) * r, b + Math.sin(u) * r), s = size * (1 - k / count * .6) * rough(.6, 1.2);
+      pebble(rubble[k % rubble.length], p.x, gy(p.x, p.z) + s * .25, p.z, s, s * rough(.45, .75), s * rough(.7, 1.1), parent);
+    }
+  }
+  /** Scaffolding along a line in the frame: standards, ledgers at two heights, a brace, from `(a0,b0)` to `(a1,b1)`. */
+  function scaffolding(a0, b0, a1, b1, height, base) {
+    const length = Math.hypot(a1 - a0, b1 - b0), bays = Math.max(1, Math.round(length / 1.8)), alongA = Math.abs(a1 - a0) >= Math.abs(b1 - b0);
+    for (let k = 0; k <= bays; k++) { const p = P(a0 + (a1 - a0) * k / bays, b0 + (b1 - b0) * k / bays); post(timberNew, p.x, base + height / 2, p.z, .06, height, district); }
+    const mid = P((a0 + a1) / 2, (b0 + b1) / 2);
+    for (const lift of [height * .42, height * .85]) box(woodLight, mid.x, base + lift, mid.z, alongA ? length : .55, .07, alongA ? .55 : length, district);
+    const brace = box(timberNew, mid.x, base + height * .45, mid.z, alongA ? length * 1.02 : .05, .06, alongA ? .05 : length * 1.02, district);
+    brace.rotation[alongA ? 'z' : 'x'] = (alongA ? 1 : -1) * Math.atan2(height * .8, length);
+  }
 
   // -------------------------------------------------------------------------
   // Ground helpers
@@ -110,19 +144,55 @@ export function createWestSuvalScenery(kit) {
       const centre = facePoint(faceId, mid), outer = facePoint(faceId, mid, t - .25), inner = facePoint(faceId, mid, -t + .15);
       const base = yAt(centre.a, centre.b) - .35;
       const along = face.axis === 'a';
-      // The old sea wall has been patched so often that its courses no longer match.
-      const body = sea && c % 3 === 1 ? stonePatch : c % 4 === 2 ? stoneWarm : stone;
+      const state = wallStateAt(faceId, mid), fresh = state === 'repaired', burnt = state === 'scorched';
       const [w, d] = along ? [span, FORT.thickness] : [FORT.thickness, span];
+      if (state === 'breach') {
+        // Thrown down to a ragged stump, and shut with a palisade of new stakes on the wall line; the rubble lies where it fell.
+        for (let k = 0; k < 3; k++) {
+          const p0 = a0 + (a1 - a0) * k / 3, stump = facePoint(faceId, p0 + (a1 - a0) / 6), hgt = rough(.5, 2.1);
+          block(k % 2 ? stoneBurnt : stone, stump.a, stump.b, along ? (a1 - a0) / 3 + .02 : FORT.thickness, hgt, along ? FORT.thickness : (a1 - a0) / 3 + .02, district, base);
+          block(soot, stump.a, stump.b, along ? (a1 - a0) / 3 + .04 : FORT.thickness + .04, .3, along ? FORT.thickness + .04 : (a1 - a0) / 3 + .04, district, base + hgt - .28);
+        }
+        for (let m = a0 + .19; m < a1; m += .38) {
+          const stake = facePoint(faceId, m, rough(-.12, .12)), p = P(stake.a, stake.b), hgt = 4.4 + rough(-.3, .3);
+          post(timberNew, p.x, base + .35 + hgt / 2, p.z, .17, hgt, district);
+          mesh(cone6, timberNew, p.x, base + .35 + hgt + .18, p.z, .17, .36, .17, district);
+        }
+        for (const lift of [1.4, 3.4]) { const rail = facePoint(faceId, mid, -.4); block(darkWood, rail.a, rail.b, along ? span : .14, .16, along ? .14 : span, district, base + lift); }
+        for (const out of [2.4, 5, 7.6]) { const heap = facePoint(faceId, mid + rough(-1.5, 1.5), t + out); rubbleHeap(heap.a, heap.b, 1.4, 5, .7 - out * .04); }
+        const inside = facePoint(faceId, mid, -t - 1.3); rubbleHeap(inside.a, inside.b, 1.2, 4, .45);
+        continue;
+      }
+      if (state === 'scaffold') {
+        // Going up again: new courses to shoulder height, boarding above them to the wall walk, scaffolding on the field face.
+        const courses = 2.4 + (c % 2) * .7;
+        block(stoneNew, centre.a, centre.b, w, courses, d, district, base);
+        const boards = facePoint(faceId, mid, .3);
+        block(timberNew, boards.a, boards.b, along ? span : .16, FORT.wallTop + .35 - courses, along ? .16 : span, district, base + courses);
+        const s0 = facePoint(faceId, a0 + .2, t + 1.3), s1 = facePoint(faceId, a1 - .2, t + 1.3);
+        scaffolding(s0.a, s0.b, s1.a, s1.b, 5.2, base + .35);
+        const blocks = facePoint(faceId, mid, -t - 1.6);
+        for (let k = 0; k < 4; k++) block(stoneNew, blocks.a + (along ? (k - 1.5) * .7 : 0), blocks.b + (along ? 0 : (k - 1.5) * .7), .6, .4 * (1 + (k % 2)), .6, district, yAt(blocks.a, blocks.b));
+        continue;
+      }
+      // The old sea wall has been patched so often that its courses no longer match. What the Empire rebuilt is new and pale.
+      const body = fresh ? stoneNew : sea && c % 3 === 1 ? stonePatch : c % 4 === 2 ? stoneWarm : stone;
       block(body, centre.a, centre.b, w, FORT.wallTop + .35, d, district, base);
+      if (burnt) {
+        // Black from the fire along its top, both faces, and streaked below the slits.
+        for (const side of [1, -1]) { const face2 = facePoint(faceId, mid, side * (t + .02)); sootLicks(face2.a, face2.b, along, span, base + FORT.wallTop + .4, 2.2, 4); }
+        const streak = facePoint(faceId, mid + rough(-1.5, 1.5), t + .02); block(sootLight, streak.a, streak.b, along ? .5 : .04, 1.6, along ? .04 : .5, district, base + 1.6);
+      }
       // A battered plinth of big old blocks, the kingdom's first course.
       const plinth = facePoint(faceId, mid, t - .1);
       block(stoneDark, plinth.a, plinth.b, along ? span : .9, 1.25, along ? .9 : span, district, base);
       block(mortarLine, plinth.a, plinth.b, along ? span : .95, .08, along ? .95 : span, district, base, 2.6);
-      // The outer parapet and its merlons.
-      block(stone, outer.a, outer.b, along ? span : .5, .8, along ? .5 : span, district, base + FORT.wallTop + .35);
-      for (let m = a0 + 1; m < a1 - .4; m += 2.1) {
+      // The outer parapet and its merlons; on a burnt stretch most of the merlons are gone.
+      block(fresh ? stoneNew : burnt ? stoneBurnt : stone, outer.a, outer.b, along ? span : .5, .8, along ? .5 : span, district, base + FORT.wallTop + .35);
+      for (let m = a0 + 1, n = 0; m < a1 - .4; m += 2.1, n++) {
+        if (burnt && n % 3 !== 1) continue;
         const merlon = facePoint(faceId, m, t - .25);
-        block(stone, merlon.a, merlon.b, along ? 1.05 : .5, .7, along ? .5 : 1.05, district, base + FORT.parapetTop + .35);
+        block(fresh ? stoneNew : burnt ? stoneBurnt : stone, merlon.a, merlon.b, along ? 1.05 : .5, burnt ? rough(.3, .7) : .7, along ? .5 : 1.05, district, base + FORT.parapetTop + .35);
       }
       // A low parapet on the town side, so the walk reads as a platform from the street.
       block(stoneWarm, inner.a, inner.b, along ? span : .3, .55, along ? .3 : span, district, base + FORT.wallTop + .35);
@@ -133,16 +203,42 @@ export function createWestSuvalScenery(kit) {
   for (const faceId of Object.keys(SOLIS_FACES)) for (const [from, to] of wallRuns(faceId)) wallRun(faceId, from, to);
 
   function tower(entry, index) {
-    const base = yAt(entry.a, entry.b) - .45, top = base + FORT.towerTop + .45;
-    block(index % 3 === 1 ? stoneWarm : stone, entry.a, entry.b, FORT.towerSize, FORT.towerTop + .45, FORT.towerSize, district, base);
+    const state = towerState(entry.id), base = yAt(entry.a, entry.b) - .45;
+    if (state === 'broken') {
+      // The crown thrown down: a ragged stump a little over the wall walk, black at its broken edge, its stones at its foot.
+      const stump = FORT.wallTop + 1.4;
+      block(stoneBurnt, entry.a, entry.b, FORT.towerSize, stump, FORT.towerSize, district, base);
+      block(stoneDark, entry.a, entry.b, FORT.towerSize + .5, 1.4, FORT.towerSize + .5, district, base);
+      for (const sa of [-1, 1]) for (const sb of [-1, 1]) {
+        const hgt = rough(.4, 2.4);
+        block(stoneBurnt, entry.a + sa * (half - .7), entry.b + sb * (half - .7), 1.4, hgt, 1.4, district, base + stump);
+        block(soot, entry.a + sa * (half - .7), entry.b + sb * (half - .7), 1.44, .3, 1.44, district, base + stump + hgt - .28);
+      }
+      const out = Math.abs(entry.b) > SOLIS_CIRCUIT.halfB ? { a: 0, b: Math.sign(entry.b) } : { a: Math.sign(entry.a), b: 0 };
+      rubbleHeap(entry.a + out.a * (half + 2.2), entry.b + out.b * (half + 2.2), 2.4, 9, .9);
+      return base + stump;
+    }
+    const top = base + FORT.towerTop + .45, rebuilt = state === 'rebuilt', roofless = state === 'roofless';
+    block(rebuilt ? stoneNew : roofless ? stoneBurnt : index % 3 === 1 ? stoneWarm : stone, entry.a, entry.b, FORT.towerSize, FORT.towerTop + .45, FORT.towerSize, district, base);
     block(stoneDark, entry.a, entry.b, FORT.towerSize + .5, 1.4, FORT.towerSize + .5, district, base);
     block(mortarLine, entry.a, entry.b, FORT.towerSize + .06, .1, FORT.towerSize + .06, district, base + FORT.wallTop + .5);
-    // Corbelled crown, merlons, then four piers carrying a tiled cap: Solis's towers are roofed.
-    block(stone, entry.a, entry.b, FORT.towerSize + .5, .45, FORT.towerSize + .5, district, top - .1);
+    // Corbelled crown, merlons, then four piers carrying a tiled cap: Solis's towers are roofed, where the fire left them a roof.
+    block(rebuilt ? stoneNew : stone, entry.a, entry.b, FORT.towerSize + .5, .45, FORT.towerSize + .5, district, top - .1);
+    if (roofless) {
+      // The cap burned and fell in: soot on the crown, and the charred rafters still standing up out of it.
+      block(soot, entry.a, entry.b, FORT.towerSize + .54, .5, FORT.towerSize + .54, district, top - .5);
+      for (const [sa, sb] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const p = P(entry.a + sa * (half - .6), entry.b + sb * (half - .6));
+        const rafter = box(charred, p.x, top + 1.1, p.z, .16, 2.4 * rough(.5, 1), .16, district);
+        rafter.rotation.set(sb * rough(.3, .6), 0, -sa * rough(.3, .6));
+      }
+      for (const [da, db] of [[0, -half], [0, half], [-half, 0], [half, 0]]) block(stoneBurnt, entry.a + da, entry.b + db, da ? .5 : 1.4, rough(.3, .75), da ? 1.4 : .5, district, top + .3);
+      return top;
+    }
     for (const sa of [-1, 1]) for (const sb of [-1, 1]) block(stone, entry.a + sa * (half - .15), entry.b + sb * (half - .15), .8, 1.7, .8, district, top + .3);
     for (const [da, db, wa, wb] of [[0, -half, 1.4, .5], [0, half, 1.4, .5], [-half, 0, .5, 1.4], [half, 0, .5, 1.4]]) block(stone, entry.a + da, entry.b + db, wa, .75, wb, district, top + .3);
     const p = P(entry.a, entry.b);
-    const cap = mesh(coneGeometry, index % 2 ? tile : tileDark, p.x, top + 2 + FORT.capRise / 2, p.z, (half + .75) * Math.SQRT2, FORT.capRise, (half + .75) * Math.SQRT2, district);
+    const cap = mesh(coneGeometry, rebuilt ? tileNew : index % 2 ? tile : tileDark, p.x, top + 2 + FORT.capRise / 2, p.z, (half + .75) * Math.SQRT2, FORT.capRise, (half + .75) * Math.SQRT2, district);
     cap.rotation.y = Math.PI / 4;
     block(tileRidge, entry.a, entry.b, .9, .4, .9, district, top + 2 + FORT.capRise - .1);
     for (const [sa, sb] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) block(shadow, entry.a + sa * (half + .01), entry.b + sb * (half + .01), sb ? .18 : .05, 1.1, sa ? .18 : .05, district, base + 5.4);
@@ -219,15 +315,20 @@ export function createWestSuvalScenery(kit) {
     const outward = Math.atan2(gate.out.a, gate.out.b);
     // The arch and the gatehouse chamber over the passage.
     const [w, d] = along ? [FORT.gateWidth + .1, FORT.towerSize] : [FORT.towerSize, FORT.gateWidth + .1];
-    block(stone, centre.a, centre.b, w, 2.2, d, district, base + 5.2);
-    block(stone, centre.a, centre.b, along ? FORT.gateWidth + .1 : .5, .9, along ? .5 : FORT.gateWidth + .1, district, base + 7.4);
+    const rebuilt = main && SUN_HORSE_GATE.rebuilt, gateStone = rebuilt ? stoneNew : stone;
+    block(gateStone, centre.a, centre.b, w, 2.2, d, district, base + 5.2);
+    block(gateStone, centre.a, centre.b, along ? FORT.gateWidth + .1 : .5, .9, along ? .5 : FORT.gateWidth + .1, district, base + 7.4);
     const arch = facePoint(gate.face, gate.along, FORT.towerOut + half + .02);
     block(stoneDark, arch.a, arch.b, along ? FORT.gateWidth + .6 : .12, .5, along ? .12 : FORT.gateWidth + .6, district, base + 4.9);
-    // Open leaves along the passage sides, studded with bronze.
+    // Open leaves along the passage sides, studded with bronze; the Sun Horses' burned, and their new oak is banded with iron.
     for (const side of [-1, 1]) {
       const leafSpot = facePoint(gate.face, gate.along + side * (FORT.gateWidth / 2 - .12), -.2);
-      block(darkWood, leafSpot.a, leafSpot.b, along ? .2 : 2.3, 4.4, along ? 2.3 : .2, district, base + .3);
-      for (let s = 0; s < 3; s++) {
+      block(rebuilt ? timberNew : darkWood, leafSpot.a, leafSpot.b, along ? .2 : 2.3, 4.4, along ? 2.3 : .2, district, base + .3);
+      if (rebuilt) for (const lift of [.9, 2.4, 3.9]) {
+        const band = facePoint(gate.face, gate.along + side * (FORT.gateWidth / 2 - .23), -.2);
+        block(iron, band.a, band.b, along ? .04 : 2.32, .16, along ? 2.32 : .04, district, base + .3 + lift);
+      }
+      else for (let s = 0; s < 3; s++) {
         const stud = facePoint(gate.face, gate.along + side * (FORT.gateWidth / 2 - .25), -.2 - .8 + s * .8);
         block(bronze, stud.a, stud.b, .12, .12, .12, district, base + 1.4 + s * 1.1);
       }
@@ -237,12 +338,15 @@ export function createWestSuvalScenery(kit) {
     const sun = mesh(discGeometry, bronze, disc.x, base + 6.3, disc.z, .72, .1, .72, district);
     sun.rotation.set(Math.PI / 2, 0, 0); sun.rotation.y = 0; sun.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), outward);
     if (main) {
-      // Two rearing bronze horses over the Gate of Sun Horses, and last summer's flowers at their feet.
+      // Two rearing bronze horses over the Gate of Sun Horses, and last summer's flowers at their feet. One is
+      // still there; the other was pulled down in the sack and melted for coin, and only its hooves are left.
       const horseBase = base + 8.3;
       for (const side of [-1, 1]) {
         const spot = facePoint(gate.face, gate.along + side * 1.2, FORT.towerOut + 1.2), p = P(spot.a, spot.b);
         block(stoneDark, spot.a, spot.b, 1.5, .5, 2.2, district, horseBase - .5);
-        bronzeHorse(p.x, horseBase, p.z, outward + side * .22, side).scale.setScalar(1.35);
+        if (SUN_HORSE_GATE.standing.includes(side)) { bronzeHorse(p.x, horseBase, p.z, outward + side * .22, side).scale.setScalar(1.35); continue; }
+        for (const [da, db] of [[-.35, -.75], [.35, -.75]]) { const hoof = P(spot.a + da, spot.b + db); mesh(cylinder, bronze, hoof.x, horseBase + .2, hoof.z, .16, .4, .16, district); }
+        block(soot, spot.a, spot.b, 1.52, .08, 2.22, district, horseBase - .06);
       }
       for (let f = 0; f < 26; f++) {
         const side = f % 2 ? 1 : -1, spot = facePoint(gate.face, gate.along + side * range(2.6, 8), range(4.3, 5.6)), p = P(spot.a, spot.b);
@@ -279,11 +383,66 @@ export function createWestSuvalScenery(kit) {
   paveLine(SOLIS_STREETS.find(street => street.id === 'camp-spur').points, 2.6, ribbon('#b3a77a'), .03);
 
   const doorSide = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+  /**
+   * A house the sack burned: its four walls standing to a ragged height and black along their broken tops,
+   * empty window holes, no door, no roof; inside, the rubble and the roof beams that came down. A 'collapsed'
+   * house is stumps and a heap; a 'scaffold' one has its new walls going up behind scaffolding.
+   */
+  function burntHouse(entry, index, state, base) {
+    const { a, b, w, d, h } = entry, thick = .45, wallMat = entry.kind === 'warehouse' ? stoneBurnt : burntWalls[index % burntWalls.length];
+    const collapsed = state === 'collapsed', rising = state === 'scaffold';
+    for (const [sa, sb] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      const length = sb ? w : d, pieces = Math.max(2, Math.round(length / 2.2));
+      for (let k = 0; k < pieces; k++) {
+        const u = (k + .5) / pieces - .5, corner = k === 0 || k === pieces - 1;
+        const pa = sb ? a + u * w : a + sa * (w / 2 - thick / 2), pb = sb ? b + sb * (d / 2 - thick / 2) : b + u * d;
+        const newWall = rising && sb === 1, hgt = newWall ? h + .3 : collapsed ? rough(.35, 1.5) : h * (corner ? rough(.85, 1) : rough(.5, .95));
+        const seg = length / pieces + .02;
+        block(newWall ? stoneNew : wallMat, pa, pb, sb ? seg : thick, hgt, sb ? thick : seg, district, base);
+        if (!newWall) {
+          // Black along the broken top, and licking down both faces from it.
+          block(soot, pa, pb, sb ? seg + .03 : thick + .04, .22, sb ? thick + .04 : seg + .03, district, base + hgt - .2);
+          for (const side of [1, -1]) {
+            const fa = sb ? pa : pa + side * (thick / 2 + .02), fb = sb ? pb + side * (thick / 2 + .02) : pb;
+            sootLicks(fa, fb, !!sb, seg, base + hgt, Math.min(h * .7, hgt * .8), 2);
+          }
+        }
+        // Empty window holes where the wall still stands high enough to have had one.
+        if (!collapsed && hgt > h * .72 && k % 2 === 1) {
+          const wa = sb ? pa : a + sa * (w / 2 + .03), wb = sb ? b + sb * (d / 2 + .03) : pb;
+          block(charred, wa, wb, sb ? .8 : .06, 1.0, sb ? .06 : .8, district, base + h * .55);
+          block(sootLight, wa, wb, sb ? 1.0 : .07, .5, sb ? .07 : 1.0, district, base + h * .55 + 1.0);
+        }
+      }
+    }
+    // The doorway, empty.
+    const [da, db] = doorSide[entry.door ?? (b < 0 ? 'south' : 'north')];
+    if (!collapsed) block(charred, a + da * (w / 2 + .03), b + db * (d / 2 + .03), da ? .1 : 1.3, 2.3, da ? 1.3 : .1, district, base + .4);
+    // Inside: the fallen roof's rubble and its beams, lying where they came down.
+    rubbleHeap(a, b, Math.min(w, d) * .35, collapsed ? 16 : 9, collapsed ? 1.1 : .75);
+    for (let k = 0; k < (collapsed ? 4 : 3); k++) {
+      const p = P(a + rough(-w, w) * .2, b + rough(-d, d) * .2), longWay = w >= d;
+      const beam = box(charred, p.x, base + .6 + rough(0, h * .35), p.z, longWay ? w * .8 : .2, .2, longWay ? .2 : d * .8, district);
+      beam.rotation.set(rough(-.25, .25), rough(-.5, .5), rough(-.35, .35));
+    }
+    if (rising) {
+      // The new front going up: scaffolding before it, a ladder, and dressed stone waiting in the street.
+      scaffolding(a - w / 2 + .2, b + d / 2 + 1.1, a + w / 2 - .2, b + d / 2 + 1.1, h + 1.2, base + .3);
+      for (let k = 0; k < 3; k++) block(stoneNew, a + w / 2 + .9, b + d / 2 - .5 - k * .75, .6, .45, .6, district, yAt(a + w / 2 + .9, b + d / 2 - .5 - k * .75));
+    }
+    // Stone and char spilled into the street along the house front.
+    const front = { a: a + da * (w / 2 + .9), b: b + db * (d / 2 + .9) };
+    rubbleHeap(front.a + (db ? rough(-w, w) * .3 : 0), front.b + (da ? rough(-d, d) * .3 : 0), .8, 4, .35);
+    metrics.buildings++; metrics.ruins++;
+    push({ ...P(a, b), hx: w / 2 + .15, hz: d / 2 + .15, kind: 'solis-building', id: entry.id, ruin: state });
+  }
   /** A house of Solis: whitewashed stone, a low red-tiled roof, shutters, and sometimes a roof garden. */
   function townHouse(entry, index) {
     const { a, b, w, d, h } = entry, base = Math.min(yAt(a - w / 2, b), yAt(a + w / 2, b)) - .3;
     const wallMat = entry.kind === 'warehouse' ? stoneWarm : walls[index % walls.length];
+    const state = buildingState(entry.id), rebuilt = state === 'rebuilt';
     block(stoneDark, a, b, w + .3, .75, d + .3, district, base);
+    if (state === 'shell' || state === 'collapsed' || state === 'scaffold') { burntHouse(entry, index, state, base); return; }
     block(wallMat, a, b, w, h + .3, d, district, base);
     const roofTop = base + h + .3;
     if (entry.garden) {
@@ -300,7 +459,7 @@ export function createWestSuvalScenery(kit) {
     } else {
       // roofGeometry's ridge runs along its depth (world z); a turn puts it along a.
       const ridgeAlongA = w >= d, p = P(a, b);
-      const roof = mesh(roofGeometry((ridgeAlongA ? d : w) + .9, (ridgeAlongA ? w : d) + .9, Math.min(2.2, Math.min(w, d) * .28)), index % 2 ? tile : tileDark, p.x, roofTop, p.z, 1, 1, 1, district);
+      const roof = mesh(roofGeometry((ridgeAlongA ? d : w) + .9, (ridgeAlongA ? w : d) + .9, Math.min(2.2, Math.min(w, d) * .28)), rebuilt ? tileNew : index % 2 ? tile : tileDark, p.x, roofTop, p.z, 1, 1, 1, district);
       if (ridgeAlongA) roof.rotation.y = Math.PI / 2;
     }
     // A door on the street side and windows with painted shutters.
@@ -316,6 +475,8 @@ export function createWestSuvalScenery(kit) {
         if (Math.hypot(wa - doorAt.a, wb - doorAt.b) < 1.2) continue;
         block(shadow, wa, wb, sb ? .8 : .06, 1.0, sb ? .06 : .8, district, base + h * .55);
         block(shutter, wa + (sb ? .6 : 0), wb + (sb ? 0 : .6), sb ? .35 : .08, 1.05, sb ? .08 : .35, district, base + h * .55 - .02);
+        // A rebuilt house still has the fire's smoke up its walls above the old windows.
+        if (rebuilt && k % 2 === 0) block(sootLight, wa, wb, sb ? 1.1 : .07, .9, sb ? .07 : 1.1, district, base + h * .55 + 1.0);
       }
     }
     metrics.buildings++;
@@ -340,7 +501,7 @@ export function createWestSuvalScenery(kit) {
     metrics.buildings++;
   }
 
-  // The Empire's layer by the gate: the tax house's boarded plaque, the barracks' defaced eagle, notices in three hands.
+  // The Empire's layer by the gate: the tax house's boarded plaque, the barracks' defaced tower of Ambron, notices in three hands.
   {
     const tax = SOLIS_BUILDINGS.find(entry => entry.id === 'tax-house'), barracks = SOLIS_BUILDINGS.find(entry => entry.id === 'legion-barracks');
     const plaqueA = tax.a + tax.w / 2 + .06, plaqueY = yAt(tax.a, tax.b) + 3.4;

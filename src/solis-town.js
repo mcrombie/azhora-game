@@ -15,6 +15,7 @@
  * are not yet sure of the Republic.
  */
 import { SOLIS_STANDS } from './west-suval.js';
+import { SACK_MEMORIES } from './solis-sack.js';
 
 const REGION = 'West Suval';
 const COALITION = Object.freeze({ holds: 'coalition', region: REGION });
@@ -115,7 +116,7 @@ const TOWNSFOLK = Object.freeze({
   },
   'solis-innkeeper': {
     coalition: ['The Bronze Mare has beds. The Republic’s officers pay for theirs in coin, which surprised me. The men from the camp drink on paper, which does not.'],
-    empire: ['Army officers in every room and a chit for each. The Empire held this city for thirty years. I know exactly what a chit is worth.'],
+    empire: ['Army officers in every room and a chit for each. The Empire held this city for three years, from the night of the fire. I know exactly what a chit is worth.'],
     routed: ['The bar is shut. Whoever holds the gate by supper can buy the first round.'],
   },
 });
@@ -130,8 +131,8 @@ const GARRISON = Object.freeze({
   'solis-tribune-clerk': ['Captain Brulan’s clerk. Every paper the rebel council left behind is being catalogued. What they signed is evidence now. Do not touch the table.'],
 });
 
-/** What a townsperson says under a holder. */
-export const townsfolkLines = (id, holder) => [...(TOWNSFOLK[id]?.[holder] ?? TOWNSFOLK[id]?.coalition ?? [])];
+/** What a townsperson says under a holder, and then what they remember of the fire (src/solis-sack.js). */
+export const townsfolkLines = (id, holder) => [...(TOWNSFOLK[id]?.[holder] ?? TOWNSFOLK[id]?.coalition ?? []), ...(SACK_MEMORIES[id] ? [SACK_MEMORIES[id]] : [])];
 export const captainLines = id => [...(CAPTAINS[id] ?? [])];
 
 /** Sergeant Kell reads the Marshal's seal: the second stage of the border chapter. */
