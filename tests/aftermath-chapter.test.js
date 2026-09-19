@@ -31,13 +31,13 @@ test('every person and place a variant names exists', () => {
   for (const spec of Object.values(AFTERMATH_VARIANTS)) {
     assert.ok(people.has(spec.commanderId) && people.has(spec.principalId), spec.id);
     assert.ok(AFTERMATH_SITE_IDS.includes(spec.rallySite));
-    // The Legate keeps his tent; everyone else needs somewhere to stand for the report.
+    // The Marshal keeps his tent; everyone else needs somewhere to stand for the report.
     assert.equal(spec.reportSite === null, spec.principalId === AFTERMATH_LEGATE_ID, spec.id);
     assert.ok(AFTERMATH_ARENA_IDS.includes(spec.arena));
     for (const lines of [spec.orders, spec.debrief, spec.after]) assert.ok(lines.length && lines.every(line => typeof line === 'string' && line.length > 5 && !/South Pyros|not built/i.test(line)));
     assert.match(spec.onward, /not built yet/);
   }
-  // Only the Legion's people wear its armor.
+  // Only the army's people wear its armor.
   assert.deepEqual(AFTERMATH_NPCS.filter(npc => npc.modelRole.startsWith('legion')).map(npc => npc.id), ['aftermath-tribune']);
 });
 
@@ -190,7 +190,7 @@ test('the Empire storms the Gate of Sun Horses from the road outside it, and the
   const spec = AFTERMATH_VARIANTS['solis-sweep'], arena = aftermathArena(spec.arena), fight = aftermathEncounter('solis-sweep', arena);
   const gate = aftermathSite('solis-gate'), rally = aftermathSite(spec.rallySite);
   assert.equal(fight.retreatSign, -1, 'the way out runs north, up the road');
-  assert.ok(rally.z < gate.z - 30, 'the Legion forms up north of the gate, outside the city');
+  assert.ok(rally.z < gate.z - 30, 'the army forms up north of the gate, outside the city');
   assert.ok(fight.checkpoint.z < fight.center.z && fight.retreatLine < fight.checkpoint.z, 'the traveler starts on the road side');
   assert.ok(fight.enemies.every(enemy => enemy.z > fight.center.z), 'the defenders stand between the traveler and the gate');
   assert.ok(Math.max(...fight.enemies.map(enemy => enemy.z)) > gate.z + 2, 'and the last of them come out of the gateway');

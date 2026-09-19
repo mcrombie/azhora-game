@@ -290,7 +290,7 @@ function mainRoadAt(x) {
   throw new Error(`The main road does not pass x = ${x}.`);
 }
 
-/** Where the Ambron road leaves the Moros road, out west past the Legion camp. */
+/** Where the Ambron road leaves the Moros road, out west past the army camp. */
 export const AMBRON_JUNCTION = mainRoadAt(-1258);
 
 /**
@@ -421,7 +421,7 @@ export const ELAGOS_CLEARINGS = freeze([
 // Signposts, in the road's own language
 // ---------------------------------------------------------------------------
 export const ELAGOS_SIGNS = freeze([
-  freeze({ ...point(AMBRON_JUNCTION.x + 8, AMBRON_JUNCTION.z - 11), label: 'Ambron', returnLabel: 'The Legion Camp', yaw: 0 }),
+  freeze({ ...point(AMBRON_JUNCTION.x + 8, AMBRON_JUNCTION.z - 11), label: 'Ambron', returnLabel: 'The Army Camp', yaw: 0 }),
   freeze({ ...point(-1246, 461), label: 'Ambron', returnLabel: 'Moros Plain', yaw: 0 }),
   freeze({ ...point(-1234, 409), label: 'The Stair', returnLabel: 'Ambron', yaw: 0 }),
   freeze({ ...point(-1231, 195), label: 'Nemmel', returnLabel: 'Ambron', yaw: 0 }),

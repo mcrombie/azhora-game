@@ -151,7 +151,7 @@ export const AMBRON_STREETS = freeze([
 
 /** The market of the narrows: the widened part of the causeway street, and where it is fought over if it ever is. */
 export const AMBRON_MARKET = freeze({ minA: 34, maxA: 60, minB: -20, maxB: 4 });
-/** The plaza before the Legate-General's Seat. */
+/** The plaza before the Lord Marshal's Seat. */
 export const SEAT_COURT = freeze({ minA: 60, maxA: 62, minB: 3, maxB: 33 });
 
 // ---------------------------------------------------------------------------
@@ -175,7 +175,7 @@ export const AMBRON_BUILDINGS = freeze([
   building({ id: 'house-ne', a: 85, b: -54, w: 8, d: 18, h: 6.5, layer: 'new' }),
   building({ id: 'lake-temple', name: 'The House of the Lake', a: 70, b: -24, w: 14, d: 22, h: 8.5, layer: 'lake-stone', kind: 'temple', door: 'west' }),
   building({ id: 'clerks-house', a: 84, b: -24, w: 10, d: 22, h: 7, layer: 'patched' }),
-  building({ id: 'legate-seat', name: 'The Legate-General’s Seat', a: 75, b: 18, w: 28, d: 30, h: 11.5, layer: 'imperial', kind: 'seat', door: 'west' }),
+  building({ id: 'legate-seat', name: 'The Lord Marshal’s Seat', a: 75, b: 18, w: 28, d: 30, h: 11.5, layer: 'imperial', kind: 'seat', door: 'west' }),
   building({ id: 'lake-granary', name: 'The Lake Granary', a: 71, b: 54, w: 18, d: 18, h: 10.5, kind: 'granary', door: 'west' }),
   building({ id: 'house-se', a: 85, b: 54, w: 8, d: 18, h: 6.5, layer: 'new' }),
   // The west bank: the timber strand, newer, poorer and working.

@@ -189,7 +189,7 @@ export const APPLEGARTH_WORKS = Object.freeze({
  */
 export const RENA_STANDS = Object.freeze({
   // Tidehaven, in the carried-over village's own frame: nothing here moves an
-  // existing stand, nothing stands within reach of a Legion post, and nothing
+  // existing stand, nothing stands within reach of an army post, and nothing
   // sits inside a bird's home ground (src/drent-birds.js, BIRD_HABITATS), which
   // would take its perches away.
   'rena-lorn': Object.freeze({ ...villageToWorld(-2, 26), yaw: -2.36 }),        // on the shingle, facing up the beach

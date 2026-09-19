@@ -245,14 +245,14 @@ test('The islands carry their own scatter, and none of it stands in the village 
 test('Peblos is level one: fishing people, a bored garrison, and nothing that can kill the first hour', () => {
   assert.equal(REGION_DESIGN.find(entry => entry.id === 'Peblos').level, 1);
   assert.equal(PEBLOS_NPCS.length, 11);
-  assert.equal(PEBLOS_NPCS.filter(npc => npc.modelRole?.startsWith('legion')).length, 4, 'a decurion and three legionaries');
+  assert.equal(PEBLOS_NPCS.filter(npc => npc.modelRole?.startsWith('legion')).length, 4, 'a lieutenant and three soldiers');
   assert.equal(PEBLOS_NPCS.every(npc => !npc.armed), true, 'nobody on the quay has a blade out');
   for (const npc of PEBLOS_NPCS) {
     assert.ok(PEBLOS_AMBIENT[npc.id]?.length >= 2, `${npc.id} has something to say`);
     assert.ok(PEBLOS_NPC_POSITIONS[npc.id], `${npc.id} has a stand`);
-    // Only Legion people wear Legion armour.
-    if (npc.modelRole?.startsWith('legion')) assert.ok(npc.role.includes('Legion'));
-    else assert.ok(!npc.role.includes('Legion'));
+    // Only Imperial soldiers wear Imperial armour.
+    if (npc.modelRole?.startsWith('legion')) assert.match(npc.role, /Ambroni (soldier|officer)|army/);
+    else assert.doesNotMatch(npc.role, /Ambroni (soldier|officer)|army/);
   }
   // The Empire's share is the seam that is written on, and it is written on by both sides.
   const said = Object.values(PEBLOS_AMBIENT).flat().join(' ');

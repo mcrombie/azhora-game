@@ -175,7 +175,7 @@ function init() {
   // The day after the battle: a commander, and whoever sends the traveler on, appear where that day's work is.
   for(const person of AFTERMATH_NPCS){world.npcPositions[person.id]={x:AFTERMATH_SITES['camp-gate'].x,z:AFTERMATH_SITES['camp-gate'].z};npcData.push({...person,hidden:true,site:null});}
   const aftermathNpcIds=new Set(AFTERMATH_NPCS.map(person=>person.id));
-  // The ostler of Lumber Town hands over the Legion's horse and teaches riding.
+  // The ostler of Lumber Town hands over the army's horse and teaches riding.
   world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
@@ -236,7 +236,7 @@ function init() {
   const refugeeRoute=world.paths[0].slice(0,REFUGEE_START+1).reverse().map(point=>({x:point.x,z:point.z}));
   const refugees=createRefugees({route:refugeeRoute,stands:REFUGEE_STANDS,onEvent:event=>{if(event.type==='refugees-arrived')toast('Three people off the Lauvel road have reached the landing. They are telling the village what they saw.','WORD FROM THE WEST');}});
   for(const person of REFUGEES){const start=refugees.positions().find(entry=>entry.id===person.id);world.npcPositions[person.id]={x:start.x,z:start.z};npcData.push({...person,yaw:start.yaw});}
-  // The Legion's posts along the road: soldiers who stand watch and have a word for a hired sword.
+  // The army's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
   for(const entry of TOWN_LIFE_NPCS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({...entry});}
@@ -267,7 +267,7 @@ function init() {
   let weapons,consumables;
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();}});
   const combatView=createCombatView(scene,world,camera);
-  let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null;
+  let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,arrivalProgress=0;
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
   const cameraFocus=new THREE.Vector3(),cameraTarget=new THREE.Vector3(),cameraColliders=[];
@@ -603,7 +603,7 @@ function init() {
   // Places change hands: garrisons (anyone with a stake, see occupation.js) are out only while their side holds their region.
   let heldControl=null,stakedNpcs=null,occupationClock=0;
   let currentMorosSite=null,currentFeederHook=false;
-  // The Legion's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
+  // The army's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
@@ -900,7 +900,7 @@ function init() {
     const hitch=LUMBER_TOWN_STABLE.hitch;
     if(action==='fetch-horse'){riding.place(hitch,hitch.yaw);placeOwnHorse();toast('A stable boy goes out with a halter. Your horse is back in the yard.','LUMBER TOWN · THE STABLE YARD');saveRoad(false);return {ok:true};}
     const result=redeemHorse({inventory,riding,hitch});if(!result.ok){toast(result.reason,'THE STABLE YARD');return result;}
-    placeOwnHorse();inventory.refresh();refreshQuest();audio?.effect('success');toast('A bay gelding, saddled, and yours. G mounts and dismounts · Shift canters · H whistles him up.','THE LEGION’S HORSE');saveRoad(false);return result;
+    placeOwnHorse();inventory.refresh();refreshQuest();audio?.effect('success');toast('A bay gelding, saddled, and yours. G mounts and dismounts · Shift canters · H whistles him up.','THE ARMY’S HORSE');saveRoad(false);return result;
   }
   const beggar=createBeggar({waypoints:TOWN_BEGGAR_ROUTE});
   const LUSCIA_NPC_IDS=new Set(LUSCIA_NPCS.map(person=>person.id));
@@ -1150,7 +1150,7 @@ function init() {
     const view=campaign.view(),control=campaign.mapControl();
     $('campaign-chapter-title').textContent=`${view.title}${view.region?` · ${view.region}`:''}${view.levelName?` · level ${view.level} ${view.levelName}`:''}`;
     $('campaign-chapter-detail').textContent=view.detail;
-    $('campaign-standing').textContent=`${view.sideName}${view.exposed?' · your double-dealing is known':''} · Empire trust ${Math.round(view.trust.empire)} · Coalition trust ${Math.round(view.trust.coalition)}${view.horse?' · a Legion horse':''}${companyStanding()}`;
+    $('campaign-standing').textContent=`${view.sideName}${view.exposed?' · your double-dealing is known':''} · Empire trust ${Math.round(view.trust.empire)} · Coalition trust ${Math.round(view.trust.coalition)}${view.horse?' · an army horse':''}${companyStanding()}`;
     const list=$('campaign-regions');list.replaceChildren();
     for(const id of CAMPAIGN_JOURNAL_REGIONS){
       const info=describeRegion(id,atlasRegions,atlasAdjacency);if(!info)continue;
@@ -1251,16 +1251,16 @@ function init() {
     // The campaign has moved on: let the quest panel open the Moros chapter at once.
     refreshQuest();
     const view=luscia.view();
-    toast(view.complete?'The rolls are filed. A Legion horse token and twenty copper for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(view.complete?'The rolls are filed. An army horse token and twenty copper for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
-  // The fork and the border battle. Allies are whoever of the hired company has mustered, filled out with legionaries;
+  // The fork and the border battle. Allies are whoever of the hired company has mustered, filled out with soldiers;
   // on the Republic's side they are the valley companies. Hold the traveler's corner and the day is won.
   function borderAllies(side){
     if(side==='coalition')return [1,2,3,4].map(n=>({id:`valley-company-${n}`,name:n===1?'Valley sergeant':'Valley company',kind:n===1?'officer':'legionary',model:{role:'suvali-guard',tunic:n%2?0x3f5f86:0x55636f}}));
     const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=MERCENARY_ROSTER.find(m=>m.id===p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
-    for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Legionary',kind:'legionary'});
+    for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
     return mustered;
   }
   // The day after the battle: one more fight beside the same allies, then the pay and the road onward.
@@ -1290,7 +1290,7 @@ function init() {
       saveRoad(false);
       const side=border.view().side;
       if(!combat.startEncounter(borderEncounter(side,borderAllies(side)))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
-      stopInput();toast(side==='empire'?'The Coalition comes on in two waves. Hold your corner of the field.':'The Legion comes on in two waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
+      stopInput();toast(side==='empire'?'The Coalition comes on in two waves. Hold your corner of the field.':'The army comes on in two waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
     refreshQuest();audio?.effect('success');
@@ -1299,12 +1299,12 @@ function init() {
     return result;
   }
   function morosAct(action){
-    const result=moros.act(action);if(!result.ok){toast(result.reason||'Report at the camp gate first.','THE LEGION ON THE PLAIN');return result;}
+    const result=moros.act(action);if(!result.ok){toast(result.reason||'Report at the camp gate first.','THE ARMY ON THE PLAIN');return result;}
     refreshQuest();inventory.refresh();audio?.effect('success');
     if(result.reward?.id==='legion-horse'&&!riding.owned){const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     const view=moros.view();
-    toast(action==='join-muster'?'Your name is on the Legate’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Legion red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the Legion’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
@@ -1612,7 +1612,7 @@ function init() {
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
-    if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Legate’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
+    if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
@@ -1628,7 +1628,7 @@ function init() {
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
     let lines,event=null,action='Until next time';
     if(npc.id==='fisher') {
-      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The Legion keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Lakota was at the head of the pier looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
+      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Lakota was at the head of the pier looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
       const said={dead:name=>`We lost ${name} out there. That is on the goblins, not on you, but I will not pretend it is nothing.`,wounded:name=>`${name} is badly hurt, but breathing. The healer is with them now.`,
         hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
@@ -1637,10 +1637,10 @@ function init() {
         'Now for a traveler’s other essentials. Keep Lakota’s message and this travel token in your satchel. Press I to open it. Hover over an item for a hint, then select the message to read it. I or Escape closes the satchel.',
         'Select a weapon in your satchel to see its condition and choose Equip. A broken sword cannot strike until repaired; a broken stick is used up. Fallen branches make weak spare weapons. The free repair bench is back in the village, beside the straw post.',
         'If those sticks left you hurting, look for ripe pawpaws under the little trees with long leaves. F gathers the fruit. Open I, select a pawpaw, and choose Eat to recover up to 25 health. Lysa can tell you more about them.',
-        'Follow the forest road to Fernway Rest, then keep going until the trees open on the Avrel farm clearing. That gate is called the Caloss Gate. The open road leads on toward the Caloss. Find Quartermaster Corvan at the Legion post. The Ambroni Empire hired you from abroad; he will tell you what service means here.'];
+        'Follow the forest road to Fernway Rest, then keep going until the trees open on the Avrel farm clearing. That gate is called the Caloss Gate. The open road leads on toward the Caloss. Find Quartermaster Corvan at the army post. The Ambroni Empire hired you from abroad; he will tell you what service means here.'];
       event='meet-waykeeper';action='Take the token';
     } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select Lakota’s message and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
-    else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the Legion post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
+    else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the army post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
     else if(questStage<2)lines=['Speak to Lakota at the head of the pier before you head inland. He has a small errand for you, and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
     else lines=['There is movement near the woodland bell, south of here. Approach along the main road, and keep an eye on the trees.'];
@@ -2141,7 +2141,7 @@ function init() {
     $('side-quest-progress').textContent=inventory.count('acorn')>=acornQuest.target?'Return to Lysa by the western cottage.':`Acorns in your satchel · ${inventory.count('acorn')} / 5`;
     $('side-quest-title').textContent=showForestTask?forestTask.title:'A little kindness';
     if(showForestTask)$('side-quest-progress').textContent=forestTask.destinationIds.includes('charcoal-hearth')?'Take the western path to the Old Charcoal Hearth.':"Return the red-tied bundle to Tamsin. J · Woodland notes";
-    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the stolen stores to Captain Varo at the Tessen post. J · Details':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':forestHideout.state.escort?'Lead the garrison along the blue-rag trail east of the Tessen post.':'Follow the blue-rag trail east of the Tessen post, or ask Captain Varo to march. J · Details';
+    if(showForestTask&&forestTask===hideoutTask)$('side-quest-progress').textContent=forestHideout.state.recovered?'Return the stolen stores to Captain Drevan at the Tessen post. J · Details':forestHideout.state.cleared?'F · Lift the marked sacks beyond the camp.':forestHideout.state.escort?'Lead the garrison along the blue-rag trail east of the Tessen post.':'Follow the blue-rag trail east of the Tessen post, or ask Captain Drevan to march. J · Details';
     if(regionalTask){$('side-quest-title').textContent=regionalTask.title;$('side-quest-progress').textContent=regionalTask.detail;}
     if(birdTask&&acornQuest.status!=='active'&&!showForestTask&&!regionalTask){$('side-quest-title').textContent=birdTask.title;$('side-quest-progress').textContent=birdTask.detail;}
     if(letterTask&&acornQuest.status!=='active'&&!showForestTask&&!regionalTask&&!birdTask){$('side-quest-title').textContent=letterTask.title;$('side-quest-progress').textContent=letterTask.detail;}
@@ -2892,6 +2892,15 @@ function init() {
           }
         }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
+        // The Empire's soldiers in a row, close up: a footman at attention, one with his sword drawn, an officer, and a Suvali guard beside them for scale.
+        if(view==='soldiers'||view==='soldiers-back'){questStage=10;combat.finishPractice();player.group.visible=false;
+          if(!reviewLineup){reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';
+            [['legion-soldier',false],['legion-soldier',true],['legion-officer',false],['suvali-guard',false]].forEach(([role,armed],i)=>{const actor=createCharacter({role,armed});actor.group.position.set((i-1.5)*1.3,0,0);actor.group.userData.actor=actor;reviewLineup.add(actor.group);});
+            scene.add(reviewLineup);}
+          const at={x:-35,z:24};reviewLineup.position.set(at.x,world.heightAt(at.x,at.z),at.z);reviewLineup.rotation.y=view==='soldiers'?0:Math.PI;reviewLineup.visible=true;
+          for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.actor.animate(t,0,true,{});
+          reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.05,at.z);yaw=.18;pitch=.08;distance=targetDistance=5.2;}
+        else if(reviewLineup)reviewLineup.visible=false;
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}

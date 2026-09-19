@@ -4,7 +4,7 @@
  * Ambient conversation only: nobody here moves a quest. Pueth's people speak
  * Drentish and meet outside officials with measured patience; they speak
  * plainly, and the east, where the rebels are, is rumour in their mouths and
- * nothing more. The Legion sentry at the garrison house speaks in orders.
+ * nothing more. The army sentry at the garrison house speaks in orders.
  * No render or DOM dependencies; the host supplies the dialogue box.
  */
 import { RIMEHOLT_STANDS, RIMEHOLT } from './pueth-world.js';
@@ -21,15 +21,15 @@ export const PUETH_NPCS = Object.freeze([
   person('rimeholt-foreman', 'Joss', 'Timber yard foreman', 'forest-woodcutter', 0x62705a),
   person('rimeholt-carter', 'Dagny', 'Carter on the coast road', 'commons-miller', 0x7d6a4c),
   person('rimeholt-trapper', 'Old Harl', 'Trapper from the hills', 'bridge-keeper', 0x6b6150),
-  Object.freeze({ id: 'rimeholt-sentry', name: 'Legionary Otho', role: 'Ambroni Legion soldier', modelRole: 'legion-soldier', color: 0x8f3b30, yaw: facing('rimeholt-sentry') }),
+  Object.freeze({ id: 'rimeholt-sentry', name: 'Footman Odo', role: 'Ambroni soldier', modelRole: 'legion-soldier', color: 0x8f3b30, yaw: facing('rimeholt-sentry') }),
 ]);
 export const PUETH_NPC_IDS = Object.freeze(PUETH_NPCS.map(npc => npc.id));
 
 export const PUETH_AMBIENT = Object.freeze({
   'rimeholt-reeve': Object.freeze([
-    'Asa Dunmore, reeve, which here means I keep the tally of whose logs are whose and I listen to the Legion when it has something to say.',
+    'Asa Dunmore, reeve, which here means I keep the tally of whose logs are whose and I listen to the army when it has something to say.',
     'Ambron buys our birch and sends a captain to count it. That has been the arrangement longer than anyone here has been alive. We are patient with it.',
-    'What is east of the valley is the east’s business. The Legion calls them rebels. I call them people I do not trade with this year.',
+    'What is east of the valley is the east’s business. The army calls them rebels. I call them people I do not trade with this year.',
   ]),
   'rimeholt-innkeeper': Object.freeze([
     'The Birch Bench. There is a fire, there is a bench, and the bench is birch, before you ask. Soup is a copper and the bed is two.',
@@ -40,7 +40,7 @@ export const PUETH_AMBIENT = Object.freeze({
     'We cut in the dry season and haul to the coast landing. This season the barges have not come, so the stacks sit and the men sit with them.',
   ]),
   'rimeholt-carter': Object.freeze([
-    'Down to Birch Landing and back, two days with a load. The road south to the Tessen is the Legion’s now; the coast track is still mine.',
+    'Down to Birch Landing and back, two days with a load. The road south to the Tessen is the army’s now; the coast track is still mine.',
     'Goblins in the birch by the sea. I have seen their rags on the trees. I drive past quickly and I do not stop to read them.',
   ]),
   'rimeholt-trapper': Object.freeze([
@@ -49,7 +49,7 @@ export const PUETH_AMBIENT = Object.freeze({
   ]),
   'rimeholt-sentry': Object.freeze([
     'Halt. State your business in Rimeholt. Hired sword? Then keep to the road and keep your blade sheathed inside the palisade.',
-    'The Feradom road is closed by order of the Legate. Nobody passes the barrier north. Report anything moving in the east to the garrison house.',
+    'The Feradom road is closed by order of the Marshal. Nobody passes the barrier north. Report anything moving in the east to the garrison house.',
   ]),
 });
 

@@ -1,11 +1,11 @@
 /**
- * The envoy and the border battle: the fork of the main quest. The Legate sends
+ * The envoy and the border battle: the fork of the main quest. The Marshal sends
  * the traveler with his terms south-east from the border stockade into West
  * Suval, to Solis: past the Coalition's watch at the Gate of Sun Horses, to the
  * envoy in the Court of Oaths. There the traveler chooses whose sellsword to be.
  * The Coalition's offer is the better one: coin on the table the moment you
  * sign. Then the battle begins with a report and a march. The Empire's
- * sellsword rides back to the Legate at the Legion's outpost on the Moros; the
+ * sellsword rides back to the Marshal at the army's outpost on the Moros; the
  * Republic's finds Captain Voss at the Gate of Sun Horses. Each is asked whether
  * they are ready, and on yes a column marches with them to the border, where
  * the fight begins when it comes up. The day goes to whoever holds that corner
@@ -21,18 +21,18 @@ export const BORDER_ENVOY_CHAPTER = 'suval-envoy';
 export const BORDER_BATTLE_CHAPTER = 'border-battle';
 export const BORDER_ENCOUNTER_ID = 'border-battle-line';
 export const BORDER_LEGATE_ID = 'post-camp-legate';
-/** Sergeant Kell of the Coalition's watch reads the Legate's seal at the Gate of Sun Horses (src/solis-town.js). */
+/** Sergeant Kell of the Coalition's watch reads the Marshal's seal at the Gate of Sun Horses (src/solis-town.js). */
 export const BORDER_GATE_ID = 'solis-gate-captain';
 export const BORDER_SIDES = Object.freeze(['empire', 'coalition']);
 export const BORDER_OUTCOMES = Object.freeze(['victory', 'defeat']);
-/** The Republic's coin on the table for a sellsword who signs: double the Legate's muster pay of 25. */
+/** The Republic's coin on the table for a sellsword who signs: double the Marshal's muster pay of 25. */
 export const COALITION_SIGNING = 50;
 export const COPPER_ID = 'copper-piece';
 /** How much killing a soldier on the field takes: mail and a shield, not a goblin's rags. */
 export const SOLDIER_HP = 100;
 
 const inSolis = id => ({ x: SOLIS_STANDS[id].x, z: SOLIS_STANDS[id].z, yaw: SOLIS_STANDS[id].yaw });
-/** Where the Legion's column falls in, beside the Legate's tent at the outpost. */
+/** Where the army's column falls in, beside the Marshal's tent at the outpost. */
 const OUTPOST_MUSTER = toWorld(-552, 356);
 
 /** People the chapter brings on, each out only in its turn (`shows`, see `cast`). */
@@ -41,10 +41,10 @@ export const BORDER_NPCS = Object.freeze([
   Object.freeze({ id: 'envoy-guard-north', name: 'Coalition spearman', role: 'Suvali company, the envoy’s escort', modelRole: 'suvali-guard', color: 0x55636f, ...inSolis('envoy-guard-north'), shows: 'envoy' }),
   Object.freeze({ id: 'envoy-guard-south', name: 'Coalition spearman', role: 'Izoli marine, the envoy’s escort', modelRole: 'suvali-guard', color: 0x4a5f7a, ...inSolis('envoy-guard-south'), shows: 'envoy' }),
   Object.freeze({ id: 'solis-captain', name: 'Captain Arlen Voss', role: 'Captain of the Lauvel companies', modelRole: 'suvali-guard', color: 0x3f5f86, ...inSolis('solis-captain'), shows: 'report-coalition' }),
-  Object.freeze({ id: 'battle-tribune', name: 'Tribune Gallus Orso', role: 'Tribune of the Legion’s left', modelRole: 'legion-officer', color: 0x832d2b, ...toWorld(-396, 325), yaw: 0, shows: 'line-empire' }),
+  Object.freeze({ id: 'battle-tribune', name: 'Captain Oswin Brulan', role: 'Captain of the army’s left', modelRole: 'legion-officer', color: 0x832d2b, ...toWorld(-396, 325), yaw: 0, shows: 'line-empire' }),
   Object.freeze({ id: 'coalition-captain', name: 'Captain Arlen Voss', role: 'Captain of the Lauvel companies', modelRole: 'suvali-guard', color: 0x3f5f86, ...toWorld(-396, 325), yaw: 0, shows: 'line-coalition' }),
-  // The columns that march with the traveler: a file of the Legion's left from the outpost, the valley companies from Solis.
-  ...[1, 2].map(n => Object.freeze({ id: `march-legionary-${n}`, name: 'Legionary', role: 'A file of the Legion’s left, on the march', modelRole: 'legion-soldier', color: 0x8f3b30,
+  // The columns that march with the traveler: a file of the army's left from the outpost, the valley companies from Solis.
+  ...[1, 2].map(n => Object.freeze({ id: `march-legionary-${n}`, name: 'Soldier', role: 'A file of the army’s left, on the march', modelRole: 'legion-soldier', color: 0x8f3b30,
     x: OUTPOST_MUSTER.x + n * 1.6, z: OUTPOST_MUSTER.z, yaw: 0, shows: 'march-empire', marches: true })),
   ...[1, 2, 3, 4].map(n => Object.freeze({ id: `march-valley-${n}`, name: n === 1 ? 'Valley sergeant' : 'Valley company', role: 'Of the Lauvel companies, on the march', modelRole: 'suvali-guard', color: n % 2 ? 0x3f5f86 : 0x55636f,
     x: SOLIS_STANDS['solis-captain'].x + n * 1.6, z: SOLIS_STANDS['solis-captain'].z - 3, yaw: Math.PI, shows: 'march-coalition', marches: true })),
@@ -129,23 +129,23 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     const current = stage();
     const won = state.outcome === 'victory';
     const views = {
-      'not-started': [0, 'The Legate’s terms', 'Finish your business at the Legion camp first.', 'MOROS PLAIN · THE BORDER', []],
-      'take-orders': [1, 'The Legate’s terms', 'The muster will not grow in time. Legate Marcus Verro has terms for the Coalition; take them from him at the command tent.', 'THE MOROS · 1 / 5 · A MESSAGE FOR THE COALITION', [BORDER_LEGATE_ID]],
-      'pass-gate': [2, 'The Gate of Sun Horses', 'Carry the Legate’s terms to Solis: south-east from the border stockade, over the downs of West Suval, to the Gate of Sun Horses. Show his seal to the Coalition’s watch at the gate.', 'WEST SUVAL · 2 / 5 · A MESSAGE FOR THE COALITION', [BORDER_GATE_ID]],
-      'meet-envoy': [3, 'The Court of Oaths', 'Envoy Telis Orren waits in the Court of Oaths, up the main street of Solis past the market square. Give her the Legate’s terms and hear what the Republic offers.', 'SOLIS · 3 / 5 · A MESSAGE FOR THE COALITION', ['coalition-envoy']],
+      'not-started': [0, 'The Marshal’s terms', 'Finish your business at the army camp first.', 'MOROS PLAIN · THE BORDER', []],
+      'take-orders': [1, 'The Marshal’s terms', 'The muster will not grow in time. Marshal Hadric Venmor has terms for the Coalition; take them from him at the command tent.', 'THE MOROS · 1 / 5 · A MESSAGE FOR THE COALITION', [BORDER_LEGATE_ID]],
+      'pass-gate': [2, 'The Gate of Sun Horses', 'Carry the Marshal’s terms to Solis: south-east from the border stockade, over the downs of West Suval, to the Gate of Sun Horses. Show his seal to the Coalition’s watch at the gate.', 'WEST SUVAL · 2 / 5 · A MESSAGE FOR THE COALITION', [BORDER_GATE_ID]],
+      'meet-envoy': [3, 'The Court of Oaths', 'Envoy Telis Orren waits in the Court of Oaths, up the main street of Solis past the market square. Give her the Marshal’s terms and hear what the Republic offers.', 'SOLIS · 3 / 5 · A MESSAGE FOR THE COALITION', ['coalition-envoy']],
       report: [4, empire() ? 'The envoy’s answer' : 'The valley companies', empire()
-        ? 'You kept the Empire’s contract. Ride back to the Legion’s outpost on the Moros and give Legate Verro the envoy’s answer. The army marches when you tell him you are ready.'
+        ? 'You kept the Empire’s contract. Ride back to the army’s outpost on the Moros and give Marshal Venmor the envoy’s answer. The army marches when you tell him you are ready.'
         : 'You signed for the Republic. Captain Arlen Voss has the Lauvel companies at the Gate of Sun Horses. They march for the border when you tell him you are ready.', empire() ? 'THE MOROS · 4 / 5 · THE BORDER BATTLE' : 'SOLIS · 4 / 5 · THE BORDER BATTLE', [reporter()]],
       march: [5, 'The march to the border', empire()
-        ? 'The hired company and a file of the Legion’s left march with you to the border stockade. Tribune Gallus Orso holds the line south-west of it; the fight begins when your column comes up.'
+        ? 'The hired company and a file of the army’s left march with you to the border stockade. Captain Oswin Brulan holds the line south-west of it; the fight begins when your column comes up.'
         : 'The valley companies march with you up the road from Solis to the border stockade. Captain Voss has ridden ahead to form the line south-west of it; the fight begins when your column comes up.', 'THE BORDER · 5 / 5 · THE BORDER BATTLE', [commander()]],
-      'join-line': [5, empire() ? 'The Legion’s left' : 'The Republic’s right', empire()
-        ? 'You kept the Empire’s contract. Tribune Gallus Orso commands the hired company on the Legion’s left, south-west of the stockade. Tell him when you are ready.'
+      'join-line': [5, empire() ? 'The army’s left' : 'The Republic’s right', empire()
+        ? 'You kept the Empire’s contract. Captain Oswin Brulan commands the hired company on the army’s left, south-west of the stockade. Tell him when you are ready.'
         : 'You stand with the Republic. Captain Arlen Voss holds the Coalition’s right with the Lauvel companies, south-west of the stockade. Tell him when you are ready.', 'THE BORDER · 5 / 5 · THE BORDER BATTLE', [commander()]],
       fighting: [5, 'Hold your corner of the field', 'Eight of theirs come on in three waves, shields up. Strike when they have swung; a soldier on guard turns a blade. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
       complete: [6, won ? 'The field is yours' : 'The field is lost', (empire()
-        ? (won ? 'The Coalition broke and fell back on Solis. The Legion rides after them into West Suval.' : 'The Legion lost the field and pulled back across the plain; the Coalition holds the stockade.')
-        : (won ? 'The Legion broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
+        ? (won ? 'The Coalition broke and fell back on Solis. The army rides after them into West Suval.' : 'The army lost the field and pulled back across the plain; the Coalition holds the stockade.')
+        : (won ? 'The army broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return { stage: current, step, steps: 5, title, detail, kicker, side: state.side, outcome: state.outcome,
@@ -165,9 +165,9 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
 
   function availableActions() {
     switch (stage()) {
-      case 'take-orders': return [action('take-legate-terms', 'Take the Legate’s terms to Solis', BORDER_LEGATE_ID)];
-      case 'pass-gate': return [action('enter-solis', 'Here is the Legate’s seal. I carry his terms to your envoy.', BORDER_GATE_ID)];
-      case 'meet-envoy': return [action('side-empire', 'I took the Empire’s coin. Give me your answer for the Legate.', 'coalition-envoy'),
+      case 'take-orders': return [action('take-legate-terms', 'Take the Marshal’s terms to Solis', BORDER_LEGATE_ID)];
+      case 'pass-gate': return [action('enter-solis', 'Here is the Marshal’s seal. I carry his terms to your envoy.', BORDER_GATE_ID)];
+      case 'meet-envoy': return [action('side-empire', 'I took the Empire’s coin. Give me your answer for the Marshal.', 'coalition-envoy'),
         action('side-coalition', `I will sign for the Republic. (${COALITION_SIGNING} copper)`, 'coalition-envoy')];
       case 'report': return [action('march-out', 'Yes.', reporter())];
       case 'march': return [action('reach-line', 'The column is up. We take the line.', commander())];
@@ -191,25 +191,25 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
 
   function act(actionId) {
     const choice = availableActions().find(candidate => candidate.id === actionId);
-    if (!choice) return fail(state.outcome ? 'The border battle is fought.' : !state.started ? 'Join the Legate’s muster first.' : `Your current task: ${view().detail}`);
+    if (!choice) return fail(state.outcome ? 'The border battle is fought.' : !state.started ? 'Join the Marshal’s muster first.' : `Your current task: ${view().detail}`);
     const toast = (text, banner) => ({ objectiveId: choice.objectiveId, toast: [text, banner] });
     switch (actionId) {
       case 'take-legate-terms':
         state.ordered = true;
-        return emit(actionId, toast('The Legate’s terms, sealed. Carry them south-east over the border to Solis.', 'JOURNAL UPDATED'));
+        return emit(actionId, toast('The Marshal’s terms, sealed. Carry them south-east over the border to Solis.', 'JOURNAL UPDATED'));
       case 'enter-solis':
         state.entered = true;
         return emit(actionId, toast('Sergeant Kell reads the seal and waves you through the Gate of Sun Horses. The envoy waits in the Court of Oaths.', 'SOLIS'));
       case 'side-empire':
         state.side = 'empire';
-        return emit(actionId, { side: state.side, ...toast('You keep the Empire’s contract. The envoy’s answer is no; carry it to the Legate.', 'YOUR SIDE IS CHOSEN') });
+        return emit(actionId, { side: state.side, ...toast('You keep the Empire’s contract. The envoy’s answer is no; carry it to the Marshal.', 'YOUR SIDE IS CHOSEN') });
       case 'side-coalition':
         state.side = 'coalition';
         return emit(actionId, { side: state.side, reward: { id: COPPER_ID, quantity: COALITION_SIGNING },
           ...toast(`You sign for the Republic, and ${COALITION_SIGNING} copper goes into your purse. Captain Voss is at the Gate of Sun Horses.`, 'YOUR SIDE IS CHOSEN') });
       case 'march-out':
         state.ready = true;
-        return emit(actionId, { ...toast(empire() ? 'The Legion marches. The hired company and a file of the left fall in behind you on the road to the border.'
+        return emit(actionId, { ...toast(empire() ? 'The army marches. The hired company and a file of the left fall in behind you on the road to the border.'
           : 'The valley companies fall in behind you. The road runs north-west over the downs to the border.', 'THE MARCH') });
       case 'reach-line':
         // The column is up: the line is formed, and the fight begins.
@@ -257,7 +257,7 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     get state() { return { ...snapshot(), stage: stage(), fighting: active, complete: !!state.outcome }; } };
 }
 
-/** The Legate, the envoy, Voss and the line commanders speak for the chapter while it is theirs. */
+/** The Marshal, the envoy, Voss and the line commanders speak for the chapter while it is theirs. */
 export function borderConversation(npc, context) {
   const { border, openDialogue, closeDialogue, act, musterCount = 1 } = context;
   const view = border.view(), current = view.stage;
@@ -275,23 +275,23 @@ export function borderConversation(npc, context) {
   if (npc.id === BORDER_LEGATE_ID && current === 'report' && view.side === 'empire') {
     openDialogue(npc, [
       'You came back alone, so I know her answer before you give it. Let me hear it anyway.',
-      'No. Of course no. Then we settle it at the border before their islanders learn to march in step. Tribune Orso has the line at the stockade. The hired company and a file of the left march with you.',
+      'No. Of course no. Then we settle it at the border before their islanders learn to march in step. Captain Brulan has the line at the stockade. The hired company and a file of the left march with you.',
       'Are you ready?',
     ], null, 'Back to the camp', { choices: [...option('march-out'), moment] });
     return true;
   }
   if (npc.id === 'coalition-envoy' && current === 'meet-envoy') {
     openDialogue(npc, [
-      'Telis Orren, for the Republic and for the Coalition in Solis. You carry Verro’s terms. I could recite them: leave, and be forgiven. We have heard them since Ambron burned the first petition.',
-      'Look at who stands with us: Izoli captains, the Suvali companies, Luscia’s own sons, a handful from Pyros, Selemis and Marosh, the island cities. Then look at who stands with Verro: men paid by the day. Like you.',
-      `So here is a better day’s pay. ${COALITION_SIGNING} copper on this table now, hard coin, for a sellsword who signs. Double the Legate’s rate for every day after. Land when the Republic wins. Verro paid you twenty-five to stand in his muster. Whose sellsword are you?`,
+      'Telis Orren, for the Republic and for the Coalition in Solis. You carry Venmor’s terms. I could recite them: leave, and be forgiven. We have heard them since Ambron burned the first petition.',
+      'Look at who stands with us: Izoli captains, the Suvali companies, Luscia’s own sons, a handful from Pyros, Selemis and Marosh, the island cities. Then look at who stands with Venmor: men paid by the day. Like you.',
+      `So here is a better day’s pay. ${COALITION_SIGNING} copper on this table now, hard coin, for a sellsword who signs. Double the Marshal’s rate for every day after. Land when the Republic wins. Venmor paid you twenty-five to stand in his muster. Whose sellsword are you?`,
     ], null, 'Back to the street', { choices: [...option('side-empire'), ...option('side-coalition'), leave] });
     return true;
   }
   if (npc.id === 'solis-captain' && current === 'report') {
     openDialogue(npc, [
-      'Arlen Voss. I farmed the Lauvel valley until the Legion made a battlefield of it. Orren says you signed. Then the valley companies march with you.',
-      'Verro will not wait for us to choose the ground. The border stockade is the ground. I ride ahead to form the line; the companies walk the road with you, north-west over the downs.',
+      'Arlen Voss. I farmed the Lauvel valley until the army made a battlefield of it. Orren says you signed. Then the valley companies march with you.',
+      'Venmor will not wait for us to choose the ground. The border stockade is the ground. I ride ahead to form the line; the companies walk the road with you, north-west over the downs.',
       'Are you ready?',
     ], null, 'Back to the gate', { choices: [...option('march-out'), moment] });
     return true;
@@ -304,17 +304,17 @@ export function borderConversation(npc, context) {
   }
   if ((npc.id === 'battle-tribune' || npc.id === 'coalition-captain') && current === 'join-line') {
     openDialogue(npc, npc.id === 'battle-tribune' ? [
-      'Gallus Orso, tribune of the left. You are the hired sword who carried the terms to Solis and came back ours. Good. Your company holds this corner; whoever of the twelve has arrived stands with you.',
+      'Oswin Brulan, captain of the left. You are the hired sword who carried the terms to Solis and came back ours. Good. Your company holds this corner; whoever of the twelve has arrived stands with you.',
       'They will come in two waves across the open ground. Hold, kill what reaches you, and fall back south to me if you must. Say when.',
     ] : [
       'Arlen Voss. Orren says you are ours now. Then you stand here, on the right, with what is left of the valley companies.',
-      'Their legionaries will come in two waves across the open ground. Hold, and fall back south to me if you must. Say when.',
+      'Their soldiers will come in two waves across the open ground. Hold, and fall back south to me if you must. Say when.',
     ], null, 'Back to the line', { choices: [...option('sound-advance'), leave] });
     return true;
   }
   // Out of their turn, the chapter's people still answer.
-  if (npc.id === 'coalition-envoy') { openDialogue(npc, [current === 'take-orders' || current === 'pass-gate' ? 'I wait for the Legate’s messenger. He is late; they always are.' : 'The Republic’s offer stands until the battle. After that it is a different conversation.'], null, 'Back to the street'); return true; }
-  if (BORDER_MARCHERS.includes(npc.id)) { openDialogue(npc, [npc.modelRole === 'legion-soldier' ? 'Keep the pace. The Tribune does not wait for stragglers.' : 'Keep to the road. We are right behind you.'], null, 'Back to the road'); return true; }
+  if (npc.id === 'coalition-envoy') { openDialogue(npc, [current === 'take-orders' || current === 'pass-gate' ? 'I wait for the Marshal’s messenger. He is late; they always are.' : 'The Republic’s offer stands until the battle. After that it is a different conversation.'], null, 'Back to the street'); return true; }
+  if (BORDER_MARCHERS.includes(npc.id)) { openDialogue(npc, [npc.modelRole === 'legion-soldier' ? 'Keep the pace. The Captain does not wait for stragglers.' : 'Keep to the road. We are right behind you.'], null, 'Back to the road'); return true; }
   if (npc.id.startsWith('envoy-guard')) { openDialogue(npc, ['We keep this door for the envoy. Speak to her, not to us.'], null, 'Back to the street'); return true; }
   if (npc.id === 'solis-captain' || npc.id === 'coalition-captain') { openDialogue(npc, ['Not now. Stand with the companies.'], null, 'Step back'); return true; }
   if (npc.id === 'battle-tribune') { openDialogue(npc, ['Stand to your place in the line.'], null, 'Step back'); return true; }

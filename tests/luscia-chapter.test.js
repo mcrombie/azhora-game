@@ -136,7 +136,7 @@ test('the campaign moves on to the Moros camp when the chapter is reported compl
   finish(f);
   assert.equal(campaign.completeChapter('luscia-aftermath').ok, true);
   assert.equal(campaign.view().chapterId, 'moros-camp');
-  assert.equal(campaign.view().horse, true, "the chapter's reward is the Legion horse");
+  assert.equal(campaign.view().horse, true, "the chapter's reward is the army horse");
 });
 
 test('Iven briefs the road, the picket turns civilians back, and the valley speaks plainly', () => {
@@ -155,7 +155,7 @@ test('Iven briefs the road, the picket turns civilians back, and the valley spea
   assert.match(f.shown.lines.join(' '), /Civilians turn at this line/);
   assert.equal(f.choice('accept-lauvel-search'), undefined, 'the sergeant hands out no errands');
   f.choice('talvus-battle').action();
-  assert.match(f.shown.lines.join(' '), /rebels/, 'the Legion calls them rebels');
+  assert.match(f.shown.lines.join(' '), /rebels/, 'the army calls them rebels');
   f.talk('burial-searcher');
   assert.match(f.shown.lines.join(' '), /brother/);
   f.choice('ilva-who-they-were').action();

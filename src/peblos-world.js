@@ -139,7 +139,7 @@ export function quayHeight(x, z) {
   return x >= q.minX && x <= q.maxX && z >= q.minZ && z <= q.maxZ ? q.deckY : null;
 }
 
-/** Ten buildings: the working sheds along the quay, the Legion's tally house, and the houses up the slope. */
+/** Ten buildings: the working sheds along the quay, the army's tally house, and the houses up the slope. */
 export const COBBLE_BUILDINGS = Object.freeze([
   ['net-loft', 330.5, 420.5, 7.2, 4.4, 4.3, '#6b6a5c', '#c3b696', -Math.PI / 2, 'The net loft, its upper floor open to the wind, the year’s nets hanging in it.'],
   ['fish-cellar', 341, 417, 5.4, 4.2, 2.4, '#5d6157', '#b3ab90', -Math.PI / 2 + .25, 'The fish cellar, dug back into the rock and cold all summer.'],

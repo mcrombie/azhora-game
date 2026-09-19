@@ -458,7 +458,7 @@ export function createRegionScenery(kit) {
   }
   crate(0, -.5, .8, .13, cart); barrel(-.65, .6, .65, cart, .15);
   colliders.push({ x: cartSpot.x, z: cartSpot.z, r: 2.3, kind: 'cart' });
-  // Corvan's Legion supply post: a canvas awning, a standard and a stack of stores.
+  // Corvan's army supply post: a canvas awning, a standard and a stack of stores.
   const postPoint = at(-232, 22), postY = groundHeight(postPoint.x, postPoint.z);
   wornPatch(postPoint.x, postPoint.z, 4.6, '#b2a881');
   // The lean-to over the table and the flag beside it are drawn with the Avrel farmsteads (place-works.js).
@@ -481,7 +481,7 @@ export function createRegionScenery(kit) {
   cottage(...xz(-408, 200), 6.7, 5.1, 3.0, '#6d7875', '#c7c4ac', .15, luscia);
   leanTo(...xz(-396, 192), '#aaa48a', .2, luscia); barrel(...xz(-393, 189), .9, luscia);
   const relayCrate = at(-395, 187); crate(relayCrate.x, relayCrate.z, .9, groundHeight(relayCrate.x, relayCrate.z), luscia);
-  // The Lauvel: broken carts, a fallen banner, a burial line and a Legion picket.
+  // The Lauvel: broken carts, a fallen banner, a burial line and an army picket.
   const field = STORY_SITES.lauvelField;
   wornPatch(field.x, field.z, 22, '#9c9a6e', 1.1);
   for (let i = 0; i < 4; i++) {
@@ -557,7 +557,7 @@ export function createRegionScenery(kit) {
     for (let i = 0; i < 3; i++) box(material(i % 2 ? '#8e7f5f' : '#a08a63'), -.8 + i * .8, 1.02, .9, .55, .2, .5, stall);
     colliders.push({ x: spot.x, z: spot.z, r: 1.5, kind: 'market-stall' });
   }
-  // The Legion's relay post on the corner of the square.
+  // The army's relay post on the corner of the square.
   const relayPost = townPoint(9, -10), relayY = groundHeight(relayPost.x, relayPost.z);
   leanTo(relayPost.x, relayPost.z, '#a89d84', roadAngle, luscia);
   const desk = townPoint(6.6, -8.2), deskY = groundHeight(desk.x, desk.z);
@@ -565,7 +565,7 @@ export function createRegionScenery(kit) {
   colliders.push({ x: desk.x, z: desk.z, r: 1.0, kind: 'relay-desk' });
   post(wood, relayPost.x + 3.0, relayY + 2.0, relayPost.z, .1, 4.0, luscia);
   const relayStandard = box(material('#8c3f38'), relayPost.x + 3.3, relayY + 3.4, relayPost.z, .62, .9, .05, luscia);
-  relayStandard.name = 'Legion relay standard';
+  relayStandard.name = 'Army relay standard';
   colliders.push({ x: relayPost.x + 3.0, z: relayPost.z, r: .3, kind: 'relay-standard' });
   crate(townPoint(11, -7).x, townPoint(11, -7).z, .85, groundHeight(townPoint(11, -7).x, townPoint(11, -7).z), luscia);
   // The timber yard: an open sawmill shed, the sawpit and stacked logs.
@@ -611,12 +611,12 @@ export function createRegionScenery(kit) {
   }
 
   // -------------------------------------------------------------------------
-  // Moros Plain: the gate, the Legion camp and the contested stockade
+  // Moros Plain: the gate, the army camp and the contested stockade
   // -------------------------------------------------------------------------
   const moros = district('Moros Plain');
   // The Moros gate, the outpost's walls, tents and standard and the forward stockade are built by
   // `moros-works.js` to the shared fortification standard; the horse line stays here with its horses.
-  // The Legion's horse line, where the traveler's horse is claimed.
+  // The army's horse line, where the traveler's horse is claimed.
   const hitch = STORY_SITES.horseHitch, hitchY = groundHeight(hitch.x, hitch.z);
   for (let i = 0; i <= 6; i++) post(wood, hitch.x + i * 2.4, hitchY + .65, hitch.z, .1, 1.3, moros);
   box(woodLight, hitch.x + 7.2, hitchY + 1.15, hitch.z, 16.8, .12, .12, moros);
@@ -682,7 +682,7 @@ export function createRegionScenery(kit) {
     for (const block of cellBlocks(name, biome.blockHexes)) scatterBlock(name, block, biome, parent);
   }
 
-  // The frontier: the end of the built world, west of the Legion camp.
+  // The frontier: the end of the built world, west of the army camp.
   for (let z = FRONTIER.z - 170; z <= FRONTIER.z + 170; z += 8) {
     const y = groundHeight(FRONTIER.barrierX, z);
     post(wood, FRONTIER.barrierX, y + .64, z, .085, 1.28, moros);

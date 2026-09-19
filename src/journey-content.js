@@ -1,7 +1,7 @@
 // These are local districts and people invented for the playable road out of Drent into Luscia.
 // The large-scale geography remains the authored World Builder geography.
 export const JOURNEY_NPCS = [
-  {id:'meadow-courier',name:'Corvan',role:'Ambroni Legion quartermaster',modelRole:'legion-officer',color:0x832d2b},
+  {id:'meadow-courier',name:'Corvan',role:'Ambroni army quartermaster',modelRole:'legion-officer',color:0x832d2b},
   {id:'crossing-keeper',name:'Hollis',role:'Crossing keeper',modelRole:'bridge-keeper',color:0x6b8c83},
   {id:'ridge-keeper',name:'Sava',role:'Keeper of the rise',modelRole:'rise-custodian',color:0x697589},
   {id:'relay-clerk',name:'Iven',role:'Imperial relay clerk',modelRole:'legion-soldier',color:0x8f3b30},
@@ -23,7 +23,7 @@ export function journeyConversation(npc,context) {
   const flavor={
     'meadow-courier':[
       tangent('nessa-caravans','What travels through these fields?',[
-        'Before the Legion came through, it was seed for one farm, wool from another, a pot sent back because a courier borrowed it. Now every manifest says campaign stores. Much the same cart, but rather more signatures.',
+        'Before the army came through, it was seed for one farm, wool from another, a pot sent back because a courier borrowed it. Now every manifest says campaign stores. Much the same cart, but rather more signatures.',
         'I like the hour before the mill starts. The grass is silver and nobody has asked which side a sack of grain belongs to. By breakfast the requisitions arrive. I keep the loads moving; command decides where they go.'
       ]),
     ],
@@ -58,7 +58,7 @@ export function journeyConversation(npc,context) {
     'relay-clerk':[
       tangent('iven-messages','How do the messages find their way?',[
         'A clear hand, a dry wrap, and a name someone recognizes. I copy warnings so one lost letter does not take the news with it. The originals stay with their bearers. A report is more useful when its witness reaches the other end.',
-        'This is the Legion’s relay on the Luscia side of the Caloss. The road runs on southwest to the Lauvel and the Moros beyond it, but a place name tells you little about who should rule it. Our forms have one box for loyal and one for rebel. The people I meet seldom fit so neatly.'
+        'This is the army’s relay on the Luscia side of the Caloss. The road runs on southwest to the Lauvel and the Moros beyond it, but a place name tells you little about who should rule it. Our forms have one box for loyal and one for rebel. The people I meet seldom fit so neatly.'
       ]),
     ],
   };
@@ -81,37 +81,37 @@ export function journeyConversation(npc,context) {
   }
   const tell=(lines,choices)=>openDialogue(npc,lines,null,'Back to the road',{choices:[...choices,...(context.extraChoices?.(npc)||[]),...(flavor[npc.id]||[]),back]});
   if(npc.id==='meadow-courier') {
-    if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the Legion needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.'],[]);
+    if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.'],[]);
     if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Lakota and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
-      'Lakota’s letter? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni Legion. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the Legion’s field detail.',
+      'Lakota’s letter? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
       'Our orders are to secure this road for the campaign against the rebels in the south. Goblin raids spilling out of Pueth have made supply work dangerous too. Before we can move, I need three parcels recovered from this broken cart.',
       'The parcels spilled east of the main road, around the broken field walls. Look for crossed ties around each bundle. Mind the goblin raiders among them; you can withdraw and catch your breath before trying again.'
     ],[choice('meet-courier','Report for field service · recover the supplies')]);
     if(state.parcels.length<3)return tell([`You have found ${state.parcels.length} of the three parcels. Look east of the main road, among the broken field walls and beside the cart track. F lifts a parcel. Your journal follows what remains; the gold marker points to the nearest one.`],[]);
-    return tell(['Three parcels, accounted for. Your first Legion assignment is complete. Take two cooked fish as provisions. Next, help Hollis put the Caloss crossing in order, then restore the route markers up Threefold Rise and report to Iven at our relay. Command needs a road into Luscia it can hold against the rebels.'],[choice('return-courier','Return the parcels · take provisions')]);
+    return tell(['Three parcels, accounted for. Your first army assignment is complete. Take two cooked fish as provisions. Next, help Hollis put the Caloss crossing in order, then restore the route markers up Threefold Rise and report to Iven at our relay. Command needs a road into Luscia it can hold against the rebels.'],[choice('return-courier','Return the parcels · take provisions')]);
   }
   if(npc.id==='crossing-keeper') {
-    if(!done(2))return tell(['The crossing needs work, but there is no hurry. A Legion quartermaster called Corvan has a broken cart back on Sunmeadow Plain. Give him a hand first; everyone on this road relies on the next traveler.'],[]);
+    if(!done(2))return tell(['The crossing needs work, but there is no hurry. An army quartermaster called Corvan has a broken cart back on Sunmeadow Plain. Give him a hand first; everyone on this road relies on the next traveler.'],[]);
     if(done(3))return tell(['Those lashings will hold for an army cart, and for the families trying to stay out of its way. Save your spare wood for a fire; the air gets cool on the rise. Sava can tell you why the people here keep feeding the rebels, whatever the imperial notices say.'],[]);
     if(!state.bridgeAccepted)return tell([
-      'Corvan sent you to clear the Legion’s route? I am Hollis. I will take the help. This is the Caloss; Drent ends on this bank and Luscia begins on the other. Families use the bridge too, especially with goblins pressing down out of Pueth. Its eastern walkway still holds, but the damaged side needs three sound branches.',
+      'Corvan sent you to clear the army’s route? I am Hollis. I will take the help. This is the Caloss; Drent ends on this bank and Luscia begins on the other. Families use the bridge too, especially with goblins pressing down out of Pueth. Its eastern walkway still holds, but the damaged side needs three sound branches.',
       'There is driftwood along this bank. Gather it with F. Bring three sticks to the bridge’s repair point and press F to lash them into place. I have the cord and tools. Your tinderbox is for cooking; it is not needed for this job.'
     ],[choice('meet-crossing-keeper','I’ll help mend the crossing.')]);
     if(!state.bridgeRepaired)return tell([`Three branches will brace the planks. You carry ${inventory.count('forest-stick')} sticks. Driftwood lies along the bank; gather enough, then use the repair point at the bridge. Keep a few spares if you want to cook afterward.`],[]);
     return tell([
       'A straight brace and tight cord. Take four spare branches. Your army has its crossing, but you have helped the people on both banks as well.',
-      'A quiet word: most households here shelter or feed the people the Empire calls rebels. They are our neighbors. Goblins take from us out of the north; the Legion takes grain and calls it protection. Speak with Sava on the rise before you decide whose side these families are on.'
+      'A quiet word: most households here shelter or feed the people the Empire calls rebels. They are our neighbors. Goblins take from us out of the north; the army takes grain and calls it protection. Speak with Sava on the rise before you decide whose side these families are on.'
     ],[choice('return-crossing-keeper','Tell Hollis the bridge is repaired')]);
   }
   if(npc.id==='ridge-keeper') {
     if(!done(3))return tell(['The river below shapes every journey up here. Ask Hollis what needs doing at Reedwater Crossing before you climb farther. We keep the road together, one small repair at a time.'],[]);
     if(done(4))return tell(['The markers stand again. You are still in imperial service, but now you know whom those orders call rebels: Luscia’s own people, most of them, who wanted a republic and lost a battle for it. What you do with that knowledge is a longer road.'],[]);
     if(!state.ridgeAccepted)return tell([
-      'I am Sava. Hollis was right to send you. You stand on the Luscia side of the Caloss now. Ten days ago the Legion met a rebel army at the Lauvel crossing and broke it. Those rebels were farmers, drovers and market families from every valley of Luscia. Most of the population supports what they wanted: a republic in place of the emperor.',
+      'I am Sava. Hollis was right to send you. You stand on the Luscia side of the Caloss now. Ten days ago the army met a rebel army at the Lauvel crossing and broke it. Those rebels were farmers, drovers and market families from every valley of Luscia. Most of the population supports what they wanted: a republic in place of the emperor.',
       'We are caught between goblin raids pressing down from the north and an empire that is losing its grip and squeezing harder as it slips. Your contract calls this a campaign against rebels. For the people living here, it is a fight for their own government and homes.',
       'Your route assignment can still help them. Rain loosened three waymarkers: western shelf, eastern bend, northern rise. Press F to straighten each reflective stone; no fuel is needed. Families escaping the fighting need those directions as much as soldiers do.',
-      'Then carry Lakota’s original letter on to Iven. He keeps the Legion’s relay post on the square at Lumber Town, down the road past the field at the Lauvel. Tell him what you have heard here; he copies reports for the army, and let this one include the people’s account.'
+      'Then carry Lakota’s original letter on to Iven. He keeps the army’s relay post on the square at Lumber Town, down the road past the field at the Lauvel. Tell him what you have heard here; he copies reports for the army, and let this one include the people’s account.'
     ],[choice('meet-ridge-keeper','I’ll restore the three waymarkers.')]);
     return tell([`${state.beacons.length} of three waymarkers restored. Follow the small stone paths off the main road. Then take Lakota’s letter to Iven. You can serve the people on this road even while you begin to question the Empire that hired you.`],[]);
   }
@@ -119,7 +119,7 @@ export function journeyConversation(npc,context) {
     if(journey.view().complete)return tell(['I have recorded both the goblin danger and what the people told you. Your Ambroni service continues; this report does not settle the war or release your contract. Keep Lakota’s original. Stay in the square a moment: the next orders out of the Moros concern the field at the Lauvel, and they concern you.'],[]);
     if(!state.ridgeAccepted||state.beacons.length<3)return tell(['I keep the road’s messages moving. Speak with Sava at the foot of the rise and put the three waymarkers in order first. A runner is no use if the next traveler cannot find the path.'],[]);
     return tell([
-      'Corvan’s mercenary. The supplies are recovered and the Legion’s route is sound. I will copy Lakota’s warning about the goblins into your field report. You keep her original letter.',
+      'Corvan’s mercenary. The supplies are recovered and the army’s route is sound. I will copy Lakota’s warning about the goblins into your field report. You keep her original letter.',
       'Sava told you who the rebels are? Our forms call them insurgents. They are the households of Luscia and the valleys beyond, and most people stand behind the republic they declared. I write for the Ambroni Empire, but I cannot make that truth disappear by choosing a different word.',
       'I will record what you witnessed. You are still serving the army that hired you; the next assignment will come later. For now, ask yourself what protecting these people means when imperial orders and their own government stand on opposite sides.'
     ],[choice('deliver-report','Submit the report · include the people’s account')]);

@@ -171,7 +171,7 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
   assert.ok(Math.hypot(lorn.x - hesta.x, lorn.z - hesta.z) > 450, 'they live a long way apart');
 });
 
-test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in front of a Legion post', async () => {
+test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in front of an army post', async () => {
   // A stand inside a habitat takes perches away from the birds that live there
   // (habitatSpots drops any spot within 1.6 m of a stand), and the traveler
   // cannot talk to a post he cannot walk up to.
@@ -184,7 +184,7 @@ test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in
       assert.ok(gap > 1.6, `${npc.id} stands in the ${habitat.id} birds’ ground (${gap.toFixed(1)} m clear)`);
     }
   }
-  // And nothing this pass builds — props included — blocks a Legion post's stand.
+  // And nothing this pass builds — props included — blocks an army post's stand.
   const ours = world.colliders.filter(collider => NEW_KINDS.test(collider.kind ?? ''));
   for (const post of LEGION_POSTS) {
     assert.ok(canStand(post.x, post.z, world, .45), `${post.name} stands on solid ground`);

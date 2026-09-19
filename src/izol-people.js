@@ -23,7 +23,7 @@
  *    Hearthstone steps outside the bond that holds, and the bond that holds is
  *    the whole of what Izol is.
  *
- * Soldiers are men by default; there is no Legion on this island and nobody wears
+ * Soldiers are men by default; there is no army on this island and nobody wears
  * its armour. No render or DOM dependencies; the host supplies the dialogue box.
  */
 import { IZOL_STANDS, IZOL_GENERALS, generalsStance } from './izol-world.js';
@@ -65,7 +65,7 @@ export const IZOL_NPCS = freeze([
   person('izol-selemi-factor', 'Iselle Draun', 'Factor of the Selemi outpost', 'shelter-keeper', 0x3f6f6b),
   // The three generals' men, on the strand within thirty metres of each other.
   soldier('izol-quartermaster', 'Tulle Barr', 'Quartermaster of General Kellveth’s commissary', 0x3f6fb0, { armed: false }),
-  soldier('izol-doreth-agent', 'Lieutenant Varo Sill', 'Recruiting for General Doreth, on Selemis', 0x2f7f7a, { armed: false }),
+  soldier('izol-doreth-agent', 'Lieutenant Drevan Sill', 'Recruiting for General Doreth, on Selemis', 0x2f7f7a, { armed: false }),
   soldier('izol-marech-serjeant', 'Serjeant Ruvan Tale', 'Levy serjeant for General Marech, before Nylon', 0x6b5540),
   // The army above the town.
   person('izol-surgeon', 'Surgeon Neve Arral', 'Surgeon of the sail loft', 'shelter-keeper', 0x7b5f55),
@@ -163,7 +163,7 @@ export const IZOL_AMBIENT = freeze({
     'Three boards on one strand, thirty paces apart. We are civil to each other. We are extremely careful to be civil to each other.',
   ]),
   'izol-doreth-agent': freeze([
-    'Varo Sill. Hulls and hands for Selemis. I want masters more than spearmen and I will take either.',
+    'Drevan Sill. Hulls and hands for Selemis. I want masters more than spearmen and I will take either.',
     'The general holds the finest harbour in the Iberos Sea and cannot put a foot outside it. The day he sails, it is Selemi again by nightfall. So he does not sail, and he asks for more men every month, and every month there are fewer men to send.',
     'No, I do not know what he intends. I know what he asks for. Those are different things and I am paid for the second.',
   ]),

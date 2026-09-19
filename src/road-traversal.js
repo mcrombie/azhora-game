@@ -12,7 +12,7 @@ export async function runRoadTraversal(h) {
   const position = () => player?.group?.position || player?.position || player;
   const copyPosition = () => ({ x: position().x, z: position().z });
   const initial = copyPosition();
-  // Out along the main road to the Legion camp, with the Suval branch walked from its
+  // Out along the main road to the army camp, with the Suval branch walked from its
   // junction as far as Elod's shut gate and the road north into Pueth walked too: every
   // region is entered on foot but East Suval, which is closed.
   const junction = (world.suvalRoute ?? [])[0];

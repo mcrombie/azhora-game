@@ -11,7 +11,7 @@
  *  - the old kingdom in the bones of the place: the walls and their patched sea
  *    face, the Court of Oaths, the temple, the orange courts, the bronze horses
  *    of the Gate of Sun Horses and the sun-horse on everything old;
- *  - the Empire in what it imposed: the Legion barracks and the tax house by the
+ *  - the Empire in what it imposed: the army barracks and the tax house by the
  *    gate, a milestone and plaques, now defaced or boarded;
  *  - the Coalition in what is days old: the contingents' banners, a paymaster's
  *    table in the tax house door, notices in three hands, and the camp outside.
@@ -197,7 +197,7 @@ export const SOLIS_BUILDINGS = freeze([
   { id: 'tax-house', name: 'The old tax house', a: -11, b: -31, w: 10, d: 8, h: 5, layer: 'empire', door: 'east' },
   { id: 'house-nw-1', a: -26, b: -31, w: 8.5, d: 7.5, h: 4.6 },
   { id: 'house-nw-2', a: -38.5, b: -30.5, w: 11, d: 8, h: 5.4, garden: true },
-  { id: 'legion-barracks', name: 'The Legion barracks', a: 14, b: -31, w: 16, d: 7.5, h: 4.2, layer: 'empire', door: 'south' },
+  { id: 'legion-barracks', name: 'The army barracks', a: 14, b: -31, w: 16, d: 7.5, h: 4.2, layer: 'empire', door: 'south' },
   { id: 'house-ne-1', a: 29.5, b: -31, w: 9, d: 8, h: 5 },
   { id: 'house-ne-2', a: 40.5, b: -30.5, w: 8, d: 9, h: 5.8, garden: true },
   // The upper town: the old kingdom's royal terrace.
@@ -370,7 +370,7 @@ export const SOLIS_STANDS = freeze({
   'solis-elder': stand(7, 6.5, EAST),
   'solis-temple-keeper': stand(16, 21, NORTH),
   'solis-innkeeper': stand(-19.5, 9.2, NORTH),
-  // The Legion's occupation, out only while the Empire holds West Suval.
+  // The army's occupation, out only while the Empire holds West Suval.
   'solis-legion-gate-west': stand(-3.9, -47, NORTH),
   'solis-legion-gate-east': stand(3.9, -47, NORTH),
   'solis-legion-square': stand(-5.6, -13, WEST),
@@ -429,8 +429,8 @@ export const WEST_SUVAL_SEA = (() => {
 /**
  * Who holds Solis on the ground right now: `control` is the occupation map
  * (`occupationControl`), `aftermath` the chapter after the battle's state. While
- * the Legion is still clearing the square, the Coalition's army has broken and
- * the Legion is not yet in: the city is 'routed', and neither garrison stands.
+ * the army is still clearing the square, the Coalition's army has broken and
+ * the army is not yet in: the city is 'routed', and neither garrison stands.
  */
 export function solisHolder(control = {}, aftermath = null) {
   if (aftermath?.variant === 'solis-sweep' && !aftermath.cleared) return 'routed';

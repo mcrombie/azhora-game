@@ -16,16 +16,16 @@ const site = (x, z, yaw, name) => Object.freeze({ ...toWorld(x, z), yaw, name })
 const arena = (x, z, retreatAxis, retreatSign = 1) => Object.freeze({ center: Object.freeze(toWorld(x, z)), retreatAxis, retreatSign });
 
 export const AFTERMATH_SITES = Object.freeze({
-  // Outside the north-east gate of the Legion's outpost on the Moros, off the road, clear of the gate guards.
-  'camp-gate': site(-518.5, 326.5, 2.2, 'The Legion camp’s gate'),
+  // Outside the north-east gate of the army's outpost on the Moros, off the road, clear of the gate guards.
+  'camp-gate': site(-518.5, 326.5, 2.2, 'The army camp’s gate'),
   // On the road east of that gate, behind where the storming party forms up.
-  'outpost-approach': site(-478, 318, Math.PI / 2, 'The road to the Legion’s outpost'),
-  // The Legate's own place before the command tent, once he has quit it.
+  'outpost-approach': site(-478, 318, Math.PI / 2, 'The road to the army’s outpost'),
+  // The Marshal's own place before the command tent, once he has quit it.
   'outpost-command': site(-543.2, 361.1, Math.PI, 'The command tent of the outpost'),
   // Solis (src/west-suval.js). Authored points in the `solis` cluster: an offset from (-297, 551) is metres in the city's frame.
   // Outside the Gate of Sun Horses, east of the causeway and beside the road, clear of the watch and the hitching rail.
   'solis-gate': site(-287.5, 497.5, Math.PI, 'The Gate of Sun Horses'),
-  // On the road north of the Gate of Sun Horses, out of bowshot, where the Legion forms up to storm it.
+  // On the road north of the Gate of Sun Horses, out of bowshot, where the army forms up to storm it.
   'solis-road': site(-294, 461, 0, 'The Solis road, north of the gate'),
   // On the steps of the Court of Oaths, facing the plaza.
   'solis-hall': site(-279.5, 553, -Math.PI / 2, 'The Court of Oaths'),

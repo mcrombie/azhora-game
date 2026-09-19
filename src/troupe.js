@@ -147,7 +147,7 @@ export const titled = phrase => bare(phrase).replace(/(^|\s)(\S)/g, (m, s, c) =>
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 export const SUGGESTIONS = freeze({
-  place: freeze(['the bottom of a well', 'the Caloss bridge', 'a goose farm', 'the Emperor’s bathtub', 'Tidehaven pier', 'a leaking rowboat', 'the ruins of Rena', 'a Legion latrine', 'the top of a very tall ladder', 'the Moros Plain, which is all of it the same', 'a wedding in Nylon', 'the inside of a whale']),
+  place: freeze(['the bottom of a well', 'the Caloss bridge', 'a goose farm', 'the Emperor’s bathtub', 'Tidehaven pier', 'a leaking rowboat', 'the ruins of Rena', 'an army latrine', 'the top of a very tall ladder', 'the Moros Plain, which is all of it the same', 'a wedding in Nylon', 'the inside of a whale']),
   thing: freeze(['a turnip', 'a wooden leg', 'a cup of hot chocolate', 'a stolen crown', 'a very small horse', 'a goblin’s hat', 'a love letter', 'a cursed spoon', 'the wrong baby', 'a skull that talks', 'a map to nowhere', 'a goose']),
   trouble: freeze(['a curse', 'unrequited love', 'taxes', 'a war nobody asked for', 'hiccups', 'a missing twin', 'bad weather', 'a debt to the Selemi', 'a prophecy, wrongly read', 'mistaken identity', 'bees', 'the plague of politeness']),
 });
@@ -260,7 +260,7 @@ const ISAURA_DEATHS = freeze([
   'Pierced by the plot. Nilor will not say which plot. There is no plot.',
 ]);
 const PIM_JOKES = freeze([
-  'Why did the legionary cross the Caloss? Because the Coalition was on the other side. Nobody laughs at that one in Moros. Nobody laughs at it anywhere, actually.',
+  'Why did the soldier cross the Caloss? Because the Coalition was on the other side. Nobody laughs at that one in Moros. Nobody laughs at it anywhere, actually.',
   'What do you call a goblin with a wooden sword? Whatever he likes.',
   'I asked The Critic what she thought of my jig. She sighed. From The Critic, that is a standing ovation.',
   'Isaura and I did a double act once: she died, and I fell over her. We were booked for a month in Eer. She died every night; I fell over her every night; the second week, they started betting on which.',

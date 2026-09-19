@@ -58,7 +58,7 @@ export function createCombatView(scene, world, camera) {
     const edge=new THREE.Mesh(new THREE.RingGeometry(reach-.09,reach,40,1,from,span),new THREE.MeshBasicMaterial({color:0xf6c867,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     edge.rotation.copy(sector.rotation);tell.add(edge);
     const badge=document.createElement('div');badge.className='enemy-badge';
-    const name=document.createElement('span');name.textContent=enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='ogre'?'Mallec':enemy.kind==='soldier'?(enemy.look==='legion'?'Legionary':'Coalition soldier'):index===0?'Bramble scout':'Bramble raider';
+    const name=document.createElement('span');name.textContent=enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='ogre'?'Mallec':enemy.kind==='soldier'?(enemy.look==='legion'?'Soldier':'Coalition soldier'):index===0?'Bramble scout':'Bramble raider';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
@@ -67,7 +67,7 @@ export function createCombatView(scene, world, camera) {
     const actor=createCharacter(ally.model?{...ally.model,armed:ally.armed!==false}:{role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
     setShadowCasting(actor,false);actor.group.add(groundShadow());
     const badge=document.createElement('div');badge.className='enemy-badge ally';
-    const name=document.createElement('span');name.textContent=ally.name||'Legionary';
+    const name=document.createElement('span');name.textContent=ally.name||'Soldier';
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,badge,fill,intent,deadTime:0};allies.set(ally.id,item);return item;

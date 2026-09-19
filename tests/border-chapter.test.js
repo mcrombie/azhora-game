@@ -14,7 +14,7 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   assert.equal(border.start().ok, true);
   assert.deepEqual(border.view().destinationIds, [BORDER_LEGATE_ID]);
   assert.deepEqual(border.cast(), ['coalition-envoy', 'envoy-guard-north', 'envoy-guard-south'], 'the envoy is already waiting at Solis');
-  assert.equal(border.act('side-empire').ok, false, 'no parley without the Legate’s terms');
+  assert.equal(border.act('side-empire').ok, false, 'no parley without the Marshal’s terms');
   assert.equal(border.act('take-legate-terms').ok, true);
   assert.equal(border.view().stage, 'pass-gate');
   assert.deepEqual(border.view().destinationIds, [BORDER_GATE_ID], 'the terms go to the Gate of Sun Horses first');
@@ -26,7 +26,7 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   assert.equal(signed.ok, true); assert.equal(signed.reward, undefined, 'keeping the Empire’s contract pays nothing extra');
   assert.equal(border.act('side-coalition').ok, false, 'a side is chosen once');
   assert.equal(border.view().side, 'empire');
-  // The report: back to the Legate, who asks whether you are ready.
+  // The report: back to the Marshal, who asks whether you are ready.
   assert.equal(border.view().stage, 'report');
   assert.deepEqual(border.view().destinationIds, [BORDER_LEGATE_ID]);
   assert.deepEqual(border.cast(), [], 'the envoy has gone and the line is not yet formed');
@@ -34,7 +34,7 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   assert.equal(border.act('march-out').ok, true);
   assert.equal(border.view().stage, 'march');
   assert.deepEqual(border.view().destinationIds, ['battle-tribune']);
-  assert.deepEqual(border.cast(), ['battle-tribune', 'march-legionary-1', 'march-legionary-2'], 'the Tribune holds the line and a file of the left marches');
+  assert.deepEqual(border.cast(), ['battle-tribune', 'march-legionary-1', 'march-legionary-2'], 'the Captain holds the line and a file of the left marches');
   // The column comes up and the fight begins.
   const arrival = border.act('reach-line');
   assert.equal(arrival.startEncounter, BORDER_ENCOUNTER_ID);
@@ -61,7 +61,7 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   lost.act('reach-line');
   assert.equal(lost.resolveBattle(BORDER_ENCOUNTER_ID).outcome, 'victory', 'the Republic’s sellsword wins the day by winning the fight, whatever the odds');
   assert.deepEqual(lost.cast(), []);
-  assert.match(lost.view().detail, /The Legion broke/);
+  assert.match(lost.view().detail, /The army broke/);
 });
 
 test('the Coalition’s offer is plainly better than the Empire’s pay, in copper and not in scrip', () => {
@@ -72,7 +72,7 @@ test('the Coalition’s offer is plainly better than the Empire’s pay, in copp
   assert.equal(borderConversation(BORDER_NPCS.find(npc => npc.id === 'coalition-envoy'), context), true);
   const speech = screens.at(-1).lines.join(' ');
   assert.match(speech, new RegExp(`${COALITION_SIGNING} copper`));
-  assert.match(speech, /Double the Legate’s rate/);
+  assert.match(speech, /Double the Marshal’s rate/);
   assert.match(speech, /Land when the Republic wins/);
   assert.doesNotMatch(speech, /scrip/i, 'paper is the merchant’s grumble, not the offer');
   assert.match(screens.at(-1).options.choices.find(choice => choice.id === 'side-coalition').label, new RegExp(String(COALITION_SIGNING)));
@@ -119,7 +119,7 @@ test('saves round-trip without a running fight; saves from the stockade version 
 test('each side’s encounter is a valid fight against the other side’s soldiers, with the allies placed on the line', () => {
   const world = { bounds: { minX: -900, maxX: 200, minZ: -300, maxZ: 700 }, colliders: [], heightAt: () => 2 };
   for (const [side, look] of [['empire', 'coalition'], ['coalition', 'legion']]) {
-    const allies = [{ id: 'merc-brannock', name: 'Brannock', kind: 'legionary' }, { id: 'ally-2', name: 'Legionary', kind: 'legionary' }, { id: 'ally-3', name: 'Tribune', kind: 'officer' }];
+    const allies = [{ id: 'merc-brannock', name: 'Brannock', kind: 'legionary' }, { id: 'ally-2', name: 'Soldier', kind: 'legionary' }, { id: 'ally-3', name: 'Captain', kind: 'officer' }];
     const config = borderEncounter(side, allies);
     assert.equal(config.enemies.length, 8);
     assert.ok(config.enemies.every(enemy => enemy.kind === 'soldier' && enemy.look === look));
@@ -133,7 +133,7 @@ test('each side’s encounter is a valid fight against the other side’s soldie
   assert.equal(borderEncounter('empire', Array.from({ length: 9 }, (_, i) => ({ id: `a${i}`, kind: 'legionary' }))).allies.length, 5, 'five stand with the traveler at most');
 });
 
-test('the Legate, the gate, the envoy and the commanders speak only in their turn, and the envoy names the Coalition truly', () => {
+test('the Marshal, the gate, the envoy and the commanders speak only in their turn, and the envoy names the Coalition truly', () => {
   const border = createBorderChapter(), screens = [], acts = [];
   const context = { border, musterCount: 7, openDialogue: (npc, lines, unused, label, options) => screens.push({ npc, lines, options }), closeDialogue: () => {}, act: id => { acts.push(id); return border.act(id); } };
   const npc = id => BORDER_NPCS.find(person => person.id === id) ?? { id };
@@ -160,7 +160,7 @@ test('the Legate, the gate, the envoy and the commanders speak only in their tur
   screens.at(-1).options.choices.find(choice => choice.id === 'reach-line').action();
   assert.deepEqual(acts, ['take-legate-terms', 'enter-solis', 'side-coalition', 'march-out', 'reach-line']);
   assert.equal(border.view().stage, 'fighting');
-  // The Empire's report goes to the Legate, with the same question.
+  // The Empire's report goes to the Marshal, with the same question.
   const empire = createBorderChapter(); empire.start(); empire.act('take-legate-terms'); empire.act('enter-solis'); empire.act('side-empire');
   assert.equal(borderConversation(npc(BORDER_LEGATE_ID), { ...context, border: empire }), true);
   assert.equal(screens.at(-1).lines.at(-1), 'Are you ready?');

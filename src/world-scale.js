@@ -66,11 +66,11 @@ export const CLUSTERS = Object.freeze([
   // north Luscia keeps its cluster so a 56 m checkpoint taken there still resumes where it was taken: in Luscia's woods.
   cluster('goblin-camp', [-432, 156], 38, { pivot: [-397, 153],
     note: 'Where the Bramble Scout Camp stood in north Luscia, hinged on its old trail junction. Empty woods now; kept so 56 m checkpoints taken there resume in place.' }),
-  cluster('lauvel-relay', [-401, 196], 12, { note: 'The Legion’s old relay hut off the road above Lumber Town.' }),
+  cluster('lauvel-relay', [-401, 196], 12, { note: 'The army’s old relay hut off the road above Lumber Town.' }),
   cluster('lauvel-field', [-386, 182.9], 24, { note: 'The field at the Lauvel: wrecks, the burial line, the pickets and the wolves.' }),
   cluster('burned-hamlet', [-348, 212], 16, { note: 'Four roofless walls, a chimney and Garran.' }),
   cluster('lumber-town', [-408, 228], 34, { note: 'Lumber Town’s square, its houses, the timber yard and the garrison.' }),
-  cluster('moros-gate', [-427, 259.4], 16, { note: 'The gate posts and the two legionaries who watch them.' }),
+  cluster('moros-gate', [-427, 259.4], 16, { note: 'The gate posts and the two soldiers who watch them.' }),
   cluster('legion-camp', [-549.2, 348.1], 46, { note: 'The palisade, the tent lines, the command tent, the horse line and the camp’s posts.' }),
   cluster('legion-camp-approach', [-505, 316], 46, { pivot: [-549.2, 348.1],
     note: 'The open ground north and east of the outpost’s north-east gate, where the day after the border battle is fought: the gate held against a pursuit from the north, or stormed from the east. It hangs from the camp, so both fights stay in front of the gate.' }),

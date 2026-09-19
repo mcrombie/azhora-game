@@ -1,7 +1,7 @@
 /**
  * The fortification standard, shared by both sides of the war.
  *
- * The Legion's outpost on the Moros Plain and Solis are built to the same
+ * The army's outpost on the Moros Plain and Solis are built to the same
  * measures: materials differ (squared timber on an earth rampart, dressed
  * stone), strength does not. This module is the measure and the ground plan of
  * a circuit: where its walls, towers, gates and ditch stand and which ground

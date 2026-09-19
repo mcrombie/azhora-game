@@ -32,7 +32,7 @@ export const PEDDLER = Object.freeze({
   id: 'peddler', name: 'Wendel', role: 'Peddler', modelRole: 'field-courier', color: 0x8a6a3c, stand: Object.freeze({ x: -30, z: 34 }), yaw: 2.4,
   lines: Object.freeze([
     'Copper, silver, gold: that is the Empire’s money, and the only money that buys anything in Drent. Ten coppers to a silver, ten silvers to a gold. I deal in copper; nobody on this coast has seen a gold piece since the tax men left.',
-    'The rebels print paper. Coalition scrip, they call it, with a seal and a promise. Here it buys nothing. Across the Caloss it buys bread, and if their republic wins it will buy a great deal more. Keep any you come by, and do not show it at a Legion post.',
+    'The rebels print paper. Coalition scrip, they call it, with a seal and a promise. Here it buys nothing. Across the Caloss it buys bread, and if their republic wins it will buy a great deal more. Keep any you come by, and do not show it at an army post.',
     'Now. Food for the road, a tinderbox, a stick or two. What will it be?',
   ]),
 });

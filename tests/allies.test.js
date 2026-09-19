@@ -22,12 +22,12 @@ const assault = {
     { id: 'camp-goblin-2', x: 2, z: -46, hp: 60, entry: .5 },
   ],
   allies: [
-    { id: 'captain', name: 'Captain Ferro', kind: 'officer', x: -1.5, z: -32 },
+    { id: 'captain', name: 'Captain Fennor', kind: 'officer', x: -1.5, z: -32 },
     { id: 'legionary-1', kind: 'legionary', x: 1.5, z: -31 },
   ],
 };
 
-test('an encounter can bring Legion allies, and rejects allies it cannot vouch for', () => {
+test('an encounter can bring army allies, and rejects allies it cannot vouch for', () => {
   const { combat } = fixture();
   assert.equal(combat.startEncounter({ ...assault, allies: [{ ...assault.allies[0], kind: 'dragoon' }] }), false, 'unknown ally kinds are refused');
   assert.equal(combat.startEncounter({ ...assault, allies: [{ ...assault.allies[0], id: 'camp-goblin-1' }] }), false, 'an ally cannot share an enemy id');
@@ -35,7 +35,7 @@ test('an encounter can bring Legion allies, and rejects allies it cannot vouch f
   assert.equal(combat.startEncounter({ ...assault, allies: [{ ...assault.allies[0], hp: -5 }] }), false);
   assert.equal(combat.startEncounter(assault), true);
   assert.deepEqual(combat.state.allies.map(ally => [ally.id, ally.kind, ally.name, ally.hp, ally.active]),
-    [['captain', 'officer', 'Captain Ferro', 110, true], ['legionary-1', 'legionary', 'Legionary', 90, true]]);
+    [['captain', 'officer', 'Captain Fennor', 110, true], ['legionary-1', 'legionary', 'Soldier', 90, true]]);
   assert.equal(combat.state.enemies.length, 2, 'allies do not replace the enemies');
 });
 
@@ -53,7 +53,7 @@ test('allies close on the nearest goblin and win the fight without the traveler 
 
 test('enemies strike the nearest standing target, an ally can fall, and the fight goes on', () => {
   const { combat, events } = fixture({ position: { z: -20 } });
-  // One frail legionary stands between the traveler and a goblin; the traveler hangs back.
+  // One frail soldier stands between the traveler and a goblin; the traveler hangs back.
   assert.ok(combat.startEncounter({ ...assault, enemies: [{ id: 'g', x: 0, z: -40, hp: 400 }],
     allies: [{ id: 'weak', kind: 'legionary', x: 0, z: -34, hp: 20 }] }));
   advanceUntil(combat, () => events.some(event => event.type === 'ally-hit'), 30);

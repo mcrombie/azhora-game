@@ -205,7 +205,7 @@ test('winning the border battle takes the other side’s ground, and a save that
   assert.equal(empire.view().chapterId, 'solis-sweep');
   empire.completeChapter('solis-sweep');
   assert.equal(empire.mapControl()['West Suval'], 'empire', 'Solis is the Emperor’s');
-  // The Republic's takes the Legion's outpost, and the Moros with it.
+  // The Republic's takes the army's outpost, and the Moros with it.
   const republic = createCampaign(); reachTheFork(republic); republic.chooseSide('coalition');
   republic.completeChapter('border-battle', 'victory');
   assert.equal(republic.view().chapterId, 'moros-outpost');

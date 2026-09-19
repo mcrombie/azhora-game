@@ -36,8 +36,8 @@ export const SIGN_LABELS = Object.freeze([
   'Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Return to bridge',
   'The Lauvel', 'The Burned Hamlet', 'Lumber Town', 'The Stable Yard', 'Notices',
   // The Moros Plain
-  'Moros Plain', 'The Moros Gate', 'The Legion Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
-  'The Shepherd’s Fold', 'The Legion Picket', 'Truce',
+  'Moros Plain', 'The Moros Gate', 'The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
+  'The Shepherd’s Fold', 'The Army Picket', 'Truce',
   // East Suval
   'East Suval', 'Elod', 'The Elodi Frontier', 'Elod’s Border Post', 'Closed by Elod',
   // Peblos

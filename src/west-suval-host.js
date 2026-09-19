@@ -8,8 +8,8 @@
  *    stakes (`holds`/`region`) are honoured by the host's occupation pass.
  *  - The frame shows who holds Solis on the ground (the camp, banners and
  *    standards through `world.setSolisHolder`), stands both garrisons down while
- *    the Legion is still clearing the square, and walks the border chapter's column
- *    at the traveler's back during the march: the file of legionaries or the
+ *    the army is still clearing the square, and walks the border chapter's column
+ *    at the traveler's back during the march: the file of soldiers or the
  *    valley companies, and on the Empire's side the hired company's mustered men.
  *    A marcher left far behind is moved up out of sight; one fighting as a combat
  *    ally is hidden while the combat view draws him. When the column comes up to

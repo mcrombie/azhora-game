@@ -63,7 +63,7 @@ export const FISH_SPECIES = Object.freeze({
   rockfish: fish('rockfish', {
     name: 'Rockfish', xp: 30, waters: { river: 6, 'cold-river': 4 },
     note: 'Striped along the flank, deep-shouldered, and strong enough that the rod does the arguing for a while.',
-    lore: 'It comes up out of the tide in spring. Take a big one and you eat for three days, if the Legion does not hear about it.',
+    lore: 'It comes up out of the tide in spring. Take a big one and you eat for three days, if the army does not hear about it.',
   }),
   trout: fish('trout', {
     name: 'Trout', xp: 30, waters: { 'cold-river': 32 },

@@ -19,13 +19,13 @@ const talk = (npc, extra = {}) => {
 test('Solis has both garrisons by occupation stake, and townsfolk who hold nothing', () => {
   const coalition = SOLIS_NPCS.filter(npc => npc.holds === 'coalition'), empire = SOLIS_NPCS.filter(npc => npc.holds === 'empire');
   assert.ok(coalition.length >= 8 && empire.length >= 3, 'a garrison each');
-  assert.ok(empire.length < coalition.length, 'the Legion’s occupation is the smaller');
+  assert.ok(empire.length < coalition.length, 'the army’s occupation is the smaller');
   for (const npc of [...coalition, ...empire]) assert.equal(npc.region, 'West Suval');
   assert.ok(coalition.every(npc => npc.modelRole === 'suvali-guard'), 'Coalition soldiers wear the Suvali kit');
   assert.ok(empire.filter(npc => npc.id !== 'solis-tribune-clerk').every(npc => npc.modelRole === 'legion-soldier'));
   const townsfolk = SOLIS_NPCS.filter(npc => !npc.holds);
   assert.ok(townsfolk.length >= 5 && townsfolk.length <= 7, 'a merchant and four to six townsfolk');
-  // The Coalition holds Solis when the game begins; the Legion's people come in when the Empire takes it.
+  // The Coalition holds Solis when the game begins; the army's people come in when the Empire takes it.
   const start = { 'West Suval': 'coalition' }, taken = occupationControl(start, { variant: 'solis-sweep', cleared: true });
   assert.equal(taken['West Suval'], 'empire', 'the square cleared is the city fallen');
   for (const npc of SOLIS_NPCS) {
@@ -65,18 +65,18 @@ test('the townsfolk speak for whoever holds the gate, and the merchant grumbles 
   const merchant = townsfolkLines('solis-merchant', 'coalition').join(' ');
   assert.match(merchant, /scrip/); assert.match(merchant, /Paper/);
   assert.match(townsfolkLines('solis-elder', 'coalition').join(' '), /king/, 'they remember being a kingdom');
-  assert.match(talk(byId('solis-legion-square')).screen.lines[0], /by order of Tribune Orso/, 'the Legion speaks in orders');
+  assert.match(talk(byId('solis-legion-square')).screen.lines[0], /by order of Captain Brulan/, 'the army speaks in orders');
   assert.match(talk(byId('solis-legion-gate-east')).screen.lines[0], /Rebels/, 'and calls the republicans rebels');
   assert.equal(solisConversation({ id: 'someone-else' }, { openDialogue: () => {}, closeDialogue: () => {} }), false);
 });
 
-test('Sergeant Kell admits the Legate’s messenger at the Gate of Sun Horses, and only then', () => {
+test('Sergeant Kell admits the Marshal’s messenger at the Gate of Sun Horses, and only then', () => {
   const border = createBorderChapter(), gate = byId('solis-gate-captain'), acts = [];
   const context = { border, act: id => { acts.push(id); return border.act(id); } };
   assert.equal(talk(gate, context).screen.options.choices.some(choice => choice.id === 'enter-solis'), false, 'no seal, no business');
   border.start(); border.act('take-legate-terms');
   const { screen } = talk(gate, context);
-  assert.match(screen.lines.join(' '), /Legion seal/);
+  assert.match(screen.lines.join(' '), /army seal/);
   const admit = screen.options.choices.find(choice => choice.id === 'enter-solis');
   assert.ok(admit); admit.action();
   assert.deepEqual(acts, ['enter-solis']);
@@ -137,13 +137,13 @@ test('the host registers Solis, stands both garrisons down while the square is f
   const border = createBorderChapter(); border.start(); border.act('take-legate-terms'); border.act('enter-solis');
   const frame = extra => host.frame({ npcById, player, border, control: { 'West Suval': 'coalition' }, aftermath: null, ...extra });
   assert.equal(frame().holder, 'coalition'); assert.deepEqual(holders, ['coalition']);
-  // While the Legion clears the square, neither garrison stands.
+  // While the army clears the square, neither garrison stands.
   frame({ aftermath: { variant: 'solis-sweep', cleared: false } });
   assert.equal(holders.at(-1), 'routed');
   assert.ok(npcData.filter(npc => npc.holds).every(npc => npc.hidden), 'the garrisons are gone');
   assert.ok(npcData.filter(npc => !npc.holds).every(npc => !npc.hidden), 'the townsfolk stay');
   frame({ control: { 'West Suval': 'empire' } }); assert.equal(holders.at(-1), 'empire');
-  // The Empire's march: the file of legionaries and the mustered hired swords fall in behind the traveler.
+  // The Empire's march: the file of soldiers and the mustered hired swords fall in behind the traveler.
   border.act('side-empire'); border.act('march-out');
   player.group.position = { x: BORDER_ARENA.checkpoint.x + 200, z: BORDER_ARENA.checkpoint.z };
   let arrived = 0;

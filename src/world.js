@@ -1200,7 +1200,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     [-366, 112, 'Reedcutters’ Camp', at(-372, 116)], [-378, 128, 'Sava’s Shrine', at(-374, 134)],
     [-386, 158, 'The Waymarkers', at(-386, 152)], [-396, 186, 'The Lauvel Relay', at(-401, 196)],
     [-321, 100, 'Quiet fishing bank', CALOSS_BANK.spot, 'Return to bridge'],
-    [-470, 300, 'The Legion Camp', STORY_SITES.legionCamp],
+    [-470, 300, 'The Army Camp', STORY_SITES.legionCamp],
     [branch, null, 'The Elodi Frontier', SUVAL_ROAD[6]], [-120, 330, 'Elod', STORY_SITES.elodGate, 'The Elodi Frontier'],
   ]) {
     const spot = typeof x === 'object' ? x : at(x, z);

@@ -1,5 +1,5 @@
 /**
- * Riding. The Legion pays the traveler for the Lauvel with a horse, handed over
+ * Riding. The army pays the traveler for the Lauvel with a horse, handed over
  * by the ostler in Lumber Town, and the long roads beyond are meant to be
  * ridden. The rules are small on purpose:
  *
@@ -189,7 +189,7 @@ export function createRiding({ onEvent = () => {} } = {}) {
 
 /** What the ostler says when he hands the horse over: the whole of the riding lesson. */
 export const RIDING_LESSON = Object.freeze([
-  'He is a bay gelding, nine years old, Legion-broke and sound. He has no name on the rolls. Most men give them one by the second day.',
+  'He is a bay gelding, nine years old, army-broke and sound. He has no name on the rolls. Most men give them one by the second day.',
   'Stand at his shoulder and press G to mount; G again to step down, on his near side if there is room. He walks faster than you run. Hold Shift and he canters, and then he turns wide, so look where you are going before you ask for it.',
   'Leave him anywhere. He will stand and graze. Press H to whistle and he comes, if he can hear you and find a way; if he cannot, he has a habit of turning up behind you regardless.',
   'He will carry you to a fight but not through one. If steel comes out you are on your feet, and he will be somewhere behind you, thinking less of everyone.',

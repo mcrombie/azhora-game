@@ -32,9 +32,9 @@ test('West Izol has twenty-five people, each standing somewhere and each with so
     assert.ok(Array.isArray(lines) && lines.length >= 2, `${npc.id} says something`);
     for (const line of lines) assert.ok(line.length > 40, `${npc.id} does not speak in fragments`);
   }
-  // Nobody on this island wears Legion armour, and the Legion is not here.
-  assert.ok(IZOL_NPCS.every(npc => !String(npc.modelRole).startsWith('legion')), 'no Legion armour on Izol');
-  assert.ok(!allLines().some(line => /\bLegion\b/.test(line)), 'and nobody here talks about the Legion');
+  // Nobody on this island wears Imperial armour, and the army is not here.
+  assert.ok(IZOL_NPCS.every(npc => !String(npc.modelRole).startsWith('legion')), 'no Imperial armour on Izol');
+  assert.ok(!allLines().some(line => /\bLegion\b/.test(line)), 'and nobody here talks about the army');
   // The soldiers are men, and the town is not.
   const soldiers = IZOL_NPCS.filter(npc => npc.modelRole === 'suvali-guard');
   assert.ok(soldiers.length >= 7, 'the town is full of soldiers');

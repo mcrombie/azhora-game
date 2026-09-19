@@ -176,7 +176,7 @@ test('the Tessen bridge carries the road north over the water, rideable end to e
   assert.equal(blocked, sampled, 'no ford: the rivers are water everywhere but the bridge');
 });
 
-test('the road north leaves the main road past the Caloss Gate, clear of Tidehaven, and ends at the Legion’s Feradom barrier', () => {
+test('the road north leaves the main road past the Caloss Gate, clear of Tidehaven, and ends at the army’s Feradom barrier', () => {
   assert.ok(segmentDistance(PUETH_JUNCTION, MAIN_ROAD) < 1e-6, 'the junction is on the main road');
   assert.ok(Math.hypot(PUETH_JUNCTION.x, PUETH_JUNCTION.z - 29) > 190, 'the junction is outside the rigid Tidehaven ground');
   assert.deepEqual(toWorld(-176, 29), { x: -176, z: 29 }, 'the Caloss Gate has not moved');
@@ -220,7 +220,7 @@ test('everyone Pueth places stands on reachable ground, at least 4 m from anyone
     assert.ok(screens[0].lines.length >= 2 && screens[0].options.choices.length === 1, `${npc.name} has a few lines and a goodbye`);
   }
   assert.match(PUETH_NPCS.find(npc => npc.id === 'rimeholt-sentry').modelRole, /legion/);
-  assert.ok(PUETH_NPCS.filter(npc => /legion/.test(npc.modelRole)).every(npc => /Legionary/.test(npc.name)), 'only the Legion wears Legion armour');
+  assert.ok(PUETH_NPCS.filter(npc => /legion/.test(npc.modelRole)).every(npc => /Footman/.test(npc.name)), 'only the army wears Imperial armour');
 });
 
 test('the Bramble Scout Camp stands in the woods north of the Tessen, its fight valid and its retreat back toward the road', () => {

@@ -30,7 +30,7 @@ export const REBEL_CONTACT = Object.freeze({ npcId: 'timber-stall', region: 'Lus
 
 const ambient = {
   'town-innkeeper': [
-    'The Sawyer’s Rest, and you are welcome in it, though I will want a coin for the bed and not a chit. The Legion pays in chits now.',
+    'The Sawyer’s Rest, and you are welcome in it, though I will want a coin for the bed and not a chit. The army pays in chits now.',
     'Eleven roofs, a well and a sawpit. We were a village until the timber trade found us, and a town before anybody thought to ask us.',
   ],
   'town-carter': [
@@ -39,11 +39,11 @@ const ambient = {
   ],
   'town-elder': [
     'Town council, if two of us in a doorway is a council. We keep the well clean and we keep the peace, and lately that is the same job.',
-    'Half the men who went out to the Lauvel came from these houses. We do not put that on a board for the Legion to read.',
+    'Half the men who went out to the Lauvel came from these houses. We do not put that on a board for the army to read.',
   ],
   'town-sawyer': [
     'Mind the pit as you pass. Two of us on a saw, one above and one below, and the one below eats the dust. I have done twenty years below.',
-    'Elm for wheels, oak for keels, and the straight pine for the Legion’s palisades. They ask for the pine now and they ask politely, which is new.',
+    'Elm for wheels, oak for keels, and the straight pine for the army’s palisades. They ask for the pine now and they ask politely, which is new.',
   ],
   'town-yardhand': [
     'Stacked and strapped, and if you take one off the top it will take the other four with it. Stand clear and I will not have to shout.',
@@ -63,7 +63,7 @@ export function townConversation(npc, context) {
 /**
  * Hara keeps a stall of timber offcuts and cloth. She is the republic's contact
  * in Lumber Town, and she stays a stallholder unless the traveler asks what the
- * town makes of the Legion, offers to hear the other side, and then says the
+ * town makes of the army, offers to hear the other side, and then says the
  * families out here did not ask for this. Any other reply leaves her a
  * stallholder, and nothing is recorded.
  */
@@ -90,7 +90,7 @@ function stallConversation(npc, context) {
   const families = () => openDialogue(npc, [
     'No. They did not.',
     'You have said three careful things and none of them were careless. So: the republic is not a word out of Ambron’s register to me. I have carried for it since before the Lauvel, and I will carry for it after.',
-    'The rangers who got out of that field are on the East Suval border, living off Elod’s neutrality and thin soup. They need somebody the pickets wave through. You have a Legion errand and a Legion face.',
+    'The rangers who got out of that field are on the East Suval border, living off Elod’s neutrality and thin soup. They need somebody the pickets wave through. You have an army errand and an army face.',
   ], null, 'Answer her', { choices: [
     { id: 'hara-join', label: 'Tell me what the rangers need.', action: () => { closeDialogue(); act('join-luscia-rebels'); } },
     { id: 'hara-decline', label: 'I will keep this to myself. That is all I can promise.',
@@ -113,11 +113,11 @@ function stallConversation(npc, context) {
 
   // Step one: an ordinary complaint, carefully worded.
   const legion = () => openDialogue(npc, [
-    'The Legion? They pay for what they take, mostly. They took the long pine in the spring and left chits, and the chits are still chits.',
+    'The army? They pay for what they take, mostly. They took the long pine in the spring and left chits, and the chits are still chits.',
     'Nobody in this square will say more than that to a stranger, and you should not read anything into it either way.',
   ], null, 'Answer her', { choices: [
     { id: 'hara-other-side', label: 'I would hear the other side of it.', action: otherSide },
-    { id: 'hara-loyal', label: 'The Legion keeps the road open, at least.',
+    { id: 'hara-loyal', label: 'The army keeps the road open, at least.',
       action: () => openDialogue(npc, [
         'It does. And an open road is good for a stall. There, we agree, and that is a comfortable place to stop.',
       ], null, 'Back to the square', { onComplete: closeDialogue }) },
@@ -127,7 +127,7 @@ function stallConversation(npc, context) {
     'Offcuts, shingles, and cloth by the ell. If you want the good linen it is under the counter, out of the dust.',
     'You are the one the clerk has running errands. Do not look surprised; the square watches the square.',
   ], [
-    { id: 'hara-legion', label: 'What does the town make of the Legion?', action: legion },
+    { id: 'hara-legion', label: 'What does the town make of the army?', action: legion },
     plain('hara-timber', 'What does a lumber town sell?', [
       'Straight pine and elm, mostly, cut in the yard and hauled to the Caloss landing. Every stick of it has grown since the last war, which tells you how long the quiet lasted.',
       'And cloth, because somebody has to, and because a stall of nothing but wood gets dull by noon.',

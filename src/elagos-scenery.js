@@ -451,7 +451,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
   }
   AMBRON_BUILDINGS.forEach(houseOf);
 
-  // The Legate-General's Seat: a colonnade and a standard over the plaza.
+  // The Lord Marshal's Seat: a colonnade and a standard over the plaza.
   {
     const seat = AMBRON_BUILDINGS.find(entry => entry.id === 'legate-seat');
     const base = cityGround(seat.a) - .3, front = seat.a - seat.w / 2;

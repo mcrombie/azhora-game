@@ -2,9 +2,9 @@
  * The Bramble Scout Camp, played through the real game: keyboard, conversation
  * buttons, combat and the save slot.
  *
- * The camp stands in the birch woods of southern Pueth, east of the Legion's
- * road post at the Tessen bridge. Legionary Casso tells a hired sword about it,
- * Captain Varo marches on it with his two men when asked, the traveler walks the
+ * The camp stands in the birch woods of southern Pueth, east of the army's
+ * road post at the Tessen bridge. Footman Cassel tells a hired sword about it,
+ * Captain Drevan marches on it with his two men when asked, the traveler walks the
  * blue-rag trail with the garrison at their shoulder and challenges the two
  * scouts beside them, falls back down the trail, stands the men down, loses on
  * purpose and retries alone, wins, lifts Tidehaven's stolen stores and brings
@@ -139,15 +139,15 @@ export async function runHideoutSmoke(h) {
     weapons.setWear(true);
     const stockBefore = stock(inventory), swordBefore = weapons.status('simple-sword').durability;
 
-    // The Captain sends a hired sword to Casso; Casso tells of the camp; the Captain marches.
+    // The Captain sends a hired sword to Cassel; Cassel tells of the camp; the Captain marches.
     await talkTo(CAPTAIN); await tap('KeyF');
-    assert(/Speak to Casso/.test($('speech').textContent) || /Casso/.test(document.getElementById('dialogue').textContent), 'the Captain did not point to Casso');
+    assert(/Speak to Cassel/.test($('speech').textContent) || /Cassel/.test(document.getElementById('dialogue').textContent), 'the Captain did not point to Cassel');
     assert(!document.querySelector('[data-choice="march-on-hideout"]'), 'the Captain offered to march on a camp nobody has told you of');
     await leave();
     await talkTo(CASSO); await choose('ask-hideout-work');
-    assert(/blue cloth/.test($('speech').textContent) || /blue cloth/.test(document.getElementById('dialogue').textContent), 'Casso did not describe the marked trail');
+    assert(/blue cloth/.test($('speech').textContent) || /blue cloth/.test(document.getElementById('dialogue').textContent), 'Cassel did not describe the marked trail');
     for (let page = 0; page < 6 && !forestHideout.state.inspected; page++) await tap('KeyF');
-    assert(forestHideout.state.inspected && !forestHideout.state.accepted, 'Casso’s account did not mark the camp'); await leave();
+    assert(forestHideout.state.inspected && !forestHideout.state.accepted, 'Cassel’s account did not mark the camp'); await leave();
     assert(same(stock(inventory), stockBefore), 'hearing of the camp changed the satchel'); assertSaved();
     await talkTo(CAPTAIN); await choose('march-on-hideout');
     assert(forestHideout.state.escort && getMode() === 'playing', 'the garrison did not fall in behind the traveler');
@@ -237,7 +237,7 @@ export async function runHideoutSmoke(h) {
       'returning the stores did not pay exactly thirty copper'); assertSaved();
     assert(same(journey.snapshot(), mainBefore) && readState().questStage === 10, 'the optional victory or return changed the main quest');
     await talkTo(CAPTAIN); await tap('KeyF');
-    assert(/report to the Legate/.test(document.getElementById('dialogue').textContent), 'the Captain did not remember the returned stores');
+    assert(/report to the Marshal/.test(document.getElementById('dialogue').textContent), 'the Captain did not remember the returned stores');
     assert(!document.querySelector('[data-choice="return-hideout-supplies"]'), 'the Captain offered to pay twice'); await leave();
     assert(inventory.count('copper-piece') === copperBefore + QUEST.reward.quantity, 'talking again duplicated the reward');
     await tap('KeyJ');
@@ -283,7 +283,7 @@ export async function verifyHideoutReload(h, expected) {
   await choose('leave-hideout');
   assert(combat.state.phase !== 'active', 'revisiting the cleared camp restarted combat');
   await talkTo(HIDEOUT_GARRISON[0]); await tap('KeyF');
-  assert(/report to the Legate/.test(document.getElementById('dialogue').textContent), 'the Captain forgot the returned stores after loading'); await leave();
+  assert(/report to the Marshal/.test(document.getElementById('dialogue').textContent), 'the Captain forgot the returned stores after loading'); await leave();
   assert(inventory.count('copper-piece') === copper && !document.querySelector('[data-choice="return-hideout-supplies"]'),
     'loading or a repeat conversation duplicated the thirty-copper reward');
   await tap('KeyJ');

@@ -10,13 +10,13 @@
 export const STORY_CHAPTER_VERSION = 1;
 
 /**
- * Where each side stands when the fighting is done: the Legion keeps the outpost
+ * Where each side stands when the fighting is done: the army keeps the outpost
  * at the centre of the Moros, the Republic keeps Solis. The battle may leave the
  * traveler on the other side's ground — a won field is the loser's place — so the
  * chapter is not closed until they have made their way back to their own.
  */
 export const SIDE_SEATS = Object.freeze({
-  empire: Object.freeze({ id: 'outpost', name: 'the Legion\u2019s outpost on the Moros', x: -980.7, z: 598.8, reach: 110 }),
+  empire: Object.freeze({ id: 'outpost', name: 'the army\u2019s outpost on the Moros', x: -980.7, z: 598.8, reach: 110 }),
   coalition: Object.freeze({ id: 'solis', name: 'Solis', x: -520, z: 950, reach: 140 }),
 });
 export const sideSeat = side => SIDE_SEATS[side] ?? null;
@@ -34,7 +34,7 @@ export const STORY_CHAPTERS = Object.freeze([
     goal: 'Report for duty. The Empire is gathering its hired swords at Lumber Town, across the Caloss in Luscia; get there and find the clerk who keeps the muster.',
     steps: [
       'Come ashore at Tidehaven and clear the Greenway of raiders',
-      'Carry Lakota’s letter to the Legion’s post in the Avrel clearing',
+      'Carry Lakota’s letter to the army’s post in the Avrel clearing',
       'Make the road sound as far as the Caloss crossing',
       'Cross the river into Luscia and find Lumber Town',
       'Report to Iven at the relay post on the town square',
@@ -45,16 +45,16 @@ export const STORY_CHAPTERS = Object.freeze([
     // Everything the traveler does once they have reported: the errand that shows them
     // what the war is, the muster, the parley that asks them to choose, and the battle.
     number: 2, id: 'joining-the-war', title: 'Joining the War', region: null,
-    // It ends where the side you chose keeps its own ground: the Legion's outpost on
+    // It ends where the side you chose keeps its own ground: the army's outpost on
     // the Moros, or the walls of Solis.
-    goal: state => `You have reported for duty. Take the Legion’s work, ride to the muster on the Moros, carry the Legate’s terms to the Coalition at Solis, choose the side you will fight for, and see the battle through${
+    goal: state => `You have reported for duty. Take the army’s work, ride to the muster on the Moros, carry the Marshal’s terms to the Coalition at Solis, choose the side you will fight for, and see the battle through${
       state.side === 'coalition' ? ' — until you stand inside Solis as one of the Republic’s own.'
-      : state.side === 'empire' ? ' — until you stand in the Legion’s outpost on the Moros as one of the Empire’s own.'
-      : '. Whichever side you take, it ends on that side’s own ground: the Legion’s outpost on the Moros, or the walls of Solis.'}`,
+      : state.side === 'empire' ? ' — until you stand in the army’s outpost on the Moros as one of the Empire’s own.'
+      : '. Whichever side you take, it ends on that side’s own ground: the army’s outpost on the Moros, or the walls of Solis.'}`,
     steps: [
       'Find the lost courier at the field at the Lauvel',
-      'Carry the muster rolls back to Iven and draw the Legion’s horse',
-      'Report to Legate Verro at the outpost on the Moros',
+      'Carry the muster rolls back to Iven and draw the army’s horse',
+      'Report to Marshal Venmor at the outpost on the Moros',
       'Carry the terms into Solis and hear the Republic’s offer',
       'Choose your side, march to the border, and fight the battle',
       'The morning after: rally, clear the ground, and take your pay',
@@ -69,7 +69,7 @@ export const STORY_CHAPTERS = Object.freeze([
     title: state => state.side === 'coalition' ? 'The Republic of Izol' : 'The Kingdom of Ambron',
     goal: state => state.side === 'coalition'
       ? 'Take your pay the day after the battle, then sail east to Izolveth in West Izol, the port that shelters the Coalition’s army. The Republic keeps no capital: its business is done at a council, and the council wants to see the sellsword who fought at the border.'
-      : 'Take your pay the day after the battle, then ride north-west across the Moros into Elagos, to Ambron on the Lake Ela narrows: the walled city whose tolls are the Empire, where the Legate-General decides what you are used for next.',
+      : 'Take your pay the day after the battle, then ride north-west across the Moros into Elagos, to Ambron on the Lake Ela narrows: the walled city whose tolls are the Empire, where the Lord Marshal decides what you are used for next.',
     steps: [
       'Leave your side’s ground with its orders in your hand',
       'Cross to the seat of the power you fight for',

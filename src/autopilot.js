@@ -456,7 +456,7 @@ export function planGoal(snapshot, world) {
  * Town's square, the courier's satchel at the Lauvel, the wolves that come off
  * the burial line (the ordinary fight policy handles those), and back again.
  */
-/** The Legion on the plain: the camp gate, the Legate's muster, the horse line. */
+/** The army on the plain: the camp gate, the Marshal's muster, the horse line. */
 /** The day after the battle: rally to the commander, fight (the ordinary fight policy handles it), and report. */
 /** Once the day after is done, the chapter closes on the traveler's own side's ground. */
 export function homeGoal(snapshot, world) {
@@ -476,7 +476,7 @@ export function aftermathGoal(snapshot, world) {
   return { kind: 'wait', intent: 'Holding with the company' };
 }
 
-/** The Legate's terms, the gate and the envoy at Solis, the report and the march, and the line. The autopilot keeps the Empire's contract. */
+/** The Marshal's terms, the gate and the envoy at Solis, the report and the march, and the line. The autopilot keeps the Empire's contract. */
 export function borderGoal(snapshot, world) {
   const border = snapshot.border;
   if (border?.complete && snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
@@ -491,7 +491,7 @@ export function morosGoal(snapshot, world) {
   const moros = snapshot.moros;
   if (moros?.complete && snapshot.border) return borderGoal(snapshot, world);
   if (moros?.complete)
-    return { kind: 'done', intent: 'On the Legate’s muster', reason: 'You are on the Legate’s muster with a horse on the line. The road to Solis is the next chapter, and it is not built yet.' };
+    return { kind: 'done', intent: 'On the Marshal’s muster', reason: 'You are on the Marshal’s muster with a horse on the line. The road to Solis is the next chapter, and it is not built yet.' };
   if (!moros?.destinationIds?.length) return { kind: 'wait', intent: 'Waiting for orders from the Moros' };
   const id = moros.destinationIds[0];
   if (world.npcPositions?.[id]) return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Reporting to ${world.npcNames?.[id] ?? id}` };
@@ -505,7 +505,7 @@ export function lusciaGoal(snapshot, world) {
   if (luscia?.complete && snapshot.moros) return morosGoal(snapshot, world);
   if (!luscia?.destinationIds?.length || luscia.complete)
     return { kind: 'done', intent: luscia?.complete ? 'The field at the Lauvel is settled' : 'The road out of Drent is done',
-      reason: luscia?.complete ? 'The field at the Lauvel is settled and the Legion owes you a horse. The Moros camp is the next chapter, and it is not built yet.' : null };
+      reason: luscia?.complete ? 'The field at the Lauvel is settled and the army owes you a horse. The Moros camp is the next chapter, and it is not built yet.' : null };
   const id = luscia.destinationIds[0];
   if (world.npcPositions?.[id])
     return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Speaking with ${world.npcNames?.[id] ?? id}` };

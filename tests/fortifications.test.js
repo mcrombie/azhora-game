@@ -52,7 +52,7 @@ test('the Ambroni outpost is a real fort: two gates, towers at every corner and 
   assert.equal(corners.length, OUTPOST_CIRCUIT.corners.length);
   assert.equal(gateTowers.length, 4);
   assert.ok(longestTowerGap(OUTPOST_CIRCUIT) <= FORT_STANDARD.towerSpacing.max, `the longest stretch between towers is ${longestTowerGap(OUTPOST_CIRCUIT).toFixed(1)} m`);
-  assert.ok(OUTPOST_CIRCUIT.perimeter > 250, `a fort for a legion's outpost, not a pen: ${OUTPOST_CIRCUIT.perimeter.toFixed(0)} m of wall`);
+  assert.ok(OUTPOST_CIRCUIT.perimeter > 250, `a fort for an army's outpost, not a pen: ${OUTPOST_CIRCUIT.perimeter.toFixed(0)} m of wall`);
   // The main road runs through both gates.
   for (const gate of OUTPOST_CIRCUIT.gates) {
     const road = world.paths[0];
@@ -90,7 +90,7 @@ test('the ground north round to east of the main gate is clear of new colliders 
     const along = (c.x - OUTPOST_CENTRE.x) * OUTPOST_ROAD.east.x + (c.z - OUTPOST_CENTRE.z) * OUTPOST_ROAD.east.z;
     assert.ok(along - (c.r ?? Math.hypot(c.hx, c.hz)) <= ditchEdge + .01, `${c.kind} stands in the fight ground north-east of the gate at ${c.x.toFixed(1)}, ${c.z.toFixed(1)}`);
   }
-  // The gate's guards, the Legate and the quartermaster keep their places, on open ground.
+  // The gate's guards, the Marshal and the quartermaster keep their places, on open ground.
   for (const id of [MOROS_GATE_ID, 'post-camp-gate-south', MOROS_LEGATE_ID, 'post-camp-stores']) {
     const post = LEGION_POSTS.find(entry => entry.id === id);
     assert.ok(canStand(post.x, post.z, world, .45), `${id} has footing`);

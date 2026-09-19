@@ -21,10 +21,10 @@
  *  - **"King" or "emperor" is a declaration.** Royalists say *Empire* because it
  *    makes them legitimate; republicans say it with contempt, because calling a
  *    king an emperor is calling him a tyrant. Nobody uses the two by accident.
- *  - The Legion speaks in orders and requisitions and calls republicans rebels.
+ *  - The army speaks in orders and requisitions and calls republicans rebels.
  *  - The Elagosi speak plainly, and with the flat confidence of people whose
  *    lakes were here before the empire and expect to outlast it.
- *  - Only Legion people wear Legion armour; soldiers are men by default.
+ *  - Only Imperial soldiers wear Imperial armour; soldiers are men by default.
  *
  * No render or DOM dependencies; the host supplies the dialogue box.
  */
@@ -50,13 +50,13 @@ export const AMBRON_NPCS = freeze([
   person('ambron-bargemaster', 'Kess Vollo', 'Bargemaster, waiting', 'bridge-keeper', 0x546a6d),
   person('ambron-bargewoman', 'Mella Drusk', 'Boat-owner of Brul', 'rise-custodian', 0x5f6a74),
   // The Empire's own
-  soldier('ambron-legate', 'Legate-General Duvo Harn', 'Commander of the narrows', 'legion-officer'),
-  soldier('ambron-adjutant', 'Optio Bral Osser', 'The Legate-General’s adjutant', 'legion-soldier'),
+  soldier('ambron-legate', 'Lord Marshal Duvo Harn', 'Commander of the narrows', 'legion-officer'),
+  soldier('ambron-adjutant', 'Lieutenant Bral Osser', 'The Lord Marshal’s adjutant', 'legion-soldier'),
   person('ambron-scrivener', 'Luso Marren', 'Scrivener of the Record House', 'relay-clerk', 0x6a5f4e),
-  soldier('ambron-gate-optio', 'Optio Halvo Renn', 'Officer of the Plain Gate', 'legion-officer'),
-  soldier('ambron-gate-legionary', 'Legionary Tuss', 'Ambroni Legion soldier', 'legion-soldier'),
-  soldier('ambron-lake-gate-guard', 'Legionary Bessin', 'Ambroni Legion soldier', 'legion-soldier'),
-  soldier('ambron-causeway-legionary', 'Legionary Corvo', 'Ambroni Legion soldier', 'legion-soldier'),
+  soldier('ambron-gate-optio', 'Lieutenant Halvo Renn', 'Officer of the Plain Gate', 'legion-officer'),
+  soldier('ambron-gate-legionary', 'Footman Tuss', 'Ambroni soldier', 'legion-soldier'),
+  soldier('ambron-lake-gate-guard', 'Footman Bessin', 'Ambroni soldier', 'legion-soldier'),
+  soldier('ambron-causeway-legionary', 'Footman Corran', 'Ambroni soldier', 'legion-soldier'),
   // One day of revolution
   person('ambron-committee', 'Neira Sarn', 'Of the King’s Council in Ambron', 'rise-custodian', 0x6b5a72),
   person('ambron-printer', 'Vetch Ollim', 'Printer of proclamations', 'relay-clerk', 0x6f6152),
@@ -108,7 +108,7 @@ export const ELAGOS_AMBIENT = freeze({
   'ambron-tally-boy': freeze([
     'Dreo. I run the tally down to the chainman and back up to the clerk, and I have done it four hundred times since the ice went out.',
     'Forty-one boats waiting this morning. It was nine yesterday, because nobody moved anything the day of the proclamation. Everyone waited to see whether the chain went up, and it went up.',
-    'If you want to know how the Lake Lands are doing, do not ask the Legate-General. Count the boats above the chain, and then count the ones below it.',
+    'If you want to know how the Lake Lands are doing, do not ask the Lord Marshal. Count the boats above the chain, and then count the ones below it.',
   ]),
   'ambron-chainman': freeze([
     'Orrec Damm. I wind it up at first light and down at dusk, and I have never once been asked whether I thought it should go up.',
@@ -126,13 +126,13 @@ export const ELAGOS_AMBIENT = freeze({
     'Say king. In Brul we say king. The ones who say emperor want something from you.',
   ]),
   'ambron-legate': freeze([
-    'Legate-General Duvo Harn. I hold the narrows. Whatever else is being argued in this city, the narrows are held.',
+    'Lord Marshal Duvo Harn. I hold the narrows. Whatever else is being argued in this city, the narrows are held.',
     'You will hear that I turned my coat at dawn yesterday. I did not turn anything. My orders are to keep the chain, the quays and the granaries, and a proclamation nailed to the Toll House door does not alter one of the three.',
     'Cedric is gone east. Wilhelm is shut up in Nylon and may the gods keep him there. Prince Valroy came ashore in the east four days ago with an army that has been fighting across the sea for six years, and he has not written to me. That is the only fact in this city worth your attention.',
-    'If you are a sellsword, the pay is the pay and the Legion does not haggle. If you are a messenger, say so and say from whom.',
+    'If you are a sellsword, the pay is the pay and the army does not haggle. If you are a messenger, say so and say from whom.',
   ]),
   'ambron-adjutant': freeze([
-    'Optio Bral Osser. The Legate-General is at the Seat and will not be drawn on the succession. Do not try.',
+    'Lieutenant Bral Osser. The Lord Marshal is at the Seat and will not be drawn on the succession. Do not try.',
     'Three cohorts on the walls, one on the quays, one standing down. We have had one broken window and no fires. For a revolution that is an orderly one.',
     'The rebels in the south call us the Empire’s dogs. The council upstairs calls us the King’s garrison. The rota has not changed.',
   ]),
@@ -142,7 +142,7 @@ export const ELAGOS_AMBIENT = freeze({
     'When the empire goes small the records stay. That is the lesson of this building. Whoever comes next will want to know what was owed, and we will be able to tell them.',
   ]),
   'ambron-gate-optio': freeze([
-    'Optio Halvo Renn. Name, trade, and what you are carrying. The Plain Gate is open and it is going to stay open.',
+    'Lieutenant Halvo Renn. Name, trade, and what you are carrying. The Plain Gate is open and it is going to stay open.',
     'Board over the arch. Grain, fish, timber, salt, hides. If your load is not on the board, it is a tenth and an argument, and you will lose the argument.',
     'You came up the haul road, so you have seen the Stair. Everything the Lake Lands sells comes up that or goes down it, and it all walks past me.',
   ]),
@@ -218,7 +218,7 @@ export const ELAGOS_AMBIENT = freeze({
   ]),
   'ambron-aviarist': freeze([
     'Ottilie Sarn. I keep the tower birds — the loft on the Record House, and every wild thing that uses this city as a cliff.',
-    'Ambron is a cliff, to a bird. Towers to nest on, a lake to feed in, and nobody throwing stones because the Legate fines you for it. There is more on these roofs than in half the woods of Drent.',
+    'Ambron is a cliff, to a bird. Towers to nest on, a lake to feed in, and nobody throwing stones because the Marshal fines you for it. There is more on these roofs than in half the woods of Drent.',
     'The lake brings everything through twice a year. In a good spring I do not sleep.',
   ]),
   'ambron-fishmaster': freeze([
@@ -414,6 +414,6 @@ export function elagosConversation(npc, context) {
   const legion = npc.modelRole === 'legion-soldier' || npc.modelRole === 'legion-officer';
   const inCity = Boolean(AMBRON_STANDS[npc.id]);
   openDialogue(npc, [...lines], null, legion ? 'Step back' : inCity ? 'Back to the street' : 'Back to the road',
-    { choices: [{ id: 'leave-ambron-talk', label: legion ? 'Optio.' : 'Good water to you.', action: closeDialogue }] });
+    { choices: [{ id: 'leave-ambron-talk', label: legion ? 'Lieutenant.' : 'Good water to you.', action: closeDialogue }] });
   return true;
 }

@@ -46,14 +46,14 @@ export const FOODS = Object.freeze({
   'smoked-eel': define(40, 'You have no smoked eel. Eel traps line the slow reaches of the Caloss and the Avrel.'),
   'fish-stew': define(50, 'You have no fish stew. It is ladled out at the Tidehaven landing whenever the boats come in.'),
 
-  // Legion rations and traders’ goods from farther off.
+  // army rations and traders’ goods from farther off.
   hardtack: define(15, 'You have no hardtack. Quartermaster Corvan issues it by the sack; it keeps for years and tastes like it.'),
   'brined-olives': define(15, 'You have no olives. Galan traders bring them up the Iberos coast in brine jars.'),
   'dried-figs': define(25, 'You have no dried figs. They come the long way, on the desert road out of Marosh.'),
   'dried-pears': define(25, 'You have no dried pears. They travel from the Sorten orchards of Ovesos in traders’ packs.'),
   'roasted-chestnuts': define(30, 'You have no roasted chestnuts. They come down from the Amod terraces by the sackful each autumn.'),
-  'salt-pork': define(35, 'You have no salt pork. The Legion’s barrels come up the coast from the Elagosi lake country.'),
-  'smoked-whitefish': define(45, 'You have no smoked whitefish. Ambron’s lake fleet smokes it for the Legion’s supply trains.'),
+  'salt-pork': define(35, 'You have no salt pork. The army’s barrels come up the coast from the Elagosi lake country.'),
+  'smoked-whitefish': define(45, 'You have no smoked whitefish. Ambron’s lake fleet smokes it for the army’s supply trains.'),
   'narcoshi-cheese': define(45, 'You have no Narcoshi cheese. The eastern-valley cheese sells dear on the Iberos coast and rarely reaches Drent.'),
 });
 

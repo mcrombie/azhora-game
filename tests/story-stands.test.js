@@ -19,7 +19,7 @@ test('everyone the later chapters place on the ground stands on walkable ground 
   const world = createWorld(new THREE.Scene());
   for (const person of BORDER_NPCS) {
     assert.ok(canStand(person.x, person.z, world, .45), `${person.name} stands on solid ground`);
-    // The parley is at Solis; the line and the Legion's column are on the Moros.
+    // The parley is at Solis; the line and the army's column are on the Moros.
     const region = person.shows === 'envoy' || person.shows === 'report-coalition' || person.shows === 'march-coalition' ? 'West Suval' : 'Moros Plain';
     assert.equal(world.regionAt(person.x, person.z)?.name, region, `${person.name} stands in ${region}`);
   }
@@ -47,7 +47,7 @@ test('the day after the battle has ground under it wherever its places are built
   for (const [id, site] of Object.entries(AFTERMATH_SITES)) {
     if (!site) continue;
     assert.ok(canStand(site.x, site.z, world, .45), `${id} can be stood on`);
-    // The envoy takes the Legate's own place, but only once the Legion's people have quit the outpost.
+    // The envoy takes the Marshal's own place, but only once the army's people have quit the outpost.
     const gone = post => id === 'outpost-command' && legionPostStake(post.id);
     for (const post of LEGION_POSTS) assert.ok(gone(post) || Math.hypot(post.x - site.x, post.z - site.z) >= 4, `${id} leaves ${post.id} room`);
   }

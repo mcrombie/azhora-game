@@ -203,7 +203,7 @@ test('approach dialogue offers a real opt-out and clearly gates the optional fig
   assert.equal(quest.state.active, true);
 });
 
-test('Casso tells of the camp, the Captain marches on request, and the stores are paid for exactly once', () => {
+test('Cassel tells of the camp, the Captain marches on request, and the stores are paid for exactly once', () => {
   const { quest, inventory } = fixture(), ui = dialogueFixture(quest);
   assert.deepEqual(hideoutTamsinChoices({ id: 'forest-woodcutter' }, ui.context), [], 'Drent has no goblin camp for Tamsin to mention');
   assert.deepEqual(HIDEOUT_GARRISON.map(g => [g.id, g.kind]), [['garrison-captain', 'officer'], ['garrison-casso', 'legionary'], ['garrison-brill', 'legionary']]);
@@ -211,12 +211,12 @@ test('Casso tells of the camp, the Captain marches on request, and the stores ar
   const choice = id => ui.screens.at(-1).options.choices.find(c => c.id === id);
   assert.equal(quest.march().ok, false, 'nobody marches on a camp they have not heard of');
   garrisonConversation(captain, ui.context);
-  assert.match(ui.screens.at(-1).lines.join(' '), /Speak to Casso/);
+  assert.match(ui.screens.at(-1).lines.join(' '), /Speak to Cassel/);
   assert.equal(choice('march-on-hideout'), undefined);
   garrisonConversation(casso, ui.context);
   choice('ask-hideout-work').action();
   assert.match(ui.screens.at(-1).lines.join(' '), /blue cloth/);
-  assert.match(ui.screens.at(-1).lines.join(' '), /Tessen[\s\S]*Tidehaven/, 'Casso ties the camp to the raid over the river');
+  assert.match(ui.screens.at(-1).lines.join(' '), /Tessen[\s\S]*Tidehaven/, 'Cassel ties the camp to the raid over the river');
   ui.screens.at(-1).options.onComplete();
   assert.equal(quest.state.inspected, true, 'his account marks the camp on the chart');
   garrisonConversation(captain, ui.context);
@@ -239,6 +239,6 @@ test('Casso tells of the camp, the Captain marches on request, and the stores ar
   assert.equal(quest.state.escort, false, 'the garrison stands down once the stores are home');
   assert.equal(quest.turnIn().ok, false);
   garrisonConversation(captain, ui.context);
-  assert.match(ui.screens.at(-1).lines.join(' '), /my report to the Legate/);
+  assert.match(ui.screens.at(-1).lines.join(' '), /my report to the Marshal/);
   assert.equal(inventory.count('copper-piece'), 30);
 });

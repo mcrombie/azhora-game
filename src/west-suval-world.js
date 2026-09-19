@@ -101,7 +101,7 @@ export function createWestSuvalScenery(kit) {
   // -------------------------------------------------------------------------
   const t = FORT.thickness / 2, half = FORT.towerSize / 2;
   const coalitionBanners = holding('Solis: the contingents’ banners', coalitionHolds);
-  const legionStandards = holding('Solis: the Legate’s standards', empireHolds);
+  const legionStandards = holding('Solis: the Marshal’s standards', empireHolds);
   /** A run of curtain wall in chunks that step with the ground, with a crenellated outer parapet and a low inner one. */
   function wallRun(faceId, from, to) {
     const face = SOLIS_FACES[faceId], length = to - from, chunks = Math.max(1, Math.round(length / 6)), sea = faceId === 'west';
@@ -248,7 +248,7 @@ export function createWestSuvalScenery(kit) {
         const side = f % 2 ? 1 : -1, spot = facePoint(gate.face, gate.along + side * range(2.6, 8), range(4.3, 5.6)), p = P(spot.a, spot.b);
         pebble(material(['#c9483a', '#e0b13a', '#e7dcc0', '#b86a8a'][f % 4]), p.x, gy(p.x, p.z) + .06, p.z, .12, .06, .12, district);
       }
-      // The Coalition's flag of the Republic over the gate, or the Legate's standard once the Legion holds it.
+      // The Coalition's flag of the Republic over the gate, or the Marshal's standard once the army holds it.
       const pole = P(centre.a, centre.b - 1.5);
       post(wood, pole.x, base + 9.9, pole.z, .08, 3.4, district);
       box(republic, pole.x + .75, base + 11, pole.z, 1.4, .9, .05, coalitionBanners);
@@ -439,7 +439,7 @@ export function createWestSuvalScenery(kit) {
     push({ ...P(court.back, midB), hx: .4, hz: spanB / 2, kind: 'court-wall' });
     for (const side of [court.north, court.south]) push({ ...P((court.front + court.back) / 2, side), hx: depthA / 2, hz: .4, kind: 'court-wall' });
     for (const pier of [court.north, court.south]) push({ ...P(court.front, pier), hx: .6, hz: .6, kind: 'court-pier' });
-    // The Republic's banner behind the council, or the Legate's standard where it flew.
+    // The Republic's banner behind the council, or the Marshal's standard where it flew.
     const hang = P(court.back - .45, midB);
     box(republic, hang.x, base + 4.4, hang.z, .06, 3.4, 2.2, coalitionBanners);
     box(legionGold, hang.x - .02, base + 5.3, hang.z, .06, .5, 1.3, coalitionBanners);
@@ -727,7 +727,7 @@ export function createWestSuvalScenery(kit) {
   for (const entry of holdings) mergeByColour(entry.group, new Set(), entry.group, entry.group, () => true);
 
   let holder = null;
-  /** Show whoever holds Solis: 'coalition', 'empire' or 'routed' (the Coalition broke and the Legion is not in yet). */
+  /** Show whoever holds Solis: 'coalition', 'empire' or 'routed' (the Coalition broke and the army is not in yet). */
   function setHolder(next) {
     if (next === holder) return false;
     holder = next;

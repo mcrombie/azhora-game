@@ -62,7 +62,7 @@ export async function runAutoplaySmoke(h) {
     if (state.journeyView?.stage && state.journeyView.stage !== lastJourneyStage) { note(`road ${state.journeyView.stage}`); lastJourneyStage = state.journeyView.stage; }
     if (state.luscia?.stage && state.luscia.stage !== lastChapterStage) { note(`luscia ${state.luscia.stage}`); lastChapterStage = state.luscia.stage; }
     if (state.enemies?.some(enemy => String(enemy.id).startsWith('lauvel-wolf'))) wolfFight = true;
-    // The Legate's terms go to the envoy at Solis, in West Suval, before the border battle.
+    // The Marshal's terms go to the envoy at Solis, in West Suval, before the border battle.
     if (state.region === 5 && state.border && !state.border.side) wentToSolis = true;
     if (state.phase === 'active' && milestones.at(-1)?.label !== 'fight') { note('fight', { at: `${now.x.toFixed(0)},${now.z.toFixed(0)}` }); fights++; }
     // How a fight ended, and where: a retreat and a win look alike from the intent alone.
@@ -104,8 +104,8 @@ export async function runAutoplaySmoke(h) {
   if (!from) {
     assert(final.journeyView.complete, 'the road was not completed');
     assert(final.luscia?.complete, 'the field at the Lauvel was not finished');
-    assert(final.moros?.complete, 'the Legion camp on the Moros was not finished');
-    assert(final.campaign?.horse === true, 'the chapter did not pay the Legion horse');
+    assert(final.moros?.complete, 'the army camp on the Moros was not finished');
+    assert(final.campaign?.horse === true, 'the chapter did not pay the army horse');
     assert(wolfFight, 'no wolf came off the burial line');
     assert(final.mapTutorial === 3, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
     assert(tookOver && restarted, 'the hand-over was never exercised');
@@ -118,9 +118,9 @@ export async function runAutoplaySmoke(h) {
   assert(final.chapter >= 3, `chapter two did not close (chapter ${final.chapter})`);
   assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 5 : 3),
     `the ${side} side ended in region ${world.regionAt(final.position[0], final.position[2]).id}`);
-  assert(wentToSolis, 'the Legate’s terms were never carried to Solis');
+  assert(wentToSolis, 'the Marshal’s terms were never carried to Solis');
   // Chapter two ends when the traveler stands on their own side's ground again, and the
-  // autopilot stops there: "You are back in the Legion's outpost…" or "…back in Solis…".
+  // autopilot stops there: "You are back in the army's outpost…" or "…back in Solis…".
   assert(/You are back in /.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
   // The day after the battle is fought on the Moros (the outpost) or at Solis, as the battle went.

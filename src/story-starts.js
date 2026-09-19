@@ -16,7 +16,7 @@ export const STORY_STARTS = Object.freeze([
     id: 'solis-parley',
     title: 'The parley at Solis',
     kicker: 'THE NEWEST CHAPTER · WEST SUVAL',
-    blurb: 'Carry the Legate’s terms through the Gate of Sun Horses, hear what the Republic offers a sellsword, choose your side, and march to the battle on the border.',
+    blurb: 'Carry the Marshal’s terms through the Gate of Sun Horses, hear what the Republic offers a sellsword, choose your side, and march to the battle on the border.',
     // The road out of Drent, Luscia and the muster on the Moros are behind the traveler.
     completed: Object.freeze(['drent-road', 'luscia-aftermath', 'moros-camp']),
     chapter: 'suval-envoy',

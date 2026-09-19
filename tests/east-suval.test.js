@@ -213,9 +213,9 @@ test('twenty-six people, and the argument the whole city is having is had from t
     assert.ok(EAST_SUVAL_AMBIENT[npc.id]?.length >= 2, `${npc.id} has something to say`);
     assert.ok(npc.name.length > 2 && npc.role.length > 4, npc.id);
     assert.ok(npc.viewRange > 0 && npc.viewRange < 120, 'ambient people are drawn only when near');
-    // Only Elod's own officials wear the black lamellar; nobody here is a legionary.
+    // Only Elod's own officials wear the black lamellar; nobody here is a soldier.
     if (npc.modelRole === 'elodi-guard') assert.match(npc.role, /Warden|watch|gate|Gate|frontier|Sea Gate|Threshold/);
-    assert.ok(!npc.modelRole?.startsWith('legion'), `${npc.id} is wearing the Legion’s armour`);
+    assert.ok(!npc.modelRole?.startsWith('legion'), `${npc.id} is wearing the army’s armour`);
     assert.ok(!npc.armed, 'nobody in Elod has a blade out');
   }
   const said = Object.values(EAST_SUVAL_AMBIENT).flat().join(' ');

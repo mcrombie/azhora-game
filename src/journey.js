@@ -70,16 +70,16 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
     const current = stage();
     const views = {
       'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry Lakota’s message out to the Caloss Gate.', ['border']],
-      'meet-courier': [2, 1, 1, 'Report for field service', 'Bring Lakota’s letter to Corvan, the Ambroni Legion quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
+      'meet-courier': [2, 1, 1, 'Report for field service', 'Bring Lakota’s letter to Corvan, the Ambroni army quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
-      'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your Legion service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],
+      'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your army service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],
       'meet-crossing-keeper': [3, 4, 1, 'The army’s crossing', 'Corvan’s next assignment is the Caloss supply route, where the river marks Drent’s edge. Speak with Hollis beside the boardwalk.', ['crossing-keeper']],
       'repair-bridge': [3, 5, 2, 'A road above the water', 'Gather three forest sticks along the wetland paths, then press F at the damaged crossing to lash down fresh rails and decking.', ['bridge-repair']],
       'return-crossing-keeper': [3, 6, 3, 'Whose road is this?', 'Report the finished repair to Hollis. The bridge serves the army, but the people crossing it have their own account of the rebels.', ['crossing-keeper']],
       'meet-ridge-keeper': [4, 7, 1, 'Voices on the rise', 'Cross the Caloss and continue your route assignment along the Luscian road beyond the river. Speak with Sava about the markers and the people the Empire calls rebels.', ['ridge-keeper']],
       'restore-beacons': [4, 8, 2, 'Three markers on the rise', `Straighten the three leaning waymarkers along the hill paths. ${state.beacons.length} of 3 restored. Press F at a marker to set it upright and uncover its reflective face. No fuel is needed.`, BEACON_IDS.filter(id => !state.beacons.includes(id))],
-      'deliver-report': [4, 9, 3, 'An uncomfortable report', 'Follow the road on past the field at the Lauvel to Lumber Town, and show Lakota’s original letter to Iven at the Legion’s relay post on its square. Report what Sava revealed about the battle at the Lauvel and the people the Empire calls rebels.', ['relay-clerk']],
-      complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied Lakota’s warning and recorded the people’s account, and the Legion has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
+      'deliver-report': [4, 9, 3, 'An uncomfortable report', 'Follow the road on past the field at the Lauvel to Lumber Town, and show Lakota’s original letter to Iven at the army’s relay post on its square. Report what Sava revealed about the battle at the Lauvel and the people the Empire calls rebels.', ['relay-clerk']],
+      complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied Lakota’s warning and recorded the people’s account, and the army has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
     };
     const [region, step, regionStep, title, detail, destinations] = views[current];
     return {

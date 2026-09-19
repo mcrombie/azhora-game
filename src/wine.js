@@ -145,7 +145,7 @@ export function vintnerConversation(npc, context) {
     ...(wine.met ? WINE_IDS.map(id => ({ id: `taste-${id}`, label: `A taste of the ${WINES[id].name}${wine.hasTasted(id) ? ' again' : ''}.`,
       action: () => { closeDialogue(); act(`taste-${id}`); } })) : []),
     { id: 'winery-war', label: 'How has the war been for you?', action: () => openDialogue(npc, [
-      'Both sides have been up the lane. The Coalition took twelve barrels “for the troops” and gave me a paper for them. The Legion took the mule and gave me nothing, which at least was honest.',
+      'Both sides have been up the lane. The Coalition took twelve barrels “for the troops” and gave me a paper for them. The army took the mule and gave me nothing, which at least was honest.',
       'We make wine the same whoever holds Solis. People want a drink under every flag. That is not loyalty; it is weather.',
     ], null, 'Back to our conversation', { onComplete: again }) },
     { id: 'winery-vines', label: 'What do you grow?', action: () => openDialogue(npc, [

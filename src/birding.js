@@ -337,7 +337,7 @@ export const LAKOTA_ARCHAEOLOGY_PITCH = Object.freeze([
 export const LAKOTA_WINE_PITCH = Object.freeze([
   'Wine. Before I came here I worked a cellar at Vaervelm Caelazh, in the north-east of West Suval. Paradise Springs, in plain words: the good green place, where the water endures. A log cabin that was the first house on the land, a great hall, a spring that has never once failed, eight grapes on the slope, and the best Norton on this coast.',
   'Tasting is only looking properly again, with your nose and your mouth. Look at the colour. Swirl it. Smell it like you mean it. Then a small mouthful, held. There, you know how.',
-  'Go and see Livia Seravo there. Take the lane east off the Solis road past the Suval Downs. And be careful: there is a war on around Solis, the Legion and the Coalition both, and neither side much minds whose field it is fought in. Keep your head down and your purse closed.',
+  'Go and see Livia Seravo there. Take the lane east off the Solis road past the Suval Downs. And be careful: there is a war on around Solis, the army and the Coalition both, and neither side much minds whose field it is fought in. Keep your head down and your purse closed.',
 ]);
 
 export function birdWatcherConversation(npc, context) {

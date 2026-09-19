@@ -4,13 +4,13 @@
  * supplies the dialogue box and the border chapter.
  *
  * Garrisons carry an occupation stake (`src/occupation.js`): the Coalition's
- * people are out while the Coalition holds West Suval, the Legion's while the
+ * people are out while the Coalition holds West Suval, the army's while the
  * Empire does. Townsfolk hold nothing and stay whoever holds the gate; each has
- * a line for each holder. While the Legion is still clearing the square after
+ * a line for each holder. While the army is still clearing the square after
  * the border battle the city is 'routed' (`solisHolder`), and neither garrison
  * stands.
  *
- * Tone (docs/content-pass.md): the Legion speaks in orders; Suvali and townsfolk
+ * Tone (docs/content-pass.md): the army speaks in orders; Suvali and townsfolk
  * speak plainly. The townsfolk remember being a kingdom, resent the Empire, and
  * are not yet sure of the Republic.
  */
@@ -42,11 +42,11 @@ export const SOLIS_NPCS = Object.freeze([
   person('solis-elder', 'Old Ismer', 'Who has watched the gate change hands', 'shelter-keeper', 0x8a7f6a),
   person('solis-temple-keeper', 'Keeper Ilaria', 'Of the temple of sea and sun', 'rise-custodian', 0xd2b56a),
   person('solis-innkeeper', 'Dorotea', 'Keeper of the Bronze Mare', 'shelter-keeper', 0xa0503a),
-  // The Legion's occupation, smaller than the Coalition's garrison.
-  person('solis-legion-gate-west', 'Legionary', 'The Legion’s watch on the Gate of Sun Horses', 'legion-soldier', 0x8f3b30, EMPIRE),
-  person('solis-legion-gate-east', 'Legionary', 'The Legion’s watch on the Gate of Sun Horses', 'legion-soldier', 0x8f3b30, EMPIRE),
-  person('solis-legion-square', 'Legionary', 'On the market square', 'legion-soldier', 0x8f3b30, EMPIRE),
-  person('solis-tribune-clerk', 'Clerk Aulus Venn', 'Tribune Orso’s clerk, in the Court of Oaths', 'relay-clerk', 0x832d2b, EMPIRE),
+  // The army's occupation, smaller than the Coalition's garrison.
+  person('solis-legion-gate-west', 'Soldier', 'The army’s watch on the Gate of Sun Horses', 'legion-soldier', 0x8f3b30, EMPIRE),
+  person('solis-legion-gate-east', 'Soldier', 'The army’s watch on the Gate of Sun Horses', 'legion-soldier', 0x8f3b30, EMPIRE),
+  person('solis-legion-square', 'Soldier', 'On the market square', 'legion-soldier', 0x8f3b30, EMPIRE),
+  person('solis-tribune-clerk', 'Clerk Anselm Venn', 'Captain Brulan’s clerk, in the Court of Oaths', 'relay-clerk', 0x832d2b, EMPIRE),
 ]);
 export const SOLIS_NPC_IDS = new Set(SOLIS_NPCS.map(npc => npc.id));
 export const SOLIS_TOWNSFOLK_IDS = Object.freeze(SOLIS_NPCS.filter(npc => !npc.holds).map(npc => npc.id));
@@ -71,7 +71,7 @@ const CAPTAINS = Object.freeze({
   ],
   'camp-captain-marosh': [
     'Gorvan Tesk, of Marosh. We came up the desert road with horses that do not care for your grass. Neither do I.',
-    'Marosh has a king, and nobody in this camp has asked me to hang him. We are here because the Emperor’s tax farmers came down our road with a legion behind them.',
+    'Marosh has a king, and nobody in this camp has asked me to hang him. We are here because the Emperor’s tax farmers came down our road with an army behind them.',
   ],
   'camp-captain-islands': [
     'Pello Arrant, for the island cities. You will not find our cities on an imperial map, and that is most of what we like about them.',
@@ -90,32 +90,32 @@ const TOWNSFOLK = Object.freeze({
       'Oil from the lower terraces, wine from the upper, and hard coin only. The Republic’s quartermaster came by this morning with a fistful of paper and called it scrip.',
       'Paper, printed in Izol, signed by a council that sits in a borrowed hall, payable when the war is won. I asked him which war. He did not laugh.',
     ],
-    empire: ['The Legion pays in coin, I will say that for it, and then takes the coin back at the tax house by the gate. I kept the Republic’s scrip. It lights a lamp.'],
+    empire: ['The army pays in coin, I will say that for it, and then takes the coin back at the tax house by the gate. I kept the Republic’s scrip. It lights a lamp.'],
     routed: ['Shutters closed and jars counted. Whoever comes through that gate next will want wine, and will not want to pay for it.'],
   },
   'solis-fountain-woman': {
     coalition: ['The water still runs through the king’s pipes, whoever holds the gate. My grandmother carried it for the palace. I carry it for whoever is thirsty, and this week that is Izoli marines.'],
-    empire: ['The Legion put a sentry on the fountain as if we might poison it. It was the king’s fountain before it was the Emperor’s. The bronze horse on it never learned to salute.'],
+    empire: ['The army put a sentry on the fountain as if we might poison it. It was the king’s fountain before it was the Emperor’s. The bronze horse on it never learned to salute.'],
     routed: ['Everyone is indoors. The fountain does not know who won. It runs.'],
   },
   'solis-porter': {
     coalition: ['The island ships come in half full of soldiers and go out full of our oil. The council says it pays for itself. My back says otherwise.'],
-    empire: ['The Legion wants the boom chain up every night and a tally of every hull in the harbour. The fishing boats are the only ones still going out.'],
+    empire: ['The army wants the boom chain up every night and a tally of every hull in the harbour. The fishing boats are the only ones still going out.'],
     routed: ['The council’s ship went out on the night tide with its lamps dark. Nobody told the porters. We found the empty berth in the morning.'],
   },
   'solis-elder': {
     coalition: ['I was a boy when the last king swore on those steps. Then the Emperor’s governors swore there. Now it is a council, and they swear a great deal. I am waiting to see what any of it is worth.'],
-    empire: ['They have hung the Legate’s standard where the Republic’s flag was, where the Emperor’s was before that, where the sun-horse was before any of them. The steps have outlasted every one.'],
+    empire: ['They have hung the Marshal’s standard where the Republic’s flag was, where the Emperor’s was before that, where the sun-horse was before any of them. The steps have outlasted every one.'],
     routed: ['Three masters in one life, and I have watched the gate change hands from this bench every time. Sit down. It takes a day or two.'],
   },
   'solis-temple-keeper': {
-    coalition: ['The guest house of the temple is open to anyone who comes in unarmed. The Coalition’s wounded are in it now. Last month it was the Legion’s.'],
-    empire: ['The Tribune’s men asked whether the temple would give thanks for the Emperor’s victory. I told them the sea and the sun keep no side. They wrote that down.'],
+    coalition: ['The guest house of the temple is open to anyone who comes in unarmed. The Coalition’s wounded are in it now. Last month it was the army’s.'],
+    empire: ['The Captain’s men asked whether the temple would give thanks for the Emperor’s victory. I told them the sea and the sun keep no side. They wrote that down.'],
     routed: ['Come in off the street if you have nowhere else to be. There is bread, and the doors are thick.'],
   },
   'solis-innkeeper': {
     coalition: ['The Bronze Mare has beds. The Republic’s officers pay for theirs in coin, which surprised me. The men from the camp drink on paper, which does not.'],
-    empire: ['Legion officers in every room and a chit for each. The Empire held this city for thirty years. I know exactly what a chit is worth.'],
+    empire: ['Army officers in every room and a chit for each. The Empire held this city for thirty years. I know exactly what a chit is worth.'],
     routed: ['The bar is shut. Whoever holds the gate by supper can buy the first round.'],
   },
 });
@@ -124,17 +124,17 @@ const GARRISON = Object.freeze({
   'solis-gate-guard-west': ['Suvali, from the downs. Bandits took a wine cart on the south road last week and the wolves have had two lambs from the fold by the road. The war gets the blame for both.'],
   'solis-gate-guard-east': ['Izoli marine. We came ashore under that gate a week ago. The children threw flowers at the horses and then at us.'],
   'solis-quay-guard': ['Nobody takes a boat out without the council’s pass. The fishermen are furious. The fish are delighted.'],
-  'solis-legion-gate-west': ['Solis is under the Legion’s protection. Keep to the street and keep your hands where they can be seen.'],
-  'solis-legion-gate-east': ['Papers at the gate from sunset. Rebels, deserters and hired swords of the rebels are to be reported to the Tribune.'],
-  'solis-legion-square': ['The square is closed by order of Tribune Orso. Trade resumes when the Tribune says it does. Move along.'],
-  'solis-tribune-clerk': ['Tribune Orso’s clerk. Every paper the rebel council left behind is being catalogued. What they signed is evidence now. Do not touch the table.'],
+  'solis-legion-gate-west': ['Solis is under the army’s protection. Keep to the street and keep your hands where they can be seen.'],
+  'solis-legion-gate-east': ['Papers at the gate from sunset. Rebels, deserters and hired swords of the rebels are to be reported to the Captain.'],
+  'solis-legion-square': ['The square is closed by order of Captain Brulan. Trade resumes when the Captain says it does. Move along.'],
+  'solis-tribune-clerk': ['Captain Brulan’s clerk. Every paper the rebel council left behind is being catalogued. What they signed is evidence now. Do not touch the table.'],
 });
 
 /** What a townsperson says under a holder. */
 export const townsfolkLines = (id, holder) => [...(TOWNSFOLK[id]?.[holder] ?? TOWNSFOLK[id]?.coalition ?? [])];
 export const captainLines = id => [...(CAPTAINS[id] ?? [])];
 
-/** Sergeant Kell reads the Legate's seal: the second stage of the border chapter. */
+/** Sergeant Kell reads the Marshal's seal: the second stage of the border chapter. */
 function gateCaptain(npc, context) {
   const { border, openDialogue, closeDialogue, act } = context;
   const stage = border?.view?.().stage ?? 'not-started', side = border?.view?.().side ?? null;
@@ -142,14 +142,14 @@ function gateCaptain(npc, context) {
   const offered = border?.availableActions?.().find(item => item.id === 'enter-solis');
   if (stage === 'pass-gate' && offered) {
     openDialogue(npc, [
-      'Hold there. That is a Legion seal on your satchel, and this is the Coalition’s gate.',
-      'Terms from Verro for the envoy. Everyone in the camp has been waiting to hear what the Legate thinks we are worth. Show me the seal and keep your hand off the hilt.',
+      'Hold there. That is an army seal on your satchel, and this is the Coalition’s gate.',
+      'Terms from Venmor for the envoy. Everyone in the camp has been waiting to hear what the Marshal thinks we are worth. Show me the seal and keep your hand off the hilt.',
     ], null, 'Back to the road', { choices: [{ ...offered, action: () => { closeDialogue(); act('enter-solis'); } }, leave] });
     return;
   }
   const lines = stage === 'meet-envoy' ? ['Up the main street, past the square, to the Court of Oaths. The envoy is inside. You have an escort; you will not notice it.']
     : side === 'coalition' ? ['Orren says you are one of ours now. Then this is your gate as much as mine.']
-      : side === 'empire' ? ['You gave the envoy your answer. The gate is open to you going out. Do not come back up this road with the Legion behind you.']
+      : side === 'empire' ? ['You gave the envoy your answer. The gate is open to you going out. Do not come back up this road with the army behind you.']
         : ['The Gate of Sun Horses is open by day to anyone with business and a sheathed blade. Keep yours sheathed.'];
   openDialogue(npc, lines, null, 'Back to the road', { choices: [leave] });
 }

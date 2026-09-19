@@ -29,7 +29,7 @@ export const AMOD_NPCS = Object.freeze([
   person('ostel-court-clerk', 'Havel Dross', 'Clerk of the water court', 'relay-clerk', 0x6a6352),
   person('ostel-roadhouse', 'Anseth Vole', 'Keeper of the Struck Measure', 'shelter-keeper', 0x8a6a44),
   person('ostel-accountant', 'Brann Ottel', 'Toll accountant of the Pueth road', 'relay-clerk', 0x726a55),
-  person('ostel-clerk', 'Clerk Naso Ferrell', 'Of the prefecture at Mavren', 'relay-clerk', 0x83322c),
+  person('ostel-clerk', 'Clerk Nels Ferrell', 'Of the prefecture at Mavren', 'relay-clerk', 0x83322c),
   person('ostel-carter', 'Sella Vint', 'Carter to the lake country', 'commons-miller', 0x7d6a4c),
   person('ostel-muleteer-1', 'Dov Kessel', 'Mule driver on the pass road', 'forest-woodcutter', 0x63705a),
   person('ostel-muleteer-2', 'Pell Kessel', 'Mule driver on the pass road', 'forest-woodcutter', 0x5c6a56),
@@ -72,7 +72,7 @@ export const AMOD_AMBIENT = Object.freeze({
     'There is a line in the back of the book that reads *the stone-keeper’s due*, four times a year. I inherited it. My father inherited it. It is cheaper than the alternative and I have done the arithmetic twice.',
   ]),
   'ostel-clerk': Object.freeze([
-    'Clerk Naso Ferrell, of the prefecture at Mavren. I am compiling the returns for the eastern pass. Everyone here has been extremely helpful.',
+    'Clerk Nels Ferrell, of the prefecture at Mavren. I am compiling the returns for the eastern pass. Everyone here has been extremely helpful.',
     'They give me tea. They carry my case up the stair. They answer every question, at length, and when I read the answers back in the evening I find I have learned the weather.',
     'I asked the court for a schedule of diversions on this stream. They gave me a schedule of diversions on this stream. It runs to nine pages and it is dated by saints’ days that do not appear in any calendar the prefecture holds.',
   ]),

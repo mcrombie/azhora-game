@@ -16,7 +16,7 @@ test('the chapter runs gate, muster, horse, in that order and pays each reward e
   assert.equal(moros.act('admit-to-camp').ok, false, 'nothing happens before the Lauvel is settled');
   assert.equal(moros.start().ok, true); assert.equal(moros.start().ok, false);
   assert.deepEqual(moros.view().destinationIds, [MOROS_GATE_ID]);
-  assert.equal(moros.act('join-muster').ok, false, 'the Legate does not see men the gate has not admitted');
+  assert.equal(moros.act('join-muster').ok, false, 'the Marshal does not see men the gate has not admitted');
   assert.equal(moros.act('admit-to-camp').ok, true);
   assert.deepEqual(moros.view().destinationIds, [MOROS_LEGATE_ID]);
   assert.equal(moros.act('claim-legion-horse').ok, false);
@@ -60,13 +60,13 @@ test('snapshots round-trip; reordered, partial or foreign data is refused withou
   assert.equal(validateMorosSnapshot(undefined, { allowMissing: false }), false);
 });
 
-test('the gate and the Legate speak for the chapter only while it is theirs, and the Legate counts the company', () => {
+test('the gate and the Marshal speak for the chapter only while it is theirs, and the Marshal counts the company', () => {
   const { moros } = fixture(), screens = [], acts = [];
   const context = { moros, musterCount: 4, openDialogue: (npc, lines, unused, label, options) => screens.push({ npc, lines, options }), closeDialogue: () => {}, act: id => { acts.push(id); return moros.act(id); } };
-  const gate = { id: MOROS_GATE_ID, name: 'Legionary Coss' }, legate = { id: MOROS_LEGATE_ID, name: 'Legate Marcus Verro' };
+  const gate = { id: MOROS_GATE_ID, name: 'Footman Coss' }, legate = { id: MOROS_LEGATE_ID, name: 'Marshal Hadric Venmor' };
   assert.equal(morosConversation(gate, context), false, 'before the chapter, the sentry keeps his ordinary lines');
   moros.start();
-  assert.equal(morosConversation(legate, context), false, 'the Legate does not see a man the gate has not passed');
+  assert.equal(morosConversation(legate, context), false, 'the Marshal does not see a man the gate has not passed');
   assert.equal(morosConversation(gate, context), true);
   assert.match(screens.at(-1).lines[0], /Name and contract/);
   screens.at(-1).options.choices.find(choice => choice.id === 'admit-to-camp').action();

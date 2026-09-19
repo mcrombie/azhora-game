@@ -34,10 +34,10 @@ test('a place falls when its fight is won, before the campaign files the chapter
   for (const variant of Object.keys(AFTERMATH_VARIANTS)) assert.ok(occupationControl(map, { variant, cleared: true }));
 });
 
-test('the Legion’s posts inside the outpost leave with the Legion; the road’s posts and the chapter’s people do not', () => {
+test('the army’s posts inside the outpost leave with the army; the road’s posts and the chapter’s people do not', () => {
   const inside = LEGION_POSTS.filter(post => legionPostStake(post.id));
   assert.ok(inside.length >= 3 && inside.every(post => post.id.startsWith('post-camp-')));
-  assert.ok(inside.some(post => post.id === 'post-camp-legate'), 'the Legate goes too');
+  assert.ok(inside.some(post => post.id === 'post-camp-legate'), 'the Marshal goes too');
   assert.equal(legionPostStake('post-landing'), null);
   assert.equal(legionPostStake('post-moros-gate-north'), null);
   const taken = { 'Moros Plain': 'coalition' };
@@ -50,12 +50,12 @@ test('the campaign flips a place only for the side that won it', () => {
   const { CHAPTERS } = campaignModule;
   assert.deepEqual(CHAPTERS['solis-sweep'].control, { 'West Suval': 'empire' });
   assert.equal(CHAPTERS['moros-outpost'].control['Moros Plain'], 'coalition');
-  // A lost field changes no garrisons: the Legion keeps its outpost, the Coalition keeps Solis.
+  // A lost field changes no garrisons: the army keeps its outpost, the Coalition keeps Solis.
   assert.equal(CHAPTERS['moros-fallback'].control, undefined);
   assert.equal(CHAPTERS['solis-fallback'].control, undefined);
 });
 
-test('while the Gate of Sun Horses is fought for, neither garrison stands about Solis; once it falls, the Legion does', () => {
+test('while the Gate of Sun Horses is fought for, neither garrison stands about Solis; once it falls, the army does', () => {
   const map = { 'West Suval': 'coalition', 'Moros Plain': 'empire' };
   const coalitionWatch = { holds: 'coalition', region: 'West Suval' }, legionWatch = { holds: 'empire', region: 'West Suval' };
   const fighting = occupationControl(map, { variant: 'solis-sweep', cleared: false, fighting: true });

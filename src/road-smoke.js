@@ -244,7 +244,7 @@ export async function runRoadSmoke(h) {
     assert(journey.view().complete, 'Iven did not finish the road report');
     assert(JSON.stringify(journey.state.completedRegions) === '[2,3,4]', 'all three new regions were not completed');
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the relay consumed the onward quest items');
-    assert(inventory.count('copper-piece') >= 12, 'the Legion did not pay for the road report');
+    assert(inventory.count('copper-piece') >= 12, 'the army did not pay for the road report');
 
     // The Luscia chapter, straight out of the road report: the clerk's errand,
     // the courier's satchel, the wolves that come with it, and the walk back.

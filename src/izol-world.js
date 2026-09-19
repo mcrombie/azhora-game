@@ -72,7 +72,7 @@ export const generalById = id => IZOL_GENERALS.find(entry => entry.id === id) ??
  *
  * `control` is the occupation map (`occupationControl`). Chapter 2 decides who
  * holds Solis: the Coalition keeps it if the traveler helped it win the border
- * battle, and the Legion takes it back if the traveler helped the Empire. Solis
+ * battle, and the army takes it back if the traveler helped the Empire. Solis
  * held is Kellveth's command; Solis lost and he is home in West Izol, a general
  * without an army and with everything to prove.
  */

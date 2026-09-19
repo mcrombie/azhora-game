@@ -217,7 +217,7 @@ test('the camp outside the walls has every contingent under its own banner, and 
   assert.equal(canStand(spot.x, spot.z, world, WALKER), true);
   world.setSolisHolder('routed'); assert.equal(tents(), 0);
   world.setSolisHolder('coalition'); assert.ok(tents() >= 20);
-  // Who holds the ground: the campaign's map, except while the Legion is still clearing the square.
+  // Who holds the ground: the campaign's map, except while the army is still clearing the square.
   assert.equal(solisHolder({ 'West Suval': 'coalition' }), 'coalition');
   assert.equal(solisHolder({ 'West Suval': 'empire' }), 'empire');
   assert.equal(solisHolder({ 'West Suval': 'coalition' }, { variant: 'solis-sweep', cleared: false }), 'routed');

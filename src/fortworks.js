@@ -2,7 +2,7 @@ import { createSceneryBuilder } from './scenery-builder.js';
 
 /**
  * Draws a fortification circuit (`src/fortification.js`) in one of two
- * materials of equal strength: the Legion's squared timber palisade on an earth
+ * materials of equal strength: the army's squared timber palisade on an earth
  * rampart, or dressed stone. Colliders come from the circuit itself; this module
  * adds only the ones its own small parts need (stairs, ladders).
  */

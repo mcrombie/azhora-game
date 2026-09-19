@@ -9,7 +9,7 @@ import { STORY_SITES } from './region-world.js';
 import { SIGN_COLOURS } from './signs.js';
 
 /**
- * The Moros Plain's built places: the Ambroni outpost (the Legion's timber fort),
+ * The Moros Plain's built places: the Ambroni outpost (the army's timber fort),
  * the forward stockade on the border, the Moros gate and the wayside between the
  * gate and the outpost. Layout lives in `outpost.js` and `wayside.js`; this
  * module draws it and adds the colliders the circuits do not already carry.
@@ -43,7 +43,7 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
     box(t.x, t.z + .35, t.hx + .05, t.hz + .5, 'outpost-tribunal');
   }
 
-  // The Legate's tent: canvas walls under a high roof, its door open to the north.
+  // The Marshal's tent: canvas walls under a high roof, its door open to the north.
   {
     const c = L.command, cy = y(c.x, c.z);
     b.block(CANVAS_DARK, c.x, cy, c.z, c.hx * 2, 2.3, c.hz * 2);
@@ -174,7 +174,7 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
   signs.notice({ x: orders.x, z: orders.z, label: 'Orders', facing: Math.atan2(-(-OUTPOST_ROAD.east.z), -OUTPOST_ROAD.east.x) + Math.PI, parent });
   b.finish(parent);
 
-  // The Legate's standard: the Legion's eagle-red while the Empire holds the plain, the Republic's blue if it falls.
+  // The Marshal's standard: the army's eagle-red while the Empire holds the plain, the Republic's blue if it falls.
   {
     const s = L.standard, sy = y(s.x, s.z), pole = createSceneryBuilder('Outpost standard pole');
     pole.cylinder('#6d5439', s.x, sy, s.z, .12, 8.2);
@@ -190,7 +190,7 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
       movingGroups.add(mesh);
       stakedProps.push({ object: mesh, holds, region: 'Moros Plain', id: name });
     };
-    flag('empire', LEGION_RED, GOLD, 'The Legate’s standard');
+    flag('empire', LEGION_RED, GOLD, 'The Marshal’s standard');
     flag('coalition', REPUBLIC_BLUE, WHITE, 'The Republic’s flag over the outpost');
   }
 
@@ -336,7 +336,7 @@ function buildMorosWayside({ parent, heightAt, push, circle, box, signs }) {
     circle(lean.x, lean.z, 1.5, 'fold-shelter');
   }
 
-  // The Legion picket: a wattle windbreak, a tent, a cold brazier and a spear rack.
+  // The army picket: a wattle windbreak, a tent, a cold brazier and a spear rack.
   {
     const p = byId['legion-picket'].frame;
     const wind0 = local(p, -4.5, 3.2), wind1 = local(p, 3.5, 4.4);

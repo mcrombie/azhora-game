@@ -179,7 +179,7 @@ const AGAIN = freeze([
 const TALK = freeze({
   sultan: [
     '“Every sack of salt that moves on this sea moves in the Sultana, or it moves in somebody’s hold who wishes it had. Saltings white off the Pebbles. The grey, from wherever the sea lies still long enough to leave it. And a pink I will not talk about.”',
-    '“The Legion salts its pork with my salt. The Izoli salt their fish with it. The Suvali bake it in their bread, and in Drent they put a line of it on the doorstep against goblins.”',
+    '“The army salts its pork with my salt. The Izoli salt their fish with it. The Suvali bake it in their bread, and in Drent they put a line of it on the doorstep against goblins.”',
     '“It doesn’t work against goblins. I don’t tell them that. A man has to eat.”',
   ],
   pasta: [

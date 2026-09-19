@@ -25,7 +25,7 @@ export const LEVELS = Object.freeze([
 ]);
 
 export const FACTIONS = Object.freeze({
-  empire: Object.freeze({ id: 'empire', name: 'Ambroni Empire', short: 'Empire', seat: 'Ambron', army: 'the Ambroni Legion', tint: '#c9a24a',
+  empire: Object.freeze({ id: 'empire', name: 'Ambroni Empire', short: 'Empire', seat: 'Ambron', army: 'the Ambroni army', tint: '#c9a24a',
     note: 'The lake-country monarchy that has ruled most of eastern Azhora for generations and is now losing its grip on every frontier.' }),
   coalition: Object.freeze({ id: 'coalition', name: 'Republican Coalition', short: 'Coalition', seat: 'Izolveth', army: 'the Coalition army', tint: '#5f8fd6',
     note: 'Ambroni heartland rebels, the Izoli Republic, the Suvals, a small Pyrosi contingent, Selemis, Marosh, a few city-states of the southern tropical islands, and a renounced Ambroni prince, united to replace the monarchy with a republic.' }),
@@ -99,7 +99,7 @@ export const REGION_DESIGN = Object.freeze([
   region('Meneth', 1, 'contested', 'Route-junction valleys between the Lotharn and the lake country; rye and barley in the south.', ['bramble-goblin', 'hill-goblin'],
     'Many bramble goblins, hill goblins in the north. An Empire-versus-Coalition arc.', { arcs: ['empire', 'coalition'] }),
   region('Moros Plain', 2, 'empire', 'Absolutely flat continental grassland; enormous sky; armies visible for days.', ['bandit', 'wolf'],
-    'Third main-quest region: the Legion’s camp, and the border battle. Horses matter here.', { story: 'main-3', arcs: ['empire', 'coalition'] }),
+    'Third main-quest region: the army’s camp, and the border battle. Horses matter here.', { story: 'main-3', arcs: ['empire', 'coalition'] }),
   region('West Suval', 2, 'coalition', 'Grassland and low hills toward the coast; Solis on the southwest.', ['bandit', 'wolf'],
     'Fourth main-quest region: the Coalition army at Solis and the first fork in the story.', { story: 'main-4', arcs: ['empire', 'coalition'], settlements: ['solis'] }),
   region('East Suval', 2, 'elodi', 'Lowland plain in the north, hills in the south.', ['hill-bandit', 'wolf-pack'],

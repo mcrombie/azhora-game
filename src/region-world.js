@@ -429,10 +429,10 @@ export const LUMBER_TOWN_STABLE = Object.freeze({
 });
 
 export const regionNpcPositions = Object.freeze({
-  'meadow-courier': at(-230, 17),         // Corvan, Legion quartermaster, at the farm clearing
+  'meadow-courier': at(-230, 17),         // Corvan, army quartermaster, at the farm clearing
   'crossing-keeper': at(-357, 106),       // Hollis, at the Caloss bridge
   'ridge-keeper': at(-372, 131),          // Sava, at her shrine on the Luscia side
-  'relay-clerk': townPoint(5, -6),        // Iven, at the Legion relay post on Lumber Town's square
+  'relay-clerk': townPoint(5, -6),        // Iven, at the army relay post on Lumber Town's square
   // Lumber Town's people, around the square and the timber yard.
   'town-innkeeper': townPoint(-8, 4),
   'town-carter': townPoint(-2, 9),
@@ -441,9 +441,9 @@ export const regionNpcPositions = Object.freeze({
   'town-sawyer': townPoint(4, 13),
   'town-yardhand': townPoint(0, 14),
   'town-beggar': townPoint(0, -4),        // Smiths, who wanders the square
-  // Captain Varo's garrison keeps the Tessen road post in Pueth now (src/pueth-world.js).
+  // Captain Drevan's garrison keeps the Tessen road post in Pueth now (src/pueth-world.js).
   // The field at the Lauvel and the burned hamlet, north-east of the town.
-  'lauvel-picket': at(-392, 186),         // Talvus, on the picket line
+  'lauvel-picket': at(-392, 186),         // Talven, on the picket line
   'burial-searcher': at(-387, 198),       // Ilva, at the burial line
   'hamlet-drover': at(-344, 208),         // Garran, at the burned hamlet
 });
@@ -482,7 +482,7 @@ export const regionFirePits = Object.freeze([
 export const CALOSS_BANK = Object.freeze({ spot: at(-306, 104), cast: at(-300, 114) });
 
 export const regionLandmarks = Object.freeze([
-  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', ...at(-236, 30), description: 'The one farm clearing cut out of Drent’s forest: crop rows, a canvas field camp, and the Legion’s supply post.' }),
+  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', ...at(-236, 30), description: 'The one farm clearing cut out of Drent’s forest: crop rows, a canvas field camp, and the army’s supply post.' }),
   Object.freeze({ id: 'fallen-cart', name: 'The Tumbled Cart', ...at(-243, 19), description: 'A courier’s wheel gave way on the farm track. Scattered parcels lie among the stubble.' }),
   Object.freeze({ id: 'old-mill', name: 'The Clearing Mill', ...at(-227, 57), description: 'Slow canvas sails turn above the Avrel grain rows and a stone-lined well.' }),
   Object.freeze({ id: 'reedwater', name: 'Caloss Crossing', ...at(-334, 84), description: 'The road drops to the Caloss. Drent ends on this bank; Luscia begins on the far one.' }),
@@ -491,14 +491,14 @@ export const regionLandmarks = Object.freeze([
   Object.freeze({ id: 'river-camp', name: 'The Reedcutters’ Camp', ...at(-372, 116), description: 'Drying reeds, tied boats, and a small raised shelter stand above the Luscian bank.' }),
   Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', ...at(-377, 138), description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
   Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', ...at(-386, 152), description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
-  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The Legion’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
-  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town between its two palisade gates: a square of stalls and a well, an inn, a smithy and a hall, the timber yard above the sawpits, the stable yard, and the Legion’s relay post on the corner.' }),
+  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The army’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
+  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town between its two palisade gates: a square of stalls and a well, an inn, a smithy and a hall, the timber yard above the sawpits, the stable yard, and the army’s relay post on the corner.' }),
   // Story hooks placed as scenery for the chapter that follows.
-  Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the Legion met a rebel army here.' }),
+  Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the army met a rebel army here.' }),
   Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', ...at(-348, 212), description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
   Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', ...at(-427, 259.4), description: 'Two great posts under a beam, palisade wings and a watch platform where the last copse ends. West of here the grass runs to the horizon.' }),
-  Object.freeze({ id: 'legion-camp', name: 'The Legion Camp', ...at(-549.2, 348.1), description: 'The Ambroni outpost at the heart of the Moros: a ditch, a timber palisade on its rampart, towers, ordered tent lines and the Legate’s standard.' }),
-  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small timber work the Legion and the republic both want: a ditch, a rampart with a fighting platform, corner towers and a truce flag.' }),
+  Object.freeze({ id: 'legion-camp', name: 'The Army Camp', ...at(-549.2, 348.1), description: 'The Ambroni outpost at the heart of the Moros: a ditch, a timber palisade on its rampart, towers, ordered tent lines and the Marshal’s standard.' }),
+  Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small timber work the army and the republic both want: a ditch, a rampart with a fighting platform, corner towers and a truce flag.' }),
   Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'Elod’s old barrier across the road, behind the stone frontier that now shuts East Suval.' }),
   Object.freeze({ id: 'old-waystation', name: 'The Roofless Waystation', ...at(-154, 328), description: 'A leaning stone arch and a few paving slabs outlast a forgotten roadside shelter.' }),
   Object.freeze({ id: 'elod-gate', name: 'The Sea-Road Gate of Elod', ...at(-28, 368.5), radius: 12,
@@ -514,7 +514,7 @@ export const STORY_SITES = Object.freeze({
   banditLookout: at(-74, 498),
 });
 
-/** The end of the built world, west of the Legion camp. */
+/** The end of the built world, west of the army camp. */
 export const FRONTIER = Object.freeze({ ...at(-776, 350), barrierX: at(-782, 350).x, name: 'The Moros Horizon',
   regionName: 'The open road west across the Moros' });
 
@@ -538,8 +538,8 @@ const REGION_TEXT = {
     palette: { ground: '#8fa35a', accent: '#dfc77d', fog: '#bdc9b5' },
     npcIds: ['crossing-keeper', 'ridge-keeper', 'relay-clerk', 'reed-worker', 'town-innkeeper', 'timber-stall', 'town-sawyer'],
     landmarks: ['reedwater', 'reed-bridge', 'reedwater-bank', 'river-camp', 'landing-workshop', 'threefold', 'beacon-ridge', 'north-relay', 'lauvel-field', 'lumber-town', 'burned-hamlet'] },
-  'Moros Plain': { subtitle: 'The Legion’s open country', spawn: at(-452, 278),
-    description: 'Flat treeless grassland under an enormous sky. The Legion camp is visible from a long way off, and horses graze the line.',
+  'Moros Plain': { subtitle: 'The army’s open country', spawn: at(-452, 278),
+    description: 'Flat treeless grassland under an enormous sky. The army camp is visible from a long way off, and horses graze the line.',
     palette: { ground: '#b9b36c', accent: '#e4d59a', fog: '#cfd3b4' },
     npcIds: [], landmarks: ['moros-gate', 'legion-camp', 'moros-stockade'] },
   // East Suval is closed (src/closed-border.js): its spawn is the city, which is

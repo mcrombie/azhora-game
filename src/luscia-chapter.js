@@ -2,7 +2,7 @@
  * The Luscia chapter: the field at the Lauvel.
  *
  * The campaign's second chapter (`luscia-aftermath`) made playable. Iven at the
- * relay sends the traveler onto the battlefield to recover a missing Legion
+ * relay sends the traveler onto the battlefield to recover a missing army
  * courier's satchel; wolves come off the burial line when it is lifted; the
  * satchel carried back finishes the chapter and pays the traveler in the horse
  * the Moros camp will want. No render or DOM dependencies: the host owns the
@@ -15,14 +15,14 @@ import { toWorld, toWorldXIn } from './world-scale.js';
 
 export const LUSCIA_VERSION = 1;
 export const LUSCIA_CHAPTER_ID = 'luscia-aftermath';
-/** The Legion's promissory token for a horse, spent with the ostler in Lumber Town (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
+/** The army's promissory token for a horse, spent with the ostler in Lumber Town (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
 export const LUSCIA_REWARD_ITEM = 'horse-token';
 /** The rest of the chapter's pay, in Ambroni copper. */
 export const LUSCIA_REWARD_COINS = 20;
 
 /** The people the chapter adds. Their stands live with Luscia's other positions in `region-world.js`. */
 export const LUSCIA_NPCS = Object.freeze([
-  Object.freeze({ id: 'lauvel-picket', name: 'Talvus', role: 'Legion picket sergeant', modelRole: 'legion-soldier', color: 0x7c3a2f }),
+  Object.freeze({ id: 'lauvel-picket', name: 'Talven', role: 'Army picket sergeant', modelRole: 'legion-soldier', color: 0x7c3a2f }),
   Object.freeze({ id: 'burial-searcher', name: 'Ilva', role: 'Of the Lauvel valley', modelRole: 'rise-custodian', color: 0x6f7b5e }),
   Object.freeze({ id: 'hamlet-drover', name: 'Garran', role: 'Drover of the burned hamlet', modelRole: 'shelter-keeper', color: 0x7b6f5a }),
 ]);
@@ -89,11 +89,11 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
   function view() {
     const current = stage();
     const views = {
-      'not-started': [0, 'Across the Caloss', 'The road out of Drent is finished. Iven keeps the Legion’s relay post on Lumber Town’s square.', 'LUSCIA · THE FIELD AT THE LAUVEL', []],
-      'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Lumber Town’s square; a Legion courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Lumber Town, past the old relay hut, to the field at the Lauvel. Sergeant Talvus holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
+      'not-started': [0, 'Across the Caloss', 'The road out of Drent is finished. Iven keeps the army’s relay post on Lumber Town’s square.', 'LUSCIA · THE FIELD AT THE LAUVEL', []],
+      'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Lumber Town’s square; an army courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
+      'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Lumber Town, past the old relay hut, to the field at the Lauvel. Sergeant Talven holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
       'return-satchel': [3, 'Carry the rolls back', 'Take the courier’s satchel back down the road to Iven in Lumber Town before anything else finds it.', 'LUSCIA · 3 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      complete: [4, 'The Legion’s horse', 'Iven has the muster rolls and you have the Legion’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, turns it into a horse. Then the road turns west for the Moros gate and the Legion’s outpost on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
+      complete: [4, 'The army’s horse', 'Iven has the muster rolls and you have the army’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, turns it into a horse. Then the road turns west for the Moros gate and the army’s outpost on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return {
@@ -141,7 +141,7 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
     else if (actionId === 'take-courier-satchel') { state.satchelTaken = true; startEncounter = LUSCIA_WOLVES.id; }
     else if (actionId === 'return-courier-satchel') {
       // The token and the pay are the chapter's reward, granted exactly once.
-      if (!inventory?.add?.(LUSCIA_REWARD_ITEM, 1)) return fail('There is no room in your satchel for the Legion’s token. Make space and speak again.');
+      if (!inventory?.add?.(LUSCIA_REWARD_ITEM, 1)) return fail('There is no room in your satchel for the army’s token. Make space and speak again.');
       inventory?.add?.('copper-piece', LUSCIA_REWARD_COINS);
       state.returned = true; reward = { id: LUSCIA_REWARD_ITEM, quantity: 1, coins: LUSCIA_REWARD_COINS };
     }
@@ -173,7 +173,7 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
 /**
  * The chapter's conversations. Same shape as `journeyConversation`: arrays of
  * lines, `tangent(...)` for colour and `choice(...)` for the one line that
- * advances the chapter. The Legion speaks in orders; Luscians speak plainly.
+ * advances the chapter. The army speaks in orders; Luscians speak plainly.
  */
 export function lusciaConversation(npc, context) {
   const { luscia, openDialogue, closeDialogue, act } = context;
@@ -191,7 +191,7 @@ export function lusciaConversation(npc, context) {
         'If they come at you, do not back toward the graves. Back east, onto the open grass, and keep your blade up. My orders say wolves are a local matter. My orders are written in Ambron.',
       ]),
       tangent('iven-ten-days', 'Ten days, and nobody has cleared the field?', [
-        'Ten days. The Legion broke the rebel army up the road on the ninth, marched west for the Moros on the eleventh, and left a picket and a signpost behind it. Everything since has been the valley’s own work.',
+        'Ten days. The army broke the rebel army up the road on the ninth, marched west for the Moros on the eleventh, and left a picket and a signpost behind it. Everything since has been the valley’s own work.',
         'The carts are still where their wheels went. The families walk up from this town to dig the line and are home before dark. I copy the returns and send them on. Neither of us is doing much for the dead.',
       ]),
     ],
@@ -223,20 +223,20 @@ export function lusciaConversation(npc, context) {
 
   if (npc.id === 'relay-clerk') {
     if (state.returned) return tell([
-      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token to Bede Harrow at the stable yard on the edge of town; he keeps the Legion’s remounts and will hand you one against my mark. Then ride west for the Moros gate. It is too far to walk with orders in your pocket.',
+      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token to Bede Harrow at the stable yard on the edge of town; he keeps the army’s remounts and will hand you one against my mark. Then ride west for the Moros gate. It is too far to walk with orders in your pocket.',
       'Sixty-one of ours named, and a list of the men we took. The Moros will read it as a victory return. I will file it as what it is: the valley’s dead, in two columns, in my handwriting.',
     ], []);
     if (state.satchelTaken) return tell([
       'That is the courier’s satchel, and you are still standing. Good. Let me have it before the light goes and before anybody west of here asks what took so long. There is pay in it for you, and it is not all in chits.',
     ], [choice('return-courier-satchel', 'Hand over the satchel · take the horse token')]);
     if (state.briefed) return tell([
-      'Take the road north-east out of the square, past the old relay hut where I used to keep this desk. The wrecked carts are on the far side of the field, off the road. The satchel is a flat leather case with a Legion strap; the courier will be near it or he will not be anywhere.',
-      'Talvus holds the picket. Tell him the relay sent you. Do not argue with him; he is a sergeant, and arguing is a thing that happens to other people.',
+      'Take the road north-east out of the square, past the old relay hut where I used to keep this desk. The wrecked carts are on the far side of the field, off the road. The satchel is a flat leather case with an army strap; the courier will be near it or he will not be anywhere.',
+      'Talven holds the picket. Tell him the relay sent you. Do not argue with him; he is a sergeant, and arguing is a thing that happens to other people.',
     ], []);
     return tell([
-      'You again, and in Legion pay. Then here are the orders that came up from the Moros, ten days late, like everything that comes up from the Moros. The Legion met the rebel army at the Lauvel on the ninth and broke it. The field is a quarter mile up the road out of this square and I have not walked out to it once.',
-      'A Legion courier rode off that field the same evening with the muster rolls and never reached this relay. Sergeant Talvus keeps the picket and will not pass a civilian. You are on the Legion’s field detail, which makes you neither one thing nor the other, which makes you useful.',
-      'Find the courier’s satchel and bring it here. Those rolls name our dead and the men we took prisoner. Do that and I will pay you the way the Legion pays me: with a horse it owes me, and a token to claim it from the ostler here in town.',
+      'You again, and in army pay. Then here are the orders that came up from the Moros, ten days late, like everything that comes up from the Moros. The army met the rebel army at the Lauvel on the ninth and broke it. The field is a quarter mile up the road out of this square and I have not walked out to it once.',
+      'An army courier rode off that field the same evening with the muster rolls and never reached this relay. Sergeant Talven keeps the picket and will not pass a civilian. You are on the army’s field detail, which makes you neither one thing nor the other, which makes you useful.',
+      'Find the courier’s satchel and bring it here. Those rolls name our dead and the men we took prisoner. Do that and I will pay you the way the army pays me: with a horse it owes me, and a token to claim it from the ostler here in town.',
     ], [choice('accept-lauvel-search', 'I’ll go out to the field.')]);
   }
   if (npc.id === 'lauvel-picket') {
@@ -252,7 +252,7 @@ export function lusciaConversation(npc, context) {
       'Straight to the carts on the north side. Touch nothing on the burial line. Be off the field before the light goes, and if you meet the wolves, that is your own affair.',
     ], []);
     return tell([
-      'Hold. This is a Legion field, not a market. Civilians turn at this line.',
+      'Hold. This is an army field, not a market. Civilians turn at this line.',
       'Nothing out there for you. Broken carts, flies, and rebels in the ground. Turn back.',
     ], []);
   }

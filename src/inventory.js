@@ -40,7 +40,7 @@ export const INVENTORY_ITEMS = Object.freeze({
   'copper-piece': Object.freeze({
     name: 'Copper pieces', type: 'Money', icon: 'token', stackable: true,
     brief: 'Ambroni copper. Ten make a silver piece, a hundred a gold.',
-    description: 'The Empire’s small coin, good in any market that answers to Ambron. Traders and beggars take it; the Legion pays in it.',
+    description: 'The Empire’s small coin, good in any market that answers to Ambron. Traders and beggars take it; the army pays in it.',
   }),
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
@@ -48,9 +48,9 @@ export const INVENTORY_ITEMS = Object.freeze({
     description: 'Eren has vouched for your passage through the northern forest. Carry this token and Lakota’s message to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
   }),
   'horse-token': Object.freeze({
-    name: 'Legion horse token', type: 'Quest item', icon: 'token',
-    brief: 'Iven’s mark on a strip of Legion leather: one horse, owed by the army.',
-    description: 'The relay clerk in Lumber Town pays in what the Legion owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the Legion’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
+    name: 'Army horse token', type: 'Quest item', icon: 'token',
+    brief: 'Iven’s mark on a strip of army leather: one horse, owed by the army.',
+    description: 'The relay clerk in Lumber Town pays in what the army owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the army’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
   }),
   herbs: Object.freeze({
     name: 'Gathered herbs', type: 'Food', icon: 'leaf', stackable: true, eatName: 'herbs',
@@ -353,10 +353,10 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A thick stew of the day’s catch, carried in a lidded crock. Restores up to 50 health.',
     description: 'Restores up to 50 health. Fish, onion and barley simmered in one pot and ladled out at the Tidehaven landing whenever the boats come in. In a lidded crock it stays warm for a while and good for longer.',
   }),
-  // Legion rations and traders’ goods from farther off.
+  // army rations and traders’ goods from farther off.
   hardtack: Object.freeze({
-    name: 'Legion hardtack', type: 'Food', icon: 'biscuit', stackable: true, eatName: 'hardtack biscuit',
-    brief: 'The Ambroni Legion’s square, rock-hard ration biscuit. Restores up to 15 health.',
+    name: 'Army hardtack', type: 'Food', icon: 'biscuit', stackable: true, eatName: 'hardtack biscuit',
+    brief: 'The Ambroni army’s square, rock-hard ration biscuit. Restores up to 15 health.',
     description: 'Restores up to 15 health. Flour, water and salt baked twice until it could stop an arrow. Quartermaster Corvan issues it by the sack. Soak it in something before biting, or lose a tooth to the Empire.',
   }),
   'brined-olives': Object.freeze({
@@ -381,13 +381,13 @@ export const INVENTORY_ITEMS = Object.freeze({
   }),
   'salt-pork': Object.freeze({
     name: 'Salt pork', type: 'Food', icon: 'slab', stackable: true, eatName: 'slice of salt pork',
-    brief: 'Fat pork packed in salt, the Legion’s marching meat. Restores up to 35 health.',
-    description: 'Restores up to 35 health. Barrelled pork from the Elagosi lake country, salted hard for the Legion’s supply trains. Sliced and fried it is good; cold from the barrel it is still food.',
+    brief: 'Fat pork packed in salt, the army’s marching meat. Restores up to 35 health.',
+    description: 'Restores up to 35 health. Barrelled pork from the Elagosi lake country, salted hard for the army’s supply trains. Sliced and fried it is good; cold from the barrel it is still food.',
   }),
   'smoked-whitefish': Object.freeze({
     name: 'Smoked whitefish', type: 'Food', icon: 'cooked-fish', stackable: true, eatName: 'smoked whitefish',
     brief: 'Lake fish from Elagos, smoked for the supply trains. Restores up to 45 health.',
-    description: 'Restores up to 45 health. Whitefish from Lake Ela, split and smoked by Ambron’s lake fleet. Elagosi dried fish reaches markets across Azhora, and the Legion marches on it.',
+    description: 'Restores up to 45 health. Whitefish from Lake Ela, split and smoked by Ambron’s lake fleet. Elagosi dried fish reaches markets across Azhora, and the army marches on it.',
   }),
   'narcoshi-cheese': Object.freeze({
     name: 'Narcoshi cheese', type: 'Food', icon: 'cheese', stackable: true, eatName: 'wedge of Narcoshi cheese',
@@ -630,10 +630,10 @@ export function createInventory({
       letter.setAttribute('aria-label', 'Lakota’s message to Quartermaster Corvan');
       letter.tabIndex = 0;
       letter.append(
-        element('p', 'inventory-letter-address', 'To Quartermaster Corvan, Ambroni Legion, The Avrel Clearing'),
+        element('p', 'inventory-letter-address', 'To Quartermaster Corvan, Ambroni army, The Avrel Clearing'),
         element('p', '', 'Bramble goblin raiders have cut the road out of Tidehaven. Our watch is holding the northern path, but the village needs help keeping travelers safe.'),
         element('p', '', 'The bearer has answered the Ambroni Empire’s call for mercenaries. Receive them at your field post, record their service, and give them their first orders. They arrive with a plain sword and no armor.'),
-        element('p', '', 'The Legion promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
+        element('p', '', 'The army promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
         element('p', 'inventory-letter-signature', 'Lakota\nof Tidehaven, by the bird garden'),
       );
       detail.append(letter);

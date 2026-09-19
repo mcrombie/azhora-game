@@ -4,7 +4,7 @@
  *
  * Ambient conversation only: nobody here moves a quest. The islanders speak
  * plainly and at their own speed, the way people do who see one boat a week;
- * the Legion speaks in orders and requisitions. Only Legion people wear Legion
+ * the army speaks in orders and requisitions. Only Imperial soldiers wear army
  * armour, and soldiers are men by default.
  *
  * The seam to write on is the Empire's share of the catch — one barrel in five,
@@ -27,10 +27,10 @@ export const PEBLOS_NPCS = Object.freeze([
   person('cobble-oldhand', 'Old Pell', 'Pilot, retired', 'commons-miller', 0x6f6657),
   person('cobble-keeper', 'Sela Vane', 'Keeper of the sea shrine', 'rise-custodian', 0x5f6d6b),
   person('cobble-runner', 'Dunnock', 'Quay runner', 'reed-worker', 0x83734e),
-  soldier('peblos-decurion', 'Decurion Aulus Bassus', 'Ambroni Legion officer', 'legion-officer'),
-  soldier('peblos-legionary-1', 'Legionary Ferro', 'Ambroni Legion soldier', 'legion-soldier'),
-  soldier('peblos-legionary-2', 'Legionary Nabo', 'Ambroni Legion soldier', 'legion-soldier'),
-  soldier('peblos-legionary-3', 'Legionary Crix', 'Ambroni Legion soldier', 'legion-soldier'),
+  soldier('peblos-decurion', 'Lieutenant Berold Ossan', 'Ambroni officer', 'legion-officer'),
+  soldier('peblos-legionary-1', 'Footman Fennor', 'Ambroni soldier', 'legion-soldier'),
+  soldier('peblos-legionary-2', 'Footman Nabel', 'Ambroni soldier', 'legion-soldier'),
+  soldier('peblos-legionary-3', 'Footman Crick', 'Ambroni soldier', 'legion-soldier'),
 ]);
 export const PEBLOS_NPC_IDS = Object.freeze(PEBLOS_NPCS.map(npc => npc.id));
 
@@ -38,7 +38,7 @@ export const PEBLOS_AMBIENT = Object.freeze({
   'cobble-netmistress': Object.freeze([
     'Bregga Sell. I keep the nets and I keep the tally, which means I am the one who tells a man his boat came in light.',
     'Cobble is what you see: ten roofs, one quay, and the water. Everybody here fishes. The ones who did not fish went to Tidehaven a long time ago and we do not hear from them.',
-    'One barrel in five goes to the Empire. That was set when there were twice as many of us to catch it, and nobody has come out to set it again. I say it to the decurion once a season and he writes it down.',
+    'One barrel in five goes to the Empire. That was set when there were twice as many of us to catch it, and nobody has come out to set it again. I say it to the lieutenant once a season and he writes it down.',
   ]),
   'cobble-boatwright': Object.freeze([
     'Hallin Orme. Every hull on this quay came off that slip, and I have mended most of them twice.',
@@ -69,7 +69,7 @@ export const PEBLOS_AMBIENT = Object.freeze({
     'You came over with Corran? He is my mother’s cousin. Everybody on this quay is somebody’s cousin, and that is why nothing here stays quiet for long.',
   ]),
   'peblos-decurion': Object.freeze([
-    'Decurion Aulus Bassus, in command of the Empire’s presence in Peblos. The Empire’s presence in Peblos is myself and three men.',
+    'Lieutenant Berold Ossan, in command of the Empire’s presence in Peblos. The Empire’s presence in Peblos is myself and three men.',
     'We count the catch and we take the fifth barrel. That is the whole of the duty here. No garrison, no wall, no rebels — the nearest thing to an enemy is the weather.',
     'The islanders think the share is too high. They may be right. I write down what Sell tells me and I send it to Ambron, and Ambron has had a war on its hands for a year. Keep your sword sheathed on this quay and you and I will have no business.',
   ]),
@@ -78,7 +78,7 @@ export const PEBLOS_AMBIENT = Object.freeze({
     'The duty is the quay. Count the barrels in, mark the fifth, stand here. Nobody has ever landed here who was not carrying fish.',
   ]),
   'peblos-legionary-2': Object.freeze([
-    'Four hundred and twelve barrels this season, and I have counted every one of them twice because the decurion likes a clean column.',
+    'Four hundred and twelve barrels this season, and I have counted every one of them twice because the lieutenant likes a clean column.',
     'They are not rebels, before you ask. They are people who wish the number were six instead of five. That is not the same thing, whatever the reports say.',
   ]),
   'peblos-legionary-3': Object.freeze([
@@ -94,6 +94,6 @@ export function peblosConversation(npc, context) {
   if (!lines) return false;
   const legion = npc.id.startsWith('peblos-');
   openDialogue(npc, [...lines], null, legion ? 'Back to the quay' : 'Back to the village',
-    { choices: [{ id: 'leave-cobble-talk', label: legion ? 'Decurion.' : 'Fair weather to you.', action: closeDialogue }] });
+    { choices: [{ id: 'leave-cobble-talk', label: legion ? 'Lieutenant.' : 'Fair weather to you.', action: closeDialogue }] });
   return true;
 }

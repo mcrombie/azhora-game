@@ -174,7 +174,7 @@ test('repair loan rechecks current need, and a failed supply grant can be retrie
   f.finish(); assert.ok(f.choice('hollis-repair-wood'));
 });
 
-test('imperial induction precedes the gradual reveal that Luscia’s people wanted the republic the Legion just defeated', () => {
+test('imperial induction precedes the gradual reveal that Luscia’s people wanted the republic the army just defeated', () => {
   const f = fixture({ sticks: 3 });
   f.talk('meadow-courier');
   const induction = f.shown.lines.join(' ');

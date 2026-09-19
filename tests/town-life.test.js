@@ -27,8 +27,8 @@ test('each new person has a name, a known look and at least two lines, and nobod
       assert.doesNotMatch(line, /goblin|South Pyros/i, `${npc.id}: ${line}`);
       assert.ok(line.length > 12 && line.length < 260, `${npc.id} speaks in lines, not speeches`);
     }
-    // Only the Legion's people wear the Legion's armour, and the Legion's people leave with the Legion.
-    if (npc.modelRole.startsWith('legion-')) assert.equal(npc.holds, 'empire', `${npc.id} is the Legion's`);
+    // Only the army's people wear the army's armour, and the army's people leave with the army.
+    if (npc.modelRole.startsWith('legion-')) assert.equal(npc.holds, 'empire', `${npc.id} is the army's`);
   }
   assert.deepEqual(townLifeLines('nobody'), []);
 });
@@ -43,7 +43,7 @@ test('Elod keeps eight to twelve guards at its frontier, one captain who explain
   for (const npc of ground) assert.equal(stakeOf(npc), null, 'Elod’s guard belongs to no side of the war');
 });
 
-test('the outpost changes hands: the Legion’s people and flag are out while the Empire holds the Moros, the Coalition’s once it falls', () => {
+test('the outpost changes hands: the army’s people and flag are out while the Empire holds the Moros, the Coalition’s once it falls', () => {
   const legion = TOWN_LIFE_NPCS.filter(npc => npc.holds === 'empire'), coalition = TOWN_LIFE_NPCS.filter(npc => npc.holds === 'coalition');
   assert.ok(legion.length >= 5 && coalition.length >= 3);
   assert.ok(coalition.some(npc => /captain/i.test(npc.name) && npc.lines.length === 2), 'a valley captain with two lines');

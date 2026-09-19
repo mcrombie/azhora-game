@@ -14,7 +14,7 @@ export const HOLDERS = Object.freeze(['empire', 'coalition']);
 
 /**
  * A place falls when its fight is won, not when the paperwork is done: the
- * chapter after the border battle hands over the Legion's outpost, or Solis, as
+ * chapter after the border battle hands over the army's outpost, or Solis, as
  * soon as the traveler's corner of it is cleared, a little before the campaign
  * records the chapter as complete.
  */
@@ -40,7 +40,7 @@ export function isOut(entry, control = {}) {
   return hasStake(entry) ? control[entry.region] === entry.holds : true;
 }
 
-/** The Legion's posts inside its outpost on the Moros Plain leave with the Legion. */
+/** The army's posts inside its outpost on the Moros Plain leave with the army. */
 export function legionPostStake(id) {
   return typeof id === 'string' && id.startsWith('post-camp-') ? OUTPOST_STAKE : null;
 }

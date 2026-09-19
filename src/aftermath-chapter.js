@@ -1,8 +1,8 @@
 /**
  * After the border battle: the four chapters the campaign can reach from it.
- * The Empire's sellsword either goes into Solis with the Legion (`solis-sweep`)
+ * The Empire's sellsword either goes into Solis with the army (`solis-sweep`)
  * or holds the outpost's gate on the retreat (`moros-fallback`); the Republic's
- * either storms the Legion's outpost at the centre of the Moros
+ * either storms the army's outpost at the centre of the Moros
  * (`moros-outpost`) or holds the gate of Solis (`solis-fallback`). Each is the
  * same shape: rally to your commander, fight one corner of the day beside your
  * allies, and report to whoever sends you on. Where the people stand is the
@@ -13,9 +13,9 @@
 export const AFTERMATH_VERSION = 1;
 export const AFTERMATH_LEGATE_ID = 'post-camp-legate';
 
-/** People the chapter brings on; the Legate already stands at his tent. */
+/** People the chapter brings on; the Marshal already stands at his tent. */
 export const AFTERMATH_NPCS = Object.freeze([
-  Object.freeze({ id: 'aftermath-tribune', name: 'Tribune Gallus Orso', role: 'Tribune of the Legion’s left', modelRole: 'legion-officer', color: 0x832d2b }),
+  Object.freeze({ id: 'aftermath-tribune', name: 'Captain Oswin Brulan', role: 'Captain of the army’s left', modelRole: 'legion-officer', color: 0x832d2b }),
   Object.freeze({ id: 'aftermath-captain', name: 'Captain Arlen Voss', role: 'Captain of the Lauvel companies', modelRole: 'suvali-guard', color: 0x3f5f86 }),
   Object.freeze({ id: 'aftermath-envoy', name: 'Envoy Telis Orren', role: 'Envoy of the Republic and the Coalition', modelRole: 'rise-custodian', color: 0x3f5f86 }),
 ]);
@@ -32,32 +32,32 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     commanderId: 'aftermath-tribune', rallySite: 'solis-road', arena: 'solis-gate-assault', principalId: 'aftermath-tribune', reportSite: 'solis-hall',
     // The defenders stand before the gate, and the last two come out of the gateway itself.
     enemyOffsets: [[-6, -9, .2], [6, -9.5, .9], [0, -11, 1.8], [-4, -10.5, 6], [4, -10.5, 7.5], [-1, -14.5, 11], [1, -15, 12.5]],
-    rally: ['The hired company on the Solis road', 'The Coalition broke at the border and fell back on Solis, and shut themselves in behind the Gate of Sun Horses. Tribune Gallus Orso has the hired company on the road north of the gate. Follow the road south-east into West Suval and find him.'],
+    rally: ['The hired company on the Solis road', 'The Coalition broke at the border and fell back on Solis, and shut themselves in behind the Gate of Sun Horses. Captain Oswin Brulan has the hired company on the road north of the gate. Follow the road south-east into West Suval and find him.'],
     fight: ['Take the Gate of Sun Horses', 'Seven of the Republic’s best hold the Gate of Sun Horses, and the last of them will come out of the gateway. Break them, with your company beside you. Fall back up the road if you must.'],
-    report: ['The Coalition’s chair', 'The gate is taken, and the city with it: the council took ship while its gate held. Tribune Orso has taken the Court of Oaths. Report to him there.'],
-    done: 'Solis is the Emperor’s, and West Suval with it. The Legate’s dispatch says a hired company went in first, and you carry it to Ambron.',
+    report: ['The Coalition’s chair', 'The gate is taken, and the city with it: the council took ship while its gate held. Captain Brulan has taken the Court of Oaths. Report to him there.'],
+    done: 'Solis is the Emperor’s, and West Suval with it. The Marshal’s dispatch says a hired company went in first, and you carry it to Ambron.',
     orders: [
       'They shut the gate on us. The council is taking ship at the quay, and the best of what the Republic has left is holding the Gate of Sun Horses to buy them the tide.',
-      'Orders: take the gate. Once it is ours, no fire, no looting, and no one touched who has put his weapon down. The Legate wants a city that pays tax, not a ruin. The men at the gate have not put theirs down.',
+      'Orders: take the gate. Once it is ours, no fire, no looting, and no one touched who has put his weapon down. The Marshal wants a city that pays tax, not a ruin. The men at the gate have not put theirs down.',
       'Your company goes at it first. Say when.',
     ],
     ready: 'We take the gate.',
     debrief: [
       'Sit if you like. It is the Coalition’s chair, and it is as hard as ours.',
-      'Solis is the Emperor’s tonight, and West Suval with it by the week’s end. The rolls will say the Legion took it. The Legate’s dispatch says a hired company went in first. I wrote that part.',
-      'Forty copper, the day’s rate doubled. And orders: the Legate-General wants to see what kind of sellsword holds a square. You ride for Ambron, north-west across the Moros. Dismissed.',
+      'Solis is the Emperor’s tonight, and West Suval with it by the week’s end. The rolls will say the army took it. The Marshal’s dispatch says a hired company went in first. I wrote that part.',
+      'Forty copper, the day’s rate doubled. And orders: the Lord Marshal wants to see what kind of sellsword holds a square. You ride for Ambron, north-west across the Moros. Dismissed.',
     ],
     close: 'Take the pay and the orders.',
     after: ['Ambron, sellsword. North-west across the Moros. The dispatch does not carry itself.'],
-    toasts: { start: 'The hired company goes at the gate first.', won: 'The Gate of Sun Horses is taken. The Tribune has the Court of Oaths.', closed: 'Forty copper, and the Legate’s dispatch for Ambron.' },
+    toasts: { start: 'The hired company goes at the gate first.', won: 'The Gate of Sun Horses is taken. The Captain has the Court of Oaths.', closed: 'Forty copper, and the Marshal’s dispatch for Ambron.' },
   }),
   'moros-fallback': variant('moros-fallback', {
     side: 'empire', outcome: 'defeat', region: 'Moros Plain', title: 'The line at the Moros', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
     commanderId: 'aftermath-tribune', rallySite: 'camp-gate', arena: 'camp-approach', principalId: AFTERMATH_LEGATE_ID, reportSite: null,
-    rally: ['Back across the plain', 'The Legion lost the field and is falling back across the plain to its camp. Tribune Gallus Orso holds the camp’s gate for the last of the wounded. Get back to him.'],
+    rally: ['Back across the plain', 'The army lost the field and is falling back across the plain to its camp. Captain Oswin Brulan holds the camp’s gate for the last of the wounded. Get back to him.'],
     fight: ['Hold the gate', 'Seven of the Coalition’s pursuit come at the gate. Hold it, with your company beside you, until the carts are in.'],
-    report: ['A field, not a war', 'The gate held and the carts are in. Legate Marcus Verro wants you at the command tent.'],
-    done: 'The Coalition holds the border stockade; the Legion holds its camp. You carry the Legate’s dispatch to Ambron.',
+    report: ['A field, not a war', 'The gate held and the carts are in. Marshal Hadric Venmor wants you at the command tent.'],
+    done: 'The Coalition holds the border stockade; the army holds its camp. You carry the Marshal’s dispatch to Ambron.',
     orders: [
       'You are alive. Half the left is not. Their pursuit is behind us and the wounded carts are still on the road.',
       'Orders: this gate stays open until the last cart is through it, and it does not fall while it is open. Your company, and what I have left.',
@@ -71,37 +71,37 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     ],
     close: 'Take the pay and the dispatch.',
     after: ['You have my dispatch. Ambron.'],
-    toasts: { start: 'Their pursuit is on the road. Hold the gate.', won: 'The gate held. The Legate wants you at the command tent.', closed: 'Forty copper, and the Legate’s dispatch for Ambron.' },
+    toasts: { start: 'Their pursuit is on the road. Hold the gate.', won: 'The gate held. The Marshal wants you at the command tent.', closed: 'Forty copper, and the Marshal’s dispatch for Ambron.' },
   }),
   'moros-outpost': variant('moros-outpost', {
     side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
     commanderId: 'aftermath-captain', rallySite: 'outpost-approach', arena: 'outpost-gate', principalId: 'aftermath-envoy', reportSite: 'outpost-command',
-    rally: ['The Legion’s outpost', 'The Legion broke and ran for its outpost at the centre of the Moros. Captain Arlen Voss means to take it before Verro can shut the gate and send for Ambron. Find him on the road outside its north-east gate.'],
-    fight: ['Storm the gate', 'Seven legionaries hold the ground before the north-east gate, shields locked, while the Legate’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
-    report: ['The Republic’s flag', 'The gate is taken and the Legion has quit its outpost. Envoy Telis Orren has ridden up behind the army and taken the Legate’s tent. Report to her there.'],
-    done: 'The Republic’s flag flies over the Legion’s outpost at the centre of the Moros, and Solis is safe behind it. The envoy sends you on to West Izol.',
+    rally: ['The army’s outpost', 'The army broke and ran for its outpost at the centre of the Moros. Captain Arlen Voss means to take it before Venmor can shut the gate and send for Ambron. Find him on the road outside its north-east gate.'],
+    fight: ['Storm the gate', 'Seven soldiers hold the ground before the north-east gate, shields locked, while the Marshal’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
+    report: ['The Republic’s flag', 'The gate is taken and the army has quit its outpost. Envoy Telis Orren has ridden up behind the army and taken the Marshal’s tent. Report to her there.'],
+    done: 'The Republic’s flag flies over the army’s outpost at the centre of the Moros, and Solis is safe behind it. The envoy sends you on to West Izol.',
     orders: [
-      'They ran. I have waited since the Lauvel to say that. But they ran to that: a ditch, a palisade, towers, and a Legate who is already writing to Ambron for another legion.',
-      'If the gate shuts tonight we sit outside it until that legion comes. It is open now because their wounded are still going in. No one here has stormed anything; most of my men had never held a spear before this spring. You have. So you go first, and we go with you.',
+      'They ran. I have waited since the Lauvel to say that. But they ran to that: a ditch, a palisade, towers, and a Marshal who is already writing to Ambron for another army.',
+      'If the gate shuts tonight we sit outside it until that army comes. It is open now because their wounded are still going in. No one here has stormed anything; most of my men had never held a spear before this spring. You have. So you go first, and we go with you.',
       'Say when.',
     ],
     ready: 'We take it now.',
     debrief: [
       'So this is an imperial command tent. It is smaller than the tax it cost.',
-      `The Republic’s flag goes up over this outpost tonight, and the council will vote you its thanks, which is worth what votes are worth. I prefer to pay: sixty copper, hard coin, which is more than Verro ever counted out for you, and ${SCRIP_NOTE}.`,
+      `The Republic’s flag goes up over this outpost tonight, and the council will vote you its thanks, which is worth what votes are worth. I prefer to pay: sixty copper, hard coin, which is more than Venmor ever counted out for you, and ${SCRIP_NOTE}.`,
       'West Izol raised this war and has not yet met the sellsword who turned its first battle. There is a ship at the Solis quay. Be on it.',
     ],
     close: 'Take the coin and the passage.',
     after: ['The ship will not wait for the council to finish talking. Neither should you.'],
-    toasts: { start: 'You go first, and the valley companies go with you.', won: 'The gate is taken and the Legion is gone. The envoy has the Legate’s tent.', closed: 'Sixty copper in hard coin, and passage from Solis to West Izol.' },
+    toasts: { start: 'You go first, and the valley companies go with you.', won: 'The gate is taken and the army is gone. The envoy has the Marshal’s tent.', closed: 'Sixty copper in hard coin, and passage from Solis to West Izol.' },
   }),
   'solis-fallback': variant('solis-fallback', {
     side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
     commanderId: 'aftermath-captain', rallySite: 'solis-gate', arena: 'solis-approach', principalId: 'aftermath-envoy', reportSite: 'solis-hall',
-    rally: ['The road back', 'The Coalition lost the field and fell back on Solis, and the Legion’s outriders are close behind. Captain Arlen Voss is at the city gate. Get back to him.'],
-    fight: ['Hold the gate of Solis', 'Seven of the Legion’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
+    rally: ['The road back', 'The Coalition lost the field and fell back on Solis, and the army’s outriders are close behind. Captain Arlen Voss is at the city gate. Get back to him.'],
+    fight: ['Hold the gate of Solis', 'Seven of the army’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
     report: ['The council argues', 'The gate is shut and Solis still stands. Envoy Telis Orren is in the council hall. Report to her.'],
-    done: 'The Legion holds the border, and Solis holds its walls. The envoy sends you on to West Izol, where the rest of the army waits.',
+    done: 'The army holds the border, and Solis holds its walls. The envoy sends you on to West Izol, where the rest of the army waits.',
     orders: [
       'We broke. I will not dress it up. The valley companies stood as long as farmers can stand against that.',
       'Their outriders are on the road behind the last of us, and the gate cannot shut until the stragglers are in. Same work as this morning, and fewer of us to do it.',
@@ -110,7 +110,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     ready: 'We hold the gate.',
     debrief: [
       'The gate is shut and Solis is still ours. The council is already arguing over whose fault the morning was. I told them the afternoon was yours.',
-      `We lost a field. Ambron has lost provinces and not noticed. The Republic needs its sellsword more tonight, not less: sixty copper, hard coin, which is more than Verro ever counted out for you, and ${SCRIP_NOTE}.`,
+      `We lost a field. Ambron has lost provinces and not noticed. The Republic needs its sellsword more tonight, not less: sixty copper, hard coin, which is more than Venmor ever counted out for you, and ${SCRIP_NOTE}.`,
       'West Izol has the army that was supposed to be here. Go and tell them what waiting cost. There is a ship at the quay.',
     ],
     close: 'Take the coin and the passage.',
@@ -188,7 +188,7 @@ export function createAftermathChapter({ onEvent = () => {} } = {}) {
       active: !state.complete, complete: state.complete, fighting: active, objectiveId, destinationIds: objectiveId ? [objectiveId] : [], siteId };
   }
 
-  /** Which of the chapter's own people are out, and at which site. The Legate is never listed: he keeps his tent. */
+  /** Which of the chapter's own people are out, and at which site. The Marshal is never listed: he keeps his tent. */
   function cast() {
     const chapter = spec(), current = stage();
     if (!chapter) return [];

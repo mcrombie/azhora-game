@@ -315,10 +315,10 @@ test('the people of Ambron speak as the day and the place require', () => {
     assert.ok(npc.name && npc.role, `${npc.id} is somebody`);
     assert.ok(ELAGOS_NPC_POSITIONS[npc.id], `${npc.id} stands somewhere`);
   }
-  // Only Legion people wear Legion armour.
+  // Only Imperial soldiers wear Imperial armour.
   const armoured = ELAGOS_NPCS.filter(npc => npc.modelRole === 'legion-soldier' || npc.modelRole === 'legion-officer');
   assert.ok(armoured.length >= 4 && armoured.length <= 8, 'the Empire keeps a garrison and not an army in the streets');
-  for (const npc of armoured) assert.match(`${npc.name} ${npc.role}`, /Legion|Optio|Legate/i, `${npc.name} is Legion`);
+  for (const npc of armoured) assert.match(`${npc.name} ${npc.role}`, /Ambroni|army|Footman|Lieutenant|Marshal/i, `${npc.name} is the army’s`);
   // King or emperor is a declaration, never an accident: the council says king with a point.
   const council = ELAGOS_AMBIENT['ambron-committee'].join(' ');
   assert.match(council, /Not emperor\. King\./);
@@ -327,7 +327,7 @@ test('the people of Ambron speak as the day and the place require', () => {
   assert.match(clerk, /toll|tenth|twentieth/i);
   assert.match(ELAGOS_AMBIENT['ambron-bargemaster'].join(' '), /paid|toll|line/i);
   assert.match(ELAGOS_AMBIENT['ambron-beggar'].join(' '), /toll/i);
-  // The day is one day old, and the news out of the east is in the Legate's mouth.
+  // The day is one day old, and the news out of the east is in the Marshal's mouth.
   assert.match(ELAGOS_AMBIENT['ambron-legate'].join(' '), /Valroy/);
   assert.match(ELAGOS_AMBIENT['ambron-printer'].join(' '), /proclamation/i);
   // The winters are somebody's job.

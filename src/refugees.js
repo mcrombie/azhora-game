@@ -65,7 +65,7 @@ const SPEECH = Object.freeze({
   'refugee-rebel': Object.freeze({
     road: Object.freeze([
       'Do not go west. That is the whole of my advice and it is free.',
-      'They broke us at the Lauvel and then they went through the villages behind it, and what they did there was not a battle. I watched a Legion sergeant stand in a doorway and tell a woman there was nothing personal in it. Nothing personal.',
+      'They broke us at the Lauvel and then they went through the villages behind it, and what they did there was not a battle. I watched an army sergeant stand in a doorway and tell a woman there was nothing personal in it. Nothing personal.',
       'The Empire calls it a province. We called it our own for two hundred years and nobody asked us which we preferred.',
     ]),
     arrived: Object.freeze([
@@ -77,7 +77,7 @@ const SPEECH = Object.freeze({
   'refugee-empire': Object.freeze({
     road: Object.freeze([
       'I am not going to argue about it on a road. I have been arguing about it on this road for four days.',
-      'The rebels raised this. They took the towns, they took the grain, they swore everyone in at spear-point, and when the Legion came for them they stood in front of our houses to do their fighting. What did anybody think was going to happen?',
+      'The rebels raised this. They took the towns, they took the grain, they swore everyone in at spear-point, and when the army came for them they stood in front of our houses to do their fighting. What did anybody think was going to happen?',
       'I want a road I can take a cart down and a season I can sell. That is not loyalty. That is arithmetic.',
     ]),
     arrived: Object.freeze([
@@ -90,7 +90,7 @@ const SPEECH = Object.freeze({
     road: Object.freeze([
       'If those two start again I am going to sit down in the road and let them walk on without me.',
       'Four days. Four days of who began it. I lost a house and a cow and a brother-in-law I was not fond of, and none of it cares who began it.',
-      'They are both right, which is what neither of them can stand. Aldis is right about what the Legion did. Berick is right about who brought the Legion. Both of those are true at once and the house is still burnt.',
+      'They are both right, which is what neither of them can stand. Aldis is right about what the army did. Berick is right about who brought the army. Both of those are true at once and the house is still burnt.',
     ]),
     arrived: Object.freeze([
       'Sea air. I have not smelled anything but smoke since Thursday.',

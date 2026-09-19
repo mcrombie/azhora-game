@@ -1,6 +1,6 @@
 import { regionFirePits } from './regions.js';
 import { OUTPOST_FIRE } from './outpost.js';
-// Every fire the world lights: the village's, the road's, and the mess fire in the Legion's outpost.
+// Every fire the world lights: the village's, the road's, and the mess fire in the army's outpost.
 const KNOWN_FIRES = new Set(['village-fire', 'pond-fire', ...regionFirePits.map(fire => fire.id), OUTPOST_FIRE.id]);
 const uniqueIds = (value, pattern, limit) => Array.isArray(value) && value.length <= limit
   && new Set(value).size === value.length && value.every(id => typeof id === 'string' && pattern.test(id));

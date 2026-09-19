@@ -189,7 +189,7 @@ export const rimeholtPoint = (a, b) => point(
   RIMEHOLT.square.x + RIMEHOLT.along.x * a + RIMEHOLT.across.x * b,
   RIMEHOLT.square.z + RIMEHOLT.along.z * a + RIMEHOLT.across.z * b);
 
-/** The Legion's barrier where the Feradom road leaves the built world. */
+/** The army's barrier where the Feradom road leaves the built world. */
 export const FERADOM_BARRIER = Object.freeze({ id: 'feradom-road', name: 'The Feradom Road', ...point(-424, -522), halfWidth: 150 });
 
 export const PUETH_ROAD = Object.freeze([
@@ -204,7 +204,7 @@ export const PUETH_ROAD = Object.freeze([
 ]);
 
 // ---------------------------------------------------------------------------
-// The Legion's road post at the Pueth end of the bridge
+// The army's road post at the Pueth end of the bridge
 // ---------------------------------------------------------------------------
 /** A palisaded yard west of the road, its gate on the road, a watch hut and a beacon over the bridge. */
 export const TESSEN_POST = Object.freeze({
@@ -255,7 +255,7 @@ export const HIDEOUT_CLEARINGS = Object.freeze([
 // ---------------------------------------------------------------------------
 // Rimeholt, the timber town on the Feradom road
 // ---------------------------------------------------------------------------
-/** Ten buildings in the town's frame: the Legion's garrison house, the inn, the reeve's hall, houses, a store and the yard shed. */
+/** Ten buildings in the town's frame: the army's garrison house, the inn, the reeve's hall, houses, a store and the yard shed. */
 export const RIMEHOLT_BUILDINGS = Object.freeze([
   ['garrison-house', 11, -14, 9.4, 6.6, 3.5, '#6b3f38', '#a9a293'],
   ['birch-bench', -12, 13, 8.6, 6.4, 3.4, '#4f5652', '#c2b89c'],
@@ -272,7 +272,7 @@ export const RIMEHOLT_YARD = Object.freeze({ shed: rimeholtPoint(14, 19), stacks
   Object.freeze({ ...rimeholtPoint(2, 27), count: 6 }), Object.freeze({ ...rimeholtPoint(27, 25), count: 5 }), Object.freeze({ ...rimeholtPoint(14, 31), count: 4 }),
 ]), well: rimeholtPoint(-3, 6) });
 
-/** The people of Rimeholt, and the Legion sentry at the garrison house. */
+/** The people of Rimeholt, and the army sentry at the garrison house. */
 export const RIMEHOLT_STANDS = Object.freeze({
   'rimeholt-reeve': rimeholtPoint(-4, -8),
   'rimeholt-innkeeper': rimeholtPoint(-12, 5.5),
@@ -289,11 +289,11 @@ export const PUETH_LANDMARKS = Object.freeze([
   Object.freeze({ id: 'tessen-bridge', name: 'The Tessen Bridge', ...point(bridge.crossing.x + 7, bridge.north.z - 3),
     description: 'A timber bridge over the Tessen. Drent’s broadleaf ends at the south bank; the birch begins on the north one.' }),
   Object.freeze({ id: 'tessen-post', name: 'The Tessen Road Post', ...TESSEN_POST.yard,
-    description: 'A palisaded yard, a watch hut and a beacon at the Pueth end of the bridge. Three men of the Legion keep the crossing.' }),
+    description: 'A palisaded yard, a watch hut and a beacon at the Pueth end of the bridge. Three men of the army keep the crossing.' }),
   Object.freeze({ id: 'tessen-shallows', name: 'The Tessen Shallows', ...point(100, -110),
     description: 'The Tessen spreads over shingle into the Stills. At low water a goblin could wade it without wetting its knees, and the beach runs south to Tidehaven.' }),
   Object.freeze({ id: 'rimeholt', name: 'Rimeholt', ...RIMEHOLT.square, radius: RIMEHOLT.radius,
-    description: 'A palisaded timber town on the Feradom road: a Legion garrison house, the Birch Bench inn, and a yard stacked with cold-birch for the lake shipwrights.' }),
+    description: 'A palisaded timber town on the Feradom road: an army garrison house, the Birch Bench inn, and a yard stacked with cold-birch for the lake shipwrights.' }),
   Object.freeze({ id: 'birch-landing', name: 'Birch Landing', ...point(76, -246),
     description: 'Cold-birch logs stacked above the shingle, branded for the coast barges. Nobody is loading them this season.' }),
   Object.freeze({ id: 'grey-shoulder', name: 'The Grey Shoulder', ...point(-268, -500),
@@ -303,7 +303,7 @@ export const PUETH_LANDMARKS = Object.freeze([
   Object.freeze({ id: 'ordel-mouth', name: 'The Ordel Mouth', ...point(84, -349),
     description: 'The Ordel comes down out of the hills to the sea here. Feradom is the far bank.' }),
   Object.freeze({ ...FERADOM_BARRIER,
-    description: 'A barrier the Legion has dropped across the road north. Feradom’s hills begin beyond it, and the road is closed by order.' }),
+    description: 'A barrier the army has dropped across the road north. Feradom’s hills begin beyond it, and the road is closed by order.' }),
 ]);
 
 /** Ground the Pueth scatter keeps clear: the bridge approaches, the post, the town, the landmarks. */

@@ -22,7 +22,7 @@ function budget(actor, role) {
   return { draws, triangles, metal };
 }
 
-test('Legion soldiers and Suvali guards are armored men with helmets, no satchel and no hand weapon', () => {
+test('Ambroni soldiers and Suvali guards are armored men with helmets, no satchel and no hand weapon', () => {
   for (const role of SOLDIERS) {
     const actor = createCharacter({ role });
     assert.equal(actor.group.name, `character-${role}`);
@@ -34,19 +34,19 @@ test('Legion soldiers and Suvali guards are armored men with helmets, no satchel
     assert.ok(metal > 0, `${role} wears iron`);
     assert.ok(draws <= 30, `${role} draws ${draws} batches`);
     assert.ok(triangles < 7500, `${role} has ${triangles} triangles`);
-    const helmet = role === 'suvali-guard' ? 'Suvali iron cap' : role === 'legion-officer' ? 'Legion crested helmet' : 'Legion helmet';
+    const helmet = role === 'suvali-guard' ? 'Suvali iron cap' : role === 'legion-officer' ? 'Ambroni plumed helm' : 'Ambroni helm';
     assert.ok(actor.group.getObjectByName(helmet), `${role} wears a ${helmet}`);
-    assert.equal(Boolean(actor.group.getObjectByName('Legion shield')), role === 'legion-soldier');
-    assert.equal(Boolean(actor.group.getObjectByName('Officer crest')), role === 'legion-officer');
-    const spear = actor.group.getObjectByName('Legion spear') || actor.group.getObjectByName('Suvali guard spear');
+    assert.equal(Boolean(actor.group.getObjectByName('Ambroni heater shield')), role === 'legion-soldier');
+    assert.equal(Boolean(actor.group.getObjectByName('Officer plume')), role === 'legion-officer');
+    const spear = actor.group.getObjectByName('Ambroni spear') || actor.group.getObjectByName('Suvali guard spear');
     assert.equal(Boolean(spear), role !== 'legion-officer', `${role} ${spear ? 'carries' : 'has no'} spear`);
-    assert.equal(Boolean(actor.group.getObjectByName('Legion banded cuirass')), role !== 'suvali-guard');
+    assert.equal(Boolean(actor.group.getObjectByName('Ambroni mail and tabard')), role !== 'suvali-guard');
     assert.equal(Boolean(actor.group.getObjectByName('Suvali studded jerkin')), role === 'suvali-guard');
   }
 });
 
 test('a planted spear stays upright with its butt at the ground through idle and walking', () => {
-  for (const [role, name] of [['legion-soldier', 'Legion spear'], ['suvali-guard', 'Suvali guard spear']]) {
+  for (const [role, name] of [['legion-soldier', 'Ambroni spear'], ['suvali-guard', 'Suvali guard spear']]) {
     const actor = createCharacter({ role });
     const spear = actor.group.getObjectByName(name);
     for (const [time, speed] of [[0, 0], [1.5, 0], [3, 0], [4.5, 0], [5.5, 2.2], [6.5, 2.2]]) {

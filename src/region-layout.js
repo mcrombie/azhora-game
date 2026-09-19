@@ -37,7 +37,7 @@ export const REGION_BIOMES = Object.freeze({
     note: 'Rolling grass with copses of trees that thin toward the Moros; the Lauvel battlefield and a burned hamlet.' }),
   'Moros Plain': Object.freeze({ id: 'open-plain', name: 'Moros Plain', ground: '#b9b36c', canopy: null, treesPerHex: 0, rocksPerHex: 0, undergrowth: 'none',
     relief: { amplitude: .9, wavelength: 260 }, clearings: ['legion-camp'],
-    note: 'Absolutely flat grassland, an enormous sky, and the Legion camp visible from a long way off. Horse country.' }),
+    note: 'Absolutely flat grassland, an enormous sky, and the army camp visible from a long way off. Horse country.' }),
   // East Suval scatters its own country (src/east-suval-world.js): what grows on
   // this blade of limestone depends on how far the ground is from the sea and how
   // high it stands, which a single count per hex cannot say.

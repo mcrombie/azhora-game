@@ -20,35 +20,35 @@ const chapter = (id, region, title, detail, extra = {}) => Object.freeze({ id, r
 /** Ordered story chapters. `next` may be a chapter id, an outcome map, or null for the frontier. */
 export const CHAPTERS = Object.freeze({
   'drent-road': chapter('drent-road', 'Drent', 'The first shore',
-    'Carry Lakota’s letter to the Legion post in the Avrel clearings and make the road sound as far as the Caloss crossing. Drent is the Empire’s quietest province; learn the road while it is quiet.',
+    'Carry Lakota’s letter to the army post in the Avrel clearings and make the road sound as far as the Caloss crossing. Drent is the Empire’s quietest province; learn the road while it is quiet.',
     { kind: 'road', next: 'luscia-aftermath' }),
   'luscia-aftermath': chapter('luscia-aftermath', 'Luscia', 'The field at the Lauvel',
-    'Cross the Caloss into Luscia. The Legion has just broken a rebel army near the Lauvel crossing. Walk the aftermath, speak with the wounded and with the people who buried the losers, and learn what the word “rebel” hides. Wolves hunt off the roads at night.',
+    'Cross the Caloss into Luscia. The army has just broken a rebel army near the Lauvel crossing. Walk the aftermath, speak with the wounded and with the people who buried the losers, and learn what the word “rebel” hides. Wolves hunt off the roads at night.',
     { reward: 'horse', next: 'moros-camp' }),
-  'moros-camp': chapter('moros-camp', 'Moros Plain', 'The Legion on the plain',
-    'Take the horse the Legion lends you and ride southwest out of the last trees onto the Moros. The Legion is camped on the open plain, hunting the rebels who fled. Report to the Legate and see the army whole.',
+  'moros-camp': chapter('moros-camp', 'Moros Plain', 'The army on the plain',
+    'Take the horse the army lends you and ride southwest out of the last trees onto the Moros. The army is camped on the open plain, hunting the rebels who fled. Report to the Marshal and see the army whole.',
     { next: 'suval-envoy' }),
   'suval-envoy': chapter('suval-envoy', 'West Suval', 'A message for the Coalition',
-    'Carry the Legate’s message southeast into West Suval, to the Coalition army at Solis: Izoli soldiers, Suvali companies, the renounced prince’s followers, Luscia’s own rebels, a handful of Pyrosi, and men from Selemis, Marosh and the southern islands. Deliver it, hear their offer, and decide whose sellsword you are.',
+    'Carry the Marshal’s message southeast into West Suval, to the Coalition army at Solis: Izoli soldiers, Suvali companies, the renounced prince’s followers, Luscia’s own rebels, a handful of Pyrosi, and men from Selemis, Marosh and the southern islands. Deliver it, hear their offer, and decide whose sellsword you are.',
     { kind: 'fork', choices: SIDES }),
   'border-battle': chapter('border-battle', 'Moros Plain', 'The border battle',
-    'The Legion and the Coalition meet on the border of the Moros Plain and West Suval. Fight on the side you chose: hold your corner of the field and your side wins the day. Their soldiers are trained men with shields; strike when they have swung.',
+    'The army and the Coalition meet on the border of the Moros Plain and West Suval. Fight on the side you chose: hold your corner of the field and your side wins the day. Their soldiers are trained men with shields; strike when they have swung.',
     { kind: 'battle', side: 'chosen', outcomes: { empire: { victory: 'solis-sweep', defeat: 'moros-fallback' }, coalition: { victory: 'moros-outpost', defeat: 'solis-fallback' } } }),
   // Empire branch
   'solis-sweep': chapter('solis-sweep', 'West Suval', 'Solis, taken',
-    'The Coalition broke. Ride with the Legion to Solis and clear the rebels and Coalition stragglers who hold out inside the walls. West Suval becomes an imperial province.',
+    'The Coalition broke. Ride with the army to Solis and clear the rebels and Coalition stragglers who hold out inside the walls. West Suval becomes an imperial province.',
     { side: 'empire', control: { 'West Suval': 'empire' }, next: 'report-ambron' }),
   'moros-fallback': chapter('moros-fallback', 'Moros Plain', 'The line at the Moros',
-    'The Legion lost the field and pulled back across the plain to its outpost. The Coalition holds the border now. Hold the outpost’s gate for the wounded, then carry the news to Ambron; the war goes on.',
+    'The army lost the field and pulled back across the plain to its outpost. The Coalition holds the border now. Hold the outpost’s gate for the wounded, then carry the news to Ambron; the war goes on.',
     { side: 'empire', next: 'report-ambron' }),
   'report-ambron': chapter('report-ambron', 'Elagos', 'The city on the narrows',
-    'Ride northwest across the Moros into Elagos and enter Ambron, the walled lake city where the emperor rules. The Legate-General pays you, arms you better, and gives you the Empire’s next use for a sellsword.',
+    'Ride northwest across the Moros into Elagos and enter Ambron, the walled lake city where the emperor rules. The Lord Marshal pays you, arms you better, and gives you the Empire’s next use for a sellsword.',
     { side: 'empire', next: 'first-pacification' }),
   'first-pacification': chapter('first-pacification', null, 'One province made quiet',
     'Ambron wants proof. Choose one of the five level-one provinces (Luscia, Peblos, Pueth, Vastos or Meneth) and finish its Empire arc: break the rebel presence there. Do more of the five for bonuses; do all five to rise in the Empire’s service.',
     { kind: 'arc', side: 'empire', next: 'amod-hill-chief' }),
   'amod-hill-chief': chapter('amod-hill-chief', 'Amod', 'The hill goblin chief',
-    'Ride north to Mavren, the terraced fortress town of Amod. The garrison fights goblins more than rebels here, and these goblins answer to something in the northwest. Join the Legion’s attack on the hill goblin outpost and kill its chief. A truce with the local rebels helps.',
+    'Ride north to Mavren, the terraced fortress town of Amod. The garrison fights goblins more than rebels here, and these goblins answer to something in the northwest. Join the army’s attack on the hill goblin outpost and kill its chief. A truce with the local rebels helps.',
     { kind: 'battle', side: 'empire', outcomes: { empire: { victory: 'lotharn-scout', defeat: null } } }),
   'lotharn-scout': chapter('lotharn-scout', 'East Lotharn Mountains', 'Something in the mountains',
     'Amod’s commander sends you into the East Lotharn to scout what he believes are mountain goblins pushing south. You see orcs. Confront them or stay hidden; either way, get back alive and report.',
@@ -67,10 +67,10 @@ export const CHAPTERS = Object.freeze({
     { side: 'empire', next: 'oremindi-convergence' }),
   // Coalition branch
   'moros-outpost': chapter('moros-outpost', 'Moros Plain', 'The outpost on the plain',
-    'The Legion broke. The Coalition storms the imperial outpost at the centre of the Moros, and Solis is safe behind you. West Suval and the plain belong to the Republic for now.',
+    'The army broke. The Coalition storms the imperial outpost at the centre of the Moros, and Solis is safe behind you. West Suval and the plain belong to the Republic for now.',
     { side: 'coalition', control: { 'Moros Plain': 'coalition', 'West Suval': 'coalition' }, next: 'sail-west-izol' }),
   'solis-fallback': chapter('solis-fallback', 'West Suval', 'Back to Solis',
-    'The Coalition lost the field and fell back on Solis. The Legion holds the border. The Republic needs its sellsword more, not less.',
+    'The Coalition lost the field and fell back on Solis. The army holds the border. The Republic needs its sellsword more, not less.',
     { side: 'coalition', next: 'sail-west-izol' }),
   'sail-west-izol': chapter('sail-west-izol', 'West Izol', 'The republic across the water',
     'Take ship from Solis to West Izol, the Izoli Republic’s stable heart, where most of the Coalition army waits to move on the Moros. Meet the people who raised this war.',
@@ -189,7 +189,7 @@ function validateSnapshot(value) {
  * down the fallback road. Every 'defeat' a save holds for it was a won fight:
  * this puts such a save on the victory road. A traveler on the fallback chapter,
  * or past it, goes to the conquest instead (the Empire's into Solis, the
- * Republic's against the Legion's outpost); nothing beyond the fallback's next
+ * Republic's against the army's outpost); nothing beyond the fallback's next
  * chapter is built, so nothing that could be played is lost.
  */
 export const FALLBACK_CONQUEST = Object.freeze({ 'moros-fallback': 'solis-sweep', 'solis-fallback': 'moros-outpost' });

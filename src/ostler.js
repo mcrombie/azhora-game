@@ -1,5 +1,5 @@
 /**
- * The ostler of Lumber Town. Iven pays for the Lauvel with a token for a Legion
+ * The ostler of Lumber Town. Iven pays for the Lauvel with a token for an army
  * horse; this is the man who turns the token into the horse, in the stable yard
  * at the edge of town, and who teaches the traveler to ride it. He will also
  * send a boy to bring the horse back to the yard if it has been left somewhere
@@ -14,9 +14,9 @@ export const OSTLER_NPC = Object.freeze({ id: 'lumber-ostler', name: 'Bede Harro
 export const horseWaiting = ({ inventory, riding }) => !riding.owned && !!inventory?.has?.(OSTLER_TOKEN);
 
 export const OSTLER_OBJECTIVE = Object.freeze({
-  title: 'What the Legion owes',
-  detail: 'Iven paid you with a token for a Legion horse. Take it to Bede Harrow, the ostler, at the stable yard on the edge of Lumber Town. The roads beyond Luscia are long, and they are meant to be ridden.',
-  kicker: 'LUSCIA · THE LEGION’S HORSE',
+  title: 'What the army owes',
+  detail: 'Iven paid you with a token for an army horse. Take it to Bede Harrow, the ostler, at the stable yard on the edge of Lumber Town. The roads beyond Luscia are long, and they are meant to be ridden.',
+  kicker: 'LUSCIA · THE ARMY’S HORSE',
 });
 
 /**
@@ -25,7 +25,7 @@ export const OSTLER_OBJECTIVE = Object.freeze({
  */
 export function redeemHorse({ inventory, riding, hitch }) {
   if (riding.owned) return { ok: false, reason: 'You already have your horse.' };
-  if (!inventory?.has?.(OSTLER_TOKEN)) return { ok: false, reason: 'Bede hands out Legion horses against a clerk’s token, and you have none.' };
+  if (!inventory?.has?.(OSTLER_TOKEN)) return { ok: false, reason: 'Bede hands out army horses against a clerk’s token, and you have none.' };
   const granted = riding.grant(hitch, hitch?.yaw ?? 0);
   if (!granted.ok) return granted;
   inventory.remove(OSTLER_TOKEN, 1);
@@ -40,12 +40,12 @@ export function ostlerConversation(npc, context) {
   if (!riding.owned) {
     if (!inventory?.has?.(OSTLER_TOKEN)) {
       openDialogue(npc, [
-        'Legion horses, every one, and every one spoken for. I feed them, I do not own them.',
+        'Army horses, every one, and every one spoken for. I feed them, I do not own them.',
         'Bring me a relay clerk’s token and one of them is yours the same hour. Iven, on the square, is the man who writes them.',
       ], null, 'Back to the road');
       return true;
     }
-    openDialogue(npc, ['Iven’s mark. Then the bay is yours, and the Legion is one horse poorer, which it will not notice.', ...RIDING_LESSON], null, 'Step back',
+    openDialogue(npc, ['Iven’s mark. Then the bay is yours, and the army is one horse poorer, which it will not notice.', ...RIDING_LESSON], null, 'Step back',
       { choices: [{ id: 'redeem-horse', label: 'Hand over the token and take the reins', action: () => { closeDialogue(); act('redeem-horse'); } }, leave] });
     return true;
   }

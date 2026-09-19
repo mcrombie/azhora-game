@@ -5,7 +5,7 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from '../src/legion-posts.js';
 
-test('eleven Legion posts line the road, each with a name, a rank, a model and two lines', () => {
+test('eleven army posts line the road, each with a name, a rank, a model and two lines', () => {
   assert.equal(LEGION_POSTS.length, 11, 'with the picket sergeant at the Lauvel that makes twelve Empire soldiers');
   assert.equal(LEGION_POST_IDS.size, 11);
   assert.equal(new Set(LEGION_POSTS.map(entry => entry.name)).size, 11);
@@ -15,7 +15,7 @@ test('eleven Legion posts line the road, each with a name, a rank, a model and t
     assert.equal(legionPostLines(entry.id).length, 2, `${entry.name} has two lines`);
     assert.ok(Number.isFinite(entry.x) && Number.isFinite(entry.z) && Number.isFinite(entry.yaw));
   }
-  assert.equal(LEGION_POSTS.filter(entry => entry.rank === 'officer').length, 1, 'one Legate commands the muster');
+  assert.equal(LEGION_POSTS.filter(entry => entry.rank === 'officer').length, 1, 'one Marshal commands the muster');
   assert.deepEqual(legionPostLines('post-nobody'), []);
 });
 

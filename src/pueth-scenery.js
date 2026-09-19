@@ -10,7 +10,7 @@ import { SURVEY } from './region-world.js';
 
 /**
  * Pueth's scenery, in world metres: its two rivers, the Tessen bridge, the
- * Legion's road post, Rimeholt, the landmarks of the hills, the east and the
+ * army's road post, Rimeholt, the landmarks of the hills, the east and the
  * coast, and the region's own scatter of birch, fir and bare stone.
  *
  * `world.js` hands over the same toolkit `world-regions.js` receives. Every
@@ -126,7 +126,7 @@ export function createPuethScenery(kit) {
   }
 
   // -------------------------------------------------------------------------
-  // The Legion's road post at the Pueth end of the bridge
+  // The army's road post at the Pueth end of the bridge
   // -------------------------------------------------------------------------
   const P = TESSEN_POST, yardY = groundHeight(P.yard.x, P.yard.z);
   wornPatch(P.yard.x, P.yard.z, 8.5, '#a39a78', 1.1);
@@ -148,7 +148,7 @@ export function createPuethScenery(kit) {
   const eastNorth = (P.gate.z - P.gateHalf + P.yard.z - P.halfZ) / 2, eastSouth = (P.gate.z + P.gateHalf + P.yard.z + P.halfZ) / 2;
   colliders.push({ x: P.yard.x + P.halfX, z: eastNorth, hx: .25, hz: (P.gate.z - P.gateHalf - (P.yard.z - P.halfZ)) / 2, kind: 'palisade' });
   colliders.push({ x: P.yard.x + P.halfX, z: eastSouth, hx: .25, hz: (P.yard.z + P.halfZ - (P.gate.z + P.gateHalf)) / 2, kind: 'palisade' });
-  // The gate: two tall posts, a lintel and the Legion's standard.
+  // The gate: two tall posts, a lintel and the army's standard.
   const legionRed = material('#8c3f38');
   for (const side of [-1, 1]) post(wood, P.gate.x, groundHeight(P.gate.x, P.gate.z + side * (P.gateHalf + .2)) + 1.8, P.gate.z + side * (P.gateHalf + .2), .19, 3.6, group);
   box(woodLight, P.gate.x, yardY + 3.5, P.gate.z, .3, .28, P.gateHalf * 2 + 1.2, group);
@@ -302,7 +302,7 @@ export function createPuethScenery(kit) {
     colliders.push({ x: spot.x, z: spot.z, r: .5, kind: 'marker-stone' });
   }
   {
-    // The Legion's barrier across the Feradom road: a closed bar between two posts, and a rope line east and west.
+    // The army's barrier across the Feradom road: a closed bar between two posts, and a rope line east and west.
     const F = FERADOM_BARRIER, y = groundHeight(F.x, F.z);
     for (const side of [-1, 1]) { post(wood, F.x + side * 3, groundHeight(F.x + side * 3, F.z) + 1.3, F.z, .18, 2.6, group); }
     box(material('#c4ad76'), F.x, y + 1.15, F.z, 6.6, .2, .2, group).name = 'Feradom road barrier';

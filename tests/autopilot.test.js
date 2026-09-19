@@ -156,7 +156,7 @@ test('the computer follows whichever road serves the leg, not only the first one
 test('a game begun at a later chapter is played from there, not from the road behind it', () => {
   const world = fakeWorld();
   world.npcPositions['post-camp-legate'] = { x: -20, z: -300 };
-  world.npcNames['post-camp-legate'] = 'Legate Verro';
+  world.npcNames['post-camp-legate'] = 'Marshal Venmor';
   // The road, Luscia and the Moros are behind this traveler: their chapters were never played here.
   const staged = snapshot({
     questStage: 10, position: { x: -18, z: -296 },
@@ -259,14 +259,14 @@ test('the map tutorial steers the autopilot through the chart and the trails, th
 });
 
 test('after the border battle the autopilot rallies, reports, and stops where the ground or the story ends', () => {
-  const world = { npcPositions: { 'aftermath-tribune': { x: -518.5, z: 326.5 }, 'post-camp-legate': { x: -543.2, z: 361.1 } }, npcNames: { 'aftermath-tribune': 'Tribune Gallus Orso' } };
+  const world = { npcPositions: { 'aftermath-tribune': { x: -518.5, z: 326.5 }, 'post-camp-legate': { x: -543.2, z: 361.1 } }, npcNames: { 'aftermath-tribune': 'Captain Oswin Brulan' } };
   const border = { complete: true, destinationIds: [] };
   const at = aftermath => borderGoal({ border, aftermath }, world);
   assert.equal(borderGoal({ border }, world).kind, 'done', 'a host without the chapter still stops at the battle');
   assert.equal(at({ variant: null, stage: 'not-started', complete: false, built: false, destinationIds: [] }).kind, 'done');
   const rally = at({ variant: 'moros-fallback', stage: 'rally', complete: false, built: true, destinationIds: ['aftermath-tribune'] });
   assert.deepEqual([rally.kind, rally.npcId, rally.target], ['talk', 'aftermath-tribune', world.npcPositions['aftermath-tribune']]);
-  assert.match(rally.intent, /Gallus Orso/);
+  assert.match(rally.intent, /Oswin Brulan/);
   assert.equal(at({ variant: 'moros-fallback', stage: 'fighting', complete: false, built: true, destinationIds: [] }).kind, 'wait', 'the fight policy has the fight');
   assert.equal(at({ variant: 'moros-fallback', stage: 'report', complete: false, built: true, destinationIds: ['post-camp-legate'] }).npcId, 'post-camp-legate');
   const unbuilt = at({ variant: 'solis-sweep', stage: 'rally', complete: false, built: false, destinationIds: ['aftermath-tribune'] });
@@ -304,7 +304,7 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
   assert.equal(reply('admit-to-camp', { moros: { actions: [{ id: 'admit-to-camp', enabled: false }] } }), 'leave-it');
 });
 
-test('the autopilot carries the terms to Solis, keeps the Empire’s contract, reports to the Legate and marches to the line', async () => {
+test('the autopilot carries the terms to Solis, keeps the Empire’s contract, reports to the Marshal and marches to the line', async () => {
   const { createBorderChapter } = await import('../src/border-chapter.js');
   const border = createBorderChapter(); border.start();
   const world = { npcPositions: { 'post-camp-legate': { x: 1, z: 1 }, 'solis-gate-captain': { x: 2, z: 2 }, 'coalition-envoy': { x: 3, z: 3 }, 'battle-tribune': { x: 4, z: 4 } }, npcNames: {} };

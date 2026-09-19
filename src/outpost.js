@@ -1,5 +1,5 @@
 /**
- * The Ambroni outpost on the Moros Plain: the Legion's timber fort at the exact
+ * The Ambroni outpost on the Moros Plain: the army's timber fort at the exact
  * centre of the plain, built to the shared fortification standard.
  *
  * Everything here is measured from the camp's centre (`STORY_SITES.legionCamp`,
@@ -73,7 +73,7 @@ export const OUTPOST_LAYOUT = Object.freeze({
     ...[-52, -45.5, -39].flatMap(dx => [tent(dx, -30), tent(dx, -21)]),
     // South-west lines
     ...[-52, -45.5, -39, -32.5].flatMap(dx => [tent(dx, 16.5), tent(dx, 25.5)]),
-    // South-east lines, beside the Legate's tent
+    // South-east lines, beside the Marshal's tent
     tent(19, 18), tent(25.5, 18), tent(19, 27), tent(25.5, 27), tent(32, 27),
   ]),
   /** Stairs up to the wall walk, inside the wall beside each gate. */

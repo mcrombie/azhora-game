@@ -18,7 +18,7 @@ const ROAD_CLOTH = Object.freeze({
   'reed-worker': 0x5f8078,
   'shelter-keeper': 0x827b6d,
 });
-// Soldiers of the Ambroni Legion wear a red under-tunic beneath banded iron;
+// The Empire's men-at-arms wear the red of Ambron: the tabard over their mail, and the tunic under it;
 // Suval's border guards wear slate wool and studded leather instead.
 const SOLDIER_CLOTH = Object.freeze({
   'legion-soldier': 0x8f3b30,
@@ -301,7 +301,7 @@ function makeBow(body) {
   return bow;
 }
 function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = false, width = 0.43, height = 0.62 } = {}) {
-  const shield = new THREE.Group(); shield.name = isRound ? 'Round shield' : 'Legion shield';
+  const shield = new THREE.Group(); shield.name = isRound ? 'Round shield' : 'Army shield';
   shield.position.set(0.13, -0.16, 0); shield.rotation.x = -0.6; parent.add(shield);
   const shieldMat = material(face), rimMat = material(rim), iron = material(0x9a9d96, { metalness: 0.46, roughness: 0.6 });
   if (isRound) {
@@ -312,6 +312,34 @@ function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = 
     for (const z of [-height / 2, height / 2]) box(shield, rimMat, [0, 0.02, z], [width, 0.034, 0.024]);
   }
   round(shield, iron, [0, -0.03, 0], [0.065, 0.022, 0.065]);
+  return shield;
+}
+/**
+ * The device of Ambron: a gold tower standing over the water of the narrows. `lay` puts one piece on a surface:
+ * `lay(mat, [across, up], [wide, tall], turn)` in the surface's own frame, the host deciding what "up" is.
+ */
+function ambronDevice(lay, gold, dark, size = 1) {
+  const k = size;
+  lay(gold, [0, .02 * k], [.1 * k, .115 * k]);                                                   // the tower
+  for (const x of [-.036, 0, .036]) lay(gold, [x * k, .09 * k], [.024 * k, .03 * k]);          // its battlements
+  lay(dark, [0, -.012 * k], [.03 * k, .05 * k]);                                                 // its gate
+  for (const [x, turn] of [[-.05, .45], [-.017, -.45], [.017, .45], [.05, -.45]]) lay(gold, [x * k, -.062 * k], [.04 * k, .014 * k], turn);   // the water
+}
+
+/** Ambron's heater shield: flat along the top, curving to a point, red with the gold tower of the narrows and an iron rim. */
+function makeHeaterShield(parent, { face = 0x8f3b30, width = 0.44, height = 0.58 } = {}) {
+  const shield = new THREE.Group(); shield.name = 'Ambroni heater shield';
+  shield.position.set(0.13, -0.16, 0); shield.rotation.x = -0.6; parent.add(shield);
+  const w = width / 2, h = height / 2, outline = new THREE.Shape();
+  outline.moveTo(-w, h); outline.lineTo(w, h); outline.lineTo(w, h * .2);
+  outline.quadraticCurveTo(w * .92, -h * .62, 0, -h); outline.quadraticCurveTo(-w * .92, -h * .62, -w, h * .2); outline.lineTo(-w, h);
+  const iron = material(0x8e918c, { metalness: 0.46, roughness: 0.55 }), gold = material(0xc8a250, { metalness: 0.28, roughness: 0.52 }), dark = material(0x3a2a22);
+  // The board, its outer face towards -y like the old shield's boss, and the rim a little larger behind it.
+  const board = part(shield, new THREE.ExtrudeGeometry(outline, { depth: 0.026, bevelEnabled: false }), material(face), [0, 0.004, 0]);
+  board.rotation.x = Math.PI / 2;
+  const rim = part(shield, new THREE.ExtrudeGeometry(outline, { depth: 0.022, bevelEnabled: false }), iron, [0, 0.012, 0], [1.08, 1.06, 1]);
+  rim.rotation.x = Math.PI / 2;
+  ambronDevice((mat, [x, z], [sx, sz], turn = 0) => { const piece = box(shield, mat, [x, -0.026, z + 0.02], [sx, 0.008, sz]); piece.rotation.y = turn; }, gold, dark, 1.3);
   return shield;
 }
 /** The held weapon a mercenary draws, by the roster's weapon word; spears, staves and bows are not held. */
@@ -748,6 +776,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   // Elod's guards: light, black and quick. `look.kit` is 'spear' (the default) or 'bow'.
   const isElodiGuard = role === 'elodi-guard';
   const isSoldier = isLegionary || isOfficer || isSuvaliGuard || isElodiGuard;
+  // Ambron's own: a man-at-arms of the Empire in mail and plate under the red tabard, and his officers.
+  const isAmbroni = isLegionary || isOfficer;
   // A hired sword from abroad: the traveler's kind of cloth and sword, a leather jerkin,
   // and a look (hair, beard, cap) chosen by the roster rather than the role.
   const isMercenary = role === 'mercenary';
@@ -902,6 +932,16 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     wrists.push(wrist);
     round(wrist, skinMat, [0, 0, 0], [0.074, 0.085, 0.073]);
     round(wrist, skinMat, [-side * 0.059, 0.017, 0.039], [0.035, 0.052, 0.04]);
+    if (isAmbroni) {
+      // Mail to the wrist, a plate cop at the elbow, and a flared steel gauntlet cuff over the hand's back.
+      // Matte, so they bake into the arm's one batch with the sleeve.
+      const mail = material(0x7c807b), steel = material(0x9ea19b);
+      part(pivot, new THREE.CylinderGeometry(0.093, 0.076, 0.21, 8), mail, [side * 0.018, -0.143, 0], [1, 1, 1.03]);
+      round(elbow, steel, [0, -0.005, -0.012], [0.07, 0.06, 0.07]);
+      part(elbow, new THREE.CylinderGeometry(0.066, 0.062, 0.12, 8), steel, [0, -0.09, 0.004], [1, 1, 1.04]);
+      part(wrist, new THREE.CylinderGeometry(0.07, 0.085, 0.07, 8), steel, [0, 0.03, 0], [1, 1, 1]);
+      round(wrist, steel, [0, -0.02, 0.012], [0.07, 0.06, 0.068]);
+    }
   }
 
   const head = new THREE.Group();
@@ -1761,18 +1801,18 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     cloakMesh.material.side = THREE.DoubleSide;
     round(body, gold, [-0.152, 1.266, 0.129], [0.031, 0.031, 0.013]);
   } else if (isSoldier) {
-    // Legion issue: banded iron over a red tunic, a helmet with cheek guards
-    // and a neck guard, greaves, a sheathed sword at the hip and a planted
-    // spear. Officers add a crest and a cloak and keep a hand on the hilt;
+    // Ambron's issue: mail under a red tabard with the gold tower of the narrows, big rounded pauldrons,
+    // a bascinet with a nasal and a mail aventail, greaves and knee cops, a heater shield, a sheathed sword
+    // at the hip and a planted spear. Officers add a plume and a gold-edged cloak and keep a hand on the hilt;
     // Suval's border guards wear a studded jerkin and a plain iron cap.
     const iron = material(isSuvaliGuard ? 0x7b7d78 : isElodiGuard ? 0x55575a : 0x9a9d96, { metalness: 0.46, roughness: 0.6 });
     const ironDark = material(isElodiGuard ? 0x2f3033 : 0x62655f, { metalness: 0.46, roughness: 0.6 });
     const strap = material(isElodiGuard ? 0x1d1c1e : 0x4d3a2a);
     const armor = new THREE.Group();
-    armor.name = isSuvaliGuard ? 'Suvali studded jerkin' : isElodiGuard ? 'Elodi black lamellar' : 'Legion banded cuirass';
+    armor.name = isSuvaliGuard ? 'Suvali studded jerkin' : isElodiGuard ? 'Elodi black lamellar' : 'Ambroni mail and tabard';
     body.add(armor);
     if (isElodiGuard) {
-      // A short coat of small black lacquered plates laced in rows over charcoal wool: lighter than the Legion's bands.
+      // A short coat of small black lacquered plates laced in rows over charcoal wool: lighter than the army's bands.
       const lacquer = material(0x18181a, { metalness: 0.2, roughness: 0.55 });
       part(armor, new THREE.CylinderGeometry(0.258, 0.232, 0.38, 8), strap, [0, 1.12, 0], [1, 1, 0.69]);
       for (let row = 0; row < 4; row++) for (let i = -3; i <= 3; i++) {
@@ -1786,16 +1826,31 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       part(armor, new THREE.CylinderGeometry(0.262, 0.236, 0.40, 8), strap, [0, 1.115, 0], [1, 1, 0.7]);
       for (let row = 0; row < 3; row++) for (let i = -2; i <= 2; i++) round(armor, iron, [i * 0.072, 1.245 - row * 0.1, 0.176 - Math.abs(i) * 0.022], [0.016, 0.016, 0.01]);
     } else {
-      // Five overlapping bands, each a little wider than the one below it.
-      for (let i = 0; i < 5; i++) part(armor, UNIT_CYLINDER, i % 2 ? ironDark : iron, [0, 1.275 - i * 0.068, 0], [0.272 - i * 0.008, 0.062, 0.19 - i * 0.005]);
-      for (const side of [-1, 1]) {
-        round(armor, iron, [side * 0.245, 1.318, 0], [0.135, 0.058, 0.15]);
-        round(armor, ironDark, [side * 0.285, 1.262, 0], [0.09, 0.05, 0.14]);
+      // A mail shirt to mid-thigh, and over it the red tabard of the Empire, gold-hemmed, with the tower of the narrows
+      // on the breast. Big rounded pauldrons in two lames; the belt and sword-belt go over the tabard.
+      // The plate shares the iron's finish and the mail is matte, so the armour costs the body no extra draws.
+      const mail = material(0x7c807b), steel = material(0x9ea19b, { metalness: 0.46, roughness: 0.6 });
+      const tabard = material(tunic), gateDark = material(0x3a2a22);
+      part(armor, new THREE.CylinderGeometry(0.262, 0.236, 0.41, 10), mail, [0, 1.12, 0], [1, 1, 0.72]);
+      part(armor, new THREE.CylinderGeometry(0.25, 0.3, 0.3, 10), mail, [0, 0.8, 0], [1, 1, 0.74]);
+      for (const face of [1, -1]) {
+        box(armor, tabard, [0, 1.0, face * 0.197], [0.34, 0.66, 0.018]);
+        box(armor, gold, [0, 0.675, face * 0.2], [0.34, 0.03, 0.016]);
+        for (const side of [-1, 1]) box(armor, gold, [side * 0.163, 1.0, face * 0.2], [0.016, 0.66, 0.016]);
       }
-      box(armor, gold, [0, 1.19, 0.198], [0.06, 0.13, 0.012]);
+      // The shoulders of the tabard, over the mail.
+      for (const side of [-1, 1]) box(armor, tabard, [side * 0.13, 1.315, 0], [0.12, 0.03, 0.4]);
+      ambronDevice((mat, [x, y], [sx, sy], turn = 0) => { const piece = box(armor, mat, [x, 1.13 + y, 0.21], [sx, sy, 0.01]); piece.rotation.z = turn; }, gold, gateDark, 1.25);
+      part(armor, UNIT_CYLINDER, strap, [0, 0.9, 0], [0.272, 0.05, 0.206]);
+      box(armor, steel, [0, 0.9, 0.212], [0.055, 0.045, 0.014]);
+      for (const side of [-1, 1]) {
+        round(armor, steel, [side * 0.27, 1.33, 0], [0.155, 0.105, 0.165]);
+        round(armor, iron, [side * 0.3, 1.255, 0], [0.13, 0.07, 0.15]);
+        if (isOfficer) round(armor, gold, [side * 0.27, 1.36, 0], [0.12, 0.08, 0.13]);
+      }
     }
-    // Leather pteruges hang from the belt around the front and sides; Elod's are short black tassets.
-    for (let i = 0; i < 7; i++) {
+    // Leather pteruges hang from the belt around the front and sides; Elod's are short black tassets. Ambron's men have mail there instead.
+    if (!isAmbroni) for (let i = 0; i < 7; i++) {
       const angle = (i - 3) * 0.38;
       const strip = box(armor, i % 2 ? strap : isElodiGuard ? material(0x232326) : leather, [Math.sin(angle) * 0.235, isElodiGuard ? 0.9 : 0.86, Math.cos(angle) * 0.19], [0.058, isElodiGuard ? 0.12 : 0.17, 0.014]);
       strip.rotation.y = angle;
@@ -1805,11 +1860,12 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     scabbard.rotation.z = 0.12;
     box(armor, ironDark, [-0.283, 1.06, -0.03], [isElodiGuard ? 0.07 : 0.12, 0.02, 0.04]);
     part(armor, UNIT_CYLINDER, strap, [-0.29, 1.11, -0.03], [0.018, 0.09, 0.018]);
-    // Greaves for the Legion and Suval; soft boots with a black wrap for Elod.
+    // Greaves for Ambron and Suval, and for Ambron a rounded plate over the knee; soft boots with a black wrap for Elod.
     for (const knee of knees) box(knee, isElodiGuard ? strap : iron, [0, isElodiGuard ? -0.06 : -0.135, 0.104], [isElodiGuard ? 0.17 : 0.15, isElodiGuard ? 0.05 : 0.2, 0.03]);
+    if (isAmbroni) for (const knee of knees) round(knee, material(0x9ea19b, { metalness: 0.46, roughness: 0.6 }), [0, 0.01, 0.07], [0.075, 0.07, 0.05]);
     part(elbows[1], UNIT_CYLINDER, strap, [0, -0.1, 0.004], [0.077, 0.09, 0.079]);
     const helmet = new THREE.Group();
-    helmet.name = isSuvaliGuard ? 'Suvali iron cap' : isElodiGuard ? 'Elodi open helm' : isOfficer ? 'Legion crested helmet' : 'Legion helmet';
+    helmet.name = isSuvaliGuard ? 'Suvali iron cap' : isElodiGuard ? 'Elodi open helm' : isOfficer ? 'Ambroni plumed helm' : 'Ambroni helm';
     head.add(helmet);
     if (isElodiGuard) {
       // A black hood drawn over a light open helm: the face bare, the hood falling to the shoulders.
@@ -1825,6 +1881,15 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(helmet, iron, [0, 0.385, -0.03], [0.205, 0.115, 0.19]);
       part(helmet, UNIT_CYLINDER, ironDark, [0, 0.36, -0.03], [0.215, 0.024, 0.2]);
       box(helmet, ironDark, [0, 0.33, 0.17], [0.024, 0.1, 0.02]);
+    } else if (isAmbroni) {
+      // A bascinet: a tall rounded bowl drawn up to a low point, a brow band, a nasal, and mail hanging from it
+      // round the sides and back of the neck and over the shoulders. The face stays open.
+      const steel = material(0x9ea19b, { metalness: 0.46, roughness: 0.6 }), mail = material(0x7c807b);
+      round(helmet, steel, [0, 0.29, -0.02], [0.228, 0.23, 0.215]);
+      part(helmet, new THREE.ConeGeometry(0.1, 0.14, 8), steel, [0, 0.5, -0.04]);
+      part(helmet, UNIT_CYLINDER, ironDark, [0, 0.245, -0.005], [0.236, 0.034, 0.218]);
+      box(helmet, steel, [0, 0.17, 0.212], [0.036, 0.14, 0.022]);
+      part(helmet, new THREE.CylinderGeometry(0.23, 0.31, 0.27, 12, 1, true, 0.85, Math.PI * 2 - 1.7), mail, [0, 0.115, -0.015], [1, 1, 0.96]);
     } else {
       round(helmet, iron, [0, 0.27, -0.015], [0.222, 0.2, 0.205]);
       part(helmet, UNIT_CYLINDER, ironDark, [0, 0.245, 0], [0.228, 0.036, 0.208]);
@@ -1833,25 +1898,23 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       // Nothing more on the head: the hood is the whole of it.
     } else if (isSuvaliGuard) {
       part(helmet, UNIT_CYLINDER, ironDark, [0, 0.228, 0], [0.27, 0.014, 0.25]);
-    } else {
-      for (const side of [-1, 1]) {
-        const cheek = box(helmet, iron, [side * 0.19, 0.17, 0.05], [0.04, 0.15, 0.12]);
-        cheek.rotation.z = side * 0.08;
-      }
-      const neckGuard = box(helmet, iron, [0, 0.16, -0.21], [0.3, 0.03, 0.12]);
-      neckGuard.rotation.x = -0.35;
-      box(helmet, ironDark, [0, 0.31, 0.19], [0.14, 0.05, 0.02]);
     }
     if (isOfficer) {
-      const crestMat = material(0xa53a2c);
-      const crest = new THREE.Group();
-      crest.name = 'Officer crest';
-      helmet.add(crest);
-      box(crest, crestMat, [0, 0.43, -0.03], [0.045, 0.1, 0.3]);
-      round(crest, crestMat, [0, 0.46, 0.05], [0.03, 0.06, 0.09]);
+      // An officer's plume, red and white, from a gold socket at the helm's point; and a red cloak to the calf,
+      // gold-edged, clasped at both shoulders.
+      const plume = new THREE.Group();
+      plume.name = 'Officer plume';
+      helmet.add(plume);
+      part(plume, UNIT_CYLINDER, gold, [0, 0.555, -0.05], [0.03, 0.04, 0.03]);
+      const red = material(0xa53a2c), white = material(0xe8e2d4);
+      for (const [x, y, z, mat, lean] of [[0, 0.64, -0.09, red, -0.5], [-0.035, 0.62, -0.12, white, -0.8], [0.035, 0.62, -0.12, white, -0.8], [0, 0.6, -0.16, red, -1.1]]) {
+        const feather = round(plume, mat, [x, y, z], [0.045, 0.1, 0.04]);
+        feather.rotation.x = lean;
+      }
       const cloakMat = material(0x7d2a24, { side: THREE.DoubleSide });
-      part(body, new THREE.CylinderGeometry(0.2, 0.34, 0.72, 8, 1, true, Math.PI / 2, Math.PI), cloakMat, [0, 0.95, -0.03], [1, 1, 0.85]);
-      for (const side of [-1, 1]) round(body, gold, [side * 0.16, 1.3, 0.13], [0.03, 0.03, 0.012]);
+      part(body, new THREE.CylinderGeometry(0.22, 0.36, 0.86, 10, 1, true, Math.PI / 2 + .15, Math.PI - .3), cloakMat, [0, 0.9, -0.04], [1, 1, 0.85]);
+      part(body, new THREE.CylinderGeometry(0.362, 0.362, 0.035, 10, 1, true, Math.PI / 2 + .15, Math.PI - .3), material(0xc8a250, { side: THREE.DoubleSide }), [0, 0.475, -0.04], [1, 1, 0.85]);
+      for (const side of [-1, 1]) round(body, gold, [side * 0.2, 1.31, 0.16], [0.035, 0.035, 0.014]);
     } else if (isElodiGuard && !armed) {
       // A short spear held close, or a bow across the back; a small round shield either way.
       // Elod's frontier captain carries no spear: a charcoal half-cloak with a silver clasp marks him instead.
@@ -1866,7 +1929,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     } else if (!armed) {
       // The spear stays planted beside the right foot while the body breathes.
       staff = new THREE.Group();
-      staff.name = isSuvaliGuard ? 'Suvali guard spear' : 'Legion spear';
+      staff.name = isSuvaliGuard ? 'Suvali guard spear' : 'Ambroni spear';
       wrists[1].add(staff);
       const shaft = material(0x6d5439);
       ribbon(staff, shaft, [0, -0.82, 0], [0, 1.18, 0], 0.036, 0.036);
@@ -1875,10 +1938,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(staff, ironDark, [0, -0.83, 0], [0.024, 0.03, 0.024]);
     }
     if (isLegionary) {
-      // A curved rectangular shield rides on the left forearm, boss outward.
-      // Held in front of the body, perpendicular to the forearm and tipped vertical at attention.
-      const shield = makeShield(elbows[0]);
-      box(shield, gold, [0, -0.026, 0.17], [0.05, 0.008, 0.14]);
+      // The heater shield rides on the left forearm, device outward, held in front of the body at attention.
+      makeHeaterShield(elbows[0], { face: tunic });
     }
   } else if (isMercenary) {
     // A hired sword's kit follows the roster: spears and the staff stand planted, the bow rides on the back.
@@ -1916,7 +1977,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   head.name = 'Head';
   batchRigidParts(group, pivots);
   if (isElodiGuard) {
-    // Lean and quick-looking: a little taller and narrower than a legionary, the head kept to its own size.
+    // Lean and quick-looking: a little taller and narrower than a soldier, the head kept to its own size.
     body.scale.set(0.93, 1.03, 0.93);
     head.scale.set(1 / Math.sqrt(0.93), 1 / 1.03, 1 / Math.sqrt(0.93));
   }
@@ -2454,7 +2515,7 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
 }
 
 /**
- * A riding horse for the Legion's lines and the road: bay, chestnut or grey,
+ * A riding horse for the army's lines and the road: bay, chestnut or grey,
  * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
  * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
  */
@@ -2532,7 +2593,7 @@ export function createHorse({ variant = 0, saddled = false } = {}) {
   }
   let saddle = null;
   if (saddled) {
-    // A Legion saddle: a red blanket, a leather seat, girth and a bridle.
+    // An army saddle: a red blanket, a leather seat, girth and a bridle.
     saddle = new THREE.Group();
     saddle.name = 'Saddle';
     spine.add(saddle);

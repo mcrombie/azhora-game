@@ -136,10 +136,10 @@ export const JUAN_LESSON = freeze([
 const JUAN_TOPICS = freeze({
   rule: [
     'Okay, so, people ask me that. Here is the thing. Here is the thing. Livia Seravo out at Vaervelm Caelazh? Best Norton in all Suval. I would marry that Norton. But I sell hers, then the guy down the hill wants me to sell his, and the guy next to him —',
-    'Suddenly I am in a valley feud. I am not in a valley feud. Up here is nobody’s vineyard. The Legion comes in, the Coalition comes in, they sit at the same barrel. You know why that works? Because it is not their wine they are fighting about.',
+    'Suddenly I am in a valley feud. I am not in a valley feud. Up here is nobody’s vineyard. The army comes in, the Coalition comes in, they sit at the same barrel. You know why that works? Because it is not their wine they are fighting about.',
   ],
   war: [
-    'Business? Business is weird, my friend. Tuesday the Coalition, Wednesday the Legion, Thursday the Coalition again and they want to know what the Legion drank. I tell them. It is wine. It is not a secret.',
+    'Business? Business is weird, my friend. Tuesday the Coalition, Wednesday the army, Thursday the Coalition again and they want to know what the army drank. I tell them. It is wine. It is not a secret.',
     'A war is bad for everything except two things: wine, and people who talk. And look at me. I am doing great. I feel terrible about it. Pour you one?',
   ],
   juan: [

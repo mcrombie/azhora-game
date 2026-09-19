@@ -106,7 +106,7 @@ function encounterConfig(config) {
           || ally.refuge.z < config.center.z - 21 || ally.refuge.z > config.center.z + 18))
         || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
         || along(ally) > 18 || beyond(ally)) return null;
-      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
+      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
         ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
@@ -554,7 +554,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
   }
 
-  // Allies: Legion soldiers who join an encounter, close on the nearest enemy and
+  // Allies: Army soldiers who join an encounter, close on the nearest enemy and
   // strike with the same tell-then-swing rhythm. Enemies treat them as targets.
   function makeAlly(spec, index) {
     const profile = ALLY_KINDS[spec.kind];

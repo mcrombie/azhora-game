@@ -155,7 +155,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       for (let i = 0; i < 3; i++) fenceLine(b, corners[i], corners[i + 1], 'stack-yard-fence', '#8a7a55', 1.0);
     }
     for (const [a, c] of A.fieldWalls) stoneWall(b, a, c);
-    // Corvan's post, now a proper lean-to with the Legion's flag on a crossbar.
+    // Corvan's post, now a proper lean-to with the army's flag on a crossbar.
     {
       const p = A.corvanPost, py = y(p.x, p.z);
       b.frame(p.x, py, p.z, p.yaw, () => {

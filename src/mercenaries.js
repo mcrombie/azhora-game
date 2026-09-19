@@ -1,6 +1,6 @@
 /**
  * The mercenary company: twelve hired swords, the traveler among them, called
- * from abroad by the Ambroni Empire and mustering at the Legion's camp on the
+ * from abroad by the Ambroni Empire and mustering at the army's camp on the
  * Moros Plain. One landed beside the traveler; ten more arrive over the hours
  * that follow and walk the same road, pausing where the traveler paused, so a
  * brisk traveler stays first and a slow one is overtaken. All of it is a pure
@@ -20,7 +20,7 @@ export const MERCENARY_STYLES = Object.freeze({
   cassel: Object.freeze({ weapon: 'spear', style: 'The spear', trades: false, styleLines: Object.freeze(['Two paces of ash between me and anything with teeth. Thrust, recover, thrust; I never let a goblin inside the point.', 'If a spearman gets his point on you, go left or right, not back. Back is where he wants you.']), tradeLine: 'The spear stays with me. A spearman without a spear is a farmer.' }),
   pell: Object.freeze({ weapon: 'spears', style: 'Two spears, one to throw', trades: false, styleLines: Object.freeze(['Two spears: a medium one for the line and a short one I throw. The throw is the trick. The first thing you see of a fight with me is a spear in your leg.', 'When a man carries more than one spear, count them. He will not close until he has thrown the short one.']), tradeLine: 'I need both spears, and you would not know what to do with either.' }),
   yorvo: Object.freeze({ weapon: 'pike', style: 'The long spear', trades: false, styleLines: Object.freeze(['Nothing reaches me before I reach it. The long spear rules open ground and is worthless in a doorway.', 'On the Moros there are no doorways. If you ever face a wall of these, get to the side of it; the front is a hedge of points.']), tradeLine: 'Trade a pike for a sword? Then who holds the line? No.' }),
-  anselm: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['Sword and shield: I take the first blow on the boards and answer over the rim. Slower than you, harder to kill.', 'Against a shield, feint high and cut the legs. Legion soldiers fight this way; remember it if the contract ever turns.']), tradeLine: 'I would try another edge, if it is not a sword like mine. Yours for mine, then.' }),
+  anselm: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['Sword and shield: I take the first blow on the boards and answer over the rim. Slower than you, harder to kill.', 'Against a shield, feint high and cut the legs. Army soldiers fight this way; remember it if the contract ever turns.']), tradeLine: 'I would try another edge, if it is not a sword like mine. Yours for mine, then.' }),
   kest: Object.freeze({ weapon: 'greatsword', style: 'The greatsword', trades: true, styleLines: Object.freeze(["Two hands, one edge, and everything within a cart's width. The great blade is slow to start and impossible to stop; I clear ground with it.", 'Get inside the arc or stay well out. The middle is where people die.']), tradeLine: 'The great blade for your little one? I have wanted to rest my back for a month. Swap, and welcome.' }),
   fennick: Object.freeze({ weapon: 'staff', style: 'The quarterstaff', trades: false, styleLines: Object.freeze(['A staff. Laugh; the goblins did. It has two ends, it strikes twice as often as your sword, and nobody hangs you for carrying one.', 'It will not cut, so I aim for hands and knees. A man who cannot hold his weapon has lost.']), tradeLine: 'You would want my staff? No. It is the only thing I own that has never broken.' }),
 });
@@ -28,15 +28,15 @@ export const MERCENARY_STYLES = Object.freeze({
 /** Arrival and departure are seconds of play after the traveler's landing; pace is metres per second on the road. */
 export const MERCENARY_ROSTER = Object.freeze([
   merc('brannock', 'Brannock', 'the Marosh fens', 0, 420, 1.28, { tunic: 0x6b5a3e, hair: 0x2b221b, skin: 0xd7ad7e, build: 'broad', headgear: 'bare', hairStyle: 'cropped', facialHair: 'full', garment: 'gambeson', marks: ['scar'] },
-    ['Same boat, same coin. Brannock, out of the Marosh fens. I’ll give the village a look and take the road after you; no sense two of us crowding one quartermaster.', 'They say the muster is a Legion camp out on the Moros Plain, past some river. I’ll see you there, or on the way.']),
+    ['Same boat, same coin. Brannock, out of the Marosh fens. I’ll give the village a look and take the road after you; no sense two of us crowding one quartermaster.', 'They say the muster is an army camp out on the Moros Plain, past some river. I’ll see you there, or on the way.']),
   merc('tesk', 'Tesk', 'the Selemi coast', 240, 45, 1.36, { tunic: 0x4f6a5b, hair: 0x5a3d26, skin: 0xd7ad7e, build: 'rangy', headgear: 'bandana', hairStyle: 'long-tied', facialHair: 'stubble', garment: 'archer', marks: [] },
     ['Tesk. Selemi coast, before the coast stopped paying. You landed ahead of me, so you know the road better than I do.', 'A river, a rise, and a plain, the letter said. I walk fast. Don’t take it personally when I pass you.']),
   merc('oru', 'Oru', 'the southern islands', 540, 60, 1.22, { tunic: 0x7a4a3a, hair: 0x1f1a16, skin: 0x8f6a4a, build: 'bull', headgear: 'bald', hairStyle: 'none', facialHair: 'braided', garment: 'fur-mantle', marks: ['tattoo'] },
     ['Oru. The islands in the south, where the Coalition is buying spears too. The Empire paid first, so here I am.', 'Cold country. I’ll keep moving so I stop noticing it.']),
   merc('halvard', 'Halvard', 'Feradom', 900, 50, 1.3, { tunic: 0x5c5b6e, hair: 0xa38b5c, skin: 0xe2bd93, build: 'wiry', headgear: 'bare', hairStyle: 'shaved-sides', facialHair: 'moustache', garment: 'sash', marks: ['earring'] },
-    ['Halvard, of Feradom. My father fought for the old emperor. I fight for whoever writes the contract.', 'Twelve of us, they said, and a whole Legion. That is a lot of coin for one border.']),
+    ['Halvard, of Feradom. My father fought for the old emperor. I fight for whoever writes the contract.', 'Twelve of us, they said, and a whole army. That is a lot of coin for one border.']),
   merc('dain', 'Dain Marrow', 'the Izoli ports', 1320, 70, 1.34, { tunic: 0x8a7a4a, hair: 0x3a3a3a, skin: 0xd7ad7e, build: 'square', headgear: 'wide-brim', hairStyle: 'receding', facialHair: 'clean', garment: 'bare-forearms', marks: [] },
-    ['Dain Marrow. Izoli ports, though I would not say so loudly around a Legion post. I’m no rebel; I’m a man with a sword and rent to pay.', 'Which way is the quartermaster? I’d rather be signed in before dark.']),
+    ['Dain Marrow. Izoli ports, though I would not say so loudly around an army post. I’m no rebel; I’m a man with a sword and rent to pay.', 'Which way is the quartermaster? I’d rather be signed in before dark.']),
   merc('cassel', 'Cassel', 'the Pyrosi hills', 1800, 40, 1.4, { tunic: 0x3f5a6b, hair: 0x6b4b2b, skin: 0xc99b70, build: 'tall-lean', headgear: 'fur-cap', hairStyle: 'lank', facialHair: 'stubble', garment: 'short-cloak', marks: [] },
     ['Cassel, from the Pyrosi hills. Pyros sent a handful to the other side, so I came to this one. Family argument.', 'Keep your eyes on the woods. Goblins do not care whose coin you carry.']),
   merc('pell', 'Pell', 'the Izoli ports', 2400, 55, 1.26, { tunic: 0x6e4f5a, hair: 0x7a5a3a, skin: 0xd7ad7e, build: 'short-stocky', headgear: 'soft-cap', hairStyle: 'curls', facialHair: 'bushy', garment: 'scarf', marks: [] },
@@ -114,7 +114,7 @@ export function mercenaryProgress(mercenary, playSeconds, stops, musterDistance)
 /**
  * @param road the main road polyline (world.paths[0])
  * @param stops [{ id, point, dwell }] places where each mercenary pauses to do the traveler's business
- * @param muster the Legion camp's rendezvous point
+ * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
  */
 export function createMercenaryCompany({ road, stops = [], muster, landing, roster = MERCENARY_ROSTER } = {}) {

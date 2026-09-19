@@ -32,6 +32,26 @@ person reaches for says what they believe:
 Write dialogue to that rule. Nobody in the game should use the two words interchangeably by
 accident.
 
+## The Empire's army
+
+Ambron's soldiers are a medieval kingdom's men-at-arms, closer to the Elder Scrolls' Empire or
+Stormwind's guards than to Rome. Nothing about them is Roman: not the ranks, not the names, not
+the kit. (Decided 2026-09-19; the game used Legion, Legate, Tribune and Latin names before.)
+
+- **The force** is *the army*, or *the Imperial army* when someone means the institution.
+  Never "the Legion". Its men are *soldiers* or *men-at-arms*; a private's title is *Footman*.
+- **Ranks**: *Lord Marshal* (Duvo Harn, commander of the narrows), *Marshal* (Hadric Venmor,
+  the camp on the Moros), *Captain* (Oswin Brulan of the left, Aldous Drevan at the Tessen road
+  post), *Lieutenant*, *Sergeant*, *Quartermaster*.
+- **Names** follow the royal house (Valdemar, Valroy, Cedric, Wilhelm, Willard): medieval given
+  names, with surnames from the Elagosi naming profile (`venmor`, `brulan`, `drevan`, `ossan`).
+- **Look**: mail under a red tabard, gold-hemmed, bearing the device of Ambron, a gold tower over
+  the water of the narrows; big rounded pauldrons; a bascinet with a nasal and a mail aventail;
+  greaves and knee cops; a red heater shield with the same device; spear or sword. Officers add a
+  red-and-white plume and a gold-edged red cloak. Ambron's colours stay red and gold.
+- Internal ids (`legion-soldier`, `legion-posts.js`, `camp-legate`) still carry the old word, so
+  saves keep working. They are never shown to the player.
+
 ## The war, year by year
 
 - **976** — At Prince Willard's wedding, **Prince Maro of Solis** carries off the bride and

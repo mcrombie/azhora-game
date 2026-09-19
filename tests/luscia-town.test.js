@@ -63,7 +63,7 @@ test('the townsfolk have ambient lines and hand out no errands', () => {
     assert.deepEqual(f.shown.options.choices.map(choice => choice.id), ['leave-town-talk'], `${id} offers no quest`);
   }
   f.talk('town-innkeeper');
-  assert.match(f.shown.lines.join(' '), /chit/i, 'the Legion pays the inn in chits');
+  assert.match(f.shown.lines.join(' '), /chit/i, 'the army pays the inn in chits');
 });
 
 test('the stall keeper stays a stall keeper unless all three careful things are said', () => {
@@ -84,7 +84,7 @@ test('the stall keeper stays a stall keeper unless all three careful things are 
   }
 });
 
-test('asking about the Legion, then the other side, then the families reveals the republic’s contact', () => {
+test('asking about the army, then the other side, then the families reveals the republic’s contact', () => {
   const f = fixture();
   f.talk('timber-stall');
   assert.match(f.shown.lines.join(' '), /cloth/i);

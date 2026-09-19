@@ -2,7 +2,7 @@
  * Wayside life on the empty stretches of road.
  *
  * The scaled world left the first 250 m of forest road beyond Tidehaven and the
- * 270 m of plain between the Moros gate and the Legion's outpost with nothing on
+ * 270 m of plain between the Moros gate and the army's outpost with nothing on
  * them. Each place here is a small landmark with discovery text, set beside the
  * road by its distance along the road and its offset from it (positive to the
  * left of the direction of travel). Drent is level 0: nothing here attacks.
@@ -49,9 +49,9 @@ export const MOROS_WAYSIDE = Object.freeze([
   place('moros-ruts', 'The Cart Ruts', moros(40, 8), 8,
     'Wheel ruts cut deep beside the road where the supply carts pull aside for the columns. Nobody fills them; nobody needs to.'),
   place('moros-shepherds-fold', 'The Shepherd’s Fold', moros(95, -36), 11,
-    'A ring of dry stone with a hurdle for a gate, and a turf lean-to for the shepherd. The Legion buys his wethers and pays him in scrip.'),
-  place('legion-picket', 'The Legion Picket', moros(158, 15), 9,
-    'A wattle windbreak, a tent and a cold brazier: two legionaries watch the road for whoever the camp is expecting.'),
+    'A ring of dry stone with a hurdle for a gate, and a turf lean-to for the shepherd. The army buys his wethers and pays him in scrip.'),
+  place('legion-picket', 'The Army Picket', moros(158, 15), 9,
+    'A wattle windbreak, a tent and a cold brazier: two soldiers watch the road for whoever the camp is expecting.'),
   place('dead-campfire', 'A Dead Campfire', moros(128, 12), 6,
     'A ring of blackened stones and a cracked pot. Somebody camped here outside the camp’s rule and left before the horn.'),
 ]);
