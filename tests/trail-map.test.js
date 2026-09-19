@@ -11,7 +11,7 @@ function model() {
     landmarks: [{ id: 'harbor', name: 'Tidehaven Landing', description: 'A little landing.', x: 0, z: 29, known: true, discovered: true, trackable: true },
       { id: 'hidden', name: 'SECRET SHRINE NAME', description: 'SECRET LORE', x: -37, z: -87, known: false, discovered: false, trackable: true },
       { id: 'bee-fold', name: 'The Bee Fold', description: 'A place for bees.', x: 42, z: -35, known: true, discovered: true, trackable: true }],
-    goal: { id: 'main-objective', name: 'Report to Mara', x: 4, z: 20, known: true, trackable: false },
+    goal: { id: 'main-objective', name: 'Report to Lakota', x: 4, z: 20, known: true, trackable: false },
     tracked: { id: 'bee-fold', name: 'The Bee Fold', x: 42, z: -35, known: true, trackable: true } };
 }
 

@@ -1,24 +1,18 @@
-import { readFile } from 'node:fs/promises';
+import { registerHooks } from 'node:module';
 
-// Match the desktop import map while preserving relative module dependencies.
-const cache = new Map();
-export async function moduleURL(url) {
-  url = new URL(url, import.meta.url);
-  if (cache.has(url.href)) return cache.get(url.href);
-  const pending = (async () => {
-    let source = await readFile(url, 'utf8');
-    const matches = [...source.matchAll(/(?:from\s*|import\s*)['"]([^'"]+)['"]/g)];
-    for (const match of matches) {
-      const specifier = match[1];
-      if (specifier === 'three') source = source.replace(match[0], match[0].replace(specifier, new URL('../vendor/three.module.js', import.meta.url).href));
-      else if (specifier.startsWith('.')) {
-        const dependency = await moduleURL(new URL(specifier, url));
-        source = source.replace(match[0], match[0].replace(specifier, dependency));
-      }
-    }
-    return `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`;
-  })();
-  cache.set(url.href, pending);
-  return pending;
-}
+// The game's modules import three by its bare name, as the desktop's import map
+// allows. Under node the bare name is mapped to the vendored copy with a resolve
+// hook, so every module loads from its own file, once, and relative imports stay
+// relative. (This used to rewrite each module into a data URL with its
+// dependencies' data URLs inside it, which copied a shared module once for every
+// path to it: the world alone grew to minutes to load and gigabytes to hold.)
+const THREE_URL = new URL('../vendor/three.module.js', import.meta.url).href;
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    return nextResolve(specifier === 'three' ? THREE_URL : specifier, context);
+  },
+});
+
+/** The URL a test-relative path resolves to. */
+export async function moduleURL(url) { return new URL(url, import.meta.url).href; }
 export async function sourceModule(file) { return import(await moduleURL(file)); }

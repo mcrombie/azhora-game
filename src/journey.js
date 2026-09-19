@@ -69,8 +69,8 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   function view() {
     const current = stage();
     const views = {
-      'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry Mara’s message out to the Caloss Gate.', ['border']],
-      'meet-courier': [2, 1, 1, 'Report for field service', 'Bring Mara’s letter to Corvan, the Ambroni Legion quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
+      'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry Lakota’s message out to the Caloss Gate.', ['border']],
+      'meet-courier': [2, 1, 1, 'Report for field service', 'Bring Lakota’s letter to Corvan, the Ambroni Legion quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
       'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your Legion service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],
       'meet-crossing-keeper': [3, 4, 1, 'The army’s crossing', 'Corvan’s next assignment is the Caloss supply route, where the river marks Drent’s edge. Speak with Hollis beside the boardwalk.', ['crossing-keeper']],
@@ -78,8 +78,8 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
       'return-crossing-keeper': [3, 6, 3, 'Whose road is this?', 'Report the finished repair to Hollis. The bridge serves the army, but the people crossing it have their own account of the rebels.', ['crossing-keeper']],
       'meet-ridge-keeper': [4, 7, 1, 'Voices on the rise', 'Cross the Caloss and continue your route assignment along the Luscian road beyond the river. Speak with Sava about the markers and the people the Empire calls rebels.', ['ridge-keeper']],
       'restore-beacons': [4, 8, 2, 'Three markers on the rise', `Straighten the three leaning waymarkers along the hill paths. ${state.beacons.length} of 3 restored. Press F at a marker to set it upright and uncover its reflective face. No fuel is needed.`, BEACON_IDS.filter(id => !state.beacons.includes(id))],
-      'deliver-report': [4, 9, 3, 'An uncomfortable report', 'Follow the road on past the field at the Lauvel to Lumber Town, and show Mara’s original letter to Iven at the Legion’s relay post on its square. Report what Sava revealed about the battle at the Lauvel and the people the Empire calls rebels.', ['relay-clerk']],
-      complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied Mara’s warning and recorded the people’s account, and the Legion has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
+      'deliver-report': [4, 9, 3, 'An uncomfortable report', 'Follow the road on past the field at the Lauvel to Lumber Town, and show Lakota’s original letter to Iven at the Legion’s relay post on its square. Report what Sava revealed about the battle at the Lauvel and the people the Empire calls rebels.', ['relay-clerk']],
+      complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied Lakota’s warning and recorded the people’s account, and the Legion has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
     };
     const [region, step, regionStep, title, detail, destinations] = views[current];
     return {
@@ -102,8 +102,8 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
       case 'meet-ridge-keeper': return [action('meet-ridge-keeper', 'Ask about the hillside markers', 'ridge-keeper')];
       case 'restore-beacons': return BEACON_IDS.filter(id => !state.beacons.includes(id))
         .map(id => action(`restore-${id}`, 'Restore waymarker', id));
-      case 'deliver-report': return [action('deliver-report', 'Show Mara’s message', 'relay-clerk',
-        inventory?.has?.('harbor-letter') ? '' : 'Bring Mara’s message in your satchel before speaking to Iven.')];
+      case 'deliver-report': return [action('deliver-report', 'Show Lakota’s message', 'relay-clerk',
+        inventory?.has?.('harbor-letter') ? '' : 'Bring Lakota’s message in your satchel before speaking to Iven.')];
       default: return [];
     }
   }
@@ -120,7 +120,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   function start() {
     if (state.started) return fail('The road out of Drent has already begun.');
     if (!inventory?.has?.('harbor-letter') || !inventory?.has?.('road-token'))
-      return fail('Carry Mara’s message and Eren’s travel token before leaving Tidehaven.');
+      return fail('Carry Lakota’s message and Eren’s travel token before leaving Tidehaven.');
     state.started = true;
     return emit('start-journey');
   }

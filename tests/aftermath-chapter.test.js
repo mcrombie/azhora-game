@@ -163,9 +163,9 @@ test('every assault after the battle forms up inside its own ground, wherever it
   for (const [id, spec] of Object.entries(AFTERMATH_VARIANTS)) {
     const fight = aftermathEncounter(id, aftermathArena(spec.arena));
     const axis = fight.retreatAxis;
-    assert.ok(fight.retreatLine - fight.checkpoint[axis] >= 6, `${id}: the company forms up well inside its retreat line`);
+    assert.ok(fight.retreatSign * (fight.retreatLine - fight.checkpoint[axis]) >= 6, `${id}: the company forms up well inside its retreat line`);
     assert.ok(Math.hypot(fight.checkpoint.x - fight.center.x, fight.checkpoint.z - fight.center.z) < 40, `${id}: and near the fight`);
-    // The word is given beside the commander at the rally, which for Solis is the city gate.
+    // The word is given beside the commander at the rally: for the Empire's Solis, on the road north of the gate it storms.
     const rally = aftermathSite(spec.rallySite);
     const position = { x: rally.x, y: 5, z: rally.z };
     const combat = createCombat({ world, position });
@@ -183,4 +183,16 @@ test('a fallback chapter saved from a won-but-rolled border battle starts over, 
     assert.equal(loaded.state.variant, null, 'not started: the host starts the conquest the campaign points to');
     assert.equal(loaded.start(fallback === 'moros-fallback' ? 'solis-sweep' : 'moros-outpost').ok, true);
   }
+});
+
+test('the Empire storms the Gate of Sun Horses from the road outside it, and the Coalition holds it', async () => {
+  const { aftermathArena, aftermathSite } = await import('../src/aftermath-sites.js');
+  const spec = AFTERMATH_VARIANTS['solis-sweep'], arena = aftermathArena(spec.arena), fight = aftermathEncounter('solis-sweep', arena);
+  const gate = aftermathSite('solis-gate'), rally = aftermathSite(spec.rallySite);
+  assert.equal(fight.retreatSign, -1, 'the way out runs north, up the road');
+  assert.ok(rally.z < gate.z - 30, 'the Legion forms up north of the gate, outside the city');
+  assert.ok(fight.checkpoint.z < fight.center.z && fight.retreatLine < fight.checkpoint.z, 'the traveler starts on the road side');
+  assert.ok(fight.enemies.every(enemy => enemy.z > fight.center.z), 'the defenders stand between the traveler and the gate');
+  assert.ok(Math.max(...fight.enemies.map(enemy => enemy.z)) > gate.z + 2, 'and the last of them come out of the gateway');
+  assert.match(spec.fight.join(' '), /Gate of Sun Horses/);
 });

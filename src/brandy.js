@@ -90,7 +90,7 @@ const TALK = freeze({
   ],
   loved: [
     'Do they? They keep coming by. I assumed they were lost.',
-    'Mara brings me fish. Lysa brings me cakes. Eren brings me his undershirts and asks for them in “something cheerful, under the armour, where nobody will know”. I know. I’m not cheerful. I’m just very good at it.',
+    'Tobin brings me fish. Lysa brings me cakes. Eren brings me his undershirts and asks for them in “something cheerful, under the armour, where nobody will know”. I know. I’m not cheerful. I’m just very good at it.',
   ],
   looks: [
     'What does a dyer look like? Stained, I suppose. Look at my fingers.',

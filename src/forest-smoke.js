@@ -103,7 +103,7 @@ export async function runForestSmoke(h) {
   try {
     await prepareVillage(); await frames(5);
     assert(getMode() === 'playing' && readState().questStage === 1 && !readState().testingEnabled, 'fixture did not begin as ordinary early village play');
-    assert(!inventory.has('harbor-letter') && !inventory.has('road-token') && inventory.has('simple-sword'), 'fixture should precede Mara’s letter');
+    assert(!inventory.has('harbor-letter') && !inventory.has('road-token') && inventory.has('simple-sword'), 'fixture should precede Lakota’s letter');
     assert(forestStory.state.stage === 'not-started', 'woodland errand was already started');
     assert(inventory.count('forest-stick') === 0 && inventory.count('cooked-fish') === 0, 'fixture already has woodland supplies');
 
@@ -171,9 +171,9 @@ export async function runForestSmoke(h) {
     assert(saved().woodland.camp.fires[pit.id] > 110, 'lighting the fire did not autosave its remaining fuel');
 
     // The optional detour must not replace or skip the original letter tutorial.
-    await talk('harbormaster', 'Mara');
+    await talk('bird-watcher', 'Lakota');
     for (let page = 0; page < 8 && getMode() === 'dialogue'; page++) await tap('KeyF');
-    assert(getMode() === 'playing' && readState().questStage === 2, 'Mara did not resume the original tutorial after the woodland detour');
+    assert(getMode() === 'playing' && readState().questStage === 2, 'Lakota did not resume the original tutorial after the woodland detour');
     assert(inventory.has('harbor-letter') && !inventory.has('road-token'), 'early save granted the wrong story equipment');
     assert(weapons.equip('simple-sword'), 'sword could not be readied for the saved tutorial');
     weapons.setWear(true);

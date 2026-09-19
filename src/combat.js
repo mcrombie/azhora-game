@@ -68,12 +68,17 @@ function encounterConfig(config) {
   const point = value => value && Number.isFinite(value.x) && Number.isFinite(value.z);
   const identifier = value => typeof value === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(value);
   // The arena runs along one axis: -Z in Tidehaven's wood, -X once the road
-  // turns west out of Drent. `retreatLine` is the far edge along that axis.
+  // turns west out of Drent. `retreatLine` is the far edge along that axis, and
+  // `retreatSign` which way it lies from the centre: +1 (the usual) toward +axis,
+  // -1 toward -axis, for a fight whose way out runs the other way (an assault on
+  // a gate that faces north). `along` measures toward the enemy's end either way.
   const axis = config.retreatAxis === 'x' ? 'x' : 'z', across = axis === 'x' ? 'z' : 'x';
+  const sign = config.retreatSign === -1 ? -1 : 1;
   const line = Number.isFinite(config.retreatLine) ? config.retreatLine : config.retreatZ;
+  const along = p => sign * (p[axis] - config.center[axis]), beyond = p => sign * (p[axis] - line) >= 0;
   if (!identifier(config.id) || !point(config.center) || !point(config.checkpoint)
-    || !Number.isFinite(line) || line <= config.center[axis]
-    || config.checkpoint[axis] >= line || !Array.isArray(config.enemies)
+    || !Number.isFinite(line) || sign * (line - config.center[axis]) <= 0
+    || beyond(config.checkpoint) || !Array.isArray(config.enemies)
     || !config.enemies.length || config.enemies.length > 12) return null;
   const seen = new Set(), enemies = [];
   for (const enemy of config.enemies) {
@@ -83,8 +88,8 @@ function encounterConfig(config) {
     if (enemy.look !== undefined && !SOLDIER_LOOKS.includes(enemy.look)) return null;
     const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
-      || Math.abs(enemy[across] - config.center[across]) > 12 || enemy[axis] < config.center[axis] - 21
-      || enemy[axis] > config.center[axis] + 18 || enemy[axis] >= line) return null;
+      || Math.abs(enemy[across] - config.center[across]) > 12 || along(enemy) < -21
+      || along(enemy) > 18 || beyond(enemy)) return null;
     seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind, ...(enemy.look ? { look: enemy.look } : {}) });
   }
   const allies = [];
@@ -99,15 +104,15 @@ function encounterConfig(config) {
         || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
         || (ally.refuge !== undefined && (!point(ally.refuge) || Math.abs(ally.refuge.x - config.center.x) > 12
           || ally.refuge.z < config.center.z - 21 || ally.refuge.z > config.center.z + 18))
-        || Math.abs(ally[across] - config.center[across]) > 12 || ally[axis] < config.center[axis] - 21
-        || ally[axis] > config.center[axis] + 18 || ally[axis] >= line) return null;
+        || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
+        || along(ally) > 18 || beyond(ally)) return null;
       seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Legionary', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
         ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
-    retreatZ: line, retreatLine: line, retreatAxis: axis, enemies, allies };
+    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, enemies, allies };
 }
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -686,7 +691,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const step = Math.min(remaining, 1 / 120);
       remaining -= step;
       time += step;
-      if (state.phase === 'active' && (position[lastEncounter.retreatAxis] > lastEncounter.retreatLine
+      if (state.phase === 'active' && ((lastEncounter.retreatSign ?? 1) * (position[lastEncounter.retreatAxis] - lastEncounter.retreatLine) > 0
         || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > 45))) {
         state.phase = 'peaceful';
         state.enemies = [];

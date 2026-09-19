@@ -16,6 +16,7 @@ import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
 import { WINERY, WINERY_LAYOUT } from './winery.js';
 import { RENA_CLEARINGS } from './rena.js';
 import { ELAGOS_CLEARINGS } from './elagos-world.js';
+import { createLauvelField } from './lauvel-field-world.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -510,6 +511,8 @@ export function createRegionScenery(kit) {
     mesh(roofGeometry(3.4, 2.8, .8), material('#9d9377'), x, y + 1.8, z, 1, 1, 1, luscia);
     colliders.push({ x, z, r: 1.6, kind: 'legion-picket' });
   }
+  // Ten days on: the fallen still on the field, arrows in the turf, crows, and the valley's burial ground (src/lauvel-aftermath.js).
+  createLauvelField({ parent: luscia, material, box, mesh, post, groundHeight, colliders, roadDistance: kit.roadDistance });
   // -------------------------------------------------------------------------
   // Lumber Town: Luscia's market town, with the main road through its square
   // -------------------------------------------------------------------------

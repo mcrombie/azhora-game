@@ -32,7 +32,7 @@ test('every post stands on walkable ground beside the road, clear of the quest c
     }
     return best;
   };
-  const quest = ['harbormaster', 'warden', 'meadow-courier', 'crossing-keeper', 'ridge-keeper', 'relay-clerk'];
+  const quest = ['warden', 'meadow-courier', 'crossing-keeper', 'ridge-keeper', 'relay-clerk'];
   for (const entry of LEGION_POSTS) {
     assert.ok(canStand(entry.x, entry.z, world, .45), `${entry.name} stands on solid ground`);
     const gap = roadDistance(entry.x, entry.z);
@@ -41,6 +41,7 @@ test('every post stands on walkable ground beside the road, clear of the quest c
       const p = world.npcPositions[id];
       assert.ok(Math.hypot(p.x - entry.x, p.z - entry.z) > 4, `${entry.name} does not crowd ${id}`);
     }
+    assert.ok(Math.hypot(world.pierHead.x - entry.x, world.pierHead.z - entry.z) > 4, `${entry.name} does not crowd Lakota at the pier`);
     for (const other of LEGION_POSTS) if (other !== entry) assert.ok(Math.hypot(other.x - entry.x, other.z - entry.z) > 3, `${entry.name} and ${other.name} keep apart`);
     assert.ok(world.regionAt(entry.x, entry.z), `${entry.name} is inside a region`);
   }

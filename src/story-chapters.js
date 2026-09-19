@@ -34,7 +34,7 @@ export const STORY_CHAPTERS = Object.freeze([
     goal: 'Report for duty. The Empire is gathering its hired swords at Lumber Town, across the Caloss in Luscia; get there and find the clerk who keeps the muster.',
     steps: [
       'Come ashore at Tidehaven and clear the Greenway of raiders',
-      'Carry Mara’s letter to the Legion’s post in the Avrel clearing',
+      'Carry Lakota’s letter to the Legion’s post in the Avrel clearing',
       'Make the road sound as far as the Caloss crossing',
       'Cross the river into Luscia and find Lumber Town',
       'Report to Iven at the relay post on the town square',

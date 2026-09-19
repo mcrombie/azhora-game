@@ -117,7 +117,7 @@ export async function runLocalMapSmoke(h) {
     assert(trailMap.state().selected?.known && trailMap.state().selected?.trackable, 'discovered village is not selectable');
     await mark();
     assert(trackedPlace()?.id === 'village' && trailMap.state().trackedId === 'village', 'Mark did not choose the stable village ID');
-    assert($('quest-title').textContent === mainTitle && localMapModel().goal?.name?.includes('Mara'),
+    assert($('quest-title').textContent === mainTitle && localMapModel().goal?.name?.includes('Lakota'),
       'optional tracking replaced the main tutorial destination');
     unchanged(initial, 'marking a place changed ordinary gameplay or checkpoint data');
     assert(trackPlace('not-a-place') === false && trackedPlace()?.id === 'village', 'invalid tracking replaced a valid pin');

@@ -650,6 +650,21 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       stance = .8; chestX = .05 + gait * .2 + beat * .025 * gait; chestY = 0; chestZ = 0; bodyX = 0; bodyZ = 0;
       headX = -.03 - gait * .13; headY *= .5; bounce = beat * .018 * gait;
     }
+    // Down on the ground, standing still: on both knees (`posture: 'kneel'`), or sat with the knees drawn up
+    // (`posture: 'sit-ground'`); the head bowed and the hands in the lap or round the knees. The seat, not the soles, takes the weight.
+    let seatY = null;
+    const lowPosture = !goblin && movementBlend < .2 && action === 'idle' && (pose.posture === 'kneel' || pose.posture === 'sit-ground') ? pose.posture : null;
+    if (lowPosture) {
+      const sway = Math.sin(seconds * .6 + offset) * .025, kneel = lowPosture === 'kneel';
+      for (let i = 0; i < 2; i++) {
+        if (kneel) { hip[i] = -.35; knee[i] = Math.PI / 2 + .35; ankle[i] = -.25; arm[i] = -.28; elbow[i] = -.95; }
+        else { hip[i] = -1.9; knee[i] = 1.4; ankle[i] = .35; arm[i] = -.95; elbow[i] = -.55; }
+        armOut[i] = (i ? 1 : -1) * (kneel ? .04 : .16);
+      }
+      stance = kneel ? .1 : .22; chestX = (kneel ? .2 : .32) + sway; chestY = 0; chestZ = 0; bodyX = 0; bodyZ = 0;
+      headX = .38 + sway; headY *= .25; bounce = 0;
+      seatY = kneel ? upperLength * Math.cos(hip[0]) - legs[0].position.y + .05 : .13 - legs[0].position.y;
+    }
     const rotate = (object, x, y, z) => {
       object.rotation.x = THREE.MathUtils.lerp(object.rotation.x, x, damping);
       object.rotation.y = THREE.MathUtils.lerp(object.rotation.y, y, damping);
@@ -695,7 +710,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         + soleY * Math.cos(foot) - soleZ * Math.sin(foot) - 0.0175 * Math.abs(Math.cos(foot)) - heelToe * Math.abs(Math.sin(foot));
       soleHeight = Math.min(soleHeight, y);
     }
-    const y = action === 'dead' ? THREE.MathUtils.smoothstep(progress, 0, 0.8) * 0.14 : grounded ? -soleHeight + bounce : 0;
+    const y = seatY ?? (action === 'dead' ? THREE.MathUtils.smoothstep(progress, 0, 0.8) * 0.14 : grounded ? -soleHeight + bounce : 0);
     body.position.y = THREE.MathUtils.lerp(body.position.y, y, 1 - Math.exp(-22 * dt));
     body.position.x = Math.sin(seconds * 0.78 + offset) * 0.008 * idle;
     if (action === 'dead') {

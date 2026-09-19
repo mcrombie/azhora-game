@@ -152,7 +152,7 @@ test('three distinct waymarkers precede the relay report; letter is retained and
   assert.equal(inventory.has('road-token'), true);
   assert.equal(journey.act('deliver-report').ok, false);
   assert.equal(journey.view().complete, true);
-  assert.match(journey.view().detail, /copied Mara’s warning/);
+  assert.match(journey.view().detail, /copied Lakota’s warning/);
   assert.equal(journey.view().objectiveId, null);
   assert.deepEqual(journey.availableActions(), []);
   assert.deepEqual(journey.state.completedRegions, [2, 3, 4]);

@@ -29,17 +29,19 @@ const variant = (id, spec) => Object.freeze({ id, encounterId: `aftermath-${id}`
 export const AFTERMATH_VARIANTS = Object.freeze({
   'solis-sweep': variant('solis-sweep', {
     side: 'empire', outcome: 'victory', region: 'West Suval', title: 'Solis, taken', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
-    commanderId: 'aftermath-tribune', rallySite: 'solis-gate', arena: 'solis-square', principalId: 'aftermath-tribune', reportSite: 'solis-hall',
-    rally: ['The hired company at the gate', 'The Coalition broke and ran for Solis. Tribune Gallus Orso has the hired company at the city’s gate. Follow the road south-east into West Suval and find him.'],
-    fight: ['Clear the market square', 'Seven hold the market square behind an overturned cart, the Republic’s best, with nowhere to run. Clear them, with your company beside you. Fall back toward the gate if you must.'],
-    report: ['The Coalition’s chair', 'The square is quiet. Tribune Orso has taken the council hall. Report to him there.'],
+    commanderId: 'aftermath-tribune', rallySite: 'solis-road', arena: 'solis-gate-assault', principalId: 'aftermath-tribune', reportSite: 'solis-hall',
+    // The defenders stand before the gate, and the last two come out of the gateway itself.
+    enemyOffsets: [[-6, -9, .2], [6, -9.5, .9], [0, -11, 1.8], [-4, -10.5, 6], [4, -10.5, 7.5], [-1, -14.5, 11], [1, -15, 12.5]],
+    rally: ['The hired company on the Solis road', 'The Coalition broke at the border and fell back on Solis, and shut themselves in behind the Gate of Sun Horses. Tribune Gallus Orso has the hired company on the road north of the gate. Follow the road south-east into West Suval and find him.'],
+    fight: ['Take the Gate of Sun Horses', 'Seven of the Republic’s best hold the Gate of Sun Horses, and the last of them will come out of the gateway. Break them, with your company beside you. Fall back up the road if you must.'],
+    report: ['The Coalition’s chair', 'The gate is taken, and the city with it: the council took ship while its gate held. Tribune Orso has taken the Court of Oaths. Report to him there.'],
     done: 'Solis is the Emperor’s, and West Suval with it. The Legate’s dispatch says a hired company went in first, and you carry it to Ambron.',
     orders: [
-      'The gate was open when we got here. The council took ship in the night. The ones who could not get a berth are in the market square behind an overturned cart.',
-      'Orders: no fire, no looting, and no one touched who has put his weapon down. The Legate wants a city that pays tax, not a ruin. The men in the square have not put theirs down.',
-      'Your company goes in first. Say when.',
+      'They shut the gate on us. The council is taking ship at the quay, and the best of what the Republic has left is holding the Gate of Sun Horses to buy them the tide.',
+      'Orders: take the gate. Once it is ours, no fire, no looting, and no one touched who has put his weapon down. The Legate wants a city that pays tax, not a ruin. The men at the gate have not put theirs down.',
+      'Your company goes at it first. Say when.',
     ],
-    ready: 'We go in.',
+    ready: 'We take the gate.',
     debrief: [
       'Sit if you like. It is the Coalition’s chair, and it is as hard as ours.',
       'Solis is the Emperor’s tonight, and West Suval with it by the week’s end. The rolls will say the Legion took it. The Legate’s dispatch says a hired company went in first. I wrote that part.',
@@ -47,7 +49,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     ],
     close: 'Take the pay and the orders.',
     after: ['Ambron, sellsword. North-west across the Moros. The dispatch does not carry itself.'],
-    toasts: { start: 'The hired company goes in first. Clear the square.', won: 'The square is yours. The Tribune has taken the council hall.', closed: 'Forty copper, and the Legate’s dispatch for Ambron.' },
+    toasts: { start: 'The hired company goes at the gate first.', won: 'The Gate of Sun Horses is taken. The Tribune has the Court of Oaths.', closed: 'Forty copper, and the Legate’s dispatch for Ambron.' },
   }),
   'moros-fallback': variant('moros-fallback', {
     side: 'empire', outcome: 'defeat', region: 'Moros Plain', title: 'The line at the Moros', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
@@ -126,8 +128,8 @@ export const AFTERMATH_ARENA_IDS = Object.freeze(Object.values(AFTERMATH_VARIANT
 /** The campaign chapter a side and a battle outcome lead to. */
 export const aftermathFor = (side, outcome) => AFTERMATH_IDS.find(id => AFTERMATH_VARIANTS[id].side === side && AFTERMATH_VARIANTS[id].outcome === outcome) ?? null;
 
-// An arena is a centre and a retreat axis; retreat is always toward +axis (the combat rule).
-// Offsets are [across, along, entry]: the enemy comes from the far end, the allies form up behind the traveler.
+// An arena is a centre, a retreat axis and the way the retreat runs along it (+1, or -1 for a way out toward -axis).
+// Offsets are [across, along, entry]: `along` is negative toward the enemy's end, and the allies form up behind the traveler.
 const ENEMY_OFFSETS = [[-6, -12, .2], [6, -13, .9], [0, -16, 1.8], [-8, -18, 6], [8, -19, 7.5], [-3, -19.5, 11], [3, -20, 12.5]];
 const ALLY_OFFSETS = [[-6, 10], [6, 10], [-9, 14], [9, 14]];
 const CHECKPOINT_ALONG = 13, RETREAT_ALONG = 21;
@@ -136,11 +138,12 @@ const CHECKPOINT_ALONG = 13, RETREAT_ALONG = 21;
 export function aftermathEncounter(variantId, arena, allies = []) {
   const spec = AFTERMATH_VARIANTS[variantId];
   if (!spec || !arena?.center || !['x', 'z'].includes(arena.retreatAxis) || ![arena.center.x, arena.center.z].every(Number.isFinite)) return null;
+  const sign = arena.retreatSign === -1 ? -1 : 1;
   const place = (across, along) => (arena.retreatAxis === 'x'
-    ? { x: arena.center.x + along, z: arena.center.z + across } : { x: arena.center.x + across, z: arena.center.z + along });
+    ? { x: arena.center.x + sign * along, z: arena.center.z + across } : { x: arena.center.x + across, z: arena.center.z + sign * along });
   return { id: spec.encounterId, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
-    retreatAxis: arena.retreatAxis, retreatLine: arena.center[arena.retreatAxis] + RETREAT_ALONG,
-    enemies: ENEMY_OFFSETS.map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 100, kind: 'soldier', look: spec.foe })),
+    retreatAxis: arena.retreatAxis, retreatSign: sign, retreatLine: arena.center[arena.retreatAxis] + sign * RETREAT_ALONG,
+    enemies: (spec.enemyOffsets ?? ENEMY_OFFSETS).map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 100, kind: 'soldier', look: spec.foe })),
     allies: allies.slice(0, ALLY_OFFSETS.length).map((ally, index) => ({ ...ally, ...place(...ALLY_OFFSETS[index]) })) };
 }
 

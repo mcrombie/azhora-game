@@ -21,7 +21,7 @@ export const FIGHTERS = Object.freeze({ 'forest-woodcutter': 'bearded-axe' });
  * still needs: the story's own people, the specialists who teach a skill, and those
  * who trade or send the traveler on an errand. Everyone else caught in a fight can die.
  */
-export const SPARED = Object.freeze(['forest-woodcutter', 'harbormaster', 'warden', 'acorn-cook', 'doomsayer', 'fisher', 'pond-fisher', 'tide-carter', 'tide-boy', 'rena-lorn',
+export const SPARED = Object.freeze(['forest-woodcutter', 'warden', 'acorn-cook', 'doomsayer', 'fisher', 'pond-fisher', 'tide-carter', 'tide-boy', 'rena-lorn',
   'mycologist', 'botanist', 'geologist', 'bird-watcher', 'pipe-smoker', 'jimson-toft', 'peddler']);
 
 /**
@@ -31,10 +31,11 @@ export const SPARED = Object.freeze(['forest-woodcutter', 'harbormaster', 'warde
  */
 export function fightGround(encounter) {
   const axis = encounter.retreatAxis === 'x' ? 'x' : 'z', across = axis === 'x' ? 'z' : 'x', c = encounter.center;
-  const line = encounter.retreatLine ?? encounter.retreatZ;
+  const line = encounter.retreatLine ?? encounter.retreatZ, sign = encounter.retreatSign === -1 ? -1 : 1;
   // Allies step within x ±12 and z -21..+18 of the centre, whatever the axis.
   const step = { minX: c.x - 12, maxX: c.x + 12, minZ: c.z - 21, maxZ: c.z + 18 };
-  const start = { [`min${axis.toUpperCase()}`]: c[axis] - 21, [`max${axis.toUpperCase()}`]: Math.min(c[axis] + 18, line - .01),
+  const start = sign > 0 ? { [`min${axis.toUpperCase()}`]: c[axis] - 21, [`max${axis.toUpperCase()}`]: Math.min(c[axis] + 18, line - .01), [`min${across.toUpperCase()}`]: c[across] - 12, [`max${across.toUpperCase()}`]: c[across] + 12 }
+    : { [`min${axis.toUpperCase()}`]: Math.max(c[axis] - 18, line + .01), [`max${axis.toUpperCase()}`]: c[axis] + 21,
     [`min${across.toUpperCase()}`]: c[across] - 12, [`max${across.toUpperCase()}`]: c[across] + 12 };
   const inset = .6;
   return {

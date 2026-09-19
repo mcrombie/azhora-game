@@ -3,7 +3,7 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
-    name: "Mara’s message", type: 'Quest item', icon: 'letter',
+    name: "Lakota’s message", type: 'Quest item', icon: 'letter',
     brief: 'A report and letter of introduction to the Ambroni army post on the Avrel clearing.',
     description: 'The seal is already broken so you can read your errand. Keep the message with you for the road ahead.',
   }),
@@ -45,7 +45,7 @@ export const INVENTORY_ITEMS = Object.freeze({
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',
-    description: 'Eren has vouched for your passage through the northern forest. Carry this token and Mara’s message to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
+    description: 'Eren has vouched for your passage through the northern forest. Carry this token and Lakota’s message to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
   }),
   'horse-token': Object.freeze({
     name: 'Legion horse token', type: 'Quest item', icon: 'token',
@@ -616,7 +616,7 @@ export function createInventory({
         element('h3', '', state.items().length ? 'Select an item above' : 'Room for a journey'),
         element('p', '', state.items().length
           ? 'Hover over an item for a quick description. Click it, or use Tab then Enter, to see what you are carrying.'
-          : 'Items given to you on the road will appear here. Speak with Mara at the landing to receive your first errand.'),
+          : 'Items given to you on the road will appear here. Speak with Lakota at the head of the pier to receive your first errand.'),
       );
       return;
     }
@@ -627,14 +627,14 @@ export function createInventory({
       detail.append(element('p', 'inventory-description', item.description));
       const letter = element('article', 'inventory-letter');
       letter.id = 'inventory-letter-body';
-      letter.setAttribute('aria-label', 'Mara’s message to Quartermaster Corvan');
+      letter.setAttribute('aria-label', 'Lakota’s message to Quartermaster Corvan');
       letter.tabIndex = 0;
       letter.append(
         element('p', 'inventory-letter-address', 'To Quartermaster Corvan, Ambroni Legion, The Avrel Clearing'),
         element('p', '', 'Bramble goblin raiders have cut the road out of Tidehaven. Our watch is holding the northern path, but the village needs help keeping travelers safe.'),
         element('p', '', 'The bearer has answered the Ambroni Empire’s call for mercenaries. Receive them at your field post, record their service, and give them their first orders. They arrive with a plain sword and no armor.'),
         element('p', '', 'The Legion promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
-        element('p', 'inventory-letter-signature', 'Mara\nHarbormaster of Tidehaven'),
+        element('p', 'inventory-letter-signature', 'Lakota\nof Tidehaven, by the bird garden'),
       );
       detail.append(letter);
     } else {
@@ -833,7 +833,7 @@ export function createInventory({
     isOpen: () => opened,
     open({lesson = false} = {}) {
       hint.textContent = lesson
-        ? 'Your next lesson: select Mara’s message and read your errand. Then close the satchel with I, Esc, or ×.'
+        ? 'Your next lesson: select Lakota’s message and read your errand. Then close the satchel with I, Esc, or ×.'
         : 'Hover for a tooltip. Click an item, or use Tab then Enter, to inspect it.';
       if (opened) return;
       opened = true;

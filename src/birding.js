@@ -318,7 +318,7 @@ export const LAKOTA_TOPICS = Object.freeze([
   Object.freeze({ id: 'machines', label: 'Do you believe in thinking machines?', lines: Object.freeze([
     'Have you noticed that everybody in Tidehaven has exactly three things to say, and says them the same way every time? Somebody wrote them.',
     'I think there are minds that are not people: made, not born, built out of rules and a great deal of reading, doing half the talking in this village. I call them artificial intelligences, because I like to be precise about what frightens me.',
-    'Mara laughs at me. But Mara also says “You heard the bell from the boat?” to every single person who gets off it.',
+    'Eren laughs at me. But Eren tells every single person who comes up the Greenway to “watch the windup, dodge to the side”, in exactly those words. Every one.',
   ]) }),
   Object.freeze({ id: 'game', label: 'You seem distracted.', lines: Object.freeze([
     'Some days I think the world is only put there as you walk into it. The road ahead is not quite finished until somebody looks at it, and the far hills are painted on.',
@@ -347,8 +347,8 @@ export function birdWatcherConversation(npc, context) {
   const leave = { id: 'leave-bird-watcher', label: birding.met ? 'Good watching.' : 'Another time.', action: closeDialogue };
   if (!birding.met) {
     openDialogue(npc, [
-      'Slowly. Slowly. There, you have not flushed it. That was the wren on the barrels behind you, and now it is looking at you instead of singing.',
-      'Lakota. I watch birds. The village thinks that means I stand about. It means I stand about with my eyes open.',
+      'You found me. Slowly, though. Slowly. There, you have not flushed it. That was the wren on the barrels behind you, and now it is looking at you instead of singing.',
+      'I watch birds. The village thinks that means I stand about. It means I stand about with my eyes open.',
       'The one on my glove is a red-tail. She came to me as a fledgling with a broken wing, and when it mended she did not go home. I keep a list of every bird I have seen in Drent: one hundred and six. The last was a bittern in the Caloss reeds, and I lay in the mud an hour for it.',
       'You have the look of someone who walks a long way. You will pass more birds in a month than most people here see in their lives. Would you like to know how to see them?',
     ], null, 'Back to the road', { choices: [

@@ -20,13 +20,17 @@ export const HOLDERS = Object.freeze(['empire', 'coalition']);
  */
 const FALLS = Object.freeze({
   'moros-outpost': Object.freeze({ region: 'Moros Plain', to: 'coalition' }),
-  'solis-sweep': Object.freeze({ region: 'West Suval', to: 'empire' }),
+  // While the Gate of Sun Horses is being fought for, its watch is the men the traveler is fighting:
+  // neither garrison stands about the town until it has fallen.
+  'solis-sweep': Object.freeze({ region: 'West Suval', to: 'empire', contested: true }),
 });
 
-/** The control map the ground should show: the campaign's, plus any place that has just fallen. */
+/** The control map the ground should show: the campaign's, plus any place that has just fallen or is being fought for. */
 export function occupationControl(mapControl = {}, aftermath = null) {
-  const fall = aftermath?.cleared ? FALLS[aftermath.variant] : null;
-  return fall ? { ...mapControl, [fall.region]: fall.to } : { ...mapControl };
+  const fall = FALLS[aftermath?.variant] ?? null;
+  if (fall && aftermath.cleared) return { ...mapControl, [fall.region]: fall.to };
+  if (fall?.contested && aftermath.fighting) return { ...mapControl, [fall.region]: 'contested' };
+  return { ...mapControl };
 }
 
 export const hasStake = entry => !!entry && HOLDERS.includes(entry.holds) && typeof entry.region === 'string' && entry.region.length > 0;

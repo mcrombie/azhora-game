@@ -54,3 +54,13 @@ test('the campaign flips a place only for the side that won it', () => {
   assert.equal(CHAPTERS['moros-fallback'].control, undefined);
   assert.equal(CHAPTERS['solis-fallback'].control, undefined);
 });
+
+test('while the Gate of Sun Horses is fought for, neither garrison stands about Solis; once it falls, the Legion does', () => {
+  const map = { 'West Suval': 'coalition', 'Moros Plain': 'empire' };
+  const coalitionWatch = { holds: 'coalition', region: 'West Suval' }, legionWatch = { holds: 'empire', region: 'West Suval' };
+  const fighting = occupationControl(map, { variant: 'solis-sweep', cleared: false, fighting: true });
+  assert.equal(isOut(coalitionWatch, fighting), false); assert.equal(isOut(legionWatch, fighting), false);
+  const fallen = occupationControl(map, { variant: 'solis-sweep', cleared: true, fighting: false });
+  assert.equal(isOut(coalitionWatch, fallen), false); assert.equal(isOut(legionWatch, fallen), true);
+  assert.deepEqual(occupationControl(map, { variant: 'moros-outpost', cleared: false, fighting: true }), map, 'the outpost’s defenders stay on its walls');
+});

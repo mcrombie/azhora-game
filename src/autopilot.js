@@ -4,7 +4,10 @@
  * Pure planning and steering with no DOM or render dependencies. Each frame the
  * host hands over a snapshot of the game and receives a command: where to walk,
  * where to look, and which of the ordinary player actions to perform (talk,
- * continue dialogue, choose a reply, swing, dodge, open the satchel). The
+ * continue dialogue, choose a reply, swing, dodge, open the satchel, mount,
+ * dismount and whistle for the horse). Once the traveler has a horse, a long
+ * leg is ridden: the autopilot whistles the horse up, mounts, canters, and
+ * steps down a few strides short of where it is going. The
  * autopilot never teleports, edits quest state, or bypasses the game's own
  * rules; it presses the same buttons a person would. Any trusted input from the
  * person stops it (the host enforces that).
@@ -21,6 +24,11 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
   idleLimit: 260,         // seconds without quest progress before giving up: a 1.7 km road takes a while between steps
   side: 'empire',         // which way the fork at Solis is taken
   runBeyond: 3.2,         // metres from the goal beyond which the autopilot runs: it travels at a run and walks only the last stride up to someone
+  rideBeyond: 60,         // metres from the goal beyond which a leg is worth the saddle
+  dismountWithin: 9,      // metres from the goal at which the rider steps down
+  fetchHorseWithin: 30,   // a horse this near is walked to; a farther one is whistled up
+  whistleEvery: 8,        // seconds between whistles while the horse is on its way
+  afootAfterStuck: 25,    // seconds on foot after a horse has been stuck, so a narrow gate is walked
 });
 
 /** Quest replies the autopilot will pick, most important first. */
@@ -376,7 +384,7 @@ export function planGoal(snapshot, world) {
   if (mode === 'arriving') return { kind: 'wait', intent: 'Coming ashore' };
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
   if (mode === 'dialogue') return { kind: 'dialogue', intent: 'Talking' };
-  if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading Mara’s message' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
+  if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading Lakota’s message' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
   // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
   if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };
@@ -415,8 +423,8 @@ export function planGoal(snapshot, world) {
   }
   const npc = id => world.npcPositions[id];
   switch (questStage) {
-    case 0: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Walking up from the landing to Mara' };
-    case 1: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Speaking with Mara' };
+    case 0: return { kind: 'talk', target: npc('bird-watcher'), npcId: 'bird-watcher', intent: 'Walking up the pier to Lakota' };
+    case 1: return { kind: 'talk', target: npc('bird-watcher'), npcId: 'bird-watcher', intent: 'Speaking with Lakota' };
     case 2: return { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post' : 'Practising a dodge' };
     // The ambush clearing on the Greenway, a little past the warning bell.
     case 3: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Following the Greenway to the bell' };
@@ -519,14 +527,14 @@ function nearestOf(points, position) {
 export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
   let active = false, intent = '', reason = '', lastYaw = null, move = { forward: 0, side: 0, run: false };
-  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0 };
+  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0 };
   let progressKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
-    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0 };
+    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0 };
     progressKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
@@ -556,6 +564,29 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     return false;
   }
 
+  /**
+   * The horse, for a leg toward `target`: an action to take instead of walking
+   * ('mount', 'dismount', 'whistle'), or a walk to the horse, or null to go on
+   * as before (on foot, or in the saddle at a canter).
+   */
+  function saddle(snapshot, target, dt) {
+    const riding = snapshot.riding;
+    if (!riding?.owned || !riding.horse || snapshot.combat?.phase === 'active') return null;
+    const gap = distance(snapshot.position, target);
+    if (riding.mounted) {
+      timers.saddleStuck = timers.stuck > 0 ? timers.saddleStuck + dt : 0;
+      if (timers.saddleStuck > config.stuckAfter * 2) { timers.saddleStuck = 0; timers.afoot = config.afootAfterStuck; return { type: 'dismount', intent: 'Stepping down: the horse cannot get through' }; }
+      if (gap <= config.dismountWithin) return { type: 'dismount', intent: 'Stepping down' };
+      return null;
+    }
+    if (timers.afoot > 0 || gap < config.rideBeyond || snapshot.combat?.action !== 'idle') return null;
+    const toHorse = distance(snapshot.position, riding.horse);
+    if (toHorse <= 2.4) return { type: 'mount', intent: 'Into the saddle' };
+    if (toHorse <= config.fetchHorseWithin) return { type: 'fetch', intent: 'Going to the horse' };
+    if (timers.whistle >= config.whistleEvery) { timers.whistle = 0; return { type: 'whistle', intent: 'Whistling for the horse' }; }
+    return null;
+  }
+
   function trackProgress(snapshot, key, gap, dt) {
     if (key !== progressKey) { progressKey = key; bestDistance = gap; timers.stuck = 0; timers.idle = 0; detour = 0; return; }
     if (gap < bestDistance - .05) { bestDistance = gap; timers.stuck = 0; }
@@ -568,7 +599,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     if (!active) return null;
     const snapshot = read();
     if (!snapshot) return null;
-    timers.dialogue += dt; timers.interact += dt; timers.swing += dt; timers.idle += dt;
+    timers.dialogue += dt; timers.interact += dt; timers.swing += dt; timers.idle += dt; timers.whistle += dt; timers.afoot = Math.max(0, timers.afoot - dt);
     const goal = planGoal(snapshot, world);
     intent = goal.intent;
     const actions = [];
@@ -604,6 +635,14 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
         break;
       }
       case 'walk': {
+        const horse = saddle(snapshot, goal.target, dt);
+        if (horse) {
+          intent = horse.intent;
+          if (horse.type === 'fetch') { walkToward(snapshot, snapshot.riding.horse, 2); break; }
+          if (timers.interact >= config.interactEvery) { actions.push({ type: horse.type }); timers.interact = 0; }
+          if (horse.type === 'whistle') walkToward(snapshot, goal.target, goal.radius ?? 2);
+          break;
+        }
         const arrived = walkToward(snapshot, goal.target, goal.radius ?? 2);
         trackProgress(snapshot, key, distance(snapshot.position, goal.target), dt);
         if (arrived && goal.radius) lastYaw = null;
@@ -612,6 +651,15 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'talk':
       case 'use': {
         const target = goal.target, gap = distance(snapshot.position, target);
+        const horse = saddle(snapshot, target, dt);
+        if (horse) {
+          intent = horse.intent;
+          if (horse.type === 'fetch') { walkToward(snapshot, snapshot.riding.horse, 2); trackProgress(snapshot, key, gap, dt); break; }
+          if (timers.interact >= config.interactEvery) { actions.push({ type: horse.type }); timers.interact = 0; }
+          if (horse.type === 'whistle') walkToward(snapshot, target, goal.radius ?? 1.9);
+          trackProgress(snapshot, key, gap, dt);
+          break;
+        }
         const ready = goal.kind === 'talk' ? snapshot.interaction?.npcId === goal.npcId
           : goal.siteId ? snapshot.interaction?.siteId === goal.siteId : goal.check ? !!snapshot.interaction?.[goal.check] : gap <= (goal.radius ?? 1.5);
         if (ready && snapshot.combat.action === 'idle') {

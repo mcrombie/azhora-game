@@ -103,10 +103,13 @@ test('Envoy Telis Orren is never out twice: the border chapter’s before the fo
   }
 });
 
-test('the day after the battle finds its ground in Solis: the gate, the Court of Oaths, the square and the road outside', () => {
+test('the day after the battle finds its ground in Solis: the gate, the Court of Oaths, and the road outside', () => {
   const offset = point => ({ a: +(point.x - SOLIS.centre.x).toFixed(6), b: +(point.z - SOLIS.centre.z).toFixed(6) });
-  assert.deepEqual(offset(AFTERMATH_ARENAS['solis-square'].center), { a: SOLIS_SQUARE.a, b: SOLIS_SQUARE.b });
-  assert.equal(AFTERMATH_ARENAS['solis-square'].retreatAxis, SOLIS_SQUARE.axis);
+  // The gate is stormed from outside: the fight is on the road before it, between the approach and the walls, and the way out is back up the road.
+  const assault = AFTERMATH_ARENAS['solis-gate-assault'];
+  assert.ok(offset(assault.center).b < SOLIS_APPROACH.b + 30 && offset(assault.center).b > SOLIS_APPROACH.b, 'the gate assault is fought outside the walls');
+  assert.equal(assault.retreatAxis, 'z'); assert.equal(assault.retreatSign, -1);
+  assert.ok(offset(assault.center).b - SOLIS_SQUARE.b < -40, 'nowhere near the market square');
   assert.deepEqual(offset(AFTERMATH_ARENAS['solis-approach'].center), { a: SOLIS_APPROACH.a, b: SOLIS_APPROACH.b });
   assert.equal(AFTERMATH_ARENAS['solis-approach'].retreatAxis, SOLIS_APPROACH.axis);
   const gate = AFTERMATH_SITES['solis-gate'], hall = AFTERMATH_SITES['solis-hall'];
