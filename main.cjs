@@ -14,6 +14,8 @@ const wineryReviewOnly = smoke && process.argv.includes('--winery-review');
 const atticReviewOnly = smoke && process.argv.includes('--attic-review');
 const troupeReviewOnly = smoke && process.argv.includes('--troupe-review');
 const perfReviewOnly = smoke && process.argv.includes('--perf-review');
+/** Any review views, photographed in turn: --review-views=brandy,brandy-close */
+const reviewViews = smoke ? (process.argv.find(arg => arg.startsWith('--review-views=')) ?? '').slice(15).split(',').filter(Boolean) : [];
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
 const openingReviewOnly = smoke && process.argv.includes('--opening-review');
 // `--map-review` pictures the chart as a new player first opens it, and again later in the story.
@@ -119,7 +121,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -285,6 +287,15 @@ if (ownsInstance) app.whenReady().then(async () => {
           fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({wineryViews:3,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(reviewViews.length){
+        const fatal=await win.webContents.executeJavaScript("(()=>{const f=document.getElementById('fatal');return f&&!f.classList.contains('hidden')?(f.dataset.stack||'fatal'):''})()");
+        if(fatal){console.log('FATAL AT LOAD: '+fatal);app.exit(1);return;}
+        for(const view of [reviewViews[0],...reviewViews]){
+          await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+        }
+        console.log(JSON.stringify({views:reviewViews,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(perfReviewOnly){
         // Where the time goes: at each place, frame times, the game loop's own time, render time, what is drawn, and a CPU profile.

@@ -132,6 +132,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A simple meal cooked over a fire. Restores up to 40 health.',
     description: 'Restores up to 40 health. A fish cooked over the campfire, ready for the road. Open your satchel with I, select it, and choose Eat. Each meal uses one cooked fish. At full health, no food is consumed.',
   }),
+  'rainbow-ribbon': Object.freeze({
+    name: 'Rainbow ribbon', type: 'Quest item', icon: 'ribbon',
+    brief: 'Dyed by Brandy Frank in every colour she has. It won’t fix anything.',
+    description: 'A long ribbon from Brandy Frank’s dye yard in Tidehaven, dyed in every colour she makes, one after another: hot pink, orange, yellow, a green that hums, a blue off the southern boats, and violet. “It won’t fix anything,” she said. “But it’s very bright, and some days that’s nearly the same thing.”',
+  }),
   'talaelos-playbill': Object.freeze({
     name: 'Talaelos playbill', type: 'Quest item', icon: 'letter',
     brief: 'The players of Nylon’s playbill, signed by the whole company, and the dog.',
@@ -393,6 +398,7 @@ const iconPaths = {
   slab: '<path d="M6 13c6-2 18-2 24 0v13c-6 2-18 2-24 0Z"/><path d="M6 19c6-2 18-2 24 0M12 14v11m12-11v11"/>',
   mug: '<path d="M7 13h18v12c0 4-3 6-6 6h-6c-3 0-6-2-6-6Z"/><path d="M25 16h3c3 0 4 2 4 4s-1 4-4 4h-3M7 17h18M12 10c-2-2 1-3 0-6m6 6c-2-2 1-3 0-6"/>',
   chocolate: '<rect x="6" y="9" width="24" height="19" rx="2"/><path d="M6 15.3h24M6 21.6h24M14 9v19M22 9v19M26 9l4 4"/>',
+  ribbon: '<path d="M18 16c-4-6-12-8-12-2s8 6 12 2Zm0 0c4-6 12-8 12-2s-8 6-12 2Z"/><path d="M16 17l-5 13 4-2 2 4 1-15M20 17l5 13-4-2-2 4-1-15"/>',
   bottle: '<path d="M15 3h6v7c0 2 4 3 4 8v13c0 1-1 2-2 2H13c-1 0-2-1-2-2V18c0-5 4-6 4-8Z"/><path d="M14 6h8M11 21h14v7H11"/>',
   jug: '<path d="M13 5h8M14 5v4c-5 3-7 8-7 13 0 6 4 9 10 9s10-3 10-9c0-5-2-10-7-13V5"/><path d="M27 15c4 0 5 3 5 5s-2 5-5 5M9 19h18"/>',
 };

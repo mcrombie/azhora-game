@@ -21,6 +21,7 @@ import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } 
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
 import { atticDeckHeight } from './wine-attic.js';
+import { createBrandyYard } from './brandy-yard.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { createWineryScenery } from './winery-world.js';
 import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
@@ -1133,6 +1134,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   buildPlaceWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   // The three Renas: the razed town at Drent's centre, Applegarth, and Rena's own wayside (src/rena-works.js).
   buildRenaWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
+  // Brandy Frank's dye yard, on the lane up to Saltwind Lookout (src/brandy-yard.js).
+  createBrandyYard({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);

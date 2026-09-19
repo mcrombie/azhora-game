@@ -548,6 +548,14 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestX = .05 + point * .06; chestZ = riff * .03;
         headX = -.03 + point * .05; headY = Math.sin(seconds * .45 + offset) * .18;
         hip[0] = -.03; hip[1] = -.02; knee[0] = .07; knee[1] = .06;
+      } else if (role === 'rainbow-dyer') {
+        // Brandy: shoulders down, head low and to one side, and every so often a long, slow sigh. Somehow it works on her.
+        const sigh = Math.pow(Math.max(0, Math.sin(seconds * .28 + offset)), 6);
+        arm[0] = -.05 + sigh * .06; elbow[0] = -.22; armOut[0] = -.03;
+        arm[1] = -.07 + sigh * .06; elbow[1] = -.3; armOut[1] = .03;
+        chestX = .1 - sigh * .1 + breath * .006; chestZ = .03;
+        headX = .17 - sigh * .15; headY = -.12 + Math.sin(seconds * .15 + offset) * .05;
+        hip[0] = -.045; hip[1] = .02; knee[0] = .15; knee[1] = .02;
       } else if (role === 'wine-clerk') {
         // Nika reads: the book held low in both hands, head bent to it, a page turned now and then.
         const page = Math.pow(Math.max(0, Math.sin(seconds * .31 + offset)), 12);
@@ -706,7 +714,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 /** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk'].includes(role), armed = false, look = null, wields = null } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer'].includes(role), armed = false, look = null, wields = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -717,6 +725,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isBirdWatcher = role === 'bird-watcher';
   // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Nika, who works the floor.
   const isWineSeller = role === 'wine-seller', isWineClerk = role === 'wine-clerk';
+  // Brandy Frank, Tidehaven's dyer: impossible colours, and an Eeyore sort of day, every day.
+  const isDyer = role === 'rainbow-dyer';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
   const isLocalWorker = isMiller || isReedWorker || isShelterKeeper;
   const isLegionary = role === 'legion-soldier', isOfficer = role === 'legion-officer', isSuvaliGuard = role === 'suvali-guard';
@@ -743,7 +753,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
 
   const cloth = material(tunic);
   const clothLight = material(new THREE.Color(tunic).lerp(new THREE.Color(0xe4d3a1), 0.18));
-  const linen = material(isWineSeller || isWineClerk ? 0xe4dccb : isElodiGuard ? 0x46464b : isSoldier ? 0xcdbf9f : isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
+  const linen = material(isWineSeller || isWineClerk || isDyer ? 0xe4dccb : isElodiGuard ? 0x46464b : isSoldier ? 0xcdbf9f : isRoadWorker ? 0xc5b79a : isTraveler ? 0xb8a386 : isCook ? 0xd6c4a0 : isDoomsayer ? 0x898474 : role === 'fisher' || isPondFisher ? 0xd5cfb3 : 0xd2ad66);
   const skinMat = material(skin);
   const noseMat = material(new THREE.Color(skin).lerp(new THREE.Color(0xd99476), 0.22));
   const leather = material(0x664833);
@@ -751,8 +761,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -801,7 +811,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     : new THREE.CylinderGeometry(0.218, 0.285, 0.275, 8);
   part(body, hem, cloth, [0, isShelterKeeper ? .64 : isMiller ? .718 : isDoomsayer ? .563 : isCook ? 0.585 : isCourier || isClerk ? .753 : isTraveler ? 0.881 : 0.814, 0], [1, 1, isCook || isDoomsayer ? 0.79 : 0.72]);
   const torsoShape = new THREE.CylinderGeometry(isCook ? 0.226 : 0.252, isCook ? 0.2 : 0.217, 0.395, 8);
-  part(body, torsoShape, cloth, [0, 1.12, 0], [1, 1, 0.68]);
+  part(body, torsoShape, cloth, [0, 1.12, 0], [isDyer ? 0.86 : 1, 1, isDyer ? 0.64 : 0.68]);
   if (isMercenary) {
     // The plain laced jerkin is the company's only shared piece, and the two men
     // in a quilted coat or a sleeveless cut do not wear even that.
@@ -837,7 +847,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const wrists = [];
   for (const side of [-1, 1]) {
     const pivot = new THREE.Group();
-    pivot.position.set(side * (isCook || isWineClerk ? 0.233 : 0.258 + (mercBuild ? mercBuild.shoulders : 0) + (isWineSeller ? 0.03 : 0)), 1.265, 0);
+    pivot.position.set(side * (isCook || isWineClerk || isDyer ? 0.233 : 0.258 + (mercBuild ? mercBuild.shoulders : 0) + (isWineSeller ? 0.03 : 0)), 1.265, 0);
     pivot.rotation.z = side * 0.085;
     body.add(pivot);
     arms.push(pivot);
@@ -846,7 +856,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(pivot, leather, [side * 0.006, -0.012, 0], [0.1, 0.055, 0.103]);
       round(pivot, skinMat, [side * 0.01, -0.058, 0], [0.09, 0.094, 0.095]);
       part(pivot, new THREE.CylinderGeometry(0.086, 0.07, 0.2, 8), skinMat, [side * 0.018, -0.147, 0], [1, 1, 1.03]);
-    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || isWineClerk) {
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || isWineClerk || isDyer) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -863,7 +873,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, garment === 'sleeveless' ? skinMat : linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
-    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineClerk) {
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineClerk || isDyer) {
       round(elbow, cloth, [0, -0.055, 0.003], [0.068, 0.083, 0.071]);
       part(elbow, UNIT_CYLINDER, linen, [0, -0.116, 0.006], [0.068, 0.037, 0.073]);
       round(elbow, skinMat, [0, -0.154, 0.006], [0.057, 0.039, 0.06]);
@@ -888,7 +898,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const templeMat = isMercenary && ['none', 'shaved-sides', 'topknot'].includes(hairStyle) ? stubbleMat : hairMat;
   part(head, UNIT_CYLINDER, skinMat, [0, -0.035, 0], [0.069, 0.14, 0.069]);
   round(head, crownMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
-  round(head, skinMat, [0, 0.181, 0.015], [isCook || isWineClerk ? 0.187 : 0.195, 0.228, 0.18]);
+  round(head, skinMat, [0, 0.181, 0.015], [isCook || isWineClerk || isDyer ? 0.187 : 0.195, 0.228, 0.18]);
   for (const side of [-1, 1]) {
     round(head, skinMat, [side * 0.194, 0.186, 0], [0.047, 0.062, 0.044]);
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
@@ -896,7 +906,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, 0.031, 0.016]);
     round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
-    const brow = box(head, hairMat, [side * 0.069, 0.273, 0.167], [0.078, isCook || isWineClerk ? 0.013 : 0.018, 0.02]);
+    const brow = box(head, hairMat, [side * 0.069, 0.273, 0.167], [0.078, isCook || isWineClerk || isDyer ? 0.013 : 0.018, 0.02]);
     brow.rotation.z = side * -0.075;
   }
   round(head, noseMat, [0, 0.178, 0.207], [0.04, 0.035, 0.044]);
@@ -1078,6 +1088,26 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       const corner = box(head, dark, [side * 0.043, 0.126, 0.2], [0.022, 0.009, 0.01]);
       corner.rotation.z = side * -0.5;
     }
+  } else if (isDyer) {
+    // Brandy: a lot of wavy brown hair, half up in a neon scrunchie, rainbow
+    // ribbons tied in; heavy, half-shut eyelids; a little pink lipstick; big
+    // gold hoops. An ordinary face that nobody quite manages to look away from.
+    const scrunchie = material(0xff3fa4), ribbons = [0xffe135, 0x1ec8d8, 0x8e44ec].map(tint => material(tint));
+    round(head, hairMat, [0, 0.32, -0.02], [0.215, 0.12, 0.2]);
+    for (const side of [-1, 1]) {
+      for (const [y, z, s] of [[0.24, -0.03, 0.075], [0.13, -0.06, 0.085], [0.03, -0.09, 0.08]]) round(head, hairMat, [side * 0.2, y, z], [s, 0.09, s * 1.1]);
+      const swoop = round(head, hairMat, [side * 0.07, 0.35, 0.1], [0.12, 0.05, 0.1]);
+      swoop.rotation.z = side * 0.35;
+      const lid = box(head, material(new THREE.Color(skin).multiplyScalar(0.92)), [side * 0.068, 0.246, 0.188], [0.054, 0.026, 0.014]);
+      lid.rotation.z = side * -0.12;
+      part(head, new THREE.TorusGeometry(0.032, 0.006, 5, 12), material(0xc9a24a, { metalness: 0.6, roughness: 0.35 }), [side * 0.205, 0.12, 0.01], [1, 1, 1]);
+    }
+    round(head, hairMat, [0, 0.14, -0.17], [0.2, 0.2, 0.1]);
+    round(head, hairMat, [0, 0.0, -0.14], [0.16, 0.12, 0.08]);
+    part(head, new THREE.TorusGeometry(0.05, 0.022, 6, 12), scrunchie, [0, 0.35, -0.16], [1, 1, 1]);
+    round(head, hairMat, [0, 0.4, -0.2], [0.06, 0.08, 0.06]);
+    ribbons.forEach((ribbonMat, i) => { const tie = box(head, ribbonMat, [0.13 - i * 0.02, 0.3 - i * 0.07, -0.13 - i * 0.015], [0.015, 0.1, 0.03]); tie.rotation.z = 0.3; });
+    box(head, material(0xe0457b), [0, 0.117, 0.173], [0.05, 0.012, 0.012]);
   } else if (isWineClerk) {
     // Nika: a copper-red pixie crop, the fringe choppy and swept to her left,
     // feathered at the ears and the nape; freckles, a pencil behind one ear and a
@@ -1653,6 +1683,29 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     ribbon(body, ribbonRed, [0.07, 1.33, 0.1], [0, 1.15, 0.2], 0.012, 0.01);
     const tastevin = part(body, UNIT_CYLINDER, silver, [0, 1.13, 0.208], [0.042, 0.012, 0.042]);
     tastevin.rotation.x = Math.PI / 2 * 0.85;
+  } else if (isDyer) {
+    // A skirt in stripes of every colour she makes, a turquoise top with a yellow
+    // belt, a hot pink shawl with black leopard spots, and fingertips stained three colours.
+    // A small waist, the skirt flaring quickly to full hips, the upper bands sitting a little further back.
+    const rainbow = [0xff3fa4, 0xff8c1a, 0xffe135, 0x7ed321, 0x1ec8d8, 0x8e44ec], radii = [0.18, 0.28, 0.315, 0.325, 0.33, 0.335, 0.34];
+    rainbow.forEach((tint, i) => {
+      const top = 0.96 - i * 0.1;
+      part(body, new THREE.CylinderGeometry(radii[i], radii[i + 1], 0.1, 14, 1, true), material(tint), [0, top - 0.05, i < 3 ? -0.03 : -0.012], [1, 1, i < 3 ? 1 : 0.94]);
+    });
+    part(body, UNIT_CYLINDER, material(0xffe135), [0, 0.975, 0], [0.19, 0.035, 0.15]);
+    // Strong arms under the sleeves, and big calves in her boots.
+    arms.forEach((pivot, i) => round(pivot, cloth, [(i ? 1 : -1) * 0.022, -0.14, 0.012], [0.108, 0.125, 0.104]));
+    elbows.forEach(elbow => round(elbow, cloth, [0, -0.075, 0.01], [0.088, 0.1, 0.088]));
+    knees.forEach(knee => round(knee, bootMat, [0, -0.1, -0.07], [0.09, 0.115, 0.075]));
+    const shawl = material(0xff3fa4), spot = material(0x141014), from = 0.75, sweep = Math.PI * 2 - 1.5;
+    part(body, new THREE.CylinderGeometry(0.2, 0.31, 0.34, 14, 1, true, from, sweep), shawl, [0, 1.2, -0.01], [1, 1, 0.9]);
+    for (let k = 0; k < 18; k++) {
+      const theta = from + ((k * 0.618) % 1) * sweep, y = 1.08 + ((k * 0.37) % 1) * 0.24, radius = 0.31 - (y - 1.03) / 0.34 * 0.11 + 0.006;
+      round(body, spot, [Math.sin(theta) * radius, y, Math.cos(theta) * radius * 0.9 - 0.01], [0.03, 0.024, 0.03]);
+    }
+    for (const [i, tints] of [[0, [0xff3fa4, 0x1ec8d8, 0x7ed321]], [1, [0xffe135, 0x8e44ec, 0xff8c1a]]]) {
+      tints.forEach((tint, k) => round(wrists[i], material(tint), [(k - 1) * 0.028, -0.075, 0.03], [0.02, 0.018, 0.022]));
+    }
   } else if (isWineClerk) {
     // A charcoal shop apron over a green knit, and a book always within reach.
     const apron = material(0x3a3a3c), cover = material(0x7a2e2a);

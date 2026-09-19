@@ -44,6 +44,8 @@ export const SIGN_LABELS = Object.freeze([
   'Peblos', 'Cobble', 'The Quay',
   // West Suval
   'West Suval', 'Solis', 'The Gate of Sun Horses', 'The Coalition camp', 'The border stockade', 'Tharganhom',
+  // Tidehaven's dyer (src/brandy.js)
+  'Brandy Frank, Dyer',
   // Pueth
   'The Tessen Bridge', 'Rimeholt',
   // West Izol
