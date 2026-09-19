@@ -132,6 +132,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A simple meal cooked over a fire. Restores up to 40 health.',
     description: 'Restores up to 40 health. A fish cooked over the campfire, ready for the road. Open your satchel with I, select it, and choose Eat. Each meal uses one cooked fish. At full health, no food is consumed.',
   }),
+  'talaelos-playbill': Object.freeze({
+    name: 'Talaelos playbill', type: 'Quest item', icon: 'letter',
+    brief: 'The players of Nylon’s playbill, signed by the whole company, and the dog.',
+    description: 'A folded playbill for Talaelos, the players of Nylon: “Every night a new play! No two alike! No script! Yes, and.” Signed by Galeon Trell, Isaura Thale, Pim Belloss, Old Nilor and Zaela Caeren, with a muddy paw print for Understudy. If anyone asks, you are with Talaelos.',
+  }),
   'hot-chocolate': Object.freeze({
     name: 'Hot chocolate', type: 'Food', icon: 'mug', stackable: true, eatName: 'hot chocolate', useVerb: 'Drink',
     brief: 'Lakota’s recipe, made at a fire: chocolate, milk, chilli and honey. Restores up to 45 health.',
