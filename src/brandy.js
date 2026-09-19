@@ -24,6 +24,8 @@ export function yardPoint(lx, lz) {
 }
 export const BRANDY_STAND = freeze({ ...yardPoint(.4, 2.0), yaw: BRANDY_YARD.yaw });
 
+/** A board on two posts, `posts` metres either side of its middle; a house-shaped board stands on closer ones. */
+const board = (id, lx, lz, turn, shape = 'board') => freeze({ id, lx, lz, turn, shape, posts: shape === 'house' ? .5 : .62 });
 /** Everything in the yard, in its frame. */
 export const YARD_LAYOUT = freeze({
   vats: freeze([[-3.2, .3, 0xff3fa4], [-2.1, .3, 0x2f7dff], [-1.0, .3, 0x9be22d]].map(([lx, lz, dye]) => freeze({ lx, lz, dye, r: .45 }))),
@@ -31,10 +33,11 @@ export const YARD_LAYOUT = freeze({
     freeze({ from: [.8, -1.0], to: [4.0, -1.0], cloths: freeze([0xff3fa4, 0xff8c1a, 0xffe135, 0x7ed321, 0x1ec8d8, 0x8e44ec]) }),
     freeze({ from: [.8, -2.4], to: [4.0, -2.4], cloths: freeze(['leopard', 0x2f7dff, 'leopard', 0xffe135, 'leopard']) }),
   ]),
+  // The painted boards (src/brandy-boards.js): animals round the yard, and the house-shaped ones along the lane, facing it.
   boards: freeze([
-    freeze({ id: 'leopard', lx: -3.2, lz: -3.2, turn: 0 }),
-    freeze({ id: 'bear', lx: -1.4, lz: -3.2, turn: 0 }),
-    freeze({ id: 'dolphin', lx: 4.6, lz: .8, turn: -1.1 }),
+    board('leopard', -3.2, -3.2, 0), board('bear', -1.4, -3.2, 0), board('dolphin', 4.6, .8, -1.1),
+    board('unicorn', -4.3, -1.4, 1.25), board('kittens', -4.3, 1.5, 1.25), board('panda', 4.7, -1.5, -1.25),
+    board('cottage', -3.4, 3.5, 0, 'house'), board('bakery', -1.8, 3.9, 0, 'house'), board('birdhouse', 3.9, 2.4, -.45, 'house'),
   ]),
   bench: freeze({ lx: -2.2, lz: -1.7, w: 1.6, d: .7 }),
   sign: freeze({ lx: 2.6, lz: 3.8 }),
@@ -45,7 +48,7 @@ export function yardColliders() {
   for (const v of YARD_LAYOUT.vats) out.push({ ...yardPoint(v.lx, v.lz), r: v.r + .05, kind: 'brandy-vat' });
   for (const line of YARD_LAYOUT.lines) for (const [lx, lz] of [line.from, line.to]) out.push({ ...yardPoint(lx, lz), r: .14, kind: 'brandy-post' });
   for (const b of YARD_LAYOUT.boards) for (const side of [-1, 1]) {
-    const lx = b.lx + Math.cos(b.turn) * side * .62, lz = b.lz - Math.sin(b.turn) * side * .62;
+    const lx = b.lx + Math.cos(b.turn) * side * b.posts, lz = b.lz - Math.sin(b.turn) * side * b.posts;
     out.push({ ...yardPoint(lx, lz), r: .14, kind: 'brandy-post' });
   }
   const bench = YARD_LAYOUT.bench;
@@ -81,6 +84,8 @@ const TALK = freeze({
   ],
   boards: [
     'The animals, the way they ought to be. A leopard, but rainbow. A dolphin, pink, jumping a rainbow, because why wouldn’t it. A little bear in a heart, with a star on its nose.',
+    'A unicorn, because Drent hasn’t got one and somebody should. Two kittens in a teacup. A panda with a lollipop, which is a bear as well, technically, so I’m allowed.',
+    'And the houses, the way they ought to be. Tidehaven, pink, with a rainbow for a roof. Lysa’s bakery, if it were made of cake, which she says would be unhygienic. A birdhouse for a bird that deserves one. I cut those boards like houses so the pictures would feel at home.',
     'Nobody’s ever seen any of them. I have. On the bad days, mostly. The bad days have the best animals.',
   ],
   loved: [
