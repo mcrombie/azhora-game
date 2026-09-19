@@ -490,6 +490,12 @@ function init() {
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
+  // Figures nobody can see wait off stage: out of the scene, so the renderer's per-frame matrix work
+  // skips them (two hundred-odd villagers are most of the scene's objects). The NPC loop moves them.
+  const offStage=new THREE.Group();
+  function onStage(npc,on){const g=npc.actor.group,m=npc.marker;
+    if(on){if(g.parent!==scene)scene.add(g);if(m&&m.parent!==scene)scene.add(m);}
+    else{if(g.parent===scene)offStage.add(g);if(m&&m.parent===scene)offStage.add(m);}}
   function gatherBodies(){
     const list=[{id:'traveler',x:player.group.position.x,z:player.group.position.z,r:riding.mounted?RIDE.radius:BODY.traveler}];
     for(const npc of npcData){if(npc.hidden||npc.fallen||!npc.actor.group.visible)continue;const p=npc.actor.group.position;list.push({id:npc.id,x:p.x,z:p.z,r:npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person});}
@@ -2154,11 +2160,11 @@ function init() {
       if(raid.ids.length&&!['active','defeated'].includes(combat.state.phase))raid.ids=[];
       const fightAt=combat.state.phase==='active'?combat.state.center:null;
       for(const npc of npcData) {
-        if(npc.hidden||npc.fallen){npc.actor.group.visible=false;npc.marker.visible=false;continue;}
+        if(npc.hidden||npc.fallen){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         const pos=npc.actor.group.position,home=npc.id===BEGGAR_NPC.id&&beggarStep?beggarStep.target:world.npcPositions[npc.id];
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
-        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);npc.actor.group.visible=false;npc.marker.visible=false;continue;}
-        npc.actor.group.visible=true;
+        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
+        npc.actor.group.visible=true;onStage(npc,true);
         const alarm=!npc.cat&&combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
         const fleeing=!!fightAt&&civilian(npc)&&Math.hypot(home.x-fightAt.x,home.z-fightAt.z)<26;
@@ -2303,7 +2309,12 @@ function init() {
         player.group.position.set(-15,world.heightAt(-15,29),29);yaw=Math.PI/2;pitch=.4;distance=targetDistance=9;refreshQuest();settleCamera();}});
     const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
-    window.__AZHORA__={state,woodland:()=>woodlandLife.state(),roadLife:()=>roadLife.state(),roadVerges:()=>roadVerges.state(),forestEcology:()=>forestEcology.state(),forestStory:()=>forestStory.state,
+    window.__AZHORA__={state,
+      // Performance: what is drawn and how much there is (main.cjs --perf-review), and render timing once asked for.
+      perf:()=>{let objects=0,meshes=0;scene.traverse(o=>{objects++;if(o.isMesh)meshes++;});const info=renderer.info;
+        return{calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,programs:info.programs?.length??0,objects,meshes,
+          npcs:npcData.length,visibleNpcs:npcData.filter(n=>n.actor.group.visible).length,colliders:world.colliders.length,shadows:renderer.shadowMap.enabled,pixelRatio:renderer.getPixelRatio(),size:renderer.getSize(new THREE.Vector2()).toArray()};},
+      timeRender:()=>{if(renderer.__timed)return;const draw=renderer.render.bind(renderer);window.__renderTimes=[];renderer.render=(s,c)=>{const t=performance.now();draw(s,c);window.__renderTimes.push(performance.now()-t);};renderer.__timed=true;},woodland:()=>woodlandLife.state(),roadLife:()=>roadLife.state(),roadVerges:()=>roadVerges.state(),forestEcology:()=>forestEcology.state(),forestStory:()=>forestStory.state,
       regionalLife:()=>({story:regionalLife.state,world:world.regionalPlaceState(),metrics:world.regionalPlaceMetrics}),
       runRegionalLifeChecks:()=>runRegionalLifeSmoke(regionalHooks()),verifyRegionalLifeReload:expected=>verifyRegionalLifeReload(regionalHooks(),expected),
       reviewRegional(view){

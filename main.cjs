@@ -13,6 +13,7 @@ const lakotaReviewOnly = smoke && process.argv.includes('--lakota-review');
 const wineryReviewOnly = smoke && process.argv.includes('--winery-review');
 const atticReviewOnly = smoke && process.argv.includes('--attic-review');
 const troupeReviewOnly = smoke && process.argv.includes('--troupe-review');
+const perfReviewOnly = smoke && process.argv.includes('--perf-review');
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
 const openingReviewOnly = smoke && process.argv.includes('--opening-review');
 // `--map-review` pictures the chart as a new player first opens it, and again later in the story.
@@ -118,7 +119,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -284,6 +285,29 @@ if (ownsInstance) app.whenReady().then(async () => {
           fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({wineryViews:3,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(perfReviewOnly){
+        // Where the time goes: at each place, frame times, the game loop's own time, render time, what is drawn, and a CPU profile.
+        const dbg=win.webContents.debugger;dbg.attach('1.3');await dbg.sendCommand('Profiler.enable');await dbg.sendCommand('Profiler.setSamplingInterval',{interval:250});
+        await win.webContents.executeJavaScript(`window.__AZHORA__.timeRender();window.__loopTimes=[];if(!window.__rafTimed){const raf=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>raf(t=>{if(cb.name!=='render'){cb(t);return;}const s=performance.now();cb(t);window.__loopTimes.push(performance.now()-s);});window.__rafTimed=true;}`);
+        const results=[];
+        for(const view of ['walk','lakota','troupe-camp','wine-attic','winery','troupe-stop-ostel']){
+          await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<150;i++)await new Promise(requestAnimationFrame);})()`);
+          await dbg.sendCommand('Profiler.start');
+          const sample=await win.webContents.executeJavaScript(`(async()=>{window.__loopTimes=[];window.__renderTimes=[];const deltas=[];let last=performance.now();for(let i=0;i<300;i++){await new Promise(requestAnimationFrame);const now=performance.now();deltas.push(now-last);last=now;}
+            const stat=a=>{const s=[...a].sort((x,y)=>x-y);return{mean:+(a.reduce((x,y)=>x+y,0)/Math.max(1,a.length)).toFixed(2),p95:+(s[Math.floor(s.length*.95)]??0).toFixed(2)};};
+            return{frame:stat(deltas),loop:stat(window.__loopTimes),render:stat(window.__renderTimes),...window.__AZHORA__.perf()};})()`);
+          const {profile}=await dbg.sendCommand('Profiler.stop');
+          const self=new Map(),byFile=new Map(),interval=profile.samples.length?(profile.endTime-profile.startTime)/profile.samples.length/1000:0;
+          for(const node of profile.nodes){if(!node.hitCount)continue;const f=node.callFrame,file=(f.url||'(native)').split('/').pop(),key=`${f.functionName||'(anonymous)'} ${file}:${f.lineNumber+1}`;
+            self.set(key,(self.get(key)||0)+node.hitCount*interval);byFile.set(file,(byFile.get(file)||0)+node.hitCount*interval);}
+          const top=(m,n)=>[...m].sort((a,b)=>b[1]-a[1]).slice(0,n).map(([k,v])=>[k,+v.toFixed(1)]);
+          results.push({view,...sample,profileMs:+((profile.endTime-profile.startTime)/1000).toFixed(0),topFunctions:top(self,18),byFile:top(byFile,12)});
+          console.log(`${view.padEnd(20)} frame ${sample.frame.mean} ms (p95 ${sample.frame.p95}) · loop ${sample.loop.mean} ms · render ${sample.render.mean} ms · ${sample.calls} draws · ${Math.round(sample.triangles/1000)}k tris · ${sample.visibleNpcs}/${sample.npcs} npcs`);
+        }
+        dbg.detach();
+        fs.writeFileSync(path.join(artifactDir,'perf.json'),JSON.stringify({results,errors},null,2));
+        console.log(JSON.stringify({perfViews:results.length,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(troupeReviewOnly){
         for(const view of ['troupe-camp','troupe-camp','troupe-scene','troupe-stop-lumber-town','troupe-stop-moros','troupe-stop-nemmel','troupe-stop-ostel']){

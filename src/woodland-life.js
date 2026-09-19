@@ -149,11 +149,14 @@ export function createWoodlandLife(scene, world) {
     }
     return result;
   }
+  const nearby = [];
   function clearGround(x, z, ownTree) {
     // A squirrel is smaller than the player's collider, and reaches the bark of
     // its own tree. Other trunks, buildings and the boundary still block it.
+    // Only the colliders filed near it are asked, not the whole world's.
     if (world.heightAt(x, z) < .6 || x < world.bounds.minX + 1 || x > world.bounds.maxX - 1 || z < world.bounds.minZ + 1) return false;
-    return !world.colliders.some(c => {
+    const near = world.nearColliders ? world.nearColliders(x, z, .2, nearby) : world.colliders;
+    return !near.some(c => {
       if (Math.hypot(c.x - ownTree.x, c.z - ownTree.z) < .01) return false;
       return c.r !== undefined ? Math.hypot(x - c.x, z - c.z) < c.r + .13
         : Math.abs(x - c.x) < c.hx + .13 && Math.abs(z - c.z) < c.hz + .13;
@@ -331,8 +334,17 @@ export function createWoodlandLife(scene, world) {
     squirrel.x = squirrel.group.position.x; squirrel.z = squirrel.group.position.z;
   }
   let time = 0;
+  /** Where all of this is: far beyond it, the woodland needs no frame's work, and its glints are already hidden. */
+  let extent = null;
+  function woodlandExtent() {
+    const points = [...acorns, ...sticks, ...fruits, ...squirrels.map(squirrel => squirrel.home)];
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length, z = points.reduce((sum, p) => sum + p.z, 0) / points.length;
+    return { x, z, radius: Math.max(...points.map(p => Math.hypot(p.x - x, p.z - z))) };
+  }
   function update(dt, playerPosition, active = true) {
     if (!active) return;
+    extent ??= woodlandExtent();
+    if (Math.hypot(playerPosition.x - extent.x, playerPosition.z - extent.z) > extent.radius + 120) return;
     dt = Math.min(Math.max(dt, 0), .05); time += dt;
     for (let i = 0; i < acorns.length; i++) {
       const acorn = acorns[i], distance = Math.hypot(acorn.x - playerPosition.x, acorn.z - playerPosition.z);
