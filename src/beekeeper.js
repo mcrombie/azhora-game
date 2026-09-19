@@ -4,8 +4,8 @@
  * The fold was there before him: three old skeps in a sunny break in the trees,
  * a low fence, and flowers let go wild beyond it. Nobody in Tidehaven was quite
  * sure whose they were until Troy took them on, and now he is there most days,
- * grinning at whoever comes up the path, with the veil of his hat rolled up
- * because the bees know him and he would rather see who he is talking to.
+ * grinning at whoever comes up the path. He wears no veil and no hat: the
+ * bees know him, and he would rather see what he is doing through his spectacles.
  *
  * He is the game's source of honeycomb, which the satchel has always known about
  * (`honeycomb`, and Lysa's honey cakes) and nobody could get: the first piece is
@@ -16,7 +16,8 @@
  */
 const freeze = Object.freeze;
 
-// Never the traveler's own model: Troy is a round, red-bearded man in a canvas smock and a bee hat.
+// Never the traveler's own model: Troy is a red-bearded man in spectacles and a canvas smock,
+// thin on top and grinning, with no hat and no veil: the bees know him.
 export const TROY = freeze({
   id: 'bee-keeper', name: 'Troy', role: 'Keeper of the Bee Fold',
   modelRole: 'bee-keeper', color: 0xe7e0c8, skin: 0xe8b98f,
@@ -70,7 +71,7 @@ export function createBeekeeper({ onEvent = () => {} } = {}) {
 /** What he says about the bees, one at a time, whenever there is time for it. */
 export const TROY_LINES = freeze([
   'Three skeps. The far one swarmed in the spring and I got them back out of a hawthorn with a sheet and a lot of talking. They have forgiven me.',
-  'People think the veil is for fear. It is for the eyes, mostly. I keep it up. They know me, and I like to see a face when I am talking to one.',
+  'People ask where the veil is. In a box, at home. They know me, and I would rather see what I am doing. The spectacles are not for the bees; they are for everything closer than a skep.',
   'They go out to the heather on the hill and come back smelling of it, and the honey tastes of it, and that is the whole of my year.',
   'A bee will look at you for a long moment before it decides you are furniture. Stand still and be furniture. It is the best thing anybody ever taught me.',
   'Lysa makes little cakes with this and acorn meal. She will not tell me the rest of it. I have asked four times and been given cake instead of an answer, which is fair.',

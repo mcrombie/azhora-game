@@ -1206,9 +1206,13 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   } else if (isKeeper) {
     // Troy: a head of tight ginger curls, a full red beard over a broad grin, and the laugh
     // lines that come with a face that is mostly grinning. Curls are lumps, not strands.
-    const curls = [[0, .345, -.02, .2], [-.13, .335, .06, .12], [.13, .335, .06, .12], [-.17, .3, -.08, .115], [.17, .3, -.08, .115],
-      [0, .36, .1, .11], [-.06, .375, -.1, .115], [.07, .372, -.1, .115], [-.19, .245, .03, .085], [.19, .245, .03, .085], [0, .285, -.19, .13]];
-    for (const [x, y, z, r] of curls) round(head, hairMat, [x, y, z], [r, r * .88, r * .92]);
+    // Thin on top and going back: a few curls round the sides and the back of the head, and
+    // a high forehead where they have given up. Nothing over the brow.
+    const curls = [[-.145, .315, -.05, .1], [.145, .315, -.05, .1], [-.185, .25, .01, .08], [.185, .25, .01, .08],
+      [0, .33, -.15, .125], [-.1, .3, -.16, .095], [.1, .3, -.16, .095], [0, .225, -.185, .1],
+      // Thinning, not gone: a light covering over the crown, well back from the brow.
+      [0, .35, -.05, .085], [-.07, .348, .01, .065], [.07, .348, .01, .065]];
+    for (const [x, y, z, r] of curls) round(head, hairMat, [x, y, z], [r, r * .82, r * .9]);
     // The beard: jaw, chin and cheeks, with a moustache over the lip.
     const beard = [[0, .01, .175, .13, .1, .105], [-.115, .055, .15, .085, .09, .085], [.115, .055, .15, .085, .09, .085],
       [-.16, .115, .095, .07, .095, .085], [.16, .115, .095, .07, .095, .085], [0, -.04, .15, .105, .075, .09], [0, .055, .19, .105, .075, .07]];
@@ -1839,20 +1843,23 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       pages.rotation.z = side * -0.12;
     }
   } else if (isKeeper) {
-    // A pale canvas smock to the knee, long gloves, and the wide straw hat of the fold with its veil
-    // rolled up on the brim, because the bees know him and he would rather see who he is talking to.
-    const canvas = material(0xe7e0c8), strawHat = material(0xd9c489), veil = material(0x6f7a6b), tin = material(0x9aa0a4, { metalness: .5, roughness: .45 });
+    // A pale canvas smock to the knee, long gloves, and no hat and no veil at all: the bees know him,
+    // and he would rather see what he is doing. The spectacles are his own, and he works in them.
+    const canvas = material(0xe7e0c8), tin = material(0x9aa0a4, { metalness: .5, roughness: .45 });
     part(body, new THREE.CylinderGeometry(.245, .33, .56, 10), canvas, [0, .62, 0], [1, 1, .82]);
     part(body, UNIT_CYLINDER, material(0x8a6a42), [0, .93, 0], [.268, .045, .2]);
     for (const side of [-1, 1]) part(arms[side > 0 ? 1 : 0], new THREE.CylinderGeometry(.078, .07, .16, 8), canvas, [side * .02, -.22, 0]);
     for (const wrist of wrists) round(wrist, canvas, [0, .01, 0], [.085, .075, .085]);
-    // The hat: a low crown and a wide brim, the veil gathered on top of it.
-    const hatGroup = new THREE.Group(); hatGroup.name = 'Troy’s bee hat'; head.add(hatGroup);
-    hatGroup.position.set(0, .4, -.02);
-    part(hatGroup, new THREE.CylinderGeometry(.42, .44, .03, 12), strawHat, [0, 0, 0]);
-    part(hatGroup, new THREE.CylinderGeometry(.215, .235, .16, 10), strawHat, [0, .09, 0]);
-    part(hatGroup, new THREE.CylinderGeometry(.24, .24, .05, 10), veil, [0, .155, 0]);
-    part(hatGroup, new THREE.TorusGeometry(.235, .035, 4, 12), veil, [0, .135, 0]).rotation.x = Math.PI / 2;
+    // Spectacles: round wire rims over the eyes, a bridge between them, and arms back to the ears.
+    const specs = new THREE.Group(); specs.name = 'Troy’s spectacles'; head.add(specs);
+    const wire = material(0x8c7a4e, { metalness: .55, roughness: .4 }), glass = material(0xdfe7ea, { roughness: .12, metalness: .1 });
+    for (const side of [-1, 1]) {
+      part(specs, new THREE.TorusGeometry(.055, .008, 4, 12), wire, [side * .07, .226, .2]);
+      part(specs, new THREE.CylinderGeometry(.052, .052, .004, 10), glass, [side * .07, .226, .198]).rotation.x = Math.PI / 2;
+      const arm = part(specs, UNIT_CYLINDER, wire, [side * .125, .232, .115], [.006, .17, .006]);
+      arm.rotation.set(Math.PI / 2, 0, side * .12);
+    }
+    part(specs, UNIT_CYLINDER, wire, [0, .226, .2], [.018, .006, .006]).rotation.z = Math.PI / 2;
     // The smoker in his right hand: a tin with a spout and a little bellows.
     const smoker = new THREE.Group(); smoker.name = 'Troy’s bee smoker'; wrists[1].add(smoker);
     smoker.position.set(-.02, -.12, .03);

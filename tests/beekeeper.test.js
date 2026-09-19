@@ -73,9 +73,10 @@ test('the combs he has cut are saved, and nonsense is refused', () => {
   assert.equal(validateBeekeeperSnapshot(undefined), true, 'a save from before Troy is fine');
 });
 
-test('Troy is a curly red-haired, red-bearded man in a bee hat with a smoker in his hand', () => {
+test('Troy is a red-bearded man in spectacles, thin on top, with a smoker in his hand', () => {
   const actor = createCharacter({ role: TROY.modelRole, tunic: TROY.color, skin: TROY.skin });
-  for (const name of ['Troy’s bee hat', 'Troy’s bee smoker']) assert.ok(actor.group.getObjectByName(name), `he has ${name}`);
+  for (const name of ['Troy’s spectacles', 'Troy’s bee smoker']) assert.ok(actor.group.getObjectByName(name), `he has ${name}`);
+  assert.equal(actor.group.getObjectByName('Troy’s bee hat'), undefined, 'and no hat');
   const head = actor.group.getObjectByName('Head'), ginger = new THREE.Color(0xb4441c);
   let red = 0;
   head.traverse(object => {
