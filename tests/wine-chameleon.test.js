@@ -111,3 +111,11 @@ test('Tancredi Vel tells the truth only to someone who has seen the seal', () =>
   for (const clue of [/three old things/, /only when he is drunk/, /Cup-Bearer to the Chameleon/, /finished by supper/]) assert.match(truth, clue);
   assert.deepEqual(ids(log), ['ed-keep', 'ed-expose-ask']);
 });
+
+test('Ed’s figure survives any frame step, even the odd first frame’s (it once crashed the game at load)', async () => {
+  const { createEdModel } = await sourceModule('../src/chameleon-model.js');
+  const ed = createEdModel();
+  for (const dt of [NaN, -5, -.01, 0, undefined, 1 / 60, 3]) ed.animate(1, dt);
+  for (let k = 0; k < 500; k++) ed.animate(k * .1, -1);
+  assert.match(ed.colour, /^[0-9a-f]{6}$/);
+});

@@ -66,12 +66,13 @@ export function createEdModel() {
   }
   add(head, tube, frame, [0, .058, .205], [.006, .03, .006], [0, 0, Math.PI / 2]);           // the bridge
   const tongueTip = add(head, tube, tongue, [0, -.04, .2], [.012, .001, .012], [Math.PI / 2, 0, 0]);
-  // Four gripping legs.
+  // Four short gripping legs, half a chameleon's usual length: he sits low, his belly all but on the ground.
+  const DROP = .17, hips = [];
   for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
-    const hip = new THREE.Group(); hip.position.set(x * .11, .36, z * .2); rig.add(hip);
-    add(hip, tube, skin, [x * .05, -.08, 0], [.035, .18, .035], [0, 0, x * .6]);
-    add(hip, tube, skin, [x * .1, -.24, z * .03], [.03, .18, .03], [z * .2, 0, -x * .15]);
-    for (const toe of [-1, 1]) add(hip, ball, skin, [x * .1, -.34, z * .03 + toe * .035], [.03, .02, .04]);
+    const hip = new THREE.Group(); hip.position.set(x * .11, .36 - DROP, z * .2); rig.add(hip); hips.push(hip);
+    add(hip, tube, skin, [x * .035, -.04, 0], [.035, .09, .035], [0, 0, x * .6]);
+    add(hip, tube, skin, [x * .06, -.12, z * .02], [.03, .09, .03], [z * .2, 0, -x * .15]);
+    for (const toe of [-1, 1]) add(hip, ball, skin, [x * .06, -.17, z * .02 + toe * .035], [.03, .02, .04]);
   }
   // The tail, curled in a spiral round a bottle of somebody else's wine.
   const tail = new THREE.Group(); tail.position.set(0, .4, -.34); rig.add(tail);
@@ -80,12 +81,16 @@ export function createEdModel() {
     const t = k / 21, a = t * Math.PI * 2.2, r = .22 * (1 - t * .75);
     curl.push(add(tail, ball, skin, [0, -r * Math.cos(a) + .02 - t * .05, -.12 - r * Math.sin(a) - t * .04], [.055 * (1 - t * .7), .055 * (1 - t * .7), .055 * (1 - t * .7)]));
   }
+  // Everything but the legs sits lower by what the legs lost.
+  for (const child of rig.children) if (!hips.includes(child)) child.position.y -= DROP;
   const bottle = new THREE.Group(); bottle.name = 'Ed’s bottle'; bottle.position.set(0, -.06, -.2); bottle.rotation.x = .5; tail.add(bottle);
   add(bottle, tube, glass, [0, 0, 0], [.04, .2, .04]); add(bottle, tube, glass, [0, .15, 0], [.014, .1, .014]); add(bottle, tube, wine, [0, -.04, 0], [.042, .07, .042]);
 
   let hiccup = 0, flick = 0, drift = Math.random() * 10;
   /** A sway, a hiccup, the odd flick of the tongue, colours drifting; a swig flushes him purple. Sober: grey and still. */
   function animate(time, dt = 1 / 60, { sober = false } = {}) {
+    // A frame's step can be zero or a hair negative (the first frame's stamp can predate the clock), or missing: keep it sane.
+    dt = Number.isFinite(dt) ? Math.min(Math.max(dt, 0), .1) : 0;
     const sway = sober ? .01 : .07;
     rig.rotation.z = Math.sin(time * 1.2) * sway;
     rig.rotation.x = Math.sin(time * .8 + 1) * sway * .4;
@@ -99,8 +104,8 @@ export function createEdModel() {
     tail.rotation.x = Math.sin(time * .9) * (sober ? .02 : .08);
     head.rotation.y = Math.sin(time * .35) * (sober ? .05 : .25);
     // His colours: drifting while drunk, a purple flush at each swig; flat grey sober.
-    drift += dt * .15;
-    const i = Math.floor(drift) % DRUNK.length, next = (i + 1) % DRUNK.length, swig = Math.pow(Math.max(0, Math.sin(time * .45)), 8);
+    drift = Number.isFinite(drift) ? drift + dt * .15 : 0;
+    const i = ((Math.floor(drift) % DRUNK.length) + DRUNK.length) % DRUNK.length, next = (i + 1) % DRUNK.length, swig = Math.pow(Math.max(0, Math.sin(time * .45)), 8);
     if (sober) skin.color.lerp(SOBER, Math.min(1, dt * 2));
     else skin.color.copy(DRUNK[i]).lerp(DRUNK[next], drift % 1).lerp(DRUNK[3], swig * .7);
     bottle.rotation.x = .5 + swig * .9;
