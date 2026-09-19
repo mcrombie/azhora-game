@@ -70,9 +70,10 @@ export const SKILLS = Object.freeze({
   }),
   wine: Object.freeze({
     id: 'wine', name: 'Wine',
-    blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted properly for the first time teaches you something about the grape and the ground.',
+    blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted for the first time teaches you something about the grape, the ground it grew in, and what was done to it indoors; the words for what is in the glass arrive as you go.',
     teacher: 'Lakota in Tidehaven, Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval, and Juan at Tharganhom, the Wine Attic in Solis',
-    // The eight wines of Vaervelm Caelazh are worth 120, and the visit 25 more: level 5.
+    // The eight wines of Vaervelm Caelazh are worth 120 and the visit 25 more: level 5. The five
+    // from its cellar are worth 125 again, and Juan's eight 150: a taster who drinks everything reaches 9.
     thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
   }),
   cooking: Object.freeze({

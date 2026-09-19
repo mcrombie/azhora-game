@@ -80,7 +80,7 @@ import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
-import { WINE_SKILL, WINE_LESSON, createWine, vintnerConversation, cellarHandConversation } from './wine.js';
+import { WINE_SKILL, WINE_LESSON, TASTING_TERMS, createWine, vintnerConversation, cellarHandConversation } from './wine.js';
 import { LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, createCooking } from './cooking.js';
 import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, NIKA, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, nikaConversation } from './wine-attic.js';
 import { ATTIC_WINES } from './attic-wines.js';
@@ -892,6 +892,12 @@ function init() {
         const view=module.view(),list=el('ul','bird-list');
         for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
         card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
+        // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
+        if(id==='wine'&&view.terms?.length){
+          const words=el('ul','bird-list');
+          for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
+          card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
+        }
         if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
       }
       if(skill.id==='botany'&&skill.learned){
@@ -1625,7 +1631,7 @@ function init() {
     if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,openDialogue,closeDialogue,act:saltAct});return;}
     if(npc.id===BRANDY.id){brandy.visit();brandyConversation(npc,{brandy,openDialogue,closeDialogue,act:brandyAct});return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,edContext());return;}
-    if(npc.id===CELLAR_HAND.id){cellarHandConversation(npc,{openDialogue});return;}
+    if(npc.id===CELLAR_HAND.id){cellarHandConversation(npc,{openDialogue,closeDialogue});return;}
     if(npc.id===MYCOLOGIST.id){mycologistConversation(npc,{mycology,openDialogue,closeDialogue,act:mycologyAct});return;}
     if(npc.id===BOTANIST.id){botanistConversation(npc,{botany,jimson,openDialogue,closeDialogue,act:botanyAct});return;}
     if(npc.id===PIPE_SMOKER.id){pipeSmokerConversation(npc,{pipe,botany,openDialogue,closeDialogue,act:pipeAct});return;}

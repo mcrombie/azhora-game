@@ -8,7 +8,7 @@ import { SOLIS_BUILDINGS, SOLIS_ENCLOSURES } from '../src/west-suval.js';
 import { ATTIC_WINES, ATTIC_WINE_IDS, ATTIC_BOTTLES } from '../src/attic-wines.js';
 import { WINE_ATTIC, ATTIC_STANDS, ATTIC_FOOT, ATTIC_HEAD, JUAN, NIKA, NIKA_LIFE, NIKA_SCARY, JUAN_WELCOME, atticOffers,
   createWineAttic, juanConversation, nikaConversation, validateWineAtticSnapshot } from '../src/wine-attic.js';
-import { WINE_IDS, createWine, validateWineSnapshot } from '../src/wine.js';
+import { WINE_IDS, createWine, validateWineSnapshot, CELLAR_WINE_IDS } from '../src/wine.js';
 import { createSkills } from '../src/skills.js';
 import { INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
 import { FOODS } from '../src/consumables.js';
@@ -100,7 +100,7 @@ test('Juan welcomes you, teaches tasting if you need it, pours eight wines and s
   // Tasting at the attic teaches the Wine skill, and the notes are saved.
   const first = wine.taste('enbraleth');
   assert.ok(first.ok && first.first && first.xp === ATTIC_WINES.enbraleth.xp);
-  assert.equal(wine.view().total, WINE_IDS.length + ATTIC_WINE_IDS.length);
+  assert.equal(wine.view().total, WINE_IDS.length + CELLAR_WINE_IDS.length + ATTIC_WINE_IDS.length, 'the winery’s eight, the five from its cellar, and Juan’s eight');
   assert.equal(validateWineSnapshot(wine.snapshot()), true);
   assert.equal(validateWineSnapshot({ ...wine.snapshot(), tasted: { 'wine-enbraleth': 1 } }), false);
 });
