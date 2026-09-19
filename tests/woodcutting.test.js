@@ -62,7 +62,7 @@ test('the Koopwood: a clearing outside Tidehaven, every tree in reach from all s
   assert.equal(world.colliders.filter(c => !c.kind && inKoopwood(c.x, c.z)).length, 0, 'the village wood keeps out of the lot');
   for (const kind of ['woodlot-tree', 'woodlot-keep', 'charcoal-kiln', 'chopping-block', 'log-pile', 'woodlot-spring']) assert.ok(world.colliders.some(c => c.kind === kind), kind);
   assert.equal(world.colliders.filter(c => c.kind === 'woodlot-tree').length, WOODLOT_TREES.length);
-  assert.equal(woodlotColliders().length, WOODLOT_TREES.length + 7);
+  assert.equal(woodlotColliders().length, WOODLOT_TREES.length + 9);
   assert.ok(world.roadSigns.some(sign => sign.label === WOODLOT_SIGN) && SIGN_LABELS.includes(WOODLOT_SIGN));
   assert.ok(world.woodlot && ['fell', 'regrow', 'set', 'chip', 'update', 'standing'].every(key => typeof world.woodlot[key] === 'function'));
   world.woodlot.fell(WOODLOT_TREES[0].id, BOWDEN_STAND); world.woodlot.update(3, 0);

@@ -33,6 +33,7 @@ import { validateTroupeSnapshot } from './troupe.js';
 import { validateBrandySnapshot } from './brandy.js';
 import { validateSaltSnapshot } from './salt-sultan.js';
 import { validateWoodcuttingSnapshot } from './woodcutting.js';
+import { validateConstructionSnapshot } from './construction.js';
 import { createGeology, validateGeologySnapshot } from './geology.js';
 import { createTalkingTree, validateTalkingTreeSnapshot } from './talking-tree.js';
 import { createFerry, validateFerrySnapshot } from './ferry.js';
@@ -105,6 +106,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateBrandySnapshot(data.brandy)) return failed('The saved visit to Brandy Frank is invalid.');
     if (!validateSaltSnapshot(data.salt)) return failed('The saved voyage of the Sultana is invalid.');
     if (!validateWoodcuttingSnapshot(data.woodcutting)) return failed('The saved woodcutting is invalid.');
+    if (!validateConstructionSnapshot(data.construction)) return failed('The saved building is invalid.');
     if (!validateGeologySnapshot(data.geology)) return failed('The saved stone notes are invalid.');
     if (!validateTalkingTreeSnapshot(data.oldTree)) return failed('The saved state of the Old Tree is invalid.');
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
@@ -201,6 +203,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'brandy')) result.brandy = { ...data.brandy };
     if (Object.hasOwn(data, 'salt')) result.salt = { ...data.salt };
     if (Object.hasOwn(data, 'woodcutting')) result.woodcutting = { ...data.woodcutting };
+    if (Object.hasOwn(data, 'construction')) result.construction = { ...data.construction, posts: { ...data.construction.posts } };
     if (Object.hasOwn(data, 'wineAttic')) result.wineAttic = { ...data.wineAttic, life: [...data.wineAttic.life], scary: [...data.wineAttic.scary] };
     if (Object.hasOwn(data, 'cooking')) result.cooking = { ...data.cooking, known: [...data.cooking.known], made: { ...data.cooking.made } };
     if (Object.hasOwn(data, 'geology')) { const geology = createGeology(); geology.restore(data.geology); result.geology = geology.snapshot(); }

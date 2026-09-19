@@ -92,6 +92,16 @@ export const SKILLS = Object.freeze({
       unlock(15, 'White oak · 38 experience a log'), unlock(30, 'Black willow · 68 experience a log'), unlock(30, 'The King’s axe, from Bowden'),
       unlock(45, 'Red maple · 100 experience a log'), unlock(60, 'Black walnut · 175 experience a log'), unlock(99, 'Bowden stops calling you “worm”')]),
   }),
+  construction: Object.freeze({
+    id: 'construction', name: 'Construction', kind: 'working',
+    blurb: 'Planks, a hammer, a saw, and knowing what goes on first. Every plank you build with is experience, and the better the wood, the more of it.',
+    teacher: 'Bowden Koop, King of the Koopwood, who built his own keep',
+    thresholds: RUNESCAPE_TABLE,
+    // What each level opens (src/construction.js holds the builds; the test keeps the two in step).
+    unlocks: Object.freeze([unlock(1, 'Birdhouse, at Bowden’s workbench'), unlock(1, 'Your house: footings and a floor'), unlock(4, 'The frame'), unlock(8, 'Walls'),
+      unlock(12, 'The roof'), unlock(15, 'Oak birdhouse'), unlock(15, 'A door and windows'), unlock(20, 'A bed to rest in'), unlock(25, 'A hearth and a chimney'),
+      unlock(30, 'A chest'), unlock(45, 'A walnut table')]),
+  }),
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));

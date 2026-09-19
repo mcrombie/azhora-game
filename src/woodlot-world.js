@@ -168,6 +168,24 @@ export function createWoodlot({ parent, material, mesh, box, post, round, cylind
     post(water, p.x, y + .03, p.z, S.r * .92, .04, root);
     for (let k = 0; k < 11; k++) { const a = k / 11 * Math.PI * 2; mesh(round, stone, p.x + Math.sin(a) * S.r, y + .1, p.z + Math.cos(a) * S.r, .26, .18, .22, root); }
     for (let k = 0; k < 7; k++) { const a = k * PHI; post(material('#6f8a3a'), p.x + Math.sin(a) * S.r * .8, y + .45, p.z + Math.cos(a) * S.r * .8, .02, .9, root); } }
+  // The workbench, for Construction: a heavy bench with a vice, a plank on it, and tools hung along its back.
+  { const W = WOODLOT_LAYOUT.workbench, p = at(W.lx, W.lz), y = ground(W.lx, W.lz);
+    const top = box(wood, p.x, y + .86, p.z, W.w, .1, W.d, root); top.rotation.y = yaw;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const q = at(W.lx + sx * (W.w / 2 - .1), W.lz + sz * (W.d / 2 - .08)); post(woodDark, q.x, y + .42, q.z, .05, .84, root); }
+    { const q = at(W.lx, W.lz); const shelf = box(woodDark, q.x, y + .25, q.z, W.w - .2, .05, W.d - .15, root); shelf.rotation.y = yaw; }
+    { const q = at(W.lx - W.w / 2 + .12, W.lz + W.d / 2 - .05); box(soot, q.x, y + .96, q.z, .16, .14, .12, root).rotation.y = yaw; }
+    { const q = at(W.lx + .15, W.lz); const plank = box(endGrain, q.x, y + .94, q.z, 1.1, .05, .22, root); plank.rotation.y = yaw + .08; }
+    { const q = at(W.lx + .55, W.lz + .1); const h = box(steel, q.x, y + .95, q.z, .22, .05, .06, root); h.rotation.y = yaw + .6; const g = post(wood, q.x - .05, y + .93, q.z + .08, .02, .3, root); g.rotation.set(Math.PI / 2, 0, yaw + .6); }
+    { const q = at(W.lx, W.lz - W.d / 2 + .04); const back = box(woodDark, q.x, y + 1.25, q.z, W.w, .5, .04, root); back.rotation.y = yaw; } }
+  // The saw pit: a log up on two trestles, half sawn through, and the long two-handled pit saw standing in the cut.
+  { const S = WOODLOT_LAYOUT.sawpit, y = ground(S.lx, S.lz);
+    for (const side of [-1, 1]) { const q = at(S.lx + side * S.len * .38, S.lz);
+      for (const lean of [-1, 1]) { const leg = post(woodDark, q.x, y + .38, q.z + lean * .18, .04, .82, root); leg.rotation.set(lean * .4, yaw, 0); }
+      const bar = box(woodDark, q.x, y + .74, q.z, .1, .1, .5, root); bar.rotation.y = yaw; }
+    const p = at(S.lx, S.lz), log = mesh(cylinder, bark, p.x, y + .98, p.z, .24, S.len, .24, root); log.rotation.set(0, yaw, Math.PI / 2);
+    for (const end of [-1, 1]) { const e = at(S.lx + end * S.len / 2, S.lz), cap = mesh(cylinder, endGrain, e.x, y + .98, e.z, .22, .02, .22, root); cap.rotation.set(0, yaw, Math.PI / 2); }
+    const blade = box(steel, p.x, y + 1.05, p.z, .02, 1.5, .28, root); blade.rotation.set(0, yaw, .12);
+    for (const end of [-1, 1]) { const q = at(S.lx + Math.sin(.12) * end * -.75, S.lz); post(wood, q.x, y + 1.05 + end * .78, q.z, .03, .36, root).rotation.set(Math.PI / 2, yaw, 0); } }
   // Chips and sawdust on the ground by the block, and a trodden patch the length of the lot.
   { const p = at(-2, 5), y = ground(-2, 5); mesh(cylinder, material('#b49a70'), p.x, y + .012, p.z, 3.4, .01, 2.2, root); }
 

@@ -162,6 +162,41 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Black walnut, dark and precious: the best wood in Drent.',
     description: 'Logs of black walnut from Bowden’s old tree, cut at Woodcutting level 60. The best timber in Drent; Bowden pays nine copper apiece and pretends it hurts.',
   }),
+  'hammer': Object.freeze({
+    name: 'Hammer', type: 'Tool', icon: 'hammer',
+    brief: 'Bowden Koop’s spare hammer. For nails, and for thumbs.',
+    description: 'A claw hammer from Bowden Koop. With the saw, it is what Construction needs: at his workbench in the Koopwood, and on your plot beside it.',
+  }),
+  'saw': Object.freeze({
+    name: 'Saw', type: 'Tool', icon: 'saw',
+    brief: 'A carpenter’s saw from Bowden Koop.',
+    description: 'A hand saw from Bowden Koop, for cutting planks to size. With the hammer, it is what Construction needs.',
+  }),
+  'pine-plank': Object.freeze({
+    name: 'Pine planks', type: 'Gathered material', icon: 'plank', stackable: true,
+    brief: 'Planks sawn from pine logs in Bowden’s pit. 29 Construction experience each, built.',
+    description: 'Pine planks, sawn from your own logs at Bowden Koop’s saw pit for a copper apiece. Build with them at his workbench or on your plot: each is worth 29 Construction experience.',
+  }),
+  'oak-plank': Object.freeze({
+    name: 'Oak planks', type: 'Gathered material', icon: 'plank', stackable: true,
+    brief: 'Planks sawn from oak logs. 60 Construction experience each, built.',
+    description: 'Oak planks, sawn from oak logs at Bowden Koop’s saw pit for two copper apiece. Each is worth 60 Construction experience, built into something.',
+  }),
+  'walnut-plank': Object.freeze({
+    name: 'Walnut planks', type: 'Gathered material', icon: 'plank', stackable: true,
+    brief: 'Planks of black walnut, dark and fine. 140 Construction experience each, built.',
+    description: 'Walnut planks, sawn from black walnut at Bowden Koop’s saw pit for five copper apiece. The finest wood in Drent: each is worth 140 Construction experience, built.',
+  }),
+  'birdhouse': Object.freeze({
+    name: 'Birdhouse', type: 'Tool', icon: 'birdhouse', stackable: true,
+    brief: 'A pine birdhouse. Hang it on a post in the Greenway and let somebody move in.',
+    description: 'A small pine birdhouse, made at Bowden’s workbench. Hang it on one of the birdhouse posts in the Greenway, west of Tidehaven. After a while a bird moves in; empty it for Birding experience.',
+  }),
+  'oak-birdhouse': Object.freeze({
+    name: 'Oak birdhouse', type: 'Tool', icon: 'birdhouse', stackable: true,
+    brief: 'An oak birdhouse: sturdier, and birds like it better.',
+    description: 'An oak birdhouse, made at Bowden’s workbench at Construction level 15. Hang it on a birdhouse post in the Greenway; emptying it once a bird has moved in is worth more Birding experience than pine.',
+  }),
   'fishing-rod': Object.freeze({
     name: 'Fishing rod', type: 'Tool', icon: 'fishing-rod',
     brief: 'A simple wooden rod with a line and hook, given to you by the fishing teacher.',
@@ -445,6 +480,10 @@ const iconPaths = {
   chocolate: '<rect x="6" y="9" width="24" height="19" rx="2"/><path d="M6 15.3h24M6 21.6h24M14 9v19M22 9v19M26 9l4 4"/>',
   axe: '<path d="M11 33 24 9M21 6c4-1 9 1 10 5l-6 4c-1-3-3-4-6-4Z"/><path d="m19 11 5 3"/>',
   logs: '<ellipse cx="9" cy="24" rx="4" ry="5"/><ellipse cx="9" cy="24" rx="1.5" ry="2"/><path d="M9 19h19c2 0 4 2 4 5s-2 5-4 5H9"/><ellipse cx="17" cy="12" rx="4" ry="5"/><ellipse cx="17" cy="12" rx="1.5" ry="2"/><path d="M17 7h11c2 0 3 2 3 5s-1 5-3 5h-6"/>',
+  hammer: '<path d="M16 14 29 31M10 5l12 9-4 5L6 9Z"/><path d="M6 9 3 13"/>',
+  saw: '<path d="M5 28 26 7l5 5-21 21ZM26 7l3-3 3 3-3 3"/><path d="m10 28 2-2m2 0 2-2m2 0 2-2m2 0 2-2"/>',
+  plank: '<path d="M4 20 26 8l6 4-22 12Z"/><path d="M4 20v4l6 4v-4M32 12v4L10 28"/><path d="m12 16 4 3m4-5 4 3"/>',
+  birdhouse: '<path d="M18 4 6 14h24Z"/><path d="M9 14v14h18V14"/><circle cx="18" cy="19" r="3"/><path d="M18 25v3M14 28v4h8v-4"/>',
   ribbon: '<path d="M18 16c-4-6-12-8-12-2s8 6 12 2Zm0 0c4-6 12-8 12-2s-8 6-12 2Z"/><path d="M16 17l-5 13 4-2 2 4 1-15M20 17l5 13-4-2-2 4-1-15"/>',
   bottle: '<path d="M15 3h6v7c0 2 4 3 4 8v13c0 1-1 2-2 2H13c-1 0-2-1-2-2V18c0-5 4-6 4-8Z"/><path d="M14 6h8M11 21h14v7H11"/>',
   jug: '<path d="M13 5h8M14 5v4c-5 3-7 8-7 13 0 6 4 9 10 9s10-3 10-9c0-5-2-10-7-13V5"/><path d="M27 15c4 0 5 3 5 5s-2 5-5 5M9 19h18"/>',

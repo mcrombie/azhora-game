@@ -99,6 +99,9 @@ export const WOODLOT_LAYOUT = freeze({
   logpile: freeze({ lx: -7.2, lz: 7.8, len: 2.6 }),
   spring: freeze({ lx: -9.8, lz: 4.4, r: 1.6 }),
   sign: freeze({ lx: 1, lz: 10.2 }),
+  // Construction (src/construction.js): the workbench by the willows, and the saw pit by the log pile.
+  workbench: freeze({ lx: -10.4, lz: 9.8, w: 1.7, d: .75 }),
+  sawpit: freeze({ lx: -6.4, lz: 10.1, len: 2.2 }),
 });
 export const WOODLOT_SIGN = 'The Koopwood';
 export const BOWDEN_STAND = freeze({ ...lotPoint(-1.5, 6.6), yaw: KOOPWOOD.yaw });
@@ -112,6 +115,8 @@ export function woodlotColliders() {
   out.push({ ...lotPoint(L.block.lx, L.block.lz), r: .42, kind: 'chopping-block' });
   for (const t of [-.4, 0, .4]) out.push({ ...lotPoint(L.logpile.lx + t * L.logpile.len, L.logpile.lz), r: .5, kind: 'log-pile' });
   out.push({ ...lotPoint(L.spring.lx, L.spring.lz), r: L.spring.r, kind: 'woodlot-spring' });
+  { const b = lotPoint(L.workbench.lx, L.workbench.lz); out.push({ x: b.x, z: b.z, hx: L.workbench.w / 2, hz: L.workbench.d / 2, kind: 'workbench' }); }
+  out.push({ ...lotPoint(L.sawpit.lx, L.sawpit.lz), r: .75, kind: 'saw-pit' });
   return out;
 }
 
@@ -242,11 +247,13 @@ const LEAVE = '“Go on, worm. The trees won’t fall down by themselves. Well. 
 /**
  * Bowden in his lot. `wood` is the woodcutting module, `skills` the
  * traveler's skills, `purse` the copper carried, `count(item)` and `has(item)`
- * read the satchel, `items` names things. `act` runs 'bowden-meet',
- * 'bowden-teach', 'bowden-buy-<axe>', 'bowden-sell' and 'bowden-kings-axe'.
+ * read the satchel. `builder`, when given, is what he says and does about
+ * Construction (src/construction.js): { known, saw: { planks, fee }, teach }.
+ * `act` runs 'bowden-meet', 'bowden-teach', 'bowden-buy-<axe>', 'bowden-sell',
+ * 'bowden-kings-axe', 'bowden-build' and 'bowden-saw'.
  */
 export function bowdenConversation(npc, context) {
-  const { wood, skills, purse = 0, count = () => 0, has = () => false, openDialogue, closeDialogue, act } = context;
+  const { wood, skills, purse = 0, count = () => 0, has = () => false, builder = null, openDialogue, closeDialogue, act } = context;
   if (npc.id !== BOWDEN.id) return false;
   const again = () => bowdenConversation(npc, { ...context, back: true });
   const talk = lines => openDialogue(npc, [...lines], null, 'Back to Bowden', { onComplete: again });
@@ -271,6 +278,9 @@ export function bowdenConversation(npc, context) {
       }),
       { id: 'bowden-axes-none', label: 'Just looking.', action: again },
     ] }) }] : []),
+    ...(builder && !builder.known ? [{ id: 'bowden-build', label: 'Could you teach me to build?', action: () => { act('bowden-build'); openDialogue(npc, [...builder.teach], null, 'Back to Bowden', { onComplete: again }); } }] : []),
+    ...(builder?.known && builder.saw.planks ? [{ id: 'bowden-saw', label: `Saw my logs into planks. (${builder.saw.planks} for ${builder.saw.fee} copper)`, disabled: purse < builder.saw.fee,
+      reason: purse < builder.saw.fee ? `That is ${builder.saw.fee} copper, and you have ${purse}.` : '', action: () => { closeDialogue(); act('bowden-saw'); } }] : []),
     ...(offer.logs ? [{ id: 'bowden-sell', label: `I’ve brought logs for the kiln. (${offer.logs} for ${offer.total} copper)`, action: () => { closeDialogue(); act('bowden-sell'); } }] : []),
     { id: 'bowden-king', label: 'Why do they call you King?', action: () => talk(TALK.king) },
     { id: 'bowden-kiln', label: 'What’s that smoking mound?', action: () => talk(TALK.kiln) },

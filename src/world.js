@@ -23,6 +23,7 @@ import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-s
 import { atticDeckHeight } from './wine-attic.js';
 import { createBrandyYard } from './brandy-yard.js';
 import { createWoodlot } from './woodlot-world.js';
+import { createHomestead } from './homestead-world.js';
 import { inKoopwood } from './woodcutting.js';
 import { createWestSuvalScenery } from './west-suval-world.js';
 import { createWineryScenery } from './winery-world.js';
@@ -1140,6 +1141,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   createBrandyYard({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
   // The Koopwood, Bowden Koop's woodlot, where woodcutting is learned (src/woodcutting.js, src/woodlot-world.js).
   const woodlot = createWoodlot({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs, movingGroups });
+  // The traveler's house on the plot beside it, and the birdhouse posts in the Greenway (src/construction.js, src/homestead-world.js).
+  const homestead = createHomestead({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, movingGroups, reindex: () => { colliderIndex = null; } });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);
@@ -1545,6 +1548,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     colliders,
     /** Bowden's woodlot, whose trees fall and grow back (src/woodlot-world.js). */
     woodlot,
+    /** The traveler's house and the birdhouse posts, built as Construction goes (src/homestead-world.js). */
+    homestead,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
     reindexColliders: () => { colliderIndex = null; },
