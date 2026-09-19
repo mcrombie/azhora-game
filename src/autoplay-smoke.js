@@ -124,14 +124,14 @@ export async function runAutoplaySmoke(h) {
   assert(final.campaign?.chapterId !== 'moros-camp' && final.campaign?.chapterId !== 'luscia-aftermath', `the campaign stopped at ${final.campaign?.chapterId} instead of going on past the Moros camp`);
   assert(final.border?.complete, 'the border battle was not fought');
   assert(final.border?.side === side, `the ${side} side was asked for and ${final.border?.side} was taken`);
-  // Chapter two closes on the traveler's own side's ground: the outpost on the Moros, or Solis.
+  // Chapter two closes in the place the traveler's side has taken: Solis for the Empire, the outpost on the Moros for the Republic.
   assert(final.chapter >= 3, `chapter two did not close (chapter ${final.chapter}, campaign ${final.campaign?.chapterId}, at ${final.position[0].toFixed(0)},${final.position[2].toFixed(0)}): ${autopilot.stopReason}; last: ${milestones.slice(-12).map(m => `${m.seconds}s ${m.label}`).join(' | ')}`);
-  assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 5 : 3),
+  assert(world.regionAt(final.position[0], final.position[2]).id === (side === 'coalition' ? 3 : 5),
     `the ${side} side ended in region ${world.regionAt(final.position[0], final.position[2]).id}`);
   assert(wentToSolis, 'the Marshal’s terms were never carried to Solis');
-  // Chapter two ends when the traveler stands on their own side's ground again, and the
-  // autopilot stops there: "You are back in the army's outpost…" or "…back in Solis…".
-  assert(/You are back in /.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
+  // Chapter two ends where the traveler took the place for their side, and the autopilot
+  // stops there: "Solis is your side’s now…" or "The outpost on the Moros is your side’s now…".
+  assert(/is your side’s now, and you are standing in it/.test(autopilot.stopReason), `autoplay stopped with “${autopilot.stopReason}”`);
   assert(final.mode === 'playing', `autoplay ended in ${final.mode}`);
   // The day after the battle is fought on the Moros (the outpost) or at Solis, as the battle went.
   assert([3, 5].includes(world.regionAt(final.position[0], final.position[2]).id), 'the traveler did not end on the Moros Plain or in West Suval');

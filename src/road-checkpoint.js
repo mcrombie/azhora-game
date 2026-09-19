@@ -22,6 +22,7 @@ import { createMycology, validateMycologySnapshot } from './mycology.js';
 import { createBotany, validateBotanySnapshot } from './botany.js';
 import { createPipe, validatePipeSnapshot } from './pipeweed.js';
 import { createJimson, validateJimsonSnapshot } from './jimson-quest.js';
+import { createKaty, validateKatySnapshot } from './katy.js';
 import { validateRefugeesSnapshot } from './refugees.js';
 import { validateFallenSnapshot } from './bystanders.js';
 import { validateArchaeologySnapshot } from './archaeology.js';
@@ -95,6 +96,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateBotanySnapshot(data.botany ?? data.herbology)) return failed('The saved plant notes are invalid.');
     if (!validatePipeSnapshot(data.pipe)) return failed('The saved pipe is invalid.');
     if (!validateJimsonSnapshot(data.jimson)) return failed('The saved errand for Toft is invalid.');
+    if (!validateKatySnapshot(data.katy)) return failed('The saved search for Batman is invalid.');
     if (!validateRefugeesSnapshot(data.refugees)) return failed('The saved road for the Lauvel refugees is invalid.');
     if (!validateFallenSnapshot(data.fallen)) return failed('The saved list of the dead is invalid.');
     if (!validateArchaeologySnapshot(data.archaeology)) return failed('The saved notes from the digs are invalid.');
@@ -194,6 +196,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'botany') || Object.hasOwn(data, 'herbology')) { const botany = createBotany(); botany.restore(data.botany ?? data.herbology); result.botany = botany.snapshot(); }
     if (Object.hasOwn(data, 'pipe')) { const pipe = createPipe(); pipe.restore(data.pipe); result.pipe = pipe.snapshot(); }
     if (Object.hasOwn(data, 'jimson')) { const jimson = createJimson(); jimson.restore(data.jimson); result.jimson = jimson.snapshot(); }
+    if (Object.hasOwn(data, 'katy')) { const katy = createKaty(); katy.restore(data.katy); result.katy = katy.snapshot(); }
     if (Object.hasOwn(data, 'refugees')) result.refugees = data.refugees;
     if (Object.hasOwn(data, 'fallen')) result.fallen = { version: 1, ids: [...data.fallen.ids] };
     if (Object.hasOwn(data, 'archaeology')) result.archaeology = { ...data.archaeology, found: { ...data.archaeology.found } };

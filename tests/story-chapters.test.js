@@ -30,14 +30,14 @@ test('chapter one ends on reporting for duty at Lumber Town', () => {
   assert.deepEqual(chapterProgress(reported).list.map(entry => entry.state), ['done', 'current', 'later']);
 });
 
-test('chapter two runs from the report to your own side’s ground, and says whose', () => {
+test('chapter two runs from the report to the place your side takes, and says which', () => {
   assert.equal(chapterProgress(fought).number, 2, 'the battle alone does not close it');
-  assert.equal(chapterProgress(settled).number, 2, 'nor does the day after, until you are back on your own ground');
+  assert.equal(chapterProgress(settled).number, 2, 'nor does the day after, until you stand on your side’s ground');
   assert.equal(chapterProgress({ ...settled, home: true }).number, 3, 'standing in it closes the chapter');
   const empire = chapterProgress({ ...fought, side: 'empire' });
-  assert.match(chapterGoal(empire.current, { side: 'empire' }), /outpost on the Moros/);
-  assert.match(chapterGoal(empire.current, { side: 'coalition' }), /Solis/);
-  assert.match(chapterGoal(empire.current, {}), /outpost on the Moros, or the walls of Solis/, 'before you choose, it names both');
+  assert.match(chapterGoal(empire.current, { side: 'empire' }), /inside Solis, taken for the Empire/);
+  assert.match(chapterGoal(empire.current, { side: 'coalition' }), /outpost on the Moros, taken for the Republic/);
+  assert.match(chapterGoal(empire.current, {}), /Solis for the Empire, the army’s outpost on the Moros for the Republic/, 'before you choose, it names both');
 });
 
 test('chapter three is the side you chose: Ambron for the Empire, the Republic for Izol', () => {

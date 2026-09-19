@@ -416,7 +416,24 @@ test('a harbour gate is the way to the water, not the way inland', async () => {
   assert.deepEqual(enclosureWaypoint({ x: 0, z: 0 }, { x: -90, z: 5 }, world).point, { x: -40, z: 0 }, 'to the waterfront: the quay gate');
 });
 
-test('from the Court of Oaths the Empire’s traveler walks all the way back to the outpost', async () => {
+test('the day after, chapter two closes in the place your side took, where you already stand', async () => {
+  const { sideSeat } = await import('../src/story-chapters.js');
+  const world = { sideSeat: (side, conquest) => sideSeat(side, conquest) };
+  const at = (side, variant, position) => aftermathGoal({ campaign: { side }, position, aftermath: { variant, complete: true, built: true, destinationIds: [] } }, world);
+  const solis = sideSeat('empire', 'solis-sweep'), outpost = sideSeat('coalition', 'moros-outpost');
+  const empire = at('empire', 'solis-sweep', { x: solis.x + 20, z: solis.z });
+  assert.equal(empire.kind, 'done', 'the Empire’s traveler reports in Solis and the chapter ends there');
+  assert.match(empire.reason, /^Solis is your side’s now, and you are standing in it/);
+  const republic = at('coalition', 'moros-outpost', { x: outpost.x, z: outpost.z + 30 });
+  assert.equal(republic.kind, 'done');
+  assert.match(republic.reason, /^The outpost on the Moros is your side’s now/);
+  // A side that took nothing still goes home, and only a side's own conquest moves its ground.
+  assert.equal(sideSeat('empire').id, 'outpost'); assert.equal(sideSeat('coalition').id, 'solis');
+  assert.equal(sideSeat('empire', 'moros-outpost').id, 'outpost');
+  assert.equal(at('empire', 'moros-fallback', { x: solis.x, z: solis.z }).kind, 'walk', 'the Empire that took nothing makes for its outpost');
+});
+
+test('from the Court of Oaths the way to the outpost on the Moros goes by the roads', async () => {
   // Twice an autoplay run jammed at Solis's north-west corner: out by the quay gate, or
   // straight along the ditch toward the outpost. The walk now goes by the roads.
   const THREE = await import('../vendor/three.module.js');

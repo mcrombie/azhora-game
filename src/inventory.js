@@ -42,6 +42,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Ambroni copper. Ten make a silver piece, a hundred a gold.',
     description: 'The Empire’s small coin, good in any market that answers to Ambron. Traders and beggars take it; the army pays in it.',
   }),
+  'katy-batman-sketch': Object.freeze({
+    name: 'Katy’s drawing of Batman', type: 'Quest item', icon: 'letter',
+    brief: 'Charcoal on the back of a wine label: a bat’s head and a bat’s wings on a man’s body. Underneath, underlined twice: HE IS NOT A MONSTER.',
+    description: 'Katy drew him from what the people who have seen him told her, so that you would know him when you see him, and not run. She wants to hear the moment you do.',
+  }),
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',

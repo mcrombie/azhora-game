@@ -51,6 +51,14 @@ test('road checkpoint round-trips partial quest progress, satchel, weapon wear, 
   assert.equal(checkpoint.read().data, null);
 });
 
+test('the search for Batman is kept, and a nonsense stage is refused', () => {
+  const { checkpoint, data } = fixture();
+  assert.equal(checkpoint.save({ ...data, katy: { version: 1, stage: 'looking' } }).ok, true);
+  assert.deepEqual(checkpoint.read().data.katy, { version: 1, stage: 'looking' });
+  assert.equal(checkpoint.save({ ...data, katy: { version: 1, stage: 'found-him' } }).ok, false);
+  assert.deepEqual(checkpoint.read().data.katy, { version: 1, stage: 'looking' }, 'the good save is not overwritten');
+});
+
 test('optional hideout checkpoints preserve unfinished supplies and reject impossible progress without overwriting the adventure', () => {
   const { checkpoint, data, inventory, storage } = fixture();
   const hideout = createForestHideoutQuest({ inventory });

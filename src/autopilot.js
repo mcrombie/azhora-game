@@ -460,12 +460,17 @@ export function planGoal(snapshot, world) {
  */
 /** The army on the plain: the camp gate, the Marshal's muster, the horse line. */
 /** The day after the battle: rally to the commander, fight (the ordinary fight policy handles it), and report. */
-/** Once the day after is done, the chapter closes on the traveler's own side's ground. */
+/**
+ * Once the day after is done, the chapter closes on the traveler's own side's ground: the
+ * place their side has just taken, which is where they stand after the report.
+ */
 export function homeGoal(snapshot, world) {
-  const seat = world.sideSeat?.(snapshot.campaign?.side);
+  const aftermath = snapshot.aftermath, seat = world.sideSeat?.(snapshot.campaign?.side, aftermath?.complete ? aftermath.variant : null);
   if (!seat) return { kind: 'done', intent: 'The war moves on', reason: 'The day after the border battle is done and you have your pay and your orders. What follows is the next chapter, and it is not built yet.' };
   const gap = distance(snapshot.position, seat);
-  if (gap <= (seat.reach ?? 110) - 12) return { kind: 'done', intent: `Standing in ${seat.name}`, reason: `You are back in ${seat.name} with your pay and your orders. What follows is the next chapter, and it is not built yet.` };
+  const named = seat.name.charAt(0).toUpperCase() + seat.name.slice(1);
+  if (gap <= (seat.reach ?? 110) - 12) return { kind: 'done', intent: `Standing in ${seat.name}`,
+    reason: `${seat.taken ? `${named} is your side’s now, and you are standing in it` : `You are back in ${seat.name}`} with your pay and your orders. What follows is the next chapter, and it is not built yet.` };
   return { kind: 'walk', target: seat, radius: Math.max(8, (seat.reach ?? 110) - 20), intent: `Making for ${seat.name}` };
 }
 
