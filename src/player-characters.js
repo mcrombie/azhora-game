@@ -1,0 +1,149 @@
+import { MERCENARY_ROSTER, CROM } from './mercenaries.js';
+
+/**
+ * Who you are. The company is always the same eleven people called to the Moros muster; the
+ * only question the opening screen asks is which of them you walk as. Choose Chris Gotwood
+ * and Crom the Barbarian takes the slot you left — his look, his arrival, his lines — and
+ * you land in Chris's cloth with Chris's sword and the Ambroni Chris already speaks.
+ *
+ * Pure data and pure functions: no DOM, no three, no skills module. The experience below is
+ * written as experience and not as levels on purpose, because two of these skills do not
+ * exist yet and a third is about to get a longer table; a number survives all of that and a
+ * level does not. Where a number is meant to read as a level it says so beside it.
+ *
+ * These are placeholders the user will rewrite from the character profiles. What is settled
+ * here is the shape: eleven entries, in the user's order, Crom first.
+ */
+export const PLAYER_CHARACTERS_VERSION = 1;
+
+/** The traveler as he has always been: the default, and the only one who starts with nothing. */
+export const DEFAULT_PLAYER = 'crom';
+
+const sword = Object.freeze([Object.freeze({ id: 'simple-sword', quantity: 1 })]);
+const swordAnd = id => Object.freeze([...sword, Object.freeze({ id, quantity: 1 })]);
+
+const playable = (id, name, title, roster, blurb, weapon, inventory, skills, extra = {}) =>
+  Object.freeze({ id, name, title, roster, blurb, weapon, inventory, skills: Object.freeze(skills),
+    startingLanguages: Object.freeze({}), ...extra });
+
+/**
+ * The eleven, in the order the user gave them. `roster` is the hired sword whose place in the
+ * world this character is; Crom has none, because when you are Crom the ten on the road are
+ * already the ten. `skills` is experience at the moment you step ashore, by skill id; ids that
+ * this build has not registered yet (swimming, linguist, cartography belong to other hands)
+ * are simply not learned, which is what `createSkills` does with them anyway.
+ */
+export const PLAYABLE = Object.freeze([
+  playable('crom', 'Crom the Barbarian', 'One sword and no explanations', null,
+    'Came for the coin, brought a sword, and brought nothing else. Everything you learn on this road, you learn on this road.',
+    'simple-sword', sword, {}),
+  playable('gotwood', 'Chris Gotwood', 'The one who can ask directions', 'merc-gotwood',
+    'Sailed with the company’s papers in his coat and enough Ambroni to be understood at a gate. The letter is yours from the first step.',
+    'simple-sword', sword, { linguist: 200 },
+    // The language module reads this: Chris interprets for the company, so he begins the road
+    // already able to hold a conversation in the Empire's tongue (src/linguist.js, src/languages.js).
+    { startingLanguages: Object.freeze({ ambroni: 40 }) }),
+  playable('word', 'Ed the Word', 'Came ashore under his own power', 'merc-word',
+    'Off a pirate ship that never docked, out of a port he will not name, with a dagger and a great deal to say about none of it.',
+    'long-dagger', swordAnd('long-dagger'), { swimming: 260 }),
+  playable('jerry', 'Jerry', 'Thirty paces and no nearer', 'merc-jerry',
+    'An archer who would rather settle a thing at a distance, and who has waited out more floats than most men have seen water.',
+    'simple-sword', sword, { fishing: 140 }),
+  playable('christin', 'Christin', 'The one who feeds the company', 'merc-christin',
+    'Sword and shield, and the only one of the eleven who can be relied on to put something hot in front of everybody afterwards.',
+    'simple-sword', sword, { cooking: 90 }),
+  playable('ciaran', 'Ciarán', 'Reads the ground he stands on', 'merc-ciaran',
+    'Two paces of ash between him and trouble, and a habit of picking up whatever the road is made of and weighing it in his hand.',
+    'simple-sword', sword, { geology: 140 }),
+  playable('lakota', 'Lakota', 'The birder of the company', 'merc-lakota',
+    'Late, unbothered, and the best pair of eyes on the coast. He has been watching birds and digging up old towns for years, and he has opinions about wine.',
+    'simple-sword', sword,
+    // 37,224 is level 40 on the ninety-nine table. Birding is on a ten-level table today, so
+    // this reads as the top of it and will read as 40 the moment that table grows.
+    { birding: 37224, archaeology: 90, wine: 50 }),
+  playable('eliana', 'Eliana', 'Two hands and one edge', 'merc-eliana',
+    'Came on her own and would have come sooner. The great blade is slow to start and cannot be stopped, and neither can the woman holding it.',
+    'greatsword', swordAnd('greatsword'), { woodcutting: 2411 }),  // level 15: white oak
+  playable('matt', 'Matt, Prince of Zorkys', 'A hall, a valley and four hundred people', 'merc-matt',
+    'Came because the histories are thin on men who went. He has raised a roof over other people before and he will do it again.',
+    'simple-sword', sword, { construction: 1584 }),  // level 12: the roof
+  playable('altun', 'Al the Tun', 'You are looking at the robe', 'merc-altun',
+    'Travelled with a prince and has not agreed with him once. He will tell you what the robe is for when there is a reason to, and not before.',
+    'iron-mace', swordAnd('iron-mace'), { mycology: 200 }),
+  playable('mus', 'Mus', 'Does not use the road', 'merc-mus',
+    'Beaches his own boat round the headland and walks to the muster through the woods, because a road goes where everybody knows it goes.',
+    'simple-sword', sword, { cartography: 200 }),
+]);
+
+/** The order the opening screen shows them in, which is the user's order, Crom first. */
+export const PLAYABLE_IDS = Object.freeze(PLAYABLE.map(entry => entry.id));
+
+/** One of the eleven by id, or null. Anything that is not a string is not a character. */
+export function playableCharacter(id) {
+  return PLAYABLE.find(entry => entry.id === id) ?? null;
+}
+
+/** Whether `id` names one of the eleven. */
+export const isPlayableId = id => PLAYABLE.some(entry => entry.id === id);
+
+/**
+ * A saved character. A save written before anyone could choose has no field at all, and that
+ * save is Crom, because Crom is who it was played as.
+ */
+export function validatePlayerCharacter(id, { allowMissing = true } = {}) {
+  if (id === undefined) return allowMissing;
+  return typeof id === 'string' && isPlayableId(id);
+}
+export const savedPlayerCharacter = id => (isPlayableId(id) ? id : DEFAULT_PLAYER);
+
+/**
+ * The ten hired swords the world places when you are `playerId`: the roster with the one you
+ * chose taken out of it and Crom put in his place, keeping his own look, arrival and lines.
+ * The letter of introduction stays with the slot rather than the man, because it came off the
+ * boat, not out of anybody's history.
+ *
+ * Pure, and stable: the same id gives the same ten in the same order, every time.
+ */
+export function companyFor(playerId = DEFAULT_PLAYER) {
+  const chosen = playableCharacter(playerId);
+  if (!chosen) throw new TypeError(`No such playable character: ${playerId}`);
+  // Playing as Crom leaves the roster exactly as it has always been.
+  if (chosen.roster === null) return MERCENARY_ROSTER;
+  return Object.freeze(MERCENARY_ROSTER.map(entry => (entry.id === chosen.roster
+    ? Object.freeze({ ...CROM, ...(entry.carriesLetter ? { carriesLetter: true } : {}) })
+    : entry)));
+}
+
+/** The hired sword whose look, weapon and place you take; null when you are Crom. */
+export function rosterEntryFor(playerId = DEFAULT_PLAYER) {
+  const chosen = playableCharacter(playerId);
+  if (!chosen || chosen.roster === null) return null;
+  return MERCENARY_ROSTER.find(entry => entry.id === chosen.roster) ?? null;
+}
+
+/**
+ * What the player's own model is built from: the chosen character's look with his weapon and
+ * whether he trades, in the shape `createCharacter({ role: 'traveler', look })` wants. Crom
+ * has no look, and gets none: the traveler's own model is his, unchanged.
+ */
+export function playerLook(playerId = DEFAULT_PLAYER) {
+  const entry = rosterEntryFor(playerId);
+  return entry ? Object.freeze({ ...entry.look, weapon: entry.weapon, trades: entry.trades }) : null;
+}
+
+/**
+ * What to call him in one word, on a tile or in a caption: the first word of his name, which
+ * is how each of them introduces himself anyway — Crom, Chris, Ed, Jerry, Christin, Ciarán,
+ * Lakota, Eliana, Matt, Al, Mus.
+ */
+export const shortName = entry => String(entry?.name ?? '').split(/[ ,]/)[0];
+
+/** Starting experience by skill id, as a plain object a caller can walk. */
+export function startingSkills(playerId = DEFAULT_PLAYER) {
+  return { ...(playableCharacter(playerId)?.skills ?? {}) };
+}
+
+/** What is in the satchel at the first step ashore. */
+export function startingInventory(playerId = DEFAULT_PLAYER) {
+  return (playableCharacter(playerId)?.inventory ?? []).map(item => ({ ...item }));
+}

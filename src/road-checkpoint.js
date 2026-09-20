@@ -1,7 +1,8 @@
 import { INVENTORY_ITEMS } from './inventory.js';
 import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
-import { MERCENARY_ROSTER } from './mercenaries.js';
+import { mercenaryById } from './mercenaries.js';
+import { validatePlayerCharacter } from './player-characters.js';
 import { journeySites, WORLD_BOUNDS as PLAYABLE_BOUNDS } from './regions.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from './world-scale.js';
 import { validateWoodlandProgress, copyWoodlandProgress } from './woodland-progress.js';
@@ -91,6 +92,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (typeof data.meadowCleared !== 'boolean' || typeof data.heardDoom !== 'boolean'
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
     if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
+    // Which of the eleven you are. A save written before anyone could choose has no field
+    // at all; that game was played as Crom, and it is restored as Crom.
+    if (!validatePlayerCharacter(data.player)) return failed('The saved character is not one of the eleven.');
     if (!validateMorosSnapshot(data.moros)) return failed('The saved Moros camp chapter is invalid.');
     if (!validateBorderSnapshot(data.border)) return failed('The saved border chapter is invalid.');
     if (!validateAftermathSnapshot(data.aftermath)) return failed('The saved chapter after the border battle is invalid.');
@@ -135,7 +139,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       const held = data.mercenaryWeapons;
       if (!held || typeof held !== 'object' || Array.isArray(held)) return failed('The saved company is invalid.');
       for (const [id, weapon] of Object.entries(held)) {
-        if (!MERCENARY_ROSTER.some(m => m.id === id) || !weapon || !TRADEABLE_WEAPONS.includes(weapon.id)
+        if (!mercenaryById(id) || !weapon || !TRADEABLE_WEAPONS.includes(weapon.id)
           || !Number.isInteger(weapon.durability) || weapon.durability < 0 || weapon.durability > WEAPON_TYPES[weapon.id].maxDurability) return failed('The saved company is invalid.');
       }
     }
@@ -221,6 +225,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       journeyGathered: [...data.journeyGathered], meadowCleared: data.meadowCleared,
       position: { x: p.x, z: p.z }, heardDoom: data.heardDoom,
     };
+    if (Object.hasOwn(data, 'player')) result.player = data.player;
     if (Object.hasOwn(data, 'lysaComplete')) result.lysaComplete = data.lysaComplete;
     if (Object.hasOwn(data, 'health')) result.health = data.health;
     if (Object.hasOwn(data, 'woodland')) result.woodland = copyWoodlandProgress(data.woodland);
