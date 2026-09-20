@@ -58,9 +58,11 @@ export const PLAYABLE = Object.freeze([
   playable('lakota', 'Lakota', 'The birder of the company', 'merc-lakota',
     'Late, unbothered, and the best pair of eyes on the coast. He has been watching birds and digging up old towns for years, and he has opinions about wine.',
     'simple-sword', sword,
-    // 37,224 is level 40 on the ninety-nine table. Birding is on a ten-level table today, so
-    // this reads as the top of it and will read as 40 the moment that table grows.
-    { birding: 37224, archaeology: 90, wine: 50 }),
+    // 37,224 is level 40, and reads as 40: every skill is on the ninety-nine table now
+    // (src/skills.js), which is the table growing that this number was written to survive.
+    // 83 is the first experience that is level 2 on it, which is where his wine belongs:
+    // he has opinions about it, which is a notch below the old towns he actually digs up.
+    { birding: 37224, archaeology: 90, wine: 83 }),
   playable('eliana', 'Eliana', 'Two hands and one edge', 'merc-eliana',
     'Came on her own and would have come sooner. The great blade is slow to start and cannot be stopped, and neither can the woman holding it.',
     'greatsword', swordAnd('greatsword'), { woodcutting: 2411 }),  // level 15: white oak

@@ -4,7 +4,7 @@ import { PLAYABLE, PLAYABLE_IDS, DEFAULT_PLAYER, companyFor, playableCharacter, 
   playerLook, rosterEntryFor, startingSkills, startingInventory, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
 import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROM, mercenaryById, mercenaryLines,
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
-import { SKILL_IDS, SKILLS, createSkills, skillLevel } from '../src/skills.js';
+import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
@@ -106,9 +106,11 @@ test('what everyone starts with is real experience in real skills', () => {
   if (missing.size) console.log(`not yet registered in src/skills.js, so not started: ${[...missing].sort().join(', ')}`);
   assert.deepEqual(startingSkills('crom'), {}, 'Crom starts with the sword and nothing else');
   assert.ok(started > 0, 'somebody begins the road already knowing something');
-  // Lakota's birding is written as experience so that it survives the table growing under it.
-  assert.ok(PLAYABLE.find(e => e.id === 'lakota').skills.birding >= SKILLS.birding.thresholds.at(-1),
-    'Lakota begins at the top of the birding table this build has');
+  // Lakota's birding was written as experience so that it would survive the table growing
+  // under it. It has: every skill is on the ninety-nine table now, so the number that used
+  // to read as the top of a ten-level table reads as the 40 it was always meant to be.
+  assert.equal(skillLevel('birding', PLAYABLE.find(e => e.id === 'lakota').skills.birding).level, 40,
+    'Lakota begins the road at birding 40');
 });
 
 test('a character can actually be handed his starting experience', () => {
