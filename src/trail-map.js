@@ -124,6 +124,13 @@ export function trailMapSVG(model, { width = 600, height = 430, selectedId = nul
     const p = project(goalHere);
     svg.push(`<g transform="translate(${number(p.x)},${number(p.y)})" class="trail-goal-marker trail-map-marker" data-trail-place="${escape(goalHere.id)}" role="button" tabindex="0" aria-label="${escape(goalHere.name || 'Main objective')}, main journey"><title>${escape(goalHere.name || 'Main objective')} — main journey</title><circle r="12" class="trail-pin-hit"/><path d="M0,-7 L7,0 L0,7 L-7,0Z"/></g>`);
   }
+  // The bird the traveler is watching, if the host is offering one: the same pair
+  // of wings the round chart draws, on the sheet he opens to work out where he is.
+  // It is where the bird was when he opened the journal, which is what a note is.
+  if (visible(model.bird)) {
+    const p = project(model.bird);
+    svg.push(`<g transform="translate(${number(p.x)},${number(p.y)})" class="trail-bird-marker" pointer-events="none"><title>A bird within your reach</title><circle r="8"/><path d="M-5,1.6 L-2.5,-1 L0,.6 L2.5,-1 L5,1.6"/></g>`);
+  }
   svg.push(...labels);
   if (visible(model.player)) {
     const p = project(model.player), heading = Number.isFinite(model.player.heading) ? model.player.heading * 180 / Math.PI : null;

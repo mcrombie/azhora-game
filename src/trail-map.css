@@ -46,6 +46,8 @@
 #trail-map .trail-tracked-marker circle{fill:none;stroke:#287e79;stroke-width:1.7}
 #trail-map .trail-tracked-marker path{fill:#438f87;stroke:#246a62;stroke-width:1.5;stroke-linejoin:round}
 #trail-map .trail-goal-marker>path{fill:#d8ad4c;stroke:#765d2d;stroke-width:1.4}
+#trail-map .trail-bird-marker circle{fill:#1f4a5ad6;stroke:none}
+#trail-map .trail-bird-marker path{fill:none;stroke:#9fd8e8;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 #trail-map .trail-player-marker path,#trail-map .trail-player-dot{fill:#284f61;stroke:#fff4d1;stroke-width:1.5;stroke-linejoin:round}
 #trail-map .trail-player-halo{fill:#f7edc94d;stroke:#476b702e;stroke-width:1}
 #trail-map .trail-map-scale{fill:#5e4630;font-size:9px}

@@ -76,6 +76,22 @@ test('Zoom uses native world bounds, follows a selected edge safely, and fits th
   assert.deepEqual(m, before);
 });
 
+test('The bird the traveler is watching is marked on the sheet, and nowhere else', () => {
+  const m = model(), before = structuredClone(m);
+  assert.ok(!trailMapSVG(m, { width: 580, height: 330 }).includes('trail-bird-marker'), 'no bird, no mark');
+  // On the sheet: a pair of wings where it is, no pin, nothing clickable.
+  const svg = trailMapSVG({ ...model(), bird: { id: 'wren-0', x: 12, z: 14 } }, { width: 580, height: 330 });
+  assert.ok(svg.includes('trail-bird-marker'));
+  assert.ok(svg.includes('A bird within your reach'));
+  assert.ok(!svg.includes('data-trail-place="wren-0"'), 'the bird is not a place to select');
+  assert.ok(!svg.includes('wren'), 'the sheet never names the species, identified or not');
+  assert.ok(!svg.includes('NaN') && !svg.includes('Infinity'));
+  // Off this region's sheet, or nonsense, and it is simply not drawn.
+  for (const bird of [{ x: 400, z: 14 }, { x: 12, z: -900 }, { x: NaN, z: 14 }, { x: 12 }, null, undefined])
+    assert.ok(!trailMapSVG({ ...model(), bird }, { width: 580, height: 330 }).includes('trail-bird-marker'), JSON.stringify(bird));
+  assert.deepEqual(m, before);
+});
+
 test('Zoom clips offscreen markers and never reveals an unknown place identity', () => {
   const m = model(), before = structuredClone(m);
   const svg = trailMapSVG(m, { width: 580, height: 310, zoom: 3, center: m.landmarks[1], selectedId: 'hidden' });

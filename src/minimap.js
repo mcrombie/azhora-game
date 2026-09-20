@@ -8,7 +8,9 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 export const MINIMAP_PALETTE = Object.freeze({ ground: { 1: '#d9caa0', 2: '#e6d8ad', 3: '#d3d0a6', 4: '#e0d3ab' }, groundFallback: '#dccfa4',
   water: '#b4c4be', waterEdge: '#4f5e63', coastWater: '#a9bcb8', coastEdge: '#5e4630', sand: '#cdb98a', trail: '#5e463099', roadEdge: '#3d2b1ab8', road: '#f0e3c0',
   timber: '#8b7355', house: '#8b7355', stone: '#a4906d', rock: '#9c8f78', ink: '#3d2b1a', boundary: '#5e46306b', frontier: '#7a4a12',
-  known: '#f2e6c4', unknown: '#5e46304d', targetRing: '#3d2b1aea' });
+  known: '#f2e6c4', unknown: '#5e46304d', targetRing: '#3d2b1aea',
+  // Birding's own colour, which is nobody else's: not the errand gold, not the marked place's teal.
+  bird: '#9fd8e8' });
 const groundColors = MINIMAP_PALETTE.ground;
 
 export function miniMapProjection({ position, radius = 62, size = 300, padding = 10 } = {}) {
@@ -46,7 +48,7 @@ function dot(ctx, x, y, radius, fill, stroke = null) {
 
 /** Draw one north-up, player-centered local view. Targets are ordinary {x,z,id?} objects. */
 export function drawMinimap(ctx, { world = {}, position, goal = null, combat = null, angle = 0,
-  time = 0, discoveries = new Set(), tracked = null, radius = 62, size = 300, northOffset = 0 } = {}) {
+  time = 0, discoveries = new Set(), tracked = null, bird = null, radius = 62, size = 300, northOffset = 0 } = {}) {
   const view = miniMapProjection({ position, radius, size });
   const { project, bounds, scale, center, ring } = view;
   size = view.size;
@@ -272,6 +274,32 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
   };
   result.optional = drawTarget(tracked, true);
   result.goal = drawTarget(goal, false);
+  // The bird the traveler is watching, handed in by the host from src/bird-finder.js.
+  // A pair of wings rather than a pin, because it is not a place and will not wait;
+  // and the chart reaches 62 m while a bird can be seen at 18 to 30, so it is almost
+  // always on the sheet - but an arrow at the ring carries the ones that are not.
+  result.bird = null;
+  if (finitePoint(bird)) {
+    const p = project(bird, { clampToRing: true, inset: 6 });
+    const wing = 4.2, lift = 2.2;
+    dot(ctx, p.x, p.y, 5.6, MINIMAP_PALETTE.targetRing);
+    ctx.strokeStyle = MINIMAP_PALETTE.bird; ctx.lineWidth = 1.7;
+    ctx.beginPath();
+    ctx.moveTo(p.x - wing, p.y + 1.3);
+    ctx.lineTo(p.x - wing / 2, p.y + 1.3 - lift);
+    ctx.lineTo(p.x, p.y + .5);
+    ctx.lineTo(p.x + wing / 2, p.y + 1.3 - lift);
+    ctx.lineTo(p.x + wing, p.y + 1.3);
+    ctx.stroke();
+    if (p.clamped) {
+      const dx = Math.sin(p.bearing), dy = -Math.cos(p.bearing);
+      ctx.lineWidth = 1.6; ctx.beginPath();
+      ctx.moveTo(p.x + dx * 7 - dy * 2.4, p.y + dy * 7 + dx * 2.4);
+      ctx.lineTo(p.x + dx * 9.6, p.y + dy * 9.6);
+      ctx.lineTo(p.x + dx * 7 + dy * 2.4, p.y + dy * 7 - dx * 2.4); ctx.stroke();
+    }
+    result.bird = { ...p, id: bird.id || null };
+  }
   // Angle zero faces +Z, matching the actual character (south on this chart).
   const yaw = Number.isFinite(angle) ? angle : 0, dx = Math.sin(yaw), dy = Math.cos(yaw);
   const tip = { x: center + dx * 8, y: center + dy * 8 };
