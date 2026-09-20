@@ -1201,6 +1201,16 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     }
     return best;
   };
+  /** Ground a traveler could walk up to a post on: dry, and inside nothing already built. */
+  const signFooting = (px, pz) => {
+    if (groundHeight(px, pz) < .45) return false;
+    for (let i = 0; i < colliders.length; i++) {
+      const c = colliders[i];
+      if (c.r !== undefined) { const dx = px - c.x, dz = pz - c.z, reach = c.r + .45; if (dx * dx + dz * dz < reach * reach) return false; }
+      else if (Math.abs(px - c.x) < c.hx + .45 && Math.abs(pz - c.z) < c.hz + .45) return false;
+    }
+    return true;
+  };
   const branch = (() => { const [a, b] = SUVAL_ROAD, l = Math.hypot(b.x - a.x, b.z - a.z); return { x: a.x + (b.x - a.x) / l * 14 - (b.z - a.z) / l * 3.6, z: a.z + (b.z - a.z) / l * 14 + (b.x - a.x) / l * 3.6 }; })();
   for (const [x, z, label, target, backLabel = 'Tidehaven'] of [
     [-192, 22, 'The Avrel Clearing', AVREL_CLEARING], [-222, 46, 'Clearing mill & farms', at(-222, 62)],
@@ -1214,6 +1224,18 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const spot = typeof x === 'object' ? x : at(x, z);
     let px = spot.x, py = spot.z, guard = 0;
     while (roadDistance(px, py) < 2.4 && guard++ < 14) { px += Math.sign(spot.x + 535) * .8; py += 1.1; }
+    // That nudge walks one fixed diagonal, so where a road runs the same way the post has
+    // far to go before it is clear - and it can walk off the bank. At the Caloss it ended
+    // in the river, 3.8 m below the ground beside it, with its head under the water. A post
+    // nobody can read is worse than one close to the road, so find dry ground off the road.
+    if (!signFooting(px, py)) {
+      let dry = null;
+      for (let reach = 1; reach <= 14 && !dry; reach += .5) for (let turn = 0; turn < 24; turn++) {
+        const angle = turn / 24 * Math.PI * 2, cx = spot.x + Math.cos(angle) * reach, cz = spot.z + Math.sin(angle) * reach;
+        if (roadDistance(cx, cz) >= 2.4 && signFooting(cx, cz)) { dry = { cx, cz }; break; }
+      }
+      if (dry) { px = dry.cx; py = dry.cz; }
+    }
     signs.direction({ x: px, z: py, label, toward: target, back: backAlong(px, py), backLabel, parent: world });
   }
 
