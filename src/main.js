@@ -2612,7 +2612,7 @@ function init() {
         if(near){batman.update(elapsed,{flare:batmanFlare||(mode==='dialogue'&&activeDialogue?.npc===batmanNpc?.28:0)});
           if(mode==='dialogue'&&activeDialogue?.npc===batmanNpc){const g=batman.group.position;batman.group.rotation.y=Math.atan2(pp.x-g.x,pp.z-g.z);}
           const d=batman.group.position.distanceTo(pp);if(d<5.5&&d<nearest){nearest=d;currentNPC=batmanNpc;}}
-        if(mode==='playing'&&hunt.stage==='ready'&&Math.hypot(HANDOVER.x-pp.x,HANDOVER.z-pp.z)<14){
+        if(mode==='playing'&&!reviewTarget&&hunt.stage==='ready'&&Math.hypot(HANDOVER.x-pp.x,HANDOVER.z-pp.z)<14){
           if(hunt.witness(inventory).ok){inventory.refresh();refreshQuest();audio?.effect('discovery');
             openDialogue(batmanNpc,[...BUST_SCENE],null,'Take the tally book off the seat',{onComplete:()=>{
               toast('Rask and Trelith, in one book, in the same hand.','THE CART\u2019S TALLY BOOK');saveRoad(false);}});}}}
@@ -2624,7 +2624,10 @@ function init() {
         const pp=player.group.position,field=fieldPoint(0,10),near=Math.hypot(field.x-pp.x,field.z-pp.z)<200;
         // She has called out to everybody who has come up that road for ten days, and does not
         // wait to be spoken to (src/lauvel-burying.js). Not in the middle of the wolves.
-        if(mode==='playing'&&burying.stage==='unknown'&&combat.state.phase!=='active'
+        // A review view is not somebody coming up the road: `reviewTarget` marks a shot being
+        // composed, the way the troupe's scene above uses it, and three of the Lauvel views stand
+        // the camera inside her earshot with the quest still at 'unknown'.
+        if(mode==='playing'&&!reviewTarget&&burying.stage==='unknown'&&combat.state.phase!=='active'
           &&Math.hypot(HAIL_FROM.x-pp.x,HAIL_FROM.z-pp.z)<HAIL_FROM.reach&&burying.hail().ok){
           audio?.effect('bell');openDialogue(npcById.get('lauvel-seeker'),[...HAIL],null,'Go over to her');refreshQuest();saveRoad(false);}
         // She is on her knees at the end of the row until somebody comes up the road; afterwards she
