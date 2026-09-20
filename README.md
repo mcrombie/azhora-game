@@ -216,6 +216,8 @@ The first goblin encounter adapts the requested pacing of `../../cromonsters`: a
 
 ## Code and validation
 
+New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of it: how the page, the host and the pure modules fit together, one module and its test read line by line, a tour by area, and an index of every file in `src/`.
+
 | Module | Responsibility |
 | --- | --- |
 | `src/world.js`, `src/regions.js` | Terrain, regional layouts, paths, props, collision, fishing banks, landmarks, and completed-site visuals |
