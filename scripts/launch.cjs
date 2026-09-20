@@ -2,7 +2,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
-const candidates = [path.join(root, 'node_modules/electron/dist/electron.exe'), path.resolve(root, '../world-builder/map/node_modules/electron/dist/electron.exe')];
+// There is no local node_modules; Electron comes from the World Builder repo beside this
+// one. A git worktree is not beside it - it lives several directories down - so look for
+// the sibling up the tree rather than only one step up.
+const candidates = [path.join(root, 'node_modules/electron/dist/electron.exe')];
+for (let dir = root, up = 0; up < 8; up++) {
+  candidates.push(path.resolve(dir, '../world-builder/map/node_modules/electron/dist/electron.exe'));
+  const parent = path.dirname(dir);
+  if (parent === dir) break;
+  dir = parent;
+}
 const electron = candidates.find(p => fs.existsSync(p));
 if (!electron) { console.error('Install the game runtime first: npm install'); process.exit(1); }
 const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
