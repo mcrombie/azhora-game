@@ -64,3 +64,60 @@ test('the branch road now ends before Elod’s shut gate, and walking on into Ea
   assert.equal(insideRegion('East Suval', walker.x, walker.z), false);
   assert.ok((walker.x - FRONTIER_GATE.x) * FRONTIER_GATE.u.x + (walker.z - FRONTIER_GATE.z) * FRONTIER_GATE.u.z < 0, 'stopped in front of the gate');
 });
+
+test('a traveler set down inside East Suval can walk out of it again, and no picket stops them', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const RADIUS = .45;
+  // The module promises it: "Somebody already inside (a tester sent there by the F8 tools, an
+  // old save) moves about freely and may leave." The rule allows it; this checks the ground does,
+  // because a wall or a ditch that closed the region for real would trap whoever F8 put there.
+  const open = point => canStand(point.x, point.z, world, RADIUS) && insideRegion('East Suval', point.x, point.z)
+    && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => canStand(point.x + dx, point.z + dz, world, RADIUS));
+  const openGroundNear = start => {
+    if (open(start)) return start;
+    for (let reach = 1; reach <= 40; reach += .5) for (let turn = 0; turn < 48; turn++) {
+      const angle = turn / 48 * Math.PI * 2, point = { x: start.x + Math.cos(angle) * reach, z: start.z + Math.sin(angle) * reach };
+      if (open(point)) return point;
+    }
+    return null;
+  };
+  /** Breadth-first, a metre a step, obeying the ground and the picket, until the outline is behind us. */
+  const walkOut = start => {
+    const watch = createBorderWatch();
+    const seen = new Set(['0,0']);
+    let queue = [{ i: 0, j: 0 }], visited = 0;
+    const at = (i, j) => ({ x: start.x + i, z: start.z + j });
+    while (queue.length && visited < 120000) {
+      const next = [];
+      for (const node of queue) {
+        visited++;
+        const here = at(node.i, node.j);
+        if (!insideRegion('East Suval', here.x, here.z)) return { out: here, refused: watch.turnedBack, visited };
+        const groundHere = world.heightAt(here.x, here.z);
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const i = node.i + di, j = node.j + dj, id = `${i},${j}`;
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const point = at(i, j);
+          if (Math.abs(i) > 700 || Math.abs(j) > 700) continue;
+          if (!canStand(point.x, point.z, world, RADIUS)) continue;
+          if (Math.abs(world.heightAt(point.x, point.z) - groundHere) > 1.4) continue;
+          if (watch.step(here, point).refused) continue;
+          next.push({ i, j });
+        }
+      }
+      queue = next;
+    }
+    return null;
+  };
+  for (const [where, spot] of [['the roofless waystation', { x: -273, z: 557 }], ['Elod, inside its walls', { x: -50, z: 641 }],
+    ['Sevenwalls', { x: -205, z: 690 }], ['the dry hills', { x: -146, z: 858 }], ['Sorrow Beach', { x: 82, z: 800 }]]) {
+    const start = openGroundNear(spot);
+    assert.ok(start, `${where}: no open ground inside East Suval to start from`);
+    const escape = walkOut(start);
+    assert.ok(escape, `${where}: a traveler at ${start.x.toFixed(0)}, ${start.z.toFixed(0)} cannot walk out of East Suval`);
+    assert.equal(escape.refused, 0, `${where}: the picket turned back ${escape.refused} steps of somebody who was only leaving`);
+    assert.equal(insideRegion('East Suval', escape.out.x, escape.out.z), false);
+  }
+});
