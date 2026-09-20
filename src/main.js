@@ -64,7 +64,8 @@ import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
-import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './skills.js';
+import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine, skillTip } from './skills.js';
+import { skillIconSVG } from './skill-icons.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
@@ -1148,14 +1149,17 @@ function init() {
   }
   // The card a skill puts up when the traveler learns something new: a bird seen, a fish landed.
   /** Every bit of experience shows as a drop by the map, RuneScape fashion, and a new level gets its banner. */
-  let levelUpTimer=0;
+  let levelUpTimer=0,levelUpSkill=null;
   function skillEvent(event){
     if(event.type!=='skill-gain'||typeof document==='undefined')return;
     const drops=$('xp-drops');if(drops){const drop=document.createElement('div');drop.className='xp-drop';drop.textContent=`+${event.gained} ${SKILLS[event.id]?.name??event.id}`;drops.append(drop);setTimeout(()=>drop.remove(),1900);}
     if(event.levelled){const opened=skillGuide(event.id,event.level).filter(entry=>entry.level>event.before&&entry.level<=event.level);
       $('level-up-title').textContent=`${SKILLS[event.id].name} · level ${event.level}`;$('level-up-line').textContent=levelUpLine(event.id,event.level);
       $('level-up-unlock').textContent=opened.length?`Now open: ${opened.map(entry=>entry.text).join(' · ')}`:'';
-      $('level-up').classList.add('visible');audio?.effect('success');clearTimeout(levelUpTimer);levelUpTimer=setTimeout(()=>$('level-up').classList.remove('visible'),5200);}
+      const banner=$('level-up');levelUpSkill=event.id;
+      // Taking the class off and putting it back is what restarts the flash on a second level in a row.
+      banner.classList.remove('visible','flash');void banner.offsetWidth;banner.classList.add('visible','flash');
+      audio?.effect('success');clearTimeout(levelUpTimer);levelUpTimer=setTimeout(()=>banner.classList.remove('visible','flash'),5200);}
   }
   function showSkillCard({kicker,name,note,skill}){
     const view=skills.view().find(entry=>entry.id===skill),level=skillLevel(skill,view?.xp??0);
@@ -1165,65 +1169,103 @@ function init() {
     $('bird-card-level').textContent=level.max?`${view.name} ${level.level} · ${level.xp} experience`:`${view.name} ${level.level} · ${level.xp} / ${level.next} experience`;
     $('bird-card').classList.add('visible');clearTimeout(birdCardTimer);birdCardTimer=setTimeout(()=>$('bird-card').classList.remove('visible'),7000);
   }
-  // The skills sheet in the journal: each skill's level and experience, and for birding the birds of Drent, seen and not.
+  // The skills sheet in the journal, RuneScape's way: a grid of the thirteen skills, three to a row,
+  // with the total level filling what the last of them leaves of the bottom row, and behind each tile
+  // that skill's own guide and the collection log that belongs to it.
+  const skillEl=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+  let openSkillId=null;
+  function skillMark(skill,cls='skill-tile-icon'){const mark=skillEl('span',cls);mark.setAttribute('aria-hidden','true');mark.innerHTML=skillIconSVG(skill.id);return mark;}
+  function skillProgressBar(progress){const bar=skillEl('div','skill-bar'),fill=skillEl('i');fill.style.width=`${Math.round(progress*100)}%`;bar.append(fill);return bar;}
+  function skillTile(skill){
+    const tile=skillEl('button',`skill-tile${skill.learned?'':' unlearned'}`);tile.type='button';tile.dataset.skill=skill.id;
+    tile.append(skillMark(skill),skillEl('b','',skill.name),skillEl('span','skill-tile-level',`${skill.learned?skill.level:0} / ${skill.top}`),
+      skillProgressBar(skill.learned?skill.progress:0),skillEl('span','skill-tip',skillTip(skill)));
+    tile.onclick=()=>{openSkillId=skill.id;refreshSkillsSheet();};
+    return tile;
+  }
+  function renderSkillGrid(sheet,view){
+    const grid=skillEl('div','skill-grid');
+    for(const skill of view)grid.append(skillTile(skill));
+    const total=skillEl('div','skill-tile skill-tile-total'),learned=view.filter(skill=>skill.learned).length;
+    total.append(skillEl('b','','Total level'),skillEl('span','skill-tile-level',String(skills.totalLevel())),
+      skillEl('span','skill-tip',`Total level: ${skills.totalLevel()} · Skills learned: ${learned} / ${view.length}`));
+    grid.append(total);sheet.append(grid);
+  }
+  // One skill's page: what each of its levels opens, and everything that skill has collected.
+  function renderSkillGuide(sheet,skill){
+    const card=skillEl('section','skill-card');
+    const back=skillEl('button','skill-back','‹ All skills');back.type='button';back.onclick=()=>{openSkillId=null;refreshSkillsSheet();};
+    const head=skillEl('header','skill-detail-head'),titles=skillEl('div');
+    titles.append(skillEl('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),skillEl('h3','',skill.name));
+    head.append(skillMark(skill),titles);card.append(back,head);
+    if(skill.learned)card.append(skillProgressBar(skill.progress),skillEl('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));
+    card.append(skillEl('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+    if(skill.guide.length){const guide=skillEl('ul','skill-guide');for(const entry of skill.guide){const li=skillEl('li',entry.open?'open':'locked');li.append(skillEl('b','',String(entry.level)),skillEl('span','',entry.text));guide.append(li);}
+      card.append(skillEl('h3','','What each level opens'),guide);}
+    appendSkillLog(card,skill);
+    sheet.append(card);
+  }
+  // The collection logs, which used to sit under every skill at once and now belong to their own skill's page.
+  function appendSkillLog(card,skill){
+    const el=skillEl;
+    if(skill.id==='geology'&&skill.learned){
+      const view=geology.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Stones named \u00b7 ${view.foundCount} / ${view.total}`),list);
+    }
+    for(const [id,module,label] of [['archaeology',archaeology,'Finds written up'],['wine',wine,'Wines tasted'],['cooking',cooking,'Recipes known']])if(skill.id===id&&skill.learned){
+      const view=module.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
+      // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
+      if(id==='wine'&&view.terms?.length){
+        const words=el('ul','bird-list');
+        for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
+        card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
+      }
+      // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
+      if(id==='wine'&&vineyard.met){
+        const rows=vineyard.view(),walked=el('ul','bird-list');
+        for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
+          li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
+        card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
+      }
+      if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
+    }
+    if(skill.id==='botany'&&skill.learned){
+      const view=botany.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}${entry.warning?' \u00b7 leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Plants named \u00b7 ${view.foundCount} / ${view.total}`),list);
+    }
+    if(skill.id==='mycology'&&skill.learned){
+      const view=mycology.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Mushrooms named · ${view.foundCount} / ${view.total}`),list);
+    }
+    if(skill.id==='fishing'&&skill.learned){
+      const view=fishing.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Fish landed · ${view.caughtCount} / ${view.total}`),list);
+    }
+    if(skill.id==='birding'){
+      const view=birding.view();
+      if(view.met)card.append(el('p','skill-xp',`Observation range ${observeRange(skill.level)} m · B to observe · a new kind of bird is worth experience`));
+      const list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.seen?'seen':'unseen',entry.seen?`${entry.name}${entry.count>1?` · seen ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Birds of Drent · ${view.seenCount} / ${view.total}`),list);
+      if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
+    }
+  }
   function refreshSkillsSheet(){
     const sheet=$('skills-sheet');sheet.replaceChildren();
-    const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-    sheet.append(el('p','skill-total',`Total level ${skills.totalLevel()}`));
-    for(const skill of skills.view()){
-      const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),el('h3','',skill.name));
-      if(skill.guide.length){const guide=el('ul','skill-guide');for(const entry of skill.guide){const li=el('li',entry.open?'open':'locked');li.append(el('b','',String(entry.level)),el('span','',entry.text));guide.append(li);}card.append(guide);}
-      if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
-      card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
-      if(skill.id==='geology'&&skill.learned){
-        const view=geology.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Stones named \u00b7 ${view.foundCount} / ${view.total}`),list);
-      }
-      for(const [id,module,label] of [['archaeology',archaeology,'Finds written up'],['wine',wine,'Wines tasted'],['cooking',cooking,'Recipes known']])if(skill.id===id&&skill.learned){
-        const view=module.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
-        // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
-        if(id==='wine'&&view.terms?.length){
-          const words=el('ul','bird-list');
-          for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
-          card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
-        }
-        // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
-        if(id==='wine'&&vineyard.met){
-          const rows=vineyard.view(),walked=el('ul','bird-list');
-          for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
-            li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
-          card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
-        }
-        if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
-      }
-      if(skill.id==='botany'&&skill.learned){
-        const view=botany.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}${entry.warning?' \u00b7 leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Plants named \u00b7 ${view.foundCount} / ${view.total}`),list);
-      }
-      if(skill.id==='mycology'&&skill.learned){
-        const view=mycology.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Mushrooms named · ${view.foundCount} / ${view.total}`),list);
-      }
-      if(skill.id==='fishing'&&skill.learned){
-        const view=fishing.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Fish landed · ${view.caughtCount} / ${view.total}`),list);
-      }
-      if(skill.id==='birding'){
-        const view=birding.view();
-        if(view.met)card.append(el('p','skill-xp',`Observation range ${observeRange(skill.level)} m · B to observe · a new kind of bird is worth experience`));
-        const list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.seen?'seen':'unseen',entry.seen?`${entry.name}${entry.count>1?` · seen ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Birds of Drent · ${view.seenCount} / ${view.total}`),list);
-        if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
-      }
-      sheet.append(card);
-    }
+    const view=skills.view(),open=openSkillId?view.find(entry=>entry.id===openSkillId):null;
+    if(open)renderSkillGuide(sheet,open);else renderSkillGrid(sheet,view);
+  }
+  /** The journal, on the Skills tab, on one skill's guide: where a level-up banner sends you. */
+  function openSkillGuide(id){
+    if(!id||!Object.hasOwn(SKILLS,id)||!['playing','journal','pause'].includes(mode))return false;
+    clearTimeout(levelUpTimer);$('level-up').classList.remove('visible','flash');
+    modal('journal');journalTab('skills');openSkillId=id;refreshSkillsSheet();return true;
   }
   function ridingAct(action){
     const hitch=LUMBER_TOWN_STABLE.hitch;
@@ -1418,7 +1460,7 @@ function init() {
     if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
     if(tab==='world'){const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),
       {region:world.regionAt(p.x,p.z)?.name??null,heading:HEX_WORLD_TRANSFORM.worldHeadingToAtlas(player.group.rotation.y)});refreshChart();}
-    show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills')refreshSkillsSheet();
+    show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills'){openSkillId=null;refreshSkillsSheet();}
     for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-trails','trails'],['tab-skills','skills']])$(id).classList.toggle('active',tab===name);
     $('journal').classList.toggle('map-open',tab==='world');$('journal').classList.toggle('trail-open',tab==='trails');
     $('journal-title').textContent=tab==='world'?'Azhora':tab==='trails'?'Paths worth taking':tab==='skills'?'What you have learned':'Small beginnings';
@@ -2303,6 +2345,7 @@ function init() {
   $('inventory-button').onclick=toggleInventory;
   $('journal-satchel').onclick=toggleInventory;
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  $('level-up').onclick=()=>openSkillGuide(levelUpSkill);
   $('tab-journey').onclick=()=>mapTab(false);$('tab-map').onclick=()=>mapTab(true);$('tab-trails').onclick=()=>journalTab('trails');$('tab-skills').onclick=()=>journalTab('skills');
   $('open-trail-map').onclick=openLocalMap;$('trail-pin-open').onclick=openLocalMap;$('trail-pin-clear').onclick=clearTrailPin;
   $('quality').onclick=()=>{fullQuality=!fullQuality;renderer.setPixelRatio(fullQuality?Math.min(devicePixelRatio,1.7):1);renderer.shadowMap.enabled=fullQuality;$('quality').textContent='Graphics: '+(fullQuality?'full':'light');};
@@ -2366,6 +2409,8 @@ function init() {
       if(mode==='dialogue')closeDialogue();
       else if(mode==='playing')modal('pause');else if(['journal','pause','testing'].includes(mode))closeModal();return;
     }
+    // While a level-up banner is up it is a door to that skill's guide.
+    if(e.code==='Enter'&&mode==='playing'&&levelUpSkill&&$('level-up').classList.contains('visible')){e.preventDefault();openSkillGuide(levelUpSkill);return;}
     if(e.code==='Enter'){if(mode==='opening'){if(document.activeElement?.closest('button'))return;e.preventDefault();begin();}else if(mode==='dialogue'){if(document.activeElement?.closest('#dialogue-choices'))return;e.preventDefault();nextSpeech();}else if(mode==='defeated')retry();return;}
     if(e.code==='Tab'&&['pause','journal','testing','dialogue','defeated'].includes(mode)) {
       const container=mode==='dialogue'?$('dialogue'):mode==='defeated'?$('defeat'):$(mode);
@@ -2587,7 +2632,7 @@ function init() {
         player.group.rotation.y=Math.PI/2;movement=2.5;
         // Chris Gotwood landed in the same boat and steps ashore beside the traveler.
         const mate=npcById.get('merc-gotwood');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
-        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO CHRIS ON THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
+        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO MARA AT THE HEAD OF THE PIER');if(pendingTesting){pendingTesting=false;modal('testing');}}
       }
       if(autopilot.active&&!reviewFrozen){
         autopilot.step(dt);
