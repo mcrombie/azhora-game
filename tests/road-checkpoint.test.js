@@ -7,6 +7,9 @@ import { createJourney } from '../src/journey.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
 import { createAftermathChapter } from '../src/aftermath-chapter.js';
+import { createMorosChapter } from '../src/moros-chapter.js';
+import { createBorderChapter, BORDER_ENCOUNTER_ID } from '../src/border-chapter.js';
+import { LUSCIA_WOLVES } from '../src/luscia-chapter.js';
 import { createRiding } from '../src/riding.js';
 import * as campaignModule from '../src/campaign.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-scale.js';
@@ -331,4 +334,82 @@ test('the traveler’s horse is saved with the road, and a horse that makes no s
   assert.deepEqual(checkpoint.read().data.riding, riding.snapshot());
   for (const bad of [null, 'bay', { ...riding.snapshot(), horse: null }, { ...riding.snapshot(), mounted: true }, { ...riding.snapshot(), horse: { x: 1, z: NaN, yaw: 0 } }])
     assert.equal(checkpoint.save({ ...data, riding: bad }).ok, false);
+});
+
+/**
+ * The chapters past the Lauvel are written in the same breath as the campaign chapter they
+ * belong to, so a save that holds one without the other is not a save any play produced. Until
+ * this test there was no such check beyond Luscia's: a checkpoint could say the Empire took
+ * Solis while the border chapter said the traveler had signed for the Republic, and it loaded.
+ */
+function onTheRoad() {
+  const { checkpoint, data, inventory } = fixture();
+  const journey = createJourney({ inventory, weapons: { spendSticks: () => true } });
+  journey.start();
+  for (let step = 0; step < 40 && journey.view().stage !== 'complete'; step++) {
+    const next = journey.availableActions().find(option => option.enabled);
+    if (!next) break;
+    journey.act(next.id);
+  }
+  const luscia = createLusciaChapter({ inventory });
+  luscia.start(); luscia.act('accept-lauvel-search'); luscia.act('take-courier-satchel');
+  luscia.clearWolves(LUSCIA_WOLVES.id); luscia.act('return-courier-satchel');
+  const moros = createMorosChapter({ inventory, hasHorse: () => true });
+  moros.start(); moros.act('admit-to-camp'); moros.act('join-muster'); moros.act('claim-legion-horse');
+  const border = side => {
+    const chapter = createBorderChapter();
+    chapter.start(); chapter.act('take-legate-terms'); chapter.act('enter-solis'); chapter.act(`side-${side}`);
+    chapter.act('march-out'); chapter.act('reach-line'); chapter.resolveBattle(BORDER_ENCOUNTER_ID);
+    return chapter;
+  };
+  const after = variant => {
+    const chapter = createAftermathChapter();
+    chapter.start(variant); chapter.act('begin-assault'); chapter.winEncounter(`aftermath-${variant}`);
+    chapter.act('close-aftermath');
+    return chapter;
+  };
+  const story = (...chapters) => {
+    const campaign = campaignModule.createCampaign();
+    for (const id of chapters) {
+      if (id === 'empire' || id === 'coalition') campaign.chooseSide(id);
+      else if (id === 'border-battle') campaign.completeChapter(id, 'victory');
+      else campaign.completeChapter(id);
+    }
+    return campaign.snapshot();
+  };
+  const base = { ...data, journey: journey.snapshot(), inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })) };
+  return { checkpoint, base, luscia, moros, border, after, story };
+}
+
+test('a save may not hold a chapter the campaign it carries never reached', () => {
+  const { checkpoint, base, luscia, moros, border, after, story } = onTheRoad();
+  const road = story('drent-road');
+  const mustered = story('drent-road', 'luscia-aftermath', 'moros-camp');
+  const fought = story('drent-road', 'luscia-aftermath', 'moros-camp', 'empire', 'border-battle');
+  const taken = story('drent-road', 'luscia-aftermath', 'moros-camp', 'empire', 'border-battle', 'solis-sweep');
+  const honest = { ...base, campaign: taken, luscia: luscia.snapshot(), moros: moros.snapshot(),
+    border: border('empire').snapshot(), aftermath: after('solis-sweep').snapshot() };
+  assert.equal(checkpoint.save(honest).ok, true, 'the honest Empire road to the end of built ground still saves');
+  const refused = [
+    ['the Moros camp with the Lauvel never walked', { ...base, campaign: road, moros: moros.snapshot() }, /Lauvel/],
+    ['the border chapter before the muster', { ...base, campaign: road, border: border('empire').snapshot() }, /muster/],
+    ['one side in the chapter and the other in the campaign',
+      { ...honest, border: border('coalition').snapshot() }, /one side/],
+    ['the other side’s morning after', { ...honest, aftermath: after('moros-outpost').snapshot() }, /other side/],
+    ['a morning after the campaign never reached',
+      { ...base, campaign: mustered, luscia: luscia.snapshot(), moros: moros.snapshot(), aftermath: after('solis-sweep').snapshot() }, /not the one the campaign reached/],
+  ];
+  for (const [what, save, reason] of refused) {
+    const result = checkpoint.save(save);
+    assert.equal(result.ok, false, `accepted ${what}`);
+    assert.match(result.reason, reason, what);
+  }
+  // And the good save is still the one on disk.
+  assert.deepEqual(checkpoint.read().data.aftermath, after('solis-sweep').snapshot());
+  // The Republic's road to the same place saves as readily as the Empire's.
+  const republic = story('drent-road', 'luscia-aftermath', 'moros-camp', 'coalition', 'border-battle', 'moros-outpost');
+  assert.equal(checkpoint.save({ ...base, campaign: republic, luscia: luscia.snapshot(), moros: moros.snapshot(),
+    border: border('coalition').snapshot(), aftermath: after('moros-outpost').snapshot() }).ok, true);
+  assert.equal(checkpoint.save({ ...base, campaign: fought, luscia: luscia.snapshot(), moros: moros.snapshot(),
+    border: border('empire').snapshot() }).ok, true, 'the border battle fought and the morning not yet begun');
 });
