@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { drawMinimap, miniMapProjection } from '../src/minimap.js';
+import { drawMinimap, miniMapProjection, MINIMAP_PALETTE } from '../src/minimap.js';
 import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
 import { toWorld } from '../src/world-scale.js';
 
@@ -121,6 +121,31 @@ test('discovery rendering and combat are read-only and cannot expose distant liv
   assert.equal(state.counts.landmarks, 2); assert.equal(state.counts.discovered, 1); assert.equal(state.counts.enemies, 1);
   assert.equal(JSON.stringify({ world, combat, discoveries: [...discoveries] }), before);
   assert.equal(drawMinimap(context(), { world, position: at(-104, 6), combat: { ...combat, phase: 'won' } }).counts.enemies, 0);
+});
+
+test('the watched bird is marked on the chart, and carried to the ring when it is off it', () => {
+  const world = fixture(), position = { x: -80, z: 29 };
+  assert.equal(drawMinimap(context(), { world, position }).bird, null, 'no bird handed in, nothing drawn');
+  // Where it is: a small pair of wings, inside the ring, in birding's own colour.
+  const near = { id: 'wren-0', x: -70, z: 39 };
+  const ctx = context(), view = drawMinimap(ctx, { world, position, bird: near });
+  assert.ok(view.bird.inside && !view.bird.clamped);
+  assert.equal(view.bird.id, 'wren-0');
+  assert.ok(Math.hypot(view.bird.x - 150, view.bird.y - 150) > 1, 'the bird is not drawn on top of the traveler');
+  const wings = ctx.calls.filter(call => call.stroke === MINIMAP_PALETTE.bird);
+  assert.ok(wings.length >= 5, `the wings are stroked in the birding colour (${wings.length} calls)`);
+  assert.notEqual(MINIMAP_PALETTE.bird, '#ffe0a0'); assert.notEqual(MINIMAP_PALETTE.bird, '#8acfc2');
+  // Beyond the chart's 62 m: held at the ring with an arrow pointing on past it.
+  const far = drawMinimap(context(), { world, position, bird: { id: 'gull-2', x: -80, z: 200 } });
+  assert.ok(far.bird.clamped);
+  assert.ok(Math.abs(Math.hypot(far.bird.x - 150, far.bird.y - 150) - 134) < .00001, 'held just inside the rim');
+  assert.ok(far.bird.y > 150, 'a bird to the south is marked to the south');
+  // It never displaces what was already on the chart.
+  const both = drawMinimap(context(), { world, position, goal: { x: -80, z: -560 }, tracked: { id: 'village', x: 100, z: 160 }, bird: near });
+  assert.ok(both.goal && both.optional && both.bird);
+  assert.notEqual(both.bird.x, both.goal.x);
+  for (const bird of [{ x: NaN, z: 3 }, { x: 4 }, null, 'a wren'])
+    assert.equal(drawMinimap(context(), { world, position, bird }).bird, null, JSON.stringify(bird));
 });
 
 test('the built world uses rendered water outlines and bridge rails without terrain resampling', async () => {
