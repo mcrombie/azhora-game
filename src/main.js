@@ -3571,6 +3571,24 @@ function init() {
           const s=troupe.stop,look={x:s.x+Math.sin(s.yaw)*1.4,z:s.z+Math.cos(s.yaw)*1.4},d=view==='troupe-scene'?8:11;
           const px=look.x+Math.sin(s.yaw+.25)*d,pz=look.z+Math.cos(s.yaw+.25)*d;player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(look.x,world.heightAt(look.x,look.z)+1.6,look.z);yaw=s.yaw+.25;pitch=.12;distance=targetDistance=d;}
+        // Birding with the pointer up: a bird he has not named yet, close enough to observe,
+        // with the caret over it, its wings on the chart and the box beside them.
+        if(view==='birding-pointer'){questStage=10;combat.finishPractice();player.setArmed(false);testTravel('village');show('testing-badge',false);birding.meet();refreshSkillsSheet();
+          const settled=drentBirds.state().birds.filter(b=>b.visible&&BIRD_SPECIES[b.species]&&!['flight','arrive','leave','away'].includes(b.action));
+          const target=settled.find(b=>b.species==='cardinal')??settled.find(b=>b.species==='robin')??settled[0];
+          if(target){
+            let stand=null;
+            for(let step=0;step<12&&!stand;step++){const turn=step*Math.PI/6,x=target.x+Math.sin(turn)*6,z=target.z+Math.cos(turn)*6;
+              if(canStand(x,z,world))stand={x,z,turn};}
+            const spot=stand??{x:target.x+6,z:target.z,turn:Math.PI/2};
+            player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+            // The camera sits behind him on the far side from the bird, so its yaw is the turn away from it.
+            yaw=spot.turn;pitch=.1;distance=targetDistance=5.6;player.group.rotation.y=Math.PI+yaw;
+            grounded=true;verticalSpeed=0;
+            reviewTarget=new THREE.Vector3((spot.x+target.x)/2,world.heightAt((spot.x+target.x)/2,(spot.z+target.z)/2)+1.25,(spot.z+target.z)/2);
+            reviewFrozen=true;settleCamera();
+          }
+        }
         if(view==='lakota'||view==='lakota-aloft'){questStage=10;combat.finishPractice();const npc=npcById.get(BIRD_WATCHER.id),a=npc.actor.group,at=a.position,face=a.rotation.y;
           player.group.position.set(at.x+Math.sin(face+1.2)*4,world.heightAt(at.x,at.z),at.z+Math.cos(face+1.2)*4);player.group.visible=false;
           if(view==='lakota'){reviewTarget=new THREE.Vector3(at.x,at.y+1.35,at.z);yaw=face+.55;pitch=.1;distance=targetDistance=2.7;}
