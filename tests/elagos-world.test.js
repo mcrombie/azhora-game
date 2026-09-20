@@ -34,17 +34,24 @@ test('Elagos is the ninth playable region, true to the atlas', () => {
   // A biome of its own, and the highest ground in the playable world: everything falls away from the shelf.
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length, 'every region has its own biome');
   const shelf = REGION_TERRAIN.Elagos;
-  // Everything falls away from the shelf except Amod, the Lotharn foothills, which the
-  // lore puts uphill of it: Amod's terraces descend into the lake country.
-  for (const name of PLAYABLE_REGIONS) if (name !== 'Elagos' && name !== 'Amod') assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
+  // Everything falls away from the shelf except the three uplands the lore puts
+  // above it: Amod, whose terraces descend into the lake country; Vastos, the
+  // tableland that "sits above the surrounding terrain on both its eastern and
+  // western approaches", one of which is this one; and Meneth's ridge country on
+  // the mountain margin, which the lake country is reached by coming down from.
+  const uplands = ['Elagos', 'Amod', 'Vastos', 'Meneth'];
+  for (const name of PLAYABLE_REGIONS) if (!uplands.includes(name)) assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
+  for (const name of ['Amod', 'Vastos', 'Meneth']) assert.ok(REGION_TERRAIN[name].base > shelf.base, `${name} stands above the shelf`);
   assert.ok(REGION_TERRAIN.Amod.base > shelf.base, 'Amod stands above the shelf and drains into it');
   // Where it lies: north-west of Luscia, west of Drent, north of the Moros.
   const centre = loops => { const points = loops.flat(); return { x: points.reduce((s, p) => s + p.x, 0) / points.length, z: points.reduce((s, p) => s + p.z, 0) / points.length }; };
   const here = centre(REGION_OUTLINES.Elagos), moros = centre(REGION_OUTLINES['Moros Plain']), drent = centre(REGION_OUTLINES.Drent);
   assert.ok(here.z < moros.z, 'north of the Moros Plain');
   assert.ok(here.x < drent.x, 'west of Drent');
-  // The world grows west and nowhere else.
-  assert.ok(WORLD_BOUNDS.minX < -1600 && WORLD_BOUNDS.minX > -1620, `world minX ${WORLD_BOUNDS.minX.toFixed(1)}`);
+  // The Lake Lands grew the world west, and every region built west of them since
+  // has grown it further west and nowhere else: the other three edges have not moved.
+  assert.ok(WORLD_BOUNDS.minX <= -1600, `world minX ${WORLD_BOUNDS.minX.toFixed(1)}`);
+  assert.ok(REGION_OUTLINES.Elagos.flat().every(p => p.x > WORLD_BOUNDS.minX), 'the shelf is no longer the western edge itself');
   assert.ok(WORLD_BOUNDS.maxX > 559 && WORLD_BOUNDS.maxZ > 1272 && WORLD_BOUNDS.minZ < -608, 'the other three edges are where they were');
 });
 
@@ -134,6 +141,11 @@ test('the Ela-south leaves Lake Ela, runs through Ambron and only ever falls', (
   const elagosWest = Math.min(...REGION_OUTLINES.Elagos.flat().map(corner => corner.x));
   assert.ok(points.at(-1).x < elagosWest,
     `the Ela-south ends at ${points.at(-1).x.toFixed(1)}, which is not west of Elagos's edge at ${elagosWest.toFixed(1)}`);
+  assert.ok(!insideRegion('Elagos', points.at(-1).x, points.at(-1).z), 'the Ela-south leaves the Lake Lands');
+  // This used to be put as "runs off the west edge of the world", which was true while Elagos
+  // was the westernmost built region. Vastos, Meneth, Caricas and Nesdor now lie west of it,
+  // Nesdor's drainage takes this water on, and the reach has to stay inside the world it crosses.
+  assert.ok(points.at(-1).x > WORLD_BOUNDS.minX, 'and stays inside the world it now has to cross');
   // And it never crosses the Moros road.
   for (let i = 1; i < points.length; i++) for (let t = 0; t <= 1; t += .05) {
     const x = points[i - 1].x + (points[i].x - points[i - 1].x) * t, z = points[i - 1].z + (points[i].z - points[i - 1].z) * t;

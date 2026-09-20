@@ -124,6 +124,9 @@ import { runRoadSmoke, runRoadTestingSmoke } from './road-smoke.js';
 import { runRoadTraversal } from './road-traversal.js';
 import { runRoadCheckSmoke, verifyRoadReload } from './road-check-smoke.js';
 import { createRoadLife } from './road-life.js';
+import { createWestLife } from './west-regions-life.js';
+import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
+  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -625,6 +628,103 @@ function init() {
   const hideoutEncounter=FOREST_HIDEOUT_QUEST.encounter;
   const hideoutWatch=createForestHideoutWatch(scene,world,hideoutEncounter);
   const roadLife=createRoadLife(scene,world);
+  // The animals of the four western regions (src/west-regions-life.js): longhorns and
+  // hares on the Vastos plain, a hawk over it, and the river fox in the Carica corridor.
+  const westLife=createWestLife(scene,world);
+  /**
+   * Where the camera stands for a named western view, and what it looks at, from
+   * the regions' own numbers rather than typed-in coordinates.
+   *
+   * `review()` puts the camera at `look + (sin yaw, cos yaw) * d` and points it
+   * back at `look`, so a shot is fully described by the thing being looked at and
+   * the place the camera is looking from. `shot()` takes exactly those two and
+   * works the yaw and the distance out, which is the only way to be sure a view
+   * ends up on the side of the river it was meant to be on.
+   */
+  function westReviewSpot(view){
+    const shot=(camera,target,pitch,height=1,self=false)=>({
+      x:camera.x,z:camera.z,pitch,self,
+      yaw:Math.atan2(camera.x-target.x,camera.z-target.z),
+      d:Math.max(2,Math.hypot(camera.x-target.x,camera.z-target.z)),
+      look:{x:target.x,z:target.z,y:height},
+    });
+    /** A point `out` metres off a watercourse, on the side the normal points to. */
+    const beside=(course,at,out,side=1)=>{
+      const s=course.samples[Math.round((course.samples.length-1)*at)];
+      return {sample:s,spot:{x:s.x+s.nx*out*side,z:s.z+s.nz*out*side}};
+    };
+    if(view==='west-vastos'){
+      // The open range: a watering pan with the plain going on behind it.
+      const pan=VASTOS_PANS[2];
+      return shot({x:pan.x+10,z:pan.z-58},pan,.05,.6);
+    }
+    if(view==='west-vastos-braid'){
+      // High enough above the bank to see all three channels and the bars between them.
+      const {sample,spot}=beside(VASTOS_RIVER,(VASTOS_BRAID.from+VASTOS_BRAID.to)/2,46,-1);
+      return shot(spot,sample,.34,.2);
+    }
+    if(view==='west-vastos-sinter'){
+      // From the turf, across the line where the grass stops, to a vent breathing
+      // on the far side of the crust. Aimed above the ground, or the crust fills
+      // the frame and there is no horizon to see the line against.
+      const vent=VASTOS_SINTER.vents[1];
+      return shot({x:VASTOS_SINTER.x+34,z:VASTOS_SINTER.z+16},vent,.05,2.2);
+    }
+    if(view==='west-vastos-basin'){
+      const basin=VASTOS_BASINS[0];
+      return shot({x:basin.x+8,z:basin.z-basin.radius-34},basin,.12,.4);
+    }
+    if(view==='west-meneth'){
+      // Down a valley floor, across the next two ridges. The floor is hay meadow,
+      // so the camera is the one band of this region with nothing standing on it.
+      const x=-1850,floor=menethTroughZ(1,x);
+      return shot({x,z:floor+16},{x,z:floor-MENETH_RIDGES.wavelength*1.6},.09,6);
+    }
+    if(view==='west-meneth-beck'){
+      const {sample,spot}=beside(MENETH_BECKS[1],.45,20);
+      return shot(spot,sample,.20,.3);
+    }
+    if(view==='west-carica'){
+      // From the Nesdor bank, across the water into the corridor's old growth. Far
+      // enough back that the water is a band and not a floor, and aimed high enough
+      // up the far bank to get the canopy in rather than a wall of trunks.
+      const {sample,spot}=beside(CARICA,.62,46,-1);
+      return shot(spot,sample,.10,7);
+    }
+    if(view==='west-carica-upper'){
+      const {sample,spot}=beside(CARICA,.14,22);
+      return shot(spot,sample,.22,.3);
+    }
+    if(view==='west-nesdor'){
+      const {sample,spot}=beside(ELA_SOUTH_REACH,.72,54,-1);
+      return shot(spot,sample,.20,.3);
+    }
+    if(view==='west-nesdor-flats'){
+      // Away from the Moros's old rope fence, which still crosses this ground.
+      return shot({x:-1560,z:760},{x:-1700,z:790},.04,4);
+    }
+    if(view==='west-lizeem'){
+      const {sample,spot}=beside(LIZEEM,.42,40);
+      return shot(spot,sample,.08,1.5);
+    }
+    const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
+      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird'}[view];
+    if(creature){
+      const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
+      if(!animal)return null;
+      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4.5:3.2;
+      // Half these animals live on a riverbank, so the camera has to go round to a
+      // side of them there is ground on rather than to a fixed bearing off one shoulder.
+      let from=null;
+      for(let i=0;i<8&&!from;i++){
+        const a=i/8*Math.PI*2,spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
+        if(canStand(spot.x,spot.z,world,.4))from=spot;
+      }
+      from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
+      return shot(from,animal,.07,creature==='longhorn'?1.1:creature==='wading-bird'?.9:.35);
+    }
+    return null;
+  }
   const roadVerges=createRoadVerges(scene,world);
   let acornQuest=createAcornQuest();
   const journey=createJourney({inventory,weapons});
@@ -2427,7 +2527,7 @@ function init() {
         developer.update(dt);
         if(developer.scene===scene){
           const observer=developer.camera.position;
-          woodlandLife.setObserver(observer);roadLife.setObserver(observer);forestEcology.setObserver(observer);
+          woodlandLife.setObserver(observer);roadLife.setObserver(observer);westLife.setObserver(observer);forestEcology.setObserver(observer);
           world.updateRegionalPlaces?.(0,observer,false);
           hideoutWatch.update(0,observer,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase)});
         }
@@ -2438,6 +2538,7 @@ function init() {
       world.setFishingState(campcraft.state.phase);
       world.update?.(elapsed,dt);woodlandLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);clouds.rotation.y=elapsed*.0015;
       roadLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
+      westLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       world.updateRegionalPlaces?.(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       forestEcology.update(dt,elapsed,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       hideoutWatch.update(dt,player.group.position,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase),playing:mode==='playing'&&!reviewFrozen});
@@ -3184,6 +3285,22 @@ function init() {
             grounded=true;verticalSpeed=0;settleCamera();
           }
         }
+        // The western regions, for review by eye. The spots are worked out from the
+        // regions' own numbers rather than typed in, so a view cannot drift off the
+        // thing it is meant to show when the ground under it is adjusted.
+        if(view.startsWith('west-')){
+          questStage=10;combat.finishPractice();player.setArmed(true);
+          const spot=westReviewSpot(view);
+          if(spot){
+            player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+            yaw=spot.yaw;pitch=spot.pitch;distance=targetDistance=spot.d;player.group.rotation.y=Math.PI+yaw;
+            if(spot.look){reviewFrozen=true;player.group.visible=spot.self!==false;
+              reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+(spot.look.y??1),spot.look.z);}
+            // The west is a kilometre and a half from where the camera was: put it there.
+            grounded=true;verticalSpeed=0;settleCamera();
+            westLife.update(.03,player.group.position,true);
+          }
+        }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
         // Anyone, close and face on: 'npc-<id>' (Toft is 'npc-jimson-toft').
         if(view.startsWith('npc-')&&npcById.has(view.slice(4))){questStage=10;combat.finishPractice();player.group.visible=false;
@@ -3446,7 +3563,7 @@ function init() {
         if(view==='road-dialogue'){questStage=10;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('road-token');journey.start();const npc=npcData.find(n=>n.id==='meadow-courier'),p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+1.8),p.z+1.8);yaw=.5;pitch=.3;distance=targetDistance=6;conversation(npc);}
         if(view.startsWith('portrait-')){const npc=npcData.find(n=>n.id===view.slice(9));if(npc){questStage=10;combat.finishPractice();const p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+2),p.z+2);player.group.visible=false;npc.actor.group.rotation.y=.3;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.3,0));yaw=.3;pitch=.15;distance=targetDistance=4;reviewFrozen=true;}}
         if(['sheep','river-bird','rock-hare'].includes(view)){questStage=10;combat.finishPractice();const animal=roadLife.state().creatures.find(a=>a.species===({sheep:'sheep','river-bird':'bank-bird','rock-hare':'rock-hare'})[view]);if(animal){player.group.position.set(animal.x+4,world.heightAt(animal.x+4,animal.z+3),animal.z+3);roadLife.update(.03,player.group.position,true);reviewTarget=new THREE.Vector3(animal.x,animal.groundY+.6,animal.z);yaw=.6;pitch=.18;distance=targetDistance=view==='sheep'?5:3.4;player.group.visible=false;reviewFrozen=true;}}
-        roadLife.update(.001,player.group.position,true);
+        roadLife.update(.001,player.group.position,true);westLife.update(.001,player.group.position,true);
         const forestView=FOREST_STORY_SITES.find(site=>site.id===view);
         if(forestView){
           questStage=1;combat.finishPractice();player.group.position.set(forestView.x,world.heightAt(forestView.x,forestView.z),forestView.z);

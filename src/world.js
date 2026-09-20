@@ -50,6 +50,8 @@ import { createElagosScenery } from './elagos-scenery.js';
 import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './amod-world.js';
 import { amodTerrainSink } from './amod-terraces.js';
 import { createAmodScenery } from './amod-scenery.js';
+import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance } from './west-regions.js';
+import { createWestScenery } from './west-regions-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -336,8 +338,17 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     let value = min;
     while (value < max) {
       const outside = Math.max(fineMin - value, value - fineMax, 0);
-      value = Math.min(max, value + 2.5 + Math.min(4.6, outside / 20 * 4.6));
-      out.push(value);
+      const next = value + 2.5 + Math.min(4.6, outside / 20 * 4.6);
+      if (next < max) { value = next; out.push(value); continue; }
+      // The last step is clamped to the edge, which can leave a sliver narrower than the fine
+      // band there - 0.27 m when the world grew west. Fold the remainder into the last step if
+      // that step can take it, else share it between the last two, so no gap is ever under the
+      // fine spacing or over the coarse.
+      const before = out.length >= 2 ? out[out.length - 2] : null;
+      if (max - value >= 2.2 || before === null) out.push(max);
+      else if (max - before <= 7.1) out[out.length - 1] = max;
+      else { out[out.length - 1] = (before + max) / 2; out.push(max); }
+      break;
     }
     return out;
   }
@@ -1083,8 +1094,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z)),
-    waterClear: (x, z) => inElagosWater(x, z, 2.5),
+    movingGroups, roadDistance,
+    riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z), westRiverDistance(x, z, 14)),
+    // Ground the biome scatter grows nothing on: Elagosi water, western water, and
+    // the sinter crust on Vastos's western fall, where the grass stops in a line.
+    waterClear: (x, z) => inElagosWater(x, z, 2.5) || westBareGround(x, z, 2),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
     insideVillage: (x, z) => {
@@ -1132,6 +1146,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Elagos and Ambron (src/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
   const elagos = createElagosScenery({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   bridgeDecks.push(elagos.bridge);
+  // The four western regions (src/west-regions-scenery.js): their water, their gravel,
+  // their sedge and Vastos's sulfur ground. Terrain and wildlife only; nobody lives there.
+  const westScenery = createWestScenery({ root: world, material, mesh, pebble, groundHeight, colliders, wornPatch, dummy, color, round });
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
   const stakedProps = [];
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
@@ -1742,6 +1759,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
       ...ELAGOS_LANDMARKS,
+      ...WEST_REGION_LANDMARKS,
     ],
     paths,
     update(time, dt) {
@@ -1755,6 +1773,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pondMaterial.uniforms.time.value = time;
       regionScenery.riverMaterial.uniforms.time.value = time;
       elagos.waterMaterial.uniforms.time.value = time;
+      westScenery.update(time);
       regionScenery.millSails.rotation.z = time * .115;
       for (const [i, camp] of [...campfires.values()].entries()) if (camp.fire.lit) {
         camp.flames.scale.set(1 + Math.sin(time * 8 + i) * .04, .94 + Math.sin(time * 11 + i) * .10, 1);

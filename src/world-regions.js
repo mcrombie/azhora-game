@@ -145,8 +145,12 @@ export function createRegionScenery(kit) {
   const grassMaterial = material('#ffffff', { side: THREE.DoubleSide });
   const stoneMaterial = material('#8b9187');
 
-  /** Ground cover is per hex too, so its density survives the bigger hex. */
-  const tuftsPerHex = biome => Math.round((biome.undergrowth === 'none' ? 34 : 26) * WORLD_SCALE * WORLD_SCALE);
+  /**
+   * Ground cover is per hex too, so its density survives the bigger hex. A biome
+   * may name its own count: the Moros's treeless sky wants more grass than a
+   * wooded region, and Vastos's cold-adapted tussock is denser still.
+   */
+  const tuftsPerHex = biome => Math.round((biome.tuftsPerHex ?? (biome.undergrowth === 'none' ? 34 : 26)) * WORLD_SCALE * WORLD_SCALE);
 
   function scatterBlock(name, block, biome, parent) {
     const trees = [], rocks = [], tufts = [];

@@ -91,9 +91,14 @@ test('Pueth is a playable region true to the atlas: 27 hexes north of Drent, wit
 
 test('the rivers are the map’s: every authored river edge on Pueth is built as water, and nothing else in Pueth is', () => {
   assert.equal(RIVER_SOURCE.edgeCount, RIVER_EDGES.length);
-  assert.ok(RIVER_EDGES.every(edge => edge.regions.includes('Pueth')));
+  // The module carries the map's water for every region built from it, not Pueth's
+  // alone: the four western regions joined RIVER_REGIONS when Vastos was built.
+  // Pueth's own rivers are the edges with a Pueth hex on one side or the other.
+  assert.ok(RIVER_EDGES.every(edge => edge.regions.some(region => RIVER_SOURCE.regions.includes(region))));
+  const puethEdges = RIVER_EDGES.filter(edge => edge.regions.includes('Pueth'));
+  assert.ok(puethEdges.length >= 12, 'the map draws Pueth twelve river edges');
   // The map gives Pueth two rivers: one on the Drent border and one on the Feradom border.
-  const raw = riverCourses(PLAYABLE_SURVEY, RIVER_EDGES, undefined, { soften: 0 });
+  const raw = riverCourses(PLAYABLE_SURVEY, puethEdges, undefined, { soften: 0 });
   assert.equal(raw.length, 2);
   assert.deepEqual(PUETH_RIVERS.map(river => river.name), ['The Tessen', 'The Ordel']);
   assert.ok(TESSEN.regions.includes('Drent') && TESSEN.regions.includes('Pueth'));

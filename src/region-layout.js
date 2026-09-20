@@ -23,7 +23,7 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -68,6 +68,33 @@ export const REGION_BIOMES = Object.freeze({
   Amod: Object.freeze({ id: 'terrace-foothills', name: 'The Amod terraces', ground: '#9aa169', canopy: '#5d7540', treesPerHex: perHex(7), rocksPerHex: perHex(6), undergrowth: 'pale-grass',
     relief: { amplitude: 9, wavelength: 150 }, clearings: ['ostel', 'spring-village', 'pass-stones'], ownScatter: true,
     note: 'Foothill country south of the Lotharn: descending ridges, each throwing a valley southward, every slope ribbed with dry-stone terraces. Chestnut, oak and walnut above; orchards, vines and goats below. The east end is drier, stonier and more open, with pale grass between the walls.' }),
+  // Vastos carries no tree at all. The lore is flat about it: "there is no significant
+  // sheltering terrain: the sky is large, the wind is consistent, and the grass, which is
+  // Vastos's primary resource, grows in the dense cold-adapted varieties that upland grazing
+  // requires". So: no canopy, half as much grass again as anywhere else, and a few erratics.
+  Vastos: Object.freeze({ id: 'cold-tableland', name: 'The Vastos plain', ground: '#8f9d6c', canopy: null, treesPerHex: 0, rocksPerHex: perHex(2), undergrowth: 'tussock', tuftsPerHex: 54,
+    relief: { amplitude: 1, wavelength: 300 }, clearings: ['vastos-water', 'sulfur-ground'], blockHexes: 4,
+    note: 'A cold upland tableland above both its approaches: dense tussock grass, an enormous sky, no shelter of any kind, one shallow braided river across the south, watering pans on the open range, sulfur ground on the western fall and two small lake basins on the eastern one.' }),
+  // Meneth scatters its own slopes (src/west-regions-scenery.js): what grows there is set by
+  // height above the valley floor — meadow on the floor, nut groves on the lower face, close-grown
+  // hardwood above — and a per-hex count cannot say which of those a point is on.
+  Meneth: Object.freeze({ id: 'ridge-upland', name: 'The Meneth ridges', ground: '#7d8f63', canopy: '#4a6a43', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'meadow', ownScatter: true,
+    relief: { amplitude: 1.8, wavelength: 140 }, clearings: ['valley-becks'],
+    note: 'Ridge-and-valley upland on a mountain margin: parallel ridges running east and west, a beck on every valley floor, hay meadow between the ridges, wild chestnut and walnut on the lower faces and close-grown hardwood above. The ridges give out southward and the country opens toward the lake shelf.' }),
+  // Caricas scatters its own ground (src/west-regions-scenery.js): what grows in the Carica
+  // corridor is set by how near the water it is, not by which hex it is in. "The corridor's
+  // distinctive feature is its woodland: old-growth mixed forest along the immediate
+  // riverbanks... This is the fox's habitat. The Caricas have not cleared it."
+  Caricas: Object.freeze({ id: 'river-corridor', name: 'The Carica corridor', ground: '#7e8f5b', canopy: '#3d5b34', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'riverine', ownScatter: true,
+    relief: { amplitude: 3.2, wavelength: 130 }, clearings: ['fox-corridor'],
+    note: 'A river corridor on the fall from an upland shelf: the Lizeem deep along the west, the Carica quick and rocky off the shelf in the north-east and slow and wooded below it, uncleared old-growth forest tight to the corridor banks, managed woodland above that, and thin stony ground on the shelf itself.' }),
+  // Nesdor scatters its own ground (src/west-regions-scenery.js): its atlas terrain divides
+  // the region into a wooded valley head and the Flats, and what grows on one does not grow
+  // on the other. "The horizon opens here in a way it does not in the valley-organized
+  // branch country."
+  Nesdor: Object.freeze({ id: 'braided-flats', name: 'The Nesdor Flats', ground: '#a3a86a', canopy: '#4f6b3e', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'open-grass', ownScatter: true, blockHexes: 4,
+    relief: { amplitude: 1.6, wavelength: 200 }, clearings: ['nesdor-braids'],
+    note: 'The transition out of the branch country into the Moros approach: shallow broad valleys with hazel and oak on their slopes in the north-west, and east and south of them the Flats — dark alluvial ground, relief measured in feet, braided shallow water crossing it, and an open horizon all the way to the plain.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);
