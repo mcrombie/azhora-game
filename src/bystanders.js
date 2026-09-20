@@ -95,18 +95,21 @@ export function bystandersFor(encounter, people, { fallen = [], clear = () => tr
     .filter(spec => spec.kind === 'villager' || spec.refuge);
 }
 
+/** The shape of a name this list may hold: one rule, so the writer and the reader agree. */
+const fallenId = id => typeof id === 'string' && /^[a-z0-9-]{1,64}$/.test(id) && !SPARED.includes(id);
+
 /** Who has died, kept with the road save. */
 export function validateFallenSnapshot(data) {
   if (data === undefined) return true;
   return !!data && data.version === 1 && Array.isArray(data.ids) && data.ids.length <= 64
-    && data.ids.every(id => typeof id === 'string' && /^[a-z0-9-]{1,64}$/.test(id) && !SPARED.includes(id))
-    && new Set(data.ids).size === data.ids.length;
+    && data.ids.every(fallenId) && new Set(data.ids).size === data.ids.length;
 }
 
 export function createFallen() {
   const ids = new Set();
   return {
-    fall(id) { if (SPARED.includes(id) || ids.has(id)) return false; ids.add(id); return true; },
+    // Only a name the save can hold: otherwise the list writes one the loader will not take back.
+    fall(id) { if (!fallenId(id) || ids.has(id)) return false; ids.add(id); return true; },
     has: id => ids.has(id),
     get ids() { return [...ids]; },
     snapshot: () => ({ version: 1, ids: [...ids] }),

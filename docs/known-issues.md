@@ -330,3 +330,297 @@ regions the story has not opened yet.
    change, because "FOUR REGIONS · PLAYTESTING" is addressed to the person building it.
 
 **Repro:** open the game, press F8, or read the opening screen.
+
+---
+
+## Ammi Tal cannot be reached from anywhere in the world
+
+**Seen:** nothing, and that is the shape of it. She is at Sevenwalls, she has a name, a model, a
+role and three paragraphs about walls and soil and going down to Elod twice a year with oil, and
+there is no way to walk to her.
+
+**Measured.** A flood fill of the whole world from the landing at Tidehaven, one metre a cell,
+using exactly the rule `moveCharacter` enforces (`canStand` at the traveler's own footprint):
+
+| | |
+|---|---|
+| cells the traveler can reach on foot | **3,369,563** of 6.9M |
+| people the fill reaches | 118 of 155 |
+| people it does not | 37 |
+
+Thirty-six of those thirty-seven are on islands — eleven in Peblos, twenty-five in West Izol —
+and are meant to be reached by boat. The thirty-seventh is **`suval-terrace-farmer`, Ammi Tal**,
+at (-205, 696), on ground the fill otherwise walks all over.
+
+Filling locally instead, from open hillside sixty metres out, reaches 499,778 cells and still does
+not reach her. The pocket she stands in is **163 cells of a quarter metre — about ten square
+metres**, running 3.3 m by 7.5 m, and it does not touch the edge of a 120 m box drawn around her.
+
+**Why every other check passed her.** They are all local. The ground under her holds a body, and
+there is standable ground in a ring around her — because the ring is inside the pocket with her.
+
+**What seals it.** Firing 720 rays outward and recording what stops each one: 685 hit a scattered
+prop, 241 a hut, 73 the cistern, 9 a field wall. There are **116 props within nine metres of her**.
+Take the props within twelve metres away and the ground opens: the same fill escapes instead of
+closing at 39 cells.
+
+**Why `keepPropsClear` did not save her.** It removes a prop whose centre is within its own radius
+plus eight tenths of a metre of somewhere somebody stands. That is the *spot*, not the way out. Of
+the 116 props around her it reaches **none**; the nearest one it cannot reach is **0.98 m** away, a
+centimetre past its clearance.
+
+**And widening it is not the repair.** Prop counts within nine metres of a stand, across all 155
+people: median 4, upper quartile 51, ninetieth percentile 115, highest **441**. Twenty-six people
+have more than eighty props that close and are perfectly fine — `peblos-legionary-2` has 441 and
+opens out. Density is not the fault; the fault is the particular ring of props, three huts, a
+cistern and a terrace wall at Sevenwalls. A bigger clearance would strip scenery across the whole
+game to mend one place.
+
+**Ways out, all local:**
+
+1. Move her. The nearest ground that is both reachable and has room to be spoken in is **6.25 m**
+   away, around (-208.1, 701.4), in the lane between the second and third huts. There are 3,831
+   reachable, roomy spots within twenty metres, so this is one coordinate in
+   `EAST_SUVAL_STANDS` (`src/east-suval.js:291`) once somebody chooses. Not guessed at here
+   because which of those spots is *her* spot is a staging choice: she is a terrace farmer, and
+   the lane between the huts is not the terrace.
+2. Thin the scatter at Sevenwalls, so the hamlet has gaps between its buildings. Keeps her where
+   she was put, and is the answer if the pocket is a scattering accident rather than her placement.
+3. Give `keepPropsClear` a second job: clear a corridor from each stand to open ground, rather
+   than a disc around it. Fixes the class instead of the instance, costs the most, and needs a
+   before-and-after prop count because it touches every stand in the world.
+
+**Repro:** `tests/nobody-sealed-in.test.js` names her; F8 to East Suval and walk to Sevenwalls.
+
+## Five of the ten hired swords wait on the harbour floor
+
+A mercenary who has landed but not yet set off stands in the `landing` phase, and
+`placements()` (`src/mercenaries.js`) puts him in a ring around the traveler's own landing
+point: `x = start.x + sin(index * 1.9) * (2.2 + index * 0.3)`. `src/main.js:196` passes
+`landing: world.spawn`. The ring therefore grows with a man's place in the roster, from 2.2 m
+for the first to 4.9 m for the tenth.
+
+**The spawn is on a pier three metres wide.** `world.spawn` is (23, 29) at height 1.80. Mapping
+`canStand` at one-metre steps around it, the standable ground is a strip from z=28 to z=30
+running west from the pier head at x≈29 back to the shore at x≈9. Everything north of z=27,
+south of z=31 and east of x≈29 is water, and the harbour floor there is at **−5.5 m** — five and
+a half metres below the sea surface (`SEA_LEVEL` 0.06).
+
+**No ring wider than 1.7 m stays on the pier.** Sweeping radii in 10 cm steps and testing all
+32 bearings, the largest fully standable ring around the spawn is **1.7 m**. Eight of the ten
+men are placed at 2.2 m or more.
+
+**Who ends up in the water,** with the terrain height under each and how long he is there
+(`hidden` is set only for the `coming` phase, so a man in `landing` is drawn and steered):
+
+| | man | ring | position | ground | waits |
+|---|---|---|---|---|---|
+| 2 | Jerry | 2.8 m | 21.3, 26.8 | −5.56 | 90 s from t=1080 |
+| 3 | Christin | 3.1 m | 21.3, 31.6 | −5.75 | 90 s from t=1080 |
+| 5 | Lakota | 3.7 m | 22.7, 25.3 | −5.52 | 60 s from t=1980 |
+| 7 | Matt | 4.3 m | 25.9, 32.2 | −5.74 | 120 s from t=3780 |
+| 8 | Al the Tun | 4.6 m | 25.2, 25.0 | −5.53 | 120 s from t=3780 |
+
+The other five land on the pier. Chris Gotwood at index 0 needs 2.2 m and his bearing is
+standable to exactly 2.2 m, so he is on the edge of it.
+
+**What it looks like in play** depends on where the traveler is, and both readings are wrong.
+Past the 180 m view range `src/main.js:2559` snaps a man to his home, so he is teleported onto
+the seabed (invisible, since he is also hidden at that range). Inside it, the steering loop
+walks him there with `stepAround` (`src/bodies.js:60`), which moves through `moveCharacter` and
+so will not enter water, and he presses against the pier edge without ever reaching the spot the
+game says he is at.
+
+**Not new.** `git log` on `src/mercenaries.js`: the roster went from eleven to ten at `dff10f0`,
+so it shrank rather than grew and the ring's reach came down with it. The formula and the spawn
+are untouched, so this has been true since the company was added at `7d76316`.
+
+**The muster is fine.** At the far end all ten stand on dry ground at height ~6.61, between 4.5
+and 14.8 m from the camp centre, comfortably inside the 20 m the existing test asks for.
+
+**Ways out:**
+
+1. Wait along the pier instead of around the spawn. The pier is 3 m wide and about 20 m long, so
+   a line of ten men at 1.8 m spacing fits on it with room to pass. This is the smallest change
+   and it needs one decision: whether the company waits in a queue down the quay or in a huddle
+   at its head.
+2. Wait on the shore end of the pier, where it meets land at x≈9, and keep the ring. Standable
+   ground opens out there, so a 4.9 m ring fits. Costs the picture of men stepping straight off
+   a boat.
+3. Give `placements()` the ground rule the rest of the game uses: if the chosen spot fails
+   `canStand`, spiral out to the nearest spot that passes. Fixes the class — the same ring is
+   used wherever a future `landing` is put — but it makes the formation depend on terrain, and a
+   drifting formation is a staging decision, not a mechanical one.
+
+Which of the three is right is a staging choice about how the company is meant to look when the
+traveler meets it, so it is not guessed at here.
+
+**Repro:** `tests/nobody-sealed-in.test.js` measures the widest ring the landing will take and
+asserts somebody is *still* wet, so it fails the moment this is mended. It deliberately does not
+name the five, because which man stands at which radius is only the order of the roster. In play:
+start a new game, stay at the landing, and wait to t=1080 (eighteen minutes) for Jerry and
+Christin.
+
+## `route` is written on every hired sword and read by nothing
+
+`MERCENARY_ROSTER` gives each man a `route`: the `merc()` factory defaults it to `'road'`
+(`src/mercenaries.js:47`), Ed the Word is authored `route: 'shore', swims: true` (line 78) and
+Mus is authored `route: 'wild'` (line 120). The doc comment above the roster says "`route` is
+how they get to the muster" (line 66).
+
+**Nothing reads it.** Grepping the whole of `src/` and `tests/` for a read of the field: the
+only hits are the two authored entries, the factory default and that comment. The three modules
+that import from `src/mercenaries.js` — `src/main.js`, `src/road-checkpoint.js` and the two test
+files — never mention it. (`src/salt-sultan.js` has a `route` of its own, on a sea port, which
+is unrelated.)
+
+**So everyone walks the road.** `mercenaryProgress()` and `placements()` take no branch on
+`route`; every man, Mus included, is positioned with `pointAlongRoad(road, progress.distance)`.
+Sweeping play time from 0 to 40,000 s and recording which phases each man is ever seen in, Mus
+passes through `coming`, `landing`, `walking`, `stopped` and `mustered` exactly like the eight
+`route: 'road'` men, pausing at all three road stops, and finishes 14.8 m from the camp centre
+in the same formation. Ed the Word does the same; `swims` is read nowhere either.
+
+**Why it is worth a decision rather than a fix.** The commit that introduced it is called
+"Eleven of us for one border, and one of them does not use the road" (`dff10f0`), so the
+intent is on the record and the code does not yet carry it. What a wild route *is* — a
+polyline of his own, an offset from the road, a cross-country line from a beach of his own to
+the camp — is the whole of the feature, and guessing it would invent a route rather than
+implement one.
+
+**Ways out:**
+
+1. Give a `route` its own polyline, the way the road is one, and have `placements()` pick the
+   polyline by `route` and keep everything else. Mus walks his line, Ed walks the shore, and
+   `mercenaryProgress` is unchanged because it is already expressed in distance along *a* path.
+2. Drop the field and the comment until there is a route to put behind them, so the roster does
+   not promise something the game does not do.
+
+**Repro:** no test covers it. `MERCENARY_ROSTER.every(m => m.route)` is true; nothing else in
+the tree mentions the field.
+
+## The Moros Horizon fence now stands inside Nesdor
+
+`FRONTIER` (`src/region-world.js:544`, "The Moros Horizon", region name "The open road west
+across the Moros") was the end of the built world: a rope fence west of the army camp, built by
+`src/world-regions.js:690` as posts every 8 m over 344 m of z with rope between them, and one
+collider 0.2 m thick by 344 m long (`kind: 'frontier'`). Since `bd2d213` there is a country west
+of it.
+
+**Where it stands.** The line is at x = −1396.4, z 430.2 to 774.2. Sampling every 8 m along it
+and asking which region lies three metres to either side: 35 of 44 samples, **272 m of the 344**,
+have Nesdor on *both* sides; 7 samples (z 438–486, 56 m) have the Moros Plain on both sides; one
+has Nesdor west and the plain east; the northernmost has Elagos to the west. Walking west along
+fixed rows until `insideRegion('Moros Plain')` fails: at z = 450 the plain ends 4 m *west* of the
+fence, so there the fence is just inside the plain; at z = 500 the plain ends 12 m east of it; at
+z = 600, **85 m** east; at z = 700 and 760 the plain is not on the row at all. The marker point
+itself (−1385.7, 602.2) is 74 m inside Nesdor.
+
+**It is solid, and it can be walked round.** `canStand` is blocked within ±0.2 m of the line and
+`moveCharacter` walking west in 5 cm steps stops 0.45 m east of it (body 0.34 + half-width 0.1),
+at every row sampled inside the span. A breadth-first fill of standable ground from the Moros
+side at mid-fence, at 1 m with a midpoint check so the 0.2 m wall cannot be hopped, first steps
+over the line at z = 775.2 — **round the south end, 1.0 m past the last post** — after 28,578
+cells; the ground beyond the north end is standable at every offset too. Both sides of the line
+are standable at 38 of the 44 samples; the other six are water or scatter, not the fence.
+
+**What it cuts off: nothing that has been built.** No path crosses the line inside its span
+(there is no Nesdor Way yet). Nesdor has no people placed. All five of Nesdor's landmarks (the
+Flats, the Braided Water, the Valley Head, the Carica Corridor, the Upper Carica) are west of
+it. Nothing ever opens or removes it: the only reader of `world.frontier` is the minimap
+(`src/minimap.js:230`), which draws it.
+
+**What the player meets.** Walking west off the plain, the region card fires "Nesdor" between
+12 and 85+ metres *before* a rope line that says the world ends here, and a ten-second walk
+along it leads round the end into the same open country. It is the Moros chapter's furniture
+standing in someone else's region.
+
+**Ways out, all story calls:**
+
+1. Take it down: the built world no longer ends there, and `regionName` "The open road west
+   across the Moros" is now false in fact.
+2. Re-site it on the plain's actual western boundary. That boundary is not a line: it runs from
+   about (−1400, 450) to (−1311, 600) and is east of x = −1276 by z = 700, so a straight 344 m
+   fence cannot lie on it. It would have to follow the outline, or shrink to a short gate on
+   whatever road the Nesdor Way becomes.
+3. Keep it where it is and mean it: the *army's* horizon, an Ambroni line inside a country it
+   does not hold, with the name and minimap label reworded to say so. Costs nothing on the
+   ground and is the reading the build-status text already gives ("still stands between this
+   region and the plain").
+
+Which of these is right depends on what the Moros chapter wants the traveler to feel at the
+far side of the plain, so it is not guessed at here.
+
+**Repro:** no test covers it. Headless: build the world, take `FRONTIER.barrierX`, and sample
+`regionNameAt(barrierX ± 3, z)` along the span. In play: cross the plain west from the army camp
+and watch the card change before the fence.
+
+## Half of the walkable west lies outside every region, and the card names it anyway
+
+Flooding standable ground from Ambron on foot (`canStand`, traveler radius, one-metre cells with
+a midpoint check) across the whole western extent — x −2310 to −1100, z −868 to 2225 — reaches
+2,709,151 cells. Sampling every fourth cell each way: **79,957 samples inside some region
+outline, 89,584 outside every outline.** That is **52.8% of everything the traveler can walk to
+in the west**, about 143 hectares, on ground no `REGION_OUTLINES` polygon owns.
+
+**Where it is.** The four new regions' outlines stop well short of the world's bounds, and the
+ground carries on to the bounds on every side:
+
+| the card says | samples | about | extent | furthest from that region's outline |
+|---|---|---|---|---|
+| Nesdor | 45,405 | 73 ha | x −2245..−1101, z 620..1960 | **1,009 m**, at (−1150, 1960) |
+| Vastos | 17,072 | 27 ha | x −2310..−1301, z −868..−468 | 577 m, at the north-west corner |
+| Caricas | 15,754 | 25 ha | x −2310..−1821, z −320..1092 | 606 m, at (−2250, 1092) |
+| Meneth | 8,590 | 14 ha | x −2310..−1853, z −728..−204 | 505 m, at the west edge |
+| Amod | 2,521 | 4 ha | x −1418..−1101, z −868..−608 | 235 m |
+| West Izol | 151 | — | x −1146..−1101, z 1904..1988 | **1,011 m** |
+| Moros Plain | 91 | — | x −1146..−1101, z 840..892 | 55 m |
+
+Nesdor's outline ends at z = 953; walkable ground the card calls Nesdor runs a kilometre further
+south. West Izol is an island on the far side of the map, and its name is what the card shows
+at (−1146, 1964).
+
+**Why the card says anything.** `regionAt` (`src/region-world.js:663`) is total: a point whose
+hex has no owner is given the nearest region rather than none. Inside the outlines that is
+harmless — on owned ground the hex owner and the polygon agree at 62,249 of 62,249 samples in
+the west, and the softened chart border never strays more than 3.1 m from the hex outline. Off
+the outlines it names ground after a region the traveler is not in, and `subregionsAt`, which is
+by distance, mostly names nothing, so the journal goes quiet while the card does not.
+
+**The Lizeem is part of it.** The chart says of the Lizeem Bank that the river is "not
+crossable by anybody on foot for the whole of its length here", and of the Bend that "the far
+bank is another country and there is no way to it here". As built, the river's deep water on the
+Caricas bank is 871 `west-deep-water` colliders spanning **z −117 to 491** — 608 m of bank —
+and walkable ground is reached *west* of that water on **all 79** sampled rows of its span,
+because both ends are open: 178 rows north and south of it (z −868 to 1180) reach past
+x = −2200 with no river collider within 12 m. Walking straight west at z = 200 the water stops
+you at x = −2240; walking round either end does not. The Bend's water stops a westward walk at
+x = −1685 on z = 800, and the fill still reaches x = −2245 on rows the card calls Nesdor, so the
+Bend is got round as well; where it is got round was not measured. The far bank is reachable,
+and it is some of the 143 hectares above.
+
+**Not new in kind, new in size.** The same class was measured in round four on the older
+regions, where the unowned ground was slivers at polygon edges. In the west it is the majority
+of the walkable country, because the four regions were built as terrain over the atlas hexes
+they own while the height field, the scatter and `WORLD_BOUNDS` extend to the map's edge.
+
+**Ways out, and each is a decision about where the world ends:**
+
+1. End the ground at the outlines: sea, cliff or the deep-water collider the Lizeem already
+   uses, so that a walker cannot leave the country the atlas draws. Costs shoreline and
+   scenery work along roughly 4 km of outline, and Nesdor's lore ("an open horizon that goes
+   on being open") argues against a hard edge on its south.
+2. Own it: extend the four outlines to the bounds the ground already reaches, so the atlas,
+   the card and the chart agree with the feet. Cheapest, but it makes the atlas say something
+   the World Builder map does not.
+3. Name it honestly: make `regionAt` return null, or a sentinel "open country", off every
+   outline, and teach the card and chart to say so. One function and its readers (the card,
+   the minimap caption, the autosave-on-enter, the map tutorial's first-province check), and
+   the world's shape does not change.
+
+Which of the three is right depends on whether the map's edge is meant to be walkable at all,
+so it is not guessed at here.
+
+**Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
+which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the
+card still says Nesdor a kilometre later.

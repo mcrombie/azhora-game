@@ -190,7 +190,7 @@ export function createWoodcutting({ skills, random = Math.random } = {}) {
     const lots = LOG_ITEMS.map((item, i) => ({ item, count: count(item), price: TREE_KINDS[TREE_KIND_IDS[i]].price })).filter(lot => lot.count > 0);
     return { lots, total: lots.reduce((sum, lot) => sum + lot.count * lot.price, 0), logs: lots.reduce((sum, lot) => sum + lot.count, 0) };
   }
-  function sold(logs) { state.sold += Math.max(0, Math.floor(logs)); }
+  function sold(logs) { if (Number.isFinite(logs)) state.sold += Math.max(0, Math.floor(logs)); }
   function snapshot() { return { version: WOODCUTTING_VERSION, met: state.met, visits: state.visits, kingsAxe: state.kingsAxe, logs: state.logs, sold: state.sold }; }
   function restore(data) {
     Object.assign(state, { met: false, visits: 0, kingsAxe: false, logs: 0, sold: 0 });

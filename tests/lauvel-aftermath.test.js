@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
-import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BEARERS_ROUND, BURIAL, FALLEN, bearersAt, bearersStandingBack, fieldPoint } from '../src/lauvel-aftermath.js';
+import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BEARERS_ROUND, BURIAL, FALLEN, HEWES_GRAVE, bearersAt, bearersStandingBack, fieldPoint } from '../src/lauvel-aftermath.js';
 import { LUSCIA_NPCS, LUSCIA_WOLVES } from '../src/luscia-chapter.js';
 
 const { pickUp, layDown, pace, lift, rest } = BEARERS_ROUND;
@@ -52,6 +52,21 @@ test('everyone on the field has a name, something to say, and an id of their own
   assert.deepEqual(LAUVEL_PEOPLE.filter(p => p.posture).map(p => [p.name, p.posture]), [['Sela', 'kneel'], ['Kerrin', 'sit-ground']]);
   assert.deepEqual(LAUVEL_PEOPLE.filter(p => p.bearer).map(p => p.bearer), ['front', 'back']);
   assert.equal(LAUVEL_PEOPLE.filter(p => p.digs).length, 1);
+});
+
+test('the gravedigger is turned towards the grave he is digging', () => {
+  // His spade swings straight out in front of him, so his yaw is not decoration: it is the
+  // difference between digging the grave and digging the turf beside it. Anything that turns him
+  // - the traveler stopping to talk, a scare off the field - has to turn him back again, which is
+  // what the facing loan in src/bodies.js is for.
+  const hewe = LAUVEL_PEOPLE.find(person => person.digs);
+  const grave = fieldPoint(BURIAL.graves[HEWES_GRAVE].dx, BURIAL.graves[HEWES_GRAVE].dz);
+  assert.equal(BURIAL.graves[HEWES_GRAVE].open, true, 'the grave he stands at has been filled in');
+  const toGrave = Math.atan2(grave.x - hewe.x, grave.z - hewe.z);
+  const off = Math.abs(Math.atan2(Math.sin(toGrave - hewe.yaw), Math.cos(toGrave - hewe.yaw)));
+  assert.ok(off < .25, `${hewe.name} faces ${(off * 180 / Math.PI).toFixed(0)} degrees away from his own grave`);
+  const reach = Math.hypot(grave.x - hewe.x, grave.z - hewe.z);
+  assert.ok(reach > .5 && reach < 2, `he is ${reach.toFixed(2)}m from it, which is not a spade's length`);
 });
 
 test('the field at the Lauvel has its dead and its graves, and its people have footing off the road and out of the wolves’ way', async () => {

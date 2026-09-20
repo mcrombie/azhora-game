@@ -72,3 +72,24 @@ export function stepAround(position, dx, dz, world, radius, side = 1) {
   }
   return moved;
 }
+
+/**
+ * Turning to face the traveler is a loan, not a gift.
+ *
+ * Somebody posed against their work faces it because that is where the work is: Old Hewe faces
+ * the grave he is digging, Sela kneels at the board with her son's name on it. Turn them to the
+ * traveler for a conversation and never turn them back, and they go on working on empty ground.
+ *
+ * While `talking` they look at `want`, and the way they were facing on the first frame of it is
+ * kept. Afterwards they ease back to it, the short way round, and the loan is let go. `lent` is
+ * `undefined` whenever nothing is owed.
+ */
+export function lendFacing({ facing, lent, talking, want, dt, rate = 4 }) {
+  if (talking) return { facing: Number.isFinite(want) ? want : facing, lent: lent ?? facing };
+  // A frame with no length, or one the timer could not measure, turns nobody. Without this a NaN
+  // reaches a rotation and the figure stops being drawn at all.
+  if (lent === undefined || !Number.isFinite(dt) || dt <= 0) return { facing, lent };
+  const turn = Math.atan2(Math.sin(lent - facing), Math.cos(lent - facing));
+  if (Math.abs(turn) < .01) return { facing: lent, lent: undefined };
+  return { facing: facing + turn * (1 - Math.exp(-rate * dt)), lent };
+}

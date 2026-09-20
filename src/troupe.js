@@ -95,6 +95,10 @@ export function createTroupe({ random = Math.random, start = null } = {}) {
    */
   function update(dt, traveler = null) {
     const events = [];
+    // A frame with no length, or one the timer could not measure, moves nothing. Without this a
+    // NaN reaches the clock, snapshot() writes it as null, and the next load refuses the whole
+    // checkpoint - not just the players of Nylon (src/road-checkpoint.js).
+    if (!Number.isFinite(dt) || dt <= 0) return events;
     state.clock += dt;
     const s = here();
     if (traveler && !state.heard && Math.hypot(s.x - traveler.x, s.z - traveler.z) < TROUPE_HEAR) { state.heard = true; events.push({ type: 'heard', stop: s, line: HEARD[Math.floor(random() * HEARD.length)] }); }
@@ -120,7 +124,7 @@ export function createTroupe({ random = Math.random, start = null } = {}) {
     if (gift) state.gifted = true;
     return { scenes: state.scenes, gift };
   }
-  const tip = n => { state.tips += Math.max(0, Math.floor(n)); };
+  const tip = n => { if (Number.isFinite(n)) state.tips += Math.max(0, Math.floor(n)); };
   const die = () => ++state.deaths;
   function snapshot() { return { version: 1, stop: here().id, clock: Math.round(state.clock * 10) / 10, met: state.met, scenes: state.scenes, tips: state.tips, deaths: state.deaths, gifted: state.gifted }; }
   function restore(data) {

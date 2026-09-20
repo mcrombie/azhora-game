@@ -132,7 +132,7 @@ import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
 import { runDeveloperSmoke } from './developer-smoke.js';
 import { moveCharacter, canStand, advanceQuest, questSteps, getMovementInput } from './game-state.js';
-import { BODY, bodyWorld, stepAround } from './bodies.js';
+import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
 
 const $ = id => document.getElementById(id);
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -2657,7 +2657,7 @@ function init() {
         if(npc.hidden||npc.fallen){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         const pos=npc.actor.group.position,home=npc.id===BEGGAR_NPC.id&&beggarStep?beggarStep.target:world.npcPositions[npc.id];
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
-        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
+        if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);if(npc.lent!==undefined){npc.actor.group.rotation.y=npc.lent;npc.lent=undefined;}npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         npc.actor.group.visible=true;onStage(npc,true);
         const alarm=!npc.cat&&combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
@@ -2682,7 +2682,13 @@ function init() {
         if(npc.id==='acorn-cook'&&birding.task()?.target==='acorn-cook')npc.marker.visible=combat.state.phase!=='active';
         if(npc.id===FOREST_STORY_NPC.id)npc.marker.visible=(!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned))&&questStage>=1&&combat.state.phase!=='active';
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);npc.marker.rotation.y=elapsed*.7;
-        if(mode==='dialogue'&&activeDialogue?.npc===npc){const p=player.group.position;npc.actor.group.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);}
+        // Facing the traveler is a loan, given back when the talking is done (src/bodies.js).
+        // Somebody posed against their work - Old Hewe at the grave he is digging, Sela at the
+        // board - faces it because that is where the work is, and nothing else ever turns them.
+        {if(pace>.1||npc.face)npc.lent=undefined;   // these have somewhere of their own to look
+          const p=player.group.position,turned=lendFacing({facing:npc.actor.group.rotation.y,lent:npc.lent,dt,
+            talking:mode==='dialogue'&&activeDialogue?.npc===npc,want:Math.atan2(p.x-pos.x,p.z-pos.z)});
+          npc.actor.group.rotation.y=turned.facing;npc.lent=turned.lent;}
       }
       {// Ed: he goes in a puff if the traveler runs at him or swings at him, and wanders between his haunts.
         const pp=player.group.position,speed=Math.hypot(pp.x-edLast.x,pp.z-edLast.z)/Math.max(dt,1e-3);edLast.x=pp.x;edLast.z=pp.z;

@@ -66,3 +66,27 @@ test('no number a save section accepts can come back out of a restore as one JSO
     }
   }
 });
+
+test('no module can be driven into a save its own validator refuses', () => {
+  // A frame the timer could not measure arrives as an undefined or NaN delta. Seven modules in
+  // src/ already turn one away with `!Number.isFinite(dt) || dt <= 0`; four did not, and a NaN
+  // that reaches a clock is written by JSON as null, which makes road-checkpoint.js refuse the
+  // whole checkpoint rather than that one section. So: hand every method nonsense and check the
+  // module still describes itself in a way it would take back.
+  const NONSENSE = [undefined, Number.NaN, Infinity, -Infinity, -1, 'soon', null, {}, []];
+  for (const entry of modules) {
+    for (const nonsense of NONSENSE) {
+      const live = entry.make();
+      for (const [name, method] of Object.entries(live)) {
+        if (typeof method !== 'function' || ['snapshot', 'restore', 'view', 'state'].includes(name)) continue;
+        try { method(nonsense); } catch { /* a method that refuses an argument outright is fine */ }
+      }
+      const written = live.snapshot();
+      assert.equal(entry.validate(written), true,
+        `${entry.file}: after being handed ${JSON.stringify(nonsense) ?? String(nonsense)}, ${entry.maker}() describes itself as ${JSON.stringify(written)}, which ${entry.validateName} refuses`);
+      // And what JSON would actually write must come back the same way.
+      assert.equal(entry.validate(JSON.parse(JSON.stringify(written))), true,
+        `${entry.file}: that save does not survive being written down`);
+    }
+  }
+});
