@@ -66,3 +66,22 @@
 /* The crossing to Peblos: the boat pulls out, the view fades, the traveler steps onto the other quay (src/ferry.js). */
 #crossing {position:fixed;inset:0;z-index:30;pointer-events:none;background:#0a1f24;display:grid;place-items:end center;padding-bottom:16vh;opacity:0;}
 #crossing p {font-family:Adventure,Georgia,serif;font-size:22px;letter-spacing:.02em;color:#f2e6c4;text-shadow:0 3px 18px #07171b;max-width:560px;text-align:center;}
+/* The line of eleven at the opening: which of the company you walk as (src/character-select.js). */
+#opening-characters {display:block;margin:0 0 20px;}
+#opening-characters .eyebrow {display:block;color:#f8df9f;font-size:11px;margin:0 0 9px;}
+#character-line {display:flex;flex-wrap:wrap;gap:6px;}
+.character-tile {display:flex;flex-direction:column;align-items:center;gap:5px;width:44px;padding:6px 2px 5px;
+  border:1px solid #e1d2a638;border-radius:4px;background:#13332fad;color:#f2e6c9c4;font-size:10px;
+  text-shadow:none;transition:border-color .18s,background .18s,transform .18s;}
+.character-tile b {display:block;max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+/* The portrait is the model's own three colours, top to bottom: hair, face, cloth. */
+.character-portrait {display:block;width:23px;height:23px;border-radius:50%;box-shadow:inset 0 0 0 1px #0e2a2877;
+  background:linear-gradient(180deg,var(--hair) 0 31%,var(--skin) 31% 58%,var(--tunic) 58% 100%);}
+.character-tile:hover {border-color:#f3daa07a;transform:translateY(-1px);}
+.character-tile.chosen {border-color:#f3daa0;background:#1d4a41e0;color:#fff3d6;box-shadow:0 3px 14px #0d262b55;}
+#opening #character-detail {margin:12px 0 0;font-size:13px;line-height:1.55;text-shadow:0 2px 12px #0c2a2ed9;}
+#character-detail b {display:block;font-family:Adventure,Georgia,serif;font-size:19px;font-weight:400;color:#ffe7ac;}
+#character-detail span {display:block;margin-top:3px;color:#fff4ddcc;}
+#character-detail small {display:block;margin-top:5px;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#f0d79a;}
+@media(max-height:820px){#opening h2 {font-size:clamp(38px,4vw,54px);}#opening p {margin:14px 0 18px;}
+  #opening-characters {margin-bottom:14px;}#opening #character-detail {margin-top:9px;}}

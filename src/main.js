@@ -9,7 +9,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROM, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -63,7 +63,10 @@ import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
-import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './skills.js';
+import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine } from './skills.js';
+// Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
+import { DEFAULT_PLAYER, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingSkills, shortName } from './player-characters.js';
+import { createCharacterSelect } from './character-select.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
@@ -158,7 +161,21 @@ function init() {
   sun.shadow.normalBias=.045;sun.shadow.bias=-.00025;sun.shadow.camera.updateProjectionMatrix();scene.add(sun,sun.target);
   const clouds=createSky(scene);
   const testingQuery=new URLSearchParams(location.search);
-  world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});player=createCharacter();scene.add(player.group);
+  world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
+  // You may be any of the eleven, so the body has to be replaceable. The rig around it is not:
+  // combat and everything else took hold of this one position object at boot and keeps holding it.
+  let playerId=DEFAULT_PLAYER,playerBody=null;
+  const playerRig=new THREE.Group();playerRig.name='player';
+  player={group:playerRig,animate:(...a)=>playerBody.animate(...a),setArmed:(...a)=>playerBody.setArmed(...a),
+    setWeapon:(...a)=>playerBody.setWeapon(...a),setFishing:(...a)=>playerBody.setFishing(...a),fishingTip:(...a)=>playerBody.fishingTip(...a)};
+  function wearPlayerLook(id){
+    const look=playerLook(id);
+    if(playerBody)playerRig.remove(playerBody.group);
+    // Crom has no roster look and gets none: his model is the traveler's, exactly as it was.
+    playerBody=createCharacter(look?{role:'traveler',tunic:look.tunic,skin:look.skin,look}:{});
+    playerRig.add(playerBody.group);
+  }
+  wearPlayerLook(playerId);scene.add(player.group);
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
   const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
@@ -195,8 +212,13 @@ function init() {
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
-  const mercenaryIds=new Set(MERCENARY_ROSTER.map(m=>m.id));
-  const company=createMercenaryCompany({road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn});
+  // Eleven possible hired swords for ten places: whichever of them you are is not on the road,
+  // and Crom stands in the place you left (companyFor). A default game is the ten it always was.
+  const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROM.id]);
+  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn};
+  let roster=companyFor(playerId),company=createMercenaryCompany({...companyPlan,roster});
+  // Whoever stands first in the line came off your boat and carries the letter.
+  const landingMateId=()=>roster[0].id;
   // A friendly dog sniffs about the green, comes to see who has landed, and eats what it is given.
   const villageDog=createVillageDog();
   world.npcPositions[VILLAGE_DOG.id]={x:VILLAGE_DOG.haunts[0].x,z:VILLAGE_DOG.haunts[0].z};
@@ -273,7 +295,8 @@ function init() {
   let playSeconds=0;
   const mercenaryWeapons=new Map();
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
-  for(const [i,placement] of company.placements(0).entries()){const merc=MERCENARY_ROSTER[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});}
+  const mercNpc=(merc,placement)=>({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});
+  for(const [i,placement] of company.placements(0).entries()){const merc=roster[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push(mercNpc(merc,placement));}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
@@ -289,6 +312,47 @@ function init() {
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
+  /**
+   * Become one of the eleven. Exactly one man on the road changes: the one whose place you
+   * have taken walks out of the world, and Crom walks into the slot he left with his own
+   * model, his own hour and his own lines. Everything else about the company is untouched.
+   */
+  function setPlayerCharacter(id){
+    const chosen=savedPlayerCharacter(id);
+    if(chosen===playerId&&playerBody)return chosen;
+    const before=roster;
+    playerId=chosen;roster=companyFor(playerId);company=createMercenaryCompany({...companyPlan,roster});
+    for(const [i,merc] of roster.entries()){
+      if(merc.id===before[i].id)continue;
+      const npc=npcById.get(before[i].id);if(!npc)continue;
+      scene.remove(npc.actor.group);npcById.delete(npc.id);mercenaryWeapons.delete(npc.id);
+      const placement=company.placements(playSeconds)[i];
+      Object.assign(npc,mercNpc(merc,placement));world.npcPositions[merc.id]={x:placement.x,z:placement.z};
+      npc.actor=createCharacter({tunic:npc.color,role:'mercenary',skin:npc.skin,look:npc.look});
+      npc.shadows=undefined;scene.add(npc.actor.group);npcById.set(npc.id,npc);
+    }
+    wearPlayerLook(playerId);settleMercenaries();
+    characterSelect.select(playerId,{announce:false});
+    return chosen;
+  }
+  /**
+   * What you step ashore with: the weapon your fighting style uses, and whatever the life you
+   * had before this road already taught you (src/player-characters.js). Crom has neither, so a
+   * default game begins with the sword and an empty skills sheet, exactly as it always has.
+   */
+  function grantStartingKit(){
+    for(const item of startingInventory(playerId)){
+      if(!inventory.has(item.id))inventory.grant(item.id);
+      if(WEAPON_TYPES[item.id])weapons.setCondition(item.id,WEAPON_TYPES[item.id].maxDurability);
+    }
+    const chosen=playableCharacter(playerId);
+    if(chosen?.weapon&&inventory.has(chosen.weapon))weapons.equip(chosen.weapon);
+    // Restored rather than learned: a life lived before the game began does not put level-up
+    // banners on the screen. Skills other hands have not registered yet are simply not known.
+    const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)).map(([id,xp])=>[id,{xp}]));
+    if(Object.keys(known).length)skills.restore({version:SKILLS_VERSION,skills:known});
+    inventory.refresh();refreshSkillsSheet();updateHUD();
+  }
   const objectiveMarker=makeQuestMarker();scene.add(objectiveMarker);
   const trailMarker=makeQuestMarker();trailMarker.scale.setScalar(.7);trailMarker.visible=false;scene.add(trailMarker);
   trailMarker.traverse(object=>{if(object.isMesh){object.material=object.material.clone();object.material.color.set(0x8acfc2);object.material.emissive.set(0x437d76);}});
@@ -1378,6 +1442,7 @@ function init() {
   function begin() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
+    grantStartingKit();
     playSeconds=0;refugeeHold=0;settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     world.ringBell?.(elapsed);audio?.effect('bell');
@@ -1656,7 +1721,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1664,6 +1729,8 @@ function init() {
   function continueRoad(){
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
+    // Who the adventure was being played as. A save from before anyone could choose is Crom.
+    setPlayerCharacter(savedPlayerCharacter(saved.player));
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
@@ -1913,7 +1980,7 @@ function init() {
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
-    if(npc.id==='merc-gotwood'&&questStage<2){chrisOnTheLanding(npc);return;}
+    if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
     if(npc.id===JUAN.id){if(wineAttic.met)wineAttic.visit();juanConversation(npc,atticContext());return;}
@@ -1984,15 +2051,17 @@ function init() {
     openDialogue(npc,lines,event,action);
   }
   /** Lakota at the head of the pier: the goblins, the letter for Corvan, the straw post, and where to find him after. */
-  // Chris Gotwood came off the same boat with the company's papers in his coat, and is the
-  // first person in Azhora who says anything to the traveler (src/mercenaries.js).
+  // Whoever stands first in the company came off the same boat with the papers in his coat, and
+  // is the man on the landing. That is Chris Gotwood unless you are Chris, in which case it is
+  // Crom; his closing line names whoever it actually is. The rest of the scene is Chris's, and
+  // docs/playable-characters.md records what Crom should say here instead (src/mercenaries.js).
   function chrisOnTheLanding(npc){
     updateQuest('ashore');
     openDialogue(npc,['That bell was going before we were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
       'Right. This is yours and I am glad to be rid of it: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service. Eren at the watch will point you at the road.',
       'A sword is welcome here even in plain cloth, but those raiders carry snapped branches and you have nothing to hide behind. Two swings on the straw post at the northern crossroads, then try a dodge. Watch for the raised stick and hit them after the swing, not during it.',
       'Your blade wears with every hit, straw included. The repair bench is beside the post \u2014 F there mends it and nobody charges you for it. I opens your satchel.',
-      'Chris Gotwood, by the way. I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
+      `${npc.name}, by the way. I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.`],
       'accept-letter','Take the letter');
   }
   function doomsayerConversation(npc){
@@ -2220,6 +2289,12 @@ function init() {
     const dx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,dz=-Math.cos(yaw)*forward-Math.sin(yaw)*side;
     combat.dodge(Math.hypot(dx,dz)>.01?{x:dx,z:dz}:{x:-Math.sin(player.group.rotation.y),z:-Math.cos(player.group.rotation.y)});
   }
+  // The character line above Step ashore: eleven tiles in the user's order, Crom chosen, so
+  // that clicking straight through plays the game that was there before anybody could choose.
+  const cromOpeningLine=$('opening-who').textContent;
+  const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,
+    onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
+      $('opening-who').textContent=id===DEFAULT_PLAYER?cromOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
@@ -2549,9 +2624,9 @@ function init() {
         arrivalProgress=Math.min(1,arrivalProgress+dt/1.9);
         player.group.position.set(THREE.MathUtils.lerp(world.boatStart.x,world.spawn.x,arrivalProgress),THREE.MathUtils.lerp(world.boatStart.y,1.8,Math.min(1,arrivalProgress*1.5)),world.spawn.z);
         player.group.rotation.y=Math.PI/2;movement=2.5;
-        // Chris Gotwood landed in the same boat and steps ashore beside the traveler.
-        const mate=npcById.get('merc-gotwood');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
-        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO CHRIS ON THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
+        // Whoever came off the same boat steps ashore beside you: Chris, or Crom if you are Chris.
+        const mate=npcById.get(landingMateId());if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
+        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.',`SPEAK TO ${shortName(npcById.get(landingMateId())).toUpperCase()} ON THE LANDING`);if(pendingTesting){pendingTesting=false;modal('testing');}}
       }
       if(autopilot.active&&!reviewFrozen){
         autopilot.step(dt);
@@ -2882,6 +2957,9 @@ function init() {
     const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
     window.__AZHORA__={state,
+      // Who you are: the chosen id is settled on the opening screen, before Step ashore, so the
+      // arrival sequence and anything else that runs after it can ask for it (PLAYABLE, companyFor).
+      playerCharacter:()=>playerId,chooseCharacter:id=>characterSelect.select(id),
       // Where the camera is and what it is doing: main.cjs --review-views prints it beside each picture.
       camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),mode}),
       // Performance: what is drawn and how much there is (main.cjs --perf-review), and render timing once asked for.
@@ -3261,6 +3339,15 @@ function init() {
         reviewFrozen=false;reviewTarget=null;reviewCat=null;player.group.visible=true;
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
         document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
+        // The opening screen itself, with the character line on it: --review-views=opening-characters
+        // photographs Crom selected, and opening-characters-lakota photographs any other of the eleven.
+        if(view.startsWith('opening-characters')){
+          const who=view.replace('opening-characters','').replace(/^-/,'');if(who)characterSelect.select(who);
+          mode='opening';document.body.classList.remove('playing');show('opening',true);
+          $('opening').style.opacity='1';$('opening').style.transform='none';
+          player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
+          return;
+        }
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
         if(view==='walk'){questStage=10;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}

@@ -131,6 +131,13 @@ export function playerLook(playerId = DEFAULT_PLAYER) {
   return entry ? Object.freeze({ ...entry.look, weapon: entry.weapon, trades: entry.trades }) : null;
 }
 
+/**
+ * What to call him in one word, on a tile or in a caption: the first word of his name, which
+ * is how each of them introduces himself anyway — Crom, Chris, Ed, Jerry, Christin, Ciarán,
+ * Lakota, Eliana, Matt, Al, Mus.
+ */
+export const shortName = entry => String(entry?.name ?? '').split(/[ ,]/)[0];
+
 /** Starting experience by skill id, as a plain object a caller can walk. */
 export function startingSkills(playerId = DEFAULT_PLAYER) {
   return { ...(playableCharacter(playerId)?.skills ?? {}) };
