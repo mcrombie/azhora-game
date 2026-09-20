@@ -498,3 +498,129 @@ implement one.
 
 **Repro:** no test covers it. `MERCENARY_ROSTER.every(m => m.route)` is true; nothing else in
 the tree mentions the field.
+
+## The Moros Horizon fence now stands inside Nesdor
+
+`FRONTIER` (`src/region-world.js:544`, "The Moros Horizon", region name "The open road west
+across the Moros") was the end of the built world: a rope fence west of the army camp, built by
+`src/world-regions.js:690` as posts every 8 m over 344 m of z with rope between them, and one
+collider 0.2 m thick by 344 m long (`kind: 'frontier'`). Since `bd2d213` there is a country west
+of it.
+
+**Where it stands.** The line is at x = −1396.4, z 430.2 to 774.2. Sampling every 8 m along it
+and asking which region lies three metres to either side: 35 of 44 samples, **272 m of the 344**,
+have Nesdor on *both* sides; 7 samples (z 438–486, 56 m) have the Moros Plain on both sides; one
+has Nesdor west and the plain east; the northernmost has Elagos to the west. Walking west along
+fixed rows until `insideRegion('Moros Plain')` fails: at z = 450 the plain ends 4 m *west* of the
+fence, so there the fence is just inside the plain; at z = 500 the plain ends 12 m east of it; at
+z = 600, **85 m** east; at z = 700 and 760 the plain is not on the row at all. The marker point
+itself (−1385.7, 602.2) is 74 m inside Nesdor.
+
+**It is solid, and it can be walked round.** `canStand` is blocked within ±0.2 m of the line and
+`moveCharacter` walking west in 5 cm steps stops 0.45 m east of it (body 0.34 + half-width 0.1),
+at every row sampled inside the span. A breadth-first fill of standable ground from the Moros
+side at mid-fence, at 1 m with a midpoint check so the 0.2 m wall cannot be hopped, first steps
+over the line at z = 775.2 — **round the south end, 1.0 m past the last post** — after 28,578
+cells; the ground beyond the north end is standable at every offset too. Both sides of the line
+are standable at 38 of the 44 samples; the other six are water or scatter, not the fence.
+
+**What it cuts off: nothing that has been built.** No path crosses the line inside its span
+(there is no Nesdor Way yet). Nesdor has no people placed. All five of Nesdor's landmarks (the
+Flats, the Braided Water, the Valley Head, the Carica Corridor, the Upper Carica) are west of
+it. Nothing ever opens or removes it: the only reader of `world.frontier` is the minimap
+(`src/minimap.js:230`), which draws it.
+
+**What the player meets.** Walking west off the plain, the region card fires "Nesdor" between
+12 and 85+ metres *before* a rope line that says the world ends here, and a ten-second walk
+along it leads round the end into the same open country. It is the Moros chapter's furniture
+standing in someone else's region.
+
+**Ways out, all story calls:**
+
+1. Take it down: the built world no longer ends there, and `regionName` "The open road west
+   across the Moros" is now false in fact.
+2. Re-site it on the plain's actual western boundary. That boundary is not a line: it runs from
+   about (−1400, 450) to (−1311, 600) and is east of x = −1276 by z = 700, so a straight 344 m
+   fence cannot lie on it. It would have to follow the outline, or shrink to a short gate on
+   whatever road the Nesdor Way becomes.
+3. Keep it where it is and mean it: the *army's* horizon, an Ambroni line inside a country it
+   does not hold, with the name and minimap label reworded to say so. Costs nothing on the
+   ground and is the reading the build-status text already gives ("still stands between this
+   region and the plain").
+
+Which of these is right depends on what the Moros chapter wants the traveler to feel at the
+far side of the plain, so it is not guessed at here.
+
+**Repro:** no test covers it. Headless: build the world, take `FRONTIER.barrierX`, and sample
+`regionNameAt(barrierX ± 3, z)` along the span. In play: cross the plain west from the army camp
+and watch the card change before the fence.
+
+## Half of the walkable west lies outside every region, and the card names it anyway
+
+Flooding standable ground from Ambron on foot (`canStand`, traveler radius, one-metre cells with
+a midpoint check) across the whole western extent — x −2310 to −1100, z −868 to 2225 — reaches
+2,709,151 cells. Sampling every fourth cell each way: **79,957 samples inside some region
+outline, 89,584 outside every outline.** That is **52.8% of everything the traveler can walk to
+in the west**, about 143 hectares, on ground no `REGION_OUTLINES` polygon owns.
+
+**Where it is.** The four new regions' outlines stop well short of the world's bounds, and the
+ground carries on to the bounds on every side:
+
+| the card says | samples | about | extent | furthest from that region's outline |
+|---|---|---|---|---|
+| Nesdor | 45,405 | 73 ha | x −2245..−1101, z 620..1960 | **1,009 m**, at (−1150, 1960) |
+| Vastos | 17,072 | 27 ha | x −2310..−1301, z −868..−468 | 577 m, at the north-west corner |
+| Caricas | 15,754 | 25 ha | x −2310..−1821, z −320..1092 | 606 m, at (−2250, 1092) |
+| Meneth | 8,590 | 14 ha | x −2310..−1853, z −728..−204 | 505 m, at the west edge |
+| Amod | 2,521 | 4 ha | x −1418..−1101, z −868..−608 | 235 m |
+| West Izol | 151 | — | x −1146..−1101, z 1904..1988 | **1,011 m** |
+| Moros Plain | 91 | — | x −1146..−1101, z 840..892 | 55 m |
+
+Nesdor's outline ends at z = 953; walkable ground the card calls Nesdor runs a kilometre further
+south. West Izol is an island on the far side of the map, and its name is what the card shows
+at (−1146, 1964).
+
+**Why the card says anything.** `regionAt` (`src/region-world.js:663`) is total: a point whose
+hex has no owner is given the nearest region rather than none. Inside the outlines that is
+harmless — on owned ground the hex owner and the polygon agree at 62,249 of 62,249 samples in
+the west, and the softened chart border never strays more than 3.1 m from the hex outline. Off
+the outlines it names ground after a region the traveler is not in, and `subregionsAt`, which is
+by distance, mostly names nothing, so the journal goes quiet while the card does not.
+
+**The Lizeem is part of it.** The chart says of the Lizeem Bank that the river is "not
+crossable by anybody on foot for the whole of its length here", and of the Bend that "the far
+bank is another country and there is no way to it here". As built, the river's deep water on the
+Caricas bank is 871 `west-deep-water` colliders spanning **z −117 to 491** — 608 m of bank —
+and walkable ground is reached *west* of that water on **all 79** sampled rows of its span,
+because both ends are open: 178 rows north and south of it (z −868 to 1180) reach past
+x = −2200 with no river collider within 12 m. Walking straight west at z = 200 the water stops
+you at x = −2240; walking round either end does not. The Bend's water stops a westward walk at
+x = −1685 on z = 800, and the fill still reaches x = −2245 on rows the card calls Nesdor, so the
+Bend is got round as well; where it is got round was not measured. The far bank is reachable,
+and it is some of the 143 hectares above.
+
+**Not new in kind, new in size.** The same class was measured in round four on the older
+regions, where the unowned ground was slivers at polygon edges. In the west it is the majority
+of the walkable country, because the four regions were built as terrain over the atlas hexes
+they own while the height field, the scatter and `WORLD_BOUNDS` extend to the map's edge.
+
+**Ways out, and each is a decision about where the world ends:**
+
+1. End the ground at the outlines: sea, cliff or the deep-water collider the Lizeem already
+   uses, so that a walker cannot leave the country the atlas draws. Costs shoreline and
+   scenery work along roughly 4 km of outline, and Nesdor's lore ("an open horizon that goes
+   on being open") argues against a hard edge on its south.
+2. Own it: extend the four outlines to the bounds the ground already reaches, so the atlas,
+   the card and the chart agree with the feet. Cheapest, but it makes the atlas say something
+   the World Builder map does not.
+3. Name it honestly: make `regionAt` return null, or a sentinel "open country", off every
+   outline, and teach the card and chart to say so. One function and its readers (the card,
+   the minimap caption, the autosave-on-enter, the map tutorial's first-province check), and
+   the world's shape does not change.
+
+Which of the three is right depends on whether the map's edge is meant to be walkable at all,
+so it is not guessed at here.
+
+**Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
+which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the
+card still says Nesdor a kilometre later.
