@@ -224,6 +224,7 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/characters.js` | Procedural traveler/NPC/goblin models, clothing, and articulated animation |
 | `src/game-state.js` | Movement, collision, and first-shore tutorial transitions |
 | `src/signs.js` | The one sign language: fingerposts, place boards, notice plaques, border stones and milestones from one lettering atlas |
+| `src/languages.js`, `src/linguist.js`, `src/word-frequency.js` | The fourteen tongues of Azhora and their dialects; what the traveler understands of what is said to him, and the commonest words of this game's own speech, which is the order he learns them in (`docs/languages.md`) |
 | `src/fortification.js`, `src/fortworks.js` | The shared fortification standard (wall, wall walk, towers, two gates, ditch) as a ground plan, and its drawing in timber or stone |
 | `src/outpost.js`, `src/moros-works.js` | The Ambroni outpost and the border stockade to that standard, the Moros gate and the Moros wayside |
 | `src/frontier.js`, `src/frontier-works.js`, `src/closed-border.js` | Elod's closed frontier with Luscia, the pickets along East Suval's border, and the rule that refuses entry to a closed region |

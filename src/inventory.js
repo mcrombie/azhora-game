@@ -152,6 +152,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Soft, sweet forest fruit with a banana-custard flavor. Restores up to 25 health.',
     description: 'Restores up to 25 health. Gather ripe fallen fruit beneath broad-leaved pawpaw saplings in the forest. The soft, sweet flesh has a banana-custard flavor. Open your satchel with I, select a pawpaw, then choose Eat. At full health, no fruit is consumed.',
   }),
+  phrasebook: Object.freeze({
+    name: 'Phrasebook', type: 'Tool', icon: 'phrasebook', stackable: true,
+    brief: 'Two hundred words of the local speech, in somebody else’s handwriting.',
+    description: 'A stitched pamphlet of the words a traveler needs and the way they are said, copied out by whoever sold it to Wendel. Buying one is reading it: the tongue of the country you bought it in comes a little easier afterwards. It is worth less the more of that tongue you already have, and there is nothing in it a fluent speaker does not know.',
+  }),
   tinderbox: Object.freeze({
     name: 'Tinderbox', type: 'Tool', icon: 'tinderbox',
     brief: 'Lysa\'s gift: a small box of flint, steel, and dry tinder for the road.',
@@ -488,6 +493,7 @@ const iconPaths = {
   feeder: '<path d="M16 3h4M18 3v4M14 7h8v5l2 3v6H12v-6l2-3Z"/><path d="M6 24c0-2 5-3 12-3s12 1 12 3-5 4-12 4-12-2-12-4ZM9 27c1 3 4 5 9 5s8-2 9-5"/><circle cx="10" cy="24" r="1.4"/><circle cx="26" cy="24" r="1.4"/><circle cx="18" cy="26" r="1.4"/>',
   acorn: '<path d="M8 17c0 10 6 15 10 16 4-1 10-6 10-16M7 16c0-6 5-10 11-10s11 4 11 10Z M18 6c-1-3 0-4 3-5M11 11l4 4m1-7 6 7m1-6 4 4M11 22c1 3 2 5 4 6"/>',
   pawpaw: '<path d="M14 12C8 11 3 20 5 27c2 8 9 9 14 3 4-5 5-12 1-15-2-2-4-1-6-3ZM10 18c-3 4-3 9 0 12M17 13l2-7M18 9C22 3 28 2 33 3c-2 7-7 12-15 10M20 11l10-6"/>',
+  phrasebook: '<path d="M6 7c5-2 9-2 12 1 3-3 7-3 12-1v21c-5-2-9-2-12 1-3-3-7-3-12-1Z"/><path d="M18 8v21M9 13h5M9 18h5M22 13h5M22 18h5"/>',
   tinderbox: '<rect x="5" y="20" width="26" height="12" rx="2"/><path d="m5 20 4-5h7m8 0h4l3 5M6 24h24M16 24v3h4v-3M18 18c-6-3-1-6-1-10 3 2 1 4 4 4 1-3 1-5-1-8 7 5 7 12 1 14"/>',
   'fishing-rod': '<path d="m5 32 9-14C20 9 24 5 30 3M4 29l4 3M7 25l4 3M30 3v23c0 6-7 6-7 1v-3l2 2M17 16l2 2M23 9l2 2"/><circle cx="12" cy="24" r="3"/>',
   'raw-fish': '<path d="M9 18C16 7 26 9 32 18c-6 9-16 11-23 0ZM9 18 3 11v14ZM22 12c-3 3-3 9 0 12M14 12l3-6 5 5M14 24l3 6 5-5"/><circle cx="27" cy="17" r="1"/>',
