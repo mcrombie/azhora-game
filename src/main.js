@@ -201,7 +201,10 @@ function init() {
   // The harbour cat naps in the sun, prowls its places, and comes to the traveler only on its own terms.
   // Who has died in a raid, and who has already been caught in one (src/bystanders.js).
   const fallen=createFallen(),raidSeen=new Set(),raid={ids:[],fell:false,outcome:[]};
-  let refugeeHold=0;   // seconds the refugees have stood waiting for a fight ahead of them to end
+  // Seconds the refugees have stood waiting for a fight ahead of them to end. It is subtracted
+  // from playSeconds, so it belongs to the same game as playSeconds does and is reset with it:
+  // carried into a new game it makes their clock negative, and a negative clock is refused.
+  let refugeeHold=0;
   // A cat hops the crates and the rails: it plans and walks by everything but the props (catWorld, below).
   const villageCat=createVillageCat({clear:(from,to)=>clearLine(from,to,catWorld,.25)});
   world.npcPositions[VILLAGE_CAT.id]={x:VILLAGE_CAT.spots[0].x,z:VILLAGE_CAT.spots[0].z};
@@ -1275,7 +1278,7 @@ function init() {
   function begin() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
-    playSeconds=0;settleMercenaries();mercenaryWeapons.clear();
+    playSeconds=0;refugeeHold=0;settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     world.ringBell?.(elapsed);audio?.effect('bell');
     setTimeout(()=>show('opening',false),700);canvas.focus();
@@ -1571,7 +1574,7 @@ function init() {
     forestStory.restore(saved.forestStory);forestHideout.restore(saved.forestHideout);regionalLife.restore(saved.regionalLife);
     campaign.restore(saved.campaign??createCampaign().snapshot());if(journey.view().complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
     mapTutorial.restore(saved.mapTutorial??0);renderMapTutorial();
-    playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;settleMercenaries();
+    playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;refugeeHold=0;settleMercenaries();
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
