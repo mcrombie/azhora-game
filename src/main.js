@@ -67,6 +67,7 @@ import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './ski
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
+import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, JOB_FIRST, JOB_AGAIN, THE_GREEN_COAT, THE_BURYING, SON } from './lauvel-burying.js';
 import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
@@ -626,6 +627,9 @@ function init() {
   const campaign=createCampaign();
   // Luscia: the chapter at the Lauvel, Lumber Town's people, and Smiths on its square.
   const luscia=createLusciaChapter({inventory});
+  // The burying at the Lauvel (src/lauvel-burying.js): Sela calls to whoever comes up the road,
+  // and the valley is short-handed at every part of putting its dead in the ground.
+  const burying=createBurying();let selaVisits=0;
   const riding=createRiding();
   let mountHeading=0,rideCamera=0;
   const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
@@ -775,6 +779,30 @@ function init() {
     if(action==='tell-dragon'){const result=vineyard.tellDragon(inventory);if(!result.ok)return result;
       inventory.refresh();audio?.effect('discovery');
       toast('A dragon\u2019s scale, warm on one side and cold on the other.','ADDED TO SATCHEL \u00b7 SHE TOLD YOU');saveRoad(false);return result;}
+    return{ok:false,reason:''};
+  }
+  /**
+   * The burying at the Lauvel (src/lauvel-burying.js). Three jobs, none of which is an errand:
+   * the work is the whole quest, and the fourth man carried in off the field is her son.
+   */
+  function buryingAct(action){
+    const sela=()=>npcById.get('lauvel-seeker');
+    if(action==='lauvel-help'){if(!burying.start().ok)return{ok:false,reason:''};refreshQuest();
+      toast('Old Hewe has the spade, Dorran has the hurdle, and Maudry has a list with nine blanks in it.','THE BURYING AT THE LAUVEL');saveRoad(false);return{ok:true,reason:''};}
+    if(action.startsWith('lauvel-work-')){const id=action.slice(12),result=burying.work(id);
+      if(!result.ok)return{ok:false,reason:result.reason};
+      const npc=npcById.get(JOBS[id].who);refreshQuest();audio?.effect(result.found?'discovery':'success');
+      const lines=result.first?[...JOB_FIRST[id]]:[JOB_AGAIN[id]];
+      if(result.found)lines.push(...THE_GREEN_COAT);
+      openDialogue(npc,lines,null,result.found?'Go and tell her':'Back to the work');
+      if(result.found)toast('A green coat, too big in the shoulder, and two fingers gone off the left hand.','THE BURYING AT THE LAUVEL');
+      else if(id==='hurdle'&&result.trips)toast(`${result.carried} carried in off the field. It is not half cleared.`,'THE BURYING AT THE LAUVEL');
+      saveRoad(false);return{ok:true,reason:''};}
+    if(action==='lauvel-tell'){if(!burying.tell().ok)return{ok:false,reason:''};refreshQuest();saveRoad(false);return{ok:true,reason:''};}
+    if(action==='lauvel-bury'){if(!burying.finish().ok)return{ok:false,reason:''};
+      world.lauvelField?.setBuried(true);refreshQuest();audio?.effect('success');
+      openDialogue(sela(),[...THE_BURYING],null,'Leave her at the board');
+      toast(`${SON.name} of this valley, in the grave you took a turn at digging.`,'THE BURYING AT THE LAUVEL · FINISHED');saveRoad(false);return{ok:true,reason:''};}
     return{ok:false,reason:''};
   }
   /** Batman's side of it: what he is told, what he is brought, and where the case finally goes. */
@@ -1524,7 +1552,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1547,7 +1575,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1787,7 +1815,10 @@ function init() {
     if(npc.id===NIKA.id){wineAttic.visit();nikaConversation(npc,atticContext());return;}
     if(npc.id===ED.id){edConversation(npc,edContext());return;}
     if(TROUPE_IDS.has(npc.id)){troupeConversation(npc,troupeContext());return;}
-    if(LAUVEL_LINES[npc.id]){openDialogue(npc,[...LAUVEL_LINES[npc.id]],null,'Leave them to it');return;}
+    if(npc.id==='lauvel-seeker'){selaConversation(npc,{burying,openDialogue,closeDialogue,act:buryingAct,visits:selaVisits++});return;}
+    if(LAUVEL_LINES[npc.id]){const work=workerChoice(npc.id,burying,buryingAct);
+      openDialogue(npc,[...LAUVEL_LINES[npc.id]],null,'Leave them to it',
+        work?{choices:[work,{id:'leave-lauvel',label:'Leave them to it.',action:closeDialogue}]}:{});return;}
     if(npc.id===BOWDEN.id){wood.visit();bowdenConversation(npc,{wood,skills,purse:inventory.count(COPPER_ITEM),count:id=>inventory.count(id),has:id=>inventory.has(id),
       builder:{known:skills.known(CONSTRUCTION_SKILL),saw:sawOffer(id=>inventory.count(id)),teach:BUILD_LINES.teach},openDialogue,closeDialogue,act:woodAct});return;}
     if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,hunt,coppers:inventory.count(COPPER_ITEM),openDialogue,closeDialogue,act:saltAct});return;}
@@ -2335,7 +2366,7 @@ function init() {
     const letterTask=localRegion===1?renaLetters.task():null;
     const edTask=world.regionAt(player.group.position.x,player.group.position.z)?.name==='West Suval'?ed.task():null;
     // Katy's search has no place of its own: it is the last thing the panel offers, wherever the traveler is.
-    const huntTask=heist.task()??hunt.task();
+    const huntTask=burying.task()??heist.task()??hunt.task();
     const katyTask=huntTask??(katy.looking?{title:'Looking for Batman',detail:'Watch the roads, and the sky at dusk. Tell Katy at Vaervelm Caelazh the moment you see him.'}:null);
     show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask||!!birdTask||!!letterTask||!!edTask||!!katyTask)&&!active);
     const fishing=campcraft.state;
@@ -2589,6 +2620,16 @@ function init() {
           if(troupe.performing&&!reviewTarget&&troupe.cancelScene())placeTroupe(true);}}
       {// The Lauvel: the bearers go on with their round, and the hurdle goes between them.
         const pp=player.group.position,field=fieldPoint(0,10),near=Math.hypot(field.x-pp.x,field.z-pp.z)<200;
+        // She has called out to everybody who has come up that road for ten days, and does not
+        // wait to be spoken to (src/lauvel-burying.js). Not in the middle of the wolves.
+        if(mode==='playing'&&burying.stage==='unknown'&&combat.state.phase!=='active'
+          &&Math.hypot(HAIL_FROM.x-pp.x,HAIL_FROM.z-pp.z)<HAIL_FROM.reach&&burying.hail().ok){
+          audio?.effect('bell');openDialogue(npcById.get('lauvel-seeker'),[...HAIL],null,'Go over to her');refreshQuest();saveRoad(false);}
+        // She is on her knees at the end of the row until somebody comes up the road; afterwards she
+        // stands at the board with her son's name on it, which is at the head of Old Hewe's grave.
+        {const sela=npcById.get('lauvel-seeker');
+          if(sela){sela.posture=burying.stage==='unknown'?'kneel':undefined;
+            if(burying.buried){const at=fieldPoint(7.9,14.5);world.npcPositions[sela.id]={x:at.x,z:at.z};sela.face=fieldPoint(6.5,15.3);}}}
         if(near!==(lauvelStretcher.group.parent===scene)){if(near)scene.add(lauvelStretcher.group);else scene.remove(lauvelStretcher.group);}
         if(near){const round=combat.state.phase==='active'&&combat.state.encounterId===LUSCIA_WOLVES.id?bearersStandingBack():bearersAt(playSeconds),front=npcById.get('lauvel-bearer-front'),back=npcById.get('lauvel-bearer-back');
           world.npcPositions[front.id]={...round.front};world.npcPositions[back.id]={...round.back};front.pace=back.pace=1.5;
@@ -2700,7 +2741,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
@@ -3322,9 +3363,19 @@ function init() {
         // The field at the Lauvel: across the fallen to the burial ground ('lauvel-dead'), close on the row ('lauvel-burial'), with the bearers halfway in,
         // and close among the fallen where the bearers lift the next one ('lauvel-fallen').
         if(view==='lauvel-dead'||view==='lauvel-burial'||view==='lauvel-fallen'){questStage=10;combat.finishPractice();player.group.visible=false;playSeconds=view==='lauvel-fallen'?3:10;
+          burying.restore(createBurying().snapshot());world.lauvelField?.setBuried(false);
           const [look,turn,d,p,rise]=view==='lauvel-dead'?[fieldPoint(10,11),-2.55,26,.42,.5]:view==='lauvel-burial'?[fieldPoint(9,19),.6,11,.3,.8]:[fieldPoint(19.5,5),2.3,8,.38,.4];
           player.group.position.set(look.x,world.heightAt(look.x,look.z),look.z);reviewTarget=new THREE.Vector3(look.x,world.heightAt(look.x,look.z)+rise,look.z);
           yaw=turn;pitch=p;distance=targetDistance=d;}
+        // The burying: Sela on her feet calling across the field ('lauvel-hail'), and the grave
+        // she is given at the end of it, with a board at its head ('lauvel-grave').
+        if(view==='lauvel-hail'||view==='lauvel-grave'){questStage=10;combat.finishPractice();player.group.visible=false;playSeconds=10;
+          const grave=view==='lauvel-grave';
+          burying.restore({version:1,stage:grave?'done':'asked',done:grave?['spade','hurdle','names']:[],carried:grave?4:0});
+          world.lauvelField?.setBuried(grave);
+          const [look,turn,d,pp,rise]=grave?[fieldPoint(6.5,15.6),.15,5.5,.26,.7]:[fieldPoint(4.2,21.9),-.1,4.6,.16,1.3];
+          player.group.position.set(look.x,world.heightAt(look.x,look.z),look.z);reviewTarget=new THREE.Vector3(look.x,world.heightAt(look.x,look.z)+rise,look.z);
+          yaw=turn;pitch=pp;distance=targetDistance=d;}
         // Construction: the house at stage n ('house-3'), the workbench, and a birdhouse with somebody in it.
         if(/^house-\d$/.test(view)||view==='workbench'||view==='birdhouse'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(!skills.known(CONSTRUCTION_SKILL))skills.learn(CONSTRUCTION_SKILL);building.claimPlot();let look,turn,d,p;

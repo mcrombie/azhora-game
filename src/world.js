@@ -1580,6 +1580,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     woodlot,
     /** The traveler's house and the birdhouse posts, built as Construction goes (src/homestead-world.js). */
     homestead,
+    /** The burial ground at the Lauvel, whose open grave is filled in if Sela's son is found (src/lauvel-burying.js). */
+    lauvelField: regionScenery.lauvelField,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
     reindexColliders: () => { colliderIndex = null; },

@@ -26,6 +26,11 @@ export const BURIAL = freeze({
   shrouds: freeze([1.5, 3.4, 5.3, 7.2, 9.1, 11, 12.9].map(dx => freeze({ dx, dz: 20.5 }))),
 });
 /**
+ * Which grave Old Hewe is standing in: the one at his feet, at the head of the open ones, and
+ * so the one Sela's son goes into if anybody ever finds him (src/lauvel-burying.js).
+ */
+export const HEWES_GRAVE = 2;
+/**
  * The fallen, where they fell: `turn` is which way the body lies, `face` whether
  * it lies face down, `side` whose man he was (the valley's, mostly), `arms`
  * what lies beside him. West of the road and east of it, never on it.

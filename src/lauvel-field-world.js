@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BURIAL, FALLEN, fieldPoint } from './lauvel-aftermath.js';
+import { BURIAL, FALLEN, HEWES_GRAVE, fieldPoint } from './lauvel-aftermath.js';
 
 /**
  * The field at the Lauvel ten days on (src/lauvel-aftermath.js), as scenery:
@@ -73,22 +73,30 @@ export function createLauvelField({ parent, material, box, mesh, post, groundHei
   // -------------------------------------------------------------------------
   // The burial ground: new graves, their spoil, a spade, and the dead laid out in their shrouds.
   // -------------------------------------------------------------------------
-  for (const grave of BURIAL.graves) {
+  /** A filled grave: its mound, and at its head a board on a stake with the name cut into it, and a strip of cloth tied round. */
+  const filled = (p, y, colour, into) => {
+    mesh(ball, spoil, p.x, y + .08, p.z, .5, .22, 1.05, into);
+    const stake = box(wood, p.x, y + .4, p.z - 1.2, .07, .8, .07, into); stake.rotation.z = .04;
+    box(material('#8a6d4c'), p.x, y + .62, p.z - 1.16, .34, .26, .035, into);
+    box(material(colour), p.x, y + .44, p.z - 1.2, .09, .05, .09, into);
+  };
+  // The grave Old Hewe is standing in is the one Bevan goes into, if anyone ever finds him
+  // (src/lauvel-burying.js). Its hole is built like the others and hidden when he does.
+  const hewesGrave = new THREE.Group(); root.add(hewesGrave);
+  const bevansGrave = new THREE.Group(); bevansGrave.visible = false; root.add(bevansGrave);
+  BURIAL.graves.forEach((grave, index) => {
     const p = fieldPoint(grave.dx, grave.dz), y = ground(p.x, p.z);
+    const hole = index === HEWES_GRAVE ? hewesGrave : root;
     if (grave.open) {
       // The open grave: trodden soil round it, and the dark of the hole, laid over the turf so the ground's slope cannot swallow them.
-      box(soil, p.x, y + .03, p.z, 1.2, .04, 2.3, root);
-      box(dark, p.x, y + .06, p.z, .9, .04, 2, root);
+      box(soil, p.x, y + .03, p.z, 1.2, .04, 2.3, hole);
+      box(dark, p.x, y + .06, p.z, .9, .04, 2, hole);
+      // The spoil stays beside it either way: there is always more of the row to dig.
       const heap = mesh(ball, spoil, p.x + 1.05, y + .12, p.z, .4, .32, 1.05, root); heap.rotation.y = .1;
       colliders.push({ x: p.x + 1.05, z: p.z, r: .45, kind: 'spoil-heap' });
-    } else {
-      // A filled grave: its mound, and at its head a board on a stake with the name cut into it, and a strip of cloth tied round.
-      mesh(ball, spoil, p.x, y + .08, p.z, .5, .22, 1.05, root);
-      const stake = box(wood, p.x, y + .4, p.z - 1.2, .07, .8, .07, root); stake.rotation.z = .04;
-      box(material('#8a6d4c'), p.x, y + .62, p.z - 1.16, .34, .26, .035, root);
-      box(material(['#8a3a2e', '#5d6f86'][grave.dx % 2 ? 1 : 0]), p.x, y + .44, p.z - 1.2, .09, .05, .09, root);
-    }
-  }
+      if (index === HEWES_GRAVE) filled(p, y, '#6f7b5e', bevansGrave);
+    } else filled(p, y, ['#8a3a2e', '#5d6f86'][grave.dx % 2 ? 1 : 0], root);
+  });
   { const p = fieldPoint(BURIAL.graves[3].dx + 1.1, BURIAL.graves[3].dz - .3), y = ground(p.x, p.z);
     const handle = post(wood, p.x, y + .72, p.z, .025, 1.2, root); handle.rotation.z = .25;
     const blade = box(steel, p.x - .1, y + .2, p.z, .22, .3, .03, root); blade.rotation.z = .25; }
@@ -103,5 +111,9 @@ export function createLauvelField({ parent, material, box, mesh, post, groundHei
   // every arrow in the turf into a post to walk round on the one field a chapter is fought over.
   // Nothing here stops anybody: the only colliders on this ground are the spoil heaps, pushed above.
   root.traverse(object => { if (object.isMesh) object.userData.passable = true; });
-  return { root };
+  return {
+    root,
+    /** Sela's son in the ground, with a board at his head: the end of src/lauvel-burying.js. */
+    setBuried(on) { bevansGrave.visible = !!on; hewesGrave.visible = !on; },
+  };
 }

@@ -4,3 +4,4 @@ tests/artifacts/
 logs/
 saves/
 tests/.electron-profiles/
+.claude/worktrees/

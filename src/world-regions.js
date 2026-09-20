@@ -512,7 +512,7 @@ export function createRegionScenery(kit) {
     colliders.push({ x, z, r: 1.6, kind: 'legion-picket' });
   }
   // Ten days on: the fallen still on the field, arrows in the turf, crows, and the valley's burial ground (src/lauvel-aftermath.js).
-  createLauvelField({ parent: luscia, material, box, mesh, post, groundHeight, colliders, roadDistance: kit.roadDistance });
+  const lauvelField = createLauvelField({ parent: luscia, material, box, mesh, post, groundHeight, colliders, roadDistance: kit.roadDistance });
   // -------------------------------------------------------------------------
   // Lumber Town: Luscia's market town, with the main road through its square
   // -------------------------------------------------------------------------
@@ -698,7 +698,7 @@ export function createRegionScenery(kit) {
   return {
     metrics, riverMaterial, riverSamples, districts,
     bridge: { deckY, heading: roadHeading, halfSpan: HALF_SPAN, axis: bridgeAxis, side: bridgeSide, crossing },
-    repairedDeck, brokenCord, damagedColliders, millSails,
+    repairedDeck, brokenCord, damagedColliders, millSails, lauvelField,
     bank: { spot: bank, surfaceY: calossSurface(bank.x, bank.z), castPoint: { x: CALOSS_BANK.cast.x, y: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z) + .035, z: CALOSS_BANK.cast.z } },
     riverSurface: calossSurface,
   };

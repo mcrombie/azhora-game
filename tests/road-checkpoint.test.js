@@ -51,6 +51,24 @@ test('road checkpoint round-trips partial quest progress, satchel, weapon wear, 
   assert.equal(checkpoint.read().data, null);
 });
 
+test('the burying at the Lauvel is kept, and a stage nobody can reach is refused', () => {
+  const { checkpoint, data } = fixture();
+  const saved = { version: 1, stage: 'found', done: ['hurdle'], carried: 4 };
+  assert.equal(checkpoint.save({ ...data, burying: saved }).ok, true);
+  assert.deepEqual(checkpoint.read().data.burying, saved);
+  assert.equal(checkpoint.save({ ...data }).ok, true, 'a save from before the quest existed still keeps');
+  assert.equal(checkpoint.read().data.burying, undefined);
+  checkpoint.save({ ...data, burying: saved });
+  for (const bad of [{ version: 1, stage: 'buried', done: [], carried: 0 },
+    { version: 1, stage: 'found', done: ['shovel'], carried: 4 },
+    { version: 1, stage: 'found', done: [], carried: -2 }]) {
+    const result = checkpoint.save({ ...data, burying: bad });
+    assert.equal(result.ok, false, JSON.stringify(bad));
+    assert.match(result.reason, /Lauvel/);
+  }
+  assert.deepEqual(checkpoint.read().data.burying, saved, 'the good save is not overwritten');
+});
+
 test('the search for Batman is kept, and a nonsense stage is refused', () => {
   const { checkpoint, data } = fixture();
   assert.equal(checkpoint.save({ ...data, katy: { version: 1, stage: 'looking' } }).ok, true);

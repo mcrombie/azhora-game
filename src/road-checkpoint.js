@@ -25,6 +25,7 @@ import { createJimson, validateJimsonSnapshot } from './jimson-quest.js';
 import { createKaty, validateKatySnapshot } from './katy.js';
 import { createVineyard, validateVineyardSnapshot } from './vineyard.js';
 import { createBatmanHunt, validateHuntSnapshot } from './batman.js';
+import { createBurying, validateBuryingSnapshot } from './lauvel-burying.js';
 import { createLightKeeper, validateLightSnapshot } from './lighthouse.js';
 import { createBosco, validateBoscoSnapshot } from './bosco.js';
 import { createHeist, validateHeistSnapshot } from './rival-light.js';
@@ -104,6 +105,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateJimsonSnapshot(data.jimson)) return failed('The saved errand for Toft is invalid.');
     if (!validateKatySnapshot(data.katy)) return failed('The saved search for Batman is invalid.');
     if (!validateVineyardSnapshot(data.vineyard)) return failed('The saved walk of the vineyard is invalid.');
+    if (!validateBuryingSnapshot(data.burying)) return failed('The saved burying at the Lauvel is invalid.');
     if (!validateHuntSnapshot(data.hunt)) return failed('The saved case against the blue trade is invalid.');
     if (!validateLightSnapshot(data.light)) return failed('The saved visit to the Suval Light is invalid.');
     if (!validateBoscoSnapshot(data.bosco)) return failed('The saved dog is invalid, which is a terrible thing to have to say.');
@@ -210,6 +212,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'jimson')) { const jimson = createJimson(); jimson.restore(data.jimson); result.jimson = jimson.snapshot(); }
     if (Object.hasOwn(data, 'katy')) { const katy = createKaty(); katy.restore(data.katy); result.katy = katy.snapshot(); }
     if (Object.hasOwn(data, 'vineyard')) { const vineyard = createVineyard(); vineyard.restore(data.vineyard); result.vineyard = vineyard.snapshot(); }
+    if (Object.hasOwn(data, 'burying')) { const burying = createBurying(); burying.restore(data.burying); result.burying = burying.snapshot(); }
     if (Object.hasOwn(data, 'hunt')) { const hunt = createBatmanHunt(); hunt.restore(data.hunt); result.hunt = hunt.snapshot(); }
     if (Object.hasOwn(data, 'light')) { const light = createLightKeeper(); light.restore(data.light); result.light = light.snapshot(); }
     if (Object.hasOwn(data, 'bosco')) { const bosco = createBosco(); bosco.restore(data.bosco); result.bosco = bosco.snapshot(); }
