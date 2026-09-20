@@ -123,6 +123,9 @@ import { runRoadSmoke, runRoadTestingSmoke } from './road-smoke.js';
 import { runRoadTraversal } from './road-traversal.js';
 import { runRoadCheckSmoke, verifyRoadReload } from './road-check-smoke.js';
 import { createRoadLife } from './road-life.js';
+import { createWestLife } from './west-regions-life.js';
+import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
+  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -620,6 +623,81 @@ function init() {
   const hideoutEncounter=FOREST_HIDEOUT_QUEST.encounter;
   const hideoutWatch=createForestHideoutWatch(scene,world,hideoutEncounter);
   const roadLife=createRoadLife(scene,world);
+  // The animals of the four western regions (src/west-regions-life.js): longhorns and
+  // hares on the Vastos plain, a hawk over it, and the river fox in the Carica corridor.
+  const westLife=createWestLife(scene,world);
+  /** Where a camera stands to look at a named western view, from the regions' own numbers. */
+  function westReviewSpot(view){
+    const facing=(from,to)=>Math.atan2(to.x-from.x,to.z-from.z);
+    if(view==='west-vastos'){
+      const pan=VASTOS_PANS[2],from={x:pan.x+6,z:pan.z-64};
+      return {...from,yaw:facing(from,pan),pitch:.05,d:18};
+    }
+    if(view==='west-vastos-braid'){
+      const s=VASTOS_RIVER.samples[Math.round(VASTOS_RIVER.samples.length*(VASTOS_BRAID.from+VASTOS_BRAID.to)/2)];
+      const from={x:s.x-s.nx*34,z:s.z-s.nz*34};
+      return {...from,yaw:facing(from,s),pitch:.11,d:16,look:{x:s.x,z:s.z,y:.6},self:false};
+    }
+    if(view==='west-vastos-sinter'){
+      const from={x:VASTOS_SINTER.x+46,z:VASTOS_SINTER.z+6};
+      return {...from,yaw:facing(from,VASTOS_SINTER),pitch:.08,d:20,look:{x:VASTOS_SINTER.pool.x,z:VASTOS_SINTER.pool.z,y:2},self:false};
+    }
+    if(view==='west-vastos-basin'){
+      const basin=VASTOS_BASINS[0],from={x:basin.x+4,z:basin.z-basin.radius-26};
+      return {...from,yaw:facing(from,basin),pitch:.10,d:20};
+    }
+    if(view==='west-meneth'){
+      // Across the ridges, not along them: the view has to show the sequence.
+      const trough=menethTroughZ(1,-1850),from={x:-1850,z:trough+MENETH_RIDGES.wavelength*.5};
+      return {...from,yaw:0,pitch:.06,d:20};
+    }
+    if(view==='west-meneth-beck'){
+      const beck=MENETH_BECKS[1],s=beck.samples[Math.round(beck.samples.length*.45)];
+      const from={x:s.x-s.nx*22,z:s.z-s.nz*22};
+      return {...from,yaw:facing(from,s),pitch:.10,d:15,look:{x:s.x,z:s.z,y:.5},self:false};
+    }
+    if(view==='west-carica'){
+      const s=CARICA.samples[Math.round(CARICA.samples.length*.62)];
+      const from={x:s.x-s.nx*30,z:s.z-s.nz*30};
+      return {...from,yaw:facing(from,s),pitch:.12,d:18,look:{x:s.x,z:s.z,y:1.2},self:false};
+    }
+    if(view==='west-carica-upper'){
+      const s=CARICA.samples[Math.round(CARICA.samples.length*.12)];
+      const from={x:s.x-s.nx*20,z:s.z-s.nz*20};
+      return {...from,yaw:facing(from,s),pitch:.16,d:13,look:{x:s.x,z:s.z,y:.4},self:false};
+    }
+    if(view==='west-nesdor'){
+      const s=ELA_SOUTH_REACH.samples[Math.round(ELA_SOUTH_REACH.samples.length*.68)];
+      const from={x:s.x-s.nx*46,z:s.z-s.nz*46};
+      return {...from,yaw:facing(from,s),pitch:.05,d:22,look:{x:s.x,z:s.z,y:1},self:false};
+    }
+    if(view==='west-nesdor-flats'){
+      return {x:-1420,z:700,yaw:-Math.PI/2,pitch:.03,d:20};
+    }
+    if(view==='west-lizeem'){
+      const s=LIZEEM.samples[Math.round(LIZEEM.samples.length*.42)];
+      const from={x:s.x-s.nx*38,z:s.z-s.nz*38};
+      return {...from,yaw:facing(from,s),pitch:.09,d:24,look:{x:s.x,z:s.z,y:1.5},self:false};
+    }
+    const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
+      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird'}[view];
+    if(creature){
+      const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
+      if(!animal)return null;
+      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4:2.8;
+      // Half these animals live on a riverbank, so the camera has to go round to a
+      // side of them there is ground on rather than to a fixed bearing off one shoulder.
+      let from=null;
+      for(let i=0;i<8&&!from;i++){
+        const a=i/8*Math.PI*2,spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
+        if(canStand(spot.x,spot.z,world,.4))from=spot;
+      }
+      from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
+      return {...from,yaw:facing(from,animal),pitch:.14,d:close,
+        look:{x:animal.x,z:animal.z,y:creature==='longhorn'?1.3:creature==='wading-bird'?1:.45},self:false};
+    }
+    return null;
+  }
   const roadVerges=createRoadVerges(scene,world);
   let acornQuest=createAcornQuest();
   const journey=createJourney({inventory,weapons});
@@ -2389,7 +2467,7 @@ function init() {
         developer.update(dt);
         if(developer.scene===scene){
           const observer=developer.camera.position;
-          woodlandLife.setObserver(observer);roadLife.setObserver(observer);forestEcology.setObserver(observer);
+          woodlandLife.setObserver(observer);roadLife.setObserver(observer);westLife.setObserver(observer);forestEcology.setObserver(observer);
           world.updateRegionalPlaces?.(0,observer,false);
           hideoutWatch.update(0,observer,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase)});
         }
@@ -2400,6 +2478,7 @@ function init() {
       world.setFishingState(campcraft.state.phase);
       world.update?.(elapsed,dt);woodlandLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);clouds.rotation.y=elapsed*.0015;
       roadLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
+      westLife.update(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       world.updateRegionalPlaces?.(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       forestEcology.update(dt,elapsed,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       hideoutWatch.update(dt,player.group.position,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase),playing:mode==='playing'&&!reviewFrozen});
@@ -3133,6 +3212,22 @@ function init() {
             grounded=true;verticalSpeed=0;settleCamera();
           }
         }
+        // The western regions, for review by eye. The spots are worked out from the
+        // regions' own numbers rather than typed in, so a view cannot drift off the
+        // thing it is meant to show when the ground under it is adjusted.
+        if(view.startsWith('west-')){
+          questStage=10;combat.finishPractice();player.setArmed(true);
+          const spot=westReviewSpot(view);
+          if(spot){
+            player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+            yaw=spot.yaw;pitch=spot.pitch;distance=targetDistance=spot.d;player.group.rotation.y=Math.PI+yaw;
+            if(spot.look){reviewFrozen=true;player.group.visible=spot.self!==false;
+              reviewTarget=new THREE.Vector3(spot.look.x,world.heightAt(spot.look.x,spot.look.z)+(spot.look.y??1),spot.look.z);}
+            // The west is a kilometre and a half from where the camera was: put it there.
+            grounded=true;verticalSpeed=0;settleCamera();
+            westLife.update(.03,player.group.position,true);
+          }
+        }
         if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
         // Anyone, close and face on: 'npc-<id>' (Toft is 'npc-jimson-toft').
         if(view.startsWith('npc-')&&npcById.has(view.slice(4))){questStage=10;combat.finishPractice();player.group.visible=false;
@@ -3385,7 +3480,7 @@ function init() {
         if(view==='road-dialogue'){questStage=10;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('road-token');journey.start();const npc=npcData.find(n=>n.id==='meadow-courier'),p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+1.8),p.z+1.8);yaw=.5;pitch=.3;distance=targetDistance=6;conversation(npc);}
         if(view.startsWith('portrait-')){const npc=npcData.find(n=>n.id===view.slice(9));if(npc){questStage=10;combat.finishPractice();const p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+2),p.z+2);player.group.visible=false;npc.actor.group.rotation.y=.3;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.3,0));yaw=.3;pitch=.15;distance=targetDistance=4;reviewFrozen=true;}}
         if(['sheep','river-bird','rock-hare'].includes(view)){questStage=10;combat.finishPractice();const animal=roadLife.state().creatures.find(a=>a.species===({sheep:'sheep','river-bird':'bank-bird','rock-hare':'rock-hare'})[view]);if(animal){player.group.position.set(animal.x+4,world.heightAt(animal.x+4,animal.z+3),animal.z+3);roadLife.update(.03,player.group.position,true);reviewTarget=new THREE.Vector3(animal.x,animal.groundY+.6,animal.z);yaw=.6;pitch=.18;distance=targetDistance=view==='sheep'?5:3.4;player.group.visible=false;reviewFrozen=true;}}
-        roadLife.update(.001,player.group.position,true);
+        roadLife.update(.001,player.group.position,true);westLife.update(.001,player.group.position,true);
         const forestView=FOREST_STORY_SITES.find(site=>site.id===view);
         if(forestView){
           questStage=1;combat.finishPractice();player.group.position.set(forestView.x,world.heightAt(forestView.x,forestView.z),forestView.z);

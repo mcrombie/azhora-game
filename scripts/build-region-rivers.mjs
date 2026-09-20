@@ -25,7 +25,15 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const MAP_PATH = path.resolve(root, '../world-builder/map/resources/examples/azhora.wwmap');
-export const RIVER_REGIONS = ['Pueth'];
+/**
+ * An edge is kept when either of its hexes belongs to one of these, so a river
+ * on a shared border arrives whole. The four western regions are listed together
+ * even though they are built one at a time: the Carica runs along the
+ * Caricas-Nesdor border and the Lizeem along Caricas's and Nesdor's both, so
+ * naming them one at a time would chop those courses into pieces and then
+ * silently re-join them, changing rivers that were already built.
+ */
+export const RIVER_REGIONS = ['Pueth', 'Vastos', 'Meneth', 'Caricas', 'Nesdor'];
 const NEIGHBORS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
 const SIZES = new Set(['small', 'medium', 'large']);
 

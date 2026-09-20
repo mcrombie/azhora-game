@@ -57,10 +57,22 @@ Three bearings do not match, and are recorded rather than reconciled:
 2. Vastos's lore says the Vastos River runs **east to west**. The atlas's river runs
    west to east, and the game's own relief agrees with the atlas: Vastos stands above the
    lake country, so its water can only leave eastward. Built flowing east.
-3. Nesdor's lore says its tributaries come from "the hill country to the south and west".
+3. Meneth's lore has its valley streams "running generally south and east toward the
+   lake-country drainage". Measured on the ground the atlas makes, each Meneth valley
+   floor stands at about twenty metres on its eastern side and falls to eight or twelve
+   on its western one, and the Vastos River along Meneth's eastern border runs at
+   twenty-one — above the valley floors, so nothing can drain into it. The lake country
+   is not downhill of Meneth here; the branch country and the Lizeem are. The becks are
+   built running **west**, each from the head of its own valley.
+4. Nesdor's lore says its tributaries come from "the hill country to the south and west".
    In the atlas the hill country is Caricas's shelf to the **north-west** and the Lizeem
    is the drain to the south. Built running from the northern valley head south to the
    Lizeem, braiding as the gradient dies, which is the lore's mechanism if not its compass.
+5. The atlas's water network hands Elagos's own drainage, the Ela-south, straight into
+   Nesdor: the reach ends at (-1625, 514), which was past the western edge of the world
+   while Elagos was the westernmost built region and is now inside Nesdor. Neither lore
+   file mentions the other's river. A river cannot stop in the middle of a country, so
+   Nesdor's drainage takes the water on to the Lizeem.
 
 `src/campaign-world.js` already carries one-line designs for all four (Vastos "flat,
 frost-heaved upland pasture", Meneth "route-junction valleys", Caricas "open grassland
@@ -126,9 +138,11 @@ ridge amplitude fades to nothing across the southern third, so the region hands 
 the lake country without a line to cross, which is what the lore insists on.
 
 **Water.** "Each valley has its stream, fed by the Lotharn snowmelt, running generally
-south and east toward the lake-country drainage." The atlas draws none, so one stream is
-derived per valley trough, on the valley floor, falling south-east. Shallow — these are
-becks, not rivers.
+south and east toward the lake-country drainage." The atlas draws none, so one beck is
+derived per valley trough, on the valley floor, from the head of its own valley to the
+region's far margin. They run **west**, because that is the way the valley floors actually
+fall on this map — see point 3 above. Shallow: these are becks, not rivers, and each falls
+between seven and fourteen metres over its length.
 
 **What grows.** Three bands, by height above the valley floor, which is how the lore
 divides the economy: "ridge faces that are forested on their upper slopes and cleared to
@@ -145,12 +159,23 @@ carried over from Vastos, both flagged as extensions.
 
 **Landform.** Two kinds of country, and the lore is precise about both. "A fast, rocky
 upper section where the eastern plateau breaks into the inner drainage basin, and a
-slower, wooded middle valley where the river loses gradient." So the north-east of the
-region is the **upland shelf** — sixteen metres above the rest, rougher, drier — and the
-Carica leaves it in a narrow, steep, gravel-bedded cut. Below that the valley opens: a
-wider floor, a slower river, banks that the lore says have never been cleared. The western
-side falls away to the **Lizeem's upper channel**, which is the biggest water anywhere in
-the playable world and is cut as a real river, not a stream.
+slower, wooded middle valley where the river loses gradient." So the whole region is a
+ramp: the **upland shelf** on its eastern side, fifteen metres above its western bank,
+rougher and drier, and the fall from it westward to the Lizeem. The Carica leaves the
+shelf in a narrow gravel-bedded notch — two metres of water and a bank several times that
+above it — and by the corridor it is three times as wide and its valley is open. Both
+halves are one river with its width and its cut lerped along its length, which is what
+losing gradient does to a river.
+
+The western side falls to the **Lizeem's upper channel**, the biggest water anywhere in
+the playable world: medium at its head where the map marks it so and large below, five
+metres of water either side rising to fifteen, cut two metres into its own bed, and not
+wadeable anywhere. The Carica is a ford at its head and a wall below it. Nobody in these
+four regions has built a bridge, so both rivers are the end of the road.
+
+One consequence of the atlas worth stating: the Carica runs **along the Caricas-Nesdor
+border**, not down the middle of Caricas. The corridor is therefore built on its western
+bank, which is the bank that is in Caricas, and the fox keepers' ground is that side.
 
 **What grows.** "The corridor's distinctive feature is its woodland: old-growth mixed
 forest along the immediate riverbanks, breaking into managed woodland and farmland above
@@ -188,10 +213,19 @@ plains everywhere else are exactly the lore's two halves, so the head and the fl
 separated by the cell terrain and not by a hand-drawn line.
 
 **Water.** The **Lizeem** along the southern edge, on the atlas's line, with the **Carica**
-joining it from Caricas. Across the flats, two derived tributaries that "widen, slow, and
-begin to braid in the way that rivers braid when the gradient declines": shallow, several
-channels wide, with bars of sand between them, and dark alluvial ground either side —
-"the soil is the dark alluvial material that centuries of river sediment have deposited".
+joining it from Caricas. Across the flats, two tributaries that "widen, slow, and begin to
+braid in the way that rivers braid when the gradient declines": shallow, three channels
+wide over their last half, with bars of sand between them, and dark alluvial ground either
+side — "the soil is the dark alluvial material that centuries of river sediment have
+deposited".
+
+One of those two is not Nesdor's own water at all. The **Ela-south**, which drains the
+whole of the Lake Lands past Ambron, crosses the head of the Flats and stops at
+(-1625, 514) — a point that was past the western edge of the world while Elagos was the
+westernmost built region, and is inside Nesdor now. Neither region's lore mentions the
+other's river. A river cannot stop in the middle of a country, so the **Ela-South Reach**
+picks the water up at exactly that point, at exactly that level, and carries it across the
+Flats to the Lizeem. Nothing in `src/elagos-world.js` was touched to do it.
 
 **What grows.** Open grassland on the flats, shading toward the Moros's own; in the
 western head, "woodland on the slopes" with "the nut crop (primarily hazel, some oak)".
@@ -200,7 +234,7 @@ Hazel and oak on the valley sides, grass everywhere else, nothing on the flats b
 **What lives there.** The **Nesdor cattle**, which the lore introduces by saying they are
 *not* the Vastos longhorn: "a hardy grassland breed, not the cultural center that the
 Vastos longhorn is in Vastos, but a practical animal suited to the semi-open terrain."
-Built as the same animal at three-quarters the size with shorter horns, which is what that
+Built as the same animal at three-quarters the size, which is what that
 sentence describes. Sheep "on the margins between the valley agriculture and the open
 grassland". On the water, **wading birds**: the fauna overview calls the Lizeem
 distributaries' assemblage "the richest avian assemblage documented on the continent", and
@@ -234,3 +268,5 @@ herons and stilt-legged waders are the ones it names.
   the hill sheep, the river fox, the otter, the upland hare, the plateau hawk and the
   wading bird.
 * Tests: one file per region in `tests/`.
+* Review views in `src/main.js`, all prefixed `west-`, each worked out from the regions'
+  own numbers rather than typed in, so a view cannot drift off the thing it shows.

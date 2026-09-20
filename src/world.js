@@ -50,6 +50,8 @@ import { createElagosScenery } from './elagos-scenery.js';
 import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './amod-world.js';
 import { amodTerrainSink } from './amod-terraces.js';
 import { createAmodScenery } from './amod-scenery.js';
+import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance } from './west-regions.js';
+import { createWestScenery } from './west-regions-scenery.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -1083,8 +1085,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    movingGroups, roadDistance, riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z)),
-    waterClear: (x, z) => inElagosWater(x, z, 2.5),
+    movingGroups, roadDistance,
+    riverDistance: (x, z) => Math.min(calossDistance(x, z), puethRiverDistance(x, z, 14), tarvelDistance(x, z), westRiverDistance(x, z, 14)),
+    // Ground the biome scatter grows nothing on: Elagosi water, western water, and
+    // the sinter crust on Vastos's western fall, where the grass stops in a line.
+    waterClear: (x, z) => inElagosWater(x, z, 2.5) || westBareGround(x, z, 2),
     // Tidehaven's own woodland already fills this box; the regional scatter
     // starts where the carried-over settlement ends.
     insideVillage: (x, z) => {
@@ -1132,6 +1137,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Elagos and Ambron (src/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
   const elagos = createElagosScenery({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   bridgeDecks.push(elagos.bridge);
+  // The four western regions (src/west-regions-scenery.js): their water, their gravel,
+  // their sedge and Vastos's sulfur ground. Terrain and wildlife only; nobody lives there.
+  const westScenery = createWestScenery({ root: world, material, mesh, pebble, groundHeight, colliders, wornPatch, dummy, color, round });
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
   const stakedProps = [];
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
@@ -1718,6 +1726,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...REGIONAL_PLACES,
       ...WEST_SUVAL_LANDMARKS,
       ...ELAGOS_LANDMARKS,
+      ...WEST_REGION_LANDMARKS,
     ],
     paths,
     update(time, dt) {
@@ -1731,6 +1740,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pondMaterial.uniforms.time.value = time;
       regionScenery.riverMaterial.uniforms.time.value = time;
       elagos.waterMaterial.uniforms.time.value = time;
+      westScenery.update(time);
       regionScenery.millSails.rotation.z = time * .115;
       for (const [i, camp] of [...campfires.values()].entries()) if (camp.fire.lit) {
         camp.flames.scale.set(1 + Math.sin(time * 8 + i) * .04, .94 + Math.sin(time * 11 + i) * .10, 1);

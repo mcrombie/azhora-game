@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -143,6 +143,32 @@ export const REGION_TERRAIN = Object.freeze({
   Amod: Object.freeze({ base: 24, amp: 2.4, wave: 190, ground: REGION_BIOMES.Amod.ground, byTerrain: Object.freeze({
     hills: Object.freeze({ base: 44, amp: 6.5, wave: 160, ground: '#94986c' }),
     mountain: Object.freeze({ base: 78, amp: 14, wave: 130, ground: '#8a8c80' }),
+  }) }),
+  // Vastos is the flattest high ground in the world and the highest ordinary ground in it:
+  // "a broad elevated tableland that sits above the surrounding terrain on both its eastern
+  // and western approaches, reached by gradual climbs". Thirty metres puts it ten above the
+  // Elagos shelf, so the hex blend alone makes the climb from the lake country a rise of ten
+  // metres over two hundred, which is what a gradual climb is. The amplitude is a tenth of
+  // Amod's over a wavelength twice as long: on this plain the eye should find nothing to
+  // rest on but the river, the pans and the weather.
+  Vastos: Object.freeze({ base: 30.5, amp: 1, wave: 300, ground: REGION_BIOMES.Vastos.ground }),
+  // Meneth is cold upland on a mountain margin, lower than the tableland beside it and much
+  // higher than the branch country below it. Its base is quiet on purpose: the region's shape
+  // is the ridge field in src/west-ground.js, and noise on top of a ridge is just noise.
+  Meneth: Object.freeze({ base: 26, amp: 1.8, wave: 140, ground: REGION_BIOMES.Meneth.ground }),
+  // Caricas is the fall from an upland shelf to the Lizeem. Its base is the corridor's own
+  // level, low enough that the big river has somewhere to be; the shelf that stands above it
+  // is added by src/west-ground.js, because it is a ramp across the region and not a level.
+  // The relief is louder than the uplands': "rougher and less well-watered", says the lore.
+  Caricas: Object.freeze({ base: 17, amp: 3.2, wave: 130, ground: REGION_BIOMES.Caricas.ground }),
+  // Nesdor is two countries and the atlas already divides them: grassland and one forest hex at
+  // the north-western head, plains everywhere south and east of it. The head keeps the branch
+  // country's shallow broad valleys; the Flats are the Moros approach, where "the terrain relief
+  // is measured in feet rather than hundreds of feet" — half the amplitude of the Moros itself,
+  // over a wavelength half again as long, so the horizon opens and stays open.
+  Nesdor: Object.freeze({ base: 9.5, amp: 1.6, wave: 200, ground: REGION_BIOMES.Nesdor.ground, byTerrain: Object.freeze({
+    plains: Object.freeze({ base: 7.2, amp: .45, wave: 340, ground: '#aeb075' }),
+    forest: Object.freeze({ base: 10.2, amp: 2, wave: 170, ground: '#8d9c63' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -585,6 +611,33 @@ const REGION_TEXT = {
     palette: { ground: '#7d9560', accent: '#cfe0e4', fog: '#b4c6c4' },
     npcIds: ['ambron-toll-clerk', 'ambron-legate', 'ambron-committee', 'ambron-gate-optio'],
     landmarks: ['ambron', 'ambron-chain', 'ambron-causeway', 'ambron-plain-gate', 'physic-garden', 'lake-ela', 'nemmel', 'ice-road-stone', 'drowned-causeway', 'lake-shrine', 'the-stair', 'thelas-link', 'lake-brul', 'lake-ossen'] },
+  // Vastos is terrain and wildlife only (src/west-regions.js, src/west-ground.js). Nobody
+  // lives here yet: the winter quarters, the river crossings and the vel-vastos routes the
+  // lore describes are all somebody's, and somebody is not built.
+  Vastos: { subtitle: 'The cold tableland', spawn: point(-1520, -330),
+    description: 'A high, flat, treeless upland west of the lake country: cold-adapted tussock from one horizon to the other, a shallow river braiding across the south, watering pans on the open range, and longhorn cattle grazing loose on all of it. Sulfur ground breathes on the western fall; two small cold lakes on the eastern one prefigure Elagos.',
+    palette: { ground: '#8f9d6c', accent: '#d9d3a4', fog: '#c2c8bc' },
+    npcIds: [], landmarks: ['vastos-river', 'vastos-braids', 'vastos-sinter', 'vastos-pans', 'vastos-basins', 'vastos-beck'] },
+  // Meneth is terrain and wildlife only too. The routes the lore is built round — the Southern
+  // Lotharn Road and the junction communities that live off it — are somebody's, and are not built.
+  Meneth: { subtitle: 'The ridge country', spawn: point(-1850, -206),
+    description: 'Cold ridge-and-valley upland between the mountains and the lake country: parallel ridges running east and west, a beck on every valley floor, hay meadow between them, wild chestnut and walnut on the lower faces and close-grown hardwood above. Southward the ridges lower and the country opens, and there is no line at which Meneth stops.',
+    palette: { ground: '#7d8f63', accent: '#cfd4a6', fog: '#bac6bb' },
+    npcIds: [], landmarks: ['meneth-ridges', 'meneth-becks', 'meneth-nut-slopes'] },
+  // Caricas is terrain and wildlife only. The fox keeper families, the Water Council and the
+  // farms on the terraced slopes are the region's whole political life and none of it is built;
+  // what is built is the ground they keep, and the fox.
+  Caricas: { subtitle: 'The Carica corridor', spawn: point(-1950, 289),
+    description: 'A wooded river corridor on the fall from an upland shelf to the Lizeem: the Carica quick and rocky where it leaves the shelf, slow and deep-banked below, and old-growth forest tight to the water for the whole of its middle reach. This is the ground of the vel-caric, the river fox, and it has never been cleared.',
+    palette: { ground: '#7e8f5b', accent: '#c7cf9a', fog: '#b0bfae' },
+    npcIds: [], landmarks: ['carica-corridor', 'carica-upper', 'lizeem-channel', 'caricas-shelf'] },
+  // Nesdor is terrain and wildlife only. The Nesdor Way, the route-communities that live off
+  // it, the inns and warehouses and the legal practitioners who sell the difference between
+  // two jurisdictions are the whole of what the lore is about, and none of it is built.
+  Nesdor: { subtitle: 'The Flats', spawn: point(-1550, 462),
+    description: 'Where the counted rivers of the branch country give out and the open country begins: shallow broad valleys with hazel and oak on their slopes in the north-west, and east and south of them the Flats — dark alluvial ground, relief measured in feet, shallow water braiding across it toward the Lizeem, cattle on the grass and an open horizon all the way to the Moros.',
+    palette: { ground: '#a3a86a', accent: '#ded9a4', fog: '#cbd0b6' },
+    npcIds: [], landmarks: ['nesdor-flats', 'nesdor-braids', 'nesdor-head', 'lizeem-bend'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

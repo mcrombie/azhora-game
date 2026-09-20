@@ -25,6 +25,14 @@ const westIzolAnchor = point(1929.999, 3072, 5, 127);
 const elagosAnchor = point(1510.348, 2608, 0, 108);
 // An Amod hill hex in the middle of the terrace country, west of the Pueth border.
 const amodAnchor = point(1607.342, 2392, 8, 99);
+// The middle of the Vastos tableland, west of the lake country.
+const vastosAnchor = point(1468.778, 2488, 1, 103);
+// A Meneth hex in the middle of the ridge country, west of the Vastos plain.
+const menethAnchor = point(1385.64, 2536, -3, 105);
+// A Caricas hex on the corridor's western side, below the eastern shelf.
+const caricasAnchor = point(1330.222, 2632, -7, 109);
+// A Nesdor plains hex out on the Flats, west of the Moros Plain.
+const nesdorAnchor = point(1441.066, 2728, -5, 113);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -45,6 +53,10 @@ const LOCALS = [
   [8, 'West Izol', 'west-izol', 'West Izol', westIzolAnchor],
   [9, 'Elagos', 'elagos', 'Elagos', elagosAnchor],
   [10, 'Amod', 'amod', 'Amod', amodAnchor],
+  [11, 'Vastos', 'vastos', 'Vastos', vastosAnchor],
+  [12, 'Meneth', 'meneth', 'Meneth', menethAnchor],
+  [13, 'Caricas', 'caricas', 'Caricas', caricasAnchor],
+  [14, 'Nesdor', 'nesdor', 'Nesdor', nesdorAnchor],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
   ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),
