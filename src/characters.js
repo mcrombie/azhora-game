@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MARKER_STYLE } from './quest-markers.js';
 
 // Deliberately built from small, flat-shaded meshes: every villager is local,
 // inexpensive to draw, and readable even at the distance of the follow camera.
@@ -3408,14 +3409,39 @@ export function groundShadow(opacity = 0.34) {
   return mesh;
 }
 
-export function makeQuestMarker() {
+/**
+ * The gold over somebody's head, in one of three kinds (src/quest-markers.js):
+ * `main` a cut stone, `plot` a rolled sheet, `skill` a leaf. Different shapes as
+ * well as different colours, so the three read apart without colour.
+ */
+export function makeQuestMarker(kind = 'main') {
+  const look = MARKER_STYLE[kind] ?? MARKER_STYLE.main;
   const group = new THREE.Group();
   group.name = 'quest-marker';
-  const mat = material(0xf3c46a, { emissive: 0xc17f24, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
-  diamond.rotation.y = Math.PI / 4;
-  const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(0xffeac1, { emissive: 0xe5be70, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
+  group.userData.markerKind = look.kind;
+  const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
+  if (look.shape === 'diamond') {
+    const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
+    diamond.rotation.y = Math.PI / 4;
+  } else if (look.shape === 'scroll') {
+    // A rolled sheet lying across, both ends showing: wide where the stone is tall.
+    const roll = part(group, new THREE.CylinderGeometry(0.056, 0.056, 0.23, 10), mat, [0, 0, 0]);
+    roll.rotation.z = Math.PI / 2;
+    for (const side of [-1, 1]) {
+      const cap = part(group, new THREE.TorusGeometry(0.06, 0.019, 5, 14), mat, [side * 0.115, 0, 0]);
+      cap.rotation.y = Math.PI / 2;
+    }
+  } else {
+    // A leaf: two cones back to back, flattened, with a stem under it.
+    for (const way of [1, -1]) {
+      const half = part(group, new THREE.ConeGeometry(0.084, 0.148, 6), mat, [0, way * 0.074, 0], [1, 1, 0.34]);
+      if (way < 0) half.rotation.x = Math.PI;
+    }
+    part(group, new THREE.CylinderGeometry(0.011, 0.011, 0.075, 5), mat, [0, -0.185, 0]);
+  }
+  const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(look.ring, { emissive: look.ringEmissive, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
   ring.rotation.x = Math.PI / 2;
+  group.scale.setScalar(look.scale);
   group.traverse((object) => {
     if (object.isMesh) {
       object.castShadow = false;

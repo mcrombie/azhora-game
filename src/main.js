@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting } from './characters.js';
+import { markerFor } from './quest-markers.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -282,8 +283,7 @@ function init() {
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
-    npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
-    if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
+    npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.markerKind='main';npc.marker=makeQuestMarker('main');scene.add(npc.marker);
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
   // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
@@ -626,7 +626,7 @@ function init() {
   const renaLetters=createRenaLetters({onEvent:event=>{if(event.type==='ardrys-caught-up')toast('Lorn and Hesta Ardry have caught up after eighty years. Both of them are fond of you.','THE ARDRYS’ LETTERS · FINISHED');}});
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0;
-  const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
+  const feederMarker=makeQuestMarker('skill');feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
   const forestHideout=createForestHideoutQuest({inventory});
@@ -2680,6 +2680,12 @@ function init() {
           const step=redTailFlight.update(dt,{glove:{x:gloveAt.x,y:gloveAt.y-.04,z:gloveAt.z,yaw:a.rotation.y},anchor:{x:a.position.x,y:a.position.y,z:a.position.z},called:mode==='dialogue'&&activeDialogue?.npc?.id===BIRD_WATCHER.id});
           redTail.pose(step,elapsed);lakota.falconer=redTailFlight.perched;}}
       const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
+      const markerView={questStage,busy:combat.state.phase==='active',heardDoom,
+        ids:{harbourmaster:HARBOURMASTER,warden:'warden',doomsayer:'doomsayer',acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
+        arcDestinations:questStage===10?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
+        acornQuestOpen:acornQuest.status!=='complete',feederWantsCook:birding.task()?.target==='acorn-cook',hasRod:inventory.has('fishing-rod'),
+        birdingLearned:birding.met,archaeologyReport:archaeology.task()?.stage==='report',
+        forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;
@@ -2710,13 +2716,10 @@ function init() {
         const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
-        npc.marker.visible=(npc.id===HARBOURMASTER&&questStage<2)||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
-        if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
-        if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
-        if(npc.id===BIRD_WATCHER.id)npc.marker.visible=questStage>=1&&(!birding.met||archaeology.task()?.stage==='report')&&combat.state.phase!=='active';
-        if(npc.id===VINTNER.id)npc.marker.visible=wine.quest==='recommended'&&combat.state.phase!=='active';
-        if(npc.id==='acorn-cook'&&birding.task()?.target==='acorn-cook')npc.marker.visible=combat.state.phase!=='active';
-        if(npc.id===FOREST_STORY_NPC.id)npc.marker.visible=(!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned))&&questStage>=1&&combat.state.phase!=='active';
+        // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
+        const markerKind=markerFor(npc.id,markerView);
+        if(markerKind&&npc.markerKind!==markerKind){scene.remove(npc.marker);npc.marker=makeQuestMarker(markerKind);npc.markerKind=markerKind;scene.add(npc.marker);}
+        npc.marker.visible=!!markerKind;
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);npc.marker.rotation.y=elapsed*.7;
         if(mode==='dialogue'&&activeDialogue?.npc===npc){const p=player.group.position;npc.actor.group.rotation.y=Math.atan2(p.x-pos.x,p.z-pos.z);}
       }

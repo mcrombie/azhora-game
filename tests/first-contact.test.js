@@ -17,7 +17,7 @@ test('the first person the traveler speaks to is Mara, the harbourmaster at the 
   assert.match(main, /world\.npcPositions\[HARBOURMASTER\]=\{x:pierHead\.x,z:pierHead\.z\}/, 'she stands at the head of the pier');
   assert.match(main, /if\(npc\.id===HARBOURMASTER\)\{maraOnTheLanding\(npc\);return;\}/, 'speaking to her is her own scene');
   assert.match(main, /questStage===1\)return\{\.\.\.npcById\.get\(HARBOURMASTER\)/, 'the arrow on the ground points at her');
-  assert.match(main, /npc\.marker\.visible=\(npc\.id===HARBOURMASTER&&questStage<2\)/, 'and so does the gold over her head');
+  assert.match(main, /ids:\{harbourmaster:HARBOURMASTER,/, 'and so does the gold over her head (src/quest-markers.js)');
   // The letter is hers to give, and the quest only moves when she gives it.
   const hers = main.slice(main.indexOf('function maraOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
   assert.match(hers, /updateQuest\('ashore'\)/);
