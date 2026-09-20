@@ -10,15 +10,15 @@ export const REGIONAL_NPC_POSITIONS = Object.freeze({
   'commons-miller': point(-233, 59), 'reed-worker': point(-380, 120), 'shelter-keeper': point(-152, 322),
 });
 export const REGIONAL_ACTIVITY_SITES = Object.freeze({
-  'mill-hoist': Object.freeze({ id: 'mill-hoist', name: 'The grain hoist', ...point(-243, 67), region: 2 }),
-  'net-float-west': Object.freeze({ id: 'net-float-west', name: 'First float line', ...point(-389, 126), region: 3 }),
-  'net-float-east': Object.freeze({ id: 'net-float-east', name: 'Second float line', ...point(-392, 128), region: 3 }),
+  'mill-hoist': Object.freeze({ id: 'mill-hoist', name: 'The grain hoist', ...point(-243, 67), region: 1 }),
+  'net-float-west': Object.freeze({ id: 'net-float-west', name: 'First float line', ...point(-389, 126), region: 2 }),
+  'net-float-east': Object.freeze({ id: 'net-float-east', name: 'Second float line', ...point(-392, 128), region: 2 }),
   'shelter-ledger': Object.freeze({ id: 'shelter-ledger', name: 'The shelter ledger', ...point(-158, 326), region: 4 }),
 });
 export const REGIONAL_PLACES = Object.freeze([
-  Object.freeze({ id: 'mill-commons', name: 'The Mill Commons', ...point(-236, 62), radius: 10, region: 2,
+  Object.freeze({ id: 'mill-commons', name: 'The Mill Commons', ...point(-236, 62), radius: 10, region: 1,
     center: point(-240, 65), description: 'Grain sacks, a worn tally board, and a flour-dusted bench gather beneath the turning mill sails.' }),
-  Object.freeze({ id: 'landing-workshop', name: 'The Landing Workshop', ...point(-380, 120), radius: 11, region: 3,
+  Object.freeze({ id: 'landing-workshop', name: 'The Landing Workshop', ...point(-380, 120), radius: 11, region: 2,
     center: point(-385, 124), description: 'A little boat rests on wooden stocks. Cork floats and drying nets hang above baskets of cut reeds.' }),
   Object.freeze({ id: 'waystation-shelter', name: 'The Waystation Shelter', ...point(-152, 322), radius: 10, region: 4,
     center: point(-156, 324), description: 'Patched canvas gives the roofless stones a purpose again: dry bedrolls, drinking water, and a book of travelers’ accounts.' }),
