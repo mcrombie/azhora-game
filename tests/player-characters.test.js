@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE, PLAYABLE_IDS, DEFAULT_PLAYER, companyFor, playableCharacter, isPlayableId,
   playerLook, rosterEntryFor, startingSkills, startingInventory, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
-import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROM } from '../src/mercenaries.js';
+import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROM, mercenaryById, mercenaryLines,
+  mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
 import { SKILL_IDS, SKILLS, createSkills, skillLevel } from '../src/skills.js';
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
@@ -212,4 +213,31 @@ test('whoever you are, the model is the traveler’s: the rig, the swap and the 
     });
     assert.ok(draws <= 34, `${id} draws ${draws} batches`);
   }
+});
+
+test('Crom on the road can be spoken to, fought beside and traded with like any of the ten', () => {
+  // He is not on the roster, so every lookup that asks a hired sword what he carries or what he
+  // would say has to know about him as well, or he is a mute stranger in somebody else's slot.
+  assert.equal(mercenaryById(CROM.id), CROM);
+  assert.equal(mercenaryById('merc-nobody'), undefined);
+  for (const id of [...MERCENARY_ROSTER.map(entry => entry.id), CROM.id]) {
+    assert.equal(mercenaryLines(id, { phase: 'walking' }).length, 2, `${id} has something to say on the road`);
+    assert.equal(mercenaryStyleLines(id).length, 2, `${id} can explain how he fights`);
+    const weapon = mercenaryWeapon(id);
+    assert.ok(weapon?.weapon && weapon.style, `${id} carries something`);
+    const held = KIT_WEAPON_ITEM[weapon.weapon] ?? null;
+    const offer = tradeOffer(id, held, 'greatsword');
+    assert.equal(typeof offer.line, 'string');
+    assert.ok(offer.line.length > 0, `${id} answers a trade rather than saying nothing`);
+  }
+  assert.equal(tradeOffer(CROM.id, 'simple-sword', 'greatsword').accepts, true, 'Crom will hold anything with a handle');
+  assert.equal(tradeOffer(CROM.id, 'simple-sword', 'simple-sword').accepts, false, 'but not another of the same');
+});
+
+test('a weapon left with Crom is saved, because he was a real man on that road', () => {
+  const { data, checkpoint } = fixture();
+  const held = { id: 'iron-mace', durability: 30 };
+  assert.equal(checkpoint.save({ ...data, player: 'gotwood', mercenaryWeapons: { [CROM.id]: held } }).ok, true);
+  assert.deepEqual(checkpoint.read().data.mercenaryWeapons, { [CROM.id]: held });
+  assert.equal(checkpoint.save({ ...data, mercenaryWeapons: { 'merc-nobody': held } }).ok, false);
 });

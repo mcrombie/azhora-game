@@ -139,6 +139,12 @@ export const MERCENARY_GROUPS = Object.freeze({
   riders: Object.freeze(['merc-jerry', 'merc-christin', 'merc-ciaran']),
   princes: Object.freeze(['merc-matt', 'merc-altun']),
 });
+/**
+ * Any of the eleven by id. Ten of them are the roster; the eleventh is Crom, who stands on
+ * the road whenever he is not the one being played (see `companyFor`). Everything that asks
+ * a hired sword what he carries or what he would say has to be able to ask him.
+ */
+export const mercenaryById = id => (id === CROM.id ? CROM : MERCENARY_ROSTER.find(entry => entry.id === id));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /** Cumulative lengths along a polyline road. */
@@ -255,7 +261,7 @@ export const KIT_WEAPON_ITEM = Object.freeze({ sword: 'simple-sword', 'sword-shi
  * Nobody trades for a stick, and nobody trades like for like.
  */
 export function tradeOffer(id, heldWeaponId, travelerWeaponId) {
-  const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
+  const mercenary = mercenaryById(id);
   if (!mercenary) return { accepts: false, line: '' };
   if (!mercenary.trades || !heldWeaponId) return { accepts: false, line: mercenary.tradeLine };
   if (!Object.values(KIT_WEAPON_ITEM).includes(travelerWeaponId)) return { accepts: false, line: 'A stick? I am a mercenary, not a shepherd. Come back with iron.' };
@@ -265,19 +271,19 @@ export function tradeOffer(id, heldWeaponId, travelerWeaponId) {
 
 /** How a mercenary fights, in his own words; also a guide to facing that weapon. */
 export function mercenaryStyleLines(id) {
-  const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
+  const mercenary = mercenaryById(id);
   return mercenary ? [...mercenary.styleLines] : [];
 }
 
 /** The weapon a mercenary carries and whether he would swap it for the traveler's sword. */
 export function mercenaryWeapon(id) {
-  const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
+  const mercenary = mercenaryById(id);
   return mercenary ? { weapon: mercenary.weapon, style: mercenary.style, trades: mercenary.trades, tradeLine: mercenary.tradeLine } : null;
 }
 
 /** What a mercenary says when spoken to on the road, given where he is. */
 export function mercenaryLines(id, placement) {
-  const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
+  const mercenary = mercenaryById(id);
   if (!mercenary) return [];
   // Most of them say the ordinary thing for where they are. Two of them would never say it:
   // a man who talks the way Ed talks does not tell you there is no time to stand about, and

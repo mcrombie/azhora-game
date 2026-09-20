@@ -1,7 +1,7 @@
 import { INVENTORY_ITEMS } from './inventory.js';
 import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
-import { MERCENARY_ROSTER } from './mercenaries.js';
+import { mercenaryById } from './mercenaries.js';
 import { validatePlayerCharacter } from './player-characters.js';
 import { journeySites, WORLD_BOUNDS as PLAYABLE_BOUNDS } from './regions.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from './world-scale.js';
@@ -137,7 +137,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       const held = data.mercenaryWeapons;
       if (!held || typeof held !== 'object' || Array.isArray(held)) return failed('The saved company is invalid.');
       for (const [id, weapon] of Object.entries(held)) {
-        if (!MERCENARY_ROSTER.some(m => m.id === id) || !weapon || !TRADEABLE_WEAPONS.includes(weapon.id)
+        if (!mercenaryById(id) || !weapon || !TRADEABLE_WEAPONS.includes(weapon.id)
           || !Number.isInteger(weapon.durability) || weapon.durability < 0 || weapon.durability > WEAPON_TYPES[weapon.id].maxDurability) return failed('The saved company is invalid.');
       }
     }
