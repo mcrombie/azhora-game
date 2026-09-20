@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BODY, bodyWorld, stepAround } from '../src/bodies.js';
+import { BODY, bodyWorld, stepAround, lendFacing } from '../src/bodies.js';
 import { canStand, moveCharacter } from '../src/game-state.js';
 
 const open = () => ({ bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 }, colliders: [], heightAt: () => 1 });
@@ -62,4 +62,47 @@ test('a traveler set down inside a prop can walk out of it, and a prop is solid 
   const other = { x: -2, z: 0 };
   moveCharacter(other, 3, 0, bodyWorld(base).moving(other));
   assert.ok(other.x < -crate.r - BODY.traveler + .01, 'but a walker from outside bumps into it');
+});
+
+/**
+ * Old Hewe digs at the grave in front of him. The traveler walks up from the road, talks to him,
+ * and he turns to answer; before this, that was where he stayed, and his spade went on swinging
+ * into the open ground he had been turned towards. Sela kneels at the board and Kerrin sits on
+ * the same field, and every one of them was turned the same way by the same line.
+ */
+test('somebody turned to answer the traveler is turned back to their work afterwards', () => {
+  const GRAVE = 0;                         // Old Hewe's authored yaw: the grave is straight ahead
+  let facing = GRAVE, lent;
+  // He turns to the traveler, who is standing west of him, and holds it for the conversation.
+  for (let frame = 0; frame < 30; frame++)
+    ({ facing, lent } = lendFacing({ facing, lent, talking: true, want: -Math.PI / 2, dt: 1 / 60 }));
+  assert.equal(facing, -Math.PI / 2, 'he did not look at the traveler');
+  assert.equal(lent, GRAVE, 'he forgot which way he had been facing');
+
+  // The conversation ends. Within a second or two he is back at his grave, exactly.
+  let frames = 0;
+  while (lent !== undefined && frames++ < 600) ({ facing, lent } = lendFacing({ facing, lent, talking: false, dt: 1 / 60 }));
+  assert.equal(facing, GRAVE, `he settled ${(facing * 180 / Math.PI).toFixed(1)} degrees off his grave`);
+  assert.equal(lent, undefined, 'the loan was never let go, so he can never be turned again');
+  assert.ok(frames < 120, `he took ${frames} frames to turn back`);
+});
+
+test('the facing loan holds through the worst turn, a dt it cannot trust, and a second conversation', () => {
+  // The traveler can talk from anywhere within 3.3m, so the turn can be the whole half circle.
+  let facing = 0, lent;
+  ({ facing, lent } = lendFacing({ facing, lent, talking: true, want: Math.PI, dt: 1 / 60 }));
+  for (let frame = 0; frame < 600 && lent !== undefined; frame++)
+    ({ facing, lent } = lendFacing({ facing, lent, talking: false, dt: 1 / 60 }));
+  assert.equal(facing, 0, 'a half turn did not come all the way back');
+
+  // A frame with no length, or one the timer could not measure, turns nobody and writes no NaN.
+  for (const bad of [0, -1, Number.NaN, Infinity, undefined]) {
+    const held = lendFacing({ facing: 1, lent: 0, talking: false, dt: bad });
+    assert.equal(held.facing, 1, `dt ${String(bad)} moved him`);
+    assert.equal(held.lent, 0, `dt ${String(bad)} dropped the loan`);
+  }
+  // And a second conversation before the first is given back still owes the first facing.
+  const again = lendFacing({ facing: 1.2, lent: .4, talking: true, want: -.9, dt: 1 / 60 });
+  assert.equal(again.lent, .4, 'the second turn overwrote where he started');
+  assert.equal(again.facing, -.9);
 });
