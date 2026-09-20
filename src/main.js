@@ -2529,7 +2529,10 @@ function init() {
         if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         if(pace<=.1&&npc.face){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
         npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer});
-        const d=pos.distanceTo(player.group.position)+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
+        // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
+        // is stopped a metre out by his own bulk before the traveler is anywhere near him.
+        const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
+        const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
         npc.marker.visible=(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
@@ -3150,6 +3153,15 @@ function init() {
           const px=at.x+Math.sin(turn)*1.4,pz=at.z+Math.cos(turn)*1.4;
           player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+.2,at.z);yaw=turn+Math.PI;pitch=.3;distance=targetDistance=1.2;}
+        // Mallec at the pass stones, head to foot ('ogre'), and the road he holds ('amod-road').
+        if(view==='ogre'||view==='amod-road'){questStage=10;combat.finishPractice();player.group.visible=false;
+          const o=npcById.get(OGRE_NPC.id),at=o.actor.group.position,turn=OGRE_STAND.yaw+.4;
+          if(view==='ogre'){const px=at.x+Math.sin(turn)*7,pz=at.z+Math.cos(turn)*7;
+            player.group.position.set(px,world.heightAt(px,pz),pz);
+            reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.9,at.z);yaw=turn;pitch=.04;distance=targetDistance=7;}
+          else{const px=at.x+Math.sin(turn)*34,pz=at.z+Math.cos(turn)*34;
+            player.group.position.set(px,world.heightAt(px,pz),pz);
+            reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+4,at.z);yaw=turn;pitch=.14;distance=targetDistance=34;}}
         // Ambron from the south, over the chain and up the channel into the city ('ambron').
         if(view==='ambron'){questStage=10;combat.finishPractice();player.group.visible=false;
           const c=AMBRON.centre,turn=0;

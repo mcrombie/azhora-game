@@ -37,8 +37,13 @@ const ENEMY_KINDS = Object.freeze({
   //              change from every fight in the game so far: there is no free second
   //              bought with a swing, and the fight is lost to greed rather than to
   //              surprise. The long tell keeps him readable while it does it.
-  ogre: Object.freeze({ tell: 1.18, attack: .44, contact: .2, recovery: 1.3, damage: 52, speed: 1.25, engage: 4.3, reach: 4.7, lunge: 6.4,
-    arc: Math.PI * .4, aimLock: .55, standoff: 2.6, stagger: false, knockback: .2 }),
+  // Half the size he was (src/characters.js `createOgre`), so the distances that describe his
+  // size came down with him: his reach is now an arm and a beam rather than a giant's span.
+  // The lunge went the other way. Backing straight up must not be a defence against him
+  // (tests/amod-ogre.test.js), and a lighter ogre buys that by throwing himself further
+  // instead of by standing further away. The timing is untouched: slow to start, slow to stop.
+  ogre: Object.freeze({ tell: 1.18, attack: .44, contact: .2, recovery: 1.3, damage: 52, speed: 1.45, engage: 3.3, reach: 3.7, lunge: 8.6,
+    arc: Math.PI * .4, aimLock: .55, standoff: 2.2, stagger: false, knockback: .2 }),
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.

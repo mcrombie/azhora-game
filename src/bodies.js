@@ -11,7 +11,7 @@
 import { moveCharacter } from './game-state.js';
 
 /** Footprints, in metres of radius. */
-export const BODY = Object.freeze({ person: .3, traveler: .34, dog: .26, cat: .15, horse: .5, ogre: 1.05, wolf: .32 });
+export const BODY = Object.freeze({ person: .3, traveler: .34, dog: .26, cat: .15, horse: .5, ogre: .62, wolf: .32 });
 
 /**
  * A view of `world` whose colliders include the frame's bodies. `moving(who, radius)`

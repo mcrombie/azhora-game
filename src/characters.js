@@ -2624,6 +2624,155 @@ export function createWolf({ variant = 0, dog = false } = {}) {
   return { group, animate, setArmed: () => {} };
 }
 
+/**
+ * Mallec, the ogre who holds the Amod road at the pass stones (src/amod-ogre.js).
+ *
+ * Half the size of a rock troll and built on a person's plan rather than a boulder's: he
+ * stands upright, his legs are as long as his body, his head sits on a neck, and his arms
+ * end at his thighs and not past his knees. He is still nobody's idea of a man — a head and
+ * a half over a tall one, twice the width, with a jaw that shuts wrong, an underbite with
+ * two tusks in it, a brow like a lintel and hands that could close round a cartwheel — but
+ * the shape a traveler reads at fifty paces is a person, which is the point of him. He
+ * takes three copper and gives change in conversation.
+ *
+ * The rig is the traveler's own (hip at .74, knee at -.325, ankle at -.29), so the analytic
+ * foot solver in `makeAnimator` works on him without the goblin's shortened legs. The figure
+ * is scaled inside an outer group so a death fade can scale the group without flattening him.
+ *
+ * He wears what a creature who sits outdoors for two generations wears: a leather kilt, a
+ * belt with the tally board on it and the bowl the copper goes in, and sacking over one
+ * shoulder against the rain. The beam with the terrace stone lashed to the end leans where
+ * he can reach it and is not in his hands, because he is not expecting to need it.
+ */
+export function createOgre({ scale = 1.8 } = {}) {
+  const group = new THREE.Group();
+  group.name = 'ogre';
+  const figure = new THREE.Group();
+  figure.name = 'Ogre figure';
+  figure.scale.setScalar(scale);
+  group.add(figure);
+  const body = new THREE.Group();
+  body.name = 'Weight and hips';
+  figure.add(body);
+
+  const hide = material(0x87805f), belly = material(0x9a9270), grime = material(0x6a654c);
+  const cloth = material(0x7a6647), leather = material(0x584833), patch = material(0x8a7a58);
+  const horn = material(0xcfc4a0), dark = material(0x231f1a), eyeWhite = material(0xc9b47a);
+  const stoneMat = material(0xa9a289), nail = material(0xb8ad86);
+  const legs = [], knees = [], ankles = [], arms = [], elbows = [], wrists = [];
+
+  // Legs on the traveler's plan, thickened: the solver's lengths, an ogre's meat.
+  for (const side of [-1, 1]) {
+    const hip = new THREE.Group();
+    hip.position.set(side * 0.16, 0.74, 0);
+    body.add(hip);
+    legs.push(hip);
+    round(hip, hide, [0, -0.17, 0], [0.135, 0.2, 0.14]);
+    part(hip, UNIT_CYLINDER, cloth, [0, -0.02, 0], [0.155, 0.16, 0.15]);
+    const knee = new THREE.Group();
+    knee.position.y = -0.325;
+    hip.add(knee);
+    knees.push(knee);
+    round(knee, hide, [0, -0.02, 0.012], [0.115, 0.12, 0.12]);
+    round(knee, hide, [0, -0.17, 0], [0.105, 0.155, 0.11]);
+    const ankle = new THREE.Group();
+    ankle.position.y = -0.29;
+    knee.add(ankle);
+    ankles.push(ankle);
+    round(ankle, hide, [0, -0.02, 0.05], [0.115, 0.065, 0.145]);
+    box(ankle, grime, [0, -0.062, 0.055], [0.22, 0.032, 0.25]);
+    for (const toe of [-0.068, 0, 0.068]) round(ankle, belly, [toe, -0.028, 0.16], [0.04, 0.04, 0.045]);
+  }
+
+  // A heavy trunk that still reads as a chest over a gut, not a boulder on legs.
+  part(body, UNIT_HAIR_LOCK, belly, [0, 0.93, 0.045], [0.33, 0.28, 0.29]);
+  part(body, UNIT_CYLINDER, leather, [0, 0.79, 0], [0.235, 0.075, 0.205]);    // the belt
+  // A kilt of hide, cut to hang: a box here reads as a slab of night across his middle.
+  part(body, new THREE.CylinderGeometry(0.225, 0.3, 0.34, 9), cloth, [0, 0.61, 0.01], [1, 1, 0.86]);
+  for (const side of [-1, 1]) ribbon(body, leather, [side * 0.1, 0.79, 0.17], [side * 0.13, 0.47, 0.15], 0.03, 0.02);
+  const chest = new THREE.Group();
+  chest.name = 'Chest';
+  chest.position.set(0, 1.06, 0);
+  body.add(chest);
+  part(chest, UNIT_HAIR_LOCK, hide, [0, 0.1, -0.01], [0.41, 0.28, 0.32]);
+  for (const side of [-1, 1]) part(chest, UNIT_HAIR_LOCK, hide, [side * 0.2, 0.18, -0.01], [0.2, 0.17, 0.22]);
+  // Sacking over the right shoulder; the tally board and the bowl on the left of the belt.
+  ribbon(chest, patch, [0.08, 0.3, 0.06], [0.28, -0.04, 0.09], 0.16, 0.05);
+  // A group, not a mesh: hanging the tick marks off a scaled board would scale them with it.
+  const tally = new THREE.Group(); tally.name = 'Mallec’s tally';
+  tally.position.set(-0.24, 0.74, 0.14); tally.rotation.z = 0.2; body.add(tally);
+  box(tally, patch, [0, 0, 0], [0.14, 0.2, 0.03]);
+  for (const mark of [-0.04, 0, 0.04]) box(tally, dark, [mark, 0.01, 0.02], [0.012, 0.13, 0.01]);
+  part(body, new THREE.CylinderGeometry(0.1, 0.085, 0.08, 8), grime, [0.24, 0.76, 0.12]);
+
+  // Arms: thick, but they stop at the thigh.
+  for (const side of [-1, 1]) {
+    const shoulder = new THREE.Group();
+    shoulder.position.set(side * 0.3, 1.26, 0);
+    body.add(shoulder);
+    arms.push(shoulder);
+    round(shoulder, hide, [side * 0.02, -0.12, 0], [0.13, 0.2, 0.135]);
+    const elbow = new THREE.Group();
+    elbow.position.set(side * 0.02, -0.3, 0);
+    shoulder.add(elbow);
+    elbows.push(elbow);
+    round(elbow, hide, [0, -0.13, 0], [0.105, 0.185, 0.11]);
+    const wrist = new THREE.Group();
+    wrist.position.set(0, -0.3, 0.015);
+    elbow.add(wrist);
+    wrists.push(wrist);
+    round(wrist, hide, [0, -0.05, 0.02], [0.12, 0.105, 0.115]);
+    for (let f = 0; f < 3; f++) round(wrist, belly, [(f - 1) * 0.055, -0.13, 0.055], [0.03, 0.06, 0.034]);
+    round(wrist, belly, [-side * 0.08, -0.06, 0.05], [0.04, 0.055, 0.04]);
+  }
+
+  // A neck, and a head on top of it: the single clearest difference from the troll.
+  const head = new THREE.Group();
+  head.name = 'Head';
+  head.position.set(0, 1.4, 0.02);
+  body.add(head);
+  part(head, UNIT_CYLINDER, hide, [0, -0.06, 0], [0.13, 0.09, 0.13]);
+  part(head, UNIT_HAIR_LOCK, hide, [0, 0.09, -0.01], [0.23, 0.21, 0.22]);
+  // The brow is a lintel; the eyes are under it and small.
+  part(head, UNIT_BOX, hide, [0, 0.11, 0.15], [0.33, 0.07, 0.11]);
+  for (const side of [-1, 1]) {
+    round(head, eyeWhite, [side * 0.075, 0.065, 0.15], [0.032, 0.026, 0.02]);
+    round(head, dark, [side * 0.078, 0.062, 0.166], [0.014, 0.016, 0.01]);
+    round(head, hide, [side * 0.2, 0.06, -0.02], [0.05, 0.075, 0.03]);       // ears, one of them wrong
+  }
+  round(head, belly, [0, 0.02, 0.19], [0.07, 0.06, 0.06]);                    // the nose
+  // The jaw shuts wrong, and two tusks come up out of it.
+  const jaw = part(head, UNIT_HAIR_LOCK, hide, [0, -0.07, 0.13], [0.2, 0.11, 0.15]);
+  jaw.rotation.x = 0.12;
+  box(head, dark, [0, -0.04, 0.2], [0.17, 0.035, 0.03]);
+  for (const side of [-1, 1]) {
+    const tusk = part(head, new THREE.ConeGeometry(0.028, 0.12, 5), horn, [side * 0.072, 0.012, 0.185]);
+    tusk.rotation.set(-0.25, 0, side * 0.12);
+  }
+  for (const side of [-1, 1]) round(head, grime, [side * 0.09, 0.21, -0.03], [0.055, 0.04, 0.05]);
+
+  // The beam stands by him rather than in his hands: he is not expecting to need it.
+  const weapon = new THREE.Group();
+  weapon.name = 'Weapon';
+  wrists[1].add(weapon);
+  weapon.position.set(0, -0.13, 0.05);
+  const beam = new THREE.Group();
+  beam.name = 'Mallec’s beam';
+  weapon.add(beam);
+  part(beam, UNIT_CYLINDER, patch, [0, -0.35, 0], [0.048, 1.0, 0.048]);
+  part(beam, UNIT_BOX, stoneMat, [0, -0.82, 0.01], [0.17, 0.2, 0.15]);
+  for (const band of [-0.72, -0.9]) ribbon(beam, leather, [-0.09, band, 0.01], [0.09, band, 0.01], 0.02, 0.018);
+  part(beam, UNIT_CYLINDER, nail, [0, 0.16, 0], [0.026, 0.06, 0.026]);
+
+  const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles, weapon];
+  for (const [kind, joints] of Object.entries({ Shoulder: arms, Elbow: elbows, Wrist: wrists, Hip: legs, Knee: knees, Ankle: ankles })) {
+    joints.forEach((joint, i) => { joint.name = `${i ? 'Right' : 'Left'} ${kind}`; });
+  }
+  batchRigidParts(group, pivots);
+  const { animate, setArmed } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, offset: 1.4 });
+  return { group, animate, setArmed, figure, scale };
+}
+
 /** A friendly village dog: the wolf's rig with hanging ears, a lighter coat, no fangs and a tail that will not stop. */
 export function createDog(options = {}) { return createWolf({ ...options, dog: true }); }
 
@@ -3017,9 +3166,15 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
  * `groundShadow()` is the dark patch that stands in for one.
  */
 /**
- * Mallec, the ogre who holds the Amod road (src/amod-ogre.js). Three times a
- * person's size, which is the whole point of him: the scale has to read from the
- * far end of the road and read worse when you are standing under it.
+ * A rock troll: three and a half times a person, grey as the ground it stands on, and
+ * the reason nobody in Azhora walks a mountain road alone at dusk. The scale is the whole
+ * point of it — it has to read from the far end of a valley and read worse when you are
+ * standing under it.
+ *
+ * Trolls have no names, hold no conversations and keep no tolls. They belong to the high
+ * country: the Lotharn Mountains, and the other ranges, none of which are built yet. This
+ * model is kept ready for them (src/rock-troll.js has what is known about the kind) and is
+ * placed nowhere at present.
  *
  * The rig keeps the goblin's joint offsets, because the analytic foot solver in
  * `makeAnimator` is written against them, and everything else departs from them
@@ -3029,14 +3184,13 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
  * an outer group, so the caller can go on setting the group's scale for a death
  * fade without flattening him.
  *
- * He carries a road-mender's beam with a dressed terrace stone lashed into the
- * end. He did not make it. He found it, the way he found the job.
+ * It carries a beam with a dressed stone lashed into the end. It did not make it.
  */
-export function createOgre({ scale = 3.55 } = {}) {
+export function createRockTroll({ scale = 3.55 } = {}) {
   const group = new THREE.Group();
-  group.name = 'ogre';
+  group.name = 'rock-troll';
   const figure = new THREE.Group();
-  figure.name = 'Ogre figure';
+  figure.name = 'Rock troll figure';
   figure.scale.setScalar(scale);
   group.add(figure);
   const body = new THREE.Group();
