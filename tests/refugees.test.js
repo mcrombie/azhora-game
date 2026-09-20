@@ -152,3 +152,17 @@ test('meeting them says who they are the first time and not the second', async (
   assert.deepEqual(opened.lines, [...speechFor('refugee-empire', true)], 'once they are here they have something else to say');
   assert.equal(opened.dismiss, undefined);
 });
+
+test('a company with no road to walk is empty rather than broken', () => {
+  // `along` answers null when there is no road, and `arrived` and `setClock` both check the
+  // total before they do anything. `positions` used to take `along`'s answer without asking
+  // and threw on it, so constructing the company before its route was known was a trap.
+  for (const route of [undefined, [], [{ x: 0, z: 0 }]]) {
+    const company = createRefugees(route === undefined ? undefined : { route, stands: REFUGEE_STANDS });
+    assert.deepEqual(company.positions(), [], `a route of ${JSON.stringify(route)} put people on the road`);
+    assert.equal(company.arrived, false);
+    assert.equal(company.setClock(90), false, 'a company with nowhere to go cannot have got there');
+    assert.deepEqual(company.positions(), [], 'and still nobody after the clock moved');
+    assert.equal(validateRefugeesSnapshot(company.snapshot()), true, 'its snapshot is still a valid one');
+  }
+});

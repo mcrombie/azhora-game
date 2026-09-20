@@ -183,6 +183,10 @@ export function createRefugees({ route = [], stands = [], pace = REFUGEE_PACE, o
   }
 
   function positions() {
+    // No road, nobody on it. `along` already says so by returning null, and the module's
+    // other readers agree: `arrived` needs a total above zero and `setClock` clamps to it.
+    // This was the one place that took `along`'s answer without asking.
+    if (route.length < 2) return [];
     return REFUGEES.map((person, i) => {
       if (arrived()) {
         const stand = stands[i] ?? stands[stands.length - 1] ?? along(total);
