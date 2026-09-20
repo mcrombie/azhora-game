@@ -2137,7 +2137,7 @@ function init() {
   const autopilotWorld={bounds:world.bounds,colliders:world.colliders,nearColliders:(x,z,reach,out)=>playerWorld.nearColliders(x,z,reach,out),heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
-    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,northTrail:world.northTrail,border:world.border,
+    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,encounter:world.encounter,northTrail:world.northTrail,border:world.border,
     // Walled places have gates, and the autopilot only knows that if it is told (src/autopilot.js).
     enclosures:world.enclosures,
     sideSeat:(side,conquest)=>sideSeat(side,conquest)};
