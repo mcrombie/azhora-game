@@ -4,7 +4,7 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
     name: 'Letter of introduction', type: 'Quest item', icon: 'letter',
-    brief: 'The report and letter of introduction that Chris Gotwood carried ashore, for the Ambroni army post on the Avrel clearing.',
+    brief: 'The report and letter of introduction Mara the harbourmaster handed over at the head of the pier, for the Ambroni army post on the Avrel clearing.',
     description: 'The seal is already broken so you can read your errand. Keep the message with you for the road ahead.',
   }),
   'simple-sword': Object.freeze({
@@ -656,7 +656,7 @@ export function createInventory({
         element('h3', '', state.items().length ? 'Select an item above' : 'Room for a journey'),
         element('p', '', state.items().length
           ? 'Hover over an item for a quick description. Click it, or use Tab then Enter, to see what you are carrying.'
-          : 'Items given to you on the road will appear here. Speak with Lakota at the head of the pier to receive your first errand.'),
+          : 'Items given to you on the road will appear here. Speak with Mara, the harbourmaster at the head of the pier, to receive your first errand.'),
       );
       return;
     }

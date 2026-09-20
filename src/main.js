@@ -160,7 +160,9 @@ function init() {
   const testingQuery=new URLSearchParams(location.search);
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});player=createCharacter();scene.add(player.group);
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
-  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
+  const HARBOURMASTER='harbormaster';
+  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Mara',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -216,8 +218,11 @@ function init() {
   world.npcPositions[PEDDLER.id]={x:PEDDLER.stand.x,z:PEDDLER.stand.z};
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // Lakota watches birds from his garden on the eastern side of Tidehaven, and teaches the traveler to (src/birding.js).
-  // Lakota meets the traveler at the head of the pier and gives them the first errand; then he goes home to his bird garden.
+  // Mara the harbourmaster meets the traveler off the boat and hands over the letter.
+  // Lakota is at home in his bird garden from the first minute, and stays there.
   const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
+  world.npcPositions[HARBOURMASTER]={x:pierHead.x,z:pierHead.z};
+  npcData.find(person=>person.id===HARBOURMASTER).yaw=pierHead.yaw;
   world.npcPositions[BIRD_WATCHER.id]={x:lakotaGarden.x,z:lakotaGarden.z};npcData.push({...BIRD_WATCHER,yaw:lakotaGarden.yaw});
   // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
   for(const person of [VINTNER,CELLAR_HAND,WINEMAKER]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
@@ -1329,7 +1334,7 @@ function init() {
     $('lesson-title').textContent=quest.lesson;$('lesson-hint').textContent=quest.hint;
     $('quest-step').textContent=questStage===10?'TIDEHAVEN · COMPLETE':`FIRST SHORE · ${questStage+1} / ${questSteps.length-1}`;
   }
-  /** Lakota waits at the head of the pier until he has given the traveler the first errand; after that he is at home in his garden. `snap` puts him there at once. */
+  /** Lakota is at home in his garden. `snap` puts him there at once rather than letting him walk. */
   function placeLakota(snap=true){
     const at=lakotaGarden,npc=npcById.get(BIRD_WATCHER.id);world.npcPositions[BIRD_WATCHER.id]={x:at.x,z:at.z};
     if(npc&&snap){npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.y=at.yaw;}
@@ -1337,7 +1342,7 @@ function init() {
   function updateQuest(event) {
     const previous=questStage;questStage=advanceQuest(questStage,event);
     if(previous===questStage)return;
-    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);placeLakota(false);}
+    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);}
     if(previous===2&&questStage===3){combat.finishPractice();audio?.effect('success');}
     if(questStage===5)audio?.effect('success');
     if(questStage===6)inventory.grant('road-token');
@@ -1913,6 +1918,7 @@ function init() {
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
+    if(npc.id===HARBOURMASTER){maraOnTheLanding(npc);return;}
     if(npc.id==='merc-gotwood'&&questStage<2){chrisOnTheLanding(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
@@ -1965,7 +1971,7 @@ function init() {
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
     let lines,event=null,action='Until next time';
     if(npc.id==='fisher') {
-      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Lakota was at the head of the pier looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
+      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Mara has been at the head of the pier since it started, looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
       const said={dead:name=>`We lost ${name} out there. That is on the goblins, not on you, but I will not pretend it is nothing.`,wounded:name=>`${name} is badly hurt, but breathing. The healer is with them now.`,
         hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
@@ -1978,22 +1984,39 @@ function init() {
       event='meet-waykeeper';action='Take the token';
     } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select the letter of introduction and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
     else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the army post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
-    else if(questStage<2)lines=['Speak to Lakota at the head of the pier before you head inland. He has a small errand for you, and something to help you on the road.'];
+    else if(questStage<2)lines=['Speak to Mara at the head of the pier before you head inland. She has a small errand for you, and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
     else lines=['There is movement near the woodland bell, south of here. Approach along the main road, and keep an eye on the trees.'];
     openDialogue(npc,lines,event,action);
   }
-  /** Lakota at the head of the pier: the goblins, the letter for Corvan, the straw post, and where to find him after. */
-  // Chris Gotwood came off the same boat with the company's papers in his coat, and is the
-  // first person in Azhora who says anything to the traveler (src/mercenaries.js).
-  function chrisOnTheLanding(npc){
+  /**
+   * Mara, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Corvan, and
+   * which way the road goes. She is the first person the traveler speaks to, and the errand is hers
+   * because it is her landing and her paperwork. Chris, who came off the same boat, keeps the sword
+   * lesson below.
+   */
+  function maraOnTheLanding(npc){
+    if(questStage>=2){
+      openDialogue(npc,[questStage>=5
+        ?'Road is clear, they tell me. Good. I have two boats waiting on a tide and a quartermaster waiting on you, so neither of us is finished.'
+        :'Corvan. The Avrel clearing, past the forest. I have said it twice and I will not enjoy saying it a third time.'],
+        null,'Back to the landing');
+      return;
+    }
     updateQuest('ashore');
-    openDialogue(npc,['That bell was going before we were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
-      'Right. This is yours and I am glad to be rid of it: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service. Eren at the watch will point you at the road.',
+    openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
+      'Mara. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
+      'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road, and I keep a rough chart of this coast if you ever want a look at it.',
+      'One of your own boat is still on the landing \u2014 plain cloth, pleased with himself, Gotwood. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to.'],
+      'accept-letter','Take the letter');
+  }
+  /** Chris Gotwood, who came ashore with you: the straw post, the dodge, what a blade costs, and where he will be. */
+  function chrisOnTheLanding(npc){
+    openDialogue(npc,['Chris Gotwood. Same contract as you, same boat as you, and no, I do not know any more about it than you do.',
       'A sword is welcome here even in plain cloth, but those raiders carry snapped branches and you have nothing to hide behind. Two swings on the straw post at the northern crossroads, then try a dodge. Watch for the raised stick and hit them after the swing, not during it.',
       'Your blade wears with every hit, straw included. The repair bench is beside the post \u2014 F there mends it and nobody charges you for it. I opens your satchel.',
-      'Chris Gotwood, by the way. I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
-      'accept-letter','Take the letter');
+      'I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
+      null,'Back to the landing');
   }
   function doomsayerConversation(npc){
     heardDoom=true;
@@ -2368,7 +2391,7 @@ function init() {
 
   function destination() {
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
-    if(questStage===1)return{...npcById.get(BIRD_WATCHER.id).actor.group.position,name:'Lakota'};
+    if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Mara \u00b7 the harbourmaster'};
     if(questStage===2)return{...world.training,name:'Practice post'};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
     if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
@@ -2674,7 +2697,7 @@ function init() {
         const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
-        npc.marker.visible=(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
+        npc.marker.visible=(npc.id===HARBOURMASTER&&questStage<2)||(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
         if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
         if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
         if(npc.id===BIRD_WATCHER.id)npc.marker.visible=questStage>=1&&(!birding.met||archaeology.task()?.stage==='report')&&combat.state.phase!=='active';
@@ -3045,8 +3068,8 @@ function init() {
         const walkSpeed=await speedWith(),tabSpeed=await speedWith('Tab'),shiftSpeed=await speedWith('ShiftLeft');
         assert(Math.abs(walkSpeed-4.2)<.01&&Math.abs(tabSpeed-7.2)<.01&&Math.abs(tabSpeed-shiftSpeed)<.01,'Tab/Shift running speed or walking speed is wrong');
         warp(0,9);press('KeyQ');await until(()=>player.group.position.x<-.35&&player.group.position.z<8.65,'Q forward-left failed');release('KeyQ');
-        // Beside Lakota at the head of the pier, on his open side: people and the harbour crates around him are solid now.
-        const harbor=npcById.get(BIRD_WATCHER.id);player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
+        // Beside Mara at the head of the pier, on her open side: people and the harbour crates around her are solid now.
+        const harbor=npcById.get(HARBOURMASTER);player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
         const diagonalStart=player.group.position.clone();press('KeyE');assert(mode==='playing','E triggered dialogue');await until(()=>player.group.position.x>diagonalStart.x+.35&&player.group.position.z<diagonalStart.z-.35,'E forward-right failed');release('KeyE');
         player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(-1,0,0));await frames();tap('KeyF');assert(mode==='dialogue','F talk failed');finishDialogue();assert(questStage===2,'Message assignment failed');
         assert(inventory.has('harbor-letter')&&inventory.has('simple-sword'),'Items were not received before the goblin encounter');

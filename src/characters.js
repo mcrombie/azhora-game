@@ -2159,13 +2159,20 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     box(book, material(0x5c4636), [0, 0, 0], [.1, .13, .022]);
     box(book, material(0xcdc1a4), [0, .004, .004], [.09, .118, .024]);
   } else if (role === 'harbormaster') {
-    // An apron and salt-grey beard distinguish the older keeper of the pier.
+    // The apron and its two straps belong to the pier, not to a particular keeper of it.
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);
     ribbon(body, leather, [-0.113, 1.277, 0.126], [-0.101, 1.093, 0.19], 0.027);
     ribbon(body, leather, [0.113, 1.277, 0.126], [0.101, 1.093, 0.19], 0.027);
-    round(head, hairMat, [0, 0.063, 0.101], [0.14, 0.106, 0.122]);
-    round(head, hairMat, [-0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
-    round(head, hairMat, [0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+    // Ovan Kell in Izolveth wears the salt-grey beard; Mara in Tidehaven wears her hair tied back,
+    // so the same apron carries two people rather than one face in two ports.
+    if (look?.beard === false) {
+      round(head, hairMat, [0, 0.052, 0], [0.152, 0.128, 0.152]);
+      round(head, hairMat, [0, 0.026, -0.126], [0.078, 0.082, 0.08]);
+    } else {
+      round(head, hairMat, [0, 0.063, 0.101], [0.14, 0.106, 0.122]);
+      round(head, hairMat, [-0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+      round(head, hairMat, [0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+    }
   } else if (role === 'fisher' || isPondFisher) {
     const scarfMat = material(0xbf7151);
     part(body, UNIT_CYLINDER, scarfMat, [0, 1.324, 0], [0.114, 0.065, 0.098]);

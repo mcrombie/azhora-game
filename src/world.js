@@ -1724,7 +1724,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     spawn: { x: worldSpawn.x, z: worldSpawn.z },
     boatStart: { x: worldBoat.x, z: worldBoat.z, y: 1.0 },
     bounds: { minX: WORLD_BOUNDS.minX, maxX: WORLD_BOUNDS.maxX, minZ: WORLD_BOUNDS.minZ, maxZ: WORLD_BOUNDS.maxZ },
-    /** The head of the pier, where Lakota meets the traveler off the boat. */
+    /** The head of the pier, where Mara the harbourmaster meets the traveler off the boat. */
     pierHead: villageToWorld(4, 20),
     npcPositions: {
       fisher: villageToWorld(-15, 22), warden: villageToWorld(0, -65),
