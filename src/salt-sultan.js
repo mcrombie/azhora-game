@@ -206,6 +206,10 @@ export function johnBound(portId) {
 }
 
 /** John on his quay. `salt` is his module; `act` runs 'john-meet' and 'john-ed'. */
+/** What a piece out of the barrel costs, which is less than it is worth and more than it is. */
+export const BEEF_PRICE = 2;
+export const SALT_BEEF = 'salt-beef';
+
 export function johnConversation(npc, context) {
   const { salt, openDialogue, closeDialogue, act } = context;
   if (npc.id !== JOHN.id) return false;
@@ -221,6 +225,9 @@ export function johnConversation(npc, context) {
     { id: 'john-crew', label: 'Who works for you?', action: () => { act('john-ed'); talk(TALK.crew); } },
     ...(salt.edTold ? [{ id: 'john-ed-good', label: 'Is Ed any good at it?', action: () => talk(TALK.edGood) }] : []),
     { id: 'john-bound', label: 'Where are you bound?', action: () => talk(johnBound(p.id)) },
+    // The hold has salt in it and things kept in salt. A dog in Drent knows this (src/bosco.js).
+    ...(context.coppers >= BEEF_PRICE ? [{ id: 'john-beef', label: `A piece of salt beef (${BEEF_PRICE} copper).`,
+      action: () => { closeDialogue(); act('buy-salt-beef'); } }] : []),
     // A man who sails four ports in a war is offered every kind of cargo (src/batman.js).
     ...(context.hunt?.stage === 'hunting' && !context.hunt.has('pass') ? [{ id: 'john-refused', label: 'Has anyone offered you a cargo you would not take?',
       action: () => openDialogue(npc, [

@@ -47,6 +47,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Charcoal on the back of a wine label: a bat’s head and a bat’s wings on a man’s body. Underneath, underlined twice: HE IS NOT A MONSTER.',
     description: 'Katy drew him from what the people who have seen him told her, so that you would know him when you see him, and not run. She wants to hear the moment you do.',
   }),
+  'salt-beef': Object.freeze({
+    name: 'Salt beef', type: 'Food', icon: 'strips', stackable: true, eatName: 'piece of salt beef',
+    brief: 'A hard red-brown piece out of the brine barrel, cut across the grain, salty in the way the sea is salty. Restores up to 35 health.',
+    description: 'What a ship eats when it is a long way from anywhere: beef packed down in salt in a barrel, which keeps for a year and tastes of exactly one thing. John carries it because his crew has to eat, and sells a piece to anybody who asks, mostly to see what they want it for. Restores up to 35 health.',
+  }),
   'velaeth-vial': Object.freeze({
     name: 'A flat bottle of Velaeth', type: 'Quest item', icon: 'bottle',
     brief: 'Thumb-sized, flat, sealed with wax. The stuff in it is blue with purple coming up underneath, and moves like oil.',

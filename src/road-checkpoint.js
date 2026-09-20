@@ -26,6 +26,7 @@ import { createKaty, validateKatySnapshot } from './katy.js';
 import { createVineyard, validateVineyardSnapshot } from './vineyard.js';
 import { createBatmanHunt, validateHuntSnapshot } from './batman.js';
 import { createLightKeeper, validateLightSnapshot } from './lighthouse.js';
+import { createBosco, validateBoscoSnapshot } from './bosco.js';
 import { createBeekeeper, validateBeekeeperSnapshot } from './beekeeper.js';
 import { validateRefugeesSnapshot } from './refugees.js';
 import { validateFallenSnapshot } from './bystanders.js';
@@ -104,6 +105,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateVineyardSnapshot(data.vineyard)) return failed('The saved walk of the vineyard is invalid.');
     if (!validateHuntSnapshot(data.hunt)) return failed('The saved case against the blue trade is invalid.');
     if (!validateLightSnapshot(data.light)) return failed('The saved visit to the Saltwind Light is invalid.');
+    if (!validateBoscoSnapshot(data.bosco)) return failed('The saved dog is invalid, which is a terrible thing to have to say.');
     if (!validateBeekeeperSnapshot(data.troy)) return failed('The saved combs from the Bee Fold are invalid.');
     if (!validateRefugeesSnapshot(data.refugees)) return failed('The saved road for the Lauvel refugees is invalid.');
     if (!validateFallenSnapshot(data.fallen)) return failed('The saved list of the dead is invalid.');
@@ -208,6 +210,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'vineyard')) { const vineyard = createVineyard(); vineyard.restore(data.vineyard); result.vineyard = vineyard.snapshot(); }
     if (Object.hasOwn(data, 'hunt')) { const hunt = createBatmanHunt(); hunt.restore(data.hunt); result.hunt = hunt.snapshot(); }
     if (Object.hasOwn(data, 'light')) { const light = createLightKeeper(); light.restore(data.light); result.light = light.snapshot(); }
+    if (Object.hasOwn(data, 'bosco')) { const bosco = createBosco(); bosco.restore(data.bosco); result.bosco = bosco.snapshot(); }
     if (Object.hasOwn(data, 'troy')) { const troy = createBeekeeper(); troy.restore(data.troy); result.troy = troy.snapshot(); }
     if (Object.hasOwn(data, 'refugees')) result.refugees = data.refugees;
     if (Object.hasOwn(data, 'fallen')) result.fallen = { version: 1, ids: [...data.fallen.ids] };

@@ -32,6 +32,7 @@ export const FOODS = Object.freeze({
   'ewe-cheese': define(30, 'You have no ewe’s cheese. The shepherds of the Avrel clearing press it from their flock’s milk.'),
   'honey-cake': define(35, 'You have no honey cakes. Lysa’s little cakes need acorn meal and bee-fold honey.'),
   'smoked-sausage': define(40, 'You have no smoked sausage. Drent households hang forest-hog sausages in the chimney smoke all winter.'),
+  'salt-beef': define(35, 'You have no salt beef. It comes out of a barrel in a ship’s hold and keeps for a year, which is the only good thing anybody says about it.'),
   herbs: define(12, 'You have no herbs. Nell Harrow, on the outskirts of Tidehaven, teaches what grows on either side of the road.'),
   tuckahoe: define(30, 'You have no tuckahoe. The arrowhead leaves stand in the river shallows in southern Drent, where the road runs down to Luscia.'),
   mushrooms: define(18, 'You have no mushrooms. Odger Pell, at the edge of the Greenway, teaches which ones are supper.'),

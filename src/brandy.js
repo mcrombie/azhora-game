@@ -56,6 +56,14 @@ export function yardColliders() {
   return out;
 }
 
+/** What Brandy says about him, which is the only subject she is not mildly sorry about. */
+export const BRANDY_ON_BOSCO = freeze([
+  'Bosco. He came out of a dye pan behind the bakery about so big, and he has been here since, and he is the only thing in this yard that came out right, and I did not make him.',
+  'I know. I know. He is not supposed to be that shape. He gets one meal and whatever he steals, and he steals professionally, and the village is in on it — every door up that lane has something for him. I have given up.',
+  'He does the gate. Carts, gulls, the wind. He has never lost, because nothing that comes up that lane has ever wanted the yard, but try telling him that.',
+  'And yes, he is that colour. He sleeps against whichever vat is warm and it takes a month to come off him. Somebody asked me last spring what breed goes green. I said it is a rare one.',
+]);
+
 // ---------------------------------------------------------------------------
 // What she says
 // ---------------------------------------------------------------------------
@@ -114,6 +122,8 @@ export function brandyConversation(npc, context) {
   openDialogue(npc, opening, null, 'Back to the lane', { choices: [
     { id: 'brandy-how', label: 'How are you, Brandy?', action: () => talk(HOW[Math.floor(random() * HOW.length)]) },
     { id: 'brandy-colours', label: 'Where do the colours come from?', action: () => talk(TALK.colours) },
+    // The one subject she is not mildly sorry about (src/bosco.js).
+    { id: 'brandy-bosco', label: 'Whose dog is this?', action: () => talk(BRANDY_ON_BOSCO) },
     { id: 'brandy-boards', label: 'What are those paintings?', action: () => talk(TALK.boards) },
     { id: 'brandy-loved', label: 'Everybody in the village seems to love you.', action: () => talk(TALK.loved) },
     { id: 'brandy-looks', label: 'You don’t look much like a dyer.', action: () => talk(TALK.looks) },
