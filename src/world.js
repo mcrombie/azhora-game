@@ -23,7 +23,7 @@ import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-s
 import { atticDeckHeight } from './wine-attic.js';
 import { createBrandyYard } from './brandy-yard.js';
 import { createLighthouse } from './lighthouse-world.js';
-import { LIGHT_HEAD_LOCAL } from './lighthouse.js';
+import { ELOD_LIGHT } from './rival-light.js';
 import { createWoodlot } from './woodlot-world.js';
 import { createHomestead } from './homestead-world.js';
 import { inKoopwood } from './woodcutting.js';
@@ -101,8 +101,6 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     || pondPathDistance(x, z) < (tree ? 2.35 : 1.45)
     || [doomsayer, pondFisher, ...firePits].some(p => Math.hypot(x - p.x, z - p.z) < (tree ? 2.1 : 1.0))
     || firePits.some(p => Math.hypot(x - p.fireX, z - p.fireZ) < (tree ? 2.1 : 1.25))
-    // Nothing with a trunk on the lighthouse head: eight metres of bare rock in the weather.
-    || (tree && Math.hypot(x - LIGHT_HEAD_LOCAL.lx, z - LIGHT_HEAD_LOCAL.lz) < LIGHT_HEAD_LOCAL.bare)
     || forestFeatureClear(x, z, tree);
   const encounter = { x: 0, z: -34, radius: 8 };
   const northTrail = { x: -5, z: -108, name: FERNWAY_REST.name };
@@ -1143,8 +1141,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   buildRenaWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   // Brandy Frank's dye yard, on the lane up to Saltwind Lookout (src/brandy-yard.js).
   createBrandyYard({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
-  // The Saltwind Light on the head beyond the Lookout, and Addison who keeps it (src/lighthouse-world.js).
+  // The two lights of this coast (src/lighthouse-world.js): Addison's on the West Suval head
+  // south of the winery lane, and her sister's across the water on the head below Elod, which
+  // is taller, blacker, and has a derrick over the cliff for bringing up what the sea leaves.
   createLighthouse({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
+  createLighthouse({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs }, ELOD_LIGHT,
+    { stone: '#4a4a4f', stoneDark: '#343438', stoneLight: '#5e5e63', slate: '#26262a', door: '#2b2723' });
   // The Koopwood, Bowden Koop's woodlot, where woodcutting is learned (src/woodcutting.js, src/woodlot-world.js).
   const woodlot = createWoodlot({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs, movingGroups });
   // The traveler's house on the plot beside it, and the birdhouse posts in the Greenway (src/construction.js, src/homestead-world.js).

@@ -47,6 +47,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Charcoal on the back of a wine label: a bat’s head and a bat’s wings on a man’s body. Underneath, underlined twice: HE IS NOT A MONSTER.',
     description: 'Katy drew him from what the people who have seen him told her, so that you would know him when you see him, and not run. She wants to hear the moment you do.',
   }),
+  'elodi-lens': Object.freeze({
+    name: 'The stepped lens', type: 'Quest item', icon: 'token',
+    brief: 'Rings of Elagosi glass ground one inside the next like a beehive, in a brass cradle, chest high and a third of a ton. You are carrying it with both arms and no dignity.',
+    description: 'The only one on this sea. A flame the size of a fist goes in the middle of it and comes out twenty miles long, which is what makes a light powerful — not the fire, the glass. It was in the lantern of the Elod Light, which is kept by Addison’s twin sister, who has spent eleven years showing it from the wrong place twice a year and taking what washes up.',
+  }),
   'salt-beef': Object.freeze({
     name: 'Salt beef', type: 'Food', icon: 'strips', stackable: true, eatName: 'piece of salt beef',
     brief: 'A hard red-brown piece out of the brine barrel, cut across the grain, salty in the way the sea is salty. Restores up to 35 health.',

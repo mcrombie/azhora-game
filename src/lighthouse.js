@@ -1,9 +1,9 @@
 /**
- * The Saltwind Light, and Addison, who keeps it.
+ * The Suval Light, and Addison, who keeps it.
  *
- * Past Brandy's dye yard and past Saltwind Lookout the coast lane runs out onto a
- * blunt headland with the sea on two sides of it, eight metres above the water, and
- * on the head stands a stone tower: a round, tapering thing built out of the same
+ * Where the Solis road runs south past the turning for the winery, the downs run out and
+ * stop: twelve metres of grass over the water, the ground falling away south and south-west
+ * into the open sea, and on the last of it stands a stone tower: a round, tapering thing built out of the same
  * grey rock it stands on, a keeper's cottage against its foot, a walled yard to take
  * the wind off the door, an oil store, and a fog bell on a frame that can be heard in
  * the village when the weather is wrong.
@@ -22,32 +22,38 @@
  *
  * Pure: no DOM, no three. The tower is src/lighthouse-world.js.
  */
-import { villageToWorld } from './region-world.js';
+import { ADDISON_AFTER, HEIST_ENDINGS, HEIST_ENDING_IDS } from './rival-light.js';
 
 const freeze = Object.freeze;
 
-/** The head itself: local (-95, 23) in Tidehaven's frame, the highest ground on this coast. */
-export const LIGHT_HEAD_LOCAL = freeze({ lx: -95, lz: 23, bare: 17 });
-const head = villageToWorld(LIGHT_HEAD_LOCAL.lx, LIGHT_HEAD_LOCAL.lz);
+/**
+ * The head: twelve metres of grass over the water on the West Suval coast, where the Solis
+ * road runs south past the turning for Vaervelm Caelazh. The winery lane's western end is a
+ * hundred and eighty strides north of it, so anybody going up to Livia's passes the light.
+ * The ground falls away south and south-west off the tower into open water; the road side is
+ * the landward side, which is why the yard opens north and the bell hangs over the drop.
+ */
+export const LIGHT_HEAD = freeze({ x: -630, z: 894, bare: 15 });
+const head = LIGHT_HEAD;
 const at = (dx, dz) => freeze({ x: head.x + dx, z: head.z + dz });
 
-export const SALTWIND_LIGHT = freeze({
-  id: 'saltwind-light', name: 'The Saltwind Light', region: 'Drent',
+export const SUVAL_LIGHT = freeze({
+  id: 'suval-light', name: 'The Suval Light', region: 'West Suval',
   head: freeze({ ...head }),
   /** The tower: round, tapering, a corbelled gallery and a glazed lantern over it. */
   tower: freeze({ ...at(0, 0), base: 3.1, top: 2.3, height: 11.4, gallery: 1.1, lantern: 2.6 }),
   /** The keeper's cottage, low and long, its back to the weather. */
-  cottage: freeze({ ...at(-5.6, 3.4), width: 8.2, depth: 5.4, eaves: 2.5, ridge: 4.1, yaw: 0.18 }),
+  cottage: freeze({ ...at(-5.6, -3.4), width: 8.2, depth: 5.4, eaves: 2.5, ridge: 4.1, yaw: 0.18 }),
   /** The yard wall: a horseshoe of drystone open to the landward side, to take the wind off the door. */
-  yard: freeze({ ...at(-2.4, 1.8), radius: 8.6, height: 1.35, openFrom: 4.55, openTo: 5.95 }),
+  yard: freeze({ ...at(-2.4, -1.8), radius: 8.6, height: 1.35, openFrom: 2.55, openTo: 3.95 }),
   /** The oil store, dug into the bank so a spark in the yard cannot reach it. */
-  store: freeze({ ...at(-8.8, -1.6), width: 3.4, depth: 2.8, height: 2.1 }),
+  store: freeze({ ...at(-8.8, 1.6), width: 3.4, depth: 2.8, height: 2.1 }),
   /** The fog bell, on a frame at the seaward edge, on a rope she can reach from the door. */
-  bell: freeze({ ...at(3.4, -3.6), height: 2.6 }),
+  bell: freeze({ ...at(3.4, 3.6), height: 2.6 }),
   /** The flagstaff, for the signals the village can read from the beach. */
-  staff: freeze({ ...at(-1.2, -4.4), height: 6.2 }),
-  /** Where the lane comes up onto the head, from the Lookout. */
-  gate: freeze({ ...at(-9.5, 6.2) }),
+  staff: freeze({ ...at(-1.2, 4.4), height: 6.2 }),
+  /** Where the track comes onto the head off the Solis road, from the north. */
+  gate: freeze({ ...at(-9.5, -6.2) }),
 });
 export const lightPoint = at;
 /**
@@ -55,12 +61,12 @@ export const lightPoint = at;
  * anybody coming up onto the head a long time before they arrive and is looking at them by
  * the time they do. Clear of the tower, the cottage and the wall, all of which are solid.
  */
-export const ADDISON_STAND = freeze({ ...at(-2.0, 6.4), yaw: -1.54 });
+export const ADDISON_STAND = freeze({ ...at(-2.0, -6.4), yaw: -1.54 });
 
 // Never the traveler's own model: dirty blonde, slightly wavy, to the shoulder and tied back off
 // her face; a knitted jersey, oilskin trousers, sea boots, a knife on a lanyard, ink on both arms.
 export const ADDISON = freeze({
-  id: 'light-keeper', name: 'Addison', role: 'Keeper of the Saltwind Light',
+  id: 'light-keeper', name: 'Addison', role: 'Keeper of the Suval Light',
   modelRole: 'light-keeper', color: 0x3f5a6b, skin: 0xd9ae83,
 });
 
@@ -158,7 +164,8 @@ export const SEEN_FROM_THE_LIGHT = freeze([
 
 /**
  * Addison's conversation. `act('climb-light')` takes the traveler up in the host, which is
- * where the chart gets widened. `visits` rotates the weather, because the weather changes.
+ * where the chart gets widened; the `sister-*` and `glass-*` acts run the business with the
+ * Elod Light (src/rival-light.js). `visits` rotates the weather, because it changes.
  */
 export function addisonConversation(npc, context) {
   const { light, openDialogue, closeDialogue, act, hunt = null, visits = 0 } = context;
@@ -166,7 +173,23 @@ export function addisonConversation(npc, context) {
   const again = () => addisonConversation(npc, { ...context, visits: visits + 1 });
   const tell = (lines, back = 'Back to the yard') => openDialogue(npc, [...lines], null, back, { onComplete: again });
   const leave = { id: 'leave-addison', label: 'I will let you get on.', action: closeDialogue };
+  // Her sister, the other light, and what she wants done about it (src/rival-light.js).
+  const heist = context.heist ?? null;
+  const sister = heist ? {
+    unknown: { id: 'light-sister', label: 'Is there another light on this coast?', act: 'sister-tell' },
+    told: { id: 'light-sister-ask', label: 'What do you want done about her?', act: 'sister-ask' },
+    asked: { id: 'light-sail', label: 'Take me across tonight.', act: 'sister-sail' },
+    home: { id: 'light-decide', label: 'What happens to the glass?', act: null },
+  }[heist.stage] ?? null : null;
   const choices = [
+    ...(sister && sister.act ? [{ id: sister.id, label: sister.label,
+      action: () => { closeDialogue(); act(sister.act); } }] : []),
+    ...(sister && !sister.act ? [{ id: sister.id, label: sister.label,
+      action: () => openDialogue(npc, [...ADDISON_AFTER], null, 'Decide', { choices: [
+        ...HEIST_ENDING_IDS.map(id => ({ id: `glass-${id}`, label: HEIST_ENDINGS[id].name,
+          action: () => { closeDialogue(); act(`glass-${id}`); } })),
+        { id: 'glass-wait', label: 'Not yet.', action: closeDialogue },
+      ] }) }] : []),
     { id: 'light-climb', label: light.climbed ? 'Can I go up again?' : 'Can I see the light?',
       action: () => { closeDialogue(); act('climb-light'); } },
     { id: 'light-work', label: 'What does keeping it actually take?', action: () => tell(LIGHT_WORK) },

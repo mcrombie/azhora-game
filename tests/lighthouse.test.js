@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { SALTWIND_LIGHT, ADDISON, ADDISON_STAND, LIGHT_HEAD_LOCAL, SIGHTLINES, LIGHT_WORK, WRECK_BOOK,
+import { SUVAL_LIGHT, ADDISON, ADDISON_STAND, LIGHT_HEAD, SIGHTLINES, LIGHT_WORK, WRECK_BOOK,
   WEATHER_LORE, HER_OWN, FROM_THE_GALLERY, SEEN_FROM_THE_LIGHT, createLightKeeper, addisonConversation,
   validateLightSnapshot } from '../src/lighthouse.js';
-import { villageToWorld, SEA_LEVEL } from '../src/region-world.js';
+import { SEA_LEVEL } from '../src/region-world.js';
 import { createBatmanHunt } from '../src/batman.js';
 import { createMapFog } from '../src/map-fog.js';
 
@@ -22,9 +22,10 @@ function talk(npc, context) {
 const npc = { id: ADDISON.id };
 
 test('the light stands on the head, and everything on it is inside its own wall', () => {
-  const L = SALTWIND_LIGHT, head = villageToWorld(LIGHT_HEAD_LOCAL.lx, LIGHT_HEAD_LOCAL.lz);
-  assert.equal(L.head.x, head.x);
-  assert.equal(L.head.z, head.z);
+  const L = SUVAL_LIGHT;
+  assert.equal(L.region, 'West Suval', 'she keeps the West Suval light');
+  assert.equal(L.head.x, LIGHT_HEAD.x);
+  assert.equal(L.head.z, LIGHT_HEAD.z);
   // The tower is on the head; the cottage, store and bell are all within a stone's throw of it.
   for (const part of [L.cottage, L.store, L.bell, L.staff, L.gate]) {
     assert.ok(Math.hypot(part.x - L.tower.x, part.z - L.tower.z) < 12, 'everything is on the head');
@@ -43,18 +44,20 @@ test('the light stands on the head, and everything on it is inside its own wall'
 test('she looks out over water from a head that has nothing growing on it', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const scene = new THREE.Scene(), world = createWorld(scene);
-  const L = SALTWIND_LIGHT;
+  const L = SUVAL_LIGHT;
   // The head is well above the sea, and the water is close on the seaward side.
   assert.ok(world.heightAt(L.tower.x, L.tower.z) > SEA_LEVEL + 6, 'eight metres of headland');
-  // Sea on two sides of it: the local frame is rotated against the world, so check the compass.
-  const wet = [[0, 34], [0, -34], [34, 0], [-34, 0], [26, 26], [-26, 26], [26, -26], [-26, -26]]
-    .filter(([dx, dz]) => world.heightAt(L.tower.x + dx, L.tower.z + dz) < SEA_LEVEL);
-  assert.ok(wet.length >= 2, `open water off at least two sides of the head, found ${wet.length}`);
+  // The ground falls away off the seaward side into open water; the road side stays dry.
+  const seaward = [[0, 80], [-56, 56]].filter(([dx, dz]) => world.heightAt(L.tower.x + dx, L.tower.z + dz) < SEA_LEVEL);
+  assert.ok(seaward.length >= 1, 'open water off the seaward side');
+  assert.ok(world.heightAt(L.tower.x, L.tower.z - 80) > SEA_LEVEL, 'and land behind it, where the road is');
+  // She stands on the landward side of her own tower, between the gate and the sea.
+  assert.ok(ADDISON_STAND.z < L.tower.z, 'the yard opens toward the road');
   // The light went up. Its meshes are merged into the world's batches, so the groups and the
   // colliders are what a test can hold on to.
-  assert.ok(scene.getObjectByName('The Saltwind Light'), 'the light is built');
-  assert.ok(scene.getObjectByName('Saltwind Light gear'), 'and her gear is in the yard');
-  assert.ok(scene.getObjectByName('Place board: The Saltwind Light'), 'and the lane is signed');
+  assert.ok(scene.getObjectByName('The Suval Light'), 'the light is built');
+  assert.ok(scene.getObjectByName(`${SUVAL_LIGHT.name} gear`), 'and her gear is in the yard');
+  assert.ok(scene.getObjectByName('Place board: The Suval Light'), 'and the lane is signed');
   for (const kind of ['lighthouse', 'lighthouse-cottage', 'lighthouse-store']) {
     assert.ok(world.colliders.some(c => c.kind === kind), `nobody walks through the ${kind}`);
   }

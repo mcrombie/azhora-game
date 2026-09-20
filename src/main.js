@@ -100,8 +100,10 @@ import { TOFT, TOFT_STAND, JIMSON_PODS_WANTED, createJimson, toftConversation } 
 import { KATY, KATY_STAND, KATY_SKETCH, createKaty, katyConversation } from './katy.js';
 import { IMANI, IMANI_STAND, createVineyard, imaniConversation } from './vineyard.js';
 import { BATMAN, BATMAN_PERCH, HANDOVER, EVIDENCE, BUST_SCENE, ENDINGS, VELAETH, createBatmanHunt, batmanConversation } from './batman.js';
-import { ADDISON, ADDISON_STAND, SALTWIND_LIGHT, FROM_THE_GALLERY, createLightKeeper, addisonConversation } from './lighthouse.js';
+import { ADDISON, ADDISON_STAND, SUVAL_LIGHT, FROM_THE_GALLERY, createLightKeeper, addisonConversation } from './lighthouse.js';
 import { BOSCO, BOSCO_HAUNTS, BOSCO_TAKES, BOSCO_WALK_START, BOSCO_WALK_END, createBosco, boscoConversation } from './bosco.js';
+import { SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, ELOD_LIGHT, LANDING, LENS_ITEM, SISTER_TOLD, SISTER_WHY,
+  CROSSING_PLAN, RIVAL_WATCHES, RIVAL_UNSEEN, HEIST_ENDINGS, createHeist, rivalConversation } from './rival-light.js';
 import { createBosco as createBoscoModel } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
@@ -215,8 +217,11 @@ function init() {
   world.npcPositions[KATY.id]={x:KATY_STAND.x,z:KATY_STAND.z};npcData.push({...KATY,yaw:KATY_STAND.yaw});
   // Imani out in the rows, in the aisle between the Cabernet Franc and the Merlot (src/vineyard.js).
   world.npcPositions[IMANI.id]={x:IMANI_STAND.x,z:IMANI_STAND.z};npcData.push({...IMANI,yaw:IMANI_STAND.yaw});
-  // Addison at the gate of the Saltwind Light, west of Tidehaven past the Lookout (src/lighthouse.js).
+  // Addison at the Suval Light on the West Suval head south of the winery lane (src/lighthouse.js).
   world.npcPositions[ADDISON.id]={x:ADDISON_STAND.x,z:ADDISON_STAND.z};npcData.push({...ADDISON,yaw:ADDISON_STAND.yaw});
+  // Her twin at the door of the Elod Light, across the water in a country that is shut (src/rival-light.js).
+  world.npcPositions[SUBTRACTIDAUGHTER.id]={x:SUBTRACTIDAUGHTER_STAND.x,z:SUBTRACTIDAUGHTER_STAND.z};
+  npcData.push({...SUBTRACTIDAUGHTER,yaw:SUBTRACTIDAUGHTER_STAND.yaw});
   // Troy at the Bee Fold in Drent's wood, with the skeps behind him (src/beekeeper.js).
   world.npcPositions[TROY.id]={x:TROY_STAND.x,z:TROY_STAND.z};npcData.push({...TROY,yaw:TROY_STAND.yaw});
   // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
@@ -365,6 +370,7 @@ function init() {
   // is carrying the blue; before that there is nothing on the rock but rock.
   const hunt=createBatmanHunt();let batmanVisits=0,batmanFlare=0;
   const light=createLightKeeper();let addisonVisits=0;
+  const heist=createHeist();let rivalVisits=0;
   // Bosco in Brandy's dye yard: plump, loud, and never entirely his own colour (src/bosco.js).
   const bosco=createBosco();let boscoVisits=0;
   const boscoModel=createBoscoModel({dye:bosco.dye.colour});scene.add(boscoModel.group);boscoModel.group.visible=false;
@@ -794,12 +800,12 @@ function init() {
   }
   /** Up the stair to the gallery: what is under you from up there, and the coast it charts. */
   function addisonAct(action){
-    if(action!=='climb-light')return{ok:false,reason:''};
+    if(action!=='climb-light')return heistAct(action);
     const addison=npcById.get(ADDISON.id),result=light.climb(mapFog);
     if(result.first)audio?.effect('discovery');
     openDialogue(addison,[...FROM_THE_GALLERY],null,'Back down the stair',
-      {onComplete:()=>addisonConversation(addison,{light,hunt,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++})});
-    if(result.first)toast('Two hundred and six steps, and the whole of this coast under you.','THE SALTWIND LIGHT');
+      {onComplete:()=>addisonConversation(addison,{light,hunt,heist,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++})});
+    if(result.first)toast('Two hundred and six steps, and the whole of this coast under you.','THE SUVAL LIGHT');
     saveRoad(false);return{ok:true,reason:''};
   }
   /** The whole of Bosco's mechanic: make a fuss of him. He has never once refused. */
@@ -824,6 +830,42 @@ function init() {
       {onComplete:()=>boscoConversation(boscoNpc,{bosco,openDialogue,closeDialogue,act:boscoAct,visits:boscoVisits++})});
     if(result.pets===1)toast('Bosco, of the dye yard. He is not a dignified animal and has never tried to be.','A GOOD DOG');
     saveRoad(false);return{ok:true,reason:''};
+  }
+  /**
+   * The business with the other light (src/rival-light.js): what Addison finally says out loud,
+   * the crossing into a country that is shut, the glass off its cradle, and what becomes of it.
+   */
+  function heistAct(action){
+    const addison=npcById.get(ADDISON.id),rival=npcById.get(SUBTRACTIDAUGHTER.id);
+    const backToAddison=()=>addisonConversation(addison,{light,hunt,heist,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++});
+    if(action==='sister-tell'){if(!heist.tell().ok)return{ok:false,reason:''};refreshQuest();
+      openDialogue(addison,[...SISTER_TOLD],null,'Back to the yard',{onComplete:backToAddison});
+      toast('There is another light on this coast, and her sister keeps it.','THE ELOD LIGHT');saveRoad(false);return{ok:true,reason:''};}
+    if(action==='sister-ask'){if(!heist.accept().ok)return{ok:false,reason:''};refreshQuest();
+      openDialogue(addison,[...SISTER_WHY,...CROSSING_PLAN],null,'Back to the yard',{onComplete:backToAddison});
+      toast('The glass, and nothing else. Tell her when you are ready to sail.','THE STEPPED LENS');saveRoad(false);return{ok:true,reason:''};}
+    if(action==='sister-sail'){if(!heist.land().ok)return{ok:false,reason:''};
+      // She lands the traveler herself, which is the only way into East Suval that does not
+      // involve an Elodi picket (src/closed-border.js only refuses crossings of the border).
+      const to={x:LANDING.x,z:LANDING.z};
+      player.place(to.x,to.z,LANDING.yaw);closeDialogue();refreshQuest();
+      audio?.effect('discovery');
+      toast('Shingle under the head, in the dark, in a country that is shut. She is on the water until first light.','EAST SUVAL \u00b7 PUT ASHORE');
+      saveRoad(false);return{ok:true,reason:''};}
+    if(action==='take-lens'){const result=heist.take(inventory);if(!result.ok)return{ok:false,reason:''};
+      inventory.refresh();refreshQuest();audio?.effect('success');
+      openDialogue(result.spoke?rival:addison,[...(result.spoke?RIVAL_WATCHES:RIVAL_UNSEEN)],null,'Down the stair',{onComplete:()=>{}});
+      toast('A third of a ton of Elagosi glass. Get it down the cliff to the boat.','THE STEPPED LENS');saveRoad(false);return result;}
+    if(action==='lens-home'){if(!heist.home().ok)return{ok:false,reason:''};
+      const home={x:ADDISON_STAND.x+1.6,z:ADDISON_STAND.z+1.6};
+      player.place(home.x,home.z,ADDISON_STAND.yaw+Math.PI);refreshQuest();
+      toast('Across in the dark with the glass in the bottom of the boat, and up onto her own head at dawn.','THE SUVAL LIGHT');
+      saveRoad(false);return{ok:true,reason:''};}
+    if(action.startsWith('glass-')){const id=action.slice(6);const result=heist.finish(id);if(!result.ok)return{ok:false,reason:''};
+      inventory.remove(LENS_ITEM,1);inventory.refresh();refreshQuest();audio?.effect('success');
+      openDialogue(addison,[result.outcome.outcome],null,'Back to the yard',{onComplete:backToAddison});
+      toast(result.outcome.name,'THE STEPPED LENS \u00b7 DECIDED');saveRoad(false);return{ok:true,reason:''};}
+    return{ok:false,reason:''};
   }
   function jimsonAct(action){
     if(action==='accept-jimson'){if(!jimson.accept())return {ok:false,reason:''};refreshQuest();toast('Three spiked pods. There is one behind Nell Harrow\u2019s shed, one out past the Caloss gate, and one away in Pueth.','TOFT\u2019S KNEE');saveRoad(false);return {ok:true,reason:''};}
@@ -1265,6 +1307,7 @@ function init() {
     if(katy.stage!=='unmet')knownNPCs.add(KATY.id);
     if(vineyard.met)knownNPCs.add(IMANI.id);
     if(light.met)knownNPCs.add(ADDISON.id);
+    if(heist.spoke)knownNPCs.add(SUBTRACTIDAUGHTER.id);
     if(heardDoom)knownNPCs.add('doomsayer');
     if(questStage===10)for(const id of journey.view().destinationIds)if(world.npcPositions[id])knownNPCs.add(id);
     for(const npc of JOURNEY_NPCS){const home=world.npcPositions[npc.id];if(discoveries.has(({2:'sunmeadow',3:'reedwater',4:'threefold'})[world.regionAt(home.x,home.z)?.id]))knownNPCs.add(npc.id);}
@@ -1479,7 +1522,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1502,7 +1545,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1757,7 +1800,8 @@ function init() {
     if(npc.id===KATY.id){katyConversation(npc,{katy,hunt,openDialogue,closeDialogue,act:katyAct,visits:katyVisits++});return;}
     if(npc.id===IMANI.id){imaniConversation(npc,{vineyard,wine,openDialogue,closeDialogue,act:imaniAct,visits:imaniVisits++});return;}
     if(npc.id===BATMAN.id){batmanConversation(npc,{hunt,openDialogue,closeDialogue,act:batmanAct,visits:batmanVisits++});return;}
-    if(npc.id===ADDISON.id){addisonConversation(npc,{light,hunt,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++});return;}
+    if(npc.id===ADDISON.id){addisonConversation(npc,{light,hunt,heist,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++});return;}
+    if(npc.id===SUBTRACTIDAUGHTER.id){rivalConversation(npc,{heist,openDialogue,closeDialogue,act:heistAct,visits:rivalVisits++});return;}
     if(npc.id===BOSCO.id){boscoConversation(npc,{bosco,carrying:BOSCO_TAKES.filter(id=>inventory.count(id)>0),openDialogue,closeDialogue,act:boscoAct,visits:boscoVisits++});return;}
     if(npc.id===TROY.id){troyConversation(npc,{troy,openDialogue,closeDialogue,act:troyAct,coppers:inventory.count(COPPER_ITEM),visits:troyVisits++});return;}
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
@@ -2289,7 +2333,7 @@ function init() {
     const letterTask=localRegion===1?renaLetters.task():null;
     const edTask=world.regionAt(player.group.position.x,player.group.position.z)?.name==='West Suval'?ed.task():null;
     // Katy's search has no place of its own: it is the last thing the panel offers, wherever the traveler is.
-    const huntTask=hunt.task();
+    const huntTask=heist.task()??hunt.task();
     const katyTask=huntTask??(katy.looking?{title:'Looking for Batman',detail:'Watch the roads, and the sky at dusk. Tell Katy at Vaervelm Caelazh the moment you see him.'}:null);
     show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask||!!birdTask||!!letterTask||!!edTask||!!katyTask)&&!active);
     const fishing=campcraft.state;
@@ -2503,6 +2547,10 @@ function init() {
         edView.group.visible=near;edView.update(elapsed,dt,{sober:ed.sober()});
         if(near&&mode==='dialogue'&&activeDialogue?.npc===edNpc){const g=edView.group.position;edView.group.rotation.y=Math.atan2(pp.x-g.x,pp.z-g.z);}
         const d=near?edView.group.position.distanceTo(pp):Infinity;if(d<ED.talk&&d<nearest){nearest=d;currentNPC=edNpc;}}
+      {// The boat under the Elod head: she waits on the water until first light, and the moment
+       // the traveler comes back down the cliff with the glass she takes them home.
+        if(mode==='playing'&&heist.stage==='taken'){const pp=player.group.position;
+          if(Math.hypot(LANDING.x-pp.x,LANDING.z-pp.z)<9)heistAct('lens-home');}}
       {// Bosco: he holds the yard, comes at a flat run to anybody who walks into it, and sits
        // on their foot. He is a different colour every so often, because he sleeps against vats.
         const pp=player.group.position,near=bosco.walking||Math.hypot(BOSCO_HAUNTS[0].x-pp.x,BOSCO_HAUNTS[0].z-pp.z)<120;
@@ -2647,7 +2695,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
@@ -3100,13 +3148,23 @@ function init() {
           const px=at.x+Math.sin(turn)*1.4,pz=at.z+Math.cos(turn)*1.4;
           player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+.2,at.z);yaw=turn+Math.PI;pitch=.3;distance=targetDistance=1.2;}
-        // Addison at her yard gate ('addison'), and the whole light from the lane ('saltwind-light').
-        if(view==='addison'||view==='saltwind-light'){questStage=10;combat.finishPractice();player.group.visible=false;
+        // The Elod Light from the landing below it ('elod-light'), and its keeper ('subtractidaughter').
+        if(view==='elod-light'||view==='subtractidaughter'){questStage=10;combat.finishPractice();player.group.visible=false;
+          if(view==='subtractidaughter'){const g=npcById.get(SUBTRACTIDAUGHTER.id).actor.group,at=g.position,turn=SUBTRACTIDAUGHTER_STAND.yaw+.4;
+            const px=at.x+Math.sin(turn)*3,pz=at.z+Math.cos(turn)*3;
+            player.group.position.set(px,world.heightAt(px,pz),pz);
+            reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.06;distance=targetDistance=3;}
+          else{const t=ELOD_LIGHT.tower,turn=2.2;
+            const px=t.x+Math.sin(turn)*30,pz=t.z+Math.cos(turn)*30;
+            player.group.position.set(px,world.heightAt(px,pz),pz);
+            reviewTarget=new THREE.Vector3(t.x,world.heightAt(t.x,t.z)+9,t.z);yaw=turn;pitch=.2;distance=targetDistance=30;}}
+        // Addison at her yard gate ('addison'), and the whole light from the lane ('suval-light').
+        if(view==='addison'||view==='suval-light'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(view==='addison'){const g=npcById.get(ADDISON.id).actor.group,at=g.position,turn=ADDISON_STAND.yaw+1.15;
             const px=at.x+Math.sin(turn)*3,pz=at.z+Math.cos(turn)*3;
             player.group.position.set(px,world.heightAt(px,pz),pz);
             reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.06;distance=targetDistance=3;}
-          else{const t=SALTWIND_LIGHT.tower,turn=2.5;
+          else{const t=SUVAL_LIGHT.tower,turn=2.5;
             const px=t.x+Math.sin(turn)*26,pz=t.z+Math.cos(turn)*26;
             player.group.position.set(px,world.heightAt(px,pz),pz);
             reviewTarget=new THREE.Vector3(t.x,world.heightAt(t.x,t.z)+7,t.z);yaw=turn;pitch=.16;distance=targetDistance=26;}}
@@ -3148,6 +3206,7 @@ function init() {
               person({role:'bee-keeper',tunic:TROY.color,skin:TROY.skin}),
               person({role:'vine-keeper',tunic:IMANI.color,skin:IMANI.skin}),
               person({role:'light-keeper',tunic:ADDISON.color,skin:ADDISON.skin}),
+              person({role:'rival-keeper',tunic:SUBTRACTIDAUGHTER.color,skin:SUBTRACTIDAUGHTER.skin}),
               ()=>({actor:createBowden(),kind:'person'}),
               person({role:'wine-seller',tunic:0x2f3f63,skin:0xb07a52}),
               person({role:'wine-clerk',tunic:0x2f5b4a,skin:0xf0cbb0}),
