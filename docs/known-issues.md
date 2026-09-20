@@ -181,3 +181,85 @@ city; its ground is moving anyway.
 offset each - or leave them until their quarter is built and place them with the rest of it.
 `tests/signposts.test.js` names both as known exceptions, so whoever moves them will see the
 test stop excusing them.
+
+---
+
+## The burying at the Lauvel can be invisible while you are standing in it
+
+**Seen:** Sela hails you from the burial ground, the quest starts, and the side-quest panel goes on
+showing a job at the reedcutters' landing a hundred and thirty metres away.
+
+**Measured.** The panel in `updateHUD` (`src/main.js`) is a chain of six sources, each shown only
+when every source above it is null. At the Lauvel, which is Luscia, region 2:
+
+| source | at the Lauvel |
+|---|---|
+| the acorns | never — it needs region 1 |
+| `showForestTask` | never — it needs region 1, or Pueth for the goblin camp |
+| `regionalTask` | **can be live** — `landing-nets` is a region-2 task |
+| `birdTask` | never — region 1 only |
+| `letterTask` | never — region 1 only |
+| `edTask` | never — West Suval only |
+| `katyTask`, which is `burying.task() ?? heist ?? hunt ?? Katy` | last |
+
+So one source can hide the burying, and it is the one whose ground the burying stands on. Driven
+against the real module: inspecting the landing workshop makes `landing-nets` ("Two patient knots")
+live, and while it is live and incomplete the panel shows it everywhere in Luscia. The workyard is
+at (-684, 195) and Sela at (-685, 326): **131 m apart**, both in the same region.
+
+**Why that is worse than an ordering quibble.** The burying has no other surface anywhere in the
+interface. `index.html` gives the journal its own sections for the acorns, the wood, the goblin
+camp, the Ardry letters, the camp meal, the cape and the regional workyards. There is no section
+for the burying, the heist, the hunt or Katy's search: those four exist only in that one HUD line.
+When the line is taken, the quest is not merely demoted, it is nowhere.
+
+**Ways out:**
+
+1. Move `burying` up the chain, above `regionalTask`. One line, and it inverts the same problem:
+   a regional task at the workyard would then be hidden while you stand in it.
+2. Show whichever live task is nearest the traveler, instead of a fixed order. The panel already
+   knows every task's region; the tasks would need a point as well, which most of them have.
+3. Give the burying — and the heist, the hunt and Katy — a journal section like the others, and
+   leave the HUD line as the "nearest one thing" it already is. Most work, and it is the answer
+   that scales: the chain is six deep now and every new side quest makes it deeper.
+
+**Repro:** inspect the landing workshop in Luscia to start `landing-nets`, then walk up the road to
+the Lauvel. Sela hails you, the journal has nothing, and the panel says "Two patient knots".
+
+---
+
+## A test says the Ela-south runs off the edge of the world, and the world is about to grow
+
+**Seen:** nothing yet. This one breaks the day the four western regions land.
+
+**Measured.** `tests/elagos-world.test.js:130`:
+
+```js
+// The reach leaves the built world rather than stopping in the middle of it.
+assert.ok(points.at(-1).x < WORLD_BOUNDS.minX, 'the Ela-south runs off the west edge of the world');
+```
+
+| | |
+|---|---|
+| the Ela-south's last point | x = **-1625.0** |
+| `WORLD_BOUNDS.minX` today | **-1610.0** |
+| the margin the assertion lives on | **15.0 m** |
+
+Elagos is the westernmost region today, from x = -1550 to -850, and the world's edge sits 60 m west
+of it. Four new regions to the west will move `WORLD_BOUNDS.minX` by far more than fifteen metres,
+and this assertion fails — not because anything about the river changed, but because the river now
+ends *inside* the map. The obvious reading of the failure is "extend the Ela-south", which is the
+wrong repair: the reach is the right length, the world moved.
+
+**What the test means to say** is that the reach leaves the country it belongs to rather than
+stopping in the middle of it. That is true of Elagos and stays true whatever lands west: the
+endpoint is **75 m west of Elagos's own outline**, against 15 m west of the world's edge. So the
+one-line alternative is to compare against the region rather than the world — the outline is
+already imported into that file as `REGION_OUTLINES`.
+
+**Why it is written up rather than fixed here.** `src/elagos-world.js` is being rebuilt for the lake
+city on one branch and the western regions are being added on another; both touch this ground, and
+whoever lands the western regions is the one who will see the failure and should choose the repair.
+Nothing else in the test suite pins the world's western edge: the only other `WORLD_BOUNDS.minX`
+assertion is `tests/regions-world.test.js:40`, which checks the world reports the bounds it was
+given and is true at any size.
