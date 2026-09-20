@@ -142,7 +142,9 @@ test('the Marshal, the gate, the envoy and the commanders speak only in their tu
   assert.equal(borderConversation(npc('coalition-envoy'), context), true, 'the envoy answers');
   assert.equal(screens.at(-1).options, undefined, 'but has nothing to offer a man without terms');
   assert.equal(borderConversation(npc(BORDER_LEGATE_ID), context), true);
-  assert.match(screens.at(-1).lines[0], /7 of twelve/);
+  // The company is eleven, the traveler among them (`MERCENARY_COMPANY_SIZE`), and the
+  // Marshal counts in the same numbers the journal's company line shows the player.
+  assert.match(screens.at(-1).lines[0], /7 of 11/);
   assert.match(screens.at(-1).lines.join(' '), /Solis/);
   screens.at(-1).options.choices.find(choice => choice.id === 'take-legate-terms').action();
   border.act('enter-solis'); acts.push('enter-solis');

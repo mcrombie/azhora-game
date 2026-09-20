@@ -1,7 +1,7 @@
 /**
  * The army on the plain: the third chapter of the main quest. The traveler
  * reports at the camp gate on the Moros Plain, signs the Marshal's muster with
- * whichever of the twelve hired swords have arrived, and draws the horse the
+ * whichever of the eleven hired swords have arrived, and draws the horse the
  * army owes for the rolls carried out of the Lauvel. Pure: no DOM, no three.
  */
 export const MOROS_VERSION = 1;
@@ -12,8 +12,15 @@ export const MOROS_GATE_ID = 'post-camp-gate-north';
 export const MOROS_LEGATE_ID = 'post-camp-legate';
 
 import { toWorld } from './world-scale.js';
+import { MERCENARY_COMPANY_SIZE } from './mercenaries.js';
 
-/** The horse line south of the tent lines: where the token is spent. Authored metres. */
+/**
+ * The horse line: where the token is spent. Authored metres, and the point is
+ * `campPoint(-13.8, -25.1)` — 25 m *north* of the camp's centre and 45 m north
+ * of the Marshal's tent, in among the north-west tent lines beside the water
+ * trough and the hay (`OUTPOST_LAYOUT` in `src/outpost.js`). Everything that
+ * sends a traveler there has to say north-west, not south.
+ */
 export const MOROS_SITES = Object.freeze({
   'legion-horse-line': Object.freeze({ id: 'legion-horse-line', name: 'The army horse line', ...toWorld(-563, 323), prompt: 'Claim your army horse' }),
 });
@@ -50,14 +57,14 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
   function view() {
     const current = stage();
     const views = {
-      'not-started': [0, 'West to the Moros', 'The army’s camp lies west of Lumber Town, past the Moros gate, on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
-      'report-at-gate': [1, 'Name and contract', 'Follow the road west out of Lumber Town through the Moros gate. Report to the sentry at the camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
+      'not-started': [0, 'Out to the Moros', 'The army’s camp lies south-west of Lumber Town, past the Moros gate, out on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
+      'report-at-gate': [1, 'Name and contract', 'Follow the road south-west out of Lumber Town through the Moros gate and on across the plain. Report to the sentry at the camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
       'report-to-legate': [2, 'The Marshal’s muster', 'Marshal Hadric Venmor keeps the muster at the command tent beyond the tent lines. Sign it, and draw your first wage.', 'MOROS PLAIN · 2 / 3 · THE ARMY ON THE PLAIN', [MOROS_LEGATE_ID]],
       // A traveler who rode in pickets the horse they came on; one who walked the whole way with Iven's token still draws a horse here.
       'claim-horse': hasHorse()
-        ? [3, 'A place on the line', 'Picket your horse on the army’s line south of the tents and draw its fodder. The quartermaster counts horses as carefully as men.', 'MOROS PLAIN · 3 / 3 · THE ARMY ON THE PLAIN', ['legion-horse-line']]
-        : [3, 'What the army owes', 'Take Iven’s token to the horse line south of the tents and claim the horse the army owes you.', 'MOROS PLAIN · 3 / 3 · THE ARMY ON THE PLAIN', ['legion-horse-line']],
-      complete: [4, 'One of twelve', 'You are on the Marshal’s muster with a horse on the line. When the company is full he will send an envoy to Solis in West Suval under a flag of truce.', 'MOROS PLAIN · CHAPTER COMPLETE', []],
+        ? [3, 'A place on the line', 'Picket your horse on the army’s line at the north-west end of the camp, by the water trough and the hay, and draw its fodder. The quartermaster counts horses as carefully as men.', 'MOROS PLAIN · 3 / 3 · THE ARMY ON THE PLAIN', ['legion-horse-line']]
+        : [3, 'What the army owes', 'Take Iven’s token to the horse line at the north-west end of the camp, by the water trough and the hay, and claim the horse the army owes you.', 'MOROS PLAIN · 3 / 3 · THE ARMY ON THE PLAIN', ['legion-horse-line']],
+      complete: [4, 'One of eleven', 'You are on the Marshal’s muster with a horse on the line. When the company is full he will send an envoy to Solis in West Suval under a flag of truce.', 'MOROS PLAIN · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return { chapterId: MOROS_CHAPTER_ID, regionName: 'Moros Plain', questTitle: 'The army on the plain', stage: current, step, steps: 3,
@@ -122,7 +129,8 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
 
 /**
  * The gate sentry and the Marshal speak for the chapter while it is theirs; otherwise the
- * host falls back to their ordinary lines. `musterCount` is how many of the twelve stand in camp.
+ * host falls back to their ordinary lines. `musterCount` is how many of the company stand in camp:
+ * `MERCENARY_COMPANY_SIZE` is eleven, the ten hired swords of the roster and the traveler.
  */
 export function morosConversation(npc, context) {
   const { moros, openDialogue, closeDialogue, act, musterCount = 1 } = context;
@@ -137,12 +145,12 @@ export function morosConversation(npc, context) {
     return true;
   }
   if (npc.id === MOROS_LEGATE_ID && current === 'report-to-legate') {
-    const count = Math.max(1, Math.min(12, Math.round(musterCount)));
-    const words = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+    const count = Math.max(1, Math.min(MERCENARY_COMPANY_SIZE, Math.round(musterCount)));
+    const words = ['none', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven'];
     openDialogue(npc, [
-      `So you are the one who brought the muster rolls out of the Lauvel. Hadric Venmor, Marshal. The Empire promised me twelve hired swords. By the gate’s count, ${words[count]} ${count === 1 ? 'stands' : 'stand'} in this camp, counting you.`,
+      `So you are the one who brought the muster rolls out of the Lauvel. Hadric Venmor, Marshal. The Empire promised me eleven hired swords. By the gate’s count, ${words[count]} ${count === 1 ? 'stands' : 'stand'} in this camp, counting you.`,
       'The Coalition holds Solis in West Suval: Izoli ships, Suvali hill-men, our own rebels, and a handful each from Pyros, Selemis, Marosh and the southern islands. They want the border stockade south-east of here, and they will come for it when they think we are thin.',
-      'When the muster is full I will send an envoy to Solis under a flag of truce, to count their spears before they count ours. It may be you. Until then: sign the muster, draw your first wage, and take your horse from the line south of the tents.',
+      'When the muster is full I will send an envoy to Solis under a flag of truce, to count their spears before they count ours. It may be you. Until then: sign the muster, draw your first wage, and take your horse from the line at the north-west end of the camp.',
     ], null, 'Back to the camp', { choices: [...choose('join-muster'), leave] });
     return true;
   }
