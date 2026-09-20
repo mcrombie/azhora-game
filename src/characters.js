@@ -3071,17 +3071,31 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
  * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
  * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
  */
-export function createHorse({ variant = 0, saddled = false } = {}) {
+/**
+ * The coats a horse can wear. The first three are the country's, picked by `variant`;
+ * `developer` is the testing panel's mount and is meant to be unmistakable, so that a fast
+ * horse can never be confused with the bay gelding the army gives you.
+ */
+export const HORSE_COATS = Object.freeze({
+  developer: Object.freeze({ coat: 0x4a3470, light: 0x5f4690, points: 0x201639, mane: 0xd8bff5 }),
+});
+const COUNTRY_COATS = Object.freeze([
+  Object.freeze({ coat: 0x6b4a32, light: 0x7d5a3f, points: 0x2f241c, mane: 0x2a201a }),
+  Object.freeze({ coat: 0x9a5a34, light: 0xad6f45, points: 0x4a3324, mane: 0x3d2a1e }),
+  Object.freeze({ coat: 0xb9b3a6, light: 0xcac5ba, points: 0x8c877d, mane: 0xd9d4c9 }),
+]);
+export function createHorse({ variant = 0, saddled = false, coat: coatName = null } = {}) {
   const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
+  const paint = HORSE_COATS[coatName] ?? COUNTRY_COATS[variation];
   const group = new THREE.Group();
-  group.name = `horse-${variation}${saddled ? '-saddled' : ''}`;
+  group.name = `horse-${coatName ?? variation}${saddled ? '-saddled' : ''}`;
   const body = new THREE.Group();
   body.name = 'Weight and hips';
   group.add(body);
-  const coat = material([0x6b4a32, 0x9a5a34, 0xb9b3a6][variation]);
-  const coatLight = material([0x7d5a3f, 0xad6f45, 0xcac5ba][variation]);
-  const points = material([0x2f241c, 0x4a3324, 0x8c877d][variation]);
-  const mane = material([0x2a201a, 0x3d2a1e, 0xd9d4c9][variation]);
+  const coat = material(paint.coat);
+  const coatLight = material(paint.light);
+  const points = material(paint.points);
+  const mane = material(paint.mane);
   const hoof = material(0x3a3129), eyeMat = material(0x1d1815), leather = material(0x5b4130), blanket = material(0x8f3b30), brass = material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
   const spine = new THREE.Group();
   spine.name = 'Spine';

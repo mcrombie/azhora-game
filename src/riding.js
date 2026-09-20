@@ -29,6 +29,13 @@ export const RIDE = Object.freeze({
   camera: Object.freeze({ back: 3.5, up: 0.8 }),
 });
 export const HORSE_NAME = 'Your bay gelding';
+/**
+ * What the testing panel's horse multiplies every gait by. One constant so it can be tuned.
+ * It is a property of the session, never of the save: `snapshot()` does not carry it and
+ * `restore()` clears it, so a real adventure can never be loaded on it.
+ */
+export const DEVELOPER_HORSE_SPEED = 2;
+export const DEVELOPER_HORSE_NAME = 'A horse that should not exist';
 
 const fail = reason => ({ ok: false, reason });
 const finitePoint = point => !!point && Number.isFinite(point.x) && Number.isFinite(point.z);
@@ -170,7 +177,9 @@ export function createRiding({ onEvent = () => {} } = {}) {
     return pace;
   }
 
-  const speed = cantering => (cantering ? RIDE.canter : RIDE.walk);
+  // The testing panel's mount: the same horse, twice as fast, and out of a saved game's reach.
+  let developerMount = false;
+  const speed = cantering => (cantering ? RIDE.canter : RIDE.walk) * (developerMount ? DEVELOPER_HORSE_SPEED : 1);
 
   /** What to save. A rider is saved on the ground with the horse under them. */
   const snapshot = () => ({ version: RIDING_VERSION, owned: state.owned, taught: state.taught, horse: state.horse ? { ...state.horse } : null });
@@ -178,11 +187,12 @@ export function createRiding({ onEvent = () => {} } = {}) {
   function restore(data) {
     if (!validateRidingSnapshot(data, { allowMissing: false })) return false;
     state = { version: RIDING_VERSION, owned: data.owned, taught: data.taught, horse: data.horse ? { ...data.horse } : null };
-    mounted = false; called = false; blocked = 0; pace = 0;
+    mounted = false; called = false; blocked = 0; pace = 0; developerMount = false;
     return true;
   }
 
   return { grant, teach, mount, dismount, unseat, ride, whistle, place, update, speed, mountBlock, distanceTo, snapshot, restore,
+    setDeveloperMount(on) { developerMount = !!on; }, get developerMount() { return developerMount; },
     get owned() { return state.owned; }, get taught() { return state.taught; }, get mounted() { return mounted; }, get called() { return called; },
     get horse() { return state.horse ? { ...state.horse } : null; }, get pace() { return pace; } };
 }

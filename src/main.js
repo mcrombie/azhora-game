@@ -59,7 +59,7 @@ import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
-import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
+import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
@@ -771,6 +771,8 @@ function init() {
   // The army's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
+  // The testing panel's horse wears a coat nobody could mistake for the army's bay, and stands in its place.
+  const devHorse=createHorse({coat:'developer',saddled:true});devHorse.group.visible=false;scene.add(devHorse.group);
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
   // Figures nobody can see wait off stage: out of the scene, so the renderer's per-frame matrix work
@@ -791,7 +793,9 @@ function init() {
     }
     return list;
   }
-  function placeOwnHorse(){const horse=riding.horse;if(!horse){ownHorse.group.visible=false;return;}ownHorse.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);ownHorse.group.rotation.y=horse.yaw;}
+  function placeOwnHorse(){const horse=riding.horse,mount=riding.developerMount?devHorse:ownHorse,other=riding.developerMount?ownHorse:devHorse;
+    other.group.visible=false;if(!horse){mount.group.visible=false;return;}
+    mount.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);mount.group.rotation.y=horse.yaw;}
   // G: into the saddle or out of it. A fight, a fall or a scene puts the rider down whether there is room or not.
   function stepDown(forced=false){
     const result=forced?riding.unseat(footing):riding.dismount(footing);if(!result.ok){toast(result.reason,'IN THE SADDLE');return false;}
@@ -2277,7 +2281,16 @@ function init() {
   };
   $('test-birds').onclick=()=>{testTravel('village');const s=world.birdGarden.stand,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Lakota to learn birding. B observes a bird; K shows your skills.','TESTING · BIRDING');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
-  $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
+  // Both testing horses go through the same door as every other test-travel button: testing is turned
+  // on and badged before the horse exists, so a real adventure can never be saved on one.
+  const testHorse=fast=>{if(!testingEnabled)prepareTesting();testingEnabled=true;show('testing-badge',true);
+    if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};
+    if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);
+    riding.teach();riding.setDeveloperMount(fast);placeOwnHorse();closeModal();
+    toast(fast?`${DEVELOPER_HORSE_NAME}. ${DEVELOPER_HORSE_SPEED} times the army's pace, and in nobody's records. G mounts · Shift canters · H whistles him up.`
+      :'A horse, here. G mounts and dismounts · Shift canters · H whistles him up.',
+      fast?'TESTING · DEVELOPER HORSE':'TESTING SESSION');};
+  $('test-horse').onclick=()=>testHorse(false);$('test-dev-horse').onclick=()=>testHorse(true);
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
   for(const id of [2,3,4,9])$('test-region-'+id).onclick=()=>testTravel(id);
@@ -2626,7 +2639,7 @@ function init() {
       player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted,fishing:mode==='fishing',riding:riding.mounted?{pace:movement}:null});
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
-        placeOwnHorse();const away=riding.distanceTo(player.group.position);ownHorse.group.visible=away<220;
+        placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
         if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
         show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
