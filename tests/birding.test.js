@@ -34,17 +34,19 @@ test('Drent has the country’s common birds, each worth experience the first ti
   assert.deepEqual([again.first, again.xp, again.count], [false, 0, 2]);
   assert.equal(birding.observe('a-pterodactyl').ok, false);
   const levels = ['wren', 'titmouse', 'crow', 'hummingbird'].map(id => birding.observe(id));
-  assert.equal(levels.filter(result => result.levelled).length, 3, 'levels 2, 3 and 4 along the way');
-  assert.deepEqual([skills.level('birding'), skills.view()[0].xp, birding.seenCount()], [4, 90, 5]);
-  // Every bird in the country is worth most of the table, and not all of it.
+  assert.equal(levels.filter(result => result.levelled).length, 1, 'level 2, at 83, on the way');
+  assert.deepEqual([skills.level('birding'), skills.view()[0].xp, birding.seenCount()], [2, 90, 5]);
+  // Every bird in the country is worth five levels of ninety-nine. The rest of the table waits on the rest of the world.
   for (const id of DRENT_BIRDS) birding.observe(id);
-  assert.ok(skills.level('birding') >= 8 && skills.level('birding') <= 10, `the lot of them reach level ${skills.level('birding')}`);
+  assert.deepEqual([skills.view()[0].xp, skills.level('birding')], [478, 5], 'the whole list of Drent is 478 experience');
 });
 
 test('the observation range grows with practice and has a limit', () => {
   assert.equal(observeRange(1), 18);
   assert.equal(observeRange(4), 24);
-  assert.equal(observeRange(10), 30);
+  // Seven is the widest it gets, and on RuneScape's table that is 650 experience: more birds than Drent holds.
+  assert.equal(observeRange(7), 30);
+  assert.equal(observeRange(99), 30);
   // The wariest bird in the country still lets you look at it from inside your range.
   assert.ok(observeRange(1) > Math.max(...DRENT_BIRDS.map(id => BIRD_SPECIES[id].spook)) + 3, 'a bird can be seen well outside its distance');
 });

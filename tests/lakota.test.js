@@ -57,7 +57,7 @@ test('archaeology: Lakota sends you to Rena, you write up five of his pegged pla
   assert.ok(report.ok && report.xp > 0);
   assert.equal(archaeology.quest, 'reported');
   assert.equal(archaeology.task(), null);
-  assert.ok(skills.level('archaeology') >= 3);
+  assert.equal(skills.level('archaeology'), 2, 'Rena’s finds and the report together are 165 experience');
   const saved = archaeology.snapshot(), again = createArchaeology();
   assert.equal(validateArchaeologySnapshot(saved), true);
   assert.equal(again.restore(saved), true);

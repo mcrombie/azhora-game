@@ -2,12 +2,15 @@
  * The traveler's skills: things learned from people along the road that grow with
  * practice. Each skill has experience and a level read from a table of thresholds.
  *
- * Two kinds. The knowing skills (birding, botany, fishing and the rest) grow by
- * finding things for the first time, through ten levels. The working skills are
- * done the RuneScape way: you do the thing over and over, experience comes with
- * every log, and the level climbs RuneScape's own table to 99, each level a
- * little further off than the last, with what each level opens written in the
- * skill's guide. Woodcutting is the first of them. Pure: no DOM, no three.
+ * One table for all of them, RuneScape's own, to 99: each level a little further
+ * off than the last, level 2 at 83 experience and level 99 at 13,034,431.
+ *
+ * Two kinds earn it differently. The knowing skills (birding, botany, fishing and
+ * the rest) are paid for finding a thing for the first time, so one country's
+ * worth of birds is a few levels and the rest of the table waits on the rest of
+ * the world. The working skills (woodcutting, construction) are paid per log and
+ * per plank, over and over, and what each level opens is written in the skill's
+ * guide. Pure: no DOM, no three.
  */
 export const SKILLS_VERSION = 1;
 /** RuneScape's cap on experience in one skill. */
@@ -30,58 +33,59 @@ export const SKILLS = Object.freeze({
     id: 'birding', name: 'Birding',
     blurb: 'Finding birds, keeping your distance, and looking at them properly. Every kind of bird you see for the first time teaches you something.',
     teacher: 'Lakota, the birder of Tidehaven',
-    // Experience needed for levels 1 to 10. Drent's five birds together are worth 90: level 4.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // Drent's five birds together are worth 90: level 2. A country is a few levels; the table is the world's.
+    thresholds: RUNESCAPE_TABLE,
   }),
   fishing: Object.freeze({
     id: 'fishing', name: 'Fishing',
     blurb: 'Reading water, waiting out a float, and knowing what you have landed. Every kind of fish you land for the first time teaches you something.',
     teacher: 'Bran at Willowmere Pond, and Hollis at the Caloss crossing',
-    // The ten fish of Drent, Luscia and Pueth together are worth 200: level 6.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // The ten fish of Drent, Luscia and Pueth together are worth 200: level 3.
+    thresholds: RUNESCAPE_TABLE,
   }),
   botany: Object.freeze({
     id: 'botany', name: 'Botany',
     blurb: 'Everything that grows, from the plantain on the path to the oldest oak in the wood: what it is, where it stands, and what it is for. Every plant and tree you name for the first time teaches you something.',
     teacher: 'Nell Harrow, on the outskirts of Tidehaven',
-    // Drent's plants and trees together are worth more than the table holds.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // Drent's thirty-four plants and trees together are worth 625: level 6.
+    thresholds: RUNESCAPE_TABLE,
   }),
   geology: Object.freeze({
     id: 'geology', name: 'Geology',
     blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
     teacher: 'Silas Garrow, digging marl under the Weatherhead',
-    // The eleven finds of Drent's coast together are worth 210: level 6.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // The eleven finds of Drent's coast together are worth 210: level 3.
+    thresholds: RUNESCAPE_TABLE,
   }),
   mycology: Object.freeze({
     id: 'mycology', name: 'Mycology',
     blurb: 'Wood or ground, gills or folds, and what it smells of. Every kind of mushroom you name for the first time teaches you something — including the two you must never eat.',
     teacher: 'Odger Pell, at the edge of the Greenway outside Tidehaven',
-    // The eleven mushrooms of Drent's woods together are worth 225: level 6.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // The eleven mushrooms of Drent's woods together are worth 225: level 3.
+    thresholds: RUNESCAPE_TABLE,
   }),
   archaeology: Object.freeze({
     id: 'archaeology', name: 'Archaeology',
     blurb: 'Reading what people and older things left in the ground, where it lies, and leaving it there. Old towns and older bones: every find written up for the first time teaches you something.',
     teacher: 'Lakota, the birder of Tidehaven, who digs as well as he watches',
-    // Rena's seven finds are worth 125, and the report to Lakota 40 more: level 4.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // Rena's seven finds are worth 125, and the report to Lakota 40 more: level 2.
+    thresholds: RUNESCAPE_TABLE,
   }),
   wine: Object.freeze({
     id: 'wine', name: 'Wine',
     blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted for the first time teaches you something about the grape, the ground it grew in, and what was done to it indoors; the words for what is in the glass arrive as you go.',
     teacher: 'Lakota in Tidehaven, Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval, and Juan at Tharganhom, the Wine Attic in Solis',
-    // The eight wines of Vaervelm Caelazh are worth 120 and the visit 25 more: level 5. The five
-    // from its cellar are worth 125 again, and Juan's eight 150: a taster who drinks everything reaches 9.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // The eight wines of Vaervelm Caelazh are worth 120 and the visit 25 more; the five from its
+    // cellar 125 again, and Juan's eight 150. A taster who drinks everything the built world pours
+    // reaches 420 experience, level 5, and five of the nine words below. The rest wait on more wine.
+    thresholds: RUNESCAPE_TABLE,
   }),
   cooking: Object.freeze({
     id: 'cooking', name: 'Cooking',
     blurb: 'What you can make at a lit fire, and why it works. Every dish made for the first time teaches you something.',
     teacher: 'Lakota in Tidehaven, whose hot chocolate is the first recipe',
-    // Hot chocolate is worth 20 and the fish 10: level 2 with both.
-    thresholds: Object.freeze([0, 20, 50, 90, 140, 200, 270, 350, 440, 540]),
+    // Hot chocolate is worth 20 and the fish 10: level 1 with both — the first log is the smallest.
+    thresholds: RUNESCAPE_TABLE,
   }),
   woodcutting: Object.freeze({
     id: 'woodcutting', name: 'Woodcutting', kind: 'working',

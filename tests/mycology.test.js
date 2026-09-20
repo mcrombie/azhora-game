@@ -93,7 +93,7 @@ test('the skill levels on new kinds, and the sheet only names what has been foun
   assert.equal(full.foundCount, MUSHROOM_IDS.length);
   assert.deepEqual(full.entries.map(entry => entry.name), MUSHROOM_IDS.map(id => MUSHROOM_SPECIES[id].name));
   const total = MUSHROOM_IDS.reduce((sum, id) => sum + MUSHROOM_SPECIES[id].xp, 0);
-  assert.ok(skills.level('mycology') >= 4, `every mushroom in Drent is worth ${total} and should be worth several levels`);
+  assert.equal(skills.level('mycology'), 3, `every mushroom in Drent is worth ${total}: three levels of ninety-nine`);
 });
 
 test('mushroom notes survive the road, and a bad note is refused', () => {
