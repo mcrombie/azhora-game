@@ -98,6 +98,7 @@ import { buildTalkingTree } from './talking-tree-view.js';
 import { PIPE_SMOKER, PIPE_ITEM, LEAF_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, pipeSmokerConversation } from './pipeweed.js';
 import { TOFT, TOFT_STAND, JIMSON_PODS_WANTED, createJimson, toftConversation } from './jimson-quest.js';
 import { KATY, KATY_STAND, KATY_SKETCH, createKaty, katyConversation } from './katy.js';
+import { IMANI, IMANI_STAND, createVineyard, imaniConversation } from './vineyard.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog } from './map-fog.js';
@@ -207,6 +208,8 @@ function init() {
   for(const person of [VINTNER,CELLAR_HAND]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Katy by the spring pool, watching the birds and waiting for Batman (src/katy.js).
   world.npcPositions[KATY.id]={x:KATY_STAND.x,z:KATY_STAND.z};npcData.push({...KATY,yaw:KATY_STAND.yaw});
+  // Imani out in the rows, in the aisle between the Cabernet Franc and the Merlot (src/vineyard.js).
+  world.npcPositions[IMANI.id]={x:IMANI_STAND.x,z:IMANI_STAND.z};npcData.push({...IMANI,yaw:IMANI_STAND.yaw});
   // Troy at the Bee Fold in Drent's wood, with the skeps behind him (src/beekeeper.js).
   world.npcPositions[TROY.id]={x:TROY_STAND.x,z:TROY_STAND.z};npcData.push({...TROY,yaw:TROY_STAND.yaw});
   // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
@@ -349,6 +352,7 @@ function init() {
   const jimson=createJimson();
   const katy=createKaty();let katyVisits=0;
   const troy=createBeekeeper();let troyVisits=0;
+  const vineyard=createVineyard({skills});let imaniVisits=0;
   const flora=createDrentFlora(scene,world,{avoid:Object.values(world.npcPositions)});
   let currentPlant=null,jimsonClock=0;
   // Geology: Silas Garrow's lesson, and the stones of Drent's coast (src/drent-stones.js).
@@ -717,6 +721,22 @@ function init() {
       toast('Katy\u2019s drawing of Batman','ADDED TO SATCHEL \u00b7 LOOKING FOR BATMAN');saveRoad(false);return {ok:true,reason:''};}
     return {ok:false,reason:''};
   }
+  /** Imani walks a block, and once the whole hill has been walked, says what is in the box under Petunia. */
+  function imaniAct(action){
+    const imani=npcById.get(IMANI.id),back=()=>imaniConversation(imani,{vineyard,wine,openDialogue,closeDialogue,act:imaniAct,visits:imaniVisits++});
+    if(action.startsWith('walk-block-')){const result=vineyard.walk(action.slice(11));if(!result.ok){toast(result.reason,WINERY.name.toUpperCase());return result;}
+      refreshSkillsSheet();if(result.first)audio?.effect('success');
+      openDialogue(imani,[...result.entry.work],null,'Back to the rows',{onComplete:back});
+      if(result.first)toast(result.complete
+        ?`Wine +${result.xp}${result.levelled?` \u00b7 level ${skills.level(WINE_SKILL)}`:''}. Every block on the hill, walked with the woman who works them.`
+        :`Wine +${result.xp}${result.levelled?` \u00b7 level ${skills.level(WINE_SKILL)}`:''}. The ${result.name} block, and what is done to it.`,
+      result.complete?'THE WHOLE HILL':'A BLOCK WALKED');
+      saveRoad(false);return result;}
+    if(action==='tell-dragon'){const result=vineyard.tellDragon(inventory);if(!result.ok)return result;
+      inventory.refresh();audio?.effect('discovery');
+      toast('A dragon\u2019s scale, warm on one side and cold on the other.','ADDED TO SATCHEL \u00b7 SHE TOLD YOU');saveRoad(false);return result;}
+    return{ok:false,reason:''};
+  }
   function jimsonAct(action){
     if(action==='accept-jimson'){if(!jimson.accept())return {ok:false,reason:''};refreshQuest();toast('Three spiked pods. There is one behind Nell Harrow\u2019s shed, one out past the Caloss gate, and one away in Pueth.','TOFT\u2019S KNEE');saveRoad(false);return {ok:true,reason:''};}
     if(action==='give-jimson'){if(!jimson.turnIn(inventory))return {ok:false,reason:''};inventory.refresh();refreshQuest();audio?.effect('success');toast('He takes them inside without meeting your eye, and pays you in pipe weed.','TOFT\u2019S KNEE');saveRoad(false);return {ok:true,reason:''};}
@@ -897,6 +917,13 @@ function init() {
           const words=el('ul','bird-list');
           for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
           card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
+        }
+        // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
+        if(id==='wine'&&vineyard.met){
+          const rows=vineyard.view(),walked=el('ul','bird-list');
+          for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
+            li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
+          card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
         }
         if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
       }
@@ -1148,6 +1175,7 @@ function init() {
     if(hideout.inspected)knownNPCs.add('garrison-captain');
     if(acornQuest.status!=='available')knownNPCs.add('acorn-cook');
     if(katy.stage!=='unmet')knownNPCs.add(KATY.id);
+    if(vineyard.met)knownNPCs.add(IMANI.id);
     if(heardDoom)knownNPCs.add('doomsayer');
     if(questStage===10)for(const id of journey.view().destinationIds)if(world.npcPositions[id])knownNPCs.add(id);
     for(const npc of JOURNEY_NPCS){const home=world.npcPositions[npc.id];if(discoveries.has(({2:'sunmeadow',3:'reedwater',4:'threefold'})[world.regionAt(home.x,home.z)?.id]))knownNPCs.add(npc.id);}
@@ -1362,7 +1390,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1385,7 +1413,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1637,6 +1665,7 @@ function init() {
     if(npc.id===PIPE_SMOKER.id){pipeSmokerConversation(npc,{pipe,botany,openDialogue,closeDialogue,act:pipeAct});return;}
     if(npc.id===TOFT.id){toftConversation(npc,{jimson,inventory,openDialogue,closeDialogue,act:jimsonAct});return;}
     if(npc.id===KATY.id){katyConversation(npc,{katy,openDialogue,closeDialogue,act:katyAct,visits:katyVisits++});return;}
+    if(npc.id===IMANI.id){imaniConversation(npc,{vineyard,wine,openDialogue,closeDialogue,act:imaniAct,visits:imaniVisits++});return;}
     if(npc.id===TROY.id){troyConversation(npc,{troy,openDialogue,closeDialogue,act:troyAct,coppers:inventory.count(COPPER_ITEM),visits:troyVisits++});return;}
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
@@ -2497,7 +2526,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
@@ -2941,6 +2970,12 @@ function init() {
           const k=npcById.get(KATY.id).actor.group,at=k.position,face=KATY_STAND.yaw,turn=view==='katy'?face+.45:face+Math.PI+.35;
           player.group.position.set(at.x+Math.sin(turn)*3,world.heightAt(at.x+Math.sin(turn)*3,at.z+Math.cos(turn)*3),at.z+Math.cos(turn)*3);
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.08;distance=targetDistance=2.8;}
+        // Imani in the rows: face on ('imani'), and from behind, for the bob ('imani-back'). Both
+        // look along the aisle, because three metres either side of her is a wall of vine.
+        if(view==='imani'||view==='imani-back'){questStage=10;combat.finishPractice();player.group.visible=false;
+          const g=npcById.get(IMANI.id).actor.group,at=g.position,face=IMANI_STAND.yaw,turn=view==='imani'?face+.12:face+Math.PI+.06;
+          player.group.position.set(at.x+Math.sin(turn)*3,world.heightAt(at.x+Math.sin(turn)*3,at.z+Math.cos(turn)*3),at.z+Math.cos(turn)*3);
+          reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.08;distance=targetDistance=2.8;}
         // Solis three years after the sack: the north wall from the road ('solis-sack-gate'), the east breach,
         // the burnt houses inside the north wall, and the ruins of the lower town.
         if(view.startsWith('solis-sack-')){questStage=10;combat.finishPractice();player.group.visible=false;
@@ -2958,6 +2993,7 @@ function init() {
               person({role:'rainbow-dyer',tunic:BRANDY.color,skin:BRANDY.skin}),
               person({role:'bat-seeker',tunic:KATY.color,skin:KATY.skin}),
               person({role:'bee-keeper',tunic:TROY.color,skin:TROY.skin}),
+              person({role:'vine-keeper',tunic:IMANI.color,skin:IMANI.skin}),
               ()=>({actor:createBowden(),kind:'person'}),
               person({role:'wine-seller',tunic:0x2f3f63,skin:0xb07a52}),
               person({role:'wine-clerk',tunic:0x2f5b4a,skin:0xf0cbb0}),

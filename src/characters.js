@@ -68,6 +68,25 @@ function round(parent, mat, position, scale) {
   return part(parent, UNIT_SPHERE, mat, position, scale);
 }
 
+/**
+ * Round wire spectacles: a rim over each eye, a bridge between them, and arms back to the
+ * ears. Troy wears a brass pair (src/beekeeper.js) and Imani a steel one (src/vineyard.js);
+ * nobody else in Azhora has thought of them yet.
+ */
+function spectacles(head, name, wire, glass, { radius = 0.055, y = 0.226, z = 0.2, spread = 0.07 } = {}) {
+  const specs = new THREE.Group();
+  specs.name = name;
+  head.add(specs);
+  for (const side of [-1, 1]) {
+    part(specs, new THREE.TorusGeometry(radius, 0.008, 4, 12), wire, [side * spread, y, z]);
+    part(specs, new THREE.CylinderGeometry(radius * 0.95, radius * 0.95, 0.004, 10), glass, [side * spread, y, z - 0.002]).rotation.x = Math.PI / 2;
+    const arm = part(specs, UNIT_CYLINDER, wire, [side * (spread + 0.055), y + 0.006, z - 0.085], [0.006, 0.17, 0.006]);
+    arm.rotation.set(Math.PI / 2, 0, side * 0.12);
+  }
+  part(specs, UNIT_CYLINDER, wire, [0, y, z], [0.018, 0.006, 0.006]).rotation.z = Math.PI / 2;
+  return specs;
+}
+
 function ribbon(parent, mat, from, to, width = 0.052, depth = 0.022) {
   const start = new THREE.Vector3(...from);
   const end = new THREE.Vector3(...to);
@@ -601,6 +620,16 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         arm[0] = -1.5; elbow[0] = -1.75; armOut[0] = .55;
         chestX = -.06 + breath * .006; headX = -.2 + Math.sin(seconds * .11 + offset) * .03; headY = follow * .1;
         hip[0] = -.03; hip[1] = -.02; knee[0] = .07; knee[1] = .1;
+      } else if (role === 'vine-keeper') {
+        // Imani works the canopy in front of her: the left hand up in the wire turning a leaf over
+        // to see the underside of it, the right hand down by the apron, and the head tipped to
+        // whatever her fingers have found. Every so often she lets it go and looks along the row.
+        const fingers = Math.sin(seconds * .53 + offset), along = Math.pow(Math.max(0, Math.sin(seconds * .11 + offset)), 14);
+        arm[0] = -1.24 + along * .5; elbow[0] = -1.05 + along * .3; armOut[0] = .34 - along * .12;
+        arm[1] = -.14; elbow[1] = -.52; armOut[1] = -.07;
+        chestX = .05 + breath * .008; chestZ = -.03 + along * .05;
+        headX = -.04 - along * .06 + fingers * .015; headY = -.22 + along * .42;
+        hip[0] = -.03; hip[1] = -.02; knee[0] = .09; knee[1] = .06;
       } else if (role === 'wine-clerk') {
         // Nika reads: the book held low in both hands, head bent to it, a page turned now and then.
         const page = Math.pow(Math.max(0, Math.sin(seconds * .31 + offset)), 12);
@@ -774,7 +803,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 /** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -789,6 +818,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isKaty = role === 'bat-seeker', slight = isWineClerk || isKaty;
   // Troy, who keeps the bees at the Bee Fold (src/beekeeper.js): curly red hair, a red beard and a grin.
   const isKeeper = role === 'bee-keeper';
+  // Imani, who keeps the vines at Vaervelm Caelazh (src/vineyard.js): a blunt black bob, steel
+  // spectacles for close work, and a stained canvas apron with the shears standing out of it.
+  const isVineKeeper = role === 'vine-keeper';
   // Brandy Frank, Tidehaven's dyer: impossible colours, and an Eeyore sort of day, every day.
   const isDyer = role === 'rainbow-dyer';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
@@ -827,8 +859,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -922,7 +954,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(pivot, leather, [side * 0.006, -0.012, 0], [0.1, 0.055, 0.103]);
       round(pivot, skinMat, [side * 0.01, -0.058, 0], [0.09, 0.094, 0.095]);
       part(pivot, new THREE.CylinderGeometry(0.086, 0.07, 0.2, 8), skinMat, [side * 0.018, -0.147, 0], [1, 1, 1.03]);
-    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || slight || isDyer) {
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || isVineKeeper || slight || isDyer) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -935,7 +967,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     elbow.position.set(side * 0.019, -0.245, 0);
     pivot.add(elbow);
     elbows.push(elbow);
-    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms || isWineSeller) {
+    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms || isWineSeller || isVineKeeper) {
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, garment === 'sleeveless' ? skinMat : linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
@@ -1247,6 +1279,22 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // The fall down her back: a flat sheet, a little wider at the shoulders, cut straight across.
     box(hair, hairMat, [0, 0.03, -0.155], [0.36, 0.5, 0.07]);
     box(hair, hairMat, [0, -0.33, -0.19], [0.34, 0.3, 0.05]);
+  } else if (isVineKeeper) {
+    // Imani’s bob: black, straight and blunt — a fringe cut level across the brow, the sides
+    // falling to the jaw, the back squared off at the nape. Cut that way because it has to go
+    // under a hood in the rain and stay out of her eyes over close work.
+    const hair = new THREE.Group(); hair.name = 'Imani’s bob'; head.add(hair);
+    round(hair, hairMat, [0, 0.295, -0.025], [0.214, 0.132, 0.206]);
+    const fringe = box(hair, hairMat, [0, 0.292, 0.108], [0.286, 0.105, 0.125]);
+    fringe.rotation.x = -0.07;
+    for (const side of [-1, 1]) {
+      // The sides, cut to the jaw, with the ends turned very slightly in.
+      const fall = box(hair, hairMat, [side * 0.181, 0.125, 0.005], [0.058, 0.3, 0.192]);
+      fall.rotation.z = side * 0.035;
+      round(hair, hairMat, [side * 0.152, 0.268, 0.062], [0.065, 0.07, 0.075]);
+    }
+    box(hair, hairMat, [0, 0.135, -0.155], [0.33, 0.315, 0.095]);
+    box(hair, hairMat, [0, -0.015, -0.13], [0.3, 0.06, 0.13]);
   } else if (!isElodiGuard && !isAmbroni) {
     // (Ambron's bascinet covers the brow; a forelock would poke out through it.)
     const fringe = round(head, hairMat, [-0.055, 0.334, 0.08], [0.143, 0.061, 0.123]);
@@ -1851,16 +1899,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     part(body, UNIT_CYLINDER, material(0x8a6a42), [0, .93, 0], [.268, .045, .2]);
     for (const side of [-1, 1]) part(arms[side > 0 ? 1 : 0], new THREE.CylinderGeometry(.078, .07, .16, 8), canvas, [side * .02, -.22, 0]);
     for (const wrist of wrists) round(wrist, canvas, [0, .01, 0], [.085, .075, .085]);
-    // Spectacles: round wire rims over the eyes, a bridge between them, and arms back to the ears.
-    const specs = new THREE.Group(); specs.name = 'Troy’s spectacles'; head.add(specs);
-    const wire = material(0x8c7a4e, { metalness: .55, roughness: .4 }), glass = material(0xdfe7ea, { roughness: .12, metalness: .1 });
-    for (const side of [-1, 1]) {
-      part(specs, new THREE.TorusGeometry(.055, .008, 4, 12), wire, [side * .07, .226, .2]);
-      part(specs, new THREE.CylinderGeometry(.052, .052, .004, 10), glass, [side * .07, .226, .198]).rotation.x = Math.PI / 2;
-      const arm = part(specs, UNIT_CYLINDER, wire, [side * .125, .232, .115], [.006, .17, .006]);
-      arm.rotation.set(Math.PI / 2, 0, side * .12);
-    }
-    part(specs, UNIT_CYLINDER, wire, [0, .226, .2], [.018, .006, .006]).rotation.z = Math.PI / 2;
+    // Spectacles: he works in them, and would rather see what he is doing than wear a veil.
+    spectacles(head, 'Troy’s spectacles', material(0x8c7a4e, { metalness: .55, roughness: .4 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
     // The smoker in his right hand: a tin with a spout and a little bellows.
     const smoker = new THREE.Group(); smoker.name = 'Troy’s bee smoker'; wrists[1].add(smoker);
     smoker.position.set(-.02, -.12, .03);
@@ -1889,6 +1929,32 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       wing.rotation.z = side * -0.35;
       for (const tip of [0.022, 0.044]) box(pendant, black, [side * tip, -0.012, 0], [0.012, 0.01, 0.006]);
     }
+  } else if (isVineKeeper) {
+    // The shirt sleeves are rolled to the elbow from the thaw to the leaf fall, and over the
+    // shirt a heavy canvas apron wiped down the same two places for eleven years: a bib to the
+    // collarbone, a skirt to the knee, the shears standing out of the pocket and the block book
+    // down beside them.
+    const canvas = material(0x8d8165), worn = material(0x776b53), stain = material(0x5f414a);
+    const steel = material(0x8d9298, { metalness: .6, roughness: .36 });
+    box(body, canvas, [0, 1.11, .176], [.2, .28, .028]);
+    box(body, canvas, [0, .8, .178], [.31, .38, .032]);
+    box(body, stain, [-.088, .705, .195], [.085, .12, .008]);
+    box(body, stain, [.102, .75, .195], [.06, .085, .008]);
+    box(body, worn, [0, .78, .196], [.27, .115, .01]);
+    for (const side of [-1, 1]) ribbon(body, canvas, [side * .105, 1.286, .1], [side * .088, 1.2, .172], .026, .014);
+    // The shears in the apron pocket: two blades and the bow of the handle above them.
+    const shears = new THREE.Group(); shears.name = 'Imani’s shears'; body.add(shears);
+    shears.position.set(.083, .83, .208); shears.rotation.z = .07;
+    for (const side of [-1, 1]) {
+      const blade = box(shears, steel, [side * .013, .04, 0], [.019, .16, .012]);
+      blade.rotation.z = side * .05;
+    }
+    part(shears, new THREE.TorusGeometry(.028, .009, 4, 10), material(0x6a4432), [0, .14, 0]);
+    // The block book: eleven years of when each block budded, flowered, turned and came in.
+    const book = new THREE.Group(); book.name = 'Imani’s block book'; body.add(book);
+    book.position.set(-.085, .845, .202); book.rotation.z = -.1;
+    box(book, material(0x5c4636), [0, 0, 0], [.1, .13, .022]);
+    box(book, material(0xcdc1a4), [0, .004, .004], [.09, .118, .024]);
   } else if (role === 'harbormaster') {
     // An apron and salt-grey beard distinguish the older keeper of the pier.
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);
@@ -2105,6 +2171,12 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     part(glass, new THREE.CylinderGeometry(0.026, 0.022, 0.16, 8), brass, [0, 0.07, 0]);
     part(glass, new THREE.CylinderGeometry(0.034, 0.03, 0.12, 8), brass, [0, 0.2, 0]);
     part(glass, UNIT_CYLINDER, material(0x2a2622), [0, 0.262, 0], [0.03, 0.01, 0.03]);
+  }
+  if (isVineKeeper) {
+    // Steel, and smaller than Troy’s: they are for buds, mites and her own handwriting, and they
+    // sit far enough down her nose that she can look over them at whoever is talking.
+    spectacles(head, 'Imani’s spectacles', material(0x53575c, { metalness: .62, roughness: .34 }),
+      material(0xdfe7ea, { roughness: .12, metalness: .1 }), { radius: .049, y: .214, z: .202, spread: .067 });
   }
   if (slight) {
     body.scale.set(0.92, 0.93, 0.92);

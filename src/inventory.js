@@ -47,6 +47,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Charcoal on the back of a wine label: a bat’s head and a bat’s wings on a man’s body. Underneath, underlined twice: HE IS NOT A MONSTER.',
     description: 'Katy drew him from what the people who have seen him told her, so that you would know him when you see him, and not run. She wants to hear the moment you do.',
   }),
+  'dragon-scale': Object.freeze({
+    name: 'A dragon’s scale', type: 'Quest item', icon: 'token',
+    brief: 'The size of a thumbnail, slate grey and wet-looking. One side is warm. The same side, always.',
+    description: 'Shed in the spring by the thing in the box slung under Petunia, and handed over by Imani at Vaervelm Caelazh after eleven years of telling nobody. The warm side is the side pointing at the rest of it. She does not know what that is for either.',
+  }),
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',
