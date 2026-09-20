@@ -589,7 +589,8 @@ function init() {
       if(result.first)saveRoad(false);return;}
     if(action.startsWith('attic-buy-')){const entry=ATTIC_WINES[action.slice(10)];if(!entry)return;
       if(inventory.count(COPPER_ITEM)<entry.price){juanShop(juan,atticContext(),'Ah, you are short. Happens to everybody. Happens to me every Tuesday.');return;}
-      if(!inventory.remove(COPPER_ITEM,entry.price)||!inventory.add(entry.item,1)){inventory.add(COPPER_ITEM,entry.price);juanShop(juan,atticContext());return;}
+      const paid=inventory.remove(COPPER_ITEM,entry.price);   // only hand back what was actually taken
+      if(!paid||!inventory.add(entry.item,1)){if(paid)inventory.add(COPPER_ITEM,entry.price);juanShop(juan,atticContext());return;}
       inventory.refresh();audio?.effect('success');toast(`A bottle of ${entry.name} for ${entry.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM JUAN');saveRoad(false);
       juanShop(juan,atticContext(),`The ${entry.name}. Beautiful choice. I wrapped it in yesterday\u2019s notices so nobody sees you have taste. Anything else?`);return;}
     if(action==='attic-ed'){if(ed.hear().first){refreshQuest?.();saveRoad(false);}return;}
@@ -1768,7 +1769,8 @@ function init() {
     const purse=inventory.count(COPPER_ITEM);
     const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS});
     const choices=offers.map(offer=>({id:`buy-${offer.id}`,label:offer.label,enabled:offer.enabled,reason:offer.reason,action:()=>{
-      if(!inventory.remove(COPPER_ITEM,offer.price)||!inventory.add(offer.id,1)){inventory.add(COPPER_ITEM,offer.price);peddlerConversation(npc,false);return;}
+      const paid=inventory.remove(COPPER_ITEM,offer.price);   // only hand back what was actually taken
+      if(!paid||!inventory.add(offer.id,1)){if(paid)inventory.add(COPPER_ITEM,offer.price);peddlerConversation(npc,false);return;}
       inventory.refresh();toast(`${offer.name} for ${offer.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM WENDEL');saveRoad(false);peddlerConversation(npc,false);}}));
     choices.push({id:'leave-peddler',label:'Nothing today.',action:closeDialogue});
     const lines=opening?[...PEDDLER.lines]:[`You carry ${describeSum(purse)}. Anything else?`];
