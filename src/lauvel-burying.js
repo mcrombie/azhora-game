@@ -58,6 +58,8 @@ export const BURYING_VERSION = 1;
  * 'told' (she knows); 'done' (he is in the ground with his name on the board).
  */
 export const BURYING_STAGES = freeze(['unknown', 'hailed', 'asked', 'helping', 'found', 'told', 'done']);
+/** He comes in on the fourth trip out with the hurdle, and not before. */
+export const FOUND_ON_TRIP = 4;
 
 export function validateBuryingSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
@@ -65,7 +67,13 @@ export function validateBuryingSnapshot(data, { allowMissing = true } = {}) {
   if (!BURYING_STAGES.includes(data.stage)) return false;
   if (!Array.isArray(data.done) || data.done.length > JOB_IDS.length) return false;
   if (!data.done.every(id => JOB_IDS.includes(id)) || new Set(data.done).size !== data.done.length) return false;
-  return Number.isInteger(data.carried) && data.carried >= 0 && data.carried <= 1e6;
+  if (!Number.isInteger(data.carried) || data.carried < 0 || data.carried > 1e6) return false;
+  // The stage, the jobs and the tally have to agree, because the quest only ever makes
+  // them agree: nobody works before she asks, the tally only moves at the hurdle, and he
+  // comes in on the fourth trip. A save that says otherwise is not one this quest wrote.
+  if (data.carried > 0 && !data.done.includes('hurdle')) return false;
+  if (['unknown', 'hailed', 'asked'].includes(data.stage) && (data.done.length > 0 || data.carried > 0)) return false;
+  return !['found', 'told', 'done'].includes(data.stage) || data.carried >= FOUND_ON_TRIP;
 }
 
 export function createBurying({ onEvent = () => {} } = {}) {
@@ -105,11 +113,11 @@ export function createBurying({ onEvent = () => {} } = {}) {
     state.done.add(id);
     if (id === 'hurdle') state.carried++;
     // He comes in on the fourth trip, and only once, and only while she still believes he is elsewhere.
-    const foundNow = id === 'hurdle' && state.carried >= 4 && at('helping');
+    const foundNow = id === 'hurdle' && state.carried >= FOUND_ON_TRIP && at('helping');
     if (foundNow) state.stage = 'found';
     onEvent({ type: 'job-worked', id, first, found: foundNow });
     return { ok: true, first, job, carried: state.carried, found: foundNow,
-      trips: id === 'hurdle' ? Math.max(0, 4 - state.carried) : 0 };
+      trips: id === 'hurdle' ? Math.max(0, FOUND_ON_TRIP - state.carried) : 0 };
   }
   /** Going back across the field to tell her. */
   function tell() {
