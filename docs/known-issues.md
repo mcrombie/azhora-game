@@ -228,43 +228,49 @@ the Lauvel. Sela hails you, the journal has nothing, and the panel says "Two pat
 
 ---
 
-## A test says the Ela-south runs off the edge of the world, and the world is about to grow
+## Two assertions still measured against the world's edge, and how much room each has
 
-**Seen:** nothing yet. This one breaks the day the four western regions land.
+**The Ela-south one is fixed.** `tests/elagos-world.test.js` asserted the reach's last point was
+west of `WORLD_BOUNDS.minX`, which had 15 m of margin against four regions that will move that edge
+by hundreds. It now measures against Elagos's own western outline, 75 m away, which is what the
+sentence was always about. Two more assertions in the suite have the same shape; neither is wrong
+today, and both are recorded here with their margins so nobody meets them by surprise.
 
-**Measured.** `tests/elagos-world.test.js:130`:
+**1. `tests/region-layout.test.js:73` — the world's total size is a budget, and it is nearly spent.**
 
 ```js
-// The reach leaves the built world rather than stopping in the middle of it.
-assert.ok(points.at(-1).x < WORLD_BOUNDS.minX, 'the Ela-south runs off the west edge of the world');
+assert.ok(bounds.maxX - bounds.minX < 25 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX,
+  'the playable regions fit a walkable world');
 ```
 
-| | |
-|---|---|
-| the Ela-south's last point | x = **-1625.0** |
-| `WORLD_BOUNDS.minX` today | **-1610.0** |
-| the margin the assertion lives on | **15.0 m** |
+| | now | limit | room left |
+|---|---|---|---|
+| east to west | 2,220 m = **22.20 hexes** | 25 | **280 m** |
+| north to south | 3,093 m = **30.93 hexes** | 32 | 107 m |
 
-Elagos is the westernmost region today, from x = -1550 to -850, and the world's edge sits 60 m west
-of it. Four new regions to the west will move `WORLD_BOUNDS.minX` by far more than fifteen metres,
-and this assertion fails — not because anything about the river changed, but because the river now
-ends *inside* the map. The obvious reading of the failure is "extend the Ela-south", which is the
-wrong repair: the reach is the right length, the world moved.
+Four regions to the west will use more than 280 m — Elagos alone is 700 m across. Unlike the
+Ela-south, this assertion is **not** mistaken: it is a deliberate budget on how far a traveler can
+be asked to walk, and the failure will be telling the truth. Whoever lands the western regions
+should raise the number on purpose and say what the new budget is, rather than treat it as a broken
+test. Note it only measures the *playable* regions, so unbuilt country to the west costs nothing
+until it is playable.
 
-**What the test means to say** is that the reach leaves the country it belongs to rather than
-stopping in the middle of it. That is true of Elagos and stays true whatever lands west: the
-endpoint is **75 m west of Elagos's own outline**, against 15 m west of the world's edge. So the
-one-line alternative is to compare against the region rather than the world — the outline is
-already imported into that file as `REGION_OUTLINES`.
+**2. `tests/peblos-world.test.js:79` — the tightest margin in the suite, on the other side.**
 
-**Why it is written up rather than fixed here.** `src/elagos-world.js` is being rebuilt for the lake
-city on one branch and the western regions are being added on another; both touch this ground, and
-whoever lands the western regions is the one who will see the failure and should choose the repair.
-Nothing else in the test suite pins the world's western edge: the only other `WORLD_BOUNDS.minX`
-assertion is `tests/regions-world.test.js:40`, which checks the world reports the bounds it was
-given and is true at any size.
+```js
+assert.ok(Math.max(...REGION_OUTLINES.Peblos.flat().map(point => point.x)) > WORLD_BOUNDS.maxX - 120,
+  'and the outermost Pebble is still near its eastern edge');
+```
 
----
+Peblos's east edge is at x = 500 and `WORLD_BOUNDS.maxX - 120` is 490: **10 m of margin**, tighter
+than the Ela-south's 15. It is safe for now because the four new regions are *west*, and `maxX` does
+not move when the world grows westward — and it has already survived one eastward extension, since
+West Izol is what pushed `maxX` out to 610 and it held with those 10 m. But anything added east of
+West Izol breaks it.
+
+Left alone rather than repaired, because unlike the river there is no obviously better thing to
+measure: "near its eastern edge" is a claim about the world's edge, and what it should mean once
+something lies further east again is a question for whoever puts it there.
 
 ## The developer tools are a headline feature of the title screen
 
