@@ -386,7 +386,7 @@ export function planGoal(snapshot, world) {
   if (mode === 'arriving') return { kind: 'wait', intent: 'Coming ashore' };
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
   if (mode === 'dialogue') return { kind: 'dialogue', intent: 'Talking' };
-  if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading Lakota’s message' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
+  if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading the letter of introduction' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
   // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
   if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };

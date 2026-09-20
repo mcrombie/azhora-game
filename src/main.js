@@ -214,8 +214,8 @@ function init() {
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // Lakota watches birds from his garden on the eastern side of Tidehaven, and teaches the traveler to (src/birding.js).
   // Lakota meets the traveler at the head of the pier and gives them the first errand; then he goes home to his bird garden.
-  const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},lakotaPier={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
-  world.npcPositions[BIRD_WATCHER.id]={x:lakotaPier.x,z:lakotaPier.z};npcData.push({...BIRD_WATCHER,yaw:lakotaPier.yaw});
+  const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
+  world.npcPositions[BIRD_WATCHER.id]={x:lakotaGarden.x,z:lakotaGarden.z};npcData.push({...BIRD_WATCHER,yaw:lakotaGarden.yaw});
   // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
   for(const person of [VINTNER,CELLAR_HAND,WINEMAKER]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Katy by the spring pool, watching the birds and waiting for Batman (src/katy.js).
@@ -281,7 +281,7 @@ function init() {
   // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
   const redTail=createRedTailHawk(),redTailFlight=createHawkFlight(),gloveAt=new THREE.Vector3();scene.add(redTail.group);
   // Everyone placed by now stands on open ground, and so does every place the traveler is sent.
-  world.keepPropsClear([...Object.values(world.npcPositions),lakotaGarden,lakotaPier,...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
+  world.keepPropsClear([...Object.values(world.npcPositions),lakotaGarden,pierHead,...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
   const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
@@ -1231,7 +1231,7 @@ function init() {
   }
   /** Lakota waits at the head of the pier until he has given the traveler the first errand; after that he is at home in his garden. `snap` puts him there at once. */
   function placeLakota(snap=true){
-    const at=questStage<2?lakotaPier:lakotaGarden,npc=npcById.get(BIRD_WATCHER.id);world.npcPositions[BIRD_WATCHER.id]={x:at.x,z:at.z};
+    const at=lakotaGarden,npc=npcById.get(BIRD_WATCHER.id);world.npcPositions[BIRD_WATCHER.id]={x:at.x,z:at.z};
     if(npc&&snap){npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.y=at.yaw;}
   }
   function updateQuest(event) {
@@ -1242,7 +1242,7 @@ function init() {
     if(questStage===5)audio?.effect('success');
     if(questStage===6)inventory.grant('road-token');
     refreshQuest();
-    if(questStage===2)toast('Lakota’s message','ADDED TO SATCHEL · I TO OPEN');
+    if(questStage===2)toast('the letter of introduction','ADDED TO SATCHEL · I TO OPEN');
     else if(questStage===6)toast('Eren’s travel token','ADDED TO SATCHEL · PRESS I');
     else if(questStage===7)toast('Message inspected. Close your satchel to continue.','I OR ESC · BACK TO THE WORLD');
     else toast(questSteps[questStage].title,questStage===10?'TIDEHAVEN SECURED · THE FOREST ROAD LIES AHEAD':'JOURNAL UPDATED');
@@ -1813,7 +1813,7 @@ function init() {
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
-    if(npc.id===BIRD_WATCHER.id&&questStage<2){lakotaAtThePier(npc);return;}
+    if(npc.id==='merc-gotwood'&&questStage<2){chrisOnTheLanding(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
     if(npc.id===JUAN.id){if(wineAttic.met)wineAttic.visit();juanConversation(npc,atticContext());return;}
@@ -1871,12 +1871,12 @@ function init() {
         hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
       const aftermath=raid.outcome.map(o=>said[o.fate](o.name)).join(' ');
       lines=[...(aftermath?[`Before anything else: ${aftermath}`]:[]),'Three raiders down. Good work. Their rotten sticks made them an easier fight, but remember what kept you standing: watch the windup, dodge to the side, and counter while the stick is down. Leave yourself enough stamina to escape.',
-        'Now for a traveler’s other essentials. Keep Lakota’s message and this travel token in your satchel. Press I to open it. Hover over an item for a hint, then select the message to read it. I or Escape closes the satchel.',
+        'Now for a traveler’s other essentials. Keep the letter of introduction and this travel token in your satchel. Press I to open it. Hover over an item for a hint, then select the message to read it. I or Escape closes the satchel.',
         'Select a weapon in your satchel to see its condition and choose Equip. A broken sword cannot strike until repaired; a broken stick is used up. Fallen branches make weak spare weapons. The free repair bench is back in the village, beside the straw post.',
         'If those sticks left you hurting, look for ripe pawpaws under the little trees with long leaves. F gathers the fruit. Open I, select a pawpaw, and choose Eat to recover up to 25 health. Lysa can tell you more about them.',
         'Follow the forest road to Fernway Rest, then keep going until the trees open on the Avrel farm clearing. That gate is called the Caloss Gate. The open road leads on toward the Caloss. Find Quartermaster Corvan at the army post. The Ambroni Empire hired you from abroad; he will tell you what service means here.'];
       event='meet-waykeeper';action='Take the token';
-    } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select Lakota’s message and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
+    } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select the letter of introduction and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
     else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the army post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
     else if(questStage<2)lines=['Speak to Lakota at the head of the pier before you head inland. He has a small errand for you, and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
@@ -1884,14 +1884,16 @@ function init() {
     openDialogue(npc,lines,event,action);
   }
   /** Lakota at the head of the pier: the goblins, the letter for Corvan, the straw post, and where to find him after. */
-  function lakotaAtThePier(npc){
+  // Chris Gotwood came off the same boat with the company's papers in his coat, and is the
+  // first person in Azhora who says anything to the traveler (src/mercenaries.js).
+  function chrisOnTheLanding(npc){
     updateQuest('ashore');
-    openDialogue(npc,['You heard the bell from the boat? That was for goblins. Bramble goblins came down on Tidehaven this morning, and three of them are still out on the Greenway, north of the village. The landing is safe. The road is not.',
-      'You are the one the Ambroni contract sent for? Then this is yours: a letter for Quartermaster Corvan at the post in the Avrel clearing, just past our forest. He will put you into service. Eren at the watch will show you the road.',
-      'A sword is welcome here, even in plain cloth, but those raiders carry snapped branches and you have nothing to hide behind. Try two swings on the straw post at the northern crossroads, then a dodge. Watch their raised sticks, and hit them after the swing.',
-      'Your blade wears with every hit, even on straw. The repair bench is beside the post: press F there to mend it, and nobody will charge you. I opens your satchel.',
-      'I am Lakota. I watch birds, mostly. I dig, and taste wine, and I have one or two theories about this place that I will tell you when I know you better. I live by the bird garden on the east side of the village. Come and find me there whenever you like. I will be looking at something.'],
-      'accept-letter','Take the message');
+    openDialogue(npc,['That bell was going before we were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
+      'Right. This is yours and I am glad to be rid of it: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service. Eren at the watch will point you at the road.',
+      'A sword is welcome here even in plain cloth, but those raiders carry snapped branches and you have nothing to hide behind. Two swings on the straw post at the northern crossroads, then try a dodge. Watch for the raised stick and hit them after the swing, not during it.',
+      'Your blade wears with every hit, straw included. The repair bench is beside the post \u2014 F there mends it and nobody charges you for it. I opens your satchel.',
+      'Chris Gotwood, by the way. I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
+      'accept-letter','Take the letter');
   }
   function doomsayerConversation(npc){
     heardDoom=true;
@@ -2103,7 +2105,7 @@ function init() {
     if(Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9){
       openDialogue({id:'border-notice',name:'The Caloss Gate',role:'Road notice'},[
         'The open gate leads to the Avrel clearing, then south-west to the Caloss crossing, and on into Luscia beyond the river. Follow the road, and greet the travelers who keep it open.',
-        questStage>=10?'You have completed the first-shore tutorial. Keep Lakota’s message and Eren’s token in your satchel. Corvan waits beside a stranded cart in the Avrel clearing. All four regions remain open for your return.':'Before setting out, clear the goblins, report to Eren, and check the message in your satchel. Follow the north trail through Fernway Rest to finish this leg of the journey.'
+        questStage>=10?'You have completed the first-shore tutorial. Keep the letter of introduction and Eren’s token in your satchel. Corvan waits beside a stranded cart in the Avrel clearing. All four regions remain open for your return.':'Before setting out, clear the goblins, report to Eren, and check the message in your satchel. Follow the north trail through Fernway Rest to finish this leg of the journey.'
       ]);
     }
   }
@@ -2448,7 +2450,7 @@ function init() {
         player.group.rotation.y=Math.PI/2;movement=2.5;
         // Chris Gotwood landed in the same boat and steps ashore beside the traveler.
         const mate=npcById.get('merc-gotwood');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
-        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','FIND MARA AT THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
+        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO CHRIS ON THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
       }
       if(autopilot.active&&!reviewFrozen){
         autopilot.step(dt);

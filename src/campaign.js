@@ -20,7 +20,7 @@ const chapter = (id, region, title, detail, extra = {}) => Object.freeze({ id, r
 /** Ordered story chapters. `next` may be a chapter id, an outcome map, or null for the frontier. */
 export const CHAPTERS = Object.freeze({
   'drent-road': chapter('drent-road', 'Drent', 'The first shore',
-    'Carry Lakota’s letter to the army post in the Avrel clearings and make the road sound as far as the Caloss crossing. Drent is the Empire’s quietest province; learn the road while it is quiet.',
+    'Carry the letter of introduction to the army post in the Avrel clearings and make the road sound as far as the Caloss crossing. Drent is the Empire’s quietest province; learn the road while it is quiet.',
     { kind: 'road', next: 'luscia-aftermath' }),
   'luscia-aftermath': chapter('luscia-aftermath', 'Luscia', 'The field at the Lauvel',
     'Cross the Caloss into Luscia. The army has just broken a rebel army near the Lauvel crossing. Walk the aftermath, speak with the wounded and with the people who buried the losers, and learn what the word “rebel” hides. Wolves hunt off the roads at night.',

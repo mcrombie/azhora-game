@@ -3,8 +3,8 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
-    name: "Lakota’s message", type: 'Quest item', icon: 'letter',
-    brief: 'A report and letter of introduction to the Ambroni army post on the Avrel clearing.',
+    name: 'Letter of introduction', type: 'Quest item', icon: 'letter',
+    brief: 'The report and letter of introduction that Chris Gotwood carried ashore, for the Ambroni army post on the Avrel clearing.',
     description: 'The seal is already broken so you can read your errand. Keep the message with you for the road ahead.',
   }),
   'simple-sword': Object.freeze({
@@ -85,7 +85,7 @@ export const INVENTORY_ITEMS = Object.freeze({
   'road-token': Object.freeze({
     name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
     brief: 'A wooden token bearing the mark of the Greenway Watch.',
-    description: 'Eren has vouched for your passage through the northern forest. Carry this token and Lakota’s message to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
+    description: 'Eren has vouched for your passage through the northern forest. Carry this token and the letter of introduction to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
   }),
   'horse-token': Object.freeze({
     name: 'Army horse token', type: 'Quest item', icon: 'token',
@@ -667,7 +667,7 @@ export function createInventory({
       detail.append(element('p', 'inventory-description', item.description));
       const letter = element('article', 'inventory-letter');
       letter.id = 'inventory-letter-body';
-      letter.setAttribute('aria-label', 'Lakota’s message to Quartermaster Corvan');
+      letter.setAttribute('aria-label', 'The letter of introduction to Quartermaster Corvan');
       letter.tabIndex = 0;
       letter.append(
         element('p', 'inventory-letter-address', 'To Quartermaster Corvan, Ambroni army, The Avrel Clearing'),
@@ -873,7 +873,7 @@ export function createInventory({
     isOpen: () => opened,
     open({lesson = false} = {}) {
       hint.textContent = lesson
-        ? 'Your next lesson: select Lakota’s message and read your errand. Then close the satchel with I, Esc, or ×.'
+        ? 'Your next lesson: select the letter of introduction and read your errand. Then close the satchel with I, Esc, or ×.'
         : 'Hover for a tooltip. Click an item, or use Tab then Enter, to inspect it.';
       if (opened) return;
       opened = true;

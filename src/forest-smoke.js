@@ -103,7 +103,7 @@ export async function runForestSmoke(h) {
   try {
     await prepareVillage(); await frames(5);
     assert(getMode() === 'playing' && readState().questStage === 1 && !readState().testingEnabled, 'fixture did not begin as ordinary early village play');
-    assert(!inventory.has('harbor-letter') && !inventory.has('road-token') && inventory.has('simple-sword'), 'fixture should precede Lakota’s letter');
+    assert(!inventory.has('harbor-letter') && !inventory.has('road-token') && inventory.has('simple-sword'), 'fixture should precede the letter of introduction');
     assert(forestStory.state.stage === 'not-started', 'woodland errand was already started');
     assert(inventory.count('forest-stick') === 0 && inventory.count('cooked-fish') === 0, 'fixture already has woodland supplies');
 
