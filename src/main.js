@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting } from './characters.js';
+import { markerFor } from './quest-markers.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -59,11 +60,12 @@ import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
-import { createRiding, RIDE, RIDING_KEYS, steer, drive } from './riding.js';
+import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
-import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine } from './skills.js';
+import { createSkills, skillLevel, SKILLS, skillGuide, levelUpLine, skillTip } from './skills.js';
+import { skillIconSVG } from './skill-icons.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
@@ -160,7 +162,9 @@ function init() {
   const testingQuery=new URLSearchParams(location.search);
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});player=createCharacter();scene.add(player.group);
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
-  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
+  const HARBOURMASTER='harbormaster';
+  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Mara',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -216,8 +220,11 @@ function init() {
   world.npcPositions[PEDDLER.id]={x:PEDDLER.stand.x,z:PEDDLER.stand.z};
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // Lakota watches birds from his garden on the eastern side of Tidehaven, and teaches the traveler to (src/birding.js).
-  // Lakota meets the traveler at the head of the pier and gives them the first errand; then he goes home to his bird garden.
+  // Mara the harbourmaster meets the traveler off the boat and hands over the letter.
+  // Lakota is at home in his bird garden from the first minute, and stays there.
   const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
+  world.npcPositions[HARBOURMASTER]={x:pierHead.x,z:pierHead.z};
+  npcData.find(person=>person.id===HARBOURMASTER).yaw=pierHead.yaw;
   world.npcPositions[BIRD_WATCHER.id]={x:lakotaGarden.x,z:lakotaGarden.z};npcData.push({...BIRD_WATCHER,yaw:lakotaGarden.yaw});
   // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
   for(const person of [VINTNER,CELLAR_HAND,WINEMAKER]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
@@ -277,8 +284,7 @@ function init() {
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
-    npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.marker=makeQuestMarker();scene.add(npc.marker);
-    if(npc.id==='acorn-cook'){npc.marker.scale.setScalar(.8);npc.marker.traverse(o=>{if(o.isMesh){o.material.color.set(0xa9dcb1);o.material.emissive.set(0x477c53);}});}
+    npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.markerKind='main';npc.marker=makeQuestMarker('main');scene.add(npc.marker);
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
   // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
@@ -621,7 +627,7 @@ function init() {
   const renaLetters=createRenaLetters({onEvent:event=>{if(event.type==='ardrys-caught-up')toast('Lorn and Hesta Ardry have caught up after eighty years. Both of them are fond of you.','THE ARDRYS’ LETTERS · FINISHED');}});
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0;
-  const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
+  const feederMarker=makeQuestMarker('skill');feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
   const forestHideout=createForestHideoutQuest({inventory});
@@ -766,6 +772,8 @@ function init() {
   // The army's horse line: real horses in place of the rebuild's block figures; the traveler's own stands saddled once claimed.
   const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
+  // The testing panel's horse wears a coat nobody could mistake for the army's bay, and stands in its place.
+  const devHorse=createHorse({coat:'developer',saddled:true});devHorse.group.visible=false;scene.add(devHorse.group);
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
   // Figures nobody can see wait off stage: out of the scene, so the renderer's per-frame matrix work
@@ -786,7 +794,9 @@ function init() {
     }
     return list;
   }
-  function placeOwnHorse(){const horse=riding.horse;if(!horse){ownHorse.group.visible=false;return;}ownHorse.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);ownHorse.group.rotation.y=horse.yaw;}
+  function placeOwnHorse(){const horse=riding.horse,mount=riding.developerMount?devHorse:ownHorse,other=riding.developerMount?ownHorse:devHorse;
+    other.group.visible=false;if(!horse){mount.group.visible=false;return;}
+    mount.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);mount.group.rotation.y=horse.yaw;}
   // G: into the saddle or out of it. A fight, a fall or a scene puts the rider down whether there is room or not.
   function stepDown(forced=false){
     const result=forced?riding.unseat(footing):riding.dismount(footing);if(!result.ok){toast(result.reason,'IN THE SADDLE');return false;}
@@ -1139,14 +1149,17 @@ function init() {
   }
   // The card a skill puts up when the traveler learns something new: a bird seen, a fish landed.
   /** Every bit of experience shows as a drop by the map, RuneScape fashion, and a new level gets its banner. */
-  let levelUpTimer=0;
+  let levelUpTimer=0,levelUpSkill=null;
   function skillEvent(event){
     if(event.type!=='skill-gain'||typeof document==='undefined')return;
     const drops=$('xp-drops');if(drops){const drop=document.createElement('div');drop.className='xp-drop';drop.textContent=`+${event.gained} ${SKILLS[event.id]?.name??event.id}`;drops.append(drop);setTimeout(()=>drop.remove(),1900);}
     if(event.levelled){const opened=skillGuide(event.id,event.level).filter(entry=>entry.level>event.before&&entry.level<=event.level);
       $('level-up-title').textContent=`${SKILLS[event.id].name} · level ${event.level}`;$('level-up-line').textContent=levelUpLine(event.id,event.level);
       $('level-up-unlock').textContent=opened.length?`Now open: ${opened.map(entry=>entry.text).join(' · ')}`:'';
-      $('level-up').classList.add('visible');audio?.effect('success');clearTimeout(levelUpTimer);levelUpTimer=setTimeout(()=>$('level-up').classList.remove('visible'),5200);}
+      const banner=$('level-up');levelUpSkill=event.id;
+      // Taking the class off and putting it back is what restarts the flash on a second level in a row.
+      banner.classList.remove('visible','flash');void banner.offsetWidth;banner.classList.add('visible','flash');
+      audio?.effect('success');clearTimeout(levelUpTimer);levelUpTimer=setTimeout(()=>banner.classList.remove('visible','flash'),5200);}
   }
   function showSkillCard({kicker,name,note,skill}){
     const view=skills.view().find(entry=>entry.id===skill),level=skillLevel(skill,view?.xp??0);
@@ -1156,65 +1169,103 @@ function init() {
     $('bird-card-level').textContent=level.max?`${view.name} ${level.level} · ${level.xp} experience`:`${view.name} ${level.level} · ${level.xp} / ${level.next} experience`;
     $('bird-card').classList.add('visible');clearTimeout(birdCardTimer);birdCardTimer=setTimeout(()=>$('bird-card').classList.remove('visible'),7000);
   }
-  // The skills sheet in the journal: each skill's level and experience, and for birding the birds of Drent, seen and not.
+  // The skills sheet in the journal, RuneScape's way: a grid of the thirteen skills, three to a row,
+  // with the total level filling what the last of them leaves of the bottom row, and behind each tile
+  // that skill's own guide and the collection log that belongs to it.
+  const skillEl=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+  let openSkillId=null;
+  function skillMark(skill,cls='skill-tile-icon'){const mark=skillEl('span',cls);mark.setAttribute('aria-hidden','true');mark.innerHTML=skillIconSVG(skill.id);return mark;}
+  function skillProgressBar(progress){const bar=skillEl('div','skill-bar'),fill=skillEl('i');fill.style.width=`${Math.round(progress*100)}%`;bar.append(fill);return bar;}
+  function skillTile(skill){
+    const tile=skillEl('button',`skill-tile${skill.learned?'':' unlearned'}`);tile.type='button';tile.dataset.skill=skill.id;
+    tile.append(skillMark(skill),skillEl('b','',skill.name),skillEl('span','skill-tile-level',`${skill.learned?skill.level:0} / ${skill.top}`),
+      skillProgressBar(skill.learned?skill.progress:0),skillEl('span','skill-tip',skillTip(skill)));
+    tile.onclick=()=>{openSkillId=skill.id;refreshSkillsSheet();};
+    return tile;
+  }
+  function renderSkillGrid(sheet,view){
+    const grid=skillEl('div','skill-grid');
+    for(const skill of view)grid.append(skillTile(skill));
+    const total=skillEl('div','skill-tile skill-tile-total'),learned=view.filter(skill=>skill.learned).length;
+    total.append(skillEl('b','','Total level'),skillEl('span','skill-tile-level',String(skills.totalLevel())),
+      skillEl('span','skill-tip',`Total level: ${skills.totalLevel()} · Skills learned: ${learned} / ${view.length}`));
+    grid.append(total);sheet.append(grid);
+  }
+  // One skill's page: what each of its levels opens, and everything that skill has collected.
+  function renderSkillGuide(sheet,skill){
+    const card=skillEl('section','skill-card');
+    const back=skillEl('button','skill-back','‹ All skills');back.type='button';back.onclick=()=>{openSkillId=null;refreshSkillsSheet();};
+    const head=skillEl('header','skill-detail-head'),titles=skillEl('div');
+    titles.append(skillEl('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),skillEl('h3','',skill.name));
+    head.append(skillMark(skill),titles);card.append(back,head);
+    if(skill.learned)card.append(skillProgressBar(skill.progress),skillEl('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));
+    card.append(skillEl('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+    if(skill.guide.length){const guide=skillEl('ul','skill-guide');for(const entry of skill.guide){const li=skillEl('li',entry.open?'open':'locked');li.append(skillEl('b','',String(entry.level)),skillEl('span','',entry.text));guide.append(li);}
+      card.append(skillEl('h3','','What each level opens'),guide);}
+    appendSkillLog(card,skill);
+    sheet.append(card);
+  }
+  // The collection logs, which used to sit under every skill at once and now belong to their own skill's page.
+  function appendSkillLog(card,skill){
+    const el=skillEl;
+    if(skill.id==='geology'&&skill.learned){
+      const view=geology.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Stones named \u00b7 ${view.foundCount} / ${view.total}`),list);
+    }
+    for(const [id,module,label] of [['archaeology',archaeology,'Finds written up'],['wine',wine,'Wines tasted'],['cooking',cooking,'Recipes known']])if(skill.id===id&&skill.learned){
+      const view=module.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
+      // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
+      if(id==='wine'&&view.terms?.length){
+        const words=el('ul','bird-list');
+        for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
+        card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
+      }
+      // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
+      if(id==='wine'&&vineyard.met){
+        const rows=vineyard.view(),walked=el('ul','bird-list');
+        for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
+          li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
+        card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
+      }
+      if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
+    }
+    if(skill.id==='botany'&&skill.learned){
+      const view=botany.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}${entry.warning?' \u00b7 leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Plants named \u00b7 ${view.foundCount} / ${view.total}`),list);
+    }
+    if(skill.id==='mycology'&&skill.learned){
+      const view=mycology.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Mushrooms named · ${view.foundCount} / ${view.total}`),list);
+    }
+    if(skill.id==='fishing'&&skill.learned){
+      const view=fishing.view(),list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Fish landed · ${view.caughtCount} / ${view.total}`),list);
+    }
+    if(skill.id==='birding'){
+      const view=birding.view();
+      if(view.met)card.append(el('p','skill-xp',`Observation range ${observeRange(skill.level)} m · B to observe · a new kind of bird is worth experience`));
+      const list=el('ul','bird-list');
+      for(const entry of view.entries){const li=el('li',entry.seen?'seen':'unseen',entry.seen?`${entry.name}${entry.count>1?` · seen ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
+      card.append(el('h3','',`Birds of Drent · ${view.seenCount} / ${view.total}`),list);
+      if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
+    }
+  }
   function refreshSkillsSheet(){
     const sheet=$('skills-sheet');sheet.replaceChildren();
-    const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
-    sheet.append(el('p','skill-total',`Total level ${skills.totalLevel()}`));
-    for(const skill of skills.view()){
-      const card=el('section','skill-card');card.append(el('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),el('h3','',skill.name));
-      if(skill.guide.length){const guide=el('ul','skill-guide');for(const entry of skill.guide){const li=el('li',entry.open?'open':'locked');li.append(el('b','',String(entry.level)),el('span','',entry.text));guide.append(li);}card.append(guide);}
-      if(skill.learned){const bar=el('div','skill-bar'),fill=el('i');fill.style.width=`${Math.round(skill.progress*100)}%`;bar.append(fill);card.append(bar,el('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));}
-      card.append(el('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
-      if(skill.id==='geology'&&skill.learned){
-        const view=geology.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Stones named \u00b7 ${view.foundCount} / ${view.total}`),list);
-      }
-      for(const [id,module,label] of [['archaeology',archaeology,'Finds written up'],['wine',wine,'Wines tasted'],['cooking',cooking,'Recipes known']])if(skill.id===id&&skill.learned){
-        const view=module.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
-        // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
-        if(id==='wine'&&view.terms?.length){
-          const words=el('ul','bird-list');
-          for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
-          card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
-        }
-        // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
-        if(id==='wine'&&vineyard.met){
-          const rows=vineyard.view(),walked=el('ul','bird-list');
-          for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
-            li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
-          card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
-        }
-        if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
-      }
-      if(skill.id==='botany'&&skill.learned){
-        const view=botany.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` \u00b7 found ${entry.count} times`:''}${entry.warning?' \u00b7 leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Plants named \u00b7 ${view.foundCount} / ${view.total}`),list);
-      }
-      if(skill.id==='mycology'&&skill.learned){
-        const view=mycology.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.found?'seen':'unseen',entry.found?`${entry.name}${entry.count>1?` · found ${entry.count} times`:''}${entry.warning?' · leave it':''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Mushrooms named · ${view.foundCount} / ${view.total}`),list);
-      }
-      if(skill.id==='fishing'&&skill.learned){
-        const view=fishing.view(),list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.caught?'seen':'unseen',entry.caught?`${entry.name}${entry.count>1?` · ${entry.count} landed`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Fish landed · ${view.caughtCount} / ${view.total}`),list);
-      }
-      if(skill.id==='birding'){
-        const view=birding.view();
-        if(view.met)card.append(el('p','skill-xp',`Observation range ${observeRange(skill.level)} m · B to observe · a new kind of bird is worth experience`));
-        const list=el('ul','bird-list');
-        for(const entry of view.entries){const li=el('li',entry.seen?'seen':'unseen',entry.seen?`${entry.name}${entry.count>1?` · seen ${entry.count} times`:''}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
-        card.append(el('h3','',`Birds of Drent · ${view.seenCount} / ${view.total}`),list);
-        if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
-      }
-      sheet.append(card);
-    }
+    const view=skills.view(),open=openSkillId?view.find(entry=>entry.id===openSkillId):null;
+    if(open)renderSkillGuide(sheet,open);else renderSkillGrid(sheet,view);
+  }
+  /** The journal, on the Skills tab, on one skill's guide: where a level-up banner sends you. */
+  function openSkillGuide(id){
+    if(!id||!Object.hasOwn(SKILLS,id)||!['playing','journal','pause'].includes(mode))return false;
+    clearTimeout(levelUpTimer);$('level-up').classList.remove('visible','flash');
+    modal('journal');journalTab('skills');openSkillId=id;refreshSkillsSheet();return true;
   }
   function ridingAct(action){
     const hitch=LUMBER_TOWN_STABLE.hitch;
@@ -1329,7 +1380,7 @@ function init() {
     $('lesson-title').textContent=quest.lesson;$('lesson-hint').textContent=quest.hint;
     $('quest-step').textContent=questStage===10?'TIDEHAVEN · COMPLETE':`FIRST SHORE · ${questStage+1} / ${questSteps.length-1}`;
   }
-  /** Lakota waits at the head of the pier until he has given the traveler the first errand; after that he is at home in his garden. `snap` puts him there at once. */
+  /** Lakota is at home in his garden. `snap` puts him there at once rather than letting him walk. */
   function placeLakota(snap=true){
     const at=lakotaGarden,npc=npcById.get(BIRD_WATCHER.id);world.npcPositions[BIRD_WATCHER.id]={x:at.x,z:at.z};
     if(npc&&snap){npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.y=at.yaw;}
@@ -1337,7 +1388,7 @@ function init() {
   function updateQuest(event) {
     const previous=questStage;questStage=advanceQuest(questStage,event);
     if(previous===questStage)return;
-    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);placeLakota(false);}
+    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);}
     if(previous===2&&questStage===3){combat.finishPractice();audio?.effect('success');}
     if(questStage===5)audio?.effect('success');
     if(questStage===6)inventory.grant('road-token');
@@ -1409,7 +1460,7 @@ function init() {
     if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
     if(tab==='world'){const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),
       {region:world.regionAt(p.x,p.z)?.name??null,heading:HEX_WORLD_TRANSFORM.worldHeadingToAtlas(player.group.rotation.y)});refreshChart();}
-    show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills')refreshSkillsSheet();
+    show('world-map',tab==='world');show('journal-content',tab==='journey');show('trail-map',tab==='trails');show('skills-sheet',tab==='skills');if(tab==='skills'){openSkillId=null;refreshSkillsSheet();}
     for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-trails','trails'],['tab-skills','skills']])$(id).classList.toggle('active',tab===name);
     $('journal').classList.toggle('map-open',tab==='world');$('journal').classList.toggle('trail-open',tab==='trails');
     $('journal-title').textContent=tab==='world'?'Azhora':tab==='trails'?'Paths worth taking':tab==='skills'?'What you have learned':'Small beginnings';
@@ -1913,6 +1964,7 @@ function init() {
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
+    if(npc.id===HARBOURMASTER){maraOnTheLanding(npc);return;}
     if(npc.id==='merc-gotwood'&&questStage<2){chrisOnTheLanding(npc);return;}
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct});return;}
     if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
@@ -1965,7 +2017,7 @@ function init() {
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
     let lines,event=null,action='Until next time';
     if(npc.id==='fisher') {
-      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Lakota was at the head of the pier looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
+      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Mara has been at the head of the pier since it started, looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
       const said={dead:name=>`We lost ${name} out there. That is on the goblins, not on you, but I will not pretend it is nothing.`,wounded:name=>`${name} is badly hurt, but breathing. The healer is with them now.`,
         hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
@@ -1978,22 +2030,39 @@ function init() {
       event='meet-waykeeper';action='Take the token';
     } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select the letter of introduction and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
     else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the army post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
-    else if(questStage<2)lines=['Speak to Lakota at the head of the pier before you head inland. He has a small errand for you, and something to help you on the road.'];
+    else if(questStage<2)lines=['Speak to Mara at the head of the pier before you head inland. She has a small errand for you, and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
     else lines=['There is movement near the woodland bell, south of here. Approach along the main road, and keep an eye on the trees.'];
     openDialogue(npc,lines,event,action);
   }
-  /** Lakota at the head of the pier: the goblins, the letter for Corvan, the straw post, and where to find him after. */
-  // Chris Gotwood came off the same boat with the company's papers in his coat, and is the
-  // first person in Azhora who says anything to the traveler (src/mercenaries.js).
-  function chrisOnTheLanding(npc){
+  /**
+   * Mara, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Corvan, and
+   * which way the road goes. She is the first person the traveler speaks to, and the errand is hers
+   * because it is her landing and her paperwork. Chris, who came off the same boat, keeps the sword
+   * lesson below.
+   */
+  function maraOnTheLanding(npc){
+    if(questStage>=2){
+      openDialogue(npc,[questStage>=5
+        ?'Road is clear, they tell me. Good. I have two boats waiting on a tide and a quartermaster waiting on you, so neither of us is finished.'
+        :'Corvan. The Avrel clearing, past the forest. I have said it twice and I will not enjoy saying it a third time.'],
+        null,'Back to the landing');
+      return;
+    }
     updateQuest('ashore');
-    openDialogue(npc,['That bell was going before we were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
-      'Right. This is yours and I am glad to be rid of it: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service. Eren at the watch will point you at the road.',
+    openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
+      'Mara. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
+      'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road, and I keep a rough chart of this coast if you ever want a look at it.',
+      'One of your own boat is still on the landing \u2014 plain cloth, pleased with himself, Gotwood. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to.'],
+      'accept-letter','Take the letter');
+  }
+  /** Chris Gotwood, who came ashore with you: the straw post, the dodge, what a blade costs, and where he will be. */
+  function chrisOnTheLanding(npc){
+    openDialogue(npc,['Chris Gotwood. Same contract as you, same boat as you, and no, I do not know any more about it than you do.',
       'A sword is welcome here even in plain cloth, but those raiders carry snapped branches and you have nothing to hide behind. Two swings on the straw post at the northern crossroads, then try a dodge. Watch for the raised stick and hit them after the swing, not during it.',
       'Your blade wears with every hit, straw included. The repair bench is beside the post \u2014 F there mends it and nobody charges you for it. I opens your satchel.',
-      'Chris Gotwood, by the way. I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
-      'accept-letter','Take the letter');
+      'I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.'],
+      null,'Back to the landing');
   }
   function doomsayerConversation(npc){
     heardDoom=true;
@@ -2254,7 +2323,16 @@ function init() {
   };
   $('test-birds').onclick=()=>{testTravel('village');const s=world.birdGarden.stand,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Lakota to learn birding. B observes a bird; K shows your skills.','TESTING · BIRDING');};
   $('test-pond').onclick=()=>testTravel('pond');$('test-village').onclick=()=>testTravel('village');
-  $('test-horse').onclick=()=>{if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);riding.teach();placeOwnHorse();closeModal();toast('A horse, here. G mounts and dismounts · Shift canters · H whistles him up.','TESTING SESSION');};
+  // Both testing horses go through the same door as every other test-travel button: testing is turned
+  // on and badged before the horse exists, so a real adventure can never be saved on one.
+  const testHorse=fast=>{if(!testingEnabled)prepareTesting();testingEnabled=true;show('testing-badge',true);
+    if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};
+    if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);
+    riding.teach();riding.setDeveloperMount(fast);placeOwnHorse();closeModal();
+    toast(fast?`${DEVELOPER_HORSE_NAME}. ${DEVELOPER_HORSE_SPEED} times the army's pace, and in nobody's records. G mounts · Shift canters · H whistles him up.`
+      :'A horse, here. G mounts and dismounts · Shift canters · H whistles him up.',
+      fast?'TESTING · DEVELOPER HORSE':'TESTING SESSION');};
+  $('test-horse').onclick=()=>testHorse(false);$('test-dev-horse').onclick=()=>testHorse(true);
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
   for(const id of [2,3,4,9])$('test-region-'+id).onclick=()=>testTravel(id);
@@ -2267,6 +2345,7 @@ function init() {
   $('inventory-button').onclick=toggleInventory;
   $('journal-satchel').onclick=toggleInventory;
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  $('level-up').onclick=()=>openSkillGuide(levelUpSkill);
   $('tab-journey').onclick=()=>mapTab(false);$('tab-map').onclick=()=>mapTab(true);$('tab-trails').onclick=()=>journalTab('trails');$('tab-skills').onclick=()=>journalTab('skills');
   $('open-trail-map').onclick=openLocalMap;$('trail-pin-open').onclick=openLocalMap;$('trail-pin-clear').onclick=clearTrailPin;
   $('quality').onclick=()=>{fullQuality=!fullQuality;renderer.setPixelRatio(fullQuality?Math.min(devicePixelRatio,1.7):1);renderer.shadowMap.enabled=fullQuality;$('quality').textContent='Graphics: '+(fullQuality?'full':'light');};
@@ -2330,6 +2409,8 @@ function init() {
       if(mode==='dialogue')closeDialogue();
       else if(mode==='playing')modal('pause');else if(['journal','pause','testing'].includes(mode))closeModal();return;
     }
+    // While a level-up banner is up it is a door to that skill's guide.
+    if(e.code==='Enter'&&mode==='playing'&&levelUpSkill&&$('level-up').classList.contains('visible')){e.preventDefault();openSkillGuide(levelUpSkill);return;}
     if(e.code==='Enter'){if(mode==='opening'){if(document.activeElement?.closest('button'))return;e.preventDefault();begin();}else if(mode==='dialogue'){if(document.activeElement?.closest('#dialogue-choices'))return;e.preventDefault();nextSpeech();}else if(mode==='defeated')retry();return;}
     if(e.code==='Tab'&&['pause','journal','testing','dialogue','defeated'].includes(mode)) {
       const container=mode==='dialogue'?$('dialogue'):mode==='defeated'?$('defeat'):$(mode);
@@ -2368,7 +2449,7 @@ function init() {
 
   function destination() {
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
-    if(questStage===1)return{...npcById.get(BIRD_WATCHER.id).actor.group.position,name:'Lakota'};
+    if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Mara \u00b7 the harbourmaster'};
     if(questStage===2)return{...world.training,name:'Practice post'};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
     if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
@@ -2551,7 +2632,7 @@ function init() {
         player.group.rotation.y=Math.PI/2;movement=2.5;
         // Chris Gotwood landed in the same boat and steps ashore beside the traveler.
         const mate=npcById.get('merc-gotwood');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
-        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO CHRIS ON THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
+        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO MARA AT THE HEAD OF THE PIER');if(pendingTesting){pendingTesting=false;modal('testing');}}
       }
       if(autopilot.active&&!reviewFrozen){
         autopilot.step(dt);
@@ -2603,7 +2684,7 @@ function init() {
       player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted,fishing:mode==='fishing',riding:riding.mounted?{pace:movement}:null});
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
-        placeOwnHorse();const away=riding.distanceTo(player.group.position);ownHorse.group.visible=away<220;
+        placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
         if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
         show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
@@ -2644,6 +2725,12 @@ function init() {
           const step=redTailFlight.update(dt,{glove:{x:gloveAt.x,y:gloveAt.y-.04,z:gloveAt.z,yaw:a.rotation.y},anchor:{x:a.position.x,y:a.position.y,z:a.position.z},called:mode==='dialogue'&&activeDialogue?.npc?.id===BIRD_WATCHER.id});
           redTail.pose(step,elapsed);lakota.falconer=redTailFlight.perched;}}
       const lusciaDestinations=questStage===10&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
+      const markerView={questStage,busy:combat.state.phase==='active',heardDoom,
+        ids:{harbourmaster:HARBOURMASTER,warden:'warden',doomsayer:'doomsayer',acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
+        arcDestinations:questStage===10?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
+        acornQuestOpen:acornQuest.status!=='complete',feederWantsCook:birding.task()?.target==='acorn-cook',hasRod:inventory.has('fishing-rod'),
+        birdingLearned:birding.met,archaeologyReport:archaeology.task()?.stage==='report',
+        forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;
@@ -2674,13 +2761,10 @@ function init() {
         const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
-        npc.marker.visible=(questStage===5&&npc.id==='warden')||(npc.id==='acorn-cook'&&questStage>=1&&acornQuest.status!=='complete'&&combat.state.phase!=='active')||(npc.id==='doomsayer'&&!heardDoom)||(npc.id==='pond-fisher'&&!inventory.has('fishing-rod'));
-        if(journeyNpcIds.has(npc.id))npc.marker.visible=questStage===10&&journey.view().destinationIds.includes(npc.id);
-        if(lusciaDestinations.includes(npc.id))npc.marker.visible=combat.state.phase!=='active';
-        if(npc.id===BIRD_WATCHER.id)npc.marker.visible=questStage>=1&&(!birding.met||archaeology.task()?.stage==='report')&&combat.state.phase!=='active';
-        if(npc.id===VINTNER.id)npc.marker.visible=wine.quest==='recommended'&&combat.state.phase!=='active';
-        if(npc.id==='acorn-cook'&&birding.task()?.target==='acorn-cook')npc.marker.visible=combat.state.phase!=='active';
-        if(npc.id===FOREST_STORY_NPC.id)npc.marker.visible=(!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned))&&questStage>=1&&combat.state.phase!=='active';
+        // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
+        const markerKind=markerFor(npc.id,markerView);
+        if(markerKind&&npc.markerKind!==markerKind){scene.remove(npc.marker);npc.marker=makeQuestMarker(markerKind);npc.markerKind=markerKind;scene.add(npc.marker);}
+        npc.marker.visible=!!markerKind;
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);npc.marker.rotation.y=elapsed*.7;
         // Facing the traveler is a loan, given back when the talking is done (src/bodies.js).
         // Somebody posed against their work - Old Hewe at the grave he is digging, Sela at the
@@ -3051,8 +3135,8 @@ function init() {
         const walkSpeed=await speedWith(),tabSpeed=await speedWith('Tab'),shiftSpeed=await speedWith('ShiftLeft');
         assert(Math.abs(walkSpeed-4.2)<.01&&Math.abs(tabSpeed-7.2)<.01&&Math.abs(tabSpeed-shiftSpeed)<.01,'Tab/Shift running speed or walking speed is wrong');
         warp(0,9);press('KeyQ');await until(()=>player.group.position.x<-.35&&player.group.position.z<8.65,'Q forward-left failed');release('KeyQ');
-        // Beside Lakota at the head of the pier, on his open side: people and the harbour crates around him are solid now.
-        const harbor=npcById.get(BIRD_WATCHER.id);player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
+        // Beside Mara at the head of the pier, on her open side: people and the harbour crates around her are solid now.
+        const harbor=npcById.get(HARBOURMASTER);player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
         const diagonalStart=player.group.position.clone();press('KeyE');assert(mode==='playing','E triggered dialogue');await until(()=>player.group.position.x>diagonalStart.x+.35&&player.group.position.z<diagonalStart.z-.35,'E forward-right failed');release('KeyE');
         player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(-1,0,0));await frames();tap('KeyF');assert(mode==='dialogue','F talk failed');finishDialogue();assert(questStage===2,'Message assignment failed');
         assert(inventory.has('harbor-letter')&&inventory.has('simple-sword'),'Items were not received before the goblin encounter');

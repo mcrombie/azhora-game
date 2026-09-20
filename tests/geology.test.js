@@ -59,7 +59,7 @@ test('nothing is named until Silas has named it, and specimens go in the satchel
 
   for (const id of ROCK_IDS) geology.find(id);
   assert.equal(geology.view().foundCount, ROCK_IDS.length);
-  assert.ok(skills.level('geology') >= 6, `the whole coast is worth level ${skills.level('geology')}`);
+  assert.equal(skills.level('geology'), 3, `the whole coast is 210 experience, level ${skills.level('geology')}`);
 });
 
 test('stone notes survive the road, and a bad note is refused', () => {

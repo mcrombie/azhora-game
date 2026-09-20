@@ -425,8 +425,8 @@ export function planGoal(snapshot, world) {
   }
   const npc = id => world.npcPositions[id];
   switch (questStage) {
-    case 0: return { kind: 'talk', target: npc('bird-watcher'), npcId: 'bird-watcher', intent: 'Walking up the pier to Lakota' };
-    case 1: return { kind: 'talk', target: npc('bird-watcher'), npcId: 'bird-watcher', intent: 'Speaking with Lakota' };
+    case 0: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Walking up the pier to Mara' };
+    case 1: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Speaking with Mara' };
     case 2: return { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post' : 'Practising a dodge' };
     // The ambush clearing on the Greenway, a little past the warning bell.
     case 3: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Following the Greenway to the bell' };

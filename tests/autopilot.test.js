@@ -11,8 +11,8 @@ function fakeWorld() {
     heightAt: () => 1,
     colliders: [{ x: 6, z: 0, r: 1.2 }, { x: 0, z: -12.5, hx: .5, hz: .5 }],
     paths: [trail, [{ x: -21, z: 13 }, { x: 0, z: 7 }]],
-    npcPositions: { 'bird-watcher': { x: 4, z: 20 }, warden: { x: 0, z: -65 }, 'meadow-courier': { x: -7, z: -190 }, 'crossing-keeper': { x: -9, z: -352 } },
-    npcNames: { 'bird-watcher': 'Lakota', warden: 'Eren', 'meadow-courier': 'Corvan', 'crossing-keeper': 'Hollis' },
+    npcPositions: { harbormaster: { x: 4, z: 20 }, 'bird-watcher': { x: 22, z: 34 }, warden: { x: 0, z: -65 }, 'meadow-courier': { x: -7, z: -190 }, 'crossing-keeper': { x: -9, z: -352 } },
+    npcNames: { harbormaster: 'Mara', 'bird-watcher': 'Lakota', warden: 'Eren', 'meadow-courier': 'Corvan', 'crossing-keeper': 'Hollis' },
     journeySites: { 'cart-parcel-1': { id: 'cart-parcel-1', x: 15, z: -218, name: 'Cloth parcel' }, 'bridge-repair': { id: 'bridge-repair', x: 0, z: -400, name: 'Reedwater bridge' } },
     stickSites: [{ id: 'bridge-debris-1', x: -8, z: -383, collected: false }, { id: 'bridge-debris-2', x: 8, z: -389, collected: true }],
     repairBenches: [{ x: 3, z: -191 }],
@@ -66,16 +66,16 @@ test('a blocked straight line is replaced by the nearest free direction', () => 
   assert.ok(around.z < 0, 'the sidestep still makes progress');
 });
 
-test('the planner walks the tutorial: Lakota at the pier, the straw post, the bell, Eren, the satchel, the boundary', () => {
+test('the planner walks the tutorial: Mara at the pier, the straw post, the bell, Eren, the satchel, the boundary', () => {
   const world = fakeWorld();
   assert.equal(planGoal(snapshot({ mode: 'opening' }), world).kind, 'begin');
   assert.equal(planGoal(snapshot({ mode: 'arriving' }), world).kind, 'wait');
   assert.equal(planGoal(snapshot({ mode: 'pause' }), world).kind, 'wait');
   assert.equal(planGoal(snapshot({ mode: 'defeated' }), world).kind, 'retry');
-  assert.deepEqual(planGoal(snapshot({ questStage: 0 }), world).target, world.npcPositions['bird-watcher']);
-  assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'speaking to Lakota is what brings the traveler ashore');
+  assert.deepEqual(planGoal(snapshot({ questStage: 0 }), world).target, world.npcPositions.harbormaster);
+  assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'speaking to the harbourmaster is what brings the traveler ashore');
   const mara = planGoal(snapshot({ questStage: 1 }), world);
-  assert.equal(mara.kind, 'talk'); assert.equal(mara.npcId, 'bird-watcher');
+  assert.equal(mara.kind, 'talk'); assert.equal(mara.npcId, 'harbormaster');
   assert.equal(planGoal(snapshot({ questStage: 2 }), world).kind, 'practice');
   assert.match(planGoal(snapshot({ questStage: 2, practiceHits: 2 }), world).intent, /dodge/);
   assert.equal(planGoal(snapshot({ questStage: 3 }), world).kind, 'walk');
@@ -132,7 +132,7 @@ test('the computer travels at a run and walks only the last stride', () => {
   assert.equal(step({ x: 4, z: 40 }).run, true, 'a long leg is run');
   assert.equal(step({ x: 4, z: 26 }).run, true, 'still running a few strides out');
   const last = step({ x: 4.6, z: 21.4 });
-  assert.equal(last.run, false, 'the last stride up to Lakota is walked');
+  assert.equal(last.run, false, 'the last stride up to Mara is walked');
   assert.ok(Math.hypot(last.forward, last.side) > .9, 'and it is still walking toward her');
   pilot.stop();
 });
@@ -152,7 +152,7 @@ test('a mount the game refuses is given up after a few seconds, and the leg is w
   const before = asked.length;
   for (let t = 0; t < 3; t += .1) pilot.step(.1);
   assert.equal(asked.length, before, 'and then stops asking while it walks');
-  assert.ok(walking > 5, 'and walks on toward Lakota');
+  assert.ok(walking > 5, 'and walks on toward Mara');
   pilot.stop();
 });
 
@@ -246,9 +246,9 @@ test('the autopilot drives the host through a talk, paces dialogue, and stops it
   assert.equal(pilot.step(.016), null, 'inactive autopilot does nothing');
   assert.equal(pilot.start(), true); assert.equal(pilot.start(), false);
   let result = pilot.step(.016);
-  assert.equal(result.goal, 'talk'); assert.ok(result.move.forward !== 0 || result.move.side !== 0, 'walks toward Lakota');
-  assert.ok(Number.isFinite(pilot.yaw)); assert.match(pilot.intent, /Lakota/);
-  state = { ...state, position: { x: 4, z: 21.5 }, interaction: { npcId: 'bird-watcher' } };
+  assert.equal(result.goal, 'talk'); assert.ok(result.move.forward !== 0 || result.move.side !== 0, 'walks toward Mara');
+  assert.ok(Number.isFinite(pilot.yaw)); assert.match(pilot.intent, /Mara/);
+  state = { ...state, position: { x: 4, z: 21.5 }, interaction: { npcId: 'harbormaster' } };
   result = pilot.step(1);
   assert.deepEqual(calls.map(call => call.type), ['interact']);
   assert.deepEqual(result.move, { forward: 0, side: 0, run: false });

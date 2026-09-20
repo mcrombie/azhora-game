@@ -27,7 +27,7 @@ test('working skills climb RuneScape’s own table to 99, with a guide to what e
   assert.ok(Math.abs(RUNESCAPE_TABLE[91] * 2 - RUNESCAPE_TABLE[98]) < RUNESCAPE_TABLE[98] * .001, 'level 92 is half of 99');
   assert.equal(SKILLS.woodcutting.thresholds, RUNESCAPE_TABLE);
   assert.deepEqual([skillLevel('woodcutting', 82).level, skillLevel('woodcutting', 83).level, skillLevel('woodcutting', MAX_XP).level, skillLevel('woodcutting', 0).top], [1, 2, 99, 99]);
-  assert.equal(skillLevel('birding', 0).top, 10, 'the knowing skills keep their ten levels');
+  assert.equal(skillLevel('birding', 0).top, 99, 'and so do the knowing skills — one table under all of them'); // tests/skills.test.js holds that.
   // The guide agrees with the trees and the axes.
   const guide = SKILLS.woodcutting.unlocks.map(u => `${u.level} ${u.text}`).join(' | ');
   for (const k of Object.values(TREE_KINDS)) assert.match(guide, new RegExp(`${k.level} ${k.name} · ${k.xp} experience`), k.id);
@@ -38,7 +38,7 @@ test('working skills climb RuneScape’s own table to 99, with a guide to what e
   assert.deepEqual(skillGuide('woodcutting', 15).filter(u => u.open).map(u => u.level), [1, 1, 6, 15]);
   assert.equal(levelUpLine('woodcutting', 15), 'Congratulations, you’ve just advanced a Woodcutting level. You are now level 15.');
   const events = [], skills = createSkills({ onEvent: e => events.push(e) });
-  skills.learn('woodcutting'); skills.learn('birding'); skills.gain('birding', 20);
+  skills.learn('woodcutting'); skills.learn('birding'); skills.gain('birding', 83);
   const up = skills.gain('woodcutting', 2411);
   assert.deepEqual([up.level, up.levelled], [15, true]);
   assert.deepEqual(events.at(-1), { type: 'skill-gain', id: 'woodcutting', gained: 2411, level: 15, levelled: true, before: 1 });

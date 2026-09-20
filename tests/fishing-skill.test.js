@@ -48,10 +48,10 @@ test('a first fish of its kind teaches something; the second is supper', () => {
   assert.deepEqual([again.first, again.xp, again.count], [false, 0, 2]);
   assert.equal(fishing.hasCaught('sunfish'), true);
   assert.equal(fishing.hasCaught('trout'), false);
-  // Landing every fish in the game is worth six levels: 200 experience.
+  // Landing every fish in the game is worth 200 experience: three levels of ninety-nine.
   for (const id of FISH_IDS) { let roll = 0; while (!fishing.hasCaught(id) && roll < 1) { fishing.land(id === 'trout' ? 'tessen-bank' : 'reedwater', roll); roll += .01; } }
   assert.equal(fishing.caughtCount(), FISH_IDS.length);
-  assert.equal(skills.level('fishing'), 6);
+  assert.equal(skills.level('fishing'), 3);
 });
 
 test('the rod and the notes are saved with the road, and nonsense is refused', () => {

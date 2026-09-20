@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRiding, validateRidingSnapshot, steer, drive, dismountSpot, RIDE, RIDING_KEYS, RIDING_LESSON } from '../src/riding.js';
+import { createRiding, validateRidingSnapshot, steer, drive, dismountSpot, RIDE, RIDING_KEYS, RIDING_LESSON, DEVELOPER_HORSE_SPEED } from '../src/riding.js';
 
 const open = () => true;
 const yard = { x: -400, z: 230 };
@@ -134,4 +134,26 @@ test('the keys are free ones and the lesson teaches every rule the player needs'
   assert.deepEqual(RIDING_KEYS, { mount: 'KeyG', whistle: 'KeyH' });
   const lesson = RIDING_LESSON.join(' ');
   for (const needed of [/press G/i, /Shift/, /press H/i, /fight|steel/i, /graze|stand/i]) assert.match(lesson, needed);
+});
+
+test('the testing panel’s horse is faster, is flagged as a testing mount, and is never saved', () => {
+  const riding = createRiding();
+  assert.equal(riding.developerMount, false, 'an ordinary game has an ordinary horse');
+  assert.equal(riding.speed(false), RIDE.walk);
+  assert.equal(riding.speed(true), RIDE.canter);
+  riding.setDeveloperMount(true);
+  assert.equal(riding.developerMount, true);
+  assert.equal(riding.speed(false), RIDE.walk * DEVELOPER_HORSE_SPEED);
+  assert.equal(riding.speed(true), RIDE.canter * DEVELOPER_HORSE_SPEED);
+  assert.ok(DEVELOPER_HORSE_SPEED > 1, 'and the constant is the only place the number lives');
+  // It belongs to the session, not to the adventure: it is not in a snapshot, and a restore clears it.
+  riding.grant(yard, 0);
+  assert.ok(!('developerMount' in riding.snapshot()), 'the fast horse is not written down');
+  const saved = riding.snapshot(), loaded = createRiding();
+  loaded.setDeveloperMount(true);
+  assert.equal(loaded.restore(saved), true);
+  assert.equal(loaded.developerMount, false, 'a loaded adventure is never on the fast horse');
+  assert.equal(loaded.speed(true), RIDE.canter);
+  riding.setDeveloperMount(false);
+  assert.equal(riding.speed(false), RIDE.walk, 'and the ordinary horse is unchanged by any of it');
 });

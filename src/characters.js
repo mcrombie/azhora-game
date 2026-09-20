@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MARKER_STYLE } from './quest-markers.js';
 
 // Deliberately built from small, flat-shaded meshes: every villager is local,
 // inexpensive to draw, and readable even at the distance of the follow camera.
@@ -2159,13 +2160,20 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     box(book, material(0x5c4636), [0, 0, 0], [.1, .13, .022]);
     box(book, material(0xcdc1a4), [0, .004, .004], [.09, .118, .024]);
   } else if (role === 'harbormaster') {
-    // An apron and salt-grey beard distinguish the older keeper of the pier.
+    // The apron and its two straps belong to the pier, not to a particular keeper of it.
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);
     ribbon(body, leather, [-0.113, 1.277, 0.126], [-0.101, 1.093, 0.19], 0.027);
     ribbon(body, leather, [0.113, 1.277, 0.126], [0.101, 1.093, 0.19], 0.027);
-    round(head, hairMat, [0, 0.063, 0.101], [0.14, 0.106, 0.122]);
-    round(head, hairMat, [-0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
-    round(head, hairMat, [0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+    // Ovan Kell in Izolveth wears the salt-grey beard; Mara in Tidehaven wears her hair tied back,
+    // so the same apron carries two people rather than one face in two ports.
+    if (look?.beard === false) {
+      round(head, hairMat, [0, 0.052, 0], [0.152, 0.128, 0.152]);
+      round(head, hairMat, [0, 0.026, -0.126], [0.078, 0.082, 0.08]);
+    } else {
+      round(head, hairMat, [0, 0.063, 0.101], [0.14, 0.106, 0.122]);
+      round(head, hairMat, [-0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+      round(head, hairMat, [0.047, 0.133, 0.188], [0.057, 0.022, 0.025]);
+    }
   } else if (role === 'fisher' || isPondFisher) {
     const scarfMat = material(0xbf7151);
     part(body, UNIT_CYLINDER, scarfMat, [0, 1.324, 0], [0.114, 0.065, 0.098]);
@@ -3064,17 +3072,31 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
  * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
  * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
  */
-export function createHorse({ variant = 0, saddled = false } = {}) {
+/**
+ * The coats a horse can wear. The first three are the country's, picked by `variant`;
+ * `developer` is the testing panel's mount and is meant to be unmistakable, so that a fast
+ * horse can never be confused with the bay gelding the army gives you.
+ */
+export const HORSE_COATS = Object.freeze({
+  developer: Object.freeze({ coat: 0x4a3470, light: 0x5f4690, points: 0x201639, mane: 0xd8bff5 }),
+});
+const COUNTRY_COATS = Object.freeze([
+  Object.freeze({ coat: 0x6b4a32, light: 0x7d5a3f, points: 0x2f241c, mane: 0x2a201a }),
+  Object.freeze({ coat: 0x9a5a34, light: 0xad6f45, points: 0x4a3324, mane: 0x3d2a1e }),
+  Object.freeze({ coat: 0xb9b3a6, light: 0xcac5ba, points: 0x8c877d, mane: 0xd9d4c9 }),
+]);
+export function createHorse({ variant = 0, saddled = false, coat: coatName = null } = {}) {
   const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
+  const paint = HORSE_COATS[coatName] ?? COUNTRY_COATS[variation];
   const group = new THREE.Group();
-  group.name = `horse-${variation}${saddled ? '-saddled' : ''}`;
+  group.name = `horse-${coatName ?? variation}${saddled ? '-saddled' : ''}`;
   const body = new THREE.Group();
   body.name = 'Weight and hips';
   group.add(body);
-  const coat = material([0x6b4a32, 0x9a5a34, 0xb9b3a6][variation]);
-  const coatLight = material([0x7d5a3f, 0xad6f45, 0xcac5ba][variation]);
-  const points = material([0x2f241c, 0x4a3324, 0x8c877d][variation]);
-  const mane = material([0x2a201a, 0x3d2a1e, 0xd9d4c9][variation]);
+  const coat = material(paint.coat);
+  const coatLight = material(paint.light);
+  const points = material(paint.points);
+  const mane = material(paint.mane);
   const hoof = material(0x3a3129), eyeMat = material(0x1d1815), leather = material(0x5b4130), blanket = material(0x8f3b30), brass = material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
   const spine = new THREE.Group();
   spine.name = 'Spine';
@@ -3387,14 +3409,39 @@ export function groundShadow(opacity = 0.34) {
   return mesh;
 }
 
-export function makeQuestMarker() {
+/**
+ * The gold over somebody's head, in one of three kinds (src/quest-markers.js):
+ * `main` a cut stone, `plot` a rolled sheet, `skill` a leaf. Different shapes as
+ * well as different colours, so the three read apart without colour.
+ */
+export function makeQuestMarker(kind = 'main') {
+  const look = MARKER_STYLE[kind] ?? MARKER_STYLE.main;
   const group = new THREE.Group();
   group.name = 'quest-marker';
-  const mat = material(0xf3c46a, { emissive: 0xc17f24, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
-  diamond.rotation.y = Math.PI / 4;
-  const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(0xffeac1, { emissive: 0xe5be70, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
+  group.userData.markerKind = look.kind;
+  const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
+  if (look.shape === 'diamond') {
+    const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
+    diamond.rotation.y = Math.PI / 4;
+  } else if (look.shape === 'scroll') {
+    // A rolled sheet lying across, both ends showing: wide where the stone is tall.
+    const roll = part(group, new THREE.CylinderGeometry(0.056, 0.056, 0.23, 10), mat, [0, 0, 0]);
+    roll.rotation.z = Math.PI / 2;
+    for (const side of [-1, 1]) {
+      const cap = part(group, new THREE.TorusGeometry(0.06, 0.019, 5, 14), mat, [side * 0.115, 0, 0]);
+      cap.rotation.y = Math.PI / 2;
+    }
+  } else {
+    // A leaf: two cones back to back, flattened, with a stem under it.
+    for (const way of [1, -1]) {
+      const half = part(group, new THREE.ConeGeometry(0.084, 0.148, 6), mat, [0, way * 0.074, 0], [1, 1, 0.34]);
+      if (way < 0) half.rotation.x = Math.PI;
+    }
+    part(group, new THREE.CylinderGeometry(0.011, 0.011, 0.075, 5), mat, [0, -0.185, 0]);
+  }
+  const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(look.ring, { emissive: look.ringEmissive, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
   ring.rotation.x = Math.PI / 2;
+  group.scale.setScalar(look.scale);
   group.traverse((object) => {
     if (object.isMesh) {
       object.castShadow = false;

@@ -33,13 +33,13 @@ export function moveCharacter(position, dx, dz, world, radius) {
   return position;
 }
 export const questSteps = [
-  {title:'Goblins on the road', detail:'A goblin attack threatens the village. Walk ashore and find Lakota at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
-  {title:'An urgent message', detail:'Speak to Lakota at the head of the pier about the goblin attack.', lesson:'Meet your neighbors', hint:'Approach Lakota and press F to speak. F or Enter continues a conversation.'},
+  {title:'Goblins on the road', detail:'A goblin attack threatens the village. Walk ashore and find Mara, the harbourmaster, at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
+  {title:'An urgent message', detail:'Speak to Mara at the head of the pier about the goblin attack.', lesson:'Meet your neighbors', hint:'Approach Mara and press F to speak. F or Enter continues a conversation.'},
   {title:'A little preparation', detail:'Find the straw practice post at the village crossroads.', lesson:'Learn at your own pace', hint:'Left-click or R to swing. Hold a direction and press C to dodge. Land two hits on the post and try one dodge.'},
   {title:'Into the Greenway', detail:'Follow the road inland toward the woodland bell.', lesson:'The road ahead', hint:'Right-drag to look around; scroll to zoom. Your next destination glows on the map.'},
   {title:'Trouble in the trees', detail:'Drive off the three goblin raiders.', lesson:'Watch the windup', hint:'An amber arc warns of a strike. C and a direction to dodge; then left-click or R to counter. Space still jumps.'},
   {title:'The road is safe', detail:'Report the three goblins to Eren at the Greenway Watch, farther along the road.', lesson:'Catch your breath', hint:'Follow the gold marker and press F to tell Eren what happened.'},
-  {title:'What you carry', detail:"Open your satchel and read Lakota's message. Eren has given you a road token.", lesson:'Your inventory', hint:"Press I for your satchel. Hover over an item for a hint, then select Lakota's message to read it."},
+  {title:'What you carry', detail:'Open your satchel and read the letter of introduction. Eren has given you a road token.', lesson:'Your inventory', hint:'Press I for your satchel. Hover over an item for a hint, then select the letter of introduction to read it.'},
   {title:'Ready for the road', detail:'Dismiss your satchel to see the path ahead.', lesson:'Return to the world', hint:'Press I or Esc, or use Close, to dismiss your inventory.'},
   {title:'Through the northern forest', detail:'Follow the forest road to Fernway Rest.', lesson:'Find your way', hint:'Follow the gold marker along the road. L shows local trails and lets you mark a known place; M opens the wider world.'},
   {title:'Where the forest opens', detail:'Continue to the Caloss Gate and look out across the Avrel clearing.', lesson:'The edge of the wood', hint:'Keep following the road south-west as the trees thin. The farm clearing marks the next leg.'},

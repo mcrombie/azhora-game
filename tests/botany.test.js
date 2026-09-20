@@ -111,7 +111,7 @@ test('the sheet only names what has been found, and every plant in Drent is wort
   for (const id of PLANT_IDS) botany.find(id);
   const full = botany.view();
   assert.equal(full.foundCount, PLANT_IDS.length);
-  assert.ok(skills.level('botany') >= 7, 'the whole country should be worth most of the table');
+  assert.equal(skills.level('botany'), 6, 'the whole country’s thirty-four plants are 625 experience: six levels of ninety-nine');
 });
 
 test('plant notes survive the road, and a bad note is refused', () => {
