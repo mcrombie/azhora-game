@@ -87,6 +87,18 @@ export function createAtlasTransform({ anchorAtlas, anchorWorld, forwardAtlas = 
       const dx = x - anchorWorld.x, dz = z - anchorWorld.z;
       return { x: anchorAtlas.x + (dx * right.x - dz * forward.x) * k, y: anchorAtlas.y + (dx * right.y - dz * forward.y) * k };
     },
+    /**
+     * Which way a world heading points on the chart, in radians clockwise from the top of the
+     * image. The atlas is not north-up in world terms (see `northOffset`), so the traveler's
+     * facing has to go through the same rotation its position does: a heading of world -Z comes
+     * back as `northOffset`, by definition.
+     */
+    worldHeadingToAtlas(yaw) {
+      if (!Number.isFinite(yaw)) return null;
+      const dx = Math.sin(yaw), dz = Math.cos(yaw);
+      const ax = dx * right.x - dz * forward.x, ay = dx * right.y - dz * forward.y;
+      return Math.atan2(ax, -ay);
+    },
     atlasToWorld(x, y) {
       const ax = x - anchorAtlas.x, ay = y - anchorAtlas.y;
       return { x: anchorWorld.x + (ax * right.x + ay * right.y) / k, z: anchorWorld.z - (ax * forward.x + ay * forward.y) / k };

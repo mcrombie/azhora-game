@@ -30,6 +30,9 @@
 .atlas-place.place span{left:6px;top:calc(-6px + var(--nudge,0px));font-size:8.5px;letter-spacing:.04em;color:#5d4c36;font-style:italic}
 .atlas-place[hidden]{display:none}
 #atlas-traveler{position:absolute;top:0;left:0;z-index:3;pointer-events:none;transform-origin:0 0}
+#atlas-traveler b{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
+#atlas-traveler b::before{content:'';position:absolute;left:-7px;top:-24px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid #c9472f;filter:drop-shadow(0 1px 0 #fff2cc) drop-shadow(0 0 2px #3d2b1a)}
+#atlas-traveler b[hidden]{display:none}
 #atlas-traveler i{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#c9472f;border:3px solid #fff2cc;box-shadow:0 0 0 2px #3d2b1a,0 0 14px #c9472f99;animation:atlas-traveler-pulse 1.6s ease-in-out infinite}
 #atlas-traveler span{position:absolute;left:13px;top:-9px;white-space:nowrap;font:italic 12px Georgia,'Palatino Linotype',serif;color:#3d2b1a;background:#f2e6c4ee;border:1px solid #5e4630;border-radius:3px;padding:1px 6px}
 #atlas-traveler[hidden]{display:none}

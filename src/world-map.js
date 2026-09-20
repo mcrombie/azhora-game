@@ -15,6 +15,9 @@ export const LOCAL_VIEW = 520;
 export function createWorldMap() {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
+  const travelerArrow = traveler?.querySelector('b') ?? null;
+  /** Which way the traveler is facing on the chart, in radians clockwise from the top of it. */
+  let travelerHeading = null;
   let metadata, zoom = 1, fitScale = 1, offsetX = 0, offsetY = 0, width = 0, height = 0, dragging = null, travelerPoint = null;
   // The chart opens on the traveler, close enough to read; once the traveler has chosen a zoom it keeps it.
   let opened = false;
@@ -118,7 +121,15 @@ export function createWorldMap() {
     if (traveler) {
       const shown = !!travelerPoint && Number.isFinite(travelerPoint.x) && Number.isFinite(travelerPoint.y);
       traveler.hidden = !shown;
-      if (shown) traveler.style.transform = `translate(${offsetX + travelerPoint.x * scale}px,${offsetY + travelerPoint.y * scale}px)`;
+      if (shown) {
+        traveler.style.transform = `translate(${offsetX + travelerPoint.x * scale}px,${offsetY + travelerPoint.y * scale}px)`;
+        // The pointer sits outside the dot and swings round it, so the marker says both where
+        // the traveler is standing and which way they are looking.
+        if (travelerArrow) {
+          travelerArrow.hidden = travelerHeading === null;
+          if (travelerHeading !== null) travelerArrow.style.transform = `rotate(${travelerHeading * 180 / Math.PI}deg)`;
+        }
+      }
     }
     $('atlas-zoom').textContent = `${Math.round(zoom * 100)}%`;
     $('atlas-out').disabled = zoom <= 1;
@@ -207,9 +218,14 @@ export function createWorldMap() {
     if (marks) { places = marks.map(place => ({ ...place })); drawPlaces(); }
     drawOverlay(); render();
   }
-  /** Where the traveler stands on the chart, and the name of the region, for the marker's label. */
-  function setTraveler(point, { region = null } = {}) {
+  /**
+   * Where the traveler stands on the chart, which way they are facing, and the name of the
+   * region for the marker's label. `heading` is in radians clockwise from the top of the chart
+   * (src/region-layout.js `worldHeadingToAtlas`), and null hides the pointer.
+   */
+  function setTraveler(point, { region = null, heading = null } = {}) {
     travelerPoint = point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null;
+    travelerHeading = Number.isFinite(heading) ? heading : null;
     const label = traveler?.querySelector('span');
     if (label) label.textContent = region ? `You are here · ${region}` : 'You are here';
     render();

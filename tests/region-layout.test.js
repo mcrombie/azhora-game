@@ -97,3 +97,25 @@ test('the compass reports true bearings for either transform', () => {
   assert.ok(['NE', 'E'].includes(facingSea.label), `looking back at the landing is ${facingSea.label}`);
   assert.equal(compassHeading(0).labels.length, 8);
 });
+
+test('a world heading comes onto the chart through the same rotation the position does', () => {
+  const t = HEX_WORLD_TRANSFORM;
+  const degrees = radians => radians * 180 / Math.PI;
+  // World -Z is north, and its bearing on the chart is what northOffset means, by definition.
+  assert.ok(Math.abs(t.worldHeadingToAtlas(Math.PI) - t.northOffset) < 1e-9);
+  // The four quarters stay a right angle apart and keep their order going clockwise.
+  const north = t.worldHeadingToAtlas(Math.PI), east = t.worldHeadingToAtlas(Math.PI / 2);
+  const south = t.worldHeadingToAtlas(0), west = t.worldHeadingToAtlas(-Math.PI / 2);
+  const turn = (from, to) => ((degrees(to) - degrees(from)) % 360 + 540) % 360 - 180;
+  assert.ok(Math.abs(turn(north, east) - 90) < 1e-6, 'east is a right turn from north');
+  assert.ok(Math.abs(turn(east, south) - 90) < 1e-6, 'south is a right turn from east');
+  assert.ok(Math.abs(turn(south, west) - 90) < 1e-6, 'west is a right turn from south');
+  // A heading that points the way the traveler walks: the marker and the step agree.
+  for (const yaw of [0, .7, 1.9, -2.4, Math.PI]) {
+    const bearing = t.worldHeadingToAtlas(yaw);
+    const here = t.worldToAtlas(0, 0), ahead = t.worldToAtlas(Math.sin(yaw) * 50, Math.cos(yaw) * 50);
+    const walked = Math.atan2(ahead.x - here.x, -(ahead.y - here.y));
+    assert.ok(Math.abs(turn(bearing, walked)) < 1e-6, `the pointer faces the way a step goes (yaw ${yaw})`);
+  }
+  assert.equal(t.worldHeadingToAtlas(Number.NaN), null, 'and no heading hides the pointer');
+});
