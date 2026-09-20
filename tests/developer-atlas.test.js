@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { createDeveloperAtlasData, DEV_WORLD_DESTINATIONS, DEV_ATLAS_PROVENANCE,
   hitAtlasRegion, developerRegionSelection, developerAtlasMarkup, developerLocalRouteMarkup } from '../src/developer-atlas.js';
@@ -29,8 +30,25 @@ test('all authored regions have exact polygons, matching survey cells, and their
   }
 });
 
-test('developer export is derived from unchanged World Builder source using the same axial projection', async () => {
-  const sourceBytes = await readFile(new URL('../../world-builder/map/resources/examples/azhora.wwmap', import.meta.url));
+// The World Builder repo is a sibling of this one, but this checkout is not always
+// beside it: a git worktree lives several directories down, and `../../world-builder`
+// from there points at nothing. Look for the authored map up the tree instead, so the
+// provenance check still has its teeth wherever the checkout sits.
+const AUTHORED_MAP = (() => {
+  let dir = new URL('../', import.meta.url);
+  for (let up = 0; up < 8; up++) {
+    const candidate = new URL('../world-builder/map/resources/examples/azhora.wwmap', dir);
+    if (existsSync(candidate)) return candidate;
+    const parent = new URL('../', dir);
+    if (parent.href === dir.href) break;
+    dir = parent;
+  }
+  return null;
+})();
+
+test('developer export is derived from unchanged World Builder source using the same axial projection', async t => {
+  if (!AUTHORED_MAP) return t.skip('the World Builder repo is not beside this checkout');
+  const sourceBytes = await readFile(AUTHORED_MAP);
   const hash = createHash('sha256').update(sourceBytes).digest('hex');
   assert.equal(hash, metadata.sha256);
   assert.equal(hash, survey.sha256);
