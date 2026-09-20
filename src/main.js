@@ -72,6 +72,7 @@ import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { BIRD_WATCHER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createDrentBirds } from './drent-birds.js';
+import { findBird } from './bird-finder.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
 import { MYCOLOGIST, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
 import { createMushrooms } from './mushrooms.js';
@@ -620,8 +621,15 @@ function init() {
   // The letters the two Ardrys carry between Tidehaven and Applegarth (src/rena-letters.js): the only reward is that both end fond of you.
   const renaLetters=createRenaLetters({onEvent:event=>{if(event.type==='ardrys-caught-up')toast('Lorn and Hesta Ardry have caught up after eighty years. Both of them are fond of you.','THE ARDRYS’ LETTERS · FINISHED');}});
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
-  let currentBird=null,birdCardTimer=null,birdClock=0;
+  let currentBird=null,birdCardTimer=null,birdClock=0,birdWatch=null,watchedBirdId=null,watchedBirdUntil=0;
   const feederMarker=makeQuestMarker();feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
+  // The pointer over the bird the traveler is watching, so one wren can be found against a
+  // whole hedge. Deliberately not an errand's marker: a quarter of the size, a caret rather
+  // than a diamond and a ring, and birding's blue rather than the quest gold.
+  const birdPointer=new THREE.Group();
+  {const caret=new THREE.Mesh(new THREE.ConeGeometry(.08,.2,4),new THREE.MeshStandardMaterial({color:0x9fd8e8,emissive:0x59a3bd,emissiveIntensity:.62,roughness:.34,metalness:.08}));
+    caret.rotation.x=Math.PI;caret.castShadow=false;caret.receiveShadow=false;birdPointer.add(caret);}
+  birdPointer.name='bird-pointer';birdPointer.visible=false;scene.add(birdPointer);
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
   const forestHideout=createForestHideoutQuest({inventory});
@@ -1130,12 +1138,37 @@ function init() {
     const target=currentBird;if(!target){toast('No bird in view. Find one, keep your distance, and face it.','BIRDING · B');return;}
     const result=birding.observe(target.species);if(!result.ok){toast(result.reason,'BIRDING');return;}
     drentBirds.observe(target.id);
+    // Having looked at one properly, keep the pointer on it while he reads about it, rather
+    // than letting it hop to whatever lands nearer. The hold is the card's own seven seconds.
+    watchedBirdId=target.id;watchedBirdUntil=elapsed+7;
     if(result.first){showBirdCard(result);audio?.effect('success');}
     else toast(`${result.species.name} · seen ${result.count} times`,'BIRDING · ALREADY IN YOUR NOTES');
     refreshSkillsSheet();saveRoad(false);
   }
   function showBirdCard(result){
     showSkillCard({kicker:`FIRST SIGHTING · BIRDING +${result.xp}${result.levelled?` · LEVEL ${result.level}`:''}`,name:result.species.name,note:result.species.note,skill:'birding'});
+  }
+  /**
+   * The bird the pointer is on, and the box beside it. src/bird-finder.js chooses; this only
+   * puts the answer into words. The box never names a kind of bird the traveler has not
+   * identified yet - the first-sighting card is what naming one looks like, and it takes the
+   * screen back the moment he earns it. Nothing here gates the birding that was already here:
+   * if the finder finds nothing, B and the observe prompt work exactly as before.
+   */
+  function watchBird(){
+    const holding=watchedBirdUntil>elapsed?watchedBirdId:null;
+    birdWatch=mode==='playing'&&birding.met&&combat.state.phase!=='active'
+      ?findBird(drentBirds.state().birds,{position:player.group.position,heading:yaw+Math.PI,
+        range:observeRange(skills.level('birding')),watching:holding,preferred:currentBird?.id??null}):null;
+    const species=birdWatch?BIRD_SPECIES[birdWatch.species]:null;
+    if(!species){birdWatch=null;return;}
+    const known=birding.hasSeen(birdWatch.species),here=currentBird?.id===birdWatch.id;
+    $('bird-watch-kicker').textContent=known?'IN YOUR NOTES':'NOT YET IN YOUR NOTES';
+    $('bird-watch-name').textContent=known?species.name:'An unfamiliar bird';
+    $('bird-watch-where').textContent=`${birdWatch.words} · ${Math.max(1,Math.round(birdWatch.distance))} m`;
+    $('bird-watch-note').textContent=known?species.lore:species.hint;
+    $('bird-watch-prompt').textContent=here?(known?'B · look at it again':`B · ${species.xp} experience the first time`)
+      :birdWatch.behind?'Turn and look for it':'Find a clear view of it';
   }
   // The card a skill puts up when the traveler learns something new: a bird seen, a fish landed.
   /** Every bit of experience shows as a drop by the map, RuneScape fashion, and a new level gets its banner. */
@@ -1451,7 +1484,8 @@ function init() {
   }
   function localMapModel(regionId){
     const known=localMapKnown();
-    return buildLocalMapModel({world,position:player.group.position,heading:Math.PI-player.group.rotation.y,discoveries,...known,goal:destination(),regionId,trackedId:trackedPlaceId});
+    // The watched bird rides along on the sheet as it was when he opened the journal, which is what a note is.
+    return {...buildLocalMapModel({world,position:player.group.position,heading:Math.PI-player.group.rotation.y,discoveries,...known,goal:destination(),regionId,trackedId:trackedPlaceId}),bird:birdWatch};
   }
   function trackedPlace(){
     if(!trackedPlaceId)return null;
@@ -2608,9 +2642,14 @@ function init() {
         show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});
-      birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;}
-      if(mode!=='playing')currentBird=null;
+      birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
+      if(mode!=='playing'){currentBird=null;birdWatch=null;}
       show('observe-prompt',!!currentBird);if(currentBird)$('observe-label').textContent=birding.hasSeen(currentBird.species)?`Observe the ${BIRD_SPECIES[currentBird.species].name.toLowerCase()}`:'Observe the bird';
+      // The pointer bobs over the bird and the box sits beside the chart; the first-sighting
+      // card takes the screen back the moment B earns it, so the two are never up together.
+      {const watching=!!birdWatch&&mode==='playing'&&combat.state.phase!=='active';
+        birdPointer.visible=watching;show('bird-watch',watching&&!$('bird-card').classList.contains('visible'));
+        if(watching){birdPointer.position.set(birdWatch.x,birdWatch.y+.44+Math.sin(elapsed*3.1)*.05,birdWatch.z);birdPointer.rotation.y=elapsed*1.1;}}
       {const task=birding.task(),hook=world.birdGarden.hook;feederMarker.visible=task?.stage==='filled'&&combat.state.phase!=='active';if(feederMarker.visible){feederMarker.position.set(hook.x,hook.y+2.75+Math.sin(elapsed*2.5)*.1,hook.z);feederMarker.rotation.y=elapsed*.7;}}
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
@@ -2844,7 +2883,7 @@ function init() {
       // Compass bearings are true to the chart: today's road runs south-west across Drent, not north.
       const {index:headingIndex,labels:headings}=compassHeading(yaw,HEX_WORLD_TRANSFORM);
       [...$('compass').children].slice(0,5).forEach((node,i)=>node.textContent=headings[(headingIndex+2-i+8)%8]);
-      mapClock+=dt;if(mapClock>.1){updateHUD();drawMinimap(map,{world,position:player.group.position,goal:destination(),combat:combat.state,angle:player.group.rotation.y,time:elapsed,discoveries,tracked:trackedPlace(),northOffset:HEX_WORLD_TRANSFORM.northOffset});mapClock=0;}
+      mapClock+=dt;if(mapClock>.1){updateHUD();drawMinimap(map,{world,position:player.group.position,goal:destination(),combat:combat.state,angle:player.group.rotation.y,time:elapsed,discoveries,tracked:trackedPlace(),bird:birdWatch,northOffset:HEX_WORLD_TRANSFORM.northOffset});mapClock=0;}
       renderer.render(scene,camera);requestAnimationFrame(render);
     }catch(error){fail(error);}
   }
@@ -2852,7 +2891,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
