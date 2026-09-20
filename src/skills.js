@@ -107,6 +107,33 @@ export const SKILLS = Object.freeze({
       unlock(12, 'The roof'), unlock(15, 'Oak birdhouse'), unlock(15, 'A door and windows'), unlock(20, 'A bed to rest in'), unlock(25, 'A hearth and a chimney'),
       unlock(30, 'A chest'), unlock(45, 'A walnut table')]),
   }),
+  cartography: Object.freeze({
+    id: 'cartography', name: 'Cartography',
+    blurb: 'Keeping your own chart of Azhora: the ground you have walked drawn properly, the coasts you have only been shown as a shape against the sea, and the rest of it dark. Asking somebody the way is worth as much to a chart as walking it.',
+    teacher: 'Mara, the harbourmaster at the head of the pier in Tidehaven, with the rough chart the village keeps',
+    thresholds: RUNESCAPE_TABLE,
+    // A placeholder guide until src/cartography.js lands: the states a region passes through, in order.
+    unlocks: Object.freeze([unlock(1, 'Your own chart, and the ground you walk drawn on it'),
+      unlock(1, 'Ask the way: a region named and roughly placed before you reach it')]),
+  }),
+  swimming: Object.freeze({
+    id: 'swimming', name: 'Swimming', kind: 'working',
+    blurb: 'Crossing water on your own, which is slower than walking, harder than it looks, and the only way to some of this country. Your wind runs out before your arms do, and what happens after that is drowning.',
+    teacher: 'Ed the Word, who came ashore at Tidehaven out of a ship that never docked',
+    thresholds: RUNESCAPE_TABLE,
+    // A placeholder guide until src/swimming.js lands (docs/swimming.md holds the curve).
+    unlocks: Object.freeze([unlock(1, 'Enter water from a shore and swim'),
+      unlock(1, 'Your wind, and how far it carries you')]),
+  }),
+  linguist: Object.freeze({
+    id: 'linguist', name: 'Linguist',
+    blurb: 'Reading the tongues of Azhora. Every conversation in a language you do not have teaches you a little of it, whether or not you understood a word at the time.',
+    // A placeholder teacher and a placeholder guide: src/linguist.js is another hand's work and will say who really teaches it.
+    teacher: 'Anybody speaking a tongue you do not have — it is learned by listening',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'The shape of a sentence you cannot read'), unlock(25, 'Words you have heard often enough'),
+      unlock(50, 'The sense of what is being said'), unlock(75, 'What is being said, plainly'), unlock(99, 'You read it as you read your own')]),
+  }),
 });
 
 export const SKILL_IDS = Object.freeze(Object.keys(SKILLS));
@@ -131,6 +158,16 @@ export function skillGuide(id, level) {
 }
 /** RuneScape's words for a new level. */
 export const levelUpLine = (id, level) => `Congratulations, you’ve just advanced a ${SKILLS[id]?.name ?? id} level. You are now level ${level}.`;
+
+/**
+ * RuneScape's hover line for a skill: what you have, what the next level wants, and the
+ * difference. Takes one entry of `createSkills().view()`.
+ */
+export function skillTip(view) {
+  if (!view?.learned) return `Not yet learned · ${view?.teacher ?? 'nobody has offered to teach it'}`;
+  if (view.max) return `${view.name} XP: ${view.xp} · Next level at: — · Remaining XP: 0`;
+  return `${view.name} XP: ${view.xp} · Next level at: ${view.next} · Remaining XP: ${view.next - view.xp}`;
+}
 
 export function validateSkillsSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;

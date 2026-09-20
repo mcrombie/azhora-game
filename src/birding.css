@@ -25,13 +25,37 @@
 .xp-drop{position:absolute;right:0;bottom:0;font-family:Adventure,Georgia,serif;font-size:19px;color:#ffe7a4;text-shadow:0 2px 8px #0e2a24;white-space:nowrap;animation:xp-rise 1.9s ease-out forwards}
 @keyframes xp-rise{0%{transform:translateY(0);opacity:0}12%{opacity:1}75%{opacity:1}100%{transform:translateY(-130px);opacity:0}}
 #level-up{position:absolute;top:84px;left:50%;transform:translate(-50%,-10px);opacity:0;transition:opacity .6s,transform .6s;pointer-events:none;text-align:center;background:#173b31e6;border:1px solid #e5cb8588;border-radius:6px;padding:12px 26px 12px;box-shadow:0 10px 40px #0d242866;min-width:340px}
-#level-up.visible{opacity:1;transform:translate(-50%,0)}
+#level-up.visible{opacity:1;transform:translate(-50%,0);pointer-events:auto;cursor:pointer}
+#level-up.flash{animation:level-flash .9s ease-out}
+@keyframes level-flash{0%{box-shadow:0 10px 40px #0d242866,0 0 0 0 #ffe7a4cc}55%{box-shadow:0 10px 40px #0d242866,0 0 26px 7px #ffe7a466}100%{box-shadow:0 10px 40px #0d242866,0 0 0 0 #ffe7a400}}
 #level-up .eyebrow{color:#f3d27c;font-size:11px}
 #level-up h3{font-family:Adventure,Georgia,serif;font-weight:400;font-size:26px;margin:2px 0 4px;color:#fff1cf}
 #level-up p{font-size:13px;color:#e8e0c4}
 #level-up-unlock{color:#bfe3a8!important;margin-top:4px}
-#skills-sheet .skill-total{font-family:Adventure,Georgia,serif;font-size:20px;color:#ffe7ac;margin-bottom:14px}
 #skills-sheet .skill-guide{list-style:none;padding:0;margin:10px 0 6px;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
 #skills-sheet .skill-guide li{font-size:13px;display:flex;gap:10px;align-items:baseline;color:#dfdfc6}
 #skills-sheet .skill-guide li b{min-width:22px;text-align:right;color:#f3d27c;font-weight:600}
 #skills-sheet .skill-guide li.locked{opacity:.45}
+/* The skills grid: thirteen skills over three columns, with the total filling the last two cells of
+   the fifth row. Three columns rather than four because "Construction" and "Cartography" have to fit
+   on one line at the journal's width, and because three columns leave no hole: four would leave two. */
+#skills-sheet .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0}
+#skills-sheet .skill-tile{position:relative;display:grid;justify-items:center;align-content:start;gap:4px;padding:13px 9px 11px;border:1px solid #d8c68c33;border-radius:4px;background:#e8cc8c0b;color:#f2dfb9;font:inherit;text-align:center;cursor:pointer}
+#skills-sheet .skill-tile:hover,#skills-sheet .skill-tile:focus-visible{border-color:#f0d79366;background:#e8cc8c1c;outline:none}
+#skills-sheet .skill-tile b{font-family:Adventure,Georgia,serif;font-weight:400;font-size:15px;color:#fff1cf;line-height:1.2}
+#skills-sheet .skill-tile-icon{display:grid;place-items:center;width:39px;height:39px;color:#e6ce95}
+#skills-sheet .skill-tile-icon svg{width:33px;height:33px}
+#skills-sheet .skill-tile-level{font-size:13px;color:#f3d27c;letter-spacing:.04em}
+#skills-sheet .skill-tile .skill-bar{width:100%;height:3px;margin:3px 0 0}
+#skills-sheet .skill-tile.unlearned{opacity:.5}
+#skills-sheet .skill-tile.unlearned .skill-tile-icon,#skills-sheet .skill-tile.unlearned b{color:#a9b5a4}
+#skills-sheet .skill-tile-total{grid-column:span 2;cursor:default;background:#e8cc8c18;grid-auto-flow:column;justify-content:center;align-items:baseline;gap:12px}
+#skills-sheet .skill-tile-total .skill-tile-level{font-family:Adventure,Georgia,serif;font-size:25px;color:#ffe7ac}
+#skills-sheet .skill-tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);z-index:3;width:max-content;max-width:250px;padding:6px 10px;border:1px solid #e5cb8566;border-radius:4px;background:#0e2a24f2;color:#f2dfb9;font-size:11.5px;line-height:1.5;opacity:0;pointer-events:none;transition:opacity .14s}
+#skills-sheet .skill-tile:hover .skill-tip,#skills-sheet .skill-tile:focus-visible .skill-tip{opacity:1}
+#skills-sheet .skill-back{display:block;margin:0 0 10px;padding:0;border:0;background:none;color:#f3d27c;font:inherit;font-size:13px;cursor:pointer}
+#skills-sheet .skill-back:hover{text-decoration:underline}
+#skills-sheet .skill-detail-head{display:flex;align-items:center;gap:13px;margin-bottom:8px}
+#skills-sheet .skill-detail-head .skill-tile-icon{width:46px;height:46px;flex:0 0 46px}
+#skills-sheet .skill-detail-head .skill-tile-icon svg{width:40px;height:40px}
+#skills-sheet .skill-detail-head h3{margin:2px 0 0}
