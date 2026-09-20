@@ -122,7 +122,9 @@ export function createSaltSultan({ start = null } = {}) {
   /** One step. `traveler` is { x, z }. Events: 'sighted' and 'putting-out' for a traveler who can see, 'heard' near the quay, and 'moored' and 'gone' always. */
   function update(dt, traveler = null) {
     const events = [], p = here();
-    state.clock += Math.max(0, dt);
+    // Math.max(0, NaN) is NaN, and a NaN clock is a save the checkpoint will not load back.
+    if (!Number.isFinite(dt) || dt <= 0) return events;
+    state.clock += dt;
     if (state.phase === 'at-sea' && state.clock >= state.due) {
       state.phase = 'arriving'; state.clock = 0; state.heard = false;
       if (near(traveler, p.stand, SIGHT)) events.push({ type: 'sighted', port: p });
