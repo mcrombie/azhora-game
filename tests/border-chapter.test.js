@@ -119,7 +119,7 @@ test('saves round-trip without a running fight; saves from the stockade version 
 test('each side’s encounter is a valid fight against the other side’s soldiers, with the allies placed on the line', () => {
   const world = { bounds: { minX: -900, maxX: 200, minZ: -300, maxZ: 700 }, colliders: [], heightAt: () => 2 };
   for (const [side, look] of [['empire', 'coalition'], ['coalition', 'legion']]) {
-    const allies = [{ id: 'merc-brannock', name: 'Brannock', kind: 'legionary' }, { id: 'ally-2', name: 'Soldier', kind: 'legionary' }, { id: 'ally-3', name: 'Captain', kind: 'officer' }];
+    const allies = [{ id: 'merc-gotwood', name: 'Chris Gotwood', kind: 'legionary' }, { id: 'ally-2', name: 'Soldier', kind: 'legionary' }, { id: 'ally-3', name: 'Captain', kind: 'officer' }];
     const config = borderEncounter(side, allies);
     assert.equal(config.enemies.length, 8);
     assert.ok(config.enemies.every(enemy => enemy.kind === 'soldier' && enemy.look === look));

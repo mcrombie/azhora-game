@@ -916,6 +916,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const mercFurDark = isMercenary ? material(0x6a5c46) : null;
   const mercFelt = isMercenary ? material(0x473b30) : null;
   const mercStrap = isMercenary ? material(0x4b3a2b) : null;
+  // Half the new company wears spectacles, so the wire and the glass are made once each
+  // rather than per face: colour is free inside a finish, another metal is not.
+  const mercWire = isMercenary ? material(0x53575c, { metalness: 0.62, roughness: 0.34 }) : null;
+  const mercGlass = isMercenary ? material(0xdfe7ea, { roughness: 0.12, metalness: 0.1 }) : null;
   const mercInk = isMercenary ? material(new THREE.Color(skin).multiplyScalar(0.4)) : null;
   const mercScar = isMercenary ? material(new THREE.Color(skin).lerp(new THREE.Color(0x9a5442), 0.5)) : null;
 
@@ -1141,7 +1145,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       lock.rotation.set(...rotation);
     }
   } else if (isMercenary) {
-    // Ten heads of hair, none of them the traveler's tousled brown.
+    // Thirteen heads of hair, none of them the traveler’s tousled brown.
     const crop = lookGroup(head, 'hair', hairStyle);
     const fringe = (height, width) => {
       const swept = round(crop, hairMat, [-0.028, height, 0.076], [width, 0.056, 0.126]);
@@ -1201,6 +1205,32 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       for (const [y, z, size] of [[0.148, 0.126, 0.052], [0.044, 0.15, 0.047], [-0.062, 0.162, 0.041], [-0.164, 0.166, 0.033]]) round(crop, hairMat, [-0.152, y, z], [size, size * 1.2, size]);
       const knot = part(crop, new THREE.TorusGeometry(0.031, 0.01, 4, 8), linen, [-0.152, -0.208, 0.166]);
       knot.rotation.y = Math.PI / 2;
+    } else if (hairStyle === 'fine') {
+      // Thin hair combed flat: the crown sits low and close, the fringe is narrow, and
+      // the scalp reads through at the front, which is the whole point of it.
+      const flat = round(crop, hairMat, [0, 0.318, -0.03], [0.176, 0.052, 0.188]);
+      flat.rotation.x = 0.06;
+      const swept = round(crop, hairMat, [-0.02, 0.322, 0.082], [0.148, 0.036, 0.1]);
+      swept.rotation.z = -0.18;
+      nape();
+    } else if (hairStyle === 'ponytail') {
+      // Drawn back off the face, gathered at the nape, and falling straight from the tie.
+      fringe(0.332, 0.176);
+      round(crop, hairMat, [0, 0.242, -0.126], [0.19, 0.152, 0.142]);
+      const tie = part(crop, new THREE.TorusGeometry(0.048, 0.014, 4, 8), linen, [0, 0.152, -0.252]);
+      tie.rotation.y = Math.PI / 2;
+      const tail = box(crop, hairMat, [0, -0.018, -0.268], [0.082, 0.36, 0.072]);
+      tail.rotation.x = -0.11;
+    } else if (hairStyle === 'long-loose') {
+      // Long and unbound: it falls past the shoulders on both sides and down the back,
+      // and it is the one head of hair here that moves like cloth rather than like a cap.
+      fringe(0.334, 0.198);
+      for (const side of [-1, 1]) {
+        const fall = box(crop, hairMat, [side * 0.192, 0.052, -0.022], [0.078, 0.46, 0.216]);
+        fall.rotation.z = side * 0.04;
+      }
+      box(crop, hairMat, [0, 0.036, -0.192], [0.316, 0.5, 0.094]);
+      round(crop, hairMat, [0, 0.3, -0.108], [0.196, 0.15, 0.156]);
     }
   } else if (isCook) {
     // A tied chestnut bun, swept fringe, and loose temple curls distinguish
@@ -1487,6 +1517,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(marked, mercStrap, [-0.068, 0.228, 0.183], [0.066, 0.056, 0.032]);
       ribbon(marked, mercStrap, [-0.102, 0.252, 0.158], [-0.166, 0.302, -0.05], 0.024, 0.013);
       ribbon(marked, mercStrap, [-0.092, 0.204, 0.162], [-0.176, 0.236, -0.05], 0.021, 0.012);
+    } else if (mark === 'spectacles') {
+      // The same round wire pair Troy and Imani wear, which is the only kind anybody
+      // in Azhora makes; on a hired sword they are the thing you notice first.
+      spectacles(marked, 'Spectacles', mercWire, mercGlass);
     }
   }
 
@@ -1834,6 +1868,23 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(worn, linen, [0.148, 0.848, 0.144], [0.036, 0.05, 0.03]);
       round(worn, bootMat, [0.212, 0.826, 0.098], [0.048, 0.054, 0.048]);
       part(worn, UNIT_CYLINDER, bootMat, [0.212, 0.858, 0.098], [0.05, 0.014, 0.05]);
+    } else if (garment === 'robe') {
+      // Nobody else in the company wears anything that reaches the ankle. It is not
+      // armour and is not pretending to be; it is what a man wears who expects the
+      // fighting to be over before it reaches him.
+      const robeMat = material(new THREE.Color(tunic).lerp(new THREE.Color(0x2a2f3c), 0.34));
+      const hem = material(new THREE.Color(tunic).lerp(new THREE.Color(0xd8c89a), 0.5));
+      part(worn, new THREE.CylinderGeometry(0.232, 0.338, 0.86, 10), robeMat, [0, 0.55, 0], [1, 1, 0.82]);
+      part(worn, new THREE.CylinderGeometry(0.34, 0.344, 0.048, 10), hem, [0, 0.142, 0], [1, 1, 0.82]);
+      // The front opening, and a cord at the waist rather than a belt.
+      ribbon(worn, hem, [0, 1.006, 0.196], [0, 0.208, 0.268], 0.046, 0.02);
+      part(worn, UNIT_CYLINDER, hem, [0, 0.93, 0], [0.252, 0.018, 0.184]);
+      for (const side of [-1, 1]) {
+        const tail = part(worn, UNIT_CYLINDER, hem, [side * 0.06, 0.83, 0.182], [0.014, 0.18, 0.014]);
+        tail.rotation.x = -0.1;
+      }
+      // Wide sleeves that hang below the elbow.
+      for (const side of [-1, 1]) part(worn, new THREE.CylinderGeometry(0.086, 0.134, 0.24, 8), robeMat, [side * 0.238, 1.02, 0], [1, 1, 0.9]);
     }
   }
   if (isDoomsayer) {

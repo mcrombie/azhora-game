@@ -1,56 +1,131 @@
 /**
- * The mercenary company: twelve hired swords, the traveler among them, called
- * from abroad by the Ambroni Empire and mustering at the army's camp on the
- * Moros Plain. One landed beside the traveler; ten more arrive over the hours
- * that follow and walk the same road, pausing where the traveler paused, so a
- * brisk traveler stays first and a slow one is overtaken. All of it is a pure
- * function of play time, so nothing but the clock needs saving.
+ * The mercenary company: eleven hired swords, the traveler among them, called from abroad
+ * by the Ambroni Empire and mustering at the army's camp on the Moros Plain.
+ *
+ * They do not come in a line. Chris Gotwood steps off the same boat as the traveler and
+ * carries the letter that starts the whole thing. Ed the Word swims ashore out of a pirate
+ * ship that never docks. Jerry, Christin and Ciaran ride in together and argue about whether
+ * to stay together. Lakota comes alone, then Eliana alone after him, then Matt and Al the Tun
+ * together at the end of it. And somewhere in that sequence — anywhere from half a minute
+ * before the traveler lands to half a minute after the last of them — Mus beaches a small
+ * boat on a shingle strand round the headland, and walks to the muster through the woods
+ * because he does not care for roads.
+ *
+ * Everything but Mus's arrival is a pure function of play time, so nothing but the clock and
+ * one seed needs saving. They walk the same road as the traveler and pause where the traveler
+ * had business, so a brisk traveler stays first and a slow one is overtaken.
  */
-export const MERCENARY_COMPANY_SIZE = 12;
+export const MERCENARY_COMPANY_SIZE = 11;
 
-const merc = (id, name, origin, arrival, departs, pace, look, lines) => Object.freeze({ id: `merc-${id}`, name, origin, arrival, departs, pace, look: Object.freeze(look), lines: Object.freeze(lines), ...MERCENARY_STYLES[id] });
+/**
+ * When each group comes ashore, in seconds of play after the traveler lands. Three of the six
+ * are groups: people who travelled together and arrive still talking to each other.
+ */
+export const ARRIVALS = Object.freeze({ gotwood: 0, word: 360, riders: 1080, lakota: 1980, eliana: 2880, princes: 3780 });
+
+/**
+ * Mus lands on his own beach at a time nobody can predict, drawn once per game and kept in
+ * the save. The range runs from a half-minute head start on the traveler to a half-minute
+ * after the last pair, and every moment in it is equally likely.
+ */
+export const MUS_ARRIVAL = Object.freeze({ from: -30, to: ARRIVALS.princes + 30 });
+export const drawMusArrival = seed => {
+  // A mixing hash, not the sine trick and not a plain step: sin(0) is zero, which would land
+  // him at the first moment of the range whenever a game began without a seed, and one
+  // multiply leaves consecutive seeds an hour apart landing him within seconds of each other.
+  // This one avalanches, so seeds 1 and 2 are as unrelated as any other pair.
+  // The offset matters: zero survives every step of the mix unchanged, and a game begun
+  // without a seed is exactly the case that must not be predictable.
+  let h = ((Number.isFinite(seed) ? Math.trunc(seed) : 0) + 0x9e3779b9) | 0;
+  h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return MUS_ARRIVAL.from + ((h >>> 0) / 4294967296) * (MUS_ARRIVAL.to - MUS_ARRIVAL.from);
+};
+
+const merc = (id, name, origin, arrival, departs, pace, look, lines, extra = {}) =>
+  Object.freeze({ id: `merc-${id}`, name, origin, arrival, departs, pace, route: 'road', group: null,
+    look: Object.freeze(look), lines: Object.freeze(lines), ...extra, ...MERCENARY_STYLES[id] });
 
 /** Each man fights his own way; his weapon is modelled, and he will explain it. `trades` says whether he swaps his weapon for the traveler's sword. */
 export const MERCENARY_STYLES = Object.freeze({
-  brannock: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['You and I carry the same blade, so listen: three cuts in a row, each heavier, and the third lands hardest. Keep your stamina for a step aside when the amber tell shows; a swing you cannot finish is worse than none.', 'Iron wears. Find a bench and mend it before the edge goes, and carry a stick for when it does. That is the whole art, and men die for want of it.']), tradeLine: 'A trade? If you carry something other than my own blade, I will try it. Yours for mine.' }),
-  tesk: Object.freeze({ weapon: 'bow', style: 'The bow', trades: false, styleLines: Object.freeze(['I do not wait for the amber tell; I put an arrow in it at thirty paces. A bow needs room and light. In the woods I am a man with a stick.', 'Against archers, close the ground fast and never walk straight at them. Every archer you meet will try to keep a field between you.']), tradeLine: 'Trade the bow? A sword cannot reach thirty paces. No.' }),
-  oru: Object.freeze({ weapon: 'mace', style: 'The mace', trades: true, styleLines: Object.freeze(['A mace does not cut; it breaks. Slow to raise, and there is no third strike in me, but one blow through a helmet ends the argument.', 'When a maceman winds up, do not block; be somewhere else. It comes down slower than a sword and it does not stop.']), tradeLine: 'My mace for your sword? I miss having an edge. Straight swap, if you mean it.' }),
-  halvard: Object.freeze({ weapon: 'dagger', style: 'The dagger', trades: true, styleLines: Object.freeze(['Short reach, no reach at all, and I like it that way. I step inside a swing where the long weapons are useless and put the point in twice before they recover.', 'A dagger is beaten by keeping your distance. Nobody keeps their distance.']), tradeLine: 'Your sword for my dagger? You would be trading down, and I would be trading up. I accept.' }),
-  dain: Object.freeze({ weapon: 'axe', style: 'The axe', trades: true, styleLines: Object.freeze(['The axe hooks: a shield rim, a spear shaft, a knee. Heavier than your sword, and it bites deep on the second swing.', "Against an axe, watch the shoulder. It goes back before the cut comes, longer than a sword's, and that is your moment to step in or out."]), tradeLine: 'The axe for the sword? Aye. My arms are tired of it. Swap.' }),
-  cassel: Object.freeze({ weapon: 'spear', style: 'The spear', trades: false, styleLines: Object.freeze(['Two paces of ash between me and anything with teeth. Thrust, recover, thrust; I never let a goblin inside the point.', 'If a spearman gets his point on you, go left or right, not back. Back is where he wants you.']), tradeLine: 'The spear stays with me. A spearman without a spear is a farmer.' }),
-  pell: Object.freeze({ weapon: 'spears', style: 'Two spears, one to throw', trades: false, styleLines: Object.freeze(['Two spears: a medium one for the line and a short one I throw. The throw is the trick. The first thing you see of a fight with me is a spear in your leg.', 'When a man carries more than one spear, count them. He will not close until he has thrown the short one.']), tradeLine: 'I need both spears, and you would not know what to do with either.' }),
-  yorvo: Object.freeze({ weapon: 'pike', style: 'The long spear', trades: false, styleLines: Object.freeze(['Nothing reaches me before I reach it. The long spear rules open ground and is worthless in a doorway.', 'On the Moros there are no doorways. If you ever face a wall of these, get to the side of it; the front is a hedge of points.']), tradeLine: 'Trade a pike for a sword? Then who holds the line? No.' }),
-  anselm: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['Sword and shield: I take the first blow on the boards and answer over the rim. Slower than you, harder to kill.', 'Against a shield, feint high and cut the legs. Army soldiers fight this way; remember it if the contract ever turns.']), tradeLine: 'I would try another edge, if it is not a sword like mine. Yours for mine, then.' }),
-  kest: Object.freeze({ weapon: 'greatsword', style: 'The greatsword', trades: true, styleLines: Object.freeze(["Two hands, one edge, and everything within a cart's width. The great blade is slow to start and impossible to stop; I clear ground with it.", 'Get inside the arc or stay well out. The middle is where people die.']), tradeLine: 'The great blade for your little one? I have wanted to rest my back for a month. Swap, and welcome.' }),
-  fennick: Object.freeze({ weapon: 'staff', style: 'The quarterstaff', trades: false, styleLines: Object.freeze(['A staff. Laugh; the goblins did. It has two ends, it strikes twice as often as your sword, and nobody hangs you for carrying one.', 'It will not cut, so I aim for hands and knees. A man who cannot hold his weapon has lost.']), tradeLine: 'You would want my staff? No. It is the only thing I own that has never broken.' }),
+  gotwood: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['We carry the same blade, so I can actually be useful to you here. Three cuts in a row, each heavier than the last, and the third lands hardest. Keep something back for a step aside when the amber shows.', 'Mend it before the edge goes rather than after. I know that sounds obvious. I have watched four men die of not doing it.']), tradeLine: 'A trade? If it is not another sword like mine, I will try it. Yours for mine, and no hard feelings either way.' }),
+  word: Object.freeze({ weapon: 'dagger', style: 'The dagger, and whatever else is to hand', trades: true, styleLines: Object.freeze(['A dagger! Everyone is very disappointed when they see it. Then I am inside the swing where their long beautiful weapon does nothing at all, and we have a completely different conversation.', 'The trick is never to be where the fight is. People think that is cowardice. People are usually dead.']), tradeLine: 'Your sword for my dagger? You are getting the worse end of that and I am delighted. Yes. Absolutely yes. Before you think about it.' }),
+  jerry: Object.freeze({ weapon: 'bow', style: 'The bow', trades: false, styleLines: Object.freeze(['I put an arrow in it at thirty paces and then I do not have to think about it any more. That is the entire appeal.', 'In woodland I am a man holding a stick. Do not let anyone tell you an archer is worth anything in a wood.']), tradeLine: 'Trade the bow for a sword. So that I can be close to the fighting. No.' }),
+  christin: Object.freeze({ weapon: 'sword-shield', style: 'Sword and shield', trades: true, styleLines: Object.freeze(['I take the first blow on the boards and answer over the rim. It is slower than what you do and much harder to kill, and it means I can stand in front of somebody who needs it.', 'Against a shield, feint high and cut low. I am telling you how to beat me because you are more use to me knowing it.']), tradeLine: 'I would try another edge, if it is not a sword like mine. Swap, and mind the rim, it catches.' }),
+  ciaran: Object.freeze({ weapon: 'spear', style: 'The spear', trades: false, styleLines: Object.freeze(['Two paces of ash between me and the thing trying to kill me. Thrust, recover, thrust. I have never once wanted to be nearer.', 'If a spearman gets his point on you, go left or right. Never back. Back is exactly where he is sending you.']), tradeLine: 'The spear stays. It is the only reason any of this has worked so far.' }),
+  lakota: Object.freeze({ weapon: 'staff', style: 'The quarterstaff', trades: false, styleLines: Object.freeze(['A staff. Go on, laugh, everyone does. It has two ends, it strikes twice as often as your sword, and no watchman has ever once asked me to leave it at a gate.', 'It will not cut, so I go for hands and knees. A man who cannot hold his weapon has lost, and he gets to walk home about it.']), tradeLine: 'My staff? No. It is the only thing I own that has never let me down, and I include people in that.' }),
+  eliana: Object.freeze({ weapon: 'greatsword', style: 'The greatsword', trades: true, styleLines: Object.freeze(['Two hands, one edge, and everything within a cart\u2019s width of me. It is slow to start and it cannot be stopped once it is going, which is a thing to know about it and also about me.', 'Get inside the arc or stay well outside it. The middle is where people die and they always choose the middle.']), tradeLine: 'The great blade for your little one? My back has wanted this conversation for a month. Swap.' }),
+  matt: Object.freeze({ weapon: 'pike', style: 'The long spear', trades: false, styleLines: Object.freeze(['The phalanx is four hundred years old and has never once been improved upon. Nothing reaches me before I reach it. In a doorway I am furniture, but we are not going to fight in a doorway.', 'If you ever face a wall of these, go round it. The front of it is a hedge of points and the men behind are not tired yet.']), tradeLine: 'Trade a pike for a sword? Then who holds the line, and with what? No. Thank you, but no.' }),
+  altun: Object.freeze({ weapon: 'mace', style: 'The mace, when it comes to that', trades: true, styleLines: Object.freeze(['The mace is for when the other thing has not worked. It does not cut, it breaks, and there is no second blow in me, so I would rather it never came to the mace at all.', 'When a man winds up with one of these, do not block it. Be elsewhere. It comes down slower than a sword and it does not stop.']), tradeLine: 'My mace for your sword? I miss having an edge. I miss a great many things. Yes, swap.' }),
+  mus: Object.freeze({ weapon: 'spears', style: 'Two spears, one of them thrown', trades: false, styleLines: Object.freeze(['A medium one for standing and a short one that leaves my hand. The first thing most people learn about a fight with me is that there is a spear in their leg.', 'Count a man\u2019s spears before you close. He will not come near you until the short one has gone.']), tradeLine: 'I need both. You would not know what to do with either, and I mean that kindly.' }),
 });
-
-/** Arrival and departure are seconds of play after the traveler's landing; pace is metres per second on the road. */
+/**
+ * Arrival and departure are seconds of play after the traveler's landing; pace is metres per
+ * second on the road. `group` names the people somebody arrived with and is the reason they
+ * are still arguing when you reach them; `route` is how they get to the muster.
+ */
 export const MERCENARY_ROSTER = Object.freeze([
-  merc('brannock', 'Brannock', 'the Marosh fens', 0, 420, 1.28, { tunic: 0x6b5a3e, hair: 0x2b221b, skin: 0xd7ad7e, build: 'broad', headgear: 'bare', hairStyle: 'cropped', facialHair: 'full', garment: 'gambeson', marks: ['scar'] },
-    ['Same boat, same coin. Brannock, out of the Marosh fens. I’ll give the village a look and take the road after you; no sense two of us crowding one quartermaster.', 'They say the muster is an army camp out on the Moros Plain, past some river. I’ll see you there, or on the way.']),
-  merc('tesk', 'Tesk', 'the Selemi coast', 240, 45, 1.36, { tunic: 0x4f6a5b, hair: 0x5a3d26, skin: 0xd7ad7e, build: 'rangy', headgear: 'bandana', hairStyle: 'long-tied', facialHair: 'stubble', garment: 'archer', marks: [] },
-    ['Tesk. Selemi coast, before the coast stopped paying. You landed ahead of me, so you know the road better than I do.', 'A river, a rise, and a plain, the letter said. I walk fast. Don’t take it personally when I pass you.']),
-  merc('oru', 'Oru', 'the southern islands', 540, 60, 1.22, { tunic: 0x7a4a3a, hair: 0x1f1a16, skin: 0x8f6a4a, build: 'bull', headgear: 'bald', hairStyle: 'none', facialHair: 'braided', garment: 'fur-mantle', marks: ['tattoo'] },
-    ['Oru. The islands in the south, where the Coalition is buying spears too. The Empire paid first, so here I am.', 'Cold country. I’ll keep moving so I stop noticing it.']),
-  merc('halvard', 'Halvard', 'Feradom', 900, 50, 1.3, { tunic: 0x5c5b6e, hair: 0xa38b5c, skin: 0xe2bd93, build: 'wiry', headgear: 'bare', hairStyle: 'shaved-sides', facialHair: 'moustache', garment: 'sash', marks: ['earring'] },
-    ['Halvard, of Feradom. My father fought for the old emperor. I fight for whoever writes the contract.', 'Twelve of us, they said, and a whole army. That is a lot of coin for one border.']),
-  merc('dain', 'Dain Marrow', 'the Izoli ports', 1320, 70, 1.34, { tunic: 0x8a7a4a, hair: 0x3a3a3a, skin: 0xd7ad7e, build: 'square', headgear: 'wide-brim', hairStyle: 'receding', facialHair: 'clean', garment: 'bare-forearms', marks: [] },
-    ['Dain Marrow. Izoli ports, though I would not say so loudly around an army post. I’m no rebel; I’m a man with a sword and rent to pay.', 'Which way is the quartermaster? I’d rather be signed in before dark.']),
-  merc('cassel', 'Cassel', 'the Pyrosi hills', 1800, 40, 1.4, { tunic: 0x3f5a6b, hair: 0x6b4b2b, skin: 0xc99b70, build: 'tall-lean', headgear: 'fur-cap', hairStyle: 'lank', facialHair: 'stubble', garment: 'short-cloak', marks: [] },
-    ['Cassel, from the Pyrosi hills. Pyros sent a handful to the other side, so I came to this one. Family argument.', 'Keep your eyes on the woods. Goblins do not care whose coin you carry.']),
-  merc('pell', 'Pell', 'the Izoli ports', 2400, 55, 1.26, { tunic: 0x6e4f5a, hair: 0x7a5a3a, skin: 0xd7ad7e, build: 'short-stocky', headgear: 'soft-cap', hairStyle: 'curls', facialHair: 'bushy', garment: 'scarf', marks: [] },
-    ['Pell. I came over with Dain, then lost him at the first tavern. He will be ahead of me by now; he always is.', 'A road with a bridge and then a plain. I can manage a road.']),
-  merc('yorvo', 'Yorvo', 'the southern islands', 3000, 60, 1.2, { tunic: 0x5a6b3f, hair: 0x2f2a25, skin: 0x8f6a4a, build: 'towering', headgear: 'bare', hairStyle: 'topknot', facialHair: 'clean', garment: 'wrapped-kilt', marks: ['tattoo'] },
-    ['Yorvo. Islands. I row better than I walk, and the road here does not row.', 'When we all stand in one camp, count us. The Empire will, and it pays by the head.']),
-  merc('anselm', 'Anselm', 'Feradom', 3720, 50, 1.32, { tunic: 0x7c6b55, hair: 0x8f7550, skin: 0xe2bd93, build: 'heavy', headgear: 'iron-skullcap', hairStyle: 'cropped', facialHair: 'trimmed', garment: 'single-pauldron', marks: ['eye-patch'] },
-    ['Anselm, of Feradom, late of three other companies. This one at least feeds you before the fighting.', 'The rise past the river has a shrine, they say. I will light nothing there; I never know whose gods are listening.']),
-  merc('kest', 'Ruddy Kest', 'the Marosh fens', 4500, 45, 1.38, { tunic: 0x4a5c6b, hair: 0xb04a2a, skin: 0xe2bd93, build: 'raw-boned', headgear: 'bare', hairStyle: 'mane', facialHair: 'forked', garment: 'sleeveless', marks: [] },
-    ['Ruddy Kest, and yes, the hair. Marosh fens, same as Brannock, though he left a season before me.', 'I don’t stop for much. If you want company on the road, you will have to keep up.']),
-  merc('fennick', 'Fennick', 'the Selemi coast', 5400, 60, 1.24, { tunic: 0x6b4a4a, hair: 0x4a3524, skin: 0xd7ad7e, build: 'slight', headgear: 'hood', hairStyle: 'braid', facialHair: 'clean', garment: 'bedroll', marks: ['earring'] },
-    ['Fennick, last off the boats, as usual. Selemi coast. My brother is somewhere on the other side of this war and I try not to think about it.', 'If the camp is where they say, I will make it by nightfall. Save me a place by the fire.']),
+  merc('gotwood', 'Chris Gotwood', 'Feradom', ARRIVALS.gotwood, 420, 1.28,
+    { tunic: 0x6b6f5a, hair: 0xd8c893, skin: 0xe2bd93, build: 'ordinary', headgear: 'bare', hairStyle: 'fine', facialHair: 'full', garment: 'jerkin', marks: ['spectacles'] },
+    ['Chris Gotwood. Same boat, same coin, and I have the letter they gave us both \u2014 you take it, you are the one they wrote it about. The army\u2019s post is up the road in the Avrel clearing.',
+      'I will give the village a look and come after you. No sense the two of us crowding one quartermaster.'],
+    { group: null, carriesLetter: true }),
+  merc('word', 'Ed the Word', 'no port he will name', ARRIVALS.word, 180, 1.34,
+    { tunic: 0x7a5a4a, hair: 0xc9a84e, skin: 0xe2bd93, build: 'rangy', headgear: 'bandana', hairStyle: 'braid', facialHair: 'clean', garment: 'sash', marks: ['earring'] },
+    ['Ed. Ed the Word. You saw the ship, everyone saw the ship, and the ship has gone, which I think we can all agree is the happiest possible outcome for the ship.',
+      'I came ashore under my own power because I felt like it. A man wants a swim. A man wants an adventure. A man is absolutely not here for any other reason.'],
+    { route: 'shore', swims: true,
+      says: { walking: 'Walking! To a war! Voluntarily! Do you know, I have done stranger things this month.',
+        stopped: 'No no, you go on. I am having a look at something and it is absolutely not worth explaining.',
+        mustered: 'And here we all are, counted and written down in a book. I have spent a great deal of my life avoiding books.' } }),
+  merc('jerry', 'Jerry', 'the Izoli ports', ARRIVALS.riders, 90, 1.3,
+    { tunic: 0x4a5560, hair: 0x1f1a16, skin: 0xd7ad7e, build: 'slight', headgear: 'bare', hairStyle: 'curls', facialHair: 'clean', garment: 'archer', marks: ['spectacles'] },
+    ['Jerry. I came up with those two and I have heard every thought either of them has had since the crossing.',
+      'Eleven of us for one border. Either it is a small border or somebody has done the arithmetic and not told us. I know which I would bet on.'],
+    { group: 'riders' }),
+  merc('christin', 'Christin', 'the Selemi coast', ARRIVALS.riders, 90, 1.26,
+    { tunic: 0x6d7f6a, hair: 0x1f1a16, skin: 0x9d7350, build: 'broad', headgear: 'bare', hairStyle: 'ponytail', facialHair: 'clean', garment: 'gambeson', marks: [] },
+    ['Christin! You are the one who landed first, then. Good \u2014 you know the road and we do not, so that is settled, we go together.',
+      'Jerry will tell you we should split up. Jerry tells everybody that. Jerry has never once been right about it.'],
+    { group: 'riders' }),
+  merc('ciaran', 'Ciar\u00e1n', 'Feradom', ARRIVALS.riders, 90, 1.32,
+    { tunic: 0x5a6b7c, hair: 0x16120f, skin: 0x6b4a33, build: 'square', headgear: 'bare', hairStyle: 'cropped', facialHair: 'clean', garment: 'scarf', marks: ['spectacles'] },
+    ['Ciar\u00e1n. The accent is on the second half, and no, I do not mind, everybody does it.',
+      'I will go with whoever is going. Together is warmer and alone is quicker, and I have not yet met the argument that settles it.'],
+    { group: 'riders' }),
+  merc('lakota', 'Lakota', 'the Marosh fens', ARRIVALS.lakota, 60, 1.24,
+    { tunic: 0xe4d8bd, hair: 0x4a3524, skin: 0xd7ad7e, build: 'wiry', headgear: 'soft-cap', hairStyle: 'lank', facialHair: 'stubble', garment: 'bedroll', marks: [] },
+    ['Lakota. Yes, I am late. There was a bird on the mast for two days and I was not going to be the man who did not look at it.',
+      'I am told there is a muster and a plain and a war. All of that is still going to be there. Have you ever actually looked at a hawk?'],
+    { teaches: true }),
+  merc('eliana', 'Eliana', 'the Pyrosi hills', ARRIVALS.eliana, 75, 1.36,
+    { tunic: 0x5c4a5e, hair: 0x14110f, skin: 0xd7ad7e, build: 'tall-lean', headgear: 'bare', hairStyle: 'long-loose', facialHair: 'clean', garment: 'sleeveless', marks: ['spectacles'] },
+    ['Eliana. I came on my own and I would have come sooner, but the boat I wanted was not the boat that was leaving.',
+      'You have walked some of this already, I can tell. Tell me what is on the road and I will tell you whether I believe you.']),
+  merc('matt', 'Matt, Prince of Zorkys', 'Zorkys', ARRIVALS.princes, 120, 1.22,
+    { tunic: 0x7a3b3b, hair: 0x6b4b2b, skin: 0xe2bd93, build: 'heavy', headgear: 'bare', hairStyle: 'curls', facialHair: 'clean', garment: 'single-pauldron', marks: ['spectacles'] },
+    ['Matt. Of Zorkys, and yes, prince, and no, it does not mean what you are imagining \u2014 it means a hall, a valley, and four hundred people who expect me back.',
+      'I came because the histories are full of men who were sent and rather thin on men who went. Al and I have argued about that the whole crossing and he is still wrong.'],
+    { group: 'princes' }),
+  merc('altun', 'Al the Tun', 'the southern islands', ARRIVALS.princes, 120, 1.2,
+    { tunic: 0x3f4a5c, hair: 0x16130f, skin: 0xe8c8a0, build: 'short-stocky', headgear: 'bare', hairStyle: 'lank', facialHair: 'clean', garment: 'robe', marks: [] },
+    ['Al the Tun. I travelled with him and I have not agreed with him once, which he mistakes for losing.',
+      'You are looking at the robe. Everyone looks at the robe. I will tell you what it is for when there is a reason to, and not before.'],
+    { group: 'princes' }),
+  merc('mus', 'Mus', 'nowhere he has said', 0, 45, 1.42,
+    { tunic: 0x4a453c, hair: 0x16120f, skin: 0x8f6a4a, build: 'raw-boned', headgear: 'hood', hairStyle: 'cropped', facialHair: 'trimmed', garment: 'short-cloak', marks: [] },
+    ['Mus.',
+      'I do not use the road. It goes where everybody knows it goes. I will see you at the plain.'],
+    { route: 'wild', drawn: true,
+      says: { walking: 'Road today. It is quicker with company.', stopped: 'Go on.', mustered: 'I have been here a while.' } }),
 ]);
 
+/** Everyone who came ashore with somebody else, and is still talking to them about it. */
+export const MERCENARY_GROUPS = Object.freeze({
+  riders: Object.freeze(['merc-jerry', 'merc-christin', 'merc-ciaran']),
+  princes: Object.freeze(['merc-matt', 'merc-altun']),
+});
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /** Cumulative lengths along a polyline road. */
@@ -117,8 +192,12 @@ export function mercenaryProgress(mercenary, playSeconds, stops, musterDistance)
  * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, roster = MERCENARY_ROSTER } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, seed = 0, roster = MERCENARY_ROSTER } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
+  // Mus is the only one whose hour is not written down. It is drawn once from the seed the
+  // game was started with and kept in the save, so he lands at the same moment on every
+  // reload of that game and a different one in the next.
+  roster = roster.map(entry => entry.drawn ? Object.freeze({ ...entry, arrival: drawMusArrival(seed) }) : entry);
   const lengths = roadLengths(road);
   const musterDistance = muster ? distanceAlongRoad(road, muster, lengths) : lengths[lengths.length - 1];
   const roadStops = stops.map(stop => ({ id: stop.id, dwell: stop.dwell, distance: distanceAlongRoad(road, stop.point, lengths) }));
@@ -187,9 +266,13 @@ export function mercenaryWeapon(id) {
 export function mercenaryLines(id, placement) {
   const mercenary = MERCENARY_ROSTER.find(entry => entry.id === id);
   if (!mercenary) return [];
-  const status = placement?.phase === 'mustered' ? 'We made it, then. The camp counts heads at dusk; make sure yours is one of them.'
-    : placement?.phase === 'stopped' ? 'Same errand as you, I expect. Go on ahead; I will catch you up.'
-    : placement?.phase === 'walking' ? 'No time to stand about. The camp on the Moros Plain, that is the word. Walk with me or after me.'
-    : mercenary.lines[1];
+  // Most of them say the ordinary thing for where they are. Two of them would never say it:
+  // a man who talks the way Ed talks does not tell you there is no time to stand about, and
+  // Mus does not use four sentences where none will do.
+  const shared = { mustered: 'We made it, then. The camp counts heads at dusk; make sure yours is one of them.',
+    stopped: 'Same errand as you, I expect. Go on ahead; I will catch you up.',
+    walking: 'No time to stand about. The camp on the Moros Plain, that is the word. Walk with me or after me.' };
+  const phase = placement?.phase;
+  const status = phase && (mercenary.says?.[phase] ?? shared[phase]) || mercenary.lines[1];
   return [mercenary.lines[0], status];
 }

@@ -2446,8 +2446,8 @@ function init() {
         arrivalProgress=Math.min(1,arrivalProgress+dt/1.9);
         player.group.position.set(THREE.MathUtils.lerp(world.boatStart.x,world.spawn.x,arrivalProgress),THREE.MathUtils.lerp(world.boatStart.y,1.8,Math.min(1,arrivalProgress*1.5)),world.spawn.z);
         player.group.rotation.y=Math.PI/2;movement=2.5;
-        // Brannock landed in the same boat and steps ashore beside the traveler.
-        const mate=npcById.get('merc-brannock');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
+        // Chris Gotwood landed in the same boat and steps ashore beside the traveler.
+        const mate=npcById.get('merc-gotwood');if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
         if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','FIND MARA AT THE LANDING');if(pendingTesting){pendingTesting=false;modal('testing');}}
       }
       if(autopilot.active&&!reviewFrozen){

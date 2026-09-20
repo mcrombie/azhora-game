@@ -52,7 +52,7 @@ test('every hired sword is built with his own look and the weapon of his fightin
       assert.ok(up.y > 0.95, `${mercenary.name}'s ${planted.name} stands upright (${up.y.toFixed(2)})`);
     }
   }
-  assert.equal(seen.size, 11, 'eleven men, eleven different kits');
+  assert.equal(seen.size, MERCENARY_ROSTER.length, 'every hired sword is built as a different man');
 });
 
 test('the traveler’s own model can show any tradeable weapon, and only one at a time', () => {
@@ -78,7 +78,7 @@ test('no two hired swords share a build, a headgear, a hair, a jaw and a garment
   // Silhouette before colour: the strongest cues may not repeat at all.
   for (const field of ['build', 'garment']) {
     const values = MERCENARY_ROSTER.map(mercenary => mercenary.look[field]);
-    assert.equal(new Set(values).size, values.length, `eleven different values of ${field}`);
+    assert.equal(new Set(values).size, values.length, `a different ${field} for each of them`);
   }
 });
 
