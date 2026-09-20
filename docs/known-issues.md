@@ -263,3 +263,64 @@ whoever lands the western regions is the one who will see the failure and should
 Nothing else in the test suite pins the world's western edge: the only other `WORLD_BOUNDS.minX`
 assertion is `tests/regions-world.test.js:40`, which checks the world reports the bounds it was
 given and is true at any size.
+
+---
+
+## The developer tools are a headline feature of the title screen
+
+**Not a bug today.** This is written down because the game is being considered as a public static
+site, and on that day this stops being a convenience and becomes the first thing a visitor sees.
+
+**Measured.** The testing surface has three doors, and only one of them is gated:
+
+| door | gate |
+|---|---|
+| `window.__AZHORA__` (`review`, `runSmoke`, every driver) | `?test=1` — `src/main.js:2748` |
+| the **F8** key | **none** — `src/main.js:2212`, five hundred lines outside that gate |
+| two buttons in the ordinary interface | **none** |
+
+The two buttons are not hidden and nothing ever hides them (`show('testing-badge', …)` is the only
+thing toggled):
+
+- on the **opening screen**, beside "Continue adventure": `Explore testing tools  F8`
+- in the **pause menu**: `Testing tools · F8`
+
+What opens is headed **"FOUR REGIONS · PLAYTESTING"** — "Try the new things." — and offers twenty-two
+controls, including:
+
+- `Ghost view developer · atlas / free flight` — the World Builder hex atlas and a free camera
+- `Developer chart: reveal the whole map`
+- `Skip tutorial & give camp supplies`
+- `Elod · East Suval, behind the gate` — into the region the main quest spends its length keeping shut
+- travel to Peblos, Izolveth, Luscia, the Moros Plain, East Suval and Elagos · Ambron
+
+`src/build-status.js` describes several of those as unfinished in its own words — East Suval is
+"a way in… No quest, no trade, no interiors." The tools are a door straight into them.
+
+**What is not wrong.** Two things worth saying, because they are the parts that would actually
+matter and they are already right:
+
+1. **A testing session cannot touch a real save.** Every travel button goes through `testTravel`,
+   which calls `prepareTesting()` and sets `testingEnabled`, and `saveRoad` refuses outright while
+   that is set (`src/main.js:1552`). `Developer chart: reveal the whole map` toggles a view-only
+   `chartRevealed` flag and never touches `mapFog`, so it is not written to the chart either.
+2. **The browser fallback is already clean.** `roadStorage = window.azhoraRoadStorage || localStorage`
+   inside a `try`, so a build with no Electron preload saves to localStorage and a build with storage
+   disabled still plays.
+
+So there is nothing here that corrupts a player's game or reaches beyond their own browser. The cost
+is presentational: an unfinished-build vocabulary on the title screen, and a spoiler door into
+regions the story has not opened yet.
+
+**Ways out, in order of how little they cost:**
+
+1. Hide the two buttons and ignore F8 unless `?test=1` is present — the gate that already exists for
+   `window.__AZHORA__`, applied to the other two doors. The smoke tests all run with `?test=1`, so
+   nothing in the harness changes. One condition, two `hidden` attributes.
+2. Keep F8 as an undocumented key and hide only the buttons. Playtesters keep their shortcut; a
+   visitor is not invited.
+3. Leave it, and treat the tools as part of what is being shown. That is a real choice for a game
+   posted as a work in progress — but it should be a choice, and the panel's wording would want to
+   change, because "FOUR REGIONS · PLAYTESTING" is addressed to the person building it.
+
+**Repro:** open the game, press F8, or read the opening screen.
