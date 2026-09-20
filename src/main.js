@@ -2358,7 +2358,7 @@ function init() {
     $('weapon-name').textContent=weapon.name;$('weapon-value').textContent=weapon.usable?`${weapon.durability} / ${weapon.maxDurability}`:weapon.owned?'Broken':'None left';
     $('weapon-fill').style.width=`${weapon.durability/weapon.maxDurability*100}%`;
     $('weapon-meter').setAttribute('aria-valuemax',weapon.maxDurability);$('weapon-meter').setAttribute('aria-valuenow',weapon.durability);
-    $('weapon-condition').classList.toggle('worn',weapon.durability<=Math.ceil(weapon.maxDurability*.25));
+    $('weapon-condition').classList.toggle('worn',weapon.worn);
     show('lesson',mode==='playing'&&questStage<10);show('practice-progress',questStage===2);
     $('inventory-count').textContent=inventory.items().length;
     $('inventory-button').classList.toggle('needs-attention',questStage===6||questStage===7);

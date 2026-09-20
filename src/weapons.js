@@ -63,6 +63,10 @@ export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEA
     return {
       id, name: type.name, owned, equipped: equipped === id,
       durability: owned ? condition[id] : 0, maxDurability: type.maxDurability,
+      // The condition at which this weapon counts as worn. Each kind says its own, and the
+      // HUD used to guess it as a quarter of the maximum, which is a different number for
+      // the long dagger and the greatsword: the bar went amber a hit before the warning.
+      wornAt: type.wornAt, worn: owned && condition[id] > 0 && condition[id] <= type.wornAt,
       usable: owned && condition[id] > 0,
     };
   }

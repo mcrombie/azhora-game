@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWeapons, WEAPON_WEAR } from '../src/weapons.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { createWeapons, WEAPON_WEAR, WEAPON_TYPES } from '../src/weapons.js';
 
 function fixture(items = { 'simple-sword': 1 }) {
   const stock = new Map(Object.entries(items));
@@ -178,4 +180,39 @@ test('for now weapons never wear, but a bench still mends and wear can be switch
   assert.equal(weapons.status('simple-sword').durability, 24);
   weapons.setWear(true); weapons.equip('simple-sword'); weapons.contact();
   assert.equal(weapons.status('simple-sword').durability, 23);
+});
+
+test('the bar going amber and the warning about it mean the same thing', () => {
+  // Each kind says its own wornAt. The HUD used to guess it as a quarter of the maximum, which is
+  // the same number for four of the six and one higher for the long dagger and the greatsword:
+  // on those two the bar went amber a hit before the game thought the weapon was worn.
+  for (const [id, type] of Object.entries(WEAPON_TYPES)) {
+    const stock = new Map([[id, 1]]);
+    const inventory = { has: key => (stock.get(key) ?? 0) > 0, count: key => stock.get(key) ?? 0,
+      remove(key, n) { stock.set(key, (stock.get(key) ?? 0) - n); return true; } };
+    const weapons = createWeapons({ wear: true, inventory });
+    assert.equal(weapons.equip(id), true, id);
+    assert.equal(weapons.profile().wornAt, type.wornAt, `${id} does not tell the HUD its own threshold`);
+    for (let durability = type.maxDurability; durability >= 1; durability--) {
+      weapons.setCondition(id, durability);
+      const profile = weapons.profile();
+      assert.equal(profile.worn, durability <= type.wornAt,
+        `${id} at ${durability} of ${type.maxDurability}: the bar says worn ${profile.worn}, the weapon says ${durability <= type.wornAt}`);
+      // And whatever the bar says, the numbers behind it stay a sane percentage.
+      const percent = profile.durability / profile.maxDurability * 100;
+      assert.ok(Number.isFinite(percent) && percent >= 0 && percent <= 100, `${id} at ${durability} gives the bar ${percent}%`);
+    }
+    // A weapon worn to nothing is not "worn", it is done. A stick is the exception and says so
+    // in weapons.js: one worn out while another is carried is replaced by a fresh one.
+    weapons.setCondition(id, 0);
+    assert.equal(weapons.profile().worn, false, `${id} at nothing still calls itself worn`);
+    assert.equal(weapons.profile().usable, id === 'forest-stick',
+      `${id} at nothing reads as ${weapons.profile().usable ? 'usable' : 'unusable'}`);
+  }
+});
+
+test('src/main.js asks the weapon whether it is worn instead of working it out again', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /classList\.toggle\('worn',\s*weapon\.worn\)/, 'the HUD is deciding for itself when a weapon is worn');
+  assert.doesNotMatch(main, /maxDurability\s*\*\s*\.25/, 'the quarter-of-maximum guess is back');
 });
