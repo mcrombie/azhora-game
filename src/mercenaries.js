@@ -49,6 +49,7 @@ const merc = (id, name, origin, arrival, departs, pace, look, lines, extra = {})
 
 /** Each man fights his own way; his weapon is modelled, and he will explain it. `trades` says whether he swaps his weapon for the traveler's sword. */
 export const MERCENARY_STYLES = Object.freeze({
+  crom: Object.freeze({ weapon: 'sword', style: 'One sword, and nothing else', trades: true, styleLines: Object.freeze(['One sword. I keep an edge on it and I keep it out of bone where I can. A man who tells you there is more to it than that is selling you something.', 'Swing all the way through or do not swing. Half a cut is how you get a whole one back.']), tradeLine: 'Your weapon for my sword. I will hold anything with a handle, and I will hand it back the moment it disappoints me.' }),
   gotwood: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['We carry the same blade, so I can actually be useful to you here. Three cuts in a row, each heavier than the last, and the third lands hardest. Keep something back for a step aside when the amber shows.', 'Mend it before the edge goes rather than after. I know that sounds obvious. I have watched four men die of not doing it.']), tradeLine: 'A trade? If it is not another sword like mine, I will try it. Yours for mine, and no hard feelings either way.' }),
   word: Object.freeze({ weapon: 'dagger', style: 'The dagger, and whatever else is to hand', trades: true, styleLines: Object.freeze(['A dagger! Everyone is very disappointed when they see it. Then I am inside the swing where their long beautiful weapon does nothing at all, and we have a completely different conversation.', 'The trick is never to be where the fight is. People think that is cowardice. People are usually dead.']), tradeLine: 'Your sword for my dagger? You are getting the worse end of that and I am delighted. Yes. Absolutely yes. Before you think about it.' }),
   jerry: Object.freeze({ weapon: 'bow', style: 'The bow', trades: false, styleLines: Object.freeze(['I put an arrow in it at thirty paces and then I do not have to think about it any more. That is the entire appeal.', 'In woodland I am a man holding a stick. Do not let anyone tell you an archer is worth anything in a wood.']), tradeLine: 'Trade the bow for a sword. So that I can be close to the fighting. No.' }),
@@ -120,6 +121,18 @@ export const MERCENARY_ROSTER = Object.freeze([
     { route: 'wild', drawn: true,
       says: { walking: 'Road today. It is quicker with company.', stopped: 'Go on.', mustered: 'I have been here a while.' } }),
 ]);
+
+/**
+ * Crom the Barbarian: the man the game has always put you inside, named and written down at last
+ * so that he can stand on the road as one of the ten when you choose to be somebody else. He is
+ * deliberately not in MERCENARY_ROSTER — the world only ever places the ten you did not choose,
+ * and `companyFor` in src/player-characters.js is what puts him into the slot you vacated. His
+ * colours are the traveler's own, so a game played as Crom looks exactly as it always has.
+ */
+export const CROM = merc('crom', 'Crom the Barbarian', 'the cold country north of the Lotharn', 0, 420, 1.3,
+  { tunic: 0x806042, hair: 0x806044, skin: 0xd7ad7e, build: 'broad', headgear: 'bare', hairStyle: 'lank', facialHair: 'stubble', garment: 'short-cloak', marks: [] },
+  ['Crom. From the cold country north of the Lotharn, where they pay a man in salt and there is never enough of it. I came for the coin and I brought a sword, and that is the whole of what I brought.',
+    'I have no letters, no trade and no opinion about this war. Point me at the border. I will be standing on it before most of them have finished arguing about it.']);
 
 /** Everyone who came ashore with somebody else, and is still talking to them about it. */
 export const MERCENARY_GROUPS = Object.freeze({
