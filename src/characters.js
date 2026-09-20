@@ -620,6 +620,18 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         arm[0] = -1.5; elbow[0] = -1.75; armOut[0] = .55;
         chestX = -.06 + breath * .006; headX = -.2 + Math.sin(seconds * .11 + offset) * .03; headY = follow * .1;
         hip[0] = -.03; hip[1] = -.02; knee[0] = .07; knee[1] = .1;
+      } else if (role === 'wine-maker') {
+        // Kat punches the cap down into a fermenter: both arms in to the elbow, a slow push from
+        // the shoulders, and between pushes she straightens up and listens to it working.
+        const push = Math.pow(Math.max(0, Math.sin(seconds * .62 + offset)), 3), listen = Math.pow(Math.max(0, Math.sin(seconds * .12 + offset)), 12);
+        for (const side of [0, 1]) {
+          arm[side] = -.62 - push * .34 + listen * .5;
+          elbow[side] = -.75 + push * .3 + listen * .45;
+          armOut[side] = (side ? -1 : 1) * (.14 - push * .05);
+        }
+        chestX = .22 - listen * .26 + push * .1 + breath * .008;
+        headX = .3 - listen * .42; headY = Math.sin(seconds * .17 + offset) * .08;
+        hip[0] = -.04; hip[1] = -.03; knee[0] = .12 + push * .05; knee[1] = .1;
       } else if (role === 'vine-keeper') {
         // Imani works the canopy in front of her: the left hand up in the wire turning a leaf over
         // to see the underside of it, the right hand down by the apron, and the head tipped to
@@ -803,7 +815,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 /** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
+export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper', 'wine-maker'].includes(role), armed = false, look = null, wields = null } = {}) {
   const isTraveler = role === 'traveler';
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
@@ -821,6 +833,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   // Imani, who keeps the vines at Vaervelm Caelazh (src/vineyard.js): a blunt black bob, steel
   // spectacles for close work, and a stained canvas apron with the shears standing out of it.
   const isVineKeeper = role === 'vine-keeper';
+  // Kat, who makes the wine (src/winery.js): brown hair to the shoulders, a leather apron over
+  // rolled sleeves, and purple to the elbow from the cap she has just put down.
+  const isWinemaker = role === 'wine-maker';
   // Brandy Frank, Tidehaven's dyer: impossible colours, and an Eeyore sort of day, every day.
   const isDyer = role === 'rainbow-dyer';
   const isMiller = role === 'commons-miller', isReedWorker = role === 'reed-worker', isShelterKeeper = role === 'shelter-keeper';
@@ -859,8 +874,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isWinemaker ? 0x4d4a44 : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -954,7 +969,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       round(pivot, leather, [side * 0.006, -0.012, 0], [0.1, 0.055, 0.103]);
       round(pivot, skinMat, [side * 0.01, -0.058, 0], [0.09, 0.094, 0.095]);
       part(pivot, new THREE.CylinderGeometry(0.086, 0.07, 0.2, 8), skinMat, [side * 0.018, -0.147, 0], [1, 1, 1.03]);
-    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || isVineKeeper || slight || isDyer) {
+    } else if (isTraveler || isRoadWorker || isSoldier || isMercenary || isWineSeller || isVineKeeper || isWinemaker || slight || isDyer) {
       // Continuous, tapered cloth sleeves avoid a segmented shoulder-pad
       // silhouette. Only an unadorned rolled cuff changes color.
       round(pivot, cloth, [side * 0.01, -0.053, 0], [0.088, 0.09, 0.093]);
@@ -967,7 +982,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     elbow.position.set(side * 0.019, -0.245, 0);
     pivot.add(elbow);
     elbows.push(elbow);
-    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms || isWineSeller || isVineKeeper) {
+    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms || isWineSeller || isVineKeeper || isWinemaker) {
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, garment === 'sleeveless' ? skinMat : linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
@@ -1279,6 +1294,21 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // The fall down her back: a flat sheet, a little wider at the shoulders, cut straight across.
     box(hair, hairMat, [0, 0.03, -0.155], [0.36, 0.5, 0.07]);
     box(hair, hairMat, [0, -0.33, -0.19], [0.34, 0.3, 0.05]);
+  } else if (isWinemaker) {
+    // Kat’s hair: brown, straight, medium-long — past the jaw and onto the shoulders, no further,
+    // because anything longer goes in a ferment. Parted off centre, one side pushed behind an ear
+    // and the other falling forward where it has escaped again.
+    const hair = new THREE.Group(); hair.name = 'Kat’s hair'; head.add(hair);
+    round(hair, hairMat, [0, 0.3, -0.02], [0.216, 0.135, 0.208]);
+    const parting = round(hair, hairMat, [-0.045, 0.338, 0.072], [0.152, 0.062, 0.13]);
+    parting.rotation.z = -0.22;
+    for (const side of [-1, 1]) {
+      // To the shoulder on the loose side; tucked shorter behind the ear on the other.
+      const fall = box(hair, hairMat, [side * 0.185, side < 0 ? 0.04 : 0.085, 0.0], [0.055, side < 0 ? 0.38 : 0.28, 0.185]);
+      fall.rotation.z = side * 0.06;
+    }
+    box(hair, hairMat, [0, 0.06, -0.16], [0.33, 0.44, 0.088]);
+    round(hair, hairMat, [0.155, -0.145, -0.05], [0.07, 0.11, 0.08]);
   } else if (isVineKeeper) {
     // Imani’s bob: black, straight and blunt — a fringe cut level across the brow, the sides
     // falling to the jaw, the back squared off at the nape. Cut that way because it has to go
@@ -1928,6 +1958,20 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
       const wing = box(pendant, black, [side * 0.028, 0.004, 0], [0.04, 0.02, 0.006]);
       wing.rotation.z = side * -0.35;
       for (const tip of [0.022, 0.044]) box(pendant, black, [side * tip, -0.012, 0], [0.012, 0.01, 0.006]);
+    }
+  } else if (isWinemaker) {
+    // A heavy leather apron, dark and stiff and wet down the front, over a linen shirt with the
+    // sleeves rolled; and purple to the elbow, which is the whole autumn on a winemaker's arms.
+    const hide = material(0x4a3527), wet = material(0x3a2a20), must = material(0x5b2b52);
+    box(body, hide, [0, 1.1, .178], [.23, .3, .03]);
+    box(body, hide, [0, .79, .181], [.33, .4, .034]);
+    box(body, wet, [-.02, .72, .199], [.19, .26, .01]);
+    for (const side of [-1, 1]) ribbon(body, hide, [side * .11, 1.286, .1], [side * .095, 1.2, .174], .03, .016);
+    // The must on her: a band at each rolled cuff, and her hands stained past helping.
+    for (const wrist of wrists) {
+      round(wrist, must, [0, .012, .004], [.074, .05, .076]);
+      // Stained skin, not gloves: the colour sits in the hand rather than over it.
+      round(wrist, material(new THREE.Color(skin).lerp(new THREE.Color(0x4f2a46), .62)), [0, -.068, .012], [.058, .05, .062]);
     }
   } else if (isVineKeeper) {
     // The shirt sleeves are rolled to the elbow from the thaw to the leaf fall, and over the

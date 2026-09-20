@@ -79,7 +79,27 @@ export const WINERY_LAYOUT = freeze({
 
 export const VINTNER = freeze({ id: 'vintner', name: 'Livia Seravo', role: 'Vintner of Vaervelm Caelazh', modelRole: 'shelter-keeper', color: 0x7d3a45, skin: 0xc79a74 });
 export const CELLAR_HAND = freeze({ id: 'cellar-hand', name: 'Nico Arrend', role: 'Cellar hand', modelRole: 'reed-worker', color: 0x6a5a44, skin: 0xb88e66 });
+/**
+ * Kat, who makes the wine. Livia owns the place and pours it, Nico keeps it once it is in the
+ * barrel, Imani grows the fruit; Kat is the one standing over it while it is still deciding what
+ * it is going to be. Medium-long brown hair, a leather apron, sleeves rolled, and purple to the
+ * elbow from the cap she has just punched down. Yes, there are two of them here called some form
+ * of Kat. They have stopped trying to fix it.
+ */
+export const WINEMAKER = freeze({ id: 'winemaker', name: 'Kat', role: 'Winemaker at Vaervelm Caelazh', modelRole: 'wine-maker', color: 0x53657f, skin: 0xd8b48d });
+
 export const WINERY_STANDS = freeze({
   vintner: freeze({ ...wineryPoint(-15.5, .4), yaw: 0 }),
   'cellar-hand': freeze({ ...wineryPoint(14.2, -3.4), yaw: -Math.PI / 2 }),
+  // On the crush pad at the hall's great doors, where the fruit comes in and the ferments stand.
+  winemaker: freeze({ ...wineryPoint(1.5, -3.4), yaw: 0.22 }),
 });
+
+/** What Kat says over the ferments, one at a time. There is more of her to come. */
+export const KAT_LINES = freeze([
+  'Mind your feet, the pad is wet. It is always wet. I have not had a dry boot since the picking started.',
+  'This one is three days in and talking to itself. You can hear it from the doors — a sound like rain on a roof, a long way off. When it stops, it is done, and not before.',
+  'Punching down. The skins float up and dry out in a cap on top, and if you leave them there you get vinegar and a lecture from Livia, so: down they go, four times a day, arms in to the elbow.',
+  'Yes. There are two of us. She is Katy, up at the pool with the spyglass, watching for a monster. I am Kat, down here, with the wine. We have stopped trying to fix it and now we just answer to both.',
+  'Imani decides what comes through those doors and I decide what happens to it afterward, and the truth is she has the harder half. I can rescue a middling grape. Nobody can rescue a bad one.',
+]);

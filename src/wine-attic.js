@@ -221,6 +221,15 @@ export function juanConversation(npc, context) {
     { id: 'attic-juan', label: 'Tell me about yourself.', action: () => talk(JUAN_TOPICS.juan) },
     { id: 'attic-about-nika', label: 'What about Nika?', action: () => talk(JUAN_TOPICS.nika) },
     { id: 'attic-shelf', label: 'What is the dusty bottle on the top shelf?', action: () => talk(JUAN_TOPICS.shelf) },
+    // Every crate that comes up that stair is packed with whatever paper the shipper had spare,
+    // and one of them was careless with an Empire requisition (src/batman.js).
+    ...(context.hunt?.stage === 'hunting' && !context.hunt.has('chit') ? [{ id: 'attic-packing', label: 'What do they pack your crates with?',
+      action: () => openDialogue(npc, [
+        'Waste paper, my friend, always. Nobody has ever wrapped a bottle in anything anybody wanted to keep. Old bills, old sermons, somebody’s terrible poem — I read it all while I unpack, it is the best hour of my week.',
+        'Now. Since you ask, and nobody has ever asked: the last crate down from the coast was packed in army paper, which is unusual, because the army does not waste paper, it hoards it.',
+        'A requisition. Dye stock, it says, for the purple. Signed Rask, quartermaster. And the quantity on it would dye every officer in Ambron twice over and then the horses.',
+        'I kept it because the hand is beautiful, and because a man who writes a number like that and signs it is not thinking about anybody reading it. Have it. Wrap something in it. Or do not.',
+      ], null, 'Take the requisition', { onComplete: () => { closeDialogue(); act('take-rask-chit'); } }) }] : []),
     ...(context.ed ? [{ id: 'attic-ed', label: 'Does anything ever go missing?', action: () => { act('attic-ed'); talk(context.ed.quest === 'exposed' ? JUAN_ON_ED.after : JUAN_ON_ED.before); } }] : []),
     { id: 'leave-juan', label: 'Thanks, Juan.', action: closeDialogue },
   ];

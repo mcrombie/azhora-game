@@ -22,7 +22,7 @@
  * which is the making of it in order.
  * Pure: no DOM, no three.
  */
-import { VINTNER, CELLAR_HAND, WINERY, VARIETIES } from './winery.js';
+import { VINTNER, CELLAR_HAND, WINEMAKER, KAT_LINES, WINERY, VARIETIES } from './winery.js';
 import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 
 export const WINE_VERSION = 1;
@@ -258,6 +258,32 @@ export function vintnerConversation(npc, context) {
     { id: 'leave-vintner', label: 'Thank you.', action: closeDialogue },
   ];
   openDialogue(npc, opening, null, 'Back to the terrace', { choices });
+  return true;
+}
+
+/**
+ * Kat on the crush pad, arms purple to the elbow. She has the ferments and not much time,
+ * and says one thing at a time. `visits` rotates what she is in the middle of.
+ */
+export function winemakerConversation(npc, context) {
+  const { openDialogue, closeDialogue, act = () => {}, hunt = null, katy = null, visits = 0 } = context;
+  if (npc?.id !== WINEMAKER.id) return false;
+  const again = () => winemakerConversation(npc, { ...context, visits: visits + 1 });
+  // One of the twelve barrels the Coalition requisitioned came back, and came back wrong. Kat is
+  // the one who would notice, because she is the one who knows what a barrel of hers weighs.
+  const barrel = hunt && katy?.looking && !hunt.has('vial') ? [{ id: 'kat-barrel', label: 'Has anything odd come back off the war?',
+    action: () => openDialogue(npc, [
+      'Funny you should. One of the twelve the Coalition took “for the troops” came back to us in the spring, on a cart, with an apology nobody signed.',
+      'And it came back heavier than it went out. I know what my own barrels weigh; I put the wine in them. So I broke the head off it, and the head had another head behind it, and the space between was packed with straw and little flat bottles.',
+      'That is what is in your hand now. It is not wine and it is not medicine. Hold it up to the light — it is blue with purple coming up under it, and when I got a drop on my thumb I could smell nothing else for two days and I liked it far too much.',
+      'Take it. Livia does not know and I would rather she went on not knowing until somebody can tell her what it is. You are the one wandering about with a drawing of a monster in your satchel, so. You take it.',
+    ], null, 'Take the vial', { onComplete: () => act('take-velaeth-vial') }) }] : [];
+  openDialogue(npc, [KAT_LINES[visits % KAT_LINES.length]], null, 'Back to the terrace', { choices: [
+    ...barrel,
+    { id: 'kat-more', label: 'What are you doing exactly?', action: () => openDialogue(npc,
+      [KAT_LINES[(visits + 1) % KAT_LINES.length]], null, 'Back to the pad', { onComplete: again }) },
+    { id: 'leave-winemaker', label: 'I will let you get on.', action: closeDialogue },
+  ] });
   return true;
 }
 

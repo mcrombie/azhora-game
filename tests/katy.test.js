@@ -31,9 +31,12 @@ test('Katy watches the birds, asks after Batman, and gives the traveler her draw
   assert.equal(katy.stage, 'met');
   first.pick('who-is-batman');
   const told = first.screens.at(-1).lines.join(' ');
-  assert.match(told, /Half a bat and half a man/);
+  // A beast, not a man in a costume: fur, a bat's head, ears, and wings that are his arms.
+  assert.match(told, /A beast/);
+  assert.match(told, /[Ff]urred/);
+  assert.match(told, /the arms are the wings/);
   assert.match(told, /not a monster/);
-  assert.match(told, /comes for the ones who hurt people/);
+  assert.match(told, /the ones who hurt people/);
   first.pick('accept-batman');
   first.finish();
   assert.equal(katy.stage, 'looking');

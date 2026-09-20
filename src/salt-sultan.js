@@ -221,6 +221,15 @@ export function johnConversation(npc, context) {
     { id: 'john-crew', label: 'Who works for you?', action: () => { act('john-ed'); talk(TALK.crew); } },
     ...(salt.edTold ? [{ id: 'john-ed-good', label: 'Is Ed any good at it?', action: () => talk(TALK.edGood) }] : []),
     { id: 'john-bound', label: 'Where are you bound?', action: () => talk(johnBound(p.id)) },
+    // A man who sails four ports in a war is offered every kind of cargo (src/batman.js).
+    ...(context.hunt?.stage === 'hunting' && !context.hunt.has('pass') ? [{ id: 'john-refused', label: 'Has anyone offered you a cargo you would not take?',
+      action: () => openDialogue(npc, [
+        '“Ha! Everyone offers me everything. I carry salt. Salt is honest: it is heavy, it is boring, and nobody has ever been hanged over a sack of it.”',
+        '“But yes. Once. Two winters ago, at the east quay, a very polite young man with very clean boots, and crates that weighed nothing and smelled — my friend, they smelled like rain on a hot road, right through the wood.”',
+        '“Three hundred silver for one night’s sailing. Three hundred! For salt I make forty and I am at sea a week.” A shrug that uses the whole body. “So of course I said no. That price is not a price, it is a warning.”',
+        '“He had a pass, for the lines, after dark. Signed by a Coalition captain, Trelith. He left it with me while he went for his master, to prove the thing was official, and he did not come back for it, because I had already told the harbourman and the harbourman told the quay and the boots went away.”',
+        '“I wrote my refusal on the back of it, in my own hand, so that if it ever came to it there would be a paper that said John said no. Here. I have been carrying it for two years waiting for somebody to want it. Somebody wants it, I think.”',
+      ], null, 'Take the pass', { onComplete: () => { closeDialogue(); act('take-trelith-pass'); } }) }] : []),
     { id: 'leave-john', label: 'Fair winds, John.', action: closeDialogue },
   ] });
   return true;

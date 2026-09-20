@@ -47,6 +47,26 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Charcoal on the back of a wine label: a bat’s head and a bat’s wings on a man’s body. Underneath, underlined twice: HE IS NOT A MONSTER.',
     description: 'Katy drew him from what the people who have seen him told her, so that you would know him when you see him, and not run. She wants to hear the moment you do.',
   }),
+  'velaeth-vial': Object.freeze({
+    name: 'A flat bottle of Velaeth', type: 'Quest item', icon: 'bottle',
+    brief: 'Thumb-sized, flat, sealed with wax. The stuff in it is blue with purple coming up underneath, and moves like oil.',
+    description: 'Out of the false head of a barrel that went to the Coalition “for the troops” and came back heavier than it left. Sold in shops as Suval Evening, a perfume; it is made from a sea snail off the Empire’s own dye beds, thousands of them to the bottle. A drop behind the ear and the evening goes well. A season of it and the colour is in the whites of your eyes.',
+  }),
+  'rask-chit': Object.freeze({
+    name: 'Rask’s requisition', type: 'Quest item', icon: 'letter',
+    brief: 'Army paper, used to pack a wine crate. A requisition for dye stock, in a beautiful clerk’s hand, for a quantity that would dye Ambron twice.',
+    description: 'Signed by Quartermaster Edmund Rask of Solis, who has never in his life been near the goods and whose hand is on every paper that moves them. He writes numbers like this because it does not occur to him that anybody outside the army will ever read one.',
+  }),
+  'trelith-pass': Object.freeze({
+    name: 'Trelith’s night pass', type: 'Quest item', icon: 'letter',
+    brief: 'A Coalition pass through the lines after dark, for one cart and one driver. On the back, in a large confident hand: a refusal, signed John.',
+    description: 'Left with the salt trader by a polite young man with clean boots who never came back for it. Captain Nessa Trelith signs every pass that crosses the lines at night, which is what makes her worth a partner on the other side of the war.',
+  }),
+  'cartel-ledger': Object.freeze({
+    name: 'The cart’s tally book', type: 'Quest item', icon: 'letter',
+    brief: 'Off the seat of a cart at the breach in Solis’s east wall. Bottles out, silver back, and two names in the same clerk’s hand.',
+    description: 'Rask on one side of the page and Trelith on the other, month after month, while their armies killed each other over the city the cart drives through. Neither of them can explain the other’s name being in their book. That is the whole of the case.',
+  }),
   'dragon-scale': Object.freeze({
     name: 'A dragon’s scale', type: 'Quest item', icon: 'token',
     brief: 'The size of a thumbnail, slate grey and wet-looking. One side is warm. The same side, always.',

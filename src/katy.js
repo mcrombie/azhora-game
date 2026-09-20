@@ -65,10 +65,11 @@ export function createKaty({ onEvent = () => {} } = {}) {
 
 /** Who Batman is, the way Katy tells it. */
 export const BATMAN_TOLD = freeze([
-  'Batman. Half a bat and half a man: a bat’s head with ears like a hare’s, and wings you could wrap a cart in, on a man’s body. He comes at night.',
-  'Everybody who sees him screams and runs, and I understand that. I do. He looks like the thing your grandmother told you about to keep you in bed.',
-  'But he is not a monster. He comes for the ones who hurt people: the men who rob the carts on the south road, the ones who burn a farm to settle a debt. He has never touched anybody good. Not once. Ask anyone who has actually seen him. Nobody asks them.',
-  'I have watched the sky over these vines every night for a year. I watch the birds in the day while I wait. They are good practice. You learn to see the thing that does not want to be seen.',
+  'Batman. And before you picture a man in a cape: no. A beast. Head and a half taller than you, and never straight — hunched over onto his hands, because the arms are the wings and the wings are too long to stand up with.',
+  'Furred all over, close and dark, like a mole is furred. A bat’s head and nothing else: a short muzzle, the nose folded back on itself like a leaf, teeth the mouth does not close over. Ears as long as your forearm that move one at a time. And the eyes take the light the way a dog’s do at a fire, and that is the part that makes people run, every time.',
+  'When the wings are folded they hang off his shoulders in rags down to the ground. Everybody who has seen him says cloak. He does not own a cloak. That is what a wing looks like folded.',
+  'And he is not a monster. He goes after the ones who hurt people — the men who rob the carts on the south road, the ones who burn a farm to settle a debt — and he has never once touched anybody who was not one of them. Ask anybody who has actually seen him and lived. Nobody asks them. They ask me, and laugh, and I let them.',
+  'I have watched the sky over these vines every night for a year. I watch the birds in the day while I wait; they are good practice. You learn to see the thing that does not want to be seen.',
 ]);
 
 /** What she says while the traveler is looking, one at a time, round and round. */
@@ -110,7 +111,22 @@ export function katyConversation(npc, context) {
     openDialogue(npc, ['You came back. Have you thought about it? About Batman?'], null, 'Back to the terrace', { choices: [who, yes, leave] });
     return true;
   }
+  // Once the traveler has actually met him, she gets to hear it (src/batman.js).
+  const hunt = context.hunt ?? null;
+  const seen = hunt && hunt.stage !== 'unknown' ? [{ id: 'told-katy', label: 'I have seen him.',
+    action: () => openDialogue(npc, hunt.stage === 'done' ? [
+      'Say that again. Slowly.',
+      'She sits down on the bank with the spyglass still in her hand and does not say anything for a while, and when she does her voice has gone somewhere else. “A year. I have been out here a year, and people have been very kind about it to my face.”',
+      '“Was he— ” She stops. “Was he all right? Is he all right? Nobody ever asks that. They ask how big he was.”',
+      '“Do not tell me where. I mean it. If I knew where he sat I would go and sit near it, and he would move, and that would be my fault. It is enough that he is there and that somebody has done something with it.”',
+      'She looks back up at the sky anyway, the way she will now for the rest of her life. “Right. Well. I am going to be insufferable about this for about ten years.”',
+    ] : [
+      'She lowers the spyglass very slowly, as if a sudden movement might make you take it back.',
+      '“Where.” Not a question. “No. No, do not tell me where. I will only go and sit there and scare him off and then it will be my fault.”',
+      '“Is he— ” She tries again. “Everybody says the eyes. Was it the eyes?”',
+      '“Then help him. Whatever he wants, help him, and do not you dare be frightened of him where he can see it. I have waited a year to be able to say that to somebody and mean it.”',
+    ], null, 'Back to Katy', { onComplete: again }) }] : [];
   openDialogue(npc, [KATY_WAITING[visits % KATY_WAITING.length]], null, 'Back to the terrace',
-    { choices: [{ id: 'more-katy', label: 'Tell me about him again.', action: () => openDialogue(npc, [...BATMAN_TOLD], null, 'Back to Katy', { onComplete: again }) }, leave] });
+    { choices: [...seen, { id: 'more-katy', label: 'Tell me about him again.', action: () => openDialogue(npc, [...BATMAN_TOLD], null, 'Back to Katy', { onComplete: again }) }, leave] });
   return true;
 }
