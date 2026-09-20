@@ -11,6 +11,11 @@ const EFFECTS=Object.freeze({
   dodge:[430,150,.17,.05],'player-hit':[105,48,.20,.20],windup:[180,260,.18,.05],
   bell:[720,718,1.8,.12],success:[520,1040,.48,.08],'enemy-defeated':[260,90,.22,.10],
   bite:[740,1120,.16,.055],blocked:[980,640,.09,.13],
+  // Twelve places ask for this by name - finding the green coat at the Lauvel, sighting
+  // Batman, the Sober Sign, Bosco - and it was the one name in the table's callers that the
+  // table did not have, so all twelve were silent. A success carried further: the same rise,
+  // an octave instead of a fifth, held longer.
+  discovery:[660,1320,.62,.085],
 });
 
 /** Geography and surface selection remain usable without opening an audio device. */
@@ -100,7 +105,7 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
     source.start(now,rand()*4,duration+.025);source.stop(now+duration+.04);steps++;
   }
   function effect(type) {
-    const spec=EFFECTS[type];return spec?tone(spec,{type:type==='bell'||type==='success'?'sine':'triangle'}):false;
+    const spec=EFFECTS[type];return spec?tone(spec,{type:['bell','success','discovery'].includes(type)?'sine':'triangle'}):false;
   }
   function toggle() {
     if(disposed)return false;
