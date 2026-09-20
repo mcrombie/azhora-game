@@ -391,3 +391,110 @@ game to mend one place.
    before-and-after prop count because it touches every stand in the world.
 
 **Repro:** `tests/nobody-sealed-in.test.js` names her; F8 to East Suval and walk to Sevenwalls.
+
+## Five of the ten hired swords wait on the harbour floor
+
+A mercenary who has landed but not yet set off stands in the `landing` phase, and
+`placements()` (`src/mercenaries.js`) puts him in a ring around the traveler's own landing
+point: `x = start.x + sin(index * 1.9) * (2.2 + index * 0.3)`. `src/main.js:196` passes
+`landing: world.spawn`. The ring therefore grows with a man's place in the roster, from 2.2 m
+for the first to 4.9 m for the tenth.
+
+**The spawn is on a pier three metres wide.** `world.spawn` is (23, 29) at height 1.80. Mapping
+`canStand` at one-metre steps around it, the standable ground is a strip from z=28 to z=30
+running west from the pier head at x≈29 back to the shore at x≈9. Everything north of z=27,
+south of z=31 and east of x≈29 is water, and the harbour floor there is at **−5.5 m** — five and
+a half metres below the sea surface (`SEA_LEVEL` 0.06).
+
+**No ring wider than 1.7 m stays on the pier.** Sweeping radii in 10 cm steps and testing all
+32 bearings, the largest fully standable ring around the spawn is **1.7 m**. Eight of the ten
+men are placed at 2.2 m or more.
+
+**Who ends up in the water,** with the terrain height under each and how long he is there
+(`hidden` is set only for the `coming` phase, so a man in `landing` is drawn and steered):
+
+| | man | ring | position | ground | waits |
+|---|---|---|---|---|---|
+| 2 | Jerry | 2.8 m | 21.3, 26.8 | −5.56 | 90 s from t=1080 |
+| 3 | Christin | 3.1 m | 21.3, 31.6 | −5.75 | 90 s from t=1080 |
+| 5 | Lakota | 3.7 m | 22.7, 25.3 | −5.52 | 60 s from t=1980 |
+| 7 | Matt | 4.3 m | 25.9, 32.2 | −5.74 | 120 s from t=3780 |
+| 8 | Al the Tun | 4.6 m | 25.2, 25.0 | −5.53 | 120 s from t=3780 |
+
+The other five land on the pier. Chris Gotwood at index 0 needs 2.2 m and his bearing is
+standable to exactly 2.2 m, so he is on the edge of it.
+
+**What it looks like in play** depends on where the traveler is, and both readings are wrong.
+Past the 180 m view range `src/main.js:2559` snaps a man to his home, so he is teleported onto
+the seabed (invisible, since he is also hidden at that range). Inside it, the steering loop
+walks him there with `stepAround` (`src/bodies.js:60`), which moves through `moveCharacter` and
+so will not enter water, and he presses against the pier edge without ever reaching the spot the
+game says he is at.
+
+**Not new.** `git log` on `src/mercenaries.js`: the roster went from eleven to ten at `dff10f0`,
+so it shrank rather than grew and the ring's reach came down with it. The formula and the spawn
+are untouched, so this has been true since the company was added at `7d76316`.
+
+**The muster is fine.** At the far end all ten stand on dry ground at height ~6.61, between 4.5
+and 14.8 m from the camp centre, comfortably inside the 20 m the existing test asks for.
+
+**Ways out:**
+
+1. Wait along the pier instead of around the spawn. The pier is 3 m wide and about 20 m long, so
+   a line of ten men at 1.8 m spacing fits on it with room to pass. This is the smallest change
+   and it needs one decision: whether the company waits in a queue down the quay or in a huddle
+   at its head.
+2. Wait on the shore end of the pier, where it meets land at x≈9, and keep the ring. Standable
+   ground opens out there, so a 4.9 m ring fits. Costs the picture of men stepping straight off
+   a boat.
+3. Give `placements()` the ground rule the rest of the game uses: if the chosen spot fails
+   `canStand`, spiral out to the nearest spot that passes. Fixes the class — the same ring is
+   used wherever a future `landing` is put — but it makes the formation depend on terrain, and a
+   drifting formation is a staging decision, not a mechanical one.
+
+Which of the three is right is a staging choice about how the company is meant to look when the
+traveler meets it, so it is not guessed at here.
+
+**Repro:** `tests/nobody-sealed-in.test.js` measures the widest ring the landing will take and
+asserts somebody is *still* wet, so it fails the moment this is mended. It deliberately does not
+name the five, because which man stands at which radius is only the order of the roster. In play:
+start a new game, stay at the landing, and wait to t=1080 (eighteen minutes) for Jerry and
+Christin.
+
+## `route` is written on every hired sword and read by nothing
+
+`MERCENARY_ROSTER` gives each man a `route`: the `merc()` factory defaults it to `'road'`
+(`src/mercenaries.js:47`), Ed the Word is authored `route: 'shore', swims: true` (line 78) and
+Mus is authored `route: 'wild'` (line 120). The doc comment above the roster says "`route` is
+how they get to the muster" (line 66).
+
+**Nothing reads it.** Grepping the whole of `src/` and `tests/` for a read of the field: the
+only hits are the two authored entries, the factory default and that comment. The three modules
+that import from `src/mercenaries.js` — `src/main.js`, `src/road-checkpoint.js` and the two test
+files — never mention it. (`src/salt-sultan.js` has a `route` of its own, on a sea port, which
+is unrelated.)
+
+**So everyone walks the road.** `mercenaryProgress()` and `placements()` take no branch on
+`route`; every man, Mus included, is positioned with `pointAlongRoad(road, progress.distance)`.
+Sweeping play time from 0 to 40,000 s and recording which phases each man is ever seen in, Mus
+passes through `coming`, `landing`, `walking`, `stopped` and `mustered` exactly like the eight
+`route: 'road'` men, pausing at all three road stops, and finishes 14.8 m from the camp centre
+in the same formation. Ed the Word does the same; `swims` is read nowhere either.
+
+**Why it is worth a decision rather than a fix.** The commit that introduced it is called
+"Eleven of us for one border, and one of them does not use the road" (`dff10f0`), so the
+intent is on the record and the code does not yet carry it. What a wild route *is* — a
+polyline of his own, an offset from the road, a cross-country line from a beach of his own to
+the camp — is the whole of the feature, and guessing it would invent a route rather than
+implement one.
+
+**Ways out:**
+
+1. Give a `route` its own polyline, the way the road is one, and have `placements()` pick the
+   polyline by `route` and keep everything else. Mus walks his line, Ed walks the shore, and
+   `mercenaryProgress` is unchanged because it is already expressed in distance along *a* path.
+2. Drop the field and the comment until there is a route to put behind them, so the roster does
+   not promise something the game does not do.
+
+**Repro:** no test covers it. `MERCENARY_ROSTER.every(m => m.route)` is true; nothing else in
+the tree mentions the field.

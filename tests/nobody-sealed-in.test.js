@@ -4,6 +4,8 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { BODY } from '../src/bodies.js';
+import { MERCENARY_ROSTER, createMercenaryCompany } from '../src/mercenaries.js';
+import { ANCHORS } from '../src/regions.js';
 
 /**
  * Every other check on the people of this world is local: the ground under them holds a body, and
@@ -89,4 +91,59 @@ test('the rule that keeps props off a stand does not pretend to keep the way out
     .sort((a, b) => b.props - a.props)[0];
   assert.ok(densest.props > props.length, `the densest stand has ${densest.props} props, no more than Ammi's ${props.length}`);
   assert.equal(opensOut(densest.place).open, true, `${densest.id} is the densest stand in the game and is sealed as well`);
+});
+
+/**
+ * The company is the one set of people the world does not place. Ten hired swords walk the main
+ * road on their own clock, and src/main.js moves each man's home every frame; the steering loop
+ * then walks him to it. A home in the sea is a man who never arrives at it.
+ */
+const company = createMercenaryCompany({
+  road: world.paths[0],
+  stops: [{ id: 'induction', point: world.npcPositions['meadow-courier'], dwell: 90 },
+    { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
+    { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point),
+  muster: ANCHORS.legionCamp, landing: world.spawn, seed: 0,
+});
+
+/** The height canStand wants under a body, from src/game-state.js. Below it is water. */
+const WALKABLE = .45;
+
+/**
+ * The men who have landed but not yet set off wait in a ring around the traveler's own spawn, at
+ * 2.2 + index * 0.3 metres. That spawn is on a pier three metres wide, so the ring does not fit
+ * and the men at the back of it are sent onto the harbour floor, five and a half metres under
+ * the water. Measured and written up in docs/known-issues.md; where they ought to wait instead
+ * is a staging choice, so it is not guessed at here.
+ *
+ * Both halves are written to fail when it is mended rather than to name who is wet today, because
+ * who stands at which radius is only the order of the roster.
+ */
+test('the ring the hired swords wait in does not fit the pier they land on', () => {
+  let widest = 0;
+  for (let radius = 0; radius <= 12; radius += .1) {
+    let whole = true;
+    for (let turn = 0; turn < 64 && whole; turn++) {
+      const angle = turn / 64 * Math.PI * 2;
+      whole = canStand(world.spawn.x + Math.sin(angle) * radius, world.spawn.z + Math.cos(angle) * radius, world, BODY.person);
+    }
+    if (!whole) break;
+    widest = radius;
+  }
+  assert.ok(widest < 2.2, `a ${widest.toFixed(1)}m ring fits around the landing now, so the waiting men are on dry ground; drop this from docs/known-issues.md`);
+
+  const wet = new Map(), landed = new Set();
+  for (let t = 0; t <= 25000; t += 5) for (const placement of company.placements(t)) {
+    // Nobody is drawn or steered before they arrive, so where they would have stood is nothing.
+    if (placement.phase === 'coming') continue;
+    if (placement.phase === 'landing') landed.add(placement.id);
+    const height = world.heightAt(placement.x, placement.z);
+    if (height >= WALKABLE || wet.has(placement.id)) continue;
+    wet.set(placement.id, `${placement.id} ${placement.phase} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} on ground ${height.toFixed(2)} high`);
+  }
+  assert.deepEqual([...landed].sort(), MERCENARY_ROSTER.map(m => m.id).sort(), 'the sweep never saw somebody land');
+  assert.ok(wet.size > 0, 'nobody waits in the water now; drop this test and the entry in docs/known-issues.md');
+  // Only the waiting spots are wrong. If a man walking the road or standing at the muster ever
+  // ends up in water, that is a new fault and this says so.
+  assert.deepEqual([...wet.values()].filter(line => !line.includes(' landing ')), []);
 });
