@@ -9,7 +9,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, CROM, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROM, KIT_WEAPON_ITEM, mercenaryById, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -1649,7 +1649,7 @@ function init() {
   // on the Republic's side they are the valley companies. Hold the traveler's corner and the day is won.
   function borderAllies(side){
     if(side==='coalition')return [1,2,3,4].map(n=>({id:`valley-company-${n}`,name:n===1?'Valley sergeant':'Valley company',kind:n===1?'officer':'legionary',model:{role:'suvali-guard',tunic:n%2?0x3f5f86:0x55636f}}));
-    const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=MERCENARY_ROSTER.find(m=>m.id===p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
+    const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=mercenaryById(p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
     for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
     return mustered;
   }
