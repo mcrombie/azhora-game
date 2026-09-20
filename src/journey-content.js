@@ -58,7 +58,7 @@ export function journeyConversation(npc,context) {
     'relay-clerk':[
       tangent('iven-messages','How do the messages find their way?',[
         'A clear hand, a dry wrap, and a name someone recognizes. I copy warnings so one lost letter does not take the news with it. The originals stay with their bearers. A report is more useful when its witness reaches the other end.',
-        'This is the army’s relay on the Luscia side of the Caloss. The road runs on southwest to the Lauvel and the Moros beyond it, but a place name tells you little about who should rule it. Our forms have one box for loyal and one for rebel. The people I meet seldom fit so neatly.'
+        'This is the army’s relay on the Luscia side of the Caloss. The road runs north-east from this square past the field at the Lauvel to the crossing, and south-west to the Moros, but a place name tells you little about who should rule it. Our forms have one box for loyal and one for rebel. The people I meet seldom fit so neatly.'
       ]),
     ],
   };
@@ -119,7 +119,7 @@ export function journeyConversation(npc,context) {
     if(journey.view().complete)return tell(['I have recorded both the goblin danger and what the people told you. Your Ambroni service continues; this report does not settle the war or release your contract. Keep the original. Stay in the square a moment: the next orders out of the Moros concern the field at the Lauvel, and they concern you.'],[]);
     if(!state.ridgeAccepted||state.beacons.length<3)return tell(['I keep the road’s messages moving. Speak with Sava at the foot of the rise and put the three waymarkers in order first. A runner is no use if the next traveler cannot find the path.'],[]);
     return tell([
-      'Corvan’s mercenary. The supplies are recovered and the army’s route is sound. I will copy the letter’s warning about the goblins into your field report. You keep her original letter.',
+      'Corvan’s mercenary. The supplies are recovered and the army’s route is sound. I will copy the letter’s warning about the goblins into your field report. You keep the original.',
       'Sava told you who the rebels are? Our forms call them insurgents. They are the households of Luscia and the valleys beyond, and most people stand behind the republic they declared. I write for the Ambroni Empire, but I cannot make that truth disappear by choosing a different word.',
       'I will record what you witnessed. You are still serving the army that hired you; the next assignment will come later. For now, ask yourself what protecting these people means when imperial orders and their own government stand on opposite sides.'
     ],[choice('deliver-report','Submit the report · include the people’s account')]);

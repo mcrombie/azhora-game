@@ -48,7 +48,12 @@ export const STORY_CHAPTERS = Object.freeze([
       'Cross the river into Luscia and find Lumber Town',
       'Report to Iven at the relay post on the town square',
     ],
-    done: state => !!state.luscia?.briefed,
+    // Reporting to Iven is `deliver-report`, and `refreshQuest` opens the Luscia
+    // chapter in the same beat, so `luscia.started` *is* the report. `briefed` is
+    // one step further on — accepting the errand out to the Lauvel — and reading
+    // the chapter off that left the journal saying Chapter 1 to a traveler who had
+    // already done every line of it.
+    done: state => !!state.luscia?.started,
   }),
   chapter({
     // Everything the traveler does once they have reported: the errand that shows them

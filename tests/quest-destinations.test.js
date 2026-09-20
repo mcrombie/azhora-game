@@ -6,8 +6,8 @@ import { canStand } from '../src/game-state.js';
 import { createJourney } from '../src/journey.js';
 import { createLusciaChapter, LUSCIA_SITES } from '../src/luscia-chapter.js';
 import { createMorosChapter, MOROS_SITES } from '../src/moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS } from '../src/border-chapter.js';
-import { createAftermathChapter } from '../src/aftermath-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_SIDES, BORDER_OUTCOMES } from '../src/border-chapter.js';
+import { createAftermathChapter, AFTERMATH_IDS } from '../src/aftermath-chapter.js';
 import { AFTERMATH_SITES } from '../src/aftermath-sites.js';
 import { AFTERMATH_NPCS } from '../src/aftermath-chapter.js';
 import { createRegionalLife } from '../src/regional-life.js';
@@ -43,8 +43,17 @@ for (const table of [LUSCIA_SITES, MOROS_SITES, AFTERMATH_SITES]) for (const [id
 for (const person of [...BORDER_NPCS, ...AFTERMATH_NPCS, ...HIDEOUT_GARRISON, ...LEGION_POSTS, ...SOLIS_NPCS]) put(person.id, person, 'a person main.js places');
 put(FOREST_HIDEOUT_QUEST.supplies.id, FOREST_HIDEOUT_QUEST.supplies, 'the stolen stores');
 
-/** Every destination id a chapter can ever name, over all of its states. */
-function destinations(make) {
+/**
+ * Every destination id a chapter can ever name, over all of its states.
+ *
+ * The booleans alone are not the whole state machine. The border chapter's side and
+ * outcome and the day after's variant are strings, and every state past the fork is
+ * gated on them: walking only the boolean mask reached `not-started` through
+ * `meet-envoy` and nothing else, and for the day after nothing at all — so the line
+ * commanders, Captain Voss and every rally and report site of the four variants were
+ * being checked by nobody. `choices` names the values to walk with the flags.
+ */
+function destinations(make, choices = {}) {
   const named = new Set(), states = new Set();
   const look = chapter => {
     const view = chapter.view?.(); if (!view) return;
@@ -55,12 +64,20 @@ function destinations(make) {
   const base = make().snapshot();
   look(make());
   const flags = Object.keys(base).filter(key => typeof base[key] === 'boolean');
-  for (let mask = 0; mask < (1 << flags.length); mask++) {
-    const saved = { ...base };
+  const keys = Object.keys(choices);
+  const spread = keys.reduce((rows, key) => rows.flatMap(row => choices[key].map(value => ({ ...row, [key]: value }))), [{}]);
+  for (let mask = 0; mask < (1 << flags.length); mask++) for (const extra of spread) {
+    const saved = { ...base, ...extra };
     flags.forEach((key, bit) => { saved[key] = Boolean(mask & (1 << bit)); });
-    if (Object.hasOwn(saved, 'revision')) saved.revision = flags.reduce((count, key) => count + Number(saved[key]), 0);
     const chapter = make();
-    if (chapter.restore(saved)) look(chapter);
+    // `revision` is a count of the steps taken, and each chapter counts its own; try
+    // every plausible one and keep whichever the chapter's validator accepts.
+    if (!Object.hasOwn(saved, 'revision')) { if (chapter.restore(saved)) look(chapter); continue; }
+    for (let revision = 0; revision <= flags.length + keys.length; revision++) {
+      const fresh = make();
+      if (!fresh.restore({ ...saved, revision })) continue;
+      look(fresh); break;
+    }
   }
   return { named, states };
 }
@@ -69,24 +86,44 @@ const CHAPTERS = [
   ['the journey down the road', () => createJourney({ inventory })],
   ['Luscia', () => createLusciaChapter({ inventory })],
   ['the Moros Plain', () => createMorosChapter({ inventory, hasHorse: () => true })],
-  ['the border', () => createBorderChapter()],
-  ['the day after', () => createAftermathChapter()],
+  ['the border', () => createBorderChapter(), { side: [null, ...BORDER_SIDES], outcome: [null, ...BORDER_OUTCOMES] }],
+  ['the day after', () => createAftermathChapter(), { variant: [null, ...AFTERMATH_IDS] }],
   ['regional life', () => createRegionalLife({ inventory })],
   ["Drent's woods", () => createForestStory({ inventory })],
   ['the Bramble scout camp', () => createForestHideoutQuest({ inventory })],
 ];
+/** The day after puts its people on sites the host resolves, so its markers stand where its `cast()` says. */
+for (const id of AFTERMATH_IDS) {
+  const chapter = createAftermathChapter();
+  chapter.start(id);
+  for (const stage of ['rally', 'report']) {
+    for (const stand of chapter.cast()) put(stand.id, AFTERMATH_SITES[stand.site], `the day after · ${id}`);
+    if (stage === 'rally') { chapter.act('begin-assault'); chapter.winEncounter(chapter.spec.encounterId); }
+  }
+}
 
 test('every destination a chapter can name is somewhere the world actually has', () => {
-  for (const [label, make] of CHAPTERS) {
-    const { named, states } = destinations(make);
+  for (const [label, make, choices] of CHAPTERS) {
+    const { named, states } = destinations(make, choices);
     assert.ok(states.size >= 1, `${label} shows no view at all`);
     assert.deepEqual([...named].filter(id => !places.has(id)), [], `${label} points at somewhere that does not exist`);
   }
 });
 
+test('the chapters past the fork are walked, not skipped over', () => {
+  // The state machines beyond the fork are exactly the ones a boolean-only walk cannot reach,
+  // and they are the newest ground, so say out loud what has been visited.
+  const border = destinations(createBorderChapter, { side: [null, ...BORDER_SIDES], outcome: [null, ...BORDER_OUTCOMES] });
+  for (const stage of ['take-orders', 'pass-gate', 'meet-envoy', 'report', 'march', 'join-line', 'complete']) assert.ok(border.states.has(stage), `the border's ${stage} is never reached`);
+  for (const id of ['battle-tribune', 'coalition-captain', 'solis-captain']) assert.ok(border.named.has(id), `${id} is never named as a destination`);
+  const after = destinations(createAftermathChapter, { variant: [null, ...AFTERMATH_IDS] });
+  for (const stage of ['not-started', 'rally', 'report', 'complete']) assert.ok(after.states.has(stage), `the day after's ${stage} is never reached`);
+  for (const id of ['aftermath-tribune', 'aftermath-captain', 'aftermath-envoy']) assert.ok(after.named.has(id), `${id} is never named as a destination`);
+});
+
 test('every destination a chapter can name has ground beside it to stand on', () => {
-  for (const [label, make] of CHAPTERS) {
-    for (const id of destinations(make).named) {
+  for (const [label, make, choices] of CHAPTERS) {
+    for (const id of destinations(make, choices).named) {
       const place = places.get(id);
       assert.ok(place, `${label} points at ${id}, which is nowhere`);
       let arrived = false;

@@ -15,6 +15,7 @@
  */
 import { toWorld, toWorldZIn } from './world-scale.js';
 import { SOLIS_STANDS } from './west-suval.js';
+import { MERCENARY_COMPANY_SIZE } from './mercenaries.js';
 
 export const BORDER_VERSION = 1;
 export const BORDER_ENVOY_CHAPTER = 'suval-envoy';
@@ -266,7 +267,7 @@ export function borderConversation(npc, context) {
   const moment = { id: 'leave-border', label: 'Give me a moment.', action: closeDialogue };
   if (npc.id === BORDER_LEGATE_ID && current === 'take-orders') {
     openDialogue(npc, [
-      `The muster stands at ${Math.max(1, Math.min(12, Math.round(musterCount)))} of twelve, and it will have to do. My scouts say the Coalition marches from Solis within days.`,
+      `The muster stands at ${Math.max(1, Math.min(MERCENARY_COMPANY_SIZE, Math.round(musterCount)))} of ${MERCENARY_COMPANY_SIZE}, and it will have to do. My scouts say the Coalition marches from Solis within days.`,
       'Their envoy sits in the Court of Oaths at Solis, south-east past the border stockade, over the downs. Carry my terms: they quit West Suval by the coast road, and the Emperor forgets the names on the Lauvel rolls. Show my seal at their gate; even rebels respect a sealed messenger.',
       'Bring me her answer, or bring me nothing and I will know it. Either way the hired company stands on my left when we march.',
     ], null, 'Back to the camp', { choices: [...option('take-legate-terms'), leave] });
@@ -304,11 +305,11 @@ export function borderConversation(npc, context) {
   }
   if ((npc.id === 'battle-tribune' || npc.id === 'coalition-captain') && current === 'join-line') {
     openDialogue(npc, npc.id === 'battle-tribune' ? [
-      'Oswin Brulan, captain of the left. You are the hired sword who carried the terms to Solis and came back ours. Good. Your company holds this corner; whoever of the twelve has arrived stands with you.',
-      'They will come in two waves across the open ground. Hold, kill what reaches you, and fall back south to me if you must. Say when.',
+      'Oswin Brulan, captain of the left. You are the hired sword who carried the terms to Solis and came back ours. Good. Your company holds this corner; whoever of the eleven has arrived stands with you.',
+      'They will come in three waves across the open ground. Hold, kill what reaches you, and fall back south to me if you must. Say when.',
     ] : [
       'Arlen Voss. Orren says you are ours now. Then you stand here, on the right, with what is left of the valley companies.',
-      'Their soldiers will come in two waves across the open ground. Hold, and fall back south to me if you must. Say when.',
+      'Their soldiers will come in three waves across the open ground. Hold, and fall back south to me if you must. Say when.',
     ], null, 'Back to the line', { choices: [...option('sound-advance'), leave] });
     return true;
   }

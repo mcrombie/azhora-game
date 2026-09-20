@@ -35,7 +35,11 @@ test('every person and place a variant names exists', () => {
     assert.equal(spec.reportSite === null, spec.principalId === AFTERMATH_LEGATE_ID, spec.id);
     assert.ok(AFTERMATH_ARENA_IDS.includes(spec.arena));
     for (const lines of [spec.orders, spec.debrief, spec.after]) assert.ok(lines.length && lines.every(line => typeof line === 'string' && line.length > 5 && !/South Pyros|not built/i.test(line)));
-    assert.match(spec.onward, /not built yet/);
+    // `onward` says where the frontier is, and the two sides have different ones: an Empire
+    // sellsword can ride to Ambron and only the chapter there is missing, while no ship exists
+    // to carry a Republic one to Izolveth at all.
+    assert.match(spec.onward, /not built/);
+    assert.match(spec.onward, spec.side === 'empire' ? /Ambron/ : /West Izol|Izolveth/);
   }
   // Only the army's people wear its armor.
   assert.deepEqual(AFTERMATH_NPCS.filter(npc => npc.modelRole.startsWith('legion')).map(npc => npc.id), ['aftermath-tribune']);
@@ -99,7 +103,7 @@ test('a variant runs rally, fight and report, and pays once', () => {
     assert.equal(chapter.act('close-aftermath').ok, false, 'paid once');
     view = chapter.view();
     assert.equal(view.complete, true);
-    assert.match(view.detail, /not built yet/);
+    assert.match(view.detail, /not built/);
     assert.match(view.kicker, /DONE$/);
     assert.deepEqual(events.map(event => event.actionId), ['start-chapter', 'win-aftermath-fight', 'close-aftermath']);
     assert.deepEqual(events.map(event => event.sequence), [1, 2, 3]);

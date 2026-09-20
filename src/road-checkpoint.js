@@ -12,7 +12,7 @@ import { createCampaign } from './campaign.js';
 import { validateMapTutorial } from './map-tutorial.js';
 import { createMorosChapter, validateMorosSnapshot } from './moros-chapter.js';
 import { createBorderChapter, validateBorderSnapshot } from './border-chapter.js';
-import { createAftermathChapter, validateAftermathSnapshot } from './aftermath-chapter.js';
+import { createAftermathChapter, validateAftermathSnapshot, AFTERMATH_VARIANTS } from './aftermath-chapter.js';
 import { createRiding, validateRidingSnapshot } from './riding.js';
 import { createSkills, validateSkillsSnapshot } from './skills.js';
 import { createBirding, validateBirdingSnapshot } from './birding.js';
@@ -178,6 +178,35 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       if (luscia.state.started && !journey.state.complete) return failed('The saved Luscia chapter outran the road out of Drent.');
       if (luscia.state.complete && !campaign.snapshot().completed.includes('luscia-aftermath'))
         return failed('The saved Luscia chapter is ahead of the campaign.');
+    }
+
+    // The three chapters past the Lauvel had no such check, so a save could hold the day
+    // after a battle that was never fought, or an Empire morning for a traveler the border
+    // chapter says signed for the Republic. Each of them is written in the same breath as
+    // the campaign chapter it belongs to (`morosAct`, `borderAct`, `aftermathAct` in
+    // main.js all move the campaign on before `saveRoad`), so the two must agree. Older
+    // saves that carry none of these sections are untouched, and a section is only ever
+    // judged against a campaign the save also carries.
+    if (Object.hasOwn(data, 'campaign')) {
+      const story = campaign.snapshot(), done = id => story.completed.includes(id);
+      const moros = createMorosChapter();
+      if (Object.hasOwn(data, 'moros') && moros.restore(data.moros)) {
+        if (moros.state.started && !done('luscia-aftermath')) return failed('The saved Moros camp outran the field at the Lauvel.');
+        if (moros.state.complete && !done('moros-camp')) return failed('The saved Moros camp is ahead of the campaign.');
+      }
+      const border = createBorderChapter();
+      if (Object.hasOwn(data, 'border') && border.restore(data.border)) {
+        if (border.state.started && !done('moros-camp')) return failed('The saved border chapter outran the Marshal’s muster.');
+        if (border.state.side && story.side && border.state.side !== story.side)
+          return failed('The saved border chapter fights for one side and the campaign for the other.');
+        if (border.state.complete && !done('border-battle')) return failed('The saved border battle is ahead of the campaign.');
+      }
+      const aftermath = createAftermathChapter();
+      if (Object.hasOwn(data, 'aftermath') && aftermath.restore(data.aftermath) && aftermath.state.variant) {
+        const variant = aftermath.state.variant, spec = AFTERMATH_VARIANTS[variant];
+        if (story.side && spec.side !== story.side) return failed('The saved day after the battle belongs to the other side.');
+        if (story.chapterId !== variant && !done(variant)) return failed('The saved day after the battle is not the one the campaign reached.');
+      }
     }
 
     // Store only the known schema. Fresh objects keep callers from modifying a

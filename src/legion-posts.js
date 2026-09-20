@@ -2,7 +2,8 @@
  * The Ambroni army's posts along the road: the soldiers a hired sword sees
  * all the way from Tidehaven's landing to the muster on the Moros Plain. They
  * stand where the road is watched, and each has a word for a mercenary. With
- * the picket sergeant at the Lauvel they make twelve Empire soldiers.
+ * the picket sergeant at the Lauvel they make twelve Empire soldiers. The hired
+ * company they are waiting for is eleven, the traveler among them (`MERCENARY_COMPANY_SIZE`).
  */
 import { toWorld } from './world-scale.js';
 
@@ -35,8 +36,8 @@ export const LEGION_POSTS = Object.freeze([
     'The bridge takes wagons; it will take you. Do not leave the road on the other side after dark. Wolves, and worse.',
   ]),
   post('moros-gate-north', 'Footman Vell', 'legionary', -429.9, 257.2, Math.PI / 2, [
-    'The Moros Plain. The camp is west along the road; you will see the standard before you see the palisade.',
-    'Say your name at the camp gate and who signed you. Twelve hired swords are expected. Nobody has counted twelve yet.',
+    'The Moros Plain. The camp is south-west along the road; you will see the standard before you see the palisade.',
+    'Say your name at the camp gate and who signed you. Eleven hired swords are expected. Nobody has counted eleven yet.',
   ]),
   post('moros-gate-south', 'Footman Tarn', 'legionary', -424.1, 261.6, Math.PI / 2, [
     'Open country from here. Nothing to hide behind, for you or for them.',
