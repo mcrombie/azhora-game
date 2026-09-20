@@ -72,7 +72,7 @@ export const REGION_BIOMES = Object.freeze({
   // sheltering terrain: the sky is large, the wind is consistent, and the grass, which is
   // Vastos's primary resource, grows in the dense cold-adapted varieties that upland grazing
   // requires". So: no canopy, half as much grass again as anywhere else, and a few erratics.
-  Vastos: Object.freeze({ id: 'cold-tableland', name: 'The Vastos plain', ground: '#8f9d6c', canopy: null, treesPerHex: 0, rocksPerHex: perHex(2), undergrowth: 'tussock', tuftsPerHex: 38,
+  Vastos: Object.freeze({ id: 'cold-tableland', name: 'The Vastos plain', ground: '#8f9d6c', canopy: null, treesPerHex: 0, rocksPerHex: perHex(2), undergrowth: 'tussock', tuftsPerHex: 54,
     relief: { amplitude: 1, wavelength: 300 }, clearings: ['vastos-water', 'sulfur-ground'], blockHexes: 4,
     note: 'A cold upland tableland above both its approaches: dense tussock grass, an enormous sky, no shelter of any kind, one shallow braided river across the south, watering pans on the open range, sulfur ground on the western fall and two small lake basins on the eastern one.' }),
   // Meneth scatters its own slopes (src/west-regions-scenery.js): what grows there is set by

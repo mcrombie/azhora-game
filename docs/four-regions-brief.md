@@ -269,4 +269,26 @@ herons and stilt-legged waders are the ones it names.
   wading bird.
 * Tests: one file per region in `tests/`.
 * Review views in `src/main.js`, all prefixed `west-`, each worked out from the regions'
-  own numbers rather than typed in, so a view cannot drift off the thing it shows.
+  own numbers rather than typed in, so a view cannot drift off the thing it shows:
+  `west-vastos`, `west-vastos-braid`, `west-vastos-sinter`, `west-vastos-basin`,
+  `west-meneth`, `west-meneth-beck`, `west-carica`, `west-carica-upper`, `west-lizeem`,
+  `west-nesdor`, `west-nesdor-flats`, and one per animal — `west-longhorn`, `west-sheep`,
+  `west-hare`, `west-fox`, `west-otter`, `west-wader`.
+
+## What the screenshots changed
+
+Four things were wrong on the ground that no test caught, and were fixed after looking:
+
+* Every view was aimed a hundred and eighty degrees the wrong way. `review()` puts the
+  camera at `look + (sin yaw, cos yaw) * d` and points it *back*, so a yaw taken as the
+  bearing from the camera to the subject faces away from it. The views are now built by
+  a `shot(camera, target, …)` helper that works the yaw and distance out from the two
+  places, which is the only way to be sure a river shot ends up on the bank it meant to.
+* The longhorn's head was sunk into its shoulder: the head hung off a neck that was not
+  there, and grazing pulled it backwards into the body. It now has a neck, the head
+  swings down *and forward* to graze, and the legs stand under the animal.
+* The Carica corridor was open woodland rather than the closed canopy the lore insists
+  has never been cut. The bank planting was doubled.
+* Two crown colours were set with `setHSL`, which the renderer reads in its working
+  colour space, so a lightness chosen for sRGB came back two stops paler — the nut
+  groves were nearly white. Both are hex now, like the hardwood beside them.

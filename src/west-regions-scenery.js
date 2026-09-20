@@ -432,8 +432,10 @@ export function createWestScenery(kit) {
       }
     }
     // Chestnut and walnut are a warmer, yellower green than the hardwood above them.
+    // Both are given as hex: setHSL is read in the renderer's working colour space,
+    // and a lightness picked for sRGB comes back two stops paler than it was meant.
     woodBatch(trees, meneth, tree => tree.wide
-      ? color.setHSL(range(.20, .25), range(.30, .42), range(.33, .43))
+      ? color.set('#87a052').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.05, .05))
       : color.set('#4a6a43').offsetHSL(range(-.03, .03), range(-.05, .06), range(-.07, .06)),
       'meneth-tree');
     rockBatch(rocks, meneth);
@@ -504,11 +506,11 @@ export function createWestScenery(kit) {
   const corridorTrees = [];
   for (const sample of WEST_PROFILES.get(CARICA.id)) {
     if (sample.along < CARICA_CORRIDOR.from || sample.along > CARICA_CORRIDOR.to) continue;
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 34; i++) {
       const side = random() < .5 ? -1 : 1, offset = sample.half + range(1.5, CARICA_CORRIDOR.bankReach);
       const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
       if (regionNameAt(x, z) !== 'Caricas' || westBareGround(x, z, 2.5)) continue;
-      if (corridorTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 3.4)) continue;
+      if (corridorTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 2.9)) continue;
       corridorTrees.push({ x, z, old: true, wide: false, s: range(.9, 1.5), h: range(12, 18), rot: range(0, 6.28) });
     }
   }
@@ -637,9 +639,11 @@ export function createWestScenery(kit) {
         tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28), floor: nesdorTerrainAt(x, z) === 'plains' });
       }
     }
+    // Hazel is a lighter, yellower leaf than oak, and both are given as hex for the
+    // same reason the Meneth crowns are.
     woodBatch(trees, nesdor, tree => tree.oak
       ? color.set('#4f6b3e').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.05, .06))
-      : color.setHSL(range(.20, .26), range(.28, .40), range(.30, .40)), 'nesdor-tree');
+      : color.set('#7d9a4f').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.05, .05)), 'nesdor-tree');
     // The Flats are paler and drier than the valley head, and shade toward the Moros.
     tuftBatch(tufts, nesdor, tuft => tuft.floor
       ? color.setHSL(range(.13, .18), range(.24, .36), range(.44, .58))

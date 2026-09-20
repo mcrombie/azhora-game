@@ -70,11 +70,15 @@ function models() {
     longhorn: {
       body: geometry([
         S(0x6d452c, [0, 1.06, -.04], [.42, .46, .84]),
-        S(0x7a4f32, [0, 1.13, .46], [.38, .43, .34]),
-        S(0xc9b294, [0, 1.46, -.10], [.20, .08, .70]),
+        // The shoulder and the neck: a longhorn is heaviest in front, and its head
+        // comes off the top of that mass rather than out of the middle of it.
+        S(0x7a4f32, [0, 1.15, .44], [.39, .42, .32]),
+        S(0x7a4f32, [0, 1.26, .66], [.24, .25, .22], [.30, 0, 0]),
+        // The winter ridge the lore gives the breed: pale hair along the spine, not a plank.
+        S(0xbda98d, [0, 1.45, -.14], [.15, .05, .62]),
         S(0x5b3924, [0, .88, .02], [.34, .27, .70]),
-        Y(0x53341f, [0, 1.06, -.86], [.045, .60, .045], [.42, 0, 0]),
-        S(0x2e211a, [0, .78, -1.03], [.055, .13, .06]),
+        Y(0x53341f, [0, .96, -.84], [.042, .66, .042], [.95, 0, 0]),
+        S(0x2e211a, [0, .64, -1.02], [.05, .12, .055]),
       ]),
       head: geometry([
         S(0x6d452c, [0, .02, .06], [.20, .21, .30]),
@@ -87,7 +91,7 @@ function models() {
         ...both(side => Y(0xcfc2a2, [side * .42, .27, .04], [.036, .22, .036], [0, 0, side * .95])),
         ...both(side => C(0xe3dac0, [side * .52, .41, .06], [.030, .20, .030], [0, 0, side * .38])),
       ]),
-      leg: geometry([Y(0x5b3924, [0, -.24, 0], [.082, .48, .084]), B(0x2e211a, [0, -.48, .03], [.14, .10, .19])]),
+      leg: geometry([Y(0x5b3924, [0, -.23, 0], [.09, .46, .092]), B(0x2e211a, [0, -.46, .03], [.15, .10, .20])]),
     },
 
     /**
@@ -478,14 +482,17 @@ export function createWestLife(scene, world) {
         return;
       }
       if (species === 'longhorn' || species === 'hill-sheep') {
-        const low = species === 'longhorn' ? 1.02 : .55, high = species === 'longhorn' ? 1.34 : .84;
+        // The head hangs off the end of the neck, so grazing swings it down and
+        // forward together rather than sinking it back into the shoulder.
+        const ox = species === 'longhorn' ? .86 : .43;
         const grazing = animal.action === 'graze';
-        place(flock.meshes.head, i, 0, grazing ? low : high, species === 'longhorn' ? .78 : .43,
-          grazing ? .95 + Math.sin(animal.clock * .8) * .06 : Math.sin(animal.clock * .8) * .07,
+        const high = species === 'longhorn' ? 1.38 : .84, low = species === 'longhorn' ? .62 : .48;
+        place(flock.meshes.head, i, 0, grazing ? low : high, grazing ? ox + .22 : ox,
+          grazing ? 1.15 + Math.sin(animal.clock * .8) * .06 : .10 + Math.sin(animal.clock * .8) * .07,
           Math.sin(animal.clock * .63) * .10);
-        const hip = species === 'longhorn' ? .28 : .24, fore = species === 'longhorn' ? .62 : .36;
+        const hip = species === 'longhorn' ? .24 : .22, fore = species === 'longhorn' ? .50 : .34;
         for (let leg = 0; leg < 4; leg++) place(flock.meshes.legs, i * 4 + leg, leg % 2 ? hip : -hip,
-          species === 'longhorn' ? .78 : .44, leg < 2 ? fore : -fore,
+          species === 'longhorn' ? .76 : .44, leg < 2 ? fore : -fore,
           walking ? Math.sin(phase + (leg === 0 || leg === 3 ? 0 : Math.PI)) * .42 : 0);
         return;
       }

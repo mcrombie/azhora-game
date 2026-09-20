@@ -626,65 +626,88 @@ function init() {
   // The animals of the four western regions (src/west-regions-life.js): longhorns and
   // hares on the Vastos plain, a hawk over it, and the river fox in the Carica corridor.
   const westLife=createWestLife(scene,world);
-  /** Where a camera stands to look at a named western view, from the regions' own numbers. */
+  /**
+   * Where the camera stands for a named western view, and what it looks at, from
+   * the regions' own numbers rather than typed-in coordinates.
+   *
+   * `review()` puts the camera at `look + (sin yaw, cos yaw) * d` and points it
+   * back at `look`, so a shot is fully described by the thing being looked at and
+   * the place the camera is looking from. `shot()` takes exactly those two and
+   * works the yaw and the distance out, which is the only way to be sure a view
+   * ends up on the side of the river it was meant to be on.
+   */
   function westReviewSpot(view){
-    const facing=(from,to)=>Math.atan2(to.x-from.x,to.z-from.z);
+    const shot=(camera,target,pitch,height=1,self=false)=>({
+      x:camera.x,z:camera.z,pitch,self,
+      yaw:Math.atan2(camera.x-target.x,camera.z-target.z),
+      d:Math.max(2,Math.hypot(camera.x-target.x,camera.z-target.z)),
+      look:{x:target.x,z:target.z,y:height},
+    });
+    /** A point `out` metres off a watercourse, on the side the normal points to. */
+    const beside=(course,at,out,side=1)=>{
+      const s=course.samples[Math.round((course.samples.length-1)*at)];
+      return {sample:s,spot:{x:s.x+s.nx*out*side,z:s.z+s.nz*out*side}};
+    };
     if(view==='west-vastos'){
-      const pan=VASTOS_PANS[2],from={x:pan.x+6,z:pan.z-64};
-      return {...from,yaw:facing(from,pan),pitch:.05,d:18};
+      // The open range: a watering pan with the plain going on behind it.
+      const pan=VASTOS_PANS[2];
+      return shot({x:pan.x+10,z:pan.z-58},pan,.05,.6);
     }
     if(view==='west-vastos-braid'){
-      const s=VASTOS_RIVER.samples[Math.round(VASTOS_RIVER.samples.length*(VASTOS_BRAID.from+VASTOS_BRAID.to)/2)];
-      const from={x:s.x-s.nx*34,z:s.z-s.nz*34};
-      return {...from,yaw:facing(from,s),pitch:.11,d:16,look:{x:s.x,z:s.z,y:.6},self:false};
+      // High enough above the bank to see all three channels and the bars between them.
+      const {sample,spot}=beside(VASTOS_RIVER,(VASTOS_BRAID.from+VASTOS_BRAID.to)/2,46,-1);
+      return shot(spot,sample,.34,.2);
     }
     if(view==='west-vastos-sinter'){
-      const from={x:VASTOS_SINTER.x+46,z:VASTOS_SINTER.z+6};
-      return {...from,yaw:facing(from,VASTOS_SINTER),pitch:.08,d:20,look:{x:VASTOS_SINTER.pool.x,z:VASTOS_SINTER.pool.z,y:2},self:false};
+      // From the turf, across the line where the grass stops, to a vent breathing
+      // on the far side of the crust. Aimed above the ground, or the crust fills
+      // the frame and there is no horizon to see the line against.
+      const vent=VASTOS_SINTER.vents[1];
+      return shot({x:VASTOS_SINTER.x+34,z:VASTOS_SINTER.z+16},vent,.05,2.2);
     }
     if(view==='west-vastos-basin'){
-      const basin=VASTOS_BASINS[0],from={x:basin.x+4,z:basin.z-basin.radius-26};
-      return {...from,yaw:facing(from,basin),pitch:.10,d:20};
+      const basin=VASTOS_BASINS[0];
+      return shot({x:basin.x+8,z:basin.z-basin.radius-34},basin,.12,.4);
     }
     if(view==='west-meneth'){
-      // Across the ridges, not along them: the view has to show the sequence.
-      const trough=menethTroughZ(1,-1850),from={x:-1850,z:trough+MENETH_RIDGES.wavelength*.5};
-      return {...from,yaw:0,pitch:.06,d:20};
+      // Down a valley floor, across the next two ridges. The floor is hay meadow,
+      // so the camera is the one band of this region with nothing standing on it.
+      const x=-1850,floor=menethTroughZ(1,x);
+      return shot({x,z:floor+16},{x,z:floor-MENETH_RIDGES.wavelength*1.6},.09,6);
     }
     if(view==='west-meneth-beck'){
-      const beck=MENETH_BECKS[1],s=beck.samples[Math.round(beck.samples.length*.45)];
-      const from={x:s.x-s.nx*22,z:s.z-s.nz*22};
-      return {...from,yaw:facing(from,s),pitch:.10,d:15,look:{x:s.x,z:s.z,y:.5},self:false};
+      const {sample,spot}=beside(MENETH_BECKS[1],.45,20);
+      return shot(spot,sample,.20,.3);
     }
     if(view==='west-carica'){
-      const s=CARICA.samples[Math.round(CARICA.samples.length*.62)];
-      const from={x:s.x-s.nx*30,z:s.z-s.nz*30};
-      return {...from,yaw:facing(from,s),pitch:.12,d:18,look:{x:s.x,z:s.z,y:1.2},self:false};
+      // From the Nesdor bank, across the water into the corridor's old growth. Far
+      // enough back that the water is a band and not a floor, and aimed high enough
+      // up the far bank to get the canopy in rather than a wall of trunks.
+      const {sample,spot}=beside(CARICA,.62,46,-1);
+      return shot(spot,sample,.10,7);
     }
     if(view==='west-carica-upper'){
-      const s=CARICA.samples[Math.round(CARICA.samples.length*.12)];
-      const from={x:s.x-s.nx*20,z:s.z-s.nz*20};
-      return {...from,yaw:facing(from,s),pitch:.16,d:13,look:{x:s.x,z:s.z,y:.4},self:false};
+      const {sample,spot}=beside(CARICA,.14,22);
+      return shot(spot,sample,.22,.3);
     }
     if(view==='west-nesdor'){
-      const s=ELA_SOUTH_REACH.samples[Math.round(ELA_SOUTH_REACH.samples.length*.68)];
-      const from={x:s.x-s.nx*46,z:s.z-s.nz*46};
-      return {...from,yaw:facing(from,s),pitch:.05,d:22,look:{x:s.x,z:s.z,y:1},self:false};
+      const {sample,spot}=beside(ELA_SOUTH_REACH,.72,54,-1);
+      return shot(spot,sample,.20,.3);
     }
     if(view==='west-nesdor-flats'){
-      return {x:-1420,z:700,yaw:-Math.PI/2,pitch:.03,d:20};
+      // Away from the Moros's old rope fence, which still crosses this ground.
+      return shot({x:-1560,z:760},{x:-1700,z:790},.04,4);
     }
     if(view==='west-lizeem'){
-      const s=LIZEEM.samples[Math.round(LIZEEM.samples.length*.42)];
-      const from={x:s.x-s.nx*38,z:s.z-s.nz*38};
-      return {...from,yaw:facing(from,s),pitch:.09,d:24,look:{x:s.x,z:s.z,y:1.5},self:false};
+      const {sample,spot}=beside(LIZEEM,.42,40);
+      return shot(spot,sample,.08,1.5);
     }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
       'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird'}[view];
     if(creature){
       const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
-      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4:2.8;
+      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4.5:3.2;
       // Half these animals live on a riverbank, so the camera has to go round to a
       // side of them there is ground on rather than to a fixed bearing off one shoulder.
       let from=null;
@@ -693,8 +716,7 @@ function init() {
         if(canStand(spot.x,spot.z,world,.4))from=spot;
       }
       from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
-      return {...from,yaw:facing(from,animal),pitch:.14,d:close,
-        look:{x:animal.x,z:animal.z,y:creature==='longhorn'?1.3:creature==='wading-bird'?1:.45},self:false};
+      return shot(from,animal,.07,creature==='longhorn'?1.1:creature==='wading-bird'?.9:.35);
     }
     return null;
   }
