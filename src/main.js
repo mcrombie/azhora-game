@@ -101,6 +101,7 @@ import { KATY, KATY_STAND, KATY_SKETCH, createKaty, katyConversation } from './k
 import { IMANI, IMANI_STAND, createVineyard, imaniConversation } from './vineyard.js';
 import { BATMAN, BATMAN_PERCH, HANDOVER, EVIDENCE, BUST_SCENE, ENDINGS, VELAETH, createBatmanHunt, batmanConversation } from './batman.js';
 import { ADDISON, ADDISON_STAND, SUVAL_LIGHT, FROM_THE_GALLERY, createLightKeeper, addisonConversation } from './lighthouse.js';
+import { AMBRON } from './region-world.js';
 import { BOSCO, BOSCO_HAUNTS, BOSCO_TAKES, BOSCO_WALK_START, BOSCO_WALK_END, createBosco, boscoConversation } from './bosco.js';
 import { SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, ELOD_LIGHT, LANDING, LENS_ITEM, SISTER_TOLD, SISTER_WHY,
   CROSSING_PLAN, RIVAL_WATCHES, RIVAL_UNSEEN, HEIST_ENDINGS, createHeist, rivalConversation } from './rival-light.js';
@@ -3148,6 +3149,12 @@ function init() {
           const px=at.x+Math.sin(turn)*1.4,pz=at.z+Math.cos(turn)*1.4;
           player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+.2,at.z);yaw=turn+Math.PI;pitch=.3;distance=targetDistance=1.2;}
+        // Ambron from the south, over the chain and up the channel into the city ('ambron').
+        if(view==='ambron'){questStage=10;combat.finishPractice();player.group.visible=false;
+          const c=AMBRON.centre,turn=0;
+          const px=c.x,pz=c.z-150;
+          player.group.position.set(px,world.heightAt(px,pz),pz);
+          reviewTarget=new THREE.Vector3(c.x,world.heightAt(c.x,c.z)+18,c.z);yaw=turn;pitch=.26;distance=targetDistance=150;}
         // The Elod Light from the landing below it ('elod-light'), and its keeper ('subtractidaughter').
         if(view==='elod-light'||view==='subtractidaughter'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(view==='subtractidaughter'){const g=npcById.get(SUBTRACTIDAUGHTER.id).actor.group,at=g.position,turn=SUBTRACTIDAUGHTER_STAND.yaw+.4;
