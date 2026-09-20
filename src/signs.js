@@ -24,6 +24,8 @@ import { forestPlaceDefinitions } from './forest-places.js';
 export const SIGN_LABELS = Object.freeze([
   // Tidehaven and the Greenway
   'Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
+  // The head west of the beach, past Brandy's yard and Saltwind Lookout (src/lighthouse.js)
+  'The Saltwind Light',
   // West Suval's winery, and the grapes on the plates at the head of its blocks (src/winery.js)
   'Vaervelm Caelazh', 'Viognier', 'Chardonnay', 'Vidal Blanc', 'Cabernet Franc', 'Merlot', 'Petit Verdot', 'Tannat', 'Norton',
   ...forestPlaceDefinitions.map(site => site.name),
