@@ -330,3 +330,64 @@ regions the story has not opened yet.
    change, because "FOUR REGIONS · PLAYTESTING" is addressed to the person building it.
 
 **Repro:** open the game, press F8, or read the opening screen.
+
+---
+
+## Ammi Tal cannot be reached from anywhere in the world
+
+**Seen:** nothing, and that is the shape of it. She is at Sevenwalls, she has a name, a model, a
+role and three paragraphs about walls and soil and going down to Elod twice a year with oil, and
+there is no way to walk to her.
+
+**Measured.** A flood fill of the whole world from the landing at Tidehaven, one metre a cell,
+using exactly the rule `moveCharacter` enforces (`canStand` at the traveler's own footprint):
+
+| | |
+|---|---|
+| cells the traveler can reach on foot | **3,369,563** of 6.9M |
+| people the fill reaches | 118 of 155 |
+| people it does not | 37 |
+
+Thirty-six of those thirty-seven are on islands — eleven in Peblos, twenty-five in West Izol —
+and are meant to be reached by boat. The thirty-seventh is **`suval-terrace-farmer`, Ammi Tal**,
+at (-205, 696), on ground the fill otherwise walks all over.
+
+Filling locally instead, from open hillside sixty metres out, reaches 499,778 cells and still does
+not reach her. The pocket she stands in is **163 cells of a quarter metre — about ten square
+metres**, running 3.3 m by 7.5 m, and it does not touch the edge of a 120 m box drawn around her.
+
+**Why every other check passed her.** They are all local. The ground under her holds a body, and
+there is standable ground in a ring around her — because the ring is inside the pocket with her.
+
+**What seals it.** Firing 720 rays outward and recording what stops each one: 685 hit a scattered
+prop, 241 a hut, 73 the cistern, 9 a field wall. There are **116 props within nine metres of her**.
+Take the props within twelve metres away and the ground opens: the same fill escapes instead of
+closing at 39 cells.
+
+**Why `keepPropsClear` did not save her.** It removes a prop whose centre is within its own radius
+plus eight tenths of a metre of somewhere somebody stands. That is the *spot*, not the way out. Of
+the 116 props around her it reaches **none**; the nearest one it cannot reach is **0.98 m** away, a
+centimetre past its clearance.
+
+**And widening it is not the repair.** Prop counts within nine metres of a stand, across all 155
+people: median 4, upper quartile 51, ninetieth percentile 115, highest **441**. Twenty-six people
+have more than eighty props that close and are perfectly fine — `peblos-legionary-2` has 441 and
+opens out. Density is not the fault; the fault is the particular ring of props, three huts, a
+cistern and a terrace wall at Sevenwalls. A bigger clearance would strip scenery across the whole
+game to mend one place.
+
+**Ways out, all local:**
+
+1. Move her. The nearest ground that is both reachable and has room to be spoken in is **6.25 m**
+   away, around (-208.1, 701.4), in the lane between the second and third huts. There are 3,831
+   reachable, roomy spots within twenty metres, so this is one coordinate in
+   `EAST_SUVAL_STANDS` (`src/east-suval.js:291`) once somebody chooses. Not guessed at here
+   because which of those spots is *her* spot is a staging choice: she is a terrace farmer, and
+   the lane between the huts is not the terrace.
+2. Thin the scatter at Sevenwalls, so the hamlet has gaps between its buildings. Keeps her where
+   she was put, and is the answer if the pocket is a scattering accident rather than her placement.
+3. Give `keepPropsClear` a second job: clear a corridor from each stand to open ground, rather
+   than a disc around it. Fixes the class instead of the instance, costs the most, and needs a
+   before-and-after prop count because it touches every stand in the world.
+
+**Repro:** `tests/nobody-sealed-in.test.js` names her; F8 to East Suval and walk to Sevenwalls.
