@@ -596,6 +596,12 @@ export const INTERPRETER = freeze({
   range: 12, reached: 'mustered', bonus: 2,
 });
 
+/**
+ * The key that shows a line the way it was actually said. Free: the road already
+ * spends WASD, QE, Shift, Tab, Space, F, R, C, I, J, M, L, K, G, H, B and P.
+ */
+export const LINGUIST_KEY = 'KeyT';
+
 /** The peddler's phrasebooks: the deliberate road, for anybody who would rather buy the words. */
 export const PHRASEBOOK_ITEM = 'phrasebook';
 export const PHRASEBOOK_PRICE = 14;
@@ -625,6 +631,16 @@ const GENERIC_IN_NAMES = freeze(new Set(['the', 'of', 'at', 'a', 'and', 'into', 
 const nameTokens = text => text.split(/[^A-Za-z’']+/).filter(Boolean);
 
 /**
+ * Names the road letters that no chart records: a dyer and a wood in Tidehaven,
+ * the shrine on the Rise, the wine attic in Solis, the places west of Ostel the
+ * game has not built, and the eight grapes on the plates at Vaervelm Caelazh.
+ * A grape is that grape in every language.
+ */
+export const EXTRA_NAMES = freeze(['Brandy', 'Frank', 'Koopwood', 'Stormfall', 'Mosskeeper', 'Saltwind',
+  'Sava', 'Tharganhom', 'Kelmod', 'Mavren', 'Sareth', 'Vel', 'Westerina', 'Elodi',
+  'Viognier', 'Chardonnay', 'Vidal', 'Blanc', 'Cabernet', 'Franc', 'Merlot', 'Petit', 'Verdot', 'Tannat', 'Norton']);
+
+/**
  * Every name on the atlas that is a name and not a word: the regions, the
  * charted subregions, and the tongues themselves. A name is a name in every
  * language, so these pass through the renderer untouched wherever they stand,
@@ -634,6 +650,7 @@ export const PLACE_NAMES = freeze(new Set([
   ...PLAYABLE_REGIONS.flatMap(nameTokens),
   ...SUBREGIONS.flatMap(area => nameTokens(area.name)),
   ...LANGUAGE_IDS.flatMap(id => nameTokens(LANGUAGES[id].name).concat(nameTokens(LANGUAGES[id].endonym))),
+  ...EXTRA_NAMES,
 ].map(token => token.toLowerCase().replace(/’/g, "'")).filter(token => !GENERIC_IN_NAMES.has(token) && token.length > 2)));
 
 /**
@@ -661,12 +678,47 @@ export const originLanguage = origin => ORIGIN_LANGUAGE[origin] ?? null;
  * ground they are standing on.
  */
 export function speechFor(npc, regionName) {
+  // Chris Gotwood came off the same boat on the same contract. Whatever the
+  // traveler's own head speaks, Chris speaks it: he is the one person in Azhora
+  // who does, which is the whole reason the first hour of the road works.
+  if (npc?.id === INTERPRETER.npcId) return spoken(null);
   if (npc?.language && LANGUAGES[npc.language]) return spoken(npc.language, npc.dialect ?? null);
   const origin = npc?.origin ? originLanguage(npc.origin) : null;
   if (origin) return spoken(origin);
   if (npc?.modelRole && IMPERIAL_ROLES.includes(npc.modelRole)) return spoken('ambroni');
   return regionSpeech(regionName);
 }
+
+/**
+ * What tongue each sign on the road is lettered in. Mostly the country it stands
+ * in; the Empire's own furniture — the camp, the outpost, the stockade, the
+ * orders nailed to it and the miles counted along its road — is Ambroni
+ * wherever it stands, because the Empire laid it.
+ *
+ * A label with no entry letters in English. That is deliberate: a new sign put
+ * up by somebody working elsewhere in the game reads plainly until whoever
+ * knows the country says what it should say, rather than breaking the road.
+ */
+export const SIGN_LANGUAGE = freeze(Object.fromEntries([
+  [spoken('drentish'), ['Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
+    'Old Charcoal Hearth', 'The Bee Fold', 'Stormfall Oak', 'Mosskeeper’s Shrine', 'Fern Hollow', 'Saltwind Lookout',
+    'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel', 'Charcoal Burners',
+    'The Forester’s Hut', 'The Wayside Shrine', 'The Timber Landing', 'Drent', 'The Ruins of Rena', 'Applegarth',
+    'Rena', 'East Rena', 'Westerina', 'Brandy Frank, Dyer', 'The Koopwood']],
+  [spoken('drentish', 'pueth'), ['The Tessen Bridge', 'Rimeholt']],
+  [spoken('drentish', 'pebble'), ['Peblos', 'Cobble', 'The Quay']],
+  [spoken('mittoli', 'luscian'), ['Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay',
+    'Quiet fishing bank', 'Return to bridge', 'The Lauvel', 'The Burned Hamlet', 'Lumber Town', 'The Stable Yard', 'Notices']],
+  [spoken('mittoli', 'plain'), ['Moros Plain', 'The Moros Gate', 'The Shepherd’s Fold']],
+  [spoken('mittoli', 'amodian'), ['Amod', 'Ostel', 'The Pass Stones', 'Kelmod & Mavren', 'Sareth-am-Vel']],
+  [spoken('ambroni'), ['The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders', 'The Army Picket', 'Truce',
+    'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine']],
+  [spoken('koleth'), ['East Suval', 'Elod', 'The Elodi Frontier', 'Elod’s Border Post', 'Closed by Elod', 'The Elod Light']],
+  [spoken('suvalen'), ['West Suval', 'Solis', 'The Gate of Sun Horses', 'The Coalition camp', 'The border stockade',
+    'Tharganhom', 'The Suval Light', 'Vaervelm Caelazh',
+    'Viognier', 'Chardonnay', 'Vidal Blanc', 'Cabernet Franc', 'Merlot', 'Petit Verdot', 'Tannat', 'Norton']],
+  [spoken('izoli'), ['Izolveth', 'The Hearth Road', 'Ardveth', 'Kelvath Cove', 'The camp']],
+].flatMap(([speech, labels]) => labels.map(label => [label, speech]))));
 
 /** Signs letter in the local tongue until you can read it; one constant turns the whole of it off. */
 export const SIGN_TRANSLATION = true;

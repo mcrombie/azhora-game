@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { forestPlaceDefinitions } from './forest-places.js';
+import { SIGN_LANGUAGE, SIGN_TRANSLATION } from './languages.js';
+import { renderLine } from './linguist.js';
 
 /**
  * One sign language for the whole road.
@@ -20,8 +22,19 @@ import { forestPlaceDefinitions } from './forest-places.js';
  * every part uses a shared material so the static batcher merges it.
  */
 
-/** Every label a sign may carry. The lettering atlas is built from this list once. */
-export const SIGN_LABELS = Object.freeze([
+/**
+ * Every label a sign may carry, in the traveler's own language.
+ *
+ * The road does not letter them in his language. A sign stands in a country and
+ * is lettered in that country's tongue (src/languages.js, SIGN_LANGUAGE) until he
+ * can read it, at which point it letters in his. That is all or nothing rather
+ * than the spectrum a spoken line gets, because the atlas below is built once from
+ * a fixed list and a board is cut to the width of what is written on it: a sign
+ * with a different word on it every few levels would need an unbounded atlas. It is
+ * also simply better - a half-translated sentence is scaffolding, and a
+ * half-translated three-word sign is noise. See docs/languages.md.
+ */
+export const ENGLISH_SIGN_LABELS = Object.freeze([
   // Tidehaven and the Greenway
   'Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
   // The two lights of this coast (src/lighthouse.js, src/rival-light.js)
@@ -60,7 +73,32 @@ export const SIGN_LABELS = Object.freeze([
   'I', 'II', 'III',
 ]);
 
-const CELL_WIDTH = 512, CELL_HEIGHT = 64, COLUMNS = 2, FONT_PX = 42;
+/** What a sign says before the traveler can read it, by label. A name letters the same either way. */
+export const FOREIGN_SIGN_LABELS = Object.freeze(new Map(ENGLISH_SIGN_LABELS
+  .map(label => [label, SIGN_LANGUAGE[label]])
+  .filter(([, speech]) => speech)
+  .map(([label, speech]) => [label, renderLine(label, speech.language, { full: true, dialect: speech.dialect, titles: true })])
+  .filter(([label, made]) => made !== label)));
+
+/** Both, because the lettering atlas holds every word any sign will ever carry. */
+export const SIGN_LABELS = Object.freeze([...ENGLISH_SIGN_LABELS, ...new Set(FOREIGN_SIGN_LABELS.values())]);
+
+/**
+ * Which tongues the traveler can read, asked afresh every time a sign is built.
+ * src/main.js hands this to the world; with nobody to ask, every sign letters in
+ * the traveler's own language, which is what the tests and the tools want.
+ */
+let signReader = null;
+export const setSignReader = canRead => { signReader = typeof canRead === 'function' ? canRead : null; };
+/** What this sign actually has written on it, for the traveler standing in front of it now. */
+export function signText(label) {
+  if (!SIGN_TRANSLATION || !signReader) return label;
+  const speech = SIGN_LANGUAGE[label];
+  if (!speech || signReader(speech.language)) return label;
+  return FOREIGN_SIGN_LABELS.get(label) ?? label;
+}
+
+const CELL_WIDTH = 512, CELL_HEIGHT = 64, COLUMNS = 3, FONT_PX = 42;
 /** Metres of board for one atlas pixel: every sign letters at the same height. */
 export const LETTER_STRIP = 0.34;
 const METRES_PER_PIXEL = LETTER_STRIP / CELL_HEIGHT;
@@ -156,8 +194,8 @@ export function createSigns(kit) {
       box(edge, (run - point) / 2 - .06, -h / 2 - .02, 0, run - point + .1, .045, depth + .02, arm);
       letters(text, arm, .01, depth, .12 + labelMetres(text) / 2 + .02);
     };
-    finger(label, toward, 2.12, .02);
-    if (back && backLabel) finger(backLabel, back, 1.62, -.02);
+    finger(signText(label), toward, 2.12, .02);
+    if (back && backLabel) finger(signText(backLabel), back, 1.62, -.02);
     pushFor(parent)({ x, z, r: .2, kind: 'signpost' });
     if (record) {
       const spot = worldSpot(parent, x, z);
@@ -170,11 +208,11 @@ export function createSigns(kit) {
   function place({ x, z, label, facing = 0, parent, record = true, collide = true }) {
     const y = groundFor(parent)(x, z);
     const group = new THREE.Group(); group.name = `Place board: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
-    const length = labelMetres(label) + .7, height = .66, depth = .08;
+    const written = signText(label), length = labelMetres(written) + .7, height = .66, depth = .08;
     for (const side of [-1, 1]) squarePost(group, side * (length / 2 + .08), 0, 0, 2.35, .17);
     box(board, 0, 1.78, 0, length, height, depth, group);
     frame(group, 0, 1.78, length, height, depth);
-    letters(label, group, 1.78, depth);
+    letters(written, group, 1.78, depth);
     if (collide) {
       const push = pushFor(parent), c = Math.cos(facing), s = Math.sin(facing);
       for (const side of [-1, 1]) push({ x: x + side * (length / 2 + .08) * c, z: z - side * (length / 2 + .08) * s, r: .2, kind: 'signpost' });
@@ -187,10 +225,10 @@ export function createSigns(kit) {
   function plate({ x, z, label, facing = 0, parent }) {
     const y = groundFor(parent)(x, z);
     const group = new THREE.Group(); group.name = `Plate: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
-    const width = Math.max(.7, labelMetres(label) + .16), top = 1.02, depth = .05;
+    const written = signText(label), width = Math.max(.7, labelMetres(written) + .16), top = 1.02, depth = .05;
     squarePost(group, 0, 0, -.13, top - .12, .1);   // behind the board, so its cap does not show through the lettering
     box(board, 0, top, 0, width, LETTER_STRIP + .1, depth, group);
-    letters(label, group, top, depth);
+    letters(written, group, top, depth);
     return group;
   }
 
@@ -200,10 +238,10 @@ export function createSigns(kit) {
    */
   function hanging({ x, y, z, label, facing = 0, parent }) {
     const group = new THREE.Group(); group.name = `Hanging board: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
-    const length = labelMetres(label) + .5, height = LETTER_STRIP + .18, depth = .06;
+    const written = signText(label), length = labelMetres(written) + .5, height = LETTER_STRIP + .18, depth = .06;
     box(board, 0, 0, 0, length, height, depth, group);
     frame(group, 0, 0, length, height, depth);
-    letters(label, group, 0, depth);
+    letters(written, group, 0, depth);
     for (const side of [-1, 1]) box(edge, side * (length / 2 - .14), height / 2 + .22, 0, .03, .36, .03, group);
     return group;
   }
@@ -215,11 +253,11 @@ export function createSigns(kit) {
   function notice({ x, z, label, facing = 0, parent, mounted = null, record = true }) {
     const y = mounted === null ? groundFor(parent)(x, z) : mounted;
     const group = new THREE.Group(); group.name = `Notice: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
-    const width = Math.max(.95, labelMetres(label) + .3), top = mounted === null ? 1.55 : 0, depth = .07;
+    const written = signText(label), width = Math.max(.95, labelMetres(written) + .3), top = mounted === null ? 1.55 : 0, depth = .07;
     if (mounted === null) for (const side of [-1, 1]) squarePost(group, side * (width / 2 - .05), 0, -.06, 1.95, .13);
     box(board, 0, top, 0, width, .95, depth, group);
     frame(group, 0, top, width, .95, depth);
-    letters(label, group, top + .26, depth);
+    letters(written, group, top + .26, depth);
     for (const side of [1, -1]) for (const [px, py, w, h] of [[-.2, -.12, .34, .3], [.19, -.16, .3, .36]]) {
       box(paper, px * side, top + py, side * (depth / 2 + .012), w, h, .012, group);
       for (let line = 0; line < 3; line++) box(ink, px * side, top + py + h / 2 - .08 - line * .075, side * (depth / 2 + .02), w * .7, .018, .006, group);
@@ -238,7 +276,7 @@ export function createSigns(kit) {
   function border({ x, z, faces, facing = 0, parent, record = true }) {
     const y = groundFor(parent)(x, z);
     const group = new THREE.Group(); group.name = `Border stone: ${faces.map(f => f.label).join(' | ')}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
-    const width = Math.max(1.2, ...faces.map(f => labelMetres(f.label) + .35)), height = 1.35, depth = .62;
+    const width = Math.max(1.2, ...faces.map(f => labelMetres(signText(f.label)) + .35)), height = 1.35, depth = .62;
     box(lime, 0, height / 2, 0, width, height, depth, group);
     const cap = mesh(new THREE.CylinderGeometry(0, Math.hypot(width, depth) / 2, .32, 4, 1), lime, 0, height + .16, 0, 1, 1, depth / width, group);
     cap.rotation.y = Math.PI / 4;
@@ -247,7 +285,7 @@ export function createSigns(kit) {
       const side = i ? -1 : 1, panel = new THREE.Group(); panel.position.set(0, .88, 0); panel.rotation.y = i ? Math.PI : 0; group.add(panel);
       box(material(face.paint), 0, 0, depth / 2 + .01, width - .16, .52, .02, panel);
       const strip = new THREE.Group(); strip.position.z = depth / 2 + .024; panel.add(strip);
-      letters(face.label, strip, 0, 0);
+      letters(signText(face.label), strip, 0, 0);
       void side;
     });
     const c = Math.cos(facing), s = Math.sin(facing);
@@ -269,7 +307,7 @@ export function createSigns(kit) {
       const panel = new THREE.Group(); panel.position.set(0, .66, 0); panel.rotation.y = side * Math.PI; group.add(panel);
       box(material(SIGN_COLOURS.paint.plain), 0, 0, .215, .5, .4, .02, panel);
       const strip = new THREE.Group(); strip.position.z = .23; panel.add(strip);
-      letters(label, strip, 0, 0);
+      letters(signText(label), strip, 0, 0);
     }
     pushFor(parent)({ x, z, r: .36, kind: 'milestone' });
     if (record) { const spot = worldSpot(parent, x, z); records.push({ x: spot.x, z: spot.z, label, returnLabel: null, kind: 'milestone' }); }

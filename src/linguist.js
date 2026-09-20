@@ -118,6 +118,19 @@ export function exposureForProficiency(level) {
  */
 const FLOOR_PER_SPEAKER = .12;
 export const exposureWeight = heard => Math.max(FLOOR_PER_SPEAKER, 1 / Math.sqrt(Math.max(1, heard)));
+/**
+ * Past this many lines from one mouth the weight is at its floor and the exact
+ * count stops meaning anything, so it stops being counted. It keeps the save
+ * small: the whole adventure is one line per person who has ever said one.
+ */
+export const SPEAKER_CEILING = 80;
+/**
+ * How many speakers the save carries, keeping the ones heard most. Somebody you
+ * met twice and lost costs you nothing - their next line is worth 1 instead of
+ * .71 - where somebody you have listened to all afternoon would be worth all of
+ * it again, which is the one thing this must not give away.
+ */
+export const SAVED_SPEAKERS = 900;
 
 /** Linguist experience for the traveler's own skill: a little for every line, a great deal for every level a tongue climbs. */
 export const XP_PER_EXPOSURE = 120;
@@ -149,10 +162,15 @@ function matchCase(source, made) {
  *             was actually said, which is what the toggle in the panel shows
  *   `dialect` a light change of sound over the same words; never word order
  *   `names`   extra names to leave alone, so NPCs keep theirs
+ *   `titles`  a sign, a board, a heading: everything on it is capitalised, so a
+ *             capital proves nothing and only a known name is a name
  */
-export function renderLine(line, languageId, { level = 0, full = false, dialect = null, names = null } = {}) {
+export function renderLine(line, languageId, { level = 0, full = false, dialect = null, names = null, titles = false } = {}) {
   const text = String(line ?? '');
   if (!LANGUAGES[languageId] || (!full && level >= MAX_PROFICIENCY)) return text;
+  // A line that is nothing but a Roman numeral is a number: the milestones on the
+  // Moros count the same miles whoever is reading them.
+  if (/^[IVXLCDM]+$/.test(text.trim())) return text;
   const known = full ? -1 : comprehension(level);
   if (known >= 1) return text;
   const twist = dialect && DIALECTS[dialect]?.language === languageId ? DIALECTS[dialect].twist : null;
@@ -164,15 +182,19 @@ export function renderLine(line, languageId, { level = 0, full = false, dialect 
   TOKENS.lastIndex = 0;
   for (let match = TOKENS.exec(text); match; match = TOKENS.exec(text)) {
     const word = match[0], key = lower(word);
-    found.push({ word, key, at: match.index,
+    // A possessive keeps its tail: the word is translated, the 's is grammar,
+    // and Sava's Shrine is Sava's shrine in whatever tongue the sign is in.
+    const owns = /['’]s$/.test(key) && key.length > 3;
+    found.push({ word, key, stem: owns ? key.slice(0, -2) : key, owns, at: match.index,
       capital: word[0] !== word[0].toLowerCase(),
       opens: SENTENCE_END.test(text.slice(0, match.index)) });
   }
-  const plainly = token => token.capital && !token.opens && !NEVER_A_NAME.has(token.key) && (RANK.get(token.key) ?? Infinity) >= NAME_FLOOR;
+  const named = token => PLACE_NAMES.has(token.stem) || !!names?.has(token.stem);
+  const plainly = token => !titles && token.capital && !token.opens && !NEVER_A_NAME.has(token.stem) && (RANK.get(token.stem) ?? Infinity) >= NAME_FLOOR;
   for (let i = 0; i < found.length; i++) {
     const token = found[i];
-    token.name = PLACE_NAMES.has(token.key) || !!names?.has(token.key) || plainly(token)
-      || (token.capital && token.opens && !NEVER_A_NAME.has(token.key) && !!found[i + 1] && plainly(found[i + 1]));
+    token.name = named(token) || plainly(token)
+      || (token.capital && token.opens && !NEVER_A_NAME.has(token.stem) && !!found[i + 1] && (named(found[i + 1]) || plainly(found[i + 1])));
   }
 
   let out = '', at = 0;
@@ -180,12 +202,9 @@ export function renderLine(line, languageId, { level = 0, full = false, dialect 
     out += text.slice(at, token.at);
     at = token.at + token.word.length;
     if (token.name || costOf(token.key) < known) { out += token.word; continue; }
-    // A possessive keeps its tail: the word is translated, the 's is grammar.
-    const possessive = /['’]s$/.test(token.key);
-    const stem = possessive ? token.key.slice(0, -2) : token.key;
-    let made = wordIn(languageId, stem);
+    let made = wordIn(languageId, token.stem);
     if (twist) made = twist(made);
-    out += matchCase(token.word, made) + (possessive ? token.word.slice(-2) : '');
+    out += matchCase(token.word, made) + (token.owns ? token.word.slice(-2) : '');
   }
   return out + text.slice(at);
 }
@@ -205,7 +224,7 @@ export function validateLinguistSnapshot(data, { allowMissing = true } = {}) {
   if (!exposures.every(([id, value]) => Object.hasOwn(LANGUAGES, id)
     && Number.isFinite(value) && value >= 0 && value <= 1e7)) return false;
   const heard = Object.entries(data.heard);
-  if (heard.length > 4000) return false;
+  if (heard.length > SAVED_SPEAKERS + 100) return false;
   return heard.every(([id, count]) => typeof id === 'string' && id.length > 0 && id.length <= 80
     && Number.isInteger(count) && count >= 0 && count <= 1e6);
 }
@@ -280,7 +299,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
     if (!LANGUAGES[id] || !line) return { ok: false, language: id, gained: 0, xp: 0 };
     const speaker = String(npc?.id ?? npc?.name ?? 'somebody');
     const before = level(id);
-    const count = (state.heard.get(speaker) ?? 0) + 1;
+    const count = Math.min(SPEAKER_CEILING, (state.heard.get(speaker) ?? 0) + 1);
     state.heard.set(speaker, count);
     const gained = exposureWeight(count) * Math.max(0, times);
     state.exposure.set(id, rawExposure(id) + gained);
@@ -305,6 +324,18 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
     return { ok: true, language: id, level: after, climbed, xp, levelled: !!gainedSkill?.levelled };
   }
 
+  /**
+   * A phrasebook read. Worth less the more of the tongue you already have, and
+   * worth nothing at all to a fluent speaker, which is what a phrasebook is
+   * like: two hundred words in somebody else's handwriting.
+   */
+  function readBook(id, exposure = PHRASEBOOK_EXPOSURE) {
+    if (!LANGUAGES[id]) return { ok: false, reason: 'Nobody speaks that.' };
+    const worth = exposure * (1 - level(id) / MAX_PROFICIENCY);
+    if (worth < 1) return { ok: false, reason: 'There is nothing in it you do not already know.' };
+    return study(id, worth);
+  }
+
   /** One line as the traveler hears it. `full` is the toggle: what was actually said. */
   function render(line, spoken, { full = false, names = null } = {}) {
     const id = typeof spoken === 'string' ? spoken : spoken?.language;
@@ -316,17 +347,19 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
   function readSign(label, regionName, { names = null } = {}) {
     const spoken = regionSpeech(regionName);
     if (canRead(spoken.language)) return String(label ?? '');
-    return renderLine(label, spoken.language, { level: 0, full: true, dialect: spoken.dialect, names });
+    return renderLine(label, spoken.language, { level: 0, full: true, dialect: spoken.dialect, names, titles: true });
   }
 
   /** Whether Chris Gotwood is beside you, still walking, and knows what is being said. */
-  function interpreterNearby(npc, { interpreter = null, languageId = null } = {}) {
+  function interpreterNearby(npc, { interpreter = null, languageId = null, at = null } = {}) {
     if (!interpreter || interpreter.hidden) return false;
     if (interpreter.placement && interpreter.placement.phase === INTERPRETER.reached) return false;
     if (npc && npc.id === INTERPRETER.npcId) return false;
     if (languageId && !INTERPRETER.knows.includes(languageId)) return false;
     const from = interpreter.placement ?? interpreter;
-    const to = npc?.placement ?? npc?.stand ?? npc;
+    // Measured to the traveler, who is the one being spoken to: most people in this
+    // world carry no position of their own, and the two of them are face to face.
+    const to = at ?? npc?.placement ?? npc?.stand ?? npc;
     if (!Number.isFinite(from?.x) || !Number.isFinite(to?.x)) return false;
     return Math.hypot(from.x - to.x, from.z - to.z) <= INTERPRETER.range;
   }
@@ -350,23 +383,31 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
     return { title: `${best.name} · ${best.level}`, detail: `You follow about ${Math.round(100 * comprehension(best.level))} words in a hundred of it. ${seen.met} of ${LANGUAGE_IDS.length} tongues have said anything to you at all.` };
   }
 
+  /**
+   * Every tongue at once, and no experience for it: a testing session reads what
+   * people say to check the content of it, not to be taught by it.
+   */
+  function fluent() {
+    for (const id of LANGUAGE_IDS) state.exposure.set(id, FLUENT_EXPOSURE);
+  }
+
   function snapshot() {
     return {
       version: LINGUIST_VERSION,
       exposure: Object.fromEntries([...state.exposure].map(([id, value]) => [id, Math.round(value * 1000) / 1000])),
-      heard: Object.fromEntries(state.heard),
+      heard: Object.fromEntries([...state.heard].sort((a, b) => b[1] - a[1]).slice(0, SAVED_SPEAKERS)),
     };
   }
   function restore(data) {
     seed();
     if (!validateLinguistSnapshot(data, { allowMissing: false })) return false;
     state.exposure = new Map(Object.entries(data.exposure));
-    state.heard = new Map(Object.entries(data.heard));
+    state.heard = new Map(Object.entries(data.heard).map(([id, count]) => [id, Math.min(SPEAKER_CEILING, count)]));
     return true;
   }
 
   return {
-    level, ownLevel, known, canRead, speech, hear, study, render, readSign, interpreterNearby, view, task,
+    level, ownLevel, known, canRead, speech, hear, study, readBook, render, readSign, interpreterNearby, view, task, fluent,
     snapshot, restore,
     comprehension: id => comprehension(level(id)),
     exposure: id => rawExposure(id),

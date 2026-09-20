@@ -5,6 +5,7 @@ import { LANGUAGE_IDS, LANGUAGES, INTERPRETER, SIGN_READING_LEVEL, PHRASEBOOK_EX
 import {
   createLinguist, renderLine, comprehension, proficiencyForExposure, exposureForProficiency,
   exposureWeight, validateLinguistSnapshot, LINGUIST_VERSION, LINGUIST_SKILL, MAX_PROFICIENCY, FLUENT_EXPOSURE,
+  SPEAKER_CEILING, SAVED_SPEAKERS,
 } from '../src/linguist.js';
 
 const LINE = 'Chris Gotwood. Same boat, same coin, and I have the letter they gave us both — you take it, you are the one they wrote it about.';
@@ -132,6 +133,16 @@ test('Chris interprets what he knows, while he is beside you and still walking',
   assert.equal(linguist.interpreterNearby(chris, { interpreter: chris, languageId: 'drentish' }), false, 'and he does not interpret himself');
 });
 
+test('Chris Gotwood himself is the one person the traveler can always follow', () => {
+  const linguist = createLinguist();
+  const chris = { id: INTERPRETER.npcId, name: 'Chris Gotwood', origin: 'Feradom' };
+  const speech = linguist.speech(chris, 'Drent');
+  assert.equal(speech.language, null, 'he has no tongue of his own in this: he has yours');
+  assert.equal(linguist.render(LINE, speech), LINE, 'so his lines arrive whole');
+  assert.equal(linguist.hear(chris, LINE, { region: 'Drent' }).ok, false, 'and teach nothing, because there is nothing in them to learn');
+  assert.equal(linguist.level('feradom'), 0);
+});
+
 test('a relative of a tongue you know gives you a floor in it, one hop and no further', () => {
   const linguist = createLinguist();
   linguist.study('drentish', exposureForProficiency(80));
@@ -199,6 +210,14 @@ test('the toggle lasts the session and is not written into the save', () => {
   assert.ok(!Object.hasOwn(linguist.snapshot(), 'showingFull'));
 });
 
+test('a testing session is fluent in everything, and pays no experience for it', () => {
+  const sheet = { known: () => false, learn: () => { throw new Error('a testing session must not touch the skill sheet'); }, gain: () => { throw new Error('nor earn experience'); } };
+  const linguist = createLinguist({ skills: sheet });
+  linguist.fluent();
+  for (const id of LANGUAGE_IDS) assert.equal(linguist.level(id), MAX_PROFICIENCY, id);
+  assert.equal(linguist.render(LINE, { language: 'koleth' }), LINE, 'so the smoke tests read what people actually say');
+});
+
 test('the save carries the tongues and refuses nonsense', () => {
   const linguist = createLinguist();
   linguist.hear({ id: 'nell' }, 'A line.', { region: 'Drent' });
@@ -226,6 +245,19 @@ test('the save carries the tongues and refuses nonsense', () => {
   spoiled.study('drentish', 500);
   assert.equal(spoiled.restore({ version: LINGUIST_VERSION, exposure: { klingon: 4 }, heard: {} }), false);
   assert.equal(spoiled.level('drentish'), 0, 'a refused save leaves the traveler knowing nothing, not knowing half');
+});
+
+test('the save stays small however many people the traveler has listened to', () => {
+  const linguist = createLinguist();
+  for (let person = 0; person < SAVED_SPEAKERS + 400; person++) {
+    for (let line = 0; line < (person < 40 ? SPEAKER_CEILING + 20 : 1); line++) linguist.hear({ id: `person-${person}` }, 'A line.', { region: 'Drent' });
+  }
+  assert.equal(linguist.heardFrom('person-0'), SPEAKER_CEILING, 'one mouth stops being counted past its floor');
+  const saved = linguist.snapshot();
+  assert.equal(Object.keys(saved.heard).length, SAVED_SPEAKERS, 'and the save keeps the ones it must');
+  assert.equal(saved.heard['person-0'], SPEAKER_CEILING, 'the people heard most are the ones kept');
+  assert.ok(JSON.stringify(saved).length < 24000, `the save is small: ${JSON.stringify(saved).length} bytes`);
+  assert.equal(validateLinguistSnapshot(JSON.parse(JSON.stringify(saved))), true);
 });
 
 test('the panel can say where every tongue stands', () => {

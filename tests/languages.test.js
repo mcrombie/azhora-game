@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { sourceModule } from './module-loader.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { SUBREGIONS } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
@@ -7,8 +9,10 @@ import { FREQUENT_WORDS } from '../src/word-frequency.js';
 import {
   LANGUAGES, LANGUAGE_IDS, DIALECTS, DIALECT_IDS, REGION_LANGUAGE, ORIGIN_LANGUAGE, KINSHIP,
   STARTING_PROFICIENCY, PLACE_NAMES, NEVER_A_NAME, INTERPRETER, SEEDED_WORDS, SIGN_READING_LEVEL,
-  forgeWord, wordIn, lexiconFor, hashWord, regionSpeech, speechFor, originLanguage,
+  forgeWord, wordIn, lexiconFor, hashWord, regionSpeech, speechFor, originLanguage, SIGN_LANGUAGE, LINGUIST_KEY,
 } from '../src/languages.js';
+
+const { ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, SIGN_LABELS, signText, setSignReader } = await sourceModule('../src/signs.js');
 
 test('every tongue is whole: a name, a country, a sound and a seed lexicon', () => {
   assert.ok(LANGUAGE_IDS.length >= 8 && LANGUAGE_IDS.length <= 20, 'the world has a plausible number of tongues');
@@ -169,5 +173,49 @@ test('who speaks what: an override, then an origin, then the Empire, then the gr
   assert.equal(speechFor({ origin: 'Zorkys' }, 'Luscia').language, 'kellith', 'then where he came from');
   assert.equal(speechFor({ modelRole: 'legion-officer' }, 'West Izol').language, 'ambroni', 'the Empire answers in its own tongue anywhere');
   assert.equal(speechFor({ id: 'villager' }, 'West Suval').language, 'suvalen', 'and everybody else speaks the country they are standing in');
+  assert.equal(speechFor({ id: INTERPRETER.npcId, origin: 'Feradom' }, 'Drent').language, null,
+    'and Chris Gotwood, who came off the same boat, speaks whatever the traveler speaks');
   assert.ok(SIGN_READING_LEVEL > 0 && SIGN_READING_LEVEL < 99, 'lettering turns over somewhere in the middle');
+});
+
+test('the road letters its signs in the country they stand in', () => {
+  for (const [label, speech] of Object.entries(SIGN_LANGUAGE)) {
+    assert.ok(ENGLISH_SIGN_LABELS.includes(label), `"${label}" is not a sign this game puts up`);
+    assert.ok(LANGUAGES[speech.language], `"${label}" is lettered in an unknown tongue`);
+    if (speech.dialect) assert.equal(DIALECTS[speech.dialect]?.language, speech.language, `"${label}" has the wrong accent`);
+  }
+  // The atlas holds every word any sign will carry, in either language, once each.
+  assert.equal(new Set(SIGN_LABELS).size, SIGN_LABELS.length, 'each label has one cell in the lettering atlas');
+  for (const made of FOREIGN_SIGN_LABELS.values()) assert.ok(SIGN_LABELS.includes(made), `${made} has no cell`);
+  // A name letters the same in every tongue, so these need no second cell at all.
+  for (const name of ['Tidehaven', 'Elod', 'Solis', 'Ambron', 'Izolveth', 'I', 'II', 'III']) {
+    assert.ok(!FOREIGN_SIGN_LABELS.has(name), `${name} is a name and should letter the same either way`);
+  }
+  assert.ok(FOREIGN_SIGN_LABELS.get('The Caloss Gate')?.includes('Caloss'), 'and a sign for a place still names the place');
+});
+
+test('a sign reads in the country’s tongue until the traveler can read it, and then in his', () => {
+  setSignReader(null);
+  assert.equal(signText('The Caloss Gate'), 'The Caloss Gate', 'with nobody to ask, a sign is plain');
+  setSignReader(() => false);
+  assert.equal(signText('The Caloss Gate'), FOREIGN_SIGN_LABELS.get('The Caloss Gate'));
+  assert.equal(signText('Tidehaven'), 'Tidehaven', 'a name is a name either way');
+  assert.equal(signText('A board nobody has written yet'), 'A board nobody has written yet', 'an unmapped label letters plainly rather than breaking the road');
+  setSignReader(() => true);
+  assert.equal(signText('The Caloss Gate'), 'The Caloss Gate');
+  setSignReader(null);
+});
+
+test('main.js speaks through the linguist and saves what it learns', async () => {
+  const source = await readFile(new URL('../src/main.js', import.meta.url), 'utf8');
+  assert.match(source, /\$\('speech'\)\.textContent=heardSpeech\(\)/, 'the dialogue panel renders through the linguist');
+  assert.doesNotMatch(source, /\$\('speech'\)\.textContent=activeDialogue\.lines/, 'and not straight out of the English');
+  assert.match(source, /linguist:linguist\.snapshot\(\)/, 'the checkpoint carries the tongues');
+  assert.match(source, /linguist\.restore\(saved\.linguist/, 'and gives them back');
+  assert.match(source, /setSignReader\(/, 'the road asks what the traveler can read');
+  assert.match(source, new RegExp(`e\.code===LINGUIST_KEY`), 'and one key shows a line the way it was said');
+  assert.ok(!/'KeyT'/.test(source.replace(/LINGUIST_KEY/g, '')), 'the toggle key is named once, in src/languages.js');
+  assert.equal(LINGUIST_KEY, 'KeyT');
+  // The review log keeps the English: the traveler's own notes are his own language.
+  assert.match(source, /reviewLog\.lines\.push\(\{at:Math\.round\(playSeconds\),who:npc\.name,lines:lines\.slice/);
 });

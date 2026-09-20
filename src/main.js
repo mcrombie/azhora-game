@@ -79,6 +79,9 @@ import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, cre
 import { createDrentFlora } from './drent-flora.js';
 import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
+import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
+import { LANGUAGES, DIALECTS, INTERPRETER, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
+import { setSignReader } from './signs.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
 import { WINE_SKILL, WINE_LESSON, TASTING_TERMS, createWine, vintnerConversation, cellarHandConversation, winemakerConversation } from './wine.js';
@@ -352,6 +355,30 @@ function init() {
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
   const skills=createSkills({onEvent:skillEvent});
+  // Linguist: nobody in Azhora speaks the traveler's language, so what people say to
+  // him arrives in theirs (src/languages.js, src/linguist.js). Chris Gotwood came off
+  // the same boat with enough of the local speech to get two men up a road; while he is
+  // beside you his interpretation runs under the line and every exposure counts double.
+  const linguist=createLinguist({skills,onEvent:event=>{
+    if(event.type!=='tongue-level')return;
+    if(event.read)toast(`${LANGUAGES[event.language].name} lettering has stopped being shapes. You will see it on the road ahead.`,'YOU CAN READ THE SIGNS');
+    else if(event.level>=MAX_PROFICIENCY)toast(`There is nothing anybody says in ${LANGUAGES[event.language].name} that you cannot follow.`,'A TONGUE OF YOUR OWN');
+    else if(event.level%10===0)toast(`${LANGUAGES[event.language].name} \u00b7 ${event.level}`,'A TONGUE IS COMING TO YOU');}});
+  // A testing session is fluent in everything: the smoke tests read what people say to
+  // check the content of it, and __AZHORA__.linguist.forget() puts the traveler back to
+  // nothing when a review wants to look at the panel as a new player sees it.
+  if(testingQuery.has('test'))linguist.fluent();
+  // The road letters its signs in the country they stand in until the traveler can read it.
+  setSignReader(id => linguist.canRead(id));
+  // Every name anybody in this world is called, so a name stays a name in every tongue.
+  let namedCount=-1,spokenNames=new Set();
+  function knownNames(){
+    if(namedCount===npcData.length)return spokenNames;
+    namedCount=npcData.length;spokenNames=new Set();
+    for(const person of npcData)for(const part of String(person.name??'').split(/[^A-Za-z\u2019']+/))
+      if(part.length>2)spokenNames.add(part.toLowerCase().replace(/\u2019/g,"'"));
+    return spokenNames;
+  }
   const wood=createWoodcutting({skills}),building=createConstruction({skills});
   const birding=createBirding({skills});
   // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
@@ -1656,7 +1683,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1679,7 +1706,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -1874,7 +1901,12 @@ function init() {
     const choices=offers.map(offer=>({id:`buy-${offer.id}`,label:offer.label,enabled:offer.enabled,reason:offer.reason,action:()=>{
       const paid=inventory.remove(COPPER_ITEM,offer.price);   // only hand back what was actually taken
       if(!paid||!inventory.add(offer.id,1)){if(paid)inventory.add(COPPER_ITEM,offer.price);peddlerConversation(npc,false);return;}
-      inventory.refresh();toast(`${offer.name} for ${offer.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM WENDEL');saveRoad(false);peddlerConversation(npc,false);}}));
+      inventory.refresh();toast(`${offer.name} for ${offer.price} copper. ${describeSum(inventory.count(COPPER_ITEM))} left.`,'BOUGHT FROM WENDEL');
+      // Buying a phrasebook is reading it: the tongue of the country you bought it in.
+      if(offer.id===PHRASEBOOK_ITEM){const here=linguist.speech(null,world.regionAt(player.group.position.x,player.group.position.z)?.name??null);
+        const read=linguist.readBook(here.language);
+        toast(read.ok?`${LANGUAGES[here.language].name} \u00b7 ${read.level}. It is all in there, badly spelled.`:'You already have every word in it.',read.ok?'YOU READ THE PHRASEBOOK':'NOTHING NEW IN IT');}
+      saveRoad(false);peddlerConversation(npc,false);}}));
     choices.push({id:'leave-peddler',label:'Nothing today.',action:closeDialogue});
     const lines=opening?[...PEDDLER.lines]:[`You carry ${describeSum(purse)}. Anything else?`];
     openDialogue(npc,lines,null,'Back to the road',{choices});
@@ -2110,17 +2142,39 @@ function init() {
   }
   function openDialogue(npc,lines,event=null,action='Back to the road',options={}){
     reviewLog.lines.push({at:Math.round(playSeconds),who:npc.name,lines:lines.slice(0,8),choices:(options.choices||[]).map(c=>c.label)});if(reviewLog.lines.length>600)reviewLog.lines.shift();
-    activeDialogue={npc,lines,index:0,event,action,...options};mode='dialogue';stopInput();show('interaction',false);show('dialogue',true);
+    activeDialogue={npc,lines,index:0,event,action,...options,
+      speech:linguist.speech(npc,world.regionAt(player.group.position.x,player.group.position.z)?.name??null),heard:new Set()};
+    mode='dialogue';stopInput();show('interaction',false);show('dialogue',true);
     $('speaker').textContent=npc.name;$('speaker-role').textContent=npc.role.toUpperCase();updateSpeech();
     ($('dialogue-choices').querySelector('button:not(:disabled)')||$('dialogue-next')).focus();
   }
   function updateSpeech() {
     const last=activeDialogue.index===activeDialogue.lines.length-1,choices=last?activeDialogue.choices:null;
-    $('speech').textContent=activeDialogue.lines[activeDialogue.index];$('dialogue-next').textContent=last?activeDialogue.action:'Continue  ↵';
-    $('speech-page').textContent=choices?'Choose a response · Tab / Enter':`${activeDialogue.index+1} / ${activeDialogue.lines.length} · F or Enter`;
+    $('speech').textContent=heardSpeech();$('dialogue-next').textContent=last?activeDialogue.action:'Continue  ↵';
+    $('speech-page').textContent=(choices?'Choose a response · Tab / Enter':`${activeDialogue.index+1} / ${activeDialogue.lines.length} · F or Enter`)+speechTongue();
     $('dialogue-choices').replaceChildren();show('dialogue-choices',!!choices);show('dialogue-next',!choices);
     for(const choice of choices||[]){const button=document.createElement('button');button.type='button';button.dataset.choice=choice.id;button.textContent=choice.label;button.disabled=!!choice.disabled||choice.enabled===false;button.title=choice.title||choice.reason||'';button.onclick=choice.action;$('dialogue-choices').append(button);}
     if(choices)$('dialogue-choices').querySelector('button:not(:disabled)')?.focus();
+  }
+  /**
+   * The line as the traveler hears it, counted once however often the panel is
+   * redrawn, with Chris Gotwood's interpretation under it while he is beside you.
+   * The review log and everything else keep the English: those are the traveler's
+   * own notes, and nothing he has to do is ever gated on reading a language.
+   */
+  function heardSpeech(){
+    const {npc,speech,heard,index,lines}=activeDialogue,line=lines[index],tongue=speech.language;
+    const helping=linguist.interpreterNearby(npc,{interpreter:npcById.get(INTERPRETER.npcId),languageId:tongue,at:player.group.position});
+    if(!heard.has(index)){heard.add(index);linguist.hear(npc,line,{language:tongue,dialect:speech.dialect,times:helping?INTERPRETER.bonus:1});}
+    const aside=$('speech-aside'),interpreted=helping&&linguist.level(tongue)<MAX_PROFICIENCY;
+    if(aside){aside.textContent=interpreted?`${INTERPRETER.name} leans in: “${line}”`:'';show('speech-aside',interpreted);}
+    return linguist.render(line,speech,{names:knownNames()});
+  }
+  /** What tongue this is, and the key that shows the line the way it was actually said. */
+  function speechTongue(){
+    const {speech}=activeDialogue,named=DIALECTS[speech.dialect]?.name??LANGUAGES[speech.language]?.name;
+    if(!named)return '';
+    return linguist.showingFull?' · T as you hear it':` · T in ${named}`;
   }
   function closeDialogue(){
     activeDialogue=null;show('dialogue',false);mode='playing';stopInput();canvas.focus();
@@ -2339,6 +2393,7 @@ function init() {
     if(e.code==='KeyJ'||e.code==='KeyM'){if(mode==='journal')closeModal();else{modal('journal');mapTab(e.code==='KeyM');}return;}
     if(e.code==='KeyL'){e.preventDefault();if(mode==='journal'&&$('tab-trails').classList.contains('active'))closeModal();else openLocalMap();return;}
     if(e.code===SKILLS_KEY){if(mode==='journal'&&$('tab-skills').classList.contains('active'))closeModal();else if(['playing','journal','pause'].includes(mode)){modal('journal');journalTab('skills');}return;}
+    if(e.code===LINGUIST_KEY&&mode==='dialogue'){e.preventDefault();linguist.toggle();updateSpeech();return;}
     if(e.code==='KeyF'){interact();return;}
     if(e.code==='KeyR'){attack();return;}
     if(e.code===RIDING_KEYS.mount){toggleMount();return;}
@@ -2882,6 +2937,10 @@ function init() {
     const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
     window.__AZHORA__={state,
+      // The tongues, for a review that wants the dialogue panel as a new traveler sees it.
+      linguist:{view:()=>linguist.view(),forget:()=>{linguist.restore(createLinguist().snapshot());if(mode==='dialogue')updateSpeech();},
+        study:(id,exposure)=>{const result=linguist.study(id,exposure);if(mode==='dialogue')updateSpeech();return result;},
+        toggle:force=>{const on=linguist.toggle(force);if(mode==='dialogue')updateSpeech();return on;}},
       // Where the camera is and what it is doing: main.cjs --review-views prints it beside each picture.
       camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),mode}),
       // Performance: what is drawn and how much there is (main.cjs --perf-review), and render timing once asked for.
