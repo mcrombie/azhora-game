@@ -836,7 +836,12 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
 export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper', 'wine-maker', 'light-keeper', 'rival-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
-  const isTraveler = role === 'traveler';
+  // Any of the eleven mercenaries can be the player (src/player-characters.js). Given a roster
+  // look, the traveler is built as that hired sword — build, hair, garment, marks, weapon —
+  // and keeps only what is his alone: the satchel, the full weapon swap and the fishing grip.
+  // Crom, who is the traveler and has no look, is built exactly as he always was.
+  const isPlayer = role === 'traveler';
+  const isTraveler = isPlayer && !look;
   const isCook = role === 'acorn-cook';
   const isDoomsayer = role === 'doomsayer', isPondFisher = role === 'pond-fisher';
   const isRoadWorker = Object.hasOwn(ROAD_CLOTH, role);
@@ -875,7 +880,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isAmbroni = isLegionary || isOfficer;
   // A hired sword from abroad: the traveler's kind of cloth and sword, a leather jerkin,
   // and a look (hair, beard, cap) chosen by the roster rather than the role.
-  const isMercenary = role === 'mercenary';
+  const isMercenary = role === 'mercenary' || (isPlayer && !!look);
   // The whole of a hired sword's appearance is roster data: build, headgear,
   // hair, facial hair, garment and small marks. Nothing here is keyed on his id.
   const mercBuild = isMercenary ? MERCENARY_BUILDS[look?.build] ?? MERCENARY_BUILDS.ordinary : null;
@@ -1524,7 +1529,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     }
   }
 
-  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker && !isSoldier && !isMercenary) {
+  if (!isCook && !isDoomsayer && !isBridgeKeeper && !isCustodian && !isWoodcutter && !isLocalWorker && !isSoldier && (!isMercenary || isPlayer)) {
     // Shoulder strap continues on the back. The pouch hangs clear of the arm.
     ribbon(body, leather, [-0.158, 1.32, 0.121], [0.218, 0.846, 0.17], 0.054);
     ribbon(body, leather, [-0.158, 1.32, -0.121], [0.218, 0.846, -0.138], 0.054);
@@ -2341,10 +2346,10 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const villagerHolds = !isTraveler && !isMercenary && !fights && VILLAGER_WEAPONS[wields] ? wields : null;
   const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip')
     : villagerHolds ? makeWeaponMount(wrists[1], 'Villager weapon grip') : null;
-  const weapons = isTraveler ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
+  const weapons = isPlayer ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
     : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) }
     : villagerHolds ? { [villagerHolds]: VILLAGER_WEAPONS[villagerHolds](weapon) } : {};
-  const fishingGrip = isTraveler || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
+  const fishingGrip = isPlayer || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
   const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
   if (weapon) pivots.push(weapon, ...Object.values(weapons));
@@ -2423,8 +2428,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     fishingRod.updateWorldMatrix(true, false);
     return rodTipWorld.set(.056, 1.625, 0).applyMatrix4(fishingRod.matrixWorld);
   }
-  if (isTraveler || fights) setWeapon('simple-sword');
-  if (isMercenary) setWeapon(KIT_HELD[look?.weapon] ?? null);
+  if (isPlayer || fights) setWeapon('simple-sword');
+  if (isMercenary && !isPlayer) setWeapon(KIT_HELD[look?.weapon] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
   return { group, animate, setArmed, setWeapon, setFishing, fishingTip };
 }
