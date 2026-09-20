@@ -126,8 +126,14 @@ test('the Ela-south leaves Lake Ela, runs through Ambron and only ever falls', (
   assert.ok(THELAS_LINK.points[0].surface > THELAS_LINK.points.at(-1).surface, 'the Link falls');
   assert.ok(elagosWaterDistance(THELAS_LINK.points.at(-1).x, THELAS_LINK.points.at(-1).z) < 0, 'and reaches Lake Ela');
   assert.ok(THELAS_LINK.points.every(p => p.half < 12), 'too small to load');
-  // The reach leaves the built world rather than stopping in the middle of it.
-  assert.ok(points.at(-1).x < WORLD_BOUNDS.minX, 'the Ela-south runs off the west edge of the world');
+  // The reach leaves the country it belongs to rather than stopping in the middle of it.
+  // Measured against Elagos's own western edge, not the world's: the world's edge is only 15 m
+  // west of this endpoint and moves whenever a region is added out there, which would fail this
+  // for a reason that has nothing to do with the river. Elagos's edge is 75 m away and is the
+  // thing the sentence is actually about.
+  const elagosWest = Math.min(...REGION_OUTLINES.Elagos.flat().map(corner => corner.x));
+  assert.ok(points.at(-1).x < elagosWest,
+    `the Ela-south ends at ${points.at(-1).x.toFixed(1)}, which is not west of Elagos's edge at ${elagosWest.toFixed(1)}`);
   // And it never crosses the Moros road.
   for (let i = 1; i < points.length; i++) for (let t = 0; t <= 1; t += .05) {
     const x = points[i - 1].x + (points[i].x - points[i - 1].x) * t, z = points[i - 1].z + (points[i].z - points[i - 1].z) * t;
