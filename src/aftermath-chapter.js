@@ -23,12 +23,23 @@ export const AFTERMATH_NPCS = Object.freeze([
 // The Coalition outbids the Empire in hard coin (the user's brief: their offer is the better one); the paper promise on top is talk, not an item.
 const SCRIP_NOTE = 'a note for forty more when the Republic has a treasury that is not a chest on a ship';
 
+/**
+ * What the traveler can do with the orders, which is not the same on the two sides.
+ * Ambron stands in Elagos and the ground between it and the Moros is walkable end to
+ * end, so an Empire sellsword can ride there and stand in the city; what is missing is
+ * the chapter that happens when they arrive. Izolveth is on the island of Izol across
+ * the Izoli Channel, with no crossing in the world, so a Republic sellsword cannot get
+ * there at all. Two different frontiers, and the journal should not call them the same.
+ */
+const AMBRON_ONWARD = 'You can ride to Ambron and walk its streets; what the Lord Marshal does with a sellsword who holds a square is the next chapter, and it is not built yet.';
+const IZOLVETH_ONWARD = 'There is no ship out of Solis yet: the passage to West Izol is not built, and Izolveth waits on the far side of the channel for the chapter that carries you there.';
+
 const variant = (id, spec) => Object.freeze({ id, encounterId: `aftermath-${id}`, ...spec });
 
 /** One entry per campaign chapter. `foe` is the look of the soldiers you fight; sites are resolved by the host. */
 export const AFTERMATH_VARIANTS = Object.freeze({
   'solis-sweep': variant('solis-sweep', {
-    side: 'empire', outcome: 'victory', region: 'West Suval', title: 'Solis, taken', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
+    side: 'empire', outcome: 'victory', region: 'West Suval', title: 'Solis, taken', foe: 'coalition', reward: 40, onward: AMBRON_ONWARD,
     commanderId: 'aftermath-tribune', rallySite: 'solis-road', arena: 'solis-gate-assault', principalId: 'aftermath-tribune', reportSite: 'solis-hall',
     // The defenders stand before the gate, and the last two come out of the gateway itself.
     enemyOffsets: [[-6, -9, .2], [6, -9.5, .9], [0, -11, 1.8], [-4, -10.5, 6], [4, -10.5, 7.5], [-1, -14.5, 11], [1, -15, 12.5]],
@@ -52,7 +63,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     toasts: { start: 'The hired company goes at the gate first.', won: 'The Gate of Sun Horses is taken. The Captain has the Court of Oaths.', closed: 'Forty copper, and the Marshal’s dispatch for Ambron.' },
   }),
   'moros-fallback': variant('moros-fallback', {
-    side: 'empire', outcome: 'defeat', region: 'Moros Plain', title: 'The line at the Moros', foe: 'coalition', reward: 40, onward: 'The road to Ambron is not built yet.',
+    side: 'empire', outcome: 'defeat', region: 'Moros Plain', title: 'The line at the Moros', foe: 'coalition', reward: 40, onward: AMBRON_ONWARD,
     commanderId: 'aftermath-tribune', rallySite: 'camp-gate', arena: 'camp-approach', principalId: AFTERMATH_LEGATE_ID, reportSite: null,
     rally: ['Back across the plain', 'The army lost the field and is falling back across the plain to its camp. Captain Oswin Brulan holds the camp’s gate for the last of the wounded. Get back to him.'],
     fight: ['Hold the gate', 'Seven of the Coalition’s pursuit come at the gate. Hold it, with your company beside you, until the carts are in.'],
@@ -74,7 +85,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     toasts: { start: 'Their pursuit is on the road. Hold the gate.', won: 'The gate held. The Marshal wants you at the command tent.', closed: 'Forty copper, and the Marshal’s dispatch for Ambron.' },
   }),
   'moros-outpost': variant('moros-outpost', {
-    side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
+    side: 'coalition', outcome: 'victory', region: 'Moros Plain', title: 'The outpost on the plain', foe: 'legion', reward: 60, onward: IZOLVETH_ONWARD,
     commanderId: 'aftermath-captain', rallySite: 'outpost-approach', arena: 'outpost-gate', principalId: 'aftermath-envoy', reportSite: 'outpost-command',
     rally: ['The army’s outpost', 'The army broke and ran for its outpost at the centre of the Moros. Captain Arlen Voss means to take it before Venmor can shut the gate and send for Ambron. Find him on the road outside its north-east gate.'],
     fight: ['Storm the gate', 'Seven soldiers hold the ground before the north-east gate, shields locked, while the Marshal’s baggage goes out the back. Break them, with the valley companies beside you. Fall back east along the road if you must.'],
@@ -96,7 +107,7 @@ export const AFTERMATH_VARIANTS = Object.freeze({
     toasts: { start: 'You go first, and the valley companies go with you.', won: 'The gate is taken and the army is gone. The envoy has the Marshal’s tent.', closed: 'Sixty copper in hard coin, and passage from Solis to West Izol.' },
   }),
   'solis-fallback': variant('solis-fallback', {
-    side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 60, onward: 'The voyage to West Izol is not built yet.',
+    side: 'coalition', outcome: 'defeat', region: 'West Suval', title: 'Back to Solis', foe: 'legion', reward: 60, onward: IZOLVETH_ONWARD,
     commanderId: 'aftermath-captain', rallySite: 'solis-gate', arena: 'solis-approach', principalId: 'aftermath-envoy', reportSite: 'solis-hall',
     rally: ['The road back', 'The Coalition lost the field and fell back on Solis, and the army’s outriders are close behind. Captain Arlen Voss is at the city gate. Get back to him.'],
     fight: ['Hold the gate of Solis', 'Seven of the army’s outriders come up the road. Hold them off, with the valley companies beside you, until the gate can shut.'],
