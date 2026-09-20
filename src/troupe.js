@@ -75,7 +75,10 @@ export function validateTroupeSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== 1) return false;
   if (!TROUPE_STOP_IDS.includes(data.stop) || typeof data.met !== 'boolean' || typeof data.gifted !== 'boolean') return false;
   for (const key of ['scenes', 'tips', 'deaths']) if (!Number.isInteger(data[key]) || data[key] < 0 || data[key] > 1e6) return false;
-  if (!Number.isFinite(data.clock) || data.clock < 0) return false;
+  // The clock is bounded like every other number here: `snapshot()` rounds it with
+  // `clock * 10`, so a merely finite 1e308 comes back out of a restore as Infinity,
+  // JSON writes that as null, and the next load rejects the whole checkpoint.
+  if (!Number.isFinite(data.clock) || data.clock < 0 || data.clock > 1e7) return false;
   return !data.gifted || data.scenes >= REGULAR_AFTER;
 }
 

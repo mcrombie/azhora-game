@@ -37,7 +37,8 @@ export function validateJimsonSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== JIMSON_VERSION) return false;
   if (!JIMSON_STAGES.includes(data.stage)) return false;
   if (typeof data.heardFromNell !== 'boolean') return false;
-  return Number.isFinite(data.since) && data.since >= 0;
+  // Seconds of play, bounded like every other clock in a save section.
+  return Number.isFinite(data.since) && data.since >= 0 && data.since <= 1e7;
 }
 
 export function createJimson({ onEvent = () => {} } = {}) {
