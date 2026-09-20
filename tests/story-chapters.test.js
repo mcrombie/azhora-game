@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/story-chapters.js';
 
-const reported = { luscia: { briefed: true } };
+// `started` is the report to Iven itself; `briefed` is the Lauvel errand accepted after it.
+const reported = { luscia: { started: true } };
 const fought = { ...reported, border: { complete: true } };
 const settled = { ...fought, aftermath: { complete: true } };
 const home = { ...settled, home: true };
@@ -27,6 +28,10 @@ test('chapter one ends on reporting for duty at Lumber Town', () => {
   // Walking the road is not enough; the chapter turns on the report itself.
   assert.equal(chapterProgress({ questStage: 10, journey: { complete: true } }).number, 1);
   assert.equal(chapterProgress(reported).number, 2, 'reporting to Iven closes it');
+  // And it closes on the report, not one step into the next chapter: a traveler who has
+  // reported and not yet taken the Lauvel errand is on Chapter 2, not still on Chapter 1.
+  assert.equal(chapterProgress({ luscia: { started: true, briefed: false } }).number, 2,
+    'the chapter turns on the report, not on accepting the next errand');
   assert.deepEqual(chapterProgress(reported).list.map(entry => entry.state), ['done', 'current', 'later']);
 });
 

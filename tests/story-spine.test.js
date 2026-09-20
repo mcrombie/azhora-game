@@ -62,11 +62,11 @@ test('beginStoryStart repairs the story state for every chapter a start can clai
 test('a chapter is only done when the thing it is about has happened', () => {
   const base = { questStage: 10, luscia: {}, aftermath: {}, home: false };
   assert.equal(chapterProgress(base).number, 1, 'nothing done yet is Chapter 1');
-  assert.equal(chapterProgress({ ...base, luscia: { briefed: true } }).number, 2, 'reporting to Iven closes Chapter 1');
+  assert.equal(chapterProgress({ ...base, luscia: { started: true } }).number, 2, 'reporting to Iven closes Chapter 1');
   // The second chapter needs both halves: the day after, and standing on your side's ground.
-  assert.equal(chapterProgress({ ...base, luscia: { briefed: true }, aftermath: { complete: true } }).number, 2, 'the day after alone does not close it');
-  assert.equal(chapterProgress({ ...base, luscia: { briefed: true }, home: true }).number, 2, 'nor does standing there without the day after');
-  assert.equal(chapterProgress({ ...base, luscia: { briefed: true }, aftermath: { complete: true }, home: true }).number, 3, 'both together do');
+  assert.equal(chapterProgress({ ...base, luscia: { started: true }, aftermath: { complete: true } }).number, 2, 'the day after alone does not close it');
+  assert.equal(chapterProgress({ ...base, luscia: { started: true }, home: true }).number, 2, 'nor does standing there without the day after');
+  assert.equal(chapterProgress({ ...base, luscia: { started: true }, aftermath: { complete: true }, home: true }).number, 3, 'both together do');
   // And the out-of-order state the walk protects against: chapter two finished, chapter one not.
   const outOfOrder = chapterProgress({ ...base, aftermath: { complete: true }, home: true });
   assert.equal(outOfOrder.number, 1, 'an unreported traveler is still on Chapter 1, whatever else they have done');
