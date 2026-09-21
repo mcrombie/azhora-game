@@ -144,4 +144,18 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    back; `companions.died` puts him in `fallen`, and he is never placed, never in another fight,
    and not at the muster.
 5. The journal's company page.
-6. Death at the muster: the count, the roster `musterVoices` is given, and the Marshal asking what happened.
+6. **Death at the muster** — **built.** The count is right in both directions: in camp is
+   mustered plus whoever walked in with you, still coming is on the road and alive, and the dead
+   are neither. A third table, `MUSTER_ARRIVED_WITH`, for a man who came through the gate at your
+   shoulder — neither of the other two could say it, and nine of ten were falling back on
+   "somewhere back down that road" from men who had never left it.
+
+   The Marshal counts, stops, and asks after each missing name. Tell it true (built from what was
+   written down when he fell), say only "Dead.", or lie. Truth and silence cost nothing. **A lie
+   is known for one by everyone who was walking with you when it happened**, each of whom drops a
+   rung and has a line for it, said once. If no witness is still alive, the lie stands and the
+   register says something false.
+
+   A dead man's weapon lies where he fell, named — "Eliana's greatsword", the only named
+   weapons in the game — until somebody takes it, and if he was carrying the traveler's traded
+   sword, that is what is lying there.

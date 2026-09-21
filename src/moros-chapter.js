@@ -206,6 +206,26 @@ export const MUSTER_AFTER = freeze({
 });
 
 /** Eleven of eleven: the company is in, which is the only count that ends the waiting. */
+/**
+ * What a man says who **arrived with you**, which neither of the other two tables can say.
+ * `MUSTER_GREETINGS` is for somebody already in camp when you get there and `MUSTER_AFTER` for
+ * somebody who walks in behind you; a companion did neither. He came through the gate at your
+ * shoulder, and nine of ten of them were falling back on "somewhere back down that road" from men
+ * who had never left it.
+ */
+export const MUSTER_ARRIVED_WITH = freeze({
+  'merc-gotwood': 'We are in. Report to the Marshal; I will see to the pegs.',
+  'merc-word': 'We have arrived! Try to look like a company and not like a rumour.',
+  'merc-jerry': 'Here, then. I had assumed it would be further.',
+  'merc-christin': 'All in together. That is how it should be done.',
+  'merc-ciaran': 'Same road, same hour. Suits me.',
+  'merc-lakota': 'Larks over the camp the whole way in. Nobody else looked up.',
+  'merc-eliana': 'The camp is laid out on the old pattern. Nobody here will know that.',
+  'merc-matt': 'A camp with its streets straight. Somebody here has read the right books.',
+  'merc-altun': 'I walked the whole way. Let it be written down that I walked.',
+  'merc-mus': 'You will not mention where you found me.',
+});
+
 export const MUSTER_FULL = MERCENARY_COMPANY_SIZE;
 /** One or two standing: the pegs are empty and the Marshal has work for early men. */
 export const MUSTER_EARLY = 2;
@@ -219,8 +239,18 @@ const COUNT_WORDS = freeze(['none', 'one', 'two', 'three', 'four', 'five', 'six'
  * `seenAt` is `{ mercenaryId: stopId }` from `src/long-road.js`; a man who never went past the
  * traveler has no clause, and gets the one for a road he cannot place him on.
  */
-export function musterVoices({ musterCount = 1, seenAt = {}, roster = [] } = {}) {
-  const count = Math.max(1, Math.min(MUSTER_FULL, Math.round(Number(musterCount) || 1)));
+export function musterVoices({ musterCount = 1, seenAt = {}, roster = [], withYou = [], dead = [] } = {}) {
+  // **In camp is those who mustered and those who walked in with you; still coming is whoever is
+  // on the road and alive; the dead are neither.** A companion's phase is `with-traveler`
+  // wherever he is, so counting only `mustered` made nine men at the traveler's shoulder count as
+  // none - the camp gave him the early face, eleven pegs "and nobody on them", with ten of the
+  // eleven standing in front of it. And once men can die, the same count waits forever for
+  // somebody who is never coming.
+  const arrived = [...new Set(withYou.filter(id => !dead.includes(id)))];
+  const gone = [...new Set(dead)];
+  const counted = Math.round(Number(musterCount) || 1) + arrived.length;
+  const expected = MUSTER_FULL - gone.length;
+  const count = Math.max(1, Math.min(expected, counted));
   const place = id => {
     const where = seenAt?.[id];
     const ground = groundOfSighting(where);
@@ -228,19 +258,31 @@ export function musterVoices({ musterCount = 1, seenAt = {}, roster = [] } = {})
   };
   const greeting = id => (MUSTER_GREETINGS[id] ?? '').replace('%s', place(id));
   const early = count <= MUSTER_EARLY;
-  const full = count >= MUSTER_FULL;
+  // Full is everybody who can still be here, which is eleven less the dead. A company that has
+  // lost two men and brought the other nine in is as whole as it is ever going to be.
+  const full = count >= expected;
   const turn = full
     ? ['The ten are drawn up in two files behind the standard, and when you come through the gate they turn and look at you.']
     : early
       ? ['The mercenaries\u2019 ground behind the standard has eleven pegs banged into it and nobody on them. A quartermaster\u2019s boy is counting them again in case he got it wrong the first time.']
       : [];
-  const marshal = full
+  const marshal = full && !gone.length
     ? `That is eleven, and eleven is what I was promised. Hadric Venmor, Marshal. You are the last of them in and the whole camp knows it, because the whole camp has been waiting on you.`
+    : full
+      // He was promised eleven and he has counted fewer, and he does not pretend otherwise. What
+      // he asks next is the traveler's to answer, once for each name (src/companions.js).
+      ? `${COUNT_WORDS[count].charAt(0).toUpperCase()}${COUNT_WORDS[count].slice(1)}. I was promised eleven. Hadric Venmor, Marshal — and before anything else you will tell me about the ones who are not here.`
     : early
       ? `${COUNT_WORDS[count]} ${count === 1 ? 'stands' : 'stand'} in this camp, counting you, and the rest are somewhere on a road. Hadric Venmor, Marshal. I have work for early men, and I remember which ones they were.`
       : `By the gate\u2019s count, ${COUNT_WORDS[count]} stand in this camp, counting you.`;
-  const company = full ? (roster.length ? roster : Object.keys(MUSTER_GREETINGS)).map(id => ({ id, line: greeting(id) })).filter(entry => entry.line) : [];
-  return { count, early, full, turn, marshal, company };
+  // A man who came in with you says so; a man who was here already greets you from where he has
+  // been standing. The dead say nothing, and are not asked to.
+  const speaking = (roster.length ? roster : Object.keys(MUSTER_GREETINGS)).filter(id => !gone.includes(id));
+  const company = full
+    ? speaking.map(id => ({ id, withYou: arrived.includes(id),
+      line: arrived.includes(id) ? (MUSTER_ARRIVED_WITH[id] ?? '') : greeting(id) })).filter(entry => entry.line)
+    : [];
+  return { count, early, full, turn, marshal, company, arrived, missing: gone, expected };
 }
 
 /** What a man says when he walks into a camp the traveler is already standing in. */

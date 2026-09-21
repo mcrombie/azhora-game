@@ -3593,7 +3593,11 @@ function init() {
       if(e.type==='ally-down'&&companions.walksWith(e.id)){
         const name=mercenaryById(e.id)?.name??e.id;
         const where=world.regionAt(e.x,e.z)?.name??'the road';
-        companions.died(e.id,{where,what:enemyWordFor(combat.state.encounterId),x:e.x,z:e.z});
+        // His weapon lies where he fell, named, until somebody takes it - and if he was
+        // carrying the traveler's own traded sword, that is what is lying there.
+        const held=mercenaryHeld({id:e.id});
+        companions.died(e.id,{where,what:enemyWordFor(combat.state.encounterId),x:e.x,z:e.z,
+          weapon:held?.id??null,weaponName:held?.id?(INVENTORY_ITEMS[held.id]?.name??'weapon').toLowerCase():null});
         showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
           note:'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
         audio?.effect('player-hit');saveRoad(false);}
