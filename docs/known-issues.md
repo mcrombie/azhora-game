@@ -3079,3 +3079,79 @@ but no picture is written for it. The cause was not found before this hand-back.
 armourer's own view was rendered and is good - he stands under the smithy tent with *"F Speak with
 The armourer"* on screen, in the Moros Plain, all in English - so **the armourer half of that
 check is done and Mern's half is not.**
+
+
+---
+
+## `FILE_FLOOR`: six, and the measurement says six whatever the mix
+
+The fill is ordinary soldiers of the side's own ally kind, handed in where the companions are
+handed in. **Not into the encounter's authored list**, because `ALLY_SPOTS`
+(`src/border-chapter.js:64`) has **five places** and the side already uses four - a fill of two
+would overflow it and `borderEncounter` would silently slice it off. *That is worth knowing before
+the builder wires it: either the fill goes through `getAllies` like the company, or `ALLY_SPOTS`
+has to grow.*
+
+Border battle at level 2, forty seeds a row, the traveler as the arc leaves him and again as a
+well-prepared player. `fill` is beyond the side's own four.
+
+| companions | fill | won | sitting still | health | enemies down |
+|---|---|---|---|---|---|
+| 0 | 0 | 0/40 | 0/40 | - | 1 of 8 |
+| 0 | 3 | 0/40 | 0/40 | - | 2 of 8 |
+| 0 | 5 | **0/40** | 0/40 | - | 4 of 8 |
+| 0 | **6** | **40/40** | 40/40 | 77 | 8 of 8 |
+| 3 | 2 | **0/40** | 0/40 | - | 5 of 8 |
+| 3 | **3** | **40/40** | 40/40 | 77 | 8 of 8 |
+| 6 | 0 | 40/40 | 40/40 | 77 | 8 of 8 |
+| 6 | 6 | 40/40 | 40/40 | 77 | 8 of 8 |
+| 10 | 0 / 6 | 40/40 | 40/40 | 77 | 8 of 8 |
+
+**The line is the same in all four tables** - both kits, the border battle and `solis-sweep` - and
+it is not about who the six are: **companions plus fill of six wins; five loses.** Bog iron and
+Blades 20 move nothing across the line (they move health from 77 to 84 and enemies down from 4 to
+5 at five, and never to eight). **And it changes nothing at six companions and above**, which is
+the property the ruling asks for: those rows are 40/40 with fill and without.
+
+So the measurement agrees with the builder's starting constant. **`FILE_FLOOR = 6` is the number**,
+read as six in the file beyond the side's own four.
+
+### What this cannot tell you, and why
+
+**It is a cliff, not a curve, and two columns say the driver is why.**
+
+- **`sitting still` tracks `won` in every row.** At the floor the traveler can stand there and his
+  side wins anyway, so this measurement cannot certify "hard but winnable" - only "winnable".
+- **No ally of any kind ever dies. Not one, in any row.** Driven directly: over a whole fight the
+  enemies emitted **3 `player-hit` and 0 `ally-hit`**. `enemyTarget` (`src/combat.js:942`) picks
+  the nearest of the player and the allies, and this driver holds the checkpoint while its own
+  line is still coming up - so it is the nearest thing to every soldier on the field, takes every
+  blow, and dies or does not while nobody behind it is touched.
+
+**So the fill soldiers' own death rate is not 0 %, it is unmeasured**, and the "hard but winnable"
+half of the question is unanswered. Reporting either from these rows would be the same mistake as
+the two dodges in sixteen seconds.
+
+**What the threshold survives.** The distortion is identical in every row - same driver, same
+geometry, same forty seeds - so the *comparison between rows* stands even though the absolute
+shape does not. Six is where the side stops losing, at both kits, in both fights.
+
+**What a better driver would need**: a player who does not stand in front of his own line. Holding
+the checkpoint is what the chapter tells him to do ("stand with your commander"), and it is what
+makes him the focal point; a real player backs off, circles, and lets the line take the charge.
+Until somebody writes that, the floor is measured and the *feel* of the floor is not.
+
+---
+
+## Not hunted this round
+
+**Bows (phase 6, `src/archery.js`) were not started.** The round ran out on the floor measurement
+and its two false starts. Nothing in this ledger says anything about arrows; the whole list the
+coordinator set - arrows through walls and people, friendly fire, shooting into an arena from
+outside it, the quiver across a save, the bow in a teaching fight or a bout, drawing while mounted
+or swimming, and zero arrows - is untouched, and the authored fights have **not** been re-measured
+with an archer in them.
+
+**The `stand-at:` shot** now parses as one view and the run reports no error, but still writes no
+picture, and the cause is still not found. `camp-armourer` renders; **Mern has never been
+photographed.**
