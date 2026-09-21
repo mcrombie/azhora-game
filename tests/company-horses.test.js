@@ -255,7 +255,13 @@ test('the two review views compose the same whether they are run once or twice',
   assert.ok(main.indexOf("view==='company-mounted'") < main.indexOf("if(view==='battle'){questStage=4;"),
     'the shot is composed before anything arms the traveler or starts a practice fight');
   // And the shot is measured, not guessed: the camera pulls in against whatever is in the way.
-  assert.match(body, /clearestBearing\(reviewTarget,21,\{prefer:hitch\.yaw\+Math\.PI\/2\}\)/);
+  // The mounted file's bearings are authored and only chosen between (`bestOf`); the picket
+  // shot was right as swept and keeps the sweep. Both are still measured, neither is guessed.
+  assert.match(body, /bestOf\(reviewTarget,20,\[facing\+1\.35/);
+  assert.match(body, /clearestBearing\(reviewTarget,21,\{prefer:facing\+Math\.PI\/2\}\)/);
+  // The facing is fitted for the file and left alone for the picket, whose line is laid off the
+  // horse's own yaw and would move with him.
+  assert.match(body, /const facing=view==='company-mounted'\?fits\.yaw:hitch\.yaw;/);
   assert.match(main, /function cameraPullIn\(focus,want,bearing\)\{/, 'one arithmetic for the camera and for the chooser');
   assert.match(main, /const actualDistance=cameraPullIn\(cameraFocus,viewDistance,yaw\);/, 'and the camera itself uses it');
   // The view reports every link in the chain, so one render says which is broken.
@@ -263,4 +269,24 @@ test('the two review views compose the same whether they are run once or twice',
     'walking:companions.companions.map(one=>one.id)', 'placed:[...(company.companionIds??[])]',
     'file:[...fileOrder]', 'stoodBackBy:', 'drawn:!!npc?.actor.group.visible', 'up:!!npc?.mounted'])
     assert.ok(main.includes(fact), `the camera report carries ${fact}`);
+});
+
+test('a rider who has arrived is still a rider', () => {
+  const main = source('main.js');
+  // Found by looking at the picture, not by a test: four riders standing on the ground beside
+  // four horses. The npc mover sets a man's height only while he is MOVING, so a companion who
+  // reached his place in the file sank to the ground and left his horse standing next to him.
+  // His height is a fact about him, not about whether his legs are going.
+  assert.match(main, /else if\(!npc\.swimming\)pos\.y=world\.heightAt\(pos\.x,pos\.z\)\+\(npc\.lift\?\?0\);/,
+    'a companion standing still keeps his seat');
+  assert.match(main, /npc\.actor\.group\.position\.set\(p\.x,world\.heightAt\(p\.x,p\.z\)\+\(npc\.lift\?\?0\),p\.z\)/,
+    'and settling the company onto its spots keeps it too');
+  // The traveler had the same fault from the other end: the review put him on the ground and
+  // then mounted him only if he was not already mounted, so the second composition of the view
+  // photographed him standing beside his own horse. The seat is set outright.
+  assert.match(main, /player\.group\.position\.set\(sx,world\.heightAt\(sx,sz\)\+RIDE\.seat\.up,sz\);/);
+  // Two horses cannot stand a body's width apart.
+  assert.equal(RIDE_FILE.room, 2.6);
+  assert.ok(RIDE_FILE.room > RIDE.radius * 2 * 2, 'a horse s length, not a rider s width');
+  assert.match(main, /room:reach\.room\?\?BODY\.person\*2/, 'and the file asks the reach how much room it needs');
 });
