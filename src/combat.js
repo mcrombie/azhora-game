@@ -167,7 +167,7 @@ const facing = (a, b, yaw, arc) => Math.abs(angleDifference(Math.atan2(b.x - a.x
  */
 const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6 });
 
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null }) {
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
   const first = margins();
   const state = {
@@ -288,7 +288,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const asked = config === undefined ? DEFAULT_ENCOUNTER : config;
     const country = asked && typeof asked === 'object' && !Number.isFinite(asked.level) && getLevel
       ? { ...asked, level: getLevel(asked.center) } : asked;
-    const next = encounterConfig(country);
+    // Whoever is walking with the traveler is in this fight, at their own numbers. They are
+    // added to whatever the encounter already authored - the border battle brings its side's four
+    // soldiers, and the company stands *with* them - and a fight that wants to be fought alone
+    // (Drent's three teaching fights) simply gets none.
+    const friends = getAllies ? getAllies(country) : [];
+    const joined = friends.length
+      ? { ...country, allies: [...(country.allies ?? []), ...friends] }
+      : country;
+    const next = encounterConfig(joined);
     if (!next) return false;
     if (atCheckpoint) {
       const checkpoint = safePoint(next.checkpoint.x, next.checkpoint.z);

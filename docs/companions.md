@@ -128,5 +128,20 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    with you is offered "Go on ahead of me." instead. The three gates are `explored` for Kristen
    (charted would open itself — Drent is charted from the first morning), a bird seen for
    Lakota, and an edge worth swapping for Eliana.
-4. The journal's company page.
-5. Death: the muster's faces and count, and the roster `musterVoices` is given.
+4. **The people walking with you are in the fight** — **built.** `createCombat` takes a
+   `getAllies`, so no authored encounter changed: whoever walks with the traveler is added to
+   whatever the fight already had, at his own `MERCENARY_ARMS` numbers. The border battle's own
+   four soldiers keep their places and the company stands with them.
+
+   **The three fights the player is taught alone in are a named list, not a place** — the
+   Greenway raid and the Avrel clearing raiders, beside the straw post's practice. "The fights he
+   is being taught alone in" is not a country: Drent has later fights that are no lesson, and
+   Luscia's wolves are a lesson in nothing. The hold fired on *any* fight before this, inherited
+   from the long road keeping Chris out of the tutorial raid, so a company stood beside the box
+   and watched.
+
+   Losing one is unmistakable: a card naming who, where, and that nobody in this company comes
+   back; `companions.died` puts him in `fallen`, and he is never placed, never in another fight,
+   and not at the muster.
+5. The journal's company page.
+6. Death at the muster: the count, the roster `musterVoices` is given, and the Marshal asking what happened.

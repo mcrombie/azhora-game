@@ -436,7 +436,10 @@ function init() {
     if(mode==='arriving'||mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){
       npc.placement={...placement,x:pos.x,z:pos.z,yaw:npc.actor.group.rotation.y};return;}
     const here=world.regionAt(p.x,p.z)?.name??null;
-    const fight=combat.state.phase==='active'?combat.state.center:null;
+    // Only the fights he is taught alone in hold a companion out. Everywhere else the people
+    // walking with him are in it, which is the design's own answer to hard country and the reason
+    // each of them can be lost (docs/companions.md).
+    const fight=combat.state.phase==='active'&&TEACHING_FIGHTS.has(combat.state.encounterId)?combat.state.center:null;
     if(here==='Pueth'||here==='Peblos'||fight){
       if(!companionHold.has(npc.id))companionHold.set(npc.id,{x:pos.x,z:pos.z});
       // The widest fight box reaches 24.2 m from its centre (fightBox, src/combat.js), so a man
@@ -474,6 +477,35 @@ function init() {
   function oneVoice(has){
     for(const id of fileOrder){const said=has(id);if(said)return {id,said};}
     return null;}
+  /**
+   * **The three fights the player is taught alone in**, by id: the straw post's practice, the
+   * raid on the Greenway, and the raiders in the Avrel clearing. Nobody walking with the traveler
+   * joins these, and the hold keeps them clear of the box.
+   *
+   * It is a list of three authored fights and not a region test, because "the fights he is being
+   * taught alone in" is not a place: Drent has later fights that are not lessons, and Luscia's
+   * wolves are a lesson in nothing. The long road's piece 4 kept Chris out of the raid for
+   * exactly this reason, and this is that rule written down rather than implied by `fight`.
+   */
+  const TEACHING_FIGHTS=new Set([GREENWAY_RAID.id,AVREL_RAID.id]);
+  /**
+   * Where the n-th companion stands in a fight: on the traveler's side of the centre, spread two
+   * ranks wide, inside every arena the game lays (`encounterConfig` allows 21 m behind the centre
+   * and 12 m across it). They are added to whatever the encounter already authored - at the
+   * border the side's own four soldiers are there and the company stands with them.
+   */
+  function companionAllies(config){
+    if(!config?.center||TEACHING_FIGHTS.has(config.id))return [];
+    const axis=config.retreatAxis==='x'?'x':'z',across=axis==='x'?'z':'x';
+    const sign=config.retreatSign===-1?-1:1;
+    return fileOrder.map((id,index)=>{
+      const merc=mercenaryById(id),arms=armsOf(id);
+      if(!merc||!arms||fallen.has(id))return null;
+      const back=5+(index%5)*3,side=(index<5?-1:1)*2.5;
+      return {id,name:merc.name,kind:'legionary',level:arms.level,toughness:arms.toughness,
+        [axis]:config.center[axis]-sign*back,[across]:config.center[across]+side,
+        model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};
+    }).filter(Boolean);}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
   function outsideTheFight(centre,at){
@@ -545,6 +577,7 @@ function init() {
     // A fight is as hard as the country it happens in (docs/difficulty-ladder.md, and
     // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
     getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
+    getAllies:config=>companionAllies(config),
     getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id)};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
@@ -3495,6 +3528,16 @@ function init() {
         else if(inAftermathFight()){const banner=aftermath.spec.title.toUpperCase();aftermath.endEncounter(combat.state.encounterId);toast('Your commander holds the ground without you for now. Give the word again when you are ready.',banner);}
         else{updateQuest('retreat');toast('Catch your breath in the village.','RETURN TO THE BELL WHEN READY');}
       }
+      // A companion who goes down is gone for good, in any fight, anywhere. The first time it
+      // happens it must be unmistakable: who, where, and that it is final - here, and in the
+      // journal's company page, which reads the same `fallen` list.
+      if(e.type==='ally-down'&&companions.walksWith(e.id)){
+        const name=mercenaryById(e.id)?.name??e.id;
+        const where=world.regionAt(e.x,e.z)?.name??'the road';
+        companions.died(e.id);
+        showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
+          note:'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
+        audio?.effect('player-hit');saveRoad(false);}
       if(e.type==='defeat'){
         drownedDefeat=!!e.drowned;
         $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':combat.state.encounterId===BORDER_ENCOUNTER_ID?'Full health · Rejoin the line south of the stockade':inAftermathFight()?'Full health · Form up with your company again':'Full health · Restart at the woodland bell';

@@ -272,6 +272,60 @@ test('Kristen’s gate is not one that opens itself', async () => {
   assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
 });
 
+test('the people walking with you are in the fight, at their own numbers', async () => {
+  // The gap this closes: step 2 built the arithmetic of a companion in a fight - his health from
+  // his own Toughness, his damage from his weapon's family - and nothing ever put one in a fight.
+  const { createCombat } = await import('../src/combat.js');
+  const { maxHealth } = await import('../src/combat-skills.js');
+  const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
+  const arena = { id: 'somewhere', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: -9 }, retreatLine: 20,
+    enemies: [{ id: 'foe', x: 0, z: 6, hp: 75 }] };
+  const friends = ['merc-mus', 'merc-altun'].map((id, index) => ({
+    id, name: id, kind: 'legionary', level: armsOf(id).level, toughness: armsOf(id).toughness,
+    z: -5 - index * 3, x: (index < 5 ? -1 : 1) * 2.5 }));
+  const combat = createCombat({ world, position: { x: 0, z: -8, y: 0 },
+    getWeapon: () => ({ id: 'simple-sword', damage: [24, 26, 34], reachMultiplier: 1, usable: true }),
+    getAllies: config => (config.id === 'a-lesson' ? [] : friends) });
+  assert.equal(combat.startEncounter(arena), true);
+  assert.deepEqual(combat.state.allies.map(a => a.id), ['merc-mus', 'merc-altun'], 'they are in it');
+  // Each at his own numbers, and not at a legionary's ninety.
+  for (const ally of combat.state.allies)
+    assert.equal(ally.maxHp, Math.round(maxHealth(armsOf(ally.id).toughness)), `${ally.id} is as tough as he is`);
+  assert.notEqual(combat.state.allies[0].maxHp, 90, 'a companion is a person, not a kind');
+  // A fight the player is taught alone in gets none of them.
+  combat.resetEncounter({});
+  const alone = createCombat({ world, position: { x: 0, z: -8, y: 0 },
+    getWeapon: () => ({ id: 'simple-sword', damage: [24, 26, 34], reachMultiplier: 1, usable: true }),
+    getAllies: config => (config.id === 'a-lesson' ? [] : friends) });
+  assert.equal(alone.startEncounter({ ...arena, id: 'a-lesson' }), true);
+  assert.deepEqual(alone.state.allies, [], 'he is taught alone');
+  // And they are added to what the fight already authored, never in place of it.
+  const withSide = createCombat({ world, position: { x: 0, z: -8, y: 0 },
+    getWeapon: () => ({ id: 'simple-sword', damage: [24, 26, 34], reachMultiplier: 1, usable: true }),
+    getAllies: () => friends });
+  assert.equal(withSide.startEncounter({ ...arena, allies: [{ id: 'line-soldier', kind: 'legionary', x: 3, z: -5 }] }), true);
+  assert.deepEqual(withSide.state.allies.map(a => a.id), ['line-soldier', 'merc-mus', 'merc-altun'],
+    'the side’s own soldiers keep their places and the company stands with them');
+});
+
+test('the three fights the player is taught alone in are a list, not a place', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /const TEACHING_FIGHTS=new Set\(\[GREENWAY_RAID\.id,AVREL_RAID\.id\]\);/, 'named fights');
+  // The hold used to fire on any fight at all, which came from the long road keeping Chris out of
+  // the tutorial raid. A company that stands beside the box and watches is the opposite of what
+  // was asked for.
+  assert.match(main, /const fight=combat\.state\.phase==='active'&&TEACHING_FIGHTS\.has\(combat\.state\.encounterId\)\?combat\.state\.center:null;/,
+    'and only they hold a companion out');
+  assert.match(main, /getAllies:config=>companionAllies\(config\)/, 'everywhere else they are in it');
+  assert.match(main, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'from one place');
+  assert.match(main, /if\(!merc\|\|!arms\|\|fallen\.has\(id\)\)return null;/, 'and a dead man is in no fight');
+  // Losing one is unmistakable: who, where, and that it is final.
+  assert.match(main, /if\(e\.type==='ally-down'&&companions\.walksWith\(e\.id\)\)\{/, 'a companion who goes down');
+  assert.match(main, /companions\.died\(e\.id\);/, 'is gone for good');
+  assert.match(main, /IS DEAD`,name:`\$\{name\} fell in \$\{where\}`/, 'and the game says who and where');
+  assert.match(main, /Nobody in this company comes back/, 'and that it is final');
+});
+
 test('a hold is each man staying where he is, and the fallback is not one stone', async () => {
   const { escortSpotFor, ESCORT_OFFSETS } = await import('../src/mercenaries.js');
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
