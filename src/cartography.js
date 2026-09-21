@@ -111,6 +111,29 @@ export const CARTOGRAPHY_DIRECTIONS = Object.freeze({
   Eer: 'West beyond the Moros. Quiet enough, if you keep off it at night.',
 });
 
+/**
+ * What a dark chart has to draw over the atlas for a given chart, from the atlas’s own cells
+ * (assets/azhora-dev-regions.json): the shape of every country whose coast is known, and the name
+ * of every country somebody has named. Feradom is not one of the built regions and has no entry in
+ * REGION_OUTLINES, so taking both from the atlas is what lets its coast be drawn at all.
+ *
+ * Ground the traveler has walked is already cut out of the dark by the hex fog, so a silhouette
+ * under an explored country costs nothing and keeps the shape whole where the walking stops.
+ */
+export function chartShapes(entries, atlasRegions) {
+  const byName = new Map((atlasRegions ?? []).map(region => [region.name ?? region.id, region]));
+  const silhouettes = [], labels = [];
+  for (const country of entries ?? []) {
+    const atlas = byName.get(country?.name);
+    if (!atlas) continue;
+    if (country.state === 'charted' || country.state === 'explored') silhouettes.push({ name: country.name, cells: atlas.cells ?? [] });
+    // A big country wants a bigger hand; the atlas gives the hex count to size it by.
+    if (country.named) labels.push({ name: country.name, x: atlas.centerX, y: atlas.centerY,
+      size: Math.max(22, Math.min(46, Math.round(Math.sqrt(atlas.hexCount ?? 9) * 11))) });
+  }
+  return { silhouettes, labels };
+}
+
 export function validateCartographySnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== CARTOGRAPHY_VERSION) return false;

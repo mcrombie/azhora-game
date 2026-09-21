@@ -121,7 +121,7 @@ import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from '
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
-import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography } from './cartography.js';
+import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
 import { regionLevel, levelWords } from './region-levels.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
@@ -1416,7 +1416,7 @@ function init() {
   // Regions the journal explains while the road is still Drent's: the start, its neighbors, and the main-quest path.
   const CAMPAIGN_JOURNAL_REGIONS=['Drent','Luscia','Pueth','Elagos','Peblos','Moros Plain','West Suval','East Suval'];
   let atlasRegions=null,atlasAdjacency=null;
-  fetch('./assets/azhora-dev-regions.json').then(response=>response.ok?response.json():null).then(data=>{if(data?.regions){atlasRegions=data.regions;atlasAdjacency=computeAdjacency(data.regions);}}).catch(()=>{});
+  fetch('./assets/azhora-dev-regions.json').then(response=>response.ok?response.json():null).then(data=>{if(data?.regions){atlasRegions=data.regions;atlasAdjacency=computeAdjacency(data.regions);refreshChart();}}).catch(()=>{});
   const journeyGathered=new Set();
   let currentJourneySite=null,currentRegionId=1;
   let currentForestSite=null;
@@ -1694,7 +1694,12 @@ function init() {
       ...found.map(place=>({id:place.id,name:place.name,kind:'place',...atlas(place.x,place.z)}))];
   }
   function refreshChart(){
-    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList(),marks:chartMarks()});
+    // The shapes and the names the dark chart draws over the atlas (src/cartography.js); the atlas's
+    // own cells arrive from the fetch above, so a coast the game has not built - Feradom - is drawn
+    // from the same source as one it has.
+    const drawn=chartShapes(cartography.view().entries,atlasRegions);
+    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList(),marks:chartMarks(),
+      silhouettes:drawn.silhouettes,labels:drawn.labels});
     const legend=$('atlas-legend'),view=mapFog.view();legend.replaceChildren();
     const el=(tag,text,cls)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
     const list=document.createElement('ul');

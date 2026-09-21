@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 import { createSkills } from '../src/skills.js';
 import {
   CHART_STATES, CHART_XP, EXPLORED_HEXES, STARTING_CHART, CARTOGRAPHY_DIRECTIONS, REGION_NEIGHBOURS,
-  createCartography, startingChart, validateCartographySnapshot,
+  createCartography, startingChart, validateCartographySnapshot, chartShapes,
 } from '../src/cartography.js';
 import { regionLevel } from '../src/region-levels.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
 const fixture = ({ taught = true } = {}) => {
   const skills = createSkills(), chart = createCartography({ skills });
@@ -135,4 +139,81 @@ test('the chart survives the road, and nonsense is refused', () => {
   assert.equal(refused.restore({ version: 1, met: true, regions: { Drent: { state: 'nowhere' } } }), false);
   assert.equal(refused.met, false, 'a refused restore leaves a fresh chart');
   assert.deepEqual(CHART_STATES, ['unknown', 'heard', 'charted', 'explored']);
+});
+
+const ATLAS = JSON.parse(readFileSync(fileURLToPath(new URL('../assets/azhora-dev-regions.json', import.meta.url)), 'utf8')).regions;
+
+test('the dark chart draws a shape for every coast you know and a name for every country you have been given', () => {
+  const { chart } = fixture();
+  // The chart Mara hands over: six coasts, one name.
+  const opening = chartShapes(chart.view().entries, ATLAS);
+  assert.deepEqual(opening.silhouettes.map(s => s.name).sort(),
+    ['Drent', 'East Suval', 'Feradom', 'Luscia', 'Pueth', 'West Suval'], 'six coasts against the sea');
+  assert.deepEqual(opening.labels.map(l => l.name), ['Drent'], 'and one name on it');
+  // Feradom is not one of the built regions and has no REGION_OUTLINES entry; the atlas carries it anyway.
+  const feradom = opening.silhouettes.find(s => s.name === 'Feradom');
+  assert.ok(feradom.cells.length > 4, `Feradom's coast is ${feradom.cells.length} hexes`);
+  for (const shape of opening.silhouettes) for (const cell of shape.cells)
+    assert.ok(Number.isFinite(cell.q) && Number.isFinite(cell.r), `${shape.name} draws in hexes`);
+  // A label sits at the atlas's own centre for that country, sized by how big it is.
+  const drent = opening.labels[0], atlas = ATLAS.find(region => region.name === 'Drent');
+  assert.deepEqual([drent.x, drent.y], [atlas.centerX, atlas.centerY]);
+  assert.ok(drent.size >= 22 && drent.size <= 46);
+
+  // Hearing of somewhere puts its name up without its shape; charting it adds the shape.
+  chart.hear('Cape Thalmagar');
+  const heard = chartShapes(chart.view().entries, ATLAS);
+  assert.ok(heard.labels.some(l => l.name === 'Cape Thalmagar'), 'a name and a rough bearing is a label');
+  assert.ok(!heard.silhouettes.some(s => s.name === 'Cape Thalmagar'), 'and no shape at all');
+  chart.chart('Cape Thalmagar');
+  assert.ok(chartShapes(chart.view().entries, ATLAS).silhouettes.some(s => s.name === 'Cape Thalmagar'));
+  // Walked ground keeps its shape: the fog cuts the atlas out of the dark over the top of it.
+  for (let i = 0; i < EXPLORED_HEXES; i++) chart.noteHex('Moros Plain');
+  const walked = chartShapes(chart.view().entries, ATLAS);
+  assert.ok(walked.silhouettes.some(s => s.name === 'Moros Plain') && walked.labels.some(l => l.name === 'Moros Plain'));
+  // Nothing is drawn for a country the atlas does not have, or for no atlas at all.
+  assert.deepEqual(chartShapes([{ name: 'Nowhere', state: 'charted', named: true }], ATLAS), { silhouettes: [], labels: [] });
+  assert.deepEqual(chartShapes(chart.view().entries, null), { silhouettes: [], labels: [] });
+  assert.deepEqual(chartShapes(null, ATLAS), { silhouettes: [], labels: [] });
+});
+
+test('the overlay goes dark, and the shapes and names are drawn into it', () => {
+  const map = source('world-map.js'), main = source('main.js');
+  assert.match(map, /fill: '#0b1620'/, 'unknown country is dark');
+  assert.doesNotMatch(map, /#e8dcba/, 'the old parchment blank is gone');
+  assert.doesNotMatch(map, /atlas-unknown/, 'and so is its hatch');
+  assert.match(map, /for \(const region of chart\.silhouettes \?\? \[\]\)/, 'a shape per known coast');
+  assert.match(map, /for \(const label of chart\.labels \?\? \[\]\)/, 'a name per named country');
+  assert.match(map, /mask: 'url\(#atlas-charted\)'/, 'and the ground you have walked is cut out of both');
+  assert.match(map, /silhouettes: chart\.silhouettes\.length/, 'the state says how many were asked for');
+  assert.match(map, /labels: \[\.\.\.overlay\.querySelectorAll\('\[data-role="labels"\] text'\)\]/, 'and which names were drawn');
+  assert.match(main, /chartShapes\(cartography\.view\(\)\.entries,atlasRegions\)/, 'main.js asks the model rather than working it out');
+  assert.match(main, /silhouettes:drawn\.silhouettes,labels:drawn\.labels/, 'and hands both to the chart');
+});
+
+test('a chart in a state no country can be in is refused', () => {
+  const { chart } = fixture();
+  chart.hear('Peblos'); chart.noteHex('Drent');
+  assert.equal(validateCartographySnapshot(chart.snapshot()), true);
+  assert.equal(validateCartographySnapshot({ version: 1, met: true, regions: { Drent: { state: 'lost' } } }), false);
+  // The whole save path is tests/road-checkpoint.test.js and tests/save-round-trip.test.js; this holds
+  // that the chart is one of the things they carry, which the source assertions below pin in place.
+});
+
+test('the game keeps the chart, feeds it and hands it over on the landing', () => {
+  const main = source('main.js'), checkpoint = source('road-checkpoint.js');
+  assert.match(main, /const cartography=createCartography\(\{skills,/, 'the chart earns its experience through the skill');
+  assert.match(main, /cartography:cartography\.snapshot\(\)/, 'and is written down with the road');
+  assert.match(main, /cartography\.restore\(saved\.cartography\?\?createCartography\(\)\.snapshot\(\)\)/, 'and read back with it');
+  assert.match(checkpoint, /validateCartographySnapshot\(data\.cartography\)/, 'and checked on the way in');
+  assert.match(main, /if\(widened\.cells\.length&&here&&!isOpenCountry\(here\)\)cartography\.noteHex\(here\.name\)/, 'a new hex is a hex of some country');
+  const hers = main.slice(main.indexOf('function maraOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
+  assert.match(hers, /own chart and it is not much/, 'she hands over the rough chart');
+  assert.match(hers, /cartography\.learn\(\)\.first/, 'and that is the lesson');
+  assert.match(hers, /NEW SKILL . CARTOGRAPHY/);
+  assert.match(main, /function wayfindingChoice\(npc,back\)/, 'anybody can be asked which way the next country is');
+  assert.match(main, /if\(options\.choices\?\.length&&!options\.noWayfinding\)/, 'from the one place every conversation goes through');
+  assert.match(main, /cartography\.directionsFrom\(homeRegion\(npc\)\)/, 'and only about the countries next door');
+  assert.match(main, /const countries=cartography\.view\(\);/, 'the journal lists what is known of each country');
+  assert.match(main, /A shape against the sea/);
 });
