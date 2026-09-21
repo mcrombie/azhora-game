@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
-  VILLAGE_CORNERS, CORNERS_XP, cornersWalked,
+  VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
 } from '../src/long-road.js';
+import { ARRIVALS } from '../src/mercenaries.js';
+import { renderLine } from '../src/linguist.js';
 import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
 import { SKILLS } from '../src/skills.js';
@@ -281,4 +283,65 @@ test('every man on the roster can be remembered, and Drent has nine grounds to c
   assert.equal(drentCharted({ mapFog: DRENT_GROUNDS.slice(1) }), false);
   assert.equal(stopGround('bran-rod').name, 'Willowmere');
   assert.equal(longRoadStop('nothing'), null);
+});
+
+test('a boat landing is announced, in the traveler\u2019s own notes and in the companion\u2019s mouth', () => {
+  // Two of the five cannot be seen from where the player is meant to be, and the bell is silent
+  // until somebody clicks Sound, so what reaches every player is the caption and the remark.
+  assert.equal(LANDINGS.length, 5, 'five boats, five legs');
+  assert.deepEqual(LANDINGS.map(entry => entry.at),
+    [ARRIVALS.word, ARRIVALS.riders, ARRIVALS.lakota, ARRIVALS.eliana, ARRIVALS.princes],
+    'the clock\u2019s own seconds and no others');
+  for (const entry of LANDINGS) {
+    assert.ok(entry.title === entry.title.toUpperCase(), entry.key + ' has a kicker');
+    assert.ok(entry.caption.length > 20 && entry.said.length > 20, entry.key + ' says something either way');
+  }
+  assert.match(LANDINGS.at(-1).caption, /last boat|no more boats/i, 'the fifth is the one that matters');
+});
+
+test('the clock owes each landing once, and a game loaded past one owes nothing', () => {
+  assert.equal(landingAt(0), null, 'nothing at the start');
+  assert.equal(landingAt(359), null);
+  assert.equal(landingAt(360).key, 'word');
+  assert.equal(landingAt(1079, 'word'), null, 'said once');
+  assert.equal(landingAt(1080, 'word').key, 'riders');
+  // Loading a save at minute fifty: everything up to then has already happened, so the next
+  // thing owed is the next boat and not four bells at once.
+  const caughtUp = landingAt(3000);
+  assert.equal(caughtUp.key, 'eliana', 'the latest one passed, not the earliest');
+  assert.equal(landingAt(3000, 'eliana'), null, 'and then nothing until the princes');
+  assert.equal(landingAt(3780, 'eliana').key, 'princes');
+  assert.equal(landingAt(99999, 'princes'), null, 'there is no sixth boat');
+  assert.equal(landingAt(NaN), null);
+  assert.deepEqual(LANDING_KEYS, ['word', 'riders', 'lakota', 'eliana', 'princes']);
+});
+
+test('a drill is six lines of the army\u2019s speech with what each one means, and never a quiz', () => {
+  assert.equal(DRILLS.length, DRILL_COUNT);
+  for (const entry of DRILLS) {
+    assert.equal(entry.lines.length, 6, `drill ${entry.index} is six lines`);
+    assert.equal(entry.leg, entry.index, 'one drill closes one leg');
+    assert.ok(entry.title && entry.opening.length > 30 && entry.closing.length > 20, `drill ${entry.index} has a scene round it`);
+    for (const line of entry.lines) assert.ok(line.length > 2 && line.length < 60, `"${line}" is a thing somebody shouts`);
+  }
+  assert.equal(new Set(DRILLS.flatMap(entry => entry.lines)).size, DRILL_COUNT * 6, 'thirty lines, none of them twice');
+  assert.equal(drillFor(6), null);
+  // The tongue is the game's own: the line is rendered by the same renderer as every other
+  // line of speech, and what the drill adds is the English under it.
+  const scene = drillScene(1, { render: line => renderLine(line, 'ambroni', { full: true }) });
+  assert.equal(scene.lines.length, 6);
+  assert.equal(scene.lines[0].means, DRILLS[0].lines[0]);
+  assert.notEqual(scene.lines[0].said, scene.lines[0].means, 'it is said in Ambroni');
+  assert.deepEqual(scene.study, { language: DRILL_LANGUAGE, exposure: DRILL_EXPOSURE });
+  assert.equal(drillScene(9), null);
+});
+
+test('when the traveler is Chris the same drill runs the other way round, and pays the same', () => {
+  const his = drillScene(1, { name: 'Cromb the Barbarian' });
+  const hers = drillScene(1, { name: 'Cromb the Barbarian', asChris: true });
+  assert.deepEqual(his.lines, hers.lines, 'the same six lines');
+  assert.deepEqual(his.study, hers.study, 'and the same thirty-five');
+  assert.notEqual(his.opening, hers.opening, 'but a different mouth asks');
+  assert.match(hers.opening, /Cromb the Barbarian/);
+  assert.match(hers.opening, /You have the Ambroni/, 'because the traveler is the one who has it');
 });

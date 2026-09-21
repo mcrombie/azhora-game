@@ -12,7 +12,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, CORNERS_XP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, DRILL_COUNT, CORNERS_XP } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -127,7 +127,7 @@ import { createBosco as createBoscoModel } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
-import { createMapFog } from './map-fog.js';
+import { createMapFog, subregionsAt } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
 import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
 import { regionLevel, levelWords } from './region-levels.js';
@@ -538,7 +538,12 @@ function init() {
     if(!next)return null;
     const stand=next.npc?world.npcPositions[next.npc]:null;
     return {...next,at:stand?{x:stand.x,z:stand.z}:{...next.point}};}
-  let longWayStop=null;
+  let longWayStop=null,landingSaid=null;
+  /** The companion npc, while he is walking with the traveler and not before or after. */
+  const companionBeside=()=>{
+    if(!companionOffTheClock||longRoad.released)return null;
+    const mate=npcById.get(landingMateId());
+    return mate&&!mate.hidden&&mate.placement?.phase==='with-traveler'?mate:null;};
   /** The open gold as the charts want it: a named point to ring, or nothing. */
   const longWayTarget=()=>{const stop=longWayNext();return stop?{id:`long-road-${stop.id}`,name:stop.title,...stop.at}:null;};
   /**
@@ -1789,7 +1794,7 @@ function init() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
-    playSeconds=0;refugeeHold=0;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
+    playSeconds=0;refugeeHold=0;landingSaid=null;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
@@ -2217,7 +2222,7 @@ function init() {
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2387,6 +2392,8 @@ function init() {
     const choices=[...mercenaryChoices(npc)];
     // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
     if(companionOffTheClock&&npc.id===landingMateId()){
+      const drill=longRoad.view(longRoadWorld()).drill;
+      if(drill)choices.unshift({id:'companion-drill',label:`Teach me some of the army\u2019s speech. (${drill.title})`,action:()=>giveDrill(npc,drill)});
       if(!longRoad.released)choices.unshift({id:'companion-go-on',label:'Go on to the muster without me.',action:()=>{
         closeDialogue();
         releaseCompanion(distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}),
@@ -2400,6 +2407,29 @@ function init() {
         mercenaryConversation(npc);}}) });
     choices.push({id:'leave-mercenary',label:'Good road to you.',action:closeDialogue});
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
+  }
+  /**
+   * A drill: six lines of the army's speech and what each one means, and no quiz at the end.
+   * The lines are rendered through the linguist like every other line in the game, so the
+   * tongue is Ambroni's own; the gloss under each is what makes it a lesson rather than
+   * overhearing. It pays through `linguist.study`, which is the hook docs/languages.md left.
+   *
+   * When the traveler is Chris the same six run the other way round: he gives it, and it pays
+   * the same, because giving a lesson in a tongue is how anybody keeps one.
+   */
+  function giveDrill(npc,offer){
+    const asChris=playerId===INTERPRETER.playerId;
+    const scene=drillScene(offer.index,{name:npc.name,asChris,
+      render:line=>linguist.render(line,{language:'ambroni'},{full:true})});
+    if(!scene){closeDialogue();return;}
+    const pages=[scene.opening,...scene.lines.map(line=>`\u201c${line.said}\u201d \u2014 ${line.means}`),scene.closing];
+    openDialogue(npc,pages,null,'That is enough for now',{onComplete:()=>{
+      const given=longRoad.act('drill',longRoadWorld());
+      if(!given.ok){closeDialogue();return;}
+      linguist.study(scene.study.language,scene.study.exposure);
+      refreshSkillsSheet();
+      toast(`${scene.title}. ${given.index} of ${DRILL_COUNT} drills, and the army reads a little easier.`,`AMBRONI \u00b7 ${linguist.level('ambroni')}`);
+      saveRoad(false);closeDialogue();}});
   }
   function dogConversation(npc,line=villageDog.greeting()){
     const foods=inventory.items().filter(id=>INVENTORY_ITEMS[id].type==='Food');
@@ -3602,6 +3632,20 @@ function init() {
         if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
         if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
           if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
+        // A boat in. Two of the five cannot be seen from where the player is and the bell is
+        // silent until somebody clicks Sound, so the landing is said rather than left to be
+        // noticed. Reloading past one says nothing: landingSaid is derived from the clock.
+        if(mode==='playing'){const boat=landingAt(playSeconds,landingSaid);
+          if(boat){landingSaid=boat.key;audio?.effect('bell');
+            const mate=companionBeside();
+            toast(mate?boat.said:boat.caption,mate?`${mate.name.toUpperCase()} \u00b7 ${boat.title}`:boat.title);}}
+        // Somebody of the company going past. He is recorded whether anybody is beside you to
+        // remark on it or not, because the muster asks where you were and not who told you.
+        if(mode==='playing'&&companionOffTheClock){
+          const seen=longRoad.notice(company.placements(playSeconds),player.group.position,point=>subregionsAt(point.x,point.z)[0]??null);
+          const mate=companionBeside();
+          if(seen.length&&mate)toast(`${seen[0].name}, going past. ${seen.length>1?`And ${seen.length-1} more of us with him.`:'That is one more of us in this country than there was.'}`,`${mate.name.toUpperCase()} \u00b7 ONE OF OURS`);
+          if(seen.length)saveRoad(false);}
         // While the water has him he is not an NPC walking to a home: he floats and swims a line.
         const swim=swimmerAt(playSeconds),ed=npcById.get(WORD_ID);
         if(ed){ed.swimming=swim.swimming?swim:null;

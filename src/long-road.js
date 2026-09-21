@@ -437,3 +437,105 @@ export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 
 export const drentCharted = state => DRENT_GROUNDS.every(id => charted(state, id));
 /** The named ground a stop stands in, for the journal and the trail map. */
 export const stopGround = id => subregion(longRoadStop(id)?.subregion ?? '') ?? null;
+
+/* ------------------------------------------------------------------ *
+ * The five landings, and the five drills
+ * ------------------------------------------------------------------ */
+
+/**
+ * A boat comes in at 6, 18, 33, 48 and 63 minutes, and each one closes a leg.
+ *
+ * Two of the five cannot be seen from where the player is meant to be standing — the fourth is
+ * about twelve pixels tall from Fernway and the fifth is 430 m away from Rena, past the draw
+ * range — and the harbour bell is silent until somebody has turned the sound on. So a landing is
+ * *announced*: a caption in the traveler's own notes, and a line from whoever is walking with
+ * him. Sight and the bell are a bonus (docs/drent-long-road-probe.md, the amendments).
+ */
+const landing = (key, at, title, caption, said) => freeze({ key, at, title, caption, said });
+export const LANDINGS = freeze([
+  landing('word', 360, 'A BELL OFF THE STILLS', 'The harbour bell, once. Something came ashore that was not a boat.',
+    'That is the bell. No boat in the roads, so somebody has swum it — which narrows it to one man, and he will tell you about it for an hour.'),
+  landing('riders', 1080, 'THREE BELLS', 'Three at once, and an argument coming up the village street.',
+    'Three bells, three of ours. They came overland and they have been arguing since the crossing; you will hear them before you see them.'),
+  landing('lakota', 1980, 'A BELL OFF THE STILLS', 'One more off the Stills. Six still to come.',
+    'One more in. That is over half of us on this coast now, and the Marshal is still waiting on the eleventh, who is you.'),
+  landing('eliana', 2880, 'A BELL OFF THE STILLS', 'Another one landed, and the light is going a little.',
+    'Another. She came on her own, by the sound of it — and she will have walked past you before you notice her.'),
+  landing('princes', 3780, 'TWO BELLS · THE LAST BOAT', 'Two bells, and no more boats are due. Everybody who is coming is ashore.',
+    'Two bells, and that is the last boat. Everyone on the contract is in this country now except the man at the far end of it, and the Marshal is holding the whole thing for you.'),
+]);
+export const LANDING_KEYS = freeze(LANDINGS.map(entry => entry.key));
+
+/**
+ * The landing the clock owes an announcement for, in `wordToastAt`'s own shape
+ * (src/word-arrival.js): the latest one the clock has passed that has not been said. `said` is
+ * the last key announced, which the host re-derives from `playSeconds` on a load — so reloading
+ * past a landing rings nothing and says nothing, because it already happened.
+ */
+export function landingAt(playSeconds, said = null) {
+  const at = Number.isFinite(playSeconds) ? playSeconds : 0;
+  const from = said ? LANDING_KEYS.indexOf(said) + 1 : 0;
+  let owed = null;
+  for (let i = Math.max(0, from); i < LANDINGS.length; i++) if (at >= LANDINGS[i].at) owed = LANDINGS[i];
+  return owed ?? null;
+}
+
+/**
+ * Chris's five Ambroni drills: one to close each leg, thirty-five exposure each, given through
+ * his own conversation and never forced. A drill is a minute — six lines of the army's speech
+ * with what each one means — and there is no quiz at the end of it, because the player never
+ * has to learn a word (docs/languages.md).
+ *
+ * The lines are written in English and *spoken* in Ambroni, through the same renderer every
+ * other line in the game goes through, so the tongue is the game's own and not something
+ * invented here. What the drill adds is the gloss underneath.
+ *
+ * When the traveler is Chris the same six lines run with the speakers swapped: the companion
+ * asks and the traveler gives the drill. It pays the same, because giving a lesson in a tongue
+ * is how anybody keeps one.
+ */
+const drill = (index, title, opening, lines, closing) => freeze({ index, leg: index, title, opening, lines: freeze(lines), closing });
+export const DRILLS = freeze([
+  drill(1, 'The words that get you through a gate',
+    'Sit down a minute. You have had a morning of people you cannot follow, and the army is worse, because the army says the same eight things at you and expects an answer.',
+    ['Halt. Name and contract.', 'Hired sword, off the Tidehaven boats.', 'Pass.', 'Wait here.', 'Who sent you?', 'Go on through.'],
+    'That is a gate. Say the second one and look bored, and you will never have trouble at one again.'),
+  drill(2, 'The words for a road',
+    'The army writes its roads down and then shouts them at people. These are the shouts.',
+    ['The road west.', 'Two miles, then the bridge.', 'The crossing is open.', 'The crossing is shut.', 'Stay on the road.', 'There is fighting ahead.'],
+    'That last one you want to hear early rather than late, so learn it first and the others after.'),
+  drill(3, 'The words for a camp',
+    'A camp is a village that hates you. Everything in it is a rule, and they are all said the same way.',
+    ['Report to the tent with the standard.', 'Draw rations here.', 'Do not go past the ditch.', 'Water is that way.', 'The Marshal is not seeing anybody.', 'Stand down.'],
+    'Stand down is the one that matters. Everything else is somebody telling you where the food is.'),
+  drill(4, 'Your own name, in their mouths',
+    'Corvan has your name in his register in Ambroni, so you may as well be able to read it. Come and stand at the desk.',
+    ['I am the sworn sword of the contract.', 'Eleven were hired.', 'My name is written here.', 'I report to the Marshal on the Moros.', 'I carry no orders.', 'I am not late.'],
+    'Say the last one in the camp and somebody will laugh, which is worth more than the correct answer.'),
+  drill(5, 'The words for a fight',
+    'One more, and it is the short one, because in the middle of it nobody has time for grammar.',
+    ['Hold the line.', 'Forward.', 'Fall back.', 'On my left.', 'Down.', 'It is done.'],
+    'Six words. If you only ever keep one, keep Down, and keep it where you can reach it.'),
+]);
+export const drillFor = index => DRILLS.find(entry => entry.index === index) ?? null;
+
+/**
+ * One drill, ready to show: the six lines as the army says them, each with what it means.
+ *
+ * `render` is the host's — `linguist.render`, or the pure `renderLine` — and is asked for the
+ * whole line in Ambroni whatever the traveler has of it, because a drill is a lesson and not an
+ * overheard sentence. `asChris` swaps the mouths: the traveler gives it, and it pays the same.
+ */
+export function drillScene(index, { render = line => line, name = 'Chris Gotwood', asChris = false } = {}) {
+  const entry = drillFor(index);
+  if (!entry) return null;
+  const lines = entry.lines.map(line => ({ said: render(line), means: line }));
+  const opening = asChris
+    ? `${name} sits down beside you. “Go on, then. You have the Ambroni and I have a war to walk into. Teach me the words that get a man through a gate.”`
+    : entry.opening;
+  const closing = asChris
+    ? `${name} says it all back to you, badly, and then says it again less badly. That is how it is done.`
+    : entry.closing;
+  return { index: entry.index, leg: entry.leg, title: entry.title, opening, lines, closing,
+    study: freeze({ language: DRILL_LANGUAGE, exposure: DRILL_EXPOSURE }) };
+}
