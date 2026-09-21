@@ -210,13 +210,21 @@ test('whoever you are, the model is the traveler’s: the rig, the swap and the 
     assert.ok(actor.group.getObjectByName('Simple hazel fishing rod'), `${id} can still take up a rod`);
     for (const weapon of Object.keys(WEAPON_TYPES)) assert.equal(actor.setWeapon(weapon), true, `${id} can draw the ${weapon}`);
     assert.equal(actor.setWeapon(playableCharacter(id).weapon), true, `${id} can draw what he came with`);
-    let draws = 0;
+    // A draw is a mesh that is actually drawn - everything above it visible too - which is the
+    // same rule `figureDrawCalls` and the `draws()` hook use. He now owns nine weapons and can
+    // hold one, so counting the eight in his pocket was always an overcount; three polearms
+    // arriving is only what made it matter.
+    let draws = 0, built = 0;
+    const shown = object => { for (let node = object; node; node = node.parent) if (!node.visible) return false; return true; };
     actor.group.traverse(object => {
       if (!object.isMesh) return;
-      draws++;
+      built++;
+      if (shown(object)) draws++;
       for (const key of ['position', 'normal']) assert.ok(object.geometry.attributes[key].array.every(Number.isFinite), `${id} has invalid ${key} geometry`);
     });
     assert.ok(draws <= 34, `${id} draws ${draws} batches`);
+    // And the figure may not balloon unwatched, held weapons and all.
+    assert.ok(built <= 44, `${id} is built from ${built} meshes`);
   }
 });
 

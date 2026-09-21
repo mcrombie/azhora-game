@@ -2457,6 +2457,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const villagerHolds = !isTraveler && !isMercenary && !fights && VILLAGER_WEAPONS[wields] ? wields : null;
   const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip')
     : villagerHolds ? makeWeaponMount(wrists[1], 'Villager weapon grip') : null;
+  // Everything the traveler carries from the start, built once and shown one at a time.
   const weapons = isPlayer ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
     : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) }
     : villagerHolds ? { [villagerHolds]: VILLAGER_WEAPONS[villagerHolds](weapon) } : {};
@@ -2511,7 +2512,23 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const { animate: animatePose, setArmed, setShield } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot, offset: idleOffset, role });
   let fishing = isPondFisher, selectedWeapon = null;
   const rodTipWorld = new THREE.Vector3();
+  /**
+   * The three poles, made the first time he holds one. They use the props the hired swords
+   * already carry (`makeSpearProp`, `makeStaffProp`) rather than new ones, so a spear in his hand
+   * is the spear Ciaran was carrying, and they hang off the same wrist mount as the blades, so
+   * they swing with the arm instead of standing planted.
+   *
+   * **Built on demand, like the buckler**: a figure has a draw-call budget
+   * (tests/player-characters.test.js holds it at 34 meshes) and these three are only ever reached
+   * by taking one off the ground where its owner fell. A traveler who never does pays nothing.
+   */
+  const LATE_WEAPONS = {
+    'ash-spear': mount => makeSpearProp(mount, 'Ash spear', 1.9),
+    'war-pike': mount => makeSpearProp(mount, 'War pike', 2.7, .26),
+    quarterstaff: mount => makeStaffProp(mount),
+  };
   function setWeapon(id) {
+    if (isPlayer && weapon && LATE_WEAPONS[id] && !weapons[id]) weapons[id] = LATE_WEAPONS[id](weapon);
     if (id !== null && !Object.hasOwn(weapons, id)) return false;
     selectedWeapon = id;
     for (const [weaponId, model] of Object.entries(weapons)) model.visible = weaponId === id;
