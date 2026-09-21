@@ -276,10 +276,38 @@ test('getting wet in the middle of a fight resets nothing', async () => {
   const combatSource = source('combat.js');
   assert.doesNotMatch(combatSource, /moveCharacter\(enemy[^)]*swimming/, 'no enemy is given the water');
   assert.match(combatSource, /distance\(position, lastEncounter\.center\) > 45/, 'and the leash is what lets you leave');
+  // But the leash ends a fight with `restorePlayer()`, which is full health and a full bar - and
+  // the bar is wind. A traveler who swims out of a fight must not come out of it with his breath
+  // back and the sea still to cross. Today nothing but the geography of where fights are
+  // authored keeps that out of reach, so the rule is written in code instead.
+  assert.match(combatSource, /restorePlayer\(\);\s*[\s\S]{0,40}\s*emit\('retreat'/, 'the leash still restores, as it should for a walker');
+  assert.match(main, /const windBefore=combat\.state\.player\.stamina;/, 'so the host remembers what the water had taken');
+  assert.match(main, /if\(inWater&&combat\.state\.player\.stamina>windBefore\)combat\.state\.player\.stamina=windBefore;/,
+    'and while the water has him his wind only ever goes down');
   // A save is never written from the water, so no crossing can be reloaded with a fresh bar of
   // wind - which is also why the save holding health and not wind does not matter.
   assert.match(main, /combat\.state\.player\.hp<=0\|\|inWater\)\{if\(notify\)toast\('Step ashore/,
     'and no checkpoint is written while he is in it');
+});
+
+test('the two ways out of the water both pay for the swim, and drowning ends a quest fight', () => {
+  const main = source('main.js');
+  // Getting on the horse is a way out of the water: he waits on land and can be reached from the
+  // shallows, so a man who pressed G instead of taking one more step used to lose the metres, the
+  // water crossed and the checkpoint with them.
+  assert.match(main, /function payForTheSwim\(x,z\)\{/, 'the payout has a name of its own');
+  assert.match(main, /if\(inWater\)payForTheSwim\(p\.x,p\.z\);[\s\S]{0,40}\s*if\(canSwim\(p\.x,p\.z,playerWorld,RIDE\.radius\)/,
+    'and the saddle pays before it takes over');
+  assert.match(main, /if\(inWater\)payForTheSwim\(p\.x,p\.z\);[\s\S]{0,40}\s*inWater=false;drowning=false;return;/,
+    'as does walking out onto ground');
+  assert.ok((main.match(/payForTheSwim\(/g) ?? []).length === 3, 'one payout, called from both ways out');
+  // A drowning does not restart the fight it interrupted, so whatever was told a fight had begun
+  // must be told it has ended. The hideout and the toll are ended in the defeat handler; the
+  // aftermath is not, because the ordinary retry restarts its fight and leaves it running.
+  assert.match(main, /if\(inAftermathFight\(\)\)aftermath\.endEncounter\(combat\.state\.encounterId\);/,
+    'so the drowned retry ends an aftermath fight itself');
+  const drowned = main.slice(main.indexOf('if(drownedDefeat){'), main.indexOf('combat.revive();'));
+  assert.ok(drowned.includes('inAftermathFight()'), 'and does it before it revives him');
 });
 
 test('the checkpoint takes a save made in deep water, which is now the right answer', async () => {

@@ -222,6 +222,8 @@ test('with no companion argument, the company stands exactly where it always has
   // with no companion at all, and if that moved one man by a metre it would move the clock the
   // eighty-seven minutes are measured on (tests/long-road-clock.test.js).
   const today = company();
+  // Every argument `company()` is given, plus the one under test: the comparison is about the
+  // companion and nothing else, so the shore Ed is put down on has to be given to both.
   const same = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore, companion: undefined });
   for (const seconds of [0, 600, 1800, 5300]) {
     assert.deepEqual(same.placements(seconds), today.placements(seconds), 'at ' + seconds + ' s');

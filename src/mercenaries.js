@@ -246,12 +246,12 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
  * @param shore where a man whose `route` is 'shore' comes out of the water instead
+ * @param wild true to give a man whose `route` is 'wild' his own line across country
  * @param companion the one man off the traveler's own boat, while he is not on the clock:
  *   `{ id, with: true }` puts him at the traveler's shoulder and off the road altogether;
  *   `{ id, releasedAt, releasedDistance }` puts him back on it from that second and that place.
  *   **Undefined is today's clock, exactly** — a save written before the long road existed
  *   restores as undefined, and not a man of the company moves by a metre under it.
- * @param wild true to give a man whose `route` is 'wild' his own line across country
  */
 export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, seed = 0, roster = MERCENARY_ROSTER, companion = undefined } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
@@ -369,11 +369,12 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
    * after you do, and never ahead of you.
    */
   function travelerRank(playSeconds, travelerDistance) {
-    // A wild man's distance is along a different and longer line, so it cannot be compared with
-    // a distance along the road. He counts as ahead when he is at the muster and not before.
-    // The man at your shoulder is never ahead of you at all.
-    return 1 + placements(playSeconds).filter(p => p.phase !== 'with-traveler' && (p.phase === 'mustered'
-      || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance))).length;
+    // Two of them cannot be ranked by a distance along the road. The companion is at your
+    // shoulder, so he is behind you by definition; and a wild man's distance is along a
+    // different and longer line, so he counts as ahead when he is at the muster and not before.
+    return 1 + placements(playSeconds).filter(p => p.phase !== 'with-traveler'
+      && (p.phase === 'mustered'
+        || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance))).length;
   }
 
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], companionId: walksWithYou ? companionId : null, stops: roadStops.map(stop => ({ ...stop })) };

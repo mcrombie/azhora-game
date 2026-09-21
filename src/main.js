@@ -2758,11 +2758,29 @@ function init() {
    * health, so drowning ends in the ordinary defeat with the ordinary checkpoint behind it.
    * Nothing here pushes anybody back to land: distance is what refuses a crossing.
    */
+  /**
+   * Out the other side. What the swim was worth is paid where he leaves the water, which is the
+   * only place it counts - and there are two ways out: walking onto ground, and getting on a
+   * horse from the shallows.
+   */
+  function payForTheSwim(x,z){
+    const landed=world.regionAt(x,z)?.name??null;
+    const paid=swimming.swam(swimMetres);
+    if(paid.xp)toast(`Swimming +${paid.xp}${paid.levelled?` · level ${paid.level}`:''}. ${Math.round(swimMetres)} m of it.`,'OUT OF THE WATER');
+    if(swimMetres>12&&landed&&landed!==swimFrom)swimming.crossed(`${swimFrom??'open water'} to ${landed}`);
+    if(swimMetres>12&&landed==='Peblos')swimming.reachedPeblos();
+    if(paid.xp||swimMetres>12)saveRoad(false);
+    swimMetres=0;
+  }
   function swimTick(dt,before){
     const p=player.group.position;
     // A horse will not go in, and `moveCharacter` will not carry one over the waterline, so a
     // rider simply cannot get wet. This says so out loud the first time he tries.
     if(riding.mounted){
+      // Mounting is one of the ways out of the water: the horse waits on land and you can reach
+      // him from the shallows. Whatever the swim was worth is paid before the saddle takes over,
+      // or a man who pressed G instead of taking one more step lost the lot.
+      if(inWater)payForTheSwim(p.x,p.z);
       if(canSwim(p.x,p.z,playerWorld,RIDE.radius)&&!drowning){drowning=true;toast('He will not go in, and he is right. Get down first.','YOUR HORSE');}
       else if(!canSwim(p.x,p.z,playerWorld,RIDE.radius))drowning=false;
       inWater=false;return;
@@ -2776,15 +2794,7 @@ function init() {
         :'You are in the water, and nobody has ever shown you how. Watch your wind, and do not go far.','SWIMMING');
     }
     if(!wet){
-      if(inWater){
-        // Out the other side. What it was worth is paid on dry land, which is the only place it counts.
-        const landed=world.regionAt(p.x,p.z)?.name??null;
-        const paid=swimming.swam(swimMetres);
-        if(paid.xp)toast(`Swimming +${paid.xp}${paid.levelled?` · level ${paid.level}`:''}. ${Math.round(swimMetres)} m of it.`,'OUT OF THE WATER');
-        if(swimMetres>12&&landed&&landed!==swimFrom)swimming.crossed(`${swimFrom??'open water'} to ${landed}`);
-        if(swimMetres>12&&landed==='Peblos')swimming.reachedPeblos();
-        if(paid.xp||swimMetres>12)saveRoad(false);
-      }
+      if(inWater)payForTheSwim(p.x,p.z);
       inWater=false;drowning=false;return;
     }
     swimMetres+=Math.hypot(p.x-before.x,p.z-before.z);
@@ -2803,6 +2813,12 @@ function init() {
     // never drawn on anybody woke in a goblin raid a hundred metres from the water.
     if(drownedDefeat){
       drownedDefeat=false;inWater=false;drowning=false;swimMetres=0;
+      // A drowning does not restart the fight it interrupted, so whatever was told a fight had
+      // begun has to be told it has ended. The hideout and the toll are already ended in the
+      // defeat handler above; the aftermath is not, because the ordinary retry restarts its
+      // fight and so leaves it running on purpose. Without this it goes on believing its
+      // encounter is underway, and will not let the commander be given the word again.
+      if(inAftermathFight())aftermath.endEncounter(combat.state.encounterId);
       combat.revive();
       const ashore=lastDry??world.spawn;
       player.group.position.set(ashore.x,world.heightAt(ashore.x,ashore.z),ashore.z);
@@ -3276,7 +3292,15 @@ function init() {
           moveCharacter(player.group.position,dx,dz,playerWorld,undefined,{swimming:true});
           if(p.action==='idle'&&speed>0){const angle=Math.atan2(dx,dz);player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-15*dt));p.yaw=player.group.rotation.y;}
         }
-        combatClock+=dt;combat.update(dt);handleCombatEvents();
+        // The 45 m leash ends a fight for anybody who walks out of it, and it does so with
+        // `restorePlayer()`: full health and a full bar. The bar is wind. A traveler who swims
+        // out of a fight would come out of it with his breath back and the sea still to cross,
+        // and nothing but the geography of where fights happen to be authored keeps that out of
+        // reach. So the rule is code: while the water has him, his wind only ever goes down.
+        const windBefore=combat.state.player.stamina;
+        combatClock+=dt;combat.update(dt);
+        if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
+        handleCombatEvents();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
