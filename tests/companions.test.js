@@ -236,6 +236,42 @@ test('a country scales its dangers and never your side', async () => {
   assert.doesNotMatch(combatSource, /function makeAlly[\s\S]{0,400}countryHealth/, 'but the ally himself is not');
 });
 
+test('each is asked where he is, and the three gates are real ones', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  // The ground a man is standing on, in the module's own words. `null` is "not now", not "no".
+  assert.match(main, /function whereHeIs\(npc\)\{/, 'the host can say what ground it is on');
+  assert.match(main, /if\(route==='wild'\)return phase==='walking'\?'wild':null;/, 'Mus only in the country');
+  assert.match(main, /if\(route==='shore'\)return phase==='landing'\?'shore':null;/, 'Ed only on his strand');
+  assert.match(main, /if\(phase==='walking'\|\|phase==='stopped'\)return 'road';/, 'the rest on the road');
+  assert.match(main, /return null;\}/, 'and a mustered man is not recruited: the finding is the game');
+  // The three things a man may want first, each the plainest reading of his own line.
+  assert.match(main, /function whatHeHas\(\)\{/, 'and what it can vouch for');
+  assert.match(main, /charted:!!here&&cartography\.state\(here\)==='explored'/, 'Kristen wants the road known');
+  assert.match(main, /birded:birding\.seenCount\(\)>0/, 'Lakota wants you to have looked at one');
+  assert.match(main, /edge:!!edge\?\.usable&&Object\.values\(KIT_WEAPON_ITEM\)\.includes\(edge\.id\)/, 'Eliana wants an edge');
+  // And the asking itself: offered where he is, his refusal in his own words, nothing at all
+  // where he is somewhere else - rather than a greyed-out line.
+  assert.match(main, /function askingChoice\(npc\)\{/, 'one choice, and it is his');
+  assert.match(main, /if\(!may\.ok&&may\.reason!=='needs'\)return null;/, 'nothing at all where he is elsewhere');
+  assert.match(main, /label:'Walk with me\.'/, 'in the player’s own words');
+  assert.match(main, /id:'merc-send-on',label:'Go on ahead of me\.'/, 'and he can be sent on again');
+  assert.match(main, /const asking=askingChoice\(npc\);[\s\S]{0,80}choices\.unshift\(asking\)/, 'above the rest, because it is why you came over');
+});
+
+test('Kristen’s gate is not one that opens itself', async () => {
+  // Drent is charted from the first morning (STARTING_CHART), so "charted" would have been a
+  // condition the traveler meets before he has walked anywhere. Explored is the real reading of
+  // "you know the road and we do not": he has walked the country's own hexes.
+  const { createCartography } = await import('../src/cartography.js');
+  const chart = createCartography();
+  assert.equal(chart.state('Drent'), 'charted', 'he lands with Drent charted');
+  assert.notEqual(chart.state('Drent'), 'explored', 'and not with it explored');
+  // The module's side of the same gate.
+  const { companions } = fresh();
+  assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: false } }).reason, 'needs');
+  assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
+});
+
 test('they walk in a file, one of them speaks, and none of them is ever a peg', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   // A file: the first where Chris has always been, the rest a stride behind him each, alternating

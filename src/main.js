@@ -80,7 +80,7 @@ import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, J
 import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { createCombatSkills, familyOf } from './combat-skills.js';
-import { createCompanions, armsOf } from './companions.js';
+import { createCompanions, armsOf, ASKS } from './companions.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -2526,6 +2526,57 @@ function init() {
     if(combat.startEncounter(OGRE_ENCOUNTER)){stopInput();toast('He is slow, and he does not stop when you are hit. Wait for the arc to settle before you move, and move across him, never back.','THE TOLL STONE \u00b7 MALLEC');audio?.effect('bell');}
     else ogreToll.endEncounter(OGRE_ENCOUNTER.id);
   }
+  /**
+   * The ground a man is standing on, in the companions module's own words. A man is asked where
+   * he is, and each of them is somewhere of his own: Ed on the strand the sea put him down on,
+   * Mus only ever in the country off the road, Chris at the landing, the rest on the road.
+   *
+   * `null` is "not now" rather than "no": a man at the muster is not recruited, because the
+   * finding is the game and the muster is where the finding ends (docs/companions.md).
+   */
+  function whereHeIs(npc){
+    const route=mercenaryById(npc.id)?.route??'road';
+    const phase=npc.placement?.phase;
+    if(route==='wild')return phase==='walking'?'wild':null;
+    if(route==='shore')return phase==='landing'?'shore':null;
+    if(phase==='landing')return 'landing';
+    if(phase==='walking'||phase==='stopped')return 'road';
+    return null;}
+  /**
+   * What the traveler can be vouched for, which is what three of them want before they will come.
+   * Each is the plainest reading of the man's own line: Kristen wants somebody who knows the road
+   * ("you know the road and we do not"), Lakota somebody who has looked at a bird, Eliana
+   * somebody carrying an edge she might swap for.
+   */
+  function whatHeHas(){
+    const here=world.regionAt(player.group.position.x,player.group.position.z)?.name??null;
+    const edge=weapons?.profile();
+    return {
+      // Not merely charted: **explored**. Drent is charted from the first morning (STARTING_CHART),
+      // so charted would be a gate that opens itself. Explored means he has walked the country's
+      // hexes, which is the plain sense of "you know the road and we do not".
+      charted:!!here&&cartography.state(here)==='explored',
+      birded:birding.seenCount()>0,
+      edge:!!edge?.usable&&Object.values(KIT_WEAPON_ITEM).includes(edge.id),
+    };}
+  /**
+   * The one choice that asks a man to come, in his own words, or tells you in his own words why
+   * not yet. It is only ever offered where he is: the module answers `'elsewhere'` for a man who
+   * is somewhere else, and this shows nothing at all rather than a greyed-out line.
+   */
+  function askingChoice(npc){
+    if(!mercenaryById(npc.id)||!Object.hasOwn(ASKS,npc.id))return null;
+    if(companions.walksWith(npc.id))
+      return {id:'merc-send-on',label:'Go on ahead of me.',action:()=>{
+        companions.sendOn(npc.id);
+        openDialogue(npc,['Right you are. I will see you up the road.'],null,'Back to the road',{onComplete:closeDialogue});}};
+    const may=companions.askable(npc.id,{where:whereHeIs(npc),has:whatHeHas()});
+    if(!may.ok&&may.reason!=='needs')return null;
+    if(!may.ok)return {id:'merc-ask',label:'Walk with me.',action:()=>openDialogue(npc,[may.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})};
+    return {id:'merc-ask',label:'Walk with me.',action:()=>{
+      const came=companions.ask(npc.id,{where:whereHeIs(npc),has:whatHeHas()});
+      openDialogue(npc,[came.line],null,'Back to the road',{onComplete:closeDialogue});
+      if(came.ok)saveRoad(false);}};}
   /** What any hired sword will answer for: his fighting style, and whether he will swap weapons. */
   function mercenaryChoices(npc,back=()=>mercenaryConversation(npc)){
     const kit=mercenaryWeapon(npc.id);if(!kit)return [];
@@ -2534,6 +2585,10 @@ function init() {
   }
   function mercenaryConversation(npc){
     const choices=[...mercenaryChoices(npc)];
+    // Whether he will come, or go on ahead. It sits above the rest because it is the thing the
+    // player came over to ask.
+    const asking=askingChoice(npc);
+    if(asking)choices.unshift(asking);
     // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
     if(companionOffTheClock&&npc.id===landingMateId()){
       const drill=longRoad.view(longRoadWorld()).drill;
