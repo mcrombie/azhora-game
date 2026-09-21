@@ -12,7 +12,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice } from './long-road.js';
+import { createLongRoad, forkNotice, CORNERS_XP } from './long-road.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
 import { bystandersFor, createFallen } from './bystanders.js';
@@ -2535,7 +2535,7 @@ function init() {
       openDialogue(npc,[questStage>=5
         ?'Road is clear, they tell me. Good. I have two boats waiting on a tide and a quartermaster waiting on you, so neither of us is finished.'
         :'Corvan. The Avrel clearing, past the forest. I have said it twice and I will not enjoy saying it a third time.'],
-        null,'Back to the landing');
+        null,'Back to the landing',{choices:[...maraCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
       return;
     }
     updateQuest('ashore');
@@ -2550,6 +2550,45 @@ function init() {
         toast('Your own chart of Azhora. The coast you came along, and Drent. Everything else is dark. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
         refreshSkillsSheet();refreshChart();if(questStage>=1)saveRoad(false);
       }});
+  }
+  /**
+   * Mara's second cartography lesson, and the only errand she has after the letter: the three
+   * corners of Tidehaven. The first lesson was the rough chart she hands over on the pier, which
+   * is somebody else's drawing; this is the traveler's own, and she countersigns what comes back.
+   *
+   * She asks; the ground between the pier, the Weatherhead and the Koopwood draws itself as it is
+   * walked (`mapFog`); she signs on the return, once, for a block of cartography. It never moves
+   * the main journey and it is never in the way: it is a choice in a conversation she was going
+   * to have anyway (docs/drent-long-road.md §4, leg 1).
+   */
+  function maraCornerChoices(npc){
+    const errand=longRoad.corners(longRoadWorld());
+    if(errand.signed)return [];
+    const back=()=>{closeDialogue();conversation(npc);};
+    if(!errand.asked)return [{id:'mara-corners-ask',label:'Is there anything else worth drawing here?',action:()=>{
+      longRoad.act('corners-ask');
+      openDialogue(npc,['There is, and nobody ever asks. You have my chart of the coast and it is not yours until you have put something on it yourself.',
+        'Three corners, and the village is inside them. The head of this pier, where you are standing. The Weatherhead, the low head south of the landing — Cabe Tolliver sits up there calling the weather, and he will talk your ear off. And the Koopwood, north-west, where Bowden takes the trees down.',
+        'Walk to all three. The ground between them draws itself as you go; that is what a chart is. Bring it back and I will put my name on it, which means the next harbourmaster down the coast will take it seriously.'],
+        null,'I will walk it',{onComplete:()=>{toast('The head of the pier, the Weatherhead, the Koopwood. Walk to all three and bring the chart back to Mara.','MARA · THE THREE CORNERS');saveRoad(false);}});}}];
+    if(!errand.canSign){
+      const left=errand.corners.filter(corner=>!corner.walked);
+      return [{id:'mara-corners-report',label:`The three corners (${errand.walked} of ${errand.of})`,action:()=>openDialogue(npc,
+        [`${errand.walked} of the three, and you know it as well as I do. Still to walk: ${left.map(corner=>corner.name).join(', ')}.`,
+          left[0].hint],null,'Back to our conversation',{onComplete:back})}];
+    }
+    return [{id:'mara-corners-sign',label:'All three corners are on the chart.',action:()=>{
+      const paid=longRoad.act('corners-sign',longRoadWorld());
+      if(!paid.ok){openDialogue(npc,[paid.reason],null,'Back to our conversation',{onComplete:back});return;}
+      const gained=skills.known(CARTOGRAPHY_SKILL)?skills.gain(CARTOGRAPHY_SKILL,CORNERS_XP):null;
+      refreshSkillsSheet();refreshChart();
+      openDialogue(npc,['So it is. Pier, head, woodlot, and the village sitting in the middle of them where it has always sat.',
+        'There. Mara, harbourmaster, Tidehaven — and the date, because a chart without a date is a rumour. Anybody on this coast will read that.',
+        'Now go and do the same to the rest of the country. It is a great deal bigger and nobody has signed any of it.'],
+        null,'Back to the landing',{onComplete:()=>{
+          const skill=gained;
+          toast(`Mara has countersigned your chart of Tidehaven. ${CORNERS_XP} cartography.`,skill?.levelled?`CARTOGRAPHY LEVEL ${skill.level}`:'THE THREE CORNERS');
+          audio?.effect('success');saveRoad(false);}});}}];
   }
   /**
    * The man who came ashore with you: the straw post, the dodge, what a blade costs, and where he

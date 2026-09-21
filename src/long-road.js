@@ -38,6 +38,33 @@ export const DRILL_LANGUAGE = 'ambroni';
 export const NOTICE_RANGE = 40;
 /** The tongue turns readable here, which is what the East Rena Stone is for (src/languages.js). */
 const SIGN_READING = 50;
+/** What Mara's countersigned village chart is worth: one block of cartography, once. */
+export const CORNERS_XP = 60;
+
+/**
+ * Mara's second cartography lesson: the three corners of Tidehaven.
+ *
+ * The first was the rough chart she hands over on the pier, which is somebody else's drawing.
+ * This is the traveler's own: walk to the three corners of the village and the ground between
+ * them draws itself, and she countersigns what comes back.
+ *
+ * The three are named here because the chart cannot name them. The pier is a landmark, but the
+ * Weatherhead and the Koopwood are neither landmarks nor named grounds — they are a headland and
+ * a woodlot, and the chart knows them only as ground walked. So "walked" is the fog's own
+ * answer, `knowsPoint`, at each of the three: the hex under it has been stood on.
+ */
+export const VILLAGE_CORNERS = freeze([
+  freeze({ id: 'pier', name: 'The head of the pier', x: 0, z: 25, hint: 'Where she is standing, and where you came ashore.' }),
+  freeze({ id: 'weatherhead', name: 'The Weatherhead', x: 2, z: 102, hint: 'The low head south of the landing, where Cabe Tolliver sits and calls the weather.' }),
+  freeze({ id: 'koopwood', name: 'The Koopwood', x: -32.3, z: -14.4, hint: 'Bowden Koop’s woodlot, north-west of the village, on the edge of the wood.' }),
+]);
+export const CORNER_STAGES = freeze(['unasked', 'asked', 'signed']);
+/** Which of the three corners the chart has the ground of. `mapFog.knowsPoint` is the fog's own answer. */
+export function cornersWalked(state) {
+  const fog = state?.mapFog;
+  const knows = typeof fog?.knowsPoint === 'function' ? (x, z) => !!fog.knowsPoint(x, z) : () => false;
+  return VILLAGE_CORNERS.map(corner => ({ ...corner, walked: knows(corner.x, corner.z) }));
+}
 
 /**
  * The five legs and the harbour they start from. Each of the five holds one of the clock's
@@ -112,8 +139,8 @@ export const LONG_ROAD_STOPS = freeze([
     reads: 'acornQuest', done: state => acornsDone(state),
     title: 'Lysa’s acorns', detail: 'Five acorns off the Greenway floor, and the tinderbox she gives for them, which is every fire you light after this.' }),
   stop({ id: 'village-corners', leg: 1, kind: 'spine', npc: 'harbormaster', skill: 'cartography', subregion: 'eastreena', point: { x: 0, z: 25 },
-    reads: 'mapFog', done: state => charted(state, 'eastreena') && charted(state, 'the-greenway'),
-    title: 'Mara again: the village charted', detail: 'The two grounds Tidehaven stands in, drawn on your own chart instead of hers.' }),
+    reads: 'longRoad', done: (state, own) => own.corners === 'signed',
+    title: 'Mara again: the three corners', detail: 'The pier, the Weatherhead and the Koopwood, walked and drawn on your own chart instead of hers, and countersigned when you bring it back.' }),
 
   // Leg 2 — the near wood. One you do, one you make, one you grind.
   stop({ id: 'bran-rod', leg: 2, kind: 'spine', npc: 'pond-fisher', skill: 'fishing', subregion: 'willowmere', point: { x: -102, z: 8.6 },
@@ -192,6 +219,8 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
   if (!Number.isInteger(data.revision) || data.revision < 0 || data.revision > 1e7) return false;
   if (typeof data.told !== 'boolean' || typeof data.played !== 'boolean') return false;
   if (!Number.isInteger(data.drills) || data.drills < 0 || data.drills > DRILL_COUNT) return false;
+  // A save from before Mara had a second errand simply has not been asked.
+  if (data.corners !== undefined && !CORNER_STAGES.includes(data.corners)) return false;
   if (!isPlainObject(data.seenAt)) return false;
   const seen = Object.entries(data.seenAt);
   if (seen.length > 16) return false;
@@ -203,7 +232,7 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
 }
 
 export function createLongRoad({ onEvent = () => {} } = {}) {
-  const state = { revision: 0, told: false, played: false, drills: 0, seenAt: new Map(), chris: null };
+  const state = { revision: 0, told: false, played: false, drills: 0, corners: 'unasked', seenAt: new Map(), chris: null };
 
   const changed = () => { state.revision++; };
 
@@ -238,6 +267,14 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
    * the walk is re-derived every time it is asked for, so a skill learned on the short road or a
    * ground charted years later closes its stop without anybody telling this module about it.
    */
+  /** Mara's errand: which stage it is at, which corners the chart has, and whether she may sign. */
+  function corners(world = {}) {
+    const walked = cornersWalked(world), left = walked.filter(corner => !corner.walked).length;
+    return { stage: state.corners, corners: walked, walked: walked.length - left, of: walked.length,
+      asked: state.corners !== 'unasked', signed: state.corners === 'signed',
+      canSign: state.corners === 'asked' && left === 0, xp: CORNERS_XP };
+  }
+
   function view(world = {}) {
     const rows = LONG_ROAD_STOPS.map(row => ({ ...row, done: doneAt(row, world) }));
     const byId = new Map(rows.map(row => [row.id, row]));
@@ -257,7 +294,7 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
       ? { index, leg: leg.leg, title: leg.title, language: DRILL_LANGUAGE, exposure: DRILL_EXPOSURE } : null;
     return {
       next, legs, stops: rows, stop: id => byId.get(id) ?? null,
-      told: state.told, played: state.played, drills: state.drills, drill,
+      told: state.told, played: state.played, drills: state.drills, drill, corners: corners(world),
       companionWith: walking, released: state.chris ? { ...state.chris } : null,
       seenAt: Object.fromEntries(state.seenAt),
       spine: { done: spine.filter(row => row.done).length, of: spine.length },
@@ -282,6 +319,20 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
       state.played = true; changed();
       onEvent({ type: 'long-road-played' });
       return { ok: true };
+    }
+    if (id === 'corners-ask') {
+      if (state.corners !== 'unasked') return { ok: false, reason: 'She has already asked you.' };
+      state.corners = 'asked'; changed();
+      onEvent({ type: 'long-road-corners-asked' });
+      return { ok: true, corners: VILLAGE_CORNERS.map(corner => ({ ...corner })) };
+    }
+    if (id === 'corners-sign') {
+      const offer = corners(context);
+      if (state.corners === 'signed') return { ok: false, reason: 'She has signed it once, and once is what it is worth.' };
+      if (!offer.canSign) return { ok: false, reason: offer.asked ? 'There is ground between those three you have not stood on yet.' : 'She has not asked you to.' };
+      state.corners = 'signed'; changed();
+      onEvent({ type: 'long-road-corners-signed', xp: CORNERS_XP });
+      return { ok: true, xp: CORNERS_XP };
     }
     if (id === 'drill') {
       const offer = view(context).drill;
@@ -338,20 +389,21 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
 
   function snapshot() {
     return { version: LONG_ROAD_VERSION, revision: state.revision, told: state.told, played: state.played,
-      drills: state.drills, seenAt: Object.fromEntries(state.seenAt), chris: state.chris ? { ...state.chris } : null };
+      drills: state.drills, corners: state.corners, seenAt: Object.fromEntries(state.seenAt), chris: state.chris ? { ...state.chris } : null };
   }
 
   function restore(data) {
-    state.revision = 0; state.told = false; state.played = false; state.drills = 0; state.seenAt.clear(); state.chris = null;
+    state.revision = 0; state.told = false; state.played = false; state.drills = 0; state.corners = 'unasked'; state.seenAt.clear(); state.chris = null;
     if (!validateLongRoadSnapshot(data, { allowMissing: false })) return false;
     state.revision = data.revision; state.told = data.told; state.played = data.played; state.drills = data.drills;
+    state.corners = data.corners ?? 'unasked';
     for (const [id, stopId] of Object.entries(data.seenAt)) state.seenAt.set(id, stopId);
     if (data.chris) state.chris = { releasedAt: data.chris.releasedAt, releasedDistance: data.chris.releasedDistance };
     return true;
   }
 
   return {
-    view, act, notice, snapshot, restore, nearestStop,
+    view, act, notice, corners, snapshot, restore, nearestStop,
     get revision() { return state.revision; },
     get told() { return state.told; },
     get drills() { return state.drills; },

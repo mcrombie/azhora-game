@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
+  VILLAGE_CORNERS, CORNERS_XP, cornersWalked,
 } from '../src/long-road.js';
 import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
@@ -13,10 +14,13 @@ const ALL_SKILLS = ['cartography', 'birding', 'cooking', 'fishing', 'woodcutting
 const everything = (over = {}) => ({
   skills: ALL_SKILLS, acornQuest: 'complete',
   journey: { courierComplete: true, bridgeComplete: true },
-  mapFog: [...SUBREGION_IDS], linguist: { drentish: 62, ambroni: 54 },
+  mapFog: { found: [...SUBREGION_IDS], knowsPoint: () => true }, linguist: { drentish: 62, ambroni: 54 },
   companion: { with: true }, ...over,
 });
-const nothing = (over = {}) => ({ skills: [], acornQuest: 'available', journey: {}, mapFog: [], linguist: {}, ...over });
+const nothing = (over = {}) => ({ skills: [], acornQuest: 'available', journey: {},
+  mapFog: { found: [], knowsPoint: () => false }, linguist: {}, ...over });
+/** The three things the long road keeps itself, done: the fork, the play and Mara's countersign. */
+const itsOwn = (road, world = everything()) => { road.act('told'); road.act('played'); road.act('corners-ask'); road.act('corners-sign', world); };
 const ground = point => subregionsAt(point.x, point.z)[0]?.id ?? null;
 
 test('every stop names a leg, a kind, a named ground and the view that says it is done', () => {
@@ -60,13 +64,16 @@ test('a stop is done when the world says so, and the long road never writes to t
   assert.equal(birder.stop('lysa-acorns').done, false);
   assert.equal(road.view(nothing({ acornQuest: { status: 'complete' } })).stop('lysa-acorns').done, true);
   assert.equal(road.view(nothing({ journey: { courierComplete: true } })).stop('corvan-register').done, true);
-  assert.equal(road.view(nothing({ mapFog: { found: ['eastreena', 'the-greenway'] } })).stop('village-corners').done, true);
+  const signed = createLongRoad();
+  signed.act('corners-ask'); signed.act('corners-sign', everything());
+  assert.equal(signed.view(nothing()).stop('village-corners').done, true, 'her countersign is what closes it');
   assert.equal(road.view(nothing({ linguist: { level: id => id === 'drentish' ? 50 : 0 } })).stop('east-rena-stone').done, true);
   assert.equal(road.view(nothing({ linguist: { level: () => 49 } })).stop('east-rena-stone').done, false);
   // All of it done but the two the long road keeps itself.
   const all = road.view(everything());
   assert.equal(all.stop('the-fork').done, false, 'the fork is this module’s own');
   assert.equal(all.stop('fernway-play').done, false, 'so is the play');
+  assert.equal(all.stop('village-corners').done, false, 'and so is Mara’s countersign');
   assert.equal(all.next.id, 'the-fork');
 });
 
@@ -77,7 +84,7 @@ test('the open gold moves down the spine in order and the legs close behind it',
   for (let i = 1; i < legs.length; i++) assert.ok(legs[i] >= legs[i - 1], 'the spine is in leg order');
   assert.equal(road.view(nothing()).next.id, 'pier-chart', 'the first gold is Mara’s');
   // Give the world everything but one stop, and that stop is what the open gold points at.
-  road.act('told');
+  road.act('told'); road.act('corners-ask'); road.act('corners-sign', everything());
   assert.equal(road.view(everything()).next.id, 'fernway-play', 'the play is the only thing left');
   road.act('played');
   const done = road.view(everything());
@@ -89,7 +96,7 @@ test('the open gold moves down the spine in order and the legs close behind it',
 
 test('a drill closes a leg, is never given twice, and is refused to a traveler walking alone', () => {
   const road = createLongRoad();
-  road.act('told'); road.act('played');
+  itsOwn(road);
   const alone = everything({ companion: false });
   assert.equal(road.view(alone).drill, null, 'nobody to give it');
   assert.equal(road.act('drill', alone).ok, false, 'and it is refused, not skipped');
@@ -111,7 +118,9 @@ test('a drill waits on its own leg, so the fourth is not offered at Fernway', ()
   const road = createLongRoad();
   road.act('told');
   // Leg 1 done, nothing after it: one drill, and no second.
-  const leg1 = { skills: ['cartography', 'birding'], acornQuest: 'complete', journey: {}, mapFog: [...SUBREGION_IDS], linguist: {}, companion: true };
+  const leg1 = { skills: ['cartography', 'birding'], acornQuest: 'complete', journey: {},
+    mapFog: { found: [...SUBREGION_IDS], knowsPoint: () => true }, linguist: {}, companion: true };
+  road.act('corners-ask'); road.act('corners-sign', leg1);
   assert.equal(road.view(leg1).drill.index, 1);
   assert.equal(road.act('drill', leg1).ok, true);
   assert.equal(road.view(leg1).drill, null, 'leg two is not walked yet');
@@ -129,6 +138,41 @@ test('the fork and the play are told once and refuse to be told twice', () => {
   spoken.act('told'); spoken.act('played');
   assert.deepEqual(heard, ['long-road-told', 'long-road-played'], 'the host is told, and decides what it means');
   assert.equal(road.act('nothing-of-the-kind').ok, false);
+});
+
+test('Mara asks for the three corners, and signs the chart only when all three are walked', () => {
+  // Her second cartography lesson. The first was the rough chart she hands over on the pier,
+  // which is somebody else's drawing; this is the traveler's own ground, walked.
+  const road = createLongRoad();
+  assert.equal(VILLAGE_CORNERS.length, 3);
+  assert.deepEqual(VILLAGE_CORNERS.map(corner => corner.id), ['pier', 'weatherhead', 'koopwood']);
+  for (const corner of VILLAGE_CORNERS) assert.ok(corner.name && corner.hint && Number.isFinite(corner.x), corner.id);
+  const nowhere = nothing(), everywhere = everything();
+  assert.equal(road.corners(nowhere).stage, 'unasked');
+  assert.equal(road.act('corners-sign', everywhere).ok, false, 'she has to ask first');
+  assert.equal(road.act('corners-ask').ok, true);
+  assert.equal(road.act('corners-ask').ok, false, 'and she asks once');
+  assert.equal(road.corners(nowhere).canSign, false, 'nothing walked');
+  assert.equal(road.corners(nowhere).walked, 0);
+  assert.equal(road.act('corners-sign', nowhere).ok, false, 'a chart with nothing on it is not signed');
+  // Two of the three is two of the three.
+  const two = nothing({ mapFog: { found: [], knowsPoint: (x, z) => Math.hypot(x - 0, z - 25) < 3 || Math.hypot(x - 2, z - 102) < 3 } });
+  assert.equal(road.corners(two).walked, 2);
+  assert.equal(road.act('corners-sign', two).ok, false);
+  const signed = road.act('corners-sign', everywhere);
+  assert.deepEqual(signed, { ok: true, xp: CORNERS_XP });
+  assert.equal(road.act('corners-sign', everywhere).ok, false, 'and it pays once');
+  assert.equal(road.corners(everywhere).signed, true);
+  assert.equal(road.view(nothing()).stop('village-corners').done, true, 'the ground stays walked whatever else happens');
+});
+
+test('the three corners are places the chart can tell you it has the ground of', () => {
+  // The chart cannot name the Weatherhead or the Koopwood - neither is a landmark or a named
+  // ground - so the errand is keyed to the fog's own answer at each of the three points.
+  const walked = cornersWalked({ mapFog: { knowsPoint: (x, z) => x < -20 } });
+  assert.deepEqual(walked.map(corner => corner.walked), [false, false, true]);
+  assert.deepEqual(cornersWalked({}).map(corner => corner.walked), [false, false, false], 'no chart, nothing walked');
+  assert.equal(CORNERS_XP > 0, true);
 });
 
 test('Chris goes back on the clock from a moment and a place, or not at all', () => {
@@ -188,7 +232,7 @@ test('what is remembered is the stop the traveler was nearest, which is his line
 
 test('the save carries what cannot be derived, and refuses what the long road would never have written', () => {
   const road = createLongRoad();
-  road.act('told'); road.act('played');
+  itsOwn(road);
   road.act('drill', everything()); road.act('drill', everything());
   road.notice([{ id: 'merc-lakota', name: 'Lakota', phase: 'walking', x: -100, z: 10 }], { x: -102, z: 8.6 }, ground);
   road.act('release', { at: 4800, distance: 620 });
@@ -214,6 +258,8 @@ test('the save carries what cannot be derived, and refuses what the long road wo
   assert.equal(bad({ chris: { releasedDistance: 620 } }), false, 'a release with no moment');
   assert.equal(bad({ chris: null }), true, 'he is simply still with you');
   assert.equal(bad({ told: 1 }), false);
+  assert.equal(bad({ corners: 'nearly' }), false, 'a stage she has no word for');
+  assert.equal(bad({ corners: undefined }), true, 'a save from before she asked is simply unasked');
   assert.equal(bad({ version: 2 }), false);
   // A refused save leaves the module empty rather than half filled.
   const fresh = createLongRoad();
