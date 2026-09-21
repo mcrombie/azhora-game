@@ -222,7 +222,14 @@ test('red deer on the open grass, hares on the shoulders, otters on the water an
   const here = WEST_LIFE_ZONES.filter(zone => zone.region === 'Isareos');
   assert.ok(here.length >= 5);
   const species = new Set(here.map(zone => zone.species));
-  for (const name of ['red-deer', 'upland-hare', 'otter', 'turkey-vulture']) assert.ok(species.has(name), `Isareos has no ${name}`);
+  for (const name of ['red-deer', 'upland-hare', 'otter', 'turkey-vulture', 'longhorn', 'hill-sheep'])
+    assert.ok(species.has(name), `Isareos has no ${name}`);
+  // The stock is the one part of this country's fauna the lore names outright — "cattle and
+  // sheep on grass that never dries out" — and it is loose, as every other country's is.
+  const cattle = here.find(zone => zone.species === 'longhorn');
+  const vastos = WEST_LIFE_ZONES.find(zone => zone.region === 'Vastos' && zone.species === 'longhorn');
+  assert.ok(cattle.scale < vastos.scale * .85, 'the lore names no breed here: these are not the Vastos longhorn');
+  assert.ok(here.some(zone => zone.species === 'hill-sheep'));
   // Every range says why it is there, and in Isareos every one of them is an extension:
   // the lore of this country names cattle and sheep and nothing wild at all.
   for (const zone of here) assert.ok(zone.note && zone.note.length > 40, `${zone.id} says nothing about why it is here`);
