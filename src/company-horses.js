@@ -1,0 +1,127 @@
+/**
+ * The company's horses. **When you ride, everyone walking with you rides.**
+ *
+ * That is the whole rule, and it is deliberately one rule rather than a system. A mount is not a
+ * thing a companion owns and can lose: it is a function of two things the save already holds -
+ * whether the traveler has a horse (`riding.owned`), and who is walking with him
+ * (`companions.walking`). So **there is no new save section**, nothing to validate, and nothing
+ * that can go stale. The dead do not walk, and neither do the sent-on, so neither has a horse,
+ * without a line of code saying so.
+ *
+ * Mounted, they follow in file as they always have, at a horse's spacing instead of a man's, and
+ * they keep up with whatever the traveler asks for - a canter, or the testing panel's horse that
+ * goes twice as fast. Stepped down, their horses are picketed in a line beside his: off to one
+ * side, out of the road's middle, and never a ring, because **a line cannot pen anybody in**.
+ *
+ * Pure: no DOM, no three, no world. The host owns the actors and the footing test.
+ */
+const freeze = Object.freeze;
+
+/**
+ * The coats a company's horses come in. Natural colours only, and no names: these are remounts
+ * from the same army stable as the traveler's bay, not characters. Which coat a man's horse has
+ * is fixed by his id, so it is the same horse every time the game is loaded and costs nothing to
+ * save.
+ */
+export const COATS = freeze(['bay', 'chestnut', 'grey', 'black', 'dun', 'roan']);
+
+/** A small stable hash: same id, same coat, on every machine and every run. */
+function hashOf(id) {
+  let hash = 0;
+  const text = String(id ?? '');
+  for (let index = 0; index < text.length; index++) hash = (Math.imul(hash, 31) + text.charCodeAt(index)) >>> 0;
+  return hash;
+}
+export const coatFor = id => COATS[hashOf(id) % COATS.length];
+
+/**
+ * The mounted file. A man on a horse needs more room than a man on his feet: `shoulder` puts the
+ * first rider far enough back that his horse's nose is not in the traveler's horse's tail, and
+ * `stride` is **a horse's length, not a man's** (compare COMPANION_REACH.stride, 4).
+ */
+export const RIDE_FILE = freeze({ shoulder: 4.2, side: -1.6, stride: 6.2 });
+
+/**
+ * The picket line. `side` is how far off the traveler's horse the line stands - far enough that
+ * stepping down on the near side never lands the rider in a horse - and `spacing` is the gap from
+ * one horse's centre to the next. A horse's body is BODY.horse (0.5) across the radius, so 2.2 m
+ * between centres leaves 1.2 m of open ground between them: **a gap a person walks through**.
+ * `lead` keeps the first picketed horse behind the traveler's own.
+ *
+ * `tries` is how far down the line a horse will look for footing before giving up. A horse with
+ * nowhere to stand is not put down at all - the host leaves it out of the frame - rather than
+ * shoved somewhere it could box a person in.
+ */
+export const PICKET = freeze({ side: 2.6, spacing: 2.2, lead: 1.4, tries: 8 });
+
+/** Seconds between one man rising in the saddle and the next: a company mounting, not a snap. */
+export const STAGGER = 0.18;
+export const staggerFor = place => Math.max(0, Math.floor(Number(place) || 0)) * STAGGER;
+
+/**
+ * **The rule.** Who in the company has a horse under them, and whether they are on it.
+ *
+ * - No horses at all before the traveler owns one: `owned` false, and everybody walks.
+ * - Mounted exactly when the traveler is mounted, and never otherwise. Nothing else can put a
+ *   companion up or take him down, which is why a fight, a cutscene and a river all work: each
+ *   of them already puts the traveler down, and the company comes with him.
+ * - Whoever is walking with you. The dead and the sent-on are not in `walking`.
+ */
+export function companyHorses({ owned = false, mounted = false, walking = [] } = {}) {
+  if (!owned) return freeze({ mounted: false, ids: freeze([]) });
+  const seen = new Set(), ids = [];
+  for (const id of Array.isArray(walking) ? walking : []) {
+    if (typeof id !== 'string' || !id || seen.has(id)) continue;
+    seen.add(id); ids.push(id);
+  }
+  return freeze({ mounted: !!mounted, ids: freeze(ids) });
+}
+
+/**
+ * How fast a mounted companion may come to keep his place in the file. The base is the traveler's
+ * own top gait, so a canter is a canter and the testing panel's horse is twice that; past a
+ * horse's length he comes harder than the traveler goes, or the gap that opened while both were
+ * getting up to speed would never close. The same shape as `companionPace` for men on foot.
+ */
+export function ridePace(gap, travelerTop) {
+  const off = Number(gap) || 0, top = Math.max(0, Number(travelerTop) || 0);
+  if (!(off > RIDE_FILE.stride)) return top;
+  return top + Math.min(top * 0.35, 0.8 + (off - RIDE_FILE.stride) * 0.4);
+}
+
+/**
+ * Where the company's horses stand when everybody is on foot: a line beside the traveler's own
+ * horse, running back along the way it is facing, on the off side first and the near side only
+ * when the off side is not ground.
+ *
+ * The line is derived entirely from `horse` - the one thing already saved - so a reload puts
+ * every horse back exactly where it was without anything being written down.
+ *
+ * Returns one entry per id, in order; `null` for a horse with nowhere to stand.
+ */
+export function picketSpots(horse, ids = [], canStand = () => true) {
+  if (!horse || !Number.isFinite(horse.x) || !Number.isFinite(horse.z)) return freeze([]);
+  const yaw = Number.isFinite(horse.yaw) ? horse.yaw : 0;
+  // The same frame `dismountSpot` uses: forward is (sin, cos) and the rider's left is (cos, -sin).
+  const at = (side, back) => ({ x: horse.x + Math.cos(yaw) * side + Math.sin(yaw) * back,
+    z: horse.z - Math.sin(yaw) * side + Math.cos(yaw) * back, yaw });
+  const taken = [{ x: horse.x, z: horse.z }];
+  const clear = spot => canStand(spot.x, spot.z)
+    && taken.every(other => Math.hypot(other.x - spot.x, other.z - spot.z) >= PICKET.spacing - 0.01);
+  const out = [];
+  for (let index = 0; index < ids.length; index++) {
+    let placed = null;
+    for (let step = 0; step < PICKET.tries && !placed; step++) {
+      const back = -(PICKET.lead + (index + step) * PICKET.spacing);
+      // The off side is the far side from where a rider steps down (`dismountSpot` takes the
+      // near side first), so a company stepping down never lands in its own picket line.
+      for (const side of [-PICKET.side, PICKET.side]) {
+        const spot = at(side, back);
+        if (clear(spot)) { placed = spot; break; }
+      }
+    }
+    if (placed) taken.push(placed);
+    out.push(placed ? freeze({ id: ids[index], ...placed }) : null);
+  }
+  return freeze(out);
+}

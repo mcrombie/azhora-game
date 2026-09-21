@@ -3169,6 +3169,15 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
  */
 export const HORSE_COATS = Object.freeze({
   developer: Object.freeze({ coat: 0x4a3470, light: 0x5f4690, points: 0x201639, mane: 0xd8bff5 }),
+  // The natural coats, for the company's remounts (src/company-horses.js). The first three are
+  // the unnamed country coats below, given the names they always had; black, dun and roan are
+  // the rest of what an army stable turns out. No markings and no names: these are remounts.
+  bay: Object.freeze({ coat: 0x6b4a32, light: 0x7d5a3f, points: 0x2f241c, mane: 0x2a201a }),
+  chestnut: Object.freeze({ coat: 0x9a5a34, light: 0xad6f45, points: 0x4a3324, mane: 0x3d2a1e }),
+  grey: Object.freeze({ coat: 0xb9b3a6, light: 0xcac5ba, points: 0x8c877d, mane: 0xd9d4c9 }),
+  black: Object.freeze({ coat: 0x2e2a28, light: 0x3c3735, points: 0x1a1716, mane: 0x171413 }),
+  dun: Object.freeze({ coat: 0xc2a778, light: 0xd4bc92, points: 0x4f4034, mane: 0x3a2f26 }),
+  roan: Object.freeze({ coat: 0x8f7d74, light: 0xa8988e, points: 0x4a3f39, mane: 0x574b44 }),
 });
 const COUNTRY_COATS = Object.freeze([
   Object.freeze({ coat: 0x6b4a32, light: 0x7d5a3f, points: 0x2f241c, mane: 0x2a201a }),

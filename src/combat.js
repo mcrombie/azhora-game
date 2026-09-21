@@ -182,7 +182,7 @@ const facing = (a, b, yaw, arc) => Math.abs(angleDifference(Math.atan2(b.x - a.x
  * family owns the last (src/combat-skills.js, docs/combat-brief.md); the defaults here are what
  * the game has always used, so a combat built without them is today's combat to the digit.
  */
-const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6 });
+const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6, armourTurns: 0, dodgeScale: 1 });
 
 export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
@@ -476,7 +476,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       emit('dodged', { enemyId: enemy.id, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
     }
     if (player.invulnerable || state.phase !== 'active' || player.hp <= 0) return;
-    const damage = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
+    // What he is wearing turns a share of it, and never all of one: at the very best - heavy,
+    // tier 6, all three pieces - armour turns half (src/gear.js).
+    const struck = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
+    const damage = Math.max(1, Math.round(struck * (1 - (margins().armourTurns ?? 0))));
     player.hp = Math.max(0, player.hp - damage);
     player.action = player.hp ? 'hurt' : 'dead';
     player.progress = 0;
@@ -526,7 +529,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       player.progress = clamp(actionTime / DODGE_DURATION, 0, 1);
       // Ease out the travel but retain a short recovery pose. Sweep through world collisions.
       const travel = t => 1 - (1 - clamp(t / DODGE_TRAVEL_TIME, 0, 1)) ** 2;
-      const amount = (travel(actionTime) - travel(previousTime)) * DODGE_DISTANCE;
+      // Mail and plate shorten the step aside: the timing is the same, the ground covered is not.
+      const amount = (travel(actionTime) - travel(previousTime)) * DODGE_DISTANCE * (margins().dodgeScale ?? 1);
       moveCharacter(position, dodgeDirection.x * amount, dodgeDirection.z * amount, world);
       if (actionTime >= DODGE_DURATION) { player.action = 'idle'; player.progress = 0; }
     } else if (player.action === 'hurt') {

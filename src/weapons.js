@@ -1,3 +1,5 @@
+import { tierScale } from './gear.js';
+
 /** Equipment condition is separate from combat checkpoints and quest progress. */
 export const WEAPON_TYPES = Object.freeze({
   'simple-sword': Object.freeze({
@@ -82,7 +84,10 @@ export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEA
    */
   function profile() {
     const type = WEAPON_TYPES[equipped];
-    const scale = damageScale(equipped);
+    // What it is made of, and what the hand holding it knows. **Every weapon the game has today
+    // is tier 0** - the sword is the reference the brief measures everything else against - so
+    // the material multiplies by exactly one until a smith sells something better.
+    const scale = damageScale(equipped) * tierScale(type.tier ?? 0);
     return { ...status(equipped), damage: type.damage.map(hit => hit * scale), reachMultiplier: type.reachMultiplier };
   }
 
