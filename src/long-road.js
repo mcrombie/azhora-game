@@ -41,6 +41,15 @@ export const DRILL_EXPOSURE = 35;
 export const DRILL_LANGUAGE = 'ambroni';
 /** A mercenary is noticed inside the traveler's own named ground, or this near wherever they are. */
 export const NOTICE_RANGE = 40;
+/**
+ * The players' camp the leg-3 stop stands at: `fernway`, in `TROUPE_STOPS` (src/troupe.js).
+ *
+ * The play is one of the two things here with no view of its own, so the host is the one that says
+ * a scene was watched to the end at that camp and calls `act('played')` for it — the module is
+ * told, and the host decides what it means. The id is kept here, beside the stop, so the two
+ * cannot drift apart, and `tests/long-road.test.js` holds the stop's point against the camp's.
+ */
+export const PLAY_TROUPE_STOP = 'fernway';
 /** The tongue turns readable here, which is what the East Rena Stone is for (src/languages.js). */
 const SIGN_READING = 50;
 /** What Mara's countersigned village chart is worth: one block of cartography, once. */

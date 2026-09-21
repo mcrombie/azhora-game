@@ -7,8 +7,9 @@ import {
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
   GROUND_PREFIX, isGround, groundOfSighting, longRoadStop as stopById,
-  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt,
+  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt, PLAY_TROUPE_STOP,
 } from '../src/long-road.js';
+import { TROUPE_STOPS } from '../src/troupe.js';
 import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
 import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/long-road.js';
 import { ARRIVALS } from '../src/mercenaries.js';
@@ -539,4 +540,63 @@ test('src/main.js actually asks a teacher to recognise somebody', () => {
   assert.match(main, /startingSkills:startingSkills\(playerId\)/, 'and tell the long road what the traveler landed knowing');
   // Never before the letter: Mara hands it to everybody, whatever they already know.
   assert.match(main, /if\(questStage<2\)return false;/);
+});
+
+test('the play at Fernway stands where the players camp, and nothing else claims to close it', () => {
+  // The leg-3 spine stop and the troupe's Fernway camp are the same verge. They are two tables in
+  // two modules, so the numbers are held against each other here rather than trusted.
+  const play = longRoadStop('fernway-play'), camp = TROUPE_STOPS.find(stop => stop.id === PLAY_TROUPE_STOP);
+  assert.ok(camp, `the players camp at ${PLAY_TROUPE_STOP}`);
+  assert.equal(camp.region, 'Drent');
+  assert.deepEqual([play.point.x, play.point.z], [camp.x, camp.z], 'the gold is on the camp, to the metre');
+  assert.equal(play.kind, 'spine', 'and it is on the curriculum, not beside it');
+  assert.equal(play.reads, 'longRoad', 'it has no view of its own, so the host has to say');
+});
+
+test('src/main.js actually closes the play: a scene watched to the end at Fernway', () => {
+  // The bug this pins: `act('played')` existed and nothing called it, so the leg-3 spine stop
+  // could never be done and the open gold stuck on the Fernway verge for the rest of the game.
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /PLAY_TROUPE_STOP/, 'the host knows which camp the stop stands at');
+  assert.match(main, /const onTheLongWay=troupe\.stop\.id===PLAY_TROUPE_STOP;/, 'and asks where the wagon is');
+  // The hat is what ends a scene (`troupe-tip-<n>`, 0 being applause), so that is where it closes.
+  const hat = main.slice(main.indexOf("const tip=/^troupe-tip-"));
+  assert.ok(hat.indexOf('const onTheLongWay=') < hat.indexOf('troupe.endScene()'),
+    'the wagon is asked where it is before the scene ends under it');
+  assert.match(hat.slice(0, 900), /if\(onTheLongWay&&longRoad\.act\('played'\)\.ok\)toast\(/, 'a play played out closes the stop, once');
+  assert.match(hat.slice(0, 1200), /saveRoad\(false\);/, 'and it is saved');
+  // Walking out of a play is not watching one: `cancelScene` counts nothing and must close nothing.
+  const walkOut = main.slice(main.indexOf('troupe.cancelScene()'));
+  assert.doesNotMatch(walkOut.slice(0, 200), /act\('played'\)/, 'walking out of the play closes nothing');
+  assert.equal(main.match(/longRoad\.act\('played'\)/g).length, 1, 'one place says it, and only one');
+});
+
+test('the whole spine walks only because the play can be watched', () => {
+  // Before the host was wired this was the shape of the game: everything else in Drent done, and
+  // the gold stuck on the play for ever, with legs 3 and every drill after the second out of reach.
+  const stuck = createLongRoad();
+  stuck.act('told'); stuck.act('corners-ask'); stuck.act('corners-sign', everything());
+  const never = stuck.view(everything());
+  assert.equal(never.next.id, 'fernway-play', 'the gold has nowhere else to go');
+  assert.deepEqual(never.stops.filter(row => row.kind === 'spine' && !row.done).map(row => row.id), ['fernway-play'],
+    'and it is the only thing in the whole of Drent that is not done');
+  assert.equal(never.legs[3].done, false, 'so leg three never closes');
+  for (let i = 0; i < DRILL_COUNT; i++) stuck.act('drill', everything());
+  assert.equal(stuck.drills, 2, 'and only two of the five drills are ever on offer');
+
+  // With the play watched, the same walk finishes: every leg, every drill, and `finished`.
+  const road = createLongRoad();
+  road.act('told'); road.act('corners-ask'); road.act('corners-sign', everything());
+  assert.equal(road.act('played').ok, true, 'the host says a scene was watched to the end');
+  assert.equal(road.act('played').ok, false, 'and says it once');
+  const walked = road.view(everything());
+  assert.equal(walked.next, null, 'no gold left on the spine');
+  assert.deepEqual(walked.legs.map(leg => leg.done), [true, true, true, true, true, true]);
+  assert.equal(walked.spine.done, walked.spine.of);
+  for (let i = 0; i < DRILL_COUNT; i++) assert.equal(road.act('drill', everything()).ok, true, `drill ${i + 1}`);
+  assert.equal(road.view(everything()).finished, true, 'the whole of the long road, walked');
+  // And it keeps: the play is one of the things the long road saves for itself.
+  const back = createLongRoad();
+  assert.equal(back.restore(road.snapshot()), true);
+  assert.equal(back.view(everything()).played, true);
 });
