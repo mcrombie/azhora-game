@@ -4,10 +4,10 @@ import { WORLD_SCALE } from './world-scale.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_BECKS, LIZEEM, CARICA, CARICA_CORRIDOR, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_POOLS,
-  LIZEEM_REACH, EER_CHANNELS,
+  LIZEEM_REACH, EER_CHANNELS, ISAREOS_RIVER, ISAREOS_BECKS, ISAMOUTH_GROUND,
   westBareGround, courseDistance, caricaCorridorDistance,
 } from './west-regions.js';
-import { WEST_PROFILES, poolSurface, westWaterSurface, westGroundAt, menethBand, braidThreadOffset } from './west-ground.js';
+import { WEST_PROFILES, poolSurface, westWaterSurface, westGroundAt, menethBand, braidThreadOffset, isareosLie } from './west-ground.js';
 
 /**
  * What the four western regions look like where the ground alone is not enough:
@@ -567,7 +567,12 @@ export function createWestScenery(kit) {
   // The reach below Nesdor is the same wall carried on: Eer's own lore says the great river
   // "cannot be crossed anywhere along the Eer bank", and the atlas gives Eer and Gala not one
   // dry hex edge between them. It is laid from the same loop so the line has no join in it.
-  for (const course of [LIZEEM, CARICA, LIZEEM_REACH]) for (const sample of WEST_PROFILES.get(course.id)) {
+  // Isareos's border river is the same case as the Carica and belongs in the same loop:
+  // a medium river waded at its head and deep below it. Left out of this at first, and the
+  // omission had two faces — a traveler could walk over the deep two-thirds of it, and the
+  // otters on it had no water to go into when somebody came at them, which made them a slow
+  // land animal that could be run down.
+  for (const course of [LIZEEM, CARICA, LIZEEM_REACH, ISAREOS_RIVER]) for (const sample of WEST_PROFILES.get(course.id)) {
     if (sample.ford) continue;
     // Samples are five metres apart, so each blocker has to be wide enough to
     // meet the one in front of it as well as the ones beside it. A gap of even a
@@ -928,6 +933,161 @@ export function createWestScenery(kit) {
     }
     batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere();
     batch.name = 'Eer cushion scrub'; eer.add(batch); metrics.thorn += eerScrub.length;
+  }
+
+  // -------------------------------------------------------------------------
+  // Isareos: grass to the top of every shoulder, thorn in every hollow
+  // -------------------------------------------------------------------------
+  /**
+   * After Eer, for the same reason Eer came after Nesdor: one seeded stream, consumed
+   * in region order, and a country added anywhere but the end re-rolls every draw
+   * after it.
+   *
+   * This is the simplest country in the west to draw, and that is the point of it.
+   * Three rules and no fourth: grass everywhere, thorn where the ground is low or in
+   * the lee, and a gallery two trees deep on the water. The atlas gives Isareos no
+   * `forest` hex in a map that has `forest` and uses it two hexes west in the
+   * Ibenwood, so there is nothing else here and there must not be.
+   */
+  const isareos = district('Isareos');
+  /** Ground left plain for Isamouth, which is a town and is therefore not built. */
+  const atIsamouth = (x, z) => Math.hypot(x - ISAMOUTH_GROUND.x, z - ISAMOUTH_GROUND.z) < ISAMOUTH_GROUND.radius;
+  ribbon(WEST_PROFILES.get(ISAREOS_RIVER.id), isareos, ISAREOS_RIVER.name);
+  for (const beck of ISAREOS_BECKS) ribbon(WEST_PROFILES.get(beck.id), isareos, beck.name);
+
+  const isareosSedge = [], isareosGravel = [];
+  for (const course of [ISAREOS_RIVER, ...ISAREOS_BECKS]) for (const sample of WEST_PROFILES.get(course.id)) {
+    if (sample.index % 2) continue;
+    for (const side of [-1, 1]) {
+      const offset = sample.half + range(.3, 2.4);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      if (hexOwnerAt(x, z) !== 'Isareos' || westWaterSurface(x, z) !== null) continue;
+      // The river's upper third is the waded part, and a ford is gravel by definition.
+      if (course === ISAREOS_RIVER && sample.along < ISAREOS_RIVER.fordUntil) isareosGravel.push({ x, z, s: range(.2, .62), rot: random() * 6.28 });
+      else isareosSedge.push({ x, z, s: range(.6, 1.3), rot: random() * 6.28 });
+    }
+  }
+  gravelBatch(isareosGravel, isareos, 'Isareos ford gravel');
+  sedgeBatch(isareosSedge, isareos, 'Isareos water rushes');
+
+  /**
+   * The gallery, planted off the water and not off the hex grid — the Carica's
+   * lesson, and Eer's after it. The lore is exact about the width and this is the
+   * whole of the wood in the country: "a narrow gallery of alder and willow on the
+   * water". Hazel goes in with them, because the lore's economy has "the wood of the
+   * stream galleries" and hazel is what a gallery is cut for.
+   */
+  const isareosGallery = [];
+  for (const course of [ISAREOS_RIVER, ...ISAREOS_BECKS]) {
+    const narrow = course !== ISAREOS_RIVER;
+    for (const sample of WEST_PROFILES.get(course.id)) for (let i = 0; i < 5; i++) {
+      const side = random() < .5 ? -1 : 1, offset = sample.half + range(.8, narrow ? 5 : 8);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      if (hexOwnerAt(x, z) !== 'Isareos' || westBareGround(x, z, 2) || westWaterSurface(x, z) !== null) continue;
+      if (atIsamouth(x, z)) continue;
+      if (isareosGallery.some(tree => Math.hypot(tree.x - x, tree.z - z) < 4.2)) continue;
+      // Hazel is a multi-stemmed shrub the height of a house; alder and willow are trees.
+      const hazel = random() < .38;
+      isareosGallery.push({ x, z, hazel, wide: hazel, s: range(.85, hazel ? 1.05 : 1.3),
+        h: hazel ? range(5.5, 7.5) : range(10, 15), rot: range(0, 6.28) });
+    }
+  }
+  woodBatch(isareosGallery, isareos, tree => tree.hazel
+    ? color.set('#7d9a4f').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.05, .05))
+    : color.set('#42663c').offsetHSL(range(-.03, .03), range(-.05, .06), range(-.06, .06)),
+    'isareos-tree');
+
+  /**
+   * The thorn, and the grass. `isareosLie` says where a point stands between the
+   * floor of its own valley and the shoulder above it, and the whole of Isareos's
+   * scatter is read off that one number:
+   *
+   *  - **Thorn** below about the half-way mark, thickest on the floor, and in ones
+   *    and threes and fours rather than evenly — "thorn in the hollows", and on a
+   *    hill with nothing to break the wind the hollow is the only place a woody
+   *    thing lives. Nothing tall enough to stand under: this is scrub.
+   *  - **Grass** over the whole of it, taller and greener low down where the water
+   *    collects, shorter and harder on the tops. `Cfa` grass, which is a different
+   *    plant from Vastos's cold tussock and reads greener and softer than anything
+   *    in the west before it.
+   *  - And on the six `plains` hexes of the western rim, both thinner: the wind
+   *    comes off the Ibenwood side and nothing there is sheltered.
+   */
+  const isareosCells = [...REGION_CELLS.Isareos].sort((a, b) => a.z - b.z || a.x - b.x);
+  const isareosTerrain = new Map(SURVEY.regions.find(region => region.name === 'Isareos')
+    .cells.map(cell => [`${cell.q},${cell.r}`, cell.terrain]));
+  const onRim = (x, z) => { const home = hexAt(x, z); return isareosTerrain.get(`${home.q},${home.r}`) === 'plains'; };
+  const hollowThorn = [];
+  for (let start = 0; start < isareosCells.length; start += BLOCK) {
+    const block = isareosCells.slice(start, start + BLOCK), tufts = [];
+    for (const cell of block) {
+      for (let i = 0; i < 46; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (hexOwnerAt(x, z) !== 'Isareos' || westBareGround(x, z, 3) || westWaterSurface(x, z) !== null) continue;
+        if (atIsamouth(x, z)) continue;
+        const lie = isareosLie(x, z), rim = onRim(x, z);
+        // Nothing on the tops, everything in the folds, and half as much on the rim.
+        if (random() > (1 - smooth(.18, .62, lie)) * (rim ? .38 : .8)) continue;
+        if (isareosGallery.some(tree => Math.hypot(tree.x - x, tree.z - z) < 8)) continue;
+        if (hollowThorn.some(bush => Math.hypot(bush.x - x, bush.z - z) < 5.5)) continue;
+        // A thicket of three or four, or a single bush: both are what the lore describes.
+        //
+        // **The members of a thicket keep their distance too**, and that is not tidiness.
+        // The first pass spaced the parent bushes and let the clump fall where it liked,
+        // and clumps merged into mats a deer could not get out of: traced through a chase,
+        // a hind wedged between two of them ran on the spot for ten seconds at full speed
+        // while somebody walked up to it. Three metres and a fifth between any two bushes
+        // leaves a gap the width of a deer, which is what a thicket on open hill country
+        // actually has.
+        const clump = random() < .45 ? 1 + Math.floor(random() * 3) : 0;
+        hollowThorn.push({ x, z, s: range(.85, 1.6), rot: random() * 6.28 });
+        for (let k = 0; k < clump; k++) {
+          const a = random() * 6.28, out = range(3.4, 5.2);
+          const bx = x + Math.sin(a) * out, bz = z + Math.cos(a) * out;
+          if (hexOwnerAt(bx, bz) !== 'Isareos' || westBareGround(bx, bz, 2) || westWaterSurface(bx, bz) !== null) continue;
+          if (hollowThorn.some(bush => Math.hypot(bush.x - bx, bush.z - bz) < 3.2)) continue;
+          hollowThorn.push({ x: bx, z: bz, s: range(.7, 1.3), rot: random() * 6.28 });
+        }
+      }
+      for (let i = 0; i < tuftsPerHex + 30; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (hexOwnerAt(x, z) !== 'Isareos' || westBareGround(x, z, 1.5) || westWaterSurface(x, z) !== null) continue;
+        const lie = isareosLie(x, z), rim = onRim(x, z);
+        tufts.push({ x, z, s: range(.8, 1.9) * (rim ? .74 : 1.22 - lie * .3), rot: range(0, 6.28), lie, rim });
+      }
+    }
+    // Deep humid green on the floors, harder and paler on the tops, greyer on the rim.
+    tuftBatch(tufts, isareos, tuft => color.setHSL(
+      (tuft.rim ? .21 : .27) - tuft.lie * .04 + range(-.015, .015),
+      (tuft.rim ? .18 : .36) - tuft.lie * .07 + range(-.05, .05),
+      (tuft.rim ? .40 : .26) + tuft.lie * .10 + range(-.04, .04)));
+  }
+
+  /**
+   * Hawthorn and blackthorn: low, dense, dark and wind-shaped, on the Vastos thorn's
+   * geometry at a larger size, because a hedge thorn in a sheltered hollow grows
+   * where a plain thorn on an open tableland cannot.
+   */
+  if (hollowThorn.length) {
+    const batch = new THREE.InstancedMesh(round, material('#46603c', { flatShading: true }), hollowThorn.length * 3);
+    let at = 0;
+    for (const bush of hollowThorn) {
+      const y = groundHeight(bush.x, bush.z);
+      for (let lobe = 0; lobe < 3; lobe++) {
+        const a = bush.rot + lobe * 2.1, spread = lobe === 2 ? 0 : .58 * bush.s;
+        dummy.position.set(bush.x + Math.sin(a) * spread, y + bush.s * (lobe === 2 ? .96 : .62), bush.z + Math.cos(a) * spread);
+        dummy.rotation.set(range(-.2, .2), a, range(-.2, .2));
+        dummy.scale.set(bush.s * .86, bush.s * .58, bush.s * .82);
+        dummy.updateMatrix(); batch.setMatrixAt(at, dummy.matrix);
+        // Dark, but not a hole in the grass: photographed across two valleys the first
+        // thorn read as gravel, because a lightness of .18 against a hillside of .45 is
+        // a shadow and not a bush.
+        batch.setColorAt(at++, color.setHSL(range(.22, .30), range(.19, .30), range(.25, .36)));
+      }
+      colliders.push({ x: bush.x, z: bush.z, r: .58 * bush.s, kind: 'isareos-thorn' });
+    }
+    batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere();
+    batch.name = 'Isareos hollow thorn'; isareos.add(batch); metrics.thorn += hollowThorn.length;
   }
 
   function update(time) {

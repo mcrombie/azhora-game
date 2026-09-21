@@ -133,6 +133,39 @@ export function caricasShelf(x, z) {
   return CARICAS_SHELF.rise * smooth(CARICAS_SHELF.from, CARICAS_SHELF.to, x) * smooth(.12, .7, weight);
 }
 
+// ---------------------------------------------------------------------------
+// Isareos: no landform of its own, and one question asked of the one it has not got
+// ---------------------------------------------------------------------------
+/**
+ * How high a point stands in its own valley, from 0 on the floor to 1 on the
+ * shoulder above it.
+ *
+ * Isareos is the only region in the west with no hand-built landform at all: its
+ * hills are `REGION_TERRAIN`'s plain relief, four and a half metres over a
+ * hundred and twenty, and that is deliberate — "low hills, not quite highlands",
+ * and a sine field is exactly what ordinary rolling country is. So there is
+ * nothing here to add to the ground. What there is, is a question to ask of it:
+ * the lore puts "thorn in the hollows" and nowhere else, and to know a hollow
+ * from a shoulder something has to measure the ground against the ground round it.
+ *
+ * It samples a ring at about a third of a wavelength — far enough to be on the
+ * next slope, near enough to still be in the same valley — and reports where the
+ * point sits between the lowest and the highest of them. That is a local measure
+ * and not a contour, so it keeps working wherever the region's blend takes the
+ * relief, including where Isareos hands itself to Caricas and to Meneth.
+ */
+export function isareosLie(x, z) {
+  if (!inBox(WEST_REGION_BOXES.Isareos, x, z)) return 1;
+  const here = westNaturalGround(x, z);
+  let low = here, high = here;
+  for (let i = 0; i < 6; i++) {
+    const angle = i / 6 * Math.PI * 2 + .4;
+    const sample = westNaturalGround(x + Math.sin(angle) * 42, z + Math.cos(angle) * 42);
+    low = Math.min(low, sample); high = Math.max(high, sample);
+  }
+  return high - low < .2 ? .5 : clamp((here - low) / (high - low), 0, 1);
+}
+
 /** The ground the water is measured against: the region's own relief, plus every landform on it. */
 const baseBeforeWater = (x, z) => westNaturalGround(x, z) + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z);
 

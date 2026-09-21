@@ -68,10 +68,25 @@ test('points resolve to regions and cells, and the world bounds enclose all four
   assert.equal(cellAtWorld(survey, 5000, 5000), null);
   const bounds = worldBoundsFor(survey);
   for (const [, point] of Object.entries(anchors)) assert.ok(point.x > bounds.minX && point.x < bounds.maxX && point.z > bounds.minZ && point.z < bounds.maxZ);
-  // West Izol lies far south of the mainland regions and Amod climbs north toward the
-  // Lotharn, so the world is taller than it is wide: about 31 hexes north to south, and
-  // about 29 east to west now that the four western regions reach out past Caricas.
-  assert.ok(bounds.maxX - bounds.minX < 30 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX, 'the playable regions fit a walkable world');
+  /**
+   * **The hex budget, and what actually spends it.** West Izol lies far south of the
+   * mainland regions and Amod climbs north toward the Lotharn, so the world has been
+   * taller than it is wide since they landed: 30.93 hexes north to south, set by those
+   * two and unchanged by anything since.
+   *
+   * East to west it was 29.2 through the four western regions and through Eer, because
+   * Eer lies inside the box Caricas already made — the first of the six south-western
+   * countries widened the world by nothing at all, and the budget was deliberately not
+   * raised for it. **Isareos is the one that spends it**: its western rim stands at
+   * x = -2850 against the Ibenwood, which takes the world's edge from -2310 to -2960
+   * and its width to 35.7 hexes. So the guard goes to 36 and no further; the five
+   * countries still to come reach further west again (the Nether Desert's own hexes
+   * are at -3050) and each will have to state its own case.
+   */
+  assert.ok(bounds.maxX - bounds.minX < 36 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX, 'the playable regions fit a walkable world');
+  // And it is a budget rather than a shrug: a country that widened the world without
+  // anybody noticing would sail through a guard with room in it.
+  assert.ok(bounds.maxX - bounds.minX > 35 * METRES_PER_HEX, 'the world is narrower than the budget says: raise nothing, lower this');
 });
 
 test('route anchors follow the brief: Tidehaven on the coast, the Caloss on the Luscia border, the Moros west, Elod north-east', () => {

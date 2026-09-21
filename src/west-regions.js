@@ -1,18 +1,21 @@
 /**
  * The western and southern regions of the playable world — Vastos, Meneth,
- * Caricas, Nesdor and now Eer — as water, landform parameters and named natural
- * ground.
+ * Caricas, Nesdor, Eer and Isareos — as water, landform parameters and named
+ * natural ground.
  *
- * Eer is here rather than in a file of its own, and the reason is its water.
- * Eer's one authored watercourse is the Lizeem's last reach, the Lizeem is built
+ * The southern countries are here rather than in a file of their own, and the
+ * reason is their water. Eer's one authored watercourse is the Lizeem's last
+ * reach and Isareos's eastern boundary is the Lizeem's head; the Lizeem is built
  * in this module, and a reach that takes the great river's level over at the
  * handover has to be able to read it. `west-ground.js` then cuts every channel in
  * `WEST_RIVERS` in one pass over one bounding box; a parallel southern module
  * would mean a second box, a second profile table and a second pass at every
  * point of Azhora, to save a comment. `docs/six-regions-brief.md` predicted
- * `src/south-regions.js` for all six countries, and the later five will want one —
- * Nethereum's hollow, the desert's dry channels and waterholes are new machinery.
- * Eer needs none of it: it is a plain with two becks on it.
+ * `src/south-regions.js` for all six countries; two of them in, nothing has
+ * wanted one. Eer is a plain with two becks on it and Isareos is rolling grass
+ * with three, and both are what `relief()` and `REGION_TERRAIN` already draw.
+ * The desert's dry channels and waterholes are the first thing on that list that
+ * is new machinery, and it can have its own module when it arrives.
  *
  * Pure: no three, no DOM, and no heights. `src/west-ground.js` turns what is
  * described here into the ground the traveler walks on, and
@@ -482,7 +485,7 @@ export const LIZEEM_REACH = river('lizeem-reach', 'The Lizeem',
  * Where they go is the atlas's. Eer's `plains` hexes are its north and north-west
  * and its `grassland` hexes its south and south-east, and the region falls the
  * same way, from the shoulder it shares with Nesdor and the Moros down to a coast
- * on two sides. So the north channel crosses to the eastern shore and the south
+ * on two sides. So the North Channel crosses to the eastern shore and the South
  * one runs down the narrowing tongue to the southern one, and both cross the line
  * where `Cfa` becomes `Csa` — which is why alder and willow stand on their upper
  * halves and tamarisk and oleander on their lower ones.
@@ -490,22 +493,83 @@ export const LIZEEM_REACH = river('lizeem-reach', 'The Lizeem',
  * Shallow, slow, and braiding over their last two-fifths, which is what the Flats
  * one region upstream already do and for the same reason: more bed than water.
  *
- * **Neither is named.** The lore names no river in Eer and the atlas draws none,
- * and Eer's own naming habit is explicitly descriptive rather than commemorative
- * ("A village called Long-Drainage or Red-Clay has a name that tells you something
- * useful about the place"), so an invented name would be an invention in a
- * register the lore is careful about. They are the north and south channels until
- * the user says otherwise.
+ * **The North Channel and the South Channel** (the user's ruling, 2026-09-21).
+ * The lore names no river in Eer and the atlas draws none, so the names are the
+ * country's own habit rather than anybody's memory: Eer's naming is explicitly
+ * descriptive and not commemorative — "A village called Long-Drainage or Red-Clay
+ * has a name that tells you something useful about the place" — and these tell you
+ * which of the two you are standing on, which is the useful thing.
  */
 export const EER_CHANNELS = Object.freeze([
-  river('eer-channel-north', 'The north channel', [
+  river('eer-channel-north', 'The North Channel', [
     point(-1430, 985), point(-1350, 1002), point(-1265, 1018), point(-1175, 1034),
     point(-1080, 1050), point(-985, 1064), point(-898, 1078), point(-862, 1084),
   ], { halfWidth: 3, halfWidthEnd: 5.2, cut: 1.4, cutEnd: .9, bed: .5 }),
-  river('eer-channel-south', 'The south channel', [
+  river('eer-channel-south', 'The South Channel', [
     point(-1300, 1020), point(-1262, 1078), point(-1216, 1136), point(-1152, 1192),
     point(-1075, 1244), point(-990, 1290), point(-946, 1338), point(-928, 1376),
   ], { halfWidth: 2.6, halfWidthEnd: 4.6, cut: 1.3, cutEnd: .85, bed: .45 }),
+]);
+
+// ---------------------------------------------------------------------------
+// Isareos: the grass hills, and the one river the atlas draws through them
+// ---------------------------------------------------------------------------
+/**
+ * The medium course along the whole Isareos–Nethereum border. The atlas draws it
+ * from (-2800, 87) — a corner inside Isareos itself, where its first edge runs
+ * between two Isareos hexes — east and south to the Lizeem at (-2250, 231).
+ *
+ * **It is the Isa** (the user's ruling, 2026-09-21). The lore names one river in
+ * Isareos and this is the only river the atlas draws there, so the name comes
+ * inland with the country when the coast goes: Isamouth stands where the Isa joins
+ * the Lizeem, at Isareos's south-eastern corner. **Isamouth itself is not built** —
+ * it is a settlement and settlements are what this whole pass leaves out — and the
+ * ground at that confluence is deliberately kept plain and unplanted so that the
+ * town can be put there later without moving anything that is already down.
+ *
+ * Waded for its upper third, and deep below. That is not a choice made here so
+ * much as the house rule for a medium river: the Carica is the same size on the
+ * same map and is shallow over gravel at its head and a wall below it, and the
+ * brief invokes exactly that precedent for the Neth. It changes no connectivity —
+ * Isareos already reaches Nethereum on two dry edges round this river's head.
+ */
+export const ISAREOS_RIVER = river('isareos-river', 'The Isa',
+  atlasCourse('Isareos,Nethereum'),
+  { halfWidth: 3.4, halfWidthEnd: 6.5, cut: 1.9, cutEnd: 1.3, bed: .8, fordUntil: .32 });
+
+/**
+ * Three becks off the hill ground into it, one to a valley. The atlas draws no
+ * water inside Isareos, so these are derived the way Meneth's were — from the
+ * landform, because a valley's water has to be on its floor and the floor is
+ * where the ground is lowest.
+ *
+ * All three run **south**, which on this country is simply downhill: Isareos is
+ * low hills falling from the Vastos and Meneth margins toward the border river on
+ * its southern side, and the lore's own account of the place is "rising gradually
+ * from the valley floors to the upland margins". They are becks and not rivers —
+ * the lore says the country has "no defining river" — so each is a step across,
+ * and each ends on the course that takes it.
+ */
+/**
+ * Where the Isa meets the Lizeem, and the one piece of Isareos that is kept empty
+ * on purpose. Isamouth stands here (the user's ruling, 2026-09-21) and Isamouth is
+ * a settlement, so it is not built in a pass that builds no settlements. What the
+ * scatter does instead is stay off it: a town put down here later should not have
+ * to move a gallery to get in, and moving a gallery moves every seeded draw after
+ * it. The radius is a town's ground and nothing more.
+ */
+export const ISAMOUTH_GROUND = Object.freeze({ x: -2250, z: 231, radius: 62 });
+
+export const ISAREOS_BECKS = Object.freeze([
+  river('isareos-beck-west', 'The west beck', [
+    point(-2698, -8), point(-2706, 38), point(-2704, 82), point(-2694, 118), point(-2686, 142),
+  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
+  river('isareos-beck-middle', 'The middle beck', [
+    point(-2522, -28), point(-2530, 24), point(-2538, 78), point(-2544, 128), point(-2548, 162),
+  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
+  river('isareos-beck-east', 'The east beck', [
+    point(-2362, 22), point(-2372, 74), point(-2380, 124), point(-2390, 172), point(-2400, 218), point(-2410, 244),
+  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
 ]);
 
 /**
@@ -536,7 +600,7 @@ export const WEST_BRAIDS = Object.freeze([
  * reach is therefore after the Lizeem.
  */
 export const WEST_RIVERS = Object.freeze([VASTOS_RIVER, VASTOS_BECK, ...MENETH_BECKS, LIZEEM, CARICA,
-  ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS]);
+  ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS, ISAREOS_RIVER, ...ISAREOS_BECKS]);
 /** Standing water: pans, basins and the warm pool, as circles with their own depth. */
 export const WEST_POOLS = Object.freeze([
   ...VASTOS_PANS, ...VASTOS_BASINS,
@@ -544,7 +608,7 @@ export const WEST_POOLS = Object.freeze([
 ]);
 
 /** The regions this module shapes, in the order they were built. */
-export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer']);
+export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer', 'Isareos']);
 
 const boxOf = () => ({ minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
 const grow = (box, x, z, reach) => {
@@ -727,6 +791,16 @@ export const WEST_REGION_LANDMARKS = Object.freeze([
     description: 'The coast of Eer, which the lore of the Iberos calls "a series of low headlands and small sheltered bays, none large enough to be major harbors". No cliff and no beach worth the name: the grass goes tawny, thins, gives out, and the water is there. The surf reaches a long way in at the head of each bay.' }),
   Object.freeze({ id: 'eer-olives', name: 'The Standing Olives', x: -1080, z: 1170,
     description: 'Wild olive and holm oak on the open grass, singly and in twos, never near enough to touch. Nobody planted them and nobody has cut them; on a plain this flat one tree standing alone is what tells a traveler from a long way off that the weather has changed under him.' }),
+  Object.freeze({ id: 'isareos-shoulders', name: 'The Isareos Shoulders', x: -2520, z: -60,
+    description: 'The high ground between the valley heads: the same modest hundred-foot rises over and over, grass to the top of every one of them and no tree on any. Nothing here needs route-finding and everything here is a climb, which between the lake country and the branch country is the whole use of the place.' }),
+  Object.freeze({ id: 'isareos-hollows', name: 'The Thorn Hollows', x: -2610, z: 20,
+    description: 'Hawthorn and blackthorn down in the folds and along the lee of every shoulder, in threes and fours and nothing tall enough to stand under. On open hill country the wind decides where a woody thing may live, and it has decided here.' }),
+  Object.freeze({ id: 'isareos-gallery', name: 'The Isa Gallery', ...midpointIn(ISAREOS_RIVER, 'Isareos'),
+    description: 'Alder, willow and hazel two trees deep along the Isa and not one pace further. The atlas gives this country no forest hex and the lore gives it none either: this ribbon is the whole of the wood in Isareos, and the valley communities cut it and let it grow again.' }),
+  Object.freeze({ id: 'isareos-becks', name: 'The Valley Becks', ...midpointIn(ISAREOS_BECKS[1], 'Isareos'),
+    description: 'A beck on the floor of every valley, running south off the shoulders to the Isa, which takes all three of them. You step over any of them without thinking about it; the lore says the country has no defining river and means it.' }),
+  Object.freeze({ id: 'isareos-west-rim', name: 'The Western Rim', x: -2800, z: 30,
+    description: 'Where the hills give out against the Ibenwood: the grass goes thin, short and grey, the shoulders flatten, and the wind comes off the forest with nothing to break it. The country stops being hills here and nobody has ever drawn the line.' }),
   Object.freeze({ id: 'lizeem-reach', name: 'The Lower Lizeem', ...midpointIn(LIZEEM_REACH, 'Eer'),
     description: 'The last reach of the great river, wide and slow and going grey with what it is carrying. Gala is on the far bank and there is no way to it: not here, not anywhere along this side. Below the last bend the water spreads into the estuary and stops being a river.' }),
 ]);

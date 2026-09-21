@@ -146,7 +146,9 @@ test('The river fox watches; everything else in the west runs', () => {
     // of it and not the other: the corridor is Carican and the keepers are Carican.
     assert.equal(hexOwnerAt(site[0], site[1]), 'Caricas', `a fox at ${site} is on the wrong bank`);
   }
-  for (const zone of WEST_LIFE_ZONES.filter(item => item.species === 'otter'))
+  // Caricas's own otters, not every otter in the west: Isareos has them too now, on the
+  // border river two countries north, and the bank that matters to them is that one's.
+  for (const zone of WEST_LIFE_ZONES.filter(item => item.species === 'otter' && item.region === 'Caricas'))
     for (const site of zone.sites) assert.equal(hexOwnerAt(site[0], site[1]), 'Caricas', `an otter at ${site} is on the wrong bank`);
   const foxOf = () => life.snapshot().creatures.find(animal => animal.species === 'river-fox');
   const otterOf = () => life.snapshot().creatures.find(animal => animal.species === 'otter');

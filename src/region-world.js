@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14, Eer: 15 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14, Eer: 15, Isareos: 16 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -223,6 +223,20 @@ export const REGION_TERRAIN = Object.freeze({
   // south off either crosses no step at all.
   Eer: Object.freeze({ base: 7.4, amp: .8, wave: 300, ground: REGION_BIOMES.Eer.ground, byTerrain: Object.freeze({
     grassland: Object.freeze({ base: 2.9, amp: .5, wave: 360, ground: '#b2a865' }),
+  }) }),
+  // Isareos is the one country in the west that is neither flat nor a ridge field: "low hills,
+  // not quite highlands... rising gradually from the valley floors to the upland margins where
+  // the territory blurs into the southern edges of the lake country". So it is plain relief and
+  // nothing else — no hand-built landform in `west-ground.js` at all — at four and a half
+  // metres over a hundred and twenty, which is a shoulder every two minutes' walk and a climb
+  // every time. Twenty-two metres puts it between the two countries it blurs into, Caricas's
+  // corridor at 17 and the Meneth ridges at 26, so neither border is a step.
+  //
+  // The atlas's six `plains` hexes are a single column down the western rim against the
+  // Ibenwood, and they are the country giving out: four metres lower, half the relief over
+  // twice the wavelength, and a greyer ground under a wind with nothing to break it.
+  Isareos: Object.freeze({ base: 22, amp: 4.5, wave: 120, ground: REGION_BIOMES.Isareos.ground, byTerrain: Object.freeze({
+    plains: Object.freeze({ base: 18, amp: 2.2, wave: 210, ground: '#8a9470' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -716,6 +730,17 @@ const REGION_TEXT = {
     description: 'The plain between the great river and the sea, and the place the green country ends: deep black loam and rank damp grass in the north-west, dry tawny grass and aromatic scrub on the Mediterranean coast, and the change happening under your feet in the middle of the country rather than at either border. Two shallow channels braid across it to a low shore of small bays. Wild olives stand singly on the open grass. The Lizeem is the western wall and there is no way over it anywhere.',
     palette: { ground: '#6d8748', accent: '#ded0a0', fog: '#c4cdb2', sky: 0xbdd8dc, haze: 0xd2d4c2, hazeDensity: .0049 },
     npcIds: [], landmarks: ['eer-loam', 'eer-braids', 'eer-bays', 'eer-olives', 'lizeem-reach'] },
+  // Isareos is terrain and wildlife only. The drove road that the whole lore file is
+  // organised round, the valley grazing communities, their fords and the herder's chart of
+  // them are all somebody's, and somebody is not built. Nor is the coast: the atlas gives
+  // Isareos thirty-one hexes and not one unclaimed edge, so the inlets, the inshore fishery,
+  // the boatbuilding timber and Isamouth are gone from the lore as well as from here
+  // (docs/six-regions-brief.md, disagreement 1). This is the first country past the Lizeem's
+  // head, and the last familiar one: everything beyond it is not.
+  Isareos: { subtitle: 'The grass hills past the river’s head', spawn: point(-2450, -58),
+    description: 'Low grass hills west of the Lizeem’s head, with a valley between every pair of shoulders and deep humid grass to the top of all of them. Hawthorn and blackthorn keep to the hollows and the lee sides; alder, willow and hazel keep to the water and go two trees deep and no further. There is no dramatic backdrop, no defining river and no particularly fertile valley — it is the most ordinary country in the west, which after four hundred metres of it is the thing worth noticing. Red deer on the open grass, hares on the shoulders, and the shadow of something circling.',
+    palette: { ground: '#6f9150', accent: '#d3dca6', fog: '#b7c8ac' },
+    npcIds: [], landmarks: ['isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

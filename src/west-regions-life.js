@@ -266,6 +266,95 @@ function models() {
     },
 
     /**
+     * Red deer, and the animal Isareos is for. The lore names nothing wild in that
+     * country at all — it names cattle and sheep and stops — so the species is a
+     * choice and it is flagged as one on its range. What decided it is the atlas:
+     * Isareos has twenty-five `grassland` hexes and six of `plains` and not one of
+     * `forest`, so a browser that needs a wood to lie up in has nothing to lie up in.
+     * A red deer grazes open grass and browses thorn, which is exactly the two
+     * things this country has, and that is why it is here and a roe deer is not.
+     *
+     * Deep-chested, high at the shoulder, on legs that are the whole animal: a deer
+     * at two hundred metres is a neck and a pair of forelegs and nothing else. The
+     * antlers are the hind's and the stag's difference and both are drawn here,
+     * because a band with nothing on its head in it is a herd of the same beast.
+     *
+     * **The neck is part of the head, and that is the whole trick.** Every other grazer
+     * here carries a head on a stub of neck that belongs to the body, and the head
+     * swings down off the end of it; on a longhorn the body is deep enough to hide the
+     * gap that opens. On a deer it is not, and photographed grazing the first one had
+     * its head floating half a metre in front of its chest with nothing joining them.
+     * So the deer's head geometry starts at the **shoulder joint** and carries its own
+     * neck up and forward, and the grazing swing turns the whole of it about that
+     * joint — which is what a neck does.
+     */
+    'red-deer': {
+      body: geometry([
+        S(0x8a6a48, [0, .95, -.05], [.25, .29, .58]),
+        S(0x96764f, [0, 1.00, .30], [.23, .26, .22]),
+        S(0xc9b189, [0, .72, .02], [.20, .18, .48]),
+        S(0xe3d6ba, [0, .88, -.58], [.105, .125, .085]),
+        S(0x7a5c3e, [0, 1.16, -.05], [.075, .05, .42]),
+        Y(0x6d5236, [0, .98, -.64], [.032, .24, .032], [.75, 0, 0]),
+      ]),
+      head: geometry([
+        S(0x8a6a48, [0, .09, .07], [.105, .115, .12]),
+        S(0x8a6a48, [0, .22, .15], [.092, .10, .105]),
+        S(0x96764f, [0, .34, .24], [.088, .10, .115]),
+        C(0x7a5c3e, [0, .30, .40], [.062, .17, .058], [Math.PI / 2 + .22, 0, 0]),
+        S(0x1d1a17, [0, .26, .50], [.036, .030, .030]),
+        ...both(side => C(0x8a6a48, [side * .085, .44, .21], [.042, .15, .028], [-.22, 0, side * .40])),
+        ...both(side => S(0x120f0e, [side * .070, .36, .30], [.017, .018, .014])),
+        // The antlers: up, back, and branching twice. A hind carries the same head
+        // with nothing on it, which `zone.hornless` asks for.
+        ...both(side => Y(0x9c8560, [side * .048, .50, .20], [.018, .17, .018], [-.28, 0, side * .26])),
+        ...both(side => Y(0x9c8560, [side * .098, .66, .12], [.015, .15, .015], [-.50, 0, side * .34])),
+        ...both(side => C(0xb39d76, [side * .134, .78, 0], [.013, .12, .013], [-.70, 0, side * .30])),
+        ...both(side => C(0xb39d76, [side * .126, .70, .24], [.012, .10, .012], [.28, 0, side * .40])),
+      ]),
+      // The hind: the same neck and head with nothing on it, and bigger ears for it.
+      hornless: geometry([
+        S(0x8a6a48, [0, .09, .07], [.105, .115, .12]),
+        S(0x8a6a48, [0, .22, .15], [.092, .10, .105]),
+        S(0x96764f, [0, .34, .24], [.088, .10, .115]),
+        C(0x7a5c3e, [0, .30, .40], [.062, .17, .058], [Math.PI / 2 + .22, 0, 0]),
+        S(0x1d1a17, [0, .26, .50], [.036, .030, .030]),
+        ...both(side => C(0x8a6a48, [side * .088, .44, .21], [.046, .17, .030], [-.22, 0, side * .40])),
+        ...both(side => S(0x120f0e, [side * .070, .36, .30], [.017, .018, .014])),
+      ]),
+      leg: geometry([Y(0x7a5c3e, [0, -.30, 0], [.052, .60, .054]), B(0x241f1a, [0, -.60, .02], [.09, .07, .13])]),
+    },
+
+    /**
+     * The turkey vulture over the Isareos hills. The game already names the species
+     * — Drent's bird garden keeps one and the birding skill scores it
+     * (`src/birding.js`, `src/drent-birds.js`) — but that is a different rig on a
+     * different module, so this is the same bird built once more in this file's
+     * house style, on the plateau hawk's soaring rig with a much wider wing.
+     *
+     * An extension, and flagged as one on its range: the fauna overview names no
+     * raptor or scavenger for this country. What it does name for the open grass
+     * further out is the **black soar-bird**, "technically a vulture-relative", and
+     * the shape in the sky is the same shape — held out flat, barely moving, and
+     * circling a long way up.
+     */
+    'turkey-vulture': {
+      body: geometry([
+        S(0x2f2925, [0, 0, -.03], [.095, .095, .26]),
+        S(0x241f1c, [0, -.03, .06], [.082, .068, .17]),
+        S(0x3a322c, [0, .01, -.30], [.085, .026, .18], [.05, 0, 0]),
+        S(0x8a4a3a, [0, .05, .19], [.052, .058, .07]),
+        C(0xd9cfb8, [0, .03, .27], [.026, .07, .024], [Math.PI / 2 + .30, 0, 0]),
+        ...both(side => S(0x120f0e, [side * .034, .075, .215], [.012, .013, .011])),
+      ]),
+      wing: geometry([
+        S(0x2a2420, [.40, 0, .02], [.46, .024, .145]),
+        S(0x3a322c, [.88, -.004, -.04], [.42, .019, .105]),
+        S(0x1c1815, [1.26, -.008, -.10], [.17, .015, .058]),
+      ]),
+    },
+
+    /**
      * Grey dolphins off the Eer shore. The fauna overview documents them "in the
      * Lizeem estuary at Nylon during upriver fish migrations", and the estuary is
      * Eer's own south-west corner, so this is a placement and not an extension.
@@ -489,13 +578,13 @@ export const WEST_LIFE_ZONES = Object.freeze([
     id: 'eer-herons', species: 'wading-bird', region: 'Eer', radius: .4, scale: 1,
     minX: -1300, maxX: -1120, minZ: 990, maxZ: 1090,
     sites: Object.freeze([[-1250, 1018], [-1205, 1026], [-1160, 1034]]),
-    note: 'The fauna overview: the Lizeem distributaries are "the richest avian assemblage documented on the continent", and herons are the first bird it names in it. The north channel’s slow upper water.',
+    note: 'The fauna overview: the Lizeem distributaries are "the richest avian assemblage documented on the continent", and herons are the first bird it names in it. The North Channel’s slow upper water.',
   }),
   Object.freeze({
     id: 'eer-egrets', species: 'egret', region: 'Eer', radius: .4, scale: .86,
     minX: -1130, maxX: -940, minZ: 1210, maxZ: 1330,
     sites: Object.freeze([[-1060, 1248], [-1020, 1272], [-988, 1292]]),
-    note: 'The same assemblage on the south channel, in white and a size smaller. On ground this flat a white bird is visible from the far side of the country, which is most of what an egret is for.',
+    note: 'The same assemblage on the South Channel, in white and a size smaller. On ground this flat a white bird is visible from the far side of the country, which is most of what an egret is for.',
   }),
   Object.freeze({
     id: 'eer-stilts', species: 'stilt', region: 'Eer', radius: .3, scale: 1,
@@ -507,7 +596,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
     // four are swept out of the zone as the dry, standable ground nearest to water,
     // spread sixteen metres apart so the band is not a queue.
     sites: Object.freeze([[-1008, 1055], [-1008, 1073], [-994, 1045], [-992, 1081]]),
-    note: 'The overview’s "range of stilt-legged species": the braided shallows at the foot of the north channel, which is the only water in Eer shallow enough for them.',
+    note: 'The overview’s "range of stilt-legged species": the braided shallows at the foot of the North Channel, which is the only water in Eer shallow enough for them.',
   }),
   Object.freeze({
     id: 'eer-ducks', species: 'duck', region: 'Eer', radius: .3, scale: 1, float: true,
@@ -532,6 +621,55 @@ export const WEST_LIFE_ZONES = Object.freeze([
     minX: -836, maxX: -788, minZ: 1120, maxZ: 1235,
     sites: Object.freeze([[-818, 1150], [-806, 1196]]),
     note: 'The overview documents grey dolphins "in the Lizeem estuary at Nylon during upriver fish migrations", and the estuary is Eer’s own corner of the map. Out past the surf: seen from the shore and not reachable from it.',
+  }),
+  // Isareos. The lore of this country names cattle and sheep and nothing wild at all,
+  // so every range below says what it is doing here. The deer are what the atlas
+  // leaves room for once it has refused the woodland: twenty-five grassland hexes and
+  // no forest hex is open grass and thorn, which is a red deer's ground and not a roe
+  // deer's. See docs/six-regions-brief.md, "Isareos — the grass hills, without the sea".
+  Object.freeze({
+    id: 'isareos-hinds', species: 'red-deer', region: 'Isareos', radius: .55, scale: 1, hornless: true,
+    // **Two hundred metres by a hundred and sixty, and no wider.** A deer band wants room
+    // — cornered against its own range edge it is caught in twenty seconds — and the
+    // obvious answer, a range three hundred and sixty metres across, is worse than the
+    // problem: a flock is ticked from its centre, so a hind that ran to a far corner took
+    // the traveler past `LIFE_REACH` of that centre and the whole band froze where it
+    // stood. Half a range's diagonal has to stay inside `LIFE_REACH`, and this one does,
+    // with room. What keeps a deer clear instead is its own wariness: it moves off at
+    // eighteen metres, which is further than anything else in the west.
+    minX: -2600, maxX: -2400, minZ: -160, maxZ: 0,
+    sites: Object.freeze([[-2520, -86], [-2494, -64], [-2546, -56], [-2470, -104], [-2500, -34]]),
+    note: 'Extension: the lore names nothing wild in Isareos. Red deer graze open grass and browse thorn and need no wood to lie up in, which is the country the atlas actually draws here — twenty-five grassland hexes and not one of forest. A band of hinds on the shoulders between two valley heads.',
+  }),
+  Object.freeze({
+    id: 'isareos-stags', species: 'red-deer', region: 'Isareos', radius: .55, scale: 1.08,
+    minX: -2740, maxX: -2560, minZ: -20, maxZ: 120,
+    sites: Object.freeze([[-2662, 44], [-2630, 66]]),
+    note: 'The same extension, apart from the hinds and carrying antlers, which is where red deer stags are for most of the year.',
+  }),
+  Object.freeze({
+    id: 'isareos-hares', species: 'upland-hare', region: 'Isareos', radius: .3, scale: 1,
+    // A hundred and eighty by a hundred and fifty, which is a touch more than the Vastos
+    // and Meneth hares have and well inside `LIFE_REACH` of its own middle.
+    minX: -2490, maxX: -2310, minZ: -180, maxZ: -30,
+    sites: Object.freeze([[-2406, -124], [-2374, -100], [-2436, -88]]),
+    note: 'Extension: the same Ganoss upland hare as on the Vastos plain and the Meneth ridges, and at last not carried far — this is the same latitude and the same open grass.',
+  }),
+  Object.freeze({
+    id: 'isareos-otters', species: 'otter', region: 'Isareos', radius: .35, scale: 1.25,
+    // **Below the ford, not on it.** An otter's way out is the water, and `waterOf` looks
+    // for deep-water colliders — which a river has only where it cannot be waded. The
+    // first range sat on the upper third, where this one is shallow over gravel, so the
+    // otters had nowhere to go and were simply a slow land animal that could be run down.
+    minX: -2620, maxX: -2440, minZ: 110, maxZ: 190,
+    sites: Object.freeze([[-2590, 140], [-2520, 160]]),
+    note: 'The great river otter on the Isa: the fauna overview places it "from the Oremindi meltwater sources through the forest-margin watercourses of Alezhor", and with the Ibenwood two hexes west this is a forest-margin watercourse even where the country itself is not forest. The Carica’s otter at a larger size; an extension by place, and flagged.',
+  }),
+  Object.freeze({
+    id: 'isareos-vultures', species: 'turkey-vulture', region: 'Isareos', radius: .3, scale: 1, air: 38,
+    minX: -2700, maxX: -2320, minZ: -200, maxZ: 160,
+    sites: Object.freeze([[-2560, -60], [-2450, 60]]),
+    note: 'Extension: the fauna overview names no raptor or scavenger for Isareos. The species is the game’s own (src/drent-birds.js, src/birding.js) and the shape in the sky is the overview’s black soar-bird, "technically a vulture-relative", held flat and circling a long way up.',
   }),
 ]);
 
@@ -563,6 +701,53 @@ const CIRCLE_RADIUS = 46, CIRCLE_PERIOD = 27;
  * with, to the digit. Membership of this table is also what says an animal is a
  * bird: it is what decides two legs rather than four.
  */
+/**
+ * The same table for the four-legged grazers: where the head sits on the end of the
+ * neck standing (`high`) and down in the grass (`low`), how far forward that is
+ * (`neck`), where the legs hang off the body (`shoulder`, `hip`, `fore`) and how far
+ * they swing (`stride`).
+ *
+ * The longhorn's and the hill sheep's rows are the numbers the four western regions
+ * were built with, to the digit; the red deer's is new and is the reason the branch
+ * became a table. Membership of this table is what says an animal grazes with a head
+ * on a neck, which is the one thing the fox, the otter and the boar do differently.
+ */
+/**
+ * The birds that are only ever seen in the air. They carry a body and two wings and
+ * nothing else — no head batch, no legs — so anything that falls past this set into
+ * the four-legged tail of `render` asks an instanced mesh that was never made for a
+ * matrix and takes the render loop down with it. That is what the vulture did the
+ * first time it was added.
+ */
+const SOARERS = new Set(['plateau-hawk', 'turkey-vulture']);
+
+/**
+ * How near a traveler has to be to a band's middle before the band is drawn and run.
+ *
+ * **It is also the hard limit on how big a range may be**, and that is the part that is
+ * not obvious. A flock is ticked when the traveler is within `REACH` of its *centre*,
+ * not of its animals, so an animal that runs to a far corner of a wide range takes the
+ * traveler with it — and the moment the two of them are more than `REACH` from the
+ * centre, the whole band stops being ticked and freezes where it stands.
+ *
+ * Measured, that is exactly what happened to Isareos's deer: given a range three
+ * hundred and sixty metres across to keep them from being cornered, a hind ran to a
+ * corner, the flock went quiet, and somebody at a walk strolled up to an animal that
+ * had stopped existing. So **half a range's diagonal must be less than this**, and
+ * `tests/west-life.test.js` holds every range in the west to it.
+ */
+export const LIFE_REACH = 130;
+
+const GRAZER_RIG = Object.freeze({
+  longhorn: { neck: .86, high: 1.38, low: .62, shoulder: .76, hip: .24, fore: .50, stride: .42 },
+  'hill-sheep': { neck: .43, high: .84, low: .48, shoulder: .44, hip: .22, fore: .34, stride: .42 },
+  // The deer's pivot is its shoulder joint rather than the base of a head: `neck` and
+  // `high` are where that joint is, and the 1.15 rad swing the grazing pose applies
+  // carries the whole neck down with the head. `low` drops the joint a little as well,
+  // because a deer that puts its nose in the grass lowers its shoulders to do it.
+  'red-deer': { neck: .30, high: 1.00, low: .68, shoulder: .62, hip: .20, fore: .42, stride: .52 },
+});
+
 const BIRD_RIG = Object.freeze({
   'wading-bird': { shoulder: .84, hip: .58, out: .11, apart: .05, beat: 1.1, swing: .22, fold: .30, sweep: 1.22, tuck: .52 },
   egret: { shoulder: .84, hip: .58, out: .11, apart: .05, beat: 1.1, swing: .22, fold: .30, sweep: 1.22, tuck: .52 },
@@ -636,7 +821,12 @@ export function createWestLife(scene, world) {
     creatures.push(...animals);
     const shape = shapes[zone.species];
     const meshes = { body: instances(group, `${zone.species} bodies`, shape.body, animals.length) };
-    if (shape.head) meshes.head = instances(group, `${zone.species} heads`, shape.head, animals.length);
+    // A band of hinds is the same animal with nothing on its head, which is a second
+    // head geometry and not a second species: one range of red deer carries antlers
+    // and the other does not, and a herd in which every beast has the same head on it
+    // is a herd of one beast repeated.
+    const headShape = zone.hornless && shape.hornless ? shape.hornless : shape.head;
+    if (headShape) meshes.head = instances(group, `${zone.species} heads`, headShape, animals.length);
     if (shape.leg) meshes.legs = instances(group, `${zone.species} legs`, shape.leg,
       animals.length * (BIRD_RIG[zone.species] ? 2 : 4));
     if (shape.ear) meshes.ears = instances(group, `${zone.species} ears`, shape.ear, animals.length * 2);
@@ -675,11 +865,11 @@ export function createWestLife(scene, world) {
    * keeps them from being chased to the horizon. The fox still never flees.
    */
   const FLEE_AT = { longhorn: 7.5, 'hill-sheep': 6.5, 'upland-hare': 9, otter: 8, 'wading-bird': 11, 'river-fox': 0,
-    egret: 12, stilt: 11, duck: 10, gull: 9, boar: 8.5 };
+    egret: 12, stilt: 11, duck: 10, gull: 9, boar: 8.5, 'red-deer': 18 };
   const WALK = { longhorn: .42, 'hill-sheep': .48, 'upland-hare': 1.9, otter: 1.1, 'wading-bird': .5, 'river-fox': .9,
-    egret: .5, stilt: .8, duck: .45, gull: .7, boar: .6 };
+    egret: .5, stilt: .8, duck: .45, gull: .7, boar: .6, 'red-deer': .7 };
   const RUN = { 'hill-sheep': 5.6, 'upland-hare': 9.6, otter: 8.2, 'wading-bird': 10,
-    egret: 10, stilt: 10.4, duck: 9.8, gull: 11, boar: 8.4 };
+    egret: 10, stilt: 10.4, duck: 9.8, gull: 11, boar: 8.4, 'red-deer': 10.5 };
   /**
    * Everything that answers a traveler by getting off the ground. A bird cannot be
    * run down, which is the whole of why they are all here and the hare is not.
@@ -691,7 +881,7 @@ export function createWestLife(scene, world) {
   const FOX = Object.freeze({ floor: 1, cap: 6.6, lead: 1.06, arm: 2.8, notice: 10 });
   /** Going home is a purposeful walk, not a graze: a band chased a hundred metres is back in a minute or two. */
   const RETURN = { longhorn: 1.3, 'hill-sheep': 1.5, 'upland-hare': 2.8, otter: 1.8, 'wading-bird': 1.4, 'river-fox': 1.5,
-    egret: 1.4, stilt: 1.7, duck: 1.3, gull: 1.6, boar: 1.6 };
+    egret: 1.4, stilt: 1.7, duck: 1.3, gull: 1.6, boar: 1.6, 'red-deer': 2.4 };
   const HOME = 16, SETTLED = 6;
   const BACK = [0, .35, -.35, .7, -.7], ALONG = [1.05, -1.05, 1.4, -1.4, 1.75, -1.75, 2.1, -2.1];
 
@@ -989,26 +1179,31 @@ export function createWestLife(scene, world) {
       const walking = animal.speed > .05, phase = animal.clock * (animal.action === 'flee' ? 13 : 7);
       const breath = Math.sin(animal.clock * 2.1) * .012;
       place(flock.meshes.body, i, 0, 0, 0, 0, 0, 0, 1, 1 + breath, 1);
-      if (species === 'plateau-hawk') {
+      // Everything that soars: a body, two wings and no limb that touches the ground,
+      // because neither of these birds is ever seen anywhere but in the air. The
+      // vulture is on the hawk's rig with a wider wing and a slower tilt to it — that
+      // is the whole of the difference, and it is the difference you see from below.
+      if (SOARERS.has(species)) {
         // Wings held out and barely moving: a bird that is circling is not flapping.
-        const tilt = Math.sin(animal.clock * .4) * .12;
+        const slow = species === 'turkey-vulture' ? .26 : .4;
+        const tilt = Math.sin(animal.clock * slow) * (species === 'turkey-vulture' ? .16 : .12);
+        // A turkey vulture holds its wings in a shallow V and rocks; a hawk holds them flat.
+        const dihedral = species === 'turkey-vulture' ? .26 : .16;
         for (let side = 0; side < 2; side++) place(flock.meshes.wings, i * 2 + side,
-          side ? -.06 : .06, .01, -.01, 0, side ? Math.PI : 0, (side ? -1 : 1) * (.16 + tilt));
+          side ? -.06 : .06, .01, -.01, 0, side ? Math.PI : 0, (side ? -1 : 1) * (dihedral + tilt));
         return;
       }
-      if (species === 'longhorn' || species === 'hill-sheep') {
+      const grazer = GRAZER_RIG[species];
+      if (grazer) {
         // The head hangs off the end of the neck, so grazing swings it down and
         // forward together rather than sinking it back into the shoulder.
-        const ox = species === 'longhorn' ? .86 : .43;
         const grazing = animal.action === 'graze';
-        const high = species === 'longhorn' ? 1.38 : .84, low = species === 'longhorn' ? .62 : .48;
-        place(flock.meshes.head, i, 0, grazing ? low : high, grazing ? ox + .22 : ox,
+        place(flock.meshes.head, i, 0, grazing ? grazer.low : grazer.high, grazing ? grazer.neck + .22 : grazer.neck,
           grazing ? 1.15 + Math.sin(animal.clock * .8) * .06 : .10 + Math.sin(animal.clock * .8) * .07,
           Math.sin(animal.clock * .63) * .10);
-        const hip = species === 'longhorn' ? .24 : .22, fore = species === 'longhorn' ? .50 : .34;
-        for (let leg = 0; leg < 4; leg++) place(flock.meshes.legs, i * 4 + leg, leg % 2 ? hip : -hip,
-          species === 'longhorn' ? .76 : .44, leg < 2 ? fore : -fore,
-          walking ? Math.sin(phase + (leg === 0 || leg === 3 ? 0 : Math.PI)) * .42 : 0);
+        for (let leg = 0; leg < 4; leg++) place(flock.meshes.legs, i * 4 + leg, leg % 2 ? grazer.hip : -grazer.hip,
+          grazer.shoulder, leg < 2 ? grazer.fore : -grazer.fore,
+          walking ? Math.sin(phase + (leg === 0 || leg === 3 ? 0 : Math.PI)) * grazer.stride : 0);
         return;
       }
       if (species === 'upland-hare') {
@@ -1059,7 +1254,7 @@ export function createWestLife(scene, world) {
 
   for (const flock of flocks) render(flock);
 
-  const REACH = 130;
+  const REACH = LIFE_REACH;
   let clock = 0, lastPlayer = null;
   function update(dt, player, active = true) {
     if (disposed || !active || !Number.isFinite(dt) || dt <= 0 || !Number.isFinite(player?.x) || !Number.isFinite(player?.z)) return;

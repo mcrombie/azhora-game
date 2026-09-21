@@ -54,7 +54,12 @@ const ATLAS_OWNERS = (() => {
 
 test('Eer is a registered region, and the atlas divides it once', () => {
   assert.ok(PLAYABLE_REGIONS.includes('Eer'));
-  assert.equal(PLAYABLE_REGIONS.at(-1), 'Eer', 'and last, so no region already built is re-seeded');
+  // Every country is appended, never inserted: `world-regions.js` walks this list with one
+  // seeded stream, so a name put anywhere but the end re-rolls every region after it and
+  // moves scatter that is already built. Eer came after the four; Isareos came after Eer.
+  const order = PLAYABLE_REGIONS.indexOf.bind(PLAYABLE_REGIONS);
+  for (const [before, after] of [['Vastos', 'Meneth'], ['Meneth', 'Caricas'], ['Caricas', 'Nesdor'], ['Nesdor', 'Eer']])
+    assert.ok(order(before) < order(after), `${after} was not appended after ${before}`);
   assert.equal(REGION_IDS.Eer, 15, 'Nesdor took 14 first');
   assert.equal(cells.length, 25, 'the atlas authors twenty-five Eer hexes');
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length);
@@ -192,6 +197,10 @@ test('the Neth is why the far four need a ford, and this pass does not build one
 
 test('two channels cross the plain to the sea, braiding where the gradient dies', () => {
   assert.equal(EER_CHANNELS.length, 2);
+  // **The North Channel and the South Channel** (the user's ruling, 2026-09-21): plain
+  // descriptive names, which is how the lore says Eer names things — "a village called
+  // Long-Drainage has a name that tells you something useful about the place".
+  assert.deepEqual(EER_CHANNELS.map(course => course.name), ['The North Channel', 'The South Channel']);
   const braids = WEST_BRAIDS.filter(braid => braid.id.startsWith('eer-'));
   assert.equal(braids.length, 2, 'one braided reach each');
   for (const channel of EER_CHANNELS) {

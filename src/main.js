@@ -159,7 +159,7 @@ import { createRoadLife } from './road-life.js';
 import { createWestLife } from './west-regions-life.js';
 import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH,
-  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS } from './west-regions.js';
+  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS, ISAREOS_RIVER } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -1443,10 +1443,52 @@ function init() {
       const {sample,spot}=beside(EER_CHANNELS[0],(braid.from+braid.to)/2,58,-1);
       return shot(spot,sample,.22,10);
     }
+    // Isareos, the second of the six and the first on the far bank of the Lizeem.
+    if(view==='south-isareos'){
+      // Across two valleys and the shoulder between them, which is the whole of what
+      // this country is: the same modest rise over and over with thorn down in every
+      // fold of it and grass to the top of all of them. Looked at from nine metres up
+      // for the reason every view out here is — `cameraPullIn` clamps to whatever
+      // stands nearest the focus, and a hollow full of blackthorn is exactly that.
+      return shot({x:-2560,z:-120},{x:-2610,z:60},.03,9);
+    }
+    if(view==='south-isareos-river'){
+      // The border river from the Isareos bank, with the gallery on it and the hills
+      // behind. **Which bank that is, is measured and not assumed**: this course runs the
+      // Nethereum line for the whole of its length, so one side of it is a country that
+      // is not built and has nothing planted on it, and the first take stood there — a
+      // bare slope with the water filling the bottom of the frame and no gallery at all.
+      //
+      // Taken below the ford rather than on it, because that is where the gallery is
+      // thickest and where the river is a river, and from nine metres up for the reason
+      // every view out here is: `cameraPullIn` clamps to whatever stands nearest the
+      // focus, and a gallery is exactly that.
+      // **Just outside the gallery, looking over it**, and that distance is measured
+      // rather than chosen: the gallery is planted to `sample.half + 8`, so nothing in
+      // it stands more than about fifteen metres off the water, and a camera at
+      // twenty-four is behind the last tree with the whole ribbon in front of it. At
+      // thirty-four it was *inside* the band a beck's own gallery makes where it comes
+      // in, with a willow across half the lens; scoring the bank for clear ground
+      // instead only moved it to a stretch that had no gallery to show.
+      //
+      // Ten metres up for the usual reason, and here for a second one: the subject is
+      // a ribbon of trees, and a ribbon reads from above its own height and not from
+      // under it.
+      // Sixty per cent along, which is between two beck mouths and not on one. The three
+      // becks come in at about a fifth, a half and seven tenths of the way down, each
+      // trailing a gallery of its own across the bank, and forty-six per cent — chosen
+      // for no better reason than being the middle — put the camera inside the middle
+      // beck's, ten metres from where it joins.
+      const bank=[1,-1].map(side=>beside(ISAREOS_RIVER,.60,24,side))
+        .find(({spot})=>world.regionAt(spot.x,spot.z)?.name==='Isareos')
+        ??beside(ISAREOS_RIVER,.60,24,-1);
+      return shot(bank.spot,bank.sample,.12,10);
+    }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
       'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird',
       'south-egret':'egret','south-stilt':'stilt','south-duck':'duck','south-boar':'boar',
-      'south-gull':'gull','south-dolphin':'dolphin'}[view];
+      'south-gull':'gull','south-dolphin':'dolphin',
+      'south-reddeer':'red-deer','south-vulture':'turkey-vulture'}[view];
     if(creature){
       let animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
@@ -1462,7 +1504,7 @@ function init() {
         westLife.update(1/30,{x:animal.x,z:animal.z},true);
         animal=westLife.snapshot().creatures.find(a=>a.id===animal.id);
       }
-      const close=creature==='longhorn'?6:creature==='boar'?5:creature==='hill-sheep'?4.5:
+      const close=creature==='longhorn'?6:creature==='red-deer'?7:creature==='boar'?5:creature==='hill-sheep'?4.5:
         creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?9:3.2;
       /**
        * **Round to the front quarter of it, and to the side with room.** Sweeping the
@@ -1492,7 +1534,7 @@ function init() {
       // is the view of one from where a traveler can actually be.
       if(creature==='dolphin')from={x:animal.x+Math.sin(animal.yaw+1.15)*close,z:animal.z+Math.cos(animal.yaw+1.15)*close};
       from=from??{x:animal.x+Math.sin(animal.yaw+.85)*close,z:animal.z+Math.cos(animal.yaw+.85)*close};
-      const height=creature==='longhorn'?1.1:creature==='wading-bird'||creature==='egret'?.9:
+      const height=creature==='longhorn'?1.1:creature==='red-deer'?1.25:creature==='wading-bird'||creature==='egret'?.9:
         creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.5:.35;
       /**
        * `look.y` is measured up from the ground under the subject, and for a dolphin
