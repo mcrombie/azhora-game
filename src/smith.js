@@ -16,6 +16,7 @@
  */
 import { smithStock, tiernamed, tierSoldAt, WEIGHTS, validPiece, armourOf, SLOTS } from './gear.js';
 import { COPPER_ITEM, describeSum } from './economy.js';
+import { BOW } from './archery.js';
 
 export const SMITH_NPC = Object.freeze({
   id: 'tidehaven-smith', name: 'The smith', role: 'Smith of Tidehaven',
@@ -74,13 +75,43 @@ export const SLOT_NOUNS = Object.freeze({ body: 'Jack', head: 'Cap', hand: 'Buck
 export const pieceName = item =>
   `${SLOT_NOUNS[item.slot] ?? 'Piece'}, ${(WEIGHTS[item.weight]?.name ?? '').toLowerCase()} ${tiernamed(item.tier)}`.trim();
 
+/**
+ * **Arrows, at every forge** (the user, 2026-09-21: "the smiths sell arrows", and there is no
+ * fletcher and no new person). An iron head on an ash shaft is smith's work in a way a bow is
+ * not, which is why the bow is given and never sold.
+ *
+ * A dozen at nine copper against a starting purse of twenty-four: a traveler who has just been
+ * given a bow can walk to a forge and fill a quiver twice over, and still not be rich.
+ */
+export const ARROWS = Object.freeze({ kind: 'arrows', id: BOW.arrow, bundle: 12, price: 9,
+  label: 'Arrows, a dozen' });
+
+/**
+ * A dozen shafts, bought the same atomic way a jack is: the money only moves if the satchel takes
+ * them, and if it will not, the money comes back. Nothing here cares whether he owns a bow - a
+ * man may lay arrows in before he has anything to shoot them with, and Jerry's gift is a
+ * friendship away.
+ */
+function buyArrows({ inventory, item }) {
+  const price = Math.max(0, Math.round(Number(item.price) || 0));
+  const bundle = Math.max(1, Math.round(Number(item.bundle) || 1));
+  const purse = inventory?.count?.(COPPER_ITEM) ?? 0;
+  if (purse < price) return { ok: false, reason: `That is ${price} copper, and you have ${describeSum(purse)}.` };
+  if (!inventory.remove(COPPER_ITEM, price)) return { ok: false, reason: 'Your purse is lighter than it looks.' };
+  if (!inventory.add(item.id, bundle)) { inventory.add(COPPER_ITEM, price); return { ok: false, reason: 'You have nowhere to put them.' }; }
+  return { ok: true, reason: '', item, had: null, price, arrows: bundle, quiver: inventory.count(item.id) };
+}
+
 /** What he has today, named the way he would name it, with what each piece turns. */
 export function smithOffers(countryLevel) {
-  return Object.freeze(smithStock(countryLevel).map(item => Object.freeze({
-    ...item, label: pieceName(item),
+  const armour = smithStock(countryLevel).map(item => Object.freeze({
+    ...item, kind: 'armour', label: pieceName(item),
     // What this one piece on its own would turn, as a share, for a player deciding between them.
     turnsPercent: Math.round(armourOf({ [item.slot]: { weight: item.weight, tier: item.tier } }).turns * 100),
-  })));
+  }));
+  // Arrows are the same at every forge in every country: a shaft is a shaft, and the tier table
+  // is about armour. They sit first because they are the cheapest thing on any of these boards.
+  return Object.freeze([ARROWS, ...armour]);
 }
 
 /**
@@ -89,6 +120,7 @@ export function smithOffers(countryLevel) {
  * piece already in that place is replaced, and the caller is told what it was so it can say so.
  */
 export function buyFromSmith({ inventory, gear, item } = {}) {
+  if (item?.kind === 'arrows') return buyArrows({ inventory, item });
   if (!item || !SLOTS.includes(item.slot) || !validPiece({ weight: item.weight, tier: item.tier }))
     return { ok: false, reason: 'He does not make that.' };
   const price = Math.max(0, Math.round(Number(item.price) || 0));
@@ -129,9 +161,9 @@ export function smithConversation(npc, context) {
   const purse = inventory?.count?.(COPPER_ITEM) ?? 0;
   const offers = smithOffers(level);
   const choices = offers.map(item => ({
-    id: `smith-buy-${item.slot}-${item.weight}-${item.tier}`,
+    id: item.kind === 'arrows' ? 'smith-buy-arrows' : `smith-buy-${item.slot}-${item.weight}-${item.tier}`,
     label: `${item.label} — ${item.price} copper${purse < item.price ? ' (you cannot yet)' : ''}`,
-    action: () => { closeDialogue?.(); act?.(`smith-buy:${item.slot}:${item.weight}:${item.tier}`); },
+    action: () => { closeDialogue?.(); act?.(item.kind === 'arrows' ? 'smith-buy:arrows' : `smith-buy:${item.slot}:${item.weight}:${item.tier}`); },
   }));
   openDialogue(npc, [...smithGreeting(level, { worn: gear?.view?.().worn ?? {}, id: npc.id }),
     `You are carrying ${describeSum(purse)}.`], null, 'Back to the village', {

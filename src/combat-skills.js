@@ -131,7 +131,7 @@ export const ARMS_SKILLS = freeze({
   'heavy-arms': freeze({ id: 'heavy-arms', weapons: freeze(['greatsword', 'iron-mace', 'bearded-axe']) }),
   polearms: freeze({ id: 'polearms', weapons: freeze(['ash-spear', 'war-pike']) }),
   staves: freeze({ id: 'staves', weapons: freeze(['forest-stick', 'quarterstaff']) }),
-  bows: freeze({ id: 'bows', weapons: freeze([]) }),
+  bows: freeze({ id: 'bows', weapons: freeze(['hunting-bow']) }),
   shield: freeze({ id: 'shield', weapons: freeze([]) }),
   toughness: freeze({ id: 'toughness', weapons: freeze([]) }),
 });

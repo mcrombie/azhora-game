@@ -223,8 +223,12 @@ test('whoever you are, the model is the traveler’s: the rig, the swap and the 
       for (const key of ['position', 'normal']) assert.ok(object.geometry.attributes[key].array.every(Number.isFinite), `${id} has invalid ${key} geometry`);
     });
     assert.ok(draws <= 34, `${id} draws ${draws} batches`);
-    // And the figure may not balloon unwatched, held weapons and all.
-    assert.ok(built <= 44, `${id} is built from ${built} meshes`);
+    // And the figure may not balloon unwatched, held weapons and all. Measured with the bow in:
+    // Cromb is 28 bare, 39 with the nine he can swing, 45 with the bow — **the bow is six of
+    // them** (two limbs, the grip, the string, and the shaft and head of the arrow on it), and it
+    // is the tenth and last weapon phase 6 adds. Matt is the dearest of the eleven at 49, and the
+    // most anybody *draws* is 22, which is the number that costs anything.
+    assert.ok(built <= 49, `${id} is built from ${built} meshes`);
   }
 });
 

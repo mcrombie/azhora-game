@@ -84,7 +84,10 @@ export function createCombatView(scene, world, camera) {
       const group=item.actor.group;group.visible=(item.deadTime<2.4||ally.wounded)&&['active','defeated'].includes(state.phase);
       group.position.set(ally.x,world.heightAt(ally.x,ally.z),ally.z);group.rotation.y=ally.yaw;
       group.scale.setScalar(dead&&!ally.wounded?Math.max(0,1-Math.max(0,item.deadTime-1.4)):1);
-      item.actor.animate(time+index*1.3,ally.speed||0,true,{action:ally.action,progress:ally.progress,alert:state.phase==='active',armed:ally.armed!==false});
+      // An archer's wind-up is a draw, and it is drawn rather than swung: `draw` is the same pose
+      // the traveler's bow uses, so Jerry standing off at thirty paces reads as Jerry.
+      item.actor.animate(time+index*1.3,ally.speed||0,true,{action:ally.action,progress:ally.progress,alert:state.phase==='active',armed:ally.armed!==false,
+        draw:ally.kind==='archer'?(ally.action==='windup'?ally.progress:ally.action==='attack'?1:0):0});
       projection.set(ally.x,group.position.y+1.9,ally.z).project(camera);
       item.badge.hidden=!visible||dead||projection.z>1||projection.z< -1||state.phase!=='active';
       if(!item.badge.hidden){

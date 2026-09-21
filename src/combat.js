@@ -1,5 +1,6 @@
 import { canStand, moveCharacter } from './game-state.js';
 import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
+import { BOW, drawnBy, shotAt, solidAt, survives } from './archery.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -63,6 +64,15 @@ const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 const ALLY_KINDS = Object.freeze({
   legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90, level: 1 }),
   officer: Object.freeze({ tell: .5, attack: .48, contact: .2, recovery: 1.7, damage: 22, speed: 2.2, engage: 1.95, reach: 2.2, hp: 110, level: 1 }),
+  /**
+   * **Jerry** (src/archery.js). An ally with `bow` does not close: he stands off at thirty paces,
+   * draws, and looses at whatever is nearest. His draw is his tell, and it is long, because
+   * "thirty paces, one arrow, and then I do not have to think about it any more" is a slow thing
+   * done once rather than a fast thing done often. He has no enemy counterpart: there are no
+   * enemy archers yet, by the coordinator's ruling.
+   */
+  archer: Object.freeze({ tell: 1.05, attack: .3, contact: .12, recovery: 1.5, damage: 24, speed: 2.2,
+    engage: 22, reach: 34, hp: 90, level: 1, bow: true, standoff: 9 }),
   // Villagers caught in a fight (src/bystanders.js). One who has a tool to hand fights, slower and
   // lighter than a soldier. One who has not freezes, then runs for its refuge, burdened, a little
   // slower than a goblin: without help it is caught.
@@ -223,7 +233,7 @@ const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swi
  */
 export const GUARD_ARC = Math.PI / 3;
 
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null }) {
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null, getArrows = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
   const first = margins();
   const state = {
@@ -235,6 +245,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     },
     enemies: [],
     allies: [],
+    /** Arrows in the air. Nothing else in this game is anywhere but where its owner is standing. */
+    arrows: [],
   };
   const player = state.player;
   const enemyTimers = new Map();
@@ -249,6 +261,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   // Hold to guard. It is held rather than done: the host says every frame whether the key is
   // down and which way the traveler is facing, and nothing here remembers a press.
   let guardHeld = false, guardYaw = 0;
+  /**
+   * Hold to draw, release to loose - the same held verb, with the same rule: the host offers the
+   * button and the facing every frame and nothing here remembers a press. `drawHeld` is this
+   * frame's button, `drawTime` how long it has actually been drawing, and `loosed` counts the
+   * arrows this traveler has ever sent, which is what decides which shafts break.
+   */
+  let drawHeld = false, drawYaw = 0, drawTime = 0, loosed = 0;
   /**
    * Whether there is `metres` of clear ground all round him to swing a long weapon in. Only the
    * pike asks. A world with no colliders - a test's - is open ground, which is the right answer.
@@ -314,6 +333,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     bufferedAttack = false;
     hitApplied = false;
     attackWeapon = null;
+    // Nothing is drawn and nothing is in the air. Arrows that were flying when a fight ended are
+    // gone with it: an arrow belongs to the fight it was loosed in.
+    drawTime = 0;
+    player.drawing = false;
+    player.draw = 0;
+    state.arrows = [];
   }
 
   function makeEnemy(id, kind, point, entry = 0, hp = kind === 'dummy' ? 100 : 75) {
@@ -414,6 +439,91 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     player.guarding = guarding();
     return player.guarding;
   }
+  /**
+   * **Hold to draw, release to loose** (docs/combat-brief.md, phase 6). The same shape as the
+   * guard, and for the same reason: the host offers the button and the facing every frame and
+   * this module latches nothing of its own.
+   *
+   * It returns how much of a draw is actually on, which is a different question from whether the
+   * button is down: it needs a bow in hand, an arrow to put on it, an idle body, and the wind to
+   * send it. Let go and whatever was drawn goes - below `BOW.least` that is nothing at all.
+   */
+  function draw(held, yaw = drawYaw) {
+    const was = drawing();
+    drawHeld = !!held;
+    if (Number.isFinite(yaw)) drawYaw = yaw;
+    const now = drawing();
+    // Letting go is the shot. A draw that stops for any other reason - a blow, the wind going,
+    // the last arrow leaving the quiver - is a draw that comes down, and sends nothing.
+    if (was && !drawHeld) loose();
+    if (!now) drawTime = 0;
+    player.drawing = now;
+    player.draw = now ? drawnBy(drawTime, margins().drawTime ?? 1) : 0;
+    return player.draw;
+  }
+  /** How many arrows there are to shoot. The host owns the satchel; this only ever asks. */
+  const arrowsLeft = () => Math.max(0, Math.floor(Number(getArrows?.()) || 0));
+  /** Whether a draw is actually on right now, which is not the same as the button being down. */
+  function drawing() {
+    const weapon = currentWeapon();
+    return !!drawHeld && !!weapon?.ranged && weapon.usable !== false && state.phase === 'active'
+      && player.action === 'idle' && player.hp > 0 && player.stamina >= BOW.wind && arrowsLeft() > 0;
+  }
+  /**
+   * The arrow leaves. What it is worth and how far it carries both follow how far it was drawn,
+   * so a snatched shot is a real arrow that falls short rather than a miss the player cannot read.
+   * The weapon's own damage has already been through the traveler's skill in Bows (`profile()`),
+   * so an arrow gets better in exactly the way every other weapon does.
+   */
+  function loose() {
+    const weapon = currentWeapon();
+    const pull = drawnBy(drawTime, margins().drawTime ?? 1);
+    drawTime = 0;
+    if (!weapon?.ranged || state.phase !== 'active' || player.hp <= 0) return false;
+    const shot = shotAt(pull, { damage: weapon.damage?.[0] ?? BOW.damage });
+    if (!shot) { emit('draw-spent', { pull, x: position.x, z: position.z }); return false; }
+    if (arrowsLeft() <= 0 || player.stamina < BOW.wind) return false;
+    player.stamina -= BOW.wind;
+    staminaDelay = Math.max(staminaDelay, .5);
+    const n = ++loosed;
+    state.arrows.push({ id: `arrow-${n}`, n, x: position.x, z: position.z, y: BOW.height,
+      yaw: drawYaw, flown: 0, range: shot.range, damage: shot.damage, weaponId: weapon.id });
+    emit('loose', { n, x: position.x, z: position.z, yaw: drawYaw, pull: shot.pull, weaponId: weapon.id });
+    return true;
+  }
+  /**
+   * An arrow stops, and that is the end of it. **About two in three can be picked up again**: one
+   * shaft in three breaks where it lands, and which one is the arrow's own number rather than a
+   * roll, so the rule holds exactly over any run and a reload cannot change what happened.
+   */
+  function landArrow(arrow, stopped, targetId = null) {
+    state.arrows = state.arrows.filter(other => other !== arrow);
+    // An ally's arrows are his own: the traveler does not walk the field gathering Jerry's.
+    emit('arrow-landed', { id: arrow.id, n: arrow.n, owner: arrow.owner ?? null, x: arrow.x, z: arrow.z,
+      stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
+  }
+  /** Every arrow in the air moves, and the first solid thing it meets is the last thing it meets. */
+  function updateArrows(dt) {
+    for (const arrow of [...state.arrows]) {
+      const travel = Math.min(BOW.speed * dt, Math.max(0, arrow.range - arrow.flown));
+      // Swept in short steps, so a fast arrow cannot pass through a thin tree between two frames.
+      const steps = Math.max(1, Math.ceil(travel / BOW.radius));
+      let hit = null, blocked = false;
+      for (let i = 0; i < steps && !hit && !blocked; i++) {
+        const step = travel / steps;
+        arrow.x += Math.sin(arrow.yaw) * step;
+        arrow.z += Math.cos(arrow.yaw) * step;
+        arrow.flown += step;
+        hit = state.enemies.find(enemy => enemy.active && enemy.action !== 'dead'
+          && Math.hypot(enemy.x - arrow.x, enemy.z - arrow.z) <= BOW.radius + .5) ?? null;
+        // **Trees and walls stop arrows.** "In woodland I am a man holding a stick."
+        if (!hit) blocked = !!solidAt(world, arrow.x, arrow.z);
+      }
+      if (hit) { hurtEnemy(hit, arrow.damage, arrow.yaw); landArrow(arrow, 'target', hit.id); continue; }
+      if (blocked) { landArrow(arrow, 'solid'); continue; }
+      if (arrow.flown >= arrow.range - 1e-6) landArrow(arrow, 'spent');
+    }
+  }
   /** Whether the shield is up and would catch something right now. */
   function guarding() {
     const { hasShield, guardCost } = margins();
@@ -427,6 +537,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (player.stamina < cost) return false;
     const weapon = usableWeapon();
     if (!weapon) { bufferedAttack = false; return false; }
+    // A bow is not swung at anything. The host holds the same button to draw it, so this is the
+    // belt to that brace: nothing can ever turn an arrow into a sword stroke.
+    if (weapon.ranged) { bufferedAttack = false; return false; }
     // A pike is two and a half paces of ash: "in a doorway I am furniture". Within `room` of
     // anything solid it will not swing at all, and the traveler is told why rather than pressing
     // a key that quietly does nothing.
@@ -644,6 +757,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < margins().dodgeWindow);
     // Read once a frame so the view, the HUD and the autopilot all see the same shield.
     player.guarding = guarding();
+    // And the draw, which is the other held verb. It only ever grows while it is actually on:
+    // a blow, an empty quiver or a spent bar all take the bow down without sending anything.
+    if (drawing()) drawTime += dt; else drawTime = 0;
+    player.drawing = drawing();
+    player.draw = player.drawing ? drawnBy(drawTime, margins().drawTime ?? 1) : 0;
     if (!staminaDelay && player.action !== 'dead') player.stamina = Math.min(player.maxStamina, player.stamina + 24 * dt);
     if (player.action === 'idle') { player.progress = 0; return; }
     const previousTime = actionTime;
@@ -888,14 +1006,30 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (ally.action === 'attack') {
       ally.progress = clamp(timers.actionTime / profile.attack, 0, 1);
-      if (timers.actionTime <= profile.contact) moveCharacter(ally, Math.sin(ally.yaw) * dt * 1.2, Math.cos(ally.yaw) * dt * 1.2, world);
+      if (!profile.bow && timers.actionTime <= profile.contact) moveCharacter(ally, Math.sin(ally.yaw) * dt * 1.2, Math.cos(ally.yaw) * dt * 1.2, world);
       if (!timers.hitApplied && timers.actionTime >= profile.contact) {
         timers.hitApplied = true;
-        const struck = foes.filter(enemy => distance(ally, enemy) <= profile.reach && facing(ally, enemy, ally.yaw, Math.PI * .3))
-          .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
-        // He hits for what he is worth, which is his own level and not the ground's.
-        if (struck) hurtEnemy(struck, profile.damage * allyDamageScale(ally.level ?? 1), ally.yaw);
-        emit('ally-strike', { id: ally.id, targetId: struck?.id ?? null, x: ally.x, z: ally.z });
+        // **An archer does not reach anybody: he sends something.** The arrow is the same arrow
+        // the traveler's is, in the same list, travelling the same way and stopped by the same
+        // trees - his own complaint about woodland is one rule, not two.
+        if (profile.bow) {
+          const aim = foes.filter(enemy => distance(ally, enemy) <= profile.reach)
+            .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
+          if (aim) {
+            const yaw = Math.atan2(aim.x - ally.x, aim.z - ally.z);
+            ally.yaw = yaw;
+            state.arrows.push({ id: `ally-arrow-${ally.id}-${++loosed}`, n: 0, owner: ally.id,
+              x: ally.x, z: ally.z, y: BOW.height, yaw, flown: 0, range: profile.reach,
+              damage: Math.round(profile.damage * allyDamageScale(ally.level ?? 1)) });
+          }
+          emit('ally-strike', { id: ally.id, targetId: aim?.id ?? null, x: ally.x, z: ally.z, loosed: !!aim });
+        } else {
+          const struck = foes.filter(enemy => distance(ally, enemy) <= profile.reach && facing(ally, enemy, ally.yaw, Math.PI * .3))
+            .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
+          // He hits for what he is worth, which is his own level and not the ground's.
+          if (struck) hurtEnemy(struck, profile.damage * allyDamageScale(ally.level ?? 1), ally.yaw);
+          emit('ally-strike', { id: ally.id, targetId: struck?.id ?? null, x: ally.x, z: ally.z });
+        }
       }
       if (timers.actionTime >= profile.attack) { ally.action = 'idle'; ally.progress = 0; timers.cooldown = profile.recovery; }
       return;
@@ -909,7 +1043,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       emit('ally-windup', { id: ally.id, targetId: target.id });
       return;
     }
-    if (dist > 1.7) ally.speed = steerAlly(ally, target, Math.min(profile.speed * dt, Math.max(0, dist - 1.7))) / dt;
+    // An archer keeps his distance rather than closing to arm's length: he walks up to where he
+    // can see, and backs off anything that gets inside his standoff.
+    const keep = profile.bow ? (profile.standoff ?? 9) : 1.7;
+    if (profile.bow && dist < keep) {
+      const away = { x: ally.x - Math.sin(targetYaw) * (keep - dist), z: ally.z - Math.cos(targetYaw) * (keep - dist) };
+      ally.speed = steerAlly(ally, away, Math.min(profile.speed * dt, keep - dist)) / dt;
+      return;
+    }
+    if (dist > keep) ally.speed = steerAlly(ally, target, Math.min(profile.speed * dt, Math.max(0, dist - keep))) / dt;
   }
 
   /** A villager with nothing to fight with: frozen at first, then running for its refuge. */
@@ -958,6 +1100,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         }
       }
       updatePlayer(step);
+      updateArrows(step);
       state.enemies.forEach(enemy => updateEnemy(enemy, step));
       state.allies.forEach(ally => updateAlly(ally, step));
     }
@@ -974,6 +1117,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   function movementScale() {
     if (['dodge', 'hurt', 'dead'].includes(player.action)) return 0;
+    // A man at full draw is walking, not running. He can still move - a bow that rooted you would
+    // be a trap rather than a weapon - but not away from anything.
+    if (player.drawing) return .42;
     return player.action === 'attack' ? .45 : 1;
   }
 
@@ -1034,7 +1180,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
     setWeaponReady(value) { weaponReady = Boolean(value); },
+    /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
+    get drawn() { return player.draw ?? 0; },
   };
 }

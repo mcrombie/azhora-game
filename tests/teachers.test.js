@@ -13,8 +13,10 @@ import { familyOf } from '../src/combat-skills.js';
 import {
   TEACHERS, TEACHER_IDS, TEACHING, TEACHABLE, LESSON_RUNGS, LESSON_XP, LESSON_LEVEL,
   SPARRING_CEILINGS, teachesOf, teachersOf, sparringCeiling, lessonXp, handsFor,
-  lendOf, lendFits, createTeachers, validateTeachersSnapshot,
+  lendOf, lendFits, giftOf, sparsWith, createTeachers, validateTeachersSnapshot,
 } from '../src/teachers.js';
+import { BOW, JERRYS_BOW } from '../src/archery.js';
+import { smithOffers } from '../src/smith.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -202,14 +204,59 @@ test('a man will only spar in the craft he teaches, and only once he has shown i
   assert.equal(handsFor('staves', { weapon: 'forest-stick' }), true, 'what you landed with is already a staff');
   assert.equal(handsFor('toughness', { weapon: 'simple-sword' }), false, 'nobody spars you into being tougher on purpose');
   assert.equal(handsFor('blades', { weapon: 'pawpaw' }), false);
-  // Every teacher's craft can be met by something: the ten of them ask for nine real things.
+  // Every teacher's craft can be met by something the game has, now that the bow is one of them.
   for (const id of TEACHER_IDS) {
     const family = TEACHERS[id].family;
     const meets = family === 'shield' ? handsFor(family, { shield: true })
       : Object.keys(WEAPON_TYPES).some(weapon => handsFor(family, { weapon }));
-    if (family !== 'bows') assert.ok(meets, `${id} can be met with something the game has`);
-    else assert.equal(meets, false, 'nobody can spar with Jerry until bows exist (phase 6)');
+    assert.ok(meets, `${id} can be met with something the game has`);
   }
+  assert.equal(handsFor('bows', { weapon: 'hunting-bow' }), true, 'the bow exists and is a Bows weapon');
+});
+
+/**
+ * **Jerry will not spar, and it is not an oversight.** A bout is three paces of melee: the teacher
+ * closes to a little over two metres and swings. Two men with bows at that range is not a lesson,
+ * it is an accident with a queue - and blunts at a mark would be a different thing altogether, a
+ * straw post with a bow, with no opponent, no exchange and nothing to yield. So he teaches by
+ * lesson and by the gift, and the rest of Bows is paid for by using it on things that shoot back
+ * with something else.
+ */
+test('one teacher will not stand up with you at all, and says why', () => {
+  const { companions, teachers } = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.fond } });
+  assert.equal(sparsWith('merc-jerry'), false);
+  for (const id of TEACHER_IDS) if (id !== 'merc-jerry') assert.equal(sparsWith(id), true, `${id} will`);
+  teachers.teach('merc-jerry');
+  const asked = teachers.bout('merc-jerry', { weapon: 'hunting-bow' });
+  assert.equal(asked.ok, false);
+  assert.equal(asked.reason, 'never', 'not "wrong hands" — never');
+  assert.equal(asked.line, TEACHERS['merc-jerry'].spar.wrong);
+  assert.match(asked.line, /three paces/, 'and the reason is the range');
+  assert.equal(teachers.ceilingFor('merc-jerry'), 0, 'so a bout with him is worth nothing, because there is none');
+  assert.equal(lendOf('merc-jerry'), null, 'and he lends nothing, because there is nothing to lend it for');
+});
+
+test('the first bow is Jerry’s spare, given with his first lesson', () => {
+  assert.equal(giftOf('merc-jerry').weapon, BOW.id);
+  assert.equal(giftOf('merc-jerry').name, JERRYS_BOW);
+  assert.equal(giftOf('merc-jerry').at, 0, 'with the first lesson, not the last');
+  assert.match(JERRYS_BOW, /^Jerry’s /, 'named the way the dead men’s weapons are named');
+  for (const id of TEACHER_IDS) if (id !== 'merc-jerry') assert.equal(giftOf(id), null, `${id} gives nothing outright`);
+  // It is the thing that shows him the bow at all: before it, Bows banks nothing.
+  const { companions, teachers, skills, arms } = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.acquainted } });
+  assert.equal(skills.known('bows'), false);
+  assert.equal(arms.dealt({ weapon: BOW.id, damage: 40 }).xp, 0, 'an arrow from nowhere teaches nothing');
+  const first = teachers.teach('merc-jerry');
+  assert.equal(first.first, true, 'and the lesson is what shows it to him');
+  assert.equal(first.gives.weapon, BOW.id);
+  assert.equal(skills.known('bows'), true);
+  assert.ok(arms.dealt({ weapon: BOW.id, damage: 40 }).xp > 0, 'and now an arrow pays Bows');
+  // Once. The second and third lessons give nothing but the lesson.
+  companions.restore({ ...companions.snapshot(), regard: { 'merc-jerry': RUNG_AT.friendly } });
+  assert.equal(teachers.teach('merc-jerry').gives, null, 'a man has one spare bow');
+  // And nobody sells one: the smiths' boards are arrows and armour.
+  for (let level = 0; level <= 11; level++)
+    for (const item of smithOffers(level)) assert.notEqual(item.id, BOW.id, 'no smith sells a bow');
 });
 
 /**

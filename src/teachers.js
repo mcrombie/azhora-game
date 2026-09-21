@@ -21,6 +21,7 @@
 import { MERCENARY_ARMS, RUNGS, rungFor } from './companions.js';
 import { ARMS, ARMS_IDS, familyOf } from './combat-skills.js';
 import { mercenaryById } from './mercenaries.js';
+import { BOW, JERRYS_BOW } from './archery.js';
 
 const freeze = Object.freeze;
 
@@ -137,10 +138,24 @@ export const TEACHING = freeze({
       'Mine, thank you. I am generous, not careless. There is a difference and I have spent years establishing it.'),
   }),
   'merc-jerry': freeze({
+    /**
+     * **The first bow is Jerry's spare** (the user, 2026-09-21), and it comes with his first
+     * lesson: a given, named weapon in the manner of the ones the dead leave behind, and the
+     * thing that shows the traveler the bow at all. Nobody else hands one out, and a second can
+     * only come off the ground where an archer fell.
+     */
+    gives: freeze({ at: 0, weapon: BOW.id, name: JERRYS_BOW }),
+    /**
+     * **And he will not spar.** Two men shooting each other across three paces is not a lesson,
+     * it is an accident with a queue; a bout is a melee exchange and an archer at that range is
+     * the man holding a stick he complains about. Blunts at a mark would be a different thing
+     * entirely - a straw post with a bow, with no opponent and no yield - and is not built.
+     */
+    spars: false,
     lessons: freeze([
       teaching('Teach me the bow.',
         'Thirty paces, one arrow, and then I do not have to think about it any more. That is the entire appeal and I will not pretend it is anything deeper.',
-        'It is all the draw. Hold it, let it settle, loose. A rushed draw is an arrow in the ground and an arrow you do not have.'),
+        'Here. Take the spare — no, take it, I have been carrying two since the crossing and one of them has never been strung. Hold it out, draw to your cheek, let it settle, loose. A rushed draw is an arrow in the ground and an arrow you do not have.'),
       teaching('What shortens the draw?',
         'Practice, and nothing else. You will feel it come down as you go — it is a long slow bargain, and at the end of it you are drawing in half the time you started with.',
         'Do not wait for the perfect one. A settled draw and a fair line beats a beautiful one you never loosed.'),
@@ -149,7 +164,7 @@ export const TEACHING = freeze({
         'So know where the open ground is before it matters. That is not archery. That is just not being an idiot in a forest.'),
     ]),
     spar: freeze({ offer: 'Put me through it.',
-      wrong: 'With what? I have one bow. One. I am not handing my one bow to a man who has never drawn one, and you cannot learn this on a borrowed stick. Find yourself a bow and I will make you worth something at thirty paces.',
+      wrong: 'Spar? With bows? You would be three paces away with an arrow on the string and so would I, and one of us would be dead and it would be whichever of us was slower. No. Go and shoot things that are not me, and then come and tell me about it.',
       done: 'Well. You are not going to do that to me twice.' }),
   }),
   'merc-christin': freeze({
@@ -331,6 +346,10 @@ export function handsFor(family, { weapon = null, shield = false } = {}) {
  * the traveler's own weapon is back in his hand the moment the bout ends, however it ends.
  */
 export const lendOf = id => TEACHERS[id]?.lends ?? null;
+/** What he gives outright, and when. Jerry's spare bow is the only one, and it is the first lesson. */
+export const giftOf = id => TEACHERS[id]?.gives ?? null;
+/** Whether he will stand up with you at all. Jerry will not, and says why (`spar.wrong`). */
+export const sparsWith = id => TEACHERS[id]?.spars !== false;
 /** Whether what he lends is a thing he could actually be teaching: his own craft, in his own hands. */
 export const lendFits = id => {
   const lent = lendOf(id);
@@ -377,8 +396,12 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
     const index = given(id);
     if (index >= LESSON_RUNGS.length || index >= earned(id)) return null;
     const { family, level, lessons } = teacher(id);
+    // What comes with this lesson, if anything. Only Jerry gives anything, and only the first
+    // time: his spare bow, which is also the only way the game's one bow reaches the traveler.
+    const gift = giftOf(id);
     return freeze({ id, index, rung: LESSON_RUNGS[index], family, ...lessons[index],
-      xp: lessonXp(index, level), ceiling: sparringCeiling(index + 1, level) });
+      xp: lessonXp(index, level), ceiling: sparringCeiling(index + 1, level),
+      gives: gift && gift.at === index ? gift : null });
   }
 
   /**
@@ -393,7 +416,7 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
     const learned = arms?.learn?.(lesson.family) ?? { first: false };
     const paid = arms?.pay?.(lesson.family, lesson.xp, 'lesson') ?? { xp: 0 };
     onEvent({ type: 'lesson', id, family: lesson.family, index: lesson.index, rung: lesson.rung,
-      first: !!learned.first, xp: paid.xp ?? 0, ceiling: lesson.ceiling });
+      first: !!learned.first, xp: paid.xp ?? 0, ceiling: lesson.ceiling, gives: lesson.gives });
     return { ok: true, ...lesson, first: !!learned.first, xp: paid.xp ?? 0, level: paid.level ?? 1 };
   }
 
@@ -411,6 +434,9 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
     if (!present(id)) return { ok: false, reason: 'away' };
     const { family, level, spar } = teacher(id);
     if (!given(id)) return { ok: false, reason: 'untaught' };
+    // One man will not, whatever is in anybody's hands, and says why: a bout is three paces of
+    // melee and two archers at three paces is not a lesson.
+    if (!sparsWith(id)) return { ok: false, reason: 'never', line: spar.wrong, family };
     const own = handsFor(family, hands);
     const lent = own ? null : lendOf(id);
     if (!own && !lent) return { ok: false, reason: 'hands', line: spar.wrong, family };
@@ -418,7 +444,7 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
   }
 
   /** What a bout with this man pays up to today, or 0 for a man who will not stand up with you. */
-  const ceilingFor = id => (present(id) && given(id) ? sparringCeiling(given(id), teacher(id).level) : 0);
+  const ceilingFor = id => (present(id) && given(id) && sparsWith(id) ? sparringCeiling(given(id), teacher(id).level) : 0);
 
   const view = () => TEACHER_IDS.map(id => ({ id, name: TEACHERS[id].name, family: TEACHERS[id].family,
     level: TEACHERS[id].level, given: given(id), earned: earned(id), here: present(id),
