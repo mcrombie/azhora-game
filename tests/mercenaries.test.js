@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
+import { wildJourney } from '../src/wild-route.js';
+import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
-const company = () => createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 } });
+// The sea puts Ed down on a strand of his own and Mus beaches round a headland, so the fixture
+// gives both, and the queue at the landing is the men who actually came off a boat.
+const shore = { x: 40, z: -30 };
+const company = () => createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore });
 
 test('the company is eleven including the traveler, and the written arrivals never go backwards', () => {
   assert.equal(MERCENARY_ROSTER.length, MERCENARY_COMPANY_SIZE - 1);
@@ -114,8 +118,13 @@ test('placements keep the men on or beside the road, off the traveler’s landin
   // this replaces did not fit the pier it was drawn on (LANDING_QUEUE, docs/known-issues.md).
   const span = Math.hypot(road[0].x - 3, road[0].z - 3);
   const ux = (road[0].x - 3) / span, uz = (road[0].z - 3) / span;
+  // Only the men who came off a boat are in it. Ed the Word is put down by the sea on his own
+  // strand and Mus beaches round the headland, so neither queues with the rest.
+  const queued = early.filter(p => mercenaryById(p.id).route === 'road');
+  assert.ok(queued.length === MERCENARY_ROSTER.filter(m => m.route === 'road').length && queued.length < early.length,
+    'the queue is the road-route men and nobody else');
   let previous = 0;
-  for (const [i, p] of early.entries()) {
+  for (const [i, p] of queued.entries()) {
     const along = (p.x - 3) * ux + (p.z - 3) * uz, across = Math.abs((p.x - 3) * -uz + (p.z - 3) * ux);
     assert.ok(along > 2, `${p.id} is off the landing itself (${along.toFixed(1)} m along)`);
     assert.ok(across <= LANDING_QUEUE.offset + 1e-9, `${p.id} keeps to the line (${across.toFixed(2)} m off it)`);
@@ -132,8 +141,15 @@ test('placements keep the men on or beside the road, off the traveler’s landin
   const widest = 1.4 + Math.floor((MERCENARY_ROSTER.length - 1) / 2) * .8;
   const corridor = { walking: widest, stopped: widest * 2.2 };
   let seen = { walking: 0, stopped: 0 }, furthest = { walking: 0, stopped: 0 };
+  let wildWalking = 0, wildStopped = 0;
   for (let t = 0; t <= 20000; t += 5) for (const p of c.placements(t)) {
     if (p.phase !== 'walking' && p.phase !== 'stopped') continue;
+    // The man who does not use the road is not measured against it. He has a line of his own
+    // (src/wild-route.js) and `tests/wild-route.test.js` holds it against the real one.
+    if (mercenaryById(p.id).route === 'wild') {
+      if (p.phase === 'walking') wildWalking++; else wildStopped++;
+      continue;
+    }
     seen[p.phase]++;
     const at = pointAlongRoad(road, distanceAlongRoad(road, p));
     const off = Math.hypot(p.x - at.x, p.z - at.z);
@@ -151,6 +167,9 @@ test('placements keep the men on or beside the road, off the traveler’s landin
     }
   }
   assert.ok(seen.walking > 500 && seen.stopped > 50, `the sweep saw ${seen.walking} walking and ${seen.stopped} stopped`);
+  // And the wild man walks a great deal and stops nowhere, because he was handed no stops.
+  assert.ok(wildWalking > 200, `the wild man was seen walking ${wildWalking} times`);
+  assert.equal(wildStopped, 0, 'a man who is never on the road never pauses at a place on it');
   // And the corridor is not slack: somebody really does go out to the edge of it.
   assert.ok(furthest.walking > corridor.walking - .1, `nobody walks near the edge (${furthest.walking.toFixed(2)} of ${corridor.walking})`);
   assert.ok(furthest.stopped > corridor.stopped - .1, `nobody stops near the edge (${furthest.stopped.toFixed(2)} of ${corridor.stopped})`);
@@ -166,13 +185,17 @@ test('placements keep the men on or beside the road, off the traveler’s landin
     for (const p of here) everWalked.add(p.id);
     if (here.length > busiest.count) busiest = { count: here.length, t };
   }
-  assert.equal(everWalked.size, MERCENARY_ROSTER.length, 'every man walks the road at some point');
+  assert.equal(everWalked.size, MERCENARY_ROSTER.length, 'every man is on his way at some point');
+  assert.ok(everWalked.has('merc-mus'), 'including the one who is on a line of his own');
   // Three, and it is the three riders, who arrive together and argue the whole way. On this
   // road, with these arrivals, that is as crowded as it gets.
   assert.equal(busiest.count, 3, `the road is busiest with ${busiest.count} men on it, at ${busiest.t}s`);
-  // Distances stay on the road they are measured along, all the way through.
-  for (let t = 0; t <= 20000; t += 25) for (const p of c.placements(t))
-    assert.ok(p.distance >= 0 && p.distance <= 650, `${p.id} is ${p.distance.toFixed(0)} m along a 650 m road at ${t}s`);
+  // Distances stay on the line they are measured along, all the way through. The wild man's is
+  // his own and longer, which is the point of him.
+  for (let t = 0; t <= 20000; t += 25) for (const p of c.placements(t)) {
+    const limit = mercenaryById(p.id).route === 'wild' ? wildJourney({ x: -400, z: 250 }).metres + 1 : 650;
+    assert.ok(p.distance >= 0 && p.distance <= limit, `${p.id} is ${p.distance.toFixed(0)} m along a ${limit} m line at ${t}s`);
+  }
   const late = c.placements(20000);
   assert.ok(late.every(p => p.phase === 'mustered'), 'given enough time, everyone musters');
   const spread = new Set(late.map(p => `${p.x.toFixed(1)},${p.z.toFixed(1)}`));
@@ -199,7 +222,7 @@ test('with no companion argument, the company stands exactly where it always has
   // with no companion at all, and if that moved one man by a metre it would move the clock the
   // eighty-seven minutes are measured on (tests/long-road-clock.test.js).
   const today = company();
-  const same = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, companion: undefined });
+  const same = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore, companion: undefined });
   for (const seconds of [0, 600, 1800, 5300]) {
     assert.deepEqual(same.placements(seconds), today.placements(seconds), 'at ' + seconds + ' s');
     assert.deepEqual(same.summary(seconds), today.summary(seconds));

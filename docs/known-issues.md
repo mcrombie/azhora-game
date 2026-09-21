@@ -489,7 +489,33 @@ name the five, because which man stands at which radius is only the order of the
 start a new game, stay at the landing, and wait to t=1080 (eighteen minutes) for Jerry and
 Kristen.
 
-## `route` is written on every hired sword and read by nothing
+## `route` is written on every hired sword and read by nothing (fixed)
+
+**Fixed 2026-09-21. All three of them are read now.**
+
+- `route: 'shore'` — `createMercenaryCompany` takes a `shore` point, and Ed the Word waits on
+  the strand the sea put him on rather than among the people who came off boats.
+- `swims` — `WORD_SWIMS` in `src/word-arrival.js` is what makes his arrival a crossing to watch
+  rather than a man appearing on the sand when the ship lets him go.
+- `route: 'wild'` — Mus walks a line of his own, `src/wild-route.js`, by way out 1 below:
+  `placements()` picks the polyline and `mercenaryProgress` is untouched, because it was already
+  written in distance along *a* path. **1,695 m against the road's 1,295, at 0.88 m/s against his
+  own 1.42**, so he musters between minute 32.4 and 96.1 instead of from 19.8. Every metre was
+  authored against the built world — A* over ground `canStand` accepts with the road fenced at
+  40 m, then simplified — and **the line never comes within 89 m of the main road** until it is
+  41 m from the camp, which is the join. He waits on his own strand, passes none of the road's
+  stops, is never `stopped`, and musters with the company like anybody else.
+
+The user's ruling of 2026-09-20 is kept whole: **his draw is not clipped**, the half-minute
+before the traveler included. `tests/wild-route.test.js` holds the law — over both ends of the
+draw and 400 seeds, he is never in before minute 30, against a direct traveler's 27.
+
+The clock pin moved as the ruling said it would: the **nine** road men keep theirs, the last of
+them at 5,234.5 s, and Mus is pinned separately as a range. On some seeds he is the last man in.
+
+What follows is what it was.
+
+
 
 **Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` takes a `shore` point, and
 a man whose route is the shore waits there instead of among the people who came off boats. Ed the
@@ -823,3 +849,118 @@ warps in and reads the same frame sees the stale line.
 **Repro:** stand at (−677.79, 297.12) with the burying at `unknown` and read
 `#interaction-label` on the next frame. Pure: `Math.hypot` of `HAIL_FROM` against
 `LUSCIA_SITES['courier-satchel']` is 29.5, and `HAIL_FROM.reach` is 34.
+
+---
+
+## The swimming fixes, verified on the real world — and the one thing the leash hands a swimmer
+
+All of this was driven through `src/main.js`'s own calls on the world `createWorld` builds: the
+`else if (magnitude>0)` movement branch, the float line, the region card at 3071, `swimTick` and
+`retry()`, frame by frame at 60 Hz. Not read — run.
+
+### What is now true, measured
+
+**A walker gets wet, from a real shore, with no warp.** The closed loop the last hunter found is
+gone: `{swimming:true}` on the on-foot move is what opens it.
+
+| shore | wet after | ground under him there |
+|---|---|---|
+| the sea off the Tidehaven strand (24.4, 29.6) | 0.47 s, 1.8 m | −5.73 m |
+| the harbour off the pier head (7.5, 25.4) | 0.22 s | 0.44 m |
+
+He walks out again the same way, is paid (`+6` xp for 28 m), and the landing writes a checkpoint.
+
+**Drowning puts him on the last dry ground he stood on.** Three situations, all three correct:
+
+| | swam | went under at | Try again took | woke |
+|---|---|---|---|---|
+| never fought a soul | 77 m, 33.3 s | (54.4, 101.6) | the drowned branch | (23.2, 31.2) — **0.00 m** from his last dry ground |
+| after a real fight | 108 m | (64.9, 129.7) | the drowned branch | 0.00 m from it |
+| walked in mid-fight | 108 m | (66.9, 129.7) | the drowned branch | 0.00 m from it |
+
+Every one: hp 100, wind 100, phase `peaceful`, no enemies alive. The old failure — a man who had
+never drawn on anybody waking 346 m away in a goblin raid — cannot happen.
+
+**Getting wet mid-fight resets nothing.** The goblin stayed on the sand 4.4 m from the fight's
+centre and never entered the water; the fight ended by the 45 m leash after 15.1 s, at 38 m out,
+with a `retreat` event and no `resetEncounter`.
+
+**Nothing saves from the water.** The Save button is refused with "Step ashore and finish any
+active fight before saving". And the autosave inside `enterRegion` **does** fire at sea — swimming
+north-east out of Drent the traveler enters *Open country* 58 m out, on the shore fringe, with the
+region card and all — and its `saveRoad(false)` is refused because he is wet. The reload-for-a-
+fresh-bar crossing is closed.
+
+**A rider cannot get in, and "He will not go in" is unreachable by riding at water.** At all four
+shores the horse stops with dry ground under him (1.80, 0.49, 0.50, 0.46 m) and `canSwim` under
+him false, so the toast at `src/main.js:2627` never fires. It fires only one way: mount from the
+water (below). Worth knowing before anybody "fixes" the toast as dead code.
+
+### The finding: the 45 m leash hands a swimmer a full bar of wind
+
+`src/combat.js:715–722` ends a fight when the traveler is 45 m from its centre, and it does it
+with `restorePlayer()` — full health **and full stamina**. Stamina is wind, and wind is the entire
+currency of the swimming design (`docs/swimming.md`'s crossing table is tuned on it).
+
+Same swimmer, same bearing, same sea, the only difference a fight picked on the sand first:
+
+```
+a. plain swim         0m wind 100   15m 87   30m 61   45m 35   60m 9   75m 0 → drowned 77 m out
+b. with a fight on    0m wind 100   15m 87   30m 61   45m 88   60m 62  75m 36  90m 10  105m 0
+                                                       ^ the leash fires    → drowned 108 m out
+```
+
+**77 m becomes 108 m: 40 % further, free, at level 1.** `swimReach` at level 1 is 58 m; this adds a
+second bar wherever the leash happens to fire.
+
+**It is not reachable today, and only by five metres.** Of the eleven fights the game can start,
+measured centre to nearest swimmable point:
+
+| | |
+|---|---|
+| the Bramble scout camp (55, −190) | **50 m** |
+| the opening Tidehaven raid (−56, 29) | 62 m (and it is `DEFAULT_ENCOUNTER`, which the 45 m rule exempts) |
+| the day after, Solis sweep | 98 m |
+| Mallec at the pass stones | 102 m |
+| every other fight | > 200 m |
+
+So by the time a swimmer is wet, the leash has already fired on land. The rule that keeps the
+crossing table honest is geography, not code, and it has 5 m of margin. The same five metres hold
+a second one: `retry()`'s drowned branch returns before the line that tells a chapter module its
+fight is over (`forestHideout.begin` at `src/main.js:2674`), so a traveler who drowned during a
+quest fight would leave that module believing the fight was still running — except that he cannot
+get wet during one.
+
+*Proposed, and not mine to make:* the leash should not hand back wind the water has taken. The
+smallest version is for the host to keep the swimmer's stamina across a `retreat` event while
+`inWater`; the honest version is a flag on `restorePlayer`. This is the builder's ground (combat
+skills are next on that branch), so it is written down here rather than changed.
+
+### Small: mounting out of the water throws the swim away
+
+`swimTick`'s mounted branch (`src/main.js:2626–2630`) returns before the payout block, so a
+swimmer who presses G at his horse instead of taking one more step loses the whole swim: no xp,
+no water crossed, no checkpoint. Reproduced: swimming 2.84 m from the horse (mount reach is 2.9),
+G is accepted, `toggleMount` teleports him to the horse on dry land, and `inWater` is cleared by
+the mounted branch with `swimMetres` still on the clock. The repair is one line — pay out first
+when `inWater` was true — and it belongs with the code above.
+
+### Checked and killed
+
+- **"The Caloss can be waded, so the bridge is decoration."** No. My first scan ran *along* the
+  river instead of across it and said so; measured properly across its own centre line
+  (`CALOSS.points`), all 24 places have an unbroken 15.6–17.2 m block of not-standable ground
+  across them. The river is solid to a walker for its whole run until it meets the sea, where the
+  bed drops to −5.5 m and 70 of 111 samples become swimmable. The bridge is the only crossing.
+- **"Inland water is walkable, so swimming is broken."** No: it is waded, on purpose. Willowmere
+  Pond's bed is dished 0.85 m under its drawn surface (`src/world.js:195`) and the Caloss's is
+  1.10 m under its, but both stay above the 0.45 m waterline, so `canSwim` is false and a traveler
+  wades. Every fishing spot casts into ground above the waterline (willowmere 1.74 m, reedwater
+  3.40 m, tessen-bank 2.88 m). Swimming is a sea skill, which is exactly what the Peblos table in
+  `docs/swimming.md` is about.
+- **"Whistling from out at sea puts the horse in the water."** No. `riding.update`'s "turns up
+  behind you" path tries eight bearings at 14 m and tests `canStand` on each; from 65 m out at
+  sea it found none and did nothing.
+- **"`revive()` leaves `combat.state.encounterId` naming a fight that is over."** It does, but
+  `#encounter-status` is hidden outside a fight and every other reader is inside an event handler,
+  so nothing shows it.

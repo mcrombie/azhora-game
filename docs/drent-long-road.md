@@ -440,6 +440,16 @@ The bug hunter measured this design against the built world before anyone built 
   so today he walks the main road and at his earliest draw musters at minute 19.8; he is already
   in for a direct traveler in roughly a quarter of games.
 
+  **Built 2026-09-21** (`src/wild-route.js`, `tests/wild-route.test.js`). A strand of his own
+  round the headland south of the harbour at (10, -60), then west through the low country behind
+  Drent, up round the head of the bay, and down onto the Moros plain from the north-west across
+  open ground. **1,695 m against the road's 1,295, walked at 0.88 m/s against his road pace of
+  1.42**, so he musters between minute **32.4 and 96.1** where before it was 19.8 at the
+  earliest. The line was authored against the built world, not drawn on a map, and never comes
+  within **89 m** of the main road until it is 41 m from the camp — so the companion's 40 m
+  remark can never fire on him. His draw is untouched. The nine road men keep the 5,234.5 s pin;
+  he is pinned as a range, and on some seeds he is the last man in.
+
   **Ruled by the user, 2026-09-20: his wild route is long, and he cannot beat the road.** Mus keeps
   his whole draw, thirty seconds before the traveler included: he may well be ashore first. But he
   goes by the wilderness, and the wilderness is honestly longer than the road, so a traveler who
