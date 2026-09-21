@@ -329,8 +329,13 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     const saw = (state.fell[id]?.witnesses ?? []).filter(witness => !dead(witness));
     for (const witness of saw) {
       state.knows[witness] = id;
-      // A rung, not a point: it is the standing that changes, and he will say why.
-      state.regard[witness] = Math.max(0, regardOf(witness) - (RUNG_AT.friendly - RUNG_AT.acquainted));
+      // **A rung, not a point: it is the standing that changes**, and he will say why. Taking a
+      // fixed 35 off was the usual size of a rung and not the promise: a man at 95 to 99 is
+      // `friendly`, and 35 off leaves him at 60 to 64, which is `friendly` still - so the five
+      // witnesses in that band paid nothing at all. He goes below the foot of the rung he is on,
+      // and never by less than the 35 that was already taken.
+      const at = regardOf(witness), below = RUNG_AT[rungFor(at)] - 1;
+      state.regard[witness] = Math.max(0, Math.min(at - (RUNG_AT.friendly - RUNG_AT.acquainted), below));
     }
     onEvent({ type: 'lied', id, knows: [...saw], register: !saw.length });
     return { ok: true, kind, knows: [...saw], register: !saw.length };

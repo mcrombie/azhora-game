@@ -141,3 +141,30 @@ test('Ed says whose ship it was, once, and does not give anybody a name', () => 
   assert.doesNotMatch(line, /\bcaptain [A-Z]/, 'nobody aboard her is given a name');
   assert.equal(main.split("id:'word-crew'").length - 1, 1, 'he says it in one place');
 });
+
+test('the whole deck rides her own clock, so a reload mid-arrival is the same picture', () => {
+  const main = source('main.js');
+  // Everything else about this arrival is a function of `playSeconds`: where she is, which way
+  // she heads, how far the two at the rail lean. The four numbers a man's body is made of came
+  // off `elapsed`, which starts at nought every time the game is opened - so the module's own
+  // promise, that a game reloaded mid-arrival shows the right pose without anything being saved,
+  // was true of her hull and false of everybody standing on it.
+  assert.match(main, /rebelShip\.update\(playSeconds,pose\)/, 'the play clock, which the save carries');
+  assert.doesNotMatch(main, /rebelShip\.update\(elapsed/, 'never the session clock');
+  // The same play-second is the same deck, man for man.
+  const at = WORD_SHIP.drops, pose = shipAt(at);
+  for (const man of REBEL_CREW) assert.deepEqual(crewPose(man, pose, at), crewPose(man, pose, at), man.id);
+  // And what the wrong clock was worth, measured: two sessions, the same second of the arrival.
+  const moving = REBEL_CREW.filter(man => man.station !== 'rail');
+  for (const man of moving) {
+    const here = crewPose(man, pose, at);
+    const drift = Math.max(...[37, 121, 300, 904].map(off => {
+      const there = crewPose(man, pose, at + off);
+      return Math.max(Math.abs(here.turn - there.turn), Math.abs(here.sway - there.sway), Math.abs(here.lift - there.lift));
+    }));
+    assert.ok(drift > .02, `${man.id} moved ${(drift * 180 / Math.PI).toFixed(1)} degrees between two sessions`);
+  }
+  // The rail men's lean is the one part that was always right: it comes off the ship's own pose.
+  const rail = REBEL_CREW.find(man => man.station === 'rail');
+  assert.equal(crewPose(rail, pose, at).lean, crewPose(rail, pose, at + 904).lean, 'the lean was never on the session clock');
+});

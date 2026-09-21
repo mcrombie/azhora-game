@@ -231,7 +231,10 @@ test('the host puts her on the water, floats him in it, and lets him teach it', 
   assert.match(main, /audio\?\.effect\('bell'\)/, 'with a bell');
   assert.match(main, /if\(npc\.swimming\)\{pos\.set\(npc\.swimming\.x,WATERLINE-SWIM\.sink,npc\.swimming\.z\)/, 'he floats where the traveler would');
   assert.match(main, /dHome>\.1&&!npc\.swimming/, 'and is not walked there over the seabed');
-  assert.match(main, /swimming:!!npc\.swimming\}\);/, 'with the swimmer’s posture');
+  // Pinned to the call and not to the shape of the object: this asked for `swimming` to be the
+  // last key in it, and the company's horses added `riding` after it, so the suite went red on a
+  // sentence that was still true.
+  assert.match(main, /npc\.actor\.animate\([^\n]*swimming:!!npc\.swimming/, 'with the swimmer’s posture');
   assert.match(main, /id:'word-swim',label:'Nobody swims that\. How is it done\?'/, 'and he will say how it is done');
   assert.match(main, /const learned=swimming\.learn\(\);/, 'which is what teaches it');
   assert.match(main, /wordSaid=wordToastAt\(playSeconds\)\?\.key\?\?null;/, 'a reload catches up without saying a word');
