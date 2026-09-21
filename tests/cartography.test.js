@@ -239,7 +239,7 @@ test('the difficulty is a number in the journal and words everywhere else', () =
   for (const line of main.split('\n')) {
     const code = line.trim();
     if (!/LEVEL /.test(code) || code.startsWith('*') || code.startsWith('//') || code.startsWith('/*')) continue;
-    assert.ok(/\$\{(found|result|landed|skill)\.level/.test(code) || /skill\.level/.test(code),
+    assert.ok(/\$\{(found|result|landed|skill|event|gained)\.level/.test(code) || /skill\.level/.test(code),
       `a LEVEL on screen that is not a skill level: ${code.slice(0, 120)}`);
   }
 

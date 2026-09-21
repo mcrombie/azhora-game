@@ -262,14 +262,17 @@ export const PLANT_PATCHES = Object.freeze({
  * The stands the country put where it put them, in world metres.
  * The tuckahoe is in the tidal shallows of the Caloss bank, in southern Drent
  * where the road runs down to Luscia; the tobacco is the Avrel ground; and the
- * three jimson weeds are Nell's (the easy one), a wild one on Drent's waste
- * ground, and a wild one away in Pueth.
+ * three jimson weeds are Nell's, on the bank behind her at the Sunken Lane (the easy one), a
+ * wild one on Drent's waste ground, and a wild one away in Pueth.
  */
 export const AUTHORED_STANDS = Object.freeze([
   // The reedwater bank: Drent's side of the river, where the road runs down to Luscia.
   Object.freeze({ id: 'tuckahoe-bank', species: 'tuckahoe', x: -536, z: 168, count: 7, spread: 5, water: true }),
   Object.freeze({ id: 'tobacco-avrel', species: 'tobacco', x: -444, z: 30, count: 12, spread: 0, rows: true }),
-  Object.freeze({ id: 'jimson-nell', species: 'jimson-weed', x: -34, z: 44, count: 1, spread: 0 }),
+  // Nell's own weed, on the hedge bank three and a half metres behind wherever she is standing.
+  // It moved to the Sunken Lane with her, because the whole point of it is that she is standing
+  // over it (src/botany.js, BOTANIST_STAND; docs/drent-long-road.md §4).
+  Object.freeze({ id: 'jimson-nell', species: 'jimson-weed', x: -484.34, z: 35.38, count: 1, spread: 0 }),
   Object.freeze({ id: 'jimson-drent', species: 'jimson-weed', x: -200, z: 46, count: 1, spread: 0 }),
   Object.freeze({ id: 'jimson-pueth', species: 'jimson-weed', x: 0, z: -226, count: 1, spread: 0 }),
 ]);

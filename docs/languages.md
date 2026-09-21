@@ -280,8 +280,25 @@ reading it: the tongue of the country you bought it in, worth 60 exposure scaled
 by how much of that tongue you *lack*, so it is worth less the more you know and
 nothing at all to a fluent speaker. It stays in the satchel as a keepsake.
 
-An NPC teacher per major tongue is the hook left open — `linguist.study(id, n)`
-takes any amount from any source. Nothing is authored for it yet.
+### The drills
+
+The hook above is taken: Chris Gotwood teaches **Ambroni** on the long road through
+Drent, in five sittings of **35 exposure** each, one to close each leg
+(`docs/drent-long-road.md` §6, `DRILLS` in `src/long-road.js`). A drill is six
+lines of the army's own speech with what each one means underneath, and there is
+no quiz at the end of it: the player is never asked to produce a word.
+
+The six lines are written in English and *rendered* through `renderLine` in full,
+so what the traveler is shown is the same Ambroni everybody else in the game
+speaks rather than anything invented for the lesson. What a drill adds is the
+gloss, and the gloss is what makes it teaching instead of overhearing.
+
+175 taught, with the seventeen or so heard on the road, is **Ambroni 51** by the
+time the traveler crosses the Caloss — which is to say the army's signs turn
+readable about as he leaves Drent. Walk the short road instead and it is about 7.
+When the traveler *is* Chris the same five run the other way round: he gives them
+to whoever came off his boat, and they pay the same, because giving a lesson in a
+tongue is how anybody keeps one.
 
 ## 7. The traveler's own skill
 

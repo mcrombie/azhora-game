@@ -8,8 +8,8 @@ import { SKILL_ICONS, skillIconSVG } from '../src/skill-icons.js';
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const HEAD = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">';
 
-test('thirteen skills, thirteen marks, drawn the way the satchel draws its items', () => {
-  assert.equal(SKILL_IDS.length, 13, 'the ten skills, cartography, swimming and the linguist');
+test('twenty-one skills, twenty-one marks, drawn the way the satchel draws its items', () => {
+  assert.equal(SKILL_IDS.length, 21, 'fourteen about the world, and the seven about fighting');
   assert.deepEqual(Object.keys(SKILL_ICONS), [...SKILL_IDS], 'one mark each, in the skills’ own order');
   const seen = new Set();
   for (const id of SKILL_IDS) {
@@ -38,9 +38,13 @@ test('the sheet is a grid of tiles, with each skill’s guide and log behind its
   assert.match(main, /function renderSkillGrid\(/, 'the grid');
   assert.match(main, /function renderSkillGuide\(/, 'the page behind a tile');
   assert.match(css, /#skills-sheet \.skill-grid\{[^}]*grid-template-columns:repeat\(3,1fr\)/, 'three columns');
-  assert.match(css, /#skills-sheet \.skill-tile-total\{grid-column:span 2/, 'and a total that fills what the thirteenth skill leaves of the last row');
-  // The total tile is appended after every skill, which is what puts it on the row below.
-  assert.match(main, /for\(const skill of view\)grid\.append\(skillTile\(skill\)\);[\s\S]{0,500}grid\.append\(total\)/, 'the total level comes last');
+  assert.match(css, /#skills-sheet \.skill-tile-total\{grid-column:span 1/, 'and a total that fills what the fourteenth ungrouped skill leaves of the last row');
+  // The total tile is appended after every ungrouped skill, which is what puts it on the row
+  // below. The seven fighting skills are not in that grid: they have a heading of their own.
+  assert.match(main, /for\(const skill of view\)if\(!SKILLS\[skill\.id\]\?\.group\)grid\.append\(skillTile\(skill\)\);[\s\S]{0,600}grid\.append\(total\)/,
+    'the total level comes last');
+  assert.match(main, /sheet\.append\(skillEl\('h3','skill-heading',heading\)\)/, 'and a heading over each group');
+  assert.match(css, /#skills-sheet \.skill-heading\{/, 'which is styled as a divider rather than a title');
   // A tile says its level out of the table's top, and carries a hairline bar.
   assert.match(main, /skill-tile-level',`\$\{skill\.learned\?skill\.level:0\} \/ \$\{skill\.top\}`/, 'level over the top of the table');
   assert.match(main, /skillProgressBar\(skill\.learned\?skill\.progress:0\)/, 'a bar on every tile');

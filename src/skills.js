@@ -12,6 +12,9 @@
  * per plank, over and over, and what each level opens is written in the skill's
  * guide. Pure: no DOM, no three.
  */
+/** The heading the seven fighting skills sit under in the journal's grid. */
+export const ARMS_HEADING = 'Arms';
+
 export const SKILLS_VERSION = 1;
 /** RuneScape's cap on experience in one skill. */
 export const MAX_XP = 200_000_000;
@@ -46,21 +49,21 @@ export const SKILLS = Object.freeze({
   botany: Object.freeze({
     id: 'botany', name: 'Botany',
     blurb: 'Everything that grows, from the plantain on the path to the oldest oak in the wood: what it is, where it stands, and what it is for. Every plant and tree you name for the first time teaches you something.',
-    teacher: 'Nell Harrow, on the outskirts of Tidehaven',
+    teacher: 'Nell Harrow, at the Sunken Lane where the old drove crosses the Caloss road',
     // Drent's thirty-four plants and trees together are worth 625: level 6.
     thresholds: RUNESCAPE_TABLE,
   }),
   geology: Object.freeze({
     id: 'geology', name: 'Geology',
     blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
-    teacher: 'Silas Garrow, digging marl under the Weatherhead',
+    teacher: 'Silas Garrow, with his marl cart at the Toll House stream on the Caloss road',
     // The eleven finds of Drent's coast together are worth 210: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
   mycology: Object.freeze({
     id: 'mycology', name: 'Mycology',
     blurb: 'Wood or ground, gills or folds, and what it smells of. Every kind of mushroom you name for the first time teaches you something — including the two you must never eat.',
-    teacher: 'Odger Pell, at the edge of the Greenway outside Tidehaven',
+    teacher: 'Odger Pell, at Fernway Rest, where the woodland paths meet',
     // The eleven mushrooms of Drent's woods together are worth 225: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
@@ -131,6 +134,16 @@ export const SKILLS = Object.freeze({
       unlock(43, 'The same 98 m on wind alone'),
       unlock(99, '280 m on one breath — and the open crossing to Cobble is 355, so you still island-hop')]),
   }),
+  farming: Object.freeze({
+    id: 'farming', name: 'Farming', kind: 'working',
+    blurb: 'Putting a row in and coming back for it. The only skill with a clock of its own: a sown row ripens on the hours of your own game whether you are standing over it or three miles away, which is the first true thing Drent tells you about itself.',
+    teacher: 'Enna, at the Mill Commons in the Avrel clearing',
+    thresholds: RUNESCAPE_TABLE,
+    // What each level opens (src/farming.js holds the crops and the rows; the test keeps the two in step).
+    unlocks: Object.freeze([unlock(1, 'Barley · four minutes a row, 24 experience'), unlock(1, 'The four commons rows at the Avrel mill'),
+      unlock(1, 'Applegarth’s kept orchard · picked, not sown, and bearing again in ten minutes'),
+      unlock(5, 'Drent leaf · eight minutes a row, 45 experience')]),
+  }),
   linguist: Object.freeze({
     id: 'linguist', name: 'Linguist',
     blurb: 'Reading the tongues of Azhora. Every conversation in a language you do not have teaches you a little of it, whether or not you understood a word at the time.',
@@ -139,6 +152,73 @@ export const SKILLS = Object.freeze({
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'The shape of a sentence you cannot read'), unlock(25, 'Words you have heard often enough'),
       unlock(50, 'The sense of what is being said'), unlock(75, 'What is being said, plainly'), unlock(99, 'You read it as you read your own')]),
+  }),
+  // ---------------------------------------------------------------------------
+  // Arms: the seven fighting skills (src/combat-skills.js, docs/combat-brief.md).
+  // They sit under their own heading in the grid, and none of them is required.
+  // ---------------------------------------------------------------------------
+  blades: Object.freeze({
+    id: 'blades', name: 'Blades', group: ARMS_HEADING,
+    blurb: 'The sword and the dagger: an edge, a point, and the sense to keep both out of bone. Every blow you land with one teaches you a little about the next.',
+    teacher: 'Mara\u2019s straw post on the pier, then Chris Gotwood for the sword and Ed the Word for the dagger',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'The sword as it has always been'), unlock(25, 'A third again the damage, and a swing that costs less'),
+      unlock(50, 'Half as hard again as the man who landed off the boat'), unlock(75, 'Twice the damage of that first morning'),
+      unlock(99, 'Three times it \u2014 and the timing is still the timing')]),
+  }),
+  'heavy-arms': Object.freeze({
+    id: 'heavy-arms', name: 'Heavy arms', group: ARMS_HEADING,
+    blurb: 'Weapons that are won by weight rather than by edge: the greatsword, the mace, the axe. Slow to start and impossible to stop once they are going.',
+    teacher: 'Eliana, for the greatsword, and Al the Tun, when it comes to the mace',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'All the weight you can already swing'), unlock(25, 'The third blow begins to tell'),
+      unlock(50, 'Armour stops being the argument it was'), unlock(75, 'Very little stands through two of these'),
+      unlock(99, 'Three times the damage, and the same long wind-up')]),
+  }),
+  polearms: Object.freeze({
+    id: 'polearms', name: 'Polearms', group: ARMS_HEADING,
+    blurb: 'Two paces of ash between you and the thing trying to kill you. The spear, the pike, and the one that leaves your hand.',
+    teacher: 'Ciar\u00e1n for the spear, Matt for the pike, and Mus for the one that is thrown',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Reach, which is most of it'), unlock(25, 'The thrust that does not have to be repeated'),
+      unlock(50, 'A line nobody walks into twice'), unlock(75, 'The pike as the Empire means it'),
+      unlock(99, 'Three times the damage at the end of two paces of ash')]),
+  }),
+  staves: Object.freeze({
+    id: 'staves', name: 'Staves', group: ARMS_HEADING,
+    blurb: 'A stick with two ends. It will not cut, so it goes for hands and knees, and no watchman has ever asked you to leave it at a gate.',
+    teacher: 'Lakota, who has never once been parted from his',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'A stick, held properly'), unlock(25, 'Two ends, used as two'),
+      unlock(50, 'Hands and knees, and the fight going out of people'), unlock(75, 'Faster than anything sharp'),
+      unlock(99, 'Three times the damage from a thing that is still only wood')]),
+  }),
+  bows: Object.freeze({
+    id: 'bows', name: 'Bows', group: ARMS_HEADING,
+    blurb: 'Settling a thing at thirty paces so you do not have to think about it any more. Useless in a wood, and worth everything in the open.',
+    teacher: 'Jerry, who would rather not be close to the fighting',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'A slow draw and an honest arrow'), unlock(25, 'The draw shortens'),
+      unlock(50, 'Thirty paces is no longer a guess'), unlock(75, 'Loosed nearly as fast as it is drawn'),
+      unlock(99, 'Half the draw and three times the damage')]),
+  }),
+  shield: Object.freeze({
+    id: 'shield', name: 'Shield', group: ARMS_HEADING,
+    blurb: 'Taking the first blow on the boards and answering over the rim. Slower than fighting without one, and a great deal harder to kill.',
+    teacher: 'Kristen, who stands in front of people who need it',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Three fifths of a blow from the front'), unlock(25, 'Catching one costs less wind'),
+      unlock(50, 'Three quarters of it, and you are still standing'), unlock(75, 'Very little of a frontal blow reaches you'),
+      unlock(99, 'Nine tenths of it \u2014 and nothing at all from behind')]),
+  }),
+  toughness: Object.freeze({
+    id: 'toughness', name: 'Toughness', group: ARMS_HEADING,
+    blurb: 'Not a weapon: you. What you can take, how long your wind lasts, and how much of a step aside the world lets you have. Taught by being hit and living.',
+    teacher: 'nobody teaches it, and everybody adds to it',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, '100 health, 100 wind, and a step aside worth 0.37 s'), unlock(25, 'Half as much again to lose'),
+      unlock(50, 'Twice the man who landed, and a longer step'), unlock(75, 'Three times, and the wind to use it'),
+      unlock(99, '400 health, 180 wind, and 0.48 s of a dodge that cannot be touched')]),
   }),
 });
 

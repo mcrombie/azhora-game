@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, validateSkillsSnapshot } from '../src/skills.js';
 
 test('levels are read from the thresholds, with progress toward the next', () => {
-  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'linguist']);
+  // Fourteen that are about the world, then the seven that are about fighting, which sit under
+  // their own heading in the grid (docs/combat-brief.md).
+  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'farming', 'linguist',
+    'blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness']);
+  assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Arms'),
+    ['blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness'], 'the seven are the grouped ones');
+  assert.ok(SKILL_IDS.slice(0, 14).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
   for (const id of SKILL_IDS) assert.ok(SKILLS[id].teacher && SKILLS[id].blurb, `${id} says who teaches it`);
   const table = SKILLS.birding.thresholds;
   assert.ok(table.every((xp, i) => i === 0 ? xp === 0 : xp > table[i - 1]), 'thresholds rise');

@@ -50,7 +50,11 @@ export function validateWeaponSnapshot(data, inventory) {
  */
 export const WEAPON_WEAR = false;
 
-export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEAR }) {
+/**
+ * `damageScale(weaponId)` is how hard the traveler hits with that weapon, given his skill in its
+ * family. The default is the game as it was: one, for everybody, forever.
+ */
+export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEAR, damageScale = () => 1 }) {
   let equipped = 'simple-sword', wears = wear;
   const condition = Object.fromEntries(Object.entries(WEAPON_TYPES).map(([id, type]) => [id, type.maxDurability]));
 
@@ -71,9 +75,15 @@ export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEA
     };
   }
 
+  /**
+   * What the equipped weapon does. `damage` is the weapon's own three-swing rhythm multiplied by
+   * whatever the traveler's skill in that family is worth (src/combat-skills.js): at level 1 the
+   * multiplier is exactly 1, so this is the same three numbers it has always been.
+   */
   function profile() {
     const type = WEAPON_TYPES[equipped];
-    return { ...status(equipped), damage: [...type.damage], reachMultiplier: type.reachMultiplier };
+    const scale = damageScale(equipped);
+    return { ...status(equipped), damage: type.damage.map(hit => hit * scale), reachMultiplier: type.reachMultiplier };
   }
 
   function equip(id) {

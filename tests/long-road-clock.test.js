@@ -34,11 +34,11 @@ function mustersAt(c, id, hi = 20000) {
 /** The nine whose hour is written down. Mus draws his, so he is pinned apart, below. */
 const WRITTEN = MERCENARY_ROSTER.filter(m => !m.drawn);
 
-test('the tenth mercenary musters at 5,234.5 seconds, which is how long the long road is', () => {
+test('the last man up the road musters at 5,234.5 seconds, which is how long the long road is', () => {
   const c = company();
   const times = WRITTEN.map(m => ({ name: m.name, at: mustersAt(c, m.id) })).sort((a, b) => a.at - b.at);
   const last = times.at(-1);
-  assert.equal(last.name, 'Al the Tun', 'the last of them in is the sorcerer off the last boat. ' + WHY);
+  assert.equal(last.name, 'Al the Tun', 'the last of them up the road is the sorcerer off the last boat. ' + WHY);
   assert.ok(Math.abs(last.at - 5234.5) <= 2, `Al the Tun musters at ${last.at.toFixed(1)} s, not 5,234.5 ± 2. ` + WHY);
   // Eighty-seven minutes and a quarter. The road is cut so a walker is on the Caloss bridge at
   // 80 to 85 minutes and through the camp gate some ten minutes after this.
@@ -80,10 +80,11 @@ test('Ed the Word sits on the shingle for twenty-five minutes, so first is first
 });
 
 test('Mus is pinned as a range, because his hour is drawn and his road is not the road', () => {
-  // He is the one man whose arrival is not written down, and once `route: 'wild'` is read he
-  // will not walk this road at all. So nothing here is a number the long road is cut to: what
-  // is pinned is that his draw spans the whole of the company's day, and that whatever he draws
-  // moves nobody else. The nine above are what the eighty-seven minutes are made of.
+  // He is the one man whose arrival is not written down, and he does not walk this road at all:
+  // `route: 'wild'` takes him through the country, off the main road the whole way, and he passes
+  // none of its stops (src/wild-route.js). On a late draw he is the last of the eleven in, after
+  // the 5,234.5 s above - so the long road's length is the nine who use the road, and Mus is a
+  // range beside it and never a number it is cut to.
   assert.deepEqual([MUS_ARRIVAL.from, MUS_ARRIVAL.to], [-30, ARRIVALS.princes + 30], 'half a minute either side of the whole company');
   const musters = [MUS_ARRIVAL.from, 0, 1200, 2400, MUS_ARRIVAL.to].map(arrival => {
     const roster = MERCENARY_ROSTER.map(m => m.drawn ? { ...m, arrival, drawn: false } : m);
@@ -91,6 +92,14 @@ test('Mus is pinned as a range, because his hour is drawn and his road is not th
   });
   for (let i = 1; i < musters.length; i++) assert.ok(musters[i] > musters[i - 1], 'a later draw is a later muster');
   assert.ok(musters[0] > MUS_ARRIVAL.from && musters.at(-1) < 20000, 'he gets there on every draw');
+  // The measured range across three hundred seeds: 32.4 to 96.1 minutes. The floor is what
+  // matters - a traveler who walks straight up the road is in well before it - and the ceiling
+  // is the only time anybody comes in after Al the Tun.
+  const seeded = Array.from({ length: 300 }, (_, i) => mustersAt(company(MERCENARY_ROSTER, i + 1), 'merc-mus'));
+  const low = Math.min(...seeded) / 60, high = Math.max(...seeded) / 60;
+  assert.ok(low > 30 && low < 34, `Mus's earliest is ${low.toFixed(1)} min. ` + WHY);
+  assert.ok(high > 94 && high < 98, `Mus's latest is ${high.toFixed(1)} min. ` + WHY);
+  assert.ok(Math.max(...seeded) > 5234.5, 'on a late draw he is the last of the eleven in, and the muster must have a line for that');
   // The seed is his and nobody else's: the nine keep their hour whatever he draws.
   const a = company(MERCENARY_ROSTER, 2), b = company(MERCENARY_ROSTER, 91);
   assert.notEqual(drawMusArrival(2), drawMusArrival(91), 'two seeds, two beaches');
