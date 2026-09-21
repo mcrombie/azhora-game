@@ -35,7 +35,13 @@ journal are already in `src/cartography.js`.
 6. **`src/west-regions-life.js`** — models and `WEST_LIFE_ZONES` entries.
 7. **`src/build-status.js`**, **`src/map-fog.js`** (three or more chart subregions, each of which
    must land on the country's own hexes — a test checks), **`src/developer-atlas.js`** (one
-   anchor; see below).
+   anchor; see below), **`src/languages.js`** (one `REGION_LANGUAGE` entry, taken from the lore
+   file's own Language section and mapped to an existing tongue; a new dialect must also be
+   named in its parent language's `dialects` list), and **`src/chameleon.js`** — **a chameleon
+   spot, or `tests/chameleon.test.js` goes red.** One per region plus two in open country, and
+   the count assertion in that test rises with the list. Sweep for it the way the others were
+   found: standable ground `canStand` accepts at `.34`, out of water, above the tide line, more
+   than twenty-five metres off every road, and nearest the region's centre.
 8. **`src/main.js`** — review views only, in the block at `view.startsWith('west-')||
    view.startsWith('south-')`. Touch nothing else in that file.
 9. **`tests/<country>-world.test.js`**, and **name it in `package.json`**. It is dropped

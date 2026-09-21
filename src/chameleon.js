@@ -8,8 +8,9 @@
  * him: he is somewhere, and then he is a puff of purple smoke, and then he is
  * somewhere else entirely, six hundred kilometres away, looking at a beetle.
  *
- * He hops the whole built world. One spot per region - sixteen of them,
- * measured off the road on ground that will hold him (`CHAMELEON_SPOTS`) - and
+ * He hops the whole built world. One spot per region - seventeen of them now,
+ * and one more with every country that is built - measured off the road on
+ * ground that will hold him (`CHAMELEON_SPOTS`) - and
  * two in open country, because a creature that belongs to nowhere in particular
  * ought to turn up where the atlas gives out. He sits at one for a while and
  * then goes, on a schedule drawn once from the game's seed, so he is in the
@@ -64,6 +65,9 @@ export const CHAMELEON_SPOTS = freeze([
   spot('meneth-ridge', 'Meneth', 'a ridge above the Meneth valleys', -1777, -105, 'He is on the spine of a ridge with the wind flattening him, holding on with all four hands.'),
   spot('caricas-reeds', 'Caricas', 'the reeds along the Lizeem', -1927, 206, 'He is in the reeds, striped like the reeds, and only the pipe gives him away.'),
   spot('nesdor-flats', 'Nesdor', 'a thorn on the Nesdor Flats', -1477, 588, 'He is on the one thorn bush for a kilometre in any direction, which he says is the point.'),
+  spot('eer-scrub', 'Eer', 'a cushion bush on the dry half of Eer', -1114, 1076, 'He is in a low bush that smells of itself, gone the same grey-green as the leaves, and only the tail is wrong.'),
+  spot('isareos-thorn', 'Isareos', 'a blackthorn in an Isareos hollow', -2446, -29, 'He is down in a fold of the hills in a blackthorn, out of a wind that has not let up since morning.'),
+  spot('nethereum-willow', 'Nethereum', 'a willow over the Nethereum outlet', -2461, 404, 'He is along a willow branch above the water with his feet in the wet bark, watching the meadow steam.'),
   spot('open-north', 'Open country', 'a rock west of the Lotharn', -1991, -295, 'He is on a rock on ground no country on the atlas claims, which suits him down to the ground.'),
   spot('open-south', 'Open country', 'a dead tree in the far south-west', -1705, 1461, 'He is in a dead tree a long way past the last border anybody has drawn, and did not come here to be found.'),
 ]);
