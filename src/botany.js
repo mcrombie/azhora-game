@@ -90,6 +90,18 @@ export const PLANT_SPECIES = Object.freeze({
     note: 'Hollow-stemmed and sprawling at the field edge, carrying cream plates of flower in summer and heavy black clusters in autumn.',
     lore: 'Flowers for a fever, berries cooked for anything else. Never raw, never the stems, and never the red-berried sort.',
   }),
+  // The two of the hedge, and two of the six foods Drent had no way of getting at all. They are
+  // botany finds the first time and gatherables every time after, which is what a hedge is for.
+  hazel: kind('hazel', {
+    name: 'Hazel', xp: 20, habitat: 'verge', use: 'food', item: 'hazelnuts',
+    note: 'A many-stemmed stool of straight rods at the field edge, leaves round and soft as felt, and in autumn nuts in leafy husks two and three together.',
+    lore: 'Every eighty-year hedge in Drent is half hazel, because it was laid to be cut and hazel is the thing that answers. The nuts keep for months in a dry pouch.',
+  }),
+  bramble: kind('bramble', {
+    name: 'Bramble', xp: 20, habitat: 'verge', use: 'food', item: 'bramble-berries',
+    note: 'An arching tangle of thorn that roots wherever a tip touches down, with white flower and green, red and black fruit on the same cane at once.',
+    lore: 'Take the black ones and leave the red. The goblins over the Tessen are named for it, which tells you how much of Drent it has had.',
+  }),
   'witch-hazel': kind('witch-hazel', {
     name: 'Witch hazel', xp: 20, habitat: 'wood', use: 'remedy',
     note: 'A wood-edge shrub that flowers in yellow ragged threads in late autumn, when there is nothing else in the wood flowering at all.',

@@ -12,7 +12,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, DRILL_COUNT, CORNERS_XP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -56,7 +56,7 @@ import { createIzolHost } from './izol-host.js';
 import { izolDeckHeight } from './izol-world.js';
 import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
-import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
+import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
@@ -397,11 +397,13 @@ function init() {
       npc.placement={...placement,x:companionHold.x,z:companionHold.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold=null;
-    let x=p.x-Math.sin(yaw)*2.5+Math.cos(yaw)*-.9,z=p.z-Math.cos(yaw)*2.5-Math.sin(yaw)*-.9;
+    let x=p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side,z=p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
     if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world));if(spot){x=spot.x;z=spot.z;}}
     const gap=Math.hypot(pos.x-x,pos.z-z);
-    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=gap>4?6.4:4.2;
-    if(gap>40)pos.set(x,world.heightAt(x,z),z);
+    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=companionPace(gap);
+    // Forty metres apart is a wall, a river, a ferry or a horse, and never running: he runs
+    // faster than the traveler does, so he closes rather than falls behind (companionPace).
+    if(gap>COMPANION_REACH.setDown)pos.set(x,world.heightAt(x,z),z);
     npc.placement={...placement,x,z,yaw};}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
@@ -2214,6 +2216,10 @@ function init() {
     refreshQuest();inventory.refresh();audio?.effect('success');
     if(result.reward?.id==='legion-horse'&&!riding.owned){const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
+    // First of eleven. Venmor remembers who came first, and it is the one thing the short road
+    // has that the long road cannot get (docs/drent-long-road.md §9). Once, and a little trust.
+    if(action==='join-muster'&&company.summary(playSeconds).mustered+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
+      toast('You are the first of the eleven into this camp, and the Marshal has noticed. The pegs behind the standard are still empty.','THE ARMY REMEMBERS EARLY MEN');
     const view=moros.view();
     toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
@@ -2392,6 +2398,16 @@ function init() {
       line='There\'s my thoughtful acorn gatherer. I haven\'t forgotten your little delivery. You needn\'t bring me anything to earn a welcome, you know. Though if you keep smiling at me like that, I may forget to watch the squirrels.';
       choices.push({id:'warm-reply',label:'It\'s good to see you too, Lysa.',action:()=>openDialogue(npc,['Then stay a moment. The washing can wait, and the squirrels have been showing off all morning. I was hoping for company.'],null,'Enjoy the quiet together.')});
     }
+    // The two recipes the acorn errand was always for. The leached meal had no use in the game
+    // until now, and both of these start with it (docs/known-issues.md, the six foods).
+    if(acornQuest.status==='complete'&&!(cooking.knows('acorn-flatbread')&&cooking.knows('honey-cake')))
+      choices.push({id:'lysa-recipes',label:'What do you actually do with the meal?',action:()=>openDialogue(npc,[
+        'Leach it in three waters until it stops fighting you, grind it coarse, and from there it is two things. Flatbread, which is dough on a hot stone and will keep you walking. And little cakes, if you can find me a comb of honey — Troy keeps bees at the fold in the wood and will give you one for the asking.',
+        'Both of them cook on any fire you can light, which is what the tinderbox was for. Write them down; I am not going to be standing at the next fire you build.'],
+        null,'Write them down',{onComplete:()=>{
+          const taught=['acorn-flatbread','honey-cake'].map(id=>cooking.learn(id)).filter(result=>result.ok&&result.first);
+          if(taught.length){refreshSkillsSheet();toast('Acorn flatbread and honey cake. Both of them start with Lysa’s meal, and both cook on any lit fire.','TWO RECIPES FROM LYSA');saveRoad(false);}
+          lysaConversation(npc);}})});
     {const feeder=lysaFeederChoice(npc,{birding,inventory,openDialogue,act:birdingAct,back:()=>lysaConversation(npc)});if(feeder)choices.push(feeder);}
     choices.push({id:'acorn-tangent',label:'How do you turn acorns into food?',action:tangent},{id:'squirrel-tangent',label:'Tell me about the squirrels.',action:squirrels},{id:'pawpaw-tangent',label:'Is there fruit I can eat on the road?',action:fruit},{id:'leave-lysa',label:acornQuest.status==='available'?'Maybe another time.':'Until next time.',action:closeDialogue});
     openDialogue(npc,[line],null,'Back to the road',{choices});
@@ -2597,7 +2613,7 @@ function init() {
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
-    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1}))return;
+    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id)}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}

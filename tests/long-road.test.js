@@ -4,8 +4,11 @@ import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
+  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt,
 } from '../src/long-road.js';
+import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
 import { ARRIVALS } from '../src/mercenaries.js';
+import { MAIN_ROAD } from '../src/region-world.js';
 import { renderLine } from '../src/linguist.js';
 import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
@@ -344,4 +347,78 @@ test('when the traveler is Chris the same drill runs the other way round, and pa
   assert.notEqual(his.opening, hers.opening, 'but a different mouth asks');
   assert.match(hers.opening, /Cromb the Barbarian/);
   assert.match(hers.opening, /You have the Ambroni/, 'because the traveler is the one who has it');
+});
+
+test('the companion keeps up with a running traveler, and the set-down is left for walls and boats', () => {
+  // His top pace used to be 6.4 against a traveler's 7.2, so the gap opened at 0.8 m/s and hit
+  // the forty-metre set-down after about fifty seconds of unbroken running - three times over on
+  // the length of Drent's road - and the player watched him pop to their shoulder over and over.
+  assert.equal(COMPANION_REACH.setDown, 40);
+  assert.equal(companionPace(0), COMPANION_REACH.walk, 'at your shoulder he walks');
+  assert.equal(companionPace(COMPANION_REACH.stride), COMPANION_REACH.walk);
+  assert.ok(companionPace(COMPANION_REACH.stride + .01) > TRAVELER_RUN, 'and past a stride he runs, harder than you do');
+  assert.ok(companionPace(30) > companionPace(6), 'the further behind, the harder he comes');
+  assert.ok(companionPace(500) <= TRAVELER_RUN + 2.5, 'and never at a sprint nobody could watch');
+  // The whole road, run without stopping. The bug hunter measured the old pace along this exact
+  // polyline: over 1,668 m the gap reached 40.0 m and Chris was set down beside the traveler
+  // four times. The answer that matters is zero.
+  const road = MAIN_ROAD.map(point => ({ x: point.x, z: point.z }));
+  let leg = 1, along = 0, gap = 0, setDowns = 0, walked = 0;
+  const legLength = i => Math.hypot(road[i].x - road[i - 1].x, road[i].z - road[i - 1].z);
+  for (let t = 0; t < 6000 && leg < road.length; t++) {
+    const dt = .1, step = TRAVELER_RUN * dt;
+    along += step; walked += step;
+    while (leg < road.length && along >= legLength(leg)) { along -= legLength(leg); leg++; }
+    gap += step;                                       // the traveler pulls away
+    gap = Math.max(0, gap - companionPace(gap) * dt);   // and he answers
+    if (gap > COMPANION_REACH.setDown) { setDowns++; gap = 0; }
+  }
+  assert.ok(walked > 1600, `the run covered ${walked.toFixed(0)} m of the 1,668 m road`);
+  assert.equal(setDowns, 0, `he was set down ${setDowns} times over the length of the road`);
+  assert.ok(gap < COMPANION_REACH.stride + 2, `he settles a stride behind, not ${gap.toFixed(1)} m`);
+  // A horse canters at 13 m/s (RIDE, src/riding.js), which nobody runs down. That is what the
+  // set-down is for, and he reaches it inside a minute of cantering.
+  let mounted = 0, seconds = 0;
+  while (mounted <= COMPANION_REACH.setDown && seconds < 600) { mounted += (13 - companionPace(mounted)) * .1; seconds += .1; }
+  assert.ok(mounted > COMPANION_REACH.setDown, 'a rider does leave him, and he is set down beside them');
+  assert.ok(seconds < 60, `and it takes ${seconds.toFixed(0)} s of cantering, not a walk across Drent`);
+});
+
+test('a traveler who already has the skill finishes the stop in one conversation', () => {
+  // Any of the eleven may be the player and each lands with a different table. A lesson is
+  // shortened, never skipped: the stop still counts, and the talk still pays its Drentish.
+  const road = createLongRoad();
+  for (const stop of LONG_ROAD_SPINE) {
+    if (!stop.skill) continue;
+    assert.ok(recognisedAt(stop.id), `${stop.id} has no line for somebody who already does this`);
+    // Mara's second errand is the exception, and not an exception to the rule: its skill is
+    // learned at her first stop, so knowing cartography is how you arrive at it rather than a
+    // reason to waive it. She still has a line for a traveler who has kept a chart before.
+    if (stop.id === 'village-corners') continue;
+    const world = nothing({ skills: [stop.skill] });
+    assert.equal(knowsAlready(world.skills, stop.skill), true, stop.id);
+    assert.equal(road.view(world).stop(stop.id).done, true, `${stop.id} is not closed by knowing it already`);
+  }
+  assert.equal(knowsAlready([], 'birding'), false);
+  assert.equal(knowsAlready({ known: id => id === 'botany' }, 'botany'), true, 'a real skill sheet answers too');
+  assert.equal(recognisedAt('nowhere'), null);
+});
+
+test('every spine stop has a recognising line, and no two teachers say the same thing', () => {
+  const lines = Object.values(RECOGNISED);
+  assert.equal(new Set(lines).size, lines.length, 'somebody is repeating somebody else');
+  for (const [id, line] of Object.entries(RECOGNISED)) {
+    assert.ok(LONG_ROAD_SPINE.some(stop => stop.id === id), `${id} is not a spine stop`);
+    assert.ok(line.length > 60, `${id} says too little to be a scene`);
+  }
+  // Lakota at Perrin's garden is the design's own worked example: a fen man at forty has still
+  // never seen a Drent bird, and finds are finds.
+  assert.match(RECOGNISED['bird-garden'], /Drent’s list/);
+  assert.match(RECOGNISED['bird-garden'], /never seen these ones/);
+  // Every spine stop that teaches a skill has one, whoever the player turns out to be.
+  const starting = new Set(PLAYABLE_IDS.flatMap(id => Object.keys(startingSkills(id))));
+  for (const stop of LONG_ROAD_SPINE) {
+    if (!stop.skill || !starting.has(stop.skill)) continue;
+    assert.ok(RECOGNISED[stop.id], `somebody lands already knowing ${stop.skill} and ${stop.id} has nothing to say to them`);
+  }
 });

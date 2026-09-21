@@ -19,6 +19,12 @@ export const RECIPES = Object.freeze({
     note: 'A cake of chocolate grated into a pan of milk over a lit fire, stirred till it coats the spoon, with a pinch of chilli and a spoonful of honey if you have one.' }),
   'cooked-fish': recipe('cooked-fish', { name: 'Cooked fish', xp: 10, needs: Object.freeze({ 'raw-fish': 1 }), makes: 'cooked-fish',
     note: 'One raw fish over a lit fire, turned once. Everybody can do it; now you know why it works.' }),
+  // Lysa's two, taught once the acorns are in. Both of them start with the same leached meal,
+  // which is the point of the acorn errand and was never used for anything until now.
+  'acorn-flatbread': recipe('acorn-flatbread', { name: 'Acorn flatbread', xp: 25, needs: Object.freeze({ acorn: 3 }), makes: 'acorn-flatbread',
+    note: 'Acorns leached in three waters until the bitterness is gone, ground to a coarse meal, worked with water into a stiff dough and cooked flat on a stone at the edge of the fire.' }),
+  'honey-cake': recipe('honey-cake', { name: 'Honey cake', xp: 35, needs: Object.freeze({ acorn: 2, honeycomb: 1 }), makes: 'honey-cake',
+    note: 'The same meal, a comb of Troy\u2019s honey worked through it while the wax is still soft, and a little longer on the stone. It is a cake the way a hedge is a wall, and it will get you up a hill.' }),
 });
 export const RECIPE_IDS = Object.freeze(Object.keys(RECIPES));
 
