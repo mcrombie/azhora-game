@@ -47,7 +47,7 @@ function dot(ctx, x, y, radius, fill, stroke = null) {
 }
 
 /** Draw one north-up, player-centered local view. Targets are ordinary {x,z,id?} objects. */
-export function drawMinimap(ctx, { world = {}, position, goal = null, combat = null, angle = 0,
+export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal = null, combat = null, angle = 0,
   time = 0, discoveries = new Set(), tracked = null, bird = null, radius = 62, size = 300, northOffset = 0 } = {}) {
   const view = miniMapProjection({ position, radius, size });
   const { project, bounds, scale, center, ring } = view;
@@ -55,7 +55,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
   const region = finitePoint(position) ? world.regionAt?.(position.x, position.z) : null;
   const counts = { paths: 0, buildings: 0, waterShapes: 0, landmarks: 0, discovered: 0, enemies: 0, heightSamples: 0 };
   // Open country has no palette of its own; it draws on Drent's, and says its own name above.
-  const result = { bounds, scale, regionId: region?.id || 1, open: region?.open === true, goal: null, optional: null, counts, player: null };
+  const result = { bounds, scale, regionId: region?.id || 1, open: region?.open === true, goal: null, openGoal: null, optional: null, counts, player: null };
   if (!ctx) return result;
   ctx.clearRect(0, 0, size, size);
   ctx.save(); ctx.beginPath(); ctx.arc(center, center, center - 1, 0, TAU); ctx.clip();
@@ -253,7 +253,10 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
     dot(ctx, p.x, p.y, 3.2, '#ef9a72', '#533c2e'); counts.enemies++;
   }
 
-  const drawTarget = (target, optional) => {
+  // Three targets, and each is a different mark rather than a different colour: a filled gold
+  // diamond for the muster road, the same diamond drawn hollow for the long road's next stop
+  // (src/quest-markers.js, the open variant), and a green ring for a place the traveler pinned.
+  const drawTarget = (target, optional, hollow = false) => {
     const p = project(target, { clampToRing: true, inset: 7 }); if (!p) return null;
     const color = optional ? '#8acfc2' : '#ffe0a0';
     ctx.lineWidth = 2;
@@ -261,8 +264,10 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
     if (optional) dot(ctx, p.x, p.y, 7.5, null, color);
     else {
       const r = 4.5 + Math.sin((Number.isFinite(time) ? time : 0) * 3) * .55;
-      ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x + r, p.y);
-      ctx.lineTo(p.x, p.y + r); ctx.lineTo(p.x - r, p.y); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x + r, p.y);
+      ctx.lineTo(p.x, p.y + r); ctx.lineTo(p.x - r, p.y); ctx.closePath();
+      if (hollow) { ctx.strokeStyle = color; ctx.lineWidth = 1.7; ctx.stroke(); ctx.lineWidth = 2; }
+      else { ctx.fillStyle = color; ctx.fill(); }
     }
     if (p.clamped) {
       const dx = Math.sin(p.bearing), dy = -Math.cos(p.bearing);
@@ -274,6 +279,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
     return { ...p, id: target.id || null };
   };
   result.optional = drawTarget(tracked, true);
+  result.openGoal = drawTarget(openGoal, false, true);
   result.goal = drawTarget(goal, false);
   // The bird the traveler is watching, handed in by the host from src/bird-finder.js.
   // A pair of wings rather than a pin, because it is not a place and will not wait;

@@ -131,6 +131,14 @@ test('Chris interprets what he knows, while he is beside you and still walking',
   assert.equal(linguist.interpreterNearby(near, { interpreter: { ...chris, hidden: true }, languageId: 'drentish' }), false);
   assert.equal(linguist.interpreterNearby(near, { interpreter: null }), false);
   assert.equal(linguist.interpreterNearby(chris, { interpreter: chris, languageId: 'drentish' }), false, 'and he does not interpret himself');
+  // The long road takes him off the clock and puts him at the traveler's shoulder
+  // (`with-traveler`, src/mercenaries.js). That is a phase this rule had never seen, and it needs
+  // no rule of its own: he is not mustered, and the host writes his real place onto the placement.
+  const companion = { id: INTERPRETER.npcId, placement: { phase: 'with-traveler', x: 2.5, z: 0 } };
+  assert.equal(linguist.interpreterNearby(near, { interpreter: companion, languageId: 'drentish' }), true,
+    'a man walking two and a half metres behind you is beside you');
+  assert.equal(linguist.interpreterNearby(far, { interpreter: companion, languageId: 'drentish' }), false,
+    'and the twelve metres are still the twelve metres');
 });
 
 test('the company are the people the traveler can always follow, and Chris is only one of them', () => {

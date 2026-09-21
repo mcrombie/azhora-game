@@ -102,7 +102,7 @@ function regionModels(world) {
  * silently change destination when the next main quest starts.
  */
 export function buildLocalMapModel({ world, position, heading, discoveries = new Set(), knownIds = [], knownLocations = [],
-  goal = null, regionId, trackedId } = {}) {
+  goal = null, openGoal = null, regionId, trackedId } = {}) {
   if (!world || !validBounds(world.bounds)) throw new TypeError('A local map needs finite world bounds.');
   if (!finitePoint(position)) throw new TypeError('A local map needs a finite player position.');
   const regions = regionModels(world);
@@ -128,7 +128,7 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
   const goalPoint = finitePoint(goal) ? goal : null;
   for (const place of Array.isArray(world.landmarks) ? world.landmarks : []) {
     if (!validId(place?.id) || !finitePoint(place) || markers.has(place.id)) continue;
-    const seen = discovered.has(place.id), revealed = seen || known.has(place.id) || goalPoint?.id === place.id;
+    const seen = discovered.has(place.id), revealed = seen || known.has(place.id) || goalPoint?.id === place.id || openGoal?.id === place.id;
     markers.set(place.id, { id: place.id, name: revealed ? text(place.name, 'Known place') : UNKNOWN_NAME,
       description: revealed ? text(place.description) : UNKNOWN_DESCRIPTION, ...copyPoint(place),
       discovered: seen, known: revealed, trackable: revealed, kind: 'place' });
@@ -143,13 +143,17 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
       : { id: location.id, name: location.name, description: text(location.description), ...copyPoint(location),
         discovered: discovered.has(location.id), known: true, trackable: true, kind: text(location.kind, 'location') });
   }
-  let mainGoal = null;
-  if (goalPoint) {
-    const match = validId(goal.id) ? markers.get(goal.id) : [...markers.values()].find(marker => marker.known
-      && Math.hypot(marker.x - goal.x, marker.z - goal.z) < .01);
-    mainGoal = { id: match?.id || (validId(goal.id) ? goal.id : 'main-objective'), name: text(goal.name, match?.name || 'Current objective'),
-      description: text(goal.description), ...copyPoint(goal), known: true, trackable: !!match?.trackable, kind: 'objective' };
-  }
+  // A goal, of either gold: the muster road's solid one, and the long road's open one beside it
+  // (src/quest-markers.js). They are separate fields so following one never hides the other.
+  const objective = (point, kind, fallback) => {
+    if (!finitePoint(point)) return null;
+    const match = validId(point.id) ? markers.get(point.id) : [...markers.values()].find(marker => marker.known
+      && Math.hypot(marker.x - point.x, marker.z - point.z) < .01);
+    return { id: match?.id || (validId(point.id) ? point.id : fallback), name: text(point.name, match?.name || 'Current objective'),
+      description: text(point.description), ...copyPoint(point), known: true, trackable: !!match?.trackable, kind };
+  };
+  const mainGoal = objective(goalPoint, 'objective', 'main-objective');
+  const openGoalMarker = objective(finitePoint(openGoal) ? openGoal : null, 'objective-open', 'long-road-objective');
   const trackedMarker = validId(trackedId) ? markers.get(trackedId) : null;
   const buildings = (Array.isArray(world.colliders) ? world.colliders : []).filter(c => c?.kind === 'house'
     && finitePoint(c) && Number.isFinite(c.width) && c.width > 0 && Number.isFinite(c.depth) && c.depth > 0
@@ -164,7 +168,7 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
     // Heading is clockwise from north in radians, independently of Three's yaw.
     player: { ...copyPoint(position), ...(Number.isFinite(heading) ? { heading }
       : Number.isFinite(position.heading) ? { heading: position.heading } : {}) },
-    goal: mainGoal, paths: visiblePaths(world.paths, bounds), landmarks: [...markers.values()].filter(marker => inside(marker, bounds)),
+    goal: mainGoal, openGoal: openGoalMarker, paths: visiblePaths(world.paths, bounds), landmarks: [...markers.values()].filter(marker => inside(marker, bounds)),
     buildings, waters: watersFor(world, bounds), lands: landsFor(world, bounds),
     tracked: trackedMarker?.trackable ? { ...trackedMarker } : null };
 }

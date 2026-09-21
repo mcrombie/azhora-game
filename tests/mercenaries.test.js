@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
+import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
@@ -109,16 +109,70 @@ test('placements keep the men on or beside the road, off the traveler’s landin
   const early = c.placements(0);
   assert.equal(early.filter(p => p.phase === 'landing').length, 1);
   assert.equal(early.filter(p => p.phase === 'coming').length, MERCENARY_ROSTER.length - 1, 'everyone but Chris is still to come');
-  for (const p of early) assert.ok(Math.hypot(p.x - 3, p.z - 3) > 2 && Math.hypot(p.x - 3, p.z - 3) < 8, 'waiting men stand near but not on the landing');
-  const mid = c.placements(1200);
-  const walking = mid.filter(p => p.phase === 'walking' || p.phase === 'stopped');
-  assert.ok(walking.length >= 1);
-  for (const p of walking) {
-    const nearest = distanceAlongRoad(road, p);
-    const onRoad = pointAlongRoad(road, nearest);
-    assert.ok(Math.hypot(p.x - onRoad.x, p.z - onRoad.z) < 4.2, `${p.id} stays beside the road`);
-    assert.ok(Number.isFinite(p.yaw));
+  // They queue down the way they are going rather than ringing the landing: one line, in roster
+  // order, half a metre either side of it, and nobody standing on the landing itself. The ring
+  // this replaces did not fit the pier it was drawn on (LANDING_QUEUE, docs/known-issues.md).
+  const span = Math.hypot(road[0].x - 3, road[0].z - 3);
+  const ux = (road[0].x - 3) / span, uz = (road[0].z - 3) / span;
+  let previous = 0;
+  for (const [i, p] of early.entries()) {
+    const along = (p.x - 3) * ux + (p.z - 3) * uz, across = Math.abs((p.x - 3) * -uz + (p.z - 3) * ux);
+    assert.ok(along > 2, `${p.id} is off the landing itself (${along.toFixed(1)} m along)`);
+    assert.ok(across <= LANDING_QUEUE.offset + 1e-9, `${p.id} keeps to the line (${across.toFixed(2)} m off it)`);
+    if (i) assert.ok(Math.abs(along - previous - LANDING_QUEUE.spacing) < 1e-9, `${p.id} stands one place behind the last`);
+    previous = along;
+    assert.ok(Math.abs(p.yaw - Math.atan2(ux, uz)) < 1e-9, `${p.id} faces the way he is going`);
   }
+  assert.equal(new Set(early.map(p => `${p.x.toFixed(2)},${p.z.toFixed(2)}`)).size, early.length, 'no two men wait on one spot');
+  // The corridor, stated from the formation rather than from one lucky sample. `lateral` fans the
+  // men out in pairs, so the outermost is 1.4 + floor((n-1)/2) * 0.8 off the line, and a stopped
+  // man stands 2.2 times that aside to let the traveler by. The test used to sample t=1200 and
+  // ask for 4.2 m, which was simply not true of the whole clock: Mus walks 4.6 m out and stops
+  // 10.1 m out, and no moment the old test looked at happened to catch him.
+  const widest = 1.4 + Math.floor((MERCENARY_ROSTER.length - 1) / 2) * .8;
+  const corridor = { walking: widest, stopped: widest * 2.2 };
+  let seen = { walking: 0, stopped: 0 }, furthest = { walking: 0, stopped: 0 };
+  for (let t = 0; t <= 20000; t += 5) for (const p of c.placements(t)) {
+    if (p.phase !== 'walking' && p.phase !== 'stopped') continue;
+    seen[p.phase]++;
+    const at = pointAlongRoad(road, distanceAlongRoad(road, p));
+    const off = Math.hypot(p.x - at.x, p.z - at.z);
+    furthest[p.phase] = Math.max(furthest[p.phase], off);
+    assert.ok(off <= corridor[p.phase] + 1e-6, `${p.id} is ${off.toFixed(2)} m off the road ${p.phase}`);
+    assert.ok(Number.isFinite(p.yaw));
+    // A man who has stopped stands at one of the authored stops, not wherever the clock left
+    // him. Nothing checked this, so a stop could have drifted along the road unnoticed.
+    if (p.phase === 'stopped') {
+      const stop = stops.find(entry => entry.id === p.stopId);
+      assert.ok(stop, `${p.id} stopped at ${p.stopId}, which is not an authored stop`);
+      const mark = pointAlongRoad(road, distanceAlongRoad(road, stop.point));
+      assert.ok(Math.hypot(p.x - mark.x, p.z - mark.z) <= corridor.stopped + 1e-6,
+        `${p.id} stopped ${Math.hypot(p.x - mark.x, p.z - mark.z).toFixed(1)} m from ${p.stopId}`);
+    }
+  }
+  assert.ok(seen.walking > 500 && seen.stopped > 50, `the sweep saw ${seen.walking} walking and ${seen.stopped} stopped`);
+  // And the corridor is not slack: somebody really does go out to the edge of it.
+  assert.ok(furthest.walking > corridor.walking - .1, `nobody walks near the edge (${furthest.walking.toFixed(2)} of ${corridor.walking})`);
+  assert.ok(furthest.stopped > corridor.stopped - .1, `nobody stops near the edge (${furthest.stopped.toFixed(2)} of ${corridor.stopped})`);
+  // Every one of them is on the road at some point, and the sweep above has checked each of
+  // those moments. There is no moment when all ten are on it together, and that is the design
+  // rather than a fault: they are staggered from 0 to 3,780 s, so Chris has mustered long
+  // before Matt and Al land. The busiest the road ever gets is recorded here so that a change
+  // to the arrivals shows up as a number rather than as a feeling.
+  const everWalked = new Set();
+  let busiest = { count: 0, t: 0 };
+  for (let t = 0; t <= 20000; t += 5) {
+    const here = c.placements(t).filter(p => p.phase === 'walking' || p.phase === 'stopped');
+    for (const p of here) everWalked.add(p.id);
+    if (here.length > busiest.count) busiest = { count: here.length, t };
+  }
+  assert.equal(everWalked.size, MERCENARY_ROSTER.length, 'every man walks the road at some point');
+  // Three, and it is the three riders, who arrive together and argue the whole way. On this
+  // road, with these arrivals, that is as crowded as it gets.
+  assert.equal(busiest.count, 3, `the road is busiest with ${busiest.count} men on it, at ${busiest.t}s`);
+  // Distances stay on the road they are measured along, all the way through.
+  for (let t = 0; t <= 20000; t += 25) for (const p of c.placements(t))
+    assert.ok(p.distance >= 0 && p.distance <= 650, `${p.id} is ${p.distance.toFixed(0)} m along a 650 m road at ${t}s`);
   const late = c.placements(20000);
   assert.ok(late.every(p => p.phase === 'mustered'), 'given enough time, everyone musters');
   const spread = new Set(late.map(p => `${p.x.toFixed(1)},${p.z.toFixed(1)}`));
@@ -138,6 +192,71 @@ test('a brisk traveler stays first; a slow one is passed; the rank says so', () 
   // Between: some ahead, some behind.
   const rank = c.travelerRank(2400, 300);
   assert.ok(rank > 1 && rank < MERCENARY_COMPANY_SIZE, `rank ${rank}`);
+});
+
+test('with no companion argument, the company stands exactly where it always has', () => {
+  // The whole of the long road hangs off this. A save written before any of it existed restores
+  // with no companion at all, and if that moved one man by a metre it would move the clock the
+  // eighty-seven minutes are measured on (tests/long-road-clock.test.js).
+  const today = company();
+  const same = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, companion: undefined });
+  for (const seconds of [0, 600, 1800, 5300]) {
+    assert.deepEqual(same.placements(seconds), today.placements(seconds), 'at ' + seconds + ' s');
+    assert.deepEqual(same.summary(seconds), today.summary(seconds));
+  }
+  assert.equal(same.companionId, null);
+  assert.equal(today.summary(0)['with-traveler'], 0, 'nobody is walking with anybody');
+});
+
+test('a companion walking with you is off the road, never musters, and is behind you wherever you are', () => {
+  const walking = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: 'merc-gotwood', with: true } });
+  for (const seconds of [0, 600, 5300, 50000]) {
+    const chris = walking.placements(seconds).find(p => p.id === 'merc-gotwood');
+    assert.equal(chris.phase, 'with-traveler', 'at ' + seconds + ' s');
+    assert.equal(chris.distance, 0);
+    assert.equal(chris.x, null, 'the host places him, not the clock');
+    assert.equal(walking.summary(seconds)['with-traveler'], 1);
+  }
+  assert.equal(walking.summary(50000).mustered, MERCENARY_ROSTER.length - 1, 'the other nine get there without him');
+  assert.equal(walking.summary(50000).arrived, MERCENARY_ROSTER.length, 'he is ashore all the same');
+  assert.equal(walking.companionId, 'merc-gotwood');
+  // First of eleven means first: a man at your shoulder is not somebody who beat you to it.
+  assert.equal(walking.travelerRank(900, walking.musterDistance), 1);
+  assert.match(mercenaryLines('merc-gotwood', { phase: 'with-traveler' })[1], /Right behind you/);
+});
+
+test('released at the bridge, he walks on from where he stood and musters ten minutes later', () => {
+  // Let go at 4,800 s at 620 m along a 650 m road, with the crossing stop 30 m ahead of him and
+  // its sixty seconds still to spend. Nothing of the landing is left to do, and Corvan's desk is
+  // behind him, so he does not walk back to it.
+  const chris = MERCENARY_ROSTER[0];
+  const released = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: chris.id, releasedAt: 4800, releasedDistance: 300 } });
+  const at = seconds => released.placements(seconds).find(p => p.id === chris.id);
+  assert.equal(at(4799).phase, 'coming', 'before he is let go he is nowhere on this clock');
+  assert.equal(at(4801).phase, 'walking', 'and the moment he is, he is walking, with no hour at a landing');
+  assert.ok(Math.abs(at(4801).distance - (300 + 1 * chris.pace)) < 1e-6, 'from where he was standing');
+  // 300 m to the crossing at 350 m, its 60 s, then 300 m to the muster at 650 m.
+  const expected = 4800 + 50 / chris.pace + 60 + 300 / chris.pace;
+  assert.equal(at(expected - 1).phase, 'walking');
+  assert.deepEqual(at(expected + 1), { id: chris.id, name: chris.name, phase: 'mustered', distance: 650, stopId: null,
+    x: at(expected + 1).x, z: at(expected + 1).z, yaw: at(expected + 1).yaw, walking: false });
+  // The induction stop at 130 m is behind him and is not made twice.
+  assert.ok(!Array.from({ length: 400 }, (_, i) => at(4800 + i)).some(p => p.stopId === 'induction'), 'he has already been to Corvan');
+});
+
+test('a released man starts behind nothing he had not passed, and never before the road begins', () => {
+  const chris = MERCENARY_ROSTER[0];
+  const make = over => createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: chris.id, releasedAt: 100, releasedDistance: 0, ...over } });
+  assert.equal(make({ releasedDistance: -50 }).placements(101).find(p => p.id === chris.id).distance > 0, true, 'a negative place is the landing');
+  assert.equal(make({ releasedDistance: 99999 }).placements(101).find(p => p.id === chris.id).phase, 'mustered', 'released at the muster, he is in at once');
+  assert.equal(make({ releasedAt: -5 }).placements(0).find(p => p.id === chris.id).phase, 'walking', 'and never earlier than the game');
+  // Released, he is on the clock like anybody else: at the muster he counts ahead of a traveler
+  // still on the road behind him.
+  const gone = make({ releasedAt: 0, releasedDistance: 600 });
+  assert.ok(gone.travelerRank(2000, 100) > 1);
 });
 
 test('mercenaries speak in two lines and know where they stand', () => {

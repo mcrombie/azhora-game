@@ -62,6 +62,18 @@ test('independent bearings retain both targets even on opposite map edges', () =
   assert.ok(!nearby.goal.clamped && !nearby.optional.clamped);
 });
 
+test('the long road’s next stop is a second, ringed target beside the arc’s own', () => {
+  // Two golds: the muster road's filled diamond and the long road's open one, both drawn, so
+  // following one never hides the other (src/quest-markers.js, docs/drent-long-road.md §2).
+  const world = fixture(), position = { x: -80, z: 29 };
+  const view = drawMinimap(context(), { world, position, goal: { x: -75, z: 29 }, openGoal: { id: 'long-road-bird-garden', x: -30, z: 20 } });
+  assert.ok(view.goal, 'the arc is still drawn');
+  assert.ok(view.openGoal, 'and so is the long road');
+  assert.equal(view.openGoal.id, 'long-road-bird-garden');
+  assert.notDeepEqual([view.goal.x, view.goal.y], [view.openGoal.x, view.openGoal.y], 'two targets, two places');
+  assert.equal(drawMinimap(context(), { world, position, goal: { x: -75, z: 29 } }).openGoal, null, 'and nothing when there is nothing to take');
+});
+
 test('player arrow follows the actual character yaw at each cardinal heading', () => {
   for (const [angle, tip] of [[0, [150, 158]], [Math.PI / 2, [158, 150]], [Math.PI, [150, 142]], [-Math.PI / 2, [142, 150]]]) {
     const state = drawMinimap(context(), { position: { x: 50, z: -222 }, angle });
