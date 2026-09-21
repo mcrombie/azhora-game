@@ -207,9 +207,9 @@ title screen; in every other state of the game it is at its berth.
 The traveler may be any of the eleven (`PLAYABLE_IDS`: `crom`, then the roster's ten by bare
 name; `normalisePlayer` also takes `merc-gotwood`, `Chris`, `Ed the Word`).
 
-- **Standard** (Crom, Jerry, Christin, Ciarán, Lakota, Eliana, Matt, Al the Tun): the sequence as
+- **Standard** (Cromb, Jerry, Kristen, Ciarán, Lakota, Eliana, Matt, Al the Tun): the sequence as
   above, the companion **Chris Gotwood**.
-- **Chris Gotwood as the traveler**: the same sequence, the companion **Crom** — "Crom is in the
+- **Chris Gotwood as the traveler**: the same sequence, the companion **Cromb** — "Cromb is in the
   bow, watching the coast come up."
 - **Ed the Word** swims ashore out of a pirate ship that never docks, so there is no boat ride:
   `variantFor('word')` is one card over the landed frame, 6 s, skippable —
@@ -249,7 +249,7 @@ and Mara's errand are untouched.
 14. **The title screen shows the boat at sea and no traveler**; Continue, the newest chapter and
     testing show the boat at its berth and never play the sequence.
 15. **Ed and Mus get one card each over the landed frame**; everyone else gets the boat, with
-    Chris, or with Crom when they are Chris.
+    Chris, or with Cromb when they are Chris.
 16. **`mode` stays `'arriving'`** for the sequence: the autopilot's `wait`, the testing menu's
     `pendingTesting`, the HUD's hiding and `walkTime` all key off it already.
 

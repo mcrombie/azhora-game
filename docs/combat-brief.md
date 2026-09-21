@@ -47,7 +47,7 @@ that moves, and that is fine.
 | **Polearms** | spear, pike, the thrown spear | Ciarán (spear), Matt (pike), Mus (the one that leaves the hand) |
 | **Staves** | quarterstaff, forest stick, walking club | Lakota |
 | **Bows** | bow | Jerry |
-| **Shield** | any shield, carried with a one-handed weapon | Christin |
+| **Shield** | any shield, carried with a one-handed weapon | Kristen |
 | **Toughness** | none — it is you | nobody; it is taught by being hit and living |
 
 This is why the skills are by weapon: **the company is the faculty.** Friendship with a mercenary
@@ -205,7 +205,7 @@ at 1. Proposed, for the user to correct when the character profiles are written:
 | Chris Gotwood | Blades 30 |
 | Ed the Word | Blades 35 (the dagger), Swimming 3 |
 | Jerry | Bows 40 |
-| Christin | Blades 25, Shield 35 |
+| Kristen | Blades 25, Shield 35 |
 | Ciarán | Polearms 35 |
 | Lakota | Staves 30 (and the birding that is already hers) |
 | Eliana | Heavy arms 40 |

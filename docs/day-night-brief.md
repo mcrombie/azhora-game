@@ -34,7 +34,7 @@ chosen against the company's timetable, and it makes the arrivals mean something
 |---|---|---|
 | You and Chris Gotwood | 0:00 | first light, day one |
 | Ed the Word | 6 min | morning |
-| Jerry, Christin, Ciarán | 18 min | just past midday |
+| Jerry, Kristen, Ciarán | 18 min | just past midday |
 | **Lakota** | 33 min | **one minute after nightfall** — a lantern on the pier, and the birder arrives with the owls |
 | **Eliana** | 48 min | **first light, day two**, to the second |
 | Matt and Al the Tun | 63 min | late morning, day two |

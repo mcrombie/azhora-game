@@ -39,7 +39,7 @@ and before every skill moved to the ninety-nine table. They survived both, which
 | 2 | Chris Gotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
 | 3 | Ed the Word | `swimming` 260 | He came ashore under his own power off a ship that never docked. |
 | 4 | Jerry | `fishing` 140 | A man who settles things at thirty paces has waited out a lot of floats. |
-| 5 | Christin | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
+| 5 | Kristen | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
 | 6 | Ciarán | `geology` 140 | Picks up what the road is made of and weighs it in his hand. |
 | 7 | Lakota | `birding` 37224, `archaeology` 90, `wine` 83 | 37,224 is level 40, and now reads as 40: every skill is on the ninety-nine table. 83 is level 2, which is where his wine belongs — he has opinions about it, a notch below the digs. |
 | 8 | Eliana | `woodcutting` 2411 | Level 15: white oak. |
@@ -111,14 +111,14 @@ profiles should leave his blank.
 - **Diverge:** his `route` is `'shore'` and he `swims`. That is already modelled for the NPC.
 
 ### 4. Jerry — thirty paces and no nearer
-- **Opening:** standard. He rode in with Christin and Ciarán, so as the player he should arrive
+- **Opening:** standard. He rode in with Kristen and Ciarán, so as the player he should arrive
   with the two of them still arguing at him — the group is already in the data (`MERCENARY_GROUPS`).
 - **Arc:** he thinks the company should split up and he is always wrong about it. Give him the
   chance to be right once.
 - **Owed:** the bow. `KIT_HELD` has no bow, so a Jerry who is the player carries a sword. Until
   ranged combat exists, that is a hole in the middle of his character.
 
-### 5. Christin — the one who feeds the company
+### 5. Kristen — the one who feeds the company
 - **Opening:** standard, arriving with the riders.
 - **Arc:** she keeps people alive in two ways and one of them is dinner. Cooking should be more
   than a side skill in her game.

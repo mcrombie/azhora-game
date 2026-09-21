@@ -416,7 +416,7 @@ men are placed at 2.2 m or more.
 | | man | ring | position | ground | waits |
 |---|---|---|---|---|---|
 | 2 | Jerry | 2.8 m | 21.3, 26.8 | −5.56 | 90 s from t=1080 |
-| 3 | Christin | 3.1 m | 21.3, 31.6 | −5.75 | 90 s from t=1080 |
+| 3 | Kristen | 3.1 m | 21.3, 31.6 | −5.75 | 90 s from t=1080 |
 | 5 | Lakota | 3.7 m | 22.7, 25.3 | −5.52 | 60 s from t=1980 |
 | 7 | Matt | 4.3 m | 25.9, 32.2 | −5.74 | 120 s from t=3780 |
 | 8 | Al the Tun | 4.6 m | 25.2, 25.0 | −5.53 | 120 s from t=3780 |
@@ -459,7 +459,7 @@ traveler meets it, so it is not guessed at here.
 asserts somebody is *still* wet, so it fails the moment this is mended. It deliberately does not
 name the five, because which man stands at which radius is only the order of the roster. In play:
 start a new game, stay at the landing, and wait to t=1080 (eighteen minutes) for Jerry and
-Christin.
+Kristen.
 
 ## `route` is written on every hired sword and read by nothing
 
