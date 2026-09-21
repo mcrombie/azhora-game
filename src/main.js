@@ -2528,11 +2528,22 @@ function init() {
     toast(`${point.name} is marked in teal. Follow the paths; the marker shows its direction.`, 'LOCAL TRAIL · L TO REVIEW');updateHUD();return true;
   }
   function clearTrailPin(){trackedPlaceId=null;trailMarker.visible=false;updateHUD();}
+  /**
+   * **How many of the company stand in this camp.** The men whose clock has them at the muster,
+   * less the ones who are never coming.
+   *
+   * `summary().mustered` counts a phase, and the company's clock knows nothing about the dead: a
+   * man struck off the walking list goes back onto the road schedule and musters on it, hidden,
+   * like anybody else. So the Marshal said one more stood in front of him than did, for every man
+   * who had died, while living men were still on the road. The dead are in neither count - not
+   * among those in camp and not among those still coming (docs/companions.md).
+   */
+  function musteredInCamp(){return company.placements(playSeconds).filter(p=>p.phase==='mustered'&&!fallen.has(p.id)).length;}
   // Where the traveler stands in the hired company: who has landed, who has mustered, and the traveler's place on the road.
   function companyStanding(){
     const s=company.summary(playSeconds),rank=company.travelerRank(playSeconds,distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}));
     const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
-    return ` · the company: ${s.arrived} of ${s.total} landed, ${s.mustered} at the muster, you stand ${ordinal(rank)} on the road`;
+    return ` · the company: ${s.arrived} of ${s.total} landed, ${musteredInCamp()} at the muster, you stand ${ordinal(rank)} on the road`;
   }
   function refreshCampaign(){
     refreshChapter();
@@ -2711,7 +2722,7 @@ function init() {
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     // First of eleven. Venmor remembers who came first, and it is the one thing the short road
     // has that the long road cannot get (docs/drent-long-road.md §9). Once, and a little trust.
-    if(action==='join-muster'&&company.summary(playSeconds).mustered+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
+    if(action==='join-muster'&&musteredInCamp()+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
       toast('You are the first of the eleven into this camp, and the Marshal has noticed. The pegs behind the standard are still empty.','THE ARMY REMEMBERS EARLY MEN');
     const view=moros.view();
     toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
@@ -2769,10 +2780,17 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());companions.restore(saved.companions??createCompanions().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());
+    // **The dead come back off the road before the company does.** `companions.restore` asks
+    // `fallen` who is dead, to keep a dead man out of the walking list it is handed - so a stale
+    // `fallen` answers for the save being loaded. Restoring it three lines later meant that
+    // loading a save written *before* a fight, in the same session as the death, struck the man
+    // out of the file: he came back alive and no longer at your shoulder.
+    fallen.restore(saved.fallen??createFallen().snapshot());
+    companions.restore(saved.companions??createCompanions().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -3185,14 +3203,16 @@ function init() {
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
-    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
+    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
-      musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
+      musterCount:musteredInCamp()+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
       // The men standing in front of him and the ones who are never coming: the count is
       // mustered plus those who walked in with you, and the dead are neither (src/companions.js).
       withYou:companions.walking,dead:fallen.ids.filter(id=>roster.some(man=>man.id===id)),
-      owed:companions.owed(),answersFor:id=>companions.answersFor(id),
+      // Asked, not handed: the conversation re-enters itself after each answer, and who is still
+      // owed has changed by then.
+      owed:()=>companions.owed(),answersFor:id=>companions.answersFor(id),
       report:(id,kind)=>{const told=companions.report(id,kind);if(told.ok)saveRoad(false);return told;},
       nameOf:id=>mercenaryById(id)?.name??id}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
@@ -4394,7 +4414,14 @@ function init() {
         const seen=pose.visible&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<420;
         if(seen&&!rebelShip)rebelShip=createRebelShip();
         if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
-        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
+        // **Her own clock, not the session's.** Everything else about this arrival is a function
+        // of `playSeconds` - where she is, which way she heads, how far the two at the rail lean -
+        // and src/rebel-crew.js says in as many words that a game reloaded mid-arrival shows the
+        // right pose without anything being saved. Handing her `elapsed` broke exactly that half
+        // of it: the helmsman's tiller, everybody's sway and the man at the sail were on a clock
+        // that starts at nought every time the game is opened, so the same second looked different
+        // after a reload - up to fifteen degrees of the helmsman.
+        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(playSeconds,pose);}
         if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
           if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
         // A boat in. Two of the five cannot be seen from where the player is and the bell is
@@ -5140,7 +5167,12 @@ function init() {
           yaw=shot.yaw;pitch=.14;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        if(view==='company-mounted'||view==='company-picket'){questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;   // the clock is set on the view's own line (tests/session-clock.test.js)
+        // The clock is pinned on the line that names the view, which is what
+        // `tests/session-clock.test.js` asks of every pin: a review that moves the session clock
+        // must be able to be read as a review at a glance. On its own line below the guard it was
+        // the one pin in the file the test could not see, and the suite has been red on it.
+        if(view==='company-mounted'||view==='company-picket'){playSeconds=4000;
+          questStage=10;combat.finishPractice();player.setArmed(false);
           // **Chris is not in the companions list.** The landing mate is filtered out of it and
           // carried on the long road's own terms, which is why the first render placed Jerry and
           // Kristen and not him. A game that walked down the long road with him has him off the
