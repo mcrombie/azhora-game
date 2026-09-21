@@ -9,6 +9,7 @@ const { createWorld, PROP_SOLID } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
 const { TIDEHAVEN_SMITHY, villageToWorld } = await import('../src/region-world.js');
 const { OUTPOST_LAYOUT } = await import('../src/outpost.js');
+const { AMBRON_FORGE } = await import('../src/ambron.js');
 const toRoad = (x, z) => {
   let best = Infinity;
   for (const path of world.paths) for (let i = 1; i < path.length; i++) {
@@ -108,4 +109,23 @@ test('every smith has ground to stand on at his own forge', () => {
   // He is outside the tent, not inside its posts: the tent box reaches 3.6 m from its middle.
   const tent = OUTPOST_LAYOUT.smithy;
   assert.ok(Math.abs(post.x - tent.x) > tent.hx || Math.abs(post.z - tent.z) > tent.hz, 'clear of the tent itself');
+  // And the capital's armourer, in the yard of the Strand Forge, with his own gear round him:
+  // a hearth, an anvil, a rack of bar stock, a quench barrel and a rail of finished armour.
+  const door = AMBRON_FORGE.stand;
+  assert.ok(canStand(door.x, door.z, world), 'the armourer of Ambron stands where the game says he does');
+  let yard = 0;
+  for (let turn = 0; turn < 16; turn++) {
+    const angle = turn / 16 * Math.PI * 2;
+    if (canStand(door.x + Math.cos(angle) * 1.4, door.z + Math.sin(angle) * 1.4, world)) yard++;
+  }
+  assert.ok(yard >= 12, `${yard} of 16 ways out of the strand forge yard`);
+  // Everything his forge puts on the ground is solid, and none of it is on top of him.
+  // Named by kind and taken from his own yard: 'quench-barrel' is also the Moros camp's word.
+  const gear = world.colliders.filter(one => ['ambron-hearth', 'ambron-anvil', 'bar-stock', 'quench-barrel', 'armour-rail'].includes(one.kind)
+    && Math.hypot(one.x - door.x, one.z - door.z) < 12);
+  assert.equal(gear.length, 5, 'the forge yard is furnished');
+  for (const one of gear) {
+    const off = Math.hypot(one.x - door.x, one.z - door.z) - (one.r ?? Math.hypot(one.hx, one.hz));
+    assert.ok(off > .8, `${one.kind} is ${off.toFixed(2)} m from where he stands`);
+  }
 });

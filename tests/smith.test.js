@@ -5,11 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { SMITH_NPC, SLOT_NOUNS, pieceName, smithOffers, buyFromSmith, smithGreeting, smithConversation } from '../src/smith.js';
 import { createGear, SLOTS, NAMED_TIERS, armourOf } from '../src/gear.js';
 import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
-import { SMITH_VOICES, TIER_NOTES, sellsHere, AMOD_SMITH_ID, MOROS_ARMOURER_NPC } from '../src/smith.js';
-import { tiernamed, tierSoldAt } from '../src/gear.js';
+import { SMITH_VOICES, TIER_NOTES, sellsHere, AMOD_SMITH_ID, MOROS_ARMOURER_NPC,
+  AMBRON_ARMOURER_NPC, MYTH_SMITHS, SELLER_TIERS, tiersSoldBy } from '../src/smith.js';
+import { tiernamed, tierSoldAt, smithStock } from '../src/gear.js';
 import { regionLevel } from '../src/region-levels.js';
 import { AMOD_NPCS } from '../src/amod-people.js';
 import { TIDEHAVEN_SMITHY } from '../src/region-world.js';
+import { AMBRON_FORGE, AMBRON_BUILDINGS, AMBRON_STREETS } from '../src/ambron.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -88,9 +90,27 @@ test('buying is atomic: the money and the piece move together or not at all', ()
   }
 });
 
-test('the smith has no name, and says what he is and is not', () => {
-  assert.equal(SMITH_NPC.name, 'The smith');
-  assert.ok(!/[A-Z][a-z]+ [A-Z]/.test(SMITH_NPC.name), 'no invented person-name from a place-name register');
+test('every smith is named for a smith of myth, and out of no other register', () => {
+  // The user's own naming register (2026-09-21), and the reason it is used: it takes nothing
+  // from Azhora's place-name generators, which are places and not people.
+  assert.equal(SMITH_NPC.name, 'Vulcan');
+  assert.equal(MOROS_ARMOURER_NPC.name, 'Wayland');
+  assert.equal(AMBRON_ARMOURER_NPC.name, 'Hephaestus');
+  assert.equal(AMOD_NPCS.find(one => one.id === AMOD_SMITH_ID).name, 'Goibniu');
+  // Every one of them, and anybody added later, comes out of the one list.
+  for (const id of Object.keys(SMITH_VOICES)) {
+    const shown = [SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, ...AMOD_NPCS].find(one => one.id === id)?.name;
+    assert.ok(shown, `${id} sells and nobody knows what name is shown over him`);
+    assert.ok(MYTH_SMITHS.includes(shown), `${shown} is not in the smiths-of-myth register`);
+    assert.ok(!/^The /.test(shown), `${id} is still shown as a trade rather than a name`);
+  }
+  // Goibniu says his own name and keeps every other word he had.
+  assert.ok(SMITH_VOICES[AMOD_SMITH_ID][0].startsWith('Goibniu.'), 'he says his own name');
+  assert.ok(SMITH_VOICES[AMOD_SMITH_ID][0].includes('Pruning hooks, channel knives, hinge work'), 'and nothing else of his changed');
+  assert.equal(AMOD_NPCS.find(one => one.id === AMOD_SMITH_ID).id, 'ostel-smith', 'his id is untouched, so saves are');
+});
+
+test('the smith says what he is and is not', () => {
   const said = smithGreeting(0, { worn: {} }).join(' ');
   assert.ok(said.includes('wood and bone'), 'he names the material honestly');
   assert.ok(/not mail|bog iron/.test(said), 'and says what he cannot do');
@@ -124,29 +144,31 @@ test('the host stands him at his forge and buys only what the table says he has'
   // The level he sells at is the country he is standing in, not a number written beside him, so
   // the same smith in better country sells better iron without a line of his own.
   assert.match(main, /level:regionLevel\(world\.regionAt\(player\.group\.position\.x,player\.group\.position\.z\)\?\.name\)\?\?0/);
-  // The action names a piece; the host looks it up in today's stock rather than trusting it.
-  assert.match(main, /const item=smithStock\(level\)\.find\(one=>one\.slot===slot&&one\.weight===weight&&one\.tier===Number\(tier\)\)/);
+  // The action names the seller and a piece; the host rebuilds *that man's* board from the man
+  // and the ground and looks the line up there, so nothing can buy what he does not have.
+  assert.match(main, /const board=smithOffers\(level,\{id:seller\}\)/);
+  assert.match(main, /const item=board\.find\(one=>one\.kind==='armour'&&one\.slot===slot&&one\.weight===weight&&one\.tier===Number\(tier\)\)/);
+  assert.ok(!/smithStock\(/.test(main), 'the host no longer reads a board the street decides');
   // He stands off his own forge, on the side the village comes from.
   const off = Math.hypot(TIDEHAVEN_SMITHY.stand.x - TIDEHAVEN_SMITHY.x, TIDEHAVEN_SMITHY.stand.z - TIDEHAVEN_SMITHY.z);
   assert.ok(off > 2.7 && off < 3.5, `${off.toFixed(2)} m out, clear of the shelter's own posts`);
 });
 
-test('three smiths, one scene, and each sells the country he is standing in', () => {
-  // Amod already had a smith - Mern, hooks and hinges and gate metal - so nobody was added
-  // there; the Moros camp's smithy tent had a rack of spears "waiting on the smith" and nobody
-  // to wait for, so it got one. Both countries are level 2, which is bog iron.
-  assert.deepEqual(Object.keys(SMITH_VOICES).sort(), ['moros-armourer', 'ostel-smith', 'tidehaven-smith']);
+test('four smiths, one scene, and each sells the country he is standing in', () => {
+  // Amod already had a smith - hooks and hinges and gate metal - so nobody was added there; the
+  // Moros camp's smithy tent had a rack of spears "waiting on the smith" and nobody to wait for,
+  // so it got one. Both countries are level 2, which is bog iron. Ambron is the fourth, and the
+  // one exception to the rule (below).
+  assert.deepEqual(Object.keys(SMITH_VOICES).sort(), ['ambron-armourer', 'moros-armourer', 'ostel-smith', 'tidehaven-smith']);
   assert.equal(sellsHere(AMOD_SMITH_ID), true);
   assert.equal(sellsHere(MOROS_ARMOURER_NPC.id), true);
+  assert.equal(sellsHere(AMBRON_ARMOURER_NPC.id), true);
   assert.equal(sellsHere('ostel-vintner'), false, 'and nobody else in Ostel sells armour');
-  assert.equal(AMOD_NPCS.some(one => one.id === AMOD_SMITH_ID), true, 'Mern was already in the world');
-  assert.equal(AMOD_NPCS.some(one => one.id === MOROS_ARMOURER_NPC.id), false, 'the armourer is not one of Ostel\u2019s');
-  // The armourer is unnamed, as agreed; Mern keeps the name he already had.
-  assert.equal(MOROS_ARMOURER_NPC.name, 'The armourer');
+  assert.equal(AMOD_NPCS.some(one => one.id === AMOD_SMITH_ID), true, 'Ostel\u2019s smith was already in the world');
+  assert.equal(AMOD_NPCS.some(one => one.id === MOROS_ARMOURER_NPC.id), false, 'the army\u2019s armourer is not one of Ostel\u2019s');
   // Each speaks for himself, and none of them says another's lines.
   const voices = Object.values(SMITH_VOICES).map(lines => lines.join(' '));
-  assert.equal(new Set(voices).size, 3);
-  assert.ok(SMITH_VOICES[AMOD_SMITH_ID][0].startsWith('Mern.'), 'Mern keeps the words he already had');
+  assert.equal(new Set(voices).size, 4);
   assert.ok(/rolls|quartermaster|issue/i.test(SMITH_VOICES[MOROS_ARMOURER_NPC.id].join(' ')), 'the army man talks like the army');
   // But the material is nobody's line: it is generated from the level, so the same man in better
   // country tells the truth about his own iron without anybody rewriting him.
@@ -174,4 +196,89 @@ test('the Tidehaven smith\u2019s pointer up the road is true', () => {
   }
   // And his own country is not, so the pointer is not pointing at his own forge.
   assert.equal(tiernamed(tierSoldAt(regionLevel('Drent'))), 'wood and bone');
+});
+
+test('a capital is the one exception, and it is a property of the seller', () => {
+  // The user, 2026-09-21: Ambron City's armourer sells wrought iron and steel both, whatever
+  // level Elagos is. Elagos is an easy country and the exception does not move it.
+  assert.equal(regionLevel('Elagos'), 0, 'Elagos is still level 0');
+  assert.equal(tierSoldAt(0), 0, 'and level 0 still sells wood and bone');
+  assert.deepEqual([...tiersSoldBy(AMBRON_ARMOURER_NPC.id, 0)], [2, 3]);
+  assert.deepEqual([...tiersSoldBy(AMBRON_ARMOURER_NPC.id, 9)], [2, 3], 'and it is his, not his country’s, at any level');
+  assert.equal(tiernamed(2), 'wrought iron');
+  assert.equal(tiernamed(3), 'steel');
+  // **The whole exception is one table**: nobody else has an entry.
+  assert.deepEqual(Object.keys(SELLER_TIERS), [AMBRON_ARMOURER_NPC.id]);
+
+  const board = smithOffers(0, { id: AMBRON_ARMOURER_NPC.id });
+  const armour = board.filter(one => one.kind === 'armour');
+  assert.deepEqual([...new Set(armour.map(one => one.tier))].sort(), [2, 3]);
+  // Wrought iron will not carry plate (WEIGHTS.heavy is tier 3 and up) and steel will: six
+  // pieces and nine, which is the gear table speaking and not a list written here.
+  assert.equal(armour.filter(one => one.tier === 2).length, 6);
+  assert.equal(armour.filter(one => one.tier === 3).length, 9);
+  assert.equal(armour.filter(one => one.tier === 4).length, 0, 'fine steel is given, never sold');
+  assert.ok(armour.every(one => one.tier <= 3), 'and nothing above it is on any board anywhere');
+  // Dearest last across both grades, so the two are one board and not two lists.
+  assert.deepEqual([...armour].map(one => one.price).sort((a, b) => a - b), armour.map(one => one.price));
+  assert.equal(board[0].kind, 'arrows', 'and he sells arrows like every other forge');
+
+  // **Every other board is unchanged to the digit**, for every seller at every level the game
+  // has: what they are handed is exactly what the country's own stock has always been.
+  for (const id of ['tidehaven-smith', AMOD_SMITH_ID, MOROS_ARMOURER_NPC.id])
+    for (let level = 0; level <= 11; level++) {
+      const theirs = smithOffers(level, { id }).filter(one => one.kind === 'armour');
+      assert.deepEqual(theirs.map(one => [one.slot, one.weight, one.tier, one.price]),
+        smithStock(level).map(one => [one.slot, one.weight, one.tier, one.price]), `${id} at level ${level}`);
+    }
+
+  // He names both grades himself, out of the generated sentence and not out of a written line.
+  const said = smithGreeting(0, { id: AMBRON_ARMOURER_NPC.id }).join(' ');
+  assert.ok(said.includes('wrought iron and steel'), said);
+  assert.ok(said.includes('hammered and folded'), 'and says what the wrought iron is');
+  assert.ok(said.includes('The Empire issues it'), 'and what the steel is');
+  assert.ok(!said.includes('fine steel'), 'and does not offer what he has not got');
+
+  // The scene is the same scene, and every line of his board carries its price.
+  const opened = [];
+  const context = { level: 0, inventory: purse(4000), gear: createGear(),
+    openDialogue: (npc, lines, _a, _b, options) => opened.push({ npc, lines, options }), closeDialogue: () => {}, act: () => {} };
+  assert.equal(smithConversation(AMBRON_ARMOURER_NPC, context), true);
+  const buys = opened[0].options.choices.filter(choice => choice.id.startsWith('smith-buy-'));
+  assert.equal(buys.length, 16, 'a dozen arrows and fifteen pieces');
+  assert.equal(new Set(buys.map(choice => choice.id)).size, buys.length, 'and no two lines share an id');
+  for (const choice of buys) assert.match(choice.label, /\d+ copper/);
+  // The action carries the seller, which is what lets the host rebuild his board rather than
+  // the street's - and without it a capital's steel would be refused on Elagosi ground.
+  const acted = [];
+  smithConversation(AMBRON_ARMOURER_NPC, { ...context, act: id => acted.push(id) });
+  opened[1].options.choices.find(choice => choice.id.startsWith('smith-buy-'))?.action();
+  assert.ok(acted[0].startsWith(`smith-buy:${AMBRON_ARMOURER_NPC.id}:`), acted[0]);
+});
+
+test('the capital’s armourer has a forge to stand at, measured and off everything', () => {
+  const forge = AMBRON_BUILDINGS.find(entry => entry.id === 'ambron-forge');
+  assert.ok(forge, 'the Strand Forge is one of the city’s buildings, so it gets the city’s collider');
+  assert.equal(AMBRON_FORGE.id, forge.id);
+  // He stands out in the yard on the door's own side, clear of his own walls.
+  assert.equal(AMBRON_FORGE.stand.b, forge.b + forge.d / 2 + 2.4);
+  assert.ok(AMBRON_FORGE.stand.b - (forge.b + forge.d / 2) >= 2, 'not inside his own shed');
+  // Three metres of daylight from everything else the city draws.
+  for (const other of AMBRON_BUILDINGS) {
+    if (other.id === forge.id) continue;
+    const gapA = Math.abs(other.a - forge.a) - (other.w + forge.w) / 2, gapB = Math.abs(other.b - forge.b) - (other.d + forge.d) / 2;
+    assert.ok(Math.max(gapA, gapB) >= 3, `the forge is ${Math.max(gapA, gapB).toFixed(1)} m from ${other.id}`);
+  }
+  // And he is not standing in the carriageway of any of the city's streets.
+  for (const street of AMBRON_STREETS) for (let i = 1; i < street.points.length; i++) {
+    const p0 = street.points[i - 1], p1 = street.points[i];
+    const da = p1.a - p0.a, db = p1.b - p0.b, len2 = da * da + db * db;
+    const t = len2 ? Math.max(0, Math.min(1, ((AMBRON_FORGE.stand.a - p0.a) * da + (AMBRON_FORGE.stand.b - p0.b) * db) / len2)) : 0;
+    const off = Math.hypot(AMBRON_FORGE.stand.a - (p0.a + da * t), AMBRON_FORGE.stand.b - (p0.b + db * t));
+    assert.ok(off > street.width / 2, `he stands in ${street.id}`);
+  }
+  // The host places him, and there is a view of him.
+  const main = source('main.js');
+  assert.match(main, /world\.npcPositions\[AMBRON_ARMOURER_NPC\.id\]=\{x:AMBRON_FORGE\.stand\.x,z:AMBRON_FORGE\.stand\.z\}/);
+  assert.match(main, /view==='ambron-armourer'/);
 });

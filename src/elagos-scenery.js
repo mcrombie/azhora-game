@@ -496,6 +496,61 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     town.block(LIME, board.x + 2.2, base + 4.6, board.z - .2, 1.1, 1.5, .04);
   }
 
+  /**
+   * The Strand Forge: the shed is drawn with the rest of the west bank by `houseOf`, and this is
+   * what makes it a forge rather than another store. The stone hearth stands against the closed
+   * north wall with its chimney up through the roof; the anvil, the quench barrel and the rack of
+   * bar stock are out on the open side by the street, where the light is and where a man walking
+   * up from the causeway sees them. Same vocabulary as Tidehaven's lean-to (`src/world.js`), in
+   * the city's own stone.
+   */
+  {
+    const forge = AMBRON_BUILDINGS.find(entry => entry.id === 'ambron-forge');
+    const M = masonryAt(forge.a, forge.b), base = cityGround(forge.a) - .3;
+    // The shed itself is a solid box, so nothing inside it would ever be seen: the working gear
+    // stands in the yard between its south face and the raft way, where the armourer stands too.
+    const at = (da, db) => P(forge.a + da, forge.b + db);
+    // The stack, up the closed north end and three metres clear of the roof, so the forge reads
+    // as a forge from the causeway.
+    const stack = at(-2.6, -2.4);
+    town.block(M.face, stack.x, base, stack.z, .95, 1.1 + forge.h + 3.2, .95);
+    town.box(M.cap, stack.x, base + 1.1 + forge.h + 3.2, stack.z, 1.2, .22, 1.2);
+    town.box(TAR, stack.x, base + 1.1 + forge.h + 3.0, stack.z, .55, .1, .55);
+    // The yard hearth, banked and open to the weather, where the heavy work is done.
+    const hearth = at(-4.0, 4.9), hy = y(hearth.x, hearth.z);
+    town.block(M.dark, hearth.x, hy, hearth.z, 1.9, .85, 1.3);
+    town.box(TAR, hearth.x, hy + .89, hearth.z, 1.6, .08, 1.0);
+    town.box('#c65a22', hearth.x, hy + .97, hearth.z, .85, .06, .55);
+    push({ x: hearth.x, z: hearth.z, hx: 1.0, hz: .7, kind: 'ambron-hearth' });
+    // The anvil on its oak stump, between the hearth and the door.
+    const anvil = at(-2.3, 4.9), ay = y(anvil.x, anvil.z);
+    town.cylinder(WOOD_DARK, anvil.x, ay, anvil.z, .3, .62, 0, 7);
+    town.block(IRON, anvil.x, ay + .62, anvil.z, .95, .26, .32);
+    town.block(IRON, anvil.x, ay + .5, anvil.z, .44, .17, .26);
+    push({ x: anvil.x, z: anvil.z, r: .45, kind: 'ambron-anvil' });
+    // A rack of bar stock leaning in the west corner, out of everybody's way.
+    const rack = at(-5.2, 4.2), ry = y(rack.x, rack.z);
+    for (const [da, h] of [[-.24, 1.6], [0, 1.85], [.24, 1.5]]) town.cylinder(IRON, rack.x + da, ry, rack.z, .045, h, 0, 4);
+    push({ x: rack.x, z: rack.z, r: .35, kind: 'bar-stock' });
+    // The quench barrel by the door, with its iron hoop.
+    const quench = at(1.8, 4.4), qy = y(quench.x, quench.z);
+    town.cylinder(WOOD, quench.x, qy, quench.z, .52, 1.0, 0, 7);
+    town.box(IRON, quench.x, qy + .66, quench.z, 1.08, .07, 1.08);
+    push({ x: quench.x, z: quench.z, r: .6, kind: 'quench-barrel' });
+    // A mail shirt and a cap on a rail at the street end: what he is actually selling, hung
+    // where a man walking up the raft way can see it without stopping.
+    const rail = at(3.0, 4.0), ly = y(rail.x, rail.z);
+    for (const side of [-1, 1]) town.cylinder(WOOD, rail.x + side * .8, ly, rail.z, .07, 2.0, 0, 4);
+    town.beam(WOOD, [rail.x - .9, ly + 2.0, rail.z], [rail.x + .9, ly + 2.0, rail.z], .07);
+    town.block(IRON, rail.x - .4, ly + .9, rail.z, .8, 1.0, .3);
+    town.cone(IRON, rail.x + .6, ly + 1.55, rail.z, .28, .42, 0, 7);
+    push({ x: rail.x, z: rail.z, r: .5, kind: 'armour-rail' });
+    // The board over the door, in the same hanging language the rest of the city's trades use.
+    const board = at(0, 3.8);
+    signs.hanging({ x: board.x, y: y(board.x, board.z) + 2.6, z: board.z, label: forge.name, facing: 0, parent: district });
+    metrics.props += 5;
+  }
+
   // The capstan that winds the chain, and its tally board.
   {
     const spot = P(AMBRON_CHAIN.capstan.a, AMBRON_CHAIN.capstan.b), ground = y(spot.x, spot.z);

@@ -10,7 +10,7 @@ import {
   AMBRON_STANDARD, AMBRON_CIRCUIT, AMBRON_GATES, AMBRON_LAND_GATES, AMBRON_WATER_GATES, AMBRON_BUILDINGS,
   ambronLocal,
   AMBRON_OUTSIDE, AMBRON_STREETS, AMBRON_QUAYS, AMBRON_STANDS, AMBRON_ENCLOSURE, AMBRON_CHAIN, AMBRON_MARKET,
-  CAUSEWAY, CHANNEL, ambronDeckHeight, cityGround,
+  AMBRON_FORGE, CAUSEWAY, CHANNEL, ambronDeckHeight, cityGround,
 } from '../src/ambron.js';
 import {
   AMBRON_NPCS, ELAGOS_NPCS, ELAGOS_AMBIENT, ELAGOS_NPC_POSITIONS, elagosConversation, isElagosNpc,
@@ -191,6 +191,9 @@ test('everyone in Ambron and the lake country has footing, and every stand in th
     return [[0, 0], [cell, 0], [-cell, 0], [0, cell], [0, -cell]].some(([da, db]) => seen[index(a + da, b + db)] === 1);
   };
   for (const [id, stand] of Object.entries(AMBRON_STANDS)) assert.ok(reached(stand.x, stand.z), `${id} can be walked to from the haul road`);
+  // The armourer is placed by the host rather than by the world, so he is in neither list above.
+  assert.ok(canStand(AMBRON_FORGE.stand.x, AMBRON_FORGE.stand.z, world, WALKER), 'the armourer has footing at his own door');
+  assert.ok(reached(AMBRON_FORGE.stand.x, AMBRON_FORGE.stand.z), 'and can be walked to from the haul road');
   // And the places that matter: the market, the Seat's plaza, both quays and the far bank.
   for (const [a, b, what] of [[47, -10, 'the market'], [58, 18, 'the Seat'], [28, 40, 'the east quay'],
     [-28, 10, 'the timber strand'], [-58, -40, 'the west bank'], [92 - 8, -6, 'the Ossen Gate']])

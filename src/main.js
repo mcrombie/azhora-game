@@ -67,7 +67,8 @@ import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { SMITH_NPC, MOROS_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './smith.js';
+import { SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './smith.js';
+import { AMBRON_FORGE } from './ambron.js';
 import { OUTPOST_LAYOUT } from './outpost.js';
 import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
@@ -90,7 +91,7 @@ import { createTeachers, TEACHERS } from './teachers.js';
 import { BOW, JERRYS_BOW, flightOf } from './archery.js';
 import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
-import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock, tierScale } from './gear.js';
+import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -283,9 +284,13 @@ function init() {
   // The smith of Tidehaven, at his own forge on the south street (src/smith.js).
   world.npcPositions[SMITH_NPC.id]={x:TIDEHAVEN_SMITHY.stand.x,z:TIDEHAVEN_SMITHY.stand.z};npcData.push({...SMITH_NPC,yaw:TIDEHAVEN_SMITHY.stand.yaw});
   // The army's armourer, beside the Moros camp's smithy tent. Amod's forge needed nobody: it
-  // already had Mern, and a man who is evidently the smith is the smith (src/smith.js).
+  // already had Goibniu, and a man who is evidently the smith is the smith (src/smith.js).
   world.npcPositions[MOROS_ARMOURER_NPC.id]={x:OUTPOST_LAYOUT.armourer.x,z:OUTPOST_LAYOUT.armourer.z};
   npcData.push({...MOROS_ARMOURER_NPC,yaw:OUTPOST_LAYOUT.armourer.yaw});
+  // The capital's armourer, at the door of the Strand Forge on Ambron's working bank. He sells
+  // above his country - the one exception, and it is a property of the seller (SELLER_TIERS).
+  world.npcPositions[AMBRON_ARMOURER_NPC.id]={x:AMBRON_FORGE.stand.x,z:AMBRON_FORGE.stand.z};
+  npcData.push({...AMBRON_ARMOURER_NPC,yaw:AMBRON_FORGE.stand.yaw});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -2318,20 +2323,24 @@ function init() {
    */
   function smithAct(action){
     if(!action.startsWith('smith-buy:'))return {ok:false,reason:''};
-    const [slot,weight,tier]=action.slice(10).split(':');
+    const [,seller,slot,weight,tier]=action.split(':');
     const level=regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0;
+    // The board is **the seller's**, not the street's: a capital's armourer sells above his
+    // country and every other smith sells what his country allows (SELLER_TIERS, src/smith.js).
+    // The host rebuilds it from the man and the ground rather than trusting the action string.
+    const board=smithOffers(level,{id:seller});
     // **Arrows, at every forge** (the user, 2026-09-21: the smiths sell them and there is no
     // fletcher). The same atomic buy, and the same rule that the host looks the line up in
     // today's board rather than trusting the action string.
     if(slot==='arrows'){
-      const shafts=smithOffers(level).find(one=>one.kind==='arrows');
+      const shafts=board.find(one=>one.kind==='arrows');
       const bought=buyFromSmith({inventory,gear,item:shafts});
       if(!bought.ok){toast(bought.reason,'THE SMITHY');return bought;}
       inventory.refresh();refreshQuiver();audio?.effect('success');
       toast(`${bought.arrows} arrows · ${bought.price} copper. You have ${bought.quiver}.${inventory.has(BOW.id)?' Hold the attack button to draw and let go to loose.':' You have nothing to shoot them out of yet.'}`,'THE SMITHY');
       saveRoad(false);return bought;}
     // Only ever what he actually has today: an action naming anything else buys nothing.
-    const item=smithStock(level).find(one=>one.slot===slot&&one.weight===weight&&one.tier===Number(tier));
+    const item=board.find(one=>one.kind==='armour'&&one.slot===slot&&one.weight===weight&&one.tier===Number(tier));
     const bought=buyFromSmith({inventory,gear,item});
     if(!bought.ok){toast(bought.reason,'THE SMITHY');return bought;}
     inventory.refresh();audio?.effect('success');
@@ -5649,7 +5658,7 @@ function init() {
         // Tidehaven's smithy, from the street it stands on. The plot was chosen by measurement
         // (TIDEHAVEN_SMITHY, src/region-world.js); the shot is too.
         // The army's armourer at the Moros camp's smithy tent, which was standing with nobody
-        // to sell from it. Amod's forge has no view of its own: Mern was already there.
+        // to sell from it. Amod's forge has no view of its own: Goibniu was already there.
         if(view==='camp-armourer'){
           questStage=10;combat.finishPractice();player.setArmed(false);
           const post=OUTPOST_LAYOUT.armourer,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.4,3.4,4.6]})??post;
@@ -5659,6 +5668,21 @@ function init() {
           reviewTarget=new THREE.Vector3(post.x,world.heightAt(post.x,post.z)+1.3,post.z);
           const shot=bestOf(reviewTarget,10,[post.yaw,post.yaw+.6,post.yaw-.6,post.yaw+1.1,post.yaw-1.1]);
           yaw=shot.yaw;pitch=.16;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
+        // The capital's armourer at the Strand Forge, from the raft way his yard fronts. The plot
+        // was swept headlessly before anything was drawn (AMBRON_FORGE, src/ambron.js).
+        if(view==='ambron-armourer'){
+          questStage=10;combat.finishPractice();player.setArmed(false);
+          // Off his shoulder, not in front of him: `startingSpot` rings the man, and the far side
+          // of that ring stands one figure exactly behind the other (measured, first draft).
+          const post=AMBRON_FORGE.stand,stand={x:post.x+2.7,z:post.z+1.0};
+          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          player.group.rotation.y=Math.atan2(post.x-stand.x,post.z-stand.z);
+          grounded=true;verticalSpeed=0;
+          reviewTarget=new THREE.Vector3((post.x+stand.x)/2,world.heightAt(post.x,post.z)+1.3,(post.z+stand.z)/2);
+          const shot=bestOf(reviewTarget,10,[.35,.1,.65,-.25]);
+          yaw=shot.yaw;pitch=.12;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
         // The shield up, in a real fight, seen from the shield side. It needs a live encounter:
