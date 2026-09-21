@@ -121,9 +121,15 @@ export const SKILLS = Object.freeze({
     blurb: 'Crossing water on your own, which is slower than walking, harder than it looks, and the only way to some of this country. Your wind runs out before your arms do, and what happens after that is drowning.',
     teacher: 'Ed the Word, who came ashore at Tidehaven out of a ship that never docked',
     thresholds: RUNESCAPE_TABLE,
-    // A placeholder guide until src/swimming.js lands (docs/swimming.md holds the curve).
-    unlocks: Object.freeze([unlock(1, 'Enter water from a shore and swim'),
-      unlock(1, 'Your wind, and how far it carries you')]),
+    // What each level opens is a crossing; the distances are measured shore to shore in
+    // docs/swimming.md and re-measured by tests/swimming.test.js.
+    unlocks: Object.freeze([unlock(1, 'Walk in: the ground stops holding you and you swim'),
+      unlock(1, 'Drent to Pilot’s Stone · 61 m, and you will feel it'),
+      unlock(4, 'Gull Scarp to Cobble · 60 m, on wind alone'),
+      unlock(7, 'The nearest skerries without drowning for any of it'),
+      unlock(25, 'Pilot’s Stone to Gull Scarp · 98 m, if you are willing to drown for the end of it'),
+      unlock(43, 'The same 98 m on wind alone'),
+      unlock(99, '280 m on one breath — and the open crossing to Cobble is 355, so you still island-hop')]),
   }),
   linguist: Object.freeze({
     id: 'linguist', name: 'Linguist',

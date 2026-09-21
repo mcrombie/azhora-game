@@ -750,8 +750,36 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     return healed;
   }
 
+  /**
+   * Wind and harm from something that is not a fight: swimming, for now (src/swimming.js). It goes
+   * through combat because combat owns the bar, the blood and the defeat, and a man who drowns
+   * should end the same way a man the goblins get ends - the same panel, the same checkpoint.
+   *
+   * `hold` keeps the bar from filling itself back up while the water still has him; without it the
+   * 24-a-second recovery in `updatePlayer` would cancel most of the drain and nobody would ever
+   * run out of wind.
+   */
+  function exhaust(wind = 0, harm = 0, { hold = true } = {}) {
+    if (player.action === 'dead' || state.phase === 'defeated') return { stamina: player.stamina, hp: player.hp, defeated: true };
+    if (wind > 0) player.stamina = Math.max(0, player.stamina - wind);
+    if (hold) staminaDelay = Math.max(staminaDelay, .25);
+    if (harm > 0) {
+      player.hp = Math.max(0, player.hp - harm);
+      if (!player.hp) {
+        player.action = 'dead';
+        player.progress = 0;
+        state.phase = 'defeated';
+        state.enemies.forEach(target => {
+          if (target.active) { target.action = 'idle'; target.progress = 0; target.speed = 0; }
+        });
+        emit('defeat', { encounterId: state.encounterId, drowned: true });
+      }
+    }
+    return { stamina: player.stamina, hp: player.hp, defeated: !player.hp };
+  }
+
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, update, resetEncounter, pose, movementScale, heal,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, update, resetEncounter, pose, movementScale, heal, exhaust,
     setWeaponReady(value) { weaponReady = Boolean(value); },
   };
 }
