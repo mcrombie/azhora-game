@@ -390,7 +390,14 @@ function init() {
    * the box, because Drent is level 0 and nothing there is his. And water or another country:
    * the ferry to Peblos and the road post over the Tessen are where he waits.
    */
-  let companionHold=null;
+  /**
+   * Where each held man stands, by his own id. It was one variable, and `placeCompanion` runs
+   * once per companion per frame - so the first man through set it from his own feet and the
+   * other nine were handed a copy of it. Ten solid men shoving at one point, for the whole of
+   * any fight and everywhere in Pueth and Peblos. A hold is a man staying where he is, which
+   * is one place per man.
+   */
+  const companionHold=new Map();
   /**
    * Where the n-th man of the file wants to be. The first is where Chris has always been, at the
    * traveler's left shoulder; the rest are strung out behind him a stride apart, alternating
@@ -421,18 +428,19 @@ function init() {
     const here=world.regionAt(p.x,p.z)?.name??null;
     const fight=combat.state.phase==='active'?combat.state.center:null;
     if(here==='Pueth'||here==='Peblos'||fight){
-      if(!companionHold)companionHold={x:pos.x,z:pos.z};
+      if(!companionHold.has(npc.id))companionHold.set(npc.id,{x:pos.x,z:pos.z});
       // The widest fight box reaches 24.2 m from its centre (fightBox, src/combat.js), so a man
       // kept COMPANION_KEEP_OUT metres off it is outside every one of them, whichever way it is laid.
-      if(fight)companionHold=outsideTheFight(fight,companionHold);
-      world.npcPositions[npc.id]={...companionHold};npc.pace=2.4;npc.escorting=false;
-      npc.placement={...placement,x:companionHold.x,z:companionHold.z,yaw:npc.actor.group.rotation.y};
+      const held=fight?outsideTheFight(fight,companionHold.get(npc.id)):companionHold.get(npc.id);
+      companionHold.set(npc.id,held);
+      world.npcPositions[npc.id]={...held};npc.pace=2.4;npc.escorting=false;
+      npc.placement={...placement,x:held.x,z:held.z,yaw:npc.actor.group.rotation.y};
       return;}
-    companionHold=null;
+    companionHold.delete(npc.id);
     const wanted=fileSpot(p,yaw,Math.max(0,place));
     let x=wanted?wanted.x:p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side;
     let z=wanted?wanted.z:p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
-    if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world));if(spot){x=spot.x;z=spot.z;}}
+    if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world),Math.max(0,place));if(spot){x=spot.x;z=spot.z;}}
     const gap=Math.hypot(pos.x-x,pos.z-z);
     world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=companionPace(gap);
     // Forty metres apart is a wall, a river, a ferry or a horse, and never running: he runs
