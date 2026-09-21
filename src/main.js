@@ -2398,6 +2398,16 @@ function init() {
       line='There\'s my thoughtful acorn gatherer. I haven\'t forgotten your little delivery. You needn\'t bring me anything to earn a welcome, you know. Though if you keep smiling at me like that, I may forget to watch the squirrels.';
       choices.push({id:'warm-reply',label:'It\'s good to see you too, Lysa.',action:()=>openDialogue(npc,['Then stay a moment. The washing can wait, and the squirrels have been showing off all morning. I was hoping for company.'],null,'Enjoy the quiet together.')});
     }
+    // The two recipes the acorn errand was always for. The leached meal had no use in the game
+    // until now, and both of these start with it (docs/known-issues.md, the six foods).
+    if(acornQuest.status==='complete'&&!(cooking.knows('acorn-flatbread')&&cooking.knows('honey-cake')))
+      choices.push({id:'lysa-recipes',label:'What do you actually do with the meal?',action:()=>openDialogue(npc,[
+        'Leach it in three waters until it stops fighting you, grind it coarse, and from there it is two things. Flatbread, which is dough on a hot stone and will keep you walking. And little cakes, if you can find me a comb of honey — Troy keeps bees at the fold in the wood and will give you one for the asking.',
+        'Both of them cook on any fire you can light, which is what the tinderbox was for. Write them down; I am not going to be standing at the next fire you build.'],
+        null,'Write them down',{onComplete:()=>{
+          const taught=['acorn-flatbread','honey-cake'].map(id=>cooking.learn(id)).filter(result=>result.ok&&result.first);
+          if(taught.length){refreshSkillsSheet();toast('Acorn flatbread and honey cake. Both of them start with Lysa’s meal, and both cook on any lit fire.','TWO RECIPES FROM LYSA');saveRoad(false);}
+          lysaConversation(npc);}})});
     {const feeder=lysaFeederChoice(npc,{birding,inventory,openDialogue,act:birdingAct,back:()=>lysaConversation(npc)});if(feeder)choices.push(feeder);}
     choices.push({id:'acorn-tangent',label:'How do you turn acorns into food?',action:tangent},{id:'squirrel-tangent',label:'Tell me about the squirrels.',action:squirrels},{id:'pawpaw-tangent',label:'Is there fruit I can eat on the road?',action:fruit},{id:'leave-lysa',label:acornQuest.status==='available'?'Maybe another time.':'Until next time.',action:closeDialogue});
     openDialogue(npc,[line],null,'Back to the road',{choices});
