@@ -96,6 +96,43 @@ test('every place, person and sign of Amod stands in Amod, off the road and out 
     });
     assert.equal(inside, undefined, `${id} is not standing inside ${inside?.id}`);
   }
+  /**
+   * **And nobody stands with his back against a wall.** A footprint test says a man is not
+   * *inside* a house; it says nothing about the metre he needs in front of it, and the hunter
+   * found Goibniu the smith standing 0.9 m off the smithy's undercroft with the whole building
+   * between him and the street - unframeable from any ground a traveler can talk to him from
+   * (docs/known-issues.md, round 5).
+   *
+   * The clearance is measured against the circles `terraceHouse` actually lays down for a house
+   * (src/amod-scenery.js: a row down the long side, each `short / 2 + .2`), because those are
+   * what a body in this town is stopped by.
+   */
+  const houseColliders = [];
+  for (const building of OSTEL_BUILDINGS) {
+    const rotation = Math.atan2(OSTEL.across.x, OSTEL.across.z) + (building.b < 4 ? Math.PI : 0);
+    const long = Math.max(building.width, building.depth), short = Math.min(building.width, building.depth);
+    const axis = building.width >= building.depth
+      ? { x: Math.cos(rotation), z: -Math.sin(rotation) } : { x: Math.sin(rotation), z: Math.cos(rotation) };
+    const reach = (long - short) / 2, count = Math.max(1, Math.ceil(reach / (short * .4)) + 1);
+    for (let k = 0; k < count; k++) {
+      const t = count === 1 ? 0 : -reach + 2 * reach * k / (count - 1);
+      houseColliders.push({ id: building.id, x: building.x + axis.x * t, z: building.z + axis.z * t, r: short / 2 + .2 });
+    }
+  }
+  const clearOfHouses = (x, z) => houseColliders.reduce((best, c) => Math.min(best, Math.hypot(c.x - x, c.z - z) - c.r), Infinity);
+  for (const [id, stand] of Object.entries(OSTEL_STANDS))
+    assert.ok(clearOfHouses(stand.x, stand.z) > .9, `${id} has ${clearOfHouses(stand.x, stand.z).toFixed(2)} m of clear ground`);
+  // The smith has more than the rest, because he is a man you stand in front of and buy from.
+  const smithy = OSTEL_BUILDINGS.find(building => building.id === 'smithy');
+  const goibniu = OSTEL_STANDS['ostel-smith'];
+  const corner = frame(smithy, goibniu);
+  assert.ok(clearOfHouses(goibniu.x, goibniu.z) > 1.2,
+    `Goibniu stands ${clearOfHouses(goibniu.x, goibniu.z).toFixed(2)} m clear of his own wall`);
+  assert.ok(corner.b < smithy.depth / 2, 'on the street side of the smithy, not in the yard behind it');
+  assert.ok(Math.abs(corner.a) > smithy.width / 2, 'and past its end wall rather than against its face');
+  assert.ok(Math.hypot(goibniu.x - smithy.x, goibniu.z - smithy.z) < 7, 'still at his own forge');
+  assert.ok(roadDistance(goibniu.x, goibniu.z) > 2.2 && roadDistance(goibniu.x, goibniu.z) < 6,
+    'at the street, and not in it');
   for (const sign of AMOD_SIGNS) {
     assert.ok(SIGN_LABELS.includes(sign.label), `${sign.label} is a known sign label`);
     assert.ok(SIGN_LABELS.includes(sign.returnLabel), `${sign.returnLabel} is a known sign label`);

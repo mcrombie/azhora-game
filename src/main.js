@@ -51,7 +51,7 @@ import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './rena-letters.js'
 import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
 import { AMOD_NPCS, AMOD_NPC_IDS, amodConversation } from './amod-people.js';
 import { createOgreToll, OGRE_NPC, OGRE_ENCOUNTER, OGRE_TOLL, OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, OGRE_VICTORY, OGRE_RETURNED } from './amod-ogre.js';
-import { OGRE_STAND } from './amod-world.js';
+import { OGRE_STAND, OSTEL } from './amod-world.js';
 import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
 import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
 import { createIzolHost } from './izol-host.js';
@@ -5893,8 +5893,66 @@ function init() {
          */
         // Tidehaven's smithy, from the street it stands on. The plot was chosen by measurement
         // (TIDEHAVEN_SMITHY, src/region-world.js); the shot is too.
+        /**
+         * **Goibniu at his board**, in Ostel's street. He had no view of his own and was never
+         * photographed until the hunter stood a traveler in front of him with `stand-at:` and
+         * found him with his back 0.9 m from the smithy wall, unframeable from any ground you
+         * can talk to him from (docs/known-issues.md, round 5). He has been moved to the street
+         * corner of his own smithy (`OSTEL_STANDS`, src/amod-world.js) and this is the picture
+         * of him there: the traveler at talking distance, the smith between him and his forge,
+         * and the smithy's end wall behind the two of them.
+         *
+         * Idempotent, like every view: nothing here toggles anything, and the stand is computed
+         * from the man's own spot rather than from wherever the last view left the traveler.
+         */
+        if(view==='ostel-smith'){
+          questStage=10;combat.finishPractice();player.setArmed(false);
+          // His spot, from the world's own table rather than from his actor: an npc a long way
+          // from the traveler has not been placed or turned yet, and this view is the first thing
+          // that happens after the world is built.
+          const him=npcById.get('ostel-smith'),spot=world.npcPositions['ostel-smith'];
+          /**
+           * **The town's own frame, not the world's.** Ostel stands on a bench and everything in
+           * it is laid along the contour (`OSTEL.along`) and down the fall line (`OSTEL.across`,
+           * which is +b, toward the water). The street runs the contour at b≈4, the smithy sits
+           * below it at b=9, and Goibniu now stands at its street corner - so **up the street**
+           * and **toward the street** are the two directions this shot is composed in, and both
+           * of them are read off the town rather than searched for.
+           */
+          const along=OSTEL.along,across=OSTEL.across;
+          // The traveler comes up the street and stops in front of him: two and a half metres
+          // toward the road, which is inside the talk radius and out of the smithy's shadow.
+          const stand={x:spot.x-across.x*2.5,z:spot.z-across.z*2.5};
+          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          player.group.rotation.y=Math.atan2(spot.x-stand.x,spot.z-stand.z);
+          grounded=true;verticalSpeed=0;
+          // The sword goes away, and it goes away *by hand*: a frozen review has no clock, so a
+          // pose that eases is a pose that never arrives (docs/builder-handover.md). The first
+          // draft photographed a man buying armour with his blade out.
+          settlePose({armed:false});
+          /**
+           * **And his board is open**, which is the whole point of the view: the hunter could
+           * stand a traveler in front of him with `stand-at:` but not show what he sells, because
+           * the board opens from a dialogue (docs/known-issues.md, round 5). It is opened through
+           * the real door - `smithConversation`, the same call `interact` makes - so the picture
+           * is of the panel the player is actually given, arrows and all.
+           */
+          smithConversation(him,{level:regionLevel(world.regionAt(spot.x,spot.z)?.name)??0,
+            inventory,gear,openDialogue,closeDialogue,act:smithAct});
+          // Aimed between the two of them, at chest height rather than head height, because the
+          // board is a panel across the bottom of the frame and the men have to stand above it.
+          const mid={x:(spot.x+stand.x)/2,z:(spot.z+stand.z)/2};
+          reviewTarget=new THREE.Vector3(mid.x,world.heightAt(mid.x,mid.z)+1.1,mid.z);
+          // From up the street, three-quarters on to the pair: the smithy's end and its roof
+          // behind them at an angle rather than a flat wall filling the frame, which is what the
+          // first draft got by letting the camera pick a bearing off the line between them.
+          const upStreet=Math.atan2(-along.x,-along.z),toStreet=Math.atan2(-across.x,-across.z);
+          const shot=bestOf(reviewTarget,7,[(upStreet+toStreet)/2,upStreet,toStreet,upStreet+.4,toStreet-.4]);
+          yaw=shot.yaw;pitch=.1;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
         // The army's armourer at the Moros camp's smithy tent, which was standing with nobody
-        // to sell from it. Amod's forge has no view of its own: Goibniu was already there.
+        // to sell from it.
         if(view==='camp-armourer'){
           questStage=10;combat.finishPractice();player.setArmed(false);
           const post=OUTPOST_LAYOUT.armourer,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.4,3.4,4.6]})??post;
