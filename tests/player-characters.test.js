@@ -284,7 +284,18 @@ test('the tongues a character already has are really his when he lands', () => {
     tongues.klingon = 99;
     assert.equal(startingLanguages(entry.id).klingon, undefined, 'the table is not handed out by reference');
   }
-  assert.deepEqual(startingLanguages('gotwood'), { ambroni: 40 });
+  assert.deepEqual(startingLanguages('gotwood'), { ambroni: 40, drentish: 40 });
+  // What he starts with is what he is said to know. `INTERPRETER.knows` is the claim; this is
+  // the table that has to honour it, minus feradom, which is the user's to place.
+  for (const tongue of INTERPRETER.knows) {
+    if (tongue === 'feradom') continue;
+    assert.equal(startingLanguages('gotwood')[tongue], 40,
+      `Chris interprets ${tongue} for you, so as Chris he has it himself`);
+  }
+  // The point of the Drentish: when you are Chris nobody interprets, and the first conversation
+  // of the game is in Drent, so without it the opening would be a wall of a tongue with no gloss.
+  assert.equal(interpreterFor('gotwood'), null, 'nobody interprets for Chris');
+  assert.ok(startingLanguages('gotwood').drentish > 0, 'so Chris follows Mara himself');
 
   // What grantStartingKit() does with it, in the same order.
   for (const id of PLAYABLE_IDS) {

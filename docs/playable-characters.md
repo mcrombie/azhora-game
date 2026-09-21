@@ -36,7 +36,7 @@ and before every skill moved to the ninety-nine table. They survived both, which
 | | Character | Starts with | Why |
 |---|---|---|---|
 | 1 | Cromb the Barbarian | nothing | A blank slate on purpose. Nothing is written about him and nothing is going to be. |
-| 2 | Chris Gotwood | `linguist` 200, `startingLanguages: { ambroni: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`. |
+| 2 | Chris Gotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
 | 3 | Ed the Word | `swimming` 260 | He came ashore under his own power off a ship that never docked. |
 | 4 | Jerry | `fishing` 140 | A man who settles things at thirty paces has waited out a lot of floats. |
 | 5 | Christin | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
@@ -84,8 +84,17 @@ profiles should leave his blank.
   company leans on him. Consider a running cost — interpreting for ten people is a job.
 - **Diverge — settled.** When he is an NPC he interprets the *locals* for you (`INTERPRETER`,
   `src/languages.js`). When he *is* you, `interpreterFor(playerId)` returns null: nobody
-  interprets and nobody needs to, because the Ambroni is yours from the first step. The bonus
-  does not pass to anybody else — there is nobody else who has the tongue.
+  interprets and nobody needs to, because the tongues are yours from the first step. The bonus
+  does not pass to anybody else — there is nobody else who has them.
+- **What "nobody needs to" costs, and how it is paid.** `interpreterFor` returning null is only
+  right if the player really has what Chris has. He is written as knowing three tongues
+  (`INTERPRETER.knows`: ambroni, drentish, feradom) and the user's words were that he knows
+  enough of the local language to get around — and in Drent the local language is Drentish, which
+  is what Mara speaks. So `startingLanguages` gives him drentish at 40 beside the ambroni. With
+  ambroni alone, choosing Chris made the game's first conversation — the one the interpreter
+  exists to teach you about — wholly foreign with nobody in the world to gloss it, which is the
+  one outcome this design is meant to prevent. Feradom is deliberately left out: it is the user's
+  to place with the rest of the profiles.
 
 ### 3. Ed the Word — came ashore under his own power
 - **Opening: not built, and it is the one that most needs building.** He canonically swims ashore

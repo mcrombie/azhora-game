@@ -49,7 +49,13 @@ export const PLAYABLE = Object.freeze([
     'simple-sword', sword, { linguist: 200 },
     // The language module reads this: Chris interprets for the company, so he begins the road
     // already able to hold a conversation in the Empire's tongue (src/linguist.js, src/languages.js).
-    { startingLanguages: Object.freeze({ ambroni: 40 }) }),
+    // Drentish at the same level because it is what he is said to know: `INTERPRETER.knows` has
+    // him glossing drentish, feradom and ambroni, and in Drent the tongue he would be glossing
+    // is Drentish — Mara speaks it. Without it, choosing Chris made the one conversation the
+    // interpreter exists to teach you wholly foreign, with nobody in the world to gloss it,
+    // because when you are Chris `interpreterFor` rightly answers nobody. Feradom is left out:
+    // it is the user's to place with the rest of the profiles.
+    { startingLanguages: Object.freeze({ ambroni: 40, drentish: 40 }) }),
   playable('word', 'Ed the Word', 'Came ashore under his own power', 'merc-word',
     'Off a pirate ship that never docked, out of a port he will not name, with a dagger and a great deal to say about none of it.',
     'long-dagger', swordAnd('long-dagger'), { swimming: 260 }),
