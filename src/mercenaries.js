@@ -15,6 +15,8 @@
  * one seed needs saving. They walk the same road as the traveler and pause where the traveler
  * had business, so a brisk traveler stays first and a slow one is overtaken.
  */
+import { WILD, MUS_ROUTE, wildJourney } from './wild-route.js';
+
 export const MERCENARY_COMPANY_SIZE = 11;
 
 /**
@@ -238,8 +240,9 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
  * @param shore where a man whose `route` is 'shore' comes out of the water instead
+ * @param wild true to give a man whose `route` is 'wild' his own line across country
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, seed = 0, roster = MERCENARY_ROSTER } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, seed = 0, roster = MERCENARY_ROSTER } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
   // Mus is the only one whose hour is not written down. It is drawn once from the seed the
   // game was started with and kept in the save, so he lands at the same moment on every
@@ -248,6 +251,23 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   const lengths = roadLengths(road);
   const musterDistance = muster ? distanceAlongRoad(road, muster, lengths) : lengths[lengths.length - 1];
   const roadStops = stops.map(stop => ({ id: stop.id, dwell: stop.dwell, distance: distanceAlongRoad(road, stop.point, lengths) }));
+  // Mus's own line (src/wild-route.js), measured off the main road and ending at the muster.
+  // `mercenaryProgress` is untouched by any of this: it is already written in distance along
+  // *a* path, so giving him a different path and a slower pace is the whole of the feature.
+  const wildRoute = wild ? wildJourney(muster ?? road[road.length - 1]) : null;
+  const wildLengths = wildRoute ? roadLengths(wildRoute.path) : null;
+  const wildDistance = wildLengths ? wildLengths[wildLengths.length - 1] : 0;
+  // Who is actually in the queue, and in what order. A man the sea put down on his own strand
+  // and a man who beaches round the headland are not in it, and the queue closes up behind them
+  // rather than leaving their places empty on the boards.
+  const seats = new Map();
+  {
+    let seat = 0;
+    for (const entry of roster) {
+      if ((entry.route === 'shore' && shore) || (entry.route === 'wild' && wild)) continue;
+      seats.set(entry.id, seat++);
+    }
+  }
   const start = landing ?? road[0];
   const lateral = index => (index % 2 ? -1 : 1) * (1.4 + Math.floor(index / 2) * .8);
   // The queue runs from the landing toward the road's first point, and the men face that way,
@@ -267,7 +287,12 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
 
   function placements(playSeconds) {
     return roster.map((mercenary, index) => {
-      const progress = mercenaryProgress(mercenary, playSeconds, roadStops, musterDistance);
+      // A wild man walks his own line, at the pace rough country allows, and passes none of the
+      // road's stops, because he is never on the road to pass them.
+      const wilding = !!wildRoute && mercenary.route === 'wild';
+      const progress = wilding
+        ? mercenaryProgress({ ...mercenary, pace: WILD.pace }, playSeconds, [], wildDistance)
+        : mercenaryProgress(mercenary, playSeconds, roadStops, musterDistance);
       const side = lateral(index);
       if (progress.phase === 'coming' || progress.phase === 'landing') {
         // A man the sea put down waits where the sea put him: `route: 'shore'` is Ed the Word,
@@ -275,13 +300,28 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
         // standing about among people who came off boats.
         if (mercenary.route === 'shore' && shore)
           return { id: mercenary.id, name: mercenary.name, ...progress, x: shore.x, z: shore.z, yaw: queue.yaw, walking: false };
+        // And a wild man waits on his own strand, round the headland, where nobody is watching.
+        if (wilding) {
+          const beach = wildRoute.path[0], next = wildRoute.path[1];
+          return { id: mercenary.id, name: mercenary.name, ...progress, x: beach.x, z: beach.z,
+            yaw: Math.atan2(next.x - beach.x, next.z - beach.z), walking: false };
+        }
         // Everybody else came off a boat and queues down the pier (LANDING_QUEUE).
-        const along = LANDING_QUEUE.lead + index * LANDING_QUEUE.spacing, off = LANDING_QUEUE.offset * ((index + 1) % 2 ? 1 : -1);
+        const seat = seats.get(mercenary.id) ?? index;
+        const along = LANDING_QUEUE.lead + seat * LANDING_QUEUE.spacing, off = LANDING_QUEUE.offset * ((seat + 1) % 2 ? 1 : -1);
         return { id: mercenary.id, name: mercenary.name, ...progress,
           x: start.x + queue.ux * along + queue.px * off, z: start.z + queue.uz * along + queue.pz * off,
           yaw: queue.yaw, walking: false };
       }
-      const point = pointAlongRoad(road, progress.distance, lengths);
+      // Walking, stopped or mustered: the same arithmetic, along whichever line is his. A wild
+      // man never reports `stopped`, because he was handed no stops.
+      if (wilding && progress.phase !== 'mustered') {
+        const spot = pointAlongRoad(wildRoute.path, progress.distance, wildLengths);
+        return { id: mercenary.id, name: mercenary.name, ...progress, x: spot.x, z: spot.z, yaw: spot.yaw, walking: true };
+      }
+      // At the muster he is one of the company like anybody else, so he takes his place in the
+      // same formation - measured along the road, because his own distance is along his own line.
+      const point = pointAlongRoad(road, wilding ? musterDistance : progress.distance, lengths);
       const off = progress.phase === 'stopped' ? side * 2.2 : progress.phase === 'mustered' ? 0 : side;
       let x = point.x + point.dz * off, z = point.z - point.dx * off;
       if (progress.phase === 'mustered') { x = point.x + point.dz * lateral(index) * 1.6 - point.dx * (4 + Math.floor(index / 2) * 2.2); z = point.z - point.dx * lateral(index) * 1.6 - point.dz * (4 + Math.floor(index / 2) * 2.2); }
@@ -297,7 +337,10 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
 
   /** The traveler's own standing in the company by road distance: 1 means first to the muster. */
   function travelerRank(playSeconds, travelerDistance) {
-    return 1 + placements(playSeconds).filter(p => p.distance > travelerDistance || p.phase === 'mustered').length;
+    // A wild man's distance is along a different and longer line, so it cannot be compared with
+    // a distance along the road. He counts as ahead when he is at the muster and not before.
+    return 1 + placements(playSeconds).filter(p => p.phase === 'mustered'
+      || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance)).length;
   }
 
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
