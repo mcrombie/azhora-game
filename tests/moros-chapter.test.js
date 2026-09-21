@@ -122,6 +122,11 @@ test('last in, the ten turn and each of them says where he last saw you', () => 
   assert.match(said['merc-matt'], /in a hedge\. In it\. Not beside it/);
   // A man who never went past you cannot place you, and says so rather than inventing it.
   assert.match(said['merc-eliana'], /somewhere back down that road/);
+  // And a man who passed you between stops saw a road, not a lesson, and claims only the road.
+  const roadside = musterVoices({ musterCount: MUSTER_FULL, roster, seenAt: { 'merc-jerry': 'ground:fernway' } });
+  const jerry = roadside.company.find(entry => entry.id === 'merc-jerry').line;
+  assert.match(jerry, /on the road through Fernway Rest, going the other way/);
+  assert.doesNotMatch(jerry, /mushroom/, 'he did not see you at the bench, because you were not at it');
   for (const entry of full.company) assert.ok(!entry.line.includes('%s'), entry.id + ' still has its slot in it');
 });
 

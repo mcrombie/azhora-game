@@ -4,6 +4,7 @@ import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
+  GROUND_PREFIX, isGround, groundOfSighting, longRoadStop as stopById,
   companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt,
 } from '../src/long-road.js';
 import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
@@ -421,4 +422,55 @@ test('every spine stop has a recognising line, and no two teachers say the same 
     if (!stop.skill || !starting.has(stop.skill)) continue;
     assert.ok(RECOGNISED[stop.id], `somebody lands already knowing ${stop.skill} and ${stop.id} has nothing to say to them`);
   }
+});
+
+test('a man can only say he saw you where he could actually see you', () => {
+  // `nearestStop` had no reach, so a sighting anywhere on the road took the nearest stop however
+  // far off: Jerry five metres away on open ground recorded Fernway Rest 123 m behind him and
+  // told the camp the traveler had been at the bench holding a mushroom up to the light.
+  const road = createLongRoad();
+  const odger = stopById('odger-fernway').point;
+  const far = { x: odger.x, z: odger.z + 123 };   // due south of the Rest, 123 m off and clear of everything
+  assert.ok(LONG_ROAD_SPINE.every(stop => Math.hypot(stop.point.x - far.x, stop.point.z - far.z) > NOTICE_RANGE),
+    'the fixture stands well clear of every stop');
+  assert.equal(road.nearestStop(far), null, 'a hundred and twenty metres off is not "at" anything');
+  assert.equal(road.nearestStop(odger), 'odger-fernway', 'and standing on it is');
+  assert.equal(road.nearestStop({ x: odger.x, z: odger.z + NOTICE_RANGE - 1 }), 'odger-fernway', 'inside the forty he saw you there');
+  assert.equal(road.nearestStop({ x: odger.x, z: odger.z + NOTICE_RANGE + 1 }), null, 'outside it he did not');
+});
+
+test('a sighting between stops is remembered as the road, and says so at the muster', () => {
+  const road = createLongRoad();
+  const odger = stopById('odger-fernway').point;
+  const far = { x: odger.x, z: odger.z + 123 };
+  // Five metres away on open ground: he saw the traveler, and he saw a road.
+  const seen = road.notice([{ id: 'merc-jerry', name: 'Jerry', phase: 'walking', x: far.x + 5, z: far.z }], far, () => 'fernway');
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].stopId, `${GROUND_PREFIX}fernway`, 'the ground, not a stop he was nowhere near');
+  assert.equal(isGround(road.seenAt('merc-jerry')), true);
+  assert.equal(groundOfSighting(road.seenAt('merc-jerry')).name, 'Fernway Rest');
+  // And on ground the chart has no name for, he has nothing to claim at all.
+  const nowhere = road.notice([{ id: 'merc-ciaran', name: 'Ciarán', phase: 'walking', x: far.x + 5, z: far.z }], far, () => null);
+  assert.equal(nowhere[0].stopId, null);
+  assert.equal(isGround(null), false);
+  assert.equal(isGround('ground:not-a-place'), false, 'and a ground the chart does not have is not one');
+  assert.equal(groundOfSighting('odger-fernway'), null, 'a stop id is not a ground');
+  // The save takes both, and refuses a ground nobody has heard of.
+  assert.equal(validateLongRoadSnapshot(road.snapshot()), true);
+  assert.equal(validateLongRoadSnapshot({ ...road.snapshot(), seenAt: { 'merc-jerry': 'ground:nowhere' } }), false);
+});
+
+test('nobody walking beside the traveler is ever recorded as having gone past him', () => {
+  // Companions are "as many as will come" now (docs/design-answers.md). Every one of them is in
+  // the phase `with-traveler` and never `walking` or `stopped`, so none of them can be a sighting.
+  const road = createLongRoad();
+  const at = { x: -102, z: 8.6 };
+  const beside = ['merc-gotwood', 'merc-word', 'merc-lakota'].map(id =>
+    ({ id, name: id, phase: 'with-traveler', distance: 0, stopId: null, x: at.x + 2.5, z: at.z }));
+  assert.deepEqual(road.notice(beside, at, ground), [], 'three men at your shoulder, and not one sighting');
+  assert.deepEqual(road.snapshot().seenAt, {}, 'and nothing written down about any of them');
+  // The moment one of them is released and back on the road, he can be seen going past.
+  const gone = road.notice([{ ...beside[0], phase: 'walking' }], at, ground);
+  assert.equal(gone.length, 1);
+  assert.equal(gone[0].id, 'merc-gotwood');
 });
