@@ -2212,3 +2212,161 @@ Found the same day, and fixed: `player` in `src/main.js` is a facade over a repl
 `setShield` was missing from it. The call was written `player.setShield?.(...)`, so it did nothing
 at all, quietly, for four renders. **An optional call on your own facade hides your own mistake**;
 it is now a plain call that would throw.
+
+---
+
+## The death lifecycle, walked end to end — four things wrong, all four fixed
+
+Driven against the real modules: `createCompanions` with the real `createFallen` it shares with
+the world's other dead, the real `createMercenaryCompany`, and `morosConversation` driven through
+a fake `openDialogue` that answers and clicks through exactly as the host's does.
+`tests/death-lifecycle.test.js` holds all of it, and every assertion named below fails against the
+code as it was.
+
+### 1. The Marshal asked after the same missing name for ever
+
+**Seen, driven:** two men dead, the traveler at the command tent. He asks after Al the Tun, the
+traveler answers, he writes it down — and then asks after **Al the Tun** again. And again. The
+second name is never reached, the second answer is refused (`report` returns `{ok:false}` for a
+man already told about), and nothing of the muster's own business ever happens.
+
+**Cause.** `morosConversation` re-enters *itself* once the pen is down
+(`openDialogue(..., {onComplete: () => morosConversation(npc, context)})`), and `context` is the
+object `src/main.js:3156` built **before** the answer, in which `owed` was already evaluated to an
+array. So the list of who is still owed is always the list from before the last answer.
+
+```
+owed at the gate: [ 'merc-altun', 'merc-mus' ]
+--- after answering about the first name ---
+    "He writes where, and against what, and reads it back once ..."
+    "two stand in this camp, counting you, ..."
+    "Al the Tun. What happened to him?"      <- the same man
+told: [ [ 'merc-mus', null ], [ 'merc-altun', 'true' ] ]
+owed now: [ 'merc-mus' ]      context.owed (stale): [ 'merc-altun', 'merc-mus' ]
+```
+
+The only way out in play is to back out of the conversation and speak to him again, which rebuilds
+the context; with two dead that is two conversations, and nothing on the screen says so.
+
+**Fixed.** `owed` is a question, not an answer: the host passes `()=>companions.owed()` and the
+chapter calls it each time round. Everything else in that context is a fact the conversation
+cannot change, and is left as it was.
+
+### 2. A dead man went on mustering, and the Marshal counted him
+
+**Cause.** `createMercenaryCompany` knows nothing about the dead. `companions.died` strikes a man
+off the walking list, `rebuildCompany` remakes the company without him — and he therefore goes
+**back onto the ordinary road schedule** and musters on it like anybody else. The host hides him
+(`npc.hidden=...||fallen.has(id)`), so nobody sees him; but `summary().mustered` counts a *phase*,
+and his phase is `mustered`.
+
+Measured on the real company with one companion dead, over the clock:
+
+| play seconds | his phase | `summary().mustered` | living men in camp |
+|---|---|---|---|
+| 600 | coming | 0 | 0 |
+| 1,200 | walking | 1 | 1 |
+| 2,400 | **mustered** | 4 | 3 |
+| 4,000 | mustered | 7 | 6 |
+| 8,000 | mustered | 10 | 9 |
+
+So at 4,000 s the Marshal said *"By the gate's count, **eight** stand in this camp, counting you"*
+with **seven** standing there. `musterVoices` clamps the count to `expected` (eleven less the
+dead), which hides the error once everybody living is in — which is why a full muster reads
+correctly and this was never caught. It is wrong for the whole of the window where any living man
+is still on the road.
+
+**Fixed** in the host, where the count is made: `musteredInCamp()` counts placements whose phase is
+`mustered` **and who are not in `fallen`**, and the four places that asked for the camp's size (the
+Marshal, the border conversation, the first-man-in toast and the HUD's company standing) all ask it.
+
+**Left, and reported rather than changed:** the company still *runs* a dead man's clock and still
+places him, hidden, which `docs/companions.md` says it should not ("never placed on the road again,
+and never waits at a landing"). Two smaller readings come off the same fact: `travelerRank` counts
+a dead man as ahead of you on the road, and `summary().arrived` counts him as landed — both are in
+the one HUD line `companyStanding()` writes. Teaching `createMercenaryCompany` who is gone is the
+repair, and it touches `placements()`, which 46,371-placement sweeps in
+`tests/nobody-sealed-in.test.js` and the whole long-road clock rest on, so it is the company's own
+ground and a decision about what a placement for a dead man should even be.
+
+### 3. Loading a save from before the fight brought him back out of the file
+
+**Seen, driven:** Jerry walks with you. Save. Jerry dies in the next fight. Load the save. He is
+alive again — and he is **not walking with you**. He is somewhere on the road with the rest of
+the company, and nothing says why.
+
+**Cause, one of ordering.** `companions.restore` deliberately filters the dead out of the walking
+list it is handed (`state.walking = data.walking.filter(id => !dead(id))`), and `dead` asks
+`fallen`. `src/main.js` restored `companions` at :2739 and `fallen` three lines later at :2742, so
+that filter ran against **the dying session's** list of the dead rather than the save's.
+
+```
+save BEFORE the fight: walking= [ 'merc-jerry' ] fallen= []
+reload, in main.js order  ->  dead: false  walking: false
+reload, fallen first      ->  dead: false  walking: true
+```
+
+A save written *after* the death was never affected: he is already out of `walking` in it.
+
+**Fixed:** `fallen.restore` now runs immediately before `companions.restore`, with the reason
+written beside it. `tests/death-lifecycle.test.js` pins both the behaviour and the order in the
+source.
+
+### 4. A lie cost five witnesses in a hundred nothing at all
+
+The design is *"a lie is known to everyone who was walking with you when it happened, each of whom
+**drops a rung**"*, and the code's own comment says "A rung, not a point". It took a flat 35 off,
+which is the usual **size** of a rung and not the promise:
+
+| witness's regard | rung | after −35 | rung |
+|---|---|---|---|
+| 94 | friendly | 59 | acquainted |
+| **95–99** | **friendly** | **60–64** | **friendly** |
+| 100 | fond | 65 | friendly |
+
+So a man who saw you lie and happened to stand in the top five points of `friendly` thought exactly
+as much of you afterwards. It is reachable: `errand` (+22) and `traded` (+14) land on flat numbers,
+and a man sent on ahead stops accruing the 1.4 a minute that would carry him past it.
+
+**Fixed:** he goes below the foot of the rung he is standing on, and never by less than the 35 that
+was already taken — so every number that dropped a rung before drops the same rung by the same
+amount, and the band that paid nothing now pays. Checked at 26, 40, 59, 60, 75, 94, 95, 97, 99 and
+100.
+
+### Checked on the same walk, and clean
+
+- **Witnesses are the set captured at the death.** A man asked *after* it holds nothing; a man sent
+  on *after* it is still a witness and still drops his rung. An unwitnessed lie sets
+  `registerIsFalse`, and truth and silence never do.
+- **The weapon.** Named ("Eliana's greatsword"), takeable once, and `take` refuses the second time.
+  Never mid-fight: both the prompt (`currentFoundWeapon`, `main.js:4390`) and the taking
+  (`main.js:3603`) are gated on `combat.state.phase!=='active'`. And **a death that recorded no
+  place leaves nothing lying at the origin** — `died` writes `x`/`z` only when both are finite and
+  `weaponOnTheGround` refuses without them.
+- **The file, the page and the next fight.** `died` fires the host's `rebuildCompany` +
+  `placeMercenaries`, so he is out of `fileOrder` the same frame; `refreshCompanyPage` reads
+  `fallen` and names him dead with where and what; `companionAllies` skips `fallen.has(id)`.
+- **Nobody can die in a teaching fight.** `TEACHING_FIGHTS` is the Greenway raid and the Avrel
+  clearing raiders by id, `companionAllies` returns `[]` for them, and the straw post is
+  `phase==='practice'` with one dummy and no allies at all. A man who is never an ally never emits
+  `ally-down`, which is the only thing that kills him.
+
+**Repro for each:** `node --test --test-isolation=none tests/death-lifecycle.test.js`.
+
+---
+
+## `tests/session-clock.test.js` was red on main, and the company review views were why
+
+Not introduced here: the same line is in `be774c6`. `session-clock` asks that every assignment to
+`playSeconds` that is not one of the two game starts sits on a line that names a review view, so
+that a shot which moves the session clock can be read as a shot at a glance. The
+`company-mounted` / `company-picket` views pinned it at 4,000 on the **statement line under** the
+`if(view===...)` guard, which is the one pin in the file the test cannot see:
+
+```
+HEAD    starts 2 pins 4 pins without view===: [5079]
+working starts 2 pins 4 pins without view===: [5099]
+```
+
+**Fixed** by moving the pin onto the guard's own line, which is the shape the other three pins
+already have. The suite is green again; nothing about the shot changed.

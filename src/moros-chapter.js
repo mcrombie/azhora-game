@@ -324,7 +324,12 @@ export function morosConversation(npc, context) {
     // **Before anything else**, the ones who are not here. He asks after each missing name in
     // turn and writes down what he is told; the muster's own business waits until the register
     // is straight, which is what a man who was promised eleven would do.
-    const asking = owed[0];
+    //
+    // **It is asked again each time round, and never read off the context.** Telling him about a
+    // man changes who is still owed, and this conversation re-enters itself once the pen is
+    // down; a list evaluated when the context was built is the list from before the answer, so
+    // he asked after the same name for ever and the second name was never reached.
+    const asking = (typeof owed === 'function' ? owed() : owed)[0];
     if (asking) {
       const name = nameOf(asking);
       openDialogue(npc, [heard.marshal, marshalAsks(name)], null, 'Back to the camp', {
