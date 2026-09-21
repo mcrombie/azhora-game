@@ -31,14 +31,17 @@ export function trailMapViewBounds(bounds, { width = 600, height = 430, padding 
 /** Unknown details remain unknown even if a caller accidentally passes their names. */
 export function trailMapSelection(model, id) {
   if (!model || !id) return null;
-  const marker = (model.landmarks || []).find(marker => marker.id === id) || (model.goal?.id === id ? model.goal : null);
+  const marker = (model.landmarks || []).find(marker => marker.id === id)
+    || (model.goal?.id === id ? model.goal : null) || (model.openGoal?.id === id ? model.openGoal : null);
   if (!marker) return null;
-  const isGoal = marker === model.goal, isKnown = known(marker) || isGoal;
+  const isGoal = marker === model.goal || marker === model.openGoal, isKnown = known(marker) || isGoal;
   return { id: marker.id, name: isKnown ? marker.name || 'Known place' : 'Unexplored',
     description: isKnown ? marker.description || (isGoal ? 'Your main journey leads here.' : 'A place recorded along your journey.')
       : 'Visit this place to learn what is here. You can mark it after you discover it.',
     known: isKnown, discovered: marker.discovered === true, trackable: isKnown && marker.trackable === true,
     tracked: model.tracked?.id === marker.id, objective: model.goal?.id === marker.id,
+    // The long road's next stop wears the same gold, open (src/quest-markers.js).
+    openObjective: model.openGoal?.id === marker.id,
     x: marker.x, z: marker.z };
 }
 
@@ -106,8 +109,10 @@ export function trailMapSVG(model, { width = 600, height = 430, selectedId = nul
   }
   const selected = inView.find(marker => marker.id === selectedId), trackedHere = visible(model.tracked) ? model.tracked : null;
   const goalHere = visible(model.goal) ? model.goal : null;
+  const openGoalHere = visible(model.openGoal) && model.openGoal.id !== goalHere?.id ? model.openGoal : null;
   if (selected) label(selected, 'is-selected');
   if (goalHere && goalHere.id !== selected?.id) label(goalHere, 'is-main-goal');
+  if (openGoalHere && openGoalHere.id !== selected?.id) label(openGoalHere, 'is-main-goal');
   if (trackedHere && trackedHere.id !== selected?.id && trackedHere.id !== goalHere?.id) label(trackedHere, 'is-tracked');
   for (const marker of inView.filter(known).sort((a, b) => a.z - b.z))
     if (![selected?.id, trackedHere?.id, goalHere?.id].includes(marker.id)) label(marker);
@@ -123,6 +128,10 @@ export function trailMapSVG(model, { width = 600, height = 430, selectedId = nul
   if (goalHere) {
     const p = project(goalHere);
     svg.push(`<g transform="translate(${number(p.x)},${number(p.y)})" class="trail-goal-marker trail-map-marker" data-trail-place="${escape(goalHere.id)}" role="button" tabindex="0" aria-label="${escape(goalHere.name || 'Main objective')}, main journey"><title>${escape(goalHere.name || 'Main objective')} — main journey</title><circle r="12" class="trail-pin-hit"/><path d="M0,-7 L7,0 L0,7 L-7,0Z"/></g>`);
+  }
+  if (openGoalHere) {
+    const p = project(openGoalHere);
+    svg.push(`<g transform="translate(${number(p.x)},${number(p.y)})" class="trail-open-goal-marker trail-map-marker" data-trail-place="${escape(openGoalHere.id)}" role="button" tabindex="0" aria-label="${escape(openGoalHere.name || 'The long way round')}, the long way round"><title>${escape(openGoalHere.name || 'The long way round')} — the long way round</title><circle r="12" class="trail-pin-hit"/><path d="M0,-7 L7,0 L0,7 L-7,0Z"/></g>`);
   }
   // The bird the traveler is watching, if the host is offering one: the same pair
   // of wings the round chart draws, on the sheet he opens to work out where he is.

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting } from './characters.js';
-import { markerFor } from './quest-markers.js';
+import { markerFor, markerGrade } from './quest-markers.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
@@ -433,6 +433,8 @@ function init() {
     inventory.refresh();refreshSkillsSheet();updateHUD();
   }
   const objectiveMarker=makeQuestMarker();scene.add(objectiveMarker);
+  // The long road's own gold on the ground, for a stop that is a place rather than a person.
+  const openMarker=makeQuestMarker('main',{open:true});openMarker.visible=false;scene.add(openMarker);
   const trailMarker=makeQuestMarker();trailMarker.scale.setScalar(.7);trailMarker.visible=false;scene.add(trailMarker);
   trailMarker.traverse(object=>{if(object.isMesh){object.material=object.material.clone();object.material.color.set(0x8acfc2);object.material.emissive.set(0x437d76);}});
   const combatEvents=[];
@@ -516,6 +518,19 @@ function init() {
   // to come in (src/long-road.js, docs/drent-long-road.md). It reads every other module's view
   // and writes to none of them; what it keeps is the handful of things nobody else can answer.
   const longRoad=createLongRoad();
+  /** What the long road can see of the rest of the game, for deciding what is done. */
+  const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,
+    companion:companionOffTheClock&&!longRoad.released?{with:true}:false});
+  /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
+  function longWayNext(){
+    if(!longRoad.told||questStage<8)return null;
+    const next=longRoad.view(longRoadWorld()).next;
+    if(!next)return null;
+    const stand=next.npc?world.npcPositions[next.npc]:null;
+    return {...next,at:stand?{x:stand.x,z:stand.z}:{...next.point}};}
+  let longWayStop=null;
+  /** The open gold as the charts want it: a named point to ring, or nothing. */
+  const longWayTarget=()=>{const stop=longWayNext();return stop?{id:`long-road-${stop.id}`,name:stop.title,...stop.at}:null;};
   /**
    * Whether this game has a companion off the clock at all. A new game does, from the moment
    * he stops walking you up the pier; a save written before the long road existed does not, and
@@ -1659,6 +1674,18 @@ function init() {
       if(entry.state!=='later'){const note=document.createElement('small');note.textContent=chapterGoal(entry,state);item.append(note);}
       list.append(item);
     }
+    // The long way round: a block under the chapter's steps, never a step of them. Walking the
+    // whole of Drent closes none of the five above it and skipping it leaves none of them open.
+    {const way=current?.longWay??null;
+      show('chapter-long-way',!!way);
+      if(way){
+        $('chapter-long-way-title').textContent=way.title;
+        $('chapter-long-way-detail').textContent=way.detail;
+        const legs=$('chapter-long-way-legs');legs.replaceChildren();
+        const walked=longRoad.view(longRoadWorld());
+        way.legs.forEach((text,i)=>{const li=document.createElement('li');
+          const leg=walked.legs[i];li.className=leg?.done?'done':i===walked.next?.leg?'current':'';
+          li.textContent=`${leg?.done?'\u2713 ':''}${text}`;legs.append(li);});}}
     // A chapter closing is worth a word, once.
     const reached=current?current.number:chapterCount+1;
     if(chapterShown&&reached>chapterShown){
@@ -1920,7 +1947,7 @@ function init() {
   function localMapModel(regionId){
     const known=localMapKnown();
     // The watched bird rides along on the sheet as it was when he opened the journal, which is what a note is.
-    return {...buildLocalMapModel({world,position:player.group.position,heading:Math.PI-player.group.rotation.y,discoveries,...known,goal:destination(),regionId,trackedId:trackedPlaceId}),bird:birdWatch};
+    return {...buildLocalMapModel({world,position:player.group.position,heading:Math.PI-player.group.rotation.y,discoveries,...known,goal:destination(),openGoal:longWayTarget(),regionId,trackedId:trackedPlaceId}),bird:birdWatch};
   }
   function trackedPlace(){
     if(!trackedPlaceId)return null;
@@ -3189,6 +3216,11 @@ function init() {
     const markerGoal=[0,2,3,8,9,10].includes(questStage)?goal:null;
     objectiveMarker.visible=!!markerGoal;
     if(markerGoal){objectiveMarker.position.set(markerGoal.x,world.heightAt(markerGoal.x,markerGoal.z)+2.8+Math.sin(elapsed*2.5)*.12,markerGoal.z);objectiveMarker.rotation.y=elapsed*.7;}
+    // Beside it, the open one. A stop with a person of his own wears it over his head instead,
+    // so the ground marker is only for the places: the Watch, the firepit, Rena, the players' camp.
+    const openAt=longWayStop&&!longWayStop.npc?longWayStop.at:null;
+    openMarker.visible=!!openAt;
+    if(openAt){openMarker.position.set(openAt.x,world.heightAt(openAt.x,openAt.z)+2.8+Math.sin(elapsed*2.5+1.1)*.12,openAt.z);openMarker.rotation.y=elapsed*.7;}
   }
   refreshQuest();
   function render(now) {
@@ -3296,6 +3328,8 @@ function init() {
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(!['opening','pause','arriving'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      // Which stop wears the open gold this frame: the HUD, the npc marks and both charts read it.
+      longWayStop=longWayNext();
       // After placeMercenaries, and before the NPC loop. That call rewrites the companion's home to
       // the landing ring every frame, and the loop snaps an NPC home and hides him when his home is
       // more than 180 m from the player; the player is in a boat 170 m out. Setting his home to the
@@ -3354,6 +3388,7 @@ function init() {
       const markerView={questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,warden:'warden',doomsayer:'doomsayer',acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===10?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
+        longWay:longWayStop?.npc?[longWayStop.npc]:[],
         acornQuestOpen:acornQuest.status!=='complete',feederWantsCook:birding.task()?.target==='acorn-cook',hasRod:inventory.has('fishing-rod'),
         birdingLearned:birding.met,archaeologyReport:archaeology.task()?.stage==='report',
         forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
@@ -3391,9 +3426,9 @@ function init() {
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
         // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
-        const markerKind=markerFor(npc.id,markerView);
-        if(markerKind&&npc.markerKind!==markerKind){scene.remove(npc.marker);npc.marker=makeQuestMarker(markerKind);npc.markerKind=markerKind;scene.add(npc.marker);}
-        npc.marker.visible=!!markerKind;
+        const mark=markerFor(npc.id,markerView),grade=markerGrade(mark);
+        if(grade&&npc.markerKind!==grade){scene.remove(npc.marker);npc.marker=makeQuestMarker(mark.kind,{open:mark.open});npc.markerKind=grade;scene.add(npc.marker);}
+        npc.marker.visible=!!grade;
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);npc.marker.rotation.y=elapsed*.7;
         // Facing the traveler is a loan, given back when the talking is done (src/bodies.js).
         // Somebody posed against their work - Old Hewe at the grave he is digging, Sela at the
@@ -3601,7 +3636,7 @@ function init() {
       // Compass bearings are true to the chart: today's road runs south-west across Drent, not north.
       const {index:headingIndex,labels:headings}=compassHeading(yaw,HEX_WORLD_TRANSFORM);
       [...$('compass').children].slice(0,5).forEach((node,i)=>node.textContent=headings[(headingIndex+2-i+8)%8]);
-      mapClock+=dt;if(mapClock>.1){updateHUD();drawMinimap(map,{world,position:player.group.position,goal:destination(),combat:combat.state,angle:player.group.rotation.y,time:elapsed,discoveries,tracked:trackedPlace(),bird:birdWatch,northOffset:HEX_WORLD_TRANSFORM.northOffset});mapClock=0;}
+      mapClock+=dt;if(mapClock>.1){updateHUD();drawMinimap(map,{world,position:player.group.position,goal:destination(),openGoal:longWayTarget(),combat:combat.state,angle:player.group.rotation.y,time:elapsed,discoveries,tracked:trackedPlace(),bird:birdWatch,northOffset:HEX_WORLD_TRANSFORM.northOffset});mapClock=0;}
       renderer.render(scene,camera);requestAnimationFrame(render);
     }catch(error){fail(error);}
   }

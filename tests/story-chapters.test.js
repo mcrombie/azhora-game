@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/story-chapters.js';
+import { LONG_ROAD_LEGS } from '../src/long-road.js';
 
 // `started` is the report to Iven itself; `briefed` is the Lauvel errand accepted after it.
 const reported = { luscia: { started: true } };
@@ -33,6 +34,22 @@ test('chapter one ends on reporting for duty at Lumber Town', () => {
   assert.equal(chapterProgress({ luscia: { started: true, briefed: false } }).number, 2,
     'the chapter turns on the report, not on accepting the next errand');
   assert.deepEqual(chapterProgress(reported).list.map(entry => entry.state), ['done', 'current', 'later']);
+});
+
+test('chapter one carries the long way round as a block and never as a step', () => {
+  const one = STORY_CHAPTERS[0];
+  assert.equal(one.steps.length, 5, 'the five steps of the muster road are untouched');
+  assert.ok(one.longWay, 'and the long road hangs under them');
+  assert.equal(one.longWay.legs.length, LONG_ROAD_LEGS.length, 'one line a leg');
+  assert.match(one.longWay.title, /long way/i);
+  assert.match(one.longWay.detail, /eleventh/, 'it says why the road west will keep');
+  for (const leg of LONG_ROAD_LEGS) assert.ok(one.longWay.legs.some(line => line.startsWith(leg.title)), leg.title);
+  // The chapter closes on reporting for duty, and on nothing else: walking the whole of Drent
+  // does not close it and skipping the whole of Drent does not hold it open.
+  assert.equal(one.done({ luscia: { started: true } }), true);
+  assert.equal(one.done({ luscia: { started: false } }), false);
+  assert.equal(Object.isFrozen(one.longWay.legs), true);
+  for (const entry of STORY_CHAPTERS.slice(1)) assert.equal(entry.longWay, null, `chapter ${entry.number} has no long way`);
 });
 
 test('chapter two runs from the report to the place your side takes, and says which', () => {
