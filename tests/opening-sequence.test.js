@@ -329,7 +329,7 @@ function talkableSpots(at, reach) {
   for (let x = at.x - reach; x <= at.x + reach + 1e-9; x += .1) {
     for (let z = at.z - reach; z <= at.z + reach + 1e-9; z += .1) {
       if (Math.hypot(x - at.x, z - at.z) > reach) continue;
-      if (canStand(x, z, world, BODY.traveler)) spots.push({ x: +x.toFixed(4), z: +z.toFixed(4) });
+      if (canStand(x, z, world)) spots.push({ x: +x.toFixed(4), z: +z.toFixed(4) });
     }
   }
   return spots;
@@ -344,7 +344,7 @@ test('the man off your boat is within earshot everywhere you can stand to speak 
   const TALK = 3.3;  // src/main.js picks the nearest npc inside this, in metres
   const spots = talkableSpots(mara, TALK);
   assert.ok(spots.length > 300, `only ${spots.length} standable spots in Mara's talk range`);
-  const standable = (x, z) => canStand(x, z, world, BODY.person);
+  const standable = (x, z) => canStand(x, z, world);
   let placed = 0, heard = 0, worst = 0;
   for (const spot of spots) {
     // Whichever way the traveler happens to be facing when he speaks to her.
@@ -366,7 +366,7 @@ test('the man off your boat is within earshot everywhere you can stand to speak 
 test('he walks the whole pier at your shoulder without once stepping off it', () => {
   // The pier deck is the only ground between the boat and the shore, and it is three metres
   // wide. Walking its length in both directions is the escort's whole job.
-  const standable = (x, z) => canStand(x, z, world, BODY.person);
+  const standable = (x, z) => canStand(x, z, world);
   assert.ok(ESCORT_OFFSETS.length >= 4 && ESCORT_OFFSETS.every(o => Math.hypot(o.lateral, o.back) < 2),
     'he keeps to arm’s length, or he is not at your shoulder');
   let steps = 0;

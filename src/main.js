@@ -1607,28 +1607,53 @@ function init() {
     const walking=!!mate&&!mateReleased&&questStage<2&&!opening&&['playing','dialogue','inventory','journal','pause'].includes(mode);
     if(!mate)return;
     if(!walking){if(mate.escorting){mate.escorting=false;mate.pace=undefined;}return;}
-    const spot=escortSpotFor({x:player.group.position.x,z:player.group.position.z,yaw:player.group.rotation.y},(x,z)=>canStand(x,z,world,BODY.person));
+    const spot=escortSpotFor({x:player.group.position.x,z:player.group.position.z,yaw:player.group.rotation.y},(x,z)=>canStand(x,z,world));
     if(spot){
       world.npcPositions[mate.id]={x:spot.x,z:spot.z};
       // His placement is what interpreterNearby measures from, so it has to follow him and not
       // stay at the landing ring placeMercenaries() put it at a moment ago.
       mate.placement={id:mate.id,name:mate.name,phase:'landing',distance:0,stopId:null,x:spot.x,z:spot.z,yaw:player.group.rotation.y,walking:true};
     }
+    // The first frame he escorts, he is still out by the boat where the sequence left him. The
+    // straight line from there to your shoulder runs along the deck's outer edge, so he is put
+    // beside you at once instead — on the frame the cutscene ends, with the camera behind you.
+    if(spot&&!mate.escorting)mate.actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
     mate.hidden=false;mate.escorting=true;mate.pace=4.6;
   }
   /**
-   * The letter is taken, so he stops walking with you and says so. His hour at the landing starts
-   * now rather than when the boat tied up — the roster's clock is shifted by however long you
-   * spent on the pier — so a player who dawdled does not watch him jump half a mile up the road.
+   * The npc loop steers him round the traveler's own body, and the pier is three metres wide, so
+   * a sidestep can put him over water. This runs after the loop has moved him: if he is off the
+   * boards, he goes back to the spot escortSpotFor chose, which is proved standable at canStand's
+   * own default radius, the strictest the game uses (tests/opening-sequence.test.js walks the
+   * whole pier at it). He is never left in the sea.
+   */
+  function keepLandingMateOnFooting(){
+    const mate=npcById.get(landingMateId());
+    if(!mate?.escorting)return;
+    const pos=mate.actor.group.position;
+    if(canStand(pos.x,pos.z,world))return;
+    const home=world.npcPositions[mate.id];
+    if(home)pos.set(home.x,world.heightAt(home.x,home.z),home.z);
+  }
+  /**
+   * The letter is taken, so he stops walking with you and says so.
+   *
+   * He can only appear to jump if you kept him past the hour he would have left the landing
+   * anyway: under that, his own clock has not started and he is standing at the landing ring
+   * regardless. So the roster's clock is shifted by the overrun and by nothing else, which keeps
+   * the whole company's timing identical to what it was for any play that does not dawdle.
    * He is not moved: placeMercenaries() gives him the landing ring again and he walks back to it.
    */
   function releaseLandingMate(){
     if(mateReleased)return;
     mateReleased=true;
     const mateId=landingMateId(),mate=npcById.get(mateId);
-    const waited=Math.max(0,playSeconds);
-    roster=roster.map(entry=>entry.id===mateId?Object.freeze({...entry,arrival:entry.arrival+waited}):entry);
-    company=createMercenaryCompany({...companyPlan,roster});
+    const entry=roster.find(man=>man.id===mateId);
+    const overrun=entry?Math.max(0,playSeconds-entry.arrival-entry.departs):0;
+    if(overrun>0){
+      roster=roster.map(man=>man.id===mateId?Object.freeze({...man,arrival:man.arrival+overrun}):man);
+      company=createMercenaryCompany({...companyPlan,roster});
+    }
     if(!mate)return;
     mate.escorting=false;mate.pace=undefined;
     toast('I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.',`${mate.name.toUpperCase()} \u00b7 ON THE LANDING`);
@@ -3044,6 +3069,7 @@ function init() {
             talking:mode==='dialogue'&&activeDialogue?.npc===npc,want:Math.atan2(p.x-pos.x,p.z-pos.z)});
           npc.actor.group.rotation.y=turned.facing;npc.lent=turned.lent;}
       }
+      keepLandingMateOnFooting();
       {// Ed: he goes in a puff if the traveler runs at him or swings at him, and wanders between his haunts.
         const pp=player.group.position,speed=Math.hypot(pp.x-edLast.x,pp.z-edLast.z)/Math.max(dt,1e-3);edLast.x=pp.x;edLast.z=pp.z;
         const home=ed.haunt,near=Math.hypot(home.x-pp.x,home.z-pp.z)<180;
