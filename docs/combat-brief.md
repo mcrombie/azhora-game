@@ -303,5 +303,26 @@ Built modest: a lean-to, a stone forge with its chimney and banked coals, an anv
 the quench barrel, a rack of bar stock, and a hanging board in the sign language of the rest of
 Drent. Review view: `tidehaven-smithy`.
 
-**Still to come:** the smith himself and the buying, which is where `smithStock`, `priceOf` and
-`gear.wear` finally meet the player. The place is built; nobody is standing in it yet.
+### The smith, and the buying — built
+
+He stands at his own forge, looks at the street, and has no name: `src/smith.js`. What he sells is
+a function of **the country he is standing in** and nothing else — `regionLevel` of the region
+under the traveler's feet — so the same man in better country would sell better iron without a
+line of his own. Drent is level 0, so his whole board is three pieces of light wood and bone: a
+cap at 18, a buckler at 26 and a jack at 40, against a starting purse of 24. The first thing on
+the board is affordable off the boat and the last is something to save for, which is what gives
+money something to be for.
+
+Two small decisions worth writing down:
+
+- **The shape is named where the selling happens.** The tier's name is the *material*, and "light
+  wood and bone" is a true description of a cap and a useless name for one. `SLOT_NOUNS` in
+  `src/smith.js` gives the shape — Jack, Cap, Buckler — so `gear.js` keeps saying only what
+  things are made of.
+- **Buying is atomic.** The money moves only if the piece is a thing the game has and the purse
+  covers it, and if the wearing fails the money comes back. Buying for a place already worn
+  replaces it and the toast says what came off. The action names a piece; the host looks it up in
+  *today's* stock rather than trusting the name, so no action can buy something he does not have.
+
+Review view: `tidehaven-smithy` shows the forge, the board, the anvil, the quench barrel and the
+smith watching the road.

@@ -83,3 +83,16 @@ test('the smithy stands on nobody’s footpath', () => {
     return toPath(spot.x, spot.z);
   })) - forge.offPath) < 0.6, 'the constant says what was measured');
 });
+
+test('the smith has ground to stand on at his own forge', () => {
+  // He is placed by the host rather than by regionNpcPositions, so no other test covers his feet.
+  const at = TIDEHAVEN_SMITHY.stand;
+  assert.ok(canStand(at.x, at.z, world), 'the smith stands where the game says he does');
+  // And there is open ground all round him, so nobody is talking to a man wedged in a corner.
+  let open = 0;
+  for (let turn = 0; turn < 16; turn++) {
+    const angle = turn / 16 * Math.PI * 2;
+    if (canStand(at.x + Math.cos(angle) * 1.4, at.z + Math.sin(angle) * 1.4, world)) open++;
+  }
+  assert.ok(open >= 12, `${open} of 16 ways out of the forge yard`);
+});

@@ -65,6 +65,7 @@ import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
+import { SMITH_NPC, smithConversation, buyFromSmith, pieceName } from './smith.js';
 import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
@@ -83,7 +84,7 @@ import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_P
 import { createCombatSkills, familyOf } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
-import { createGear, TIERS, tierSoldAt, WEIGHTS } from './gear.js';
+import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -255,6 +256,8 @@ function init() {
   const aftermathNpcIds=new Set(AFTERMATH_NPCS.map(person=>person.id));
   // The ostler of Lumber Town hands over the army's horse and teaches riding.
   world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
+  // The smith of Tidehaven, at his own forge on the south street (src/smith.js).
+  world.npcPositions[SMITH_NPC.id]={x:TIDEHAVEN_SMITHY.stand.x,z:TIDEHAVEN_SMITHY.stand.z};npcData.push({...SMITH_NPC,yaw:TIDEHAVEN_SMITHY.stand.yaw});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -2002,6 +2005,22 @@ function init() {
     clearTimeout(levelUpTimer);$('level-up').classList.remove('visible','flash');
     modal('journal');journalTab('skills');openSkillId=id;refreshSkillsSheet();return true;
   }
+  /**
+   * Buying a piece of armour. The action carries the piece itself - slot, weight and tier - so
+   * the host never keeps a copy of the smith's stock that could drift from `smithStock`.
+   */
+  function smithAct(action){
+    if(!action.startsWith('smith-buy:'))return {ok:false,reason:''};
+    const [slot,weight,tier]=action.slice(10).split(':');
+    const level=regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0;
+    // Only ever what he actually has today: an action naming anything else buys nothing.
+    const item=smithStock(level).find(one=>one.slot===slot&&one.weight===weight&&one.tier===Number(tier));
+    const bought=buyFromSmith({inventory,gear,item});
+    if(!bought.ok){toast(bought.reason,'THE SMITHY');return bought;}
+    inventory.refresh();audio?.effect('success');
+    const swapped=bought.had?` He takes the old ${pieceName({slot,...bought.had}).toLowerCase()} off your hands.`:'';
+    toast(`${pieceName(item)} \u00b7 ${bought.price} copper. It turns ${Math.round(bought.turns*100)} in a hundred off a blow.${swapped}`,'THE SMITHY');
+    saveRoad(false);return bought;}
   function ridingAct(action){
     const hitch=LUMBER_TOWN_STABLE.hitch;
     if(action==='fetch-horse'){riding.place(hitch,hitch.yaw);placeOwnHorse();toast('A stable boy goes out with a halter. Your horse is back in the yard.','LUMBER TOWN · THE STABLE YARD');saveRoad(false);return {ok:true};}
@@ -3068,6 +3087,8 @@ function init() {
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
+    // What he sells is a function of the country he stands in, so he needs no stock of his own.
+    if(npc.id===SMITH_NPC.id){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
