@@ -77,7 +77,7 @@ export const SUBREGIONS = Object.freeze([
   // Vastos: a plain with nothing built on it charts by its water and its one outcrop of strange rock.
   area('vastos-range', 'The Open Range', 'Vastos', -1560, -400, 120, 'Cold tussock from one horizon to the other, with watering pans strung across it and longhorn cattle standing in them. Nothing here breaks the wind and nothing here casts a shadow.'),
   area('vastos-sulfur', 'The Sulfur Ground', 'Vastos', -1700, -430, 46, 'A crust of pale sinter on the plain’s western fall, a warm pool at its middle, and three vents that have not stopped breathing. The grass stops in a line where the crust starts.'),
-  area('vastos-braids', 'The Braided Reach', 'Vastos', -1599, -46, 70, 'Where the ground goes flat the river stops choosing: three shallow channels round bars of grey gravel, and none of them is the river.'),
+  area('vastos-braids', 'The Braided Reach', 'Vastos', -1539, -106, 70, 'Where the ground goes flat the river stops choosing: three shallow channels round bars of grey gravel, and none of them is the river.'),
   area('vastos-basins', 'The Eastern Basins', 'Vastos', -1330, -300, 100, 'Two small cold lakes on the fall toward the lake country, sedge to the waterline. Everything about them is a rehearsal for Elagos except the size.'),
   // Meneth: a country you chart by which ridge you are on and which valley you are in.
   area('meneth-ridges', 'The Meneth Ridges', 'Meneth', -1870, -240, 100, 'Rounded ridge after rounded ridge, all of them running east and west, with an open valley between each pair. Every one is a climb and none of them needs route-finding, which between the mountains and the lake country is the whole point.'),
@@ -93,7 +93,7 @@ export const SUBREGIONS = Object.freeze([
   area('nesdor-head', 'The Valley Head', 'Nesdor', -1570, 380, 76, 'The last of the branch country: a shallow broad valley with hazel and oak on its slopes and a beck on its floor. South and east of here there are no more valleys, and nobody has ever drawn a line where that starts.'),
   area('nesdor-braids', 'The Braided Water', 'Nesdor', -1660, 660, 96, 'Where the gradient dies the water stops keeping to one channel: three shallow threads side by side round low bars of sand, a different shape after every flood season and never deep enough to matter.'),
   area('nesdor-flats', 'The Nesdor Flats', 'Nesdor', -1420, 730, 120, 'Dark alluvial ground with the relief measured in feet, cattle standing about on it, and an open horizon that goes on being open until it is the Moros. Nothing here breaks the sky.'),
-  area('lizeem-bend', 'The Lizeem Bend', 'Nesdor', -1730, 800, 90, 'Where the great river turns south-east along the foot of the Flats and takes everything off them with it. A hundred paces of deep water; the far bank is another country and there is no way to it here.'),
+  area('lizeem-bend', 'The Lizeem Bend', 'Nesdor', -1630, 740, 90, 'Where the great river turns south-east along the foot of the Flats and takes everything off them with it. A hundred paces of deep water; the far bank is another country and there is no way to it here.'),
   // Peblos: the islands, which are charted from the water as much as from the land.
   area('cobble', 'Cobble', 'Peblos', 336, 432, 45, 'The one village in the Pebbles: a stone quay, drying racks, ten roofs on a shelf of rock, and the Empire’s tally shed.'),
   area('peblos-headland', 'The Cobble Headland', 'Peblos', 402, 366, 42, 'The northern cape of the main island, with the unlit headland light on its crown.'),

@@ -8,7 +8,7 @@
  * Ids: 1 Drent, 2 Luscia, 3 Moros Plain, 4 East Suval.
  */
 export {
-  regions, regionAt, regionNpcPositions, journeySites, regionRepairBenches, regionFirePits, regionLandmarks,
+  regions, regionAt, OPEN_COUNTRY, isOpenCountry, regionNpcPositions, journeySites, regionRepairBenches, regionFirePits, regionLandmarks,
   REGION_IDS, REGION_NAME_BY_ID, ANCHORS, WORLD_BOUNDS, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_GATE, CALOSS_BANK, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING, LUMBER_TOWN, townPoint,
   VILLAGE, villageToWorld, worldToVillage, insideRegion, regionInfo,

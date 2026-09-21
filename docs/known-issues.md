@@ -555,7 +555,7 @@ far side of the plain, so it is not guessed at here.
 `regionNameAt(barrierX ± 3, z)` along the span. In play: cross the plain west from the army camp
 and watch the card change before the fence.
 
-## Half of the walkable west lies outside every region, and the card names it anyway
+## Half of the walkable west lies outside every region, and the card named it anyway (fixed)
 
 Flooding standable ground from Ambron on foot (`canStand`, traveler radius, one-metre cells with
 a midpoint check) across the whole western extent — x −2310 to −1100, z −868 to 2225 — reaches
@@ -620,6 +620,25 @@ they own while the height field, the scatter and `WORLD_BOUNDS` extend to the ma
 
 Which of the three is right depends on whether the map's edge is meant to be walkable at all,
 so it is not guessed at here.
+
+**Resolved, option 3.** `regionAt` no longer guesses: a point whose hex no region owns answers
+`OPEN_COUNTRY` (`src/region-world.js`), a region-shaped sentinel with id 0 and the name
+"Open country", so every one of its twenty-seven readers goes on working and none of them
+borrows a neighbour's name. The region card names it and says OUTSIDE EVERY BORDER THE ATLAS
+DRAWS, the kicker says NO COUNTRY CLAIMS THIS, the minimap carries `open`, the map tutorial's
+first-province check wants an id above nought so that walking off the atlas is not arriving
+somewhere, and the chart of countries (`src/cartography.js`) never records it, because it is not
+a country. Scenery batching keeps its old district for it (`?.id || 1`). The ground itself did
+not change.
+
+Two things the old snapping had been hiding came out with it, both fixed here: the
+`lizeem-bend` named area stood 30 m outside Nesdor with 27% of its disc on owned ground, and
+`vastos-braids` was 55% inside Vastos - both moved to the nearest centre whose whole disc is
+inside its own region, 117 m and 85 m respectively. And West Izol's spawn, which the testing
+panel's "Sail to Izolveth" uses, was five metres off the island's own outline; it is on the
+island now. `tests/map-fog.test.js` checks every named area's centre against its region's outline
+rather than against `regionAt`, and `tests/open-country.test.js` holds the four worst points the
+survey above measured.
 
 **Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
 which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
-import { regions, regionAt, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
+import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
 import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
 import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
@@ -1505,7 +1505,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     if (!object.geometry.attributes.normal) return;
     if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
     batchCenter.copy(object.geometry.boundingSphere.center).applyMatrix4(object.matrixWorld);
-    const district = spatialBatches ? regionAt(batchCenter.x, batchCenter.z)?.id ?? 1 : 1;
+    // Open country has id 0; scenery out there batches with Drent as it always did.
+    const district = spatialBatches ? regionAt(batchCenter.x, batchCenter.z)?.id || 1 : 1;
     if (!batches.has(object.material)) batches.set(object.material, new Map());
     const districtBatches = batches.get(object.material);
     if (!districtBatches.has(district)) districtBatches.set(district, []);
@@ -1618,7 +1619,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     /** Props that belong to a garrison and are out only while their side holds the region (see occupation.js). */
     stakedProps,
     regions,
-    regionAt,
+    regionAt, isOpenCountry,
     journeySites,
     routeJourney: ONWARD_ROAD.map(p => ({ x: p.x, z: p.z })),
     // The branch is walkable only to Elod's shut gate: East Suval is closed (closed-border.js).

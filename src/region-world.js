@@ -601,7 +601,9 @@ const REGION_TEXT = {
       'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
   // West Izol is authored in world metres too (src/izol-world.js); its spawn is the quay a ship puts the traveler ashore on.
-  'West Izol': { subtitle: 'The western half of the island of Izol', spawn: point(56, 1725),
+  // The spawn was five metres off the island's own outline, on a hex West Izol does not own; it
+  // only ever read as West Izol because regionAt snapped unowned ground to its nearest neighbour.
+  'West Izol': { subtitle: 'The western half of the island of Izol', spawn: point(56, 1735),
     description: 'Rock, sea turf and headlands across the Izoli Channel: Izolveth on its river flat with the Coalition\u2019s army camped above it, the fishing cove at Ardveth, and the road inland toward the Three Presences. The confederation has no capital, and says so.',
     palette: { ground: '#7e8b62', accent: '#d8d0ae', fog: '#b4c3c0' },
     npcIds: [], landmarks: [] },
@@ -656,20 +658,33 @@ const regionById = new Map(regions.map(region => [region.id, region]));
 const regionByName = new Map(regions.map(region => [region.name, region]));
 
 /**
- * Which region a world point belongs to, by authored hex. Points beyond every
- * outline (the sea, the neighbouring countries) report the nearest region, so
- * the charts and the traversal always have a district to name.
+ * Ground the atlas does not own. The height field, the scatter and WORLD_BOUNDS run past the
+ * outlines the World Builder drew, and in the west that is the majority of what a traveler can
+ * walk to: 89,584 of 169,541 sampled cells, about 143 hectares, up to a kilometre beyond the
+ * nearest outline (docs/known-issues.md, "Half of the walkable west..."). It used to be given
+ * the nearest region's name, so the card said Nesdor a kilometre south of Nesdor. It is open
+ * country now, and everything that names where you are says that instead of borrowing a name.
+ *
+ * It keeps a region's shape so that every reader of `regionAt` goes on working, and its id is 0,
+ * which no province has.
+ */
+export const OPEN_COUNTRY = Object.freeze({
+  id: 0, name: 'Open country', subtitle: 'Ground no country on the atlas claims',
+  description: 'Country outside every border the atlas draws. Nobody rules it, nobody patrols it, and nothing on your chart is going to tell you where you are.',
+  open: true, biome: null, spawn: null,
+});
+/** True for the sentinel above, and for nothing else. */
+export const isOpenCountry = region => !!region && region.id === 0 && region.open === true;
+
+/**
+ * Which region a world point belongs to, by authored hex. A point whose hex no region owns -
+ * the sea, and the unowned ground past the outlines - is open country rather than the nearest
+ * neighbour's name.
  */
 export function regionAt(x, z) {
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   const home = hexAt(x, z), owner = cellRegion.get(key(home.q, home.r));
-  if (owner) return regionByName.get(owner);
-  let best = regions[0], bestDistance = Infinity;
-  for (const name of REGION_ORDER) for (const cell of REGION_CELLS[name]) {
-    const distance = Math.hypot(cell.x - x, cell.z - z);
-    if (distance < bestDistance) { bestDistance = distance; best = regionByName.get(name); }
-  }
-  return best;
+  return owner ? regionByName.get(owner) : OPEN_COUNTRY;
 }
 export const regionNameAt = (x, z) => regionAt(x, z)?.name ?? null;
 export const regionInfo = id => regionById.get(id) ?? null;

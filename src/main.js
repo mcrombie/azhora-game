@@ -120,6 +120,7 @@ import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog } from './map-fog.js';
+import { isOpenCountry } from './regions.js';
 import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography } from './cartography.js';
 import { regionLevel, levelWords } from './region-levels.js';
 import { buildStatusList } from './build-status.js';
@@ -1446,11 +1447,16 @@ function init() {
   // autosaves, and on the first province beyond Drent starts the map tutorial.
   const regionInfoCache=new Map();
   function regionInfo(name){if(!regionInfoCache.has(name))regionInfoCache.set(name,describeRegion(name)??null);return regionInfoCache.get(name);}
-  function regionKicker(region){const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
+  function regionKicker(region){
+    if(isOpenCountry(region))return 'AZHORA · NO COUNTRY CLAIMS THIS';
+    const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
   function enterRegion(region){
-    const info=regionInfo(region.name);
+    const open=isOpenCountry(region),info=open?null:regionInfo(region.name);
     $('region-card-name').textContent=region.name;$('region-card-subtitle').textContent=region.subtitle||'';
-    $('region-card-detail').textContent=info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
+    // The card gives a country's difficulty in words; the number is the cartography journal's (docs/design-answers.md).
+    $('region-card-detail').textContent=open?'OUTSIDE EVERY BORDER THE ATLAS DRAWS'
+      :levelWords(regionLevel(region.name))?`${levelWords(regionLevel(region.name)).toUpperCase()}${info?` · ${info.faction.name.toUpperCase()}`:''}`
+      :info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
     $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
     if(questStage>=1)saveRoad(false);
     if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
@@ -2343,7 +2349,8 @@ function init() {
     settleCamera();
   }
   /** Where somebody lives, as far as the chart is concerned. */
-  function homeRegion(npc){const at=world.npcPositions[npc?.id];return at?world.regionAt(at.x,at.z)?.name??null:null;}
+  function homeRegion(npc){const at=world.npcPositions[npc?.id],here=at?world.regionAt(at.x,at.z):null;
+    return here&&!isOpenCountry(here)?here.name:null;}
   /**
    * Which way to somewhere. Offered by anybody who lives in a country with countries next to it,
    * once Mara has handed the chart over and while there is still something they can tell you.
@@ -2923,7 +2930,9 @@ function init() {
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing'){
         const p=player.group.position,widened=mapFog.reveal(p.x,p.z);
         // A hex the fog has just given up is a hex of some country, and the chart of countries counts it.
-        if(widened.cells.length)cartography.noteHex(world.regionAt(p.x,p.z)?.name);
+        // Open country is not a country and never goes on the chart of them.
+        const here=world.regionAt(p.x,p.z);
+        if(widened.cells.length&&here&&!isOpenCountry(here))cartography.noteHex(here.name);
       }}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
       // The boat, its man and the crossing: he waits on whichever shore the traveler is on.
