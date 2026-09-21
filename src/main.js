@@ -158,7 +158,8 @@ import { runRoadCheckSmoke, verifyRoadReload } from './road-check-smoke.js';
 import { createRoadLife } from './road-life.js';
 import { createWestLife } from './west-regions-life.js';
 import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
-  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH } from './west-regions.js';
+  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH,
+  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -1349,21 +1350,92 @@ function init() {
       const {sample,spot}=beside(LIZEEM,.42,40);
       return shot(spot,sample,.08,1.5);
     }
+    // Eer, the first of the six south-western countries. Prefixed `south-` on the
+    // brief's naming, and worked out the same way: from the country's own numbers.
+    if(view==='south-eer'){
+      // The line the whole country is: standing on the black loam of the humid half,
+      // looking south-east down the fall, across the change, to the dry grass and the
+      // standing olives beyond it. Aimed above the ground so the horizon is in frame,
+      // because the thing to see here is the colour of the far half.
+      //
+      // The camera stands between the two channels and clear of both — the first take
+      // was nineteen metres off the north one and had a gallery willow filling a third
+      // of the lens. Nearest water from here is forty-five metres.
+      //
+      // It looks from nine metres up rather than from head height, and that is the
+      // second correction rather than a taste: `cameraPullIn` drags a review camera
+      // forward to whatever stands on its line, and on a plain scattered with olives
+      // and cushion scrub something always does — the second take was hauled a hundred
+      // and twenty metres into the dry half and lost the very line it was taking. A
+      // focus above `heightAt + 7` is a focus nothing on the ground can clamp against,
+      // and the whole of both halves is in the frame because of it.
+      //
+      // The distance is fog rather than framing: `FogExp2` at Eer's own .0049 leaves
+      // about half the light at 184 m and a fifth at 250, so a longer look across this
+      // plain would show haze and not a country.
+      return shot({x:-1170,z:1080},{x:-1030,z:1200},.02,9);
+    }
+    if(view==='south-eer-coast'){
+      // The low bays from the grass behind one, out over the water. No cliff and no
+      // beach to speak of: the point of the shot is that the grass gives out and the
+      // sea is there. The dolphins' ground is out past the look.
+      //
+      // **Aimed at the waterline, not at the water.** Two takes aimed out to sea and
+      // both lost it: a focus in the sea sits below sea level, which drags the whole
+      // sight line down until it grazes the last few metres of shore and the sea is
+      // behind the grass. Aiming at the last standable metre instead keeps the line
+      // descending past it, so everything beyond — the bay, the far headlands and the
+      // dolphins' water — falls below it and is in the frame.
+      //
+      // And looking from above the scrub rather than through it. `cameraPullIn` clamps
+      // to whatever stands *nearest the focus*, so on a shore with cushion bushes right
+      // down to the sand it does not nudge the camera, it hauls it to the waterline: one
+      // take of this view came out as nothing but sea and sand. A focus above
+      // `heightAt + 7` cannot be clamped against at all, and from sixteen metres the
+      // shape of the bay is in the frame with the grass and the scrub in front of it,
+      // which is what the lore means by "low headlands and small sheltered bays".
+      return shot({x:-990,z:1176},{x:-900,z:1176},.05,11);
+    }
+    if(view==='south-eer-braids'){
+      // The north channel where the gradient dies: three threads round bars of sand,
+      // from far enough back and high enough up to see all three at once, which is the
+      // same shot the Vastos braid takes and for the same reason.
+      //
+      // It differs from the Vastos one in the look height, and that is not taste: the
+      // Vastos braid has nothing growing anywhere near it, and this one has a gallery
+      // on both banks, so `cameraPullIn` clamped the camera to the first tamarisk and
+      // took the view from twenty-five metres out with a crown across a third of it.
+      // A focus ten metres up is above anything on this plain and cannot be clamped.
+      const braid=WEST_BRAIDS.find(item=>item.id==='eer-north');
+      const {sample,spot}=beside(EER_CHANNELS[0],(braid.from+braid.to)/2,58,-1);
+      return shot(spot,sample,.22,10);
+    }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
-      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird'}[view];
+      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird',
+      'south-egret':'egret','south-stilt':'stilt','south-duck':'duck','south-boar':'boar',
+      'south-gull':'gull','south-dolphin':'dolphin'}[view];
     if(creature){
       const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
-      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4.5:3.2;
+      const close=creature==='longhorn'?6:creature==='boar'?5:creature==='hill-sheep'?4.5:
+        creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?14:3.2;
       // Half these animals live on a riverbank, so the camera has to go round to a
       // side of them there is ground on rather than to a fixed bearing off one shoulder.
+      // A dolphin has no side with ground on it at all: it is looked at from the shore,
+      // which is the only place anybody ever sees one from.
       let from=null;
-      for(let i=0;i<8&&!from;i++){
+      for(let i=0;i<8&&!from&&creature!=='dolphin';i++){
         const a=i/8*Math.PI*2,spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
         if(canStand(spot.x,spot.z,world,.4))from=spot;
       }
+      if(creature==='dolphin'){
+        for(let out=close;out<220&&!from;out+=6){const spot={x:animal.x-out,z:animal.z};
+          if(canStand(spot.x,spot.z,world,.4))from=spot;}
+      }
       from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
-      return shot(from,animal,.07,creature==='longhorn'?1.1:creature==='wading-bird'?.9:.35);
+      const height=creature==='longhorn'?1.1:creature==='wading-bird'||creature==='egret'?.9:
+        creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.4:.35;
+      return shot(from,animal,creature==='dolphin'?.01:.07,height);
     }
     return null;
   }
@@ -5496,10 +5568,12 @@ function init() {
             grounded=true;verticalSpeed=0;settleCamera();
           }
         }
-        // The western regions, for review by eye. The spots are worked out from the
-        // regions' own numbers rather than typed in, so a view cannot drift off the
-        // thing it is meant to show when the ground under it is adjusted.
-        if(view.startsWith('west-')){
+        // The western regions, for review by eye, and the south-western ones on the same
+        // machinery: Eer's ground and animals are built in the same modules, so its views
+        // are worked out by the same function. The spots come from the regions' own numbers
+        // rather than typed in, so a view cannot drift off the thing it is meant to show
+        // when the ground under it is adjusted.
+        if(view.startsWith('west-')||view.startsWith('south-')){
           questStage=10;combat.finishPractice();player.setArmed(true);
           const spot=westReviewSpot(view);
           if(spot){

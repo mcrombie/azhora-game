@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14, Eer: 15 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -207,6 +207,22 @@ export const REGION_TERRAIN = Object.freeze({
   Nesdor: Object.freeze({ base: 9.5, amp: 1.6, wave: 200, ground: REGION_BIOMES.Nesdor.ground, byTerrain: Object.freeze({
     plains: Object.freeze({ base: 7.2, amp: .45, wave: 340, ground: '#aeb075' }),
     forest: Object.freeze({ base: 10.2, amp: 2, wave: 170, ground: '#8d9c63' }),
+  }) }),
+  // Eer is one plain with one line drawn across it, and the atlas draws the line: twelve
+  // `plains` hexes over the north and north-west, thirteen `grassland` hexes over the south
+  // and south-east, and the Köppen field agreeing with the terrain field hex for hex but one
+  // (`Cfa` x 11 against `Csa` x 14; the odd one is the north-east corner on the sea, which is
+  // plains ground under a Mediterranean sky). So the default profile is the humid inland half
+  // and `byTerrain.grassland` is the coastal half, and the ordinary hex blend spreads the fall
+  // between them over a hundred metres without anybody drawing a contour.
+  //
+  // The relief is the quietest in the world after the Moros: this is flatter than Nesdor's
+  // Flats and wetter, and the lore says the ground "rises very gently inland to the north-west
+  // and then simply stops being farmed". 7.4 m on the shoulder is within a metre of both the
+  // countries it runs off — Nesdor's plains at 7.2 and the Moros at 6.4 — so a traveler walking
+  // south off either crosses no step at all.
+  Eer: Object.freeze({ base: 7.4, amp: .8, wave: 300, ground: REGION_BIOMES.Eer.ground, byTerrain: Object.freeze({
+    grassland: Object.freeze({ base: 2.9, amp: .5, wave: 360, ground: '#b2a865' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -683,6 +699,23 @@ const REGION_TEXT = {
     description: 'Where the counted rivers of the branch country give out and the open country begins: shallow broad valleys with hazel and oak on their slopes in the north-west, and east and south of them the Flats — dark alluvial ground, relief measured in feet, shallow water braiding across it toward the Lizeem, cattle on the grass and an open horizon all the way to the Moros.',
     palette: { ground: '#a3a86a', accent: '#ded9a4', fog: '#cbd0b6' },
     npcIds: [], landmarks: ['nesdor-flats', 'nesdor-braids', 'nesdor-head', 'lizeem-bend'] },
+  // Eer is terrain and wildlife only, like the four western regions before it. Everything the
+  // lore of Eer is about belongs to somebody — the villages, the canals and the systems of
+  // drainage, the north road out of Nylon and the eleven occupations that have taxed it — and
+  // none of it is built. Nylon itself is not on the atlas at all: the survey window stops
+  // before it, the way it stops before Minora and the Ibenwood.
+  //
+  // **Eer is the first country in the game with a sky of its own** (src/region-sky.js). It is
+  // the only place a traveler can walk from `Cfa` into `Csa` without crossing a border, and
+  // the horizon is where that is visible: drier air, a paler and bluer background, a warm
+  // haze off the dry coast instead of the lake country's soft green-grey, and a lower density,
+  // because the one thing everybody says about a Mediterranean coast is that you can see a
+  // long way. Three new fields and nothing else: `palette.fog` is the chart legend's colour
+  // and is left exactly as every other region has it.
+  Eer: { subtitle: 'The Lizeem’s last farmland', spawn: point(-1050, 982),
+    description: 'The plain between the great river and the sea, and the place the green country ends: deep black loam and rank damp grass in the north-west, dry tawny grass and aromatic scrub on the Mediterranean coast, and the change happening under your feet in the middle of the country rather than at either border. Two shallow channels braid across it to a low shore of small bays. Wild olives stand singly on the open grass. The Lizeem is the western wall and there is no way over it anywhere.',
+    palette: { ground: '#6d8748', accent: '#ded0a0', fog: '#c4cdb2', sky: 0xbdd8dc, haze: 0xd2d4c2, hazeDensity: .0049 },
+    npcIds: [], landmarks: ['eer-loam', 'eer-braids', 'eer-bays', 'eer-olives', 'lizeem-reach'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

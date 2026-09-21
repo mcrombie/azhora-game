@@ -1,6 +1,18 @@
 /**
- * The four western regions of the playable world — Vastos, Meneth, Caricas and
- * Nesdor — as water, landform parameters and named natural ground.
+ * The western and southern regions of the playable world — Vastos, Meneth,
+ * Caricas, Nesdor and now Eer — as water, landform parameters and named natural
+ * ground.
+ *
+ * Eer is here rather than in a file of its own, and the reason is its water.
+ * Eer's one authored watercourse is the Lizeem's last reach, the Lizeem is built
+ * in this module, and a reach that takes the great river's level over at the
+ * handover has to be able to read it. `west-ground.js` then cuts every channel in
+ * `WEST_RIVERS` in one pass over one bounding box; a parallel southern module
+ * would mean a second box, a second profile table and a second pass at every
+ * point of Azhora, to save a comment. `docs/six-regions-brief.md` predicted
+ * `src/south-regions.js` for all six countries, and the later five will want one —
+ * Nethereum's hollow, the desert's dry channels and waterholes are new machinery.
+ * Eer needs none of it: it is a plain with two becks on it.
  *
  * Pure: no three, no DOM, and no heights. `src/west-ground.js` turns what is
  * described here into the ground the traveler walks on, and
@@ -113,10 +125,23 @@ function joinAtlas(...pieces) {
 }
 /** The part of a chain whose edges still touch `region`, from whichever end it starts on. */
 function chainWithin(key, region) {
-  const { points, edges } = atlasChain(key);
+  const { points } = atlasChain(key);
+  return points.slice(0, chainBreak(key, region) + 1);
+}
+/**
+ * The rest of that chain: from the last edge that touches `region` to the far end.
+ * The two together are the whole chain, and they share the point they meet at, so
+ * a course built on one begins exactly where a course built on the other stops.
+ */
+function chainBeyond(key, region) {
+  const { points } = atlasChain(key);
+  return points.slice(chainBreak(key, region));
+}
+function chainBreak(key, region) {
+  const { edges } = atlasChain(key);
   let last = 0;
   while (last < edges.length && edges[last].regions.includes(region)) last++;
-  return points.slice(0, last + 1);
+  return last;
 }
 
 /**
@@ -135,13 +160,22 @@ function chainWithin(key, region) {
  * `taper` is how many metres of its end a course gives its channel up over: a
  * beck that reaches level ground spreads and sinks, and ending one in a wall of
  * bank would be a lie about what happens to snow water on a flat plain.
+ *
+ * `head` is a water level a course starts at rather than works out for itself, and
+ * `headOf` is the same thing named as another course instead of as a number: the
+ * level that course hands on at, whatever it turns out to be. A river carried on
+ * from one region to the next cannot step up at the handover, and it should not
+ * step down either — the two reaches are one river and the eye reads a centimetre
+ * of waterfall in the middle of it. `west-ground.js` builds the profiles down
+ * `WEST_RIVERS` in order, so a course with `headOf` must come after the one it
+ * names.
  */
-function river(id, name, course, { halfWidth, cut, bed = .55, halfWidthEnd, cutEnd, fordUntil = 1, taper = 0, head = null }) {
+function river(id, name, course, { halfWidth, cut, bed = .55, halfWidthEnd, cutEnd, fordUntil = 1, taper = 0, head = null, headOf = null }) {
   const points = Object.freeze(soften(course).map(p => point(p.x, p.z)));
   const samples = Object.freeze(resample(points, 5).map(sample => Object.freeze(sample)));
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const p of points) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); }
-  return Object.freeze({ id, name, points, samples, halfWidth, cut, bed, taper, fordUntil, head,
+  return Object.freeze({ id, name, points, samples, halfWidth, cut, bed, taper, fordUntil, head, headOf,
     halfWidthEnd: halfWidthEnd ?? halfWidth, cutEnd: cutEnd ?? cut,
     maxHalf: Math.max(halfWidth, halfWidthEnd ?? halfWidth),
     bounds: Object.freeze({ minX, maxX, minZ, maxZ }) });
@@ -401,31 +435,116 @@ export const NESDOR_BECK = river('nesdor-beck', 'The Flats Beck', [
   point(-1530, 546), point(-1538, 600), point(-1556, 650), point(-1580, 694),
 ], { halfWidth: 2.6, halfWidthEnd: 4, cut: 1.3, cutEnd: 1, bed: .45, taper: 60 });
 
+// ---------------------------------------------------------------------------
+// Eer: the Lizeem's last reach, and two channels off it to the sea
+// ---------------------------------------------------------------------------
+/**
+ * The Lizeem below Nesdor. The atlas carries the great river on past the bank the
+ * four western regions were built against: five more edges down the Eer|Gala
+ * border and one on Eer|Northern Ascarth, ending at (-1350, 1213), which on this
+ * map is its mouth — the hexes south-west of that point are unclaimed sea, and the
+ * estuary reaches inland between Gala and Eer.
+ *
+ * It is a **separate course** from `LIZEEM` on purpose, and the reason is the four
+ * regions already built. Lengthening the Lizeem in place would resample and
+ * re-soften its whole polyline, move every point of it by a little, and re-seed
+ * every tree on both banks in Caricas and Nesdor — which is the one thing the
+ * rejoin of its shattered chains was careful not to do. So the reach begins at the
+ * exact point the Lizeem stops (`chainBeyond` and `chainWithin` share that corner)
+ * and takes the water over at the level the Lizeem hands it on at (`headOf`),
+ * which is what the Ela-South Reach does where the atlas hands Elagos's drainage
+ * into Nesdor. Two courses, one river, one water level.
+ *
+ * Wider and less deeply cut than the channel above it: a river at its mouth
+ * spreads and stops digging. Still `fordUntil: 0` — the Lizeem is the wall that
+ * puts Gala on the far bank, and the lore of Eer says so in as many words: "it
+ * cannot be crossed anywhere along the Eer bank".
+ */
+export const LIZEEM_REACH = river('lizeem-reach', 'The Lizeem',
+  chainBeyond('Eer,Gala,Nesdor,Northern Ascarth', 'Nesdor'),
+  { halfWidth: 15, halfWidthEnd: 19, cut: 3.4, cutEnd: 1.9, bed: 2.2, fordUntil: 0, headOf: 'lizeem' });
+
+/**
+ * Eer's own water. The atlas draws none inside the region — every river edge it
+ * has is the Lizeem on its western border — so these two are derived, and they are
+ * derived from the ground rather than from the lore's canals, which are dug and
+ * are therefore somebody's.
+ *
+ * The lore calls what is here "the Lizeem's northern distributaries", and that is
+ * nearly what these are: both rise on the loam within a couple of hundred metres
+ * of the great river's Eer bank and run south-east across the plain to the sea.
+ * Nearly, and not exactly, and the difference is worth writing down — a true
+ * distributary leaves its parent at the parent's own level, and the Lizeem here is
+ * cut three metres into its bed, so nothing climbs out of it. What an alluvial
+ * plain beside a river like that actually carries is its own drainage, running the
+ * same way for the same reason, and that is what is built.
+ *
+ * Where they go is the atlas's. Eer's `plains` hexes are its north and north-west
+ * and its `grassland` hexes its south and south-east, and the region falls the
+ * same way, from the shoulder it shares with Nesdor and the Moros down to a coast
+ * on two sides. So the north channel crosses to the eastern shore and the south
+ * one runs down the narrowing tongue to the southern one, and both cross the line
+ * where `Cfa` becomes `Csa` — which is why alder and willow stand on their upper
+ * halves and tamarisk and oleander on their lower ones.
+ *
+ * Shallow, slow, and braiding over their last two-fifths, which is what the Flats
+ * one region upstream already do and for the same reason: more bed than water.
+ *
+ * **Neither is named.** The lore names no river in Eer and the atlas draws none,
+ * and Eer's own naming habit is explicitly descriptive rather than commemorative
+ * ("A village called Long-Drainage or Red-Clay has a name that tells you something
+ * useful about the place"), so an invented name would be an invention in a
+ * register the lore is careful about. They are the north and south channels until
+ * the user says otherwise.
+ */
+export const EER_CHANNELS = Object.freeze([
+  river('eer-channel-north', 'The north channel', [
+    point(-1430, 985), point(-1350, 1002), point(-1265, 1018), point(-1175, 1034),
+    point(-1080, 1050), point(-985, 1064), point(-898, 1078), point(-862, 1084),
+  ], { halfWidth: 3, halfWidthEnd: 5.2, cut: 1.4, cutEnd: .9, bed: .5 }),
+  river('eer-channel-south', 'The south channel', [
+    point(-1300, 1020), point(-1262, 1078), point(-1216, 1136), point(-1152, 1192),
+    point(-1075, 1244), point(-990, 1290), point(-946, 1338), point(-928, 1376),
+  ], { halfWidth: 2.6, halfWidthEnd: 4.6, cut: 1.3, cutEnd: .85, bed: .45 }),
+]);
+
 /**
  * The braided reaches. A braid is what a river does when it has more bed than
- * water, and the Flats give both of these more bed than they know what to do
+ * water, and the Flats give both of theirs more bed than they know what to do
  * with: the last two-fifths of each one runs as three channels round bars of
- * sand rather than as one.
+ * sand rather than as one. Eer's two do the same, one region further down the
+ * same river and on ground flatter still.
+ *
+ * Order is load-bearing in one place only: `WEST_BRAIDS[1]` is the Ela-South's,
+ * which `WEST_REGION_LANDMARKS` names below, so new braids go on the end.
  */
 export const WEST_BRAIDS = Object.freeze([
   Object.freeze({ id: 'vastos', course: VASTOS_RIVER, ...VASTOS_BRAID, lift: .18 }),
   Object.freeze({ id: 'ela-south', course: ELA_SOUTH_REACH, from: .42, to: .94, offset: 21, half: 2.6, cut: .9, lift: .16 }),
   Object.freeze({ id: 'nesdor-beck', course: NESDOR_BECK, from: .46, to: .92, offset: 16, half: 1.9, cut: .75, lift: .14 }),
+  Object.freeze({ id: 'eer-north', course: EER_CHANNELS[0], from: .58, to: .96, offset: 15, half: 1.8, cut: .7, lift: .13 }),
+  Object.freeze({ id: 'eer-south', course: EER_CHANNELS[1], from: .60, to: .95, offset: 13, half: 1.6, cut: .65, lift: .12 }),
 ]);
 
 // ---------------------------------------------------------------------------
 // Every piece of western water, and the questions the rest of the game asks of it
 // ---------------------------------------------------------------------------
+/**
+ * Order matters in one way: a course that takes its level from another (`headOf`)
+ * must come after the course it takes it from, because `west-ground.js` builds the
+ * profiles down this list and reads the earlier one's last sample. The Lizeem's
+ * reach is therefore after the Lizeem.
+ */
 export const WEST_RIVERS = Object.freeze([VASTOS_RIVER, VASTOS_BECK, ...MENETH_BECKS, LIZEEM, CARICA,
-  ELA_SOUTH_REACH, NESDOR_BECK]);
+  ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS]);
 /** Standing water: pans, basins and the warm pool, as circles with their own depth. */
 export const WEST_POOLS = Object.freeze([
   ...VASTOS_PANS, ...VASTOS_BASINS,
   Object.freeze({ id: 'sulfur-pool', ...VASTOS_SINTER.pool, depth: VASTOS_SINTER.pool.depth }),
 ]);
 
-/** The four western regions, in the order they were built. */
-export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor']);
+/** The regions this module shapes, in the order they were built. */
+export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer']);
 
 const boxOf = () => ({ minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
 const grow = (box, x, z, reach) => {
@@ -600,6 +719,16 @@ export const WEST_REGION_LANDMARKS = Object.freeze([
     description: 'The rough, dry upland the Carica comes off: fifteen metres above the corridor, stony, thin in the soil, and holding no water at all. Everything that makes the valley below it worth having drains off this.' }),
   Object.freeze({ id: 'vastos-beck', name: 'The Snowmelt Beck', ...midpointIn(VASTOS_BECK, 'Vastos'),
     description: 'Snow water off the high ground on the plain’s north-eastern margin, running hard for a few hundred metres and then giving up: the bank flattens, the channel spreads, and the beck is simply gone into the grass.' }),
+  Object.freeze({ id: 'eer-loam', name: 'The Black Loam', x: -1250, z: 1000,
+    description: 'The heavy ground of the inland half: alluvium the great river has been laying down here for longer than anybody has been counting, black to the depth of a spade and holding water the whole year. The grass on it stands to the knee and is the greenest thing in this quarter of the continent. It is also why everybody who has ever wanted this country has wanted it.' }),
+  Object.freeze({ id: 'eer-braids', name: 'The Braided Channels', ...braidMiddle(EER_CHANNELS[0], WEST_BRAIDS[3]),
+    description: 'Where the last of the gradient goes the channel stops keeping to itself: three shallow threads side by side round low bars of sand, herons standing in all of them, and the sea near enough that the water in the bed rises and falls without any rain having fallen.' }),
+  Object.freeze({ id: 'eer-bays', name: 'The Low Bays', x: -930, z: 1270,
+    description: 'The coast of Eer, which the lore of the Iberos calls "a series of low headlands and small sheltered bays, none large enough to be major harbors". No cliff and no beach worth the name: the grass goes tawny, thins, gives out, and the water is there. The surf reaches a long way in at the head of each bay.' }),
+  Object.freeze({ id: 'eer-olives', name: 'The Standing Olives', x: -1080, z: 1170,
+    description: 'Wild olive and holm oak on the open grass, singly and in twos, never near enough to touch. Nobody planted them and nobody has cut them; on a plain this flat one tree standing alone is what tells a traveler from a long way off that the weather has changed under him.' }),
+  Object.freeze({ id: 'lizeem-reach', name: 'The Lower Lizeem', ...midpointIn(LIZEEM_REACH, 'Eer'),
+    description: 'The last reach of the great river, wide and slow and going grey with what it is carrying. Gala is on the far bank and there is no way to it: not here, not anywhere along this side. Below the last bend the water spreads into the estuary and stops being a river.' }),
 ]);
 
 export { point as westPoint, resample as westResample, soften as westSoften, river as westRiver, atlasCourse };
