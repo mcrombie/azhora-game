@@ -64,24 +64,24 @@ const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 
 const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 324]]
   .map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; });
 
-/** The encounter for a side: eight of the other side's soldiers in three waves, and the allies who stand with the traveler. */
 /**
- * **A hold, to be lifted.** Combat phase 2 gives every fight the level of the country it happens
- * in, and the set-piece battles with armies in them stand on ground of level 1 and 2 - so they
- * would be harder than they were tuned for, by a traveler who has no armour and no company yet
- * because phase 3 and companions are not built. The design closes that gap with gear and with who
- * walks beside you; until both exist these fights are authored at the level they were balanced
- * at, and say so.
+ * The encounter for a side: eight of the other side's soldiers in three waves, and the allies who
+ * stand with the traveler.
  *
- * **Lift this when phase 3 (tiers and armour) and companions are in**, and let them take their
- * country's level like everything else. Nothing in `ARMS` or in the difficulty ladder is bent to
- * make this work: it is one number on a handful of authored encounters, and it is temporary.
+ * **The hold is lifted** (the user, 2026-09-21: "Lift it to level 2"). These battles carried
+ * `HELD_AT_TUNED_LEVEL = 0` while phase 3 and companions were unbuilt, because a traveler with no
+ * armour and nobody beside him would have met them at their country's level and lost. Both are
+ * built now, so the field is gone and this fight takes the level of the ground it is fought on
+ * like every other fight in the game - which for the stockade is the Moros Plain, and **level 2**,
+ * measured on the built world rather than assumed.
+ *
+ * What that is, driven: alone or with three it cannot be won; with six it is won every time in
+ * about eighteen seconds at seventy-two per cent health, which is the climax the chapter was
+ * written for (docs/known-issues.md).
  */
-export const HELD_AT_TUNED_LEVEL = 0;
-
 export function borderEncounter(side, allies = []) {
   const foe = side === 'empire' ? 'coalition' : 'legion';
-  return { id: BORDER_ENCOUNTER_ID, level: HELD_AT_TUNED_LEVEL, center: { ...BORDER_ARENA.center }, checkpoint: { ...BORDER_ARENA.checkpoint },
+  return { id: BORDER_ENCOUNTER_ID, center: { ...BORDER_ARENA.center }, checkpoint: { ...BORDER_ARENA.checkpoint },
     retreatAxis: BORDER_ARENA.retreatAxis, retreatLine: BORDER_ARENA.retreatLine,
     enemies: ENEMY_SPOTS.map(([x, z, entry], index) => ({ id: `border-foe-${index + 1}`, x, z, entry, hp: SOLDIER_HP, kind: 'soldier', look: foe })),
     allies: allies.slice(0, ALLY_SPOTS.length).map((ally, index) => ({ ...ally, x: ALLY_SPOTS[index][0], z: ALLY_SPOTS[index][1] })) };

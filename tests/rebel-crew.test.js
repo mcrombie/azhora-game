@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { REBEL_CREW, CREW_IDS, DECK_Y, DROP_RAIL, crewPose, CREW_ALWAYS_IN_FULL } from '../src/rebel-crew.js';
+import { REBEL_CREW, CREW_IDS, DECK_Y, POOP_Y, overTheHouse, DROP_RAIL, crewPose, CREW_ALWAYS_IN_FULL } from '../src/rebel-crew.js';
 import { shipAt, WORD_SHIP, WORD_TRACK, WORD_BEACH } from '../src/word-arrival.js';
-import { HULL } from '../src/salt-sultan.js';
+import { HULL, REBEL_STERN_HOUSE } from '../src/salt-sultan.js';
 import { alwaysInFull, figureDetail } from '../src/figure-lod.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -37,6 +37,25 @@ test('every one of them is on her deck, inside her bulwarks', () => {
     assert.ok(Math.abs(man.z) < L * .86, `${man.id} is off her bow or her stern (${man.z.toFixed(2)} of ${L.toFixed(2)})`);
   }
   assert.equal(DECK_Y, 1.16, 'the deck is where salt-ship.js lays it');
+  // **And against what stands ON the deck, not only against her sides.** This test checked the
+  // bulwarks - a flat beam-and-length box - and could not see her stern house, so the helmsman
+  // stood inside it with the roof cutting him off at the chest and everything here passed.
+  const house = REBEL_STERN_HOUSE;
+  for (const man of REBEL_CREW) {
+    if (overTheHouse(man.x, man.z)) {
+      assert.equal(man.y, POOP_Y, `${man.id} is over her stern house, so he stands on it`);
+      assert.ok(POOP_Y > house.top, 'and the poop is above the house, not inside it');
+    } else {
+      assert.equal(man.y, DECK_Y, `${man.id} is on her deck`);
+      // Clear of the house by a body's width, so nobody is leaning on its side either.
+      const off = Math.max(Math.abs(man.x - house.x) - house.roofWidth, Math.abs(man.z - house.z) - house.roofLength);
+      assert.ok(off > .3, `${man.id} stands ${off.toFixed(2)} m clear of her stern house`);
+    }
+  }
+  assert.equal(REBEL_CREW.filter(man => overTheHouse(man.x, man.z)).length, 1, 'one man is up there, and he is the one at the tiller');
+  assert.equal(REBEL_CREW.find(man => overTheHouse(man.x, man.z)).station, 'tiller');
+  // The house itself did not move, and was not lowered or shortened to make room for him.
+  assert.deepEqual([house.y, house.height, house.roofY, house.roofThick], [1.68, .95, 2.2, .1]);
   // One at the tiller, two at the rail, one at the sail.
   const by = station => REBEL_CREW.filter(man => man.station === station);
   assert.equal(by('tiller').length, 1);
@@ -167,4 +186,18 @@ test('the whole deck rides her own clock, so a reload mid-arrival is the same pi
   // The rail men's lean is the one part that was always right: it comes off the ship's own pose.
   const rail = REBEL_CREW.find(man => man.station === 'rail');
   assert.equal(crewPose(rail, pose, at).lean, crewPose(rail, pose, at + 904).lean, 'the lean was never on the session clock');
+});
+
+test('the hull is built from the same stern house the crew stand on', () => {
+  // One description of her stern, read by the model, by the man who stands on it and by this
+  // test - rather than three copies of the same numbers in three files.
+  const ship = source('salt-ship.js');
+  assert.match(ship, /REBEL_STERN_HOUSE as HOUSE/, 'the model reads it');
+  assert.match(ship, /rebel \? HOUSE\.y : 1\.85/, 'for the house');
+  assert.match(ship, /rebel \? HOUSE\.roofY : 2\.54/, 'and for the tarpaulin over it');
+  // A man's feet are his own, and only the helmsman's are not on the deck.
+  assert.match(ship, /actor\.group\.position\.set\(man\.x, man\.y \?\? DECK_Y, man\.z\)/, 'he is stood where his own row says');
+  assert.match(ship, /hand\.actor\.group\.position\.y = \(hand\.man\.y \?\? DECK_Y\) \+ stance\.lift/, 'and the pose lifts him from there');
+  // The Sultana is untouched: her cabin and her dome are where they were.
+  assert.match(ship, /1\.85/); assert.match(ship, /2\.54/);
 });

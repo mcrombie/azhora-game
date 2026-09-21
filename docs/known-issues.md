@@ -2597,3 +2597,324 @@ branch did.
 **The lesson, since both are the same one:** an assertion that pins a key's *position* in an object
 literal is an assertion about something nobody promised. Both of these went red on work that did
 exactly what it was supposed to do.
+
+
+---
+
+## Round 2: the four rulings, built
+
+### 1. Men yield to horses — fixed
+
+The file's footing test was the static world, and a picketed horse and the traveler's own bay are
+*bodies*, not colliders, so the two layouts were blind to each other. The ruling: the horses are
+laid first, because a picketed horse's place is a function of the traveler's own horse, which the
+save carries, while a man's place is recomputed every frame.
+
+**What was built.** One function, `companyHorseGround()` in `src/main.js`, answers with the rule,
+the picket line and **the bodies a man must not be given** — the traveler's bay while he is off
+it, and every horse standing on the picket. `placeMercenaries` seeds `fileTaken` from it before
+the first man is placed, and `refreshCompanyHorses` reads the same function to draw them. It is
+**computed by both, not stashed by one for the other**, so the two halves of a frame cannot fall
+out of step and every snapping path — `settleMercenaries`, a load, a story start, every review
+view — gets it for nothing.
+
+`fileSpotFor` (`src/company-horses.js`) and the per-man fallback ring now honour **a room on the
+entry**: `Number.isFinite(other.room) ? other.room : room`. A man needs `BODY.person + BODY.horse`
+= 0.80 m from a horse's centre and `BODY.person * 2` = 0.68 from another man, and a ridden horse
+is no obstacle at all because its man already is, at a rider's own footprint.
+
+**Measured on the real world, ten men and ten picketed horses, over all 48 facings:**
+
+| | men given a place inside a horse | left without ground | worst span |
+|---|---|---|---|
+| the yard, file blind to them | **4** | 0 | 54.5 m |
+| the yard, file yielding | **0** | 0 | 54.5 m |
+| the open road, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
+| Lumber Town square, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
+
+**It costs nothing.** Not one man loses his ground and the file trails no further, which is the
+column that would have said the repair was too expensive. In the picket review's own geometry the
+nearest man to a horse goes from **0.63 m to 1.26 m**. `tests/company-file.test.js` holds all
+three claims — nobody inside a horse, nothing lost by yielding, and the host's own wiring — with
+the blind file kept as the control, so the test fails if the fault is ever put back.
+
+**And the probe fault is mended where it shipped.** `tests/company-horses.test.js`'s flood seeded
+its grid at `round(span / step) * step` from the origin, which with span 29 and step 0.4 is 0.2 m
+from the point it had just tested. On its flat synthetic ground every cell is open and it could
+not matter; on the real world the same arithmetic reported two starts at Bede Harrow's yard sealed
+that were nothing of the kind. The grid is aligned to its own start now.
+
+### 2. The helmsman stands on the house — fixed
+
+He was inside her stern deckhouse with the roof cutting him off at the chest. The house is not
+moved, lowered or shortened: **her stern house is his steering platform**, which is what a low
+poop is.
+
+The numbers are now one description, `REBEL_STERN_HOUSE` in `src/salt-sultan.js`, beside the hull
+— because a thing that stands on her deck is something anybody standing on her deck has to know
+about. `src/salt-ship.js` builds the house from it, `src/rebel-crew.js` exports `POOP_Y` (2.25, the
+top of the tarpaulin) and `overTheHouse(x, z)`, and a man's row carries his own `y`, which is
+`DECK_Y` for the four on the deck and `POOP_Y` for the one at the tiller.
+
+`tests/rebel-crew.test.js` now checks every man **against what stands on the deck and not only
+against her bulwarks** — which is what let this pass: a beam-and-length box cannot see a
+deckhouse. Each man is either over the house with his feet on it, or on the deck and at least
+0.3 m clear of its sides; exactly one is up there and he is the one at the tiller; and the house's
+own four numbers are pinned so nobody makes room for him by shrinking it.
+
+**Looked at.** `--review-views=word-crew`: he reads whole, above the house, aft, at the tiller.
+
+### 3. The dead man's clock, in the company's own ground — fixed
+
+`createMercenaryCompany` takes `dead` the same way it takes `companions`, and for the same reason:
+a companion's death is permanent and the clock had no other way to learn of one.
+
+- **A dead man has no placement at all.** `placements()` returns the list with his hole closed and
+  **nothing else moved** — the roster index is still his, so nobody's formation shifts when he
+  falls.
+- `summary()` therefore counts him under nothing, `arrived` is the living less those still coming,
+  and there is a `dead` count for anybody who wants it.
+- `travelerRank` never has him ahead of the traveler, because he is not in the list it filters.
+- `companionId` / `companionIds` drop him too, so the file and the horses hung off it answer for
+  themselves whatever list still names him.
+- `musteredInCamp()` in the host is now **`company.summary(playSeconds).mustered`**: the host asks
+  instead of subtracting.
+
+**Undefined or empty is today's clock to the digit**, which is the rule every addition to that
+module has kept: with no dead the mapped array is handed back untouched, and
+`tests/death-lifecycle.test.js` drives `undefined`, `[]`, `null` and rubbish against a company
+built without the argument at seven moments of the clock, on `placements`, `summary`,
+`travelerRank` and `companionIds`.
+
+**Two places that indexed `placements()` by row**, and would have handed a man his neighbour's
+place the moment the list had a hole in it, are by name now: the figures built at the first frame
+(`src/main.js:381`) and the character swap (`:668`). Neither could be reached with a dead man
+today; the invariant is cheaper to keep than to remember.
+
+**And a dead man is put out of the world.** He has no placement, so the loop that used to hide him
+every frame never reaches him again — he would have gone on doing whatever he was doing the frame
+he fell. `placeMercenaries` sets `fallen` and `hidden` over the company's dead before it places
+anybody, which is the same pair of flags the Greenway raid sets over a villager it kills.
+
+### 4. The normal-mode pass
+
+**Swept:** speech and the aside, signs, the phrasebook, Chris's five sittings, the skill tile and
+what a character lands knowing, the journal, the character sheet, and every string in `src/`
+matching *interpret*, *phrasebook*, *tongue*, *cannot follow*, *does not speak*.
+
+**Every surface is shut, and each by its own gate.** The speech panel returns the authored line
+and clears the aside **before** anything is heard into a tongue, so nothing is even paid for;
+`setSignReader` is called only under the gate, and with no reader `signText` answers the label
+itself, for every word the atlas carries; Wendel's stock drops the phrasebook and his opening line
+is the one that does not mention one; the drill choice is not offered; the linguist's experience
+and Chris's starting tongues are both behind the gate, and the character sheet is handed the
+hidden list so nobody reads a Linguist level off it. Driven and pinned in
+`tests/game-mode.test.js` and `tests/signs.test.js` — the sign test sets a reader who has no
+tongues and watches the foreign boards come back, so the English one is the gate working and not
+the atlas being English anyway.
+
+**Rendered with the interface showing** (no `--review-clean`): `road-dialogue` and
+`waymarker-before`. Corvan's four lines, the quest panel, the region card, the two toasts and the
+key strip are all plain English, and there is no aside.
+
+**One line fixed, because it is unambiguous.** `src/journey-content.js:105` — Corvan's first
+line began *"the letter of introduction?"*, lower case, and reads on screen as a fragment with its
+opening words missing. Capitalised, and nothing else about it touched.
+
+**Reported, not fixed:**
+
+- **The lettering atlas still carries every foreign word in normal mode.** `FOREIGN_SIGN_LABELS`
+  is computed at module load in `src/signs.js`, with no mode in sight, and `SIGN_LABELS` is both
+  sets. Nothing can show them — `signText` answers the plain label with no reader — so this is
+  cost and not copy: the atlas is taller than a normal-mode game needs. **The sign atlas is
+  another agent's ground**, so it is written down here.
+- **Two lines gloss a place name with "in your tongue"** — `src/wine-attic.js:121` ("Tharganhom.
+  The Wine Attic, in your tongue.") and `src/wine.js:226` ("This is Paradise Springs. In your
+  tongue, …"). Left alone on purpose: a foreign *name* having a meaning is true in both modes,
+  and these are about a name and not about what the speaker is speaking. Worth a glance from
+  whoever owns the copy.
+- **`longRoad.view().finished` can never be true in normal mode**, because it wants five drills
+  and the drills are hard mode's. Checked every reader: nothing reads it, so nothing is blocked.
+  It is written down so that whoever gives it a reader knows.
+
+
+---
+
+## The ten-man mounted file, rendered at last — and what the render found
+
+There was no view of the thing the arithmetic says is sixty metres long: `company-mounted` and
+`company-picket` are about the yard and carry three men on purpose. `company-ten` is the whole
+company, mounted, on the road out of Lumber Town.
+
+### The first shot found a rider under the traveler's horse
+
+The camera was buried in the town and the picture was of empty ground, so the facts line answered
+instead of another guess. It said the file had formed — ten up, ten ridden — and it said this:
+
+| | back from the traveler's horse |
+|---|---|
+| Chris | 4.7 m |
+| **Ciarán** | **1.9 m** |
+| Ed | 10.7 m |
+| … | … |
+| Mus | **97.5 m** |
+
+**1.9 m between two mounted men**, where `RIDE_FILE.room` is 2.6 because "a horse is about 2.4 m
+nose to tail". His own file spot did not stand, so he fell back on the escort ring — and the ring
+is a list of close-in offsets measured from the traveler, with nothing to stop it putting a man on
+top of him. **`fileTaken` never contained the traveler.** It is exactly the class the horses' fix
+had just closed, one body further in: `fileSpotFor` measures *back* from him and so can never be
+handed his ground, and that is precisely why nobody had ever had to put him in the list.
+
+**Fixed:** `placeMercenaries` pushes the traveler into `fileTaken` with a rider's room when he is
+mounted and a man's when he is not. It bites only on the fallback path, which is where it was
+wrong.
+
+**And 97.5 m is the retreat's own ceiling** (`shoulder + (9 + FILE_RETREAT) * stride` = 97.2, plus
+the seat offset). Beside a town the shoulder spots fail all the way down the file, so it goes
+single and trails to the end of its rope. Not a fault — that is what "single and long" is for —
+but it is what a company looks like if the traveler stops his horse in a street.
+
+### The second shot, two waypoints out of the gate
+
+| | |
+|---|---|
+| riders up, on their own horses | **10 of 10** |
+| closest pair, the traveler counted | **4.69 m** (room is 2.6) |
+| file length | **60.2 m** |
+| spacing, man to man | 6.2 m, every one of them |
+| camera, stood back | the full 48 m asked for |
+
+**60.2 m against the arithmetic's 60.0** (`shoulder 4.2 + 9 x stride 6.2`), with **no retreat at
+all**: on open ground every man takes his own place at his own shoulder. Looked at, it is eleven
+riders in a single even file coming out through Lumber Town's gate, each on his own coat. That is
+the picture `docs/companions.md` describes, and it had never been seen.
+
+
+---
+
+## The hold, lifted — and what the day after is with a company
+
+The user's ruling: **"Lift it to level 2."** The measuring came first, because the constant also
+held the four day-after fights (`src/aftermath-chapter.js`) and nobody had ever run one with a
+company.
+
+### Two faults in my own harness, found before any number was believed
+
+**One: `attack` takes a yaw and `dodge` takes a point.** Called with neither they answer false for
+ever. The first run of the harness reported **nought swings in every row** and four tidy columns
+that looked like a measurement. Nothing in the output said "broken"; the tell was that the player
+never swung and every fight ended the same way.
+
+**Two, and worse, because it would have survived:** `startEncounter` asks the host's `getLevel`
+**only when the encounter authored no level of its own**, and both builders authored
+`level: HELD_AT_TUNED_LEVEL`. A harness that set `getLevel` and left the field alone measured the
+held fight twice and called one of them level 2 — and it printed **byte-identical rows for level 0
+and level 2**, which is the only reason it was caught. The lift is deleting the field, not setting
+it to 0; `level: 0` is the hold under another name.
+
+### The table, at last
+
+The traveler as the arc leaves him (Blades 17, Toughness 12), the side's own four soldiers, 40
+seeds a row, companions at their `MERCENARY_ARMS` numbers. **"Sitting still"** is the same fight
+with the player never swinging — he still closes and dodges.
+
+| fight | level | company | won | health | down | secs | companions dead | sitting still |
+|---|---|---|---|---|---|---|---|---|
+| the border battle | 0 (held) | 0 | 0/40 | — | 6/8 | 15.5 | 0 | 0/40 |
+| | 0 | 3 | **40/40** | 82 | 8/8 | 13.0 | 0 | 0/40 |
+| | 0 | 6 | 40/40 | 82 | 8/8 | 9.8 | 0 | **40/40** |
+| | 0 | 10 | 40/40 | 82 | 8/8 | 8.0 | 0 | 40/40 |
+| **the border battle** | **2** | 0 | **0/40** | — | 2/8 | 8.2 | 0 | 0/40 |
+| | 2 | 3 | **0/40** | — | 3/8 | 10.2 | 0 | 0/40 |
+| | **2** | **6** | **40/40** | **72** | 8/8 | **17.8** | 0 | 40/40 |
+| | 2 | 10 | 40/40 | 72 | 8/8 | 14.3 | 0 | 40/40 |
+
+And the four day-after variants, every one of them level 2 ground (`West Suval` and the
+`Moros Plain`), all four behaving alike:
+
+| | 0 | 3 | 6 | 10 |
+|---|---|---|---|---|
+| held at 0 | 0/40 | 40/40 in 11.3 s | 40/40 in 8.9 s | 40/40 in 7.1 s |
+| **at level 2** | **0/40**, 2 of 7 down | **0/40**, 3 of 7 down | **40/40**, 72 % health, 15.7 s | 40/40, 72 %, 12.6 s |
+
+**Every variant is fair with six**, so the constant is deleted and both take their country's level.
+**The border stockade's ground is the Moros Plain, level 2 — measured on the built world**
+(`regionAt(-690.6, 527.2)`), not assumed, so no explicit 2 is needed anywhere.
+
+**What the lift buys:** at level 2 the fight cannot be won alone or with three, and with six it is
+won at 72 % health over about eighteen seconds — the longest row in the table. Held at 0 it was
+won with **three**, at 82 % health, in thirteen seconds.
+
+### Two things to read the table with, and one I could not reproduce
+
+- **The absolute win counts are this harness's, not the last round's.** This driver closes to
+  1.5 m, dodges a tell it has seen past a per-seed reaction of 0.18–0.40 s, and swings when idle;
+  the round-one driver closed in single file with perfect facing. A lone traveler wins 20/40 at
+  level 0 under that one and 0/40 under this one. **Read the comparisons between rows, never the
+  absolute numbers across rounds.**
+- **No companion dies in any row**, where round one measured 2.0 at level 2 with six. A companion's
+  health is `maxHealth(toughness)` — 159 to 197 for these men against a legionary's 90 — and ten
+  allies spread eight soldiers' attention. Which of the two drivers is right about deaths is not
+  settled here, and the honest thing to say is that **this round found none and the last found
+  two**.
+- **"Sitting still" wins at six**, which round one did not find. Same caveat: a passenger who dodges
+  as reliably as this one does is a weak control. The row that matters is unchanged either way —
+  three is a wall, six is the fight.
+
+---
+
+## Weapon feel: it is the traveler's alone, and Matt's pike can never refuse him
+
+`weapons.profile()` was dropping `tempo`, `arc`, `room`, `locked` and `thrust` until `7e5b5b8`, so
+phase 5 was true of the module and of nothing anybody held. What moved, driven:
+
+| fight | weapon | now | before the fix |
+|---|---|---|---|
+| the wolves at the Lauvel | **sword** | 40/40, 100 %, 3.1 s, 6 swings | **identical** |
+| | war pike | 40/40, 87 %, 4.4 s | 40/40, 100 %, 3.1 s |
+| | iron mace | 40/40, 87 %, 4.7 s | 40/40, 100 %, 3.1 s |
+| | forest stick | 40/40, 100 %, 3.5 s | 40/40, 87 %, 6.8 s |
+| the border battle | **sword** | 9.3 s, 11 swings | **identical** |
+| | war pike | 10.6 s, 12 swings | 9.3 s, 11 swings |
+| | forest stick | 14.3 s, 28 swings | 9.3 s, 11 swings |
+| Mallec at the pass stones | **sword** | **identical** | |
+
+**The sword is unchanged to the digit in every authored fight**, which is what makes the fix
+invisible to the arc as it stands. Everything else moved, in the direction its row in
+`WEAPON_TYPES` says: the stick is quick and the pike and the mace are slow.
+
+### Allies' weapons take no road at all
+
+**Asked before any number was trusted, and then driven.** An ally's numbers come entirely from
+`ALLY_KINDS[kind]` plus `allyDamageScale(level)` and `maxHealth(toughness)`. `companionAllies`
+(`src/main.js`) hands `combat` a `kind`, a `level`, a `toughness`, a point and a `model` — and
+`model.look.weapon` is what the renderer draws. `updateAlly` uses a hard-coded `Math.PI * .3` for
+its arc; there is no `tempo`, no `locked`, no `thrust` and **no `room`** anywhere on that path.
+`roomToSwing` reads `position`, which is **the traveler's**, and its one call site is inside the
+player's `beginAttack`.
+
+So: **Matt cannot refuse to swing, ever, in any arena.** Driven, three polearm men (Matt's pike,
+Ciarán's spear, Mus's spears) as allies:
+
+| | ally hits | `no-room` refusals | won |
+|---|---|---|---|
+| boxed in by ten pillars at 2.3 m | 18 | **0** | 12/12 |
+| the same three on open ground | 18 | **0** | 12/12 |
+
+Identical, which is the proof that the pillars reached nothing of theirs. **And the control that
+shows the pillars were real:** the *traveler*, on that same ground,
+
+| | swings | `no-room` refusals |
+|---|---|---|
+| with a war pike | **0** | **1,548** |
+| with a sword | 11 | 0 |
+
+The pike's two metres bite, and they bite the traveler and nobody else. *(The first run of this
+control ringed the arena's centre, which the traveler never reaches, and measured 0 refusals for
+everybody — a pillar he never stands near is not a doorway.)*
+
+**Worth a decision, not a fix:** a companion carrying a pike fights exactly like a companion
+carrying a mace, and the design's own sentence — "in a doorway I am furniture" — is Matt's line.
+Giving allies the feel of what they carry is the combat brief's ground and a tuning decision, so
+it is written down rather than taken.

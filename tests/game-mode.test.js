@@ -168,6 +168,36 @@ test('no line in normal mode says the traveler cannot follow what is said', () =
   assert.match(economy, /phrasebookLine: 'Now\./, 'and the line that does is kept beside it');
 });
 
+test('every other surface a tongue could reach is shut in normal mode', () => {
+  // The sweep behind this one: speech, the aside, signs, the phrasebook, Chris's five drills,
+  // the skill tile, the starting tongues, and the character sheet's own list of them.
+  const main = source('main.js');
+
+  // **Signs.** The host hands the world a reader only in hard mode, and with nobody to ask every
+  // sign letters in the traveler's own language (driven in tests/signs.test.js, which can load
+  // the module that draws them).
+  assert.match(main, /if\(gameMode\.has\('linguist'\)\)setSignReader\(id => linguist\.canRead\(id\)\);/,
+    'only hard mode ever sets one');
+
+  // **Speech and the aside.** The gate returns the authored line and clears the aside, before
+  // anything is heard or rendered: `linguist.hear` is below the early return, so nothing is paid.
+  assert.match(main, /if\(!gameMode\.has\('linguist'\)\)\{const plain=\$\('speech-aside'\);if\(plain\)\{plain\.textContent='';show\('speech-aside',false\);\}return line;\}/,
+    'the authored English, and no aside');
+
+  // **The phrasebook**, and so the tongue it would teach, is not on Wendel's boards.
+  assert.match(main, /const sellsPhrasebook=gameMode\.has\('linguist'\);/);
+  assert.match(main, /stock:sellsPhrasebook\?PEDDLER_STOCK:PEDDLER_STOCK\.filter\(entry=>entry\.id!==PHRASEBOOK_ITEM\)/);
+
+  // **Chris's five sittings** exist to teach a tongue, so they are not offered.
+  assert.match(main, /const drill=gameMode\.has\('linguist'\)\?longRoad\.view\(longRoadWorld\(\)\)\.drill:null;/);
+
+  // **What he lands knowing**: the skill's experience and the tongues are both behind the gate,
+  // and the character sheet is handed the hidden list so nobody reads a Linguist level off it.
+  assert.match(main, /if\(gameMode\.has\('linguist'\)\)for\(const \[id,proficiency\] of Object\.entries\(startingLanguages\(playerId\)\)\)/);
+  assert.match(main, /SKILL_IDS\.includes\(id\)&&!hiddenSkills\.has\(id\)/);
+  assert.match(source('character-select.js'), /describeStartingSkills\(entry, hidden\)/);
+});
+
 /* ------------------------------------------------------------------ *
  * Saves
  * ------------------------------------------------------------------ */

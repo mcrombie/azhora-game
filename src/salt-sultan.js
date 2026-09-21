@@ -26,6 +26,21 @@ export const STAY = 480, KEEP = 30, SIGHT = 260, HEAR = 45;
 export const SAIL_SPEED = 6, SEA_SPEED = 3;
 /** Her length and beam, for the model and for the depth she needs. */
 export const HULL = freeze({ length: 12, beam: 3.8, draft: 1.3 });
+/**
+ * The rebel hull's stern house: a low deckhouse with a tarpaulin over it, where the Sultana has
+ * her cabin under a gilt dome. It is here beside the hull rather than written into the model
+ * because **it is a thing that stands on her deck**, and anybody standing on her deck has to know
+ * where it is - her helmsman stands on its roof, and the test that checks nobody is inside the
+ * furniture has to be able to ask. `x`/`z` is its centre in the ship's own frame, `width` and
+ * `length` are its half-extents, `top` is the house itself and `roof` the top of the tarpaulin.
+ */
+export const REBEL_STERN_HOUSE = freeze({
+  x: 0, z: -HULL.length / 2 * .62,
+  width: HULL.beam / 2 * 1.3 / 2, length: HULL.length / 2 * .42 / 2,
+  y: 1.68, height: .95, top: 1.68 + .95 / 2,
+  roofY: 2.2, roofThick: .1, roof: 2.2 + .1 / 2,
+  roofWidth: HULL.beam / 2 * 1.42 / 2, roofLength: HULL.length / 2 * .46 / 2,
+});
 export const PHASES = freeze(['moored', 'departing', 'at-sea', 'arriving']);
 
 const spot = (x, z, yaw) => freeze({ x, z, yaw });

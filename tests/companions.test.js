@@ -602,8 +602,10 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   assert.match(horses, /const side = reach\.side \* \(n % 2 \? -1 : 1\);/, 'and alternating shoulders');
   assert.match(horses, /if \(step === 0\) \{ const shoulder = spot\(side, back\); if \(free\(shoulder\)\) return shoulder; \}[\s\S]{0,180}if \(free\(middle\)\) return middle;/,
     'narrow ground closes the file to single, by asking the ground rather than by a list of places');
-  // And a man another has already been given ground cannot be given the same ground.
-  assert.match(horses, /taken\.every\(other => Math\.hypot\(other\.x - one\.x, other\.z - one\.z\) >= room\)/,
+  // And a man another has already been given ground cannot be given the same ground - nor ground
+  // a horse is standing on, which carries its own room because a man needs more of it from a
+  // horse than from a man.
+  assert.match(horses, /taken\.every\(other => Math\.hypot\(other\.x - one\.x, other\.z - one\.z\) >= \(Number\.isFinite\(other\.room\) \? other\.room : room\)\)/,
     'one place per man, as the hold is one place per man');
   assert.match(main, /placeCompanion\(npc,placement,fileOrder\.indexOf\(npc\.id\)\)/, 'and each man knows his place in it');
   // One voice per event.
@@ -616,9 +618,11 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   assert.match(main, /npc\.walkingWith=false;/, 'and is cleared the moment he is not');
   // A dead man is never placed.
   assert.match(main, /npc\.hidden=placement\.phase==='coming'\|\|fallen\.has\(placement\.id\);/, 'nor is a dead one');
-  // The host hands the company the whole set, and empty is spelled as nothing.
-  assert.match(main, /const asked=companionPlan\(\);/, 'the company takes the set');
-  assert.match(main, /company=createMercenaryCompany\(\{\.\.\.companyPlan,roster,companions:asked\}\);/);
+  // The host hands the company the whole set - and, since a death is permanent and the clock has
+  // no other way to learn of one, who is not coming. Empty is spelled as nothing.
+  assert.match(main, /company=createMercenaryCompany\(\{\.\.\.companyPlan,roster,companions:companionPlan\(\),dead:companyDead\(\)\}\);/,
+    'the company takes the set, and the dead');
+  assert.match(main, /const companyDead=\(\)=>roster\.filter\(man=>fallen\.has\(man\.id\)\)/, 'from the one list of the gone');
   assert.match(main, /return all\.length\?all:undefined;/, 'and empty is today’s clock, spelled as nothing');
 });
 

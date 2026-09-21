@@ -32,9 +32,9 @@ const fresh = () => { const fallen = createFallen(); return { fallen, companions
 // geometry - it is a claim about phases and counts, which are a function of the clock alone.
 const ROAD = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const STOPS = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
-const buildCompany = companions => createMercenaryCompany({ road: ROAD, stops: STOPS,
+const buildCompany = (companions, dead) => createMercenaryCompany({ road: ROAD, stops: STOPS,
   muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore: { x: 40, z: -30 },
-  companions: companions.length ? companions : undefined });
+  companions: companions.length ? companions : undefined, dead });
 
 test('the Marshal asks after each missing name in turn, in one conversation', () => {
   const { fallen, companions } = fresh();
@@ -77,34 +77,64 @@ test('the host asks the Marshal what is owed rather than handing him a list', ()
   assert.match(main(), /owed:\(\)=>companions\.owed\(\)/, 'a question, not an answer');
 });
 
-test('a dead man is in neither count at the muster', () => {
+test('a dead man has no placement, and is in neither count at the muster', () => {
   const { fallen, companions } = fresh();
   companions.ask('merc-jerry', { where: 'road' });
   companions.died('merc-jerry', { where: 'Luscia', what: 'Wolves', x: -300, z: 120 });
-  const company = buildCompany(companions.companions);
-  // The company's clock is untouched by death - he was struck off the walking list, so he went
-  // back on the road schedule and musters on it like anybody else, hidden.
+  const company = buildCompany(companions.companions, fallen.ids);
   const at = 4000;
-  const places = company.placements(at);
-  assert.equal(places.find(p => p.id === 'merc-jerry').phase, 'mustered', 'his clock has him in the camp');
-  const honest = places.filter(p => p.phase === 'mustered' && !fallen.has(p.id)).length;
-  assert.equal(company.summary(at).mustered, honest + 1, 'and the phase count has him among the living');
 
-  // What the Marshal says with each count. The dead man is worth exactly one man of over-count.
-  const voices = count => musterVoices({ musterCount: count + 1, roster: ROSTER, withYou: companions.walking, dead: fallen.ids });
-  assert.equal(voices(honest).count, honest + 1, 'the traveler and the living who are in');
-  assert.equal(voices(company.summary(at).mustered).count, honest + 2, 'the phase count says one man too many');
-  // And not among those still coming either: eleven less the dead is all there will ever be.
-  assert.equal(voices(honest).expected, 10);
-  assert.deepEqual(voices(honest).missing, ['merc-jerry']);
+  // **He is nowhere.** Struck off the walking list he would otherwise go straight back onto the
+  // road schedule and muster on it, hidden, and be counted among the living in the camp.
+  const places = company.placements(at);
+  assert.equal(places.some(one => one.id === 'merc-jerry'), false, 'the clock has stopped for him');
+  assert.equal(places.length, MERCENARY_ROSTER.length - 1, 'and the list is thinned, not renumbered');
+
+  // Neither count: not in the camp, and not among those still to come.
+  const s = company.summary(at);
+  assert.equal(s.mustered, places.filter(one => one.phase === 'mustered').length);
+  assert.equal(s.dead, 1);
+  assert.equal(s.arrived, MERCENARY_ROSTER.length - 1 - s.coming, 'the dead did not land, as far as this is concerned');
+  // Never ahead of the traveler on the road, whatever his distance was when he fell.
+  const alive = buildCompany(companions.companions, []);
+  assert.equal(company.travelerRank(at, 0), alive.travelerRank(at, 0) - 1, 'exactly one man fewer stands ahead of you');
+
+  // What the Marshal says, with the count the company now gives on its own.
+  const heard = musterVoices({ musterCount: s.mustered + 1, roster: ROSTER, withYou: companions.walking, dead: fallen.ids });
+  assert.equal(heard.count, s.mustered + 1, 'the traveler and the living who are in');
+  assert.equal(heard.expected, 10);
+  assert.deepEqual(heard.missing, ['merc-jerry']);
+  // The old error, kept as the measurement: the phase count had one man too many in the camp.
+  assert.equal(alive.summary(at).mustered, s.mustered + 1);
+});
+
+test('nobody dead is today\u2019s clock, to the digit', () => {
+  // The rule every addition to src/mercenaries.js has kept. An undefined list, an empty one and
+  // rubbish in the list are all the company this game has always had.
+  const today = buildCompany([], undefined);
+  for (const dead of [undefined, [], null, ['', 7, {}]]) {
+    const same = buildCompany([], dead);
+    for (const seconds of [0, 600, 1200, 2400, 4000, 8000, 20000]) {
+      assert.deepEqual(same.placements(seconds), today.placements(seconds), `${JSON.stringify(dead)} at ${seconds} s`);
+      assert.deepEqual(same.summary(seconds), today.summary(seconds), `${JSON.stringify(dead)} at ${seconds} s`);
+      assert.equal(same.travelerRank(seconds, 400), today.travelerRank(seconds, 400));
+    }
+    assert.deepEqual(same.companionIds, today.companionIds);
+  }
+  // And a man who is dead is out of the file as well, whatever list still names him.
+  const walking = buildCompany([{ id: 'merc-gotwood', with: true }, { id: 'merc-jerry', with: true }], ['merc-jerry']);
+  assert.deepEqual(walking.companionIds, ['merc-gotwood'], 'the dead do not walk with you');
+  assert.equal(walking.companionId, 'merc-gotwood');
 });
 
 test('the host counts the camp by name and not by phase', () => {
   const source = main();
-  assert.match(source, /function musteredInCamp\(\)\{return company\.placements\(playSeconds\)\.filter\(p=>p\.phase==='mustered'&&!fallen\.has\(p\.id\)\)\.length;\}/,
-    'the count leaves out the men who are not coming');
-  assert.ok(!/company\.summary\(playSeconds\)\.mustered/.test(source),
-    'and nothing reads the phase count as if it were the camp');
+  // The host asks rather than subtracts: the company is told who is dead, a dead man has no
+  // placement, and so `mustered` is already the men standing in the camp.
+  assert.match(source, /function musteredInCamp\(\)\{return company\.summary\(playSeconds\)\.mustered;\}/,
+    'the count is the company\u2019s own');
+  assert.ok(!/placements\(playSeconds\)[^\n]*fallen\.has/.test(source),
+    'and nothing subtracts the dead by hand any more');
   for (const each of [/musterCount:musteredInCamp\(\)\+1/g]) assert.equal((source.match(each) ?? []).length, 2, 'both conversations ask it');
   assert.match(source, /musteredInCamp\(\)\+1<=MUSTER_EARLY/, 'and so does the first-man-in toast');
 });

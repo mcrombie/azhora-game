@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createCharacter } from './characters.js';
-import { JOHN, HULL } from './salt-sultan.js';
+import { JOHN, HULL, REBEL_STERN_HOUSE as HOUSE } from './salt-sultan.js';
 import { REBEL_CREW, DECK_Y, crewPose } from './rebel-crew.js';
 
 /**
@@ -165,8 +165,10 @@ export function createSultana(rebel = false) {
   const deck = new THREE.Mesh(new THREE.ShapeGeometry(plan), deckWood); deck.rotation.x = -Math.PI / 2; deck.position.y = 1.16; deck.receiveShadow = true; ship.add(deck);
   // The stern cabin under a gilt dome, a lantern, the name board and the rudder. The rebel's
   // stern is a low deckhouse with a tarpaulin over it and no light showing.
-  add(ship, cube, mat(rebel ? 0x6f5a44 : 0xe9dfc6), [0, rebel ? 1.68 : 1.85, -L * .62], [B * 1.3, rebel ? .95 : 1.3, L * .42]);
-  add(ship, cube, rebel ? mat(0x3a352c) : blue, [0, rebel ? 2.2 : 2.54, -L * .62], [B * 1.42, .1, L * .46]);
+  // The rebel's numbers are `REBEL_STERN_HOUSE` (src/salt-sultan.js), because her helmsman stands
+  // on this roof and the crew table has to know where it is.
+  add(ship, cube, mat(rebel ? 0x6f5a44 : 0xe9dfc6), [0, rebel ? HOUSE.y : 1.85, -L * .62], [B * 1.3, rebel ? HOUSE.height : 1.3, L * .42]);
+  add(ship, cube, rebel ? mat(0x3a352c) : blue, [0, rebel ? HOUSE.roofY : 2.54, -L * .62], [B * 1.42, rebel ? HOUSE.roofThick : .1, L * .46]);
   if (!rebel) {
     add(ship, new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), GOLD, [0, 2.58, -L * .62], [.62, .75, .62]);
     add(ship, new THREE.ConeGeometry(.08, .45, 8), GOLD, [0, 3.5, -L * .62]);
@@ -240,7 +242,10 @@ export function createSultana(rebel = false) {
   const crew = rebel ? REBEL_CREW.map(man => {
     const actor = createCharacter({ role: 'mercenary', tunic: man.look.tunic, skin: man.look.skin, look: man.look });
     actor.group.name = man.id;
-    actor.group.position.set(man.x, DECK_Y, man.z);
+    // Not every one of them stands on the deck: the helmsman's tiller is abaft her stern house,
+    // so his deck is its roof (`y` on the man, src/rebel-crew.js). He was standing *in* it, with
+    // the roof cutting him off at the chest.
+    actor.group.position.set(man.x, man.y ?? DECK_Y, man.z);
     actor.group.traverse(object => { if (object.isMesh) { object.castShadow = false; object.receiveShadow = false; } });
     ship.add(actor.group);
     return { man, actor, base: man.yaw };
@@ -265,7 +270,7 @@ export function createSultana(rebel = false) {
       hand.actor.group.rotation.x = stance.lean;
       hand.actor.group.rotation.y = hand.base + stance.turn;
       hand.actor.group.rotation.z = stance.sway;
-      hand.actor.group.position.y = DECK_Y + stance.lift;
+      hand.actor.group.position.y = (hand.man.y ?? DECK_Y) + stance.lift;
     }
   }
   return { group, update };
