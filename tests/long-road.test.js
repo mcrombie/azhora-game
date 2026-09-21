@@ -7,9 +7,9 @@ import {
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
   GROUND_PREFIX, isGround, groundOfSighting, longRoadStop as stopById,
-  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt, PLAY_TROUPE_STOP,
+  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt, PLAY_TROUPE_STOP, PLAY_TROUPE_STOPS,
 } from '../src/long-road.js';
-import { TROUPE_STOPS } from '../src/troupe.js';
+import { TROUPE_STOPS, TROUPE_UNSEEN, FIRST_CAMP, createTroupe } from '../src/troupe.js';
 import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
 import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/long-road.js';
 import { ARRIVALS } from '../src/mercenaries.js';
@@ -542,7 +542,7 @@ test('src/main.js actually asks a teacher to recognise somebody', () => {
   assert.match(main, /if\(questStage<2\)return false;/);
 });
 
-test('the play at Fernway stands where the players camp, and nothing else claims to close it', () => {
+test('the play stands where the players camp, and both Drent camps serve it', () => {
   // The leg-3 spine stop and the troupe's Fernway camp are the same verge. They are two tables in
   // two modules, so the numbers are held against each other here rather than trusted.
   const play = longRoadStop('fernway-play'), camp = TROUPE_STOPS.find(stop => stop.id === PLAY_TROUPE_STOP);
@@ -551,20 +551,80 @@ test('the play at Fernway stands where the players camp, and nothing else claims
   assert.deepEqual([play.point.x, play.point.z], [camp.x, camp.z], 'the gold is on the camp, to the metre');
   assert.equal(play.kind, 'spine', 'and it is on the curriculum, not beside it');
   assert.equal(play.reads, 'longRoad', 'it has no view of its own, so the host has to say');
+  // The pair: the verge it stands on, and the other camp in Drent, which is the "players' second
+  // camp" the route table names on leg 4 and which was never built as a branch stop of its own.
+  assert.deepEqual([...PLAY_TROUPE_STOPS], ['fernway', 'avrel']);
+  assert.equal(PLAY_TROUPE_STOP, PLAY_TROUPE_STOPS[0], 'the one it stands on comes first');
+  for (const id of PLAY_TROUPE_STOPS) {
+    const other = TROUPE_STOPS.find(stop => stop.id === id);
+    assert.ok(other, `${id} is a camp the players keep`);
+    assert.equal(other.region, 'Drent', `${id} is in the country the long road walks`);
+  }
+  assert.deepEqual(TROUPE_STOPS.filter(stop => stop.region === 'Drent').map(stop => stop.id).sort(),
+    [...PLAY_TROUPE_STOPS].sort(), 'and they are every camp in Drent, so none is left out');
 });
 
-test('src/main.js actually closes the play: a scene watched to the end at Fernway', () => {
+test('a new game finds the players on the verge the stop stands on, whatever the draw', () => {
+  // The bug this settles: the first camp used to be a coin toss, and a wagon that landed at Avrel
+  // could never come to Fernway while the traveler walked the long road - every camp within
+  // TROUPE_UNSEEN of him is one the company will not move to either. So half of all games could
+  // not close a spine stop. Only the first camp is settled; the wandering after it is untouched.
+  assert.equal(FIRST_CAMP, PLAY_TROUPE_STOP, 'they begin where the stop is');
+  for (let seed = 0; seed < 200; seed++) {
+    // A different draw every time, and one that never returns the same number twice in a game.
+    let n = seed * 0.0049 % 1;
+    const troupe = createTroupe({ random: () => (n = (n + 0.618033988749895) % 1) });
+    assert.equal(troupe.stop.id, FIRST_CAMP, `seed ${seed} begins at the verge`);
+  }
+  assert.equal(createTroupe({ start: 'avrel' }).stop.id, 'avrel', 'and a caller may still say otherwise');
+});
+
+test('every fresh game walked to Fernway on the long road’s timings finds the players still there', () => {
+  // The long road's own clock (docs/drent-long-road.md §8): the harbour and the village, the near
+  // wood, then out to Fernway Rest at about minute fifty. Walked a second at a time, because the
+  // company's staying or going is judged every frame against where the traveler is standing.
+  const legs = [
+    [{ x: 0, z: 25 }, 12, 'the pier and the Greenway'],
+    [{ x: -10.9, z: 34.6 }, 11, 'Lysa’s kitchen'],
+    [{ x: -24.4, z: 4.4 }, 5, 'Perrin’s garden'],
+    [{ x: -33.8, z: -7.8 }, 17, 'the Koopwood'],
+    [{ x: -102, z: 8.6 }, 1, 'Willowmere'],
+    [{ x: -128.4, z: 39.6 }, 4, 'Fernway Rest'],
+  ];
+  assert.equal(legs.reduce((sum, [, minutes]) => sum + minutes, 0), 50, 'fifty minutes, as the road is cut');
+  const camp = TROUPE_STOPS.find(stop => stop.id === FIRST_CAMP);
+  for (const [at, , where] of legs)
+    assert.ok(Math.hypot(camp.x - at.x, camp.z - at.z) < TROUPE_UNSEEN,
+      `at ${where} he is inside the ${TROUPE_UNSEEN} m that pins them`);
+
+  for (let seed = 0; seed < 120; seed++) {
+    let n = (seed * 0.137) % 1;
+    const troupe = createTroupe({ random: () => (n = (n + 0.618033988749895) % 1) });
+    for (const [at, minutes] of legs) for (let second = 0; second < minutes * 60; second++) troupe.update(1, at);
+    assert.equal(troupe.stop.id, FIRST_CAMP, `seed ${seed}: the wagon is still on the verge at minute fifty`);
+  }
+  // And the rule that does it is the distance, not the fixed start: a traveler who walks away and
+  // stays away leaves them free to go, which is the wandering the troupe is for.
+  let n = .21;
+  const wandering = createTroupe({ random: () => (n = (n + 0.618033988749895) % 1) });
+  const far = { x: camp.x + TROUPE_UNSEEN * 4, z: camp.z };
+  for (let second = 0; second < 20 * 60; second++) wandering.update(1, far);
+  assert.notEqual(wandering.stop.id, FIRST_CAMP, 'out of sight for twenty minutes and they have moved on');
+});
+
+test('src/main.js actually closes the play: a scene watched to the end at either Drent camp', () => {
   // The bug this pins: `act('played')` existed and nothing called it, so the leg-3 spine stop
   // could never be done and the open gold stuck on the Fernway verge for the rest of the game.
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  assert.match(main, /PLAY_TROUPE_STOP/, 'the host knows which camp the stop stands at');
-  assert.match(main, /const onTheLongWay=troupe\.stop\.id===PLAY_TROUPE_STOP;/, 'and asks where the wagon is');
+  assert.match(main, /PLAY_TROUPE_STOPS/, 'the host knows which camps serve the stop');
+  assert.match(main, /const onTheLongWay=PLAY_TROUPE_STOPS\.includes\(troupe\.stop\.id\)/, 'and asks where the wagon is');
+  assert.match(main, /troupe:\{stop:troupe\.stop\.id,x:troupe\.stop\.x,z:troupe\.stop\.z\}/, 'and tells the long road, so the gold can follow it');
   // The hat is what ends a scene (`troupe-tip-<n>`, 0 being applause), so that is where it closes.
   const hat = main.slice(main.indexOf("const tip=/^troupe-tip-"));
   assert.ok(hat.indexOf('const onTheLongWay=') < hat.indexOf('troupe.endScene()'),
     'the wagon is asked where it is before the scene ends under it');
-  assert.match(hat.slice(0, 900), /if\(onTheLongWay&&longRoad\.act\('played'\)\.ok\)toast\(/, 'a play played out closes the stop, once');
-  assert.match(hat.slice(0, 1200), /saveRoad\(false\);/, 'and it is saved');
+  assert.match(hat.slice(0, 1200), /if\(onTheLongWay&&longRoad\.act\('played'\)\.ok\)toast\(/, 'a play played out closes the stop, once');
+  assert.match(hat.slice(0, 1800), /saveRoad\(false\);/, 'and it is saved');
   // Walking out of a play is not watching one: `cancelScene` counts nothing and must close nothing.
   const walkOut = main.slice(main.indexOf('troupe.cancelScene()'));
   assert.doesNotMatch(walkOut.slice(0, 200), /act\('played'\)/, 'walking out of the play closes nothing');
@@ -599,4 +659,56 @@ test('the whole spine walks only because the play can be watched', () => {
   const back = createLongRoad();
   assert.equal(back.restore(road.snapshot()), true);
   assert.equal(back.view(everything()).played, true);
+});
+
+test('the play’s gold is on the camp the wagon is at, and a company abroad never jams the road', () => {
+  const at = id => { const camp = TROUPE_STOPS.find(stop => stop.id === id); return { stop: id, x: camp.x, z: camp.z }; };
+  const road = createLongRoad();
+  road.act('told'); road.act('corners-ask'); road.act('corners-sign', everything());
+  const playStop = view => view.stops.find(row => row.id === 'fernway-play');
+
+  // At Fernway, where every new game starts them: the gold is the stop's own point.
+  const here = road.view(everything({ troupe: at('fernway') }));
+  assert.equal(here.next.id, 'fernway-play');
+  assert.deepEqual([here.next.point.x, here.next.point.z], [-110.6, 29.3], 'the verge it stands on');
+  assert.equal(playStop(here).camp, 'fernway');
+
+  // At Avrel, where an older save may have left them: the same stop, and the gold moves to them,
+  // so it never stands on an empty verge.
+  const away = road.view(everything({ troupe: at('avrel') }));
+  assert.equal(away.next.id, 'fernway-play', 'still the thing that is waiting');
+  assert.deepEqual([away.next.point.x, away.next.point.z], [-430.4, 46.4], 'and the gold is where they are');
+  assert.equal(playStop(away).camp, 'avrel');
+
+  // Out of the country: the gold passes over it to the next undone spine stop. The stop stays
+  // open, `finished` still wants it, and it comes back the moment they do.
+  const abroad = everything({ troupe: at('ostel') });
+  const gone = road.view(abroad);
+  assert.equal(gone.next, null, 'with all of Drent done there is nothing else to point at');
+  assert.equal(playStop(gone).done, false, 'the stop is not closed by their leaving');
+  assert.equal(playStop(gone).camp, null);
+  assert.equal(gone.legs[3].done, false, 'and leg three is honestly still open');
+  assert.equal(gone.finished, false, 'the whole road still wants the play');
+  assert.equal(road.view(everything({ troupe: at('fernway') })).next.id, 'fernway-play', 'and it is offered again when they come back');
+
+  // Passing over it means the stop behind it is reachable: with only the play and the bridge left
+  // and the company abroad, the gold is the bridge and not an empty verge.
+  const half = createLongRoad();
+  half.act('told'); half.act('corners-ask'); half.act('corners-sign', everything());
+  const noBridge = { journey: { courierComplete: true, bridgeComplete: false } };
+  assert.equal(half.view(everything({ ...noBridge, troupe: at('fernway') })).next.id, 'fernway-play');
+  assert.equal(half.view(everything({ ...noBridge, troupe: at('ostel') })).next.id, 'hollis-bridge',
+    'the road behind the play is not held up by it');
+
+  // A caller that says nothing at all is not claiming they have left: the table's answer stands.
+  assert.equal(road.view(everything()).next.id, 'fernway-play', 'silence is not a claim');
+
+  // And all of it survives the save: the play is the long road's own, and where the wagon is is
+  // the troupe's own, so a restored road asked afresh answers the same way.
+  road.act('played');
+  const back = createLongRoad();
+  assert.equal(back.restore(road.snapshot()), true);
+  assert.equal(back.view(abroad).played, true, 'watched is watched, wherever they went afterwards');
+  assert.equal(playStop(back.view(abroad)).done, true);
+  assert.equal(back.view(abroad).next, null);
 });
