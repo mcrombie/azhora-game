@@ -1373,3 +1373,191 @@ is what the comment beside it says.
 `src/wild-route.js` does not author and so did not fix. It runs (−996.5, 554.9) to (−991.1,
 569.9), a few metres of something solid on the approach to the camp. Small, and it is at the end
 where he is arriving anyway, but the file's promise covers the whole line a man walks.
+
+---
+
+## Jerry calls her Christin at the muster (fixed)
+
+One line in `src/moros-chapter.js` — what Jerry says when he walks into the camp behind you —
+still used her old spelling: *"Here before us. Christin owes me nothing and is somehow still
+pleased."* She is **Kristen** on screen everywhere else; `christin` and `merc-christin` are ids,
+and ids never change once a save has written them.
+
+Fixed, and `tests/mercenaries.test.js` now sweeps every file in `src/` for the capitalised old
+spelling on a word boundary, so the id may keep it and the writing may not. Checked against the
+old source: the test fails there and names the file and line.
+
+Nothing was looking, because every test that knew her knew her by id.
+
+---
+
+## A man says he saw you at a stop you were never at
+
+`notice()` (`src/long-road.js:374`) records, for each of the ten, **the stop the traveler was
+nearest to** when they passed within 40 m or shared a named ground. `nearestStop` (`:259`) has no
+radius: it returns the nearest of all sixteen spine stops however far away it is.
+
+The lines those ids feed are written as sightings of an **activity**, not a place —
+`'bran-rod': 'up to your knees in a pond'`, `'nell-hedge': 'in a hedge. In it. Not beside it'`,
+`'odger-fernway': 'at the bench at Fernway, holding a mushroom up to the light'`. So the muster
+makes a man assert something that did not happen.
+
+**Driven:** traveler at (−250, 60), Jerry five metres off, standing on no named ground. Recorded:
+`odger-fernway` — whose bench is **123 m away**. At the muster Jerry says *"We passed you. You
+were at the bench at Fernway, holding a mushroom up to the light."* The traveler had never been
+to the bench.
+
+**How wide it can get:** the spine's widest gap is `fernway-play → corvan-register` at **305 m**,
+so a traveler halfway along is **153 m** from the nearest stop and will be placed there.
+
+The fallback already exists and is good: `PLACE_UNKNOWN` is *"somewhere back down that road"*, and
+with nobody seen anywhere, 9 of the 10 lines already use it. *Smallest repair:* give `nearestStop`
+a radius — `NOTICE_RANGE` (40 m) is the obvious one, since that is already how near a man has to
+be to notice you at all — and return null beyond it, so the honest clause is used.
+
+---
+
+## The two repairs, verified on the real world
+
+**The landing checkpoint is written.** A 22 m crossing, `swimming.learn()` first so the xp is real:
+
+| way out | xp | checkpoint |
+|---|---|---|
+| walked out | 11 | **written**, at (28.0, 30.0), dry ground |
+| mounted out at the horse | 11 | **written**, at (28.0, 30.0), dry ground |
+
+Both were refused before. `payForTheSwim` clearing `inWater` as its first act is the whole fix.
+
+**Blocked stop places: 32 → 0.** With `standable` passed as `main.js` passes it, **stopped is 0 of
+197**. (My first re-run said 32 of 197 because my harness had not passed the new callback — the
+nudge lives inside `createMercenaryCompany` and only runs when the host hands it a footing test.)
+
+**What remains, measured properly.** 14 of 816 *walking* homes are still blocked, and walking homes
+are deliberately not nudged. My earlier fixed-home sweep called nine of them "marching", but that
+sweep held a walking man's home still, which play never does. Driven instead with each man's home
+taken from `placements(t)` every frame over forty minutes of play, and counting only frames where
+he is walking, his home is blocked **and the gap is not closing**:
+
+| | |
+|---|---|
+| blocked-home frames, all ten men | 4,141 of 1,440,000 (**0.288 %**) |
+| longest any man is genuinely stuck | **3.88 s** (Kristen, 1.39 m from her home) |
+| next longest | 1.73 s (Ciarán), 0.95 s (Jerry), 0.88 s (Lakota) |
+
+Four seconds of a man not quite closing the last metre and a half, once in forty minutes, is not
+the two minutes of marching the stopped case was. The repair took the part that showed.
+
+---
+
+## Combat phase 2 against the main arc: a linear player against a multiplicative country
+
+Measured on the pure modules. Nothing retuned.
+
+### Which country each of the arc's fights now takes
+
+| fight | country | L | enemies |
+|---|---|---|---|
+| the opening raids, the Avrel clearing | Drent | **0** | goblins 65–75 |
+| the Bramble scout camp | Pueth | **1** | 2 goblins 65 |
+| the wolves on the burial line | Luscia | **1** | 2 wolves 58 |
+| Mallec at the pass stones | Amod | **2** | ogre 620 |
+| the border battle | Moros Plain | **2** | 8 soldiers 100 |
+| the day after (all four variants) | Moros / West Suval | **2** | 7 soldiers 100 |
+
+### What that does, blow by blow
+
+| fight | L | enemy health | swings to kill | blows you can take |
+|---|---|---|---|---|
+| Drent's raids | 0 | 75 → 75 | 3 → **3** | 6 → **6** |
+| the Bramble camp | 1 | 65 → 94 | 3 → **4** | 6 → **5** |
+| the Lauvel wolves | 1 | 58 → 84 | 3 → **3** | 8 → **6** |
+| Mallec | 2 | 620 → **1,178** | 23 → **43** | 4 → **3** |
+| the border battle | 2 | 100 → **190** | 4 → **7** | 5 → **3** |
+| the day after | 2 | 100 → **190** | 4 → **7** | 5 → **3** |
+
+### Why the traveler cannot answer it
+
+The Arms table is a **straight line from level 1 to 99** (`along`, `src/combat-skills.js:82`). One
+level is **+2.04 % damage** and **+3.0 health**. The country is **+45 % enemy health** and
+**+30 % enemy damage per level**. So:
+
+| country L | enemy health × | Blades to match | enemy damage × | Toughness to match | docs' "9 × L" |
+|---|---|---|---|---|---|
+| 1 | 1.45 | **24** | 1.30 | **11** | 9 |
+| 2 | 1.90 | **46** | 1.60 | **21** | 18 |
+| 3 | 2.35 | **68** | 1.90 | **31** | 27 |
+
+Walking the arc and paying exactly what its fights pay, the traveler arrives with **Blades 8 /
+Toughness 6** at the Lauvel (L1 wants 24 / 11) and **Blades 17 / Toughness 12** at the border
+(L2 wants 46 / 21). Toughness roughly half-answers its country; **Blades never does**, because
+health is the thing that scales and damage is the thing that does not.
+
+The xp rate is not the lever: reaching Blades 24 takes **64 level-1 goblins**, and Blades 46 takes
+**370 level-2 soldiers**. The arc does not contain them. *The curve is the lever, not the rate.*
+
+### Where the first wall is
+
+**Not at Luscia.** The Lauvel wolves stay a three-swing kill (58 → 84 against a 84-point combo)
+and cost 6 blows of tolerance instead of 8. The Bramble camp goes 3 → 4 swings. Both are harder
+and neither is a wall.
+
+**The wall is level 2, and it is specifically the soldiers.** A soldier at 190 hp needs 7 swings
+where he needed 4, while the traveler's tolerance falls from 5 blows to 3 — and a soldier is the
+one kind that cannot be handled the way goblins and wolves can (below). The border battle is
+**eight** of them, with `guard`, `armor`, `poise` and `pack: 2`. Every one of the four day-after
+variants is seven more.
+
+**Mallec is the loudest number and the least urgent:** 620 → 1,178 hp, 23 → 43 swings. He is a
+toll before he is a fight, and the toll is still payable.
+
+### The thing that makes Drent and Luscia safe, and the border not
+
+Driving `combat.js` with the autopilot's own `fightCommand` at its own `swingEvery` of 0.3 s, the
+traveler finishes the Drent raids, the Bramble camp and the Lauvel wolves at **40 of 40 seeds with
+100 % health**, at every level — and loses the border battle **0 of 40** (and 3 of 40 even at
+level 0, before any of this).
+
+That gap is not the country's doing. It is `src/combat.js:403-412`: a landed blow staggers an
+enemy, resets its recovery and pushes `nextAttackerAt` by 0.35 s — **unless the kind has `poise`**.
+Goblins and wolves have none, so a swing every 0.3 s holds them permanently staggered and they
+never wind up. Soldiers have poise, so they cannot be held, and they answer.
+
+So the country's multipliers are nearly invisible wherever the player can stun-lock, and
+unforgiving wherever he cannot. **Take the harness's 100 % health as the ceiling, not the
+expectation** — it approaches in single file with perfect facing and never misses. The shape is
+what matters: the arc's difficulty is decided by `poise`, and the country's levels then multiply
+whatever that has already decided.
+
+### The straw post and the earning rate
+
+- The post pays a flat 12 a swing and stops at Blades 5: **33 swings**, which is a reasonable
+  minute at the practice post and then honestly nothing.
+- "Skills near 9 × L" (`docs/combat-brief.md`) **is** roughly what the arc pays — 8 at L1, 17 at
+  L2. It is the target itself that does not keep up with 1.45 and 1.90.
+
+### The smallest levers, and what each would do
+
+1. **Lower `COUNTRY.health` from 0.45** (leave damage at 0.30). Health is what outruns a linear
+   player: at 0.20 a soldier is 140 hp (5 swings, not 7) and Mallec is 868 (32 swings, not 43).
+   One number in the frozen table; nothing else moves. **The smallest lever that removes the wall.**
+2. **Author a level on the story fights** (`level:` is already honoured per encounter, and
+   `encounterConfig` reads it). Keeps the ladder for the open world and holds the arc at 0–1.
+   More edits, but it is per-fight surgery rather than a global change.
+3. **Steepen `ARMS.damage`** from `{low: 1, high: 3}`. Makes the player catch up, but it changes
+   every fight at every level, including the ones that are right today.
+4. **Raise the xp rate.** Measured above: it does not reach. 64 goblins and 370 soldiers are not
+   in the arc at any rate this side of a tenfold change.
+5. **Wait for armour (phase 3).** Answers the damage half (3 blows back toward 5) and does nothing
+   about the health half, which is the 7-swing soldier and the 43-swing ogre.
+
+The numbers are the user's; this is the measurement, not a proposal.
+
+### Would the Electron smoke still pass?
+
+**Yes, on this evidence, and it is worth saying before paying for the run.** The road smoke's two
+fights are the **Avrel clearing raiders** (Drent, level **0** — unchanged to the digit) and the
+**Lauvel wolves** (Luscia, level 1 — still a three-swing kill, with 6 blows of tolerance instead
+of 8, and the smoke's own loop dodges on the amber tell before it swings). Neither is a soldier
+fight; the smoke never reaches the border battle or the day after. The one thing that could still
+bite is the smoke's fixed `deadline` per fight, since a wolf now takes the same three swings but
+the traveler is closing on a stouter enemy — the wolves resolved comfortably inside the limit here.
