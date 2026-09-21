@@ -70,6 +70,21 @@ export const ARMS = freeze({
  * to miss. At level 0 both multipliers are exactly 1, so every fight already built is untouched.
  */
 export const COUNTRY = freeze({ health: .45, damage: .30, top: 11 });
+
+/**
+ * **A country's level is a property of its dangers, not of its ground** (the user, 2026-09-21).
+ * It scales what its enemies are and what they do, to anybody standing in front of them; it does
+ * not scale your side. A companion's health and damage come from *their own* levels, through
+ * these same curves - Toughness for health, their weapon's family for damage - so a mercenary at
+ * 45 stands in level-2 country with about 235 health and nearly double damage, because of who he
+ * is and not because of where he is standing.
+ *
+ * These two are the same curves as the traveler's, expressed as multipliers on what an ally
+ * already had, so **level 1 is exactly today's ally**: `maxHealth(1)` is 100 and
+ * `damageMultiplier(1)` is 1.
+ */
+export const allyHealthScale = level => maxHealth(level) / ARMS.health.low;
+export const allyDamageScale = level => damageMultiplier(level);
 const clampCountry = level => Math.max(0, Math.min(COUNTRY.top, Math.floor(Number(level) || 0)));
 /** What an enemy's health and damage are multiplied by, in a country of this level. */
 export const countryHealth = level => 1 + COUNTRY.health * clampCountry(level);

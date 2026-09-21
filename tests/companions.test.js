@@ -1,16 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createFallen } from '../src/bystanders.js';
 import {
   COMPANION_LIMIT, COMPANION_IDS, ASKS, GROUPS, RUNGS, RUNG_LABELS, RUNG_AT, REGARD,
-  rungFor, rungLabel, createCompanions, validateCompanionsSnapshot,
+  rungFor, rungLabel, createCompanions, validateCompanionsSnapshot, MERCENARY_ARMS, armsOf,
 } from '../src/companions.js';
 
-const fresh = ({ mustered = false } = {}) => {
+const fresh = () => {
   const fallen = createFallen();
   const heard = [];
-  return { fallen, heard, companions: createCompanions({ fallen, mustered: () => mustered, onEvent: e => heard.push(e) }) };
+  return { fallen, heard, companions: createCompanions({ fallen, onEvent: e => heard.push(e) }) };
 };
 
 test('everyone on the roster can be asked, each somewhere of his own', () => {
@@ -49,25 +51,33 @@ test('the rungs are the four this game already uses, and nothing in between', ()
   assert.equal(RUNGS.filter(rung => RUNG_AT[rung] > 0).length, 3);
 });
 
-test('one walks with you on the road, two once the company has mustered', () => {
-  assert.deepEqual([COMPANION_LIMIT.road, COMPANION_LIMIT.mustered], [1, 2]);
-  const road = fresh();
-  assert.equal(road.companions.limit, 1);
-  assert.equal(road.companions.ask('merc-word', { where: 'shore' }).ok, true);
-  const second = road.companions.askable('merc-mus', { where: 'wild' });
-  assert.deepEqual([second.ok, second.reason], [false, 'full'], 'asking a second is asking the first to go on ahead');
-  // And it refuses rather than shuffling: the choice belongs to the player, in words.
-  assert.deepEqual(road.companions.walking, ['merc-word']);
-  assert.equal(road.companions.sendOn('merc-word').ok, true);
-  assert.equal(road.companions.ask('merc-mus', { where: 'wild' }).ok, true);
-  assert.deepEqual(road.companions.walking, ['merc-mus']);
-  assert.equal(road.companions.sendOn('merc-mus').ok, true);
-  assert.equal(road.companions.sendOn('merc-mus').ok, false, 'nobody is sent on twice');
-  const camp = fresh({ mustered: true });
-  assert.equal(camp.companions.limit, 2);
-  assert.equal(camp.companions.ask('merc-word', { where: 'shore' }).ok, true);
-  assert.equal(camp.companions.ask('merc-mus', { where: 'wild' }).ok, true);
-  assert.equal(camp.companions.askable('merc-matt', { where: 'road' }).reason, 'full');
+test('as many as will come, and no number anywhere says otherwise', () => {
+  // The user's ruling. The traveler may reach the muster with most of the company behind him;
+  // the scarcity is that each says yes only for his own reason at his own moment.
+  assert.equal(COMPANION_LIMIT, COMPANION_IDS.length, 'the only limit is that there are only ten of them');
+  const { companions } = fresh();
+  const everybody = [
+    ['merc-word', { where: 'shore' }],
+    ['merc-mus', { where: 'wild' }],
+    ['merc-jerry', { where: 'road' }],
+    ['merc-ciaran', { where: 'road' }],
+    ['merc-christin', { where: 'road', has: { charted: true } }],
+    ['merc-lakota', { where: 'road', has: { birded: true } }],
+    ['merc-eliana', { where: 'road', has: { edge: true } }],
+    ['merc-matt', { where: 'road' }],
+    ['merc-altun', { where: 'road' }],
+    ['merc-gotwood', { where: 'landing' }],
+  ];
+  for (const [id, where] of everybody) assert.equal(companions.ask(id, where).ok, true, `${id} comes`);
+  assert.equal(companions.walking.length, COMPANION_IDS.length, 'the whole company walks with you');
+  // The three who rode in together can all come, and so can both of the last pair.
+  for (const id of GROUPS.riders) assert.ok(companions.walksWith(id), `${id} came`);
+  assert.ok(companions.walksWith('merc-matt') && companions.walksWith('merc-altun'));
+  // Nobody is ever refused for being a crowd.
+  assert.equal(companions.askable('merc-word', { where: 'shore' }).reason, 'already');
+  assert.equal(companions.sendOn('merc-word').ok, true);
+  assert.equal(companions.sendOn('merc-word').ok, false, 'nobody is sent on twice');
+  assert.equal(companions.ask('merc-word', { where: 'shore' }).ok, true, 'and may be asked again');
 });
 
 test('each says yes for his own reason, and no for his own reason', () => {
@@ -157,12 +167,73 @@ test('who walks with you survives the road, and the dead do not walk out of an o
   const after = createCompanions({ fallen, mustered: () => true });
   assert.equal(after.restore(saved), true);
   assert.deepEqual(after.walking, ['merc-ciaran'], 'the dead do not walk');
+  // Three walking with you is now perfectly ordinary; more than the company is still nonsense.
+  assert.equal(validateCompanionsSnapshot({ ...saved, walking: ['merc-word', 'merc-mus', 'merc-matt'] }), true,
+    'as many as will come');
   for (const bad of [null, [], { ...saved, version: 2 }, { ...saved, walking: ['nobody'] },
     { ...saved, walking: ['merc-word', 'merc-word'] },
-    { ...saved, walking: ['merc-word', 'merc-mus', 'merc-matt'] },
+    { ...saved, walking: [...COMPANION_IDS, 'merc-word'] },
     { ...saved, regard: { nobody: 10 } }, { ...saved, regard: { 'merc-mus': -1 } },
     { ...saved, regard: { 'merc-mus': 1e9 } }, { ...saved, errands: ['nobody'] }])
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
+});
+
+test('a country scales its dangers and never your side', async () => {
+  // The user's ruling, 2026-09-21. Phase 2 scaled the blows that land on an ally but not the ally
+  // - `countryHealth` was applied only in the enemies loop - so an ally was a flat 90 anywhere.
+  // A companion's health and damage now come from his *own* levels, through the same `ARMS`
+  // curves as the traveler's, because he is as good as he is wherever he is standing.
+  const { createCombat } = await import('../src/combat.js');
+  const { maxHealth, damageMultiplier, countryHealth } = await import('../src/combat-skills.js');
+  const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
+  const fight = (level, allies) => {
+    const position = { x: 0, z: 0, y: 0 };
+    const combat = createCombat({ world, position, getWeapon: () => ({ id: 'simple-sword', damage: [24, 26, 34], reachMultiplier: 1, usable: true }) });
+    combat.startEncounter({ id: 'trial', level, center: { x: 0, z: 0 }, checkpoint: { x: 0, z: -8 }, retreatLine: 20,
+      enemies: [{ id: 'foe', x: 0, z: 6, hp: 75 }], allies });
+    return combat.state;
+  };
+  // A companion at level 1 is exactly today's ally: a legionary's ninety, in any country.
+  for (const level of [0, 2, 8]) {
+    const state = fight(level, [{ id: 'friend', kind: 'legionary', x: -2, z: 2 }]);
+    assert.equal(state.allies[0].maxHp, 90, `a level-1 legionary in level-${level} country`);
+  }
+  // And the enemy in the same fight does grow with the country, so the sweep is not measuring
+  // a scale that is broken everywhere.
+  assert.equal(fight(8, []).enemies[0].maxHp ?? fight(8, []).enemies[0].hp, Math.round(75 * countryHealth(8)));
+  // A companion carries his own Toughness, and it is the traveler's own curve.
+  for (const toughness of [17, 30, 40]) {
+    const state = fight(2, [{ id: 'friend', kind: 'legionary', x: -2, z: 2, toughness }]);
+    assert.equal(state.allies[0].maxHp, Math.round(maxHealth(toughness)), `toughness ${toughness}`);
+  }
+  assert.equal(fight(0, [{ id: 'f', kind: 'legionary', x: -2, z: 2, toughness: 40 }]).allies[0].maxHp,
+    fight(9, [{ id: 'f', kind: 'legionary', x: -2, z: 2, toughness: 40 }]).allies[0].maxHp,
+    'no ally’s health depends on the country he is standing in');
+  // Mus at 45, Toughness 40, is about the 225 the ruling describes.
+  const mus = armsOf('merc-mus');
+  assert.deepEqual([mus.weapon, mus.level], ['polearms', 45]);
+  assert.ok(Math.round(maxHealth(mus.toughness)) > 215 && Math.round(maxHealth(mus.toughness)) < 240,
+    `${Math.round(maxHealth(mus.toughness))} health, wherever he is standing`);
+  assert.ok(damageMultiplier(mus.level) > 1.8, 'and nearly double damage');
+  // Everyone on the roster has numbers, each a little tougher than nothing and each with a family.
+  for (const id of COMPANION_IDS) {
+    const arms = armsOf(id);
+    assert.ok(arms, `${id} is worth something in a fight`);
+    assert.ok(arms.level >= 20 && arms.level <= 60, `${id} is between 20 and 60, as the brief says`);
+    // Toughness a little under the weapon, for everybody but Kristen: she carries the shield and
+    // stands in front of people who need it, so she is the one of them built to be hit.
+    if (id === 'merc-christin') {
+      assert.ok(arms.toughness > arms.level, 'Kristen is tougher than her blade, which is the whole of her');
+      assert.ok(arms.shield > arms.level, 'and her shield is better than either');
+    } else {
+      assert.ok(arms.toughness < arms.level, `${id}'s Toughness is a little under his weapon`);
+      assert.ok(arms.toughness > arms.level - 10, `${id}'s Toughness is a little under it, not far under`);
+    }
+  }
+  // The blows that land on them still take the country's level: that half was right already.
+  const combatSource = readFileSync(fileURLToPath(new URL('../src/combat.js', import.meta.url)), 'utf8');
+  assert.match(combatSource, /function hurtAlly[\s\S]{0,260}countryDamage/, 'a blow on an ally is the country’s');
+  assert.doesNotMatch(combatSource, /function makeAlly[\s\S]{0,400}countryHealth/, 'but the ally himself is not');
 });
 
 test('the companion it hands the company is the one the long road already takes', () => {
@@ -170,17 +241,27 @@ test('the companion it hands the company is the one the long road already takes'
   // wants is `{ id, with: true }`, and undefined when nobody walks with you - which is today's
   // clock, exactly, and is pinned by the company's own snapshot test.
   const { companions } = fresh();
-  assert.equal(companions.companion, undefined, 'nobody asked is nobody walking');
+  assert.deepEqual(companions.companions, [], 'nobody asked is nobody walking');
   companions.ask('merc-word', { where: 'shore' });
-  assert.deepEqual(companions.companion, { id: 'merc-word', with: true });
+  companions.ask('merc-mus', { where: 'wild' });
+  assert.deepEqual(companions.companions, [{ id: 'merc-word', with: true }, { id: 'merc-mus', with: true }]);
   const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -400, z: 0 }];
-  const walking = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: companions.companion });
-  assert.equal(walking.companionId, 'merc-word');
-  assert.equal(walking.placements(600).find(p => p.id === 'merc-word').phase, 'with-traveler');
-  companions.sendOn('merc-word');
-  const alone = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: companions.companion });
-  assert.equal(alone.companionId, null);
+  const walking = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companions: companions.companions });
+  assert.deepEqual([...walking.companionIds].sort(), ['merc-mus', 'merc-word'], 'both of them');
+  for (const id of ['merc-word', 'merc-mus'])
+    assert.equal(walking.placements(600).find(p => p.id === id).phase, 'with-traveler', id);
+  assert.equal(walking.summary(600)['with-traveler'], 2, 'and the summary counts them');
+  // The long road's own spelling still works, and is a list of one.
+  const one = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: { id: 'merc-gotwood', with: true } });
+  assert.equal(one.companionId, 'merc-gotwood');
+  assert.deepEqual(one.companionIds, ['merc-gotwood']);
+  // And the empty set is today's clock, exactly - the property the whole design rests on.
+  companions.sendOn('merc-word'); companions.sendOn('merc-mus');
+  const alone = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companions: companions.companions });
+  assert.deepEqual([alone.companionId, alone.companionIds], [null, []]);
   const untouched = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 } });
-  for (const seconds of [0, 600, 1800, 5300])
-    assert.deepEqual(alone.placements(seconds), untouched.placements(seconds), `at ${seconds} s`);
+  for (const seconds of [0, 600, 1800, 5300]) {
+    assert.deepEqual(alone.placements(seconds), untouched.placements(seconds), `empty, at ${seconds} s`);
+    assert.deepEqual(alone.summary(seconds), untouched.summary(seconds), `empty summary, at ${seconds} s`);
+  }
 });

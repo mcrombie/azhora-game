@@ -27,19 +27,18 @@ simply the first case and the only one that is automatic.
 
 ## Settled, and why
 
-### One at a time, and two once the country asks for it
+### As many as will come
 
-The combat brief says level-6 country — "Go armed, and not alone" — is "tuned for a traveler with
-one or two companions". So: **one companion until the Moros muster, two after it.**
+**The user's ruling, 2026-09-21.** There is no limit. A traveler may reach the muster with most
+of the company behind him, and that is the generous reading on purpose. I had proposed one on the
+road and two after it; the answer was the other end of the range.
 
-One on the road keeps the long road exactly as it is: Chris at your shoulder, one set of remarks,
-one figure in the fight box, one man to lose. Two would make the road's noticing, the dialogue
-prompts and the fight box all more crowded at the very hour the long road was tuned. After the
-muster the company is formed, the country gets harder, and the brief's own "one or two" comes
-due.
-
-**This is the user's to confirm.** It is the single number that most changes how companions feel,
-and I have taken the reading that keeps the long road untouched.
+So the scarcity is not a number. It is that **each man says yes only for his own reason at his
+own moment**, and some of those moments are narrow: Ed is on his strand for twenty-five minutes,
+Mus is only ever found off the road, Kristen wants the road charted first. Keep those honest and
+the company stays something gathered rather than collected. "Asking a second is asking the first
+to go on ahead" is gone, and so is the `'full'` refusal — the only reasons anybody says no are
+his own.
 
 ### How each of the nine is asked
 
@@ -56,8 +55,8 @@ each has one moment where asking is natural. Nobody is recruited from a menu.
 | **Matt and Al the Tun** | the last pair in, minute 63 | Matt comes if there is a line to hold; **Al** comes for company, and would rather it never came to the mace |
 | **Mus** | only in the woods, on his wild line | you left the road, which is the one thing he respects. He never says why he says yes — he is the sage's eyes, and he does not explain the route either |
 
-**Only one may walk with you**, so asking a second is asking the first to go on ahead. That is a
-choice with a cost and it is the point.
+**All of them may walk with you**, and the three who rode in together can all come. What keeps
+the company from being a shopping list is that each is asked where he is and for what he wants.
 
 ### Friendship: four rungs, and what moves them
 
@@ -102,18 +101,20 @@ Recruitable **until** the muster: the road is where you find people, and the fin
 Once the company is mustered the army has them, and who walks with you is settled at the camp
 instead of on the road — and two may, because from there the country is level 2 and climbing.
 
-## For the user to decide
+## Answered by the user
 
-1. **One companion on the road, two after the muster** — my reading of "one or two". The single
-   number most worth confirming.
-2. **Kristen's condition** is the only one that asks the player for something specific (the road
-   charted). Everything else is met by being in the right place. If that is too much of a gate, she
-   falls back to Ciarán's reason.
-3. **What the Marshal says when the eleven are not eleven**, because somebody died. It is one line
-   and it is the user's voice, not mine. Until it exists the muster keeps its present line for a
-   full company and says the plain count otherwise, which is already what `musterVoices` does.
-4. **Whether a dead companion's weapon can be recovered.** The save already holds
-   `mercenaryWeapons`, so a sword traded to a man who then dies is somewhere. Not built either way.
+All four were answered on 2026-09-21 (docs/design-answers.md):
+
+1. **How many: as many as will come.** No limit.
+2. **Kristen keeps her condition:** she comes if you have charted the road.
+3. **The gap at the muster: he asks you what happened.** A short conversation, once for each
+   missing name. Tell it true, say only "Dead.", or lie — and a lie is known to everyone who was
+   walking with you when it happened, each of whom drops a rung and says so once, later, by their
+   own fire. If nobody living saw it, the lie stands and the campaign remembers the register says
+   something false. Built in step 5.
+4. **A dead companion's weapon lies where they fell**, marked, until picked up, as a named weapon
+   — "Eliana's greatsword" — and if they carried the traveler's traded sword, that is what lies
+   there. The only named weapons in the game.
 
 ## Build order
 

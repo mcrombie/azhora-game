@@ -1,3 +1,4 @@
+import { HELD_AT_TUNED_LEVEL } from './border-chapter.js';
 /**
  * After the border battle: the four chapters the campaign can reach from it.
  * The Empire's sellsword either goes into Solis with the army (`solis-sweep`)
@@ -152,7 +153,7 @@ export function aftermathEncounter(variantId, arena, allies = []) {
   const sign = arena.retreatSign === -1 ? -1 : 1;
   const place = (across, along) => (arena.retreatAxis === 'x'
     ? { x: arena.center.x + sign * along, z: arena.center.z + across } : { x: arena.center.x + across, z: arena.center.z + sign * along });
-  return { id: spec.encounterId, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
+  return { id: spec.encounterId, level: HELD_AT_TUNED_LEVEL, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
     retreatAxis: arena.retreatAxis, retreatSign: sign, retreatLine: arena.center[arena.retreatAxis] + sign * RETREAT_ALONG,
     enemies: (spec.enemyOffsets ?? ENEMY_OFFSETS).map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 100, kind: 'soldier', look: spec.foe })),
     allies: allies.slice(0, ALLY_OFFSETS.length).map((ally, index) => ({ ...ally, ...place(...ALLY_OFFSETS[index]) })) };
