@@ -7,8 +7,10 @@ import { WEAPON_TYPES, SWORD_ARC, TRADEABLE_WEAPONS } from '../src/weapons.js';
 import { ARMS_SKILLS, familyOf } from '../src/combat-skills.js';
 import { KIT_WEAPON_ITEM, MERCENARY_STYLES } from '../src/mercenaries.js';
 import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { sourceModule } from './module-loader.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
+const { createCharacter } = await sourceModule('../src/characters.js');
 const open = { heightAt: () => 1.5, colliders: [], bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 } };
 
 /** A fight with one goblin due north, and whatever weapon is being asked about. */
@@ -155,4 +157,42 @@ test('every weapon has a family, a home and a way into the traveler’s hand', (
     const item = KIT_WEAPON_ITEM[MERCENARY_STYLES[who].weapon];
     assert.ok(item && WEAPON_TYPES[item], `${who}'s ${MERCENARY_STYLES[who].weapon} is a real weapon`);
   }
+});
+
+test('what he takes up is what he is seen holding', () => {
+  // A traveler who picks a dead friend's spear off the ground must not be drawn with a sword.
+  const actor = createCharacter();
+  const PROPS = { 'ash-spear': 'Ash spear', 'war-pike': 'War pike', quarterstaff: 'Quarterstaff' };
+  for (const id of Object.keys(WEAPON_TYPES)) {
+    assert.equal(actor.setWeapon(id), true, `${id} is a thing he can be seen holding`);
+  }
+  assert.equal(actor.setWeapon('nothing-of-the-kind'), false, 'and nothing else is');
+  // The three poles are the props the hired swords already carry, not new ones invented here.
+  for (const [id, name] of Object.entries(PROPS)) {
+    const prop = actor.group.getObjectByName(name);
+    assert.ok(prop, `${id} has a ${name} on him`);
+    actor.setWeapon(id);
+    assert.equal(prop.visible, true, `${name} is shown when it is what he holds`);
+    actor.setWeapon('simple-sword');
+    assert.equal(prop.visible, false, `and hidden when it is not`);
+  }
+  // Exactly one at a time: he is never seen carrying two.
+  for (const id of Object.keys(WEAPON_TYPES)) {
+    actor.setWeapon(id);
+    let shown = 0;
+    for (const name of Object.values(PROPS)) if (actor.group.getObjectByName(name)?.visible) shown++;
+    assert.ok(shown <= 1, `holding ${id}, ${shown} poles are drawn`);
+  }
+  // They hang off the wrist mount with the blades, so they swing with the arm rather than
+  // standing planted the way an npc's does.
+  const characters = source('characters.js');
+  assert.match(characters, /'ash-spear': mount => makeSpearProp\(mount, 'Ash spear', 1\.9\),/);
+  // Built the first time he holds one, like the buckler: a figure has a draw-call budget and
+  // these three are only ever reached by taking one off the ground where its owner fell.
+  assert.match(characters, /if \(isPlayer && weapon && LATE_WEAPONS\[id\] && !weapons\[id\]\) weapons\[id\] = LATE_WEAPONS\[id\]\(weapon\);/);
+  // And the facade forwards it plainly. `player` is a facade over a replaceable body, and a verb
+  // called with `?.` on it does nothing at all, quietly (docs/known-issues.md).
+  const main = source('main.js');
+  assert.match(main, /setWeapon:\(\.\.\.a\)=>playerBody\.setWeapon\(\.\.\.a\)/);
+  assert.doesNotMatch(main, /player\.setWeapon\?\./);
 });

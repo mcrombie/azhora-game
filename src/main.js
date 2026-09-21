@@ -5028,6 +5028,26 @@ function init() {
         }
         // The shield up, in a real fight, seen from the shield side. It needs a live encounter:
         // the guard is only ever up while one is on, which is the rule and not the view's choice.
+        // The traveler holding one of the three poles he can only get off the ground where its
+        // owner fell: arms-spear, arms-pike, arms-staff.
+        if(view.startsWith('arms-')){
+          const held={'arms-spear':'ash-spear','arms-pike':'war-pike','arms-staff':'quarterstaff'}[view];
+          if(held){
+            questStage=10;combat.finishPractice();
+            inventory.add(held);weapons.equip(held);player.setArmed(true);
+            const post=world.training,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.6,3.4,4.4]})??post;
+            player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+            const face=Math.atan2(post.x-stand.x,post.z-stand.z);
+            player.group.rotation.y=face;grounded=true;verticalSpeed=0;
+            // The weapon is on his wrist, so settle the arm before freezing or the pose is
+            // whatever the last view left (settlePose, and the frozen-clock trap it exists for).
+            settlePose({armed:true});
+            reviewTarget=new THREE.Vector3(player.group.position.x,world.heightAt(stand.x,stand.z)+1.2,player.group.position.z);
+            const shot=bestOf(reviewTarget,4.8,[face+1.45,face-1.45,face+1.8,face-1.8]);
+            yaw=shot.yaw;pitch=.08;distance=targetDistance=shot.distance;reviewFrozen=true;
+            return;
+          }
+        }
         if(view==='shield-guard'){
           questStage=10;combat.finishPractice();player.setArmed(true);
           gear.wear('hand',{weight:'light',tier:0});refreshShield();
