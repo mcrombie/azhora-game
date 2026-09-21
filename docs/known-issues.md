@@ -65,55 +65,6 @@ under the south wall.
 
 ---
 
-## Six foods exist, heal, and cannot be got
-
-**Seen:** nothing, which is the problem. The satchel describes hazelnuts, bramble berries,
-Avrel apples, acorn flatbread, honey cakes and roasted chestnuts; a traveler will never hold one.
-
-**Measured.** Every item id in `INVENTORY_ITEMS` was matched against every source in `src/` —
-anything that calls `inventory.add(id)`, any reward table, `PEDDLER_STOCK`, `ATTIC_WINES`, and
-every other literal use of the id. Six ids appear in exactly two places and nowhere else:
-
-| item | heals | its own "you have none" line says to look |
-|---|---|---|
-| `hazelnuts` | 15 | hazel thickets where the forest meets the fields |
-| `bramble-berries` | 15 | the thorn tangles the bramble goblins are named for |
-| `avrel-apple` | 20 | the Avrel valley orchards |
-| `acorn-flatbread` | 30 | Lysa bakes it from leached acorn meal at her outdoor kitchen |
-| `honey-cake` | 35 | Lysa's little cakes need acorn meal and bee-fold honey |
-| `roasted-chestnuts` | 30 | down from the Amod terraces by the sackful each autumn |
-
-The two places are `src/inventory.js` (name, icon, brief, description) and `src/consumables.js`
-(healing and the missing message). No third.
-
-**Why it is not just unbuilt content.** Four of the six name things the game already has.
-Lysa stands at her outdoor kitchen in Tidehaven and the acorn quest runs through her; Troy keeps
-the Bee Fold and honeycomb has had a source since he arrived; the Avrel clearing is built and has
-crop fields; the Amod terraces are built. The fifth, bramble berries, names the bramble goblins,
-who attack the village in the tutorial. So each one reads as a source that was meant to follow
-and did not, rather than as a larder written for a country that does not exist yet.
-
-`tests/foods.test.js` cannot catch this: it checks the larder against itself — that every food
-is a stackable satchel item, that the brief and description quote the healing, that eating one
-works — and nothing about the larder's own consistency says whether a traveler can fill it.
-
-**Ways out, each a different decision:**
-
-1. Put them where their own text says they are: a hazel thicket and a bramble tangle to gather
-   from at the forest edge (`src/woodland-life.js` already gathers pawpaws and sticks this way),
-   apples in the Avrel orchards, chestnuts sold or given in Amod. Most work, and it is the answer
-   the text has already promised.
-2. Give Lysa the two she is named for. `acorn-flatbread` and `honey-cake` both want acorn meal,
-   which the acorn quest already collects, and `honey-cake` wants bee-fold honey, which Troy sells.
-   That is a recipe each in `src/cooking.js`, which today holds only two.
-3. Stock them at the peddler. One line each in `PEDDLER_STOCK`. Cheapest, and it makes six pieces
-   of writing about where food comes from into six prices.
-4. Delete them. Also a decision, and it costs six good descriptions.
-
-**Repro:** `grep -rn 'hazelnuts' src/` returns two lines. So does each of the other five.
-
----
-
 ## A tumbled cart sits on a track, not beside it
 
 **Seen:** walking the short spur that leaves the Avrel clearing road south-west, the way is shut
