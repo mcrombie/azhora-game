@@ -16,6 +16,15 @@
  */
 export const REFUGEES_VERSION = 1;
 
+/**
+ * **Switched off for now** (the user, 2026-09-21: "they get in the way, just disable them for
+ * now"). With this false the host never stands them in the world: nobody to meet on the road,
+ * nobody at the landing, no toast when they arrive. The module, its walk and its lines are kept
+ * whole and still tested, and the save still carries their clock, so turning them back on is
+ * this one word and nothing else.
+ */
+export const REFUGEES_ENABLED = false;
+
 /** A tired walk, in metres a second, and how long they sit down for. */
 export const REFUGEE_PACE = 1.15;
 export const REFUGEE_REST = 90;

@@ -140,7 +140,7 @@ import { SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, ELOD_LIGHT, LANDING, LENS_I
 import { createBosco as createBoscoModel } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
-import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
+import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog, subregionsAt } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
 import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
@@ -379,8 +379,9 @@ function init() {
   // was and walk the main road east while the game is played, so where they are
   // when the traveler meets them depends entirely on what the traveler did first.
   const refugeeRoute=world.paths[0].slice(0,REFUGEE_START+1).reverse().map(point=>({x:point.x,z:point.z}));
-  const refugees=createRefugees({route:refugeeRoute,stands:REFUGEE_STANDS,onEvent:event=>{if(event.type==='refugees-arrived')toast('Three people off the Lauvel road have reached the landing. They are telling the village what they saw.','WORD FROM THE WEST');}});
-  for(const person of REFUGEES){const start=refugees.positions().find(entry=>entry.id===person.id);world.npcPositions[person.id]={x:start.x,z:start.z};npcData.push({...person,yaw:start.yaw});}
+  const refugees=createRefugees({route:refugeeRoute,stands:REFUGEE_STANDS,onEvent:event=>{if(REFUGEES_ENABLED&&event.type==='refugees-arrived')toast('Three people off the Lauvel road have reached the landing. They are telling the village what they saw.','WORD FROM THE WEST');}});
+  // Disabled at the user's request (REFUGEES_ENABLED): their clock still runs, but nobody is stood in the world.
+  if(REFUGEES_ENABLED)for(const person of REFUGEES){const start=refugees.positions().find(entry=>entry.id===person.id);world.npcPositions[person.id]={x:start.x,z:start.z};npcData.push({...person,yaw:start.yaw});}
   // The army's posts along the road: soldiers who stand watch and have a word for a hired sword.
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
@@ -5272,7 +5273,7 @@ function init() {
       nearOldTree=mode==='playing'&&Math.hypot(player.group.position.x-TALKING_TREE.x,player.group.position.z-TALKING_TREE.z)<TALKING_TREE.trunkRadius*1.6+2.4;
       if(mode==='playing'){oldTreeView.pose(oldTree.update(dt,{x:player.group.position.x,z:player.group.position.z}));specimenTrees.update(player.group.position);}
       if(mode==='playing'){if(jimson.tick(Math.min(1,Math.max(0,elapsed-jimsonClock))))jimsonNight();jimsonClock=elapsed;}
-      if(mode==='playing'){if(fightAt&&refugees.positions().some(walker=>Math.hypot(walker.x-fightAt.x,walker.z-fightAt.z)<60))refugeeHold+=dt;refugees.setClock(playSeconds-refugeeHold);for(const walker of refugees.positions()){world.npcPositions[walker.id]={x:walker.x,z:walker.z};const npc=npcById.get(walker.id);if(npc)npc.pace=walker.pace;}}
+      if(mode==='playing'){if(fightAt&&refugees.positions().some(walker=>Math.hypot(walker.x-fightAt.x,walker.z-fightAt.z)<60))refugeeHold+=dt;refugees.setClock(playSeconds-refugeeHold);if(REFUGEES_ENABLED)for(const walker of refugees.positions()){world.npcPositions[walker.id]={x:walker.x,z:walker.z};const npc=npcById.get(walker.id);if(npc)npc.pace=walker.pace;}}
       const p=player.group.position,nearestPickup=[currentAcorn,currentStick,currentFruit].filter(Boolean).sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z))[0];
       if(currentAcorn!==nearestPickup)currentAcorn=null;if(currentStick!==nearestPickup)currentStick=null;if(currentFruit!==nearestPickup)currentFruit=null;
       nearRepair=(world.repairBenches||[world.repairBench]).some(bench=>Math.hypot(p.x-bench.x,p.z-bench.z)<2.1);
