@@ -22,7 +22,7 @@ import { bystandersFor, createFallen } from './bystanders.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
 import { TOWN_LIFE_NPCS, TOWN_LIFE_IDS, townLifeLines, createWallWatch } from './town-life.js';
 import { createBorderWatch, CLOSED_BORDER_TITLE } from './closed-border.js';
-import { COPPER_ITEM, PEDDLER, STARTING_PURSE, describeSum, peddlerOffers } from './economy.js';
+import { COPPER_ITEM, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerLines, peddlerOffers } from './economy.js';
 import { VILLAGE_DOG, createVillageDog } from './village-dog.js';
 import { VILLAGE_CAT, createVillageCat } from './village-cat.js';
 import { createRedTailHawk } from './lakota-hawk.js';
@@ -103,6 +103,7 @@ import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeolog
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
 import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
 import { setSignReader } from './signs.js';
+import { createGameMode } from './game-mode.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
 import { WINE_SKILL, WINE_LESSON, TASTING_TERMS, createWine, vintnerConversation, cellarHandConversation, winemakerConversation } from './wine.js';
@@ -206,6 +207,15 @@ function init() {
   sun.shadow.normalBias=.045;sun.shadow.bias=-.00025;sun.shadow.camera.updateProjectionMatrix();scene.add(sun,sun.target);
   const clouds=createSky(scene);
   const testingQuery=new URLSearchParams(location.search);
+  // Normal or hard (src/game-mode.js, docs/hard-mode.md). Normal is the game we develop and the
+  // only one we test, and it is all in English; hard is where the linguist and its tongues are
+  // reserved. There is no selector, because hard mode is not yet worth choosing: ?mode=hard beside
+  // ?test=1 is the only way in, and it keeps the reserved code reachable with no interface work.
+  // Nothing else in this file asks which mode it is - it asks the gate for a feature by name.
+  const gameMode=createGameMode({mode:testingQuery.get('mode')});
+  // The skills no sheet shows in this mode. The registry in src/skills.js keeps every one of them,
+  // so a save holding linguist experience still validates and keeps every point of it.
+  const hiddenSkills=new Set(gameMode.hiddenSkills);
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
   // You may be any of the eleven, so the body has to be replaceable. The rig around it is not:
   // combat and everything else took hold of this one position object at boot and keeps holding it.
@@ -675,11 +685,14 @@ function init() {
     if(chosen?.weapon&&inventory.has(chosen.weapon))weapons.equip(chosen.weapon);
     // Restored rather than learned: a life lived before the game began does not put level-up
     // banners on the screen. An id this build's skills module does not know is simply not known.
-    const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)).map(([id,xp])=>[id,{xp}]));
+    // A skill this mode does not show is not handed out either: nothing pays what is not on the
+    // sheet. The table in src/player-characters.js keeps it, for the mode that does (game-mode.js).
+    const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)&&!hiddenSkills.has(id)).map(([id,xp])=>[id,{xp}]));
     if(Object.keys(known).length)skills.restore({version:SKILLS_VERSION,skills:known});
     // And the tongues he already had. Chris Gotwood interprets for the company, so when he is the
     // player the Ambroni is his own from the first step and nobody has to lean in and repeat it.
-    for(const [id,proficiency] of Object.entries(startingLanguages(playerId)))linguist.speakAlready(id,proficiency);
+    // Normal mode is all in English, so `startingLanguages` stays in the data and is never applied.
+    if(gameMode.has('linguist'))for(const [id,proficiency] of Object.entries(startingLanguages(playerId)))linguist.speakAlready(id,proficiency);
     inventory.refresh();refreshSkillsSheet();updateHUD();
   }
   const objectiveMarker=makeQuestMarker();scene.add(objectiveMarker);
@@ -780,12 +793,14 @@ function init() {
   // nothing but which lessons have been given: the standing is the companions', the experience
   // the skills'. The dead teach nothing and a man sent on ahead teaches nothing until he is back.
   teachers=createTeachers({companions,arms,onEvent:()=>refreshSkillsSheet()});
-  // Linguist: nobody in Azhora speaks the traveler's language, so what people say to
+  // Linguist: in hard mode nobody in Azhora speaks the traveler's language, so what people say to
   // him arrives in theirs (src/languages.js, src/linguist.js). Chris Gotwood came off
   // the same boat with enough of the local speech to get two men up a road; while he is
   // beside you his interpretation runs under the line and every exposure counts double.
+  // In normal mode everybody is understood: nothing here is fed, nothing here is paid, and the
+  // module exists so that a save which holds a tongue keeps it (docs/hard-mode.md).
   const linguist=createLinguist({skills,onEvent:event=>{
-    if(event.type!=='tongue-level')return;
+    if(!gameMode.has('linguist')||event.type!=='tongue-level')return;
     if(event.read)toast(`${LANGUAGES[event.language].name} lettering has stopped being shapes. You will see it on the road ahead.`,'YOU CAN READ THE SIGNS');
     else if(event.level>=MAX_PROFICIENCY)toast(`There is nothing anybody says in ${LANGUAGES[event.language].name} that you cannot follow.`,'A TONGUE OF YOUR OWN');
     else if(event.level%10===0)toast(`${LANGUAGES[event.language].name} \u00b7 ${event.level}`,'A TONGUE IS COMING TO YOU');}});
@@ -793,8 +808,9 @@ function init() {
   // check the content of it, and __AZHORA__.linguist.forget() puts the traveler back to
   // nothing when a review wants to look at the panel as a new player sees it.
   if(testingQuery.has('test'))linguist.fluent();
-  // The road letters its signs in the country they stand in until the traveler can read it.
-  setSignReader(id => linguist.canRead(id));
+  // The road letters its signs in the country they stand in until the traveler can read it. With
+  // nobody to ask, src/signs.js letters every board in English, which is normal mode exactly.
+  if(gameMode.has('linguist'))setSignReader(id => linguist.canRead(id));
   // The long road through Drent: the optional walk that is exactly as long as the company takes
   // to come in (src/long-road.js, docs/drent-long-road.md). It reads every other module's view
   // and writes to none of them; what it keeps is the handful of things nobody else can answer.
@@ -1966,9 +1982,10 @@ function init() {
     $('bird-card-level').textContent=level.max?`${view.name} ${level.level} · ${level.xp} experience`:`${view.name} ${level.level} · ${level.xp} / ${level.next} experience`;
     $('bird-card').classList.add('visible');clearTimeout(birdCardTimer);birdCardTimer=setTimeout(()=>$('bird-card').classList.remove('visible'),7000);
   }
-  // The skills sheet in the journal, RuneScape's way: a grid of the thirteen skills, three to a row,
-  // with the total level filling what the last of them leaves of the bottom row, and behind each tile
-  // that skill's own guide and the collection log that belongs to it.
+  // The skills sheet in the journal, RuneScape's way: a grid of the skills of the world, three to a
+  // row, with the total level filling what the last of them leaves of the bottom row, and behind each
+  // tile that skill's own guide and the collection log that belongs to it. Thirteen of them in normal
+  // mode and the seven Arms under their own heading; the Linguist is hard mode's (src/game-mode.js).
   const skillEl=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   let openSkillId=null;
   function skillMark(skill,cls='skill-tile-icon'){const mark=skillEl('span',cls);mark.setAttribute('aria-hidden','true');mark.innerHTML=skillIconSVG(skill.id);return mark;}
@@ -1985,10 +2002,14 @@ function init() {
     // fighting sit under 'Arms'; everything else is ungrouped and comes first, exactly as it did
     // when there were only thirteen.
     const grid=skillEl('div','skill-grid');
-    for(const skill of view)if(!SKILLS[skill.id]?.group)grid.append(skillTile(skill));
+    let ungrouped=0;
+    for(const skill of view)if(!SKILLS[skill.id]?.group){grid.append(skillTile(skill));ungrouped++;}
     const total=skillEl('div','skill-tile skill-tile-total'),learned=view.filter(skill=>skill.learned).length;
-    total.append(skillEl('b','','Total level'),skillEl('span','skill-tile-level',String(skills.totalLevel())),
-      skillEl('span','skill-tip',`Total level: ${skills.totalLevel()} · Skills learned: ${learned} / ${view.length}`));
+    // It fills out the bottom row whatever that row has in it: one cell after fourteen ungrouped
+    // skills, two after the thirteen normal mode shows, so the grid never ends in a hole.
+    total.style.gridColumn=`span ${((3-ungrouped%3)%3)||1}`;
+    total.append(skillEl('b','','Total level'),skillEl('span','skill-tile-level',String(shownTotalLevel())),
+      skillEl('span','skill-tip',`Total level: ${shownTotalLevel()} · Skills learned: ${learned} / ${view.length}`));
     grid.append(total);sheet.append(grid);
     const headings=[];
     for(const skill of view){const group=SKILLS[skill.id]?.group;if(group&&!headings.includes(group))headings.push(group);}
@@ -2064,14 +2085,22 @@ function init() {
       if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
     }
   }
+  /**
+   * The skills this game shows. The registry in src/skills.js holds every skill in the build, so a
+   * save that carries linguist experience still validates and keeps it; what comes out here is
+   * whatever belongs to a mode this game is not being played in (src/game-mode.js).
+   */
+  function shownSkills(){return skills.view().filter(entry=>!hiddenSkills.has(entry.id));}
+  /** RuneScape's total level, over the skills this mode shows. */
+  function shownTotalLevel(){return shownSkills().reduce((sum,entry)=>sum+(entry.learned?entry.level:0),0);}
   function refreshSkillsSheet(){
     const sheet=$('skills-sheet');sheet.replaceChildren();
-    const view=skills.view(),open=openSkillId?view.find(entry=>entry.id===openSkillId):null;
+    const view=shownSkills(),open=openSkillId?view.find(entry=>entry.id===openSkillId):null;
     if(open)renderSkillGuide(sheet,open);else renderSkillGrid(sheet,view);
   }
   /** The journal, on the Skills tab, on one skill's guide: where a level-up banner sends you. */
   function openSkillGuide(id){
-    if(!id||!Object.hasOwn(SKILLS,id)||!['playing','journal','pause'].includes(mode))return false;
+    if(!id||!Object.hasOwn(SKILLS,id)||hiddenSkills.has(id)||!['playing','journal','pause'].includes(mode))return false;
     clearTimeout(levelUpTimer);$('level-up').classList.remove('visible','flash');
     modal('journal');journalTab('skills');openSkillId=id;refreshSkillsSheet();return true;
   }
@@ -2517,11 +2546,22 @@ function init() {
     toast(`${point.name} is marked in teal. Follow the paths; the marker shows its direction.`, 'LOCAL TRAIL · L TO REVIEW');updateHUD();return true;
   }
   function clearTrailPin(){trackedPlaceId=null;trailMarker.visible=false;updateHUD();}
+  /**
+   * **How many of the company stand in this camp.** The men whose clock has them at the muster,
+   * less the ones who are never coming.
+   *
+   * `summary().mustered` counts a phase, and the company's clock knows nothing about the dead: a
+   * man struck off the walking list goes back onto the road schedule and musters on it, hidden,
+   * like anybody else. So the Marshal said one more stood in front of him than did, for every man
+   * who had died, while living men were still on the road. The dead are in neither count - not
+   * among those in camp and not among those still coming (docs/companions.md).
+   */
+  function musteredInCamp(){return company.placements(playSeconds).filter(p=>p.phase==='mustered'&&!fallen.has(p.id)).length;}
   // Where the traveler stands in the hired company: who has landed, who has mustered, and the traveler's place on the road.
   function companyStanding(){
     const s=company.summary(playSeconds),rank=company.travelerRank(playSeconds,distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}));
     const ordinal=n=>n+(n%100>=11&&n%100<=13?'th':['th','st','nd','rd'][n%10]||'th');
-    return ` · the company: ${s.arrived} of ${s.total} landed, ${s.mustered} at the muster, you stand ${ordinal(rank)} on the road`;
+    return ` · the company: ${s.arrived} of ${s.total} landed, ${musteredInCamp()} at the muster, you stand ${ordinal(rank)} on the road`;
   }
   function refreshCampaign(){
     refreshChapter();
@@ -2700,7 +2740,7 @@ function init() {
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     // First of eleven. Venmor remembers who came first, and it is the one thing the short road
     // has that the long road cannot get (docs/drent-long-road.md §9). Once, and a little trust.
-    if(action==='join-muster'&&company.summary(playSeconds).mustered+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
+    if(action==='join-muster'&&musteredInCamp()+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
       toast('You are the first of the eleven into this camp, and the Marshal has noticed. The pegs behind the standard are still empty.','THE ARMY REMEMBERS EARLY MEN');
     const view=moros.view();
     toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
@@ -2730,7 +2770,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -2738,6 +2778,10 @@ function init() {
   function continueRoad(){
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
+    // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
+    // sheet, the sign lettering and the starting kit were settled when the page opened, and
+    // switching them under a running game would leave half of it in the other mode. The field says
+    // which game the save was written in; a save with no field at all is a normal-mode adventure.
     // Who the adventure was being played as. A save from before anyone could choose is Cromb.
     setPlayerCharacter(savedPlayerCharacter(saved.player));mateSaidGoodbye=saved.questStage>=2;
     trackedPlaceId=null;trailMarker.visible=false;
@@ -2754,10 +2798,17 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());companions.restore(saved.companions??createCompanions().snapshot());teachers.restore(saved.teachers??createTeachers().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());
+    // **The dead come back off the road before the company does.** `companions.restore` asks
+    // `fallen` who is dead, to keep a dead man out of the walking list it is handed - so a stale
+    // `fallen` answers for the save being loaded. Restoring it three lines later meant that
+    // loading a save written *before* a fight, in the same session as the death, struck the man
+    // out of the file: he came back alive and no longer at your shoulder.
+    fallen.restore(saved.fallen??createFallen().snapshot());
+    companions.restore(saved.companions??createCompanions().snapshot());teachers.restore(saved.teachers??createTeachers().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -3010,7 +3061,9 @@ function init() {
     if(asking)choices.unshift(asking);
     // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
     if(companionOffTheClock&&npc.id===landingMateId()){
-      const drill=longRoad.view(longRoadWorld()).drill;
+      // His five sittings exist to teach a tongue, so they are hard mode's and are not offered in
+      // normal mode, where the army is understood already (src/game-mode.js, docs/hard-mode.md).
+      const drill=gameMode.has('linguist')?longRoad.view(longRoadWorld()).drill:null;
       if(drill)choices.unshift({id:'companion-drill',label:`Teach me some of the army\u2019s speech. (${drill.title})`,action:()=>giveDrill(npc,drill)});
       if(!longRoad.released)choices.unshift({id:'companion-go-on',label:'Go on to the muster without me.',action:()=>{
         closeDialogue();
@@ -3136,7 +3189,11 @@ function init() {
   }
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
-    const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS});
+    // A phrasebook is a lump of a tongue, so it is hard mode's: where it is not sold it is not on
+    // the pack and Wendel does not offer it (src/game-mode.js, docs/hard-mode.md).
+    const sellsPhrasebook=gameMode.has('linguist');
+    const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS,
+      stock:sellsPhrasebook?PEDDLER_STOCK:PEDDLER_STOCK.filter(entry=>entry.id!==PHRASEBOOK_ITEM)});
     const choices=offers.map(offer=>({id:`buy-${offer.id}`,label:offer.label,enabled:offer.enabled,reason:offer.reason,action:()=>{
       const paid=inventory.remove(COPPER_ITEM,offer.price);   // only hand back what was actually taken
       if(!paid||!inventory.add(offer.id,1)){if(paid)inventory.add(COPPER_ITEM,offer.price);peddlerConversation(npc,false);return;}
@@ -3147,7 +3204,7 @@ function init() {
         toast(read.ok?`${LANGUAGES[here.language].name} \u00b7 ${read.level}. It is all in there, badly spelled.`:'You already have every word in it.',read.ok?'YOU READ THE PHRASEBOOK':'NOTHING NEW IN IT');}
       saveRoad(false);peddlerConversation(npc,false);}}));
     choices.push({id:'leave-peddler',label:'Nothing today.',action:closeDialogue});
-    const lines=opening?[...PEDDLER.lines]:[`You carry ${describeSum(purse)}. Anything else?`];
+    const lines=opening?peddlerLines({phrasebook:sellsPhrasebook}):[`You carry ${describeSum(purse)}. Anything else?`];
     openDialogue(npc,lines,null,'Back to the road',{choices});
   }
   function offerTrade(npc){
@@ -3229,14 +3286,16 @@ function init() {
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
-    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
+    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
-      musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
+      musterCount:musteredInCamp()+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
       // The men standing in front of him and the ones who are never coming: the count is
       // mustered plus those who walked in with you, and the dead are neither (src/companions.js).
       withYou:companions.walking,dead:fallen.ids.filter(id=>roster.some(man=>man.id===id)),
-      owed:companions.owed(),answersFor:id=>companions.answersFor(id),
+      // Asked, not handed: the conversation re-enters itself after each answer, and who is still
+      // owed has changed by then.
+      owed:()=>companions.owed(),answersFor:id=>companions.answersFor(id),
       report:(id,kind)=>{const told=companions.report(id,kind);if(told.ok)saveRoad(false);return told;},
       nameOf:id=>mercenaryById(id)?.name??id}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
@@ -3518,6 +3577,9 @@ function init() {
   function interpreterNpc(){const id=interpreterFor(playerId);return id?npcById.get(id)??null:null;}
   function heardSpeech(){
     const {npc,speech,heard,index,lines}=activeDialogue,line=lines[index],tongue=speech.language;
+    // Normal mode: everybody is understood. The line is shown as it was authored, nothing is
+    // heard into a tongue, and there is no aside under it (src/game-mode.js, docs/hard-mode.md).
+    if(!gameMode.has('linguist')){const plain=$('speech-aside');if(plain){plain.textContent='';show('speech-aside',false);}return line;}
     const helping=linguist.interpreterNearby(npc,{interpreter:interpreterNpc(),languageId:tongue,at:player.group.position});
     if(!heard.has(index)){heard.add(index);linguist.hear(npc,line,{language:tongue,dialect:speech.dialect,times:helping?INTERPRETER.bonus:1});}
     const aside=$('speech-aside'),interpreted=helping&&linguist.level(tongue)<MAX_PROFICIENCY;
@@ -3526,6 +3588,7 @@ function init() {
   }
   /** What tongue this is, and the key that shows the line the way it was actually said. */
   function speechTongue(){
+    if(!gameMode.has('linguist'))return '';
     const {speech}=activeDialogue,named=DIALECTS[speech.dialect]?.name??LANGUAGES[speech.language]?.name;
     if(!named)return '';
     return linguist.showingFull?' · T as you hear it':` · T in ${named}`;
@@ -3748,7 +3811,7 @@ function init() {
   // The character line above Step ashore: eleven tiles in the user's order, Cromb chosen, so
   // that clicking straight through plays the game that was there before anybody could choose.
   const crombOpeningLine=$('opening-who').textContent;
-  const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,
+  const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,hidden:hiddenSkills,
     onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
       $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
   $('skip-cutscene').onclick=skipOpening;
@@ -3884,7 +3947,9 @@ function init() {
     if(e.code==='KeyJ'||e.code==='KeyM'){if(mode==='journal')closeModal();else{modal('journal');mapTab(e.code==='KeyM');}return;}
     if(e.code==='KeyL'){e.preventDefault();if(mode==='journal'&&$('tab-trails').classList.contains('active'))closeModal();else openLocalMap();return;}
     if(e.code===SKILLS_KEY){if(mode==='journal'&&$('tab-skills').classList.contains('active'))closeModal();else if(['playing','journal','pause'].includes(mode)){modal('journal');journalTab('skills');}return;}
-    if(e.code===LINGUIST_KEY&&mode==='dialogue'){e.preventDefault();linguist.toggle();updateSpeech();return;}
+    // T shows a line the way it was actually said, which is hard mode's: in normal mode it was
+    // said in English and the key does nothing at all (src/game-mode.js).
+    if(e.code===LINGUIST_KEY&&mode==='dialogue'&&gameMode.has('linguist')){e.preventDefault();linguist.toggle();updateSpeech();return;}
     if(e.code==='KeyF'){interact();return;}
     if(e.code==='KeyR'){attack();return;}
     if(e.code===RIDING_KEYS.mount){toggleMount();return;}
@@ -4490,7 +4555,14 @@ function init() {
         const seen=pose.visible&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<420;
         if(seen&&!rebelShip)rebelShip=createRebelShip();
         if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
-        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
+        // **Her own clock, not the session's.** Everything else about this arrival is a function
+        // of `playSeconds` - where she is, which way she heads, how far the two at the rail lean -
+        // and src/rebel-crew.js says in as many words that a game reloaded mid-arrival shows the
+        // right pose without anything being saved. Handing her `elapsed` broke exactly that half
+        // of it: the helmsman's tiller, everybody's sway and the man at the sail were on a clock
+        // that starts at nought every time the game is opened, so the same second looked different
+        // after a reload - up to fifteen degrees of the helmsman.
+        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(playSeconds,pose);}
         if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
           if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
         // A boat in. Two of the five cannot be seen from where the player is and the bell is
@@ -5292,8 +5364,12 @@ function init() {
           yaw=shot.yaw;pitch=.14;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        if(view==='company-mounted'||view==='company-picket'){
-          questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
+        // The clock is pinned on the line that names the view, which is what
+        // `tests/session-clock.test.js` asks of every pin: a review that moves the session clock
+        // must be able to be read as a review at a glance. On its own line below the guard it was
+        // the one pin in the file the test could not see, and the suite has been red on it.
+        if(view==='company-mounted'||view==='company-picket'){playSeconds=4000;
+          questStage=10;combat.finishPractice();player.setArmed(false);
           // **Chris is not in the companions list.** The landing mate is filtered out of it and
           // carried on the long road's own terms, which is why the first render placed Jerry and
           // Kristen and not him. A game that walked down the long road with him has him off the
@@ -5381,6 +5457,8 @@ function init() {
         if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
+        // The skills sheet as the journal draws it, for checking what this mode shows.
+        if(view==='skills'){combat.finishPractice();modal('journal');journalTab('skills');}
         // Amod, for review by eye: the terraces from the Pueth road, the bridge, Ostel from below,
         // the street, and Mallec standing beside a person so the scale can be judged rather than asserted.
         if(view.startsWith('amod-')){

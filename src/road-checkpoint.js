@@ -54,6 +54,7 @@ import { createTalkingTree, validateTalkingTreeSnapshot } from './talking-tree.j
 import { createFerry, validateFerrySnapshot } from './ferry.js';
 import { createRenaLetters, validateRenaLettersSnapshot } from './rena-letters.js';
 import { createOgreToll, validateOgreSnapshot } from './amod-ogre.js';
+import { validateGameModeSnapshot } from './game-mode.js';
 import { createLinguist, validateLinguistSnapshot } from './linguist.js';
 import { createLongRoad, validateLongRoadSnapshot } from './long-road.js';
 import { createFarming, validateFarmingSnapshot } from './farming.js';
@@ -152,6 +153,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateFerrySnapshot(data.ferry)) return failed('The saved crossing to Peblos is invalid.');
     if (!validateRenaLettersSnapshot(data.renaLetters)) return failed('The saved letters between the Ardrys are invalid.');
     if (!validateOgreSnapshot(data.ogreToll)) return failed('The saved toll at the Amod pass stones is invalid.');
+    // Which game this was: one field, and no field at all is a normal-mode adventure, which is
+    // every save written before there were modes (src/game-mode.js, docs/hard-mode.md).
+    if (!validateGameModeSnapshot(data.mode)) return failed('The saved game mode is not one this build knows.');
     if (!validateLinguistSnapshot(data.linguist)) return failed('The saved tongues of Azhora are invalid.');
     if (!validateLongRoadSnapshot(data.longRoad)) return failed('The saved long road through Drent is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
@@ -246,6 +250,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       journeyGathered: [...data.journeyGathered], meadowCleared: data.meadowCleared,
       position: { x: p.x, z: p.z }, heardDoom: data.heardDoom,
     };
+    // Which game this was. One field, and a save without it is a normal-mode adventure.
+    if (Object.hasOwn(data, 'mode')) result.mode = data.mode;
     if (Object.hasOwn(data, 'player')) result.player = data.player;
     if (Object.hasOwn(data, 'lysaComplete')) result.lysaComplete = data.lysaComplete;
     if (Object.hasOwn(data, 'health')) result.health = data.health;

@@ -159,13 +159,13 @@ export const MUSTER_PLACES = freeze({
   'willowmere-fire': 'crouched over a fire with a fish on it',
   'bowden-axe': 'hitting a tree, repeatedly, with a great deal of conviction',
   'odger-fernway': 'at the bench at Fernway, holding a mushroom up to the light',
-  'fernway-play': 'watching a play in a language you did not have',
+  'fernway-play': 'standing on a verge watching a play',
   'corvan-register': 'at the quartermaster\u2019s table, signing something',
   'rena-dig': 'in the grass at Rena with a peg in your hand',
   'enna-rows': 'standing over a row of barley as though it might do something',
   'nell-hedge': 'in a hedge. In it. Not beside it',
   'silas-stream': 'squatting in a stream, turning a stone over',
-  'hollis-bridge': 'on the bridge, listening to a man you could not follow',
+  'hollis-bridge': 'on the bridge, listening to the man who keeps it',
 });
 const PLACE_UNKNOWN = 'somewhere back down that road';
 /**
@@ -324,7 +324,12 @@ export function morosConversation(npc, context) {
     // **Before anything else**, the ones who are not here. He asks after each missing name in
     // turn and writes down what he is told; the muster's own business waits until the register
     // is straight, which is what a man who was promised eleven would do.
-    const asking = owed[0];
+    //
+    // **It is asked again each time round, and never read off the context.** Telling him about a
+    // man changes who is still owed, and this conversation re-enters itself once the pen is
+    // down; a list evaluated when the context was built is the list from before the answer, so
+    // he asked after the same name for ever and the second name was never reached.
+    const asking = (typeof owed === 'function' ? owed() : owed)[0];
     if (asking) {
       const name = nameOf(asking);
       openDialogue(npc, [heard.marshal, marshalAsks(name)], null, 'Back to the camp', {

@@ -48,7 +48,7 @@ const chapter = entry => Object.freeze({ ...entry, steps: Object.freeze(entry.st
  */
 const LONG_WAY = Object.freeze({
   title: 'The long way round',
-  detail: 'The company is eleven and the Marshal marches when the eleventh has reported, so the road west will keep. Walk Drent instead and it will teach you the country you are about to fight over: the tongue first, then a rod, a fire, an axe, a hedge and a stone. Chris walks it with you.',
+  detail: 'The company is eleven and the Marshal marches when the eleventh has reported, so the road west will keep. Walk Drent instead and it will teach you the country you are about to fight over: a chart and a bird first, then a rod, a fire, an axe, a hedge and a stone. Chris walks it with you.',
   legs: LONG_ROAD_LEGS.map(leg => `${leg.title} — ${leg.note}`),
 });
 
