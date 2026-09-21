@@ -2008,3 +2008,54 @@ Both are the muster's and the long road's, so they are written down rather than 
   level needs the ally wiring — where a companion becomes `combat.state.allies` — which is still
   with the builder. The level-0 and level-2 baselines to measure it against are already taken:
   **29/40 at 42 % health** and **0/40 with 1.4 of 8 down**.
+
+---
+
+## The long road's last stretch, walked on the real world
+
+Every stop of legs 4 and 5 stands on ground a traveler can stand on, and the two that matter most
+are within a stride of the road:
+
+| stop | leg | standable | m from the road | named ground |
+|---|---|---|---|---|
+| `corvan-register` | 4 | yes | 13 | Drent / avrel |
+| `rena-dig` | 4 | yes | 101 | Drent / rena |
+| `enna-rows` | 4 | yes | 28 | Drent / avrel |
+| `applegarth` | 4 (branch) | yes | 124 | Drent / applegarth |
+| `nell-hedge` | 5 | yes | 19 | Drent / avrel |
+| `silas-stream` | 5 | yes | **13** | Drent / **none** |
+| `hollis-bridge` | 5 | yes | **2** | Luscia / caloss-crossing |
+
+**Silas really is in no named ground**, exactly as `src/long-road.js` claims. The nearest
+subregion centre is `caloss-bank` at **89 m against a 70 m reach**; then `caloss-crossing` at 106
+against 55, and `avrel` at 107 against 75. He is outside all of them, so the only way a man is
+noticed going past him is the forty metres — which is what the comment beside him says.
+
+*One thing I measured and will not report as a fault:* a straight line from the nearest road
+waypoint to `rena-dig`, `applegarth`, `nell-hedge` and `corvan-register` is blocked. That is a
+naive test — those are 13 to 124 m off the road, through hedge and wood, and a player walks round
+things. It says nothing except that my probe walks in straight lines.
+
+---
+
+## The six-regions groundwork: what moved, and what did not
+
+Asked for at once, so measured at once.
+
+**Something moved.** The built world is now **33,247 colliders against 33,131** before the
+groundwork — **116 more** — and a sweep of the west (x −1400 to −900, z 0 to 700, every 20 m)
+finds 766 standable samples, 98 swimmable and 72 solid, the swimmable ones being the rejoined
+western rivers.
+
+**Nothing that anything of mine rests on moved.**
+
+- the Moros camp still reads **Moros Plain**;
+- the main road still runs **41 waypoints**, ending at (−1378.6, 602.2);
+- **Mus's wild line is untouched**: 1,610 m of authored route with **0 blocked** and **0 in
+  water**, still **62.7 m** from the road at its closest authored point and **40.2 m** outside the
+  41 m join, so `WILD.clearance` still holds. The 13 m that remain are the appended muster leg, as
+  before, at the same coordinates.
+
+His line runs west to x = −1070 and round the head of the bay, which is exactly where rejoined
+rivers would have caught it, so it is the measurement worth having: **the western work did not
+put Mus in a river.**
