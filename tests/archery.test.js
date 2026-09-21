@@ -9,18 +9,19 @@ import { createSkills } from '../src/skills.js';
 import { createCombatSkills, ARMS_SKILLS, familyOf, marginsFor, drawTime } from '../src/combat-skills.js';
 import { smithOffers, buyFromSmith, ARROWS } from '../src/smith.js';
 import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
-import { BOW, JERRYS_BOW, drawnBy, shotAt, solidAt, survives, recoveredOf, flightOf } from '../src/archery.js';
+import { BOW, JERRYS_BOW, drawnBy, shotAt, solidAt, survives, recoveredOf, flightOf, groundAt } from '../src/archery.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
 /** A fight with a bow in the traveler's hands and a quiver behind him. */
-function archer({ arrows = 20, trees = [], level = 1, enemies = [{ id: 'goblin', x: 0, z: 12, hp: 200 }] } = {}) {
+function archer({ arrows = 20, trees = [], level = 1, enemies = [{ id: 'goblin', x: 0, z: 12, hp: 200 }],
+  heightAt = () => 1.5 } = {}) {
   const world = {
-    bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, colliders: [], heightAt: () => 1.5,
+    bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, colliders: [], heightAt,
     // The same shape `roomToSwing` reads: a circle with an `r`, or a box with `hx`/`hz`.
     nearColliders: (x, z, radius) => trees.filter(t => Math.hypot(t.x - x, t.z - z) <= radius + (t.r ?? 0)),
   };
-  const position = { x: 0, y: 1.5, z: 0 };
+  const position = { x: 0, y: heightAt(0, 0), z: 0 };
   const events = [];
   const skills = createSkills();
   const arms = createCombatSkills({ skills });
@@ -285,8 +286,8 @@ test('every arrow loosed leaves the quiver, and the host is the one who empties 
   const frame = main.slice(from, main.indexOf('const floor=world.heightAt(player.group.position.x,player.group.position.z);', from));
   assert.ok(frame.indexOf('combat.draw(drawKey,player.group.rotation.y);') < frame.indexOf('combat.update(dt);'),
     'the button is offered before the arrow can land');
-  assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.draw\(false\);\}/,
-    'and nothing is held while nothing is played');
+  assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.lowerBow\(\);\}/,
+    'and nothing is held while nothing is played — the bow comes down rather than going off');
   // No new key: the swing button is the draw button when there is a bow in his hands.
   assert.match(main, /const ranged=\(\)=>!!heldWeapon\(\)\?\.ranged;/);
   assert.match(main, /if\(ranged\(\)\)return;/, 'a press does not swing a bow');
@@ -405,4 +406,85 @@ test('an archer ally stands off and looses, and his arrows are his own', () => {
   assert.ok(!kinds.includes('bow:'), 'no enemy kind carries a bow — there are no enemy archers yet');
   // And the host gives the family's own man the archer's kind, rather than writing a list.
   assert.match(source('main.js'), /kind:arms\.weapon==='bows'\?'archer':'legionary'/);
+});
+
+/**
+ * **Three bow repairs** (the user's answers, 2026-09-21, and the coordinator's rulings beside
+ * them). All three come out of the hunter's round 5: the pause menu fired the bow, a blow that
+ * ate a draw said nothing at all, and an arrow had no height so no ground could stop one.
+ */
+test('anything that stops the game lowers the bow and keeps the arrow', () => {
+  const held = archer({ arrows: 5 });
+  // Full draw, the button still down, and then the game stops: a pause, a lost focus, a dialogue.
+  for (let t = 0; t < 1.3; t += 1 / 60) { held.combat.draw(true, 0); held.combat.update(1 / 60); }
+  assert.equal(held.combat.drawn, 1, 'he is at full draw');
+  assert.equal(held.combat.lowerBow(), true, 'and the bow comes down');
+  assert.equal(held.of('loose').length, 0, 'nothing was loosed');
+  assert.equal(held.combat.state.arrows.length, 0, 'and nothing is in the air');
+  assert.equal(held.combat.drawn, 0);
+  assert.equal(held.combat.state.player.drawing, false);
+  assert.equal(held.quiver.count, 5, 'the arrow is still his');
+  // The button is not latched either: coming back to the game does not fire the shot he never took.
+  held.combat.update(1 / 60);
+  assert.equal(held.of('loose').length, 0, 'and a frame later it is still not loosed');
+  assert.equal(held.of('draw-spent').length, 0, 'and nothing was wasted, so nothing is reported');
+  // He can draw again from nothing, which is what "keeps the arrow" is worth.
+  const again = shoot(held, 1.3);
+  assert.ok(again && Math.abs(again.pull - 1) < 1e-9, 'and the next draw is a whole draw');
+  // The thing it is not: letting go while the game is being played is still the shot.
+  const loosed = archer();
+  assert.ok(shoot(loosed, 1.3), 'a release in play sends the arrow');
+  // And lowering a bow nobody was drawing is not an event of any kind.
+  assert.equal(archer().combat.lowerBow(), false);
+});
+
+test('a blow that eats the draw says so, and a twitch says something else', () => {
+  // A goblin at the traveler's elbow, so the blow lands while the string is back.
+  const struck = archer({ enemies: [{ id: 'goblin', x: 0, z: 1.6, hp: 200 }] });
+  let after = 0;
+  for (let t = 0; t < 8 && after < 6; t += 1 / 60) {
+    struck.combat.draw(true, 0); struck.combat.update(1 / 60);
+    if (struck.of('player-hit').length) after++;
+  }
+  assert.ok(struck.of('player-hit').length, 'he was hit, or this measures nothing');
+  const spent = struck.of('draw-spent');
+  assert.equal(spent.length, 1, 'and the lost draw is reported exactly once');
+  assert.equal(spent[0].why, 'struck');
+  assert.ok(spent[0].pull > 0, `and says how much of a draw went with it (${spent[0].pull.toFixed(2)})`);
+  assert.equal(struck.of('loose').length, 0, 'no arrow left');
+  // The other half of the same event: a draw too short to be a shot, which says something else.
+  const twitch = archer();
+  assert.equal(shoot(twitch, .1), null);
+  assert.equal(twitch.of('draw-spent')[0].why, 'short');
+  // And the host has a short line for each, the way it has one for everything else a fight says.
+  assert.match(source('main.js'), /if\(e\.type==='draw-spent'\)toast\(e\.why==='struck'\?/);
+});
+
+test('an arrow flies at a height, and ground that rises above it stops it', () => {
+  // A bank four metres out, standing two metres above the archer's feet: chest height is 1.25.
+  const bank = archer({ heightAt: (x, z) => (z > 4 ? 3.5 : 1.5) });
+  shoot(bank, 1.3);
+  settle(bank);
+  const stopped = bank.of('arrow-landed')[0];
+  assert.equal(stopped.stopped, 'ground', 'the rise took it');
+  assert.ok(stopped.z >= 4 && stopped.z < 5, `it stopped at the foot of the rise, at ${stopped.z.toFixed(1)} m`);
+  assert.equal(bank.of('hit').length, 0, 'and the goblin over the rise is untouched');
+  assert.equal(stopped.recovered, true, 'a shaft in the ground is a shaft you can pull out');
+  // Ground below the flight is no ground at all: a shot downhill carries.
+  const fall = archer({ heightAt: (x, z) => (z > 4 ? -8 : 1.5) });
+  shoot(fall, 1.3);
+  settle(fall);
+  assert.equal(fall.of('arrow-landed')[0].stopped, 'target', 'downhill it reaches him');
+  // Flat ground at exactly the height it left is not above it either.
+  const flat = archer();
+  shoot(flat, 1.3);
+  settle(flat);
+  assert.equal(flat.of('arrow-landed')[0].stopped, 'target');
+  // The same question asked without a fight, which is what the host's mark sweep asks.
+  const hill = { heightAt: (x, z) => (z > 6 ? 9 : 0), nearColliders: () => [] };
+  assert.equal(flightOf({ yaw: 0, range: 20, world: hill }).stopped, 'ground');
+  assert.ok(flightOf({ yaw: 0, range: 20, world: hill }).travelled <= 6.5);
+  assert.equal(flightOf({ yaw: 0, range: 20, world: { heightAt: () => 0, nearColliders: () => [] } }).stopped, 'spent');
+  assert.equal(groundAt(null, 0, 0), 0, 'a world with no floor is flat at nothing');
+  assert.equal(groundAt({ heightAt: () => 4 }, 0, 0), 4);
 });

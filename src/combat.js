@@ -1,6 +1,6 @@
 import { canStand, moveCharacter } from './game-state.js';
 import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
-import { BOW, drawnBy, shotAt, solidAt, survives } from './archery.js';
+import { BOW, drawnBy, groundAt, shotAt, solidAt, survives } from './archery.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -464,10 +464,47 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // Letting go is the shot. A draw that stops for any other reason - a blow, the wind going,
     // the last arrow leaving the quiver - is a draw that comes down, and sends nothing.
     if (was && !drawHeld) loose();
-    if (!now) drawTime = 0;
+    if (!now) loseDraw();
     player.drawing = now;
     player.draw = now ? drawnBy(drawTime, margins().drawTime ?? 1) : 0;
     return player.draw;
+  }
+  /**
+   * **The bow comes down and the arrow stays on the string** (the user's answers, 2026-09-21).
+   *
+   * Pausing, alt-tabbing, or a dialogue opening is not letting go of the button: it is the game
+   * stopping. Until today the host answered all three with `draw(false)`, which is the loose - so
+   * opening the pause menu spent an arrow and put it in the air to land while the game was paused
+   * (docs/known-issues.md, round 5). **Only a release while the game is being played is a shot**;
+   * everything else lowers the bow, and the arrow is still in the quiver afterwards.
+   *
+   * It emits nothing, because nothing happened: no arrow left and none was wasted.
+   */
+  function lowerBow() {
+    const was = drawHeld || drawTime > 0;
+    drawHeld = false;
+    drawTime = 0;
+    player.drawing = false;
+    player.draw = 0;
+    return was;
+  }
+  /**
+   * **The draw is gone and no arrow left.** A blow that lands mid-draw takes the draw with it -
+   * `drawing()` goes false, the pull is lost, and until today that happened in silence and the
+   * player was told nothing at all (docs/known-issues.md, round 5). Now it says so, with the same
+   * event a draw too short to be a shot uses, because they are the same thing from the player's
+   * side: he held the button and no arrow came out.
+   *
+   * The wind going or the last shaft leaving the quiver is not a blow and is not reported: the
+   * bar and the count are both already on the screen saying why.
+   */
+  function loseDraw() {
+    if (!(drawTime > 0)) return false;
+    const pull = drawnBy(drawTime, margins().drawTime ?? 1);
+    drawTime = 0;
+    if (player.action !== 'hurt' && player.action !== 'dead') return false;
+    emit('draw-spent', { why: 'struck', pull, x: position.x, z: position.z });
+    return true;
   }
   /** How many arrows there are to shoot. The host owns the satchel; this only ever asks. */
   const arrowsLeft = () => Math.max(0, Math.floor(Number(getArrows?.()) || 0));
@@ -496,12 +533,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     drawTime = 0;
     if (!weapon?.ranged || !shootable() || player.hp <= 0) return false;
     const shot = shotAt(pull, { damage: weapon.damage?.[0] ?? BOW.damage });
-    if (!shot) { emit('draw-spent', { pull, x: position.x, z: position.z }); return false; }
+    if (!shot) { emit('draw-spent', { why: 'short', pull, x: position.x, z: position.z }); return false; }
     if (arrowsLeft() <= 0 || player.stamina < BOW.wind) return false;
     player.stamina -= BOW.wind;
     staminaDelay = Math.max(staminaDelay, .5);
     const n = ++loosed;
-    state.arrows.push({ id: `arrow-${n}`, n, x: position.x, z: position.z, y: BOW.height,
+    state.arrows.push({ id: `arrow-${n}`, n, x: position.x, z: position.z, y: groundAt(world, position.x, position.z) + BOW.height,
       yaw: drawYaw, flown: 0, range: shot.range, damage: shot.damage, weaponId: weapon.id });
     emit('loose', { n, x: position.x, z: position.z, yaw: drawYaw, pull: shot.pull, weaponId: weapon.id });
     return true;
@@ -519,14 +556,20 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     emit('arrow-landed', { id: arrow.id, n: arrow.n, owner: arrow.owner ?? null, x: arrow.x, z: arrow.z,
       flown: arrow.flown, stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
   }
-  /** Every arrow in the air moves, and the first solid thing it meets is the last thing it meets. */
+  /** Where the ground is here, asked of the same floor the whole fight is fought on. */
+  const floorAt = (x, z) => groundAt(world, x, z);
+  /**
+   * Every arrow in the air moves, and the first thing it meets is the last thing it meets:
+   * **an enemy, a tree, or ground that has risen above it.**
+   */
   function updateArrows(dt) {
+    if (!state.arrows.length) return;
     for (const arrow of [...state.arrows]) {
       const travel = Math.min(BOW.speed * dt, Math.max(0, arrow.range - arrow.flown));
       // Swept in short steps, so a fast arrow cannot pass through a thin tree between two frames.
       const steps = Math.max(1, Math.ceil(travel / BOW.radius));
-      let hit = null, blocked = false;
-      for (let i = 0; i < steps && !hit && !blocked; i++) {
+      let hit = null, blocked = false, grounded = false;
+      for (let i = 0; i < steps && !hit && !blocked && !grounded; i++) {
         const step = travel / steps;
         arrow.x += Math.sin(arrow.yaw) * step;
         arrow.z += Math.cos(arrow.yaw) * step;
@@ -535,9 +578,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
           && Math.hypot(enemy.x - arrow.x, enemy.z - arrow.z) <= BOW.radius + .5) ?? null;
         // **Trees and walls stop arrows.** "In woodland I am a man holding a stick."
         if (!hit) blocked = !!solidAt(world, arrow.x, arrow.z);
+        // **And so does ground that has risen above the flight**: a bank, a terrace, the near
+        // side of a ravine. The arrow flies level at the height it left the bow at.
+        if (!hit && !blocked) grounded = floorAt(arrow.x, arrow.z) > arrow.y;
       }
       if (hit) { hurtEnemy(hit, arrow.damage, arrow.yaw); landArrow(arrow, 'target', hit.id); continue; }
       if (blocked) { landArrow(arrow, 'solid'); continue; }
+      if (grounded) { landArrow(arrow, 'ground'); continue; }
       if (arrow.flown >= arrow.range - 1e-6) landArrow(arrow, 'spent');
     }
   }
@@ -784,8 +831,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // Read once a frame so the view, the HUD and the autopilot all see the same shield.
     player.guarding = guarding();
     // And the draw, which is the other held verb. It only ever grows while it is actually on:
-    // a blow, an empty quiver or a spent bar all take the bow down without sending anything.
-    if (drawing()) drawTime += dt; else drawTime = 0;
+    // a blow, an empty quiver or a spent bar all take the bow down without sending anything -
+    // and a blow says so, which is what `loseDraw` is for.
+    if (drawing()) drawTime += dt; else loseDraw();
     player.drawing = drawing();
     player.draw = player.drawing ? drawnBy(drawTime, margins().drawTime ?? 1) : 0;
     if (!staminaDelay && player.action !== 'dead') player.stamina = Math.min(player.maxStamina, player.stamina + 24 * dt);
@@ -1045,7 +1093,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
             const yaw = Math.atan2(aim.x - ally.x, aim.z - ally.z);
             ally.yaw = yaw;
             state.arrows.push({ id: `ally-arrow-${ally.id}-${++allyShafts}`, n: 0, owner: ally.id,
-              x: ally.x, z: ally.z, y: BOW.height, yaw, flown: 0, range: profile.reach,
+              x: ally.x, z: ally.z, y: floorAt(ally.x, ally.z) + BOW.height, yaw, flown: 0, range: profile.reach,
               damage: Math.round(profile.damage * allyDamageScale(ally.level ?? 1)) });
           }
           emit('ally-strike', { id: ally.id, targetId: aim?.id ?? null, x: ally.x, z: ally.z, loosed: !!aim });
@@ -1206,7 +1254,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
     setWeaponReady(value) { weaponReady = Boolean(value); },
     /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
     get drawn() { return player.draw ?? 0; },

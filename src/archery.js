@@ -15,6 +15,7 @@
  *     of them at a full draw. Jerry's own figure is thirty paces.
  *   **The first solid thing stops it.** "In woodland I am a man holding a stick": `solidAt` asks
  *     the world what is in the way, through the same `nearColliders` call the pike's room uses.
+ *     **And ground that rises above the flight**, which is why the flight has a height at all.
  *   **About two in three can be picked up again.** One shaft in three breaks where it lands, and
  *     which one is arithmetic rather than a dice roll, so a test can say so and a player cannot
  *     feel the difference.
@@ -88,6 +89,16 @@ export function solidAt(world, x, z, radius = BOW.radius) {
 }
 
 /**
+ * How high the ground is under a point, asked of a world that may not have one. A world with no
+ * floor - a test's - is flat at nought, which is the right answer and lets a flight be measured
+ * without building one.
+ */
+export function groundAt(world, x, z) {
+  const floor = world?.heightAt?.(x, z);
+  return Number.isFinite(floor) ? floor : 0;
+}
+
+/**
  * **Two in three.** Which shaft breaks is the arrow's own number rather than a roll, so the rule
  * is exactly two in three over any run of them, a test can state it, and a reload cannot change
  * what happened. A player counting his quiver sees two back out of every three he looses.
@@ -103,13 +114,23 @@ export const recoveredOf = loosed =>
  *
  * This is the same arithmetic `combat.update` runs a step at a time, written once so that a test
  * can ask "where does it stop" without standing a traveler in a wood.
+ *
+ * **An arrow has a height**, and it is the plainest model that answers the question the user
+ * asked: it leaves the bow at a man's chest and flies level at that height. Thirty-four metres at
+ * forty-six a second is nine tenths of a second, which is flat enough to call flat; what matters
+ * is that the flight is somewhere rather than nowhere, so that **ground rising above it stops
+ * it** - a bank, a terrace, the near side of a ravine - exactly as a tree does. The arrow's own
+ * drop is left out on purpose: it would be a number nobody has chosen, and it would move the
+ * range of every shot in the game (docs/design-answers.md, 2026-09-21).
  */
-export function flightOf({ x = 0, z = 0, yaw = 0, range = BOW.range, world = null, step = .25 } = {}) {
+export function flightOf({ x = 0, z = 0, yaw = 0, range = BOW.range, world = null, step = .25, height = BOW.height } = {}) {
   const dx = Math.sin(yaw), dz = Math.cos(yaw);
+  const y = groundAt(world, x, z) + height;
   for (let travelled = step; travelled <= range; travelled += step) {
     const at = { x: x + dx * travelled, z: z + dz * travelled };
     const solid = solidAt(world, at.x, at.z);
-    if (solid) return freeze({ ...at, travelled, stopped: 'solid', collider: solid });
+    if (solid) return freeze({ ...at, y, travelled, stopped: 'solid', collider: solid });
+    if (groundAt(world, at.x, at.z) > y) return freeze({ ...at, y, travelled, stopped: 'ground', collider: null });
   }
-  return freeze({ x: x + dx * range, z: z + dz * range, travelled: range, stopped: 'spent', collider: null });
+  return freeze({ x: x + dx * range, z: z + dz * range, y, travelled: range, stopped: 'spent', collider: null });
 }

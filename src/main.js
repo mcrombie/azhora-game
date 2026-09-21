@@ -4619,6 +4619,11 @@ function init() {
         mark.hits++;arms.learn('bows');
         armsPaid(arms.dealt({weapon:BOW.id,damage:markWorth(e.flown),...markPay()}));
       }
+      // **A draw that came to nothing says so.** A blow that lands mid-draw eats the draw and the
+      // arrow stays in the quiver; until today the player was told nothing at all and simply
+      // found his bow at rest (docs/known-issues.md, round 5). A twitch too short to be a shot
+      // is the other half of the same event and has its own words.
+      if(e.type==='draw-spent')toast(e.why==='struck'?'The blow takes the draw with it. The arrow is still on the string.':'Not drawn far enough to be a shot. Hold it longer.','THE DRAW');
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         // **A fight come through together** is what moves a man's regard fastest, and a little
@@ -4792,7 +4797,12 @@ function init() {
       // (A frozen review is still `playing` and is left alone on purpose: `shield-guard` holds
       // the guard by hand and then stops the clock, and clearing it here would lower the shield
       // the picture exists to show.)
-      if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.draw(false);}
+      // **And the bow comes down rather than going off.** `combat.draw(false)` is the loose, so
+      // this line used to send the arrow: pausing, alt-tabbing (the blur handler opens the pause
+      // modal) or a dialogue opening spent a shaft and put it in the air to land while the game
+      // was stopped (docs/known-issues.md, round 5). Only a release while the game is being
+      // played is a shot; anything that stops the game lowers the bow and keeps the arrow.
+      if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.lowerBow();}
       if(mode==='playing'&&!reviewFrozen) {
         const before=player.group.position.clone();
         const {forward,side}=autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
