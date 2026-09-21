@@ -16,10 +16,28 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor'];
-// Axial window around the playable regions, in atlas hex coordinates. Wide
-// enough that every coast and inland horizon inside the world bounds is honest.
-export const WINDOW = { minQ: -14, maxQ: 34, minR: 92, maxR: 133 };
+export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor',
+  'Isareos', 'Nethereum', 'Ovesos', 'Oves Desert', 'Gala', 'Eer'];
+/**
+ * Axial window around the playable regions, in atlas hex coordinates. Wide
+ * enough that every coast and inland horizon inside the world bounds is honest.
+ *
+ * `minQ` was -14, and that was too narrow twice over. It is too narrow already:
+ * forty-nine claimed hexes of Legemum, East Pyros and the Aurumlis fall inside
+ * today's coast lattice (WORLD_BOUNDS widened by COAST_MARGIN) and were being
+ * left out of LAND_HEXES, so the coast field called land sea. Nothing is built
+ * out there, so what it cost was horizon rather than ground. And it is far too
+ * narrow for the six southern countries: Nethereum reaches x = -2900 and the
+ * Nether Desert behind it -3050, so without them the ground immediately west of
+ * Nethereum would be open water.
+ *
+ * -33 is measured, not chosen: over the world bounds the six produce, the coast
+ * lattice can sample a hex whose centre lies within COAST_MARGIN plus one hex
+ * circumradius of the bounds, and the westernmost such hex on the whole atlas is
+ * at q = -31. Two hexes of slack, and no more, because every hex in the window
+ * is a line in a generated file.
+ */
+export const WINDOW = { minQ: -33, maxQ: 34, minR: 92, maxR: 133 };
 
 export function buildSource(survey) {
   const name = region => region.name ?? region.id;
