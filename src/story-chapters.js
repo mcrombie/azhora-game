@@ -7,6 +7,8 @@
  * muster. A chapter is done when its `done(state)` says so, and the state is the
  * same views the journal already has. Pure: no DOM, no three.
  */
+import { LONG_ROAD_LEGS } from './long-road.js';
+
 export const STORY_CHAPTER_VERSION = 1;
 
 /**
@@ -35,7 +37,20 @@ export const atSideSeat = (side, point, conquest = null) => {
   return !!seat && !!point && Math.hypot(point.x - seat.x, point.z - seat.z) <= seat.reach;
 };
 
-const chapter = entry => Object.freeze({ ...entry, steps: Object.freeze(entry.steps) });
+const chapter = entry => Object.freeze({ ...entry, steps: Object.freeze(entry.steps),
+  longWay: entry.longWay ? Object.freeze({ ...entry.longWay, legs: Object.freeze(entry.longWay.legs) }) : null });
+
+/**
+ * The second block on Chapter 1's page: the road the chapter does not require. It is a field
+ * and not steps, because the chapter is finished by reporting for duty and by nothing else —
+ * `done` never reads this, and walking the whole of Drent does not close a step of the five
+ * above it, nor does skipping it leave one open (docs/drent-long-road.md §2).
+ */
+const LONG_WAY = Object.freeze({
+  title: 'The long way round',
+  detail: 'The company is eleven and the Marshal marches when the eleventh has reported, so the road west will keep. Walk Drent instead and it will teach you the country you are about to fight over: the tongue first, then a rod, a fire, an axe, a hedge and a stone. Chris walks it with you.',
+  legs: LONG_ROAD_LEGS.map(leg => `${leg.title} — ${leg.note}`),
+});
 
 export const STORY_CHAPTERS = Object.freeze([
   chapter({
@@ -48,6 +63,7 @@ export const STORY_CHAPTERS = Object.freeze([
       'Cross the river into Luscia and find Lumber Town',
       'Report to Iven at the relay post on the town square',
     ],
+    longWay: LONG_WAY,
     // Reporting to Iven is `deliver-report`, and `refreshQuest` opens the Luscia
     // chapter in the same beat, so `luscia.started` *is* the report. `briefed` is
     // one step further on — accepting the errand out to the Lauvel — and reading

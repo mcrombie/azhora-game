@@ -197,15 +197,21 @@ export function pointAlongRoad(road, distanceOnRoad, lengths = roadLengths(road)
 /**
  * Where a mercenary stands at a moment of play: not yet arrived, waiting at the
  * landing, walking the road, stopped where the traveler had business, or mustered.
+ *
+ * `startDistance` on the mercenary is how far along the road he begins, and it is zero for
+ * everybody who walks up from the landing. It is not zero for one man: the companion, released
+ * back onto the clock from wherever he was standing when he left the traveler. Every stop behind
+ * him is one he has already made, so he does not walk back to Corvan's desk to make it again.
  */
 export function mercenaryProgress(mercenary, playSeconds, stops, musterDistance) {
   let remaining = playSeconds - mercenary.arrival;
   if (!(remaining >= 0)) return { phase: 'coming', distance: 0, stopId: null };
   remaining -= mercenary.departs;
   if (remaining < 0) return { phase: 'landing', distance: 0, stopId: null };
-  let at = 0;
+  let at = Math.max(0, Math.min(musterDistance, Number(mercenary.startDistance) || 0));
   for (const stop of [...stops].sort((a, b) => a.distance - b.distance)) {
     if (stop.distance >= musterDistance) break;
+    if (stop.distance < at) continue;
     const travel = Math.max(0, stop.distance - at) / mercenary.pace;
     if (remaining < travel) return { phase: 'walking', distance: at + remaining * mercenary.pace, stopId: null };
     remaining -= travel; at = stop.distance;
@@ -241,9 +247,23 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  * @param landing where the boats put people ashore
  * @param shore where a man whose `route` is 'shore' comes out of the water instead
  * @param wild true to give a man whose `route` is 'wild' his own line across country
+ * @param companion the one man off the traveler's own boat, while he is not on the clock:
+ *   `{ id, with: true }` puts him at the traveler's shoulder and off the road altogether;
+ *   `{ id, releasedAt, releasedDistance }` puts him back on it from that second and that place.
+ *   **Undefined is today's clock, exactly** — a save written before the long road existed
+ *   restores as undefined, and not a man of the company moves by a metre under it.
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, seed = 0, roster = MERCENARY_ROSTER } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, seed = 0, roster = MERCENARY_ROSTER, companion = undefined } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
+  const companionId = companion?.id ?? null;
+  const walksWithYou = !!companionId && companion.with === true;
+  // Released, he is the same pure function of the clock as everybody else: he simply lands at
+  // the moment he was let go, has no hour to spend at a landing he left long ago, and starts
+  // from the road distance he was standing at.
+  if (companionId && !walksWithYou) roster = roster.map(entry => entry.id === companionId
+    ? Object.freeze({ ...entry, arrival: Math.max(0, Number(companion.releasedAt) || 0), departs: 0,
+      startDistance: Math.max(0, Number(companion.releasedDistance) || 0) })
+    : entry);
   // Mus is the only one whose hour is not written down. It is drawn once from the seed the
   // game was started with and kept in the save, so he lands at the same moment on every
   // reload of that game and a different one in the next.
@@ -287,6 +307,12 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
 
   function placements(playSeconds) {
     return roster.map((mercenary, index) => {
+      // The companion is off the clock and off the road: he is wherever the traveler is, so he
+      // has no road distance and no position of his own here. The host puts him at the shoulder
+      // and writes the real x and z back onto this placement, which is what the interpreter's
+      // twelve metres are measured from (`interpreterNearby`, src/linguist.js).
+      if (walksWithYou && mercenary.id === companionId)
+        return { id: mercenary.id, name: mercenary.name, phase: 'with-traveler', distance: 0, stopId: null, x: null, z: null, yaw: 0, walking: false };
       // A wild man walks his own line, at the pace rough country allows, and passes none of the
       // road's stops, because he is never on the road to pass them.
       const wilding = !!wildRoute && mercenary.route === 'wild';
@@ -330,20 +356,28 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   }
 
   function summary(playSeconds) {
-    const counts = { coming: 0, landing: 0, walking: 0, stopped: 0, mustered: 0 };
+    // A man walking beside you is counted under his own key and is ashore like anybody else, so
+    // `arrived` is still how many of the company are in this country.
+    const counts = { coming: 0, landing: 0, walking: 0, stopped: 0, mustered: 0, 'with-traveler': 0 };
     for (const placement of placements(playSeconds)) counts[placement.phase]++;
     return { ...counts, arrived: roster.length - counts.coming, total: roster.length + 1, musterDistance, roadLength: lengths[lengths.length - 1] };
   }
 
-  /** The traveler's own standing in the company by road distance: 1 means first to the muster. */
+  /**
+   * The traveler's own standing in the company by road distance: 1 means first to the muster.
+   * The companion is at your shoulder, so he is behind you by definition — he arrives a step
+   * after you do, and never ahead of you.
+   */
   function travelerRank(playSeconds, travelerDistance) {
-    // A wild man's distance is along a different and longer line, so it cannot be compared with
-    // a distance along the road. He counts as ahead when he is at the muster and not before.
-    return 1 + placements(playSeconds).filter(p => p.phase === 'mustered'
-      || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance)).length;
+    // Two of them cannot be ranked by a distance along the road. The companion is at your
+    // shoulder, so he is behind you by definition; and a wild man's distance is along a
+    // different and longer line, so he counts as ahead when he is at the muster and not before.
+    return 1 + placements(playSeconds).filter(p => p.phase !== 'with-traveler'
+      && (p.phase === 'mustered'
+        || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance))).length;
   }
 
-  return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
+  return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], companionId: walksWithYou ? companionId : null, stops: roadStops.map(stop => ({ ...stop })) };
 }
 
 /** The quest stage the letter of introduction is in your satchel at (src/game-state.js). */
@@ -461,7 +495,8 @@ export function mercenaryLines(id, placement) {
   // Mus does not use four sentences where none will do.
   const shared = { mustered: 'We made it, then. The camp counts heads at dusk; make sure yours is one of them.',
     stopped: 'Same errand as you, I expect. Go on ahead; I will catch you up.',
-    walking: 'No time to stand about. The camp on the Moros Plain, that is the word. Walk with me or after me.' };
+    walking: 'No time to stand about. The camp on the Moros Plain, that is the word. Walk with me or after me.',
+    'with-traveler': 'Right behind you. Take your time — the Marshal is waiting on the eleventh of us and that is you, so nothing starts without you.' };
   const phase = placement?.phase;
   const status = phase && (mercenary.says?.[phase] ?? shared[phase]) || mercenary.lines[1];
   return [mercenary.lines[0], status];

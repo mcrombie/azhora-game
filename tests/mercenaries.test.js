@@ -217,6 +217,73 @@ test('a brisk traveler stays first; a slow one is passed; the rank says so', () 
   assert.ok(rank > 1 && rank < MERCENARY_COMPANY_SIZE, `rank ${rank}`);
 });
 
+test('with no companion argument, the company stands exactly where it always has', () => {
+  // The whole of the long road hangs off this. A save written before any of it existed restores
+  // with no companion at all, and if that moved one man by a metre it would move the clock the
+  // eighty-seven minutes are measured on (tests/long-road-clock.test.js).
+  const today = company();
+  // Every argument `company()` is given, plus the one under test: the comparison is about the
+  // companion and nothing else, so the shore Ed is put down on has to be given to both.
+  const same = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore, companion: undefined });
+  for (const seconds of [0, 600, 1800, 5300]) {
+    assert.deepEqual(same.placements(seconds), today.placements(seconds), 'at ' + seconds + ' s');
+    assert.deepEqual(same.summary(seconds), today.summary(seconds));
+  }
+  assert.equal(same.companionId, null);
+  assert.equal(today.summary(0)['with-traveler'], 0, 'nobody is walking with anybody');
+});
+
+test('a companion walking with you is off the road, never musters, and is behind you wherever you are', () => {
+  const walking = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: 'merc-gotwood', with: true } });
+  for (const seconds of [0, 600, 5300, 50000]) {
+    const chris = walking.placements(seconds).find(p => p.id === 'merc-gotwood');
+    assert.equal(chris.phase, 'with-traveler', 'at ' + seconds + ' s');
+    assert.equal(chris.distance, 0);
+    assert.equal(chris.x, null, 'the host places him, not the clock');
+    assert.equal(walking.summary(seconds)['with-traveler'], 1);
+  }
+  assert.equal(walking.summary(50000).mustered, MERCENARY_ROSTER.length - 1, 'the other nine get there without him');
+  assert.equal(walking.summary(50000).arrived, MERCENARY_ROSTER.length, 'he is ashore all the same');
+  assert.equal(walking.companionId, 'merc-gotwood');
+  // First of eleven means first: a man at your shoulder is not somebody who beat you to it.
+  assert.equal(walking.travelerRank(900, walking.musterDistance), 1);
+  assert.match(mercenaryLines('merc-gotwood', { phase: 'with-traveler' })[1], /Right behind you/);
+});
+
+test('released at the bridge, he walks on from where he stood and musters ten minutes later', () => {
+  // Let go at 4,800 s at 620 m along a 650 m road, with the crossing stop 30 m ahead of him and
+  // its sixty seconds still to spend. Nothing of the landing is left to do, and Corvan's desk is
+  // behind him, so he does not walk back to it.
+  const chris = MERCENARY_ROSTER[0];
+  const released = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: chris.id, releasedAt: 4800, releasedDistance: 300 } });
+  const at = seconds => released.placements(seconds).find(p => p.id === chris.id);
+  assert.equal(at(4799).phase, 'coming', 'before he is let go he is nowhere on this clock');
+  assert.equal(at(4801).phase, 'walking', 'and the moment he is, he is walking, with no hour at a landing');
+  assert.ok(Math.abs(at(4801).distance - (300 + 1 * chris.pace)) < 1e-6, 'from where he was standing');
+  // 300 m to the crossing at 350 m, its 60 s, then 300 m to the muster at 650 m.
+  const expected = 4800 + 50 / chris.pace + 60 + 300 / chris.pace;
+  assert.equal(at(expected - 1).phase, 'walking');
+  assert.deepEqual(at(expected + 1), { id: chris.id, name: chris.name, phase: 'mustered', distance: 650, stopId: null,
+    x: at(expected + 1).x, z: at(expected + 1).z, yaw: at(expected + 1).yaw, walking: false });
+  // The induction stop at 130 m is behind him and is not made twice.
+  assert.ok(!Array.from({ length: 400 }, (_, i) => at(4800 + i)).some(p => p.stopId === 'induction'), 'he has already been to Corvan');
+});
+
+test('a released man starts behind nothing he had not passed, and never before the road begins', () => {
+  const chris = MERCENARY_ROSTER[0];
+  const make = over => createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 },
+    companion: { id: chris.id, releasedAt: 100, releasedDistance: 0, ...over } });
+  assert.equal(make({ releasedDistance: -50 }).placements(101).find(p => p.id === chris.id).distance > 0, true, 'a negative place is the landing');
+  assert.equal(make({ releasedDistance: 99999 }).placements(101).find(p => p.id === chris.id).phase, 'mustered', 'released at the muster, he is in at once');
+  assert.equal(make({ releasedAt: -5 }).placements(0).find(p => p.id === chris.id).phase, 'walking', 'and never earlier than the game');
+  // Released, he is on the clock like anybody else: at the muster he counts ahead of a traveler
+  // still on the road behind him.
+  const gone = make({ releasedAt: 0, releasedDistance: 600 });
+  assert.ok(gone.travelerRank(2000, 100) > 1);
+});
+
 test('mercenaries speak in two lines and know where they stand', () => {
   const lines = mercenaryLines('merc-gotwood', { phase: 'landing' });
   assert.equal(lines.length, 2); assert.match(lines[0], /Chris Gotwood/);

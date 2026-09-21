@@ -12,6 +12,7 @@ function model() {
       { id: 'hidden', name: 'SECRET SHRINE NAME', description: 'SECRET LORE', x: -37, z: -87, known: false, discovered: false, trackable: true },
       { id: 'bee-fold', name: 'The Bee Fold', description: 'A place for bees.', x: 42, z: -35, known: true, discovered: true, trackable: true }],
     goal: { id: 'main-objective', name: 'Report to Lakota', x: 4, z: 20, known: true, trackable: false },
+    openGoal: { id: 'long-road-bird-garden', name: 'Perrin at the bird garden', x: -24, z: 4, known: true, trackable: false },
     tracked: { id: 'bee-fold', name: 'The Bee Fold', x: 42, z: -35, known: true, trackable: true } };
 }
 
@@ -39,6 +40,14 @@ test('Undiscovered places never leak names or lore and cannot be tracked', () =>
 test('The map separates the main objective, player heading and optional marker without mutating the model', () => {
   const m = model(), before = structuredClone(m), svg = trailMapSVG(m, { selectedId: 'bee-fold' });
   assert.ok(svg.includes('trail-goal-marker')); assert.ok(svg.includes('trail-tracked-marker')); assert.ok(svg.includes('trail-player-marker'));
+  // Two golds on the sheet as well: the muster road's pin, and the long road's next stop drawn
+  // with the same diamond and no fill (src/quest-markers.js, the open variant).
+  assert.ok(svg.includes('trail-open-goal-marker'), 'the long road is not on the sheet');
+  assert.ok(svg.includes('the long way round'));
+  const openSelection = trailMapSelection(m, 'long-road-bird-garden');
+  assert.equal(openSelection.openObjective, true);
+  assert.equal(openSelection.objective, false, 'it is not the arc, and never claims to be');
+  assert.equal(trailMapSVG({ ...m, openGoal: null }).includes('trail-open-goal-marker'), false);
   assert.ok(svg.includes('rotate(90)')); assert.ok(svg.includes('trail-water')); assert.ok(svg.includes('trail-building')); assert.ok(svg.includes('trail-road'));
   assert.ok(svg.includes('role="button" tabindex="0"')); assert.ok(svg.includes('40 m'));
   assert.equal(trailMapSelection(m, 'bee-fold').tracked, true);

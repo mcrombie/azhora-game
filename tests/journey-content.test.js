@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from '../src/journey-content.js';
+import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation, registerLine } from '../src/journey-content.js';
 import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/journey.js';
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
@@ -79,6 +79,29 @@ test('NPC quest choices appear in campaign order and route the existing action I
     'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report']);
   assert.deepEqual(f.journey.state.completedRegions, [2, 3, 4]);
   assert.equal(f.inventory.has('harbor-letter'), true);
+});
+
+test('Corvan reads the field register back, with the count the host hands him', () => {
+  // He is the one who says the rule for the army: the company is eleven and the Marshal does not
+  // move until it is in, so neither road out of Tidehaven is the late one. The numbers are the
+  // company's own clock and never this module's (docs/drent-long-road.md §2).
+  const f = fixture();
+  f.context.register = { signed: 3, atSea: 2 };
+  f.talk('meadow-courier');
+  const induction = f.shown.lines.join(' ');
+  assert.match(induction, /Eleven were hired under that letter/);
+  assert.match(induction, /Three of them have signed it ahead of you/);
+  assert.match(induction, /Two are still at sea/);
+  assert.match(induction, /the Marshal does not move until the company is in/);
+  finishMeadow(f);
+  f.context.register = { signed: 10, atSea: 0 };
+  f.talk('meadow-courier');
+  const after = f.shown.lines.join(' ');
+  assert.match(after, /Ten of them have signed it ahead of you/, 'he reads it back on the way out too');
+  assert.match(after, /all ashore now/);
+  // Said nothing at all, he still says something true: you are the first name in the book.
+  assert.match(registerLine(), /You are the first name in it/);
+  assert.match(registerLine({ signed: 1, atSea: 1 }), /One of them has signed it ahead of you\. One is still at sea\./);
 });
 
 test('every flavor tangent returns to its neighbor without progression before or after road completion', () => {
