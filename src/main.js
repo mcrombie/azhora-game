@@ -5326,8 +5326,8 @@ function init() {
          * before the bout is laid on, so the second pass builds the same bout rather than finding
          * one already running.
          */
-        if(view==='sparring'){
-          questStage=10;combat.revive();sparring=null;player.setArmed(true);playSeconds=4000;
+        if(view==='sparring'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          questStage=10;combat.revive();sparring=null;player.setArmed(true);
           companionOffTheClock=true;
           // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/companions.js) and a
           // ceiling of min(35, his 35). Restored rather than played, so the shot is the same
