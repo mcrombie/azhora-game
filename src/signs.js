@@ -81,8 +81,25 @@ export const FOREIGN_SIGN_LABELS = Object.freeze(new Map(ENGLISH_SIGN_LABELS
   .map(([label, speech]) => [label, renderLine(label, speech.language, { full: true, dialect: speech.dialect, titles: true })])
   .filter(([label, made]) => made !== label)));
 
-/** Both, because the lettering atlas holds every word any sign will ever carry. */
+/** Both, because an atlas that carries the foreign lettering holds every word any sign will ever show. */
 export const SIGN_LABELS = Object.freeze([...ENGLISH_SIGN_LABELS, ...new Set(FOREIGN_SIGN_LABELS.values())]);
+
+/**
+ * Whether the atlas has to carry the foreign lettering as well as the English.
+ *
+ * The host says so once, as a plain yes or no, before the world is built. This module does not
+ * know what a game mode is and never asks: only whether these words will ever be wanted. With it
+ * off the atlas is cut for the English labels alone: 95 labels at 1536x2048 rather than 154 at
+ * 1536x4096, which is twelve megabytes of texture saved on words no sign here will ever show.
+ *
+ * It settles `signText` as well, so a word the atlas was not cut for can never be asked of it.
+ * That would throw in `letters()` while the world was being built, which is a fatal panel rather
+ * than a missing sign (src/frame-errors.js).
+ */
+let foreignLettering = SIGN_TRANSLATION;
+export const setForeignLettering = wanted => { foreignLettering = SIGN_TRANSLATION && !!wanted; return foreignLettering; };
+/** The labels the next atlas is cut for. */
+export const letteringLabels = () => (foreignLettering ? SIGN_LABELS : ENGLISH_SIGN_LABELS);
 
 /**
  * Which tongues the traveler can read, asked afresh every time a sign is built.
@@ -93,7 +110,7 @@ let signReader = null;
 export const setSignReader = canRead => { signReader = typeof canRead === 'function' ? canRead : null; };
 /** What this sign actually has written on it, for the traveler standing in front of it now. */
 export function signText(label) {
-  if (!SIGN_TRANSLATION || !signReader) return label;
+  if (!foreignLettering || !signReader) return label;
   const speech = SIGN_LANGUAGE[label];
   if (!speech || signReader(speech.language)) return label;
   return FOREIGN_SIGN_LABELS.get(label) ?? label;
@@ -110,8 +127,13 @@ export const labelPixels = label => Math.max(40, Math.min(CELL_WIDTH - 20, Math.
 export const labelMetres = label => labelPixels(label) * METRES_PER_PIXEL;
 
 const nextPow2 = n => 2 ** Math.ceil(Math.log2(Math.max(1, n)));
-const ATLAS_HEIGHT = nextPow2(Math.ceil(SIGN_LABELS.length / COLUMNS) * CELL_HEIGHT);
 const ATLAS_WIDTH = CELL_WIDTH * COLUMNS;
+const atlasHeightFor = labels => nextPow2(Math.ceil(labels.length / COLUMNS) * CELL_HEIGHT);
+/** The atlas the next world will cut, and what it costs: four bytes a pixel, uploaded once. */
+export function letteringAtlas() {
+  const labels = letteringLabels(), height = atlasHeightFor(labels);
+  return { labels: labels.length, width: ATLAS_WIDTH, height, bytes: ATLAS_WIDTH * height * 4 };
+}
 
 /** The standard colours: the village's own post, board and edge woods, lime and paint. */
 export const SIGN_COLOURS = Object.freeze({
@@ -128,18 +150,21 @@ export function createSigns(kit) {
   const { material, mesh, box, groundFor, pushFor, worldSpot } = kit;
   const post = material(SIGN_COLOURS.post), board = material(SIGN_COLOURS.board), edge = material(SIGN_COLOURS.edge);
   const lime = material(SIGN_COLOURS.lime), paper = material(SIGN_COLOURS.paper), ink = material(SIGN_COLOURS.ink);
-  const cells = new Map(SIGN_LABELS.map((label, index) => [label, index]));
+  // Cut once, here, for the labels the host said would be wanted: the English ones, and the
+  // foreign ones as well wherever a sign may letter in them.
+  const labels = letteringLabels(), atlasHeight = atlasHeightFor(labels);
+  const cells = new Map(labels.map((label, index) => [label, index]));
   const lettering = (() => {
     let texture;
     if (typeof document === 'undefined') {
       texture = new THREE.DataTexture(new Uint8Array([244, 231, 196, 255]), 1, 1); texture.needsUpdate = true;
     } else {
-      const canvas = document.createElement('canvas'); canvas.width = ATLAS_WIDTH; canvas.height = ATLAS_HEIGHT;
+      const canvas = document.createElement('canvas'); canvas.width = ATLAS_WIDTH; canvas.height = atlasHeight;
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, ATLAS_WIDTH, ATLAS_HEIGHT);
+      ctx.clearRect(0, 0, ATLAS_WIDTH, atlasHeight);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `600 ${FONT_PX}px Georgia, serif`;
       ctx.lineJoin = 'round';
-      SIGN_LABELS.forEach((label, index) => {
+      labels.forEach((label, index) => {
         const cx = (index % COLUMNS) * CELL_WIDTH + 10 + labelPixels(label) / 2, cy = Math.floor(index / COLUMNS) * CELL_HEIGHT + CELL_HEIGHT / 2 + 2;
         ctx.lineWidth = 7; ctx.strokeStyle = SIGN_COLOURS.ink; ctx.strokeText(label, cx, cy, labelPixels(label));
         ctx.fillStyle = SIGN_COLOURS.letter; ctx.fillText(label, cx, cy, labelPixels(label));
@@ -153,11 +178,11 @@ export function createSigns(kit) {
   /** A lettered strip, both faces, centred on the parent's origin in its local x/y plane. */
   function letters(label, parent, y, depth, x = 0) {
     const index = cells.get(label);
-    if (index === undefined) throw new Error(`Sign label "${label}" is not in SIGN_LABELS.`);
+    if (index === undefined) throw new Error(`Sign label "${label}" is not in the lettering atlas (SIGN_LABELS).`);
     const px = labelPixels(label) + 20, width = px * METRES_PER_PIXEL;
     const u0 = ((index % COLUMNS) * CELL_WIDTH) / ATLAS_WIDTH, u1 = u0 + px / ATLAS_WIDTH;
     const top = Math.floor(index / COLUMNS) * CELL_HEIGHT;
-    const v1 = 1 - top / ATLAS_HEIGHT, v0 = 1 - (top + CELL_HEIGHT) / ATLAS_HEIGHT;
+    const v1 = 1 - top / atlasHeight, v0 = 1 - (top + CELL_HEIGHT) / atlasHeight;
     for (const side of [1, -1]) {
       const geometry = new THREE.PlaneGeometry(width, LETTER_STRIP);
       const uv = geometry.attributes.uv;

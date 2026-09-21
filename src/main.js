@@ -14,7 +14,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOP } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -101,7 +101,7 @@ import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
 import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
-import { setSignReader } from './signs.js';
+import { setSignReader, setForeignLettering } from './signs.js';
 import { createGameMode } from './game-mode.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
@@ -113,7 +113,7 @@ import { PUCK, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, creat
 import { createPuckView } from './wine-goblin-view.js';
 import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonThanks, carryingForEd } from './chameleon.js';
 import { createEdView, createEdModel } from './chameleon-model.js';
-import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
+import { TALAELOS, TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
 import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
 import { createJohn, createSultana, createRebelShip } from './salt-ship.js';
 import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt } from './word-arrival.js';
@@ -215,6 +215,10 @@ function init() {
   // The skills no sheet shows in this mode. The registry in src/skills.js keeps every one of them,
   // so a save holding linguist experience still validates and keeps every point of it.
   const hiddenSkills=new Set(gameMode.hiddenSkills);
+  // The lettering atlas is cut once, when the world is built, so the answer has to be in before
+  // the next line. In normal mode no sign will ever letter in a tongue, so the foreign words are
+  // left out of it and the texture is halved (src/signs.js knows only yes or no, never the mode).
+  setForeignLettering(gameMode.has('linguist'));
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
   // You may be any of the eleven, so the body has to be replaceable. The rig around it is not:
   // combat and everything else took hold of this one position object at boot and keeps holding it.
@@ -1175,7 +1179,13 @@ function init() {
     if(action==='troupe-scene-begin'){troupe.beginScene();placeTroupe(true);return;}
     if(action==='troupe-isaura-dies'){troupe.die();return;}
     const tip=/^troupe-tip-(\d+)$/.exec(action);
-    if(tip){let n=Number(tip[1]);if(n&&!inventory.remove(COPPER_ITEM,n))n=0;troupe.tip(n);const done=troupe.endScene();placeTroupe(true);
+    if(tip){let n=Number(tip[1]);if(n&&!inventory.remove(COPPER_ITEM,n))n=0;troupe.tip(n);
+      // The long road's leg-3 stop is this play, watched to the end at the Fernway verge, and it
+      // has no view of its own: the host is the one that can say it happened (src/long-road.js
+      // `PLAY_TROUPE_STOP`). Read before the scene ends, because the wagon is where it was.
+      const onTheLongWay=troupe.stop.id===PLAY_TROUPE_STOP;
+      const done=troupe.endScene();placeTroupe(true);
+      if(onTheLongWay&&longRoad.act('played').ok)toast('A play on the verge at Fernway, watched to the end.',`${TALAELOS.name.toUpperCase()} · THE LONG WAY ROUND`);
       if(done.gift)inventory.add(PLAYBILL_ITEM,1);inventory.refresh();audio?.effect('success');
       openDialogue(galeon,troupeThanks(n,done.gift),null,'Exit, pursued by nobody');
       if(done.gift)toast('You are a regular of Talaelos now. The playbill is in your satchel, signed by the whole company, and the dog.','THE PLAYERS OF NYLON');saveRoad(false);}
@@ -5262,6 +5272,10 @@ function init() {
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
         // The skills sheet as the journal draws it, for checking what this mode shows.
         if(view==='skills'){combat.finishPractice();modal('journal');journalTab('skills');}
+        // A lettered board, close enough to read: the Greenway fingerpost above the landing. What
+        // it is for is the lettering atlas, whose cells move when it is cut for fewer words.
+        if(view==='signpost'){questStage=10;combat.finishPractice();player.group.visible=false;
+          player.group.position.set(-4.9,world.heightAt(-4.9,29.4),29.4);yaw=0;pitch=.02;distance=targetDistance=3.2;}
         // Amod, for review by eye: the terraces from the Pueth road, the bridge, Ostel from below,
         // the street, and Mallec standing beside a person so the scale can be judged rather than asserted.
         if(view.startsWith('amod-')){
