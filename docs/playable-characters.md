@@ -82,8 +82,10 @@ profiles should leave his blank.
 - **Arc:** he already knows Ambroni, so the language barrier that shapes everyone else's first
   hours is not his. His arc should be the opposite problem: he is the one everybody asks, and the
   company leans on him. Consider a running cost — interpreting for ten people is a job.
-- **Diverge:** when he is an NPC he interprets for you (`INTERPRETER`, `src/languages.js`). When
-  he *is* you, nobody interprets, and the interpreter bonus should pass to whoever is nearest.
+- **Diverge — settled.** When he is an NPC he interprets the *locals* for you (`INTERPRETER`,
+  `src/languages.js`). When he *is* you, `interpreterFor(playerId)` returns null: nobody
+  interprets and nobody needs to, because the Ambroni is yours from the first step. The bonus
+  does not pass to anybody else — there is nobody else who has the tongue.
 
 ### 3. Ed the Word — came ashore under his own power
 - **Opening: not built, and it is the one that most needs building.** He canonically swims ashore
@@ -167,6 +169,19 @@ profiles should leave his blank.
 - **Diverge:** his `route` is `'wild'` and his arrival is `drawn`. When he is the player, the seed
   still has to draw something — for Cromb, standing in his slot, arrival 0 is used instead, which
   means the randomness quietly leaves the game. Decide whether that is right.
+
+## The company's own tongue
+
+**Decided (`docs/design-answers.md`): all eleven share the language of the contract.** They were
+hired abroad together and came here together, so `speechFor` in `src/languages.js` gives every
+member of the company the traveler's own tongue — `speaksTheContract(npc)`, which asks
+`mercenaryById` and so covers the ten of the roster *and* Cromb in whichever slot he is standing.
+Whoever the player is, their own company is plain from the first minute; the locals are not.
+
+Two consequences for the profiles: their `ORIGIN_LANGUAGE` entries are still who they are and may
+still be shown by the toggle, so a character's home tongue is available to write with even though
+it never stands between them and the player; and Cromb has no entry and will not get one, because
+the tongue he thinks in is the traveler's — by default he *is* the traveler.
 
 ## Companions die
 

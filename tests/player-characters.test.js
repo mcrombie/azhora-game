@@ -6,7 +6,7 @@ import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, mercenar
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
 import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
 import { createLinguist, MAX_PROFICIENCY } from '../src/linguist.js';
-import { INTERPRETER, interpreterFor, LANGUAGES } from '../src/languages.js';
+import { INTERPRETER, interpreterFor, LANGUAGES, ORIGIN_LANGUAGE, speaksTheContract, speechFor } from '../src/languages.js';
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
@@ -333,4 +333,51 @@ test('when you are Chris nobody interprets, and nobody needs to', () => {
   const linguist = createLinguist();
   assert.equal(linguist.interpreterNearby({ id: 'anybody', x: 0, z: 0 }, { interpreter: null, languageId: 'ambroni', at: { x: 0, z: 0 } }), false);
   assert.equal(linguist.interpreterNearby({ id: 'anybody', x: 0, z: 0 }, { interpreter: undefined, languageId: 'ambroni', at: { x: 0, z: 0 } }), false);
+});
+
+test('the company of eleven share the language of the contract, and the locals do not', () => {
+  // All eleven were hired abroad on the same contract and came here together, so every man of
+  // the company is plain from the first minute, whoever the player is. It is the locals the
+  // traveler cannot follow (docs/design-answers.md, "the company of eleven").
+  const LINE = 'The road north is not safe today, and the bell has been going since dawn.';
+  for (const playerId of PLAYABLE_IDS) {
+    const linguist = createLinguist();
+    const company = companyFor(playerId);
+    assert.equal(company.length, 10);
+    for (const merc of company) {
+      // Exactly the npc src/main.js builds for a hired sword, origin and all.
+      const npc = { id: merc.id, name: merc.name, origin: merc.origin, modelRole: 'mercenary' };
+      const speech = linguist.speech(npc, 'Drent');
+      assert.equal(speaksTheContract(npc), true, `${playerId}: ${merc.name} is one of the company`);
+      assert.equal(speech.language, null, `${playerId}: ${merc.name} has no tongue of his own in this`);
+      assert.equal(linguist.render(LINE, speech), LINE, `${playerId}: ${merc.name} arrives whole at proficiency 0`);
+      // His own origin is still who he is, and still says what he grew up speaking.
+      if (merc.id !== CROMB.id) assert.ok(ORIGIN_LANGUAGE[merc.origin], `${merc.name}'s origin still names a tongue`);
+    }
+  }
+
+  // The landing scene in particular: the man off your boat, whoever the slot turns out to hold.
+  for (const playerId of PLAYABLE_IDS) {
+    const mate = companyFor(playerId)[0];
+    assert.equal(speechFor({ id: mate.id, origin: mate.origin }, 'Drent').language, null, `${playerId}: the man on the landing is plain`);
+  }
+  assert.equal(companyFor('gotwood')[0].id, CROMB.id, 'and when you are Chris that man is Cromb');
+  assert.equal(speechFor({ id: CROMB.id, origin: CROMB.origin }, 'Drent').language, null, 'who is plain too');
+  // Cromb has no origin tongue and is not getting one: he is a blank slate by decision.
+  assert.equal(ORIGIN_LANGUAGE[CROMB.origin], undefined);
+  assert.equal(speechFor({ id: CROMB_OLD_ID }, 'Drent').language, null, 'even under the name he had for a morning');
+
+  // A local standing beside them is as foreign as ever.
+  const linguist = createLinguist();
+  for (const local of [{ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' },
+    { id: 'acorn-cook', name: 'Lysa' }, { id: 'warden', name: 'Eren', modelRole: 'legion-soldier' }]) {
+    const speech = linguist.speech(local, 'Drent');
+    assert.equal(speaksTheContract(local), false, `${local.name} is not of the company`);
+    assert.ok(LANGUAGES[speech.language], `${local.name} speaks a tongue of this world`);
+    assert.notEqual(linguist.render(LINE, speech), LINE, `${local.name} is not understood at proficiency 0`);
+  }
+  // Nobody who is not a mercenary can be mistaken for one by an id that looks like one.
+  assert.equal(speaksTheContract({ id: 'merc-nobody' }), false);
+  assert.equal(speaksTheContract({}), false);
+  assert.equal(speaksTheContract(null), false);
 });

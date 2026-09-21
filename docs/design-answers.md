@@ -48,6 +48,14 @@ Word, and on through the company; the ten not chosen are the NPC roster. Startin
 by character (Lakota's birding, Chris's Ambroni). The full character profiles are still to be
 written by the user.
 
+**The company share a working tongue: the language of the contract.** All eleven were hired
+abroad on the same contract and sailed or rode here together, so every mercenary is readable from
+the first minute, whoever the player is; it is the locals the traveler cannot follow. Their
+origins and home tongues stay as data — that is who they are, and the toggle may still show it —
+but they no longer hide what the company say to each other. Chris Gotwood is not special here any
+more: he still interprets the *locals* while he is beside you, and when you are Chris nobody
+needs to.
+
 ## 2026-09-20 — the world
 
 **Ground outside every region outline is "open country".** Half of the walkable west lies outside

@@ -28,6 +28,7 @@
  *
  * Pure: no DOM, no three, no state. Everything here is frozen.
  */
+import { mercenaryById } from './mercenaries.js';
 import { SUBREGIONS } from './map-fog.js';
 import { PLAYABLE_REGIONS } from './region-layout.js';
 import { FREQUENT_WORDS } from './word-frequency.js';
@@ -521,9 +522,12 @@ export const REGION_LANGUAGE = freeze({
 });
 
 /**
- * Where the hired company came from, and what each of them speaks. The origins
- * are the strings in `src/mercenaries.js`; a mercenary carries their own tongue
- * up the road whatever country they are standing in.
+ * Where the hired company came from, and the tongue each of them grew up in. The
+ * origins are the strings in `src/mercenaries.js`. This is who they are, and the
+ * toggle may still show it, but it is no longer what they say to the traveler:
+ * see `speaksTheContract` below. Cromb has no entry and will not get one — he is
+ * a blank slate by decision (docs/design-answers.md), and the tongue he thinks in
+ * is the traveler's, because by default he is the traveler.
  */
 export const ORIGIN_LANGUAGE = freeze({
   Feradom: 'feradom',
@@ -536,6 +540,26 @@ export const ORIGIN_LANGUAGE = freeze({
   'no port he will name': 'cant',
   'nowhere he has said': 'ibnael',
 });
+
+/**
+ * The language of the contract: the company's own working tongue.
+ *
+ * All eleven were hired abroad on the same contract and came here together, by the
+ * same boats and roads, and a company that cannot talk to itself does not get as far
+ * as the muster. So they have a tongue between them, and it is the one the traveler
+ * thinks in. Whoever the player is, their own company is plain from the first minute;
+ * it is the locals the traveler cannot follow, which is the whole point of the road
+ * (docs/design-answers.md, "the company of eleven").
+ *
+ * `mercenaryById` knows the ten of the roster and Cromb — the whole company however
+ * it is cast, because `companyFor(playerId)` is always ten of those eleven and the
+ * eleventh is the player. So this needs no playerId and cannot go stale when the
+ * player changes: whoever is standing in whichever slot, he is one of yours.
+ *
+ * Chris Gotwood is not special here any more. He still interprets the *locals* for
+ * you while he is beside you (INTERPRETER), and when you are Chris nobody needs to.
+ */
+export const speaksTheContract = npc => Boolean(npc?.id && mercenaryById(npc.id));
 
 /**
  * The Empire's own people speak Ambroni wherever they stand: soldiers, prefects,
@@ -692,10 +716,7 @@ export const originLanguage = origin => ORIGIN_LANGUAGE[origin] ?? null;
  * ground they are standing on.
  */
 export function speechFor(npc, regionName) {
-  // Chris Gotwood came off the same boat on the same contract. Whatever the
-  // traveler's own head speaks, Chris speaks it: he is the one person in Azhora
-  // who does, which is the whole reason the first hour of the road works.
-  if (npc?.id === INTERPRETER.npcId) return spoken(null);
+  if (speaksTheContract(npc)) return spoken(null);
   if (npc?.language && LANGUAGES[npc.language]) return spoken(npc.language, npc.dialect ?? null);
   const origin = npc?.origin ? originLanguage(npc.origin) : null;
   if (origin) return spoken(origin);
