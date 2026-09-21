@@ -27,15 +27,35 @@ function everyFight() {
   return fights;
 }
 
-/** The company, placed the way `companionAllies` places it: on the traveler's side of the centre. */
-function companyFor(config, count) {
+/**
+ * **`companionAllies`'s placement, written out once so the tests measure the host's rule rather
+ * than a second idea of it** - and pinned against the host's own source below, so the copy cannot
+ * drift. The file forms up on the point the fight forms up at, stepped the way that is away from
+ * the enemies from there, and clamped inside the ground `encounterConfig` will accept.
+ */
+export function placeFor(config) {
   const axis = config.retreatAxis === 'x' ? 'x' : 'z', across = axis === 'x' ? 'z' : 'x';
   const sign = config.retreatSign === -1 ? -1 : 1;
+  const along = p => sign * (p[axis] - config.center[axis]), over = p => p[across] - config.center[across];
+  const line = Number.isFinite(config.retreatLine) ? config.retreatLine : config.retreatZ;
+  const anchorAlong = along(config.checkpoint), anchorOver = over(config.checkpoint);
+  const enemyAlong = config.enemies.reduce((sum, foe) => sum + along(foe), 0) / config.enemies.length;
+  const back = anchorAlong >= enemyAlong ? 1 : -1;
+  const far = Math.min(18, along({ [axis]: line, [across]: 0 }) - 1.5), near = -19.5;
+  const overBase = Math.max(-6.6, Math.min(5.5, anchorOver));
+  return index => {
+    const rank = index < 5 ? 0 : 1;
+    return { [axis]: config.center[axis] + sign * Math.max(near, Math.min(far, anchorAlong + back * (2.6 + rank * 2.6))),
+      [across]: config.center[across] + overBase + ((index % 5) - 2) * 2.2 + rank * 1.1 };
+  };
+}
+
+/** The company, placed the way `companionAllies` places it: with the traveler, never among the enemy. */
+function companyFor(config, count) {
   const room = Math.max(0, MAX_ALLIES - (config.allies?.length ?? 0));
+  const place = placeFor(config);
   return MERCENARY_ROSTER.slice(0, Math.min(count, room)).map((merc, index) => ({
-    id: merc.id, name: merc.name, kind: 'legionary', level: 30, toughness: 26,
-    [axis]: config.center[axis] - sign * (5 + (index % 5) * 3),
-    [across]: config.center[across] + (index < 5 ? -1 : 1) * 2.5,
+    id: merc.id, name: merc.name, kind: 'legionary', level: 30, toughness: 26, ...place(index),
   }));
 }
 
@@ -127,4 +147,71 @@ test('no fight is started by a bare if whose refusal does nothing', () => {
   const wolves = main.indexOf('combat.startEncounter(LUSCIA_WOLVES)');
   assert.ok(wolves > 0, 'the wolves are still started somewhere');
   assert.match(main.slice(wolves, wolves + 500), /toast\(|else|endEncounter\(/, 'and a refusal is answered');
+});
+
+/**
+ * **The file stands with the traveler, and never among the enemy.**
+ *
+ * `place(index)` was `center - sign*(5 + (index%5)*3)` - five ranks measured from the arena's
+ * centre away from the way out, which is the **enemy's** end of every arena the game lays. Its own
+ * comment said "on the traveler's side of the centre". Measured on the real border battle, the
+ * side's four authored soldiers stood 6.7 to 9.1 m from the traveler while the six the army
+ * assigned him stood **18.2 to 30.1 m away, and 1.8 to 8.7 m from the nearest enemy** - the fifth
+ * of them in contact before the first blow. Every table taken since companions became allies was
+ * measured with the file standing among the enemy (docs/known-issues.md).
+ *
+ * A sign was not the repair. The arenas disagree: the Lauvel's traveler forms up at along -11 with
+ * his wolves at -7 and -9, on the far side of them, and Mallec's forms up at +21, outside the +18
+ * an ally may even stand at. So the file is laid on the checkpoint, stepped away from the enemies
+ * from there, and clamped into the ground `encounterConfig` accepts.
+ */
+test('every man of the file starts with the traveler, and none of them among the enemy', () => {
+  for (const [label, encounter] of everyFight()) {
+    const authoredAllies = encounter.allies ?? [];
+    for (const count of [1, 3, 6, 10, 12]) {
+      const company = companyFor(encounter, count);
+      if (!company.length) continue;
+      const toTraveler = man => Math.hypot(man.x - encounter.checkpoint.x, man.z - encounter.checkpoint.z);
+      const toNearestFoe = man => Math.min(...encounter.enemies.map(foe => Math.hypot(man.x - foe.x, man.z - foe.z)));
+      for (const man of company) {
+        // **Nearer his own man than theirs**, which is the whole of what went wrong.
+        assert.ok(toTraveler(man) < toNearestFoe(man),
+          `${label} with ${count}: ${man.id} is ${toTraveler(man).toFixed(1)} m from the traveler and ${toNearestFoe(man).toFixed(1)} m from an enemy`);
+        // And beside him rather than out on the field: the arena is 39 m long, so ten metres is
+        // already a long way to be from the man you are supposed to be standing with.
+        assert.ok(toTraveler(man) <= 10,
+          `${label} with ${count}: ${man.id} forms up ${toTraveler(man).toFixed(1)} m from the traveler`);
+        // Nobody starts inside the side's own soldiers.
+        for (const mate of authoredAllies) assert.ok(Math.hypot(man.x - mate.x, man.z - mate.z) >= 1.2,
+          `${label} with ${count}: ${man.id} stands on ${mate.id}`);
+      }
+      // Nor inside each other.
+      for (let i = 0; i < company.length; i++) for (let j = i + 1; j < company.length; j++) {
+        const gap = Math.hypot(company[i].x - company[j].x, company[i].z - company[j].z);
+        assert.ok(gap >= 1.0, `${label} with ${count}: ${company[i].id} and ${company[j].id} are ${gap.toFixed(2)} m apart`);
+      }
+    }
+  }
+});
+
+/**
+ * And the copy of the rule these tests measure with is the host's rule. Every piece of the
+ * placement is pinned, because a test that quietly measures a second idea of the game is worth
+ * nothing at all.
+ */
+test('the placement the tests use is the placement main.js writes', () => {
+  const main = source('main.js');
+  assert.match(main, /const anchor=config\.checkpoint,anchorAlong=along\(anchor\),anchorOver=over\(anchor\);/,
+    'the file forms up where the fight forms up');
+  assert.match(main, /const enemyAlong=config\.enemies\.reduce\(\(sum,foe\)=>sum\+along\(foe\),0\)\/config\.enemies\.length;/);
+  assert.match(main, /const back=anchorAlong>=enemyAlong\?1:-1;/, 'and steps away from them');
+  assert.match(main, /const far=Math\.min\(18,along\(\{\[axis\]:line,\[across\]:0\}\)-1\.5\),near=-19\.5;/,
+    'short of the way out, and inside the ground encounterConfig accepts');
+  assert.match(main, /\[axis\]:config\.center\[axis\]\+sign\*Math\.max\(near,Math\.min\(far,anchorAlong\+back\*\(2\.6\+rank\*2\.6\)\)\)/);
+  assert.match(main, /const overBase=Math\.max\(-6\.6,Math\.min\(5\.5,anchorOver\)\);/,
+    'the line is shifted to fit across the arena, never clamped man by man');
+  assert.match(main, /\[across\]:config\.center\[across\]\+overBase\+\(\(index%5\)-2\)\*2\.2\+rank\*1\.1/);
+  // The fault itself, so it cannot come back.
+  assert.ok(!/config\.center\[axis\]-sign\*\(5\+\(index%5\)\*3\)/.test(main),
+    'the file is never again measured from the centre toward the enemy');
 });
