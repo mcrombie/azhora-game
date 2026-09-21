@@ -405,12 +405,22 @@ pass a bollard. Nobody stands in water in any phase, and the whole sweep - 46,37
 to say so. The staging choice was the user's: option 1, the queue, "it keeps the picture of
 people stepping off a boat".
 
-**While checking it, a smaller thing.** Of the 2,523 placements where a man is walking the road
-or stopped at a stop, **140 (5.5%) put his home inside a collider** - a hedge, a post, a cart -
-because the lateral offset is up to 4.6 m walking and 10.1 m stopped. He never stands in it:
-`src/main.js` steers him there with `stepAround`, which goes through `moveCharacter` and stops
-him beside the thing. It is recorded rather than fixed, and the test holds a ceiling of 8% so
-that it cannot quietly get worse. The muster is clean: 43,326 placements, none blocked.
+**While checking it, a smaller thing — and one half of it turned out to matter.** A man's home
+can land inside a collider, because the lateral offset is up to 4.6 m walking and 10.1 m stopped.
+The 8% ceiling first written here was over both phases together and hid the difference between
+them: **walking is 56 of 2,192 (2.6%) and harmless** — the home moves every frame and
+`stepAround` has him past the thing in a second — but **stopped was 78 of 486 (16.2%), and a
+stopped man holds his place for 60, 90 or 120 seconds**. Twelve of those were close enough that
+`pace` never fell below the tenth of a metre that ends the walk, so the man marched on the spot
+against a hedge for the whole dwell, in Lumber Town square and at the crossing. Kristen was one
+confirmed case, 0.08 m short of a place she could not reach.
+
+**Fixed 2026-09-21.** `createMercenaryCompany` takes an optional `standable` predicate from the
+host, and moves a blocked *stop* place — once, when the formation is laid, out in half-metre
+rings, so it is deterministic and the same in every save. Stopped is now **0 of 486**, nothing
+else moved by a millimetre, and the ceiling in `tests/nobody-sealed-in.test.js` is split by phase:
+landing, stopped and mustered are held at zero and the message names the phase, while walking
+keeps a ceiling of 5%. The muster was always clean: 43,171 placements, none blocked.
 
 **Also corrected:** the old test asserted every walking or stopped man stays within 4.2 m of the
 road, and sampled one moment (t=1200) to check it. It was not true of the whole clock - Mus walks

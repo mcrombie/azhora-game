@@ -243,7 +243,10 @@ function init() {
   // Eleven possible hired swords for ten places: whichever of them you are is not on the road,
   // and Cromb stands in the place you left (companyFor). A default game is the ten it always was.
   const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROMB.id]);
-  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn,shore:WORD_BEACH};
+  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn,shore:WORD_BEACH,
+    // A stopped man holds his place for up to two minutes, so it has to be ground he can
+    // actually reach; the company moves any that is not, once, when the formation is laid.
+    standable:(x,z)=>canStand(x,z,world,BODY.person)};
   let roster=companyFor(playerId),company=createMercenaryCompany({...companyPlan,roster});
   // Whoever stands first in the line came off your boat and carries the letter.
   const landingMateId=()=>roster[0].id;
