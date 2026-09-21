@@ -2059,3 +2059,70 @@ western rivers.
 His line runs west to x = −1070 and round the head of the bay, which is exactly where rejoined
 rivers would have caught it, so it is the measurement worth having: **the western work did not
 put Mus in a river.**
+
+---
+
+## Walk to the border battle with three companions and it will not start
+
+**`encounterConfig` refuses any encounter with more than six allies** (`src/combat.js:135`):
+
+```js
+if (!Array.isArray(config.allies) || config.allies.length > 6) return null;
+```
+
+`getAllies` adds the company to whatever the encounter already authored, and the cap counts the
+sum. Measured, adding companions one at a time:
+
+| fight | authored allies | companions before it is refused |
+|---|---|---|
+| **the border battle** | 4 | **2** — the third refuses it |
+| the wolves at the Lauvel | 0 | 6 — the seventh refuses it |
+| the Bramble scout camp | 0 | 6 |
+
+`startEncounter` returning false is not a small thing. It means **the fight never starts**, and
+each caller has its own way of saying so:
+
+- **The border battle (`src/main.js:2337`) becomes a loop.** On refusal it calls
+  `border.endEncounter` and toasts *"The line is not ready. Stand with your commander south-west
+  of the stockade."* The traveler is already standing there. Give the word again and it says the
+  same thing. **With three or more companions the main arc cannot be finished.**
+- **The Lauvel wolves (`:2292`) simply never come.** The call is inside an `if`, so a refusal is a
+  silent no-op: the satchel is lifted off the cart and nothing comes off the burial line.
+- The aftermath (`:2320`) and the hideout (`:2462`) toast and end their encounters, so they at
+  least say something.
+
+The user's decision is **"as many as will come"** — up to ten. The cap is **six, including the
+side's own soldiers**, and it was sized when the only allies were authored ones: the border's four
+and the hideout's three. Nothing in `companionAllies` knows about it, and nothing tells the player.
+
+**Smallest repair:** the cap exists to bound the arena and the update loop, so raise it to what
+the decision now allows — the roster is ten, the border authors four, so fourteen — or exempt the
+company from it and cap only the authored list. Either way `companionAllies` should not be able to
+hand `encounterConfig` something it will throw the whole encounter out for.
+
+### What the placement itself does, which is the thing that was worried about
+
+Nothing wrong with it. Ten companions, laid by `companionAllies` into three boxes:
+
+| fight | box | outside the box | in an enemy | in an authored ally | in each other | on ground they cannot stand on |
+|---|---|---|---|---|---|---|
+| the border battle | 24 × 39 m | **0** | **0** | **0** | **0** | **0** |
+| the Lauvel wolves | 39 × 39 m | **0** | **0** | — | **0** | **0** |
+| the Bramble camp | 24 × 39 m | **0** | **0** | — | **0** | **0** |
+
+Two ranks of five, back 5 to 17 m and ±2.5 m across, well inside the 21 m behind and 12 m across
+that `encounterConfig` allows. The construction is sound; it is the count that is not.
+
+### What is blocked by it
+
+**"What lifts the hold" cannot be measured yet.** The question was how many companions, at what
+levels, make a level-2 border battle winnable, and how many die doing it — and the fight does not
+start with three of them. The two rows that could be run:
+
+| level | company | won | health left | enemies down (of 8) | companions dead |
+|---|---|---|---|---|---|
+| 0 | none | 20/40 | 45 % | 6.3 | 0 |
+| 2 | none | **0/40** | — | 1.3 | 0 |
+
+which restate the baseline and nothing more. The moment the cap lifts, the same harness gives the
+rest, deaths included.
