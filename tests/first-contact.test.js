@@ -51,3 +51,29 @@ test('nothing in the game still sends the player up the pier to Lakota', () => {
     for (const pattern of stale) assert.doesNotMatch(text, pattern, `${name} still sends the traveler to Lakota off the boat`);
   }
 });
+
+test('nobody on the road still thinks Lakota is whoever gave you the letter', () => {
+  // The letter is Mara's to give, and its signature is hers. Lakota is real - a birder with a
+  // garden, and the seventh of the company - so his name is not banned anywhere; what is stale
+  // is any line in the story's own files that means "the man who sent you" and says Lakota.
+  // Corvan's was the last: he told a traveler who had not started to finish their business
+  // with Lakota and Eren.
+  const storyFile = name => /^(journey.*|.*-chapter|campaign.*|story-.*)\.js$/.test(name);
+  const names = readdirSync(fileURLToPath(new URL('src/', root))).filter(storyFile).map(name => `src/${name}`);
+  assert.ok(names.length >= 8, `only ${names.length} story files were found: ${names.join(', ')}`);
+  for (const wanted of ['src/journey-content.js', 'src/journey.js', 'src/luscia-chapter.js', 'src/campaign.js', 'src/story-chapters.js'])
+    assert.ok(names.includes(wanted), `${wanted} is not among the story files this reads`);
+  const stale = [
+    /business with Lakota/,
+    /Lakota (sent|gave|handed|wrote|signed)/,
+    /(sent|given|handed|written|signed)[^.]{0,40} by Lakota/,
+    /letter[^.]{0,60}Lakota/,
+    /Lakota[^.]{0,60}letter/,
+    /from Lakota/,
+  ];
+  for (const name of names) {
+    const text = file(name);
+    for (const pattern of stale) assert.doesNotMatch(text, pattern, `${name} still takes Lakota for whoever gave the traveler the letter`);
+  }
+  assert.match(file('src/journey-content.js'), /finish your business with Mara and Eren/, 'Corvan sends an unstarted traveler back to Mara, who has the letter');
+});

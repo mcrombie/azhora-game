@@ -82,7 +82,7 @@ export function journeyConversation(npc,context) {
   const tell=(lines,choices)=>openDialogue(npc,lines,null,'Back to the road',{choices:[...choices,...(context.extraChoices?.(npc)||[]),...(flavor[npc.id]||[]),back]});
   if(npc.id==='meadow-courier') {
     if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.'],[]);
-    if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Lakota and Eren. This road will still be here.'],[]);
+    if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Mara and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
       'the letter of introduction? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
       'Our orders are to secure this road for the campaign against the rebels in the south. Goblin raids spilling out of Pueth have made supply work dangerous too. Before we can move, I need three parcels recovered from this broken cart.',
