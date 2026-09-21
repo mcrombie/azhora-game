@@ -4,6 +4,20 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — the army fills your file (the user's answer)
+
+With the hold lifted the hunter measured the border battle at level 2 for a traveler alone and
+with three companions, across every kit a smith sells and every level the game can give: nought
+wins in forty in every row, the absolute ceiling included, because eight soldiers land a blow
+every 0.3 s and a dodge is affordable every 1.9 s. Numbers on your side decide that fight, not
+gear. Asked what should happen to a traveler who arrives with too few companions, the user chose:
+**the army fills your file.** It is the army's battle; if fewer than about six stand with the
+traveler, his commander assigns ordinary soldiers to make up the number. They are weaker than
+companions, so friends still matter, and nobody meets a wall on the main arc. The number is to be
+measured, not guessed. The same holds for the day-after fights, and for whichever side the
+traveler signed with. Not chosen: a general rule that only a few enemies press the traveler at
+once; easing the battle for a short company; leaving it and telling the player to recruit.
+
 ## 2026-09-21 — bows, the border battle, and the Nethermere (the user's answers)
 
 **The first bow is Jerry's spare.** When Jerry comes to like the traveler he gives him his spare
