@@ -4,6 +4,32 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — what an arrow meets (the user's answers, after the hunter's round on bows)
+
+**Arrows hurt whoever they hit.** Real friendly fire, the traveler's and Jerry's alike. Offered and
+not taken: passing through friends, and friends blocking a shaft unharmed. What follows from it,
+decided by the coordinator: an arrow is stopped by the first body in its path as it is by the
+first tree; a friend it strikes is hurt by it, and a companion killed by it is dead for good, his
+death recorded as every death is (where, and what: the traveler's arrow), so the truth the
+Marshal is given is that truth. An ally who shoots does not loose while a friend stands in his
+line. The man struck remembers it; a companion killed by the traveler's arrow costs every living
+witness a rung, as a lie does.
+
+**Enemies come after an archer.** Shot from where they cannot reach, enemies leave their own
+ground and chase the traveler anywhere inside the fight's outer limit; past that limit it is a
+retreat, as it already is. A bow buys a few free shots, not a free battle.
+
+**Mallec charges.** If his target stays out of reach for a few seconds the ogre makes a short,
+fast charge with a clear tell that can be stepped out of. It keeps him a timing fight, and it is
+the rule for other big slow creatures later.
+
+**A second gift: a fine steel cap** when the traveler's side pays him after the day-after fight,
+from whoever already pays him in that scene.
+
+Decided by the coordinator alongside: pausing or losing focus at full draw lowers the bow and
+keeps the arrow; a blow that eats a draw says so; an arrow is stopped by ground that rises above
+its flight.
+
 ## 2026-09-21 — seven open questions, settled (the user's answers)
 
 **Smiths are named for the smiths of myth.** The user's words: "Name them things like Vulcan and
