@@ -81,6 +81,7 @@ import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { createCombatSkills, familyOf } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
+import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -525,6 +526,34 @@ function init() {
     if(encounterId===BORDER_ENCOUNTER_ID)return 'The border battle';
     if(encounterId===hideoutEncounter.id)return 'The scouts at the Bramble camp';
     return 'Goblins';}
+  /**
+   * Weapons lying in the world to be found (src/found-weapons.js). It owns nothing: a dead man's
+   * weapon is already kept in src/companions.js, with where he fell and whether it has been
+   * taken, so this asks rather than copies. A barrow or a gift can be another source later.
+   */
+  const foundWeapons=createFoundWeapons({sources:[fallenCompanions(companions)]});
+  const foundWeaponProps=new Map();
+  const foundWeaponGroup=new THREE.Group();foundWeaponGroup.name='Weapons on the ground';scene.add(foundWeaponGroup);
+  /**
+   * One mesh a lying weapon, put there the first time it is seen and taken away when it is picked
+   * up. A weapon on the ground is **marked** - it stands a little proud of the grass with a quiet
+   * upright over it - because a named weapon nobody can find is a weapon nobody is given.
+   */
+  function refreshFoundWeapons(){
+    const lying=foundWeapons.lying();
+    const here=new Set(lying.map(one=>one.id));
+    for(const [id,prop] of foundWeaponProps){if(here.has(id))continue;foundWeaponGroup.remove(prop);foundWeaponProps.delete(id);}
+    for(const one of lying){
+      if(foundWeaponProps.has(one.id))continue;
+      const prop=new THREE.Group();
+      const blade=new THREE.Mesh(new THREE.BoxGeometry(.1,.08,1.15),new THREE.MeshStandardMaterial({color:0x8c8f96,roughness:.5,metalness:.55}));
+      blade.rotation.z=.12;blade.position.y=.09;prop.add(blade);
+      const mark=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1.5,6),new THREE.MeshStandardMaterial({color:0x6b5a44,roughness:.9}));
+      mark.position.y=.75;prop.add(mark);
+      const cloth=new THREE.Mesh(new THREE.PlaneGeometry(.34,.22),new THREE.MeshStandardMaterial({color:0xb23b2e,roughness:.95,side:THREE.DoubleSide}));
+      cloth.position.set(.17,1.33,0);prop.add(cloth);
+      prop.position.set(one.x,world.heightAt(one.x,one.z),one.z);
+      foundWeaponGroup.add(prop);foundWeaponProps.set(one.id,prop);}}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
   function outsideTheFight(centre,at){
@@ -1833,6 +1862,7 @@ function init() {
   const checkpoint=createRoadCheckpoint({storage:roadStorage});
   let checkpointAvailable=checkpoint.read();
   let checkpointFailureShown=false;
+  let currentFoundWeapon=null;
   let currentAcorn=null,currentStick=null,currentFruit=null,nearRepair=false,currentFire=null,nearFishing=false,currentFishingSpot=null;
   let testingEnabled=false,pendingTesting=false,heardDoom=false;
   const mapTutorial=createMapTutorial();let regionCardTimer,mapTutorialTimer;
@@ -2467,7 +2497,7 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());companions.restore(saved.companions??createCompanions().snapshot());rebuildCompany();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());companions.restore(saved.companions??createCompanions().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
     chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
@@ -3327,6 +3357,13 @@ function init() {
         toast(count===1?'A ripe pawpaw. Open I, select it, and choose Eat.':`Ripe pawpaw gathered · ${count} carried`,'FOREST FRUIT · RESTORES UP TO 25 HEALTH');audio?.effect('success');
       }return;
     }
+    if(combat.state.phase!=='active'&&currentFoundWeapon){
+      const taken=foundWeapons.take(currentFoundWeapon.id);
+      if(taken.ok){
+        inventory.add(taken.weapon);currentFoundWeapon=null;refreshFoundWeapons();inventory.refresh();saveRoad(false);
+        toast(`${taken.name}. Open I to equip it.`,'TAKEN UP FROM THE GROUND');audio?.effect('success');
+      }return;
+    }
     if(combat.state.phase!=='active'&&currentStick){
       if(woodlandLife.collectStick(currentStick.id)){
         inventory.add('forest-stick');const count=inventory.count('forest-stick');currentStick=null;
@@ -3625,7 +3662,7 @@ function init() {
           weapon:held?.id??null,weaponName:held?.id?(INVENTORY_ITEMS[held.id]?.name??'weapon').toLowerCase():null});
         showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
           note:'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
-        audio?.effect('player-hit');saveRoad(false);}
+        audio?.effect('player-hit');refreshFoundWeapons();saveRoad(false);}
       if(e.type==='defeat'){
         drownedDefeat=!!e.drowned;
         $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':combat.state.encounterId===BORDER_ENCOUNTER_ID?'Full health · Rejoin the line south of the stockade':inAftermathFight()?'Full health · Form up with your company again':'Full health · Restart at the woodland bell';
@@ -4086,6 +4123,9 @@ function init() {
       const nearBorder=Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9;
       currentAcorn=mode==='playing'?woodlandLife.nearestAcorn(player.group.position,2):null;
       currentStick=mode==='playing'?woodlandLife.nearestStick(player.group.position,2):null;
+      currentFoundWeapon=mode==='playing'&&combat.state.phase!=='active'?foundWeapons.nearest(player.group.position.x,player.group.position.z):null;
+      show('found-weapon-prompt',!!currentFoundWeapon);
+      if(currentFoundWeapon)$('found-weapon-label').textContent=`Take up ${currentFoundWeapon.name}`;
       currentFruit=mode==='playing'?woodlandLife.nearestFruit(player.group.position,2):null;
       currentMushroom=mode==='playing'&&combat.state.phase!=='active'?mushrooms.nearest(player.group.position,2.2):null;
       currentPlant=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom?flora.nearest(player.group.position,2.2):null;
