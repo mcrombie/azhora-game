@@ -1310,8 +1310,16 @@ function init() {
    * ends up on the side of the river it was meant to be on.
    */
   function westReviewSpot(view){
-    const shot=(camera,target,pitch,height=1,self=false)=>({
-      x:camera.x,z:camera.z,pitch,self,
+    /**
+     * `stand` is where the traveler is put, which is the camera's own spot unless a
+     * view says otherwise. It says otherwise for the animals: the camera has to be
+     * four metres from a heron to show one, and a heron four metres from a traveler
+     * is a heron in the air. `review()` freezes the camera on `look` independently
+     * of the player, so the two can be separated and the bird can be looked at
+     * living rather than leaving.
+     */
+    const shot=(camera,target,pitch,height=1,self=false,stand=camera)=>({
+      x:stand.x,z:stand.z,pitch,self,
       yaw:Math.atan2(camera.x-target.x,camera.z-target.z),
       d:Math.max(2,Math.hypot(camera.x-target.x,camera.z-target.z)),
       look:{x:target.x,z:target.z,y:height},
@@ -1440,27 +1448,67 @@ function init() {
       'south-egret':'egret','south-stilt':'stilt','south-duck':'duck','south-boar':'boar',
       'south-gull':'gull','south-dolphin':'dolphin'}[view];
     if(creature){
-      const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
+      let animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
+      /**
+       * **A frozen review settles its subject before it takes the shot.** A dolphin is
+       * under the water for most of its cycle, and photographed at whatever instant the
+       * jump happened to land on it was a dark speck under the surface. So the pod is
+       * run on until the one being looked at is up — which is the only moment anybody
+       * has ever seen a dolphin in — and the camera is worked out from where it then is.
+       * Nothing flees: `tickSea` does not look at the traveler at all.
+       */
+      if(creature==='dolphin')for(let step=0;step<300&&animal.y<SEA_LEVEL+.34;step++){
+        westLife.update(1/30,{x:animal.x,z:animal.z},true);
+        animal=westLife.snapshot().creatures.find(a=>a.id===animal.id);
+      }
       const close=creature==='longhorn'?6:creature==='boar'?5:creature==='hill-sheep'?4.5:
-        creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?14:3.2;
-      // Half these animals live on a riverbank, so the camera has to go round to a
-      // side of them there is ground on rather than to a fixed bearing off one shoulder.
-      // A dolphin has no side with ground on it at all: it is looked at from the shore,
-      // which is the only place anybody ever sees one from.
+        creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?9:3.2;
+      /**
+       * **Round to the front quarter of it, and to the side with room.** Sweeping the
+       * circle from due north and taking the first standable bearing photographed half
+       * these animals from behind, and an egret from the tail is a white lump when the
+       * bill and the neck are the whole bird. Dead ahead is no better: nose-on, a boar
+       * has no length and no ridge. So the sweep runs over the front quarter on both
+       * sides, keeps the bearings there is ground to stand on, and of those takes the
+       * one with least between the camera and the animal — the first boar was shot
+       * through a gallery trunk that filled a quarter of the frame.
+       */
       let from=null;
-      for(let i=0;i<8&&!from&&creature!=='dolphin';i++){
-        const a=i/8*Math.PI*2,spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
-        if(canStand(spot.x,spot.z,world,.4))from=spot;
+      if(creature!=='dolphin'){
+        const eye={x:animal.x,z:animal.z,y:animal.y+.4};
+        let best=Infinity;
+        for(let i=0;i<12;i++){
+          const a=animal.yaw+(i%2?-1:1)*(.85+Math.floor(i/2)*.26);
+          const spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
+          if(!canStand(spot.x,spot.z,world,.4))continue;
+          const crowd=cameraCrowding(eye,close,a);
+          if(crowd<best){best=crowd;from=spot;}
+          if(!crowd)break;
+        }
       }
-      if(creature==='dolphin'){
-        for(let out=close;out<220&&!from;out+=6){const spot={x:animal.x-out,z:animal.z};
-          if(canStand(spot.x,spot.z,world,.4))from=spot;}
-      }
-      from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
+      // A dolphin has no side with ground on it at all. The camera goes out over the
+      // water, which is the only place its own shape can be looked at; `south-eer-coast`
+      // is the view of one from where a traveler can actually be.
+      if(creature==='dolphin')from={x:animal.x+Math.sin(animal.yaw+1.15)*close,z:animal.z+Math.cos(animal.yaw+1.15)*close};
+      from=from??{x:animal.x+Math.sin(animal.yaw+.85)*close,z:animal.z+Math.cos(animal.yaw+.85)*close};
       const height=creature==='longhorn'?1.1:creature==='wading-bird'||creature==='egret'?.9:
-        creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.4:.35;
-      return shot(from,animal,creature==='dolphin'?.01:.07,height);
+        creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.5:.35;
+      /**
+       * `look.y` is measured up from the ground under the subject, and for a dolphin
+       * the ground is five and a half metres of seabed: the first take aimed the camera
+       * at the bottom of the sea and photographed an empty bay. `groundY` is what the
+       * animal is actually standing — or floating, or swimming — on, so the offset
+       * between the two lifts the aim to where the animal is and is nought for
+       * everything that walks.
+       */
+      const lift=animal.groundY-world.heightAt(animal.x,animal.z);
+      // The traveler goes well outside the flee distance of anything here (the widest is
+      // the egret's twelve metres), so the bird in the frame is standing and not leaving.
+      const back=Math.hypot(from.x-animal.x,from.z-animal.z)||1;
+      const stand={x:animal.x+(from.x-animal.x)/back*22,z:animal.z+(from.z-animal.z)/back*22};
+      return shot(from,animal,creature==='dolphin'?.22:.07,height+lift,false,
+        creature==='dolphin'?{x:animal.x-90,z:animal.z}:stand);
     }
     return null;
   }

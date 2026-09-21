@@ -329,8 +329,23 @@ test('the birds of the Lizeem’s distributaries, the boar in the scrub, and the
     assert.ok(Number.isFinite(animal.x + animal.y + animal.z), `${animal.id} went to NaN`);
     assert.ok(animal.x >= zone.minX - .5 && animal.x <= zone.maxX + .5
       && animal.z >= zone.minZ - .5 && animal.z <= zone.maxZ + .5, `${animal.id} left its range`);
-    if (!zone.air && !zone.sea) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
+    if (!zone.air && !zone.sea && !zone.float) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
   }
+  // The duck is the one that *should* float. A mallard sits on a river; it does not stand
+  // on the bed of one, and photographed before `zone.float` existed it was three-quarters
+  // submerged in its own channel. Its feet are on the water surface wherever there is water
+  // under it, and on the ground wherever there is not.
+  const ducks = life.snapshot().creatures.filter(animal => animal.species === 'duck');
+  assert.ok(ducks.length >= 3);
+  let afloat = 0;
+  for (const duck of ducks) {
+    const water = westWaterSurface(duck.x, duck.z), ground = world.heightAt(duck.x, duck.z);
+    if (water === null) { assert.ok(Math.abs(duck.groundY - ground) < .05, `${duck.id} is on dry land and not on it`); continue; }
+    afloat++;
+    assert.ok(Math.abs(duck.groundY - (water - .04)) < .05, `${duck.id} sits ${(duck.groundY - water).toFixed(2)} m off its own water`);
+    assert.ok(duck.groundY > ground, `${duck.id} is standing on the bed of the channel`);
+  }
+  assert.ok(afloat >= 2, `only ${afloat} of ${ducks.length} duck are on the water`);
   // The dolphins: out past the surf, at the sea's own level, and never anywhere a man could
   // get to. A flock only ticks with somebody inside its reach, so the traveler stands on the
   // nearest shore first — which is also the only place anybody ever watches one from.
