@@ -646,6 +646,44 @@ because a host-placed man is in neither list by default.
 Review view: `ambron-armourer`. The first draft used `startingSpot`, which rings the man — and the
 far side of that ring stood the traveler exactly behind him. He is placed off the shoulder now.
 
+### Your army rewards fine steel — built
+
+**The user, 2026-09-21**: the side the traveler signed with gives fine steel for service,
+beginning after the border battle is won. It is the only way tier 4 enters the game — the table
+puts it in level-6/7 country and no country with a forge standing in it is within four levels of
+that, so nothing sells it at any price.
+
+**One piece, the body, in mail** (`SIDE_GIFT`, `src/aftermath-chapter.js`). The weight is the
+arithmetic's choice. At tier 4 a light jack turns .096 of a blow and a mail coat turns .16; the
+best body piece on any board the traveler has stood at by the border is bog-iron mail at .115. A
+*fine steel* jack would therefore turn **less** than a thing he can buy for seventy-two copper,
+and a reward weaker than a shop item is not a reward. The mail coat is a clear step above anything
+purchasable before Ambron and costs him the same tenth off his dodge that any mail costs, so the
+gift adds no penalty he is not already paying. Plate is legal at this tier
+(`WEIGHTS.heavy.fromTier` is 3) and would turn .224, but it takes a quarter off the dodge and
+**doubles the wind swimming spends** — a gift he cannot refuse that doubles his drowning is a
+trap, not a thank-you.
+
+**Given by whoever already speaks to him after the victory**, on each side, in that man's existing
+voice: Captain Oswin Brulan when he rallies the hired company for the day after, Captain Arlen
+Voss when he rallies the valley companies. Two lines each, before the orders — a captain who has
+just watched a man hold the corner hands him the coat before he gives him the next piece of work.
+It reaches the scene the way the file fill does: the **host** builds it, because only the host
+knows what is already on his back.
+
+**No save field was added.** Nothing else in the game makes tier-4 armour, no smith sells above
+steel, and nothing anywhere calls `gear.takeOff` — so *wearing fine steel on that place* is a
+permanent record that the side gave it, and it is already in the gear snapshot. `sideGiftOwed`
+asks what he has on, so walking up to the same captain again says nothing more about it. A test
+asserts the host never gains a way to take armour off, because that is what the derivation rests
+on.
+
+**Proposed, not built:** a second piece at the next victory. The day after already ends with the
+principal counting out pay in his own voice — Brulan in the Court of Oaths, Envoy Orren in the
+Marshal's tent — and a fine-steel **cap** there would sit in exactly the same slot in the scene as
+the coat does at the rally, with the same derivation (`head` at tier 4) and no new save field. The
+shield hand would then be a third, further on. Not built: it is a content decision.
+
 ### The army fills your file — built
 
 **The user's ruling of 2026-09-21** (`docs/design-answers.md`), measured by the hunter: at level 2

@@ -61,7 +61,7 @@ import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight }
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
-import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
+import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
@@ -3015,6 +3015,32 @@ function init() {
     for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
     return mustered;
   }
+  /**
+   * **The fine steel your side owes you for the border** (`SIDE_GIFT`, src/aftermath-chapter.js;
+   * the gear table's tier 4 is "officers, and gifts from a side you have served"). The first man
+   * who speaks to him after that victory is the captain who rallies him for the day after, and he
+   * hands it over in his own voice, once, before he gives him the next piece of work.
+   *
+   * **Nothing new is saved.** Nothing else in the game makes tier-4 armour, no smith sells above
+   * steel, and nothing anywhere takes a piece off again — so the coat on his back *is* the record
+   * that it was given, and it is already in the gear snapshot. `sideGiftOwed` asks what he is
+   * wearing, so a second walk up to the same captain says nothing more about it.
+   */
+  function giveSideGift(npc){
+    const chapter=aftermath.spec;
+    if(!chapter||npc.id!==chapter.commanderId||aftermath.view().stage!=='rally')return [];
+    const lines=GIFT_LINES[chapter.commanderId];
+    if(!lines||!sideGiftOwed(gear.wearing(SIDE_GIFT.slot)))return [];
+    const had=gear.wearing(SIDE_GIFT.slot);
+    const worn=gear.wear(SIDE_GIFT.slot,{weight:SIDE_GIFT.weight,tier:SIDE_GIFT.tier});
+    if(!worn.ok)return [];
+    audio?.effect('success');
+    toast(`${pieceName(SIDE_GIFT)} · given, not sold. It turns ${Math.round(worn.turns*100)} in a hundred off a blow.`
+      +`${had?` He takes the old ${pieceName({slot:SIDE_GIFT.slot,...had}).toLowerCase()} off your hands.`:''}`,
+      chapter.side==='empire'?'THE ARMY ARMS YOU IN FINE STEEL':'THE REPUBLIC ARMS YOU IN FINE STEEL');
+    saveRoad(false);
+    return [...lines];
+  }
   // The day after the battle: one more fight beside the same allies, then the pay and the road onward.
   function aftermathAct(action){
     const result=aftermath.act(action);if(!result.ok){toast(result.reason,'AFTER THE BATTLE');return result;}
@@ -3654,7 +3680,7 @@ function init() {
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
     if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
-    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid()}))return;
+    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1,fill:fillSaid()}))return;

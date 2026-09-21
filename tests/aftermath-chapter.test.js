@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CHAPTERS } from '../src/campaign.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { AFTERMATH_VARIANTS, AFTERMATH_IDS, AFTERMATH_NPCS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, AFTERMATH_LEGATE_ID, aftermathFor, aftermathEncounter,
-  createAftermathChapter, validateAftermathSnapshot, aftermathConversation } from '../src/aftermath-chapter.js';
+  createAftermathChapter, validateAftermathSnapshot, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from '../src/aftermath-chapter.js';
+import { armourOf, tierSoldAt, tiernamed, validPiece, WEIGHTS, NAMED_TIERS, TIERS } from '../src/gear.js';
+import { SELLER_TIERS } from '../src/smith.js';
+import { regionLevel } from '../src/region-levels.js';
 
 const ARENA_Z = { center: { x: -392, z: 308 }, retreatAxis: 'z' };
 const ARENA_X = { center: { x: 120, z: 640 }, retreatAxis: 'x' };
@@ -157,6 +162,82 @@ test('the commander gives the orders, the principal pays, and nobody else speaks
     assert.equal(aftermathConversation({ id: spec.principalId }, context), true);
     assert.deepEqual([opened.at(-1).lines, opened.at(-1).choices], [spec.after, []]);
   }
+});
+
+test('your side arms you in fine steel for the border, once, from whoever rallies you', () => {
+  // The user, 2026-09-21: the side the traveler signed with gives fine steel as a reward for
+  // service, beginning after the border battle is won. Nobody sells it at any price, anywhere.
+  assert.equal(tiernamed(SIDE_GIFT.tier), 'fine steel');
+  assert.equal(SIDE_GIFT.tier, NAMED_TIERS, 'and it is the best material that has a name');
+  // The table puts it in level-7 country, and no country with a forge standing in it is close.
+  assert.equal(TIERS[SIDE_GIFT.tier].sold, 7);
+  for (const country of ['Drent', 'Moros Plain', 'Amod', 'Elagos'])
+    assert.ok(tierSoldAt(regionLevel(country)) < SIDE_GIFT.tier, `${country} has a forge in it and it sells fine steel`);
+  assert.ok(!Object.values(SELLER_TIERS).some(tiers => tiers.includes(SIDE_GIFT.tier)),
+    'and the capital’s exception does not reach it either');
+  // One piece, the body, in mail - and the weight is the arithmetic's choice, not the picture's.
+  assert.equal(SIDE_GIFT.slot, 'body');
+  assert.ok(validPiece(SIDE_GIFT), 'a piece the game actually has');
+  const turned = weight => armourOf({ body: { weight, tier: SIDE_GIFT.tier } }).turns;
+  const bogMail = armourOf({ body: { weight: 'medium', tier: 1 } }).turns;
+  assert.ok(turned('light') < bogMail, 'a fine steel jack would turn less than the mail a smith already sells');
+  assert.ok(turned('medium') > bogMail, 'and the mail coat is a real step above it');
+  assert.equal(SIDE_GIFT.weight, 'medium');
+  // Plate is legal at this tier and is not the gift: it would cost him a quarter of his dodge and
+  // double the wind he spends in the water, which is a trap and not a thank-you.
+  assert.equal(WEIGHTS.heavy.fromTier, 3);
+  assert.ok(validPiece({ weight: 'heavy', tier: SIDE_GIFT.tier }));
+  assert.equal(armourOf({ body: SIDE_GIFT }).dodge, WEIGHTS.medium.dodge, 'it costs the tenth any mail costs');
+  assert.equal(armourOf({ body: SIDE_GIFT }).wind, 1, 'and nothing at all in the water');
+
+  // **Owed until he is wearing it**, and that is the whole of the record: nothing else makes
+  // tier-4 armour and nothing takes a piece off, so no save field was added.
+  assert.equal(sideGiftOwed(null), true);
+  assert.equal(sideGiftOwed({ weight: 'medium', tier: 1 }), true);
+  assert.equal(sideGiftOwed({ weight: 'heavy', tier: 3 }), true, 'the best a smith sells is still not fine steel');
+  assert.equal(sideGiftOwed({ weight: 'medium', tier: SIDE_GIFT.tier }), false);
+
+  // Each side's own captain says it, in the voice he already has, and nobody else has lines.
+  const givers = new Set(Object.keys(GIFT_LINES));
+  for (const id of AFTERMATH_IDS) {
+    const spec = AFTERMATH_VARIANTS[id];
+    assert.ok(givers.has(spec.commanderId), `${id} has nobody to hand it over`);
+    const lines = GIFT_LINES[spec.commanderId];
+    assert.ok(lines.length === 2 && lines.every(line => line.length > 40));
+    assert.match(lines.join(' '), /fine steel/i, `${spec.commanderId} does not say what it is`);
+  }
+  assert.deepEqual([...givers].sort(), ['aftermath-captain', 'aftermath-tribune']);
+  assert.notDeepEqual(GIFT_LINES['aftermath-tribune'], GIFT_LINES['aftermath-captain'], 'two men, two voices');
+
+  // The scene takes it from the host and says it before the orders, and only at the rally.
+  for (const id of AFTERMATH_IDS) {
+    const spec = AFTERMATH_VARIANTS[id], aftermath = createAftermathChapter(), opened = [];
+    const gift = [...GIFT_LINES[spec.commanderId]];
+    const context = { aftermath, openDialogue: (npc, lines, _, __, options) => opened.push({ npc: npc.id, lines, choices: options?.choices ?? [] }),
+      closeDialogue: () => {}, act: action => aftermath.act(action), gift };
+    aftermath.start(id);
+    assert.equal(aftermathConversation({ id: spec.commanderId }, context), true);
+    assert.deepEqual(opened.at(-1).lines, [...gift, ...spec.orders], 'the coat comes before the next order');
+    // Said once: the host stops handing it over, and the same conversation is the orders alone.
+    assert.equal(aftermathConversation({ id: spec.commanderId }, { ...context, gift: [] }), true);
+    assert.deepEqual(opened.at(-1).lines, spec.orders);
+    // And never at the debrief, whoever the principal is.
+    aftermath.act('begin-assault'); aftermath.winEncounter(spec.encounterId);
+    assert.equal(aftermathConversation({ id: spec.principalId }, context), true);
+    assert.deepEqual(opened.at(-1).lines, spec.debrief, `${id} repeats the gift at the debrief`);
+  }
+});
+
+test('the host gives the fine steel at the rally and nowhere else, and nothing new is saved', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  // Only the captain who is rallying him, and only while he is rallying.
+  assert.match(main, /if\(!chapter\|\|npc\.id!==chapter\.commanderId\|\|aftermath\.view\(\)\.stage!=='rally'\)return \[\]/);
+  // The coat on his back is the record, asked of the gear that already saves.
+  assert.match(main, /!sideGiftOwed\(gear\.wearing\(SIDE_GIFT\.slot\)\)/);
+  assert.match(main, /gear\.wear\(SIDE_GIFT\.slot,\{weight:SIDE_GIFT\.weight,tier:SIDE_GIFT\.tier\}\)/);
+  assert.match(main, /gift:giveSideGift\(npc\)/, 'and the scene is handed it the way it is handed the file fill');
+  // Nothing anywhere takes a piece of armour off again, which is what makes the record permanent.
+  assert.ok(!/gear\.takeOff\(/.test(main), 'the host can take armour off now, so wearing it no longer proves it was given');
 });
 
 test('every assault after the battle forms up inside its own ground, wherever its commander stands', async () => {
