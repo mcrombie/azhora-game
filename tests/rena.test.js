@@ -15,7 +15,7 @@ import { LEGION_POSTS } from '../src/legion-posts.js';
 import { JOURNEY_NPCS } from '../src/journey-content.js';
 import { TOWN_LIFE_NPCS } from '../src/town-life.js';
 import { SUBREGIONS, subregion, subregionsAt } from '../src/map-fog.js';
-import { regionNameAt, insideRegion, landDistance, MAIN_ROAD, VILLAGE, worldToVillage } from '../src/region-world.js';
+import { hexOwnerAt, insideRegion, landDistance, MAIN_ROAD, VILLAGE, worldToVillage } from '../src/region-world.js';
 import { validateWoodlandProgress } from '../src/woodland-progress.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
@@ -38,7 +38,7 @@ const gapTo = (collider, x, z) => (collider.r !== undefined
 
 test('the ruins and the village stand on Drent’s own ground, inland, and well clear of the main road', () => {
   for (const [name, place] of [['Rena', RENA.centre], ['Applegarth', APPLEGARTH.centre]]) {
-    assert.equal(regionNameAt(place.x, place.z), 'Drent', `${name} is in Drent`);
+    assert.equal(hexOwnerAt(place.x, place.z), 'Drent', `${name} is in Drent`);
     assert.ok(insideRegion('Drent', place.x, place.z), `${name} is inside Drent's own outline`);
     assert.ok(landDistance(place.x, place.z) > 60, `${name} is well inland, not on a shore`);
     assert.ok(lineDistance(MAIN_ROAD, place.x, place.z) > 60, `${name} is a walk off the main road, not beside it`);
@@ -81,7 +81,7 @@ test('the old road leaves the main road, runs through the ruins and reaches Appl
     for (let k = 0; k <= steps; k++) {
       const x = a.x + (b.x - a.x) * k / steps, z = a.z + (b.z - a.z) * k / steps;
       assert.ok(canStand(x, z, world, .45), `the old road is blocked at ${x.toFixed(1)}, ${z.toFixed(1)}`);
-      assert.equal(regionNameAt(x, z), 'Drent', 'the old road never leaves Drent');
+      assert.equal(hexOwnerAt(x, z), 'Drent', 'the old road never leaves Drent');
     }
   }
   assert.ok(length > 300 && length < 600, `the walk between the two of them is a real one (${length.toFixed(0)} m)`);
@@ -123,7 +123,7 @@ test('Applegarth is a village of ten roofs with its own works, none of them grow
   assert.ok(APPLEGARTH_BUILDINGS.length >= 8 && APPLEGARTH_BUILDINGS.length <= 12, `eight to twelve buildings (${APPLEGARTH_BUILDINGS.length})`);
   assert.equal(new Set(APPLEGARTH_BUILDINGS.map(building => building.id)).size, APPLEGARTH_BUILDINGS.length);
   for (const building of APPLEGARTH_BUILDINGS) {
-    assert.equal(regionNameAt(building.x, building.z), 'Drent', building.id);
+    assert.equal(hexOwnerAt(building.x, building.z), 'Drent', building.id);
     assert.ok(Math.abs(building.b) - building.depth / 2 > 4, `${building.id} stands back from the road`);
     for (const other of APPLEGARTH_BUILDINGS) {
       if (other === building) continue;
@@ -153,7 +153,7 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
     assert.ok(stand, `${npc.id} has a stand`);
     assert.deepEqual({ x: world.npcPositions[npc.id].x, z: world.npcPositions[npc.id].z }, { x: stand.x, z: stand.z }, `${npc.id} stands where the world puts it`);
     assert.ok(canStand(stand.x, stand.z, world, .45), `${npc.id} has footing`);
-    assert.equal(regionNameAt(stand.x, stand.z), 'Drent', `${npc.id} is in Drent`);
+    assert.equal(hexOwnerAt(stand.x, stand.z), 'Drent', `${npc.id} is in Drent`);
     // Everyone already standing anywhere: the world's own stands, and the ones main.js adds from their modules.
     const standing = [...Object.entries(world.npcPositions).map(([id, p]) => ({ id, ...p })),
       ...LEGION_POSTS, ...TOWN_LIFE_NPCS, ...JOURNEY_NPCS.map(person => ({ ...person, ...world.npcPositions[person.id] }))];
@@ -231,7 +231,7 @@ test('the chart names Tidehaven, with Eastreena as its old name, and adds the ru
   assert.match(village.note, /Eastreena/, 'and keeps Eastreena as the old name in its note');
   for (const area of SUBREGIONS) {
     assert.doesNotMatch(area.name, /Eastreena/, `${area.id} does not use the old name as a title`);
-    assert.equal(regionNameAt(area.x, area.z), area.region, `${area.name} stands in ${area.region}`);
+    assert.equal(hexOwnerAt(area.x, area.z), area.region, `${area.name} stands in ${area.region}`);
     assert.ok(area.radius >= 28 && area.radius <= 130, area.id);
   }
   for (const area of SUBREGIONS) for (const other of SUBREGIONS) {
@@ -258,7 +258,7 @@ test('every place this pass adds can be discovered, in Drent, with nothing in it
     assert.ok(ids.includes(place.id), `${place.id} can be discovered`);
     assert.ok(place.description.length > 60, `${place.id} has discovery text`);
     assert.doesNotMatch(place.description, /goblin/i);
-    assert.equal(regionNameAt(place.x, place.z), 'Drent', place.id);
+    assert.equal(hexOwnerAt(place.x, place.z), 'Drent', place.id);
     assert.ok(canStand(place.x, place.z, world, .3) || world.colliders.some(collider => gapTo(collider, place.x, place.z) < 6), `${place.id} is somewhere`);
   }
   assert.equal(DRENT_DEEP_PLACES.length, 3, 'three more small places on the road that already ran there');

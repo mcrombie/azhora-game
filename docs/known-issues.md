@@ -568,7 +568,7 @@ Which of these is right depends on what the Moros chapter wants the traveler to 
 far side of the plain, so it is not guessed at here.
 
 **Repro:** no test covers it. Headless: build the world, take `FRONTIER.barrierX`, and sample
-`regionNameAt(barrierX ± 3, z)` along the span. In play: cross the plain west from the army camp
+`hexOwnerAt(barrierX ± 3, z)` along the span. In play: cross the plain west from the army camp
 and watch the card change before the fence.
 
 ## Half of the walkable west lies outside every region, and the card named it anyway (fixed)
@@ -703,8 +703,10 @@ outside every outline: 50.4%**, where before the fringe the same sweep gave 90,4
 (The 52.8% at the head of this entry is the original flood-fill from Ambron, 89,584 of 169,541;
 the sweep above reproduces it to within a third of a point without the reachability pass.)
 **The fringe is what the traveler is told, and nothing else.** `regionAt` carries it;
-`regionNameAt` does not, and the two now differ on purpose. Every caller of `regionNameAt` in
-`src/` is a scatter filter — `west-regions-scenery.js`, `amod-scenery.js`, `pueth-scenery.js`,
+`hexOwnerAt` does not, and the two now differ on purpose. That second function was called
+`regionNameAt` until the fringe landed, which was a name that claimed it was `regionAt(x, z)`
+with the object unwrapped; it was renamed across all 112 mentions the day after, and the built
+world did not move by a collider. Every caller of `hexOwnerAt` in `src/` is a scatter filter — `west-regions-scenery.js`, `amod-scenery.js`, `pueth-scenery.js`,
 `east-suval-world.js`, `world-regions.js`, `west-suval.js`, `west-regions.js`, `rena.js` — and
 each asks whose hex this is so that Caricas's forest goes on Caricas's hexes. Handing them the
 fringe re-seeds all of them: measured, **about 4,700 colliders moved across the west**, because

@@ -7,7 +7,7 @@ import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import { PLAYABLE_SURVEY } from '../src/region-survey.js';
 import {
   REGION_IDS, REGION_TERRAIN, REGION_OUTLINES, WORLD_BOUNDS, AMBRON, ambronPoint, hexCentre,
-  regionNameAt, insideRegion, MAIN_ROAD,
+  hexOwnerAt, insideRegion, MAIN_ROAD,
 } from '../src/region-world.js';
 import { groundWithRiver, regionBase } from '../src/world-terrain.js';
 import {
@@ -167,7 +167,7 @@ test('the haul road comes up from the Moros to Ambron’s Plain Gate, and a ride
     best = Math.min(best, Math.hypot(AMBRON_JUNCTION.x - a.x - dx * t, AMBRON_JUNCTION.z - a.z - dz * t));
   }
   assert.ok(best < .01, 'the junction stands on the road');
-  assert.equal(regionNameAt(AMBRON_JUNCTION.x, AMBRON_JUNCTION.z), 'Moros Plain');
+  assert.equal(hexOwnerAt(AMBRON_JUNCTION.x, AMBRON_JUNCTION.z), 'Moros Plain');
   const gate = ambronPoint(56, AMBRON.halfB);
   assert.ok(AMBRON_ROAD.some(p => Math.hypot(p.x - gate.x, p.z - gate.z) < 1e-6), 'and passes through the Plain Gate');
   assert.ok(AMBRON_ROAD.at(-1).z < gate.z, 'ending inside the walls');

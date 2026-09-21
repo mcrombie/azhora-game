@@ -10,7 +10,7 @@ import { JOURNEY_NPCS } from '../src/journey-content.js';
 import { LUSCIA_NPCS } from '../src/luscia-chapter.js';
 import { BORDER_NPCS } from '../src/border-chapter.js';
 import { AFTERMATH_SITES } from '../src/aftermath-sites.js';
-import { LUMBER_TOWN_STABLE, MAIN_ROAD, SUVAL_ROAD, regionNameAt } from '../src/region-world.js';
+import { LUMBER_TOWN_STABLE, MAIN_ROAD, SUVAL_ROAD, hexOwnerAt } from '../src/region-world.js';
 import { createMercenaryCompany } from '../src/mercenaries.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
@@ -64,7 +64,7 @@ test('every new stand is on walkable ground in its own region, clear of the ques
   const muster = createMercenaryCompany({ road: world.paths[0], stops: [], muster: world.storySites.legionCamp, landing: world.spawn }).placements(1e7);
   for (const npc of TOWN_LIFE_NPCS) {
     assert.ok(canStand(npc.x, npc.z, world, .45), `${npc.id} has footing`);
-    const region = regionNameAt(npc.x, npc.z);
+    const region = hexOwnerAt(npc.x, npc.z);
     assert.notEqual(region, 'East Suval', `${npc.id} stands where the traveler can reach`);
     for (const other of quest) if (Number.isFinite(other.x)) assert.ok(Math.hypot(other.x - npc.x, other.z - npc.z) >= 4, `${npc.id} crowds ${other.id}`);
     for (const man of muster) assert.ok(Math.hypot(man.x - npc.x, man.z - npc.z) >= 3, `${npc.id} stands in the muster`);

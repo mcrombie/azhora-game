@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { REGION_CELLS, regionNameAt, landDistance, hexAt } from './region-world.js';
+import { REGION_CELLS, hexOwnerAt, landDistance, hexAt } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, TESSEN_POST, RIMEHOLT, RIMEHOLT_BUILDINGS, RIMEHOLT_YARD, rimeholtPoint,
@@ -360,7 +360,7 @@ export function createPuethScenery(kit) {
       for (let i = 0; i < attempts; i++) {
         const x = cell.x + range(-52, 52), z = cell.z + range(-58, 58);
         if (random() * 1.5 > woodland(x, z) / Math.max(1, density)) continue;
-        if (regionNameAt(x, z) !== 'Pueth' || insideVillage(x, z) || regionClear(x, z, 2.5) || inTown(x, z, 4)) continue;
+        if (hexOwnerAt(x, z) !== 'Pueth' || insideVillage(x, z) || regionClear(x, z, 2.5) || inTown(x, z, 4)) continue;
         if (roadDistance(x, z) < 4.5 || puethRiverDistance(x, z, 14) < 10 || landDistance(x, z) < 6 || groundHeight(x, z) < 1.4) continue;
         if (people.some(p => Math.hypot(p.x - x, p.z - z) < 5)) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 3.4)) continue;
@@ -372,13 +372,13 @@ export function createPuethScenery(kit) {
       const rockCount = Math.round((hills ? 70 : 12) * (terrainAt(cell.x, cell.z) === 'plains' ? .5 : 1));
       for (let i = 0; i < rockCount; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Pueth' || insideVillage(x, z) || regionClear(x, z, 2) || inTown(x, z, 2) || roadDistance(x, z) < 3.4 || landDistance(x, z) < 2) continue;
+        if (hexOwnerAt(x, z) !== 'Pueth' || insideVillage(x, z) || regionClear(x, z, 2) || inTown(x, z, 2) || roadDistance(x, z) < 3.4 || landDistance(x, z) < 2) continue;
         if (people.some(p => Math.hypot(p.x - x, p.z - z) < 4)) continue;
         rocks.push({ x, z, s: range(.5, hills ? 2.8 : 1.3), rot: range(0, 6.28) });
       }
       for (let i = 0; i < tuftsPerHex; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Pueth' || insideVillage(x, z) || roadDistance(x, z) < 2.1 || groundHeight(x, z) < 1.2) continue;
+        if (hexOwnerAt(x, z) !== 'Pueth' || insideVillage(x, z) || roadDistance(x, z) < 2.1 || groundHeight(x, z) < 1.2) continue;
         tufts.push({ x, z, s: range(.7, 1.6), rot: range(0, 6.28), hills: terrainAt(x, z) === 'hills' });
       }
     }

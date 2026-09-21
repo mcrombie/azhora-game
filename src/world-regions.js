@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
-  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, regionNameAt, journeySites, regionNpcPositions } from './region-world.js';
+  STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, hexOwnerAt, journeySites, regionNpcPositions } from './region-world.js';
 import { HIDEOUT_CLEARINGS, PUETH_CLEARINGS } from './pueth-world.js';
 import { PEBLOS_CLEARINGS } from './peblos-world.js';
 import { AMOD_CLEARINGS } from './amod-world.js';
@@ -164,7 +164,7 @@ export function createRegionScenery(kit) {
         // A copse grows with the hex it stands in, so its trees keep their spacing.
         const spread = clusters ? 9 * WORLD_SCALE : METRES_PER_HEX * .48;
         const x = anchor.x + range(-spread, spread), z = anchor.z + range(-spread * 1.1, spread * 1.1);
-        if (regionNameAt(x, z) !== name || kit.insideVillage(x, z)) continue;
+        if (hexOwnerAt(x, z) !== name || kit.insideVillage(x, z)) continue;
         if (regionClear(x, z, 2.5) || kit.roadDistance(x, z) < 4.2 || kit.riverDistance(x, z) < 12) continue;
         if (groundHeight(x, z) < 1.4) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (dense ? 3.1 : 5.2))) continue;
@@ -175,12 +175,12 @@ export function createRegionScenery(kit) {
       }
       for (let i = 0; i < biome.rocksPerHex; i++) {
         const x = cell.x + range(-26 * WORLD_SCALE, 26 * WORLD_SCALE), z = cell.z + range(-28 * WORLD_SCALE, 28 * WORLD_SCALE);
-        if (regionNameAt(x, z) !== name || kit.insideVillage(x, z) || regionClear(x, z, 2) || kit.roadDistance(x, z) < 3.4) continue;
+        if (hexOwnerAt(x, z) !== name || kit.insideVillage(x, z) || regionClear(x, z, 2) || kit.roadDistance(x, z) < 3.4) continue;
         rocks.push({ x, z, s: range(.55, biome.id === 'stone-hills' ? 3.1 : 1.3), rot: range(0, 6.28) });
       }
       for (let i = 0; i < tuftsPerHex(biome); i++) {
         const x = cell.x + range(-27 * WORLD_SCALE, 27 * WORLD_SCALE), z = cell.z + range(-30 * WORLD_SCALE, 30 * WORLD_SCALE);
-        if (regionNameAt(x, z) !== name || kit.insideVillage(x, z) || kit.roadDistance(x, z) < 2.1) continue;
+        if (hexOwnerAt(x, z) !== name || kit.insideVillage(x, z) || kit.roadDistance(x, z) < 2.1) continue;
         // Grass grows on any ground above the tideline, which in the Lake Lands includes the bed of a lake.
         if (kit.waterClear?.(x, z)) continue;
         if (groundHeight(x, z) < 1.2) continue;
