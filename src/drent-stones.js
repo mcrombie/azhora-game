@@ -1,7 +1,7 @@
 /**
  * The stones of Drent: what Silas Garrow teaches the traveler to read
  * (`src/geology.js`). Each is found where the country put it — sharks' teeth in
- * the shingle under the Weatherhead, scallops and marl in the bank above them,
+ * the shingle under the Weatherhead — Silas's old pit, which is still his — scallops and marl in the bank above them,
  * white quartz and petrified wood at the edge of Willowmere, ironstone and clay
  * and, once in a long while, a worked point in the Avrel furrows, dressed
  * sandstone in the ruins of Rena, and granite in the riverbed at the Caloss
@@ -95,6 +95,10 @@ export const STONE_GROUNDS = Object.freeze([
   Object.freeze({ id: 'weatherhead-shingle', x: 1, z: 84, spread: 6, kinds: Object.freeze({ 'shark-tooth': 3, quartz: 1 }) }),
   Object.freeze({ id: 'willowmere-edge', x: -103, z: 2, spread: 7, kinds: Object.freeze({ quartz: 2, 'petrified-wood': 1 }) }),
   Object.freeze({ id: 'avrel-furrows', x: -432, z: 44, spread: 12, kinds: Object.freeze({ ironstone: 3, clay: 2, arrowhead: 1 }) }),
+  // The stream cut below the Toll House, where Silas stands now. The Avrel furrows are the same
+  // ironstone and clay, but they are ninety-seven metres back up the road: a man is taught to
+  // read a stone where he is shown one, so the stream has its own (docs/drent-long-road.md §4).
+  Object.freeze({ id: 'tollhouse-stream', x: -512.5, z: 96.5, spread: 8, kinds: Object.freeze({ ironstone: 2, clay: 2, quartz: 1 }) }),
   Object.freeze({ id: 'rena-stone', x: -395, z: -70, spread: 14, kinds: Object.freeze({ sandstone: 3 }) }),
   Object.freeze({ id: 'caloss-riverbed', x: -596, z: 132, spread: 6, kinds: Object.freeze({ granite: 2, quartz: 1 }) }),
 ]);

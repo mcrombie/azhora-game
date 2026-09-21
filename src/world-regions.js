@@ -14,7 +14,7 @@ import { PLACE_CLEARINGS } from './places.js';
 import { FRONTIER_CLEARINGS } from './frontier.js';
 import { WEST_SUVAL_CLEARINGS } from './west-suval.js';
 import { WINERY, WINERY_LAYOUT } from './winery.js';
-import { RENA_CLEARINGS } from './rena.js';
+import { RENA_CLEARINGS, DRENT_DEEP_PLACES } from './rena.js';
 import { ELAGOS_CLEARINGS } from './elagos-world.js';
 import { createLauvelField } from './lauvel-field-world.js';
 
@@ -462,6 +462,32 @@ export function createRegionScenery(kit) {
   }
   crate(0, -.5, .8, .13, cart); barrel(-.65, .6, .65, cart, .15);
   colliders.push({ x: cartSpot.x, z: cartSpot.z, r: 2.3, kind: 'cart' });
+  // Silas Garrow's marl cart, at the Toll House stream (src/geology.js). He digs the marl out of
+  // the bank under the Weatherhead and the Avrel families pay him by the load; the cart is how it
+  // gets here. It stands on the road side of the house, because the house hides him from anybody
+  // walking up from Tidehaven and the cart is what says somebody is working here.
+  {
+    const toll = DRENT_DEEP_PLACES[1];
+    const marlSpot = { x: toll.x - toll.frame.left.x * 3.6, z: toll.z - toll.frame.left.z * 3.6 };
+    const marlCart = new THREE.Group();
+    marlCart.name = 'Silas Garrow’s marl cart';
+    marlCart.position.set(marlSpot.x, groundHeight(marlSpot.x, marlSpot.z) + .75, marlSpot.z);
+    marlCart.rotation.y = Math.atan2(toll.frame.dir.x, toll.frame.dir.z); drent.add(marlCart);
+    box(woodLight, 0, 0, 0, 1.9, .18, 2.6, marlCart);
+    for (const side of [-1, 1]) {
+      box(wood, side * .93, .38, 0, .11, .76, 2.6, marlCart);
+      const wheel = mesh(new THREE.TorusGeometry(.68, .11, 5, 12), darkWood, side * 1.14, -.08, .1, 1, 1, 1, marlCart);
+      wheel.rotation.y = Math.PI / 2;
+      for (let k = 0; k < 4; k++) { const spoke = box(wood, side * 1.14, -.08, .1, .09, .09, 1.3, marlCart); spoke.rotation.x = k * Math.PI / 4; }
+      // The shafts, tipped down to the ground the way a cart is left standing.
+      box(wood, side * .55, -.42, 1.9, .1, .12, 2.2, marlCart);
+    }
+    // The load: shell marl, which is what a field wants and what a geologist reads.
+    const marl = material('#cfc7b4');
+    for (const [mx, my, mz, r] of [[0, .3, -.35, .52], [-.32, .24, .35, .4], [.36, .22, .55, .34]])
+      pebble(marl, mx, my, mz, r, r * .62, r * .9, marlCart);
+    colliders.push({ x: marlSpot.x, z: marlSpot.z, r: 1.5, kind: 'marl-cart' });
+  }
   // Corvan's army supply post: a canvas awning, a standard and a stack of stores.
   const postPoint = at(-232, 22), postY = groundHeight(postPoint.x, postPoint.z);
   wornPatch(postPoint.x, postPoint.z, 4.6, '#b2a881');

@@ -1,7 +1,9 @@
 /**
- * Geology, the traveler's fifth skill. Silas Garrow digs marl out of the bank
- * under the Weatherhead and has picked up every stone on this coast at least
- * once; he will teach anyone who stops how to read one.
+ * Geology, the traveler's fifth skill. Silas Garrow digs marl out of the bank under the
+ * Weatherhead and carts it up the road to the Avrel fields, which pay him by the load; he has
+ * picked up every stone on this coast at least once, and he will teach anyone who stops how to
+ * read one. He is found at the stream below the Toll House now, with the cart beside him. The
+ * old pit is still his, and still where he sends you for the coastal stones.
  *
  * The stones are the stones of the country the game is drawn from: a tidewater
  * plain of sand, clay and shell laid down by old seas, cut by rivers that fall
@@ -17,12 +19,27 @@ export const GEOLOGY_SKILL = 'geology';
 export const SPECIMEN_ITEM = 'stone-specimens';
 
 export const GEOLOGIST = Object.freeze({
-  id: 'geologist', name: 'Silas Garrow', role: 'Marl-digger under the Weatherhead',
+  id: 'geologist', name: 'Silas Garrow', role: 'Marl-digger, at the Toll House stream',
   modelRole: 'bridge-keeper', color: 0x6a5d4c, skin: 0xcaa07a,
 });
 
-/** He works the foot of the bank below the Weatherhead, where the shell beds show. */
-export const GEOLOGIST_STAND = Object.freeze({ x: -5, z: 97, yaw: Math.PI * .1 });
+/**
+ * Where he stands: the Toll House on the Caloss road, whose stream cut is a geologist's section
+ * and whose furrows behind it hold the ironstone and the clay.
+ *
+ * He used to stand at the foot of the bank below the Weatherhead, a hundred metres from the
+ * pier, which is where geology's first lesson was and where five other teachers were. The move
+ * is the one thing in the long road that bends written lore, and the user ruled on it: the man
+ * moves, the marl pit stays (docs/drent-long-road.md, the answers of 2026-09-20). Cabe Tolliver
+ * keeps the Weatherhead and his pipe, and Silas sends you back down there for the shore stones.
+ *
+ * Not at the house's own centre, which is where the design put him: the toll house is a stone
+ * box with walls, and a man there has no five clear metres to be talked to in. He stands at the
+ * crossing stones instead, a metre off the stream, eight metres out from the house on the road
+ * side, with the cart between him and anybody coming up from Tidehaven. Measured against the
+ * built ground: 13 m off the road, inside the house's kept-clear disc, clear of the kingfisher.
+ */
+export const GEOLOGIST_STAND = Object.freeze({ x: -513.43, z: 94.15, yaw: -2.642 });
 
 const kind = (id, entry) => Object.freeze({ id, ...entry });
 
@@ -118,7 +135,7 @@ export function createGeology({ skills, onEvent = () => {} } = {}) {
 
   /** A stone looked at properly. Good specimens go in the satchel; the rest stay where they lie. */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'A stone. Silas Garrow, digging under the Weatherhead, could tell you what kind.' };
+    if (!state.met) return { ok: false, reason: 'A stone. Silas Garrow, at the Toll House stream on the Caloss road, could tell you what kind.' };
     const species = ROCK_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a stone anyone here can name.' };
     const first = !state.found[id];
@@ -141,7 +158,7 @@ export function createGeology({ skills, onEvent = () => {} } = {}) {
         name: state.found[id] ? ROCK_SPECIES[id].name : 'A stone you have not named',
         detail: state.found[id] ? ROCK_SPECIES[id].note
           : state.met ? `Found in ${SETTING_WORDS[ROCK_SPECIES[id].setting]}.`
-          : 'Silas Garrow digs marl in the bank under the Weatherhead.' })),
+          : 'Silas Garrow keeps his cart at the Toll House stream, west along the Caloss road.' })),
     };
   }
 
@@ -167,7 +184,7 @@ export function geologistConversation(npc, context) {
   if (!geology.met) {
     openDialogue(npc, [
       'Stand there a moment — no, there, off the bed. You are on a sea that dried up before anybody had a name for anything.',
-      'Silas Garrow. I dig marl out of this bank for the fields, and while I dig I find things, and I have been finding things for fifty years and I am not bored yet.',
+      'Silas Garrow. I dig marl out of a bank down on the coast, under the Weatherhead, and I cart it up here because the Avrel families pay me by the load. While I dig I find things, and I have been finding things for fifty years and I am not bored yet.',
       'You look like somebody who kicks stones along the road. Shall I teach you to pick them up instead?',
     ], null, 'Back to the shore', { choices: [
       { id: 'learn-geology', label: 'Teach me.', action: () => { closeDialogue(); act('learn-geology'); } },

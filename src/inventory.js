@@ -327,6 +327,11 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Thin, dry oat rounds baked on a griddle stone. Restores up to 20 health.',
     description: 'Restores up to 20 health. Rough oat rounds from the farm kitchens around the Avrel clearing, baked hard so they keep. Better with cheese or honey, but fine on their own.',
   }),
+  barley: Object.freeze({
+    name: 'Barley', type: 'Material', icon: 'grain', stackable: true,
+    brief: 'A sheaf off one of the commons rows at the Avrel mill. Enna’s mill turns it into flour and the flour into the village share.',
+    description: 'Four minutes in the ground and a whole summer’s worth of meaning: the commons grows it, the mill grinds it, and the tally board beside the millstones is an argument about who gets it. Farming’s first crop.',
+  }),
   'avrel-apple': Object.freeze({
     name: 'Avrel apples', type: 'Food', icon: 'apple', stackable: true, eatName: 'apple',
     brief: 'A crisp orchard apple from the Avrel valley. Restores up to 20 health.',
@@ -500,6 +505,8 @@ const iconPaths = {
   'cooked-fish': '<path d="M9 23c7-9 17-8 23 0-6 8-16 9-23 0ZM9 23l-6-6v12ZM24 18c-3 3-3 7 0 10M13 20l3 6m3-8 3 8M12 13c-4-4 4-5 0-9m8 9c-4-4 4-5 0-9m8 9c-4-4 4-5 0-9"/><circle cx="28" cy="22" r="1"/>',
   leaf: '<path d="M7 30C8 17 17 8 31 6c-1 14-9 23-22 24Z"/><path d="m7 30 19-19M13 22c3 1 6 1 9-1M11 26c3 1 6 1 8-1M17 17c2 1 5 1 7-1"/>',
   nut: '<path d="M12 16c-2 6 1 12 6 14 5-2 8-8 6-14Z"/><path d="M10 16c2-7 5-9 8-9s6 2 8 9c-5-2-11-2-16 0Z"/><path d="M14 18c1 4 2 7 4 10"/>',
+  // A bound sheaf: farming's own crop, and the only thing in the satchel with a clock behind it.
+  grain: '<path d="M10 32c2-9 5-15 8-19 3 4 6 10 8 19"/><path d="M18 13c-3.4 0-5.2-2-5.2-5.2 3.4 0 5.2 2 5.2 5.2Z"/><path d="M18 13c3.4 0 5.2-2 5.2-5.2-3.4 0-5.2 2-5.2 5.2Z"/><path d="M15.6 20c-3 .4-4.8-1.2-5.2-4 3 -.4 4.8 1.2 5.2 4ZM20.4 20c3 .4 4.8-1.2 5.2-4-3-.4-4.8 1.2-5.2 4Z"/><path d="M8 27h20"/>',
   berries: '<circle cx="13" cy="22" r="4.5"/><circle cx="22" cy="25" r="4.5"/><circle cx="20" cy="15" r="4.5"/><circle cx="28" cy="18" r="3.5"/><path d="M20 10V4M20 6c-4-3-8-2-10 1 4 2 7 1 10-1"/>',
   honeycomb: '<path d="M22.5 18l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM29.25 14.1l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM29.25 21.9l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM15.75 14.1l-2.25 3.9h-4.5L6.75 14.1 9 10.2h4.5ZM15.75 21.9l-2.25 3.9h-4.5L6.75 21.9 9 18h4.5ZM22.5 10.2l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5ZM22.5 25.8l-2.25 3.9h-4.5l-2.25-3.9 2.25-3.9h4.5Z"/>',
   strips: '<path d="M5 26c5-7 12-11 20-13l7-1-4 5c-6 4-13 8-21 10Z"/><path d="M10 22c2 1 3 2 4 4M16 18c2 1 3 2 4 4M22 15c2 1 3 2 4 4"/>',

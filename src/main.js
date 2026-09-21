@@ -12,7 +12,8 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, DRILL_COUNT, CORNERS_XP } from './long-road.js';
+import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
 import { bystandersFor, createFallen } from './bystanders.js';
@@ -83,7 +84,7 @@ import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
 import { findBird } from './bird-finder.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
-import { MYCOLOGIST, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
+import { MYCOLOGIST, MYCOLOGIST_STAND, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
 import { createMushrooms } from './mushrooms.js';
 import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, createBotany, botanistConversation } from './botany.js';
 import { createDrentFlora } from './drent-flora.js';
@@ -126,7 +127,7 @@ import { createBosco as createBoscoModel } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
-import { createMapFog } from './map-fog.js';
+import { createMapFog, subregionsAt } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
 import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
 import { regionLevel, levelWords } from './region-levels.js';
@@ -302,10 +303,10 @@ function init() {
   {const homes=troupe.homes();for(const p of TROUPE_PEOPLE){const h=homes[p.id];world.npcPositions[p.id]={x:h.x,z:h.z};
     npcData.push({id:p.id,name:p.name,role:p.role,yaw:h.yaw,troupe:true,dog:p.model==='understudy',horse:p.model==='critic',greet:p.model==='critic'?'Greet the mare':undefined,
       make:()=>p.model==='understudy'?createUnderstudy():p.model==='critic'?createCritic():createPlayer(p.model)});}}
-  // Odger Pell dries mushrooms at the edge of the Greenway, a few steps outside the village (src/mycology.js).
-  world.npcPositions[MYCOLOGIST.id]={x:-50,z:25};npcData.push({...MYCOLOGIST,yaw:Math.PI*.42});
-  // Nell Harrow's drying shed on the western outskirts, Toft on his barrel in the
-  // village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
+  // Odger Pell dries mushrooms at Fernway Rest, where the woodland paths meet (src/mycology.js).
+  world.npcPositions[MYCOLOGIST.id]={x:MYCOLOGIST_STAND.x,z:MYCOLOGIST_STAND.z};npcData.push({...MYCOLOGIST,yaw:MYCOLOGIST_STAND.yaw});
+  // Nell Harrow's drying frames on the Sunken Lane's hedge bank (src/botany.js), Toft on his
+  // barrel in the village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
   world.npcPositions[BOTANIST.id]={x:BOTANIST_STAND.x,z:BOTANIST_STAND.z};npcData.push({...BOTANIST,yaw:BOTANIST_STAND.yaw});
   world.npcPositions[TOFT.id]={x:TOFT_STAND.x,z:TOFT_STAND.z};npcData.push({...TOFT,yaw:TOFT_STAND.yaw});
   world.npcPositions[PIPE_SMOKER.id]={x:WEATHERHEAD.stand.x,z:WEATHERHEAD.stand.z};npcData.push({...PIPE_SMOKER,yaw:Math.PI*.55});
@@ -541,6 +542,15 @@ function init() {
   // The long road through Drent: the optional walk that is exactly as long as the company takes
   // to come in (src/long-road.js, docs/drent-long-road.md). It reads every other module's view
   // and writes to none of them; what it keeps is the handful of things nobody else can answer.
+  // Farming, the fourteenth skill: four rows at the Mill Commons and Applegarth's kept orchard
+  // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
+  const farming=createFarming({skills,inventory,onEvent:event=>{
+    if(event.type==='row-sown')toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · THE COMMONS ROWS`);
+    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');
+      toast(event.type==='row-reaped'?`${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
+        event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
+    if(questStage>=1)saveRoad(false);}});
+  let currentRow=null,currentAppleTree=null;
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,
@@ -552,7 +562,12 @@ function init() {
     if(!next)return null;
     const stand=next.npc?world.npcPositions[next.npc]:null;
     return {...next,at:stand?{x:stand.x,z:stand.z}:{...next.point}};}
-  let longWayStop=null;
+  let longWayStop=null,landingSaid=null;
+  /** The companion npc, while he is walking with the traveler and not before or after. */
+  const companionBeside=()=>{
+    if(!companionOffTheClock||longRoad.released)return null;
+    const mate=npcById.get(landingMateId());
+    return mate&&!mate.hidden&&mate.placement?.phase==='with-traveler'?mate:null;};
   /** The open gold as the charts want it: a named point to ring, or nothing. */
   const longWayTarget=()=>{const stop=longWayNext();return stop?{id:`long-road-${stop.id}`,name:stop.title,...stop.at}:null;};
   /**
@@ -1336,9 +1351,24 @@ function init() {
     openDialogue(npcById.get(GEOLOGIST.id),[...GEOLOGY_LESSON],null,'Back to the shore');
     toast('Geology \u00b7 level 1. Weigh it, scratch it, and ask where it is lying.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return {ok:true,reason:''};
   }
+  /**
+   * A row takes one press. Bare, it is sown with the best crop the level opens; ripe, it is
+   * reaped; sown and growing, it says how long and nothing else, because the whole lesson is
+   * that you go away and come back.
+   */
+  function workRow(){
+    if(!currentRow)return;
+    if(!farming.met){toast('Four drilled rows and nothing in them. Enna keeps the commons mill a few steps west; she will show you how a row goes in.','THE COMMONS ROWS');return;}
+    if(currentRow.stage==='ripe'){const got=farming.reap(currentRow.id,playSeconds);if(!got.ok)toast(got.reason,'THE COMMONS ROWS');return;}
+    if(currentRow.stage==='sown'){toast(`${currentRow.cropName} again in about ${Math.ceil(currentRow.left)} seconds. Go and do something else; it grows either way.`,'THE COMMONS ROWS');return;}
+    const seeds=farming.sowable(currentRow.id);
+    if(!seeds.length){toast('Nothing you know how to put in yet.','THE COMMONS ROWS');return;}
+    const sown=farming.sow(currentRow.id,seeds.at(-1).id,playSeconds);
+    if(!sown.ok)toast(sown.reason,'THE COMMONS ROWS');
+  }
   function gatherStone(){
     if(!currentStone)return;
-    if(!geology.met){toast('A stone that catches the eye. Silas Garrow, digging under the Weatherhead, could tell you what it is.','A STONE');return;}
+    if(!geology.met){toast('A stone that catches the eye. Silas Garrow, at the Toll House stream on the Caloss road, could tell you what it is.','A STONE');return;}
     const found=geology.find(currentStone.species,inventory);
     if(!found.ok){toast(found.reason,'A STONE');return;}
     stones.gather(currentStone.id,{take:found.taken});
@@ -1350,7 +1380,7 @@ function init() {
   // A tree is named, not taken: looking at one properly is the whole of it.
   function lookAtTree(){
     if(!currentTree)return;
-    if(!botany.met){toast('A tree worth looking at, and no name for it. Nell Harrow, on the outskirts of Tidehaven, has a name for every tree in this wood.','A TREE');return;}
+    if(!botany.met){toast('A tree worth looking at, and no name for it. Nell Harrow, at the Sunken Lane, has a name for every tree in this wood.','A TREE');return;}
     const found=botany.find(currentTree.species,inventory);
     if(!found.ok){toast(found.reason,'A TREE');return;}
     refreshSkillsSheet();audio?.effect('success');
@@ -1372,7 +1402,7 @@ function init() {
   }
   function gatherPlant(){
     if(!currentPlant)return;
-    if(!botany.met){toast('A plant, and no name for it. Nell Harrow, on the outskirts of the village, has a name for everything here.','SOMETHING GROWING');return;}
+    if(!botany.met){toast('A plant, and no name for it. Nell Harrow, at the Sunken Lane, has a name for everything here.','SOMETHING GROWING');return;}
     if(!jimson.canPick(currentPlant.stand)){toast('Nell is standing ten paces away with her arms folded. Ask her what it is before you put a hand on it.','HER GROUND, HER PLANT');return;}
     const found=botany.find(currentPlant.species,inventory);
     if(!found.ok){toast(found.reason,'SOMETHING GROWING');return;}
@@ -1390,7 +1420,7 @@ function init() {
   }
   function gatherMushroom(){
     if(!currentMushroom)return;
-    if(!mycology.met){toast('An unfamiliar mushroom. Odger Pell, at the edge of the Greenway, would name it for you.','A MUSHROOM');return;}
+    if(!mycology.met){toast('An unfamiliar mushroom. Odger Pell, at Fernway Rest where the paths meet, would name it for you.','A MUSHROOM');return;}
     const found=mycology.find(currentMushroom.species,inventory);
     if(!found.ok){toast(found.reason,'A MUSHROOM');return;}
     mushrooms.gather(currentMushroom.id,{take:found.species.edible});
@@ -1788,7 +1818,7 @@ function init() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
-    playSeconds=0;refugeeHold=0;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
+    playSeconds=0;refugeeHold=0;landingSaid=null;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
@@ -2189,7 +2219,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -2216,7 +2246,7 @@ function init() {
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2386,6 +2416,8 @@ function init() {
     const choices=[...mercenaryChoices(npc)];
     // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
     if(companionOffTheClock&&npc.id===landingMateId()){
+      const drill=longRoad.view(longRoadWorld()).drill;
+      if(drill)choices.unshift({id:'companion-drill',label:`Teach me some of the army\u2019s speech. (${drill.title})`,action:()=>giveDrill(npc,drill)});
       if(!longRoad.released)choices.unshift({id:'companion-go-on',label:'Go on to the muster without me.',action:()=>{
         closeDialogue();
         releaseCompanion(distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}),
@@ -2399,6 +2431,29 @@ function init() {
         mercenaryConversation(npc);}}) });
     choices.push({id:'leave-mercenary',label:'Good road to you.',action:closeDialogue});
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
+  }
+  /**
+   * A drill: six lines of the army's speech and what each one means, and no quiz at the end.
+   * The lines are rendered through the linguist like every other line in the game, so the
+   * tongue is Ambroni's own; the gloss under each is what makes it a lesson rather than
+   * overhearing. It pays through `linguist.study`, which is the hook docs/languages.md left.
+   *
+   * When the traveler is Chris the same six run the other way round: he gives it, and it pays
+   * the same, because giving a lesson in a tongue is how anybody keeps one.
+   */
+  function giveDrill(npc,offer){
+    const asChris=playerId===INTERPRETER.playerId;
+    const scene=drillScene(offer.index,{name:npc.name,asChris,
+      render:line=>linguist.render(line,{language:'ambroni'},{full:true})});
+    if(!scene){closeDialogue();return;}
+    const pages=[scene.opening,...scene.lines.map(line=>`\u201c${line.said}\u201d \u2014 ${line.means}`),scene.closing];
+    openDialogue(npc,pages,null,'That is enough for now',{onComplete:()=>{
+      const given=longRoad.act('drill',longRoadWorld());
+      if(!given.ok){closeDialogue();return;}
+      linguist.study(scene.study.language,scene.study.exposure);
+      refreshSkillsSheet();
+      toast(`${scene.title}. ${given.index} of ${DRILL_COUNT} drills, and the army reads a little easier.`,`AMBRONI \u00b7 ${linguist.level('ambroni')}`);
+      saveRoad(false);closeDialogue();}});
   }
   function dogConversation(npc,line=villageDog.greeting()){
     const foods=inventory.items().filter(id=>INVENTORY_ITEMS[id].type==='Food');
@@ -2559,7 +2614,7 @@ function init() {
       openDialogue(npc,[questStage>=5
         ?'Road is clear, they tell me. Good. I have two boats waiting on a tide and a quartermaster waiting on you, so neither of us is finished.'
         :'Corvan. The Avrel clearing, past the forest. I have said it twice and I will not enjoy saying it a third time.'],
-        null,'Back to the landing');
+        null,'Back to the landing',{choices:[...maraCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
       return;
     }
     updateQuest('ashore');
@@ -2574,6 +2629,45 @@ function init() {
         toast('Your own chart of Azhora. The coast you came along, and Drent. Everything else is dark. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
         refreshSkillsSheet();refreshChart();if(questStage>=1)saveRoad(false);
       }});
+  }
+  /**
+   * Mara's second cartography lesson, and the only errand she has after the letter: the three
+   * corners of Tidehaven. The first lesson was the rough chart she hands over on the pier, which
+   * is somebody else's drawing; this is the traveler's own, and she countersigns what comes back.
+   *
+   * She asks; the ground between the pier, the Weatherhead and the Koopwood draws itself as it is
+   * walked (`mapFog`); she signs on the return, once, for a block of cartography. It never moves
+   * the main journey and it is never in the way: it is a choice in a conversation she was going
+   * to have anyway (docs/drent-long-road.md §4, leg 1).
+   */
+  function maraCornerChoices(npc){
+    const errand=longRoad.corners(longRoadWorld());
+    if(errand.signed)return [];
+    const back=()=>{closeDialogue();conversation(npc);};
+    if(!errand.asked)return [{id:'mara-corners-ask',label:'Is there anything else worth drawing here?',action:()=>{
+      longRoad.act('corners-ask');
+      openDialogue(npc,['There is, and nobody ever asks. You have my chart of the coast and it is not yours until you have put something on it yourself.',
+        'Three corners, and the village is inside them. The head of this pier, where you are standing. The Weatherhead, the low head south of the landing — Cabe Tolliver sits up there calling the weather, and he will talk your ear off. And the Koopwood, north-west, where Bowden takes the trees down.',
+        'Walk to all three. The ground between them draws itself as you go; that is what a chart is. Bring it back and I will put my name on it, which means the next harbourmaster down the coast will take it seriously.'],
+        null,'I will walk it',{onComplete:()=>{toast('The head of the pier, the Weatherhead, the Koopwood. Walk to all three and bring the chart back to Mara.','MARA · THE THREE CORNERS');saveRoad(false);}});}}];
+    if(!errand.canSign){
+      const left=errand.corners.filter(corner=>!corner.walked);
+      return [{id:'mara-corners-report',label:`The three corners (${errand.walked} of ${errand.of})`,action:()=>openDialogue(npc,
+        [`${errand.walked} of the three, and you know it as well as I do. Still to walk: ${left.map(corner=>corner.name).join(', ')}.`,
+          left[0].hint],null,'Back to our conversation',{onComplete:back})}];
+    }
+    return [{id:'mara-corners-sign',label:'All three corners are on the chart.',action:()=>{
+      const paid=longRoad.act('corners-sign',longRoadWorld());
+      if(!paid.ok){openDialogue(npc,[paid.reason],null,'Back to our conversation',{onComplete:back});return;}
+      const gained=skills.known(CARTOGRAPHY_SKILL)?skills.gain(CARTOGRAPHY_SKILL,CORNERS_XP):null;
+      refreshSkillsSheet();refreshChart();
+      openDialogue(npc,['So it is. Pier, head, woodlot, and the village sitting in the middle of them where it has always sat.',
+        'There. Mara, harbourmaster, Tidehaven — and the date, because a chart without a date is a rumour. Anybody on this coast will read that.',
+        'Now go and do the same to the rest of the country. It is a great deal bigger and nobody has signed any of it.'],
+        null,'Back to the landing',{onComplete:()=>{
+          const skill=gained;
+          toast(`Mara has countersigned your chart of Tidehaven. ${CORNERS_XP} cartography.`,skill?.levelled?`CARTOGRAPHY LEVEL ${skill.level}`:'THE THREE CORNERS');
+          audio?.effect('success');saveRoad(false);}});}}];
   }
   /**
    * The man who came ashore with you: the straw post, the dodge, what a blade costs, and where he
@@ -2866,6 +2960,8 @@ function init() {
     if(combat.state.phase!=='active'&&currentFeederHook){birdingAct('hang-feeder');return;}
     if(combat.state.phase!=='active'&&currentMushroom){gatherMushroom();return;}
     if(combat.state.phase!=='active'&&currentPlant){gatherPlant();return;}
+    if(combat.state.phase!=='active'&&currentRow){workRow();return;}
+    if(combat.state.phase!=='active'&&currentAppleTree){const picked=farming.pick(currentAppleTree.id,playSeconds);if(!picked.ok)toast(picked.reason,'APPLEGARTH’S ORCHARD');return;}
     if(combat.state.phase!=='active'&&currentStone){gatherStone();return;}
     if(combat.state.phase!=='active'&&currentDig){readDig();return;}
     if(combat.state.phase!=='active'&&currentVine){readVines();return;}
@@ -3591,6 +3687,20 @@ function init() {
         if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
         if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
           if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
+        // A boat in. Two of the five cannot be seen from where the player is and the bell is
+        // silent until somebody clicks Sound, so the landing is said rather than left to be
+        // noticed. Reloading past one says nothing: landingSaid is derived from the clock.
+        if(mode==='playing'){const boat=landingAt(playSeconds,landingSaid);
+          if(boat){landingSaid=boat.key;audio?.effect('bell');
+            const mate=companionBeside();
+            toast(mate?boat.said:boat.caption,mate?`${mate.name.toUpperCase()} \u00b7 ${boat.title}`:boat.title);}}
+        // Somebody of the company going past. He is recorded whether anybody is beside you to
+        // remark on it or not, because the muster asks where you were and not who told you.
+        if(mode==='playing'&&companionOffTheClock){
+          const seen=longRoad.notice(company.placements(playSeconds),player.group.position,point=>subregionsAt(point.x,point.z)[0]??null);
+          const mate=companionBeside();
+          if(seen.length&&mate)toast(`${seen[0].name}, going past. ${seen.length>1?`And ${seen.length-1} more of us with him.`:'That is one more of us in this country than there was.'}`,`${mate.name.toUpperCase()} \u00b7 ONE OF OURS`);
+          if(seen.length)saveRoad(false);}
         // While the water has him he is not an NPC walking to a home: he floats and swims a line.
         const swim=swimmerAt(playSeconds),ed=npcById.get(WORD_ID);
         if(ed){ed.swimming=swim.swimming?swim:null;
@@ -3616,6 +3726,10 @@ function init() {
       currentMushroom=mode==='playing'&&combat.state.phase!=='active'?mushrooms.nearest(player.group.position,2.2):null;
       currentPlant=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom?flora.nearest(player.group.position,2.2):null;
       currentStone=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant?stones.nearest(player.group.position,2.2):null;
+      // A row at the commons and a kept tree at Applegarth: the two things farming is done at.
+      {const working=mode==='playing'&&combat.state.phase!=='active';
+        currentRow=working?FARM_ROWS.map(row=>farming.rowState(row.id,playSeconds)).find(row=>Math.hypot(row.x-p.x,row.z-p.z)<2.4)??null:null;
+        currentAppleTree=working&&!currentRow?ORCHARD_TREES.map(tree=>farming.treeState(tree.id,playSeconds)).find(tree=>Math.hypot(tree.x-p.x,tree.z-p.z)<2.4)??null:null;}
       currentDig=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?digs.nearest(player.group.position):null;
       currentVine=mode==='playing'&&combat.state.phase!=='active'&&!currentDig?vinePlateNear(player.group.position):null;
       currentTree=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?specimenTrees.nearest(player.group.position):null;
@@ -3648,7 +3762,7 @@ function init() {
       nearFishing=!!currentFishingSpot;
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
-      const prompting=mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active';show('interaction',prompting);
+      const prompting=mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentAppleTree||nearRepair||nearBorder)&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -3656,6 +3770,11 @@ function init() {
       if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentMorosSite&&!currentNPC)$('interaction-label').textContent=currentMorosSite.prompt;
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
+      if(currentRow&&!currentNPC)$('interaction-label').textContent=!farming.met?'A drilled row, and nobody has shown you what to do with it'
+        :currentRow.stage==='ripe'?`Reap the ${currentRow.cropName.toLowerCase()} · ${currentRow.name.toLowerCase()}`
+        :currentRow.stage==='sown'?`${currentRow.cropName} · ${Math.ceil(currentRow.left)} seconds`:`Sow ${currentRow.name.toLowerCase()}`;
+      if(currentAppleTree&&!currentNPC)$('interaction-label').textContent=!farming.met?'An apple tree somebody keeps'
+        :currentAppleTree.stage==='fruiting'?'Pick an Avrel apple':`Picked out · bearing again in ${Math.ceil(currentAppleTree.left)} seconds`;
       if(currentStone&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant)$('interaction-label').textContent=geology.met?(geology.hasFound(currentStone.species)?`Pick up the ${currentStone.name.toLowerCase()}`:'Look at this stone'):'A stone catches your eye';
       if(currentDig&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=archaeology.met?(archaeology.hasFound(currentDig.id)?`${currentDig.name} \u00b7 written up`:'Read this place'):'A surveyor\u2019s peg with a red ribbon';
       if(currentVine&&!currentNPC&&!currentDig)$('interaction-label').textContent=`The ${VARIETIES[currentVine.variety].name} vines`;
@@ -3735,7 +3854,7 @@ function init() {
       prepareLocalMap:()=>{forestHooks().prepareVillage();discoveries.clear();forestStory.restore();forestHideout.restore();journey.restore(createJourney().snapshot());syncForest();syncHideout();
         trackedPlaceId=null;reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);
         player.group.position.set(-15,world.heightAt(-15,29),29);yaw=Math.PI/2;pitch=.4;distance=targetDistance=9;refreshQuest();settleCamera();}});
-    const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,localMapModel,openLocalMap,trackPlace,
+    const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,farming:farming.view(playSeconds),teachFarming:()=>{const first=farming.learn().first;if(first){toast('Farming, level 1. Four rows at the commons: sow, walk away, come back. Barley is four minutes.','ENNA TAUGHT YOU TO FARM');refreshSkillsSheet();saveRoad(false);}},localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
     window.__AZHORA__={state,
       // The tongues, for a review that wants the dialogue panel as a new traveler sees it.

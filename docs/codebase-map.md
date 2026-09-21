@@ -343,7 +343,9 @@ The road out of Drent into Luscia is its own smaller thing: [`src/journey.js`](.
 
 Level 2 is 83 experience; level 99 is 13,034,431; level 92 is half of 99. Woodcutting was the first to move onto it.
 
-Each skill is a module, and most have a companion file holding the *things* the skill finds: [`birding.js`](../src/birding.js) with [`drent-birds.js`](../src/drent-birds.js), [`botany.js`](../src/botany.js) with [`drent-flora.js`](../src/drent-flora.js) and [`drent-trees.js`](../src/drent-trees.js), [`mycology.js`](../src/mycology.js) with [`mushrooms.js`](../src/mushrooms.js), [`geology.js`](../src/geology.js) with [`drent-stones.js`](../src/drent-stones.js), [`archaeology.js`](../src/archaeology.js) with [`rena-digs.js`](../src/rena-digs.js), [`wine.js`](../src/wine.js) with [`attic-wines.js`](../src/attic-wines.js). The rest: [`fishing-skill.js`](../src/fishing-skill.js), [`cooking.js`](../src/cooking.js), [`woodcutting.js`](../src/woodcutting.js), [`construction.js`](../src/construction.js).
+Each skill is a module, and most have a companion file holding the *things* the skill finds: [`birding.js`](../src/birding.js) with [`drent-birds.js`](../src/drent-birds.js), [`botany.js`](../src/botany.js) with [`drent-flora.js`](../src/drent-flora.js) and [`drent-trees.js`](../src/drent-trees.js), [`mycology.js`](../src/mycology.js) with [`mushrooms.js`](../src/mushrooms.js), [`geology.js`](../src/geology.js) with [`drent-stones.js`](../src/drent-stones.js), [`archaeology.js`](../src/archaeology.js) with [`rena-digs.js`](../src/rena-digs.js), [`wine.js`](../src/wine.js) with [`attic-wines.js`](../src/attic-wines.js). The rest: [`fishing-skill.js`](../src/fishing-skill.js), [`cooking.js`](../src/cooking.js), [`woodcutting.js`](../src/woodcutting.js), [`construction.js`](../src/construction.js), [`farming.js`](../src/farming.js).
+
+Farming is the fourteenth and the odd one out: it is the only skill with a clock of its own. A row at the Mill Commons is sown at a moment of play and is ripe a fixed number of play-seconds later — barley in four minutes, Drent leaf in eight — so it grows while the traveler is three miles away, exactly as the company on the road does. Enna teaches it; Applegarth's kept orchard is the same skill with no sowing.
 
 Every skill has a teacher, named in the table, and the teacher is a real person standing somewhere.
 
@@ -533,7 +535,7 @@ e0dc43a A company of refugees with no road to walk is empty, not broken
 
 **Long dense lines in `main.js` are deliberate.** One concern per line. Do not reformat around an edit.
 
-**Line endings are stored byte for byte.** [`.gitattributes`](../.gitattributes) sets `* -text`. `src/main.js`, `index.html` and `src/campaign.js` are CRLF; nearly everything else is LF. Preserve whatever a file already uses.
+**Line endings are stored byte for byte.** [`.gitattributes`](../.gitattributes) sets `* -text`, so whatever a file already uses is what it keeps. Most of the tree is LF, and `src/main.js` is LF too — it was CRLF when this map was written and is not any more, which is exactly the kind of thing to check rather than trust. Preserve whatever the file in front of you has.
 
 ### Where the written notes have drifted from the code
 
@@ -612,6 +614,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/elagos-scenery.js`](../src/elagos-scenery.js) | The scenery of Elagos: the lakes, Ambron on the narrows, and the lake country | The regions | 925 |
 | [`src/elagos-world.js`](../src/elagos-world.js) | Elagos, the Lake Lands, as water, roads and places | The regions | 452 |
 | [`src/elod-people.js`](../src/elod-people.js) | The people of Elod, and of East Suval outside it | The regions | 279 |
+| [`src/farming.js`](../src/farming.js) | Farming, the fourteenth skill, and the only one with a clock of its own: four rows at the Mill Commons sown on play-seconds, and Applegarth's kept orchard, picked rather than planted | Skills | 213 |
 | [`src/ferry.js`](../src/ferry.js) | The crossing to Peblos: Corran Sell's boat, the fee, and the short scene | People with a story | 251 |
 | [`src/fishing-skill.js`](../src/fishing-skill.js) | Fishing, the traveler's second skill. The rod, the float and the bite are campcraft's (`src/campcraft.js`); this is what comes up on the line | Skills | 160 |
 | [`src/forest-ecology.js`](../src/forest-ecology.js) | The wood as a living thing: instanced understory plants, mossy logs, deer that graze and flee, foraging thrushes, butterflies, bees and dragonflies | Optional life | 476 |
@@ -653,6 +656,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/lighthouse-world.js`](../src/lighthouse-world.js) | The Suval Light on its head on the West Suval coast, south of the winery lane (src/lighthouse.js): a round stone tower tapering to a corbelled gallery and a glazed | The regions | 200 |
 | [`src/lighthouse.js`](../src/lighthouse.js) | The Suval Light, and Addison, who keeps it. Where the Solis road runs south past the turning for the winery | People with a story | 220 |
 | [`src/local-map-data.js`](../src/local-map-data.js) | Builds the local trail map’s model from world state: which places are known, the roads and paths near them, and the bounds to draw | The charts | 179 |
+| [`src/long-road.js`](../src/long-road.js) | The long road through Drent: the optional walk that takes the whole of the company's day. The frame and never the lessons — which stops make up the walk, which wears the open gold next, and the handful of things no other module can answer | Optional life | 470 |
 | [`src/local-map-smoke.js`](../src/local-map-smoke.js) | Real UI checks: chart browsing must never become travel or a quest shortcut | The charts | 185 |
 | [`src/luscia-chapter.js`](../src/luscia-chapter.js) | The Luscia chapter: the field at the Lauvel. The campaign's second chapter (`luscia-aftermath`) made playable | The story | 277 |
 | [`src/luscia-town.js`](../src/luscia-town.js) | Lumber Town: the people of Luscia's market town | The regions | 137 |

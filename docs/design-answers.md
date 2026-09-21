@@ -20,6 +20,32 @@ ask again.
 
 **The long road is being built**, by its own builder, from `docs/drent-long-road-build.md`.
 
+## 2026-09-21 — the long road through Drent, as built
+
+**The five questions of `docs/drent-long-road.md` are answered and built.** First is guaranteed
+(Ed the Word waits out twenty-five minutes on the shingle); Chris can die in Drent and the
+interpreter is a role rather than a man; the march is the traveler's choice at the camp; Hesta
+Ardry may give archaeology's first lesson at Rena; and Silas Garrow moves to the Toll House
+stream while the marl pit under the Weatherhead stays his. The rulings are written out in full in
+`docs/drent-long-road.md` under *The user's answers*.
+
+**Mara's three corners is a lesson, and it is keyed to ground walked.** The design's leg 1 has her
+ask for the pier, the Weatherhead and the Koopwood charted. The chart cannot *name* the last two —
+neither is a landmark or a named ground — so the errand is keyed to the fog's own answer at each
+of the three points, which is what walking to a corner means. She countersigns on the return, once,
+for a block of cartography. (Coordinator's ruling, 2026-09-21: it was in the approved design and
+its absence from the build brief was an omission rather than a decision.)
+
+**Two things the ground refused, and what was built instead.** Odger Pell stands at the bench side
+of Fernway Rest, not beside the cairn, because the cairn is inside the pileated woodpecker's home
+ground and inside the band the company walks in. Silas Garrow stands at the crossing stones a
+metre off the stream, not at the Toll House's own centre, because the toll house is a stone box
+with walls and a teacher needs five clear metres to be talked to in.
+
+**Open for the user:** whether the Toll House stream becomes a tenth named ground on the chart.
+It is the one long-road stop the chart has no name for; until it is decided, Silas is noticed by
+the forty-metre rule alone and nothing counts Drent's grounds by a hard-coded nine.
+
 ## 2026-09-21 — fighting, and the day
 
 **Combat skills are divided by weapon: you get good at what you carry.** Blades, Heavy arms,

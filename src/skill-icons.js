@@ -52,6 +52,10 @@ export const SKILL_ICONS = Object.freeze({
     + '<path d="M3 23.4c3.1-2.5 6.2-2.5 9.3 0s6.2 2.5 9.3 0 6.2-2.5 9.3 0"/>'
     + '<path d="M3 29.4c3.1-2.5 6.2-2.5 9.3 0s6.2 2.5 9.3 0 6.2-2.5 9.3 0"/>',
   // An open book: two leaves, the spine between them, and writing you cannot read yet.
+  // An ear of barley on its stem: the one skill that ripens on a clock of its own.
+  farming: '<path d="M18 33V13"/><path d="M18 13c-4.6 0-7-2.6-7-7 4.6 0 7 2.6 7 7Z"/>'
+    + '<path d="M18 13c4.6 0 7-2.6 7-7-4.6 0-7 2.6-7 7Z"/><path d="M18 21c-4.6 0-7-2.6-7-7 4.6 0 7 2.6 7 7Z"/>'
+    + '<path d="M18 21c4.6 0 7-2.6 7-7-4.6 0-7 2.6-7 7Z"/><path d="M5 33h26"/>',
   linguist: '<path d="M18 9.6C14.4 6.8 9.6 5.8 4 6.2v20c5.6-.4 10.4.6 14 3.4 3.6-2.8 8.4-3.8 14-3.4v-20c-5.6-.4-10.4.6-14 3.4Z"/>'
     + '<path d="M18 9.6v20"/>'
     + '<path d="M7.8 12.8c2.4-.2 4.6.2 6.6 1.2M7.8 17.8c2.4-.2 4.6.2 6.6 1.2M21.6 14c2-1 4.2-1.4 6.6-1.2M21.6 19c2-1 4.2-1.4 6.6-1.2"/>',

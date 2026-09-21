@@ -1,6 +1,7 @@
 /**
  * Botany, the catch-all skill for everything that grows, as mycology is the
- * catch-all for mushrooms. Nell Harrow keeps a drying shed on the outskirts of Tidehaven and will
+ * catch-all for mushrooms. Nell Harrow works the hedge banks of the Sunken Lane, where the old
+ * drove crosses the Caloss road, and will
  * teach anyone who stops what grows in Drent and what it is for: what staunches
  * a cut, what settles a fever, what is supper after three waters and poison
  * before them.
@@ -21,12 +22,21 @@ export const LEAF_ITEM = 'pipe-weed';
 export const JIMSON_ITEM = 'jimson-pods';
 
 export const BOTANIST = Object.freeze({
-  id: 'botanist', name: 'Nell Harrow', role: 'Botanist of the Tidehaven outskirts',
+  id: 'botanist', name: 'Nell Harrow', role: 'Botanist of the Sunken Lane',
   modelRole: 'shelter-keeper', color: 0x746354,
 });
 
-/** Her drying shed on the western outskirts, in world metres, facing the village. */
-export const BOTANIST_STAND = Object.freeze({ x: -40, z: 44, yaw: Math.PI * .78 });
+/**
+ * Her drying frames on the hedge bank of the Sunken Lane, in world metres, facing the road.
+ *
+ * She used to stand on Tidehaven's outskirts, forty metres from the pier, which is where six
+ * other teachers were. Two hedge banks eighty years unlaid are the best botany in Drent and the
+ * tobacco is Avrel's, so this is where the work is (docs/drent-long-road.md §4). The point is
+ * the lane's own centre, measured against the built ground: 19 m off the road, inside the lane's
+ * kept-clear disc, 2.4 m from the nearest hedge bank and 69 m from the nearest bird's ground.
+ * `DRENT_DEEP_PLACES[0]` in src/rena.js is the lane itself; this is where she stands in it.
+ */
+export const BOTANIST_STAND = Object.freeze({ x: -482.4333760917881, z: 38.31351676295392, yaw: .576 });
 
 const kind = (id, entry) => Object.freeze({ id, item: HERB_ITEM, ...entry });
 
@@ -246,7 +256,7 @@ export function createBotany({ skills, onEvent = () => {} } = {}) {
    * goes into the satchel under its own item; the rest is named and left growing.
    */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'A plant, and no name for it. Nell Harrow, on the edge of the village, has a name for everything here.' };
+    if (!state.met) return { ok: false, reason: 'A plant, and no name for it. Nell Harrow, at the Sunken Lane, has a name for everything here.' };
     const species = PLANT_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a plant anyone here can name.' };
     const first = !state.found[id];
@@ -272,7 +282,7 @@ export function createBotany({ skills, onEvent = () => {} } = {}) {
         name: state.found[id] ? PLANT_SPECIES[id].name : 'A plant you have not named',
         detail: state.found[id] ? PLANT_SPECIES[id].note
           : state.met ? (PLANT_SPECIES[id].where ? `Stands in ${PLANT_SPECIES[id].where}.` : `Grows on ${HABITAT_WORDS[PLANT_SPECIES[id].habitat] ?? PLANT_SPECIES[id].habitat}.`)
-          : 'Nell Harrow keeps a drying shed on the outskirts of Tidehaven.' })),
+          : 'Nell Harrow works the hedge banks of the Sunken Lane, on the Caloss road.' })),
     };
   }
 
@@ -334,13 +344,13 @@ export function botanistConversation(npc, context) {
       'Bloodroot bleeds orange when you break it and takes the flesh off anything it sits on long enough. Mayapple is an umbrella an inch off the floor: the fallen yellow fruit is supper and every other part of it is a purge that has killed people in a hurry.',
       'Pokeweed is the crimson stem with the black berries, head-high by autumn — three waters and the spring shoots are a dish, and the berries are poison however you cook them. And the sumac you can drink holds its red cones up. The one that hangs white berries down will blister you for a month.',
     ], null, 'Back to our conversation', { onComplete: again }) },
-    // The plant behind her shed: the easy way into the jimson errand, for anyone
+    // The plant on the bank behind her: the easy way into the jimson errand, for anyone
     // who notices it early. Asking is what unlocks picking it.
-    ...(jimson?.canAsk ? [{ id: 'botany-jimson', label: 'What is that rank thing behind your shed?', action: () => {
+    ...(jimson?.canAsk ? [{ id: 'botany-jimson', label: 'What is that rank thing on the bank behind you?', action: () => {
       botany.askAboutJimson(); jimson.askedNell?.();
       openDialogue(npc, [
         'That. That is jimson weed, and before you ask: no, I did not plant it, and no, I will not pull it up.',
-        'I keep it where I can see it. Every few years somebody boils it for greens the way a garrison did up the river once, and spends eleven days talking to people who are not in the room. If it is going to grow in this village it can grow where I am standing over it.',
+        'I keep it where I can see it. Every few years somebody boils it for greens the way a garrison did up the river once, and spends eleven days talking to people who are not in the room. If it is going to grow in this country it can grow where I am standing over it.',
         'The pods are the spiked ones. If you are fetching them for Toft — and you are, he has asked everybody — take them off my plant rather than go crawling round the waste ground for a wild one. And tell him from me that I know exactly what he is like.',
       ], null, 'Back to our conversation', { onComplete: again });
     } }] : []),

@@ -3,7 +3,7 @@
  *
  * Toft Ellery wants jimson weed — specifically the spiked pods — for his knee,
  * which is a lie he has told so many times he has started believing it. There
- * are three plants in reach: the one behind Nell Harrow's shed, which is the
+ * are three plants in reach: the one on the bank behind Nell Harrow, which is the
  * easy one if the traveler thinks to ask her about it; a wild one on Drent's
  * waste ground; and a wild one away in Pueth, for anyone who gets there first
  * and comes back.

@@ -1,8 +1,12 @@
 /**
- * Mycology, the traveler's third skill. Odger Pell keeps a drying rack at the
- * edge of the Greenway outside Tidehaven and will teach anyone who stops: what
- * grows on a stump and what grows from a root, which of them is supper and which
- * of them will kill you by Thursday.
+ * Mycology, the traveler's third skill. Odger Pell keeps a drying rack at Fernway Rest,
+ * where the woodland paths meet, and will teach anyone who stops: what grows on a stump and
+ * what grows from a root, which of them is supper and which of them will kill you by Thursday.
+ *
+ * He used to stand a few steps outside Tidehaven, which put seven of Drent's teachers within a
+ * hundred metres of the pier. Mushrooms want old damp wood, and Fern Hollow behind the Rest is
+ * the dampest ground in Drent's forest; a rack is a rack, and he put his where the paths cross
+ * because that is where people with baskets pass (docs/drent-long-road.md §4).
  *
  * The mushrooms are the mushrooms of the country the game is drawn from — the
  * oak-hickory woods, floodplains and old pastures between two great rivers — with
@@ -16,9 +20,20 @@ export const MYCOLOGY_SKILL = 'mycology';
 export const MUSHROOM_ITEM = 'mushrooms';
 
 export const MYCOLOGIST = Object.freeze({
-  id: 'mycologist', name: 'Odger Pell', role: 'Mushroom man of the Greenway edge',
+  id: 'mycologist', name: 'Odger Pell', role: 'Mushroom man of Fernway Rest',
   modelRole: 'forest-woodcutter', color: 0x7a6a45,
 });
+
+/**
+ * His stand, on the bench side of Fernway Rest rather than beside the cairn.
+ *
+ * The cairn is 4.3 m from the centre of the pileated woodpecker's home ground (`BIRD_HABITATS`,
+ * src/drent-birds.js), and a stand takes a bird's perches away; it is also 2.8 m from the road's
+ * centreline, inside the 4.6 m the company walks in. This spot is 7.4 m from the cairn, 5.5 m
+ * from the road and 2.3 m clear of the bird, and was measured against the built ground rather
+ * than chosen (docs/drent-long-road-probe.md §1). He faces the cairn and the road behind it.
+ */
+export const MYCOLOGIST_STAND = Object.freeze({ x: -128.4, z: 39.6, yaw: 3.07 });
 
 const kind = (id, entry) => Object.freeze({ id, ...entry });
 
@@ -114,7 +129,7 @@ export function createMycology({ skills, onEvent = () => {} } = {}) {
    * the satchel; the other two are noted and left standing.
    */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'You do not know one mushroom from another yet. Odger Pell, at the edge of the Greenway, does.' };
+    if (!state.met) return { ok: false, reason: 'You do not know one mushroom from another yet. Odger Pell, at Fernway Rest, does.' };
     const species = MUSHROOM_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a mushroom anyone here can name.' };
     const first = !state.found[id];
@@ -136,7 +151,7 @@ export function createMycology({ skills, onEvent = () => {} } = {}) {
         name: state.found[id] ? MUSHROOM_SPECIES[id].name : 'A mushroom you have not named',
         detail: state.found[id] ? MUSHROOM_SPECIES[id].note
           : state.met ? `Grows on ${MUSHROOM_SPECIES[id].habitat === 'grass' ? 'open grass' : MUSHROOM_SPECIES[id].habitat === 'oak' ? 'the ground under oaks' : MUSHROOM_SPECIES[id].habitat}.`
-          : 'Odger Pell keeps a drying rack at the edge of the Greenway, outside Tidehaven.' })),
+          : 'Odger Pell keeps a drying rack at Fernway Rest, where the woodland paths meet.' })),
     };
   }
 
