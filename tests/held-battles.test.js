@@ -53,6 +53,9 @@ test('every other fight still takes the country it happens in', () => {
     'forest-hideout.js', 'luscia-chapter.js', 'ogre-toll.js']) {
     let text = '';
     try { text = source(file); } catch { continue; }
+    // A sparring bout is the one fight that authors a level on purpose: a friend is not a danger
+    // of the country, so a lesson is level 0 wherever it is given (src/main.js, phase 7).
+    text = text.replace(/bout:true,level:0/g, 'bout:true').replace(/`level: 0` because a friend/g, '');
     // `level:` as an encounter's own field, not `skill.level:0` in a ternary.
     if (/(?<![.\w-])level:\s*(?!HELD_AT_TUNED_LEVEL)\d/.test(text)) authored.push(file);
   }
