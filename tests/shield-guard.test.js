@@ -264,6 +264,34 @@ test('an eased pose needs time, and a frozen view has none — so the view spend
   assert.ok(body.indexOf('settlePose') < body.indexOf('reviewFrozen=true'), 'and does it before it freezes');
 });
 
+/**
+ * Found by the bug hunter and written down in docs/known-issues.md: the host offered the guard
+ * *after* it stepped the fight, so a blow was answered for with the key and the facing of the
+ * frame before it. Sixteen milliseconds, and harmless - except that the offer lives inside the
+ * playing branch, so the defeat panel, a dialogue and the pause menu all left `guardHeld`
+ * latched, and the first playing frame after one of them resolved against a key nobody was
+ * pressing. A hand off the keyboard is a hand off the shield.
+ */
+test('the guard is offered before the fight is stepped, and nothing is held while nothing is played', () => {
+  const main = source('main.js');
+  const from = main.indexOf("if(mode==='playing'&&!reviewFrozen) {");
+  const to = main.indexOf('const floor=world.heightAt(player.group.position.x,player.group.position.z);', from);
+  assert.ok(from > 0 && to > from, 'the playing branch is still where it was');
+  const frame = main.slice(from, to);
+  assert.ok(frame.includes('combat.guard(guardKey,player.group.rotation.y);'), 'the key is still offered every frame');
+  assert.ok(frame.includes('combat.update(dt);'), 'and the fight is still stepped here');
+  assert.ok(frame.indexOf('combat.guard(guardKey,player.group.rotation.y);') < frame.indexOf('combat.update(dt);'),
+    'the guard is offered before the blow lands, not after it');
+  // And outside play the latch is let go, on the same frame, before anything can read it.
+  assert.match(main, /if\(mode!=='playing'\)combat\.guard\(false,player\.group\.rotation\.y\);/,
+    'a mode that is not play holds no shield');
+  assert.ok(main.indexOf("if(mode!=='playing')combat.guard(false,player.group.rotation.y);") < from,
+    'and it is let go before the playing branch can step anything');
+  // The module still latches nothing of its own: the host is the only one who remembers a press.
+  assert.match(source('combat.js'), /let guardHeld = false, guardYaw = 0;/);
+  assert.match(source('combat.js'), /guardHeld = !!held;/);
+});
+
 test('the view reports what was drawn, not only what was decided', () => {
   const main = source('main.js');
   // `up: true` beside a hip-height shield was reportable for two commits. It is not any more:
