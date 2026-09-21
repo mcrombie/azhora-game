@@ -9,8 +9,9 @@ settlement, no road, no field wall, no bridge, no boat, no person, no sign, no q
 > lore says to fit the atlas."** It is a standing rule for the whole world, not only these
 > six. This document was first written the other way round — the four-regions brief had let
 > the lore win on climate — and has been revised to it throughout. Every disagreement below
-> is now settled for the atlas, and the lore files themselves have been adjusted to match
-> (`docs/lore-adjusted-to-atlas.md`).
+> is now settled for the atlas. The lore files are to be adjusted to match; the adjustment is
+> written out claim by claim in `docs/lore-adjusted-to-atlas.md` and is **not yet applied** —
+> this agent is isolated in its worktree and the tool refuses to write to the lore repository.
 
 The brief for each is its lore file in `world-builder/azhora_lore/geography/regions/`, plus
 `fauna/azhoran_fauna_overview.md`, `geography/azhoran_flora_distribution.md` and
@@ -120,8 +121,8 @@ Every course below is authored on hex edges in `azhora.wwmap` and is not invente
 ## Where lore and atlas disagreed, and how the user settled it
 
 Seven. **All seven are settled for the atlas by the user, 2026-09-21** — "Favor the atlas over
-what the lore says. Adjust what the lore says to fit the atlas." The lore files have been
-edited to match; what moved in each is listed in `docs/lore-adjusted-to-atlas.md`. They are
+what the lore says. Adjust what the lore says to fit the atlas." What each costs the lore is
+written out in `docs/lore-adjusted-to-atlas.md`, ready to apply. They are
 kept here in the order they bite, because what the atlas refused is worth knowing even once
 it has been written away.
 
@@ -397,7 +398,9 @@ flat bottom means water that enters has nowhere urgent to go" — is a statement
 and shape is the game's to decide. So: a **wide shallow hollow** at the middle of the region,
 about 600 m across, floor at 13 m against a rim at 21, with the fall spread over two hundred
 metres so that nothing about it is a bank. Water gathers in it and leaves slowly. It is soft
-underfoot after rain and it is never standing water. That is the largest piece of quiet
+underfoot after rain, and the game never shows it under water: the lore's adjustment keeps a
+shallow spring sheet over the meadow, which is `grassland` honestly, and the game has no
+seasons to bring it. That is the largest piece of quiet
 landform in the job and it reads, from a rise, as a country with a dish in it.
 
 **The water.** Both authored courses are built as the map draws them, on the rims rather than
@@ -817,10 +820,12 @@ the hunter's own box and the far south-west, 869 samples moved. 276 of them lie 
   before and after.
 
 **Names.** Every river, range and desert in this job that has a name has it from the lore or
-the atlas: the Lizeem, the Neth, the Oveth, the Sorten, the Oves Desert. Two
-authored courses have no name anywhere — the medium river on the Isareos|Nethereum border and
-the small one on the Gala|Telemonia border — and they are **left unnamed and listed here for
-the user** rather than invented.
+the atlas: the Lizeem, the Neth, the Oveth, the Sorten, the Oves Desert. Two authored courses
+had no name anywhere. The lore adjustment proposes one of them: **the Isa**, which the lore
+already names as Isareos's river and which the atlas draws in exactly one place, so that
+Isamouth stands where it joins the Lizeem. That is a derivation and not an invention, and it
+is the user's to refuse. The other — the small course on the Gala|Telemonia border — stays
+**unnamed and listed here for the user**.
 
 ---
 
