@@ -609,7 +609,8 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   // A dead man is never placed.
   assert.match(main, /npc\.hidden=placement\.phase==='coming'\|\|fallen\.has\(placement\.id\);/, 'nor is a dead one');
   // The host hands the company the whole set, and empty is spelled as nothing.
-  assert.match(main, /companions:companionPlan\(\)/, 'the company takes the set');
+  assert.match(main, /const asked=companionPlan\(\);/, 'the company takes the set');
+  assert.match(main, /company=createMercenaryCompany\(\{\.\.\.companyPlan,roster,companions:asked\}\);/);
   assert.match(main, /return all\.length\?all:undefined;/, 'and empty is today’s clock, spelled as nothing');
 });
 

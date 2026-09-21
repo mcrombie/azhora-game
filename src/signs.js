@@ -37,6 +37,7 @@ import { renderLine } from './linguist.js';
 export const ENGLISH_SIGN_LABELS = Object.freeze([
   // Tidehaven and the Greenway
   'Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
+  'The Smithy',
   // The two lights of this coast (src/lighthouse.js, src/rival-light.js)
   'The Suval Light', 'The Elod Light',
   // West Suval's winery, and the grapes on the plates at the head of its blocks (src/winery.js)

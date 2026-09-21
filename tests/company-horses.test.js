@@ -11,6 +11,7 @@ import {
 import { COMPANION_REACH, companionPace } from '../src/long-road.js';
 import { createRiding, RIDE, DEVELOPER_HORSE_SPEED } from '../src/riding.js';
 import { createCompanions, COMPANION_IDS } from '../src/companions.js';
+import { createMercenaryCompany } from '../src/mercenaries.js';
 import { createFallen } from '../src/bystanders.js';
 import { BODY } from '../src/bodies.js';
 
@@ -207,4 +208,53 @@ test('what ten horses cost in meshes', () => {
   assert.equal(count(createHorse({ variant: 0, saddled: true })) + count(createHorse({ coat: 'developer', saddled: true })), 28);
   // For scale: a person is about this many, and the game stands dozens of them in a town.
   assert.ok(one < 20, 'a horse is cheaper than a figure');
+});
+
+test('a companion set walking by a restore is placed, and not lost between the two lists', () => {
+  // **`createMercenaryCompany` reads the walking list once, at construction.** It is a snapshot,
+  // not a live view of the companions module, and this is the fact that makes the fault possible.
+  const plan = { road: [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }],
+    stops: [], muster: { x: -400, z: 90 }, landing: { x: 3, z: 3 } };
+  assert.deepEqual(createMercenaryCompany({ ...plan, companions: [] }).companionIds, []);
+  const three = ['merc-gotwood', 'merc-jerry', 'merc-christin'];
+  assert.deepEqual(createMercenaryCompany({ ...plan, companions: three.map(id => ({ id, with: true })) }).companionIds, three);
+  // A man the companions module says is walking with you, in a company built before he was, is
+  // placed nowhere at all: his placement is his own road clock, not 'with-traveler'.
+  const stale = createMercenaryCompany({ ...plan, companions: [] });
+  assert.equal(stale.placements(4000).some(one => one.phase === 'with-traveler'), false,
+    'the men are walking with you in the save and nowhere in the world');
+  // So every path that changes who walks with you has to remake the company. `joined`, `sent-on`
+  // and `died` go through the event hook that does; **`companions.restore` does not** — a loaded
+  // save, a story start, a review view. Asking every frame is what stops a call site forgetting.
+  const main = source('main.js');
+  assert.match(main, /const walking=companions\.companions\.map\(one=>one\.id\)\.join\(','\);/);
+  assert.match(main, /if\(walking!==companyBuiltWith\)rebuildCompany\(\);/, 'placeMercenaries asks, so nobody has to remember');
+  assert.match(main, /companyBuiltWith=companions\.companions\.map\(one=>one\.id\)\.join\(','\);/, 'and rebuilding records what it built with');
+  // The review views are the first callers to have needed it, and they say so.
+  assert.match(main, /companions\.restore\(\{\.\.\.companions\.snapshot\(\),walking:\['merc-gotwood','merc-jerry','merc-christin'\]\}\);/);
+});
+
+test('the two review views compose the same whether they are run once or twice', () => {
+  // main.cjs photographs `[reviewViews[0], ...reviewViews]`, so the first view is composed twice
+  // and the picture kept is the second. Everything in the branch must therefore be idempotent.
+  const main = source('main.js');
+  const branch = main.slice(main.indexOf("if(view==='company-mounted'||view==='company-picket')"));
+  const body = branch.slice(0, branch.indexOf('return;'));
+  // `toggleMount()` is a toggle: called twice it steps him back down, which is exactly what the
+  // first render showed. It is asked for only when he is not already up.
+  assert.match(body, /if\(view==='company-mounted'\)\{[\s\S]{0,400}if\(!riding\.mounted\)toggleMount\(\);/);
+  assert.match(body, /if\(riding\.mounted\)stepDown\(true\);/, 'and the picket view puts him down only if he is up');
+  assert.match(body, /if\(!riding\.owned\)riding\.grant\(hitch,hitch\.yaw\);else riding\.place\(hitch,hitch\.yaw\);/, 'a horse is granted once');
+  // It runs before the unconditional practice branch, which arms him for every other view.
+  assert.ok(main.indexOf("view==='company-mounted'") < main.indexOf("if(view==='battle'){questStage=4;"),
+    'the shot is composed before anything arms the traveler or starts a practice fight');
+  // And the shot is measured, not guessed: the camera pulls in against whatever is in the way.
+  assert.match(body, /clearestBearing\(reviewTarget,21,\{prefer:hitch\.yaw\+Math\.PI\/2\}\)/);
+  assert.match(main, /function cameraPullIn\(focus,want,bearing\)\{/, 'one arithmetic for the camera and for the chooser');
+  assert.match(main, /const actualDistance=cameraPullIn\(cameraFocus,viewDistance,yaw\);/, 'and the camera itself uses it');
+  // The view reports every link in the chain, so one render says which is broken.
+  for (const fact of ['owned:riding.owned', 'mounted:riding.mounted', 'mountBlock:riding.mountBlock',
+    'walking:companions.companions.map(one=>one.id)', 'placed:[...(company.companionIds??[])]',
+    'file:[...fileOrder]', 'stoodBackBy:', 'drawn:!!npc?.actor.group.visible', 'up:!!npc?.mounted'])
+    assert.ok(main.includes(fact), `the camera report carries ${fact}`);
 });

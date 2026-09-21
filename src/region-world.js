@@ -96,6 +96,30 @@ export function isLandHex(x, z) { const h = hexAt(x, z); return landHexes.has(ke
  */
 export const VILLAGE = Object.freeze({ ...at(-20, 29), yaw: Math.PI / 2 });
 export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - lx });
+
+/**
+ * The smithy on Tidehaven's south street (docs/combat-brief.md, phase 3). The approved brief puts
+ * a smith in Drent, and Drent is level 0, so what he sells is what you landed with - bog iron is
+ * a country up (`smithStock`, src/gear.js).
+ *
+ * **The plot was chosen by measurement, not by eye.** Every standable half-metre of the village
+ * was swept and scored on four things the brief asked for: a clear yard, off the middle of the
+ * street, off the opening raid ground, and clear of the queue that comes down the pier. The
+ * village is tight - no plot anywhere in it holds a full cottage-sized yard AND keeps off the
+ * street, which is why this is an open-sided lean-to and not another cottage. Of the 61 plots
+ * that passed at a lean-to's size, this one sits in the same band off the street as the cottages
+ * (9-16 m) with the most room around it:
+ *
+ *   5.8 m of clear ground to the nearest collider - 14.6 m off the road's centreline
+ *   18.4 m from the nearest thing that must stay clear (the raid ground, the pier queue, a door)
+ */
+const SMITHY_AT = villageToWorld(14, -11.5), SMITHY_FACE = villageToWorld(0, 0);
+export const TIDEHAVEN_SMITHY = Object.freeze({
+  id: 'tidehaven-smithy', a: 14, b: -11.5, ...SMITHY_AT,
+  // Facing in toward the village, so the open side of the shelter is the side people come from.
+  yaw: Math.atan2(SMITHY_FACE.x - SMITHY_AT.x, SMITHY_FACE.z - SMITHY_AT.z),
+  clear: 5.8, offRoad: 14.6, offKept: 18.4,
+});
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 
 // The goblin camp (HIDEOUT_SITE, hideoutToWorld) stands in southern Pueth now: see src/pueth-world.js.
