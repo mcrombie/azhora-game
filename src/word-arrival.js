@@ -35,6 +35,13 @@ const ED = mercenaryById(WORD_ID);
  * lesson for the same price.
  */
 export const WORD_LEVEL = 3;
+/**
+ * `swims: true` on his roster row, read rather than admired. It is the roster's way of saying he
+ * comes ashore through the water instead of off a boat, and it is the difference between the
+ * swim below and a man simply standing on the strand from the moment the ship lets him go. Take
+ * the flag off him and there is no crossing to watch.
+ */
+export const WORD_SWIMS = ED.swims === true;
 
 /**
  * The clock, in seconds of play after the traveler lands. `drops` is `ARRIVALS.word`, because
@@ -126,6 +133,9 @@ export function shipAt(playSeconds) {
 export function swimmerAt(playSeconds) {
   const t = Number.isFinite(playSeconds) ? playSeconds : 0;
   if (t < WORD_SHIP.drops) return { phase: 'aboard', swimming: false, ashore: false, ...WORD_SWIM.from, yaw: headingTo(WORD_SWIM.from, WORD_SWIM.to), metres: 0 };
+  // A man who does not swim is simply ashore the moment the ship lets him go. Nobody on the
+  // roster is authored that way today; the flag is read so that it means something.
+  if (!WORD_SWIMS) return { phase: 'ashore', swimming: false, ashore: true, ...WORD_SWIM.to, yaw: headingTo(WORD_SWIM.from, WORD_SWIM.to), metres: 0 };
   const swum = Math.min(WORD_SWIM.metres, (t - WORD_SHIP.drops) * swimSpeed(WORD_LEVEL));
   const at = lerpPoint(WORD_SWIM.from, WORD_SWIM.to, WORD_SWIM.metres ? swum / WORD_SWIM.metres : 1);
   const done = swum >= WORD_SWIM.metres;

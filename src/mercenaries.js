@@ -216,6 +216,23 @@ export function mercenaryProgress(mercenary, playSeconds, stops, musterDistance)
 }
 
 /**
+ * How the men who have landed wait. They used to stand in a ring around the landing itself, at
+ * 2.2 + index * 0.3 metres - and the landing is a pier three metres wide. Nothing wider than
+ * 1.7 m fits on it, so five of the ten stood on the harbour floor, five and a half metres under
+ * the water, for as long as ninety seconds at a time (docs/known-issues.md).
+ *
+ * So they queue instead, down the way they are about to go: the line from the landing to the
+ * road's own first point, which at Tidehaven runs straight down the deck. They alternate half a
+ * metre either side of that line so the traveler can walk up through them rather than round.
+ *
+ * The numbers were measured against the built pier, not chosen: of the shapes that put all
+ * eleven on standable ground, this is the one that leaves the most room around the tightest man
+ * in it - 0.8 m of clear ring, where three of them pass a bollard. `tests/mercenaries.test.js`
+ * re-measures it, so if the deck's furniture moves the test says so rather than the men wading.
+ */
+export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .45 });
+
+/**
  * @param road the main road polyline (world.paths[0])
  * @param stops [{ id, point, dwell }] places where each mercenary pauses to do the traveler's business
  * @param muster the army camp's rendezvous point
@@ -233,19 +250,36 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   const roadStops = stops.map(stop => ({ id: stop.id, dwell: stop.dwell, distance: distanceAlongRoad(road, stop.point, lengths) }));
   const start = landing ?? road[0];
   const lateral = index => (index % 2 ? -1 : 1) * (1.4 + Math.floor(index / 2) * .8);
+  // The queue runs from the landing toward the road's first point, and the men face that way,
+  // because it is the way they are going. `p` is the perpendicular they step off it on.
+  const queue = (() => {
+    // Toward the road's first point. A landing that *is* the road's first point - which is how
+    // the opening sequence's own short road is written - has no direction of its own, so the
+    // road's first leg stands in for it: either way they queue along the way they are going.
+    const head = road[0];
+    let dx = head.x - start.x, dz = head.z - start.z;
+    if (Math.hypot(dx, dz) < 1e-6) { dx = road[1].x - head.x; dz = road[1].z - head.z; }
+    const span = Math.hypot(dx, dz);
+    if (!(span > 1e-6)) return { ux: 0, uz: 1, px: 1, pz: 0, yaw: 0 };
+    const ux = dx / span, uz = dz / span;
+    return { ux, uz, px: -uz, pz: ux, yaw: Math.atan2(ux, uz) };
+  })();
 
   function placements(playSeconds) {
     return roster.map((mercenary, index) => {
       const progress = mercenaryProgress(mercenary, playSeconds, roadStops, musterDistance);
       const side = lateral(index);
       if (progress.phase === 'coming' || progress.phase === 'landing') {
-        // Almost everybody steps off a boat at the landing and stands about near it. Ed the
-        // Word does not: `route: 'shore'` means the sea put him down somewhere else, and until
-        // this was read he waited for his own ship among people who came off boats.
-        const from = mercenary.route === 'shore' && shore ? shore : start;
-        const angle = index * 1.9;
-        const spread = mercenary.route === 'shore' && shore ? 0 : 2.2 + index * .3;
-        return { id: mercenary.id, name: mercenary.name, ...progress, x: from.x + Math.sin(angle) * spread, z: from.z + Math.cos(angle) * spread, yaw: angle + Math.PI, walking: false };
+        // A man the sea put down waits where the sea put him: `route: 'shore'` is Ed the Word,
+        // who comes out of the water onto his own strand (src/word-arrival.js) rather than
+        // standing about among people who came off boats.
+        if (mercenary.route === 'shore' && shore)
+          return { id: mercenary.id, name: mercenary.name, ...progress, x: shore.x, z: shore.z, yaw: queue.yaw, walking: false };
+        // Everybody else came off a boat and queues down the pier (LANDING_QUEUE).
+        const along = LANDING_QUEUE.lead + index * LANDING_QUEUE.spacing, off = LANDING_QUEUE.offset * ((index + 1) % 2 ? 1 : -1);
+        return { id: mercenary.id, name: mercenary.name, ...progress,
+          x: start.x + queue.ux * along + queue.px * off, z: start.z + queue.uz * along + queue.pz * off,
+          yaw: queue.yaw, walking: false };
       }
       const point = pointAlongRoad(road, progress.distance, lengths);
       const off = progress.phase === 'stopped' ? side * 2.2 : progress.phase === 'mustered' ? 0 : side;

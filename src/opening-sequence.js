@@ -18,7 +18,7 @@
  * village transform in src/region-world.js rather than typed in, so they move if the village does.
  */
 import { VILLAGE, villageToWorld, SEA_LEVEL } from './region-world.js';
-import { MERCENARY_ROSTER } from './mercenaries.js';
+import { MERCENARY_ROSTER, LANDING_QUEUE } from './mercenaries.js';
 
 const freeze = Object.freeze;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -84,12 +84,14 @@ const thirdPersonCamera = (() => {
  * The first controllable frame, and what skipping sets. The traveler stands on the landing
  * facing west up the pier (rotation -PI/2, the way the ferry sets a traveler down); the camera
  * is the ordinary one behind them; the companion is where placements() in src/mercenaries.js
- * puts the first man of the roster while he waits at the landing (index 0: 2.2 m on bearing 0,
- * facing back across the pier), so settleMercenaries() in the host agrees with this to the metre.
+ * puts the first man of the roster while he waits at the landing, so settleMercenaries() in the
+ * host agrees with this to the metre. That used to be a ring around the landing, which did not
+ * fit the pier; it is the head of the queue down it now (LANDING_QUEUE), one lead in front of
+ * the traveler and half a metre off the line, facing the way they are both about to walk.
  */
 export const LANDED = freeze({
   traveler: freeze({ x: SPAWN.x, y: SPAWN.y, z: SPAWN.z, yaw: -Math.PI / 2 }),
-  companion: freeze({ x: SPAWN.x + Math.sin(0) * 2.2, y: SPAWN.y, z: SPAWN.z + Math.cos(0) * 2.2, yaw: 0 + Math.PI }),
+  companion: freeze({ x: SPAWN.x - LANDING_QUEUE.lead, y: SPAWN.y, z: SPAWN.z - LANDING_QUEUE.offset, yaw: -Math.PI / 2 }),
   camera: thirdPersonCamera,
   view: freeze({ yaw: THIRD_PERSON.yaw, pitch: THIRD_PERSON.pitch, distance: THIRD_PERSON.distance }),
   /** The toast the landing shows, in the quest's own words; the errand is the harbourmaster's. */

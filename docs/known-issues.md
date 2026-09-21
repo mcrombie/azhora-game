@@ -392,7 +392,35 @@ game to mend one place.
 
 **Repro:** `tests/nobody-sealed-in.test.js` names her; F8 to East Suval and walk to Sevenwalls.
 
-## Five of the ten hired swords wait on the harbour floor
+## Five of the ten hired swords wait on the harbour floor (fixed)
+
+**Fixed 2026-09-21: they queue down the pier.** The ring is gone. `placements()` now puts a
+waiting man in a line running from the landing toward the road's own first point - which at
+Tidehaven is straight down the deck - at `LANDING_QUEUE` (lead 2.4 m, spacing 1.9 m, alternating
+0.45 m either side of the line so the traveler can walk up through them). The numbers were
+measured against the built pier: of the shapes that put all eleven on standable ground, this is
+the one leaving the most room around the tightest man, 0.8 m of clear ring where three of them
+pass a bollard. Nobody stands in water in any phase, and the whole sweep - 46,371 placements over
+25,000 seconds - is checked in `tests/nobody-sealed-in.test.js`, whose tripwire is turned over
+to say so. The staging choice was the user's: option 1, the queue, "it keeps the picture of
+people stepping off a boat".
+
+**While checking it, a smaller thing.** Of the 2,523 placements where a man is walking the road
+or stopped at a stop, **140 (5.5%) put his home inside a collider** - a hedge, a post, a cart -
+because the lateral offset is up to 4.6 m walking and 10.1 m stopped. He never stands in it:
+`src/main.js` steers him there with `stepAround`, which goes through `moveCharacter` and stops
+him beside the thing. It is recorded rather than fixed, and the test holds a ceiling of 8% so
+that it cannot quietly get worse. The muster is clean: 43,326 placements, none blocked.
+
+**Also corrected:** the old test asserted every walking or stopped man stays within 4.2 m of the
+road, and sampled one moment (t=1200) to check it. It was not true of the whole clock - Mus walks
+4.6 m out and stops 10.1 m out - and no moment it looked at happened to catch him. The corridor
+is now stated from the formation itself (`1.4 + floor((n-1)/2) * 0.8`, and 2.2 times that for a
+stopped man) and swept over 20,000 seconds.
+
+The measurements below are what it was.
+
+
 
 A mercenary who has landed but not yet set off stands in the `landing` phase, and
 `placements()` (`src/mercenaries.js`) puts him in a ring around the traveler's own landing
@@ -463,12 +491,17 @@ Kristen.
 
 ## `route` is written on every hired sword and read by nothing
 
-**Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` now takes a `shore`
-point, and a man whose route is the shore waits there instead of among the people who came off
-boats. Ed the Word comes out of the water onto the strand north of the pier and stands on it,
-which is where `src/word-arrival.js` puts him and what `tests/word-arrival.test.js` checks.
-What follows is still true of `route: 'wild'` — Mus walks the road like everybody else — and
-of `swims`, which is read nowhere.
+**Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` takes a `shore` point, and
+a man whose route is the shore waits there instead of among the people who came off boats. Ed the
+Word comes out of the water onto the strand north of the pier and stands on it, which is where
+`src/word-arrival.js` puts him and what `tests/word-arrival.test.js` and
+`tests/nobody-sealed-in.test.js` check.
+
+`swims` is read too, as of 2026-09-21: `WORD_SWIMS` in `src/word-arrival.js` is what makes his
+arrival a crossing to watch rather than a man appearing on the sand when the ship lets him go.
+Nobody on the roster is authored without it, but the flag now means something.
+
+What follows is still true of `route: 'wild'` — Mus walks the road like everybody else.
 
 
 `MERCENARY_ROSTER` gives each man a `route`: the `merc()` factory defaults it to `'road'`

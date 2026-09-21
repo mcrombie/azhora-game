@@ -6,6 +6,7 @@ import { canStand } from '../src/game-state.js';
 import { BODY } from '../src/bodies.js';
 import { MERCENARY_ROSTER, createMercenaryCompany } from '../src/mercenaries.js';
 import { ANCHORS } from '../src/regions.js';
+import { WORD_BEACH, WORD_ASHORE } from '../src/word-arrival.js';
 
 /**
  * Every other check on the people of this world is local: the ground under them holds a body, and
@@ -103,23 +104,23 @@ const company = createMercenaryCompany({
   stops: [{ id: 'induction', point: world.npcPositions['meadow-courier'], dwell: 90 },
     { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
     { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point),
-  muster: ANCHORS.legionCamp, landing: world.spawn, seed: 0,
+  muster: ANCHORS.legionCamp, landing: world.spawn, shore: WORD_BEACH, seed: 0,
 });
 
 /** The height canStand wants under a body, from src/game-state.js. Below it is water. */
 const WALKABLE = .45;
 
 /**
- * The men who have landed but not yet set off wait in a ring around the traveler's own spawn, at
- * 2.2 + index * 0.3 metres. That spawn is on a pier three metres wide, so the ring does not fit
- * and the men at the back of it are sent onto the harbour floor, five and a half metres under
- * the water. Measured and written up in docs/known-issues.md; where they ought to wait instead
- * is a staging choice, so it is not guessed at here.
+ * They used to wait in a ring around the traveler's own spawn, at 2.2 + index * 0.3 metres, and
+ * that spawn is on a pier three metres wide: nothing wider than 1.7 m fits on it, so five of the
+ * ten stood on the harbour floor five and a half metres under the water, for as long as ninety
+ * seconds at a time. (`hidden` is set only for the `coming` phase, so a man in `landing` is
+ * drawn and steered.) They queue down the pier now - LANDING_QUEUE in src/mercenaries.js.
  *
- * Both halves are written to fail when it is mended rather than to name who is wet today, because
- * who stands at which radius is only the order of the roster.
+ * This was the tripwire that asserted somebody was *still* wet. It is turned over: the ring
+ * still does not fit, and there is no longer anybody standing in it.
  */
-test('the ring the hired swords wait in does not fit the pier they land on', () => {
+test('the hired swords wait on the boards, and the ring that would not fit is gone', () => {
   let widest = 0;
   for (let radius = 0; radius <= 12; radius += .1) {
     let whole = true;
@@ -130,20 +131,64 @@ test('the ring the hired swords wait in does not fit the pier they land on', () 
     if (!whole) break;
     widest = radius;
   }
-  assert.ok(widest < 2.2, `a ${widest.toFixed(1)}m ring fits around the landing now, so the waiting men are on dry ground; drop this from docs/known-issues.md`);
+  // The pier has not changed. What changed is that nobody is put in a ring on it.
+  assert.ok(widest < 2.2, `a ${widest.toFixed(1)}m ring fits around the landing now, which it never did before`);
 
-  const wet = new Map(), landed = new Set();
+  const wet = new Map(), landed = new Set(), seen = new Set();
   for (let t = 0; t <= 25000; t += 5) for (const placement of company.placements(t)) {
     // Nobody is drawn or steered before they arrive, so where they would have stood is nothing.
     if (placement.phase === 'coming') continue;
+    seen.add(placement.phase);
     if (placement.phase === 'landing') landed.add(placement.id);
     const height = world.heightAt(placement.x, placement.z);
     if (height >= WALKABLE || wet.has(placement.id)) continue;
     wet.set(placement.id, `${placement.id} ${placement.phase} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} on ground ${height.toFixed(2)} high`);
   }
   assert.deepEqual([...landed].sort(), MERCENARY_ROSTER.map(m => m.id).sort(), 'the sweep never saw somebody land');
-  assert.ok(wet.size > 0, 'nobody waits in the water now; drop this test and the entry in docs/known-issues.md');
-  // Only the waiting spots are wrong. If a man walking the road or standing at the muster ever
-  // ends up in water, that is a new fault and this says so.
-  assert.deepEqual([...wet.values()].filter(line => !line.includes(' landing ')), []);
+  assert.deepEqual([...seen].sort(), ['landing', 'mustered', 'stopped', 'walking'], 'the sweep saw every phase a man is drawn in');
+  assert.deepEqual([...wet.values()], [], 'nobody the company places stands in water, in any phase');
+});
+
+/**
+ * The other half of the same question, and the one the old test could not ask while five of them
+ * were in the sea: is the ground under a man ground a body can actually stand on? Height alone
+ * would let him stand inside a bollard. This walks the whole clock and asks `canStand` of every
+ * placement in every phase he is drawn in.
+ */
+test('every man the company places is on ground a body can stand on', () => {
+  const blocked = { landing: [], mustered: [], road: 0 };
+  let checked = 0, onRoad = 0;
+  for (let t = 0; t <= 25000; t += 5) for (const placement of company.placements(t)) {
+    if (placement.phase === 'coming') continue;
+    checked++;
+    const walking = placement.phase === 'walking' || placement.phase === 'stopped';
+    if (walking) onRoad++;
+    if (canStand(placement.x, placement.z, world, BODY.person)) continue;
+    const line = `${placement.id} ${placement.phase} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} ` +
+      `(ground ${world.heightAt(placement.x, placement.z).toFixed(2)}) at ${t}s`;
+    if (walking) blocked.road++;
+    else if (!blocked[placement.phase].some(had => had.startsWith(placement.id + ' '))) blocked[placement.phase].push(line);
+  }
+  assert.ok(checked > 40000, `only ${checked} placements checked`);
+  // The two that must be solid, because a man holds them for a minute or more and is drawn and
+  // steered the whole time. This is the half the ring got wrong.
+  assert.deepEqual(blocked.landing, [], 'a waiting man stands on ground');
+  assert.deepEqual(blocked.mustered, [], 'and so does a mustered one');
+  // The road is a different matter, and worth saying plainly rather than asserting away. A
+  // walking man's *home* moves along the road every frame with a lateral offset of up to 4.6 m,
+  // and now and then that offset lands inside a hedge, a post or a cart. He never stands in it:
+  // src/main.js steers him with `stepAround`, which goes through `moveCharacter` and stops him
+  // beside the thing. So this holds a ceiling rather than a zero - if it climbs, the scatter has
+  // moved into the road and somebody should look.
+  const share = blocked.road / onRoad;
+  assert.ok(share < .08, `${blocked.road} of ${onRoad} road placements (${(share * 100).toFixed(1)}%) are inside scenery`);
+});
+
+/** And Ed the Word, whom the sea put down, waits on his own strand rather than on the boards. */
+test('the man the sea landed waits where the sea landed him', () => {
+  const waiting = company.placements(WORD_ASHORE + 60).find(p => p.id === 'merc-word');
+  assert.equal(waiting.phase, 'landing');
+  assert.deepEqual([waiting.x, waiting.z], [WORD_BEACH.x, WORD_BEACH.z]);
+  assert.ok(canStand(waiting.x, waiting.z, world, BODY.person), 'and it is ground he can stand on');
+  assert.ok(Math.hypot(waiting.x - world.spawn.x, waiting.z - world.spawn.z) > 8, 'nowhere near the boats');
 });
