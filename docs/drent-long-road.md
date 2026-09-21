@@ -407,3 +407,35 @@ Asked the five questions above; these are the rulings, and they bind the build.
    landing, a name that was the coordinator's reading rather than the user's word - keeps Cabe
    Tolliver and his pipe, and the marl pit at its foot stays in the world as a place Silas sends
    you back to for the coastal stones.
+
+## Amendments from the ground probe (2026-09-20)
+
+The bug hunter measured this design against the built world before anyone built it
+(`docs/drent-long-road-probe.md` on its branch). What changes:
+
+- **Odger Pell stands on the bench side of Fernway Rest, at (-128.4, 39.6), not beside the cairn.**
+  The cairn is 4.3 m from the centre of the pileated woodpecker's home ground (radius 8), so
+  anywhere beside it breaks the standing rule that nobody is placed on a bird's ground; the
+  designed spot was also 2.8 m from the road's centreline, inside the 4.6 m the company walks in.
+  The new spot is 7.4 m from the cairn, 5.5 m from the road, 2.3 m clear of the bird. His present
+  stand is set in `src/main.js`, not `src/mycology.js`. Fernway Rest needs a kept-clear disc.
+- **Nell and Silas stand exactly where designed.** Silas's marl cart fits on one side of the Toll
+  House only; it should be the side facing the road, since the house hides him from a traveler
+  coming from Tidehaven.
+- **The clock.** The tenth mercenary musters at 5,234.5 s (pin that, not 5,233). With Ed the
+  Word's `departs` at 1,500 he leaves at 31:00 and musters at 51.4 min, so the timeline row that
+  had him as "the first of them you see go by" at the Watch is wrong: the first anybody sees are
+  the three riders, at minute 19.6, passing within 2-8 m of Mara and Lysa. Ed passes Willowmere at
+  32.2, three minutes ahead of Lakota.
+- **The five arrivals are announced, not left to be noticed.** Two of the five landings cannot be
+  seen from where the player is (the fourth is about twelve pixels tall; the fifth, from Rena, is
+  430 m away against a 180 m draw range), and the bell is silent until the player has clicked
+  Sound. What reaches every player is the companion's remark as a mercenary passes within 40 m,
+  which fires on every leg. So each landing gets a caption in the journal's voice and a line from
+  whoever is walking with you; sight and the bell are a bonus.
+- **The hedge is authored.** Hazel and bramble have no habitat rule; place stands at the Sunken
+  Lane by hand, as the jimson weeds are. There is ground for it (77% of cells take a gatherable),
+  and Applegarth's orchard and the wild trees by the Avrel clearing give the apple real trees.
+- **"First is guaranteed" is broken by Mus, not by Ed.** His `route: 'wild'` is read by nothing,
+  so today he walks the main road and at his earliest draw musters at minute 19.8; he is already
+  in for a direct traveler in roughly a quarter of games. Awaiting the user's ruling.
