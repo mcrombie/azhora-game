@@ -1861,3 +1861,76 @@ Once it runs, the driving is largely there already: `?test=1` hangs `window.__AZ
 page, and the existing hooks reach `playing`. Step `render` a few dozen frames in each of
 playing, fighting, dialogue, mounted and swimming, and assert `state().frameErrors.count` is zero
 — the field this entry's other half just added.
+
+---
+
+## The file of ten collapses onto one man in two places
+
+The file itself is good. `fileSpot` (`src/main.js:414`) takes the man's place in the file and
+steps him back by `stride` with the side alternating, and measured on the built world it gives
+**ten distinct standable places, no two closer than two bodies**, with the last man 38.5 m behind
+the traveler — on the open road west of Tidehaven and down the pier alike.
+
+Two paths throw that away and give every man the same point.
+
+### 1. The hold: a fight, Pueth, or Peblos
+
+```js
+if(here==='Pueth'||here==='Peblos'||fight){
+  if(!companionHold)companionHold={x:pos.x,z:pos.z};          // src/main.js:434
+  …
+  world.npcPositions[npc.id]={...companionHold};
+```
+
+`companionHold` is **one closure variable**, and `placeCompanion` runs once per companion in the
+same frame. The first man through sets it from *his own* position; the other nine are then handed
+a copy of it. So for the whole of any fight, and everywhere in Pueth and Peblos, **all ten are
+told to stand on one spot**.
+
+They are solid to one another (`src/bodies.js`), so nothing merges — they shove at that point and
+keep shoving, because the home is recomputed to the same place every frame. Ten men treading on
+each other for the length of a fight, just outside the box.
+
+The keep-out itself is right: the tutorial raid's box reaches **24.2 m** from its centre and
+`COMPANION_KEEP_OUT` is **26**, so the hold is outside every fight box however it is laid.
+
+### 2. The fallback: wherever `fileSpot` finds nothing
+
+```js
+if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},…);if(spot){x=spot.x;z=spot.z;}}
+```
+
+`escortSpotFor` (`src/mercenaries.js:509`) walks a fixed list of offsets and returns **the first
+standable one**. It takes no place in the file, so every man who falls back to it gets the *same*
+answer. Measured in **Lumber Town square, 2 of 10** find no `fileSpot` and fall through to it —
+and both land on the same stone.
+
+### Smallest repair
+
+Both want the one thing they lack, which is the man's place in the file:
+
+- give `outsideTheFight` the index and fan the held men along the line it already computes, or
+  simply hold each man where *he* stands rather than where the first of them stood — the hold's
+  own purpose is only "not in the box", and each man is already outside it;
+- let `escortSpotFor` take a place and start its walk that far down `ESCORT_OFFSETS`, which is
+  the same shape `fileSpot` already has.
+
+It is the companions' own ground, so it is written down rather than changed.
+
+---
+
+## Checked and clean: nobody in the file is ever drawn as a peg
+
+This was the thing I expected to be wrong and it is right.
+
+- `placeCompanion` sets `npc.walkingWith=true` at its **very top** (`src/main.js:425`), before
+  every early return — the arriving branch, the escorting branch and the hold branch — so all ten
+  carry it whatever they are doing.
+- `placeMercenaries` clears it only on the `else` path (`:391`), which `continue` has already
+  taken every `with-traveler` placement away from, so a man in the file is never cleared by
+  mistake.
+- The stand-in reads `escorting: !!npc.escorting || !!npc.walkingWith` (`:3781`), and
+  `alwaysInFull` exempts `escorting`.
+
+So the flag survives the fight-hold that deliberately clears `escorting`, and a man at the back of
+a ten-long file — 38.5 m off, which is inside the 62 m band — is a full figure like the rest.
