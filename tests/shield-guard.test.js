@@ -329,7 +329,7 @@ test('the guard is offered before the fight is stepped, and a hand off the keybo
   assert.ok(offered > 0 && stepped > 0 && offered < stepped, 'the guard is offered before the fight is stepped');
   // **And the latch is cleared whenever nothing is being played**, so the defeat panel, a
   // dialogue or the pause menu cannot leave a shield up that nobody is asking for.
-  assert.match(main, /if\(mode!=='playing'\)combat\.guard\(false,player\.group\.rotation\.y\);/);
+  assert.match(main, /if\(mode!=='playing'\)\{?combat\.guard\(false,player\.group\.rotation\.y\);/);
   assert.ok(main.indexOf("if(mode!=='playing')combat.guard(false,player.group.rotation.y);") < offered,
     'and it is cleared before the playing branch can set it again');
 
