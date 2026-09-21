@@ -1675,3 +1675,94 @@ man of the eleven falls through the one hole the test does not look at.
   scene and the Marshal's work for early men; eleven gives the full turn and all ten company
   lines; three to ten gives the plain count and no company lines, which is the quiet middle the
   design asks for.
+
+---
+
+## The recognising, verified as it was found
+
+Driven as each of the eleven, with the world shaped the way `longRoadWorld()` (`src/main.js:576`)
+shapes it — `startingSkills` is what `landedWith` reads, not the skills module.
+
+| player | owed | teacher | before | after | said twice? |
+|---|---|---|---|---|---|
+| Jerry | `bran-rod` | pond-fisher | **open** | closed | "They have already said it." |
+| Kristen | `lysa-acorns` | acorn-cook | **open** | closed | refused |
+| Ciarán | `silas-stream` | geologist | **open** | closed | refused |
+| Lakota | `bird-garden` | garden-keeper | **open** | closed | refused |
+| Eliana | `bowden-axe` | woodcutter-bowden | **open** | closed | refused |
+| **Matt** | **`house-plot`** | woodcutter-bowden | **open** | closed | refused |
+| Altun | `odger-fernway` | mycologist | **open** | closed | refused |
+| Mus | `pier-chart` | harbormaster | **open** | closed | refused |
+| Mus | `village-corners` | harbormaster | **open** | *still open* | refused |
+| Cromb, Chris, Ed | — | | | | |
+
+Every one closes once and cannot be said twice. **Matt's `house-plot` now has Bowden's line**, so
+the branch stop that fell through the old spine-only guard is covered.
+
+**Mus's second row is right, not a miss.** `village-corners` is done by `own.corners === 'signed'`,
+not by a skill, so recognising lifts the block and leaves the work: Mara says *"You have surveyed.
+Good — then walk my three corners"*, and he still has to walk them. The lesson is shortened and
+the work is not skipped, which is what §10 asked for. Mara says both her lines in one conversation
+(`src/main.js:589` filters `owed` by npc and maps them all), and the toast reads "can see you have
+done **both** of these before".
+
+**It pays nothing.** Birding xp 10,000,000 before and after, level 96 both sides; the only thing
+raised is a `long-road-recognised` event. The host's handler pays nothing either and calls
+`saveRoad`.
+
+**It survives a save and a reload mid-road.** The snapshot carries `recognised: ["bird-garden"]`,
+restores, and the stop stays closed with nothing still owed. **And a save from before the feature**
+— no `recognised` key at all — restores cleanly and then owes the recognising afresh, which is the
+right answer for a save written yesterday.
+
+**Mara is held until the letter** by `questStage<2` in the host (`src/main.js:588`), so a man who
+lands with cartography does not have the letter scene skipped.
+
+**The two deliberate leftovers are exactly the two flagged**, and no others: `willowmere-fire`
+(Kristen) and `rena-dig` (Lakota) are places with no npc, so there is nobody to do the
+recognising and they stay ticked at t = 0.
+
+---
+
+## The six foods and Chris's five sittings: both clean, and two harness slips of my own
+
+### The six foods
+
+Nothing to report: `tests/larder-sources.test.js` already answers this, and answers it better than
+I first did. It sweeps every file in `src/` as text and accepts five ways a food can reach the
+satchel — the pedlar's stock, a recipe's output, a gathered plant, the farm, and **"somebody's
+hand"**, which is any module outside `inventory.js`, `consumables.js` and `foods.js` that names
+the id. It asserts that the only foods with nowhere to come from are **exactly eight**, all wines
+of countries recorded on the atlas and not built, and it names them so the list cannot quietly
+grow. 33 green across it and `foods`, `consumables`, `cooking`, `botany`.
+
+**My own first probe reported pawpaw, honeycomb and wood-sorrel as unreachable.** They are not:
+my version knew only four mechanisms and had no notion of "somebody's hand", so it re-invented a
+narrower test and then believed it. The repo's test is the right one; mine was noise.
+
+The six the long road gave sources to are all sourced: `avrel-apple` from Applegarth's kept
+orchard, `hazelnuts` and `bramble-berries` from the hedge at the Sunken Lane, and the rest through
+the skills that own them.
+
+### Chris's five sittings
+
+Five drills, one closing each leg but the harbour's (`DRILL_COUNT`, `src/long-road.js:37`), six
+lines apiece, `DRILL_EXPOSURE = 35` — **175 taught**, which is what `docs/languages.md:286` says
+and what makes the army's signs readable about as the traveler leaves Drent.
+
+The gating is right and is the interesting part: `act('drill')` is refused with *"Not here, and
+not without him."* unless the leg is finished **and** Chris is actually walking with you. The
+comment at `:262` says why — *"the failure that matters is a drill given to a man on his own"* —
+and a companion who has been released cannot teach.
+
+The save holds: a snapshot claiming **99** sittings is refused by the validator (`:237`, which
+bounds `drills` to `DRILL_COUNT` and to integers), and an honest one restores its count.
+
+**Second harness slip:** my probe read `exposure` off each drill row and reported "total taught:
+0". The exposure is one constant for all five, not a field on the row. Nothing was wrong but my
+reading of it.
+
+*Both slips are the same shape as the `landedWith` one and the `standable` one before it: a probe
+that models the game from the outside and then trusts its own model. The rule that keeps catching
+it is to find the thing from where the source builds it — and, where the repo already has a test,
+to read that test before writing a worse one.*
