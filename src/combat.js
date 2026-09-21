@@ -1,4 +1,5 @@
 import { canStand, moveCharacter } from './game-state.js';
+import { countryHealth, countryDamage, COUNTRY } from './combat-skills.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -104,6 +105,10 @@ function encounterConfig(config) {
     || !Number.isFinite(line) || sign * (line - config.center[axis]) <= 0
     || beyond(config.checkpoint) || !Array.isArray(config.enemies)
     || !config.enemies.length || config.enemies.length > 12) return null;
+  // The country's own level, which everything in the fight is measured against. An encounter
+  // that does not say carries 0, and 0 is today's game to the digit.
+  const level = Number.isFinite(config.level) ? Math.floor(config.level) : 0;
+  if (level < 0 || level > COUNTRY.top) return null;
   const seen = new Set(), enemies = [];
   for (const enemy of config.enemies) {
     if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || !point(enemy)) return null;
@@ -114,7 +119,10 @@ function encounterConfig(config) {
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
       || Math.abs(enemy[across] - config.center[across]) > 12 || along(enemy) < -21
       || along(enemy) > 18 || beyond(enemy)) return null;
-    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind, ...(enemy.look ? { look: enemy.look } : {}) });
+    // Health is scaled once, here, so an enemy is born with the country's own toughness and
+    // everything downstream - the bar, the blow that kills it - is the number it was born with.
+    const stout = Math.round(hp * countryHealth(level));
+    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp: stout, entry, kind, ...(enemy.look ? { look: enemy.look } : {}) });
   }
   const allies = [];
   if (config.allies !== undefined) {
@@ -135,7 +143,7 @@ function encounterConfig(config) {
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
-    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, enemies, allies };
+    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, enemies, allies };
 }
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -151,7 +159,7 @@ const facing = (a, b, yaw, arc) => Math.abs(angleDifference(Math.atan2(b.x - a.x
  */
 const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6 });
 
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null }) {
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
   const first = margins();
   const state = {
@@ -266,7 +274,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    */
   function startEncounter(config, { atCheckpoint = false } = {}) {
     if (state.phase === 'active' || (state.phase === 'won' && config === undefined)) return false;
-    const next = encounterConfig(config === undefined ? DEFAULT_ENCOUNTER : config);
+    // A fight takes the level of the country it happens in, unless it was authored with one of
+    // its own. The host is the only one who knows which country that is, so it hands in a
+    // `getLevel`; without one, or off the atlas, the level is 0 and the fight is today's fight.
+    const asked = config === undefined ? DEFAULT_ENCOUNTER : config;
+    const country = asked && typeof asked === 'object' && !Number.isFinite(asked.level) && getLevel
+      ? { ...asked, level: getLevel(asked.center) } : asked;
+    const next = encounterConfig(country);
     if (!next) return false;
     if (atCheckpoint) {
       const checkpoint = safePoint(next.checkpoint.x, next.checkpoint.z);
@@ -396,7 +410,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       nextAttackerAt = Math.max(nextAttackerAt, time + .35);
       moveCharacter(enemy, Math.sin(yaw) * (profile.knockback ?? .43), Math.cos(yaw) * (profile.knockback ?? .43), world);
     }
-    emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
+    emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage, weaponId: attackWeapon?.id ?? currentWeapon()?.id ?? null,
+      killed: !enemy.hp, level: lastEncounter.level ?? 0 });
     if (!enemy.hp) emit('enemy-defeated', { id: enemy.id, x: enemy.x, z: enemy.z });
     if (state.phase === 'active' && state.enemies.every(target => !target.active)) {
       state.phase = 'won';
@@ -420,8 +435,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function hurtPlayer(enemy) {
+    // A dodge that actually avoided a strike is the thing Toughness is paid for, and the engine
+    // is the only one who knows it happened: the enemy's contact moment arrived and the traveler
+    // was invulnerable for it. `hurtProtection` is the second and a bit after being hit, which is
+    // mercy rather than skill, so it does not count.
+    if (player.invulnerable && player.action === 'dodge' && state.phase === 'active' && player.hp > 0) {
+      emit('dodged', { enemyId: enemy.id, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+    }
     if (player.invulnerable || state.phase !== 'active' || player.hp <= 0) return;
-    const damage = (ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage;
+    const damage = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
     player.hp = Math.max(0, player.hp - damage);
     player.action = player.hp ? 'hurt' : 'dead';
     player.progress = 0;
@@ -430,7 +452,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     hurtProtection = 1.15;
     player.invulnerable = true;
     moveCharacter(position, Math.sin(enemy.yaw) * .55, Math.cos(enemy.yaw) * .55, world);
-    emit('player-hit', { damage, x: position.x, z: position.z });
+    emit('player-hit', { damage, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
     if (!player.hp) {
       state.phase = 'defeated';
       state.enemies.forEach(target => {
@@ -622,7 +644,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   function hurtAlly(ally, enemy) {
     if (!ally.active) return;
-    const damage = (ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage;
+    const damage = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
     const timers = allyTimers.get(ally.id);
     ally.hp = Math.max(0, ally.hp - damage);
     ally.action = ally.hp ? 'hurt' : 'dead';

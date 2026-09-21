@@ -227,8 +227,20 @@ Each phase stands alone and leaves the game working.
    untouched. Nothing is banked in a skill nobody has shown you, and the weapon works anyway.
    Practice ceilings are in: the straw post pays Blades to 5, sparring to 20, a real fight has no
    ceiling.
-2. **The country pushes back.** An encounter carries its country's level; health and damage scale
-   by it. Level 0 is today's numbers.
+2. **The country pushes back.** — **built 2026-09-21.** An encounter carries a `level`, and
+   `createCombat` takes a `getLevel` so every fight already authored takes the level of the
+   country it happens in without a single call site changing; an encounter written with a level of
+   its own keeps it. Health is scaled once, where the enemy is made, and damage where it is dealt
+   — to the traveler and to his allies alike. **Level 0 is today's numbers**, and every fight
+   test passed untouched. Timing is not multiplied by anything, anywhere, and a test says so by
+   name for each of the nine durations.
+
+   Phase 1's payments are wired here too, which is what makes an Arms skill gainable at all:
+   Mara's straw post shows Blades and pays as a post (ceiling 5), a real blow pays its weapon's
+   family by what it did and where, being hit and living pays Toughness, and so does a step aside
+   that actually avoided a strike — which the engine is the only one who can know, so `combat`
+   emits `dodged` for it. `dodged`, `hurt` and `caught` gained the `source` that only `dealt` had,
+   without which no ceiling ever reached them.
 3. **Tiers, armour and smiths.** Items, three armour slots, a smith's shop in Tidehaven first.
 4. **The shield's guard.**
 5. **Tempo and arc** for daggers, staves, spears and pikes, and the pike's wall rule.

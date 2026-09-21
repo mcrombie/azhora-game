@@ -160,6 +160,79 @@ test('what the practice was worth survives the road, and nonsense does not', () 
     assert.equal(validateCombatSkillsSnapshot(bad), false, JSON.stringify(bad));
 });
 
+test('each of the four ways of being paid respects both ceilings', () => {
+  // `dealt` took a source from the first day; the other three did not, so the default 'fight'
+  // applied and no ceiling ever reached them. Driven, dodging at a post that cannot hit back took
+  // Toughness past 30.
+  for (const [name, pay, id] of [
+    ['dealt', (a, source) => a.dealt({ weapon: 'simple-sword', damage: 30, source }), 'blades'],
+    ['dodged', (a, source) => a.dodged({ source }), 'toughness'],
+    ['hurt', (a, source) => a.hurt({ damage: 20, source }), 'toughness'],
+    ['caught', (a, source) => a.caught({ damage: 20, source }), 'shield'],
+  ]) {
+    for (const [source, ceiling] of [['post', ARMS.ceiling.post], ['sparring', ARMS.ceiling.sparring]]) {
+      const skills = createSkills(), arms = createCombatSkills({ skills });
+      arms.learn(id);
+      for (let i = 0; i < 4000; i++) pay(arms, source);
+      assert.equal(skills.level(id), ceiling, `${name} at the ${source} stops at ${ceiling}, not ${skills.level(id)}`);
+      assert.equal(pay(arms, source).capped, true, `${name} says so when it is capped`);
+    }
+    // And a real fight has no ceiling at all.
+    const skills = createSkills(), arms = createCombatSkills({ skills });
+    arms.learn(id);
+    for (let i = 0; i < 4000; i++) pay(arms, 'fight');
+    assert.ok(skills.level(id) > ARMS.ceiling.sparring, `${name} in a fight reached ${skills.level(id)}`);
+  }
+});
+
+test('the country pushes back, and level 0 is today', async () => {
+  const { countryHealth, countryDamage, COUNTRY } = await import('../src/combat-skills.js');
+  // The two multipliers, from docs/combat-brief.md.
+  assert.equal(countryHealth(0), 1);
+  assert.equal(countryDamage(0), 1);
+  assert.ok(Math.abs(countryHealth(8) - (1 + .45 * 8)) < 1e-9);
+  assert.ok(Math.abs(countryDamage(8) - (1 + .30 * 8)) < 1e-9);
+  // An ogre's 52 becomes 177 at level 8, which is the brief's own worked example.
+  assert.equal(Math.round(52 * countryDamage(8)), 177);
+  // Both rise the whole way, and nonsense is level 0 rather than a bonus.
+  for (let level = 1; level <= COUNTRY.top; level++) {
+    assert.ok(countryHealth(level) > countryHealth(level - 1));
+    assert.ok(countryDamage(level) > countryDamage(level - 1));
+  }
+  for (const bad of [-4, NaN, null, undefined, 'eight']) {
+    assert.equal(countryHealth(bad), 1, String(bad));
+    assert.equal(countryDamage(bad), 1, String(bad));
+  }
+  assert.equal(countryHealth(1e6), countryHealth(COUNTRY.top), 'and a level past the ladder is its top');
+});
+
+test('timing never scales, with any level of anything', () => {
+  // The law that makes the whole design work: a level-8 ogre is not faster and does not
+  // telegraph less, so a traveler who reads the tell can still dodge it - he simply cannot
+  // afford to miss. Nothing that is a duration may be multiplied by a country level or a skill.
+  const combat = source('combat.js');
+  for (const timing of ['tell', 'attack', 'contact', 'recovery', 'ENEMY_TELL', 'ENEMY_ATTACK', 'ENEMY_CONTACT', 'ENEMY_RECOVERY', 'duration']) {
+    const pattern = new RegExp(`${timing}\s*[*]\s*(country|damageMultiplier|margins)`, 'i');
+    assert.doesNotMatch(combat, pattern, `${timing} is multiplied by something`);
+  }
+  // The two country multipliers are used in exactly the two places they are meant to be.
+  assert.equal((combat.match(/countryHealth\(/g) ?? []).length, 1, 'health is scaled in exactly one place');
+  assert.equal((combat.match(/countryDamage\(/g) ?? []).length, 2, 'damage in exactly two: the traveler, and his allies');
+  assert.match(combat, /const stout = Math\.round\(hp \* countryHealth\(level\)\);/, 'health is scaled once, where the enemy is made');
+});
+
+test('the host gives a fight the level of the country it happens in', () => {
+  const main = source('main.js');
+  assert.match(main, /getLevel:centre=>regionLevel\(world\.regionAt\(centre\?\.x\?\?0,centre\?\.z\?\?0\)\?\.name\)\?\?0/,
+    'the country under the fight, or 0 where there is none');
+  assert.match(source('combat.js'), /Number\.isFinite\(asked\.level\)/, 'and an encounter authored with a level of its own keeps it');
+  // The four payments, each with a truthful source.
+  assert.match(main, /if\(e\.type==='practice-hit'\)\{arms\.learn\('blades'\);armsPaid\(arms\.dealt\(\{[^}]*source:'post'\}\)\)/, 'the straw post pays as a post');
+  assert.match(main, /if\(e\.type==='hit'&&e\.damage>0&&combat\.state\.phase==='active'\)/, 'a real blow pays as a fight');
+  assert.match(main, /arms\.hurt\(\{damage:e\.damage,countryLevel:e\.level\?\?0\}\)/, 'being hit pays Toughness');
+  assert.match(main, /if\(e\.type==='dodged'\)\{arms\.learn\('toughness'\);/, 'and so does a step aside that worked');
+});
+
 test('the host reads the margins rather than writing numbers of its own', () => {
   const main = source('main.js');
   assert.match(main, /arms=createCombatSkills\(\{skills/, 'the fighting skills are built beside the rest');
