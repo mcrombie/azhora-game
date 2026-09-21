@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
-import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting } from './characters.js';
+import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole } from './characters.js';
 import { markerFor, markerGrade } from './quest-markers.js';
 import { createCombat } from './combat.js';
 import { createCombatView } from './combat-view.js';
@@ -154,6 +154,8 @@ import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, 
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
 import { talkTarget, placeKeepsPrompt } from './prompt-priority.js';
+import { figureDetail } from './figure-lod.js';
+import { createStandIn } from './figure-stand-in.js';
 
 const $ = id => document.getElementById(id);
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -331,6 +333,28 @@ function init() {
     npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.markerKind='main';npc.marker=makeQuestMarker('main');scene.add(npc.marker);
   }
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
+  /**
+   * How much of somebody is drawn (src/figure-lod.js). The stand-in is a child of the figure's
+   * own group, and that group stays visible: other code reads `npc.actor.group.visible` as "this
+   * person is here" - the bodies list that makes people solid to one another, the draws() hook -
+   * so hiding it would make everybody in the distance walk-through and uncounted. As a child it
+   * also stands, turns and scales with them for nothing.
+   *
+   * What the rig itself has hidden stays hidden: a child is put back the way it was, not
+   * switched on.
+   */
+  function showFigure(npc,detail){
+    const group=npc.actor.group,peg=detail==='stand-in';
+    if(peg&&!npc.standIn){
+      const role=npc.modelRole||npc.id;
+      npc.standIn=createStandIn({tunic:npc.look?.tunic??npc.color??tunicForRole(role),skin:npc.look?.skin??npc.skin??skinForRole(role),hair:npc.look?.hair??null});
+      npc.standIn.visible=false;group.add(npc.standIn);}
+    for(const child of group.children){
+      if(child===npc.standIn){child.visible=peg;continue;}
+      if(peg){if(npc.detail!=='stand-in')child.userData.shownInFull=child.visible;child.visible=false;}
+      else child.visible=child.userData.shownInFull??true;}
+    npc.detail=detail;
+  }
   // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
   const redTail=createRedTailHawk(),redTailFlight=createHawkFlight(),gloveAt=new THREE.Vector3();scene.add(redTail.group);
   // Everyone placed by now stands on open ground, and so does every place the traveler is sent.
@@ -3413,12 +3437,19 @@ function init() {
         const alarm=!npc.cat&&combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
         const fleeing=!!fightAt&&civilian(npc)&&Math.hypot(home.x-fightAt.x,home.z-fightAt.z)<26;
+        // Past sixty-two metres somebody is thirty pixels tall and seventeen to twenty-four draw
+        // calls; there he is one mesh instead (src/figure-lod.js). `npc.marker.visible` is last
+        // frame's, which is soon enough for a mark that is about to be looked at.
+        {const detail=figureDetail(npc.detail,Math.hypot(pos.x-player.group.position.x,pos.z-player.group.position.z),
+            {kind:npc.dog?'dog':npc.cat?'cat':npc.horse?'horse':npc.ogre?'ogre':'person',talking:activeDialogue?.npc===npc,escorting:!!npc.escorting,
+              fighting:alarm||!!npc.lastFight,fleeing,marked:npc.marker.visible,swimming:!!npc.swimming,posed:!!npc.sitting||!!npc.posture,made:!!npc.make});
+          if(detail!==(npc.detail??'full'))showFigure(npc,detail);}
         let destX=home.x,destZ=home.z;
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         if(pace<=.1&&npc.face&&!npc.swimming){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
-        npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming});
+        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;

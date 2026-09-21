@@ -28,6 +28,18 @@ const SOLDIER_CLOTH = Object.freeze({
   // Elod's frontier guards: black lamellar over charcoal wool, nothing red and nothing slate.
   'elodi-guard': 0x2b2b2f,
 });
+
+/**
+ * What somebody's coat and skin are when nothing names them. These were the defaults of
+ * `createCharacter`'s own parameters and still are; they are a name of their own because the
+ * stand-in for a figure too far off to see (src/figure-lod.js) has to arrive at the same colour
+ * the figure was built in, and the only honest way is to ask the same question. Reading it back
+ * off the built rig does not work: the parts are batched per pivot, and the commonest colour on
+ * the chest is the skin of the arms it carries.
+ */
+export const tunicForRole = role => ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role]
+  ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44);
+export const skinForRole = role => (role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e);
 // Builds for the hired company. Height and girth scale the whole standing body,
 // and `shoulders` moves the arm joints in or out, so two men of the same cloth
 // still read apart at thumbnail size. Every value stays inside 0.9 to 1.12 so
@@ -854,7 +866,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 /** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
-export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ?? SOLDIER_CLOTH[role] ?? (role === 'traveler' ? 0x806042 : role === 'doomsayer' ? 0x494d43 : role === 'pond-fisher' ? 0x7e7454 : 0x537a44), skin = role === 'shelter-keeper' ? 0xc8a78a : 0xd7ad7e, hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper', 'wine-maker', 'light-keeper', 'rival-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
+export function createCharacter({ role = 'traveler', tunic = tunicForRole(role), skin = skinForRole(role), hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper', 'wine-maker', 'light-keeper', 'rival-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
   // Any of the eleven mercenaries can be the player (src/player-characters.js). Given a roster
   // look, the traveler is built as that hired sword — build, hair, garment, marks, weapon —
   // and keeps only what is his alone: the satchel, the full weapon swap and the fishing grip.

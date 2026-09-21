@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import { FIGURE_LOD, alwaysInFull, figureDetail, standInLook, figureDrawCalls } from '../src/figure-lod.js';
 
@@ -28,7 +30,7 @@ test('somebody becomes a stand-in past 62 m and themselves again inside 56 m, an
 });
 
 test('the people the player is looking at are never stand-ins, however far off', () => {
-  for (const flag of ['talking', 'escorting', 'fighting', 'fleeing', 'marked', 'ridden', 'swimming', 'posed']) {
+  for (const flag of ['talking', 'escorting', 'fighting', 'fleeing', 'marked', 'ridden', 'swimming', 'posed', 'made']) {
     assert.equal(alwaysInFull({ [flag]: true }), true, flag);
     assert.equal(figureDetail(undefined, 150, { [flag]: true }), 'full', `${flag} at 150 m`);
     assert.equal(figureDetail('stand-in', 150, { [flag]: true }), 'full', `${flag}, and already a stand-in`);
@@ -88,4 +90,37 @@ test('the stand-in is one mesh, in their colours, casting nothing, and two peopl
   assert.equal(twin.geometry, eren.geometry, 'dressed alike, one geometry');
   assert.equal(twin.material, other.material, 'and everybody shares the one material');
   assert.notEqual(other.geometry, eren.geometry);
+});
+
+/**
+ * The stand-in has to arrive at the colour the figure was actually built in, or somebody changes
+ * coat at sixty-two metres, which is a worse thing than the draw calls it saves. Most people are
+ * built with `tunic: npc.color` and match by construction; the ones who are not are built from
+ * their role alone, and that default is now one exported answer both sides ask
+ * (src/characters.js), so the two cannot drift.
+ *
+ * Reading the colour back off the built rig was tried and does not work: the parts are batched
+ * per pivot, so the commonest colour on a villager's chest is 0xd6ac7d - the skin of the arms it
+ * carries - and not his coat at all. That measurement is why `made` is on the exemption list.
+ */
+test('a stand-in is dressed the way the figure was dressed, role and all', async () => {
+  const { tunicForRole, skinForRole, createCharacter } = await sourceModule('../src/characters.js');
+  // The role tables, which are what somebody wears when their entry names no colour.
+  assert.equal(tunicForRole('legion-soldier'), 0x8f3b30, 'a soldier is red');
+  assert.equal(tunicForRole('elodi-guard'), 0x2b2b2f, 'and Elod\u2019s guards are not');
+  assert.equal(tunicForRole('field-courier'), 0x777957);
+  assert.equal(tunicForRole('traveler'), 0x806042);
+  assert.equal(tunicForRole('a-role-nobody-has-written'), 0x537a44, 'and anybody else is the road\u2019s own green');
+  assert.equal(skinForRole('shelter-keeper'), 0xc8a78a);
+  assert.equal(skinForRole('fisher'), 0xd7ad7e);
+  // The figure and the stand-in ask the same question, so neither can drift from the other.
+  const asBuilt = createCharacter({ role: 'legion-soldier' });
+  assert.ok(asBuilt.group, 'a soldier is still built with no tunic named');
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /tunic:npc\.look\?\.tunic\?\?npc\.color\?\?tunicForRole\(role\)/, 'the wiring falls back to the role, not to a default coat');
+  assert.match(main, /skin:npc\.look\?\.skin\?\?npc\.skin\?\?skinForRole\(role\)/);
+  assert.match(main, /made:!!npc\.make/, 'and somebody built by their own hand is never a stand-in');
+  // The rig is not posed while nobody can see it, and the group itself stays visible.
+  assert.match(main, /if\(npc\.detail!=='stand-in'\)npc\.actor\.animate\(/, 'a stand-in is not animated');
+  assert.doesNotMatch(main, /showFigure\(npc,detail\);[\s\S]{0,80}group\.visible=false/, 'the figure\u2019s own group is never hidden by the swap');
 });
