@@ -5140,8 +5140,7 @@ function init() {
           yaw=shot.yaw;pitch=.14;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        if(view==='company-mounted'||view==='company-picket'){
-          questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
+        if(view==='company-mounted'||view==='company-picket'){questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;   // the clock is set on the view's own line (tests/session-clock.test.js)
           // **Chris is not in the companions list.** The landing mate is filtered out of it and
           // carried on the long road's own terms, which is why the first render placed Jerry and
           // Kristen and not him. A game that walked down the long road with him has him off the
