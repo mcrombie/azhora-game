@@ -142,6 +142,7 @@ import { createDeveloperMode } from './developer-mode.js';
 import { runDeveloperSmoke } from './developer-smoke.js';
 import { moveCharacter, canStand, advanceQuest, questSteps, getMovementInput } from './game-state.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
+import { talkTarget, placeKeepsPrompt } from './prompt-priority.js';
 
 const $ = id => document.getElementById(id);
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -2907,7 +2908,7 @@ function init() {
         forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
-      currentNPC=null;let nearest=3.3;
+      currentNPC=null;let nearest=3.3;const talkers=[];
       // Villagers caught in the raid are drawn by the fight while it lasts, and stand where it left them after.
       for(const id of raid.ids){const npc=npcById.get(id),ally=['active','defeated'].includes(combat.state.phase)?combat.state.allies.find(a=>a.id===id):null;
         if(ally){npc.hidden=true;npc.lastFight={x:ally.x,z:ally.z};continue;}
@@ -2932,7 +2933,7 @@ function init() {
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
-        const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite)){nearest=d;currentNPC=npc;}
+        const d=pos.distanceTo(player.group.position)-reachIn+(npc.dog||npc.cat?1.5:npc.id===BEGGAR_NPC.id?1.1:0);if(d<nearest&&!(npc.escorting&&currentHideoutSite))talkers.push({npc,d});
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
         // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
@@ -2948,6 +2949,9 @@ function init() {
             talking:mode==='dialogue'&&activeDialogue?.npc===npc,want:Math.atan2(p.x-pos.x,p.z-pos.z)});
           npc.actor.group.rotation.y=turned.facing;npc.lent=turned.lent;}
       }
+      // Who answers F: the traveler's own business first, then whoever belongs there, and a hired sword of the
+      // company last, because he is only passing and stops exactly where the traveler has business (src/prompt-priority.js).
+      {const answers=talkTarget(talkers.map(t=>({...t,marked:t.npc.marker.visible,passing:mercenaryIds.has(t.npc.id)})));if(answers){currentNPC=answers.npc;nearest=answers.d;}}
       {// Ed: he goes in a puff if the traveler runs at him or swings at him, and wanders between his haunts.
         const pp=player.group.position,speed=Math.hypot(pp.x-edLast.x,pp.z-edLast.z)/Math.max(dt,1e-3);edLast.x=pp.x;edLast.z=pp.z;
         const home=ed.haunt,near=Math.hypot(home.x-pp.x,home.z-pp.z)<180;
@@ -3056,6 +3060,8 @@ function init() {
       currentLusciaSite=mode==='playing'&&luscia.view().stage==='find-satchel'?Object.values(LUSCIA_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<2.7)||null:null;
       currentFeederHook=mode==='playing'&&birding.feeder==='filled'&&inventory.has(FILLED_FEEDER_ITEM)&&Math.hypot(p.x-world.birdGarden.hook.x,p.z-world.birdGarden.hook.z)<2.6;
       currentMorosSite=mode==='playing'&&moros.view().stage==='claim-horse'?Object.values(MOROS_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<3)||null:null;
+      // A place the traveler has business at keeps its prompt, and the key, from a hired sword who is walking by.
+      if(currentNPC&&placeKeepsPrompt({marked:!!currentNPC.marker?.visible,passing:mercenaryIds.has(currentNPC.id)},currentJourneySite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite))currentNPC=null;
       // The horses on the line breathe, graze and swish only while the traveler is near enough to see them.
       {const near=Math.hypot(p.x-horseLine[0].x,p.z-horseLine[0].z)<160;for(const [i,horse] of horseLine.entries()){horse.actor.group.visible=near;if(near)horse.actor.animate(elapsed+i*1.7,0,true,horse.grazing?{grazing:Math.sin(elapsed*.11+i)>0}:{});}}
       currentHideoutSite=null;
