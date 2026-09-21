@@ -1338,18 +1338,28 @@ function init() {
       // descending past it, so everything beyond — the bay, the far headlands and the
       // dolphins' water — falls below it and is in the frame.
       //
-      // `cameraPullIn` clamps the camera to whatever stands nearest the focus, so on
-      // this shot it is not fought but used: it lands the camera just behind the last
-      // cushion bush above the water, which is where somebody looking at a bay stands.
-      return shot({x:-1000,z:1176},{x:-898,z:1176},.09,1.8);
+      // And looking from above the scrub rather than through it. `cameraPullIn` clamps
+      // to whatever stands *nearest the focus*, so on a shore with cushion bushes right
+      // down to the sand it does not nudge the camera, it hauls it to the waterline: one
+      // take of this view came out as nothing but sea and sand. A focus above
+      // `heightAt + 7` cannot be clamped against at all, and from sixteen metres the
+      // shape of the bay is in the frame with the grass and the scrub in front of it,
+      // which is what the lore means by "low headlands and small sheltered bays".
+      return shot({x:-990,z:1176},{x:-900,z:1176},.05,11);
     }
     if(view==='south-eer-braids'){
       // The north channel where the gradient dies: three threads round bars of sand,
       // from far enough back and high enough up to see all three at once, which is the
       // same shot the Vastos braid takes and for the same reason.
+      //
+      // It differs from the Vastos one in the look height, and that is not taste: the
+      // Vastos braid has nothing growing anywhere near it, and this one has a gallery
+      // on both banks, so `cameraPullIn` clamped the camera to the first tamarisk and
+      // took the view from twenty-five metres out with a crown across a third of it.
+      // A focus ten metres up is above anything on this plain and cannot be clamped.
       const braid=WEST_BRAIDS.find(item=>item.id==='eer-north');
-      const {sample,spot}=beside(EER_CHANNELS[0],(braid.from+braid.to)/2,44,-1);
-      return shot(spot,sample,.30,.25);
+      const {sample,spot}=beside(EER_CHANNELS[0],(braid.from+braid.to)/2,58,-1);
+      return shot(spot,sample,.22,10);
     }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
       'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird',
