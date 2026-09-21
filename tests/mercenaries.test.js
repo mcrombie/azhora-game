@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { wildJourney } from '../src/wild-route.js';
+
+const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
@@ -300,6 +304,24 @@ test('mercenaries speak in two lines and know where they stand', () => {
     }
   }
   assert.ok(mercenaryLines('merc-mus', { phase: 'stopped' })[1].length < 12, 'Mus does not go on about it');
+  // A man who is not on the road does not talk about the road. His whole route is `walking`, and
+  // it passes within a few metres of the Well at Rena and the Ruins, where people stand about.
+  const found = mercenaryLines('merc-mus', { phase: 'walking' });
+  assert.deepEqual(found, ['You left the road. Most people never do.',
+    'I will be at the muster. Do not wait for me there, and do not look for me here.']);
+  assert.deepEqual(mercenaryLines('merc-mus', { phase: 'walking' }, { met: true }),
+    ['I will be at the muster. Do not wait for me there, and do not look for me here.'], 'and he says less the second time');
+  for (const line of [...found, ...mercenaryLines('merc-mus', { phase: 'walking' }, { met: true })])
+    assert.doesNotMatch(line, /road today|quicker with company/i, 'nothing he says in the country is about the road');
+  // The road line is now said by nobody, and a wild man with no lines of his own gets a neutral
+  // one rather than a road one.
+  assert.notEqual(mercenaryLines('merc-mus', { phase: 'walking' })[1], mercenaryById('merc-mus').says.walking);
+  const src = source('mercenaries.js');
+  assert.match(src, /const wildShared = \{ first:/, 'there is a neutral fallback for any other wild man');
+  // It may say you are off the road - that is what being off it means. What no wild line may do
+  // is send you back to it, which is what the line they all used to share did.
+  const fallback = src.slice(src.indexOf('const wildShared'), src.indexOf('const shared'));
+  assert.doesNotMatch(fallback, /quicker|walk with me|no time to stand about/i, 'and it does not send you to the road');
   // Everyone has a landing line of their own, and it is the second thing they say.
   for (const m of MERCENARY_ROSTER) assert.equal(mercenaryLines(m.id, { phase: 'landing' })[1], m.lines[1], m.name);
 });

@@ -127,7 +127,12 @@ export const MERCENARY_ROSTER = Object.freeze([
     ['Mus.',
       'I do not use the road. It goes where everybody knows it goes. I will see you at the plain.'],
     { route: 'wild', drawn: true,
-      says: { walking: 'Road today. It is quicker with company.', stopped: 'Go on.', mustered: 'I have been here a while.' } }),
+      says: { walking: 'Road today. It is quicker with company.', stopped: 'Go on.', mustered: 'I have been here a while.' },
+      // What he says when you come on him in the country, which is the only place you can. His
+      // `walking` line above is now said by nobody: a wild man's whole route is `walking`, and
+      // that line is about a road he has just told you he does not use.
+      saysWild: { first: 'You left the road. Most people never do.',
+        after: 'I will be at the muster. Do not wait for me there, and do not look for me here.' } }),
 ]);
 
 /**
@@ -487,17 +492,27 @@ export function mercenaryWeapon(id) {
 }
 
 /** What a mercenary says when spoken to on the road, given where he is. */
-export function mercenaryLines(id, placement) {
+export function mercenaryLines(id, placement, { met = false } = {}) {
   const mercenary = mercenaryById(id);
   if (!mercenary) return [];
   // Most of them say the ordinary thing for where they are. Two of them would never say it:
   // a man who talks the way Ed talks does not tell you there is no time to stand about, and
   // Mus does not use four sentences where none will do.
+  // A man who is not on the road does not talk about the road. Mus's line passes 2 m from the
+  // Well at Rena and 5 m from the Ruins, where people stand about, and for 1,700 m he answered
+  // "Road today. It is quicker with company." - four words after telling you he does not use it.
+  const wildShared = { first: 'You are a long way off the road.', after: 'I will see you at the muster.' };
   const shared = { mustered: 'We made it, then. The camp counts heads at dusk; make sure yours is one of them.',
     stopped: 'Same errand as you, I expect. Go on ahead; I will catch you up.',
     walking: 'No time to stand about. The camp on the Moros Plain, that is the word. Walk with me or after me.',
     'with-traveler': 'Right behind you. Take your time — the Marshal is waiting on the eleventh of us and that is you, so nothing starts without you.' };
   const phase = placement?.phase;
+  // Walking his own line across country is a different thing from walking the road, and is
+  // answered differently. `met` is the host's: a man like Mus says the longer thing once.
+  if (mercenary.route === 'wild' && phase === 'walking') {
+    const wild = mercenary.saysWild ?? wildShared;
+    return met ? [wild.after] : [wild.first, wild.after];
+  }
   const status = phase && (mercenary.says?.[phase] ?? shared[phase]) || mercenary.lines[1];
   return [mercenary.lines[0], status];
 }

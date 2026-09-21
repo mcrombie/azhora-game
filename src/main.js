@@ -2453,7 +2453,11 @@ function init() {
         if(learned.first){toast('Swimming, level 1. Walk into the water and it will hold you up for as long as your wind lasts.','ED THE WORD TAUGHT YOU TO SWIM');refreshSkillsSheet();saveRoad(false);}
         mercenaryConversation(npc);}}) });
     choices.push({id:'leave-mercenary',label:'Good road to you.',action:closeDialogue});
-    openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
+    // A man met in the country says the longer thing once. It is kept on the npc and not in the
+    // save on purpose: nothing about Mus is written down, and a new session meeting him in the
+    // woods again is a new meeting as far as he is concerned.
+    openDialogue(npc,mercenaryLines(npc.id,npc.placement,{met:!!npc.metInTheCountry}),null,'Back to the road',{choices});
+    if(npc.placement?.phase==='walking')npc.metInTheCountry=true;
   }
   /**
    * A drill: six lines of the army's speech and what each one means, and no quiz at the end.

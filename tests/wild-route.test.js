@@ -60,7 +60,9 @@ test('his route is longer than the road, and he walks it slower', () => {
         for (let i = 0; i < road.length - 1; i++) { if (Math.hypot(road[i].x - camp.x, road[i].z - camp.z) < 1) break; at = lengths[i + 1]; }
         return at; })()
     : 0;
-  assert.ok(journey.metres > 1600 && journey.metres < 1800, `${journey.metres.toFixed(0)} m of wild country`);
+  assert.ok(journey.metres > 1650 && journey.metres < 1800, `${journey.metres.toFixed(0)} m of wild country with the muster leg`);
+  assert.ok(routeMetres(MUS_ROUTE) > 1550 && routeMetres(MUS_ROUTE) < 1650,
+    `${routeMetres(MUS_ROUTE).toFixed(0)} m of it is the line this module authors`);
   assert.ok(journey.metres > roadToCamp, `the wilderness (${journey.metres.toFixed(0)} m) is longer than the road (${roadToCamp.toFixed(0)} m)`);
   assert.ok(WILD.pace < mercenaryById('merc-mus').pace * .7, `${WILD.pace} m/s through the rough against ${mercenaryById('merc-mus').pace} on a road`);
   assert.ok(Math.abs(journey.seconds - journey.metres / WILD.pace) < 1e-9);
@@ -68,8 +70,10 @@ test('his route is longer than the road, and he walks it slower', () => {
   assert.deepEqual(journey.path[0], MUS_BEACH);
   assert.deepEqual(journey.path[journey.path.length - 1], camp);
   assert.equal(routeMetres(MUS_ROUTE) > 0, true);
+  // A leg can be short where the country is tight - the line goes round things rather than
+  // through them - but none of them is a duplicate point.
   for (let i = 1; i < MUS_ROUTE.length; i++)
-    assert.ok(Math.hypot(MUS_ROUTE[i].x - MUS_ROUTE[i - 1].x, MUS_ROUTE[i].z - MUS_ROUTE[i - 1].z) > 20, `leg ${i} is a real leg`);
+    assert.ok(Math.hypot(MUS_ROUTE[i].x - MUS_ROUTE[i - 1].x, MUS_ROUTE[i].z - MUS_ROUTE[i - 1].z) > 5, `leg ${i} is a real leg`);
 });
 
 test('nobody on the road ever sees him pass', () => {
@@ -87,13 +91,60 @@ test('nobody on the road ever sees him pass', () => {
       if (fromCamp > 130 && d < closest) { closest = d; closestAt = { x, z }; }
     }
   }
-  assert.ok(closest > 2 * WILD.clearance,
+  assert.ok(closest > WILD.clearance + 15,
     `the line comes within ${closest.toFixed(0)} m of the road at (${closestAt.x.toFixed(0)}, ${closestAt.z.toFixed(0)})`);
   assert.ok(joinedAt !== null && joinedAt < 60, `he first comes inside ${WILD.clearance} m of the road ${joinedAt?.toFixed(0)} m from the camp`);
+  // The authored line - the part this module owns, before the company appends the muster leg -
+  // is measured on its own, because it is the part that must never be walked past anybody.
+  let authored = Infinity;
+  for (let i = 1; i < MUS_ROUTE.length; i++) {
+    const a = MUS_ROUTE[i - 1], b = MUS_ROUTE[i], steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
+    for (let s = 0; s <= steps; s++) { const t = s / steps; authored = Math.min(authored, toRoad(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)); }
+  }
+  assert.ok(authored > 60, `the authored line's closest approach is ${authored.toFixed(1)} m`);
   // And he comes onto the plain across country, not in along the road behind the others.
   const last = MUS_ROUTE[MUS_ROUTE.length - 1];
   assert.ok(toRoad(last.x, last.z) > WILD.clearance, 'his last waypoint of his own is still off the road');
   assert.ok(last.z < camp.z, 'he comes down onto the plain from the north-west, not in at the gate');
+});
+
+test('every metre of the authored line is ground a body can stand on, and none of it is wet', () => {
+  // The repair this is here for: the first draft ran A* over standable *cells* and then let the
+  // simplifier cut corners between them. Neither step checked the line itself, so 29 m of the
+  // authored route - legs 1, 2, 4, 5 and 8, the first only a few metres off his own beach - lay
+  // through props the A* had carefully gone round. Both checks are inside the loops now: every
+  // grid edge, and every shortcut. This measures the result a metre at a time.
+  let blocked = 0, wet = 0, metres = 0;
+  const bad = [];
+  for (let i = 1; i < MUS_ROUTE.length; i++) {
+    const a = MUS_ROUTE[i - 1], b = MUS_ROUTE[i], leg = Math.hypot(b.x - a.x, b.z - a.z);
+    const steps = Math.max(2, Math.ceil(leg));
+    metres += leg;
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
+      if (!canStand(x, z, world, P)) { blocked++; if (bad.length < 6) bad.push(`leg ${i} at ${x.toFixed(1)}, ${z.toFixed(1)}`); }
+      if (world.heightAt(x, z) < .45) wet++;
+    }
+  }
+  assert.ok(metres > 1500, `only ${metres.toFixed(0)} m of line to walk`);
+  assert.deepEqual(bad, [], `${blocked} metres of the authored line are not standable`);
+  assert.equal(wet, 0, 'and none of it is water: he walks, he does not swim');
+});
+
+test('the muster leg is the camp’s own ground, and is allowed to be', () => {
+  // The last leg is appended by the company from wherever the muster is, so it is not this
+  // module's to author. It ends among the camp's tents, which is what a camp is; the host steers
+  // him round them with `stepAround`, exactly as it does every man in the road formation.
+  const path = wildJourney(camp).path;
+  const a = path[path.length - 2], b = path[path.length - 1];
+  let blocked = 0;
+  const steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    if (!canStand(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, world, P)) blocked++;
+  }
+  assert.ok(blocked < 30, `${blocked} metres of the muster leg are inside the camp's own scenery`);
+  assert.ok(Math.hypot(a.x - camp.x, a.z - camp.z) < 130, 'and it is a short leg, not a second route');
 });
 
 test('every step of it is ground a body can walk', () => {
