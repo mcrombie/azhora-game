@@ -443,11 +443,12 @@ The bug hunter measured this design against the built world before anyone built 
   **Built 2026-09-21** (`src/wild-route.js`, `tests/wild-route.test.js`). A strand of his own
   round the headland south of the harbour at (10, -60), then west through the low country behind
   Drent, up round the head of the bay, and down onto the Moros plain from the north-west across
-  open ground. **1,695 m against the road's 1,295, walked at 0.88 m/s against his road pace of
-  1.42**, so he musters between minute **32.4 and 96.1** where before it was 19.8 at the
-  earliest. The line was authored against the built world, not drawn on a map, and never comes
-  within **89 m** of the main road until it is 41 m from the camp — so the companion's 40 m
-  remark can never fire on him. His draw is untouched. The nine road men keep the 5,234.5 s pin;
+  open ground. **1,598 m of authored line, 1,714 m with the muster leg, against the road's 1,295,
+  walked at 0.88 m/s against his road pace of 1.42**, so he musters between minute **32.7 and
+  96.7** where before it was 19.8 at the earliest. The line was authored against the built world,
+  not drawn on a map, and the authored part never comes within **62.7 m** of the main road — so
+  the companion's 40 m remark can never fire on him. The muster leg closes to 39.7 m at the end,
+  where everybody is noticed anyway. His draw is untouched. The nine road men keep the 5,234.5 s pin;
   he is pinned as a range, and on some seeds he is the last man in.
 
   **Ruled by the user, 2026-09-20: his wild route is long, and he cannot beat the road.** Mus keeps
