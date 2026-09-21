@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt } from './region-world.js';
+import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt, hexCentre, METRES_PER_HEX, landDistance } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_BECKS, LIZEEM, CARICA, CARICA_CORRIDOR, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_POOLS,
+  LIZEEM_REACH, EER_CHANNELS,
   westBareGround, courseDistance, caricaCorridorDistance,
 } from './west-regions.js';
 import { WEST_PROFILES, poolSurface, westWaterSurface, westGroundAt, menethBand, braidThreadOffset } from './west-ground.js';
@@ -563,7 +564,10 @@ export function createWestScenery(kit) {
    * section: they are the two edges of this region, and nobody here has built a
    * bridge. The blockers are laid along the water at its own width.
    */
-  for (const course of [LIZEEM, CARICA]) for (const sample of WEST_PROFILES.get(course.id)) {
+  // The reach below Nesdor is the same wall carried on: Eer's own lore says the great river
+  // "cannot be crossed anywhere along the Eer bank", and the atlas gives Eer and Gala not one
+  // dry hex edge between them. It is laid from the same loop so the line has no join in it.
+  for (const course of [LIZEEM, CARICA, LIZEEM_REACH]) for (const sample of WEST_PROFILES.get(course.id)) {
     if (sample.ford) continue;
     // Samples are five metres apart, so each blocker has to be wide enough to
     // meet the one in front of it as well as the ones beside it. A gap of even a
@@ -582,7 +586,12 @@ export function createWestScenery(kit) {
   // -------------------------------------------------------------------------
   const nesdor = district('Nesdor');
   for (const course of [ELA_SOUTH_REACH, NESDOR_BECK]) ribbon(WEST_PROFILES.get(course.id), nesdor, course.name);
-  for (const braid of WEST_BRAIDS.filter(item => item.id !== 'vastos'))
+  // Named, not filtered. This used to read `WEST_BRAIDS.filter(id !== 'vastos')`, which was
+  // true of exactly Nesdor's two until Eer added a pair of its own — and had it stayed,
+  // Eer's braids would have been drawn into Nesdor's district and, worse, drawn from
+  // Nesdor's own place in this module's one seeded stream, moving every tree after them.
+  const NESDOR_BRAIDS = WEST_BRAIDS.filter(item => item.id === 'ela-south' || item.id === 'nesdor-beck');
+  for (const braid of NESDOR_BRAIDS)
     braidThreads(braid).forEach((thread, index) => ribbon(thread, nesdor, `${braid.course.name} thread ${index + 1}`, braid.half));
 
   /**
@@ -592,7 +601,7 @@ export function createWestScenery(kit) {
    * between the channels rather than banks of shingle.
    */
   const flatsSand = [], flatsSedge = [];
-  for (const braid of WEST_BRAIDS.filter(item => item.id !== 'vastos')) {
+  for (const braid of NESDOR_BRAIDS) {
     for (const sample of WEST_PROFILES.get(braid.course.id)) {
       const offset = braidThreadOffset(braid, sample.along);
       if (offset === null) continue;
@@ -667,6 +676,225 @@ export function createWestScenery(kit) {
         if (surface - westGroundAt(x, z) < .75) continue;
         colliders.push({ x, z, r: step * .72, kind: 'west-deep-water' });
       }
+  }
+
+  // -------------------------------------------------------------------------
+  // Eer: a country the atlas divides once, and two channels across it to the sea
+  // -------------------------------------------------------------------------
+  /**
+   * **Everything below is drawn after Nesdor on purpose.** This module has one seeded
+   * stream and it is consumed in region order, so a country added anywhere but the end
+   * re-rolls every draw after it and moves scatter that is already built and already
+   * tested against. Eer goes last; the six countries after it go later still.
+   */
+  const eer = district('Eer');
+
+  /**
+   * How Mediterranean a point is: 0 on the humid inland loam, 1 on the dry coast.
+   *
+   * The atlas divides Eer exactly once — twelve `plains` hexes over the north and
+   * north-west, thirteen `grassland` over the south and south-east — and its Köppen
+   * field draws the same line, `Cfa` against `Csa`. So there is no hand-drawn
+   * boundary here and there must not be one: this is the cell terrain, blended over
+   * its neighbours by the same weights `terrainMix` uses for the ground colour and
+   * the height, which spreads the change across about a hundred metres. A traveler
+   * walking south-east crosses it without ever crossing a line, which is the whole
+   * point the brief makes about this country: "This is where the game stops being
+   * green, and it stops being green in the middle of a country rather than at a
+   * border."
+   *
+   * Only Eer's own hexes count. A sea hex has no terrain to vote with and a Nesdor
+   * hex is a different country's weather.
+   */
+  const eerTerrain = new Map(SURVEY.regions.find(region => region.name === 'Eer')
+    .cells.map(cell => [`${cell.q},${cell.r}`, cell.terrain]));
+  const EER_NEIGHBOURS = [[0, 0], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  function eerSeaward(x, z) {
+    const home = hexAt(x, z);
+    let total = 0, dry = 0;
+    for (const [dq, dr] of EER_NEIGHBOURS) {
+      const q = home.q + dq, r = home.r + dr, terrain = eerTerrain.get(`${q},${r}`);
+      if (!terrain) continue;
+      const centre = hexCentre(q, r);
+      const weight = Math.max(0, 1 - Math.hypot(x - centre.x, z - centre.z) / (METRES_PER_HEX * 1.28));
+      if (!weight) continue;
+      total += weight;
+      if (terrain === 'grassland') dry += weight;
+    }
+    return total ? dry / total : 1;
+  }
+
+  ribbon(WEST_PROFILES.get(LIZEEM_REACH.id), eer, LIZEEM_REACH.name);
+  for (const channel of EER_CHANNELS) ribbon(WEST_PROFILES.get(channel.id), eer, channel.name);
+  const EER_BRAIDS = WEST_BRAIDS.filter(item => item.id === 'eer-north' || item.id === 'eer-south');
+  for (const braid of EER_BRAIDS)
+    braidThreads(braid).forEach((thread, index) => ribbon(thread, eer, `${braid.course.name} thread ${index + 1}`, braid.half));
+
+  /**
+   * Sand on the braid bars and sedge at the waterlines, as on the Flats upstream —
+   * the same river, the same gradient dying, the same result. Eer's is the paler
+   * shell sand of a coast rather than the Flats' river grit, and there is more of
+   * it: these channels are within sight of the sea.
+   */
+  const eerSand = [], eerSedge = [];
+  for (const braid of EER_BRAIDS) for (const sample of WEST_PROFILES.get(braid.course.id)) {
+    const offset = braidThreadOffset(braid, sample.along);
+    if (offset === null) continue;
+    for (let i = 0; i < 7; i++) {
+      const side = random() < .5 ? -1 : 1, out = range(sample.half + .5, offset + braid.half + 8);
+      const x = sample.x + sample.nx * out * side, z = sample.z + sample.nz * out * side;
+      if (hexOwnerAt(x, z) !== 'Eer' || westWaterSurface(x, z) !== null) continue;
+      if (i < 4) eerSand.push({ x, z, s: range(.25, .8), rot: random() * 6.28 });
+      else eerSedge.push({ x, z, s: range(.9, 1.9), rot: random() * 6.28 });
+    }
+  }
+  // The Lizeem's own bank, which carries the reeds the fauna overview's "richest avian
+  // assemblage documented on the continent" stands in.
+  for (const sample of WEST_PROFILES.get(LIZEEM_REACH.id)) {
+    if (sample.index % 3) continue;
+    for (const side of [-1, 1]) {
+      const offset = sample.half + range(.4, 4);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      if (hexOwnerAt(x, z) !== 'Eer' || westWaterSurface(x, z) !== null) continue;
+      eerSedge.push({ x, z, s: range(1, 2.1), rot: random() * 6.28 });
+    }
+  }
+  gravelBatch(eerSand, eer, 'Eer channel sand');
+  sedgeBatch(eerSedge, eer, 'Eer channel sedge');
+
+  /**
+   * The galleries. The atlas gives Eer no `forest` hex, so nothing here is woodland,
+   * and what trees the country has stand where a tree can drink: in a narrow ribbon
+   * along the two channels and nowhere else.
+   *
+   * Which trees is the climate's business, and the channels cross the climate line,
+   * so each one changes species along its own length. Above the line — humid `Cfa`,
+   * water all year — **alder and willow**, tall, soft and dark. Below it — `Csa`, a
+   * bed that runs hard in winter and not at all in August — **tamarisk and
+   * oleander**, which is what actually grows in a watercourse like that: shorter,
+   * looser, paler, and more shrub than tree.
+   *
+   * Planted off the water rather than off the hex grid, for the reason the Carica
+   * corridor is: a hex is a hundred metres and a gallery is fifteen, so scattering
+   * it from cell centres would put nearly every attempt on open grass and leave the
+   * one wooded thing in the country looking like an accident.
+   */
+  const galleryTrees = [];
+  for (const channel of EER_CHANNELS) for (const sample of WEST_PROFILES.get(channel.id)) {
+    for (let i = 0; i < 9; i++) {
+      const side = random() < .5 ? -1 : 1, offset = sample.half + range(1.2, 16);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      // `westBareGround` measures from a course's own centre line and knows nothing
+      // about braids, and the last two-fifths of both channels are braided out to
+      // fifteen metres either side — which is exactly the band a gallery grows in.
+      // So the water surface is asked as well, and it is the authority: a tree in a
+      // side channel is a worse error than a bare metre of bar.
+      if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 2) || westWaterSurface(x, z) !== null) continue;
+      const seaward = eerSeaward(x, z);
+      // The gallery thins as it dries: a winter watercourse feeds fewer trees than a
+      // river that runs all year, and the thinning is the climate showing on the ground.
+      if (random() > 1 - seaward * .45) continue;
+      if (galleryTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (seaward > .5 ? 3.4 : 2.8))) continue;
+      const scrubby = seaward > .5;
+      galleryTrees.push({ x, z, scrubby, wide: scrubby, s: range(.8, scrubby ? 1.1 : 1.35),
+        h: scrubby ? range(4.5, 7) : range(9, 14), rot: range(0, 6.28) });
+    }
+  }
+  // Alder and willow are a deep cool green; tamarisk and oleander are grey-green and
+  // dusty, which is the single most Mediterranean thing a plant can be. Hex, not
+  // setHSL: a lightness picked for sRGB comes back two stops paler through the
+  // renderer's working space (docs/four-regions-brief.md).
+  woodBatch(galleryTrees, eer, tree => tree.scrubby
+    ? color.set('#8b9a6d').offsetHSL(range(-.02, .02), range(-.06, .05), range(-.05, .06))
+    : color.set('#41633a').offsetHSL(range(-.03, .03), range(-.05, .06), range(-.06, .06)),
+    'eer-tree');
+
+  /**
+   * Eer's open ground, which is nearly all of Eer. Three things grow on it and the
+   * `seaward` blend decides how much of each:
+   *
+   *  - **Grass**, everywhere. Rank, tall and green on the loam — "the greenest thing
+   *    in this quarter of the continent" — going short, thin and tawny toward the sea.
+   *  - **Low aromatic cushion scrub**, on the dry half only, and thickest on the sandy
+   *    ground behind the bays. The shape East Suval already draws for its limestone,
+   *    paler and lower, because this is sand and not rock.
+   *  - **Wild olive and holm oak**, singly and in twos on the coastal grass, never
+   *    near enough to touch. A wild olive is a tree and not a crop; one standing alone
+   *    on open ground is the thing that says Mediterranean at a distance without being
+   *    a wood, and the atlas is clear that there is no wood here to be.
+   *
+   * No rock anywhere. The atlas gives Eer no `hills` hex and the lore gives it deep
+   * alluvial loam to the depth of a spade; a boulder on this plain would be a lie.
+   */
+  const eerCells = [...REGION_CELLS.Eer].sort((a, b) => a.z - b.z || a.x - b.x);
+  const oliveTint = () => color.set('#8e9a72').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06));
+  const eerScrub = [], standingTrees = [];
+  for (let start = 0; start < eerCells.length; start += BLOCK) {
+    const block = eerCells.slice(start, start + BLOCK), tufts = [];
+    for (const cell of block) {
+      // The standing trees: an attempt every few dozen metres, and a spacing rule that
+      // means most of them fail. What survives is a scatter nothing in it touches.
+      for (let i = 0; i < 26; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 4) || westWaterSurface(x, z) !== null) continue;
+        const seaward = eerSeaward(x, z);
+        if (random() > seaward * .5) continue;                 // the loam half carries none
+        if (standingTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 44)) continue;
+        if (galleryTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 26)) continue;
+        const holm = random() < .38;
+        standingTrees.push({ x, z, holm, wide: true, s: range(.9, 1.3),
+          h: holm ? range(8, 11) : range(5.5, 7.5), rot: range(0, 6.28) });
+      }
+      // Cushion scrub: the dry half, and thicker the nearer the sand behind a bay is.
+      for (let i = 0; i < 30; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 2) || westWaterSurface(x, z) !== null) continue;
+        const seaward = eerSeaward(x, z), shore = 1 - smooth(40, 210, landDistance(x, z));
+        if (random() > seaward * (.28 + shore * .5)) continue;
+        if (eerScrub.some(bush => Math.hypot(bush.x - x, bush.z - z) < 3.2)) continue;
+        eerScrub.push({ x, z, s: range(.55, 1.15), rot: random() * 6.28, seaward });
+      }
+      for (let i = 0; i < tuftsPerHex + 10; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 1.5) || westWaterSurface(x, z) !== null) continue;
+        tufts.push({ x, z, s: range(.7, 1.8), rot: range(0, 6.28), seaward: eerSeaward(x, z) });
+      }
+    }
+    // The one continuous thing in the country: deep green on the loam, tawny on the sea.
+    tuftBatch(tufts, eer, tuft => color.setHSL(
+      .26 - tuft.seaward * .11 + range(-.015, .015),
+      .38 - tuft.seaward * .12 + range(-.05, .05),
+      .26 + tuft.seaward * .24 + range(-.04, .04)));
+  }
+  // Holm oak is dark and heavy; a wild olive is pale, grey and open. Both wide-crowned,
+  // because a tree that has never had a neighbour grows out rather than up.
+  woodBatch(standingTrees, eer, tree => tree.holm
+    ? color.set('#3f5733').offsetHSL(range(-.02, .02), range(-.04, .05), range(-.04, .05))
+    : oliveTint(), 'eer-tree');
+
+  /**
+   * The cushion scrub itself: three low lobes, grey-green, aromatic, and never more
+   * than knee high. It is the Vastos thorn's geometry drawn flatter and paler —
+   * a thorn grows in the lee of a bank because of the wind, and a cushion grows low
+   * because of the summer.
+   */
+  if (eerScrub.length) {
+    const batch = new THREE.InstancedMesh(round, material('#7f8a63', { flatShading: true }), eerScrub.length * 3);
+    let at = 0;
+    for (const bush of eerScrub) {
+      const y = groundHeight(bush.x, bush.z);
+      for (let lobe = 0; lobe < 3; lobe++) {
+        const a = bush.rot + lobe * 2.1, spread = lobe === 2 ? 0 : .42 * bush.s;
+        dummy.position.set(bush.x + Math.sin(a) * spread, y + bush.s * (lobe === 2 ? .40 : .26), bush.z + Math.cos(a) * spread);
+        dummy.rotation.set(range(-.16, .16), a, range(-.16, .16));
+        dummy.scale.set(bush.s * .72, bush.s * .26, bush.s * .68);
+        dummy.updateMatrix(); batch.setMatrixAt(at, dummy.matrix);
+        batch.setColorAt(at++, color.setHSL(range(.17, .24), range(.10, .20), range(.32, .46)));
+      }
+      colliders.push({ x: bush.x, z: bush.z, r: .5 * bush.s, kind: 'eer-scrub' });
+    }
+    batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere();
+    batch.name = 'Eer cushion scrub'; eer.add(batch); metrics.thorn += eerScrub.length;
   }
 
   function update(time) {

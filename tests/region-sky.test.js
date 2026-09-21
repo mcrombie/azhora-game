@@ -25,13 +25,32 @@ test('the default sky is the three numbers src/main.js has always used', () => {
   assert.ok(!/palette\.fog/.test(main), 'palette.fog is the chart legend’s colour and is not the horizon');
 });
 
-test('every region in the game today gets the default sky, to the digit', () => {
+/**
+ * Eer is the first country to take the permission up (`docs/six-regions-brief.md`): it is the
+ * one place a traveler walks out of `Cfa` into `Csa` without crossing a border, and the
+ * horizon is where that shows. Every other region is still on the default, and the promise
+ * this file was written to hold is the *"nothing that exists changes"* half, so it is now
+ * written as an allow-list: a second name appearing here is a deliberate act and not a drift.
+ */
+const OWN_SKY = new Set(['Eer']);
+
+test('every region but the ones that asked for their own gets the default sky, to the digit', () => {
   for (const region of regions) {
+    if (OWN_SKY.has(region.name)) continue;
     const sky = regionSky(region);
     assert.deepEqual({ ...sky }, { ...DEFAULT_SKY }, `${region.name} has stopped using the default sky`);
     // And none of them has quietly grown the fields that would change that.
     for (const field of ['sky', 'haze', 'hazeDensity'])
       assert.equal(region.palette[field], undefined, `${region.name} declares palette.${field}`);
+  }
+  // The ones that did ask: a real declaration, and only through the three fields the module
+  // reads. `palette.fog` is the chart legend's colour and must still be a CSS string.
+  for (const name of OWN_SKY) {
+    const region = regions.find(item => item.name === name);
+    assert.ok(region, `${name} is not a region`);
+    assert.notDeepEqual({ ...regionSky(region) }, { ...DEFAULT_SKY }, `${name} declares a sky that is the default anyway`);
+    assert.equal(typeof region.palette.fog, 'string', `${name} turned palette.fog into a sky colour`);
+    assert.ok(Number.isInteger(region.palette.sky), `${name} declares palette.sky as an integer`);
   }
   assert.deepEqual({ ...regionSky(OPEN_COUNTRY) }, { ...DEFAULT_SKY }, 'open country keeps the default');
   assert.deepEqual({ ...regionSky(null) }, { ...DEFAULT_SKY });

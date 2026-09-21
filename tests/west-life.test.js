@@ -22,7 +22,11 @@ const { createWorld } = await sourceModule('../src/world.js');
 const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
 const world = createWorld(new THREE.Scene());
 const WALK = 4.2, RUN = 7.2, HZ = 60;
-const ground = WEST_LIFE_ZONES.filter(zone => !zone.air);
+// Everything a traveler could walk up to. A hawk holds its circle thirty metres up and Eer's
+// dolphins are out past the surf, and neither has any footing to be asked about: the six laws
+// below are about what happens when somebody on foot comes at an animal, and nobody on foot
+// can come at either of those. `tests/eer-world.test.js` holds the dolphins to their own law.
+const ground = WEST_LIFE_ZONES.filter(zone => !zone.air && !zone.sea);
 const bySpecies = species => ground.filter(zone => zone.species === species);
 const turn = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 

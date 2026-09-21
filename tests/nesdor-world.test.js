@@ -75,7 +75,9 @@ test('The Ela-south is handed over rather than left to stop in the middle of a c
 });
 
 test('Both watercourses braid where the gradient dies, and hold water the whole way', () => {
-  const braids = WEST_BRAIDS.filter(braid => braid.id !== 'vastos');
+  // Named, not "everything that is not Vastos": Eer braids two channels of its own now, and
+  // every country after it on the same river may braid more.
+  const braids = WEST_BRAIDS.filter(braid => braid.id === 'ela-south' || braid.id === 'nesdor-beck');
   assert.equal(braids.length, 2, 'the reach and the beck');
   for (const braid of braids) {
     const profile = WEST_PROFILES.get(braid.course.id);
@@ -151,7 +153,9 @@ test('The cattle of the Flats are the Vastos longhorn drawn smaller, as the lore
     assert.ok(Number.isFinite(animal.x + animal.y + animal.z), `${animal.id} went to NaN`);
     assert.ok(animal.x >= zone.minX - .5 && animal.x <= zone.maxX + .5
       && animal.z >= zone.minZ - .5 && animal.z <= zone.maxZ + .5, `${animal.id} left its range`);
-    if (!zone.air) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
+    // A hawk is thirty metres up and Eer's dolphins are out past the surf: neither has any
+    // ground under it to be measured against.
+    if (!zone.air && !zone.sea) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
   }
   life.dispose();
 });
