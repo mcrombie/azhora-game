@@ -631,6 +631,17 @@ somewhere, and the chart of countries (`src/cartography.js`) never records it, b
 a country. Scenery batching keeps its old district for it (`?.id || 1`). The ground itself did
 not change.
 
+Two more the sentinel exposed, fixed with it. **Sound:** `roadAudioProfile` fell back to region 1
+for anything that was not a positive id, so open country - id 0 - would have played Drent's forest
+bed (0.065) a kilometre south of Nesdor. Id 0 is a region like any other now and simply has no bed:
+no sea, no forest, no field, no river, no ridge, and earth underfoot. Anything missing or
+nonsensical still falls back to 1 as it always did. **The trails tab:** `buildLocalMapModel` used
+the snapped region and, with the sentinel, would have defaulted to Drent's sheet from the far west.
+It opens the *nearest* region's sheet instead, sets `outside: true`, and the caption says "You are
+outside every border the atlas draws. This is the nearest sheet, X, and you are off it." The player
+marker is not drawn when he is off the sheet, which `trailMapSVG`'s own `visible()` already
+ensured; nothing is clamped onto a border to pretend otherwise.
+
 Two things the old snapping had been hiding came out with it, both fixed here: the
 `lizeem-bend` named area stood 30 m outside Nesdor with 27% of its disc on owned ground, and
 `vastos-braids` was 55% inside Vastos - both moved to the nearest centre whose whole disc is

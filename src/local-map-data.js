@@ -1,4 +1,4 @@
-import { regions as authoredRegions, regionAt as authoredRegionAt } from './regions.js';
+import { regions as authoredRegions, regionAt as authoredRegionAt, isOpenCountry } from './regions.js';
 
 const UNKNOWN_NAME = 'Unexplored place';
 const UNKNOWN_DESCRIPTION = 'Follow a side path to see what lies there';
@@ -107,7 +107,20 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
   if (!finitePoint(position)) throw new TypeError('A local map needs a finite player position.');
   const regions = regionModels(world);
   const current = world.regionAt?.(position.x, position.z) || authoredRegionAt(position.x, position.z);
-  const currentRegionId = regions.some(region => region.id === current?.id) ? current.id : 1;
+  // Open country has no sheet of its own: half the walkable west is outside every outline the atlas
+  // draws (docs/known-issues.md). Rather than pretend he is in the country whose name used to be
+  // snapped to him, the tab opens the nearest one's sheet and says he is off it.
+  const outside = isOpenCountry(current) || !regions.some(region => region.id === current?.id);
+  const nearest = () => {
+    let best = regions[0], bestGap = Infinity;
+    for (const item of regions) {
+      const gap = Math.hypot(Math.max(item.bounds.minX - position.x, 0, position.x - item.bounds.maxX),
+        Math.max(item.bounds.minZ - position.z, 0, position.z - item.bounds.maxZ));
+      if (gap < bestGap) { bestGap = gap; best = item; }
+    }
+    return best.id;
+  };
+  const currentRegionId = outside ? nearest() : current.id;
   const requestedId = Number(regionId);
   const region = regions.find(item => item.id === requestedId) || regions.find(item => item.id === currentRegionId);
   const bounds = { ...region.bounds }, discovered = identifiers(discoveries), known = identifiers(knownIds);
@@ -146,6 +159,8 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
     return overlaps({ minX: c.x - halfX, maxX: c.x + halfX, minZ: c.z - halfZ, maxZ: c.z + halfZ }, bounds);
   }).map(c => ({ ...copyPoint(c), width: c.width, depth: c.depth, angle: c.angle || 0 }));
   return { regions, region: { ...region, bounds: { ...region.bounds } }, currentRegionId, bounds,
+    // True where no country on the atlas owns the ground under him; the sheet is the nearest one's.
+    outside,
     // Heading is clockwise from north in radians, independently of Three's yaw.
     player: { ...copyPoint(position), ...(Number.isFinite(heading) ? { heading }
       : Number.isFinite(position.heading) ? { heading: position.heading } : {}) },

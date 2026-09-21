@@ -23,7 +23,12 @@ export function roadAudioProfile({position={},region=1}={}) {
   // The four authored regions of the road have their own beds; the regions built since
   // (West Suval, Pueth, the islands, Elagos, Amod) keep their own id and play no bed of
   // Drent's, which is what they used to borrow. Their own beds are still to be made.
-  const given=region?.id??region, id=Number.isFinite(given)&&given>0?given:1;
+  //
+  // Open country is id 0 (src/region-world.js): ground no country on the atlas claims. It keeps
+  // its own id rather than falling back to 1, because falling back meant standing a kilometre
+  // south of Nesdor and hearing Drent's forest. It has no bed at all - wind, and earth underfoot.
+  const given=region?.id??region, known=Number.isFinite(given)&&given>=0;
+  const id=known?given:1;
   const x=Number.isFinite(position.x)?position.x:0,z=Number.isFinite(position.z)?position.z:0;
   // Drent's coast is east (+X); the Caloss crosses the Drent-Luscia border.
   const shore=clamp((x+42)/54,0,1),water=clamp(1-Math.hypot(x-CROSSING.x,z-CROSSING.z)/RIVER_EARSHOT,0,1);

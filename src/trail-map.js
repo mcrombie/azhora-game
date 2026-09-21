@@ -171,8 +171,9 @@ export function createTrailMap({ mount, getModel, onTrack = () => {}, onClear = 
     $('#trail-map-fit').disabled = zoom <= 1;
     $('.trail-map-zoom').textContent = `${number(zoom)}×`;
     $('.trail-map-context').textContent = zoom > 1 ? 'Select a place to look closer. Fit shows the whole region.'
-      : viewedRegion === model.currentRegionId ? 'North is up. Select a place, then zoom in to look closer.'
-        : `You are in ${currentRegionName()}. Viewing this map does not move you.`;
+      : model.outside ? `You are outside every border the atlas draws. This is the nearest sheet, ${currentRegionName()}, and you are off it.`
+        : viewedRegion === model.currentRegionId ? 'North is up. Select a place, then zoom in to look closer.'
+          : `You are in ${currentRegionName()}. Viewing this map does not move you.`;
   }
   function setZoom(amount) {
     if (disposed || !model) return;
