@@ -489,7 +489,33 @@ name the five, because which man stands at which radius is only the order of the
 start a new game, stay at the landing, and wait to t=1080 (eighteen minutes) for Jerry and
 Kristen.
 
-## `route` is written on every hired sword and read by nothing
+## `route` is written on every hired sword and read by nothing (fixed)
+
+**Fixed 2026-09-21. All three of them are read now.**
+
+- `route: 'shore'` — `createMercenaryCompany` takes a `shore` point, and Ed the Word waits on
+  the strand the sea put him on rather than among the people who came off boats.
+- `swims` — `WORD_SWIMS` in `src/word-arrival.js` is what makes his arrival a crossing to watch
+  rather than a man appearing on the sand when the ship lets him go.
+- `route: 'wild'` — Mus walks a line of his own, `src/wild-route.js`, by way out 1 below:
+  `placements()` picks the polyline and `mercenaryProgress` is untouched, because it was already
+  written in distance along *a* path. **1,695 m against the road's 1,295, at 0.88 m/s against his
+  own 1.42**, so he musters between minute 32.4 and 96.1 instead of from 19.8. Every metre was
+  authored against the built world — A* over ground `canStand` accepts with the road fenced at
+  40 m, then simplified — and **the line never comes within 89 m of the main road** until it is
+  41 m from the camp, which is the join. He waits on his own strand, passes none of the road's
+  stops, is never `stopped`, and musters with the company like anybody else.
+
+The user's ruling of 2026-09-20 is kept whole: **his draw is not clipped**, the half-minute
+before the traveler included. `tests/wild-route.test.js` holds the law — over both ends of the
+draw and 400 seeds, he is never in before minute 30, against a direct traveler's 27.
+
+The clock pin moved as the ruling said it would: the **nine** road men keep theirs, the last of
+them at 5,234.5 s, and Mus is pinned separately as a range. On some seeds he is the last man in.
+
+What follows is what it was.
+
+
 
 **Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` takes a `shore` point, and
 a man whose route is the shore waits there instead of among the people who came off boats. Ed the
