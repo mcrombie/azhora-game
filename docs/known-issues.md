@@ -3530,3 +3530,138 @@ written to do, on ground nobody chose for it.
 So the bow's place among the authored fights is: **useless where the ground is cluttered, decisive
 where the enemy is slow and the ground is open, and merely another weapon in the three open-field
 raids** (4 to 7 arrows, the same six or seven seconds as a sword).
+
+---
+
+# Round 6: the file repaired, and the battle re-measured on it
+
+## The placement, fixed
+
+`place(index)` in `companionAllies` put the whole file - companions and the army's assigned men
+alike - at the **enemy's** end of every arena, 5 to 17 m past the centre, while its own comment
+said "on the traveler's side of the centre". At the border battle the side's four authored soldiers
+stood 6.7 to 9.1 m from the traveler and the six he was assigned stood **18.2 to 30.1 m away, and
+1.8 to 8.7 m from the nearest enemy**.
+
+**A sign was not the repair.** Measured, each arena in its own along-axis (+ is the way out):
+
+| arena | way out | forms up at | enemies |
+|---|---|---|---|
+| the border battle, and all four days after it | +21 | +13 | -9 to -20 |
+| the Lauvel wolves | **+11** | **-11** | -7, -9 |
+| Mallec at the pass stones | +27 | **+21** | -2 |
+| the Bramble scout camp | +23 | +15 (9 m off its own centre line) | +3, -3 |
+
+The Lauvel's traveler forms up on the **far side of his own wolves**, and Mallec's forms up at +21,
+outside the +18 an ally is even allowed to stand at. Flipping the sign would have put five men past
+the Lauvel's retreat line at +11 - and an ally one metre past the line makes the whole encounter
+invalid, which at the border is a toast telling the traveler to go and stand where he is already
+standing.
+
+So the file is now laid **on the point the fight forms up at**, stepped the way that is away from
+the enemies *from there*, and clamped inside the ground `encounterConfig` accepts and a metre and a
+half short of the way out. Two shallow ranks of five, 2.2 m apart across with the second rank half
+a step over, so that where the clamp puts both ranks on one line - which it does at Mallec - the
+men still each have their own ground. The line is **shifted** to fit the 12 m across rather than
+clamped man by man; clamping put two of the file on the same spot at the Bramble camp, which the
+new test caught before any measurement was taken from it.
+
+Pinned in `tests/fights-with-company.test.js` on every fight the game can lay, with 1, 3, 6, 10 and
+12 in the file: every man nearer the traveler than to any enemy, within 10 m of him, at least 1.2 m
+off the side's authored four and 1.0 m off each other - and the test's copy of the rule is pinned
+against the host's own source so the two cannot drift.
+
+**Read on screen.** `filled-file` now reports the assigned men at 2.2 to 4.6 m behind the
+checkpoint instead of 18 to 30 m away, and the picture is a rank standing with the traveler against
+the eight across the field. `bow-jerry` puts Jerry 4.1 m from the traveler and 13.4 m from the
+nearest enemy. The review view's own bearing moved with the repair: side-on to a rank abreast is
+**along** the retreat axis, and across it now photographs the line as a column of shoulders.
+
+## The border battle, re-measured
+
+Level 2 asked of `getLevel`, traveler as the arc leaves him (Blades 17, Toughness 12, no armour, no
+shield), the side's own four, 40 seeds, the same validated driver that keeps its place in its own
+front rank.
+
+**A correction to the harness first.** One row printed a total of nought enemies, which made no
+sense. A **retreat** empties `state.enemies` (`src/combat.js:1112`), and the driver can walk itself
+out of a fight by following a line that wanders. Retreats and two-minute stalemates are now counted
+as their own columns instead of hiding among the losses.
+
+| companions | assigned | **won** | lost | walked out | stalemate | health | down | **assigned dead** | companions dead |
+|---|---|---|---|---|---|---|---|---|---|
+| **0** | **6** | **21/40** | 14 | 0 | **5** | 50 % | 6.8/8 | **6.0 of 6** | - |
+| 3 | 3 | 40/40 | 0 | 0 | 0 | 96 % | 8/8 | 2.6 of 3 | 1.3 of 3 |
+| 6 | 0 | 40/40 | 0 | 0 | 0 | 96 % | 8/8 | - | 2.2 of 6 |
+| 10 | 0 | 40/40 | 0 | 0 | 0 | 96 % | 8/8 | - | 1.1 of 10 |
+
+**The control, with the mechanism off** - alone and nobody assigned: **0/40**, 2.4 of 8 down.
+
+**The passenger** - closes and dodges, never swings:
+
+| companions | assigned | won | enemies the allies kill on their own |
+|---|---|---|---|
+| **0** | **6** | **0/40** | **0.7 of 8** |
+| 3 | 3 | 21/40 | 6.3 of 8 |
+| 6 | 0 | 36/40 | 7.8 of 8 |
+
+**One day after** (`moros-fallback`, seven enemies on its own ground):
+
+| companions | assigned | won | health | down | assigned dead |
+|---|---|---|---|---|---|
+| 0 | 6 | **36/40** | 65 % | 6.7/7 | 6.0 of 6 |
+| 6 | 0 | 40/40 | 96 % | 7/7 | - |
+| 0 | 6, passenger | **0/40** | - | 0.5 of 7 | 6.0 of 6 |
+
+## The answer to the ruling
+
+**A lone traveler with the army's file finds the border battle hard, and wins it just over half the
+time.** 21 of 40, at 50 % health, over 93 seconds, taking 2.5 blows and swinging 40 times - with
+**every one of the six assigned men dead in every run**, and all four of the side's own. The
+passenger control says the fighting is **entirely his**: without him the ten men on his side kill
+**0.7 of 8**.
+
+The repair moved that row from **15/40 at 30 % health to 21/40 at 50 %**. Against the control of
+0/40 with nobody assigned, `FILE_FLOOR = 6` is doing exactly the job the user asked of it.
+
+**So no lever is needed to meet the ruling.** 21/40 is 52 %, which is the "roughly half" the
+coordinator set, and every other column says hard: half health, every assigned man dead, a minute
+and a half of fighting, and nothing won without him.
+
+### The one wart, and the lever that would remove it
+
+**Five runs in forty are still going at the two-minute cap.** A border battle the chapter expects to
+last 18 to 35 seconds should not stalemate. If that is to go without making the fight easy, the
+numbers for both levers, lone traveler, 40 seeds:
+
+**Lever A - raise `FILE_FLOOR`** (the men stay the ally kind's plain ninety):
+
+| floor | won | health | assigned dead | stalemates |
+|---|---|---|---|---|
+| **6** (today) | 21/40 | 50 % | 6.0 of 6 | **5** |
+| 8 | 29/40 | 52 % | 8.0 of 8 | 0 |
+| 10 | 34/40 | 77 % | 9.6 of 10 | 0 |
+| 12 | 40/40 | 86 % | 9.8 of 12 | 0 |
+
+**Lever B - six men, but soldiers rather than the kind's plain ninety:**
+
+| the assigned man is | won | health | assigned dead | stalemates |
+|---|---|---|---|---|
+| **plain 90** (today) | 21/40 | 50 % | 6.0 of 6 | **5** |
+| level 10 / toughness 8 | 28/40 | 58 % | 6.0 of 6 | 0 |
+| **level 15 / toughness 12** | **32/40** | **59 %** | **5.9 of 6** | **0** |
+| level 20 / toughness 17 (= Altun's own) | 34/40 | 61 % | 5.8 of 6 | 0 |
+| level 30 / toughness 26 (= Gotwood's) | 39/40 | 83 % | 5.0 of 6 | 0 |
+| level 40 / toughness 34 (= Jerry's) | 40/40 | 94 % | 3.1 of 6 | 0 |
+
+**The honest single lever is B at level 15 / toughness 12.** It keeps six men and keeps the cost -
+5.9 of 6 still die - removes every stalemate, and leaves the traveler at 59 % health having done
+all of it. And it keeps an assigned man **strictly weaker than the weakest companion**, which is
+what `src/file-fill.js` says they are for: Altun is level 20 / toughness 17, and 20/17 for the fill
+would make an assigned stranger exactly as good as a man who chose to walk with you.
+
+**Lever A cannot do the same job.** Floor 8 clears the stalemates but only reaches 29/40 with eight
+men; floor 10 reaches 34/40 by putting **ten** men on the field, at 77 % health, which stops being
+hard and makes "fewer than six companions" a number about nothing.
+
+**Nothing is tuned.** `FILE_FLOOR` is still 6 and the fill still carries no level or toughness.
