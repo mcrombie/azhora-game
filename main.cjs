@@ -52,6 +52,16 @@ if (smoke || windowTest) {
 let server;
 let mainWindow;
 const errors = [];
+/**
+ * What the frame's one catch caught, asked of the page (src/frame-errors.js). A review run
+ * must never write a picture of a broken frame: the fatal panel is only checked at load, and
+ * a throw arriving while the camera is placed used to be photographed and filed.
+ */
+const frameErrorsOf = async win => {
+  const seen = await win.webContents.executeJavaScript('window.__AZHORA__?.state?.().frameErrors ?? null').catch(() => null);
+  if (!seen || !seen.count) return '';
+  return `${seen.count} frame error(s): ${seen.first?.message ?? '?'}${seen.first?.at ? ' at ' + seen.first.at : ''}`;
+};
 const launchStatePath = path.join(__dirname, 'logs', 'window-state.json');
 function recordWindowState(event) {
   if (smoke || windowTest || !mainWindow || mainWindow.isDestroyed()) return;
@@ -297,6 +307,8 @@ if (ownsInstance) app.whenReady().then(async () => {
         if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const s=document.createElement('style');s.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(s);})()`);
         for(const view of [reviewViews[0],...reviewViews]){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+          const threw=await frameErrorsOf(win);
+          if(threw){console.error(`FRAME THREW while composing ${view}: ${threw}`);app.exit(1);return;}
           const picture=await win.webContents.capturePage();
           fs.writeFileSync(path.join(artifactDir,`${view}.${reviewJpeg?'jpg':'png'}`),reviewJpeg?picture.toJPEG(82):picture.toPNG());
           console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
@@ -331,6 +343,7 @@ if (ownsInstance) app.whenReady().then(async () => {
             shots.push(shot);console.log(JSON.stringify(shot));
           }
         }
+        {const threw=await frameErrorsOf(win);if(threw){console.error(`FRAME THREW during the draw review: ${threw}`);app.exit(1);return;}}
         fs.writeFileSync(path.join(artifactDir,'draws.json'),JSON.stringify({results,shots,errors},null,2));
         console.log(JSON.stringify({drawSamples:results.length,shots:shots.length,errors},null,2));app.exit(errors.length?1:0);return;
       }

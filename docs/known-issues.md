@@ -1766,3 +1766,98 @@ reading of it.
 that models the game from the outside and then trusts its own model. The rule that keeps catching
 it is to find the thing from where the source builds it — and, where the repo already has a test,
 to read that test before writing a worse one.*
+
+---
+
+## The frame's one catch now leaves a record, and one thing about it was not what we thought
+
+### The correction first
+
+The frame was **not** swallowing in silence, and the catch does **not** let a bad frame pass.
+Read as it stands (`src/main.js`, the end of `render`):
+
+```js
+      renderer.render(scene,camera);requestAnimationFrame(render);
+    }catch(error){frameErrors.note(error,frameCount);fail(error);}
+```
+
+`requestAnimationFrame(render)` is **the last statement inside the try**. A throw anywhere above
+it never reaches the reschedule, so the loop *stops*, and `fail` writes the error to the console
+and puts the fatal panel up. One bad frame ends the game, with a visible panel and a console line
+— and `main.cjs:111` already turns a console error into a non-zero exit.
+
+So the day the game threw, it was not quiet and it was not limping: it **froze on the first frame
+of play, loudly, to anybody watching a window**. What was missing was anybody watching. Nothing
+ran the host's frame for a day, so the loudness had no audience.
+
+That matters for what to build next, so it is written down rather than folded away:
+
+- "the catch exists so one bad frame does not end the game" is **not** what the code does. If
+  that is the behaviour wanted, the reschedule has to move into the catch — a real design change
+  (a game that limps on with a half-updated HUD rather than stopping), and **the user's call, not
+  mine**, so I have not made it.
+- while the loop stops, `frameErrors.count` can only ever reach 1. The counter is built to count
+  properly and will if the reschedule ever moves; today it is a flag with a stack line on it.
+
+### What was built
+
+`src/frame-errors.js`, pure, and three places that now look:
+
+1. **`state().frameErrors`** — `{ count, first: { message, at, frame } }`, plain JSON on its way
+   out of the page.
+2. **`src/road-smoke.js`** asks at **every `arrive()`** — thirty-odd points down the road — and
+   names the message, the stack line and the frame number when it fires.
+3. **`main.cjs`** asks before it photographs: the named-views loop checks before every
+   `capturePage`, and the draw review checks before it files anything. A picture of a broken
+   frame used to be written and kept; the fatal panel was only ever checked at load.
+
+Plus a console line **once per distinct message** (not once per frame) and a toast while
+`?test=1` or the testing tools are open.
+
+**Proved end to end** by executing the real shape — the two farming lines from `e33762e` with
+`const p` below them — and reading what came out: `count: 1`, message *"Cannot access 'p' before
+initialization"*, the stack line, and frame 412; the console shouted once, the toast once, and
+the walkthrough's assertion reads *"the frame threw 1 time(s) after arriving at 1.0, 2.0: Cannot
+access 'p' before initialization at …"*.
+
+---
+
+## The better guard, for whoever picks it up: run the frame headlessly
+
+Not built — a day of work plus upkeep, against a 30-second Electron render after each merge into
+the host, which is now a habit. But it is the only thing that catches **the class**, so here are
+the numbers to start from rather than an adjective.
+
+**Why the static checker is not the answer, measured rather than assumed.** The bug's read is
+inside an arrow function that `.find()` happens to call immediately:
+
+```js
+.find(row => Math.hypot(row.x - p.x, …))     // `const p` nine lines below
+```
+
+A sound scope analyser sees a closure reading a binding declared later and correctly says nothing;
+knowing that `.find` calls it *now* is escape analysis, which a parser does not give you. A
+hand-rolled scanner built for this reported **0 for the real bug and 114 false positives** across
+`src/` after four rounds of fixes, and was taken out again. The aggressive variant — ESLint's
+`no-use-before-define` shape, which reports through closures — does catch it and fires
+**450 times in 90 files** here. Neither can be a gate. **No parser dependency is worth adding for
+a check that would not have caught this.**
+
+**What a headless run of `src/main.js` needs**, measured:
+
+| surface | size |
+|---|---|
+| distinct element ids `$('…')` reaches for | **181** |
+| `document.*` members | **10** — `getElementById`, `querySelector`, `querySelectorAll`, `createElement`, `createTextNode`, `body`, `activeElement`, `addEventListener`, `dispatchEvent`, `hidden` |
+| globals | **8** — `requestAnimationFrame`, `performance`, `localStorage`, `innerWidth`, `innerHeight`, `devicePixelRatio`, `KeyboardEvent`, `location` |
+| `THREE.*` classes constructed in `main.js` | **14**, plus `WebGLRenderer` |
+
+The 181 ids are the cheap part: one generic fake element answering `classList`, `textContent`,
+`style`, `onclick`, `getClientRects`, `replaceChildren`, `focus`, `append`, `dataset`, behind a
+`Map` keyed by id. **`WebGLRenderer` is the cost** — it wants a GL context, so either a stub deep
+enough for `world.js` and `characters.js` or a headless GL.
+
+Once it runs, the driving is largely there already: `?test=1` hangs `window.__AZHORA__` off the
+page, and the existing hooks reach `playing`. Step `render` a few dozen frames in each of
+playing, fighting, dialogue, mounted and swimming, and assert `state().frameErrors.count` is zero
+— the field this entry's other half just added.

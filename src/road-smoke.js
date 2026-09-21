@@ -17,6 +17,19 @@ export async function runRoadSmoke(h) {
     warp(x, z);
     await frames(3);
     assert(canStand(position.x, position.z, world), `interaction approach blocked at ${x}, ${z}`);
+    noThrow(`after arriving at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+  }
+
+  /**
+   * The frame is allowed to be slow and is not allowed to throw. `render` runs inside one try,
+   * and a throw in it stops the loop and puts the fatal panel up — which is loud to somebody
+   * watching the window and silent to everything else. This is the everything else.
+   */
+  function noThrow(where) {
+    const thrown = state().frameErrors;
+    if (!thrown || !thrown.count) return;
+    assert(false, `the frame threw ${thrown.count} time(s) ${where}: ${thrown.first?.message}`
+      + `${thrown.first?.at ? ` at ${thrown.first.at}` : ''}${thrown.first?.frame ? ` (frame ${thrown.first.frame})` : ''}`);
   }
 
   /** Stand beside somebody wherever they happen to be, on whichever side is clear. */
