@@ -232,7 +232,9 @@ test('the host gives a fight the level of the country it happens in', () => {
     'the country under the fight, or 0 where there is none');
   assert.match(source('combat.js'), /Number\.isFinite\(asked\.level\)/, 'and an encounter authored with a level of its own keeps it');
   // The four payments, each with a truthful source.
-  assert.match(main, /if\(e\.type==='practice-hit'\)\{arms\.learn\('blades'\);armsPaid\(arms\.dealt\(\{[^}]*source:'post'\}\)\)/, 'the straw post pays as a post');
+  // The straw post pays as a post - and only when it is the post. Jerry's mark runs in the same
+  // practice phase and teaches Bows where the arrow lands, so a sword at his straw banks nothing.
+  assert.match(main, /if\(e\.type==='practice-hit'&&!mark\)\{arms\.learn\('blades'\);armsPaid\(arms\.dealt\(\{[^}]*source:'post'\}\)\)/, 'the straw post pays as a post');
   assert.match(main, /if\(e\.type==='hit'&&e\.damage>0&&combat\.state\.phase==='active'\)/, 'a real blow pays as a fight');
   assert.match(main, /arms\.hurt\(\{damage:e\.damage,countryLevel:e\.level\?\?0,\.\.\.sparringPay\(\)\}\)/, 'being hit pays Toughness');
   assert.match(main, /if\(e\.type==='dodged'\)\{arms\.learn\('toughness'\);/, 'and so does a step aside that worked');

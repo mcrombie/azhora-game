@@ -313,7 +313,7 @@ long road's long tail: Bowden shows it at minute 40; nobody builds a house in a 
 **What the long road gives that the short road does not, beyond levels.**
 
 1. *A country you can read.* Drent's signs, and the army's, for the rest of the game.
-2. *Mara's countersign.* With all nine named grounds of Drent charted, Mara signs your chart — an
+2. *Mara's countersign.* With all ten named grounds of Drent charted, Mara signs your chart — an
    item, a block of cartography experience — and Drent's level number, 0, appears in the journal,
    which is how that number was always meant to be found.
 3. *A full satchel* of the six foods, none of which can be bought together anywhere.

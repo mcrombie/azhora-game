@@ -25,6 +25,10 @@ export const SUBREGIONS = Object.freeze([
   area('avrel', 'The Avrel Clearing', 'Drent', -421, 40, 75, 'Farm clearings in Drent’s forested upland: the mill commons, the army’s post, the sunken drove lane where Nell Harrow works her hedge banks, and the road on to the Caloss.'),
   area('rena', 'The Ruins of Rena', 'Drent', -395, -70, 55, 'Rena was the principal town of Drent until it was pulled down after a battle eighty years ago: street lines under the grass, a burnt gate, the stump of the hall, and a well that still holds water.'),
   area('applegarth', 'Applegarth', 'Drent', -568, -32, 45, 'The orchard village at the west end of the old Rena road. It was West Rena, then Westerina, and its bound stone has never been recut.'),
+  // Drent's tenth (the user, 2026-09-21). Small on purpose: the Caloss Bank's reach comes within
+  // twenty metres of it, so the ground is sized to what is actually here - the roofless house,
+  // the stream crossing below it, Silas Garrow's cart, and the road they all stand off.
+  area('the-toll-house', 'The Toll House', 'Drent', -515, 92, 18, 'A roofless toll house at the head of a stream crossing on the Caloss road, where the lord of Rena took a toll on everything going down to the river. Silas Garrow keeps his marl cart on the road side of it, and the stream cut below is a section a man can read.'),
   area('caloss-bank', 'The Caloss Bank', 'Drent', -546, 177, 70, 'Drent’s side of the river: reed beds, a quiet fishing bank and the road down to the bridge.'),
   // Luscia
   area('caloss-crossing', 'The Caloss Crossing', 'Luscia', -610, 139, 55, 'The bridge over the Caloss and the crossing keeper’s hut. Luscia begins on the far bank.'),
