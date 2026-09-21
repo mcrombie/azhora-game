@@ -609,10 +609,37 @@ function init() {
   const SPARRING_ID='sparring-bout';
   const TEACHING_FIGHTS=new Set([GREENWAY_RAID.id,AVREL_RAID.id,SPARRING_ID]);
   /**
-   * Where the n-th companion stands in a fight: on the traveler's side of the centre, spread two
-   * ranks wide, inside every arena the game lays (`encounterConfig` allows 21 m behind the centre
-   * and 12 m across it). They are added to whatever the encounter already authored - at the
-   * border the side's own four soldiers are there and the company stands with them.
+   * **Where the n-th man of the file stands: with the traveler, and never among the enemy.**
+   *
+   * This used to be `center - sign*(5 + (index%5)*3)`, five ranks measured from the arena's centre
+   * away from the way out - which is the ENEMY's end of every arena the game lays. Its own comment
+   * said "on the traveler's side of the centre" and it did the opposite: at the border battle the
+   * side's own four soldiers stood 6.7 to 9.1 m from the traveler while the six the army assigned
+   * him stood **18 to 30 m away, the fifth of them 1.8 m from an enemy soldier** before the first
+   * blow (docs/known-issues.md). Every table taken since companions became allies was measured
+   * with the file standing among the enemy.
+   *
+   * **A sign is not the repair**, because the arenas do not agree with each other. Measured, in
+   * each arena's own along-axis (+ is the way out, - is the enemy's end):
+   *
+   * | arena | way out | checkpoint | enemies |
+   * |---|---|---|---|
+   * | border battle, and all four days after it | +21 | +13 | -9 to -20 |
+   * | the Lauvel wolves | **+11** | **-11** | -7, -9 |
+   * | Mallec at the pass stones | +27 | **+21** | -2 |
+   * | the Bramble camp | +23 | +15 | +3, -3 |
+   *
+   * The Lauvel's traveler starts on the far side of his own wolves, and Mallec's starts at +21,
+   * outside the +18 an ally is even allowed to stand at. So the file is laid **on the point the
+   * fight forms up at** - the checkpoint, which is where the encounter lays its own soldiers too -
+   * stepped the way that is **away from the enemies from there**, and clamped inside the ground
+   * `encounterConfig` will accept. The clamp is not decoration: an ally one metre past the
+   * retreat line makes the whole encounter invalid and `startEncounter` returns false, which at
+   * the border is a toast telling the traveler to go and stand where he is already standing.
+   *
+   * Two shallow ranks of five, 2.2 m apart across and the second rank half a step over, so that
+   * when the clamp puts both ranks on the same line - which it does at Mallec - the eleven men
+   * still each have their own ground, and none of them stands on the side's authored four.
    */
   function companionAllies(config){
     if(!config?.center||TEACHING_FIGHTS.has(config.id))return [];
@@ -623,8 +650,26 @@ function init() {
     // authors four of its own, so handing it everybody would have made the arc unfinishable with
     // three companions. If there is not room for all of them, the rest hold.
     const room=Math.max(0,MAX_ALLIES-(config.allies?.length??0));
-    /** Where the n-th man of the file stands, whoever he is: two ranks wide, behind the centre. */
-    const place=index=>({[axis]:config.center[axis]-sign*(5+(index%5)*3),[across]:config.center[across]+(index<5?-1:1)*2.5});
+    // The fight's own frame, read exactly as `encounterConfig` reads it.
+    const along=p=>sign*(p[axis]-config.center[axis]),over=p=>p[across]-config.center[across];
+    const line=Number.isFinite(config.retreatLine)?config.retreatLine:config.retreatZ;
+    const anchor=config.checkpoint,anchorAlong=along(anchor),anchorOver=over(anchor);
+    // Which way is away from them, from where the file forms up. A fight with no enemies at all
+    // cannot happen (`encounterConfig` refuses one), so this is always a real bearing.
+    const enemyAlong=config.enemies.reduce((sum,foe)=>sum+along(foe),0)/config.enemies.length;
+    const back=anchorAlong>=enemyAlong?1:-1;
+    // As far back as the arena allows: inside the 18 m `encounterConfig` permits toward the way
+    // out, the 21 m it permits toward the enemy, and a metre and a half short of the retreat line.
+    const far=Math.min(18,along({[axis]:line,[across]:0})-1.5),near=-19.5;
+    // The line is **shifted** to fit the 12 m the arena allows across, never clamped man by man:
+    // clamping put two of the file on the same spot at the Bramble camp, whose checkpoint stands 9
+    // m off its own centre line. A rank runs from -4.4 to +5.5 of its base, so the base fits here.
+    const overBase=Math.max(-6.6,Math.min(5.5,anchorOver));
+    const place=index=>{
+      const rank=index<5?0:1;
+      return {[axis]:config.center[axis]+sign*Math.max(near,Math.min(far,anchorAlong+back*(2.6+rank*2.6))),
+        [across]:config.center[across]+overBase+((index%5)-2)*2.2+rank*1.1};
+    };
     const file=fileOrder.slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id))return null;
@@ -6008,15 +6053,20 @@ function init() {
           /**
            * **Aimed across the file, not down it.** The first draft aimed at the traveler and let
            * `bestOf` choose a bearing; it chose one looking at the enemy, and put the six men it
-           * was a picture of behind the camera. A file is a line, and a line reads side-on: the
-           * shot looks across the retreat axis, at the middle of everybody who is standing on
-           * the traveler's side of the field.
+           * was a picture of behind the camera. A file is a line, and a line reads side-on.
+           *
+           * **Which way that is changed with the repair to `companionAllies`.** While the file was
+           * strung out toward the enemy, "side-on" meant looking across the retreat axis. Now that
+           * the men stand as a rank abreast beside the traveler - which is what they were always
+           * meant to be - across the retreat axis looks straight *down* the rank and photographs
+           * it as a column of shoulders. Side-on to a rank abreast is **along** the retreat axis:
+           * from behind the line, or from in front of it, with the arena's own length going away.
            */
           const me=player.group.position;
           const mine=[{x:me.x,z:me.z},...combat.state.allies.map(one=>({x:one.x,z:one.z}))];
           const heart={x:mine.reduce((s,o)=>s+o.x,0)/mine.length,z:mine.reduce((s,o)=>s+o.z,0)/mine.length};
           reviewTarget=new THREE.Vector3(heart.x,world.heightAt(heart.x,heart.z)+1.2,heart.z);
-          const across=BORDER_ARENA.retreatAxis==='x'?0:Math.PI/2;
+          const across=BORDER_ARENA.retreatAxis==='x'?Math.PI/2:0;
           const shot=bestOf(reviewTarget,17,[across,across+Math.PI,across+.5,across-.5+Math.PI]);
           yaw=shot.yaw;pitch=.3;distance=targetDistance=shot.distance;reviewFrozen=true;
           $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
