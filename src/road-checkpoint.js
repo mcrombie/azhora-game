@@ -38,7 +38,8 @@ import { validateArchaeologySnapshot } from './archaeology.js';
 import { validateWineSnapshot } from './wine.js';
 import { validateCookingSnapshot } from './cooking.js';
 import { validateWineAtticSnapshot } from './wine-attic.js';
-import { validateEdSnapshot } from './wine-chameleon.js';
+import { validatePuckSnapshot, createPuck } from './wine-goblin.js';
+import { validateChameleonSnapshot, createChameleon } from './chameleon.js';
 import { validateTroupeSnapshot } from './troupe.js';
 import { validateBrandySnapshot } from './brandy.js';
 import { validateSaltSnapshot } from './salt-sultan.js';
@@ -124,7 +125,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateWineSnapshot(data.wine)) return failed('The saved tasting notes are invalid.');
     if (!validateCookingSnapshot(data.cooking)) return failed('The saved recipes are invalid.');
     if (!validateWineAtticSnapshot(data.wineAttic)) return failed('The saved visit to the Wine Attic is invalid.');
-    if (!validateEdSnapshot(data.ed)) return failed('The saved goblin is invalid.');
+    // A road saved before Ed and Puck were two creatures keeps its `ed` key, which was Puck's half.
+    if (!validatePuckSnapshot(data.puck ?? data.ed)) return failed('The saved goblin is invalid.');
+    if (!validateChameleonSnapshot(data.chameleon)) return failed('The saved chameleon is invalid.');
     if (!validateTroupeSnapshot(data.troupe)) return failed('The saved players of Nylon are invalid.');
     if (!validateBrandySnapshot(data.brandy)) return failed('The saved visit to Brandy Frank is invalid.');
     if (!validateSaltSnapshot(data.salt)) return failed('The saved voyage of the Sultana is invalid.');
@@ -261,7 +264,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'fallen')) result.fallen = { version: 1, ids: [...data.fallen.ids] };
     if (Object.hasOwn(data, 'archaeology')) result.archaeology = { ...data.archaeology, found: { ...data.archaeology.found } };
     if (Object.hasOwn(data, 'wine')) result.wine = { ...data.wine, tasted: { ...data.wine.tasted } };
-    if (Object.hasOwn(data, 'ed')) result.ed = { ...data.ed };
+    // The goblin's state, under its new key, accepting the one it was saved under before the split.
+    if (Object.hasOwn(data, 'puck') || Object.hasOwn(data, 'ed')) { const puck = createPuck(); puck.restore(data.puck ?? data.ed); result.puck = puck.snapshot(); }
+    if (Object.hasOwn(data, 'chameleon')) { const ed = createChameleon(); ed.restore(data.chameleon); result.chameleon = ed.snapshot(); }
     if (Object.hasOwn(data, 'troupe')) result.troupe = { ...data.troupe };
     if (Object.hasOwn(data, 'brandy')) result.brandy = { ...data.brandy };
     if (Object.hasOwn(data, 'salt')) result.salt = { ...data.salt };

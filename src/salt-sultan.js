@@ -5,7 +5,7 @@
  * will not talk about), and judges everything he meets by how salty it is. The
  * sea does not pass. "That's pasta water."
  *
- * He employs Ed, the wine chameleon of Solis (src/wine-chameleon.js), as his
+ * He employs Puck, the wine goblin of Solis (src/wine-goblin.js), as his
  * Chief Taster: perhaps not wisely. We'll see.
  *
  * The Sultana goes round four ports in turn (Tidehaven, Cobble, Izolveth and
@@ -42,9 +42,12 @@ export const SALT_PORTS = freeze([
   port('tidehaven', 'Tidehaven', 'Drent', 'pier', spot(19.5, 28.6, -Math.PI / 2), spot(44, 40, -1.72),
     [[240, 70], [44, 40]], 'Cobble next, for the Saltings white.'),
   // Down the channel between the Pebbles to the bay north of the quay, clear of the ferry's berth.
-  port('cobble', 'Cobble', 'Peblos', 'quay', spot(305, 429.4, Math.PI / 2), spot(292, 408, -.6),
+  // His stand is a metre inside Cobble's own outline: it was a metre outside it, and only read
+  // as Peblos because regionAt used to snap unowned ground to its nearest neighbour.
+  port('cobble', 'Cobble', 'Peblos', 'quay', spot(305, 430.4, Math.PI / 2), spot(292, 408, -.6),
     [[325, 180], [325, 360], [292, 408]], 'Izolveth next, where the Izoli pay in fish and argue in both directions.'),
-  port('izolveth', 'Izolveth', 'West Izol', 'quay', spot(51, 1716.2, 0), spot(47, 1640, 0),
+  // Likewise: thirteen metres south-east, onto the island the quay belongs to.
+  port('izolveth', 'Izolveth', 'West Izol', 'quay', spot(57, 1728.2, 0), spot(47, 1640, 0),
     [[40, 1400], [47, 1640]], 'Solis next, where my Chief Taster will have lost something.'),
   port('solis', 'Solis', 'West Suval', 'quay', S(-72.5, -12, Math.PI / 2), spot(-626, 955, Math.PI / 2),
     [[-860, 990], [-626, 955]], 'Home to Tidehaven next, if I have a home, which my mother says I don’t.'),

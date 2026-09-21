@@ -601,9 +601,10 @@ const REGION_TEXT = {
       'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
   // West Izol is authored in world metres too (src/izol-world.js); its spawn is the quay a ship puts the traveler ashore on.
-  // The spawn was five metres off the island's own outline, on a hex West Izol does not own; it
-  // only ever read as West Izol because regionAt snapped unowned ground to its nearest neighbour.
-  'West Izol': { subtitle: 'The western half of the island of Izol', spawn: point(56, 1735),
+  // The spawn is the quay a ship lands on (IZOL_QUAY.landing). It used to be five metres further
+  // out, on a hex West Izol does not own, and only read as West Izol because regionAt snapped
+  // unowned ground to its nearest neighbour.
+  'West Izol': { subtitle: 'The western half of the island of Izol', spawn: point(56, 1730),
     description: 'Rock, sea turf and headlands across the Izoli Channel: Izolveth on its river flat with the Coalition\u2019s army camped above it, the fishing cove at Ardveth, and the road inland toward the Three Presences. The confederation has no capital, and says so.',
     palette: { ground: '#7e8b62', accent: '#d8d0ae', fog: '#b4c3c0' },
     npcIds: [], landmarks: [] },
