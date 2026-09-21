@@ -190,8 +190,17 @@ export const APPLEGARTH_WORKS = Object.freeze({
 export const RENA_STANDS = Object.freeze({
   // Tidehaven, in the carried-over village's own frame: nothing here moves an
   // existing stand, nothing stands within reach of an army post, and nothing
-  // sits inside a bird's home ground (src/drent-birds.js, BIRD_HABITATS), which
-  // would take its perches away.
+  // sits inside a bird's home ground (src/drent-birds.js, BIRD_HABITATS).
+  //
+  // Not because a stand would take a perch. It cannot: `habitatSpots`
+  // (src/drent-birds.js) maps a habitat's perches through untouched, and `avoid`
+  // — which the host fills with every NPC's position — thins only its *ground*
+  // foraging spots, and only within 1.6 m of somebody. Swept over the built
+  // world with every stand in the game, no habitat loses a single ground spot.
+  //
+  // The reason is the player. A home ground is where the birding skill sends
+  // them to stand and look at that bird, and somebody standing in it is in the
+  // way of the thing they came for.
   'rena-lorn': Object.freeze({ ...villageToWorld(-2, 26), yaw: -2.36 }),        // on the shingle, facing up the beach
   'tide-carter': Object.freeze({ ...villageToWorld(4, 4), yaw: -1.1 }),
   'tide-boy': Object.freeze({ ...villageToWorld(1, 8), yaw: 2.2 }),
