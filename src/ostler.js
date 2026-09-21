@@ -33,8 +33,16 @@ export function redeemHorse({ inventory, riding, hitch }) {
   return { ok: true, reason: '' };
 }
 
+/**
+ * What he says about the company's mounts. One line, and it is the rule in his own voice:
+ * the army's remounts go out with the army's rider, and he did not think it worth asking
+ * about (src/company-horses.js).
+ */
+export const OSTLER_COMPANY_LINE = 'Your friends are up on army horses out of my back row, and no, I did not ask you. '
+  + 'Ten men walking behind one man riding is not a company, it is a joke, and the army does not pay me to be funny.';
+
 export function ostlerConversation(npc, context) {
-  const { inventory, riding, hitch, playerPosition, openDialogue, closeDialogue, act } = context;
+  const { inventory, riding, hitch, playerPosition, openDialogue, closeDialogue, act, company = 0 } = context;
   if (npc.id !== OSTLER_NPC.id) return false;
   const leave = { id: 'leave-ostler', label: 'Another time.', action: closeDialogue };
   if (!riding.owned) {
@@ -50,7 +58,8 @@ export function ostlerConversation(npc, context) {
     return true;
   }
   const far = riding.distanceTo(playerPosition) > 40 && riding.distanceTo(hitch) > 12;
-  openDialogue(npc, [far ? 'Walked in, did you? Then he is standing in a field somewhere wondering about you.' : 'He looks well on it. Keep his feet picked out and he will carry you to Ambron and back.'], null, 'Back to the road', { choices: [
+  openDialogue(npc, [far ? 'Walked in, did you? Then he is standing in a field somewhere wondering about you.' : 'He looks well on it. Keep his feet picked out and he will carry you to Ambron and back.',
+    ...(company > 0 ? [OSTLER_COMPANY_LINE] : [])], null, 'Back to the road', { choices: [
     { id: 'ostler-lesson', label: 'Tell me again how he goes.', action: () => openDialogue(npc, [...RIDING_LESSON], null, 'Back to the road') },
     ...(far ? [{ id: 'fetch-horse', label: 'Can you have him brought in?', action: () => { closeDialogue(); act('fetch-horse'); } }] : []),
     { ...leave, label: 'Good day to you.' },

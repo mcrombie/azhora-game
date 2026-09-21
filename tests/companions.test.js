@@ -578,18 +578,24 @@ test('a hold is each man staying where he is, and the fallback is not one stone'
   assert.deepEqual(escortSpotFor(at, everywhere), escortSpotFor(at, everywhere, 0), 'place 0 is what it always was');
   assert.equal(escortSpotFor(at, () => false, 3), null, 'nowhere is still nowhere');
   assert.ok(escortSpotFor(at, everywhere, 99), 'and a place past the end of the list wraps rather than throwing');
-  assert.match(main, /escortSpotFor\(\{x:p\.x,z:p\.z,yaw\},\(sx,sz\)=>canStand\(sx,sz,world\),Math\.max\(0,place\)\)/,
+  assert.match(main, /escortSpotFor\(\{x:p\.x,z:p\.z,yaw\},stands,Math\.max\(0,place\)\)/,
     'and the host tells it which man is asking');
+  // `stands` is the one footing test that man needs — his own feet, or his horse's, and never
+  // the other's, so the fallback can no more put a rider on unridable ground than the file can.
+  assert.match(main, /stands=\(sx,sz\)=>canStand\(sx,sz,world,seat\?RIDE\.radius:undefined\)/);
 });
 
 test('they walk in a file, one of them speaks, and none of them is ever a peg', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   // A file: the first where Chris has always been, the rest a stride behind him each, alternating
   // shoulders - and closing to the centreline where the shoulders have nowhere to be.
-  assert.match(main, /function fileSpot\(p,yaw,place\)\{/, 'the file has a shape of its own');
-  assert.match(main, /const back=COMPANION_REACH\.shoulder\+place\*COMPANION_REACH\.stride;/, 'a stride apart');
-  assert.match(main, /const side=COMPANION_REACH\.side\*\(place%2\?-1:1\);/, 'and alternating shoulders');
-  assert.match(main, /if\(canStand\(shoulder\.x,shoulder\.z,world\)\)return shoulder;[\s\S]{0,160}return middle;/,
+  assert.match(main, /function fileSpot\(p,yaw,place,mounted=false\)\{/, 'the file has a shape of its own');
+  // One shape, measured in whatever the file is made of: a man's stride on foot, a horse's
+  // length in the saddle (RIDE_FILE, src/company-horses.js).
+  assert.match(main, /const reach=mounted\?RIDE_FILE:COMPANION_REACH,radius=mounted\?RIDE\.radius:undefined;/, 'men or horses');
+  assert.match(main, /const back=reach\.shoulder\+place\*reach\.stride;/, 'a stride apart');
+  assert.match(main, /const side=reach\.side\*\(place%2\?-1:1\);/, 'and alternating shoulders');
+  assert.match(main, /if\(canStand\(shoulder\.x,shoulder\.z,world,radius\)\)return shoulder;[\s\S]{0,180}return middle;/,
     'narrow ground closes the file to single, by asking the ground rather than by a list of places');
   assert.match(main, /placeCompanion\(npc,placement,fileOrder\.indexOf\(npc\.id\)\)/, 'and each man knows his place in it');
   // One voice per event.

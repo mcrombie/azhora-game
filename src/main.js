@@ -63,6 +63,7 @@ import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEn
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
+import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
@@ -391,10 +392,13 @@ function init() {
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){
     fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
+    // The stagger is measured from the moment the traveler went up or came down, so it is the
+    // same clock for every man in the file and nothing has to be told about it.
+    if(riding.mounted!==companyWasMounted){companyWasMounted=riding.mounted;companyMountedAt=elapsed;}
     for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
     if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
-    npc.walkingWith=false;
+    npc.walkingWith=false;npc.mounted=false;npc.lift=0;
     world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming'||fallen.has(placement.id);npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   /**
    * The companion, placed: two and a half metres behind the traveler's left shoulder, which is
@@ -415,6 +419,22 @@ function init() {
    */
   const companionHold=new Map();
   /**
+   * **When you ride, everyone walking with you rides.** One rule, and this line is all of it:
+   * a companion is in the saddle exactly when the traveler is, a short stagger down the file
+   * behind him. Nothing else can put a man up or take him down, which is why a fight, a river,
+   * a ferry and a cutscene need no line of their own - each already puts the traveler on the
+   * ground, and the company comes with him.
+   *
+   * The same expression does both ways. Going up, a man's turn has come when enough of the
+   * stagger has passed; coming down, he is still up until it has. So the file rises raggedly
+   * from the front and steps down raggedly from the front, which is what a company looks like.
+   */
+  let companyMountedAt=-1e9,companyWasMounted=false;
+  function companyUp(place){
+    if(!riding.owned)return false;
+    const since=elapsed-companyMountedAt,turn=staggerFor(Math.max(0,place));
+    return riding.mounted?since>=turn:since<turn;}
+  /**
    * Where the n-th man of the file wants to be. The first is where Chris has always been, at the
    * traveler's left shoulder; the rest are strung out behind him a stride apart, alternating
    * shoulders so the file reads as a file and not as a queue of one man's shadow.
@@ -424,14 +444,18 @@ function init() {
    * places in it: it falls out of asking whether the shoulder spot is ground, and taking the
    * middle when it is not.
    */
-  function fileSpot(p,yaw,place){
-    const back=COMPANION_REACH.shoulder+place*COMPANION_REACH.stride;
-    const side=COMPANION_REACH.side*(place%2?-1:1);
+  function fileSpot(p,yaw,place,mounted=false){
+    // A file of horses is the same file with a horse's room in it: further back, wider apart,
+    // and tested against the mount's own footprint rather than a man's (src/company-horses.js).
+    // Narrow ground still closes it to single file, by the same question asked of the same spot.
+    const reach=mounted?RIDE_FILE:COMPANION_REACH,radius=mounted?RIDE.radius:undefined;
+    const back=reach.shoulder+place*reach.stride;
+    const side=reach.side*(place%2?-1:1);
     const at=off=>({x:p.x-Math.sin(yaw)*back+Math.cos(yaw)*off,z:p.z-Math.cos(yaw)*back-Math.sin(yaw)*off});
     const shoulder=at(side);
-    if(canStand(shoulder.x,shoulder.z,world))return shoulder;
+    if(canStand(shoulder.x,shoulder.z,world,radius))return shoulder;
     const middle=at(0);
-    if(canStand(middle.x,middle.z,world))return middle;
+    if(canStand(middle.x,middle.z,world,radius))return middle;
     return null;}
   function placeCompanion(npc,placement,place=0){
     const p=player.group.position,pos=npc.actor.group.position,yaw=player.group.rotation.y;
@@ -452,16 +476,21 @@ function init() {
       // kept COMPANION_KEEP_OUT metres off it is outside every one of them, whichever way it is laid.
       const held=fight?outsideTheFight(fight,companionHold.get(npc.id)):companionHold.get(npc.id);
       companionHold.set(npc.id,held);
-      world.npcPositions[npc.id]={...held};npc.pace=2.4;npc.escorting=false;
+      world.npcPositions[npc.id]={...held};npc.pace=2.4;npc.escorting=false;npc.mounted=false;npc.lift=0;
       npc.placement={...placement,x:held.x,z:held.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold.delete(npc.id);
-    const wanted=fileSpot(p,yaw,Math.max(0,place));
-    let x=wanted?wanted.x:p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side;
-    let z=wanted?wanted.z:p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
-    if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world),Math.max(0,place));if(spot){x=spot.x;z=spot.z;}}
+    const seat=companyUp(place),reach=seat?RIDE_FILE:COMPANION_REACH,stands=(sx,sz)=>canStand(sx,sz,world,seat?RIDE.radius:undefined);
+    const wanted=fileSpot(p,yaw,Math.max(0,place),seat);
+    let x=wanted?wanted.x:p.x-Math.sin(yaw)*reach.shoulder+Math.cos(yaw)*reach.side;
+    let z=wanted?wanted.z:p.z-Math.cos(yaw)*reach.shoulder-Math.sin(yaw)*reach.side;
+    if(!stands(x,z)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},stands,Math.max(0,place));if(spot){x=spot.x;z=spot.z;}}
     const gap=Math.hypot(pos.x-x,pos.z-z);
-    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=companionPace(gap);
+    // In the saddle he sits a seat's height above the ground the mover puts him on, and he keeps
+    // up with whatever the traveler asked for - the canter, and the testing panel's horse that
+    // goes twice as fast. On his feet he runs as he always has (companionPace).
+    npc.mounted=seat;npc.lift=seat?RIDE.seat.up:0;
+    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=seat?ridePace(gap,riding.speed(true)):companionPace(gap);
     // Forty metres apart is a wall, a river, a ferry or a horse, and never running: he runs
     // faster than the traveler does, so he closes rather than falls behind (companionPace).
     if(gap>COMPANION_REACH.setDown)pos.set(x,world.heightAt(x,z),z);
@@ -1288,6 +1317,47 @@ function init() {
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
   // The testing panel's horse wears a coat nobody could mistake for the army's bay, and stands in its place.
   const devHorse=createHorse({coat:'developer',saddled:true});devHorse.group.visible=false;scene.add(devHorse.group);
+  /**
+   * The company's remounts: one per companion, made the first time he needs one, so a game that
+   * never reaches Bede Harrow's yard never pays for a single mesh of them. The coat is fixed by
+   * the man's id (src/company-horses.js), so it is the same horse every load and nothing about
+   * it is saved.
+   *
+   * Like the traveler's own horse these are plain actors, not people: they have no stand-in and
+   * no level of detail, so the file's horses are exempt from the distant peg exactly as the men
+   * in the file are.
+   */
+  const companyHorseActors=new Map();
+  function companyHorseFor(id){
+    let horse=companyHorseActors.get(id);
+    if(!horse){horse=createHorse({coat:coatFor(id),saddled:true});horse.group.visible=false;scene.add(horse.group);companyHorseActors.set(id,horse);}
+    return horse;}
+  /**
+   * Under each man who is up, and picketed beside the traveler's own horse for each man who is
+   * not. The picket is a straight line off one side of his horse, derived from `riding.horse` -
+   * which is already saved - so nothing here is written down and a reload puts every horse back
+   * where it was. A line, never a ring: ten picketed horses cannot pen anybody in.
+   */
+  function refreshCompanyHorses(){
+    const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,
+      walking:fileOrder.filter(id=>npcById.get(id)?.walkingWith)});
+    const here=new Set(rule.ids);
+    const picket=picketSpots(riding.horse,rule.ids,(x,z)=>canStand(x,z,world,RIDE.radius));
+    for(const [index,id] of rule.ids.entries()){
+      const npc=npcById.get(id),actor=companyHorseFor(id);
+      if(npc?.mounted&&npc.actor.group.visible){
+        const at=npc.actor.group.position,turn=npc.actor.group.rotation.y;
+        const hx=at.x-Math.sin(turn)*RIDE.seat.forward,hz=at.z-Math.cos(turn)*RIDE.seat.forward;
+        actor.group.position.set(hx,world.heightAt(hx,hz),hz);actor.group.rotation.y=turn;
+        actor.group.visible=true;actor.ridden=true;actor.animate(elapsed,npc.shownPace??0,true,{grazing:false});
+        continue;}
+      const spot=picket[index];
+      actor.ridden=false;
+      if(!spot){actor.group.visible=false;continue;}
+      actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);actor.group.rotation.y=spot.yaw;
+      actor.group.visible=Math.hypot(spot.x-player.group.position.x,spot.z-player.group.position.z)<220;
+      if(actor.group.visible)actor.animate(elapsed,0,true,{});}
+    for(const [id,actor] of companyHorseActors)if(!here.has(id)){actor.group.visible=false;actor.ridden=false;}}
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
   // Figures nobody can see wait off stage: out of the scene, so the renderer's per-frame matrix work
@@ -1298,10 +1368,14 @@ function init() {
     else{if(g.parent===scene)offStage.add(g);if(m&&m.parent===scene)offStage.add(m);}}
   function gatherBodies(){
     const list=[{id:'traveler',x:player.group.position.x,z:player.group.position.z,r:riding.mounted?RIDE.radius:BODY.traveler}];
-    for(const npc of npcData){if(npc.hidden||npc.fallen||!npc.actor.group.visible)continue;const p=npc.actor.group.position;list.push({id:npc.id,x:p.x,z:p.z,r:npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person});}
+    // A companion in the saddle is a rider's footprint, the same as the traveler's is.
+    for(const npc of npcData){if(npc.hidden||npc.fallen||!npc.actor.group.visible)continue;const p=npc.actor.group.position;list.push({id:npc.id,x:p.x,z:p.z,r:npc.mounted?RIDE.radius:npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person});}
     if(troupeWagon.visible)list.push(...troupe.bodies());
     for(const [i,h] of horseLine.entries())if(h.actor.group.visible)list.push({id:`line-horse-${i}`,x:h.actor.group.position.x,z:h.actor.group.position.z,r:BODY.horse});
     if(ownHorse.group.visible&&!riding.mounted)list.push({id:'own-horse',x:ownHorse.group.position.x,z:ownHorse.group.position.z,r:BODY.horse});
+    // A picketed horse is solid like the traveler's own. A ridden one is not: its man already is.
+    for(const [id,horse] of companyHorseActors)if(horse.group.visible&&!horse.ridden)
+      list.push({id:`company-horse-${id}`,x:horse.group.position.x,z:horse.group.position.z,r:BODY.horse});
     if(combat.state.phase==='active'){
       for(const e of combat.state.enemies)if(e.active!==false&&e.action!=='dead')list.push({id:e.id,x:e.x,z:e.z,r:e.kind==='ogre'?BODY.ogre:e.kind==='wolf'?BODY.wolf:BODY.person});
       for(const a of combat.state.allies)if(a.active)list.push({id:a.id,x:a.x,z:a.z,r:BODY.person});
@@ -2907,7 +2981,7 @@ function init() {
     if(npc.id===TROY.id){troyConversation(npc,{troy,openDialogue,closeDialogue,act:troyAct,coppers:inventory.count(COPPER_ITEM),visits:troyVisits++});return;}
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
-    if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct});return;}
+    if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
@@ -3852,6 +3926,7 @@ function init() {
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
+        refreshCompanyHorses();
         if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
         show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
@@ -3978,7 +4053,10 @@ function init() {
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         if(pace<=.1&&npc.face&&!npc.swimming){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
-        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming});
+        // A man in the saddle sits in it: his legs do not walk, and the pace goes to the horse
+        // under him instead (refreshCompanyHorses).
+        npc.shownPace=pace;
+        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):npc.mounted?0:pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming,riding:npc.mounted?{pace}:null});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
@@ -4730,6 +4808,25 @@ function init() {
         // wants the place as it is rather than a composed shot. stand-at:x,z,facing[,pitch,distance] (main.cjs --draw-review).
         if(view.startsWith('stand-at:')){const [sx,sz,facing=0,tilt=.3,back=7]=view.slice(9).split(',').map(Number);
           if(Number.isFinite(sx)&&Number.isFinite(sz)){questStage=10;combat.finishPractice();player.setArmed(false);player.group.position.set(sx,world.heightAt(sx,sz),sz);yaw=facing;pitch=tilt;distance=targetDistance=back;player.group.rotation.y=Math.PI+yaw;}}
+        // The company's horses, at Bede Harrow's yard: the traveler up with three riders in
+        // file behind him (company-mounted), and the same four stepped down with the horses
+        // picketed beside his (company-picket). One frame places the file; nothing is staged
+        // beyond who is walking with him.
+        if(view==='company-mounted'||view==='company-picket'){
+          questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
+          companions.restore({...companions.snapshot(),walking:['merc-gotwood','merc-jerry','merc-christin']});
+          const yard=LUMBER_TOWN_STABLE.hitch;
+          player.group.position.set(yard.x,world.heightAt(yard.x,yard.z),yard.z);player.group.rotation.y=yard.yaw;
+          if(!riding.owned)riding.grant(yard,yard.yaw);else riding.place(yard,yard.yaw);
+          riding.teach();placeOwnHorse();
+          if(view==='company-mounted')toggleMount();
+          // A photograph, not a sequence: the stagger is spent, so the file is all up or all down.
+          companyWasMounted=riding.mounted;companyMountedAt=-1e9;
+          placeMercenaries();refreshCompanyHorses();
+          // Off the flank and a little behind, so the whole file reads rather than the man in front.
+          yaw=yard.yaw+Math.PI*.62;pitch=.24;distance=targetDistance=17;
+          return;
+        }
         if(view==='walk'){questStage=10;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
         if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}

@@ -55,8 +55,11 @@ each has one moment where asking is natural. Nobody is recruited from a menu.
 | **Matt and Al the Tun** | the last pair in, minute 63 | Matt comes if there is a line to hold; **Al** comes for company, and would rather it never came to the mace |
 | **Mus** | only in the woods, on his wild line | you left the road, which is the one thing he respects. He never says why he says yes — he is the sage's eyes, and he does not explain the route either |
 
-**All of them may walk with you**, and the three who rode in together can all come. What keeps
-the company from being a shopping list is that each is asked where he is and for what he wants.
+**All of them may walk with you**, and the three who came up together can all come. (They are
+`group: 'riders'` in the roster, which names the people somebody arrived *with* and has never
+meant horses: all three land off the ship and walk the road at a walking pace, like everybody
+else. Nothing on screen says otherwise.) What keeps the company from being a shopping list is
+that each is asked where he is and for what he wants.
 
 ### Friendship: four rungs, and what moves them
 
@@ -159,3 +162,38 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    A dead man's weapon lies where he fell, named — "Eliana's greatsword", the only named
    weapons in the game — until somebody takes it, and if he was carrying the traveler's traded
    sword, that is what is lying there.
+
+### Horses: one rule
+
+**When you ride, everyone walking with you rides.** That is the whole of it, and it is one rule
+rather than a system, because a mount is not a thing a companion owns and can lose. It is a
+function of two things the save already holds — whether the traveler has a horse, and who is
+walking with him — so **there is no new save section**, nothing to validate and nothing that can
+go stale. The dead do not walk and neither do the sent-on, so neither has a horse, without a line
+of code saying so (`src/company-horses.js`).
+
+- **From the moment he owns one.** Bede Harrow hands over the army's bay, and the company is
+  mounted from that hour; a man who joins later has one too. Before that, everybody walks.
+- **Up exactly when he is up.** A fight, a ferry, a river, a cutscene: each already puts the
+  traveler on the ground, and the company comes down with him. No mounted combat needed a line of
+  its own. Whatever his horse will not do, theirs will not — one footing test, `RIDE.radius`.
+- **A company, not a snap.** They rise in turn down the file, about a fifth of a second apart,
+  and step down the same way.
+- **Mounted, the file is a file with a horse's room in it**: further back, wider apart, a horse's
+  length instead of a man's stride, and still single file where the ground is narrow. They keep
+  up with a canter and with the testing panel's horse, by the same rule that lets Chris keep up
+  with a run.
+- **Stepped down, the horses are picketed beside his** — a straight line off one side of his
+  horse, out of the road's middle, with 2.2 m between centres so there is over a metre of open
+  ground between any two of them. A line, never a ring: **ten picketed horses cannot pen anybody
+  in**, and a test floods the ground around them from every gap to prove it.
+- **Natural coats, no names.** Bay, chestnut, grey, black, dun, roan, fixed by the man's id, so
+  it is the same horse every load and nothing about it is written down. The only horse in the
+  game with a name is the traveler's own.
+- **Cost:** 14 meshes each, 140 for a full company of ten, and a horse is made only when the man
+  it belongs to needs one — a game that never reaches the stable yard pays none of it.
+- **One new line**, for Bede Harrow, when the traveler has company in his yard.
+
+One thing worth knowing: `riding.snapshot()` saves a rider **on the ground** with the horse under
+them, so a reload comes back with the traveler on his feet — and therefore the whole company on
+their feet, horses picketed. The rule holds across the save; the saddle does not, for anybody.
