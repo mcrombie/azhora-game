@@ -4,7 +4,7 @@ import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionNameAt, regions } from '../src/region-world.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/region-world.js';
 import {
   LIZEEM, CARICA, CARICA_CORRIDOR, CARICAS_SHELF, WEST_REGION_LANDMARKS,
   caricaCorridorDistance, courseDistance, westBareGround,
@@ -131,7 +131,7 @@ test('Every hex of the corridor country is honest ground', () => {
   }
   assert.ok(worst < 1e-9, `west-ground.js and world-terrain.js disagree by ${worst}`);
   const spawn = regions.find(region => region.name === 'Caricas').spawn;
-  assert.equal(regionNameAt(spawn.x, spawn.z), 'Caricas');
+  assert.equal(hexOwnerAt(spawn.x, spawn.z), 'Caricas');
   assert.ok(canStand(spawn.x, spawn.z, world, .5));
 });
 
@@ -144,10 +144,10 @@ test('The river fox watches; everything else in the west runs', () => {
       `a fox at ${site} is off the fox ground`);
     // The Carica runs the Caricas-Nesdor border, so "fox ground" means one bank
     // of it and not the other: the corridor is Carican and the keepers are Carican.
-    assert.equal(regionNameAt(site[0], site[1]), 'Caricas', `a fox at ${site} is on the wrong bank`);
+    assert.equal(hexOwnerAt(site[0], site[1]), 'Caricas', `a fox at ${site} is on the wrong bank`);
   }
   for (const zone of WEST_LIFE_ZONES.filter(item => item.species === 'otter'))
-    for (const site of zone.sites) assert.equal(regionNameAt(site[0], site[1]), 'Caricas', `an otter at ${site} is on the wrong bank`);
+    for (const site of zone.sites) assert.equal(hexOwnerAt(site[0], site[1]), 'Caricas', `an otter at ${site} is on the wrong bank`);
   const foxOf = () => life.snapshot().creatures.find(animal => animal.species === 'river-fox');
   const otterOf = () => life.snapshot().creatures.find(animal => animal.species === 'otter');
   assert.ok(foxOf() && otterOf(), 'both are placed on standable bank');
@@ -184,7 +184,7 @@ test('Caricas is charted and listed, and nobody lives there', () => {
   for (const id of caricas.landmarks)
     assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
   for (const landmark of WEST_REGION_LANDMARKS.filter(item => caricas.landmarks.includes(item.id)))
-    assert.equal(regionNameAt(landmark.x, landmark.z), 'Caricas', `${landmark.id} stands in Caricas`);
+    assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Caricas', `${landmark.id} stands in Caricas`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Caricas').length >= 3);
   assert.equal(regionBuildStatus('Caricas').playable, true);
 });

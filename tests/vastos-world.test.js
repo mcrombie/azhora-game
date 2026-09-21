@@ -4,7 +4,7 @@ import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionAt, regionNameAt, regions } from '../src/region-world.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionAt, hexOwnerAt, regions } from '../src/region-world.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   WEST_POOLS, WEST_RIVERS, WEST_REGION_LANDMARKS, westBareGround, westRiverDistance, coursePosition,
@@ -167,7 +167,7 @@ test('Vastos is charted, listed and named, and nobody lives there', () => {
   for (const id of vastos.landmarks)
     assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
   for (const landmark of WEST_REGION_LANDMARKS.filter(item => item.id.startsWith('vastos-'))) {
-    assert.equal(regionNameAt(landmark.x, landmark.z), 'Vastos', `${landmark.id} stands in Vastos`);
+    assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Vastos', `${landmark.id} stands in Vastos`);
     assert.ok(landmark.description.length > 60, `${landmark.id} says what it is`);
   }
   assert.ok(SUBREGIONS.filter(area => area.region === 'Vastos').length >= 4, 'the plain charts in named pieces');
@@ -176,12 +176,12 @@ test('Vastos is charted, listed and named, and nobody lives there', () => {
 
 test('The plain grows grass and nothing else, and its water is left out of the scatter', () => {
   const trees = world.colliders.filter(collider => collider.kind === 'region-tree'
-    && regionNameAt(collider.x, collider.z) === 'Vastos');
+    && hexOwnerAt(collider.x, collider.z) === 'Vastos');
   assert.equal(trees.length, 0, 'no tree stands on the Vastos plain');
   const thorn = world.colliders.filter(collider => collider.kind === 'vastos-thorn');
   assert.ok(thorn.length > 4, 'the thorn in the lee of the river banks is the only woody thing here');
   for (const bush of thorn) {
-    assert.equal(regionNameAt(bush.x, bush.z), 'Vastos');
+    assert.equal(hexOwnerAt(bush.x, bush.z), 'Vastos');
     assert.ok(westRiverDistance(bush.x, bush.z, 60) < 30, 'and it only grows where a bank shelters it');
   }
   assert.ok(world.colliders.some(collider => collider.kind === 'vastos-erratic'), 'the plain carries erratics');

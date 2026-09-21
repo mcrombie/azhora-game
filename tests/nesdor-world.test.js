@@ -4,7 +4,7 @@ import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionNameAt, regions } from '../src/region-world.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/region-world.js';
 import {
   LIZEEM, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_REGION_LANDMARKS,
   courseDistance, westBareGround,
@@ -62,7 +62,7 @@ test('The Flats are the flattest ground in the world outside the Moros, and fall
 test('The Ela-south is handed over rather than left to stop in the middle of a country', () => {
   const ela = ELAGOS_REACHES.find(reach => reach.id === 'ela-south');
   const end = ela.points.at(-1);
-  assert.equal(regionNameAt(end.x, end.z), 'Nesdor', 'the lake country’s drainage ends inside Nesdor');
+  assert.equal(hexOwnerAt(end.x, end.z), 'Nesdor', 'the lake country’s drainage ends inside Nesdor');
   const head = ELA_SOUTH_REACH.points[0];
   assert.ok(Math.hypot(head.x - end.x, head.z - end.z) < 1, 'and the reach starts exactly where it ends');
   const profile = WEST_PROFILES.get(ELA_SOUTH_REACH.id);
@@ -116,7 +116,7 @@ test('Every hex of the Flats is honest ground', () => {
   }
   assert.ok(worst < 1e-9, `west-ground.js and world-terrain.js disagree by ${worst}`);
   const spawn = regions.find(region => region.name === 'Nesdor').spawn;
-  assert.equal(regionNameAt(spawn.x, spawn.z), 'Nesdor');
+  assert.equal(hexOwnerAt(spawn.x, spawn.z), 'Nesdor');
   assert.ok(canStand(spawn.x, spawn.z, world, .5));
 });
 
@@ -127,7 +127,7 @@ test('Nothing grows on the Flats; the hazel and oak are all on the valley head',
     Math.hypot(cell.x - tree.x, cell.z - tree.z) < Math.hypot(best.x - tree.x, best.z - tree.z) ? cell : best);
   assert.equal(trees.filter(tree => nearestCell(tree).terrain === 'plains').length, 0,
     'not one tree stands on a plains hex');
-  for (const tree of trees) assert.equal(regionNameAt(tree.x, tree.z), 'Nesdor');
+  for (const tree of trees) assert.equal(hexOwnerAt(tree.x, tree.z), 'Nesdor');
 });
 
 test('The cattle of the Flats are the Vastos longhorn drawn smaller, as the lore says', () => {
@@ -142,7 +142,7 @@ test('The cattle of the Flats are the Vastos longhorn drawn smaller, as the lore
   const life = createWestLife(scene, world);
   const here = life.snapshot().creatures.filter(animal => animal.region === 'Nesdor');
   assert.equal(here.length, nesdor.reduce((sum, zone) => sum + zone.sites.length, 0), 'every one of them found footing');
-  for (const animal of here) assert.equal(regionNameAt(animal.x, animal.z), 'Nesdor', `${animal.id} strayed`);
+  for (const animal of here) assert.equal(hexOwnerAt(animal.x, animal.z), 'Nesdor', `${animal.id} strayed`);
   // Thirty seconds of them moving about: nobody leaves its range or its ground.
   const player = { x: -1500, y: 0, z: 640 };
   for (let step = 0; step < 900; step++) life.update(1 / 30, player, true);
@@ -162,7 +162,7 @@ test('Nesdor is charted and listed, and nobody lives there', () => {
   for (const id of nesdor.landmarks)
     assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
   for (const landmark of WEST_REGION_LANDMARKS.filter(item => nesdor.landmarks.includes(item.id)))
-    assert.equal(regionNameAt(landmark.x, landmark.z), 'Nesdor', `${landmark.id} stands in Nesdor`);
+    assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Nesdor', `${landmark.id} stands in Nesdor`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Nesdor').length >= 3);
   assert.equal(regionBuildStatus('Nesdor').playable, true);
   // Every western region is terrain and wildlife: not one of them places a person.

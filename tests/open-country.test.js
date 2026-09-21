@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { regionAt, regionNameAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS,
+import { regionAt, hexOwnerAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS,
   SHORE_FRINGE, hexAt, hexCentre } from '../src/region-world.js';
 import { createMapTutorial } from '../src/map-tutorial.js';
 import { canStand } from '../src/game-state.js';
@@ -37,7 +37,7 @@ test('ground outside every outline is open country, not the nearest neighbour’
   for (const spot of UNOWNED) {
     const here = regionAt(spot.x, spot.z);
     assert.ok(isOpenCountry(here), `(${spot.x}, ${spot.z}) is still called ${here?.name} — ${spot.note}`);
-    assert.equal(regionNameAt(spot.x, spot.z), OPEN_COUNTRY.name);
+    assert.equal(hexOwnerAt(spot.x, spot.z), OPEN_COUNTRY.name);
     assert.equal(insideRegion(spot.was, spot.x, spot.z), false, `and it is genuinely outside ${spot.was}`);
   }
   // No province answers to the sentinel's id, and nothing else answers isOpenCountry.
@@ -174,35 +174,35 @@ test('a country’s own shore is that country, and the fringe stops at the shore
 });
 
 test('what the traveler is told and where a tree may go are two questions', () => {
-  // `regionAt` carries the shore fringe and `regionNameAt` does not, which is a trap unless it
-  // is written down and held. Every caller of `regionNameAt` in src/ is a scatter filter — it
+  // `regionAt` carries the shore fringe and `hexOwnerAt` does not, which is a trap unless it
+  // is written down and held. Every caller of `hexOwnerAt` in src/ is a scatter filter — it
   // asks whose hex this is, so that Caricas's forest goes on Caricas's hexes — and handing it
   // the fringe re-seeds all of them: about 4,700 colliders moved across the west when it was
   // tried, because a rejected candidate still advances the seeded stream, and the west's
   // animals are tuned against the scatter as it stands (tests/west-life.test.js).
   const stand = WEATHERHEAD.stand;
   assert.equal(regionAt(stand.x, stand.z).name, 'Drent', 'the traveler is in Drent on his own beach');
-  assert.equal(regionNameAt(stand.x, stand.z), OPEN_COUNTRY.name, 'and no tree of Drent’s is planted there');
+  assert.equal(hexOwnerAt(stand.x, stand.z), OPEN_COUNTRY.name, 'and no tree of Drent’s is planted there');
   assert.equal(insideRegion('Drent', stand.x, stand.z), false, 'the authored outline agrees with the scatter');
 
   // On a region's own hexes the two never disagree, which is all the scatter ever sees.
   for (const name of REGION_ORDER) {
     const cell = REGION_CELLS[name][0];
     assert.equal(regionAt(cell.x, cell.z).name, name);
-    assert.equal(regionNameAt(cell.x, cell.z), name, `${name} disagrees with itself on its own ground`);
+    assert.equal(hexOwnerAt(cell.x, cell.z), name, `${name} disagrees with itself on its own ground`);
   }
   // And out in the unowned west they agree too: the fringe is tens of metres, that is hundreds.
   for (const spot of UNOWNED) {
     assert.equal(regionAt(spot.x, spot.z).name, OPEN_COUNTRY.name);
-    assert.equal(regionNameAt(spot.x, spot.z), OPEN_COUNTRY.name);
+    assert.equal(hexOwnerAt(spot.x, spot.z), OPEN_COUNTRY.name);
   }
-  assert.equal(regionNameAt(NaN, 0), null, 'nonsense is nothing to either of them');
+  assert.equal(hexOwnerAt(NaN, 0), null, 'nonsense is nothing to either of them');
 
   // The scatter modules are the callers this is for; if one of them moves to regionAt, the
   // west's scenery moves with it and this test should be the thing that asks why.
   for (const name of ['west-regions-scenery.js', 'amod-scenery.js', 'pueth-scenery.js', 'world-regions.js']) {
     const text = source(name);
-    assert.match(text, /regionNameAt/, `${name} scatters by hex ownership`);
+    assert.match(text, /hexOwnerAt/, `${name} scatters by hex ownership`);
     assert.doesNotMatch(text, /\bregionAt\(/, `${name} should not scatter by what the traveler is told`);
   }
 });

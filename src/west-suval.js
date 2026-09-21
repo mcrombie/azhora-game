@@ -22,7 +22,7 @@
  * dressed stone: a closed circuit, a wall walk behind a parapet, a tower at every
  * corner and either side of each gate, two gates, and a ditch outside.
  */
-import { SOLIS, solisPoint, SOLIS_ROAD, regionNameAt, insideRegion, landDistance } from './region-world.js';
+import { SOLIS, solisPoint, SOLIS_ROAD, hexOwnerAt, insideRegion, landDistance } from './region-world.js';
 import { toWorld } from './world-scale.js';
 import { WINE_ATTIC, ATTIC_ENCLOSURE } from './wine-attic.js';
 
@@ -298,7 +298,7 @@ export const WEST_SUVAL_BORDER = (() => {
     const a = SOLIS_ROAD[i - 1], b = SOLIS_ROAD[i], length = Math.hypot(b.x - a.x, b.z - a.z);
     for (let s = 0; s <= length; s += 1) {
       const x = a.x + (b.x - a.x) * s / length, z = a.z + (b.z - a.z) * s / length;
-      if (regionNameAt(x, z) !== 'West Suval') continue;
+      if (hexOwnerAt(x, z) !== 'West Suval') continue;
       const ux = (b.x - a.x) / length, uz = (b.z - a.z) / length;
       // The sign stands 4.5 m to the traveler's right, its board square to the road so both faces read.
       return freeze({ crossing: point(x, z), sign: point(x - uz * 4.5, z + ux * 4.5), yaw: Math.atan2(-ux, -uz) });

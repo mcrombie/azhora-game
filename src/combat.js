@@ -778,8 +778,27 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     return { stamina: player.stamina, hp: player.hp, defeated: !player.hp };
   }
 
+  /**
+   * On your feet, whole, with nothing happening. The leash already does exactly this when a
+   * traveler walks 45 m out of a fight; drowning needs the same thing and must not go through
+   * `resetEncounter`, which restarts `lastEncounter` - and `lastEncounter` begins life as
+   * DEFAULT_ENCOUNTER, so a man who had never drawn on anybody woke in a goblin raid a hundred
+   * metres away.
+   *
+   * It moves nobody. The host puts the traveler back on the last dry ground he stood on
+   * (src/main.js), because that is what drowning owes him and a fight's checkpoint is not it.
+   */
+  function revive() {
+    state.phase = 'peaceful';
+    state.enemies = [];
+    enemyTimers.clear();
+    clearAllies();
+    restorePlayer();
+    return { hp: player.hp, stamina: player.stamina };
+  }
+
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, update, resetEncounter, pose, movementScale, heal, exhaust,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
     setWeaponReady(value) { weaponReady = Boolean(value); },
   };
 }
