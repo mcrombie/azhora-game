@@ -5,10 +5,18 @@ Terrain and wildlife only, exactly as Vastos, Meneth, Caricas and Nesdor were bu
 weather, what grows on them and what lives there, and nothing that belongs to anybody: no
 settlement, no road, no field wall, no bridge, no boat, no person, no sign, no quest.
 
+> **The user's ruling, 2026-09-21: "Favor the atlas over what the lore says. Adjust what the
+> lore says to fit the atlas."** It is a standing rule for the whole world, not only these
+> six. This document was first written the other way round — the four-regions brief had let
+> the lore win on climate — and has been revised to it throughout. Every disagreement below
+> is now settled for the atlas, and the lore files themselves have been adjusted to match
+> (`docs/lore-adjusted-to-atlas.md`).
+
 The brief for each is its lore file in `world-builder/azhora_lore/geography/regions/`, plus
 `fauna/azhoran_fauna_overview.md`, `geography/azhoran_flora_distribution.md` and
-`geography/regions/iberos_coast.md`. Where those are silent this document says so and says
-what was chosen instead.
+`geography/regions/iberos_coast.md`. Where the atlas is silent — on relief, on what a
+watercourse looks like, on animals — the lore fills it in, and where both are silent this
+document says so and says what was chosen instead.
 
 ---
 
@@ -40,7 +48,7 @@ these six it says three different things:
 | Region | Köppen, by hex | reads as |
 |---|---|---|
 | Isareos | `Cfa` × 31 | humid subtropical: warm wet summers, cool wet winters, rain all year |
-| Nethereum | `Cfa` × 27 | the same, and the lore adds that the basin's water makes it milder and greyer |
+| Nethereum | `Cfa` × 27 | the same; the lore's "muffled" overcast light survives the loss of its lake |
 | Ovesos | `BSh` × 19 | hot semi-arid steppe |
 | Oves Desert | `BSh` × 23 | hot semi-arid steppe — the rain shadow |
 | Gala | `BSh` × 12, `Csb` × 7, `Csa` × 2 | dry in the north, Mediterranean in the south |
@@ -50,7 +58,44 @@ these six it says three different things:
 Three codes, drawn along lines that match the lore — the arid wedge round the Oveth basin,
 the Mediterranean coast the flora document describes in those words ("The Iberos Coast,
 facing the Iberos Sea, has a Mediterranean climate — warm dry summers, mild wet winters") —
-is a statement. **The atlas wins on climate here, except once**: see disagreement 4.
+is a statement and not a default. **The atlas wins on climate, with no exception**
+(the user's ruling, above).
+
+And the field is not a two-word vocabulary. `climateSystem` is `koppen-v1` and the map uses
+nineteen codes across the continent, among them **`BWh`, true hot desert** — 245 hexes of it.
+The map's author had that word available and did not use it on the Oves Desert or the Nether
+Desert: both are `BSh`, hot *steppe*. That agrees with the Oves Desert's own lore, which is
+at pains to say it is not the Moroshé — "it is not large, it is not particularly severe, and
+in wet years it generates a temporary vegetation cover that makes the word 'desert' seem like
+an overstatement". It also means **the atlas draws no climatic line at all between Ovesos and
+the Oves Desert**: both are `BSh`, and what separates them is terrain — Ovesos grassland and
+plains, the Oves Desert hills and plains.
+
+### What the terrain field says, and what it refuses to say
+
+The same is true of terrain, and it is the more surprising half. The atlas's vocabulary is
+`plains`, `grassland`, `hills`, `mountain`, `high_mountain`, `highland`, `forest`,
+`deep_forest`, `deep_jungle`, **`lake`**, **`wetland`**, `coast` and `ocean`. It uses `lake`
+for 28 hexes — five of them in Elagos, which is why the Lake Lands have lakes — and
+`wetland` for 28, twenty-five of them in the Acor Wetlands.
+
+So the map **can** say inland standing water, and **can** say marsh, and says both elsewhere.
+Over these six it says neither, anywhere. And it says `forest` nowhere in them either:
+
+| Region | terrain, by hex |
+|---|---|
+| Isareos | grassland 25, plains 6 — the plains a single column down the western rim |
+| Nethereum | grassland 26, plains 1 |
+| Ovesos | grassland 8 (the northern two rows), plains 11 (the southern three) |
+| Oves Desert | plains 20, hills 3 (the north-western rim: the rain-shadow ridge itself) |
+| Gala | plains 19, grassland 2 (the southernmost row, on the sea) |
+| Eer | plains 12 (the humid inland half), grassland 13 (the Mediterranean coastal half) |
+
+**None of the six has a forest hex, a lake hex or a wetland hex.** Under the user's rule that
+settles three things at once: there is no closed woodland anywhere in these countries, there
+is no Nethermere, and there is no marsh round it. Trees appear only where a region's own
+design puts them along its water, which is what Nesdor already does with the one `forest` hex
+at its wooded head — and none of the six has one.
 
 ### The rivers, read off the map
 
@@ -72,54 +117,71 @@ Every course below is authored on hex edges in `azhora.wwmap` and is not invente
 
 ---
 
-## Where lore and atlas disagree
+## Where lore and atlas disagreed, and how the user settled it
 
-Seven, recorded rather than reconciled, in the order they bite:
+Seven. **All seven are settled for the atlas by the user, 2026-09-21** — "Favor the atlas over
+what the lore says. Adjust what the lore says to fit the atlas." The lore files have been
+edited to match; what moved in each is listed in `docs/lore-adjusted-to-atlas.md`. They are
+kept here in the order they bite, because what the atlas refused is worth knowing even once
+it has been written away.
 
 1. **Isareos has no coast.** Its lore is entirely a coastal territory — "the coastline of
    Isareos is the dominant geographic fact", dozens of inlets, the promontories, the
    inshore fishery, boatbuilding timber, Isamouth on the Isa river. **The atlas gives Isareos
    thirty-one hexes with zero unclaimed edges: it is landlocked, six hundred metres of it
-   between Caricas and the Ibenwood.** There is no reconciling this; it is not a bearing, it
-   is a different country. Built with the half of the lore that survives the move: the
-   interior. "Low hills, not quite highlands, covered in mixed deciduous and scrub forest,
-   rising gradually away … some grain in the better valley floors, some mixed livestock,
-   significant woodland resources." The inlets, the fishery and the boats are not built, and
-   **this is the user's call to overrule if Isareos is meant to be somewhere else.**
-2. **The Nethermere is not on the map.** Nethereum's lore is one seasonal basin lake and the
-   country of elevated islands round it. The atlas gives twenty-six grassland hexes and one
-   plains, no lake terrain, and draws both its rivers along the region's *borders* rather
-   than into its middle. A country cannot be built without the thing it is. **The Nethermere
-   is built in the middle of Nethereum**, as a broad shallow basin holding water, with marsh
-   margins, ridge ground round the rim and derived channels from both authored courses into
-   it and one out to the Lizeem. Flagged as derived at the placement, as Meneth's becks were.
+   between Caricas and the Ibenwood.** It is not a bearing that is wrong; it is a different
+   country. *Settled for the atlas:* Isareos is inland grass country. The inlets, the fishery
+   and the boats are gone from the lore, and what the interior half of the file already
+   described — modest ground, mixed livestock, grain in the better valley floors — carries
+   the whole of it. Its western `plains` rim, against Yunethre and the Ibenwood, is the drier
+   and emptier end.
+2. **The Nethermere is not on the map, and the map can say lake.** Nethereum's lore is one
+   seasonal basin lake and the country of elevated islands round it — the flood, the weirs,
+   the reed-grain, the Flood Recall, the whole file. The atlas gives it twenty-six grassland
+   hexes and one plains. **This is not a gap in the map's vocabulary: it has `lake` and uses
+   it 28 times, and `wetland` and uses it 28 times, and it puts neither in Nethereum.**
+   *Settled for the atlas:* **there is no Nethermere.** What survives the move is the
+   mechanism rather than the water — the atlas says nothing about relief, so Nethereum is
+   built as what its grassland and its two border rivers make it: a broad, shallow, damp
+   hollow of humid grass whose water gathers slowly and leaves slowly, soft underfoot after
+   rain and never standing. The country is still organised by its water; the water is simply
+   in the ground rather than on it. This is the one of the seven that takes most of a country
+   away, and the coordinator has it in front of the user.
 3. **The Oves Desert is nowhere near Caricas.** Its lore puts its contested eastern margin on
    "the western bank of the Carica River's upper drainage", with Carican corridor families
    working it. The atlas puts the Oves Desert at x -2500…-1850, z 722…1068 — six hundred
-   metres south-west of Caricas, sharing no border with it at all. The whole Branch-Compact
-   boundary dispute is between people and is not built, so the disagreement costs nothing on
-   the ground; the desert is built where the atlas puts it, on the Oveth basin's south-west.
-4. **Ovesos is not semi-arid.** The one place the atlas's climate field is overruled. `BSh`
-   over all nineteen hexes, against a lore that is emphatic: "the climate is temperate and
-   wet … winters are cold, short-summer, with spring floods", barley and hard wheat, apple
-   and pear orchards, fulling mills on a river with gradient. Apples do not keep in a hot
-   steppe. Built as the lore's green river valley, **with its south-western margin drying
-   toward the Oves Desert**, which is where the atlas's reading is right and is the whole
-   subject of the desert's lore.
+   metres south-west of Caricas, sharing no border with it at all; its neighbours are Ovesos,
+   the Nether Desert, East Pyros, Telemonia and Gala. *Settled for the atlas:* the desert
+   lies where the map puts it and the boundary dispute is with Telemonia and the Nether
+   Desert margin, not with Caricas.
+4. **Ovesos is not a wet farming valley.** `BSh`, hot semi-arid steppe, over all nineteen
+   hexes, against a lore that is emphatic the other way: "the climate is temperate and wet …
+   winters are cold, short-summer, with spring floods", barley and hard wheat, apple and pear
+   orchards whose fruit is the kingdom's reputation, fulling mills on a river with gradient.
+   The first draft of this brief let the lore win here. **The user has reversed that.**
+   *Settled for the atlas:* Ovesos is steppe — grass in the north, open plains in the south,
+   green only along the Oveth, and its living is stock and river-bottom grain rather than
+   orchards. Everything downstream of that in this document has been re-derived; see the
+   Ovesos section.
 5. **Gala's compass is turned.** The lore has the Ascarth Peninsula's foothills to Gala's
    north and the Lizeem's delta to its east. The atlas has the dry Ovesos/Oves Desert
    interior to its north and Northern Ascarth to its **south-east**, with the Lizeem on its
-   east as the Eer border. Built with the atlas's compass and the lore's character: dry
-   pastoral upland in the north, Mediterranean coastal plain in the south, the great river
-   on the east.
+   east as the Eer border. *Settled for the atlas*, and the climate field settles the rest
+   of it: `BSh` over the northern three rows, `Csb` over the next two, `Csa` on the sea. Gala
+   is a steppe in the north and Mediterranean in the south, and the gradient runs the length
+   of the country.
 6. **Eer has no chalk hills.** "The land is flat near the coast and rises gently toward low
    chalk hills in the interior, which mark the region's northern limit." The atlas gives Eer
-   twelve plains hexes in the north and thirteen grassland in the south, and no `hills` hex
-   anywhere. Built as a gentle rise to the north-west and no hill line.
+   twelve `plains` hexes and thirteen `grassland` and no `hills` hex anywhere — and it puts
+   the plains in the humid north-west and the grassland on the Mediterranean coast, which is
+   the opposite way round from the lore's "flat near the coast, rising inland". *Settled for
+   the atlas:* no hill line, and the coast is the grassy half.
 7. **Nylon is not on the atlas.** Eer is defined by it — "the agricultural hinterland north
    and east of Nylon", the north road, the walls — and Gala is defined against it across the
-   river. Neither the city nor the road is built; the country is built as the farmland it is,
-   with nothing in it that Nylon put there.
+   river. *Settled for the atlas* only so far as the ground goes: neither the city nor the
+   road is built, and the country is built as the farmland it is. Nylon is left standing in
+   the lore, because the atlas does not deny it — it simply stops before it, at the edge of
+   the survey window, the way it stops before Minora and the Ibenwood.
 
 `src/campaign-world.js` already carries one-line designs for five of the six (Ovesos "dry
 grassland at the edge of the Oves Desert", Oves Desert "open desert with low hills", Isareos
@@ -155,8 +217,34 @@ border of every one of these countries in turn, and it sorts them into two sides
 
 So the walking route into the far four is about four kilometres from Caricas's north-west
 corner, and it turns on two fords. **Both are `medium` rivers on the map, as the Carica is,
-and the Carica is waded for the first third of its length.** The Neth and the Oveth will be
+and the Carica is waded for the first third of its length.** The Neth and the Oveth are
 built the same way: fordable in the upper reach, deep below it.
+
+### The Neth's ford, and why it is there (decided 2026-09-21)
+
+**The Neth is waded in its upper third.** The course comes off the Nether Desert's edge at
+(-2350, 577) and joins the Lizeem at (-2100, 491); its first edge is the Nether Desert
+border and every edge after it has Nethereum on one bank and Ovesos on the other. The ford
+is therefore on the Nethereum–Ovesos line, at about **(-2270, 565)**, four hundred metres
+below where the river leaves the plateau. Below it the Neth is deep to the Lizeem, which is
+what the lore says happens — "a short, fast lower section that gives the Neth a split
+character: gentle and spreading in the middle country, quick and navigable in its lower
+reach", and a navigable river is not a river you wade.
+
+**The choice was made to keep the six connected without the Nether Desert.** Every one of
+the five Nethereum–Ovesos hex edges is this river and none of them is dry, so a Neth built
+as a wall would have made the Nether Desert — a country the user did not name and which is
+not built — the only land bridge between two countries that are. One ford in the right
+place is a smaller invention than a seventh region, and it is the same invention the Carica
+already carries. The Nether Desert stays unbuilt: its hexes are in `LAND_HEXES` so the
+ground west of Nethereum is ground, and it has no biome, no terrain profile and no place in
+`PLAYABLE_REGIONS`.
+
+The Oveth's crossing into Gala is the same shape of decision and is made when Gala is built.
+Ovesos and the Oves Desert both reach Gala only across it, and the lore puts the wadeable
+part at the *lower* end rather than the upper — "below the Sorten it narrows, drops through
+a rocky lower section" — which is the Carica's own description of its fordable head, read
+backwards. The course will take a ford window rather than a ford length.
 
 ### The Nether Desert, which the user did not name
 
@@ -181,12 +269,14 @@ the new bounds, without making it playable. Hexes in `LAND_HEXES` are land; only
 
 ## Eer — the farmland that has been taken eleven times
 
-**Landform.** "The land is flat near the coast and rises gently toward low chalk hills in the
-interior." The hills are not on the map (disagreement 6), so: a plain, falling from about
-7.5 m on its north-west shoulder against Nesdor to 2.6 m on the coastal plains hexes, with
-relief amplitude under 1 over a long wavelength. Flatter than Nesdor's Flats and wetter.
-The deep alluvial loam is the ground colour's whole job: dark, heavy, worked — the darkest
-open ground in the game.
+**Landform.** No hill line: the atlas gives Eer no `hills` hex (disagreement 6). A plain,
+falling from about 7.5 m on its north-west shoulder against Nesdor and the Moros to 2.6 m on
+the coast, with relief amplitude under 1 over a long wavelength — flatter than Nesdor's Flats
+and wetter. The atlas divides it once, diagonally, and the division is both terrain and
+climate at the same line: **`plains` and `Cfa` in the north-west, `grassland` and `Csa` in
+the south-east**, from (-1450, 982) down to the sea. That one line is the whole of Eer's
+shape. The deep alluvial loam is the ground colour's job on the inland half: dark, heavy —
+the darkest open ground in the game — going tawny and thin toward the coast.
 
 **Water and coast.** Two things, and both are the map's. The **Lizeem** on the western
 border, the new lower reach of it, running south-east between Eer and Gala, and **the sea**:
@@ -203,16 +293,26 @@ the same water: two shallow distributary channels off the Lizeem crossing the pl
 south-east to the sea, braiding as the gradient dies — the same mechanism as Nesdor's Flats,
 one region further down the same river.
 
-**Climate as a traveler feels it.** `Csa` on the coast, `Cfa` inland: hot dry summers with a
-sea breeze that arrives every afternoon, mild wet winters, and a light that is the first real
-change since the lake country. This is where the game stops being green.
+**Climate as a traveler feels it.** `Cfa` inland, `Csa` on the coast — and the traveler
+arrives from the Moros on the `Cfa` side, so the change happens *under* them as they walk
+south-east: rain all year behind, hot dry summers and mild wet winters ahead, with a sea
+breeze that comes up every afternoon. This is where the game stops being green, and it stops
+being green in the middle of a country rather than at a border.
 
-**What grows.** The lore is a list and every item is farmed: grain, olives, orchard fruit.
-Farming is people. So the wild version: **coastal Mediterranean scrub** on the sandy ground
-behind the bays — low aromatic cushion, the same shape East Suval already draws for its
-limestone but paler and drier; **tamarisk and oleander** in the channel beds; **umbrella pine
-and holm oak** in loose stands on the drier rises inland, never a closed canopy; and dry
-tawny grass with a thin spring green everywhere else.
+**What grows.** The lore is a list and every item is farmed: grain, olives, orchard fruit,
+the canal fish. Farming is people. And the atlas gives Eer no forest hex, so nothing here is
+woodland either. What is left is the two halves of the open ground and the water between them:
+
+* On the humid inland half, **rank damp grass** on the alluvium, tall and green, with
+  **alder and willow** tight along the channels and nowhere else.
+* On the Mediterranean coastal half, **dry tawny grass** with a thin spring green over it,
+  low **aromatic cushion scrub** on the sandy ground behind the bays — the shape East Suval
+  already draws for its limestone, paler and drier — and **tamarisk and oleander** in the
+  channel beds, which is what grows in a watercourse that runs hard in winter and not at all
+  in August.
+* Scattered wild **olive** and **holm oak**, singly and in twos, never touching. A wild olive
+  is a tree and not a crop, and one standing alone on open grass is the thing that says
+  Mediterranean at a distance without being a wood.
 
 **What lives there.** The fauna overview's one direct statement about this water is the
 richest thing in it: the Lizeem distributaries carry "the richest avian assemblage documented
@@ -222,24 +322,23 @@ Eer is where that is true. So:
 * **Herons and egrets** on the channels — the existing `wading-bird`, retinted white for the
   egret and used at two sizes.
 * **Black-winged stilts** on the braided shallows, the lore's "stilt-legged species".
-* **Mallard and teal** on the slow water — a new small duck, which the Nethermere needs too.
+* **Mallard and teal** on the slow water — a new small duck, and the one new model Eer needs.
 * **Wild boar** in the tamarisk and the scrub, which is what lives in it.
 * **Gulls** along the coast, which the game already names as a species in Drent.
 * **Grey dolphins** offshore: the fauna overview documents them "in the Lizeem estuary at
   Nylon during upriver fish migrations", and the estuary is Eer's own south-west corner. A
   back and a fin, out past the surf, seen and not reachable.
 
-## Isareos — the wooded hills, without the sea
+## Isareos — the grass hills, without the sea
 
 **Landform.** The interior half of the lore: "low hills, not quite highlands … rising
-gradually away from the coast to the upland margins where the territory blurs into the
-southern edges of the lake country or the approaches to Vastos". On the atlas the blur is
-into Meneth and Caricas, which stand at 26 and 17 m, and the Lizeem's head cuts its eastern
-side. Base 22 m with an amplitude of 4.5 over a 120 m wavelength — the most ordinary rolling
-country in the west, and deliberately so: everything round it is either flat or a ridge
-field, and this is the one that is neither. The atlas puts its `plains` hexes along the
-western and north-western rim against Yunethre and the Ibenwood; those drop to 18 and open
-out.
+gradually away … to the upland margins where the territory blurs into the southern edges of
+the lake country or the approaches to Vastos". On the atlas the blur is into Meneth and
+Caricas, which stand at 26 and 17 m, and the Lizeem's head cuts its eastern side. Base 22 m
+with an amplitude of 4.5 over a 120 m wavelength — the most ordinary rolling country in the
+west, and deliberately so: everything round it is either flat or a ridge field, and this is
+the one that is neither. The atlas puts its six `plains` hexes in a single column down the
+western rim against Yunethre and the Ibenwood; those drop to 18 and open out.
 
 **Water.** Two authored courses, both on borders. The **Lizeem's head**, medium where the map
 marks it so, down the Caricas side — already built, and unchanged by this pass. And the
@@ -253,93 +352,112 @@ ground into it, one per valley.
 dry month. The traveler notices nothing. That is the point of putting it first past the
 river: Isareos is the familiar country on the far bank, and everything past it is not.
 
-**What grows.** "Mixed deciduous and scrub forest" on the hill faces, thinning to open
-ground on the better valley floors. So: closed hardwood on the upper slopes, oak and hazel
-scrub below it, and grass on the floors — Meneth's three bands read off height above the
-valley rather than off a ridge field, because these hills have no grain to them. Denser on
-the west, where the Ibenwood is two hexes away, than on the east.
+**What grows.** The lore said "mixed deciduous and scrub forest" on the hill faces. **The
+atlas says grassland — twenty-five hexes of it and six of plains, and not one `forest` hex**,
+in a map that has `forest` and `deep_forest` and uses them freely two hexes away in the
+Ibenwood. Settled for the atlas. So Isareos is open country:
 
-**What lives there.** The lore names nothing wild. Two things reach in from documented
-neighbours, and both are flagged as extensions at the placement:
+* **Tall humid grass** over the whole of the hill ground, rank and green — `Cfa` grass, which
+  is a different plant from Vastos's cold tussock and should read greener and softer than
+  anything in the west so far.
+* **Hawthorn and blackthorn**, singly and in thickets of three or four, in the hollows and on
+  the lee of the hill shoulders. Scrub, not wood: nothing tall enough to stand under.
+* **Alder, willow and hazel** in a narrow gallery along the border river and the three becks,
+  and nowhere else at all. On the atlas's reading this is the only woody cover in the country
+  and it is a ribbon two trees wide.
+* The western `plains` column is thinner, shorter and greyer — the wind comes off the
+  Ibenwood side and nothing there is sheltered.
 
-* **Roe deer** through the wood — the model `forest-ecology.js` already draws for Tidehaven's
-  own woods, which is the pattern to follow rather than the file to import.
-* **Wild boar** in the oak scrub, the ordinary large animal of a mixed deciduous hill country.
+**What lives there.** The lore names nothing wild, and with the woodland gone the roe deer and
+the boar of the first draft go with it. What is left is what lives on wet grass hills:
+
+* **Upland hares**, the animal already built for Vastos and Meneth, at home here on softer
+  ground — and at last not an extension: this is the same latitude and the same open grass.
 * The **great river otter** on the border river: the fauna overview places it "from the
-  Oremindi meltwater sources through the forest-margin watercourses of Alezhor", and this is
-  a forest-margin watercourse. Built as the Carica otter at a larger size.
-* **Turkey vultures** over the open floors, which the game already names.
+  Oremindi meltwater sources through the forest-margin watercourses of Alezhor", and with the
+  Ibenwood two hexes west this is a forest-margin watercourse even if the country is not
+  forest. Built as the Carica otter at a larger size. An extension by place, flagged.
+* **Red deer**, which graze open grass and browse thorn and do not need a wood — as against
+  the roe deer, which does. A new model, and the one Isareos is for.
+* **Turkey vultures** over the hills, which the game already names as a species.
 
-## Nethereum — the deep water country
+## Nethereum — the wet grass country, and the lake that is not there
 
-**Landform, and the one big new shape in this job.** "The Nethermere sits at the low point of
-a natural drainage basin roughly twenty miles across. No single river created it … the basin's
-flat bottom means water that enters has nowhere urgent to go." Built literally: a **basin**
-about 600 m across at the middle of the region, its floor at 11 m, its rim at 21, with the
-fall from rim to floor spread over two hundred metres so that nothing about it is a bank.
-"The communities of Nethereum are built on elevated points: the ridgelines around the basin
-perimeter, the higher hummocks within it" — the hummocks are terrain and are built (four of
-them, standing two to three metres above the water line, with dry ground on top); the
-communities are people and are not.
+**What the atlas refused, first, because everything else follows from it.** Nethereum's lore
+is a lake: "the Nethermere, a body of standing water that in dry years is a large shallow
+lake with productive margins and in flood years is a flat inland sea". The atlas gives it
+**twenty-six `grassland` hexes and one `plains`**, in a map that has a `lake` terrain and uses
+it 28 times, and a `wetland` terrain and uses it 28 times. It had both words and used neither
+here. Settled for the atlas, on the user's rule: **there is no Nethermere, and no marsh.**
 
-**The water.** The **Nethermere** itself: a single flat sheet at the low point, wide and
-shallow, with a marsh margin round it far wider than the open water — which is the lore's
-whole distinction, "a gradient of reliable ground" rather than a shore. It is built at its
-**dry-year extent**, a lake of about 350 m with marsh beyond it, because the game has no
-seasons yet and a flood year is a thing that happens *to* a place. Note for later: when
-seasons exist, this is the first landform in the game that should have two sizes.
+**Landform.** The atlas says nothing about relief, and that is where the lore survives. The
+mechanism the file is built on — "a broad depression in the interior plateau where multiple
+hill-streams converge and the water has no efficient route to the main Lizeem … the basin's
+flat bottom means water that enters has nowhere urgent to go" — is a statement about shape,
+and shape is the game's to decide. So: a **wide shallow hollow** at the middle of the region,
+about 600 m across, floor at 13 m against a rim at 21, with the fall spread over two hundred
+metres so that nothing about it is a bank. Water gathers in it and leaves slowly. It is soft
+underfoot after rain and it is never standing water. That is the largest piece of quiet
+landform in the job and it reads, from a rise, as a country with a dish in it.
 
-The two authored courses are built as drawn — the **Neth** off the Nether Desert along the
-southern border, and the unnamed northern river along the Isareos border — and, because
-neither of them enters the basin the lore says they feed, **two derived channels** run off
-them into the Nethermere and **one narrow outlet** carries it south-east to the Lizeem, which
-is the lore's own mechanism: "The Neth itself exits through a narrow channel to the
-southeast, where it drops off the plateau edge and joins the Lizeem approaches below."
+**The water.** Both authored courses are built as the map draws them, on the rims rather than
+through the middle: the **Neth** off the Nether Desert along the southern border, fording at
+about (-2270, 565) and deep below it, and the **unnamed river** along the whole Isareos border
+from (-2800, 87) east to the Lizeem at (-2250, 231). Derived, because a hollow with no outlet
+is a lake and the atlas has just said there is none: **three hill-streams** off the rim into
+the hollow, and one **slow outlet** carrying it south-east to the Lizeem — "the Neth itself
+exits through a narrow channel to the southeast, where it drops off the plateau edge and joins
+the Lizeem approaches below", which is the lore's own sentence and now describes the country's
+drainage rather than a lake's.
 
-**Climate.** `Cfa`, and the lore adds the thing a traveler would actually notice: "The basin's
-water moderates temperature somewhat … but the chronic dampness shapes everything … The sky
-over the Nethermere is often overcast. The light has a quality that travelers describe as
-muffled." That is a fog and a light call, not a ground call, and it is the second reason this
-job needs per-region sky (see the desert section): Nethereum wants a low, grey, close horizon
-where the Oves Desert wants a high white one.
+**Climate.** `Cfa`: rain all year, no dry month, and the lore's own observation survives the
+loss of the lake unchanged, because it was never about the lake — "the chronic dampness shapes
+everything … The sky over Nethereum is often overcast. The light has a quality that travelers
+describe as muffled." That is a sky call, not a ground call, and it is the second reason this
+job needs a per-region horizon: Nethereum wants a low, grey, close one where the Oves Desert
+wants a high white one.
 
-**What grows.** Three bands off height above the water line, which is how the country works:
+**What grows.** Grass, and the atlas is unanimous about it — twenty-six hexes of the same
+word. What varies is wetness, and that is the hollow's doing:
 
-* **Reed and marsh**, tall, in the standing water and the wet margin — "the tall marsh reeds
-  used for thatch, basketry, rope fiber". The largest single stand of anything in this job.
-* **Wet meadow** on the post-flood margin: "the basin margins after flood recession are
-  carpeted with the fast-growing grass that the retreating water deposits". Bright, rank and
-  soft-looking, unlike anything else in the west.
-* **Alder and willow** on the levees and the hummocks, and nothing at all on the open water.
+* **Rank wet meadow** on the hollow's floor: tall, bright, soft, standing in its own damp.
+  The greenest ground anywhere in the west, and a deliberate shock two countries west of a
+  desert.
+* **Ordinary humid grass** up the sides and over the rim, shorter and harder.
+* **Rush and sedge** in the low threads where the hill-streams run out across the floor —
+  not a marsh, a wet line in a field, of the kind that tells a walker where to put his feet.
+* **Willow and alder** along the two border rivers and the outlet, a gallery and nothing more.
 
-The marsh grain, the barley and oats on the perimeter and the weirs are crops and works.
-**Not built.**
+The marsh grain, the barley and oats on the perimeter and the fish weirs are crops and works,
+and two of them are now impossible besides. **Not built.**
 
-**What lives there.** The lore names three and the fauna overview supports all three:
+**What lives there.** With the water gone, the fishery and the wildfowl go with it, and the
+lore's one land animal is the one that survives:
 
-* **Nethrani cattle** — "a compact, short-legged breed adapted to wet ground", moved onto the
-  post-flood pasture. The longhorn's geometry at three-quarters height and full width with
-  short legs, which is what that sentence describes, and a different colour.
-* **River fish**, "a large population … that move into the basin during flood season". Not a
-  creature model: rises on the flat water, which is cheap and is the right amount of fish.
-* **Herons and stilt-legged waders**, thick — the marsh is what the fauna overview's "high
-  flood years … temporary wetland habitat draws concentrations of birds" describes.
-* **Duck, in rafts** on the open water: the new small waterbird, shared with Eer.
-* **Otters** on the Neth, the same animal as the Carica's.
-* And a **marsh harrier** quartering the reeds — the `plateau-hawk`'s soar at a tenth of the
-  height and a much slower, lower, side-slipping line. An extension: the overview names no
-  raptor for Mittolo's wetlands.
+* **Nethrani cattle** — "a compact, short-legged breed adapted to wet ground", which is
+  exactly the beast for a damp meadow whether or not a lake ever floods it. The longhorn's
+  geometry at three-quarters the height and full width on short legs, which is what that
+  sentence describes, and a different colour. Lore-named, and the lore still supports it.
+* **Upland hares** on the dry rim, the same animal as Isareos's.
+* **Otters** on the Neth and the border river, the same animal as the Carica's.
+* **Herons**, a few and not many, working the stream threads on the hollow floor — a wet line
+  in a field feeds one heron, where a marsh would have fed a hundred.
+* A **harrier** quartering the meadow — the `plateau-hawk`'s soar at a tenth of the height on
+  a slow, low, side-slipping line. An extension: the overview names no raptor for this
+  country.
 
 ## Ovesos — the Sorten, and the dry edge of it
 
 **Landform.** "Where the Oveth crosses its widest valley — a stretch of bottomland the people
 of the region call the Sorten, 'the wide seat' … roughly twelve miles of valley floor where
 the Oveth slows, widens, and deposits what it has carried from the upland." The atlas agrees
-without being asked: Ovesos's `grassland` hexes are its northern two rows and its `plains`
-hexes its southern three, and the Oveth runs along the southern border. So the region is a
-tilt — upland ridge pasture at 16 m in the north, falling to the Sorten's bottomland at 10 in
-the south — and "no mountain wall marks Ovesos's borders to the north, west, or south. The
-terrain simply rises."
+about the shape if not about the weather: Ovesos's `grassland` hexes are its northern two
+rows and its `plains` hexes its southern three, and the Oveth runs along the southern border.
+So the region is a tilt — grass upland at 16 m in the north, falling to the river bottom at
+10 in the south — and "no mountain wall marks Ovesos's borders to the north, west, or south.
+The terrain simply rises." The Sorten is still the wide seat at the bottom of it; it is a
+steppe river's bottomland now rather than a wet valley's, which is a change of what grows on
+it and not of where it is.
 
 **Water.** The **Oveth**, on the map's own line, medium and small: "navigable for light boats
 and substantial enough for irrigation" by the time it reaches the Sorten, and below it "it
@@ -350,31 +468,49 @@ the reason given above. And the **Lizeem** along the whole eastern side, unforda
 built. Derived: three hill-streams off the northern ridges into the Sorten, because a valley
 that "deposits what it has carried from the upland" has to be carrying it from somewhere.
 
-**Climate.** The one overrule. `BSh` on the map, temperate and wet in the lore, and the lore
-wins for the valley (disagreement 4) — "winters are cold, short-summer, with spring floods
-that are more localized and more variable in timing than the main Lizeem's". But the map is
-right about the **south-west**, where Ovesos runs into the Oves Desert, and that is where the
-green stops: over the last hundred and fifty metres before the desert border the grass goes
-from green to buff, the trees stop, and the ground shows through. That gradient is the whole
-subject of the Oves Desert's lore and it is built as a gradient, not a line, because the lore
-is explicit that the rain shadow's edge "shifts slightly on a decadal cycle".
+**Climate — and this is the one the user reversed.** `BSh`, hot semi-arid steppe, over all
+nineteen hexes. The lore says the opposite in as many words: "the climate is temperate and
+wet … winters are cold, short-summer, with spring floods", with apple and pear orchards whose
+fruit is the kingdom's commercial reputation and fulling mills on a river with gradient. The
+first draft of this brief let the lore win. **Settled for the atlas** (disagreement 4), and
+that is not a small edit: it takes the orchards, and with them most of what Ovesos was for.
 
-**What grows.** The orchards, the grain and the mills are worked and are not built. What is
-left is genuinely most of the country: **hay meadow and rough pasture** on the bottomland;
-**scrub oak and wild pear** on the slopes above the flood line, standing apart, which is the
-wild ancestor of the orchard the lore is proud of; **willow and alder** on the Oveth itself;
-and on the north ridges the short hard upland turf the lore's herders move onto in summer.
+The atlas draws no climate line at all between Ovesos and the Oves Desert — both are `BSh`.
+What separates them is terrain: Ovesos grassland and plains, the desert hills and plains. So
+the rain shadow the desert's lore is built on is real but it is a gradient of *ground* and not
+of weather, and it is built as one, which is what the lore itself insists — the shadow's edge
+"shifts slightly on a decadal cycle" and is a band rather than a line. Walking south-west out
+of Ovesos the grass thins, the stone comes up, and nothing announces a border.
 
-**What lives there.** The lore names the livestock and nothing else: "cattle and short-legged
-sheep adapted to rolling terrain" on the upland ridges. So:
+**What grows.** Hot steppe, so: no orchard, no closed cover, no gallery except on the water.
 
-* **Short-legged sheep** — the hill sheep with its legs shortened and its body deepened, on
-  the northern ridges. Loose, unfolded, nobody with them.
-* **Cattle** on the bottomland, the Nethrani animal again at ordinary proportions.
-* **Upland hares** on the ridge turf, the same extension as on Vastos and Meneth.
-* On the dry south-western margin, the first two animals of the desert community appear
-  before the desert does: the **road fox** and the **dry-plateau hawk**, both of which the
-  fauna overview places in East Pyros, which is the Oves Desert's own western neighbour.
+* **Bunch grass** over the north two rows, in tussocks with bare ground between them — the
+  cover is perhaps two parts in three, and the gaps are the point. Green for a few weeks in
+  spring and buff for the rest of the year.
+* **Open plains** over the southern three, thinner still, with **grey wormwood and saltbush**
+  where the grass gives out — the drought-tolerant scrub that the Oves Desert's own lore
+  calls "the community's drought-tolerant tail", here at its unstressed end.
+* Along the Oveth on the southern border, and only there, a **gallery of poplar, willow and
+  tamarisk**, dense, narrow and dark green. On a steppe a river is visible from a kilometre
+  away because it is the only thing with a tree on it, and that is Ovesos's one long view.
+* Nothing at all on the stony rises. Under `BSh` the thin soil is a fact about the ground
+  before it is a fact about anybody's water rights.
+
+**What lives there.** The lore names the livestock, and — unlike the orchards — livestock is
+exactly what `BSh` supports, so the pastoral half of the file survives the change intact:
+
+* **Short-legged sheep**, "adapted to rolling terrain", on the northern grass. The hill sheep
+  with its legs shortened and its body deepened. Loose, unfolded, nobody with them.
+  Lore-named, and now the country's principal living rather than its secondary one.
+* **Cattle** on the river bottom, the Nethrani animal at ordinary proportions — on a steppe
+  they keep to the one green strip, which puts them where a traveler following the Oveth will
+  meet them.
+* **Upland hares** on the open plains, at their dry limit.
+* The **road fox** and the **dry-plateau hawk**, both of which the fauna overview places in
+  East Pyros, "the eastern rain-shadow landscape" — which, with Ovesos now `BSh`, is a
+  description of this country and not only of the desert beyond it. They are no longer an
+  extension into Ovesos from a desert margin: they belong to the whole of it.
+* **Wading birds** on the Oveth and the Lizeem bank, where the two waters are.
 
 ## The Oves Desert — the rain shadow
 
@@ -447,19 +583,29 @@ the Telemonia border to the sea, which the lore does not name and which is there
 unnamed and listed for the user. Derived: two of the lore's "network of small rivers fed from
 those hills", off the south-eastern rise and across the plain.
 
-**Climate.** The clearest gradient in the job, and the atlas draws it: `BSh` over the twelve
-northern hexes, `Csb` and `Csa` over the nine southern ones. The north is dry steppe running
-up into the Oves Desert; the south is Mediterranean — "by latitude and soil it is among the
-more comfortable places on Azhora's eastern coast: warm, well-watered … sheltered from the
-worst of the interior weather". A traveler walking south through Gala walks out of the desert
-margin into the softest country in the west over about a kilometre.
+**Climate.** The clearest gradient in the job, and the atlas draws it in three bands with the
+lines straight across the country: **`BSh` over the northern three rows** (z 982 to 1155),
+**`Csb` over the next two** (1241, 1328) and **`Csa` on the southern row** (1415), which is
+the one that touches the sea. The north is the same hot steppe as Ovesos and the Oves Desert;
+the south is Mediterranean — "by latitude and soil it is among the more comfortable places on
+Azhora's eastern coast: warm, well-watered … sheltered from the worst of the interior
+weather". A traveler walking south through Gala walks out of the steppe into the softest
+country in the west over about four hundred metres, and does it twice, because `Csb` is the
+cooler-summer step between.
 
 **What grows.** The lore's list is agriculture — grain, olives, figs, stone fruit, wine — and
-is not built. The wild ground under it: **olive and fig gone wild** in loose stands on the
-southern slopes (a wild olive is a real tree and not a crop); **holm oak and pine** on the
-rise; **maquis** — dense aromatic scrub, chest high — on the stony ground between; and
-**tamarisk and oleander** along every watercourse. North of the climate line all of that
-stops and the Oves Desert's scrub takes over.
+is not built. And the atlas gives Gala nineteen `plains` hexes and two `grassland` and no
+`forest`, so nothing here is a wood either. Three bands, on the three climate rows:
+
+* **North (`BSh`)**: Ovesos's steppe carried over the border — bunch grass in tussocks, grey
+  wormwood and saltbush on the stonier ground, bare between.
+* **Middle (`Csb`)**: dry tawny grass, **low maquis** in patches on the stony rises — knee to
+  chest, aromatic, never closed — and **wild olive and fig** standing singly, well apart. A
+  wild olive is a real tree and not a crop, and one alone on open ground is what says
+  Mediterranean without being a wood.
+* **South (`Csa`, and the sea)**: the same, warmer and thinner, with **tamarisk and oleander**
+  thick along every watercourse and a short band of **sea grass and thrift** on the two
+  coastal hexes.
 
 **What lives there.** The overview gives the coast and the great river:
 
@@ -570,7 +716,8 @@ there is nowhere to put them.
   scenery and no place in `PLAYABLE_REGIONS`.
 * The whole Branch Compact and the boundary disputes that are three of the six lore files'
   main subject. Those are law, and law is people.
-* The Nethermere's flood year, which is a season and there are no seasons.
+* The Nethermere, the flood, the fish weirs and the reed-grain, which the atlas refuses
+  outright: Nethereum has no `lake` hex and no `wetland` hex in a map that has both words.
 * The sand-cat, which is a night animal and there is no night.
 
 ---
@@ -602,15 +749,16 @@ to west, on purpose and with the reason written in, as the last builder was aske
   anything. Its coast comes free from `LAND_HEXES`.
 * **2 · Isareos.** The land bridge in. Mixed hill woodland, three derived becks, the
   unnamed border river. The last familiar country.
-* **3 · Nethereum.** The Nethermere: the largest new landform in the job, and the one that
-  most needs looking at before it is trusted.
+* **3 · Nethereum.** The wide shallow hollow: the largest piece of quiet landform in the
+  job, and the one that most needs looking at before it is trusted, because a dish six
+  hundred metres across either reads from a rise or does not read at all.
 * **4 · Ovesos and 5 · the Oves Desert, as a pair.** They share the aridity gradient, and
   building either alone means building that gradient against nothing. All the new arid work —
   ground, pavement, dry channels, waterholes, the lizard and the vulture — lands here.
 * **6 · Gala.** Last because it needs both halves of everything: the arid work from 4-5 in
   its north and the Mediterranean scrub from Eer in its south, plus the Lizeem's mouth.
 
-**The files.** New: `src/south-regions.js` (pure: the water, the Nethermere, the basin, the
+**The files.** New: `src/south-regions.js` (pure: the water, the Nethereum hollow, the
 aridity gradient, the named natural ground), `src/south-ground.js` (pure: the landform, on the
 `west-ground.js` model), `src/south-regions-scenery.js`, `src/south-regions-life.js`. Touched
 in the west family: `src/west-regions.js` only where the Lizeem is rejoined and its new reach
@@ -627,8 +775,49 @@ Tests: one file per region in `tests/`, plus `tests/south-life.test.js` holding 
 laws `tests/west-life.test.js` holds — nothing can be walked down, the quick ones cannot be
 run down, a chased band comes home — and one test that the Lizeem and the Carica did not move.
 
+### What the groundwork did to the built world, measured
+
+The bug hunter counted 33,247 colliders after the groundwork merged against 33,131 before and
+asked for the 116 to be accounted for. The standard here is a collider dump that is identical
+or a diff explained line by line, so: **the dump is identical.** Every collider in the world,
+sorted, from the commit this branch left (`65c92c3`) and from its tip with main merged in —
+**33,247 both ways, and the two files differ by zero lines.** `west-deep-water` is 2,989 in
+both, as it was at `bd2d213`.
+
+The 116 predate this branch. Building the same dump backwards through main:
+
+| commit | colliders | what happened |
+|---|---|---|
+| `7a871bc` | 28,370 | main before the four western regions |
+| `bd2d213` | 33,215 | the four regions merged: their trees and thorn, 14 erratics, and 2,989 `west-deep-water` |
+| `a21065f` | 33,247 | the builder's and hunter's merges: `prop` +167, `region-tree` +25, `marl-cart` +1, and re-seeded scatter moving `ridge-rock` −99, `caricas-tree` −37, `meneth-tree` −14 |
+| `65c92c3` | 33,247 | this branch's starting point |
+| this tip | 33,247 | identical to `65c92c3`, line for line |
+
+The hunter's 33,131 matches none of those, so whatever tree gave it is older than the four
+regions' merge; the +32 between `bd2d213` and `a21065f` is somebody else's scatter and is
+already on main.
+
+**The ground did change, in one direction only.** Sweeping 7,804 points over the western belt,
+the hunter's own box and the far south-west, 869 samples moved. 276 of them lie outside
+`WORLD_BOUNDS` and are not walkable world at all. Of the 593 inside it:
+
+* **562 in the far south-west and 10 at the Oves Desert corner are the survey-window fix** —
+  claimed hexes of Legemum, East Pyros and the Aurumlis that the coast field was calling sea.
+  449 points go from water to ground. **Nought go the other way: there is no ground a traveler
+  could stand on yesterday and cannot today.**
+* **21 in the Lizeem's own reach** below Caricas moved in height by at most **8.4 mm**, and
+  none of them changed standable or swimmable. That is the picometre shift in the river's
+  points resolving, at a tie, into a different nearest profile sample — and a profile sample
+  is five metres of river, so its water surface differs from its neighbour's by about a
+  centimetre. Every one of the twenty-one is inside the deep water, where nobody can stand.
+* **The hunter's own box — x -1400…-900, z 0…700 — has nought changed samples.** That box is
+  the Lake Lands: its water is Lake Ela and the Ela-south, authored in `src/elagos-world.js`,
+  and nothing in it is a western river. Its 98 swimmable and 72 solid samples read the same
+  before and after.
+
 **Names.** Every river, range and desert in this job that has a name has it from the lore or
-the atlas: the Lizeem, the Neth, the Oveth, the Nethermere, the Sorten, the Oves Desert. Two
+the atlas: the Lizeem, the Neth, the Oveth, the Sorten, the Oves Desert. Two
 authored courses have no name anywhere — the medium river on the Isareos|Nethereum border and
 the small one on the Gala|Telemonia border — and they are **left unnamed and listed here for
 the user** rather than invented.
@@ -639,8 +828,8 @@ the user** rather than invented.
 
 Named on the `west-` pattern, each worked out from the regions' own numbers through the
 `shot(camera, target, …)` helper rather than typed in: `south-eer`, `south-eer-coast`,
-`south-eer-braids`, `south-isareos`, `south-isareos-river`, `south-nethermere`,
-`south-nethermere-marsh`, `south-neth`, `south-sorten`, `south-oveth`, `south-oves`,
+`south-eer-braids`, `south-isareos`, `south-isareos-river`, `south-nethereum`,
+`south-nethereum-hollow`, `south-neth`, `south-sorten`, `south-oveth`, `south-oves`,
 `south-oves-channel`, `south-oves-waterhole`, `south-gala`, `south-gala-maquis`,
 `south-lizeem-mouth`, and one per new animal — `south-lizard`, `south-bonebird`,
-`south-roadfox`, `south-boar`, `south-deer`, `south-duck`.
+`south-roadfox`, `south-boar`, `south-reddeer`, `south-duck`.
