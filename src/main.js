@@ -2698,6 +2698,13 @@ function init() {
       {id:'merc-trade',label:'Would you trade weapons?',action:()=>offerTrade(npc)}];
   }
   function mercenaryConversation(npc){
+    // A man who was walking with you when somebody fell, and heard you tell the Marshal he went
+    // home, says so once - to you, on his own, and never in front of the Marshal. There is no
+    // camp fire at the muster to say it by (the game's only fire pits are Drent's village and
+    // pond), so it is said the next time you speak to him, which is the same privacy.
+    const holds=companions.holdsAgainstYou(npc.id);
+    if(holds){companions.letGo(npc.id);saveRoad(false);
+      openDialogue(npc,[holds.line],null,'Back to the road',{onComplete:()=>mercenaryConversation(npc)});return;}
     const choices=[...mercenaryChoices(npc)];
     // Whether he will come, or go on ahead. It sits above the rest because it is the thing the
     // player came over to ask.
@@ -2870,7 +2877,14 @@ function init() {
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
-    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id)}))return;
+    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
+      musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
+      // The men standing in front of him and the ones who are never coming: the count is
+      // mustered plus those who walked in with you, and the dead are neither (src/companions.js).
+      withYou:companions.walking,dead:fallen.ids.filter(id=>roster.some(man=>man.id===id)),
+      owed:companions.owed(),answersFor:id=>companions.answersFor(id),
+      report:(id,kind)=>{const told=companions.report(id,kind);if(told.ok)saveRoad(false);return told;},
+      nameOf:id=>mercenaryById(id)?.name??id}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
     // A teacher with somebody in front of them who already does this says so first.

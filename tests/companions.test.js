@@ -272,6 +272,63 @@ test('Kristen’s gate is not one that opens itself', async () => {
   assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
 });
 
+test('the Marshal asks before anything else, through the conversation', async () => {
+  const { morosConversation, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } = await import('../src/moros-chapter.js');
+  const { createMorosChapter } = await import('../src/moros-chapter.js');
+  const { companions } = fresh();
+  const roster = MERCENARY_ROSTER.map(man => man.id);
+  companions.ask('merc-mus', { where: 'wild' });
+  companions.ask('merc-altun', { where: 'road' });
+  companions.died('merc-mus', { where: 'Luscia', what: 'Wolves' });
+  const moros = createMorosChapter();
+  moros.start();
+  moros.act('admit-to-camp');
+  assert.equal(moros.view().stage, 'report-to-legate', 'he is in front of the Marshal');
+  // The conversation, driven: what was said, and what was offered.
+  const said = [];
+  let offered = [];
+  const context = () => ({ moros, act: () => {}, closeDialogue: () => {},
+    openDialogue: (npc, lines, _a, _b, options = {}) => { said.push(...lines); offered = options.choices ?? []; options.onComplete?.(); },
+    musterCount: 1, roster, withYou: companions.walking,
+    dead: roster.filter(id => !companions.living().includes(id)),
+    owed: companions.owed(), answersFor: id => companions.answersFor(id),
+    report: (id, kind) => companions.report(id, kind), nameOf: id => mercenaryById(id)?.name ?? id });
+  const npc = { id: MOROS_LEGATE_ID };
+  assert.equal(morosConversation(npc, context()), true, 'the Marshal speaks');
+  // Before anything else: the count he actually has, and the name.
+  // He gives the count he actually has - the full muster's "I was promised eleven" is one of its
+  // faces, and this camp is two men - and then asks after the man who is not here.
+  assert.ok(said.some(line => /stand in this camp/.test(line)), 'he says what the gate counted');
+  assert.ok(said.includes(marshalAsks('Mus')), 'and asks after the man who is not here');
+  assert.ok(!said.some(line => /sign the muster|draw your first wage/.test(line)),
+    'and nothing of the muster proper until the register is straight');
+  // Three answers, and the true one built from the record.
+  assert.deepEqual(offered.map(choice => choice.id), ['muster-told-true', 'muster-told-silent', 'muster-told-lie']);
+  assert.equal(offered[0].label, 'At Luscia. Wolves.');
+  // Telling him writes it down, does not argue, and moves on to the muster proper.
+  said.length = 0;
+  offered.find(choice => choice.id === 'muster-told-lie').action();
+  assert.ok(said.includes(MARSHAL_WRITES.lie), 'he writes it without arguing');
+  assert.equal(companions.told('merc-mus'), 'lie');
+  assert.deepEqual(companions.owed(), [], 'and he is asked about a man once');
+  // Asked again, with nothing owed, the muster's own business happens as it always did.
+  said.length = 0;
+  assert.equal(morosConversation(npc, context()), true);
+  assert.ok(said.some(line => /sign the muster/.test(line)), 'the muster proper, undisturbed');
+});
+
+test('the man who saw it says so once, and not in front of the Marshal', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  // The design says "by their own fire". There is no camp fire at the muster - the game's only
+  // fire pits are Drent's village and its pond - so it is said the next time you speak to him,
+  // alone, which is the same privacy and an existing hook rather than an invented camp.
+  assert.match(main, /const holds=companions\.holdsAgainstYou\(npc\.id\);/, 'he has it in mind when you speak to him');
+  assert.match(main, /companions\.letGo\(npc\.id\);/, 'and having said it, he lets it go');
+  assert.match(main, /camp fire at the muster/, 'and the reason is written down where it was decided');
+  // Never the Marshal: he is not one of the company and holds nothing.
+  assert.match(main, /if\(holds\)\{[\s\S]{0,200}openDialogue\(npc,\[holds\.line\]/, 'it is his own line and nothing else');
+});
+
 test('a dead man\u2019s weapon lies where he fell, named, until it is taken', () => {
   const { companions } = fresh();
   companions.ask('merc-eliana', { where: 'road', has: { edge: true } });

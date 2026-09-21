@@ -226,6 +226,18 @@ export const MUSTER_ARRIVED_WITH = freeze({
   'merc-mus': 'You will not mention where you found me.',
 });
 
+/**
+ * What he says when he has been told. One line an answer, and **he does not argue**: he was
+ * promised eleven, he has counted fewer, and a register is a register. He is not written kind.
+ */
+export const MARSHAL_WRITES = freeze({
+  true: 'He writes where, and against what, and reads it back once to be sure he has the place right. “That is more than most of them get.”',
+  silent: 'He waits with the pen down. When nothing else comes he writes the one word and rules a line under it.',
+  lie: 'He writes it without looking up. “Went home. They do.” The pen moves on to the next name.',
+});
+/** The question itself, which is the man's name and nothing else. */
+export const marshalAsks = name => `${name}. What happened to him?`;
+
 export const MUSTER_FULL = MERCENARY_COMPANY_SIZE;
 /** One or two standing: the pegs are empty and the Marshal has work for early men. */
 export const MUSTER_EARLY = 2;
@@ -294,7 +306,9 @@ export const musterArrivalLine = id => MUSTER_AFTER[id] ?? 'You were here first.
  * `MERCENARY_COMPANY_SIZE` is eleven, the ten hired swords of the roster and the traveler.
  */
 export function morosConversation(npc, context) {
-  const { moros, openDialogue, closeDialogue, act, musterCount = 1, seenAt = {}, roster = [] } = context;
+  const { moros, openDialogue, closeDialogue, act, musterCount = 1, seenAt = {}, roster = [],
+    withYou = [], dead = [], owed = [], answersFor = () => [], report = () => {},
+    nameOf = id => id } = context;
   const current = moros.view().stage;
   const choose = id => { const option = moros.availableActions().find(item => item.id === id); return option ? [{ ...option, action: () => { closeDialogue(); act(id); } }] : []; };
   const leave = { id: 'leave-moros', label: 'Understood.', action: closeDialogue };
@@ -306,7 +320,25 @@ export function morosConversation(npc, context) {
     return true;
   }
   if (npc.id === MOROS_LEGATE_ID && current === 'report-to-legate') {
-    const heard = musterVoices({ musterCount, seenAt, roster });
+    const heard = musterVoices({ musterCount, seenAt, roster, withYou, dead });
+    // **Before anything else**, the ones who are not here. He asks after each missing name in
+    // turn and writes down what he is told; the muster's own business waits until the register
+    // is straight, which is what a man who was promised eleven would do.
+    const asking = owed[0];
+    if (asking) {
+      const name = nameOf(asking);
+      openDialogue(npc, [heard.marshal, marshalAsks(name)], null, 'Back to the camp', {
+        choices: answersFor(asking).map(answer => ({
+          id: `muster-told-${answer.kind}`, label: answer.label,
+          action: () => {
+            report(asking, answer.kind);
+            openDialogue(npc, [MARSHAL_WRITES[answer.kind]], null, 'Back to the camp',
+              { onComplete: () => morosConversation(npc, context) });
+          },
+        })),
+      });
+      return true;
+    }
     openDialogue(npc, [
       ...heard.turn,
       `So you are the one who brought the muster rolls out of the Lauvel. The Empire promised me eleven hired swords. ${heard.marshal}`,
