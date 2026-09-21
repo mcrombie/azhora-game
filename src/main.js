@@ -4369,7 +4369,14 @@ function init() {
         const seen=pose.visible&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<420;
         if(seen&&!rebelShip)rebelShip=createRebelShip();
         if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
-        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
+        // **Her own clock, not the session's.** Everything else about this arrival is a function
+        // of `playSeconds` - where she is, which way she heads, how far the two at the rail lean -
+        // and src/rebel-crew.js says in as many words that a game reloaded mid-arrival shows the
+        // right pose without anything being saved. Handing her `elapsed` broke exactly that half
+        // of it: the helmsman's tiller, everybody's sway and the man at the sail were on a clock
+        // that starts at nought every time the game is opened, so the same second looked different
+        // after a reload - up to fifteen degrees of the helmsman.
+        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(playSeconds,pose);}
         if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
           if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
         // A boat in. Two of the five cannot be seen from where the player is and the bell is

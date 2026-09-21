@@ -2370,3 +2370,223 @@ working starts 2 pins 4 pins without view===: [5099]
 
 **Fixed** by moving the pin onto the guard's own line, which is the shape the other three pins
 already have. The suite is green again; nothing about the shot changed.
+
+
+---
+
+## The company's horses, asked of the real ground
+
+All of this is `createWorld` through `tests/module-loader.js` and the real `canStand`, not a flat
+plane. The synthetic-ground tests in `tests/company-horses.test.js` are right about the arithmetic;
+these are the numbers the ground gives back.
+
+### Nobody is penned in, and the two that looked sealed were the probe
+
+Ten picketed horses, with the real world's own colliders in the fill, at three places:
+
+| | picketed | open starts that reach 25 m clear |
+|---|---|---|
+| Bede Harrow's yard | **10 / 10** | 815 / 817 |
+| the Caloss bridge | **10 / 10** | 929 / 929 |
+| the Tidehaven pier head | **3 / 10** | 319 / 319 |
+
+The closest pair of horses is **2.20 m** in every case, which is `PICKET.spacing` exactly. With ten
+the line takes both sides of his horse rather than one, at the yard and at the bridge; two parallel
+lines open at both ends are still not a ring, and the fill says so.
+
+**The two exceptions are not pens.** Each is a single 0.4 m cell with no open neighbour, and
+four-connectivity is symmetric - a body that cannot step out of a cell could never have stepped
+into it, so they are slivers nothing can reach rather than places somebody can be shut in. Without
+the horses both walk out, so the horses do close them; they close them to everybody, including
+whoever would have to be standing there.
+
+**And a probe fault worth writing down, because the same arithmetic is in the shipped test.** My
+first fill seeded its grid at `round(span / step) * step` from the origin, which with span 29 and
+step 0.4 is **0.2 m away from the point it had just tested**. It reported two starts at the yard
+"sealed after 1 cell" that were not those starts at all. `tests/company-horses.test.js:99` seeds
+its flood the same way; on the flat synthetic ground it uses, every cell is open and it cannot
+matter, but the arithmetic is there to be copied.
+
+### The pier head picks three of ten, and draws the other seven nowhere
+
+`picketSpots` answers `null` for a horse with no footing and the host sets `visible = false`, which
+is the design ("a horse with nowhere to stand is not put down at all"). The pier is the extreme of
+it: step down at the pier head with a full company and **seven horses leave the frame**, then
+reappear under their men the moment he mounts again. The mounted file is worse there - **1 of 10**
+riders gets a file spot and the other nine hold where they stand.
+
+### A mounted file of ten is sixty metres long before the ground says anything
+
+`RIDE_FILE.shoulder 4.2 + 9 x stride 6.2` = **60.0 m**, so the tenth rider is sixty metres behind
+the traveler on open ground with no retreat at all. Measured over 48 facings:
+
+| | median span | worst | facings leaving somebody unplaced |
+|---|---|---|---|
+| the yard, mounted | 60.0 m | **91.0 m** | 1 |
+| the yard, on foot | 38.5 m | 54.5 m | 0 |
+| the open road, mounted | 60.0 m | 78.6 m | 0 |
+| Lumber Town square, mounted | 66.2 m | 84.8 m | 0 |
+
+The 60 is the design; the rest is the retreat, and it is bounded at 97.2 m
+(`shoulder + (9 + FILE_RETREAT) * stride`). Not reported as a fault - a file that cannot spread
+goes single and long on purpose - but sixty metres is longer than it reads on paper, and it is why
+the `company-mounted` review goes to the trouble of choosing a facing that needs no retreat.
+
+*A metric of mine that was wrong, and is struck out:* I first counted "riders past the 40 m
+set-down" by their distance from the **traveler**. `COMPANION_REACH.setDown` is measured from a
+man's own **place**, which he is standing on, so nobody is teleported by a long file. The corrected
+column is above.
+
+### The finding: a man on foot can be given a place inside a horse
+
+**The file's footing test is `canStand(x, z, world)` - the static world.** The picketed horses and
+the traveler's own bay are *bodies*, not colliders, so `fileSpotFor` cannot see them, and
+`picketSpots` cannot see the file either: two layouts, each blind to the other, laid from two
+different origins (the file from the traveler, the picket from his horse).
+
+Measured at Bede Harrow's yard, ten on foot with ten picketed, over 48 facings: **3 of 48 put at
+least one man inside a horse.** At the hitch's own facing it is Kristen, **0.56 m** from a horse's
+centre where a man needs `BODY.person + BODY.horse` = **0.80**. On the open road it is 0 of 10.
+
+And in the shot the game takes of itself: `--review-views=company-picket` puts **Chris 0.32 m from
+the traveler's own bay** - a man standing in the middle of a horse.
+
+**How much it shows.** In ordinary play the mover saves it: the spot is only the man's *home*, and
+`stepAround` runs against a body list that does include both horses, so he presses up against the
+animal and settles about 0.84 m out. What it costs is that his home stays inside the horse, so he
+leans on it for as long as he stands there - the same class as the hired sword who marched on the
+spot against a hedge. Where it is not saved is any path that **snaps** a man onto his spot rather
+than walking him there: `settleMercenaries()`, which is a load, a story start and every review
+view. That is how the picket shot got Chris into the bay.
+
+**Not fixed, because it is a decision about which layout yields.** Either the file learns to treat
+a horse as ground it cannot stand on - the horses are already solid to everybody else - or the
+picket is laid after the file and steps around it. The first is the smaller change and puts the
+test where it belongs (one footing predicate, the way `RIDE.radius` is one footing test for both
+mounts), but the picket is computed in `refreshCompanyHorses` after `placeMercenaries`, so somebody
+has to decide which of the two goes first in the frame.
+
+### Checked on the same walk, and clean
+
+- **A rider who halts stays in the saddle.** Already mended at `src/main.js:4248-4252`; the seat is
+  a fact about the man and not about whether he is moving.
+- **A fight, water and the ferry all bring the company down, and none of them needed a line.** The
+  fight unseats him (`main.js:4052`), the ferry **refuses** while he is mounted
+  (`src/ferry.js:122`, "Not with the horse"), and a horse will not enter water at all - so in all
+  three the traveler is on his feet and the one rule puts the company on theirs.
+- **Chris rides.** The host reads the *placed file* and not the companions list, which is the one
+  place the landing mate would otherwise have fallen through.
+
+---
+
+## The smiths: checked, and I could not break them
+
+- **Buying is atomic from both sides.** `buyFromSmith` takes the money only after the piece is
+  validated and the purse covers it, and hands it back if `gear.wear` refuses.
+- **No action can buy what is not on today's board.** `smithAct` does not trust the action string:
+  it rebuilds `smithStock(level)` from the country the traveler is standing in and *finds* the
+  piece in it, so an action naming anything else resolves to `undefined` and buys nothing.
+- **Each sells the country he stands in**, because the level is read from `world.regionAt(player)`
+  at the moment of the conversation rather than written beside the man.
+- **Nothing reaches tiers 5 or 6.** `tierSoldAt` walks `TIERS`, and tiers 5 and 6 have `sold: null`,
+  so the ceiling is tier 4 at country level 7; `validPiece` refuses an unnamed tier everywhere but
+  a save, which may carry one because the naming is what is missing and not the thing.
+- **All three are reachable**: `tests/nobody-sealed-in.test.js` already adds the two host-placed
+  smiths to the world's own people by hand, and Mern is in `world.npcPositions` with the rest of
+  Ostel.
+
+---
+
+## The shield's guard: read closely, and one thing worth knowing
+
+Every condition the brief asks for is in one predicate, `guarding()` (`src/combat.js:376`): a
+shield in hand, an active fight, an **idle** body, alive, and wind to pay. The catching branch
+(`:525`) returns before the line that sets `player.action='hurt'` and before `moveCharacter`, so it
+never rocks him, and it sets no invulnerability - a dodge is still the only thing that makes a blow
+miss. `TODAY` carries `hasShield: false`, so a combat wired to nothing has no guard and is the old
+game to the digit. This is the builder's ground, so it was read rather than changed.
+
+**One thing to know before anybody tunes it:** the host runs `combat.update(dt)` at
+`src/main.js:4076` and `combat.guard(key, facing)` at `:4085`, so **a blow is resolved against last
+frame's key and last frame's facing**. Sixteen milliseconds, and harmless in a fight. The one place
+it is visible in principle is the first playing frame after the defeat panel: `combat.guard` is
+inside `if(mode==='playing')`, so a player who let go of V while the panel was up has a stale
+`guardHeld` for exactly one `combat.update`. Not worth a change; worth not being surprised by.
+
+---
+
+## The rebel crew rode the session clock, and two things the render showed
+
+### Fixed: her deck was on a clock the save does not carry
+
+Everything about this arrival is a function of `playSeconds` - where she is, which way she heads,
+how far the two at the rail lean, when the village says its five things. The men standing on her
+were not: `src/main.js` handed the hull `elapsed`, the **session** clock, which starts at nought
+every time the game is opened. So `crewPose`'s `sway`, the helmsman's `turn` and the sail man's
+`lift` were different at the same second of the same arrival after a reload - up to **0.26 rad, 15
+degrees, of helmsman**. `src/rebel-crew.js` says in as many words that a reload mid-arrival shows
+the right pose "without anything being saved", and `src/word-arrival.js:111` repeats it; it was
+true of her hull and false of everybody on it. One token, and
+`tests/rebel-crew.test.js` now pins the clock and measures what the wrong one was worth.
+
+*Note for whoever owns the Sultana:* `src/main.js:4364` hands her `elapsed` too. She makes no
+promise about reloading, so it is left alone and written down here.
+
+### The helmsman is standing inside the deckhouse
+
+Seen in `--review-views=word-crew`: the man aft shows from the chest up, with the rest of him
+inside her deckhouse.
+
+| | |
+|---|---|
+| `rebel-helm` | z = **−4.44** (`−L × .74`), feet at `DECK_Y` **1.16** |
+| the rebel deckhouse (`src/salt-ship.js:168`) | centred z = −3.72, **z −4.98 to −2.46**, y **1.205 to 2.155**, with a tarpaulin over it at 2.2 |
+
+So he stands 0.54 m inside its after end, and his legs and hips are inside a solid box whose roof
+cuts him at the chest. `tests/rebel-crew.test.js` checks every man against her **bulwarks** - beam
+and length - which is a flat box and cannot see anything standing on the deck.
+
+**Why it is written down rather than moved.** Where a helmsman should stand on a hull whose stern
+is a deckhouse is a staging choice, and the room is tight: the test's own bound is `|z| < L × .86`
+= 5.16, and the house's after face is at 4.98, so **abaft the house there are 18 cm**. The two
+places that exist are forward of the house (z between −2.46 and 0, which is amidships and not where
+a tiller is) or lowering / shortening the house at its after end so a man can stand at the tiller
+under the break of it. Both change the picture the user has seen.
+
+### And one that is the review, not the game
+
+In the same shot Ed appears to be **standing upright on the water** rather than swimming. He is
+not: `swimmerAt(WORD_SHIP.drops)` answers `swimming: true`, the host sinks him to
+`WATERLINE − SWIM.sink` and passes `swimming: true` to his animator. What the picture shows is the
+swim stroke **at stride phase 0**, which `src/characters.js:801` makes: `reach = sin(0) = 0` for
+both arms, so `arm = −.58`, `armOut = ±.46`, `hip = −.22`, `knee = .3` - arms out at the sides,
+legs straight, chest back. A frozen review stops `walkTime`, so an NPC is photographed at whatever
+phase the clock is on, and phase nought of a swim looks like a man standing.
+
+This is the same family as the guard pose that would not draw, and the answer is the same shape:
+`settlePose` runs the **player's** animator forward before a frozen shot, and nothing does that for
+an NPC. Anybody reviewing a moving NPC should advance `walkTime` first, or read the shot knowing
+this. No change made: it costs nothing in play, where the clock runs.
+
+---
+
+## Two tests were red on `main` before any of this, and both are mended here
+
+Found while running targeted files, confirmed against `be774c6`, and neither is anything this
+branch did.
+
+1. **`tests/session-clock.test.js`** - "everything subtracted from playSeconds is reset wherever
+   playSeconds is". It asks that every pin of the session clock sit on a line naming a review view.
+   The `company-mounted` / `company-picket` views pinned it at 4,000 on the statement line *under*
+   their `if(view===...)` guard - the one pin in the file the test cannot see. Replayed against both
+   copies: `HEAD pins without view===: [5079]`, working: `[5099]`. The pin moved onto the guard's
+   own line; the shot is unchanged.
+2. **`tests/word-arrival.test.js`** - "the host puts her on the water… with the swimmer's posture".
+   It matched `/swimming:!!npc\.swimming\}\);/`, which required `swimming` to be the **last key**
+   of the object handed to an NPC's animator. The company's horses added `riding:` after it. The
+   sentence was still true, so the anchor was moved onto the call - `npc.actor.animate(… swimming:
+   !!npc.swimming` - rather than onto the shape of the object.
+
+**The lesson, since both are the same one:** an assertion that pins a key's *position* in an object
+literal is an assertion about something nobody promised. Both of these went red on work that did
+exactly what it was supposed to do.
