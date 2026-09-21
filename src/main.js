@@ -4608,10 +4608,10 @@ function init() {
             reviewTarget=new THREE.Vector3(t.x,world.heightAt(t.x,t.z)+9,t.z);yaw=turn;pitch=.2;distance=targetDistance=30;}}
         // Addison at her yard gate ('addison'), and the whole light from the lane ('suval-light').
         if(view==='addison'||view==='suval-light'){questStage=10;combat.finishPractice();player.group.visible=false;
-          if(view==='addison'){const g=npcById.get(ADDISON.id).actor.group,at=g.position,turn=ADDISON_STAND.yaw+1.15;
+          if(view==='addison'){const g=npcById.get(ADDISON.id).actor.group,at=g.position,turn=2.2;
             const px=at.x+Math.sin(turn)*3,pz=at.z+Math.cos(turn)*3;
             player.group.position.set(px,world.heightAt(px,pz),pz);
-            reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.06;distance=targetDistance=3;}
+            reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.1;distance=targetDistance=3.6;g.rotation.y=turn;}
           else{const t=SUVAL_LIGHT.tower,turn=2.5;
             const px=t.x+Math.sin(turn)*26,pz=t.z+Math.cos(turn)*26;
             player.group.position.set(px,world.heightAt(px,pz),pz);
