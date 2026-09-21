@@ -88,7 +88,7 @@ import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_P
 import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
 import { createTeachers, TEACHERS, markOf } from './teachers.js';
-import { BOW, JERRYS_BOW, flightOf, solidAt } from './archery.js';
+import { BOW, JERRYS_BOW, flightOf, inTheLine, solidAt } from './archery.js';
 import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gear.js';
@@ -816,6 +816,12 @@ function init() {
     // How many arrows there are to shoot. The fight never touches the satchel; it only ever asks,
     // exactly as it asks who walks with the traveler and how hard the country is (src/archery.js).
     getArrows:()=>inventory.count(BOW.arrow),
+    // Everybody standing in the world who is not in the fight, for the one question an arrow asks
+    // of them: are you in the way (the user, 2026-09-21 — a villager, a horse or a beast stops a
+    // shaft and is unhurt). It is the frame's own body list, the same one the traveler walks
+    // against, and **only the arrows read it**: nothing about a swing, a step or where an enemy
+    // may stand is told about these bodies, so every sword fight is the fight it was.
+    getBodies:()=>gatherBodies(),
     getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(heldWeapon()?.id),
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
       armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
@@ -4201,6 +4207,17 @@ function init() {
    * far enough that walking back is a decision; the traveler then goes back further himself,
    * because a long shot he had to think about is the whole of what the mark teaches.
    */
+  /**
+   * **Nobody in the line of it.** Since a body stops an arrow (the user, 2026-09-21), a straw
+   * mark set across a street is a target the traveler cannot hit and a villager he can: the
+   * `jerry-mark` render on main showed one standing about two metres to the right of the straw.
+   * So the line is asked the arrow's three questions before the stake goes in - is the ground
+   * clear of solid things, does it rise above the flight, and **is anybody standing in it** -
+   * and Jerry himself is not, because he stands behind the shooter's shoulder.
+   */
+  const lineIsClear=(from,at,ignore=[])=>flightOf({x:from.x,z:from.z,yaw:Math.atan2(at.x-from.x,at.z-from.z),
+    range:Math.hypot(at.x-from.x,at.z-from.z),world}).stopped==='spent'
+    &&!inTheLine(from,at,gatherBodies().filter(body=>body.id!=='traveler'&&!ignore.includes(body.id)),{far:-1.6});
   function startMark(npc,offer){
     endMark(null);
     const me=player.group.position,face=player.group.rotation.y;
@@ -4208,9 +4225,9 @@ function init() {
     let at=null;
     for(const reach of [18,14,10]){
       const spot={x:me.x+Math.sin(face)*reach,z:me.z+Math.cos(face)*reach};
-      if(canStand(spot.x,spot.z,world)&&!solidAt(world,spot.x,spot.z,.6)){at=spot;break;}
+      if(canStand(spot.x,spot.z,world)&&!solidAt(world,spot.x,spot.z,.6)&&lineIsClear(me,spot)){at=spot;break;}
     }
-    if(!at){toast('There is no open ground here to put a target on. Find some, and ask him again.','THE MARK');return false;}
+    if(!at){toast('There is no open ground here to put a target on — and nothing to shoot past. Find some, and ask him again.','THE MARK');return false;}
     combat.startPractice(at);
     mark={id:npc.id,family:offer.family,ceiling:offer.ceiling,done:offer.done,at,group:markMesh(at),hits:0};
     audio?.effect('bell');
@@ -4624,6 +4641,13 @@ function init() {
       // found his bow at rest (docs/known-issues.md, round 5). A twitch too short to be a shot
       // is the other half of the same event and has its own words.
       if(e.type==='draw-spent')toast(e.why==='struck'?'The blow takes the draw with it. The arrow is still on the string.':'Not drawn far enough to be a shot. Hold it longer.','THE DRAW');
+      // **Arrows hurt whoever they hit** (the user, 2026-09-21). A companion the traveler shoots
+      // and does not kill loses a little of what he thought of you, and says one word about it.
+      if(e.type==='ally-hit'&&e.arrow&&e.by==='traveler'&&companions.walksWith(e.id)&&combat.state.allies.find(a=>a.id===e.id)?.active){
+        const name=mercenaryById(e.id)?.name??e.id;
+        companions.struckByYou(e.id);
+        toast(`${name} takes your arrow and turns round. “That was yours. Look where you are shooting.”`,`${name.toUpperCase()} · YOUR ARROW`);
+      }
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         // **A fight come through together** is what moves a man's regard fastest, and a little
@@ -4668,10 +4692,20 @@ function init() {
         // His weapon lies where he fell, named, until somebody takes it - and if he was
         // carrying the traveler's own traded sword, that is what is lying there.
         const held=mercenaryHeld({id:e.id});
-        companions.died(e.id,{where,what:enemyWordFor(combat.state.encounterId),x:e.x,z:e.z,
+        // **What killed him**, and it is the record the Marshal is answered from, so it has to be
+        // the truth even when the truth is the traveler (the user, 2026-09-21). An arrow of his
+        // own is named as his own; one from the line beside him is named as that.
+        const mine=!!e.arrow&&e.by==='traveler';
+        const what=e.arrow?(mine?'Your own arrow':'An arrow from your own line'):enemyWordFor(combat.state.encounterId);
+        companions.died(e.id,{where,what,x:e.x,z:e.z,
           weapon:held?.id??null,weaponName:held?.id?(INVENTORY_ITEMS[held.id]?.name??'weapon').toLowerCase():null});
+        // **And everyone who saw it drops a rung**, which is the cost of a lie at the muster paid
+        // the moment it happens instead: the same mechanism, because it is the same idea - the
+        // men who were walking with you know what you did (src/companions.js).
+        const saw=mine?companions.costWitnesses(e.id):[];
         showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
-          note:'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
+          note:mine?`Your arrow killed him. It is written down as that, and it is what the Marshal will be told.${saw.length?' Every man who was with you saw it.':''}`
+            :'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
         audio?.effect('player-hit');refreshFoundWeapons();saveRoad(false);}
       if(e.type==='defeat'){
         drownedDefeat=!!e.drowned;
@@ -6134,7 +6168,10 @@ function init() {
             for(const from of [world.training,{x:6,z:78},greenwayEncounter.center])
               for(let turn=0;turn<24;turn++){
                 const bearing=turn/24*Math.PI*2;
-                if(flightOf({x:from.x,z:from.z,yaw:bearing,range:BOW.range,world}).stopped==='spent')return {from,bearing};
+                // Solids, rising ground and people, which is everything that now stops a shaft:
+                // nine arrows down a lane with a villager in it is a picture of one arrow.
+                const at={x:from.x+Math.sin(bearing)*BOW.range,z:from.z+Math.cos(bearing)*BOW.range};
+                if(lineIsClear(from,at))return {from,bearing};
               }
             return {from:world.training,bearing:0};
           };
@@ -6259,6 +6296,12 @@ function init() {
            * man shooting at the sea with his target on the hill behind him. `flightOf` reads
            * colliders and **the sea is not a collider**, so the sweep asks `canStand` at the
            * straw's own spot as well, which is the question `startMark` will ask a moment later.
+           *
+           * **And it asks the people question too**, through the same `lineIsClear` the real door
+           * uses, so the bearing the picture is taken on is a bearing `startMark` will accept: on
+           * main a villager stood about two metres to the right of the straw, which with bodies
+           * stopping arrows is a man in the line of fire. Jerry is left out of it because he is
+           * put behind the shooter's shoulder a few lines below.
            */
           const MARK_OUT=18;
           const open=(()=>{
@@ -6267,7 +6310,7 @@ function init() {
                 const bearing=turn/36*Math.PI*2;
                 const at={x:from.x+Math.sin(bearing)*MARK_OUT,z:from.z+Math.cos(bearing)*MARK_OUT};
                 if(!canStand(from.x,from.z,world)||!canStand(at.x,at.z,world))continue;
-                if(flightOf({x:from.x,z:from.z,yaw:bearing,range:MARK_OUT+2,world}).stopped!=='spent')continue;
+                if(!lineIsClear(from,at,['merc-jerry']))continue;
                 return {from,bearing};
               }
             return {from:world.training,bearing:0};})();

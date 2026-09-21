@@ -1,6 +1,6 @@
 import { canStand, moveCharacter } from './game-state.js';
 import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
-import { BOW, drawnBy, groundAt, shotAt, solidAt, survives } from './archery.js';
+import { BOW, drawnBy, groundAt, inTheLine, shotAt, solidAt, survives } from './archery.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -233,7 +233,7 @@ const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swi
  */
 export const GUARD_ARC = Math.PI / 3;
 
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null, getArrows = null }) {
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null, getArrows = null, getBodies = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
   const first = margins();
   const state = {
@@ -556,11 +556,48 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     emit('arrow-landed', { id: arrow.id, n: arrow.n, owner: arrow.owner ?? null, x: arrow.x, z: arrow.z,
       flown: arrow.flown, stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
   }
+  /**
+   * **Everybody in the world who is not in this fight**, for the one question an arrow asks of
+   * them: are you in the way. Villagers on a street, horses on a picket line, the stock - none of
+   * them is a combatant and none of them is hurt, but a shaft that meets one stops there (the
+   * user, 2026-09-21).
+   *
+   * The host hands them in, because the fight is built on the bare world and the bodies are the
+   * host's own list (`gatherBodies`, src/main.js). **Nothing else in this module reads it**: the
+   * ground a swing needs, where an enemy may stand and every distance in a melee are exactly what
+   * they were, which is what keeps every sword fight already measured unmoved.
+   *
+   * Gathered once per `update`, however many arrows are in the air.
+   */
+  let bodiesThisUpdate = null;
+  function otherBodies() {
+    if (bodiesThisUpdate) return bodiesThisUpdate;
+    const mine = new Set([...state.enemies.map(one => one.id), ...state.allies.map(one => one.id), 'traveler']);
+    bodiesThisUpdate = (getBodies?.() ?? []).filter(body =>
+      body && Number.isFinite(body.x) && Number.isFinite(body.z) && !mine.has(body.id));
+    return bodiesThisUpdate;
+  }
   /** Where the ground is here, asked of the same floor the whole fight is fought on. */
   const floorAt = (x, z) => groundAt(world, x, z);
   /**
+   * **A bout can kill nobody, and neither can practice**: a sparring partner, the traveler and
+   * anybody else in one stops at a single point of health and yields. One rule, in one place, so
+   * that an arrow and a sword cannot disagree about it - Jerry's mark and Mara's straw post both
+   * run in the practice phase, and nothing shot at a lesson may take anyone below one.
+   */
+  const killFloor = () => (lastEncounter.bout || state.phase === 'practice' ? 1 : 0);
+  /** Whether this body is near enough to the arrow to be the thing it stops on. */
+  const inTheWay = (body, arrow, radius = BOW.body) => Math.hypot(body.x - arrow.x, body.z - arrow.z) <= radius;
+  /**
+   * **A body that fights can be hit by mistake; a body that is only in the way is only in the
+   * way.** The fleeing villager of a raid carries no tool and is not in the fight in any sense
+   * that matters - she is running for a door - so she stops a shaft and is unhurt, along with
+   * everybody in the world outside the fight. Everyone who is actually fighting bleeds.
+   */
+  const fights = ally => !ALLY_KINDS[ally.kind]?.flees;
+  /**
    * Every arrow in the air moves, and the first thing it meets is the last thing it meets:
-   * **an enemy, a tree, or ground that has risen above it.**
+   * **an enemy, a friend, a bystanding body, a tree, or ground that has risen above it.**
    */
   function updateArrows(dt) {
     if (!state.arrows.length) return;
@@ -568,21 +605,43 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const travel = Math.min(BOW.speed * dt, Math.max(0, arrow.range - arrow.flown));
       // Swept in short steps, so a fast arrow cannot pass through a thin tree between two frames.
       const steps = Math.max(1, Math.ceil(travel / BOW.radius));
-      let hit = null, blocked = false, grounded = false;
-      for (let i = 0; i < steps && !hit && !blocked && !grounded; i++) {
+      // Where it was loosed from, which is the only thing the archer's own body space can be
+      // measured against: a companion keeps nine tenths of a metre off the traveler's elbow and
+      // no further, so without this every shot in a file would end in the back of the man beside
+      // him. It is people only - a tree at half a metre still stops the shot.
+      const from = { x: arrow.x - Math.sin(arrow.yaw) * arrow.flown, z: arrow.z - Math.cos(arrow.yaw) * arrow.flown };
+      const beside = one => Math.hypot(one.x - from.x, one.z - from.z) <= BOW.clearOfShooter;
+      let hit = null, friend = null, struck = false, body = null, blocked = false, grounded = false;
+      for (let i = 0; i < steps && !hit && !friend && !struck && !body && !blocked && !grounded; i++) {
         const step = travel / steps;
         arrow.x += Math.sin(arrow.yaw) * step;
         arrow.z += Math.cos(arrow.yaw) * step;
         arrow.flown += step;
         hit = state.enemies.find(enemy => enemy.active && enemy.action !== 'dead'
-          && Math.hypot(enemy.x - arrow.x, enemy.z - arrow.z) <= BOW.radius + .5) ?? null;
+          && inTheWay(enemy, arrow)) ?? null;
+        // **Arrows hurt whoever they hit** (the user, 2026-09-21). Past the archer's own body
+        // space the next thing in the way is the next thing in the way, friend or not: an ally,
+        // a companion, the traveler himself if the shaft is somebody else's.
+        if (!hit) friend = state.allies.find(ally => ally.active && ally.action !== 'dead'
+          && ally.id !== arrow.owner && !beside(ally) && inTheWay(ally, arrow)) ?? null;
+        if (!hit && !friend && arrow.owner && player.hp > 0 && player.action !== 'dead'
+          && !beside(position) && inTheWay(position, arrow)) struck = true;
+        if (!hit && !friend && !struck)
+          body = otherBodies().find(one => !beside(one) && inTheWay(one, arrow, BOW.radius + (one.r ?? .45))) ?? null;
         // **Trees and walls stop arrows.** "In woodland I am a man holding a stick."
-        if (!hit) blocked = !!solidAt(world, arrow.x, arrow.z);
+        if (!hit && !friend && !struck && !body) blocked = !!solidAt(world, arrow.x, arrow.z);
         // **And so does ground that has risen above the flight**: a bank, a terrace, the near
         // side of a ravine. The arrow flies level at the height it left the bow at.
-        if (!hit && !blocked) grounded = floorAt(arrow.x, arrow.z) > arrow.y;
+        if (!hit && !friend && !struck && !body && !blocked) grounded = floorAt(arrow.x, arrow.z) > arrow.y;
       }
       if (hit) { hurtEnemy(hit, arrow.damage, arrow.yaw); landArrow(arrow, 'target', hit.id); continue; }
+      if (friend) {
+        if (fights(friend)) hurtAllyByArrow(friend, arrow);
+        landArrow(arrow, fights(friend) ? 'friend' : 'body', friend.id);
+        continue;
+      }
+      if (struck) { hurtPlayerByArrow(arrow); landArrow(arrow, 'friend', 'traveler'); continue; }
+      if (body) { landArrow(arrow, 'body', body.id); continue; }
       if (blocked) { landArrow(arrow, 'solid'); continue; }
       if (grounded) { landArrow(arrow, 'ground'); continue; }
       if (arrow.flown >= arrow.range - 1e-6) landArrow(arrow, 'spent');
@@ -690,7 +749,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (guarded) damage *= 1 - profile.guard;
     damage = Math.max(1, Math.round(damage * (1 - (profile.armor ?? 0))));
     // In a bout nobody's health goes below one: he is beaten, and he says so, and he gets up.
-    const floor = lastEncounter.bout ? 1 : 0;
+    const floor = killFloor();
     enemy.hp = Math.max(floor, enemy.hp - damage);
     enemy.active = enemy.hp > floor;
     // A blow he caught on his shield leaves him standing, and the fight goes on above this line.
@@ -777,7 +836,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const struck = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
     const damage = Math.max(1, Math.round(struck * (1 - (margins().armourTurns ?? 0))));
     // A bout can kill nobody, the traveler included: his health stops at one and he yields.
-    const floor = lastEncounter.bout ? 1 : 0;
+    const floor = killFloor();
     const spent = () => {
       if (!player.hp) { fall(); return true; }
       if (floor && player.hp <= floor) { endBout('teacher'); return true; }
@@ -810,6 +869,61 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     moveCharacter(position, Math.sin(enemy.yaw) * .55, Math.cos(enemy.yaw) * .55, world);
     emit('player-hit', { damage, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
     spent();
+  }
+
+  /**
+   * **An arrow in the traveler's own back** (the user, 2026-09-21: real friendly fire, the
+   * traveler's arrows and Jerry's alike). It is not a blow from an enemy and it does not come
+   * through `hurtPlayer`: there is nobody standing there to take a knockback from, nothing to
+   * dodge that was ever aimed at him, and no shield in the world is up against a shaft he never
+   * saw. What it shares with a blow is everything after the damage - armour turns its share, the
+   * bar, the rock, the defeat - so those are spelled the same way and nothing else is.
+   */
+  function hurtPlayerByArrow(arrow) {
+    if (player.invulnerable || state.phase !== 'active' || player.hp <= 0) return;
+    const damage = Math.max(1, Math.round(arrow.damage * (1 - (margins().armourTurns ?? 0))));
+    const floor = killFloor();
+    player.hp = Math.max(floor, player.hp - damage);
+    // The floor is the bottom, so a man standing on it is hurt and not dead - spelled exactly as
+    // `hurtPlayer` spells it, because a bout ends in a yield and never in a body.
+    player.action = player.hp ? 'hurt' : 'dead';
+    player.progress = 0;
+    actionTime = 0;
+    bufferedAttack = false;
+    hurtProtection = 1.15;
+    player.invulnerable = true;
+    emit('player-hit', { damage, arrow: true, by: arrow.owner ?? null, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+    if (!player.hp) fall();
+    else if (floor && player.hp <= floor) endBout('teacher');
+  }
+  /**
+   * **A friend struck by a shaft is hurt by it**, and the man who loosed it is named, because
+   * everything the host has to do about it afterwards turns on whose arrow it was: a companion
+   * killed by the traveler's own arrow is recorded as that and costs every living witness a rung
+   * (src/companions.js), and one merely hit says a short word about it.
+   *
+   * A bystander is never brought here at all - she is not fighting, so she stops the shaft and is
+   * unhurt - and neither is anybody outside the fight.
+   */
+  function hurtAllyByArrow(ally, arrow) {
+    if (!ally.active) return;
+    const timers = allyTimers.get(ally.id);
+    const floor = killFloor();
+    const damage = Math.max(1, Math.round(arrow.damage));
+    ally.hp = Math.max(floor, ally.hp - damage);
+    // Spelled exactly as `hurtAlly` spells it: a man standing on the floor is hurt, not dead,
+    // which is what makes a lesson a lesson.
+    ally.action = ally.hp ? 'hurt' : 'dead';
+    ally.active = ally.hp > 0;
+    if (ally.frozen) ally.frozen = 0;
+    if (!ally.active && ally.spared) ally.wounded = true;
+    ally.progress = 0;
+    ally.speed = 0;
+    timers.actionTime = 0;
+    timers.hitApplied = false;
+    const by = arrow.owner ?? 'traveler';
+    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, arrow: true, by });
+    if (!ally.active) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, arrow: true, by });
   }
 
   /** The fight is over and he lost it. One place, so the shield's path cannot drift from the other. */
@@ -1042,6 +1156,31 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (!ally.hp) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z });
   }
 
+  /**
+   * **Who is between this archer and what he is aiming at.** The traveler, every other living
+   * ally, and everybody in the world who is not in the fight - a villager crossing behind the
+   * line, a horse on its picket - because an arrow now stops on all three and the man loosing it
+   * can see them perfectly well.
+   *
+   * The corridor is a little wider than the width an arrow actually strikes a body at
+   * (`BOW.corridor` against `BOW.body`), so the margin is his and not the shaft's.
+   */
+  function friendInLine(archer, target) {
+    const friends = [{ id: 'traveler', x: position.x, z: position.z },
+      ...state.allies.filter(one => one !== archer && one.active && one.action !== 'dead'),
+      ...otherBodies()];
+    return inTheLine(archer, target, friends, { far: BOW.body });
+  }
+  /** A step along the line rather than down it: the archer looking for a lane he can shoot in. */
+  function shiftAlly(ally, target, profile, dt) {
+    const yaw = Math.atan2(target.x - ally.x, target.z - ally.z);
+    for (const side of [1, -1]) {
+      const to = { x: ally.x + Math.cos(yaw) * side * 3, z: ally.z - Math.sin(yaw) * side * 3 };
+      const moved = steerAlly(ally, to, Math.min(profile.speed * dt, 3));
+      if (moved > 0) { ally.speed = moved / dt; return; }
+    }
+  }
+
   function steerAlly(ally, target, step) {
     const yaw = Math.atan2(target.x - ally.x, target.z - ally.z);
     for (const offset of [0, .45, -.45, .9, -.9, 1.4, -1.4]) {
@@ -1087,7 +1226,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         // the traveler's is, in the same list, travelling the same way and stopped by the same
         // trees - his own complaint about woodland is one rule, not two.
         if (profile.bow) {
-          const aim = foes.filter(enemy => distance(ally, enemy) <= profile.reach)
+          // **He never shoots a friend on purpose** (the user, 2026-09-21). Asked again at the
+          // moment the string goes, because the man he was aiming past may have stepped into it
+          // while he was drawing: then he holds the shot and the cooldown is spent on nothing,
+          // which is an archer waiting for a lane rather than an archer with a rule.
+          const aim = foes.filter(enemy => distance(ally, enemy) <= profile.reach && !friendInLine(ally, enemy))
             .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
           if (aim) {
             const yaw = Math.atan2(aim.x - ally.x, aim.z - ally.z);
@@ -1113,6 +1256,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const targetYaw = Math.atan2(target.x - ally.x, target.z - ally.z);
     ally.yaw += angleDifference(targetYaw, ally.yaw) * Math.min(1, dt * 8);
     if (dist <= profile.engage && timers.cooldown <= 0) {
+      // **An archer does not begin a draw down a lane with a friend in it.** He shifts along the
+      // line until he has a clear one, which is what a man does, and it keeps the corridor rule
+      // out of the part of the frame where the arrow is already gone.
+      if (profile.bow && friendInLine(ally, target)) { shiftAlly(ally, target, profile, dt); return; }
       ally.action = 'windup'; ally.yaw = targetYaw; ally.progress = 0; timers.actionTime = 0;
       emit('ally-windup', { id: ally.id, targetId: target.id });
       return;
@@ -1153,6 +1300,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   function update(dt) {
     if (!Number.isFinite(dt) || dt <= 0) return;
+    // The world's other bodies are the host's list and move with the frame, so they are asked for
+    // once a frame rather than once a substep, however many arrows are in the air.
+    bodiesThisUpdate = null;
     // Substeps preserve contact windows and swept movement through occasional slow frames.
     let remaining = Math.min(dt, 10);
     while (remaining > 1e-9) {
