@@ -102,13 +102,17 @@ export function createWorldMap() {
     soften.append(node('feGaussianBlur', { stdDeviation: '2.4' }));
     defs.append(soften, mask); overlay.append(defs);
     // Unknown country is dark - not parchment, not a hatch. The hexes the traveler has walked are
-    // cut out of it and show the real atlas; everything else is the edge of a chart.
+    // cut out of it and show the real atlas; everything else is the edge of a chart. The dark is
+    // OPAQUE: at .93 the atlas's own shapes and lettering - black ink on bright parchment - read
+    // straight through it, and a traveler who had charted one hex could read the continent.
     overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height,
-      fill: '#0b1620', 'fill-opacity': '.93', mask: 'url(#atlas-charted)' }));
+      fill: '#0b1620', 'fill-opacity': '1', mask: 'url(#atlas-charted)' }));
     // A coast you have been shown is a lighter shape in the dark: the country's own hexes, filled
     // flat, so the land reads against the sea and nothing inside it does. The same mask keeps ground
     // you have actually walked showing through.
-    const shapes = node('g', { fill: '#33506a', 'fill-opacity': '.62', stroke: '#33506a', 'stroke-opacity': '.62',
+    // Opaque as well, for the same reason: the colour is what '#33506a' at .62 over the dark used
+    // to come out as, so a known coast looks as it did and no longer shows its interior through.
+    const shapes = node('g', { fill: '#243a4e', 'fill-opacity': '1', stroke: '#243a4e', 'stroke-opacity': '1',
       'stroke-width': '1.2', 'stroke-linejoin': 'round', mask: 'url(#atlas-charted)' });
     shapes.dataset.role = 'silhouettes';
     for (const region of chart.silhouettes ?? []) {

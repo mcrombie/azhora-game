@@ -180,6 +180,12 @@ test('the dark chart draws a shape for every coast you know and a name for every
 test('the overlay goes dark, and the shapes and names are drawn into it', () => {
   const map = source('world-map.js'), main = source('main.js');
   assert.match(map, /fill: '#0b1620'/, 'unknown country is dark');
+  // Opaque, both of them. At .93 the whole continent - shapes and lettering - could be read through
+  // the dark by a traveler who had charted a single hex, and a known coast showed its interior.
+  assert.match(map, /fill: '#0b1620', 'fill-opacity': '1', mask:/, 'and nothing of the atlas shows through it');
+  assert.match(map, /fill: '#243a4e', 'fill-opacity': '1', stroke: '#243a4e', 'stroke-opacity': '1'/, 'nor through a coast you have only been shown');
+  assert.doesNotMatch(map, /mask: 'url\(#atlas-charted\)'[^\n]*'fill-opacity': '\.\d/, 'no masked layer of the fog is translucent');
+  assert.doesNotMatch(map, /'fill-opacity': '\.\d+'[^\n]*mask: 'url\(#atlas-charted\)'/, 'whichever way round it is written');
   assert.doesNotMatch(map, /#e8dcba/, 'the old parchment blank is gone');
   assert.doesNotMatch(map, /atlas-unknown/, 'and so is its hatch');
   assert.match(map, /for \(const region of chart\.silhouettes \?\? \[\]\)/, 'a shape per known coast');
