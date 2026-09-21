@@ -54,7 +54,8 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
   size = view.size;
   const region = finitePoint(position) ? world.regionAt?.(position.x, position.z) : null;
   const counts = { paths: 0, buildings: 0, waterShapes: 0, landmarks: 0, discovered: 0, enemies: 0, heightSamples: 0 };
-  const result = { bounds, scale, regionId: region?.id || 1, goal: null, optional: null, counts, player: null };
+  // Open country has no palette of its own; it draws on Drent's, and says its own name above.
+  const result = { bounds, scale, regionId: region?.id || 1, open: region?.open === true, goal: null, optional: null, counts, player: null };
   if (!ctx) return result;
   ctx.clearRect(0, 0, size, size);
   ctx.save(); ctx.beginPath(); ctx.arc(center, center, center - 1, 0, TAU); ctx.clip();

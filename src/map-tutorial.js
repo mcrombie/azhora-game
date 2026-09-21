@@ -29,8 +29,9 @@ export function validateMapTutorial(value) {
 export function createMapTutorial(initial = 0) {
   let step = validateMapTutorial(initial) ? initial : 0;
   /** True when arriving in a region other than Drent (id 1) should start the tutorial. */
+  // Open country carries id 0 and is not a province; walking off the atlas is not arriving somewhere.
   function shouldStart({ regionId, mode = 'playing' } = {}) {
-    return step === 0 && mode === 'playing' && Number.isInteger(regionId) && regionId !== 1;
+    return step === 0 && mode === 'playing' && Number.isInteger(regionId) && regionId > 0 && regionId !== 1;
   }
   function start() {
     if (step !== 0) return false;

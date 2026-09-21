@@ -120,6 +120,9 @@ import { createBatman } from './batman-model.js';
 import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
 import { REFUGEES, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog } from './map-fog.js';
+import { isOpenCountry } from './regions.js';
+import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
+import { regionLevel, levelWords } from './region-levels.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
 import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './story-chapters.js';
@@ -450,6 +453,16 @@ function init() {
       if(part.length>2)spokenNames.add(part.toLowerCase().replace(/\u2019/g,"'"));
     return spokenNames;
   }
+  // The chart of countries: what is dark, what is a shape against the sea, what has been walked
+  // (src/cartography.js, docs/cartography.md). The fog is the hexes; this is the countries over them.
+  const cartography=createCartography({skills,onEvent:event=>{
+    if(event.type!=='chart-changed'||!event.xp)return;
+    const words=event.state==='explored'?`${event.region} is yours now, end to end.`
+      :event.state==='charted'?`${event.region} has a shape on your chart.`
+      :`${event.region}, and roughly which way.`;
+    toast(`Cartography +${event.xp}${event.levelled?` · level ${event.level}`:''}. ${words}`,'YOUR OWN CHART');
+    refreshSkillsSheet();
+  }});
   const wood=createWoodcutting({skills}),building=createConstruction({skills});
   const birding=createBirding({skills});
   // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
@@ -1403,7 +1416,7 @@ function init() {
   // Regions the journal explains while the road is still Drent's: the start, its neighbors, and the main-quest path.
   const CAMPAIGN_JOURNAL_REGIONS=['Drent','Luscia','Pueth','Elagos','Peblos','Moros Plain','West Suval','East Suval'];
   let atlasRegions=null,atlasAdjacency=null;
-  fetch('./assets/azhora-dev-regions.json').then(response=>response.ok?response.json():null).then(data=>{if(data?.regions){atlasRegions=data.regions;atlasAdjacency=computeAdjacency(data.regions);}}).catch(()=>{});
+  fetch('./assets/azhora-dev-regions.json').then(response=>response.ok?response.json():null).then(data=>{if(data?.regions){atlasRegions=data.regions;atlasAdjacency=computeAdjacency(data.regions);refreshChart();}}).catch(()=>{});
   const journeyGathered=new Set();
   let currentJourneySite=null,currentRegionId=1;
   let currentForestSite=null;
@@ -1434,11 +1447,16 @@ function init() {
   // autosaves, and on the first province beyond Drent starts the map tutorial.
   const regionInfoCache=new Map();
   function regionInfo(name){if(!regionInfoCache.has(name))regionInfoCache.set(name,describeRegion(name)??null);return regionInfoCache.get(name);}
-  function regionKicker(region){const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
+  function regionKicker(region){
+    if(isOpenCountry(region))return 'AZHORA · NO COUNTRY CLAIMS THIS';
+    const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
   function enterRegion(region){
-    const info=regionInfo(region.name);
+    const open=isOpenCountry(region),info=open?null:regionInfo(region.name);
     $('region-card-name').textContent=region.name;$('region-card-subtitle').textContent=region.subtitle||'';
-    $('region-card-detail').textContent=info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
+    // The card gives a country's difficulty in words; the number is the cartography journal's (docs/design-answers.md).
+    $('region-card-detail').textContent=open?'OUTSIDE EVERY BORDER THE ATLAS DRAWS'
+      :levelWords(regionLevel(region.name))?`${levelWords(regionLevel(region.name)).toUpperCase()}${info?` · ${info.faction.name.toUpperCase()}`:''}`
+      :info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
     $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
     if(questStage>=1)saveRoad(false);
     if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
@@ -1676,7 +1694,12 @@ function init() {
       ...found.map(place=>({id:place.id,name:place.name,kind:'place',...atlas(place.x,place.z)}))];
   }
   function refreshChart(){
-    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList(),marks:chartMarks()});
+    // The shapes and the names the dark chart draws over the atlas (src/cartography.js); the atlas's
+    // own cells arrive from the fetch above, so a coast the game has not built - Feradom - is drawn
+    // from the same source as one it has.
+    const drawn=chartShapes(cartography.view().entries,atlasRegions);
+    worldMap.setChart({cells:mapFog.cells,reveal:chartRevealed,status:buildStatusList(),marks:chartMarks(),
+      silhouettes:drawn.silhouettes,labels:drawn.labels});
     const legend=$('atlas-legend'),view=mapFog.view();legend.replaceChildren();
     const el=(tag,text,cls)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
     const list=document.createElement('ul');
@@ -1689,6 +1712,14 @@ function init() {
         list.append(item);
       }
     } else {
+      const countries=cartography.view();
+      legend.append(el('h4',`Countries · ${countries.explored} walked, ${countries.charted} charted, ${countries.heard} heard of`));
+      const known=document.createElement('ul');known.className='chart-countries';
+      for(const country of countries.entries){const item=document.createElement('li');
+        const said=country.state==='explored'?'Walked':country.state==='charted'?'A shape against the sea':'Heard of, and roughly where';
+        item.append(el('b',country.named?country.name:'A coast with no name on it'),
+          el('small',country.level===null?said:`${said} · level ${country.level} · ${country.words}`));known.append(item);}
+      legend.append(known);
       legend.append(el('h4',`Charted ground · ${view.foundCount} of ${view.total} named areas · ${view.cellCount} hexes`));
       if(!view.foundCount)list.append(el('li','Nothing is charted yet. The chart fills in as you walk.'));
       for(const area of view.found){const item=document.createElement('li');item.append(el('b',`${area.name} · ${area.region}`),el('small',area.note));list.append(item);}
@@ -1833,7 +1864,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -1858,7 +1889,7 @@ function init() {
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
-    mapFog.restore(saved.chart??createMapFog().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;
+    mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());ed.restore(saved.ed??createEd().snapshot());placeEd();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);placeLakota(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2185,9 +2216,15 @@ function init() {
     updateQuest('ashore');
     openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
       'Mara. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
-      'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road, and I keep a rough chart of this coast if you ever want a look at it.',
+      'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road.',
+      'And take this. It is the village’s own chart and it is not much — this coast from Feradom down past Pueth to us, Luscia and the two Suvals as shapes, and Drent written on the only bit anybody here has walked. Everything past that is dark, and it stays dark until you go and look.',
+      'Mark it as you go. Ground you walk draws itself. For the rest of it, ask: anybody who lives somewhere can tell you which way the next country is, and a name and a bearing is worth having before you need it.',
       'One of your own boat is still on the landing \u2014 plain cloth, pleased with himself, Gotwood. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to.'],
-      'accept-letter','Take the letter');
+      'accept-letter','Take the letter',{onComplete:()=>{
+        if(!cartography.learn().first)return;
+        toast('Your own chart of Azhora. The coast you came along, and Drent. Everything else is dark. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
+        refreshSkillsSheet();refreshChart();if(questStage>=1)saveRoad(false);
+      }});
   }
   /**
    * The man who came ashore with you: the straw post, the dodge, what a blade costs, and where he
@@ -2316,7 +2353,30 @@ function init() {
     player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=destination==='pond'?-Math.PI/2:0;pitch=.35;distance=targetDistance=7;closeModal();
     settleCamera();
   }
+  /** Where somebody lives, as far as the chart is concerned. */
+  function homeRegion(npc){const at=world.npcPositions[npc?.id],here=at?world.regionAt(at.x,at.z):null;
+    return here&&!isOpenCountry(here)?here.name:null;}
+  /**
+   * Which way to somewhere. Offered by anybody who lives in a country with countries next to it,
+   * once Mara has handed the chart over and while there is still something they can tell you.
+   */
+  function wayfindingChoice(npc,back){
+    if(!cartography.met)return null;
+    const near=cartography.directionsFrom(homeRegion(npc)).filter(name=>cartography.state(name)==='unknown'||!cartography.named(name));
+    if(!near.length)return null;
+    return {id:'ask-the-way',label:'Which way to…?',action:()=>openDialogue(npc,['Which way from here?'],null,'Never mind',{noWayfinding:true,choices:[
+      ...near.map(name=>({id:`way-to-${name.toLowerCase().replace(/ /g,'-')}`,label:name,action:()=>{
+        cartography.hear(name);
+        openDialogue(npc,[CARTOGRAPHY_DIRECTIONS[name]],null,'Back to our conversation',{noWayfinding:true,onComplete:back});
+      }})),
+      {id:'way-enough',label:'That will do.',action:back},
+    ]})};
+  }
   function openDialogue(npc,lines,event=null,action='Back to the road',options={}){
+    if(options.choices?.length&&!options.noWayfinding){
+      const ask=wayfindingChoice(npc,()=>openDialogue(npc,lines,event,action,options));
+      if(ask)options={...options,choices:[...options.choices.slice(0,-1),ask,options.choices.at(-1)]};
+    }
     reviewLog.lines.push({at:Math.round(playSeconds),who:npc.name,lines:lines.slice(0,8),choices:(options.choices||[]).map(c=>c.label)});if(reviewLog.lines.length>600)reviewLog.lines.shift();
     activeDialogue={npc,lines,index:0,event,action,...options,
       speech:linguist.speech(npc,world.regionAt(player.group.position.x,player.group.position.z)?.name??null),heard:new Set()};
@@ -2872,7 +2932,13 @@ function init() {
       if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
-      fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing')mapFog.reveal(player.group.position.x,player.group.position.z);}
+      fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing'){
+        const p=player.group.position,widened=mapFog.reveal(p.x,p.z);
+        // A hex the fog has just given up is a hex of some country, and the chart of countries counts it.
+        // Open country is not a country and never goes on the chart of them.
+        const here=world.regionAt(p.x,p.z);
+        if(widened.cells.length&&here&&!isOpenCountry(here))cartography.noteHex(here.name);
+      }}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
       // The boat, its man and the crossing: he waits on whichever shore the traveler is on.
       if(ferry.state.crossing)ferry.frame(dt);else if(mode==='playing'&&!reviewFrozen)ferry.settle();
@@ -3116,7 +3182,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');

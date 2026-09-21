@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { regionAt } from '../src/regions.js';
-import { hexAt, hexCentre } from '../src/region-world.js';
+import { hexAt, hexCentre, insideRegion } from '../src/region-world.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { SUBREGIONS, createMapFog, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
 import { BUILD_STATES, buildStatusList, regionBuildStatus } from '../src/build-status.js';
@@ -54,6 +54,17 @@ test('every named area stands in the region it claims, and none of them swallow 
   for (const area of SUBREGIONS) {
     assert.ok(PLAYABLE_REGIONS.includes(area.region), `${area.id} names a playable region`);
     assert.equal(regionAt(area.x, area.z)?.name, area.region, `${area.name} stands in ${area.region}`);
+    // regionAt used to snap unowned ground to the nearest region, which let a centre sit outside
+    // its own outline and still pass. It answers open country now, so the outline itself is checked.
+    assert.ok(insideRegion(area.region, area.x, area.z), `${area.name} stands outside ${area.region}'s own outline`);
+    let owned = 0, samples = 0;
+    for (let a = 0; a < 24; a++) for (let r = 1; r <= 4; r++) {
+      const d = area.radius * r / 4, angle = a / 24 * Math.PI * 2;
+      samples++; if (insideRegion(area.region, area.x + Math.cos(angle) * d, area.z + Math.sin(angle) * d)) owned++;
+    }
+    // A border post, a harbour and a river bank are meant to straddle: ten areas sit between 63%
+    // and 75%. Most of the disc inside is the real bar, and it catches the two that were half out.
+    assert.ok(owned / samples > .6, `${area.name} is only ${Math.round(owned / samples * 100)}% inside ${area.region}`);
     assert.ok(area.radius >= 28 && area.radius <= 130, `${area.id} is a believable size`);
     assert.ok(area.note.length > 30 && area.name.length > 3, area.id);
   }

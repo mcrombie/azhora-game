@@ -21,7 +21,7 @@ export function createWorldMap() {
   let metadata, zoom = 1, fitScale = 1, offsetX = 0, offsetY = 0, width = 0, height = 0, dragging = null, travelerPoint = null;
   // The chart opens on the traveler, close enough to read; once the traveler has chosen a zoom it keeps it.
   let opened = false;
-  let chart = { cells: [], reveal: false, status: [] };
+  let chart = { cells: [], reveal: false, status: [], silhouettes: [], labels: [] };
   const overlay = document.createElementNS(SVG_NS, 'svg');
   overlay.id = 'atlas-overlay'; overlay.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(overlay, traveler ?? null);
@@ -100,13 +100,32 @@ export function createWorldMap() {
     mask.append(charted);
     const soften = node('filter', { id: 'atlas-soft', x: '-20%', y: '-20%', width: '140%', height: '140%' });
     soften.append(node('feGaussianBlur', { stdDeviation: '2.4' }));
-    // Uncharted ground is the blank of an old chart: pale parchment and a light hatch over it,
-    // the coast and the lie of the land still showing faintly through, not a dark hole.
-    const hatch = node('pattern', { id: 'atlas-unknown', patternUnits: 'userSpaceOnUse', width: 9, height: 9, patternTransform: 'rotate(35)' });
-    hatch.append(node('line', { x1: 0, y1: 0, x2: 0, y2: 9, stroke: '#7a6644', 'stroke-width': '.9', 'stroke-opacity': '.22' }));
-    defs.append(soften, mask, hatch); overlay.append(defs);
-    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#e8dcba', 'fill-opacity': '.5', mask: 'url(#atlas-charted)' }));
-    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: 'url(#atlas-unknown)', mask: 'url(#atlas-charted)' }));
+    defs.append(soften, mask); overlay.append(defs);
+    // Unknown country is dark - not parchment, not a hatch. The hexes the traveler has walked are
+    // cut out of it and show the real atlas; everything else is the edge of a chart.
+    overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height,
+      fill: '#0b1620', 'fill-opacity': '.93', mask: 'url(#atlas-charted)' }));
+    // A coast you have been shown is a lighter shape in the dark: the country's own hexes, filled
+    // flat, so the land reads against the sea and nothing inside it does. The same mask keeps ground
+    // you have actually walked showing through.
+    const shapes = node('g', { fill: '#33506a', 'fill-opacity': '.62', stroke: '#33506a', 'stroke-opacity': '.62',
+      'stroke-width': '1.2', 'stroke-linejoin': 'round', mask: 'url(#atlas-charted)' });
+    shapes.dataset.role = 'silhouettes';
+    for (const region of chart.silhouettes ?? []) {
+      for (const cell of region.cells ?? []) shapes.append(node('polygon', { points: polygonPoints(cell.q, cell.r) }));
+    }
+    if (shapes.childElementCount) overlay.append(shapes);
+    // A country somebody has named for you carries its name, drawn here because the atlas's own
+    // label is under the dark. Nothing else of it is drawn unless its shape is known too.
+    const labels = node('g', { fill: '#cfe0f2', 'fill-opacity': '.82', 'font-family': 'Adventure, Georgia, serif',
+      'text-anchor': 'middle', 'pointer-events': 'none' });
+    labels.dataset.role = 'labels';
+    for (const label of chart.labels ?? []) {
+      const text = node('text', { x: label.x, y: label.y, 'font-size': label.size ?? 34 });
+      text.textContent = label.name;
+      labels.append(text);
+    }
+    if (labels.childElementCount) overlay.append(labels);
   }
 
   function render() {
@@ -213,8 +232,9 @@ export function createWorldMap() {
     console.error(error); return null;
   });
   /** What the traveler has charted, and whether the developer is looking past the fog. */
-  function setChart({ cells = chart.cells, reveal = chart.reveal, status = chart.status, marks = null } = {}) {
-    chart = { cells: [...cells], reveal: !!reveal, status };
+  function setChart({ cells = chart.cells, reveal = chart.reveal, status = chart.status, marks = null,
+    silhouettes = chart.silhouettes, labels = chart.labels } = {}) {
+    chart = { cells: [...cells], reveal: !!reveal, status, silhouettes, labels };
     if (marks) { places = marks.map(place => ({ ...place })); drawPlaces(); }
     drawOverlay(); render();
   }
@@ -253,5 +273,7 @@ export function createWorldMap() {
   return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, open,
     state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source, traveler: travelerPoint ? { ...travelerPoint } : null,
       chart: { charted: chart.cells.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
+        silhouettes: chart.silhouettes.length, silhouetteCells: overlay.querySelectorAll('[data-role="silhouettes"] polygon').length,
+        labels: [...overlay.querySelectorAll('[data-role="labels"] text')].map(text => text.textContent),
         marks: places.length, marked: [...placeLayer.querySelectorAll('.atlas-place:not([hidden])')].length }})};
 }
