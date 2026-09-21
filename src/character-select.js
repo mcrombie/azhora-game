@@ -16,9 +16,14 @@ import { SKILLS, skillLevel } from './skills.js';
  * What a character already knows when he lands, for the line under his name. Every id the table
  * names is registered in src/skills.js, so the skill's own name is always the one shown; an id
  * this build does not know falls back to itself rather than disappearing from the tile.
+ *
+ * `hidden` is the skills this game does not show at all (src/game-mode.js). A skill that is not
+ * on the sheet is not handed out either, so it is not claimed here.
  */
-export function describeStartingSkills(entry) {
-  const parts = Object.entries(entry?.skills ?? {}).map(([id, xp]) => (SKILLS[id] ? `${SKILLS[id].name} ${skillLevel(id, xp).level}` : id));
+export function describeStartingSkills(entry, hidden = null) {
+  const parts = Object.entries(entry?.skills ?? {})
+    .filter(([id]) => !hidden?.has(id))
+    .map(([id, xp]) => (SKILLS[id] ? `${SKILLS[id].name} ${skillLevel(id, xp).level}` : id));
   return parts.length ? parts.join(' · ') : 'Nothing but the sword';
 }
 
@@ -37,8 +42,9 @@ export function tileColours(look) {
  * @param detail    an element to write the chosen one's name, line and skills into
  * @param lookFor   (id) => the roster look his model is built from, or null for Cromb
  * @param onChange  called with the chosen id whenever the choice moves
+ * @param hidden    skill ids this game does not show, so nobody claims one (src/game-mode.js)
  */
-export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER } = {}) {
+export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER, hidden = null } = {}) {
   if (!root) throw new TypeError('The character line needs somewhere to stand.');
   const doc = root.ownerDocument;
   let chosen = isPlayableId(selected) ? selected : DEFAULT_PLAYER;
@@ -102,7 +108,7 @@ export function createCharacterSelect({ root, detail = null, lookFor = () => nul
     const line = doc.createElement('span');
     line.textContent = entry.blurb;
     const skills = doc.createElement('small');
-    skills.textContent = describeStartingSkills(entry);
+    skills.textContent = describeStartingSkills(entry, hidden);
     detail.append(name, line, skills);
   }
 

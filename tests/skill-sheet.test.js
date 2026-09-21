@@ -4,12 +4,18 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SKILL_IDS, SKILLS, createSkills, skillTip } from '../src/skills.js';
 import { SKILL_ICONS, skillIconSVG } from '../src/skill-icons.js';
+import { hiddenSkillsIn } from '../src/game-mode.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const HEAD = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">';
 
 test('twenty-one skills, twenty-one marks, drawn the way the satchel draws its items', () => {
+  // The registry keeps every skill in the build, so a save that holds any of their experience
+  // still validates. What the sheet draws is a mode's business (tests/game-mode.test.js).
   assert.equal(SKILL_IDS.length, 21, 'fourteen about the world, and the seven about fighting');
+  const shown = SKILL_IDS.filter(id => !hiddenSkillsIn('normal').includes(id));
+  assert.equal(shown.length, 20, 'and normal mode draws twenty: thirteen of the world, and the seven Arms');
+  assert.equal(shown.filter(id => SKILLS[id].group === undefined).length, 13, 'thirteen ungrouped tiles');
   assert.deepEqual(Object.keys(SKILL_ICONS), [...SKILL_IDS], 'one mark each, in the skills’ own order');
   const seen = new Set();
   for (const id of SKILL_IDS) {
@@ -38,11 +44,14 @@ test('the sheet is a grid of tiles, with each skill’s guide and log behind its
   assert.match(main, /function renderSkillGrid\(/, 'the grid');
   assert.match(main, /function renderSkillGuide\(/, 'the page behind a tile');
   assert.match(css, /#skills-sheet \.skill-grid\{[^}]*grid-template-columns:repeat\(3,1fr\)/, 'three columns');
-  assert.match(css, /#skills-sheet \.skill-tile-total\{grid-column:span 1/, 'and a total that fills what the fourteenth ungrouped skill leaves of the last row');
+  assert.match(css, /#skills-sheet \.skill-tile-total\{grid-column:span 1/, 'a total that is one cell unless the row it lands on wants more');
   // The total tile is appended after every ungrouped skill, which is what puts it on the row
   // below. The seven fighting skills are not in that grid: they have a heading of their own.
-  assert.match(main, /for\(const skill of view\)if\(!SKILLS\[skill\.id\]\?\.group\)grid\.append\(skillTile\(skill\)\);[\s\S]{0,600}grid\.append\(total\)/,
+  assert.match(main, /for\(const skill of view\)if\(!SKILLS\[skill\.id\]\?\.group\)\{grid\.append\(skillTile\(skill\)\);ungrouped\+\+;\}[\s\S]{0,900}grid\.append\(total\)/,
     'the total level comes last');
+  // Thirteen ungrouped tiles leave two cells of the last row, fourteen leave one, and the total
+  // fills whatever is left, so the grid never ends in a hole.
+  assert.match(main, /total\.style\.gridColumn=`span \$\{\(\(3-ungrouped%3\)%3\)\|\|1\}`/, 'the total fills out its row');
   assert.match(main, /sheet\.append\(skillEl\('h3','skill-heading',heading\)\)/, 'and a heading over each group');
   assert.match(css, /#skills-sheet \.skill-heading\{/, 'which is styled as a divider rather than a title');
   // A tile says its level out of the table's top, and carries a hairline bar.

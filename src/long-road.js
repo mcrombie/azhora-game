@@ -165,13 +165,13 @@ export const LONG_ROAD_STOPS = freeze([
     reads: 'skills', done: state => learned(state, 'construction'),
     title: 'The plot beside the Koopwood', detail: 'Nobody builds a house in a tutorial. He shows you the ground anyway, and it is still yours in a hundred hours.' }),
 
-  // Leg 3 — Fernway, and the first language lesson that is not a lesson.
+  // Leg 3 — Fernway: the damp ground behind the Rest, and the players on the verge.
   stop({ id: 'odger-fernway', leg: 3, kind: 'spine', npc: 'mycologist', skill: 'mycology', subregion: 'fernway', point: { x: -128.4, z: 39.6 },
     reads: 'skills', done: state => learned(state, 'mycology'),
     title: 'Odger Pell at Fernway Rest', detail: 'A rack where the paths meet, and Fern Hollow behind it: the dampest old wood in Drent, and the only place a mushroom wants to be.' }),
   stop({ id: 'fernway-play', leg: 3, kind: 'spine', place: 'The players’ camp on the verge', system: 'drentish', subregion: 'fernway', point: { x: -110.6, z: 29.3 },
     reads: 'longRoad', done: (state, own) => !!own.played,
-    title: 'A play, in Drentish', detail: 'Talaelos improvise something short on the verge. Many mouths at once, none of them explaining, and Chris murmuring under it.' }),
+    title: 'A play, on the verge', detail: 'Talaelos improvise something short beside the road. Many mouths at once, nobody explaining, and the whole of it made up as it goes.' }),
   stop({ id: 'east-rena-stone', leg: 3, kind: 'branch', place: 'The East Rena Stone', system: 'drentish', subregion: 'fernway', point: { x: -128, z: 34 },
     reads: 'linguist', done: state => tongue(state, 'drentish') >= SIGN_READING,
     title: 'The East Rena Stone', detail: 'The first writing in Drent you can read, ten seconds up the road from the bench, at about the minute the tongue crosses fifty.' }),
@@ -521,7 +521,7 @@ export function companionPace(gap, travelerRun = TRAVELER_RUN) {
  */
 export const forkLines = (name = 'Chris Gotwood') => freeze([
   `Before you set off. There are eleven of us on this contract and nine are still at sea — one swam ashore behind us this morning and the last pair are a boat and an hour away yet. Venmor is paying for eleven and he will not march short.`,
-  `So there is no hurry, and I mean that as a fact and not as comfort. Go straight up the road and you are first into an empty camp, or you walk Drent with me and learn the country you have been hired to fight over. The tongue first: you cannot hear what is being said to you and that will get somebody killed.`,
+  `So there is no hurry, and I mean that as a fact and not as comfort. Go straight up the road and you are first into an empty camp, or you walk Drent with me and learn the country you have been hired to fight over. You have not seen a yard of it yet, and that will get somebody killed.`,
   `Either way I am walking with you. — ${name}`,
 ]);
 /** The same thing in one breath, for the notice at the corner of the screen. */
