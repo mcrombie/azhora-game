@@ -694,10 +694,21 @@ outside every outline: 50.4%**, where before the fringe the same sweep gave 90,4
 **53.1%**. The fringe reclaims 4,494 samples, 2.6 points of the figure, and all of it is coast.
 (The 52.8% at the head of this entry is the original flood-fill from Ambron, 89,584 of 169,541;
 the sweep above reproduces it to within a third of a point without the reachability pass.)
-`insideRegion` is untouched and still strict — it promises no fringe and its callers rely on
-that — and `tests/open-country.test.js` holds the shore: the Weatherhead's whole standable disc
-is Drent, no standable step of the strand at z = 104, 120 or 127 is nowhere, and the sea and the
-west still are.
+**The fringe is what the traveler is told, and nothing else.** `regionAt` carries it;
+`regionNameAt` does not, and the two now differ on purpose. Every caller of `regionNameAt` in
+`src/` is a scatter filter — `west-regions-scenery.js`, `amod-scenery.js`, `pueth-scenery.js`,
+`east-suval-world.js`, `world-regions.js`, `west-suval.js`, `west-regions.js`, `rena.js` — and
+each asks whose hex this is so that Caricas's forest goes on Caricas's hexes. Handing them the
+fringe re-seeds all of them: measured, **about 4,700 colliders moved across the west**, because
+a rejected candidate still advances the seeded stream, and the retuned western animals are
+tuned against the scatter as it stands — `tests/west-life.test.js` went red on a fox that could
+be walked down. With the split, the built world is **byte-identical** to before the fringe:
+33,131 colliders, same positions, same radii, same kinds. `insideRegion` is untouched and still
+strict — it promises no fringe and its callers rely on that — and `tests/open-country.test.js`
+holds both halves: the shore (the Weatherhead's whole standable disc is Drent, no standable step
+of the strand at z = 104, 120 or 127 is nowhere, the sea and the west still are) and the split
+itself (on a region's own hexes the two functions never disagree, and no scatter module may
+quietly move to `regionAt`).
 
 **Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
 which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the

@@ -75,8 +75,9 @@ that country's nearest hex centre, which is 26 m past a flat edge, about a quart
 is measured, not chosen: the smallest whole metre that takes in every standable cell of Drent's
 built coast (worst: the south-east strand at (25, 127), 75.86 m). It does not touch the west —
 every pinned point there is still open country — and it moves the share of the walkable west
-outside every outline from 53.1% to 50.4%. `insideRegion` stays strict.
-(`docs/known-issues.md`, "Amended 2026-09-21: a shore fringe".)
+outside every outline from 53.1% to 50.4%. It changes only what the traveler is *told*: the
+scatter still asks whose hex it is (`regionNameAt`), so the built world is byte-identical, and
+`insideRegion` stays strict. (`docs/known-issues.md`, "Amended 2026-09-21: a shore fringe".)
 
 **The Moros Horizon fence stays, as the army's line.** It stands where it is, 272 of its 344 m
 inside Nesdor, as an Ambroni line inside a country the Empire does not hold. Only its name, its

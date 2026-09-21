@@ -737,7 +737,28 @@ export function regionAt(x, z) {
   }
   return near ? regionByName.get(near) : OPEN_COUNTRY;
 }
-export const regionNameAt = (x, z) => regionAt(x, z)?.name ?? null;
+/**
+ * The region whose authored hex a point sits on, with **no shore fringe** — and so not always
+ * the same answer as `regionAt(x, z).name`. Read that difference before using either.
+ *
+ * This is the builder's question, not the traveler's: every caller of it in src/ is a scatter
+ * filter deciding where a region's trees, rocks and props may be put down
+ * (src/west-regions-scenery.js, src/amod-scenery.js, src/pueth-scenery.js,
+ * src/east-suval-world.js, src/world-regions.js, src/west-suval.js, src/west-regions.js,
+ * src/rena.js). Those want the atlas's own grid and nothing else: Caricas's forest belongs on
+ * Caricas's hexes. Handing them the fringe instead re-seeds every one of those loops - it was
+ * measured at about 4,700 colliders moved across the west, because a rejected candidate still
+ * advances the seeded stream - and the west's animals were retuned against the scatter as it
+ * is (`tests/west-life.test.js`: nothing in the west can be walked down).
+ *
+ * What the traveler is *told* he is standing in is `regionAt`, which does carry the fringe, and
+ * that is what the region card, the kicker, the minimap, the trails sheet and the sound read.
+ */
+export const regionNameAt = (x, z) => {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+  const home = hexAt(x, z);
+  return cellRegion.get(key(home.q, home.r)) ?? OPEN_COUNTRY.name;
+};
 export const regionInfo = id => regionById.get(id) ?? null;
 /** Strictly inside an authored outline, with no nearest-region fallback. */
 export function insideRegion(name, x, z) {

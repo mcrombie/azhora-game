@@ -135,11 +135,11 @@ test('a country’s own shore is that country, and the fringe stops at the shore
     if (!canStand(x, z, world, 0.5)) continue;
     standable++;
     if (!insideRegion('Drent', x, z)) offAtlas++;
-    assert.equal(regionNameAt(x, z), 'Drent', `the Weatherhead reads ${regionNameAt(x, z)} at ${x}, ${z}`);
+    assert.equal(regionAt(x, z).name, 'Drent', `the Weatherhead reads ${regionAt(x, z).name} at ${x}, ${z}`);
   }
   assert.ok(standable > 1000, `the hill is walkable (${standable} cells)`);
   assert.ok(offAtlas > 0, 'and a real part of it is off the atlas’s own hexes, which is the point');
-  assert.equal(regionNameAt(WEATHERHEAD.stand.x, WEATHERHEAD.stand.z), 'Drent', 'including the stand itself');
+  assert.equal(regionAt(WEATHERHEAD.stand.x, WEATHERHEAD.stand.z).name, 'Drent', 'including the stand itself');
 
   // Walking inland out to the water is not a border crossing: no standable step of it is
   // nowhere, so the card, the kicker, the minimap caption and the autosave-on-enter never
@@ -150,18 +150,18 @@ test('a country’s own shore is that country, and the fringe stops at the shore
     for (let x = -30; x <= 40; x += 0.5) {
       if (!canStand(x, z, world, 0.5)) continue;
       walked++;
-      assert.equal(regionNameAt(x, z), 'Drent', `a hole in the shore at ${x}, ${z}`);
+      assert.equal(regionAt(x, z).name, 'Drent', `a hole in the shore at ${x}, ${z}`);
     }
     assert.ok(walked > 40, `the strand at z=${z} is walkable (${walked} steps)`);
   }
 
   // Well out to sea is still open country: the fringe is a fringe, not a claim on the water.
   for (const at of [{ x: 200, z: 104 }, { x: 300, z: 40 }]) {
-    assert.ok(isOpenCountry(regionAt(at.x, at.z)), `(${at.x}, ${at.z}) at sea reads ${regionNameAt(at.x, at.z)}`);
+    assert.ok(isOpenCountry(regionAt(at.x, at.z)), `(${at.x}, ${at.z}) at sea reads ${regionAt(at.x, at.z).name}`);
     assert.equal(canStand(at.x, at.z, world), false, 'and nobody can stand there anyway');
   }
   // And deep in the unowned west it changes nothing at all.
-  for (const at of UNOWNED) assert.ok(isOpenCountry(regionAt(at.x, at.z)), `${at.note} reads ${regionNameAt(at.x, at.z)}`);
+  for (const at of UNOWNED) assert.ok(isOpenCountry(regionAt(at.x, at.z)), `${at.note} reads ${regionAt(at.x, at.z).name}`);
 
   // The fringe is never wider than it says: a point beyond it, off every hex, is open country.
   const far = { x: -1600, z: 1600 }, home = hexAt(far.x, far.z), centre = hexCentre(home.q, home.r);
@@ -171,4 +171,38 @@ test('a country’s own shore is that country, and the fringe stops at the shore
   // insideRegion stays strict: it promises no fringe and its callers rely on that.
   assert.equal(insideRegion('Drent', WEATHERHEAD.stand.x, WEATHERHEAD.stand.z), false,
     'the stand is genuinely outside the authored outline; only regionAt forgives it');
+});
+
+test('what the traveler is told and where a tree may go are two questions', () => {
+  // `regionAt` carries the shore fringe and `regionNameAt` does not, which is a trap unless it
+  // is written down and held. Every caller of `regionNameAt` in src/ is a scatter filter — it
+  // asks whose hex this is, so that Caricas's forest goes on Caricas's hexes — and handing it
+  // the fringe re-seeds all of them: about 4,700 colliders moved across the west when it was
+  // tried, because a rejected candidate still advances the seeded stream, and the west's
+  // animals are tuned against the scatter as it stands (tests/west-life.test.js).
+  const stand = WEATHERHEAD.stand;
+  assert.equal(regionAt(stand.x, stand.z).name, 'Drent', 'the traveler is in Drent on his own beach');
+  assert.equal(regionNameAt(stand.x, stand.z), OPEN_COUNTRY.name, 'and no tree of Drent’s is planted there');
+  assert.equal(insideRegion('Drent', stand.x, stand.z), false, 'the authored outline agrees with the scatter');
+
+  // On a region's own hexes the two never disagree, which is all the scatter ever sees.
+  for (const name of REGION_ORDER) {
+    const cell = REGION_CELLS[name][0];
+    assert.equal(regionAt(cell.x, cell.z).name, name);
+    assert.equal(regionNameAt(cell.x, cell.z), name, `${name} disagrees with itself on its own ground`);
+  }
+  // And out in the unowned west they agree too: the fringe is tens of metres, that is hundreds.
+  for (const spot of UNOWNED) {
+    assert.equal(regionAt(spot.x, spot.z).name, OPEN_COUNTRY.name);
+    assert.equal(regionNameAt(spot.x, spot.z), OPEN_COUNTRY.name);
+  }
+  assert.equal(regionNameAt(NaN, 0), null, 'nonsense is nothing to either of them');
+
+  // The scatter modules are the callers this is for; if one of them moves to regionAt, the
+  // west's scenery moves with it and this test should be the thing that asks why.
+  for (const name of ['west-regions-scenery.js', 'amod-scenery.js', 'pueth-scenery.js', 'world-regions.js']) {
+    const text = source(name);
+    assert.match(text, /regionNameAt/, `${name} scatters by hex ownership`);
+    assert.doesNotMatch(text, /\bregionAt\(/, `${name} should not scatter by what the traveler is told`);
+  }
 });
