@@ -13,7 +13,7 @@ export function validateWoodlandProgress(value, stock) {
     || !uniqueIds(value.acorns, /^acorn-[1-6]-[1-4]$/, 24)
     || !uniqueIds(value.sticks, /^stick-[1-7]-[1-2]$/, 14)
     || !uniqueIds(value.fruits, /^pawpaw-[1-6]-[1-2]$/, 12)
-    || !uniqueIds(value.discoveries, /^[a-zA-Z][a-zA-Z0-9-]{0,63}$/, 160)) return false;   // room for every landmark the regions add
+    || !uniqueIds(value.discoveries, /^[a-zA-Z][a-zA-Z0-9-]{0,63}$/, 400)) return false;   // room for every landmark the regions add: the world drew 162 when the cap was 160, and a save past the cap is refused whole
   const camp = value.camp;
   if (!camp || camp.version !== 1 || typeof camp.taught !== 'boolean'
     || !Number.isSafeInteger(camp.catches) || camp.catches < 0
