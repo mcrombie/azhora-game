@@ -540,9 +540,13 @@ export const STORY_SITES = Object.freeze({
   banditLookout: at(-74, 498),
 });
 
-/** The end of the built world, west of the army camp. */
-export const FRONTIER = Object.freeze({ ...at(-776, 350), barrierX: at(-782, 350).x, name: 'The Moros Horizon',
-  regionName: 'The open road west across the Moros' });
+/**
+ * The army’s rope line west of the camp. It was the end of the built world until Nesdor was
+ * built beyond it; it stays where it is, as an Ambroni line inside a country the Empire does
+ * not hold (docs/design-answers.md). Nothing about it moves: only what it is called.
+ */
+export const FRONTIER = Object.freeze({ ...at(-776, 350), barrierX: at(-782, 350).x, name: 'The Army’s Line',
+  regionName: 'An Ambroni line across the Nesdor Flats, in a country the Empire does not hold' });
 
 // ---------------------------------------------------------------------------
 // Regions

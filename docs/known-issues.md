@@ -501,6 +501,14 @@ the tree mentions the field.
 
 ## The Moros Horizon fence now stands inside Nesdor
 
+**DECIDED 2026-09-20, and done: option 3, keep it and mean it.** It stays where it is as the
+army's line: an Ambroni line inside a country the Empire does not hold
+(`docs/design-answers.md`). Nothing moved. Its name (`FRONTIER.name`, now "The Army’s Line"), its
+caption, the build-status sentence and the comments that called it the world's end were
+reworded, and `tests/regions-world.test.js` asserts the old wording is gone. The minimap draws
+it as an unlabelled stroke, so there was no label text to change. What follows is kept as the
+record of why, and quotes the wording as it was.
+
 `FRONTIER` (`src/region-world.js:544`, "The Moros Horizon", region name "The open road west
 across the Moros") was the end of the built world: a rope fence west of the army camp, built by
 `src/world-regions.js:690` as posts every 8 m over 344 m of z with rope between them, and one
@@ -556,6 +564,13 @@ far side of the plain, so it is not guessed at here.
 and watch the card change before the fence.
 
 ## Half of the walkable west lies outside every region, and the card names it anyway
+
+**DECIDED 2026-09-20: option 3, "open country".** `regionAt` stops snapping: off every outline
+it answers nothing, or an open-country sentinel, and the card, the minimap caption, the
+autosave-on-enter, the map tutorial's first-province check and the chart all say so
+(`docs/design-answers.md`). The ground does not change. Not done yet: it belongs to the
+builder, with the cartography work. What follows is the baseline that change is measured
+against.
 
 Flooding standable ground from Ambron on foot (`canStand`, traveler radius, one-metre cells with
 a midpoint check) across the whole western extent — x −2310 to −1100, z −868 to 2225 — reaches

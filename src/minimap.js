@@ -216,7 +216,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, combat = n
     ctx.restore(); if (house || c.kind === 'windmill') counts.buildings++;
   }
 
-  // Region borders follow the authored outlines; the frontier is where the world ends.
+  // Region borders follow the authored outlines; the frontier stroke is the army's line west of the Moros camp.
   ctx.setLineDash([3, 5]);
   for (const district of world.regions || []) {
     const loops = districtLoops(district), box = district.bounds;

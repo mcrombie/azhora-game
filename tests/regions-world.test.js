@@ -10,6 +10,7 @@ import {
 import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world-scale.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { REGION_IDS } from '../src/region-world.js';
+import { BUILD_STATUS } from '../src/build-status.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -163,11 +164,23 @@ test('Parcel, supply and waymarker visuals respond independently and remain fini
   assert.equal(world.journeySiteState()['cart-parcel-1'], false);
 });
 
-test('The frontier rope, not an invisible wall, marks where the built world stops', () => {
+test('The army’s rope line is solid, and nothing calls it the end of the world any more', () => {
   const frontier = world.colliders.find(c => c.kind === 'frontier');
   assert.ok(frontier && frontier.x === FRONTIER.barrierX);
   assert.equal(canStand(FRONTIER.barrierX, FRONTIER.z, world), false);
   assert.ok(canStand(FRONTIER.x, FRONTIER.z, world), 'the overlook east of the rope is walkable');
+  // Nesdor is built beyond it now, and 272 of its 344 metres stand inside Nesdor. The user's
+  // answer (docs/design-answers.md) is that it stays where it is and means what it is: an Ambroni
+  // line inside a country the Empire does not hold. Nothing moved; only the words did.
+  assert.ok(insideRegion('Nesdor', FRONTIER.barrierX - 3, FRONTIER.z) && insideRegion('Nesdor', FRONTIER.barrierX + 3, FRONTIER.z),
+    'the line no longer has Nesdor on both sides of it, so the wording below wants looking at again');
+  const said = [FRONTIER.name, FRONTIER.regionName, world.frontier.name, world.frontier.regionName, BUILD_STATUS.Nesdor.work].join(' | ');
+  for (const old of ['Horizon', 'open road west', 'rope fence', 'end of the world', 'still stands between'])
+    assert.ok(!said.includes(old), '"' + old + '" is the old reading of the line: ' + said);
+  assert.match(FRONTIER.name, /Line/);
+  assert.match(FRONTIER.regionName, /Ambroni/);
+  assert.match(FRONTIER.regionName, /does not hold/);
+  assert.match(BUILD_STATUS.Nesdor.work, /Ambroni line inside a country the Empire does not hold/);
 });
 
 test('District scenery batches reduce submitted geometry without excessive extra draw calls', t => {

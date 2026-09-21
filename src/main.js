@@ -805,7 +805,7 @@ function init() {
       return shot(spot,sample,.20,.3);
     }
     if(view==='west-nesdor-flats'){
-      // Away from the Moros's old rope fence, which still crosses this ground.
+      // Away from the army's rope line, which crosses this ground: an Ambroni line in a country the Empire does not hold.
       return shot({x:-1560,z:760},{x:-1700,z:790},.04,4);
     }
     if(view==='west-lizeem'){
