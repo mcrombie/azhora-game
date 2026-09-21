@@ -120,10 +120,15 @@ export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - l
  *   15.2 m from the nearest thing that must stay clear (the raid ground, the pier queue, a door)
  */
 const SMITHY_AT = villageToWorld(16.5, -35), SMITHY_FACE = villageToWorld(0, 0);
+// Facing in toward the village, so the side people come from is the side he is looking at.
+const SMITHY_YAW = Math.atan2(SMITHY_FACE.x - SMITHY_AT.x, SMITHY_FACE.z - SMITHY_AT.z);
 export const TIDEHAVEN_SMITHY = Object.freeze({
-  id: 'tidehaven-smithy', a: 16.5, b: -35, ...SMITHY_AT,
-  // Facing in toward the village, so the open side of the shelter is the side people come from.
-  yaw: Math.atan2(SMITHY_FACE.x - SMITHY_AT.x, SMITHY_FACE.z - SMITHY_AT.z),
+  id: 'tidehaven-smithy', a: 16.5, b: -35, ...SMITHY_AT, yaw: SMITHY_YAW,
+  // Where the smith stands: just outside the shelter's posts on the village side, looking at the
+  // street, so he is between the traveler and his own forge rather than behind it (src/smith.js).
+  // He looks at the street, not at his own coals: whoever comes up from the village arrives in
+  // front of him. Facing him inward put his back to every traveler who walked up.
+  stand: Object.freeze({ x: SMITHY_AT.x + Math.sin(SMITHY_YAW) * 2.9, z: SMITHY_AT.z + Math.cos(SMITHY_YAW) * 2.9, yaw: SMITHY_YAW }),
   clear: 5.8, offRoad: 14.8, offPath: 6.5, offKept: 15.2,
 });
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
