@@ -8,6 +8,7 @@ import {
 } from '../src/long-road.js';
 import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
 import { ARRIVALS } from '../src/mercenaries.js';
+import { MAIN_ROAD } from '../src/region-world.js';
 import { renderLine } from '../src/linguist.js';
 import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
@@ -358,14 +359,22 @@ test('the companion keeps up with a running traveler, and the set-down is left f
   assert.ok(companionPace(COMPANION_REACH.stride + .01) > TRAVELER_RUN, 'and past a stride he runs, harder than you do');
   assert.ok(companionPace(30) > companionPace(6), 'the further behind, the harder he comes');
   assert.ok(companionPace(500) <= TRAVELER_RUN + 2.5, 'and never at a sprint nobody could watch');
-  // Five minutes of unbroken running, in tenths, from a standing start behind him.
-  let gap = 0;
-  for (let t = 0; t < 3000; t++) {
-    const dt = .1;
-    gap += TRAVELER_RUN * dt;                       // the traveler pulls away
-    gap = Math.max(0, gap - companionPace(gap) * dt);  // and he answers
-    assert.ok(gap < 12, `after ${(t * dt).toFixed(1)} s of running he is ${gap.toFixed(1)} m off`);
+  // The whole road, run without stopping. The bug hunter measured the old pace along this exact
+  // polyline: over 1,668 m the gap reached 40.0 m and Chris was set down beside the traveler
+  // four times. The answer that matters is zero.
+  const road = MAIN_ROAD.map(point => ({ x: point.x, z: point.z }));
+  let leg = 1, along = 0, gap = 0, setDowns = 0, walked = 0;
+  const legLength = i => Math.hypot(road[i].x - road[i - 1].x, road[i].z - road[i - 1].z);
+  for (let t = 0; t < 6000 && leg < road.length; t++) {
+    const dt = .1, step = TRAVELER_RUN * dt;
+    along += step; walked += step;
+    while (leg < road.length && along >= legLength(leg)) { along -= legLength(leg); leg++; }
+    gap += step;                                       // the traveler pulls away
+    gap = Math.max(0, gap - companionPace(gap) * dt);   // and he answers
+    if (gap > COMPANION_REACH.setDown) { setDowns++; gap = 0; }
   }
+  assert.ok(walked > 1600, `the run covered ${walked.toFixed(0)} m of the 1,668 m road`);
+  assert.equal(setDowns, 0, `he was set down ${setDowns} times over the length of the road`);
   assert.ok(gap < COMPANION_REACH.stride + 2, `he settles a stride behind, not ${gap.toFixed(1)} m`);
   // A horse canters at 13 m/s (RIDE, src/riding.js), which nobody runs down. That is what the
   // set-down is for, and he reaches it inside a minute of cantering.
