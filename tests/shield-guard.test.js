@@ -9,7 +9,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter, BUCKLER_NAME } = await sourceModule('../src/characters.js');
 
 /** Flat ground and nothing to walk into: the fight, and only the fight. */
 const world = { heightAt: () => 1.5, colliders: [], bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 } };
@@ -224,4 +224,59 @@ test('the arm follows the rules and not the key, and the footer follows the shie
     'hidden until the body says he is carrying one');
   // It is its own class, not the combat one: being armed is not being shielded.
   assert.ok(!/combat-control[^<]*Guard/.test(html), 'the guard is not shown merely for being armed');
+});
+
+test('an eased pose needs time, and a frozen view has none — so the view spends it by hand', () => {
+  // **This is the bug the pose test could not see.** `damping` is `1 - exp(-rate * dt)` and dt is
+  // the change in the time handed to `animate`. A frozen review stops `walkTime`, so dt is 0,
+  // `rotate` moves nothing, and the body keeps the pose it already had - while `guard` reported
+  // `up: true` and the buckler hung at his hip. The old test settled the animator itself, so it
+  // proved `characters.js` right and said nothing about the frame it runs in.
+  const actor = createCharacter({ role: 'traveler' });
+  actor.setShield(true);
+  const buckler = actor.group.getObjectByName(BUCKLER_NAME);
+  const height = () => {
+    actor.group.updateMatrixWorld(true);
+    return buckler.getWorldPosition(new THREE.Vector3()).y;
+  };
+  for (let i = 0; i < 40; i++) actor.animate(i / 40, 0, true, { armed: true });
+  const resting = height();
+  // Time standing still: the same instant over and over, which is what a frozen view gives.
+  for (let i = 0; i < 40; i++) actor.animate(1, 0, true, { armed: true, guarding: true });
+  const frozen = height() - resting;
+  // Time moving: the same forty frames, spent.
+  for (let i = 0; i < 40; i++) actor.animate(1 + i / 60, 0, true, { armed: true, guarding: true });
+  const spent = height() - resting;
+  assert.ok(spent > .35, `time spent raises it ${spent.toFixed(2)} m`);
+  // Frozen time does not raise it. Not quite nothing — the first call still sees the step from
+  // whatever instant came before — but a fraction of the way, and it never gets any further,
+  // which is a shield drawn at the hip while the rules say it is up.
+  assert.ok(frozen < spent * .3, `frozen time got ${frozen.toFixed(2)} m of ${spent.toFixed(2)} and stopped`);
+
+  // So the view spends the time itself, before it freezes.
+  const main = source('main.js');
+  assert.match(main, /function settlePose\(pose,frames=48\)\{/);
+  assert.match(main, /for\(let step=0;step<frames;step\+\+\)player\.animate\(walkTime\+step\/60,0,true,pose\);/,
+    'with time that actually advances');
+  const view = main.slice(main.indexOf("if(view==='shield-guard')"));
+  const body = view.slice(0, view.indexOf('return;'));
+  assert.match(body, /settlePose\(\{armed:true,guarding:true\}\);/, 'the view eases the arm in');
+  assert.ok(body.indexOf('settlePose') < body.indexOf('reviewFrozen=true'), 'and does it before it freezes');
+});
+
+test('the view reports what was drawn, not only what was decided', () => {
+  const main = source('main.js');
+  // `up: true` beside a hip-height shield was reportable for two commits. It is not any more:
+  // the block carries the buckler's own position and facing, in the traveler's frame.
+  assert.match(main, /buckler:bucklerDrawn\(\)\}/);
+  assert.match(main, /function bucklerDrawn\(\)\{/);
+  assert.match(main, /const node=player\.group\.getObjectByName\(BUCKLER_NAME\);/,
+    'it looks up the very object on the screen');
+  assert.match(main, /if\(!node\|\|!node\.visible\)return null;/, 'and says nothing when there is nothing drawn');
+  // In his own frame, so the numbers mean the same wherever he stands and whichever way he faces.
+  assert.match(main, /applyAxisAngle\(axis,turn\)/);
+  assert.match(main, /const axis=new THREE\.Vector3\(0,1,0\),turn=-player\.group\.rotation\.y;/);
+  // One name, shared, so the host and the model cannot drift apart over it.
+  assert.match(source('characters.js'), /export const BUCKLER_NAME = /);
+  assert.match(source('characters.js'), /buckler\.name = BUCKLER_NAME;/);
 });

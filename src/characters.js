@@ -334,6 +334,8 @@ function makeBow(body) {
 }
 /** How the traveler's own buckler sits: out to the side at rest, turned forward on guard. */
 const GUARD_SHIELD = Object.freeze({ x: -0.5, z: 1.57, turn: -1.35 });
+/** The one name the host looks the buckler up by, so the two cannot drift apart. */
+export const BUCKLER_NAME = 'The traveler\u2019s buckler';
 
 function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = false, width = 0.43, height = 0.62 } = {}) {
   const shield = new THREE.Group(); shield.name = isRound ? 'Round shield' : 'Army shield';
@@ -450,7 +452,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       // nearly flat and reading as a thin ellipse from every angle.
       buckler.position.set(-0.05, -0.20, 0.06);
       buckler.rotation.set(GUARD_SHIELD.x, 0, GUARD_SHIELD.z);
-      buckler.name = 'The traveler\u2019s buckler';
+      buckler.name = BUCKLER_NAME;
     }
     if (buckler) buckler.visible = on;
   };

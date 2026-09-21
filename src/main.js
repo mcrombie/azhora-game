@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
-import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole } from './characters.js';
+import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole, BUCKLER_NAME } from './characters.js';
 import { markerFor, markerGrade } from './quest-markers.js';
 import { createCombat, MAX_ALLIES } from './combat.js';
 /** Held, not pressed: the one new verb melee gets (docs/combat-brief.md, phase 4). */
@@ -1444,6 +1444,34 @@ function init() {
   // Not `setShield?.()`: the optional call hid the fact that the facade above had no such verb
   // at all, so the buckler was quietly never built and four renders showed a man with no shield.
   // If it ever goes missing again it should throw.
+  /**
+   * Where the buckler actually is and which way it actually points, **as drawn**, in the
+   * traveler's own frame: +z is in front of him, -x is his shield side, y is height off his
+   * feet. Held up it should read about (-.16, 1.31, .36) facing .81 forward; at his side, about
+   * (-.37, .84, .09) facing flat out.
+   *
+   * This exists because `up: true` was reported beside a hip-height shield for two commits. A
+   * flag says what the rules decided; these say what the player is looking at.
+   */
+  function bucklerDrawn(){
+    const node=player.group.getObjectByName(BUCKLER_NAME);
+    if(!node||!node.visible)return null;
+    player.group.updateMatrixWorld(true);
+    const axis=new THREE.Vector3(0,1,0),turn=-player.group.rotation.y;
+    const at=node.getWorldPosition(new THREE.Vector3()).sub(player.group.position).applyAxisAngle(axis,turn);
+    const face=axis.clone().applyQuaternion(node.getWorldQuaternion(new THREE.Quaternion())).normalize().applyAxisAngle(axis,turn);
+    const round=v=>[+v.x.toFixed(2),+v.y.toFixed(2),+v.z.toFixed(2)];
+    return {at:round(at),face:round(face)};
+  }
+  /**
+   * An eased pose cannot be shown in a frozen review: `damping` is `1 - exp(-rate * dt)` and a
+   * frozen view stops `walkTime`, so dt is 0, `rotate` moves nothing, and the body keeps whatever
+   * it was doing. Run the animator forward by hand first; the frozen frames afterwards then hold
+   * exactly this.
+   */
+  function settlePose(pose,frames=48){
+    for(let step=0;step<frames;step++)player.animate(walkTime+step/60,0,true,pose);
+  }
   function refreshShield(){
     const carried=!!gear.wearing('hand');
     player.setShield(carried);
@@ -4515,7 +4543,9 @@ function init() {
         // module say walks with him, who did the mercenary company actually place, and for each
         // of them - where he is, whether he is drawn, whether he is up, and whether his horse
         // exists and is in the frame.
-        guard:{up:!!combat.state.player.guarding,shield:!!gear.wearing('hand'),phase:combat.state.phase,action:combat.state.player.action,stamina:Math.round(combat.state.player.stamina),cost:arms?arms.margins().guardCost:null,shielded:document.body.classList.contains('shielded')},
+        guard:{up:!!combat.state.player.guarding,shield:!!gear.wearing('hand'),phase:combat.state.phase,action:combat.state.player.action,stamina:Math.round(combat.state.player.stamina),cost:arms?arms.margins().guardCost:null,shielded:document.body.classList.contains('shielded'),
+        // What is on the screen, not what was decided: `up` beside a hip-height buckler is a bug.
+        buckler:bucklerDrawn()},
         company:{owned:riding.owned,mounted:riding.mounted,grounded,seat:+player.group.position.y.toFixed(2),ground:+world.heightAt(player.group.position.x,player.group.position.z).toFixed(2),horse:riding.horse?[+riding.horse.x.toFixed(1),+riding.horse.z.toFixed(1)]:null,
           mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
           walking:companions.companions.map(one=>one.id),placed:[...(company.companionIds??[])],file:[...fileOrder],
@@ -5015,10 +5045,16 @@ function init() {
           // Held, through the same door the player uses. If the rules say it is not up, the
           // picture will show it not up, which is the point of the picture.
           combat.guard(true,face);
-          // His shield is on his left arm, so the camera stands off that side and a little in
-          // front: from anywhere else the man himself is in the way of the thing being shown.
+          // On guard the face points forward, at whatever he is guarding against - so a camera on
+          // his shield side sees the rim edge-on. To show the face of it the camera has to stand
+          // roughly where the blow would come from: in front, and off his weapon side so the
+          // goblin is not between the two of them.
           reviewTarget=new THREE.Vector3(player.group.position.x,world.heightAt(player.group.position.x,player.group.position.z)+1.25,player.group.position.z);
-          const shot=bestOf(reviewTarget,4.4,[face-.85,face-1.15,face-.6,face-1.5]);
+          // The arm eases into the guard over about half a second, and the frames after this
+          // are frozen ones that move nothing, so it has to be eased in here or the picture keeps
+          // the rest pose while the block says the shield is up - which is what it did.
+          settlePose({armed:true,guarding:true});
+          const shot=bestOf(reviewTarget,4.4,[face+.95,face+1.25,face+.7,face+1.6]);
           yaw=shot.yaw;pitch=.06;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
