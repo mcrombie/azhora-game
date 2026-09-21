@@ -186,3 +186,79 @@ a comment naming that failure. Not a bug.
 - **Discipline.** One world build at a time; check free memory and Electron first; never the full
   suite. When a fix needs a decision, write it up in `docs/known-issues.md` with the numbers and
   the options. Say what was run and what was only read. Tell the coordinator the near-misses.
+
+
+---
+
+# Addendum, 2026-09-21 evening: the second hunter's drivers and traps
+
+Four rounds on. This is what a fresh hunter needs to pick the harnesses up without re-learning
+them, and what is still owed.
+
+## The drivers, and what each is good for
+
+**None of them lives in the repo.** They were scratch files; they are described here so they can be
+rebuilt, because rebuilding one from this description is cheaper than trusting a number from one
+that was never checked.
+
+1. **The pure-module probe.** `createCompanions`, `createTeachers`, `createMercenaryCompany`,
+   `moros-chapter`, `gear`, `weapons` - all pure, no world, no cost. Almost every death-lifecycle,
+   teacher and regard finding came from one of these in seconds. **Reach for this first.**
+2. **The world probe.** `createWorld` through `tests/module-loader.js`, then `canStand`,
+   `regionAt`, `world.paths[0]`. About twenty seconds and a gigabyte. One at a time; check free
+   memory first. This is what the horses, the picket, the file and the smiths' ground were
+   measured on.
+3. **The fight harness.** `createCombat` with a flat world, `getWeapon` from `createWeapons`,
+   `getMargins` built field-for-field the way `src/main.js` builds it, `getAllies` mirroring
+   `companionAllies`, and a driver that closes, dodges and swings. Forty seeds, each seed a
+   different reaction time and lean. **It has been wrong four times** (below) and every number out
+   of it should be read as a comparison between its own rows, never against another round's.
+4. **The review render.** `node scripts/launch.cjs --smoke-test --review-views=<a,b>`. The only
+   thing that catches what tests cannot: a man inside a horse, a helmsman inside a deckhouse. Read
+   the JSON facts line as well as the picture - twice it answered a question the picture could not.
+
+## The traps, all of them mine
+
+- **`combat.attack(yaw)` takes a yaw and `combat.dodge({x,z})` takes a point.** Called with
+  neither they return false for ever. The first fight harness printed nought swings in every row
+  under four tidy columns and looked like a measurement.
+- **`startEncounter` asks `getLevel` only when the encounter authored no level.** A harness that
+  set `getLevel` and left `level: 0` in place measured the held fight twice and called one of them
+  level 2. The tell was identical rows for both levels.
+- **A greedy driver is not a player.** Swinging whenever a target is in reach leaves nothing for a
+  dodge - two dodges in a sixteen-second fight, wind on the floor - and turns a fight into a wall.
+  Keep `swingCost + 25` back.
+- **A driver that holds the checkpoint is the nearest thing to every enemy**, so it takes every
+  blow and no ally is ever struck. That is why the `FILE_FLOOR` table has no ally deaths in it and
+  cannot say whether the floor is *hard*.
+- **`--review-views` used to split on commas**, so `stand-at:x,z,facing` was torn into four views
+  of the wrong place with `"errors": []`. Fixed; the shot still does not write, cause unknown.
+- **A flood fill must align its grid to its own start.** `round(span/step)*step` put the seed cell
+  0.2 m from the point being tested and reported two false seals at Bede Harrow's yard.
+- **Counting kills by the `hit` event counts the allies' kills too** (the first hunter's fifth
+  trap, still true). The passenger control - a player who closes and dodges but never swings - is
+  the honest measure of whether the player matters.
+- **`placements()` has holes in it now.** A dead man has no placement, so indexing it by roster row
+  hands a man his neighbour's place. Find people by id.
+
+## What is unverified
+
+- **Bows (`src/archery.js`) are entirely unhunted**, and the authored fights have not been
+  re-measured with an archer in them.
+- **"Hard but winnable" at the file floor** - see the ledger entry; the driver cannot say.
+- **The fill soldiers' death rate** is unmeasured, not zero.
+- **No death has been driven through the real save** in Electron; the whole death lifecycle is
+  module-level plus source checks.
+- **Mern has never been photographed**, and the `stand-at:` view writes no picture.
+- **Companion deaths in a fight**: round one measured 2.0 at level 2 with six, rounds two to four
+  measure none. Which driver is right is not settled.
+- **The aftermath arenas** were measured on a synthetic arena shape, not on each named arena's
+  real ground.
+
+## How to work
+
+The rules at the top of `docs/known-issues.md` still hold, and the one that earns its place every
+round is this: **when a probe says something surprising, prove the probe first.** Four of this
+hunter's findings were faults in its own harness, and each was caught by one number that did not
+make sense - nought swings, identical rows, two dodges, no ally ever hit. Look for that number
+before writing the entry.
