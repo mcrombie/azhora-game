@@ -463,10 +463,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
   /** How many arrows there are to shoot. The host owns the satchel; this only ever asks. */
   const arrowsLeft = () => Math.max(0, Math.floor(Number(getArrows?.()) || 0));
+  /**
+   * When an arrow may be sent at all: in a fight, or **at a mark**. Practice is the phase the
+   * straw post already runs in, and a shot at a target is the bow's straw post - the dummy takes
+   * no damage, nothing shoots back, and no fight is won or lost by it (Jerry's mark,
+   * docs/combat-brief.md). The swing has always worked in both; the draw now does too.
+   */
+  const shootable = () => state.phase === 'active' || state.phase === 'practice';
   /** Whether a draw is actually on right now, which is not the same as the button being down. */
   function drawing() {
     const weapon = currentWeapon();
-    return !!drawHeld && !!weapon?.ranged && weapon.usable !== false && state.phase === 'active'
+    return !!drawHeld && !!weapon?.ranged && weapon.usable !== false && shootable()
       && player.action === 'idle' && player.hp > 0 && player.stamina >= BOW.wind && arrowsLeft() > 0;
   }
   /**
@@ -479,7 +486,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const weapon = currentWeapon();
     const pull = drawnBy(drawTime, margins().drawTime ?? 1);
     drawTime = 0;
-    if (!weapon?.ranged || state.phase !== 'active' || player.hp <= 0) return false;
+    if (!weapon?.ranged || !shootable() || player.hp <= 0) return false;
     const shot = shotAt(pull, { damage: weapon.damage?.[0] ?? BOW.damage });
     if (!shot) { emit('draw-spent', { pull, x: position.x, z: position.z }); return false; }
     if (arrowsLeft() <= 0 || player.stamina < BOW.wind) return false;
@@ -499,8 +506,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function landArrow(arrow, stopped, targetId = null) {
     state.arrows = state.arrows.filter(other => other !== arrow);
     // An ally's arrows are his own: the traveler does not walk the field gathering Jerry's.
+    // `flown` is how far it actually went, which is the only honest measure of a long shot: a
+    // mark pays by it (src/main.js), and nothing else has to remember where the shot was taken.
     emit('arrow-landed', { id: arrow.id, n: arrow.n, owner: arrow.owner ?? null, x: arrow.x, z: arrow.z,
-      stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
+      flown: arrow.flown, stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
   }
   /** Every arrow in the air moves, and the first solid thing it meets is the last thing it meets. */
   function updateArrows(dt) {
