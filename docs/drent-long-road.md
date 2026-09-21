@@ -380,3 +380,28 @@ trust in `src/campaign.js`). Each road has something the other cannot get. Neith
 5. **May Silas leave the Weatherhead?** He is the one move that bends written lore — the marl
    bank is his. I moved the man and kept the pit. Say no and geology stays the harbour's last
    lesson, and the Toll House stream keeps only the Pedlar's Stone for company.
+
+## The user's answers (2026-09-20)
+
+Asked the five questions above; these are the rulings, and they bind the build.
+
+1. **First is guaranteed.** Ed the Word lingers on the beach about twenty-five minutes before he
+   takes the road (`departs` 180 -> 1500), so a traveler who goes straight to the muster is always
+   the first of the eleven in. It also keeps swimming's natural teacher at Tidehaven through the
+   long road's first leg.
+2. **Chris can die in Drent. "The rule is the rule, but there are nine other mercenaries along
+   the way."** A companion can die in any fight, anywhere, and that includes the interpreter in the
+   raid on the Greenway at minute ten. The long road must survive him: the interpreter is a role,
+   not a man. Every member of the company has the tongues he or she has; whoever walks with the
+   traveler gives the aside for the tongues they know, and the boats keep landing - Ed the Word at
+   six minutes, the riders at eighteen, Lakota at thirty-three. Build the company's languages as a
+   table per mercenary, and let the aside come from whichever companion present knows the speaker's
+   tongue best. If Chris is dead the Ambroni drills pass to whoever else has Ambroni.
+3. **The march is the traveler's choice at the camp.** An early arrival is asked: march now,
+   short-handed, with the army's soldiers filling the line - or wait for the company. The first
+   command decision the game gives.
+4. **Archaeology's first lesson may be given at Rena by Hesta Ardry**, with Lorn sending you to
+   her - the standing rule is that any specialist of a skill may introduce it. Lakota still can,
+   once you know him.
+5. **Silas and the Weatherhead: not yet ruled.** The user asked what the Weatherhead is before
+   deciding whether he may leave it.
