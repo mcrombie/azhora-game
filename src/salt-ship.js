@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createCharacter } from './characters.js';
 import { JOHN, HULL } from './salt-sultan.js';
+import { REBEL_CREW, DECK_Y, crewPose } from './rebel-crew.js';
 
 /**
  * John, the Sultan of the Salt Trade (src/salt-sultan.js), and his ship the
@@ -228,6 +229,23 @@ export function createSultana(rebel = false) {
   add(ship, ball, rebel ? mat(0x5d452e) : GOLD, [0, top + .12, mastZ], [.12, .12, .12]);
   trimSail(0, 0);
 
+  /**
+   * Her crew, on deck, inside the ship's own group so they ride her: they rock and heel with
+   * her and need no position of their own (src/rebel-crew.js). Only the rebel has them - the
+   * Sultana carries John, who is placed ashore or aboard by the host.
+   *
+   * They cast no shadow. She lies sixty-eight metres off the pier over open water, where a
+   * shadow falls on nothing anybody can see, and it halves what each of them costs to draw.
+   */
+  const crew = rebel ? REBEL_CREW.map(man => {
+    const actor = createCharacter({ role: 'mercenary', tunic: man.look.tunic, skin: man.look.skin, look: man.look });
+    actor.group.name = man.id;
+    actor.group.position.set(man.x, DECK_Y, man.z);
+    actor.group.traverse(object => { if (object.isMesh) { object.castShadow = false; object.receiveShadow = false; } });
+    ship.add(actor.group);
+    return { man, actor, base: man.yaw };
+  }) : [];
+
   let lastSet = -1;
   function update(time, pose) {
     const under = !!pose?.moving, set = pose?.sail ?? 0;
@@ -240,6 +258,15 @@ export function createSultana(rebel = false) {
     for (let i = 0; i < p.length; i += 3) { const x = pennantFlat[i]; p[i + 2] = Math.sin(time * 5 - x * 2.2) * .12 * x / 2.4; }
     pennantGeometry.attributes.position.needsUpdate = true;
     pennant.rotation.y = Math.PI / 2 + Math.sin(time * .3) * .25;
+    // The men on her deck. Four numbers each, no allocation, and all of it a function of the
+    // clock the hull is already being given, so a game reloaded mid-arrival shows the right pose.
+    for (const hand of crew) {
+      const stance = crewPose(hand.man, pose, time);
+      hand.actor.group.rotation.x = stance.lean;
+      hand.actor.group.rotation.y = hand.base + stance.turn;
+      hand.actor.group.rotation.z = stance.sway;
+      hand.actor.group.position.y = DECK_Y + stance.lift;
+    }
   }
   return { group, update };
 }

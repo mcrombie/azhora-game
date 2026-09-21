@@ -104,24 +104,38 @@ const headingTo = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
  * Where the ship is at a moment of play. `phase` is one of `before`, `standing-in`,
  * `lying-to`, `standing-out`, `gone`; `sail` is how much canvas is set (the Sultana's own
  * `update` takes it), and `moving` heels her over.
+ *
+ * `lean` is how far the two men at her port rail are out over the water, 0 to 1. It belongs
+ * here rather than with them because it is the ship's own clock that decides it: it comes on as
+ * she rounds up, is hard over as he goes over the side, and goes off as her sail fills again
+ * (`src/rebel-crew.js`). Being a function of the clock, a game reloaded in the middle of the
+ * arrival shows the right pose and nothing about them is saved.
  */
+/** How long they take to lean out, and how long to straighten once she is away. */
+const LEAN_IN = 8, LEAN_OUT = 6;
+function leanAt(t) {
+  if (t < WORD_SHIP.turns || t >= WORD_SHIP.gone) return 0;
+  if (t < WORD_SHIP.away) return ease(clamp01((t - WORD_SHIP.turns) / LEAN_IN));
+  return 1 - ease(clamp01((t - WORD_SHIP.away) / LEAN_OUT));
+}
 export function shipAt(playSeconds) {
   const t = Number.isFinite(playSeconds) ? playSeconds : 0;
   const { offing, standOff, away } = WORD_TRACK;
-  if (t < WORD_SHIP.sighted) return { phase: 'before', visible: false, ...offing, yaw: headingTo(offing, standOff), sail: 1, moving: true };
-  if (t >= WORD_SHIP.gone) return { phase: 'gone', visible: false, ...away, yaw: headingTo(standOff, away), sail: 1, moving: true };
+  const lean = leanAt(t);
+  if (t < WORD_SHIP.sighted) return { phase: 'before', visible: false, ...offing, yaw: headingTo(offing, standOff), sail: 1, moving: true, lean };
+  if (t >= WORD_SHIP.gone) return { phase: 'gone', visible: false, ...away, yaw: headingTo(standOff, away), sail: 1, moving: true, lean };
   if (t < WORD_SHIP.turns) {
     const at = lerpPoint(offing, standOff, ease(clamp01((t - WORD_SHIP.sighted) / (WORD_SHIP.turns - WORD_SHIP.sighted))));
-    return { phase: 'standing-in', visible: true, ...at, yaw: headingTo(offing, standOff), sail: 1, moving: true };
+    return { phase: 'standing-in', visible: true, ...at, yaw: headingTo(offing, standOff), sail: 1, moving: true, lean };
   }
   if (t < WORD_SHIP.away) {
     // Rounded up and lying there with her sail spilled, swinging a little on the swell.
     const turn = clamp01((t - WORD_SHIP.turns) / (WORD_SHIP.away - WORD_SHIP.turns));
     const held = headingTo(offing, standOff), out = headingTo(standOff, away);
-    return { phase: 'lying-to', visible: true, ...standOff, yaw: held + (out - held) * ease(turn), sail: .25, moving: false };
+    return { phase: 'lying-to', visible: true, ...standOff, yaw: held + (out - held) * ease(turn), sail: .25, moving: false, lean };
   }
   const at = lerpPoint(standOff, away, ease(clamp01((t - WORD_SHIP.away) / (WORD_SHIP.gone - WORD_SHIP.away))));
-  return { phase: 'standing-out', visible: true, ...at, yaw: headingTo(standOff, away), sail: 1, moving: true };
+  return { phase: 'standing-out', visible: true, ...at, yaw: headingTo(standOff, away), sail: 1, moving: true, lean };
 }
 
 /**
