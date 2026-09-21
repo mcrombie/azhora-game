@@ -73,7 +73,7 @@ place names where one does not.
 | --- | --- | --- | --- |
 | **Ambroni** (endonym *Elagosi*) | Elagos and the Lake Lands, and every clerk, prefect and soldier the Empire posts anywhere | profile `elagosi` | Its own family, related to nothing else anyone has proved; the prestige administrative tongue of eastern Azhora in strong imperial periods |
 | **Drentish** | Drent, Pueth, the Pebbles | derived: Drent's authored names (Drent, Rena, Avrel, Caloss, the Torn) over Elagosi, which it has stood beside for centuries | "Its own thing… related to Elagosi in the way neighbouring peoples in contact for centuries develop similarities without becoming the same" |
-| **Mittoli** | Luscia, the Moros Plain, Amod, Vastos, Meneth, Caricas, Nesdor | profile `mittoli` | The great western family; commerce, governance and scholarship |
+| **Mittoli** | Luscia, the Moros Plain, Amod, Vastos, Meneth, Caricas, Nesdor, Eer, Isareos | profile `mittoli` | The great western family; commerce, governance and scholarship |
 | **Koleth** | East Suval: Elod, its harbour quarter, its country | profile `elodi` | Not an Azhoran language at all — it crossed the Iberos Sea with the Elodi migration. *Koleth* means the common tongue |
 | **Suvalen** | West Suval: Solis, the downs, the fishing coast | derived: coastal Mittoli, with the glosses the game already uses at Vaervelm Caelazh | "A variety of the Iberos coastal contact language, related to mainland trade Mittoli" |
 | **Izoli** | the island of Izol | derived: the island's own names (Izolveth, Ardveth, Kelvath, Anvath, Doreth) and the goddess's domain | The coastal dialect trades; the highland variety is conservative and does not translate its shrine vocabulary |
@@ -127,6 +127,8 @@ understand each other — and changes only the sound. Word order never moves.
 | Meneth Mittoli | Mittoli | Final `-th` → `-nth`, the pre-Mittoli Lotharn cluster the name *Meneth* itself comes out of |
 | Carican Mittoli | Mittoli | Final `-as`/`-os` → `-ac`/`-oc`; inner-branch speech with its own vocabulary for fox-corridor practice |
 | Nesdor Mittoli | Mittoli | Rolls an `r`; Plains Mittoli facing the Moros, named from *nessar* (counted) + *dorath* (water-place) |
+| Eer Mittoli | Mittoli | Shortens a doubled `e`; coastal-transitional, a stratigraphic record of every power that has administered the place, and place names that describe the ground and commemorate nobody |
+| Isareos Mittoli | Mittoli | Final `-os` → `-eos`; the western-interior speech of the valley heads, carrying **the ford vocabulary** — single terms for water heights and crossing conditions that Standard Mittoli needs a compound for |
 | the highland Izoli | Izoli | Doubles a final consonant; conservative, and keeps shrine vocabulary the towns do not have |
 
 **The four western regions** — Vastos, Meneth, Caricas, Nesdor — are all Mittoli
@@ -136,6 +138,13 @@ Mittoli", and Vastos's *vel-vastos* is called "the Mittoli-contact word"). They
 sit inside the Empire's reach, so the people speak Mittoli and the prefect, the
 clerk and the soldier answer in Ambroni — which is exactly what `IMPERIAL_ROLES`
 does.
+
+**Eer and Isareos** are the same answer again, from their own lore files: Eer speaks
+"a Mittoli dialect that linguists categorize as coastal-transitional" and Isareos
+"the western-interior dialect of Standard Mittoli, with the ford vocabulary". Neither
+needed a new tongue. **A region added to the atlas needs a line in `REGION_LANGUAGE`**
+or `tests/languages.test.js` goes red, which is the point: it is a question for the
+lore and not something to default. Nethereum, Ovesos, the Oves Desert and Gala are next.
 
 ## 3. Who speaks what, in order
 

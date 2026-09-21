@@ -146,12 +146,25 @@ export const TEACHING = freeze({
      */
     gives: freeze({ at: 0, weapon: BOW.id, name: JERRYS_BOW }),
     /**
-     * **And he will not spar.** Two men shooting each other across three paces is not a lesson,
-     * it is an accident with a queue; a bout is a melee exchange and an archer at that range is
-     * the man holding a stick he complains about. Blunts at a mark would be a different thing
-     * entirely - a straw post with a bow, with no opponent and no yield - and is not built.
+     * **He will not spar, and he teaches at a mark instead** (the user, 2026-09-21). Two men
+     * shooting each other across three paces is not a lesson, it is an accident with a queue; a
+     * bout is a melee exchange and an archer at that range is the man holding a stick he
+     * complains about. So he sets up a bundle of straw on a stake and the traveler shoots at it
+     * from a distance: the bow's own straw post, with no opponent, nothing to yield and nothing
+     * to win. It pays Bows **to the same ceiling a bout with him would pay** - the lessons he has
+     * given, cut down to his own level - and never past it.
      */
     spars: false,
+    mark: freeze({
+      offer: 'Set me a mark.',
+      /** What he says to a man who came to shoot with the wrong thing in his hands. */
+      hands: 'With the bow. I am not setting up a target so that you can walk up to it and hit it with a sword, and I would like it on record that I have had to say that before.',
+      lines: freeze([
+        'There. A bundle of straw on a stake. It has never hurt anybody and it never will, which is the entire point of it and the whole difference between this and sparring.',
+        'Now go back. Further than that. Anybody can hit a thing at ten paces and nobody ever learned a thing doing it — one long shot you had to think about is worth three short ones you did not.',
+      ]),
+      done: 'That will do. Pull your shafts out of the straw before you go; two in three of them are still arrows, and the third one was never going to be.',
+    }),
     lessons: freeze([
       teaching('Teach me the bow.',
         'Thirty paces, one arrow, and then I do not have to think about it any more. That is the entire appeal and I will not pretend it is anything deeper.',
@@ -164,7 +177,7 @@ export const TEACHING = freeze({
         'So know where the open ground is before it matters. That is not archery. That is just not being an idiot in a forest.'),
     ]),
     spar: freeze({ offer: 'Put me through it.',
-      wrong: 'Spar? With bows? You would be three paces away with an arrow on the string and so would I, and one of us would be dead and it would be whichever of us was slower. No. Go and shoot things that are not me, and then come and tell me about it.',
+      wrong: 'Spar? With bows? You would be three paces away with an arrow on the string and so would I, and one of us would be dead and it would be whichever of us was slower. No. But I will set you a mark and stand well behind you while you shoot at it.',
       done: 'Well. You are not going to do that to me twice.' }),
   }),
   'merc-christin': freeze({
@@ -350,6 +363,11 @@ export const lendOf = id => TEACHERS[id]?.lends ?? null;
 export const giftOf = id => TEACHERS[id]?.gives ?? null;
 /** Whether he will stand up with you at all. Jerry will not, and says why (`spar.wrong`). */
 export const sparsWith = id => TEACHERS[id]?.spars !== false;
+/**
+ * What he sets up instead of standing up with you, or null. Jerry alone has one, and it is there
+ * for exactly the reason he will not spar: a bout is three paces of melee and a bow is not.
+ */
+export const markOf = id => TEACHERS[id]?.mark ?? null;
 /** Whether what he lends is a thing he could actually be teaching: his own craft, in his own hands. */
 export const lendFits = id => {
   const lent = lendOf(id);
@@ -443,8 +461,30 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
     return { ok: true, id, family, ceiling: sparringCeiling(given(id), level), offer: spar.offer, done: spar.done, loan: lent };
   }
 
-  /** What a bout with this man pays up to today, or 0 for a man who will not stand up with you. */
-  const ceilingFor = id => (present(id) && given(id) && sparsWith(id) ? sparringCeiling(given(id), teacher(id).level) : 0);
+  /**
+   * **A mark, for the one man who will not spar.** Same gate as a bout, same arithmetic, same
+   * ceiling: he must be here, he must have shown you his craft at least once, and the traveler
+   * must have the right thing in his hands - which for a bow is the bow, because a mark is not
+   * something he can lend you a spare of. It differs from `bout` in what comes back: there is no
+   * loan and no opponent, only a target and how high shooting at it pays.
+   */
+  function atTheMark(id, hands = {}) {
+    const spec = markOf(id);
+    if (!spec) return { ok: false, reason: 'none' };
+    if (!present(id)) return { ok: false, reason: 'away' };
+    const { family, level } = teacher(id);
+    if (!given(id)) return { ok: false, reason: 'untaught' };
+    if (!handsFor(family, hands)) return { ok: false, reason: 'hands', line: spec.hands, family };
+    return { ok: true, id, family, ceiling: sparringCeiling(given(id), level),
+      offer: spec.offer, lines: [...spec.lines], done: spec.done };
+  }
+
+  /**
+   * What practice with this man pays up to today, or 0 for a man who will neither stand up with
+   * you nor set you anything. A mark is practice exactly as a bout is, so it is counted here.
+   */
+  const ceilingFor = id => (present(id) && given(id) && (sparsWith(id) || markOf(id))
+    ? sparringCeiling(given(id), teacher(id).level) : 0);
 
   const view = () => TEACHER_IDS.map(id => ({ id, name: TEACHERS[id].name, family: TEACHERS[id].family,
     level: TEACHERS[id].level, given: given(id), earned: earned(id), here: present(id),
@@ -459,7 +499,7 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
     return true;
   }
 
-  return { owed, teach, bout, ceilingFor, view, snapshot, restore,
+  return { owed, teach, bout, atTheMark, ceilingFor, view, snapshot, restore,
     given, teaches: id => teacher(id)?.family ?? null,
     get lessons() { return { ...state.lessons }; } };
 }

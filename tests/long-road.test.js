@@ -15,7 +15,7 @@ import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/long-road.js';
 import { ARRIVALS } from '../src/mercenaries.js';
 import { MAIN_ROAD } from '../src/region-world.js';
 import { renderLine } from '../src/linguist.js';
-import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
+import { SUBREGION_IDS, SUBREGIONS, subregionsAt } from '../src/map-fog.js';
 import { MERCENARY_ROSTER } from '../src/mercenaries.js';
 import { SKILLS } from '../src/skills.js';
 
@@ -55,8 +55,11 @@ test('every stop names a leg, a kind, a named ground and the view that says it i
     assert.ok(row.subregion === null ? areas.length === 0 : areas.includes(row.subregion),
       `${row.id} claims ${row.subregion} and stands in [${areas}]`);
   }
-  assert.equal(LONG_ROAD_STOPS.filter(row => row.subregion === null).map(row => row.id).join(), 'silas-stream',
-    'the Toll House stream is the one stop the chart has no name for');
+  // **Every stop stands in named ground now.** The Toll House stream was the last that did not,
+  // and the user gave it a ground of its own (2026-09-21), Drent's tenth.
+  assert.deepEqual(LONG_ROAD_STOPS.filter(row => row.subregion === null).map(row => row.id), [],
+    'a stop the chart has no name for');
+  assert.equal(longRoadStop('silas-stream').subregion, 'the-toll-house');
   assert.equal(LONG_ROAD_LEGS.length, 6, 'the harbour and five legs, one for each boat that lands');
   for (const leg of LONG_ROAD_LEGS) assert.ok(LONG_ROAD_STOPS.some(row => row.leg === leg.leg && row.kind === 'spine'), leg.title + ' has a spine');
   assert.ok(LONG_ROAD_SPINE.length >= 15, 'seventeen lessons, near enough: ' + LONG_ROAD_SPINE.length);
@@ -278,14 +281,22 @@ test('the save carries what cannot be derived, and refuses what the long road wo
   assert.equal(fresh.released, null);
 });
 
-test('every man on the roster can be remembered, and Drent has nine grounds to chart', () => {
+test('every man on the roster can be remembered, and Drent has ten grounds to chart', () => {
   const road = createLongRoad();
   for (const mercenary of MERCENARY_ROSTER) {
     road.notice([{ id: mercenary.id, name: mercenary.name, phase: 'stopped', x: -102, z: 9 }], { x: -102, z: 8.6 }, ground);
   }
   assert.equal(Object.keys(road.snapshot().seenAt).length, MERCENARY_ROSTER.length);
   assert.ok(validateLongRoadSnapshot(road.snapshot()));
-  assert.equal(DRENT_GROUNDS.length, 9, 'Mara signs your chart when all nine are on it');
+  // Ten since 2026-09-21: the Toll House was the one stop the chart could not name, and the
+  // user gave it a ground of its own.
+  assert.equal(DRENT_GROUNDS.length, 10, 'Mara signs your chart when all ten are on it');
+  assert.ok(DRENT_GROUNDS.includes('the-toll-house'));
+  assert.equal(DRENT_GROUNDS.length, new Set(DRENT_GROUNDS).size, 'and no ground is counted twice');
+  // Every named ground of Drent is one of them, so nobody can add a tenth-and-a-half and forget.
+  assert.deepEqual([...DRENT_GROUNDS].sort(),
+    SUBREGIONS.filter(one => one.region === 'Drent').map(one => one.id).sort(),
+    'Drent’s named ground and Mara’s countersign are the same list');
   for (const id of DRENT_GROUNDS) assert.ok(SUBREGION_IDS.includes(id), id);
   assert.equal(drentCharted({ mapFog: DRENT_GROUNDS }), true);
   assert.equal(drentCharted({ mapFog: DRENT_GROUNDS.slice(1) }), false);

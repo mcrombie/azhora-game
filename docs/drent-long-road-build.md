@@ -211,7 +211,7 @@ variant (the count is 1 or 2: the empty pegs, Venmor's "early men"), the last-in
 "That's eleven", then one line from each of the ten built from `seenAt` — ten templates, one
 phrase per stop), and one fresh line for each mercenary who musters after the traveler. First-in
 adds a small gain to the army's trust in `src/campaign.js`, once. Mara's countersign — an item and
-cartography experience, once, when all nine Drent grounds are charted — belongs to whichever
+cartography experience, once, when all ten Drent grounds are charted — belongs to whichever
 module holds Mara's conversation.
 *Tests:* `tests/moros-chapter.test.js`; `tests/every-fight.test.js` untouched and green.
 

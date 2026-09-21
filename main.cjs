@@ -334,7 +334,11 @@ if (ownsInstance) app.whenReady().then(async () => {
           const threw=await frameErrorsOf(win);
           if(threw){console.error(`FRAME THREW while composing ${view}: ${threw}`);app.exit(1);return;}
           const picture=await win.webContents.capturePage();
-          fs.writeFileSync(path.join(artifactDir,`${view}.${reviewJpeg?'jpg':'png'}`),reviewJpeg?picture.toJPEG(82):picture.toPNG());
+          // **Through `shotName`, like every other shot in this file.** This was the one writer
+          // that used the view's own text, and `--review-views` is the only flag that reaches it -
+          // so `stand-at:x,z,facing` wrote to the alternate data stream of a file called
+          // `stand-at`, which on Windows succeeds, writes no picture and says nothing at all.
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.${reviewJpeg?'jpg':'png'}`),reviewJpeg?picture.toJPEG(82):picture.toPNG());
           console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
         }
         console.log(JSON.stringify({views:reviewViews,errors},null,2));app.exit(errors.length?1:0);return;

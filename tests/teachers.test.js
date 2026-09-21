@@ -13,7 +13,7 @@ import { familyOf } from '../src/combat-skills.js';
 import {
   TEACHERS, TEACHER_IDS, TEACHING, TEACHABLE, LESSON_RUNGS, LESSON_XP, LESSON_LEVEL,
   SPARRING_CEILINGS, teachesOf, teachersOf, sparringCeiling, lessonXp, handsFor,
-  lendOf, lendFits, giftOf, sparsWith, createTeachers, validateTeachersSnapshot,
+  lendOf, lendFits, giftOf, sparsWith, markOf, createTeachers, validateTeachersSnapshot,
 } from '../src/teachers.js';
 import { BOW, JERRYS_BOW } from '../src/archery.js';
 import { smithOffers } from '../src/smith.js';
@@ -217,12 +217,11 @@ test('a man will only spar in the craft he teaches, and only once he has shown i
 /**
  * **Jerry will not spar, and it is not an oversight.** A bout is three paces of melee: the teacher
  * closes to a little over two metres and swings. Two men with bows at that range is not a lesson,
- * it is an accident with a queue - and blunts at a mark would be a different thing altogether, a
- * straw post with a bow, with no opponent, no exchange and nothing to yield. So he teaches by
- * lesson and by the gift, and the rest of Bows is paid for by using it on things that shoot back
- * with something else.
+ * it is an accident with a queue. **So he sets a mark instead** (the user, 2026-09-21): a straw
+ * post with a bow, with no opponent, no exchange and nothing to yield, which pays Bows to exactly
+ * the ceiling a bout with him would have paid.
  */
-test('one teacher will not stand up with you at all, and says why', () => {
+test('one teacher will not stand up with you at all, and sets you a mark instead', () => {
   const { companions, teachers } = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.fond } });
   assert.equal(sparsWith('merc-jerry'), false);
   for (const id of TEACHER_IDS) if (id !== 'merc-jerry') assert.equal(sparsWith(id), true, `${id} will`);
@@ -232,8 +231,109 @@ test('one teacher will not stand up with you at all, and says why', () => {
   assert.equal(asked.reason, 'never', 'not "wrong hands" — never');
   assert.equal(asked.line, TEACHERS['merc-jerry'].spar.wrong);
   assert.match(asked.line, /three paces/, 'and the reason is the range');
-  assert.equal(teachers.ceilingFor('merc-jerry'), 0, 'so a bout with him is worth nothing, because there is none');
   assert.equal(lendOf('merc-jerry'), null, 'and he lends nothing, because there is nothing to lend it for');
+  // His refusal is now an offer: he says what he will do instead, in the same breath.
+  assert.match(asked.line, /mark/i, 'and he offers the mark where he used to only refuse');
+
+  // **He alone has a mark**, and it is the reason he alone refuses.
+  assert.ok(markOf('merc-jerry'), 'he has one');
+  for (const id of TEACHER_IDS) if (id !== 'merc-jerry') assert.equal(markOf(id), null, `${id} does not need one`);
+  for (const id of TEACHER_IDS) assert.equal(sparsWith(id) === false, !!markOf(id), `${id}: a mark is what stands in for a bout`);
+
+  // Same gate as a bout, and the same arithmetic: his rung, cut down to his own level.
+  const aim = teachers.atTheMark('merc-jerry', { weapon: BOW.id });
+  assert.equal(aim.ok, true);
+  assert.equal(aim.family, 'bows');
+  assert.equal(aim.ceiling, sparringCeiling(1, MERCENARY_ARMS['merc-jerry'].level));
+  assert.equal(teachers.ceilingFor('merc-jerry'), aim.ceiling, 'practice with him is worth what the mark pays');
+  assert.ok(aim.lines.length >= 2 && aim.offer.length > 4 && aim.done.length > 20);
+  // And it never pays past him: three lessons and his own forty is the end of it.
+  const fond = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.fond } });
+  for (let n = 0; n < 3; n++) fond.teachers.teach('merc-jerry');
+  assert.equal(fond.teachers.atTheMark('merc-jerry', { weapon: BOW.id }).ceiling, MERCENARY_ARMS['merc-jerry'].level);
+  assert.ok(MERCENARY_ARMS['merc-jerry'].level < SPARRING_CEILINGS[3], 'his own level is the binding one');
+
+  // The bow, or nothing: a mark is not something he can lend you a spare of.
+  const wrong = teachers.atTheMark('merc-jerry', { weapon: 'simple-sword' });
+  assert.equal(wrong.ok, false);
+  assert.equal(wrong.reason, 'hands');
+  assert.equal(wrong.line, TEACHERS['merc-jerry'].mark.hands);
+  // And nothing at all before he has shown you anything, or while he is up the road.
+  const stranger = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.acquainted } });
+  assert.equal(stranger.teachers.atTheMark('merc-jerry', { weapon: BOW.id }).reason, 'untaught');
+  const away = company({ walking: [], regard: { 'merc-jerry': RUNG_AT.fond } });
+  assert.equal(away.teachers.atTheMark('merc-jerry', { weapon: BOW.id }).reason, 'away');
+  assert.equal(away.teachers.ceilingFor('merc-jerry'), 0, 'a man up the road teaches nothing');
+});
+
+/**
+ * The mark in the host: a straw post with a bow. It runs in the phase the straw post already runs
+ * in, so nothing shoots back and no fight is won or lost; it pays Bows where the arrow lands,
+ * by how far the arrow actually went; and walking away takes it down.
+ */
+test('the mark is practice, it pays by the arrow, and walking away ends it', () => {
+  const main = source('main.js');
+  // The offer, the taking-down, and the refusal when the bow is not in his hands.
+  assert.match(main, /const aim=teachers\.atTheMark\(npc\.id,travelerHands\(\)\);/);
+  assert.match(main, /id:'teacher-mark'/);
+  assert.match(main, /id:'teacher-mark-done'/, 'and he can put it away again');
+  assert.match(main, /id:'teacher-mark-no'/);
+  // **Practice, not a fight**: the same call Mara's post makes, and nothing else.
+  assert.match(main, /combat\.startPractice\(at\);/, 'the straw stands in the practice phase');
+  assert.doesNotMatch(main, /startEncounter\(\{id:'mark/, 'and nothing here lays a fight');
+  // Only arrows pay, and only his own: the mark is not the village post with a sword at it.
+  assert.match(main, /if\(e\.type==='practice-hit'&&!mark\)/, 'a sword at his straw banks nothing');
+  assert.match(main, /if\(e\.type==='arrow-landed'&&e\.stopped==='target'&&!e\.owner&&mark\)/);
+  assert.match(main, /arms\.dealt\(\{weapon:BOW\.id,damage:markWorth\(e\.flown\),\.\.\.markPay\(\)\}\)/);
+  // And it pays as a bout does: the sparring source, at his own ceiling, so the ceiling bites.
+  assert.match(main, /const markPay=\(\)=>\(mark\?\{source:'sparring',ceiling:mark\.ceiling\}:\{\}\);/);
+  // Distance matters, within reason: the near figure is the post's own blow and the far one twice it.
+  assert.match(main, /const markWorth=flown=>MARK_BLOW\*\(1\+Math\.min\(1,Math\.max\(0,\(\(Number\(flown\)\|\|0\)-MARK_NEAR\)\/\(BOW\.range-MARK_NEAR\)\)\)\);/);
+  assert.match(main, /const MARK_BLOW=12, MARK_NEAR=6;/);
+  assert.match(main, /const POST_BLOW=12;/, 'a hit up close is worth what a blow at the post is worth');
+  // Walking away ends it, and so does anything that takes the game out of practice.
+  assert.match(main, /if\(combat\.state\.phase!=='practice'\)endMark\(null\);/);
+  assert.match(main, /else if\(Math\.hypot\(player\.group\.position\.x-mark\.at\.x,player\.group\.position\.z-mark\.at\.z\)>MARK_WALK\)endMark\('walked-away'\);/);
+  assert.match(main, /const MARK_WALK=BOW\.range\+12;/, 'past the bow’s own range there is nothing to shoot at');
+  // Nothing about it is written down: it is an afternoon, not a state of the world.
+  assert.doesNotMatch(main, /mark:mark/, 'the mark is in no snapshot');
+  assert.match(main, /view==='jerry-mark'/, 'and there is a picture of it');
+});
+
+/**
+ * The draw had to be let into the practice phase for any of this to work, and that is the whole
+ * of what `combat.js` gained: the swing has always worked at the post, and now the draw does too.
+ */
+test('an arrow may be sent at a mark, and a mark cannot be hurt', () => {
+  const combatSource = source('combat.js');
+  assert.match(combatSource, /const shootable = \(\) => state\.phase === 'active' \|\| state\.phase === 'practice';/);
+  assert.match(combatSource, /flown: arrow\.flown/, 'and the landing says how far it went');
+
+  // Driven: a traveler with a bow, a dummy in front of him, and a full draw let go.
+  const inventory = { has: () => true, count: () => 12 };
+  const weapons = createWeapons({ inventory });
+  weapons.equip(BOW.id);
+  const position = { x: 0, y: 0, z: 0 };
+  const events = [];
+  const fight = createCombat({ world: null, position, onEvent: event => events.push(event),
+    getWeapon: () => weapons.profile(), getMargins: () => marginsFor({}), getArrows: () => 12 });
+  fight.startPractice({ x: 0, z: 14 });
+  assert.equal(fight.state.phase, 'practice');
+  const straw = fight.state.enemies[0];
+  assert.equal(straw.kind, 'dummy');
+  for (let step = 0; step < 200; step++) { fight.draw(true, 0); fight.update(1 / 60); }
+  assert.ok(fight.drawn > .99, `the draw filled to ${fight.drawn.toFixed(2)} at a mark`);
+  fight.draw(false, 0);
+  for (let step = 0; step < 200 && fight.state.arrows.length; step++) fight.update(1 / 60);
+  const landed = events.filter(event => event.type === 'arrow-landed');
+  assert.equal(landed.length, 1, 'the arrow went and it stopped');
+  assert.equal(landed[0].stopped, 'target', 'in the straw');
+  assert.ok(landed[0].flown > 13 && landed[0].flown < 15, `${landed[0].flown?.toFixed(1)} m of flight`);
+  // Nobody can be hurt, and nothing is won or lost.
+  assert.equal(straw.hp, straw.maxHp, 'the straw is not damaged by being shot');
+  assert.equal(fight.state.player.hp, fight.state.player.maxHp ?? fight.state.player.hp, 'and neither is he');
+  assert.deepEqual(events.filter(event => ['victory', 'defeat', 'retreat', 'spar-over'].includes(event.type)), []);
+  assert.ok(events.some(event => event.type === 'practice-hit'), 'it registers as practice, as the post does');
 });
 
 test('the first bow is Jerry’s spare, given with his first lesson', () => {
@@ -351,7 +451,7 @@ test('the loan lives inside the bout and nowhere else', () => {
     'the loan goes back before anything else, and even for a bout the host has forgotten');
   assert.match(main, /if\(lent&&!\(sparring&&combat\.state\.phase==='active'&&combat\.state\.encounterId===SPARRING_ID\)\)returnLoan\(\);/,
     'and a frame in which no bout is running holds nothing borrowed');
-  assert.match(main, /sparring=null;returnLoan\(\);/, 'a reload gives it back too');
+  assert.match(main, /sparring=null;endMark\(null\);returnLoan\(\);/, 'a reload gives it back too, and takes the mark down with it');
 });
 
 test('a weapon carries how it feels all the way to the fight', () => {
@@ -484,6 +584,67 @@ test('a bout really does kill nobody, on either side', () => {
   for (let i = 0; i < 60 * 30 && !events.some(e => e.type === 'victory'); i++) { fight.attack(0); fight.update(1 / 60); }
   assert.equal(events.some(e => e.type === 'enemy-defeated'), true, 'outside a bout, a killing blow still kills');
   assert.equal(real.combat.state.phase, 'active', 'and the bout beside it is still a bout');
+});
+
+/**
+ * **And the blow that beats him is never merely blocked.** A sparring partner carries `guard`, so
+ * a man who is idle, off cooldown and facing the blow turns half of it and is not rocked - and the
+ * answer to a guarded blow used to be `emit('blocked'); return`, which sits *above* the bout's
+ * yield. The blow that put him on the floor of one therefore set `active: false` and returned: he
+ * was beaten, no further blow could ever reach him, and no `spar-over` was ever sent. The bout ran
+ * for ever. With a bow it was every bout, every time, because a man who cannot be reached is idle
+ * and an idle man is always on guard (docs/known-issues.md).
+ */
+test('a guarded blow that beats him still ends the bout', () => {
+  // **One swing.** Swinging every frame runs the combo on, and by the third stroke he has begun a
+  // swing of his own and guards nothing - which is how this test first passed against the bug.
+  const oneBlow = onGuard => {
+    const fix = bout({ hp: 2 });
+    fix.position.z = 1.4;                       // inside a sword's reach of the man at z 3.2
+    const foe = fix.combat.state.enemies[0];
+    let swung = false;
+    for (let i = 0; i < 240 && !fix.over().length; i++) {
+      // Held in the one state `guarded` asks for: idle, off cooldown, facing the blow. The
+      // control puts him mid-swing instead, where a shield is worth nothing.
+      foe.hp = Math.min(foe.hp, 2); foe.x = 0; foe.z = 3.2; foe.yaw = Math.PI;
+      foe.action = onGuard ? 'idle' : 'attack';
+      if (!swung) swung = fix.combat.attack(0);
+      fix.combat.update(1 / 60);
+    }
+    return { over: fix.over(), phase: fix.combat.state.phase,
+      struck: fix.events.filter(e => e.type === 'hit').map(e => e.damage) };
+  };
+  const open = oneBlow(false), caughtOnIt = oneBlow(true);
+  assert.equal(open.struck.length, 1);
+  assert.equal(caughtOnIt.struck.length, 1);
+  assert.ok(caughtOnIt.struck[0] < open.struck[0],
+    `the blow was caught on his shield, which is the whole point of the measurement (${caughtOnIt.struck[0]} against ${open.struck[0]})`);
+  assert.equal(open.over.length, 1, 'control: an unguarded finishing blow ends the bout');
+  assert.equal(caughtOnIt.over.length, 1, 'and so does one he caught on his shield');
+  assert.equal(caughtOnIt.over[0].winner, 'traveler');
+  assert.equal(caughtOnIt.phase, 'peaceful');
+  // **And an ordinary fight is untouched, to the digit.** Outside a bout the floor is nought, so
+  // `active` is `hp > 0` and the two readings are the same question: a man on guard still catches
+  // one on his shield and is still standing afterwards, and the last blow still kills and still
+  // wins the fight. Driven against a soldier, who is the kind that carries a guard at all.
+  const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 1.5 };
+  const position = { x: 0, y: 1.5, z: 0 }, events = [];
+  const fight = createCombat({ world, position, onEvent: event => events.push(event) });
+  fight.startEncounter({ id: 'guarded-soldier', level: 0, center: { x: 0, z: 1.6 }, checkpoint: { x: 0, z: 0 },
+    retreatAxis: 'z', retreatLine: 25.6, enemies: [{ id: 'soldier', kind: 'soldier', x: 0, z: 3.2, hp: 400 }] });
+  const guarded = fight.state.enemies[0];
+  let caught = 0;
+  for (let i = 0; i < 60 * 60 && fight.state.phase === 'active'; i++) {
+    // Held on guard until he has taken two on the shield, then let go and fought properly.
+    if (caught < 2 && guarded.hp > 40) { guarded.x = 0; guarded.z = 3.2; guarded.yaw = Math.PI; guarded.action = 'idle'; }
+    fight.attack(Math.atan2(guarded.x - position.x, guarded.z - position.z));
+    fight.update(1 / 60);
+    caught = events.filter(e => e.type === 'blocked').length;
+    if (caught >= 2 && guarded.hp > 40) guarded.hp = 40;   // straight to the end of it
+  }
+  assert.ok(caught >= 2, `a soldier on guard still catches one on his shield (${caught})`);
+  assert.ok(events.some(e => e.type === 'enemy-defeated'), 'and the blow that does for him still kills');
+  assert.ok(events.some(e => e.type === 'victory'), 'and still wins the fight');
 });
 
 test('a bout can kill nobody, and no victory is ever reported for one', () => {

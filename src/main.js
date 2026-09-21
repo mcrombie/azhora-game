@@ -61,7 +61,7 @@ import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight }
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
-import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
+import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
@@ -87,8 +87,8 @@ import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
-import { createTeachers, TEACHERS } from './teachers.js';
-import { BOW, JERRYS_BOW, flightOf } from './archery.js';
+import { createTeachers, TEACHERS, markOf } from './teachers.js';
+import { BOW, JERRYS_BOW, flightOf, solidAt } from './archery.js';
 import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gear.js';
@@ -773,6 +773,13 @@ function init() {
    * is the bout that is on right now - who, in which family, and up to what.
    */
   let teachers=null,sparring=null;
+  /**
+   * **Jerry's mark**, and nothing else uses it: who set it up, in which family, what it pays up
+   * to, where the straw is standing and the mesh that is standing there. It is a straw post with
+   * a bow - practice, not a fight - so it is not in any snapshot, and it comes down the moment
+   * the traveler walks off.
+   */
+  let mark=null;
   /**
    * **What a teacher has lent for the length of a bout**, and nothing else in the game has
    * anything like it: `{weapon}` or `{shield:true}`. It is not in the satchel, it is not in
@@ -3015,6 +3022,32 @@ function init() {
     for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
     return mustered;
   }
+  /**
+   * **The fine steel your side owes you for the border** (`SIDE_GIFT`, src/aftermath-chapter.js;
+   * the gear table's tier 4 is "officers, and gifts from a side you have served"). The first man
+   * who speaks to him after that victory is the captain who rallies him for the day after, and he
+   * hands it over in his own voice, once, before he gives him the next piece of work.
+   *
+   * **Nothing new is saved.** Nothing else in the game makes tier-4 armour, no smith sells above
+   * steel, and nothing anywhere takes a piece off again — so the coat on his back *is* the record
+   * that it was given, and it is already in the gear snapshot. `sideGiftOwed` asks what he is
+   * wearing, so a second walk up to the same captain says nothing more about it.
+   */
+  function giveSideGift(npc){
+    const chapter=aftermath.spec;
+    if(!chapter||npc.id!==chapter.commanderId||aftermath.view().stage!=='rally')return [];
+    const lines=GIFT_LINES[chapter.commanderId];
+    if(!lines||!sideGiftOwed(gear.wearing(SIDE_GIFT.slot)))return [];
+    const had=gear.wearing(SIDE_GIFT.slot);
+    const worn=gear.wear(SIDE_GIFT.slot,{weight:SIDE_GIFT.weight,tier:SIDE_GIFT.tier});
+    if(!worn.ok)return [];
+    audio?.effect('success');
+    toast(`${pieceName(SIDE_GIFT)} · given, not sold. It turns ${Math.round(worn.turns*100)} in a hundred off a blow.`
+      +`${had?` He takes the old ${pieceName({slot:SIDE_GIFT.slot,...had}).toLowerCase()} off your hands.`:''}`,
+      chapter.side==='empire'?'THE ARMY ARMS YOU IN FINE STEEL':'THE REPUBLIC ARMS YOU IN FINE STEEL');
+    saveRoad(false);
+    return [...lines];
+  }
   // The day after the battle: one more fight beside the same allies, then the pay and the road onward.
   function aftermathAct(action){
     const result=aftermath.act(action);if(!result.ok){toast(result.reason,'AFTER THE BATTLE');return result;}
@@ -3098,7 +3131,7 @@ function init() {
     // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
     // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
     // that loading one *during* a bout cannot leave a man holding somebody else's pike.
-    sparring=null;returnLoan();clearArrows();
+    sparring=null;endMark(null);returnLoan();clearArrows();
     // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
     // sheet, the sign lettering and the starting kit were settled when the page opened, and
     // switching them under a running game would leave half of it in the other mode. The field says
@@ -3377,6 +3410,16 @@ function init() {
       else{closeDialogue();startSpar(npc,spar);}}});
     else if(spar.reason==='hands')choices.unshift({id:'teacher-spar-no',label:'Stand up and go a few with me.',
       action:()=>openDialogue(npc,[spar.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
+    // **And the one man who will not stand up with you sets you a mark instead** (src/teachers.js).
+    // Same gate as a bout and the same ceiling; what differs is that there is nobody in front of
+    // the arrow. Taking it down is the same line offered back, so nothing is stranded.
+    const aim=teachers.atTheMark(npc.id,travelerHands());
+    if(mark&&mark.id===npc.id)choices.unshift({id:'teacher-mark-done',label:'That will do for today.',
+      action:()=>{closeDialogue();endMark('done');}});
+    else if(aim.ok)choices.unshift({id:'teacher-mark',label:`${aim.offer} (${SKILLS[aim.family]?.name??aim.family}, to ${aim.ceiling})`,
+      action:()=>{closeDialogue();startMark(npc,aim);}});
+    else if(aim.reason==='hands')choices.unshift({id:'teacher-mark-no',label:'Set me a mark.',
+      action:()=>openDialogue(npc,[aim.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
     const lesson=teachers.owed(npc.id);
     if(lesson)choices.unshift({id:'teacher-lesson',label:lesson.offer,
       action:()=>openDialogue(npc,[...lesson.lines],null,'Back to our conversation',{onComplete:()=>{giveLesson(npc.id);mercenaryConversation(npc);}})});
@@ -3654,7 +3697,7 @@ function init() {
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
     if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
-    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid()}))return;
+    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1,fill:fillSaid()}))return;
@@ -4112,6 +4155,84 @@ function init() {
    * teach past what he knows (src/teachers.js). A real fight has no ceiling at all.
    */
   const sparringPay=()=>(sparring&&combat.state.encounterId===SPARRING_ID?{source:'sparring',ceiling:sparring.ceiling}:{});
+  /**
+   * **Jerry's mark** (the user, 2026-09-21; docs/combat-brief.md). He cannot spar - two archers at
+   * three paces is not a lesson and he says so - so he sets a bundle of straw on a stake and the
+   * traveler shoots at it from a distance. It is the bow's straw post and it runs in the same
+   * `practice` phase: nothing shoots back, no damage is dealt to anything, and no victory or
+   * defeat is ever emitted. Arrows are spent and two in three are still arrows on the ground,
+   * exactly as in a fight.
+   *
+   * **A hit pays Bows to the ceiling a bout with him would pay** - the lessons he has given, cut
+   * down to his own level (`sparringCeiling`, src/teachers.js) - and never past it. Only arrows
+   * pay: a sword at a target set up for archery is not what he set it up for.
+   */
+  const MARK_BLOW=12, MARK_NEAR=6;
+  /** How far he can walk off before the straw is behind him for good: past the bow's own range. */
+  const MARK_WALK=BOW.range+12;
+  /**
+   * **And distance matters, within reason.** A hit from six metres is worth what a blow at the
+   * straw post is worth; one from the bow's full range is worth twice that, and nothing past the
+   * range can be shot at all. `flown` is how far the arrow actually went, which the fight
+   * measures itself, so nothing here has to remember where the shot was taken from.
+   */
+  const markWorth=flown=>MARK_BLOW*(1+Math.min(1,Math.max(0,((Number(flown)||0)-MARK_NEAR)/(BOW.range-MARK_NEAR))));
+  /**
+   * A bundle of straw lashed to a stake, with a ring painted on it. Built by the host and thrown
+   * away with the mark: it is a thing one man set up for an afternoon, not scenery, and it is
+   * **not a collider** - straw stops nothing, and the arrow is stopped by the target behind it
+   * being a target rather than by anything solid.
+   */
+  function markMesh(at){
+    const group=new THREE.Group();group.name='Jerry’s mark';
+    const wood=new THREE.MeshLambertMaterial({color:0x6b5334}),straw=new THREE.MeshLambertMaterial({color:0xc9b071});
+    const ring=new THREE.MeshLambertMaterial({color:0x8a3a2c}),ground=world.heightAt(at.x,at.z);
+    const stake=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,1.5,5),wood);stake.position.y=.75;group.add(stake);
+    const boss=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.22,9),straw);
+    boss.position.y=1.3;boss.rotation.x=Math.PI/2;group.add(boss);
+    const eye=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.24,9),ring);
+    eye.position.y=1.3;eye.rotation.x=Math.PI/2;group.add(eye);
+    group.position.set(at.x,ground,at.z);
+    scene.add(group);
+    return group;
+  }
+  /**
+   * He sets it up. The straw goes out along the open ground the traveler is already looking down,
+   * far enough that walking back is a decision; the traveler then goes back further himself,
+   * because a long shot he had to think about is the whole of what the mark teaches.
+   */
+  function startMark(npc,offer){
+    endMark(null);
+    const me=player.group.position,face=player.group.rotation.y;
+    // Out along the line he is facing, on the furthest standable spot of the three that is clear.
+    let at=null;
+    for(const reach of [18,14,10]){
+      const spot={x:me.x+Math.sin(face)*reach,z:me.z+Math.cos(face)*reach};
+      if(canStand(spot.x,spot.z,world)&&!solidAt(world,spot.x,spot.z,.6)){at=spot;break;}
+    }
+    if(!at){toast('There is no open ground here to put a target on. Find some, and ask him again.','THE MARK');return false;}
+    combat.startPractice(at);
+    mark={id:npc.id,family:offer.family,ceiling:offer.ceiling,done:offer.done,at,group:markMesh(at),hits:0};
+    audio?.effect('bell');
+    openDialogue(npc,[...offer.lines],null,'Back to the road',{onComplete:closeDialogue});
+    toast(`A bundle of straw on a stake, ${Math.round(Math.hypot(at.x-me.x,at.z-me.z))} m out. Walk back and shoot at it: hold the attack button to draw and let go to loose. It pays ${SKILLS[offer.family]?.name??offer.family} to ${offer.ceiling}, and a hit from further out pays more.`,'JERRY SETS YOU A MARK');
+    return true;
+  }
+  /** And it comes down: he takes it up, or the traveler walks away from it, or a real fight starts. */
+  function endMark(why){
+    const was=mark;mark=null;
+    if(!was)return false;
+    scene.remove(was.group);
+    combat.finishPractice();
+    if(why==='walked-away')toast('You leave the straw where it stands. He will pull the stake up when he notices.','THE MARK');
+    else if(why==='done'){
+      const npc=npcById.get(was.id);
+      if(npc&&mode==='playing'&&!reviewTarget)openDialogue(npc,[was.done],null,'Back to the road',{onComplete:closeDialogue});
+    }
+    return true;
+  }
+  /** What a hit on the mark counts as: Bows, at his ceiling, by how far the arrow actually went. */
+  const markPay=()=>(mark?{source:'sparring',ceiling:mark.ceiling}:{});
   /** The bout is over: who had the better of it, and the one thing he says about it. */
   function endSpar(winner){
     const bout=sparring;sparring=null;
@@ -4472,7 +4593,9 @@ function init() {
       // Mara's straw post is where Blades is shown, in the first ten minutes, and it is the one
       // place a swing teaches without anything swinging back. A post pays as a light blow does,
       // and stops at level 5 (`ARMS.ceiling.post`): nobody reaches sixty by hitting straw.
-      if(e.type==='practice-hit'){arms.learn('blades');armsPaid(arms.dealt({weapon:weapons?.profile()?.id,damage:POST_BLOW,source:'post'}));}
+      // Jerry's mark runs in the same phase and is not that post: what it teaches is Bows, and it
+      // is paid where the arrow lands rather than here, so a sword at his straw banks nothing.
+      if(e.type==='practice-hit'&&!mark){arms.learn('blades');armsPaid(arms.dealt({weapon:weapons?.profile()?.id,damage:POST_BLOW,source:'post'}));}
       // A real blow pays the weapon's own family, by what it did and where it was done.
       if(e.type==='hit'&&e.damage>0&&combat.state.phase==='active')
         armsPaid(arms.dealt({weapon:e.weaponId,damage:e.damage,killed:!!e.killed,countryLevel:e.level??0,...sparringPay()}));
@@ -4490,6 +4613,12 @@ function init() {
       if(e.type==='loose'){inventory.remove(BOW.arrow,1);inventory.refresh();refreshQuiver();}
       // And where it stopped, two shafts in three are still arrows lying on the ground.
       if(e.type==='arrow-landed'&&e.recovered)dropArrow(e.x,e.z);
+      // **A hit on Jerry's mark pays Bows**, at the ceiling a bout with him would pay and no
+      // further, by how far the arrow actually went. Only his own shafts: an ally's are his.
+      if(e.type==='arrow-landed'&&e.stopped==='target'&&!e.owner&&mark){
+        mark.hits++;arms.learn('bows');
+        armsPaid(arms.dealt({weapon:BOW.id,damage:markWorth(e.flown),...markPay()}));
+      }
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         // **A fight come through together** is what moves a man's regard fastest, and a little
@@ -4720,6 +4849,13 @@ function init() {
         // drowning goes through `combat.revive()` and a fight can be ended from outside. This is
         // the belt to that brace, and it is cheap: one null check a frame.
         if(lent&&!(sparring&&combat.state.phase==='active'&&combat.state.encounterId===SPARRING_ID))returnLoan();
+        // **Walking away ends the mark**, and so does anything that takes the game out of the
+        // practice phase - a real fight beginning, a drowning, a load. Past the bow's own range
+        // there is nothing he could be shooting at anyway, so it is not a rule he has to learn.
+        if(mark){
+          if(combat.state.phase!=='practice')endMark(null);
+          else if(Math.hypot(player.group.position.x-mark.at.x,player.group.position.z-mark.at.z)>MARK_WALK)endMark('walked-away');
+        }
         // Walk over a spent shaft and it is yours again. No prompt and no key: stooping for an
         // arrow is not a decision (src/archery.js - about two in three survive the landing).
         gatherArrows();
@@ -5856,7 +5992,7 @@ function init() {
          */
         if(view==='filled-file'||view==='filled-file-coalition'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
           const side=view==='filled-file-coalition'?'coalition':'empire';
-          questStage=10;combat.revive();sparring=null;returnLoan();clearArrows();player.setArmed(true);
+          questStage=10;combat.revive();sparring=null;endMark(null);returnLoan();clearArrows();player.setArmed(true);
           companionOffTheClock=true;
           companions.restore({...createCompanions().snapshot(),walking:[]});
           rebuildCompany();settleMercenaries();
@@ -5887,7 +6023,7 @@ function init() {
           return;
         }
         if(view==='bow-drawn'||view==='bow-jerry'||view==='bow-spent'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
-          questStage=10;combat.revive();sparring=null;returnLoan();clearArrows();
+          questStage=10;combat.revive();sparring=null;endMark(null);returnLoan();clearArrows();
           companionOffTheClock=true;
           const jerry=view==='bow-jerry';
           companions.restore({...createCompanions().snapshot(),walking:jerry?['merc-jerry']:[],regard:jerry?{'merc-jerry':60}:{}});
@@ -5947,10 +6083,12 @@ function init() {
            * on the same ground, with no `level` of its own so it takes the country's like every
            * other authored fight does (tests/held-battles.test.js).
            */
-          const mark={x:at.x,z:at.z-6};
+          // Named `foe`, not `mark`: `mark` is Jerry's straw target and is an outer variable of
+          // this closure, and a block-scoped shadow of it here would be a trap for the next reader.
+          const foe={x:at.x,z:at.z-6};
           combat.startEncounter({id:'bow-review',center:at,checkpoint:{x:me.x,z:me.z},
             retreatAxis:'z',retreatLine:at.z+30,
-            enemies:[{id:'goblin-mark',x:mark.x,z:mark.z,hp:400,entry:0}]});
+            enemies:[{id:'goblin-mark',x:foe.x,z:foe.z,hp:400,entry:0}]});
           // A fight is only `active` a few frames in, and a draw only fills while one is on.
           for(let step=0;step<10;step++)combat.update(1/60);
           if(spent){
@@ -6028,13 +6166,84 @@ function init() {
           $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
           return;
         }
+        if(view==='jerry-mark'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          /**
+           * **Jerry teaches by shooting at a mark** (the user, 2026-09-21). He cannot spar, so
+           * there is no fight here at all: the straw stands in the `practice` phase, which is the
+           * straw post's own phase, and nothing in this picture can hurt anybody.
+           */
+          questStage=10;combat.revive();sparring=null;endMark(null);returnLoan();clearArrows();player.setArmed(true);
+          // **The landing mate is off**, which is what takes Chris out of the file: with him in it
+          // he stands between the camera and the shooter, and this picture is about two men.
+          companionOffTheClock=false;
+          // Two lessons given, which is `friendly` and a ceiling of min(35, his own 40) = 35.
+          companions.restore({...createCompanions().snapshot(),walking:['merc-jerry'],regard:{'merc-jerry':60}});
+          teachers.restore({version:1,lessons:{'merc-jerry':2}});
+          rebuildCompany();settleMercenaries();
+          if(!inventory.has(BOW.id))inventory.add(BOW.id,1);
+          weapons.setCondition(BOW.id,WEAPON_TYPES[BOW.id].maxDurability);weapons.equip(BOW.id);
+          if(inventory.count(BOW.arrow)<12)inventory.add(BOW.arrow,12-inventory.count(BOW.arrow));
+          inventory.refresh();refreshQuiver();
+          /**
+           * **Ground the straw can stand on, and a line the arrow can cross to it.** The first
+           * draft asked only the arrow's question (`flightOf`, as `bow-spent` does) and the
+           * clearest line at the landing beach is straight out over the water: it photographed a
+           * man shooting at the sea with his target on the hill behind him. `flightOf` reads
+           * colliders and **the sea is not a collider**, so the sweep asks `canStand` at the
+           * straw's own spot as well, which is the question `startMark` will ask a moment later.
+           */
+          const MARK_OUT=18;
+          const open=(()=>{
+            for(const from of [greenwayEncounter.center,world.training,{x:6,z:78}])
+              for(let turn=0;turn<36;turn++){
+                const bearing=turn/36*Math.PI*2;
+                const at={x:from.x+Math.sin(bearing)*MARK_OUT,z:from.z+Math.cos(bearing)*MARK_OUT};
+                if(!canStand(from.x,from.z,world)||!canStand(at.x,at.z,world))continue;
+                if(flightOf({x:from.x,z:from.z,yaw:bearing,range:MARK_OUT+2,world}).stopped!=='spent')continue;
+                return {from,bearing};
+              }
+            return {from:world.training,bearing:0};})();
+          const me={x:open.from.x,z:open.from.z},face=open.bearing;
+          player.group.position.set(me.x,world.heightAt(me.x,me.z),me.z);
+          player.group.rotation.y=face;grounded=true;verticalSpeed=0;
+          // Where he said he would be: behind the shooter's shoulder and well out of the line.
+          const jerry=npcById.get('merc-jerry');
+          const by={x:me.x-Math.sin(face)*1.9+Math.cos(face)*1.7,z:me.z-Math.cos(face)*1.9-Math.sin(face)*1.7};
+          world.npcPositions['merc-jerry']={x:by.x,z:by.z};
+          if(jerry){jerry.hidden=false;jerry.actor.group.position.set(by.x,world.heightAt(by.x,by.z),by.z);
+            jerry.actor.group.rotation.y=face;}
+          // Set through the real door, so the picture is of the thing the player is given. The
+          // dialogue it opens is closed again: a review is not a conversation.
+          const aim=teachers.atTheMark('merc-jerry',travelerHands());
+          if(aim.ok&&jerry)startMark(jerry,aim);
+          closeDialogue();
+          // Held, through the same door the player uses, and never let go: if the rules say a
+          // draw cannot fill at a mark, the picture will show it not drawing.
+          for(let step=0;step<90;step++){combat.draw(true,face);combat.update(1/60);}
+          combatClock+=1;combatView.update(1,combatClock,combat.state,player.group.position,true);
+          settlePose({armed:true,draw:combat.drawn});
+          /**
+           * **Behind the whole file, looking down the line.** The company places a companion
+           * *behind* the traveler and goes on doing it every frame, so putting Jerry by hand does
+           * nothing - measured: he came to rest 6.5 m back, which the first draft's camera at 5.3 m
+           * back stood in front of, and the picture had no teacher in it at all. The camera goes
+           * behind him instead: his shoulder in the near ground, the traveler at his draw in the
+           * middle, and the straw at the far end of the same line.
+           */
+          const ahead={x:me.x+Math.sin(face)*6,z:me.z+Math.cos(face)*6};
+          reviewTarget=new THREE.Vector3(ahead.x,world.heightAt(ahead.x,ahead.z)+1.3,ahead.z);
+          yaw=face-Math.PI+.5;pitch=.16;distance=targetDistance=14;reviewFrozen=true;
+          player.group.visible=true;
+          $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
+          return;
+        }
         if(view==='sparring'||view==='sparring-pike'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
           // **Two bouts.** `sparring` is Ed the Word, who teaches the dagger and is therefore the
           // one man a traveler with the sword he landed with can already stand up against.
           // `sparring-pike` is Matt, whose craft is not in the traveler's hands at all - so he
           // lends his spare pike, and the picture is of a borrowed weapon being used.
           const teach=view==='sparring-pike'?'merc-matt':WORD_ID;
-          questStage=10;combat.revive();sparring=null;returnLoan();player.setArmed(true);
+          questStage=10;combat.revive();sparring=null;endMark(null);returnLoan();player.setArmed(true);
           companionOffTheClock=true;
           // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/companions.js) and a
           // ceiling of min(35, his own 35). Restored rather than played, so the shot is the same

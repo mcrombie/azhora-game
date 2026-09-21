@@ -266,8 +266,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * button and the facing every frame and nothing here remembers a press. `drawHeld` is this
    * frame's button, `drawTime` how long it has actually been drawing, and `loosed` counts the
    * arrows this traveler has ever sent, which is what decides which shafts break.
+   *
+   * **`loosed` is the traveler's alone.** An ally archer keeps his own tally (`allyShafts`), which
+   * numbers nothing and only makes his arrows tell each other apart. They shared one counter until
+   * the hunt found it: every arrow Jerry sent moved the traveler's next shaft along one, so the
+   * rule `survives` states - exactly two in three, and the same two whatever happens - held only
+   * when nobody was shooting beside him. Driven: thirty shots with Jerry at his shoulder came back
+   * seventeen instead of twenty, and a reload that changed Jerry's cadence changed which of the
+   * traveler's own shafts broke.
    */
-  let drawHeld = false, drawYaw = 0, drawTime = 0, loosed = 0;
+  let drawHeld = false, drawYaw = 0, drawTime = 0, loosed = 0, allyShafts = 0;
   /**
    * Whether there is `metres` of clear ground all round him to swing a long weapon in. Only the
    * pike asks. A world with no colliders - a test's - is open ground, which is the right answer.
@@ -463,10 +471,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
   /** How many arrows there are to shoot. The host owns the satchel; this only ever asks. */
   const arrowsLeft = () => Math.max(0, Math.floor(Number(getArrows?.()) || 0));
+  /**
+   * When an arrow may be sent at all: in a fight, or **at a mark**. Practice is the phase the
+   * straw post already runs in, and a shot at a target is the bow's straw post - the dummy takes
+   * no damage, nothing shoots back, and no fight is won or lost by it (Jerry's mark,
+   * docs/combat-brief.md). The swing has always worked in both; the draw now does too.
+   */
+  const shootable = () => state.phase === 'active' || state.phase === 'practice';
   /** Whether a draw is actually on right now, which is not the same as the button being down. */
   function drawing() {
     const weapon = currentWeapon();
-    return !!drawHeld && !!weapon?.ranged && weapon.usable !== false && state.phase === 'active'
+    return !!drawHeld && !!weapon?.ranged && weapon.usable !== false && shootable()
       && player.action === 'idle' && player.hp > 0 && player.stamina >= BOW.wind && arrowsLeft() > 0;
   }
   /**
@@ -479,7 +494,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const weapon = currentWeapon();
     const pull = drawnBy(drawTime, margins().drawTime ?? 1);
     drawTime = 0;
-    if (!weapon?.ranged || state.phase !== 'active' || player.hp <= 0) return false;
+    if (!weapon?.ranged || !shootable() || player.hp <= 0) return false;
     const shot = shotAt(pull, { damage: weapon.damage?.[0] ?? BOW.damage });
     if (!shot) { emit('draw-spent', { pull, x: position.x, z: position.z }); return false; }
     if (arrowsLeft() <= 0 || player.stamina < BOW.wind) return false;
@@ -499,8 +514,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function landArrow(arrow, stopped, targetId = null) {
     state.arrows = state.arrows.filter(other => other !== arrow);
     // An ally's arrows are his own: the traveler does not walk the field gathering Jerry's.
+    // `flown` is how far it actually went, which is the only honest measure of a long shot: a
+    // mark pays by it (src/main.js), and nothing else has to remember where the shot was taken.
     emit('arrow-landed', { id: arrow.id, n: arrow.n, owner: arrow.owner ?? null, x: arrow.x, z: arrow.z,
-      stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
+      flown: arrow.flown, stopped, targetId, recovered: !arrow.owner && survives(arrow.n) });
   }
   /** Every arrow in the air moves, and the first solid thing it meets is the last thing it meets. */
   function updateArrows(dt) {
@@ -629,7 +646,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const floor = lastEncounter.bout ? 1 : 0;
     enemy.hp = Math.max(floor, enemy.hp - damage);
     enemy.active = enemy.hp > floor;
-    if (guarded && enemy.hp) {
+    // A blow he caught on his shield leaves him standing, and the fight goes on above this line.
+    // **But the blow that beats him is never merely blocked**, because everything that ends a
+    // fight is below here: the bout's yield, and the victory. This read `enemy.hp`, which in an
+    // ordinary fight is the same question - a man at nought is a man who is not active - and in a
+    // **bout** is not, because a bout's floor is one. So a guarded blow that put a sparring
+    // partner on the floor set `active: false` and then returned: he was beaten, he could no
+    // longer be a candidate for anything, and no `spar-over` was ever emitted. The bout ran for
+    // ever, and with a bow - a man who cannot be reached is idle, and an idle man is always on
+    // guard - that was every bout, every time (docs/known-issues.md).
+    if (guarded && enemy.active) {
       emit('blocked', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
       emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
       return;
@@ -1018,7 +1044,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
           if (aim) {
             const yaw = Math.atan2(aim.x - ally.x, aim.z - ally.z);
             ally.yaw = yaw;
-            state.arrows.push({ id: `ally-arrow-${ally.id}-${++loosed}`, n: 0, owner: ally.id,
+            state.arrows.push({ id: `ally-arrow-${ally.id}-${++allyShafts}`, n: 0, owner: ally.id,
               x: ally.x, z: ally.z, y: BOW.height, yaw, flown: 0, range: profile.reach,
               damage: Math.round(profile.damage * allyDamageScale(ally.level ?? 1)) });
           }

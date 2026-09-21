@@ -225,10 +225,11 @@ export const LONG_ROAD_STOPS = freeze([
   stop({ id: 'nell-hedge', leg: 5, kind: 'spine', npc: 'botanist', skill: 'botany', subregion: 'avrel', point: { x: -482.4, z: 38.3 },
     reads: 'skills', done: state => learned(state, 'botany'),
     title: 'Nell Harrow at the Sunken Lane', detail: 'Two hedge banks eighty years unlaid, where the old drove crosses the road. The best botany in Drent, and hazel and bramble in the satchel.' }),
-  // The Toll House stream lies in no named ground at all: it is 113 m from the Avrel clearing's
-  // centre and 84 m from the Caloss Bank's, outside the reach of both. So Silas is the one stop
-  // the chart cannot name, and the only way he is noticed going past is the forty metres.
-  stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: null, point: { x: -513.43, z: 94.15 },
+  // The Toll House stream used to lie in no named ground at all - 113 m from the Avrel clearing's
+  // centre and 84 m from the Caloss Bank's, outside the reach of both - so Silas was the one stop
+  // the chart could not name. **The user gave it a ground of its own** (2026-09-21), Drent's
+  // tenth, sized to the house and the stream because the Caloss Bank comes within twenty metres.
+  stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: 'the-toll-house', point: { x: -513.43, z: 94.15 },
     reads: 'skills', done: state => learned(state, 'geology'),
     title: 'Silas Garrow at the Toll House stream', detail: 'A cart of marl on the road side of the house, and a stream cut that is a geologist’s section. Ironstone out of a furrow.' }),
   stop({ id: 'hollis-bridge', leg: 5, kind: 'spine', npc: 'crossing-keeper', system: 'the-bridge', subregion: 'caloss-crossing', point: { x: -628.1, z: 156.2 },
@@ -571,9 +572,13 @@ export const forkLines = (name = 'Chris Gotwood') => freeze([
 export const forkNotice = () =>
   'Eleven of us on this contract, and nine still at sea. Venmor will not march short, so the road west will keep. Go straight up it and be first into an empty camp, or walk Drent with me and learn the country first. Either way I am with you.';
 
-/** Every named ground of Drent the long road walks through, for Mara's countersign. */
-export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 'fernway', 'caloss-gate', 'avrel', 'rena', 'applegarth', 'caloss-bank']);
-/** Whether the chart holds all nine of them. */
+/**
+ * Every named ground of Drent the long road walks through, for Mara's countersign. **Ten since
+ * 2026-09-21**: the Toll House was the one stop the chart could not name, and the user gave it a
+ * ground of its own.
+ */
+export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 'fernway', 'caloss-gate', 'avrel', 'rena', 'applegarth', 'the-toll-house', 'caloss-bank']);
+/** Whether the chart holds all ten of them. */
 export const drentCharted = state => DRENT_GROUNDS.every(id => charted(state, id));
 /** The named ground a stop stands in, for the journal and the trail map. */
 export const stopGround = id => subregion(longRoadStop(id)?.subregion ?? '') ?? null;
