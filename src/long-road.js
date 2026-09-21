@@ -16,7 +16,12 @@
  *
  * Three things have no view of their own and so are saved here: whether the fork has been put to
  * the traveler, whether the players' play at Fernway has been watched, and how many of Chris's
- * five Ambroni drills have been given. A fourth is the release of Chris himself — the pair of
+ * five Ambroni drills have been given. A fourth is the **recognising**: any of the eleven may be
+ * the player and each lands knowing something, so a stop whose skill the traveler already had
+ * when he stepped off the boat is derived-done from the first second. That would tick it before
+ * its teacher was ever met, take the open gold off them and leave Perrin an ordinary villager
+ * with nothing to say about birds. So such a stop is **open until its teacher has recognised
+ * them**, and the recognising is the one thing about a stop that cannot be re-derived. A fourth is the release of Chris himself — the pair of
  * numbers that puts him back on the company's clock (`docs/drent-long-road.md` §3) — and a fifth
  * is where the traveler was standing when each mercenary went past, which the muster asks for.
  *
@@ -232,6 +237,10 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
   if (!Number.isInteger(data.drills) || data.drills < 0 || data.drills > DRILL_COUNT) return false;
   // A save from before Mara had a second errand simply has not been asked.
   if (data.corners !== undefined && !CORNER_STAGES.includes(data.corners)) return false;
+  // And a save from before anybody could be recognised simply has not been.
+  if (data.recognised !== undefined && (!Array.isArray(data.recognised) || data.recognised.length > LONG_ROAD_STOPS.length
+    || new Set(data.recognised).size !== data.recognised.length
+    || !data.recognised.every(id => STOP_BY_ID.has(id) && !!RECOGNISED[id]))) return false;
   if (!isPlainObject(data.seenAt)) return false;
   const seen = Object.entries(data.seenAt);
   if (seen.length > 16) return false;
@@ -243,7 +252,7 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
 }
 
 export function createLongRoad({ onEvent = () => {} } = {}) {
-  const state = { revision: 0, told: false, played: false, drills: 0, corners: 'unasked', seenAt: new Map(), chris: null };
+  const state = { revision: 0, told: false, played: false, drills: 0, corners: 'unasked', recognised: new Set(), seenAt: new Map(), chris: null };
 
   const changed = () => { state.revision++; };
 
@@ -260,7 +269,26 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
     return companion.with !== false && companion.phase !== 'mustered';
   };
 
-  const doneAt = (row, world) => !!row.done(world, state);
+  /**
+   * Whether the traveler landed already knowing what a stop teaches. `startingSkills` is the
+   * chosen character's own table (src/player-characters.js), handed in by the host; a skill
+   * learned on the road is not in it, so a stop taught by its own teacher closes the ordinary way.
+   */
+  const landedWith = (world, skill) => {
+    const started = world?.startingSkills;
+    if (!skill || !started) return false;
+    return Array.isArray(started) ? started.includes(skill) : Object.hasOwn(started, skill);
+  };
+  /**
+   * A stop is done when the world says so — unless its teacher has somebody in front of them who
+   * already does this, and has not yet said so. Then it is open, they wear the open gold, and one
+   * conversation closes it. A stop with no teacher has nobody to do the recognising, so it keeps
+   * the ordinary derivation whatever the traveler landed with.
+   */
+  const doneAt = (row, world) => {
+    if (row.npc && RECOGNISED[row.id] && landedWith(world, row.skill) && !state.recognised.has(row.id)) return false;
+    return !!row.done(world, state);
+  };
 
   /**
    * The stop the traveler is nearest, **within the same forty metres a man needs to notice him**.
@@ -314,6 +342,11 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
     return {
       next, legs, stops: rows, stop: id => byId.get(id) ?? null,
       told: state.told, played: state.played, drills: state.drills, drill, corners: corners(world),
+      recognised: [...state.recognised],
+      // The stops whose teacher has somebody in front of them who already does this.
+      recognising: LONG_ROAD_STOPS.filter(row => row.npc && RECOGNISED[row.id]
+        && landedWith(world, row.skill) && !state.recognised.has(row.id))
+        .map(row => ({ id: row.id, npc: row.npc, skill: row.skill, line: RECOGNISED[row.id] })),
       companionWith: walking, released: state.chris ? { ...state.chris } : null,
       seenAt: Object.fromEntries(state.seenAt),
       spine: { done: spine.filter(row => row.done).length, of: spine.length },
@@ -338,6 +371,15 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
       state.played = true; changed();
       onEvent({ type: 'long-road-played' });
       return { ok: true };
+    }
+    if (id === 'recognise') {
+      const row = STOP_BY_ID.get(context.id ?? context.stop);
+      if (!row || !RECOGNISED[row.id]) return { ok: false, reason: 'Nobody there has anything to recognise.' };
+      if (state.recognised.has(row.id)) return { ok: false, reason: 'They have already said it.' };
+      state.recognised.add(row.id); changed();
+      onEvent({ type: 'long-road-recognised', stop: row.id, skill: row.skill });
+      // Nothing is paid. The skill was already theirs; what they get is the stop, and being seen.
+      return { ok: true, stop: row.id, line: RECOGNISED[row.id], pays: 0 };
     }
     if (id === 'corners-ask') {
       if (state.corners !== 'unasked') return { ok: false, reason: 'She has already asked you.' };
@@ -414,14 +456,17 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
 
   function snapshot() {
     return { version: LONG_ROAD_VERSION, revision: state.revision, told: state.told, played: state.played,
-      drills: state.drills, corners: state.corners, seenAt: Object.fromEntries(state.seenAt), chris: state.chris ? { ...state.chris } : null };
+      drills: state.drills, corners: state.corners, recognised: [...state.recognised],
+      seenAt: Object.fromEntries(state.seenAt), chris: state.chris ? { ...state.chris } : null };
   }
 
   function restore(data) {
-    state.revision = 0; state.told = false; state.played = false; state.drills = 0; state.corners = 'unasked'; state.seenAt.clear(); state.chris = null;
+    state.revision = 0; state.told = false; state.played = false; state.drills = 0; state.corners = 'unasked';
+    state.recognised.clear(); state.seenAt.clear(); state.chris = null;
     if (!validateLongRoadSnapshot(data, { allowMissing: false })) return false;
     state.revision = data.revision; state.told = data.told; state.played = data.played; state.drills = data.drills;
     state.corners = data.corners ?? 'unasked';
+    for (const id of data.recognised ?? []) state.recognised.add(id);
     for (const [id, stopId] of Object.entries(data.seenAt)) state.seenAt.set(id, stopId);
     if (data.chris) state.chris = { releasedAt: data.chris.releasedAt, releasedDistance: data.chris.releasedDistance };
     return true;
@@ -626,6 +671,7 @@ export const RECOGNISED = freeze({
   'enna-rows': 'You have put a row in. Then you will know why I am standing here doing nothing: it is four minutes and it does not care whether I watch.',
   'nell-hedge': 'You name things. I can hear it. So name these — eighty years unlaid, and half of it is not in anybody’s book.',
   'silas-stream': 'You pick stones up. There are men who walk this coast their whole lives and never once bend over. Come and look at this section.',
+  'house-plot': 'YOU BUILD! With your HANDS! Then I am not going to stand here explaining a PLANK to you. Come and look at the plot instead \u2014 flat, drained, mine to give, and nobody has ever taken it. BWAH HA HA!',
   'hollis-bridge': 'You have mended a bridge, have you. Then take the cord and I will hold the plank, and we will both pretend that is the usual way round.',
 });
 /** The one recognising line a stop has for somebody who already knows its skill, or null. */

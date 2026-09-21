@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
@@ -8,6 +10,7 @@ import {
   companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt,
 } from '../src/long-road.js';
 import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
+import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/long-road.js';
 import { ARRIVALS } from '../src/mercenaries.js';
 import { MAIN_ROAD } from '../src/region-world.js';
 import { renderLine } from '../src/linguist.js';
@@ -385,41 +388,92 @@ test('the companion keeps up with a running traveler, and the set-down is left f
   assert.ok(seconds < 60, `and it takes ${seconds.toFixed(0)} s of cantering, not a walk across Drent`);
 });
 
-test('a traveler who already has the skill finishes the stop in one conversation', () => {
-  // Any of the eleven may be the player and each lands with a different table. A lesson is
-  // shortened, never skipped: the stop still counts, and the talk still pays its Drentish.
-  const road = createLongRoad();
-  for (const stop of LONG_ROAD_SPINE) {
-    if (!stop.skill) continue;
-    assert.ok(recognisedAt(stop.id), `${stop.id} has no line for somebody who already does this`);
-    // Mara's second errand is the exception, and not an exception to the rule: its skill is
-    // learned at her first stop, so knowing cartography is how you arrive at it rather than a
-    // reason to waive it. She still has a line for a traveler who has kept a chart before.
-    if (stop.id === 'village-corners') continue;
-    const world = nothing({ skills: [stop.skill] });
+test('a stop whose skill the traveler landed with is open until its teacher has said so', () => {
+  // Every one of the eleven lands knowing something, and `done` is re-derived from the skill
+  // being known - so such a stop used to be ticked at t = 0, before its teacher was ever met.
+  // Ticked, it was never the next open gold, so the teacher wore no mark and had nothing to say.
+  // A lesson is shortened, never skipped: it is open until one conversation closes it.
+  for (const stop of ALL_STOPS) {
+    if (!stop.skill || !stop.npc) continue;
+    assert.ok(recognisedAt(stop.id), `${stop.id} has a teacher and no line for somebody who already does this`);
+    const road = createLongRoad();
+    const world = nothing({ skills: [stop.skill], startingSkills: [stop.skill] });
     assert.equal(knowsAlready(world.skills, stop.skill), true, stop.id);
-    assert.equal(road.view(world).stop(stop.id).done, true, `${stop.id} is not closed by knowing it already`);
+    assert.equal(road.view(world).stop(stop.id).done, false, `${stop.id} is ticked before its teacher is met`);
+    const owed = road.view(world).recognising.find(entry => entry.id === stop.id);
+    assert.ok(owed, `${stop.id} is not on the list of people who owe you a look`);
+    assert.equal(owed.npc, stop.npc);
+    // One conversation, and it pays nothing: the skill was already theirs.
+    const said = road.act('recognise', { id: stop.id });
+    assert.equal(said.ok, true);
+    assert.equal(said.pays, 0, `${stop.id} paid for a skill the traveler already had`);
+    assert.equal(said.line, recognisedAt(stop.id));
+    assert.equal(road.act('recognise', { id: stop.id }).ok, false, 'and they say it once');
+    // Recognised, the stop falls back to its own derivation. For all but one that is the skill,
+    // so it closes. Mara's second errand is the exception the design allows for: cartography is
+    // how you arrive at the three corners, not a reason to have walked them, and she still has
+    // to countersign a chart she has actually been handed.
+    const closes = stop.id !== 'village-corners';
+    assert.equal(road.view(world).stop(stop.id).done, closes, `${stop.id} did not close on the conversation`);
+    if (!closes) {
+      road.act('corners-ask'); road.act('corners-sign', everything());
+      assert.equal(road.view(everything({ startingSkills: [stop.skill] })).stop(stop.id).done, true, 'and closes when she signs');
+    }
+    // It survives being written down.
+    const back = createLongRoad();
+    assert.equal(back.restore(road.snapshot()), true);
+    assert.equal(back.view(world).stop(stop.id).done, true, `${stop.id} forgot it across a save`);
   }
   assert.equal(knowsAlready([], 'birding'), false);
   assert.equal(knowsAlready({ known: id => id === 'botany' }, 'botany'), true, 'a real skill sheet answers too');
   assert.equal(recognisedAt('nowhere'), null);
+  assert.equal(createLongRoad().act('recognise', { id: 'nowhere' }).ok, false);
 });
 
-test('every spine stop has a recognising line, and no two teachers say the same thing', () => {
+test('each of the ten finds their own teachers open, and closes each in one conversation', () => {
+  // As the bug hunter played it: be somebody, walk the road, and see what is already ticked.
+  for (const who of PLAYABLE_IDS) {
+    const started = Object.keys(startingSkills(who));
+    const road = createLongRoad();
+    const world = everything({ startingSkills: started });
+    const owed = road.view(world).recognising;
+    const expected = ALL_STOPS.filter(stop => stop.npc && recognisedAt(stop.id) && started.includes(stop.skill));
+    assert.deepEqual(owed.map(entry => entry.id).sort(), expected.map(stop => stop.id).sort(),
+      `playing as ${who}, the wrong teachers are waiting to recognise you`);
+    for (const stop of expected) {
+      assert.equal(road.view(world).stop(stop.id).done, false, `${who}: ${stop.id} was ticked before ${stop.npc} was met`);
+      assert.equal(road.act('recognise', { id: stop.id }).ok, true);
+      if (stop.id === 'village-corners') continue;   // hers closes on the countersign, not on being seen
+      assert.equal(road.view(world).stop(stop.id).done, true, `${who}: ${stop.id} did not close`);
+    }
+  }
+  // Cromb lands knowing nothing, so nobody has anything to recognise and the road is as written.
+  assert.deepEqual(createLongRoad().view(everything({ startingSkills: [] })).recognising, []);
+});
+
+test('every stop that teaches a skill has a recognising line, spine or branch', () => {
   const lines = Object.values(RECOGNISED);
   assert.equal(new Set(lines).size, lines.length, 'somebody is repeating somebody else');
   for (const [id, line] of Object.entries(RECOGNISED)) {
-    assert.ok(LONG_ROAD_SPINE.some(stop => stop.id === id), `${id} is not a spine stop`);
+    assert.ok(ALL_STOPS.some(stop => stop.id === id), `${id} is not a stop`);
     assert.ok(line.length > 60, `${id} says too little to be a scene`);
   }
+  // This swept the spine only, and the house plot is a branch - which is exactly the stop a man
+  // who lands able to build closes by landing. One of the eleven fell through the one place it
+  // did not look, so it looks everywhere a skill is taught now.
+  for (const stop of ALL_STOPS) {
+    if (!stop.skill || !stop.npc) continue;
+    assert.ok(RECOGNISED[stop.id], `${stop.id} teaches ${stop.skill} and has nothing to say to somebody who has it`);
+  }
+  assert.ok(RECOGNISED['house-plot'], 'the branch the sweep used to miss');
   // Lakota at Perrin's garden is the design's own worked example: a fen man at forty has still
   // never seen a Drent bird, and finds are finds.
   assert.match(RECOGNISED['bird-garden'], /Drent’s list/);
   assert.match(RECOGNISED['bird-garden'], /never seen these ones/);
   // Every spine stop that teaches a skill has one, whoever the player turns out to be.
   const starting = new Set(PLAYABLE_IDS.flatMap(id => Object.keys(startingSkills(id))));
-  for (const stop of LONG_ROAD_SPINE) {
-    if (!stop.skill || !starting.has(stop.skill)) continue;
+  for (const stop of ALL_STOPS) {
+    if (!stop.skill || !starting.has(stop.skill) || !stop.npc) continue;
     assert.ok(RECOGNISED[stop.id], `somebody lands already knowing ${stop.skill} and ${stop.id} has nothing to say to them`);
   }
 });
@@ -473,4 +527,16 @@ test('nobody walking beside the traveler is ever recorded as having gone past hi
   const gone = road.notice([{ ...beside[0], phase: 'walking' }], at, ground);
   assert.equal(gone.length, 1);
   assert.equal(gone[0].id, 'merc-gotwood');
+});
+
+test('src/main.js actually asks a teacher to recognise somebody', () => {
+  // The lines existed and nothing imported them: `recognisedAt` and `knowsAlready` were reachable
+  // only from this file, so Bowden's "YOU HAVE SWUNG ONE!" could not be got to by anybody.
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /function recogniseTeacher\(npc\)/, 'the host has to ask');
+  assert.match(main, /if\(recogniseTeacher\(npc\)\)return;/, 'and ask before the teacher\u2019s own conversation is built');
+  assert.match(main, /longRoad\.act\('recognise'/, 'and record it');
+  assert.match(main, /startingSkills:startingSkills\(playerId\)/, 'and tell the long road what the traveler landed knowing');
+  // Never before the letter: Mara hands it to everybody, whatever they already know.
+  assert.match(main, /if\(questStage<2\)return false;/);
 });

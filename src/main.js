@@ -573,8 +573,28 @@ function init() {
   let currentRow=null,currentAppleTree=null;
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
-  const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,
+  const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
     companion:companionOffTheClock&&!longRoad.released?{with:true}:false});
+  /**
+   * Any of the eleven may be the player and every one of them lands knowing something, so a
+   * teacher may have somebody in front of them who already does this. The lesson is shortened
+   * and never skipped: they say their one recognising line, the stop closes, and nothing is paid,
+   * because the skill was already theirs (docs/drent-long-road.md §10). Answered before the
+   * teacher's own conversation is built, and only ever once per stop.
+   */
+  function recogniseTeacher(npc){
+    // Never before the letter. Mara hands the letter and the rough chart to everybody, whatever
+    // they already know, and a man who lands with cartography must not have that scene skipped.
+    if(questStage<2)return false;
+    const owed=longRoad.view(longRoadWorld()).recognising.filter(stop=>stop.npc===npc.id);
+    if(!owed.length)return false;
+    openDialogue(npc,owed.map(stop=>stop.line),null,'Go on',{onComplete:()=>{
+      for(const stop of owed)longRoad.act('recognise',{id:stop.id});
+      toast(owed.length>1?`${npc.name} can see you have done both of these before.`:`${npc.name} can see you have done this before. The lesson is shorter; the country is not.`,
+        `${npc.name.toUpperCase()} · YOU HAVE DONE THIS`);
+      saveRoad(false);closeDialogue();conversation(npc);}});
+    return true;
+  }
   /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
   function longWayNext(){
     if(!longRoad.told||questStage<8)return null;
@@ -2622,6 +2642,8 @@ function init() {
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id)}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
+    // A teacher with somebody in front of them who already does this says so first.
+    if(recogniseTeacher(npc))return;
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
     if(npc.id===BEGGAR_NPC.id){beggarConversation(npc,{beggar,inventory,openDialogue,closeDialogue,act:townAct});return;}
     if(TOWN_NPC_IDS.includes(npc.id)){townConversation(npc,{campaign,inventory,openDialogue,closeDialogue,act:townAct});return;}
