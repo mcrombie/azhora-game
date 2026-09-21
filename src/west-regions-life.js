@@ -366,7 +366,7 @@ export function createWestLife(scene, world) {
         id: `${zone.id}-${i + 1}`, species: zone.species, region: zone.region, zone, index: i, scale,
         ...home, y: world.heightAt(home.x, home.z) + (zone.air ?? 0), home: { ...home },
         yaw: (i * 1.83 + .5) % TAU, action: zone.air ? 'soar' : 'graze', timer: 1.4 + i * .71,
-        clock: i * .43, speed: 0, lift: 0, watching: 0,
+        clock: i * .43, speed: 0, lift: 0, watching: 0, detour: 0, blocked: 0, flight: 0, hidden: false, landing: null, homing: false, cornered: 0, breakYaw: 0,
       });
     }
     creatures.push(...animals);
@@ -381,15 +381,19 @@ export function createWestLife(scene, world) {
       centre: { x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 } });
   }
 
-  function move(animal, step) {
+  /**
+   * One step along the animal's heading, or a little to either side of it if that is blocked.
+   * `footing` says what it may stand on; a bird in the air needs only to stay over its own range.
+   */
+  function move(animal, step, { offsets = [0, .55, -.55, 1.1, -1.1], footing = valid } = {}) {
     const fromX = animal.x, fromZ = animal.z;
-    for (const offset of [0, .55, -.55, 1.1, -1.1]) {
+    for (const offset of offsets) {
       const yaw = animal.yaw + offset, dx = Math.sin(yaw) * step, dz = Math.cos(yaw) * step;
       const slices = Math.max(1, Math.ceil(step / .12));
       let clear = true;
       for (let i = 1; i <= slices; i++) {
         const x = animal.x + dx * i / slices, z = animal.z + dz * i / slices;
-        if (!valid(x, z, animal.zone) || Math.abs(world.heightAt(x, z) - animal.y) > .7) { clear = false; break; }
+        if (!footing(x, z, animal.zone) || (footing === valid && Math.abs(world.heightAt(x, z) - animal.y) > .7)) { clear = false; break; }
       }
       if (clear) { animal.x += dx; animal.z += dz; animal.yaw = yaw; return Math.hypot(animal.x - fromX, animal.z - fromZ); }
     }
@@ -397,55 +401,238 @@ export function createWestLife(scene, world) {
     return 0;
   }
 
+  /**
+   * Paces, in metres a second, set against the traveler's own: a walk is 4.2 and a run is 7.2
+   * (src/main.js). The rule they are tuned to, and tests/west-life.test.js holds them to it:
+   * nothing here can be walked down; the quick ones cannot be run down either - the hare on its
+   * legs, the wader into the air, the otter into the water; sheep bunch and go, faster than a
+   * walk, and somebody running can herd them; cattle are big and unhurried and do not bolt at
+   * all. They turn to face you and give ground at about a walk, which is truer than fleeing and
+   * keeps them from being chased to the horizon. The fox still never flees.
+   */
   const FLEE_AT = { longhorn: 7.5, 'hill-sheep': 6.5, 'upland-hare': 9, otter: 8, 'wading-bird': 11, 'river-fox': 0 };
   const WALK = { longhorn: .42, 'hill-sheep': .48, 'upland-hare': 1.9, otter: 1.1, 'wading-bird': .5, 'river-fox': .9 };
-  const RUN = { longhorn: 3.6, 'hill-sheep': 3.2, 'upland-hare': 7.2, otter: 3.4, 'wading-bird': 3.8, 'river-fox': 4.2 };
+  const RUN = { 'hill-sheep': 5.6, 'upland-hare': 9.6, otter: 8.2, 'wading-bird': 10 };
+  /** Cattle giving ground: a shade over the traveler's walk, so a walker never closes and a runner does. */
+  const GIVE = 4.5;
+  /** The fox drifts back as fast as you come on, up to `cap`: only a flat run gains on it, and slowly. */
+  const FOX = Object.freeze({ floor: 1, cap: 6.6, lead: 1.06, arm: 2.8, notice: 10 });
+  /** Going home is a purposeful walk, not a graze: a band chased a hundred metres is back in a minute or two. */
+  const RETURN = { longhorn: 1.3, 'hill-sheep': 1.5, 'upland-hare': 2.8, otter: 1.8, 'wading-bird': 1.4, 'river-fox': 1.5 };
+  const HOME = 16, SETTLED = 6;
+  const BACK = [0, .35, -.35, .7, -.7], ALONG = [1.05, -1.05, 1.4, -1.4, 1.75, -1.75, 2.1, -2.1];
 
-  function tickGround(animal, dt, player) {
-    animal.clock += dt; animal.timer -= dt; animal.speed = 0; animal.lift = 0;
-    const near = Math.hypot(animal.x - player.x, animal.z - player.z);
+  /**
+   * Face whoever it is and step straight back from them. If what is behind it will not let it -
+   * and the fox lives on a river bank too steep to stand beside - it goes along that instead,
+   * and at `quick`, because going sideways opens no distance until it has got round.
+   */
+  function backOff(animal, player, speed, dt, quick = speed) {
+    animal.yaw += angleDelta(Math.atan2(player.x - animal.x, player.z - animal.z), animal.yaw) * Math.min(1, dt * 3.5);
+    const facing = animal.yaw, straight = Math.atan2(animal.x - player.x, animal.z - player.z);
+    animal.yaw = straight;
+    let moved = move(animal, speed * dt, { offsets: BACK });
+    if (!moved) { animal.yaw = straight; moved = move(animal, quick * dt, { offsets: ALONG }); }
+    animal.speed = moved / dt; animal.yaw = facing;
+  }
+
+  /** The water an otter can reach: the deep-water colliders in and about its range, found once. */
+  const waterByZone = new Map();
+  function waterOf(zone) {
+    if (!waterByZone.has(zone.id)) waterByZone.set(zone.id, (world.colliders ?? []).filter(c => /water/.test(c.kind ?? '')
+      && c.x > zone.minX - 30 && c.x < zone.maxX + 30 && c.z > zone.minZ - 30 && c.z < zone.maxZ + 30));
+    return waterByZone.get(zone.id);
+  }
+  function nearestWater(animal) {
+    let best = null;
+    for (const c of waterOf(animal.zone)) {
+      const edge = Math.hypot(c.x - animal.x, c.z - animal.z) - (c.r ?? Math.max(c.hx ?? 0, c.hz ?? 0));
+      if (!best || edge < best.edge) best = { x: c.x, z: c.z, edge };
+    }
+    return best;
+  }
+
+  /** A wader put up off the water: up and away at a pace nobody on foot can match, and down again only when it is left alone. */
+  function fly(animal, dt, player, near) {
+    animal.flight += dt;
+    const settle = animal.flight > 2.2 && near > 26;
+    if (!settle) animal.landing = null;
+    else if (!animal.landing) animal.landing = (animal.homing && Math.hypot(player.x - animal.home.x, player.z - animal.home.z) > 30)
+      ? { ...animal.home } : clearPoint(animal.x, animal.z, animal.zone) ?? { ...animal.home };
+    let heading = Math.atan2(animal.x - player.x, animal.z - player.z);
+    if (animal.landing) heading = Math.atan2(animal.landing.x - animal.x, animal.landing.z - animal.z);
+    else if (!inRange(animal.x + Math.sin(heading) * 14, animal.z + Math.cos(heading) * 14, animal.zone))
+      heading = Math.atan2(animal.home.x - animal.x, animal.home.z - animal.z);   // round again over its own water
+    animal.yaw += angleDelta(heading, animal.yaw) * Math.min(1, dt * 4);
+    const left = animal.landing ? Math.hypot(animal.landing.x - animal.x, animal.landing.z - animal.z) : Infinity;
+    if (left < .8) {
+      animal.x = animal.landing.x; animal.z = animal.landing.z; animal.lift = 0; animal.flight = 0; animal.landing = null; animal.homing = false;
+      animal.action = 'graze'; animal.timer = 3; animal.speed = 0;
+    } else {
+      animal.speed = move(animal, Math.min(RUN['wading-bird'] * dt, left), { footing: inRange }) / dt;
+      const height = animal.landing ? Math.min(5.5, left * .8) : 5.5;
+      animal.lift += Math.max(-dt * 6, Math.min(dt * 5, height - animal.lift));
+    }
+    animal.y = world.heightAt(animal.x, animal.z);
+  }
+
+  /** An otter gone into the water: under for a few seconds, and up again at whichever of its bank spots is furthest from the traveler. */
+  function dive(animal, dt, player, flock) {
+    animal.hidden = true; animal.lift = 0; animal.speed = 0;
+    if (animal.timer > 0) return;
+    let best = null;
+    for (const mate of flock.animals) {
+      const d = Math.hypot(mate.home.x - player.x, mate.home.z - player.z);
+      if (!best || d > best.d) best = { ...mate.home, d };
+    }
+    if (!best || best.d < 14) { animal.timer = 2; return; }   // nowhere safe to come up yet
+    animal.x = best.x; animal.z = best.z; animal.y = world.heightAt(best.x, best.z);
+    animal.hidden = false; animal.action = 'graze'; animal.timer = 3;
+  }
+
+  /** Every way on is shut: of the ways that are open, the one that points least at whoever is coming. */
+  function widestWayOut(animal, player) {
+    const at = Math.atan2(player.x - animal.x, player.z - animal.z);
+    let best = null;
+    for (let k = 0; k < 24; k++) {
+      const yaw = k / 24 * TAU; let open = true;
+      for (let s = .25; s <= 2 && open; s += .25) open = valid(animal.x + Math.sin(yaw) * s, animal.z + Math.cos(yaw) * s, animal.zone);
+      const wide = Math.abs(angleDelta(yaw, at));
+      if (open && (!best || wide > best.wide)) best = { yaw, wide };
+    }
+    return best ? best.yaw : animal.yaw;
+  }
+
+  function tickGround(animal, dt, player, flock, motion) {
+    animal.clock += dt; animal.timer -= dt; animal.speed = 0;
+    const species = animal.species, near = Math.hypot(animal.x - player.x, animal.z - player.z);
+    let wheeling = false;
+    animal.cornered = Math.max(0, animal.cornered - dt);
+    // In the air or under the water there is nowhere the traveler can follow.
+    if (animal.action === 'fly') { fly(animal, dt, player, near); return; }
+    if (animal.action === 'dive') { dive(animal, dt, player, flock); return; }
+    animal.lift = 0;
+    const away = Math.atan2(animal.x - player.x, animal.z - player.z);
     /**
      * The river fox is the one animal in Azhora that does not run from you.
      * "When approached, it does not flee unless directly threatened. It watches."
      * So: inside ten metres it stops whatever it was doing and turns to face the
-     * traveler, and it keeps facing them. Only at arm's length does it move, and
-     * then it goes a short way along the bank and turns round again.
+     * traveler, and it keeps facing them. Just outside arm's length it gives way without ever
+     * turning its back: it drifts off exactly as fast as you come on, so a walker
+     * never gets nearer than that, and only somebody at a flat run gains on it.
      */
-    if (animal.species === 'river-fox') {
-      if (near < 10) {
+    if (species === 'river-fox') {
+      if (near < FOX.notice) {
         animal.watching = Math.min(1, animal.watching + dt * 2);
-        animal.action = near < 2.4 ? 'withdraw' : 'watch';
-        animal.yaw += angleDelta(Math.atan2(player.x - animal.x, player.z - animal.z), animal.yaw) * Math.min(1, dt * 3.5);
+        animal.action = near < FOX.arm ? 'withdraw' : 'watch';
         if (animal.action === 'withdraw') {
-          animal.yaw += Math.PI;
-          animal.speed = move(animal, RUN['river-fox'] * .45 * dt) / dt;
-          animal.yaw -= Math.PI;
-        }
+          const closing = Math.max(0, motion.vx * Math.sin(away) + motion.vz * Math.cos(away));
+          backOff(animal, player, Math.min(FOX.cap, Math.max(FOX.floor, closing * FOX.lead)), dt, FOX.cap);
+        } else animal.yaw += angleDelta(Math.atan2(player.x - animal.x, player.z - animal.z), animal.yaw) * Math.min(1, dt * 3.5);
         animal.y = world.heightAt(animal.x, animal.z);
         return;
       }
       animal.watching = Math.max(0, animal.watching - dt);
-    } else if (near < FLEE_AT[animal.species]) {
+    } else if (species === 'longhorn' && near < FLEE_AT.longhorn) {
+      // Cattle do not bolt. They put their heads up, turn to face you, and give ground.
+      animal.action = 'yield'; animal.timer = 1.2;
+      backOff(animal, player, GIVE, dt, GIVE * 1.3);
+      animal.y = world.heightAt(animal.x, animal.z);
+      return;
+    } else if (near < FLEE_AT[species]) {
+      if (species === 'wading-bird') { animal.action = 'fly'; animal.flight = 0; animal.landing = null; fly(animal, dt, player, near); return; }
       animal.action = 'flee'; animal.timer = 1.9;
-      animal.yaw += angleDelta(Math.atan2(animal.x - player.x, animal.z - player.z), animal.yaw) * Math.min(1, dt * 5);
+      let heading = away;
+      if (species === 'hill-sheep') {
+        // Sheep bunch: away from you, and toward the rest of the band.
+        const bx = flock.cx - animal.x, bz = flock.cz - animal.z, b = Math.hypot(bx, bz);
+        if (b > 2.5 && bx / b * Math.sin(away) + bz / b * Math.cos(away) > -.3)
+          heading = Math.atan2(Math.sin(away) + bx / b * .55, Math.cos(away) + bz / b * .55);
+      } else if (species === 'otter') {
+        const water = nearestWater(animal);
+        if (water && water.edge < 1.6) { animal.action = 'dive'; animal.timer = 5; animal.hidden = true; return; }
+        if (water && water.edge < 40) {
+          const to = Math.atan2(water.x - animal.x, water.z - animal.z);
+          if (Math.abs(angleDelta(to, away)) < 1.75) heading = to;   // the water, unless you are standing in the way of it
+        }
+      }
+      // Something standing that takes fright wheels first and then goes: it does not run at you while it turns.
+      if (animal.cornered > 0) heading = animal.breakYaw;   // it has chosen its way out and is taking it
+      const off = angleDelta(heading, animal.yaw);
+      animal.yaw += off * Math.min(1, dt * (Math.abs(off) > 1.2 ? 18 : 6));
+      wheeling = Math.abs(off) > 1.57;
     }
-    if (animal.timer <= 0) {
-      if (animal.action === 'walk' || animal.action === 'flee' || animal.action === 'withdraw') {
+    const fromHome = Math.hypot(animal.x - animal.home.x, animal.z - animal.home.z);
+    // Nothing sets off for home with the traveler still close, and nothing walks home at them:
+    // it stands where it got to and waits for them to go.
+    const wary = (FLEE_AT[species] || FOX.notice) + 12;
+    if (animal.action !== 'flee' && animal.action !== 'return' && fromHome > HOME && near > wary) {
+      // A wader does not walk home round a river. It gets up and flies there.
+      if (species === 'wading-bird') { animal.action = 'fly'; animal.flight = 2.3; animal.landing = null; animal.homing = true; fly(animal, dt, player, near); return; }
+      animal.action = 'return'; animal.detour = 0; animal.blocked = 0;
+    }
+    if (animal.action === 'return') {
+      if (fromHome < SETTLED || near < wary - 8) { animal.action = 'graze'; animal.timer = 2 + (animal.index % 3) * .8; }
+      else {
+        // Straight for home; and when something is in the way, along it for a moment before trying again.
+        animal.detour = Math.max(0, animal.detour - dt);
+        if (!animal.detour) animal.yaw += angleDelta(Math.atan2(animal.home.x - animal.x, animal.home.z - animal.z), animal.yaw) * Math.min(1, dt * 4);
+        animal.speed = move(animal, RETURN[species] * dt) / dt;
+        if (!animal.speed) {
+          animal.blocked++; animal.detour = Math.min(6, 1.4 * animal.blocked);
+          animal.yaw = Math.atan2(animal.home.x - animal.x, animal.home.z - animal.z) + (animal.blocked % 2 ? 1.7 : -1.7);
+        }
+      }
+    } else if (animal.timer <= 0) {
+      if (['walk', 'flee', 'withdraw', 'yield'].includes(animal.action)) {
         animal.action = 'graze'; animal.timer = 2.4 + (animal.index % 3) * .8;
       } else {
         animal.action = 'walk'; animal.timer = 1.3 + (animal.index % 2) * .8;
-        const home = Math.hypot(animal.x - animal.home.x, animal.z - animal.home.z);
-        animal.yaw = home > 16 ? Math.atan2(animal.home.x - animal.x, animal.home.z - animal.z)
-          : animal.yaw + Math.sin(animal.clock + animal.index) * 1.7;
+        animal.yaw += Math.sin(animal.clock + animal.index) * 1.7;
       }
     }
-    if (animal.action === 'walk' || animal.action === 'flee') {
-      const speed = animal.action === 'flee' ? RUN[animal.species] : WALK[animal.species];
-      animal.speed = move(animal, speed * dt) / dt;
-      if (animal.species === 'upland-hare' && animal.speed > .1)
-        animal.lift = Math.max(0, Math.sin(animal.clock * (animal.action === 'flee' ? 16 : 10))) * (animal.action === 'flee' ? .3 : .13);
+    // Something running for its life tries every way round what is in front of it - the ridge faces
+    // of Meneth are close-grown hardwood - before it gives up and turns, which is toward you.
+    if (animal.action === 'flee' && !wheeling) {
+      const kept = animal.yaw;
+      animal.speed = move(animal, RUN[species] * dt, { offsets: [...BACK, ...ALONG] }) / dt;
+      if (!animal.speed) {
+        // Cornered against the edge of its range or the water. It does not stand and turn on the spot
+        // while you walk up to it: it breaks back past you by the widest way open, and means it.
+        animal.breakYaw = widestWayOut(animal, player); animal.cornered = 1.2; animal.yaw = animal.breakYaw;
+        animal.speed = move(animal, RUN[species] * dt, { offsets: [0, .3, -.3] }) / dt;
+        if (!animal.speed) animal.yaw = kept;
+      }
+    }
+    else if (animal.action === 'walk') animal.speed = move(animal, WALK[species] * dt) / dt;
+    if (species === 'upland-hare' && animal.speed > .1) {
+      const quick = animal.action !== 'walk';
+      animal.lift = Math.max(0, Math.sin(animal.clock * (quick ? 16 : 10))) * (quick ? .3 : .13);
     }
     animal.y = world.heightAt(animal.x, animal.z);
+  }
+
+  /**
+   * A band nobody has been near is not frozen where it was left: when it is next looked at, each
+   * of its animals has had that long to make its own way home, at the pace it goes home at.
+   */
+  function settle(flock, elapsed) {
+    for (const animal of flock.animals) {
+      if (flock.zone.air) continue;
+      const dx = animal.home.x - animal.x, dz = animal.home.z - animal.z, d = Math.hypot(dx, dz);
+      const aloft = animal.action === 'fly' || animal.action === 'dive';
+      if (!aloft && d <= HOME / 2) continue;
+      const reach = RETURN[animal.species] * elapsed;
+      if (aloft || reach >= d) { animal.x = animal.home.x; animal.z = animal.home.z; }
+      else for (let s = 1; s <= reach; s += 1) {
+        const x = animal.x + dx / d * s, z = animal.z + dz / d * s;
+        if (!valid(x, z, flock.zone)) break;
+        if (s + 1 > reach) { animal.x = x; animal.z = z; }
+      }
+      animal.y = world.heightAt(animal.x, animal.z); animal.lift = 0; animal.flight = 0; animal.landing = null; animal.hidden = false;
+      animal.speed = 0; animal.detour = 0; animal.blocked = 0; animal.cornered = 0; animal.homing = false;
+      animal.action = 'graze'; animal.timer = 1 + animal.index * .3;
+    }
   }
 
   /** A hawk holds its circle whatever the traveler does; it is far too high to care. */
@@ -469,7 +656,7 @@ export function createWestLife(scene, world) {
     const species = flock.zone.species;
     flock.animals.forEach((animal, i) => {
       rotation.setFromEuler(new THREE.Euler(0, animal.yaw, 0));
-      unit.setScalar(animal.scale);
+      unit.setScalar(animal.hidden ? 1e-4 : animal.scale);   // an otter under the water is not drawn
       rootMatrix.compose(new THREE.Vector3(animal.x, animal.y + animal.lift, animal.z), rotation, unit);
       const walking = animal.speed > .05, phase = animal.clock * (animal.action === 'flee' ? 13 : 7);
       const breath = Math.sin(animal.clock * 2.1) * .012;
@@ -506,8 +693,12 @@ export function createWestLife(scene, world) {
         // Head, neck and bill are part of the body: a heron's neck is its posture,
         // not a joint, and the two instanced batches it needs are wings and legs.
         for (let side = 0; side < 2; side++) {
-          place(flock.meshes.wings, i * 2 + side, side ? -.11 : .11, .84, -.02, 0, side ? Math.PI : 0, (side ? -1 : 1) * .12);
-          place(flock.meshes.legs, i * 2 + side, side ? .05 : -.05, .58, .02, walking ? Math.sin(phase + side * Math.PI) * .22 : 0);
+          // In the air the wings are out and beating and the legs trail; on the water's edge they are folded.
+          const flying = animal.action === 'fly';
+          place(flock.meshes.wings, i * 2 + side, side ? -.11 : .11, .84, -.02, 0, side ? Math.PI : 0,
+            (side ? -1 : 1) * (flying ? 1.1 + Math.sin(animal.clock * 9) * .42 : .12));
+          place(flock.meshes.legs, i * 2 + side, side ? .05 : -.05, .58, .02,
+            flying ? 1.15 : walking ? Math.sin(phase + side * Math.PI) * .22 : 0);
         }
         return;
       }
@@ -524,15 +715,23 @@ export function createWestLife(scene, world) {
   for (const flock of flocks) render(flock);
 
   const REACH = 130;
+  let clock = 0, lastPlayer = null;
   function update(dt, player, active = true) {
     if (disposed || !active || !Number.isFinite(dt) || dt <= 0 || !Number.isFinite(player?.x) || !Number.isFinite(player?.z)) return;
-    const step = Math.min(dt, .25); updates++;
+    const step = Math.min(dt, .25); updates++; clock += step;
+    // How fast the traveler is coming on, which is what the fox paces itself against. A jump is not a stride.
+    const strode = lastPlayer ? Math.hypot(player.x - lastPlayer.x, player.z - lastPlayer.z) : Infinity;
+    const motion = strode < 6 ? { vx: (player.x - lastPlayer.x) / step, vz: (player.z - lastPlayer.z) / step } : { vx: 0, vz: 0 };
+    lastPlayer = { x: player.x, z: player.z };
     for (const flock of flocks) {
       const near = Math.hypot(player.x - flock.centre.x, player.z - flock.centre.z) <= REACH + (flock.zone.air ? CIRCLE_RADIUS : 0);
       flock.group.visible = near;
       if (!near) continue;
-      flock.ticks++;
-      for (const animal of flock.animals) flock.zone.air ? tickAir(animal, step) : tickGround(animal, step, player);
+      if (flock.seen !== undefined && clock - flock.seen > 1) settle(flock, clock - flock.seen);
+      flock.seen = clock; flock.ticks++;
+      flock.cx = flock.animals.reduce((sum, animal) => sum + animal.x, 0) / Math.max(1, flock.animals.length);
+      flock.cz = flock.animals.reduce((sum, animal) => sum + animal.z, 0) / Math.max(1, flock.animals.length);
+      for (const animal of flock.animals) flock.zone.air ? tickAir(animal, step) : tickGround(animal, step, player, flock, motion);
       render(flock);
     }
   }
@@ -550,7 +749,8 @@ export function createWestLife(scene, world) {
       updates,
       creatures: creatures.map(animal => ({ id: animal.id, species: animal.species, region: animal.region,
         x: animal.x, y: animal.y + animal.lift, groundY: animal.y, z: animal.z, yaw: animal.yaw,
-        action: animal.action, speed: animal.speed, clock: animal.clock, watching: animal.watching })),
+        action: animal.action, speed: animal.speed, clock: animal.clock, watching: animal.watching,
+        lift: animal.lift, hidden: !!animal.hidden })),
       groups: flocks.map(flock => ({ id: flock.zone.id, visible: flock.group.visible, ticks: flock.ticks, count: flock.animals.length })),
     };
   }
