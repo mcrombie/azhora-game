@@ -209,7 +209,7 @@ test('the host puts her on the water, floats him in it, and lets him teach it', 
   assert.match(main, /const learned=swimming\.learn\(\);/, 'which is what teaches it');
   assert.match(main, /wordSaid=wordToastAt\(playSeconds\)\?\.key\?\?null;/, 'a reload catches up without saying a word');
   assert.match(main, /view==='word-ship'\|\|view==='word-ashore'/, 'and there is a view of it to look at');
-  assert.match(main, /landing:world\.spawn,shore:WORD_BEACH\}/, 'the company knows where the sea puts a man down');
+  assert.match(main, /landing:world\.spawn,shore:WORD_BEACH[,}]/, 'the company knows where the sea puts a man down');
   // The lesson is Ed's, in his own words, and it is the swimming module's copy.
   assert.ok(SWIMMING_LESSON.length >= 4);
   assert.match(SWIMMING_LESSON.join(' '), /Walk in/, 'and it starts where the skill starts');
