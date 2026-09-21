@@ -182,7 +182,16 @@ const facing = (a, b, yaw, arc) => Math.abs(angleDifference(Math.atan2(b.x - a.x
  * family owns the last (src/combat-skills.js, docs/combat-brief.md); the defaults here are what
  * the game has always used, so a combat built without them is today's combat to the digit.
  */
-const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6, armourTurns: 0, dodgeScale: 1 });
+const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6, armourTurns: 0, dodgeScale: 1,
+  // The shield, at level 1 (ARMS.guard / ARMS.guardCost, src/combat-skills.js). `hasShield` is
+  // false, so a combat wired to nothing has no guard at all and is today's game exactly.
+  guardShare: .6, guardCost: 18, hasShield: false });
+/**
+ * How near his own facing a blow must come to meet the shield. The same sixty degrees the
+ * soldiers' own guard uses, so what a legionary does with a shield and what the traveler does
+ * with one are the same rule read from the two sides.
+ */
+export const GUARD_ARC = Math.PI / 3;
 
 export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
@@ -207,6 +216,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   let comboUntil = -1;
   let comboNext = 0;
   let staminaDelay = 0;
+  // Hold to guard. It is held rather than done: the host says every frame whether the key is
+  // down and which way the traveler is facing, and nothing here remembers a press.
+  let guardHeld = false, guardYaw = 0;
   let hurtProtection = 0;
   let dodgeDirection = { x: 0, z: 1 };
   let nextAttackerAt = 0;
@@ -341,6 +353,27 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     position.z = checkpoint.z;
     position.y = world.heightAt(position.x, position.z);
     return startEncounter({ ...lastEncounter, ...changes });
+  }
+
+  /**
+   * **Hold to guard**, the one new verb melee gets. It is there at level 1 with any shield in
+   * hand and levels only make it better: the share caught rises from .6 to .9 and the wind it
+   * costs falls from 18 to 8. **No parry and no riposte** - the margins are the whole of it.
+   *
+   * `held` is this frame's key, `yaw` this frame's facing. Returns whether the shield is
+   * actually up, which is not the same question: it needs a shield in hand, an idle body (not
+   * swinging, not getting over a swing, not rocked) and the wind to pay for a blow.
+   */
+  function guard(held, yaw = guardYaw) {
+    guardHeld = !!held;
+    if (Number.isFinite(yaw)) guardYaw = yaw;
+    return guarding();
+  }
+  /** Whether the shield is up and would catch something right now. */
+  function guarding() {
+    const { hasShield, guardCost } = margins();
+    return !!guardHeld && !!hasShield && state.phase === 'active'
+      && player.action === 'idle' && player.hp > 0 && player.stamina >= (guardCost ?? 0);
   }
 
   function beginAttack(yaw) {
@@ -480,6 +513,23 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // tier 6, all three pieces - armour turns half (src/gear.js).
     const struck = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
     const damage = Math.max(1, Math.round(struck * (1 - (margins().armourTurns ?? 0))));
+    // **The shield.** A blow that comes at his front while he is on guard is caught: the shield
+    // takes its share, the rest of it costs him wind, and - the whole point of holding it - it
+    // does not rock him, so the guard is still up for the next one. It buys no invulnerable
+    // moment: a dodge is still the only thing that makes a blow miss, and a man who guards
+    // everything runs out of wind and is rocked like anybody else.
+    const fromBlow = Math.atan2(enemy.x - position.x, enemy.z - position.z);
+    if (guarding() && Math.abs(angleDifference(guardYaw, fromBlow)) < GUARD_ARC) {
+      const { guardShare = 0, guardCost = 0 } = margins();
+      const absorbed = Math.round(damage * guardShare), through = Math.max(1, damage - absorbed);
+      player.hp = Math.max(0, player.hp - through);
+      player.stamina = Math.max(0, player.stamina - guardCost);
+      staminaDelay = Math.max(staminaDelay, .45);
+      emit('caught', { enemyId: enemy.id, absorbed, damage: through, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+      emit('player-hit', { damage: through, caught: true, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+      if (!player.hp) fall();
+      return;
+    }
     player.hp = Math.max(0, player.hp - damage);
     player.action = player.hp ? 'hurt' : 'dead';
     player.progress = 0;
@@ -489,13 +539,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     player.invulnerable = true;
     moveCharacter(position, Math.sin(enemy.yaw) * .55, Math.cos(enemy.yaw) * .55, world);
     emit('player-hit', { damage, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
-    if (!player.hp) {
-      state.phase = 'defeated';
-      state.enemies.forEach(target => {
-        if (target.active) { target.action = 'idle'; target.progress = 0; target.speed = 0; }
-      });
-      emit('defeat', { encounterId: state.encounterId });
-    }
+    if (!player.hp) fall();
+  }
+
+  /** The fight is over and he lost it. One place, so the shield's path cannot drift from the other. */
+  function fall() {
+    player.action = 'dead';
+    state.phase = 'defeated';
+    state.enemies.forEach(target => {
+      if (target.active) { target.action = 'idle'; target.progress = 0; target.speed = 0; }
+    });
+    emit('defeat', { encounterId: state.encounterId });
   }
 
   function updatePlayer(dt) {
@@ -504,6 +558,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // The part of a dodge that cannot be hurt. Toughness lengthens it, from .37 s to .48 s at
     // level 99 - forgiving, never automatic, and never long enough to make a dodge unnecessary.
     player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < margins().dodgeWindow);
+    // Read once a frame so the view, the HUD and the autopilot all see the same shield.
+    player.guarding = guarding();
     if (!staminaDelay && player.action !== 'dead') player.stamina = Math.min(player.maxStamina, player.stamina + 24 * dt);
     if (player.action === 'idle') { player.progress = 0; return; }
     const previousTime = actionTime;
@@ -889,7 +945,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
     setWeaponReady(value) { weaponReady = Boolean(value); },
   };
 }

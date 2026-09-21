@@ -353,3 +353,29 @@ level table rather than trusting the prose, so if either country is ever re-leve
 fails instead of quietly lying.
 
 Review view: `camp-armourer`. Amod has none — Mern was already there to be looked at.
+
+## Phase 4 — the shield's guard — built
+
+**Hold V to guard.** The one new verb melee gets. It is there at level 1 with any shield in hand
+and levels only make it better: the share caught rises .6 → .9 and the wind it costs falls 18 → 8.
+**No parry and no riposte** — the margins are the whole of it, as the user chose.
+
+- **The hand slot IS the shield** (`gear.js`), so owning one and buying one are the same act.
+- **Held, not pressed.** The host offers the key and the facing every frame; `combat.js` latches
+  nothing. `combat.guard(held, yaw)` returns whether the shield is actually *up*, which is a
+  different question: it needs a shield, an idle body, and the wind to pay for a blow.
+- **Frontal only**, within `GUARD_ARC` — the same sixty degrees the legionaries' own guard uses,
+  so the rule is one rule read from both sides.
+- **A caught blow does not rock him.** That is the point of holding it: the guard is still up for
+  the next one. It buys **no invulnerable moment** — only a dodge makes a blow miss — and it
+  always lets something through, at every level, so no shield is ever a wall.
+- **Wind is the limit.** Each catch costs `guardCost`; run out and the shield is simply not up.
+- **Paid by what it stopped.** `caught` carries what the shield took, and Shield is paid on that,
+  while Toughness is still paid for what got through.
+- **Level 1 is today.** `hasShield` is false by default, so a traveler who owns no shield — and a
+  combat wired to nothing — is the game it was, to the digit. The existing fight tests pass
+  untouched.
+
+He is also *seen* carrying it: a buckler on the shield arm, built once and shown or hidden with
+the hand slot. Two things found by looking rather than by testing are written down in
+`docs/known-issues.md`.
