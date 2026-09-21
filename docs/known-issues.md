@@ -2126,3 +2126,72 @@ start with three of them. The two rows that could be run:
 
 which restate the baseline and nothing more. The moment the cap lifts, the same harness gives the
 rest, deaths included.
+
+---
+
+## The border battle with a company: where the climax is
+
+Traveler as the arc leaves him — Blades 17, Toughness 12 — the side's four soldiers, companions at
+their own `MERCENARY_ARMS` numbers, 40 seeds a row. **"Won sitting still"** is the same fight with
+the player never swinging (he still closes and dodges): the control for *does the player matter*.
+
+| level | company | allies | won | health left | enemies down | seconds | swings | **companions dead** | who dies most | **won sitting still** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 0 | 4 | 20/40 | 45 % | 6.3/8 | 24 | 25 | 0.0 | — | **0/40** |
+| 0 | 3 | 7 | 40/40 | 74 % | 8.0/8 | 22 | 22 | 0.0 | Jerry 1/40 | **20/40** |
+| 0 | 6 | 10 | 39/40 | 99 % | 8.0/8 | 29 | 17 | 0.0 | — | **36/40** |
+| 0 | 10 | 14 | 40/40 | 100 % | 8.0/8 | **15** | 14 | 0.0 | — | **40/40** |
+| 2 | 0 | 4 | 0/40 | — | 1.3/8 | 17 | 17 | 0.0 | — | **0/40** |
+| 2 | 3 | 7 | 4/40 | 29 % | 4.4/8 | 24 | 25 | 0.8 | Jerry 22/40 | **0/40** |
+| **2** | **6** | **10** | **36/40** | **78 %** | **7.8/8** | **31** | **31** | **2.0** | Kristen 25/40 | **0/40** |
+| 2 | 10 | 14 | 40/40 | 91 % | 8.0/8 | 25 | 27 | 0.9 | Mus 15/40 | **8/40** |
+
+### What the battle is like as a fight
+
+**At the held level 0, a company ruins it.** With three, the allies win it alone half the time.
+With ten, the player can stand still and watch and win **forty times out of forty, in fifteen
+seconds**, having swung fourteen times. The held battle is a good climax only with **no company at
+all** — 20/40 at 45 % health, and 0/40 sitting still, so every bit of it is the player's.
+
+**At level 2 with six, it is the fight the chapter was written for.** Won 36 times in 40, at 78 %
+health, 7.8 of 8 down, **two companions dead**, over 31 seconds and 31 swings — the longest and
+busiest row in the table — and **0 of 40 sitting still**. Hard, winnable, costly, and the player
+does all of it.
+
+Either side of six is worse: at three it is 4/40, a wall with a death in it; at ten it is 40/40 at
+91 % with the player becoming optional (8/40 sitting still) and the toll falling back to 0.9,
+because fourteen allies smother it.
+
+### The recommendation
+
+**Lift the hold to level 2 and expect a company of about six.** That row is the climax the brief
+asks for and the only row in the table that is all three things at once.
+
+**And it is what a player will plausibly arrive with.** Of the ten who can be asked, **seven come
+for the asking** wherever they are met — Chris at the landing (automatic), Ed on his shore, Jerry,
+Ciarán, Matt and Al on the road, Mus in the wild — and **three are gated on doing something
+first**: Kristen on the country being *charted*, Lakota on having *birded*, Eliana on the *edge*.
+So a player who simply says yes to everyone lands on **seven**, and one who also does the three
+skills lands on ten. Six is the floor of that band, not the ceiling — which means **the battle is
+at its best for the player who did the least**, and gets easier for the one who did the most.
+
+If ten is to stay a climax rather than a parade, the lever is not the country's level: it is
+either the arena (eight enemies against fourteen allies is a fight tuned for four) or a reason for
+some of the company to be elsewhere.
+
+### Two things to read the table with
+
+- **The deaths fall on the least experienced, which is right.** At level 2 with six, the man who
+  dies is **Kristen** (25/28, the lowest of the first six) 25 times in 40; with three it is Jerry;
+  with ten it is Mus. Nobody dies at level 0 in any row.
+- **"Sitting still" is not idle.** The passenger still closes and still dodges — only the swinging
+  is off. And the harness closes in single file with perfect facing and never misses, so read the
+  win counts as a ceiling and the comparisons between rows as the real content.
+
+### A correction to my own first pass
+
+My first run carried a column called *player killed* which matched *enemies down* exactly in every
+row. It was wrong: an ally's strike calls the same `hurtEnemy` (`src/combat.js:753`), which emits
+the same `hit` event, so I was counting every kill and calling it the player's. The passenger
+control replaced it and is the honest measure. That is the fifth time a probe of mine has modelled
+the game from outside and believed itself; the rule in this ledger keeps earning its place.
