@@ -158,7 +158,18 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
       if (!COMPANION_IDS.includes(id) || !at || typeof at !== 'object' || Array.isArray(at)) return false;
       if (at.where !== null && typeof at.where !== 'string') return false;
       if (at.what !== null && at.what !== undefined && typeof at.what !== 'string') return false;
+      if (at.witnesses !== undefined && (!Array.isArray(at.witnesses) || at.witnesses.some(w => !COMPANION_IDS.includes(w)))) return false;
     }
+  }
+  if (data.told !== undefined) {
+    if (!data.told || typeof data.told !== 'object' || Array.isArray(data.told)) return false;
+    for (const [id, kind] of Object.entries(data.told))
+      if (!COMPANION_IDS.includes(id) || !['true', 'silent', 'lie'].includes(kind)) return false;
+  }
+  if (data.knows !== undefined) {
+    if (!data.knows || typeof data.knows !== 'object' || Array.isArray(data.knows)) return false;
+    for (const [id, about] of Object.entries(data.knows))
+      if (!COMPANION_IDS.includes(id) || !COMPANION_IDS.includes(about)) return false;
   }
   // A man cannot both walk with you and be dead. The dead live in `createFallen()`, which the
   // save already carries, so they are handed in rather than kept here.
@@ -170,7 +181,7 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
  *   shared with the world's other dead on purpose: permanent death is one idea, not two.
  */
 export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
-  const state = { walking: [], regard: {}, errands: [], fell: {} };
+  const state = { walking: [], regard: {}, errands: [], fell: {}, told: {}, knows: {} };
 
   const dead = id => !!fallen?.has?.(id);
   const regardOf = id => state.regard[id] ?? 0;
@@ -242,18 +253,103 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
    * built from them rather than invented: "At the Lauvel. Wolves, at night." They are also what
    * the journal's company page says of him, and where his weapon is lying.
    */
-  function died(id, { where = null, what = null, x = null, z = null } = {}) {
+  function died(id, { where = null, what = null, x = null, z = null, weapon = null, weaponName = null } = {}) {
     if (!known(id) || dead(id)) return { ok: false };
     fallen?.fall?.(id);
     state.walking = state.walking.filter(walker => walker !== id);
+    // Who else was walking with the traveler when it happened. A lie about this man is known to
+    // every one of them who is still alive, and to nobody else: if the last witness dies later,
+    // the lie stands.
+    const witnesses = state.walking.filter(walker => walker !== id);
     state.fell[id] = { where: typeof where === 'string' && where ? where : null,
-      what: typeof what === 'string' && what ? what : null,
+      what: typeof what === 'string' && what ? what : null, witnesses,
+      ...(weapon ? { weapon, weaponName: weaponName ?? 'weapon' } : {}),
       ...(Number.isFinite(x) && Number.isFinite(z) ? { x, z } : {}) };
     onEvent({ type: 'died', id, name: mercenaryById(id)?.name ?? id, ...state.fell[id] });
     return { ok: true, walking: [...state.walking], fell: { ...state.fell[id] } };
   }
   /** Where a man fell and against what, or null for somebody who has not. */
   const fellAt = id => (state.fell[id] ? { ...state.fell[id] } : null);
+  /**
+   * What is lying on the ground where he fell, and not yet picked up. A dead man's weapon stays
+   * where he went down, marked, as **a named weapon** - "Eliana's greatsword" - which is what the
+   * combat brief says a given weapon should be, and these are the only named weapons in the game.
+   * If he was carrying the traveler's own traded sword, that is what is lying there.
+   */
+  function weaponOnTheGround(id) {
+    const at = state.fell[id];
+    if (!at || at.taken || !at.weapon || !Number.isFinite(at.x)) return null;
+    return { id, weapon: at.weapon, x: at.x, z: at.z,
+      name: `${mercenaryById(id)?.name ?? id}’s ${at.weaponName ?? 'weapon'}` };
+  }
+  /** Everything still lying where somebody fell. */
+  const weaponsOnTheGround = () => COMPANION_IDS.map(weaponOnTheGround).filter(Boolean);
+  /** Picked up. It is not lying there any more, and it does not come back. */
+  function takeWeapon(id) {
+    const lying = weaponOnTheGround(id);
+    if (!lying) return { ok: false };
+    state.fell[id] = { ...state.fell[id], taken: true };
+    onEvent({ type: 'weapon-taken', id, weapon: lying.weapon, name: lying.name });
+    return { ok: true, ...lying };
+  }
+
+  // --- what you tell the Marshal ------------------------------------------
+  /**
+   * The dead the Marshal has not yet been told about, in roster order. He counts, stops, and asks
+   * after each missing name in turn.
+   */
+  const owed = () => COMPANION_IDS.filter(id => dead(id) && !state.told[id]);
+  /**
+   * The true answer, built from what was written down when he fell rather than invented now:
+   * "At the Lauvel. Wolves." A man whose fall nobody recorded gets the plainest thing there is.
+   */
+  function truthAbout(id) {
+    const at = state.fell[id];
+    if (!at) return 'Dead.';
+    const where = at.where ? `At ${at.where}.` : null;
+    const what = at.what ? `${at.what}.` : null;
+    return [where, what].filter(Boolean).join(' ') || 'Dead.';
+  }
+  /** What the traveler may say, in his own words, with the true one built from the record. */
+  const answersFor = id => freeze([
+    freeze({ id: 'true', label: truthAbout(id), kind: 'true' }),
+    freeze({ id: 'silent', label: 'Dead.', kind: 'silent' }),
+    freeze({ id: 'lie', label: 'He took his pay and went home.', kind: 'lie' }),
+  ]);
+  /**
+   * Tell him. Truth costs nothing and silence costs nothing. **A lie is known for one by everyone
+   * who was walking with you when it happened**, each of whom drops a rung and will say so once,
+   * later, by their own fire - not in front of the Marshal. If nobody living saw it, the lie
+   * stands, and the register says something false, which the late story will want.
+   */
+  function report(id, kind) {
+    if (!dead(id) || state.told[id] || !['true', 'silent', 'lie'].includes(kind)) return { ok: false };
+    state.told[id] = kind;
+    if (kind !== 'lie') return { ok: true, kind, knows: [], register: true };
+    const saw = (state.fell[id]?.witnesses ?? []).filter(witness => !dead(witness));
+    for (const witness of saw) {
+      state.knows[witness] = id;
+      // A rung, not a point: it is the standing that changes, and he will say why.
+      state.regard[witness] = Math.max(0, regardOf(witness) - (RUNG_AT.friendly - RUNG_AT.acquainted));
+    }
+    onEvent({ type: 'lied', id, knows: [...saw], register: !saw.length });
+    return { ok: true, kind, knows: [...saw], register: !saw.length };
+  }
+  /** Whether the register the Marshal keeps says something false about this man. */
+  const registerIsFalse = id => state.told[id] === 'lie' && !(state.fell[id]?.witnesses ?? []).some(w => !dead(w));
+  /** What a man holds against you, and the one line he has for it. Said once, and then let go. */
+  function holdsAgainstYou(id) {
+    const about = state.knows[id];
+    if (!about) return null;
+    return { about, name: mercenaryById(about)?.name ?? about,
+      line: `You told the Marshal ${mercenaryById(about)?.name ?? about} went home. I was there. I have not said anything, and I am not going to, but I was there.` };
+  }
+  /** He has said it. He does not say it twice. */
+  function letGo(id) {
+    if (!state.knows[id]) return { ok: false };
+    delete state.knows[id];
+    return { ok: true };
+  }
 
   /**
    * The living of the company, in roster order. This is what the muster is given: `musterVoices`
@@ -271,13 +367,16 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   function snapshot() {
     return { version: COMPANIONS_VERSION, walking: [...state.walking],
       regard: Object.fromEntries(Object.entries(state.regard).map(([id, at]) => [id, Math.round(at * 10) / 10])),
-      errands: [...state.errands], fell: Object.fromEntries(Object.entries(state.fell).map(([id, at]) => [id, { ...at }])) };
+      errands: [...state.errands], fell: Object.fromEntries(Object.entries(state.fell).map(([id, at]) => [id, { ...at }])),
+      told: { ...state.told }, knows: { ...state.knows } };
   }
 
   function restore(data) {
     Object.assign(state, { walking: [], regard: {}, errands: [], fell: {} });
     if (!validateCompanionsSnapshot(data, { allowMissing: false })) return false;
     state.fell = Object.fromEntries(Object.entries(data.fell ?? {}).map(([id, at]) => [id, { ...at }]));
+    state.told = { ...(data.told ?? {}) };
+    state.knows = { ...(data.knows ?? {}) };
     // A save written before somebody died, loaded after: the dead do not walk.
     state.walking = data.walking.filter(id => !dead(id));
     state.regard = { ...data.regard };
@@ -286,6 +385,9 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   }
 
   return { ask, askable, sendOn, travelled, fought, traded, errand, died, fellAt, living, view, snapshot, restore,
+    owed, truthAbout, answersFor, report, registerIsFalse, holdsAgainstYou, letGo,
+    weaponOnTheGround, weaponsOnTheGround, takeWeapon,
+    told: id => state.told[id] ?? null,
     rung: id => rungFor(regardOf(id)), label: id => RUNG_LABELS[rungFor(regardOf(id))],
     regardFor: id => Math.round(regardOf(id)),
     get walking() { return [...state.walking]; },

@@ -272,6 +272,137 @@ test('Kristen’s gate is not one that opens itself', async () => {
   assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
 });
 
+test('a dead man\u2019s weapon lies where he fell, named, until it is taken', () => {
+  const { companions } = fresh();
+  companions.ask('merc-eliana', { where: 'road', has: { edge: true } });
+  assert.deepEqual(companions.weaponsOnTheGround(), [], 'nothing is lying anywhere yet');
+  companions.died('merc-eliana', { where: 'Luscia', what: 'Wolves', x: -600, z: 140,
+    weapon: 'greatsword', weaponName: 'greatsword' });
+  const lying = companions.weaponOnTheGround('merc-eliana');
+  // The only named weapons in the game, as the combat brief says a given weapon should be.
+  assert.equal(lying.name, 'Eliana\u2019s greatsword');
+  assert.deepEqual([lying.weapon, lying.x, lying.z], ['greatsword', -600, 140]);
+  assert.deepEqual(companions.weaponsOnTheGround().map(one => one.id), ['merc-eliana']);
+  // Picked up once, and then it is not lying there any more.
+  assert.equal(companions.takeWeapon('merc-eliana').ok, true);
+  assert.equal(companions.weaponOnTheGround('merc-eliana'), null);
+  assert.equal(companions.takeWeapon('merc-eliana').ok, false);
+  assert.deepEqual(companions.weaponsOnTheGround(), []);
+  // A man who fell carrying nothing leaves nothing; a living man leaves nothing either.
+  const { companions: other } = fresh();
+  other.ask('merc-matt', { where: 'road' });
+  other.died('merc-matt', { where: 'Pueth', what: 'Goblins', x: 1, z: 2 });
+  assert.equal(other.weaponOnTheGround('merc-matt'), null, 'nothing was written down as his');
+  assert.equal(other.weaponOnTheGround('merc-mus'), null, 'and he is alive');
+});
+
+test('the muster sees the people standing in front of it', async () => {
+  // `summary().mustered` counts the phase `mustered`, and a companion's phase is `with-traveler`
+  // wherever he is - so nine men at the traveler's shoulder counted as none. The camp gave him
+  // the early face: eleven pegs "and nobody on them", with ten of the eleven standing in front of
+  // it. Once men can die the same count waits forever for somebody who is never coming.
+  const { musterVoices, MUSTER_ARRIVED_WITH, MUSTER_FULL } = await import('../src/moros-chapter.js');
+  const roster = MERCENARY_ROSTER.map(man => man.id);
+  // Alone: the early face, which was always right.
+  const alone = musterVoices({ musterCount: 1, roster });
+  assert.deepEqual([alone.count, alone.early, alone.full], [1, true, false]);
+  // The whole company at your shoulder: eleven, and the face for it.
+  const all = musterVoices({ musterCount: 1, roster, withYou: roster });
+  assert.deepEqual([all.count, all.full, all.early], [MUSTER_FULL, true, false]);
+  assert.match(all.marshal, /That is eleven, and eleven is what I was promised/);
+  assert.equal(all.company.length, roster.length, 'and every one of them says something');
+  assert.ok(all.company.every(man => man.withYou), 'all of them came in with you');
+  // Two dead and the rest in: as whole as it is ever going to be, and he says so.
+  const dead = ['merc-mus', 'merc-altun'];
+  const short = musterVoices({ musterCount: 1, roster, withYou: roster.filter(id => !dead.includes(id)), dead });
+  assert.deepEqual([short.count, short.expected, short.full], [9, 9, true]);
+  assert.match(short.marshal, /^Nine\. I was promised eleven\./, 'he does not pretend the count is right');
+  assert.match(short.marshal, /you will tell me about the ones who are not here/);
+  assert.deepEqual(short.missing, dead);
+  assert.equal(short.company.length, 8, 'the dead are not greeted');
+  for (const id of dead) assert.ok(!short.company.some(man => man.id === id), `${id} says nothing`);
+  // A mix: some in camp, some with you, one dead, and nobody counted twice.
+  const mixed = musterVoices({ musterCount: 5, roster, withYou: ['merc-mus', 'merc-word'], dead: ['merc-jerry'] });
+  assert.deepEqual([mixed.count, mixed.expected, mixed.full], [7, 10, false]);
+  // The third table: a companion arrives *with* you, which neither other table can say.
+  assert.equal(Object.keys(MUSTER_ARRIVED_WITH).length, roster.length, 'a line for each of them');
+  for (const id of roster) assert.ok(MUSTER_ARRIVED_WITH[id]?.length > 10, `${id} has something to say on arriving`);
+  assert.equal(all.company.find(man => man.id === 'merc-mus').line, 'You will not mention where you found me.');
+  // And a man already in camp still greets you from where he has been standing.
+  const someWaiting = musterVoices({ musterCount: MUSTER_FULL, roster, withYou: [] });
+  assert.ok(someWaiting.company.every(man => !man.withYou), 'nobody came in with you');
+});
+
+test('the Marshal asks what happened, and what you say is remembered', () => {
+  const { companions } = fresh();
+  companions.ask('merc-mus', { where: 'wild' });
+  companions.ask('merc-altun', { where: 'road' });
+  companions.ask('merc-matt', { where: 'road' });
+  companions.travelled('merc-altun', 4000);
+  companions.travelled('merc-matt', 4000);
+  const before = companions.rung('merc-altun');
+  companions.died('merc-mus', { where: 'Luscia', what: 'Wolves' });
+  // He asks after each missing name in turn, and the true answer is built from the record rather
+  // than invented now.
+  assert.deepEqual(companions.owed(), ['merc-mus']);
+  assert.equal(companions.truthAbout('merc-mus'), 'At Luscia. Wolves.');
+  const answers = companions.answersFor('merc-mus');
+  assert.deepEqual(answers.map(answer => answer.kind), ['true', 'silent', 'lie']);
+  assert.equal(answers[1].label, 'Dead.');
+  assert.match(answers[2].label, /took his pay and went home/);
+  // A lie is known for one by everyone who was walking with you when it happened.
+  const told = companions.report('merc-mus', 'lie');
+  assert.deepEqual([...told.knows].sort(), ['merc-altun', 'merc-matt']);
+  assert.equal(told.register, false, 'somebody living saw it, so the register is not the lie');
+  assert.notEqual(companions.rung('merc-altun'), before, 'and each of them thinks less of you');
+  assert.match(companions.holdsAgainstYou('merc-altun').line, /I was there/);
+  assert.equal(companions.holdsAgainstYou('merc-matt').about, 'merc-mus');
+  assert.equal(companions.letGo('merc-altun').ok, true, 'he says it once');
+  assert.equal(companions.holdsAgainstYou('merc-altun'), null);
+  assert.equal(companions.report('merc-mus', 'lie').ok, false, 'and he is asked about a man once');
+  assert.deepEqual(companions.owed(), [], 'the Marshal has his answer');
+});
+
+test('a lie nobody living saw is a lie that stands', () => {
+  const { companions } = fresh();
+  companions.ask('merc-mus', { where: 'wild' });
+  companions.ask('merc-altun', { where: 'road' });
+  companions.died('merc-mus', { where: 'Luscia', what: 'Wolves' });
+  assert.deepEqual(companions.fellAt('merc-mus').witnesses, ['merc-altun'], 'one man saw it');
+  // The last witness dies before you are asked.
+  companions.died('merc-altun', { where: 'the Moros Plain', what: 'The border battle' });
+  const told = companions.report('merc-mus', 'lie');
+  assert.deepEqual(told.knows, [], 'nobody living saw it');
+  assert.equal(told.register, true, 'so the register says something false');
+  assert.equal(companions.registerIsFalse('merc-mus'), true);
+  // Truth and silence cost nothing, and neither makes the register false.
+  companions.report('merc-altun', 'true');
+  assert.equal(companions.registerIsFalse('merc-altun'), false);
+  assert.equal(companions.told('merc-altun'), 'true');
+  // A man who never died is not asked about, and cannot be lied about.
+  assert.equal(companions.report('merc-matt', 'lie').ok, false);
+});
+
+test('what you told him comes back off the road', () => {
+  const { companions, fallen } = fresh();
+  companions.ask('merc-mus', { where: 'wild' });
+  companions.ask('merc-matt', { where: 'road' });
+  companions.died('merc-mus', { where: 'Luscia', what: 'Wolves' });
+  companions.report('merc-mus', 'lie');
+  const saved = companions.snapshot();
+  assert.equal(validateCompanionsSnapshot(saved), true);
+  const later = createCompanions({ fallen });
+  assert.equal(later.restore(saved), true);
+  assert.equal(later.told('merc-mus'), 'lie');
+  assert.equal(later.holdsAgainstYou('merc-matt')?.about, 'merc-mus', 'and he has not forgotten');
+  assert.deepEqual(later.owed(), [], 'nor has the Marshal forgotten being told');
+  for (const bad of [{ ...saved, told: { 'merc-mus': 'maybe' } }, { ...saved, told: { nobody: 'true' } },
+    { ...saved, knows: { 'merc-matt': 'nobody' } }, { ...saved, knows: [] }])
+    assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
+  const { told, knows, ...older } = saved;
+  assert.equal(validateCompanionsSnapshot(older), true, 'a save from before anybody was asked');
+});
+
 test('the journal says where each man is, and names the dead as dead', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
@@ -290,14 +421,16 @@ test('a man who falls is remembered where he fell, and it survives the road', ()
   companions.ask('merc-eliana', { where: 'road', has: { edge: true } });
   const gone = companions.died('merc-eliana', { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
   assert.equal(gone.ok, true);
-  assert.deepEqual(companions.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
+  // `witnesses` is who else was walking with you when it happened, which a lie is measured
+  // against later. Nobody else was, here.
+  assert.deepEqual(companions.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', witnesses: [], x: -600, z: 140 });
   assert.equal(companions.fellAt('merc-mus'), null, 'a living man fell nowhere');
   // The page and the Marshal both read it, so it has to come back off the road.
   const saved = companions.snapshot();
   assert.equal(validateCompanionsSnapshot(saved), true);
   const later = createCompanions({ fallen });
   assert.equal(later.restore(saved), true);
-  assert.deepEqual(later.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
+  assert.deepEqual(later.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', witnesses: [], x: -600, z: 140 });
   assert.equal(later.view().find(man => man.id === 'merc-eliana').fell.where, 'Luscia');
   // An older save has nobody fallen, and that is not nonsense.
   const { fell, ...withoutFell } = saved;
@@ -307,7 +440,8 @@ test('a man who falls is remembered where he fell, and it survives the road', ()
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
   // And the host tells it what killed him, in the fight's own plainest word.
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  assert.match(main, /companions\.died\(e\.id,\{where,what:enemyWordFor\(combat\.state\.encounterId\),x:e\.x,z:e\.z\}\)/, 'who, where and against what');
+  assert.match(main, /companions\.died\(e\.id,\{where,what:enemyWordFor\(combat\.state\.encounterId\),x:e\.x,z:e\.z,/, 'who, where and against what');
+  assert.match(main, /weapon:held\?\.id\?\?null,weaponName:/, 'and what he was carrying, which is left lying there');
   assert.match(main, /if\(encounterId===LUSCIA_WOLVES\.id\)return 'Wolves';/, 'and the words are the fight’s own');
 });
 
