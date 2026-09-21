@@ -2713,6 +2713,13 @@ function init() {
           'Then I will see you at the plain. Take your time over this country; it is the last quiet one you will walk through.');}});
       else if(border.view().stage!=='march')choices.unshift({id:'companion-come-back',label:'Walk Drent with me.',action:()=>{closeDialogue();recallCompanion();}});}
     // Ed is the only man in Drent who has swum anything, and the only one who will explain it.
+    // The men at her rail. He watched them watch him go over, and he is not going to say so
+    // plainly, because he never says anything plainly (docs/design-answers.md: they are the
+    // rebels the Peblos quest finds with that hull later).
+    if(npc.id===WORD_ID)choices.unshift({id:'word-crew',label:'Whose ship was that?',
+      action:()=>openDialogue(npc,['Mine! Well — mine in every sense that matters and none of the ones a clerk would accept. You saw the deck? Five of them at the rail watching me swim, and not one hand put out. That is my crew. The tall one at the tiller has my hat.',
+        'I shall want it back. Not today. Today I have a war to be extremely useful in and a great deal of seawater to get out of my ears, and they have a hull with nowhere to take it.'],
+        null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
     if(npc.id===WORD_ID&&!swimming.taught)choices.unshift({id:'word-swim',label:'Nobody swims that. How is it done?',
       action:()=>openDialogue(npc,[...SWIMMING_LESSON],null,'Back to our conversation',{onComplete:()=>{
         const learned=swimming.learn();
@@ -4838,16 +4845,21 @@ function init() {
         else if(reviewLineup&&!view.startsWith('cast-'))reviewLineup.visible=false;
         // The rebel ship at the moment she rounds up, from the end of the pier; and Ed on the
         // strand a moment after he walks out of the water.
-        if(view==='word-ship'||view==='word-ashore'){questStage=10;combat.finishPractice();player.group.visible=false;
-          playSeconds=view==='word-ship'?WORD_SHIP.turns+8:WORD_ASHORE+3;wordSaid=wordToastAt(playSeconds)?.key??null;
+        // `word-crew` is `word-ship` at the moment he goes over the side, close enough to see
+        // the two men at her port rail looking down at the water (src/rebel-crew.js).
+        if(view==='word-ship'||view==='word-ashore'||view==='word-crew'){questStage=10;combat.finishPractice();player.group.visible=false;
+          const atShip=view==='word-ship'||view==='word-crew';
+          playSeconds=view==='word-ship'?WORD_SHIP.turns+8:view==='word-crew'?WORD_SHIP.drops:WORD_ASHORE+3;
+          wordSaid=wordToastAt(playSeconds)?.key??null;
           settleMercenaries();
-          const look=view==='word-ship'?WORD_TRACK.standOff:WORD_BEACH;
-          const spot=view==='word-ship'?{x:26,z:29}:{x:WORD_BEACH.x-7,z:WORD_BEACH.z-6};
+          const look=atShip?WORD_TRACK.standOff:WORD_BEACH;
+          const spot=atShip?{x:26,z:29}:{x:WORD_BEACH.x-7,z:WORD_BEACH.z-6};
           const ground=Math.max(SEA_LEVEL,world.heightAt(spot.x,spot.z));
           player.group.position.set(spot.x,ground,spot.z);
-          reviewTarget=new THREE.Vector3(look.x,view==='word-ship'?SEA_LEVEL+3.4:world.heightAt(look.x,look.z)+1.1,look.z);
-          yaw=Math.atan2(spot.x-look.x,spot.z-look.z);pitch=view==='word-ship'?.08:.12;
-          distance=targetDistance=view==='word-ship'?Math.hypot(spot.x-look.x,spot.z-look.z):9.2;}
+          reviewTarget=new THREE.Vector3(look.x,atShip?SEA_LEVEL+3.4:world.heightAt(look.x,look.z)+1.1,look.z);
+          yaw=Math.atan2(spot.x-look.x,spot.z-look.z);pitch=atShip?.08:.12;
+          distance=targetDistance=view==='word-ship'?Math.hypot(spot.x-look.x,spot.z-look.z)
+            :view==='word-crew'?18:9.2;}
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}

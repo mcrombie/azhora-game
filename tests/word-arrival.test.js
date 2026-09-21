@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
+import { CREW_IDS } from '../src/rebel-crew.js';
 import { canStand, canSwim, WATERLINE } from '../src/game-state.js';
 import { ARRIVALS, MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
 import { PLAYABLE } from '../src/player-characters.js';
@@ -179,10 +180,36 @@ test('the rebel ship is the Sultana’s hull with everything worth seeing taken 
   const a = size(sultana.group), b = size(rebel.group);
   assert.ok(Math.abs(a.z - b.z) < .6 && Math.abs(a.x - b.x) < .6, 'the same hull: one length, one beam');
   assert.ok(b.z > HULL.length * .9 && b.y > 9, 'a ship, with a mast');
-  const domes = group => { let n = 0; group.traverse(o => { if (o.isMesh && o.geometry.type === 'SphereGeometry') n++; }); return n; };
+  // Spheres in her own fabric, not in her people: she carries a crew now (src/rebel-crew.js)
+  // and a man has a head, so "any sphere aboard" stopped meaning "a gilt dome over her cabin".
+  const domes = group => {
+    let n = 0;
+    group.traverse(o => {
+      if (!o.isMesh || o.geometry.type !== 'SphereGeometry') return;
+      for (let p = o.parent; p; p = p.parent) if (CREW_IDS.includes(p.name)) return;
+      n++;
+    });
+    return n;
+  };
   assert.ok(domes(sultana.group) > 0 && domes(rebel.group) === 0, 'and no gilt dome on her');
-  const count = group => { let n = 0; group.traverse(o => { if (o.isMesh) n++; }); return n; };
-  assert.ok(count(rebel.group) < count(sultana.group) - 8, `${count(rebel.group)} pieces against the Sultana's ${count(sultana.group)}`);
+  // Her fabric, again without her people. She is the poorer ship, and she has more figures on
+  // her deck than the Sultana does, so the two have to be counted apart to mean anything.
+  const count = (group, crew) => {
+    let n = 0;
+    group.traverse(o => {
+      if (!o.isMesh) return;
+      let aboard = false;
+      for (let p = o.parent; p; p = p.parent) if (CREW_IDS.includes(p.name)) aboard = true;
+      if (aboard === crew) n++;
+    });
+    return n;
+  };
+  assert.ok(count(rebel.group, false) < count(sultana.group, false) - 8,
+    `${count(rebel.group, false)} pieces against the Sultana's ${count(sultana.group, false)}`);
+  // And the crew themselves: five men, and cheap enough for a ship nobody gets within sixty
+  // metres of. They cast no shadow, so each of them is drawn once and not twice.
+  assert.ok(count(rebel.group, true) > 0 && count(rebel.group, true) < 180, `the crew cost ${count(rebel.group, true)} pieces`);
+  assert.equal(count(sultana.group, true), 0, 'and the Sultana carries none of them');
   // No gold anywhere on her, and no salt.
   const golds = group => { const seen = new Set(); group.traverse(o => { if (o.isMesh && o.material?.color) seen.add(o.material.color.getHex()); }); return seen; };
   assert.ok(golds(sultana.group).has(0xd2a843) && !golds(rebel.group).has(0xd2a843), 'the gold is the Sultana’s alone');
