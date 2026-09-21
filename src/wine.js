@@ -195,7 +195,7 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
       task: task(), cellarOpen: cellarOpen(), plainTasted: plainTasted(), terms: termsAt(level),
       entries: [...WINE_IDS.map(id => ({ id, tasted: !!state.tasted[id], colour: WINES[id].colour,
         name: state.tasted[id] ? WINES[id].name : `A ${WINES[id].colour} of Vaervelm Caelazh`,
-        detail: state.tasted[id] ? WINES[id].note : state.met ? `Livia pours it at ${WINERY.name}.` : 'Lakota, the birder in Tidehaven, knows wine.' })), ...cellar, ...attic] };
+        detail: state.tasted[id] ? WINES[id].note : state.met ? `Livia pours it at ${WINERY.name}.` : 'Lakota, the man on the road with the hawk, knows wine.' })), ...cellar, ...attic] };
   }
 
   function snapshot() { return { version: WINE_VERSION, met: state.met, quest: state.quest, tasted: { ...state.tasted } }; }

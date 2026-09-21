@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
 import { createSkills } from '../src/skills.js';
 import {
-  BIRD_SPECIES, DRENT_BIRDS, BIRD_GROUPS, BIRD_WATCHER, FEEDER_ITEM, FILLED_FEEDER_ITEM, BIRDING_LESSON,
-  createBirding, observeRange, validateBirdingSnapshot, birdWatcherConversation, lysaFeederChoice,
+  BIRD_SPECIES, DRENT_BIRDS, BIRD_GROUPS, BIRD_WATCHER, GARDEN_KEEPER, GARDEN_BIRDS, FEEDER_ITEM, FILLED_FEEDER_ITEM, BIRDING_LESSON,
+  createBirding, observeRange, validateBirdingSnapshot, gardenKeeperConversation, lysaFeederChoice,
 } from '../src/birding.js';
 
 function fixture() {
@@ -25,7 +25,7 @@ test('Drent has the country’s common birds, each worth experience the first ti
   }
   assert.ok(BIRD_SPECIES.crow.spook > BIRD_SPECIES.cardinal.spook && BIRD_SPECIES.hummingbird.spook < BIRD_SPECIES.wren.spook, 'crows are warier than songbirds; hummingbirds hardly care');
   const { skills, birding } = fixture();
-  assert.equal(birding.observe('cardinal').ok, false, 'nothing counts before Lakota has taught you');
+  assert.equal(birding.observe('cardinal').ok, false, 'nothing counts before Perrin has taught you');
   assert.equal(birding.meet().first, true);
   assert.equal(skills.level('birding'), 1);
   const first = birding.observe('cardinal');
@@ -92,16 +92,18 @@ test('birding survives a save, and nonsense is refused', () => {
     assert.equal(validateBirdingSnapshot(bad), false, JSON.stringify(bad));
 });
 
-test('Lakota teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
+test('Perrin teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
   const { birding, inventory } = fixture(), opened = [], acted = [];
   const context = { birding, openDialogue: (npc, lines, _, __, options) => opened.push({ lines, choices: options?.choices ?? [] }), closeDialogue: () => {}, act: id => acted.push(id) };
-  assert.equal(birdWatcherConversation({ id: 'someone-else' }, context), false);
-  birdWatcherConversation(BIRD_WATCHER, context);
-  assert.deepEqual(opened.at(-1).choices.map(c => c.id), ['learn-birding', 'leave-bird-watcher']);
+  assert.equal(gardenKeeperConversation({ id: 'someone-else' }, context), false);
+  assert.equal(gardenKeeperConversation(BIRD_WATCHER, context), false, 'Lakota is not the man in the garden any more');
+  gardenKeeperConversation(GARDEN_KEEPER, context);
+  assert.deepEqual(opened.at(-1).choices.map(c => c.id), ['learn-birding', 'leave-garden-keeper']);
+  // The lesson is available from the first minute of the game, which is the whole point of Perrin.
   opened.at(-1).choices[0].action();
   assert.deepEqual(acted, ['learn-birding']);
   birding.meet();
-  birdWatcherConversation(BIRD_WATCHER, context);
+  gardenKeeperConversation(GARDEN_KEEPER, context);
   const ids = opened.at(-1).choices.map(c => c.id);
   assert.ok(ids.includes('ask-hummingbirds') && ids.includes('birding-hints') && !ids.includes('birding-lore'), ids.join());
   opened.at(-1).choices.find(c => c.id === 'ask-hummingbirds').action();
@@ -117,8 +119,29 @@ test('Lakota teaches birding first, then offers the feeder; Lysa fills it only w
   assert.equal(choice.id, 'fill-feeder');
   choice.action();
   assert.deepEqual([acted.at(-1), birding.feeder, lysaFeederChoice(lysa, lysaContext)], ['fill-feeder', 'filled', null]);
+  // He talks about his own garden's birds, not the whole country's: a crow is neither.
   birding.observe('crow');
-  birdWatcherConversation(BIRD_WATCHER, context);
+  gardenKeeperConversation(GARDEN_KEEPER, context);
+  assert.ok(!opened.at(-1).choices.some(c => c.id === 'birding-lore'), 'a crow is not a garden bird');
+  birding.observe('catbird');
+  gardenKeeperConversation(GARDEN_KEEPER, context);
   assert.ok(opened.at(-1).choices.some(c => c.id === 'birding-lore'));
   assert.match(opened.at(-1).lines[0], /hook/);
+});
+
+test('the garden\u2019s own birds are the ones that actually come to it', () => {
+  // Measured against BIRD_HABITATS in src/drent-birds.js: nothing else in the village comes within
+  // fourteen metres of the garden, and the hummingbird is counted apart because it wants the feeder.
+  assert.deepEqual([...GARDEN_BIRDS], ['chickadee', 'catbird', 'wren']);
+  for (const id of GARDEN_BIRDS) assert.ok(DRENT_BIRDS.includes(id), id);
+  assert.ok(!GARDEN_BIRDS.includes('hummingbird'), 'the fourth is the one you have to earn');
+  const { birding } = fixture();
+  birding.meet();
+  const opened = [];
+  const context = { birding, openDialogue: (npc, lines, _, __, options) => opened.push({ lines, choices: options?.choices ?? [] }), closeDialogue() {}, act() {} };
+  gardenKeeperConversation(GARDEN_KEEPER, context);
+  assert.match(opened.at(-1).lines[0], /Anything yet/);
+  for (const id of GARDEN_BIRDS) birding.observe(id);
+  gardenKeeperConversation(GARDEN_KEEPER, context);
+  assert.match(opened.at(-1).lines[0], /All three of the garden ones/);
 });

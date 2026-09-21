@@ -850,6 +850,9 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const isCustodian = role === 'rise-custodian', isClerk = role === 'relay-clerk';
   const isWoodcutter = role === 'forest-woodcutter';
   const isBirdWatcher = role === 'bird-watcher';
+  // Perrin, who keeps the bird garden in Tidehaven. Not a birder: a man with a garden that birds
+  // come to, which he considers a different and more sensible thing to be (src/birding.js).
+  const isGardenKeeper = role === 'garden-keeper';
   // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Nika, who works the floor.
   const isWineSeller = role === 'wine-seller', isWineClerk = role === 'wine-clerk';
   // Katy, at Vaervelm Caelazh: watching the birds, and looking for Batman (src/katy.js). Nika's slight build.
@@ -907,8 +910,8 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   const soleMat = material(0x302b24);
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
-  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isWinemaker ? 0x4d4a44 : isRivalKeeper ? 0x232427 : isLightKeeper ? 0x3c4a4e : isBirdWatcher ? 0x3b3129 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeperKin ? 0x9c8355 : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isWinemaker ? 0x4d4a44 : isRivalKeeper ? 0x232427 : isLightKeeper ? 0x3c4a4e : isBirdWatcher ? 0x3b3129 : isGardenKeeper ? 0x4a4436 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
+  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeperKin ? 0x9c8355 : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isGardenKeeper ? 0x877b62 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -1432,7 +1435,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     fringe.rotation.z = -0.18;
   }
 
-  if (hat && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper && !isBirdWatcher) {
+  if (hat && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper && !isBirdWatcher && !isGardenKeeper) {
     // A soft, rounded country cap, with a short leather peak and folded crown.
     const cap = new THREE.Group();
     cap.position.set(-0.018, 0.371, -0.028);
@@ -1943,6 +1946,29 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
     // A tiny wooden kitchen spoon in a pocket makes her role legible.
     ribbon(body, leather, [0.111, 0.67, 0.23], [0.139, 0.839, 0.225], 0.018, 0.014);
     round(body, bagMat, [0.141, 0.842, 0.225], [0.031, 0.044, 0.014]);
+  } else if (isGardenKeeper) {
+    // A man who kneels for a living: both knees worn pale and dark with soil, sleeves rolled back off
+    // the forearms, a twine belt with a trowel through it, and a hat that has been rained on for years.
+    const soil = material(0x4a3d2e), twine = material(0xb0a281), steel = material(0x8d8f92), worn = material(0x6b6352);
+    for (const side of [-1, 1]) {
+      box(body, worn, [side * 0.082, 0.44, 0.06], [0.135, 0.14, 0.135]);
+      round(body, soil, [side * 0.082, 0.4, 0.118], [0.07, 0.05, 0.03]);
+    }
+    box(body, twine, [0, 0.93, 0.17], [0.37, 0.036, 0.036]);
+    // The trowel through the belt on his right, blade down.
+    const handle = part(body, UNIT_CYLINDER, worn, [0.155, 0.99, 0.185], [0.019, 0.1, 0.019]);
+    handle.rotation.set(0.18, 0, 0.12);
+    const blade = part(body, new THREE.ConeGeometry(1, 1, 4), steel, [0.166, 0.845, 0.194], [0.036, 0.13, 0.016]);
+    blade.rotation.set(Math.PI - 0.18, Math.PI / 4, -0.12);
+    // A coil of garden cord on the other hip.
+    const coil = part(body, new THREE.TorusGeometry(0.052, 0.016, 5, 12), twine, [-0.16, 0.9, 0.16]);
+    coil.rotation.set(Math.PI / 2, 0, 0.2);
+    // Hair going grey at the sides, and a broad soft hat over it.
+    round(head, hairMat, [0, 0.18, -0.06], [0.152, 0.118, 0.155]);
+    const brim = part(head, UNIT_CYLINDER, worn, [0, 0.29, 0], [0.33, 0.016, 0.33]);
+    brim.rotation.set(0.07, 0, 0.05);
+    part(head, UNIT_CYLINDER, worn, [0, 0.35, 0], [0.175, 0.1, 0.175]);
+    part(head, UNIT_CYLINDER, twine, [0, 0.31, 0], [0.181, 0.02, 0.181]);
   } else if (isBirdWatcher) {
     // Tidehaven's bird-watcher, drawn from Michael's sketch (page 231, the Future Panic doodles): a big
     // rounded head under thick upright spiky hair, a long hooked nose, a cream collared shirt buttoned

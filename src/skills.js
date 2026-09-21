@@ -32,7 +32,7 @@ export const SKILLS = Object.freeze({
   birding: Object.freeze({
     id: 'birding', name: 'Birding',
     blurb: 'Finding birds, keeping your distance, and looking at them properly. Every kind of bird you see for the first time teaches you something.',
-    teacher: 'Lakota, the birder of Tidehaven',
+    teacher: 'Perrin, who keeps the bird garden on the eastern side of Tidehaven',
     // Drent's five birds together are worth 90: level 2. A country is a few levels; the table is the world's.
     thresholds: RUNESCAPE_TABLE,
   }),
@@ -67,14 +67,14 @@ export const SKILLS = Object.freeze({
   archaeology: Object.freeze({
     id: 'archaeology', name: 'Archaeology',
     blurb: 'Reading what people and older things left in the ground, where it lies, and leaving it there. Old towns and older bones: every find written up for the first time teaches you something.',
-    teacher: 'Lakota, the birder of Tidehaven, who digs as well as he watches',
+    teacher: 'Lakota, the seventh hired sword up the road, who digs as well as he watches',
     // Rena's seven finds are worth 125, and the report to Lakota 40 more: level 2.
     thresholds: RUNESCAPE_TABLE,
   }),
   wine: Object.freeze({
     id: 'wine', name: 'Wine',
     blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted for the first time teaches you something about the grape, the ground it grew in, and what was done to it indoors; the words for what is in the glass arrive as you go.',
-    teacher: 'Lakota in Tidehaven, Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval, and Juan at Tharganhom, the Wine Attic in Solis',
+    teacher: 'Lakota on the road, Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval, and Juan at Tharganhom, the Wine Attic in Solis',
     // The eight wines of Vaervelm Caelazh are worth 120 and the visit 25 more; the five from its
     // cellar 125 again, and Juan's eight 150. A taster who drinks everything the built world pours
     // reaches 420 experience, level 5, and five of the nine words below. The rest wait on more wine.
@@ -83,7 +83,7 @@ export const SKILLS = Object.freeze({
   cooking: Object.freeze({
     id: 'cooking', name: 'Cooking',
     blurb: 'What you can make at a lit fire, and why it works. Every dish made for the first time teaches you something.',
-    teacher: 'Lakota in Tidehaven, whose hot chocolate is the first recipe',
+    teacher: 'Lakota, somewhere behind you on the road, whose hot chocolate is the first recipe',
     // Hot chocolate is worth 20 and the fish 10: level 1 with both — the first log is the smallest.
     thresholds: RUNESCAPE_TABLE,
   }),

@@ -99,7 +99,8 @@ export const MERCENARY_ROSTER = Object.freeze([
     { tunic: 0xe4d8bd, hair: 0x4a3524, skin: 0xd7ad7e, build: 'wiry', headgear: 'soft-cap', hairStyle: 'lank', facialHair: 'stubble', garment: 'bedroll', marks: [] },
     ['Lakota. Yes, I am late. There was a bird on the mast for two days and I was not going to be the man who did not look at it.',
       'I am told there is a muster and a plain and a war. All of that is still going to be there. Have you ever actually looked at a hawk?'],
-    { teaches: true }),
+    // He is drawn as himself rather than in the company's kit, so the red-tail has a glove to sit on (src/birding.js).
+    { teaches: true, modelRole: 'bird-watcher' }),
   merc('eliana', 'Eliana', 'the Pyrosi hills', ARRIVALS.eliana, 75, 1.36,
     { tunic: 0x5c4a5e, hair: 0x14110f, skin: 0xd7ad7e, build: 'tall-lean', headgear: 'bare', hairStyle: 'long-loose', facialHair: 'clean', garment: 'sleeveless', marks: ['spectacles'] },
     ['Eliana. I came on my own and I would have come sooner, but the boat I wanted was not the boat that was leaving.',

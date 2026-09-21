@@ -133,14 +133,14 @@ export const INVENTORY_ITEMS = Object.freeze({
     description: 'One of the letters the Ardrys are writing to each other after eleven years. They are not sealed, and both of them have said you may read them: open your journal with J to do it. Deliver it to the one it is addressed to.',
   }),
   'hummingbird-feeder': Object.freeze({
-    name: 'Lakota’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
+    name: 'Perrin’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
     brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',
-    description: 'Lakota’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
+    description: 'Perrin’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
   }),
   'sugar-water-feeder': Object.freeze({
     name: 'Filled hummingbird feeder', type: 'Quest item', icon: 'feeder',
-    brief: 'Lakota’s feeder, full of Lysa’s sugar water. Carry it upright.',
-    description: 'Hang it on the hook among the red flowers in Lakota’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
+    brief: 'Perrin’s feeder, full of Lysa’s sugar water. Carry it upright.',
+    description: 'Hang it on the hook among the red flowers in Perrin’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
   }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,
@@ -680,7 +680,7 @@ export function createInventory({
         element('p', '', 'Bramble goblin raiders have cut the road out of Tidehaven. Our watch is holding the northern path, but the village needs help keeping travelers safe.'),
         element('p', '', 'The bearer has answered the Ambroni Empire’s call for mercenaries. Receive them at your field post, record their service, and give them their first orders. They arrive with a plain sword and no armor.'),
         element('p', '', 'The army promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
-        element('p', 'inventory-letter-signature', 'Lakota\nof Tidehaven, by the bird garden'),
+        element('p', 'inventory-letter-signature', 'Mara\nHarbourmaster of Tidehaven'),
       );
       detail.append(letter);
     } else {

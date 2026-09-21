@@ -9,10 +9,19 @@ import { RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED, createArchaeology, validateArch
 import { WINES, WINE_IDS, createWine, validateWineSnapshot, vintnerConversation } from '../src/wine.js';
 import { WINERY, WINERY_LAYOUT, WINERY_STANDS, VINTNER, VARIETIES, VARIETY_IDS } from '../src/winery.js';
 import { BIRD_WATCHER, LAKOTA_TOPICS, LAKOTA_ARCHAEOLOGY_PITCH, LAKOTA_WINE_PITCH, birdWatcherConversation } from '../src/birding.js';
+import { createLakota, validateLakotaSnapshot } from '../src/lakota.js';
+import { MERCENARY_ROSTER, mercenaryWeapon } from '../src/mercenaries.js';
 import { SOLIS, SOLIS_ROAD } from '../src/region-world.js';
 
-test('Tidehaven’s birder is Lakota now, with the dinosaurs, the chocolate, the machines and his doubts about the world', () => {
+test('Lakota is the seventh hired sword, and carries the dinosaurs, the chocolate, the machines and his doubts about the world', () => {
   assert.equal(BIRD_WATCHER.name, 'Lakota');
+  // His id is his place in the company now, so the fifty-odd references written against
+  // BIRD_WATCHER.id followed him onto the road without one of them being rewritten.
+  assert.equal(BIRD_WATCHER.id, 'merc-lakota');
+  const roster = MERCENARY_ROSTER.find(merc => merc.id === BIRD_WATCHER.id);
+  assert.ok(roster, 'he is on the roster');
+  assert.equal(roster.modelRole, 'bird-watcher', 'and is drawn as himself, so the red-tail has a glove to sit on');
+  assert.equal(mercenaryWeapon(BIRD_WATCHER.id).weapon, 'staff');
   const topics = Object.fromEntries(LAKOTA_TOPICS.map(topic => [topic.id, topic.lines.join(' ')]));
   assert.match(topics.dinosaurs, /[Dd]inosaurs/); assert.match(topics.dinosaurs, /birds are what is left of them/);
   assert.match(topics.chocolate, /[Cc]hocolate/);
@@ -23,14 +32,34 @@ test('Tidehaven’s birder is Lakota now, with the dinosaurs, the chocolate, the
   assert.match(wine, /Paradise Springs/); assert.match(wine, /north-east of West Suval/); assert.match(wine, /war/);
 });
 
-test('once he has taught birding he offers archaeology and wine, and never lets the birds out of the conversation', () => {
+test('nothing of his is offered until the traveler has worked out what he is', () => {
   let opened = null;
-  const context = extra => ({ birding: { met: true, hasSeen: () => false, feeder: 'hung' }, openDialogue: (npc, lines, event, action, options) => { opened = { lines, options }; },
+  const lakota = createLakota(), acted = [];
+  const base = { birding: { met: true, hasSeen: () => false, feeder: 'hung' },
+    openDialogue: (npc, lines, event, action, options) => { opened = { lines, options }; },
+    closeDialogue() {}, act: id => acted.push(id) };
+  birdWatcherConversation({ id: BIRD_WATCHER.id }, { ...base, lakota, archaeology: createArchaeology(), wine: createWine(),
+    mercenaryChoices: [{ id: 'merc-style', label: 'How do you fight?', action() {} }] });
+  assert.deepEqual(opened.options.choices.map(choice => choice.id), ['lakota-know', 'merc-style', 'leave-bird-watcher'],
+    'a hired sword with a hawk, the company question, and the one thing that gets you anywhere');
+  assert.match(opened.lines.join(' '), /same contract you are/);
+  opened.options.choices[0].action();
+  assert.deepEqual(acted, ['know-lakota']);
+});
+
+test('once you know him he offers archaeology and wine, and answers for his staff like any hired sword', () => {
+  let opened = null;
+  const lakota = createLakota(); lakota.know();
+  const context = extra => ({ birding: { met: true, hasSeen: () => false, feeder: 'hung' }, lakota,
+    mercenaryChoices: [{ id: 'merc-style', label: 'How do you fight?', action() {} }, { id: 'merc-trade', label: 'Trade?', action() {} }],
+    openDialogue: (npc, lines, event, action, options) => { opened = { lines, options }; },
     closeDialogue() {}, act() {}, ...extra });
   const archaeology = createArchaeology(), wine = createWine();
   birdWatcherConversation({ id: BIRD_WATCHER.id }, context({ archaeology, wine }));
   const ids = opened.options.choices.map(choice => choice.id);
-  for (const id of ['learn-archaeology', 'learn-wine', 'lakota-mind', 'ask-hawk', 'birding-hints']) assert.ok(ids.includes(id), `${id} is offered`);
+  for (const id of ['learn-archaeology', 'learn-wine', 'lakota-mind', 'ask-hawk', 'merc-style', 'merc-trade']) assert.ok(ids.includes(id), `${id} is offered`);
+  // The garden's business is Perrin's: Lakota neither teaches birding nor lends a feeder.
+  for (const id of ['learn-birding', 'birding-hints', 'ask-hummingbirds', 'take-feeder']) assert.ok(!ids.includes(id), `${id} belongs to the garden`);
   opened.options.choices.find(choice => choice.id === 'lakota-mind').action();
   assert.deepEqual(opened.options.choices.map(choice => choice.id), [...LAKOTA_TOPICS.map(topic => `topic-${topic.id}`), 'topics-done']);
   // Taught, the offers go; with five finds written up, reporting is offered instead.
@@ -141,4 +170,22 @@ test('there is a real spring: water out of the rock into a basin, and a rill tha
   for (const p of course) assert.equal(world.regionAt(p.x, p.z)?.name, 'West Suval');
   assert.ok(world.colliders.filter(c => c.kind === 'winery-spring').length >= 3, 'the outcrop, the basin and the pool are solid');
   for (const plate of WINERY_LAYOUT.plates) assert.ok(canStand(plate.x, plate.z - 1.2, world, .3), `the ${plate.variety} plate can be read`);
+});
+
+test('knowing Lakota is its own small thing, saved with the road', () => {
+  const heard = [], lakota = createLakota({ onEvent: event => heard.push(event.type) });
+  assert.equal(lakota.met, false);
+  assert.deepEqual(lakota.snapshot(), { version: 1, met: false });
+  assert.deepEqual([lakota.know().first, lakota.know().first], [true, false]);
+  assert.deepEqual(heard, ['lakota-known'], 'he is worked out once');
+  const copy = createLakota();
+  assert.equal(copy.restore(lakota.snapshot()), true);
+  assert.equal(copy.met, true);
+  assert.equal(validateLakotaSnapshot(undefined), true, 'older saves have not met him');
+  assert.equal(validateLakotaSnapshot(undefined, { allowMissing: false }), false);
+  for (const bad of [null, [], { version: 2, met: true }, { version: 1 }, { version: 1, met: 'yes' }])
+    assert.equal(validateLakotaSnapshot(bad), false, JSON.stringify(bad));
+  const refused = createLakota(); refused.know();
+  assert.equal(refused.restore({ version: 1, met: 'yes' }), false);
+  assert.equal(refused.met, false, 'a refused restore leaves him a stranger');
 });

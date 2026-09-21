@@ -731,7 +731,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pebble(material('#5f9150'), px, localGround(px, pz) + .25, pz, .3, .27, .32);
     }
   }
-  // Lakota's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
+  // Perrin's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
   const birdGarden = buildBirdGarden({ root: villageRoot, material, mesh, box, post, pebble, localGround, vpush, movingGroups });
   const wellX = -5.7, wellZ = 1.5, wellY = localGround(wellX, wellZ);
   const wellRing = new THREE.TorusGeometry(1, .26, 5, 12); wellRing.rotateX(Math.PI / 2);

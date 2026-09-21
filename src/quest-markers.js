@@ -37,7 +37,7 @@ export function strongestMarker(kinds) {
 }
 
 /** The people who can carry a mark at all, by the name the host knows them under. */
-export const MARKER_ROLES = Object.freeze(['harbourmaster', 'warden', 'doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'birdWatcher', 'vintner']);
+export const MARKER_ROLES = Object.freeze(['harbourmaster', 'warden', 'doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'gardenKeeper', 'birdWatcher', 'vintner']);
 
 const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) : list.includes(value));
 
@@ -63,7 +63,10 @@ export function markerFor(id, view = {}) {
   // Teachers, and the errands that pay a skill.
   if (id === ids.acornCook && !busy && ((stage >= 1 && view.acornQuestOpen) || view.feederWantsCook)) kinds.push('skill');
   if (id === ids.pondFisher && !view.hasRod) kinds.push('skill');
-  if (id === ids.birdWatcher && stage >= 1 && !busy && (!view.birdingLearned || view.archaeologyReport)) kinds.push('skill');
+  // Perrin's garden is where birding is taught, so his mark is up until somebody has taught it.
+  if (id === ids.gardenKeeper && stage >= 1 && !busy && !view.birdingLearned) kinds.push('skill');
+  // Lakota's is up when he has notes to take back, which only happens once you know him.
+  if (id === ids.birdWatcher && !busy && view.archaeologyReport) kinds.push('skill');
   if (id === ids.vintner && view.wineRecommended && !busy) kinds.push('skill');
   return strongestMarker(kinds);
 }

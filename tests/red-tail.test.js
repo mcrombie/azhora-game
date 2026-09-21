@@ -4,6 +4,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { RED_TAIL, createHawkFlight } from '../src/hawk-flight.js';
 import { BIRD_WATCHER, RED_TAIL_LINES, birdWatcherConversation } from '../src/birding.js';
+import { createLakota } from '../src/lakota.js';
 
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 const anchor = { x: 10, y: 2, z: -5 }, glove = { x: 10.3, y: 3.2, z: -4.7, yaw: .4 };
@@ -64,8 +65,9 @@ test('Lakota is drawn from the sketch, holds his fist up for her, and talks abou
   assert.ok(up > down + .15 && up > 1, `the gloved fist comes up for the hawk (${down.toFixed(2)} to ${up.toFixed(2)} m)`);
   assert.equal(BIRD_WATCHER.color, 0xe4d8bd, 'the cream shirt of the sketch');
   let opened = null;
-  const birding = { met: true, hasSeen: () => false, feeder: 'none' };
-  birdWatcherConversation({ id: BIRD_WATCHER.id }, { birding, openDialogue: (npc, lines, event, action, options) => { opened = options; }, closeDialogue() {}, act() {} });
+  const birding = { met: true, hasSeen: () => false, feeder: 'none' }, known = createLakota();
+  known.know();
+  birdWatcherConversation({ id: BIRD_WATCHER.id }, { birding, lakota: known, openDialogue: (npc, lines, event, action, options) => { opened = options; }, closeDialogue() {}, act() {} });
   const ask = opened.choices.find(choice => choice.id === 'ask-hawk');
   assert.ok(ask, 'you can ask about the hawk');
   assert.ok(RED_TAIL_LINES.some(line => /brick red/.test(line)) && RED_TAIL_LINES.some(line => /scream/.test(line)));
