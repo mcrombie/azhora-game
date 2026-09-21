@@ -3821,8 +3821,8 @@ function init() {
       currentStone=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant?stones.nearest(player.group.position,2.2):null;
       // A row at the commons and a kept tree at Applegarth: the two things farming is done at.
       {const working=mode==='playing'&&combat.state.phase!=='active';
-        currentRow=working?FARM_ROWS.map(row=>farming.rowState(row.id,playSeconds)).find(row=>Math.hypot(row.x-p.x,row.z-p.z)<2.4)??null:null;
-        currentAppleTree=working&&!currentRow?ORCHARD_TREES.map(tree=>farming.treeState(tree.id,playSeconds)).find(tree=>Math.hypot(tree.x-p.x,tree.z-p.z)<2.4)??null:null;}
+        currentRow=working?FARM_ROWS.map(row=>farming.rowState(row.id,playSeconds)).find(row=>Math.hypot(row.x-player.group.position.x,row.z-player.group.position.z)<2.4)??null:null;
+        currentAppleTree=working&&!currentRow?ORCHARD_TREES.map(tree=>farming.treeState(tree.id,playSeconds)).find(tree=>Math.hypot(tree.x-player.group.position.x,tree.z-player.group.position.z)<2.4)??null:null;}
       currentDig=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?digs.nearest(player.group.position):null;
       currentVine=mode==='playing'&&combat.state.phase!=='active'&&!currentDig?vinePlateNear(player.group.position):null;
       currentTree=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?specimenTrees.nearest(player.group.position):null;
@@ -4528,12 +4528,15 @@ function init() {
           const at=solisPoint(a,b);player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+rise,at.z);
           yaw=turn;pitch=p;distance=targetDistance=d;}
         // The whole cast shoulder to shoulder: those with a model of their own ('cast-line'), and the
-        // villagers who wear one of the shared bodies in their own colours ('cast-folk').
-        if(view==='cast-line'||view==='cast-folk'){questStage=10;combat.finishPractice();player.group.visible=false;
+        // villagers who wear one of the shared bodies in their own colours ('cast-folk'); and the
+        // company of eleven as the road sees them, Cromb first and then the ten in the order they
+        // land, each in their own build with their own weapon ('cast-company').
+        if(view==='cast-line'||view==='cast-folk'||view==='cast-company'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(reviewLineup&&reviewLineup.userData.cast!==view){scene.remove(reviewLineup);reviewLineup=null;}
           if(!reviewLineup){
             const person=options=>()=>({actor:createCharacter(options),kind:'person'});
-            const cast=view==='cast-line'?[
+            const cast=view==='cast-company'?[CROMB,...MERCENARY_ROSTER].map(m=>person({role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:m.trades}}))
+            :view==='cast-line'?[
               person({role:'bird-watcher',tunic:BIRD_WATCHER.color}),
               person({role:'rainbow-dyer',tunic:BRANDY.color,skin:BRANDY.skin}),
               person({role:'bat-seeker',tunic:KATY.color,skin:KATY.skin}),
@@ -4568,7 +4571,7 @@ function init() {
           player.group.position.set(at.x,ground,at.z);
           // Settle every pose: a character reads its idle over a second or two, and Ed keeps his own clock.
           for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.kind==='ed'?g.userData.actor.animate(t,1/60,{}):g.userData.actor.animate(t,0,true,{});
-          reviewTarget=new THREE.Vector3(at.x,ground+1.05,at.z);yaw=.02;pitch=.04;distance=targetDistance=view==='cast-line'?10.8:12.2;}
+          reviewTarget=new THREE.Vector3(at.x,ground+1.05,at.z);yaw=.02;pitch=.04;distance=targetDistance=view==='cast-folk'?12.2:10.8;}
         // The Empire's soldiers in a row, close up: a footman at attention, one with his sword drawn, an officer, and a Suvali guard beside them for scale.
         if(view==='soldiers'||view==='soldiers-back'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(reviewLineup&&reviewLineup.userData.cast!=='soldiers'){scene.remove(reviewLineup);reviewLineup=null;}
