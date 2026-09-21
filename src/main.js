@@ -12,7 +12,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, DRILL_COUNT, CORNERS_XP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -397,11 +397,13 @@ function init() {
       npc.placement={...placement,x:companionHold.x,z:companionHold.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold=null;
-    let x=p.x-Math.sin(yaw)*2.5+Math.cos(yaw)*-.9,z=p.z-Math.cos(yaw)*2.5-Math.sin(yaw)*-.9;
+    let x=p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side,z=p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
     if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world));if(spot){x=spot.x;z=spot.z;}}
     const gap=Math.hypot(pos.x-x,pos.z-z);
-    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=gap>4?6.4:4.2;
-    if(gap>40)pos.set(x,world.heightAt(x,z),z);
+    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=companionPace(gap);
+    // Forty metres apart is a wall, a river, a ferry or a horse, and never running: he runs
+    // faster than the traveler does, so he closes rather than falls behind (companionPace).
+    if(gap>COMPANION_REACH.setDown)pos.set(x,world.heightAt(x,z),z);
     npc.placement={...placement,x,z,yaw};}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */

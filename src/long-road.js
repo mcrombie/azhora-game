@@ -415,6 +415,33 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
 }
 
 /**
+ * How the companion is placed, and how fast he moves to stay there.
+ *
+ * `shoulder` and `side` put him two and a half metres behind the traveler's left shoulder, which
+ * is inside the twelve the interpreter's aside needs and outside the reach of every site prompt.
+ *
+ * `setDown` is for a wall, a river, a ferry or a horse: forty metres apart means something is
+ * between you, and he is simply put back beside you. It was never meant for running. His top
+ * pace used to be 6.4 m/s against a traveler's 7.2, so the gap opened at 0.8 m/s and reached the
+ * forty in about fifty seconds of unbroken running - three times over on the length of Drent's
+ * road - and what the player saw was Chris popping to their shoulder over and over.
+ */
+export const COMPANION_REACH = freeze({ shoulder: 2.5, side: -.9, stride: 4, walk: 4.2, setDown: 40 });
+/** The traveler's own run, from the host's movement (src/main.js). */
+export const TRAVELER_RUN = 7.2;
+/**
+ * What he does with his legs, given how far he is off that spot. Inside a stride he walks; past
+ * it he runs, and he runs **faster than the traveler runs**, because a man who exactly matches
+ * your speed never closes the gap that opened while you were both getting up to it. The further
+ * behind he is the harder he comes, up to a limit, so he catches up and then settles.
+ */
+export function companionPace(gap, travelerRun = TRAVELER_RUN) {
+  const off = Number(gap) || 0;
+  if (!(off > COMPANION_REACH.stride)) return COMPANION_REACH.walk;
+  return travelerRun + Math.min(2.4, .6 + (off - COMPANION_REACH.stride) * .3);
+}
+
+/**
  * The fork, in the companion's own words, at the moment the satchel shuts.
  *
  * It is not a menu and it asks for no answer: you choose by walking. He speaks in your own

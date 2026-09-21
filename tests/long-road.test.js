@@ -4,6 +4,7 @@ import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
+  companionPace, COMPANION_REACH, TRAVELER_RUN,
 } from '../src/long-road.js';
 import { ARRIVALS } from '../src/mercenaries.js';
 import { renderLine } from '../src/linguist.js';
@@ -344,4 +345,31 @@ test('when the traveler is Chris the same drill runs the other way round, and pa
   assert.notEqual(his.opening, hers.opening, 'but a different mouth asks');
   assert.match(hers.opening, /Cromb the Barbarian/);
   assert.match(hers.opening, /You have the Ambroni/, 'because the traveler is the one who has it');
+});
+
+test('the companion keeps up with a running traveler, and the set-down is left for walls and boats', () => {
+  // His top pace used to be 6.4 against a traveler's 7.2, so the gap opened at 0.8 m/s and hit
+  // the forty-metre set-down after about fifty seconds of unbroken running - three times over on
+  // the length of Drent's road - and the player watched him pop to their shoulder over and over.
+  assert.equal(COMPANION_REACH.setDown, 40);
+  assert.equal(companionPace(0), COMPANION_REACH.walk, 'at your shoulder he walks');
+  assert.equal(companionPace(COMPANION_REACH.stride), COMPANION_REACH.walk);
+  assert.ok(companionPace(COMPANION_REACH.stride + .01) > TRAVELER_RUN, 'and past a stride he runs, harder than you do');
+  assert.ok(companionPace(30) > companionPace(6), 'the further behind, the harder he comes');
+  assert.ok(companionPace(500) <= TRAVELER_RUN + 2.5, 'and never at a sprint nobody could watch');
+  // Five minutes of unbroken running, in tenths, from a standing start behind him.
+  let gap = 0;
+  for (let t = 0; t < 3000; t++) {
+    const dt = .1;
+    gap += TRAVELER_RUN * dt;                       // the traveler pulls away
+    gap = Math.max(0, gap - companionPace(gap) * dt);  // and he answers
+    assert.ok(gap < 12, `after ${(t * dt).toFixed(1)} s of running he is ${gap.toFixed(1)} m off`);
+  }
+  assert.ok(gap < COMPANION_REACH.stride + 2, `he settles a stride behind, not ${gap.toFixed(1)} m`);
+  // A horse canters at 13 m/s (RIDE, src/riding.js), which nobody runs down. That is what the
+  // set-down is for, and he reaches it inside a minute of cantering.
+  let mounted = 0, seconds = 0;
+  while (mounted <= COMPANION_REACH.setDown && seconds < 600) { mounted += (13 - companionPace(mounted)) * .1; seconds += .1; }
+  assert.ok(mounted > COMPANION_REACH.setDown, 'a rider does leave him, and he is set down beside them');
+  assert.ok(seconds < 60, `and it takes ${seconds.toFixed(0)} s of cantering, not a walk across Drent`);
 });
