@@ -649,7 +649,13 @@ test('a guarded blow that beats him still ends the bout', () => {
 
 test('a bout can kill nobody, and no victory is ever reported for one', () => {
   const combat = source('combat.js');
-  assert.match(combat, /const floor = lastEncounter\.bout \? 1 : 0;/, 'health stops at one in a bout');
+  // One floor, for a bout and for practice both, so that an arrow at Jerry's mark and a sword in
+  // a sparring bout cannot disagree about who may be killed (the user, 2026-09-21).
+  assert.match(combat, /const killFloor = \(\) => \(lastEncounter\.bout \|\| state\.phase === 'practice' \? 1 : 0\);/,
+    'health stops at one in a bout, and in practice');
+  assert.equal(combat.match(/const floor = killFloor\(\);/g)?.length, 4,
+    'and everything that takes health off somebody reads the same floor: an enemy, the traveler, '
+    + 'the traveler shot by a friend, a friend shot by the traveler');
   assert.match(combat, /if \(lastEncounter\.bout && !enemy\.active\) \{ endBout\('traveler'\); return; \}/,
     'the man yields instead of dying, before the victory check');
   assert.match(combat, /function endBout\(winner\)/, 'and a bout has its own ending');

@@ -289,10 +289,12 @@ test('the guard is offered before the fight is stepped, and nothing is held whil
   assert.ok(frame.indexOf('combat.guard(guardKey,player.group.rotation.y);') < frame.indexOf('combat.update(dt);'),
     'the guard is offered before the blow lands, not after it');
   // And outside play the latch is let go, on the same frame, before anything can read it.
-  // The bow is the second held verb and is let go in the same breath (src/archery.js).
-  assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.draw\(false\);\}/,
-    'a mode that is not play holds no shield and draws no bow');
-  assert.ok(main.indexOf("if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.draw(false);}") < from,
+  // The bow is the second held verb and comes down in the same breath - **down, not off**:
+  // `combat.draw(false)` is the loose, so this line used to fire the bow at the pause menu
+  // (docs/known-issues.md, round 5). `lowerBow` keeps the arrow (src/archery.js).
+  assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.lowerBow\(\);\}/,
+    'a mode that is not play holds no shield and holds no draw');
+  assert.ok(main.indexOf("if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.lowerBow();}") < from,
     'and both are let go before the playing branch can step anything');
   // The module still latches nothing of its own: the host is the only one who remembers a press.
   assert.match(source('combat.js'), /let guardHeld = false, guardYaw = 0;/);

@@ -420,6 +420,61 @@ test('the Marshal asks what happened, and what you say is remembered', () => {
   assert.deepEqual(companions.owed(), [], 'the Marshal has his answer');
 });
 
+/**
+ * **A companion killed by the traveler's own arrow** (the user, 2026-09-21: arrows hurt whoever
+ * they hit; a man killed by one is dead for good, recorded as that, and every living witness
+ * drops a rung, as a lie does). It is the lie's own cost paid at the moment instead of at the
+ * muster, and it is deliberately the same arithmetic: one idea should never have two sizes.
+ */
+test('your own arrow costs every man who saw it a rung, and the record says it was yours', () => {
+  const { companions } = fresh();
+  for (const [id, where] of [['merc-mus', 'wild'], ['merc-altun', 'road'], ['merc-matt', 'road']])
+    companions.ask(id, { where });
+  companions.travelled('merc-altun', 4000);
+  companions.travelled('merc-matt', 2400);
+  const before = { al: companions.regardFor('merc-altun'), matt: companions.regardFor('merc-matt') };
+  const rungs = { al: companions.rung('merc-altun'), matt: companions.rung('merc-matt') };
+  // He goes down to the traveler's own shaft, and it is written down as that.
+  companions.died('merc-mus', { where: 'the Moros Plain', what: 'Your own arrow' });
+  assert.equal(companions.truthAbout('merc-mus'), 'At the Moros Plain. Your own arrow.',
+    'which is the truthful answer at the muster');
+  const saw = companions.costWitnesses('merc-mus');
+  assert.deepEqual([...saw].sort(), ['merc-altun', 'merc-matt'], 'both of them were walking with him');
+  assert.notEqual(companions.rung('merc-altun'), rungs.al, 'and each of them drops a rung');
+  assert.notEqual(companions.rung('merc-matt'), rungs.matt);
+  assert.ok(companions.regardFor('merc-altun') <= before.al - (RUNG_AT.friendly - RUNG_AT.acquainted),
+    `never by less than a rung's usual size (${before.al} to ${companions.regardFor('merc-altun')})`);
+  assert.ok(companions.regardFor('merc-matt') < RUNG_AT[rungs.matt], 'and below the foot of the rung he was on');
+  // Exactly what a lie at the muster takes, measured against a lie at the muster.
+  const lied = fresh().companions;
+  for (const [id, where] of [['merc-mus', 'wild'], ['merc-altun', 'road']]) lied.ask(id, { where });
+  lied.travelled('merc-altun', 4000);
+  lied.died('merc-mus', { where: 'Luscia', what: 'Wolves' });
+  lied.report('merc-mus', 'lie');
+  assert.equal(lied.regardFor('merc-altun'), companions.regardFor('merc-altun'),
+    'the same man, the same road, the same cost');
+  // A man who is dead cannot be charged for it, and nobody pays twice for the same shaft.
+  assert.deepEqual(companions.costWitnesses('merc-word'), [], 'nobody saw a man who never fell');
+});
+
+test('a shaft of yours he got up from costs a little, and he says one thing about it', () => {
+  const { companions } = fresh();
+  companions.ask('merc-matt', { where: 'road' });
+  companions.travelled('merc-matt', 4000);
+  const before = companions.regardFor('merc-matt');
+  const hit = companions.struckByYou('merc-matt');
+  assert.equal(hit.ok, true);
+  assert.equal(companions.regardFor('merc-matt'), before - REGARD.struck, 'a modest amount, and no more');
+  assert.ok(REGARD.struck < RUNG_AT.friendly - RUNG_AT.acquainted, 'less than killing him costs a witness');
+  // Twice is twice: the second one is not an accident any more.
+  companions.struckByYou('merc-matt');
+  assert.equal(companions.regardFor('merc-matt'), before - REGARD.struck * 2);
+  // And the dead are past minding.
+  companions.died('merc-matt', { where: 'Luscia', what: 'Wolves' });
+  assert.equal(companions.struckByYou('merc-matt').ok, false);
+  assert.equal(companions.struckByYou('nobody').ok, false);
+});
+
 test('a lie nobody living saw is a lie that stands', () => {
   const { companions } = fresh();
   companions.ask('merc-mus', { where: 'wild' });
@@ -497,7 +552,12 @@ test('a man who falls is remembered where he fell, and it survives the road', ()
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
   // And the host tells it what killed him, in the fight's own plainest word.
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  assert.match(main, /companions\.died\(e\.id,\{where,what:enemyWordFor\(combat\.state\.encounterId\),x:e\.x,z:e\.z,/, 'who, where and against what');
+  // What killed him is the fight's own plainest word - unless it was an arrow, and then it is
+  // whose arrow, because the Marshal is answered from this record and the truth may be the
+  // traveler himself (the user, 2026-09-21).
+  assert.match(main, /const what=e\.arrow\?\(mine\?'Your own arrow':'An arrow from your own line'\):enemyWordFor\(combat\.state\.encounterId\);/,
+    'who, where and against what');
+  assert.match(main, /companions\.died\(e\.id,\{where,what,x:e\.x,z:e\.z,/, 'and it is handed to the record');
   assert.match(main, /weapon:held\?\.id\?\?null,weaponName:/, 'and what he was carrying, which is left lying there');
   assert.match(main, /if\(encounterId===LUSCIA_WOLVES\.id\)return 'Wolves';/, 'and the words are the fight’s own');
 });

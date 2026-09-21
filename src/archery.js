@@ -15,6 +15,9 @@
  *     of them at a full draw. Jerry's own figure is thirty paces.
  *   **The first solid thing stops it.** "In woodland I am a man holding a stick": `solidAt` asks
  *     the world what is in the way, through the same `nearColliders` call the pike's room uses.
+ *     **And the first body**, whoever it belongs to (the user, 2026-09-21: arrows hurt whoever
+ *     they hit), **and ground that rises above the flight**, which is why the flight has a height
+ *     at all.
  *   **About two in three can be picked up again.** One shaft in three breaks where it lands, and
  *     which one is arithmetic rather than a dice roll, so a test can say so and a player cannot
  *     feel the difference.
@@ -40,6 +43,25 @@ export const BOW = freeze({
   radius: .4,
   /** How high off the ground it flies, which is where a man's chest is. */
   height: 1.25,
+  /**
+   * **How near an arrow has to pass a body to stop on it**, measured from the body's middle. A
+   * person is about that wide across the shoulders, and it is the figure the fight already used
+   * for an enemy, written down here now that friends stop arrows too.
+   */
+  body: .9,
+  /**
+   * How far an arrow is down range before the people standing beside the archer are in its way.
+   * A companion keeps nine tenths of a metre off the traveler's elbow and no further, so without
+   * this every shot in a crowded file would end in the back of the man at his shoulder. The
+   * archer's own body space, and nothing more: a tree at half a metre still stops the shot.
+   */
+  clearOfShooter: 1.2,
+  /**
+   * **How near a friend has to be to the line for an archer to hold his shot.** Wider than
+   * `body`, because a man shifting his feet must not be clipped by a shot already loosed: Jerry
+   * never shoots a friend on purpose, so he leaves himself the margin rather than the arrow.
+   */
+  corridor: 1.4,
   /** One shaft in three breaks where it lands. The other two are still arrows. */
   breaksEvery: 3,
   /** How near the traveler has to be to pick a spent one up. */
@@ -88,6 +110,16 @@ export function solidAt(world, x, z, radius = BOW.radius) {
 }
 
 /**
+ * How high the ground is under a point, asked of a world that may not have one. A world with no
+ * floor - a test's - is flat at nought, which is the right answer and lets a flight be measured
+ * without building one.
+ */
+export function groundAt(world, x, z) {
+  const floor = world?.heightAt?.(x, z);
+  return Number.isFinite(floor) ? floor : 0;
+}
+
+/**
  * **Two in three.** Which shaft breaks is the arrow's own number rather than a roll, so the rule
  * is exactly two in three over any run of them, a test can state it, and a reload cannot change
  * what happened. A player counting his quiver sees two back out of every three he looses.
@@ -103,13 +135,45 @@ export const recoveredOf = loosed =>
  *
  * This is the same arithmetic `combat.update` runs a step at a time, written once so that a test
  * can ask "where does it stop" without standing a traveler in a wood.
+ *
+ * **An arrow has a height**, and it is the plainest model that answers the question the user
+ * asked: it leaves the bow at a man's chest and flies level at that height. Thirty-four metres at
+ * forty-six a second is nine tenths of a second, which is flat enough to call flat; what matters
+ * is that the flight is somewhere rather than nowhere, so that **ground rising above it stops
+ * it** - a bank, a terrace, the near side of a ravine - exactly as a tree does. The arrow's own
+ * drop is left out on purpose: it would be a number nobody has chosen, and it would move the
+ * range of every shot in the game (docs/design-answers.md, 2026-09-21).
  */
-export function flightOf({ x = 0, z = 0, yaw = 0, range = BOW.range, world = null, step = .25 } = {}) {
+export function flightOf({ x = 0, z = 0, yaw = 0, range = BOW.range, world = null, step = .25, height = BOW.height } = {}) {
   const dx = Math.sin(yaw), dz = Math.cos(yaw);
+  const y = groundAt(world, x, z) + height;
   for (let travelled = step; travelled <= range; travelled += step) {
     const at = { x: x + dx * travelled, z: z + dz * travelled };
     const solid = solidAt(world, at.x, at.z);
-    if (solid) return freeze({ ...at, travelled, stopped: 'solid', collider: solid });
+    if (solid) return freeze({ ...at, y, travelled, stopped: 'solid', collider: solid });
+    if (groundAt(world, at.x, at.z) > y) return freeze({ ...at, y, travelled, stopped: 'ground', collider: null });
   }
-  return freeze({ x: x + dx * range, z: z + dz * range, travelled: range, stopped: 'spent', collider: null });
+  return freeze({ x: x + dx * range, z: z + dz * range, y, travelled: range, stopped: 'spent', collider: null });
+}
+
+/**
+ * **Is anybody standing in the corridor of this shot?** The line from `from` to `to`, `corridor`
+ * metres either side of it, with the archer's own body space left out at the near end and the
+ * target's at the far one. `bodies` is whatever the caller counts as a body: `{x, z}` is all that
+ * is read of each. The first one found is handed back, so a caller can say who.
+ *
+ * One piece of arithmetic for two callers: the ally archer, who will not loose while a friend is
+ * in it, and the host, which will not set a straw mark across anybody (src/main.js).
+ */
+export function inTheLine(from, to, bodies = [], { corridor = BOW.corridor, near = BOW.clearOfShooter, far = 0 } = {}) {
+  const dx = to.x - from.x, dz = to.z - from.z, span = Math.hypot(dx, dz);
+  if (!(span > 1e-6)) return null;
+  const ux = dx / span, uz = dz / span;
+  for (const body of bodies) {
+    if (!body || !Number.isFinite(body.x) || !Number.isFinite(body.z)) continue;
+    const along = (body.x - from.x) * ux + (body.z - from.z) * uz;
+    if (along <= near || along >= span - far) continue;
+    if (Math.abs((body.x - from.x) * uz - (body.z - from.z) * ux) <= corridor + (body.r ?? 0)) return body;
+  }
+  return null;
 }
