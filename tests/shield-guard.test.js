@@ -311,3 +311,51 @@ test('the view reports what was drawn, not only what was decided', () => {
   assert.match(source('characters.js'), /export const BUCKLER_NAME = /);
   assert.match(source('characters.js'), /buckler\.name = BUCKLER_NAME;/);
 });
+
+test('the guard is offered before the fight is stepped, and a hand off the keyboard is a hand off the shield', async () => {
+  const { createCombat } = await import('../src/combat.js');
+  const { readFileSync } = await import('node:fs');
+  const { fileURLToPath } = await import('node:url');
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+
+  // **The order, in the host.** `combat.update` is where a blow lands, so a guard answered for
+  // after it answers this frame's key against last frame's blow.
+  const offered = main.indexOf('combat.guard(guardKey,player.group.rotation.y);');
+  const stepped = main.indexOf('combatClock+=dt;combat.update(dt);');
+  assert.ok(offered > 0 && stepped > 0 && offered < stepped, 'the guard is offered before the fight is stepped');
+  // **And the latch is cleared whenever nothing is being played**, so the defeat panel, a
+  // dialogue or the pause menu cannot leave a shield up that nobody is asking for.
+  assert.match(main, /if\(mode!=='playing'\)combat\.guard\(false,player\.group\.rotation\.y\);/);
+  assert.ok(main.indexOf("if(mode!=='playing')combat.guard(false,player.group.rotation.y);") < offered,
+    'and it is cleared before the playing branch can set it again');
+
+  // **Driven: what the clear is for.** The latch is the thing, not the order of two lines - a key
+  // offered a frame late still catches every blow after the first, because `guardHeld` stays set.
+  // What the defeat panel did was leave it set with nobody asking, and that is what this measures.
+  // (My first version of this control pressed the key late and expected the blow through; the
+  // blow lands long after the first frame, so both orders caught it and the control said nothing.
+  // The order itself is pinned above, where it can be.)
+  const world = { bounds: { minX: -40, maxX: 40, minZ: -40, maxZ: 40 }, colliders: [], heightAt: () => 0, nearColliders: () => [] };
+  const margins = { hasShield: true, guardShare: .6, guardCost: 18, maxHp: 100, maxStamina: 100 };
+  function firstBlow({ holding }) {
+    const position = { x: 0, y: 0, z: 0 };
+    const events = [];
+    const combat = createCombat({ world, position, onEvent: event => events.push(event), getMargins: () => margins });
+    combat.startEncounter({ id: 'guard-latch', center: { x: 0, z: 2 }, checkpoint: { x: 0, z: 0 },
+      retreatAxis: 'z', retreatLine: 30, enemies: [{ id: 'goblin-1', x: 0, z: 2.1, hp: 400 }] });
+    combat.guard(true, 0);                       // he put it up while he could
+    for (let frame = 0; frame < 20 * 60 && combat.state.phase === 'active'; frame++) {
+      combat.state.player.yaw = 0;
+      // `holding` is the host still offering the key. False is the panel: nobody is asking.
+      combat.guard(!!holding, 0);
+      combat.update(1 / 60);
+      if (events.some(event => event.type === 'player-hit')) break;
+    }
+    const hit = events.find(event => event.type === 'player-hit');
+    return { caught: !!hit?.caught, damage: hit?.damage ?? null };
+  }
+  const held = firstBlow({ holding: true }), released = firstBlow({ holding: false });
+  assert.equal(held.caught, true, 'a hand on the key catches it');
+  assert.equal(released.caught, false, 'and a hand off it does not, however it was latched before');
+  assert.ok(held.damage < released.damage, `caught ${held.damage} against ${released.damage} through`);
+});

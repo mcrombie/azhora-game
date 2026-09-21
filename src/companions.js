@@ -152,6 +152,8 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
     if (!Number.isFinite(at) || at < 0 || at > REGARD.top) return false;
   }
   if (!Array.isArray(data.errands) || data.errands.some(id => !COMPANION_IDS.includes(id))) return false;
+  // Missing is a save from before a trade was paid once, which is every save written until today.
+  if (data.traded !== undefined && (!Array.isArray(data.traded) || data.traded.some(id => !COMPANION_IDS.includes(id)))) return false;
   if (data.fell !== undefined) {
     if (!data.fell || typeof data.fell !== 'object' || Array.isArray(data.fell)) return false;
     for (const [id, at] of Object.entries(data.fell)) {
@@ -181,7 +183,7 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
  *   shared with the world's other dead on purpose: permanent death is one idea, not two.
  */
 export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
-  const state = { walking: [], regard: {}, errands: [], fell: {}, told: {}, knows: {} };
+  const state = { walking: [], regard: {}, errands: [], traded: [], fell: {}, told: {}, knows: {} };
 
   const dead = id => !!fallen?.has?.(id);
   const regardOf = id => state.regard[id] ?? 0;
@@ -238,7 +240,23 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   /** A fight come through together, and a little more if he was hurt in it and lived. */
   const fought = (id, { bled = false } = {}) => regardBy(id, REGARD.fought + (bled ? REGARD.bled : 0), 'fought');
   /** A weapon traded: he is carrying something of yours. */
-  const traded = id => regardBy(id, REGARD.traded, 'traded');
+  /**
+   * A weapon traded: he is carrying something of yours. **Once a man**, because it is a state and
+   * not an act - and because `tradeOffer` refuses only a swap for the same weapon, so a traveler
+   * could hand his sword over, take the mace, and swap straight back for ever. Measured: at 14 a
+   * swap it took **seven swaps** to carry a man from asked to fond, against sixty-three minutes of
+   * walking for the same climb. That is the whole of the friendship design - a road walked, fights
+   * come through, his own errand - bought with fourteen dialogue clicks.
+   *
+   * It is spelled the way `errand` is, and kept in the same list, so a save written before this
+   * carries it without a new field: a man who has traded is a man whose errand-shaped things are
+   * done once.
+   */
+  function traded(id) {
+    if (!known(id) || state.traded.includes(id)) return { ok: false, rung: rungFor(regardOf(id)) };
+    state.traded.push(id);
+    return regardBy(id, REGARD.traded, 'traded');
+  }
   /** His own errand, done once. */
   function errand(id) {
     if (!known(id) || state.errands.includes(id)) return { ok: false, rung: rungFor(regardOf(id)) };
@@ -366,18 +384,18 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     id, name: mercenaryById(id)?.name ?? id,
     walking: state.walking.includes(id), dead: dead(id), fell: fellAt(id),
     regard: Math.round(regardOf(id)), rung: rungFor(regardOf(id)), label: RUNG_LABELS[rungFor(regardOf(id))],
-    errand: state.errands.includes(id),
+    errand: state.errands.includes(id), traded: state.traded.includes(id),
   }));
 
   function snapshot() {
     return { version: COMPANIONS_VERSION, walking: [...state.walking],
       regard: Object.fromEntries(Object.entries(state.regard).map(([id, at]) => [id, Math.round(at * 10) / 10])),
-      errands: [...state.errands], fell: Object.fromEntries(Object.entries(state.fell).map(([id, at]) => [id, { ...at }])),
+      errands: [...state.errands], traded: [...state.traded], fell: Object.fromEntries(Object.entries(state.fell).map(([id, at]) => [id, { ...at }])),
       told: { ...state.told }, knows: { ...state.knows } };
   }
 
   function restore(data) {
-    Object.assign(state, { walking: [], regard: {}, errands: [], fell: {} });
+    Object.assign(state, { walking: [], regard: {}, errands: [], traded: [], fell: {} });
     if (!validateCompanionsSnapshot(data, { allowMissing: false })) return false;
     state.fell = Object.fromEntries(Object.entries(data.fell ?? {}).map(([id, at]) => [id, { ...at }]));
     state.told = { ...(data.told ?? {}) };
@@ -386,6 +404,8 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     state.walking = data.walking.filter(id => !dead(id));
     state.regard = { ...data.regard };
     state.errands = [...data.errands];
+    // A save written before a trade was once-only has no list, and nobody in it has traded twice.
+    state.traded = [...(data.traded ?? [])];
     return true;
   }
 

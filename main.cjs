@@ -15,8 +15,32 @@ const atticReviewOnly = smoke && process.argv.includes('--attic-review');
 const troupeReviewOnly = smoke && process.argv.includes('--troupe-review');
 const perfReviewOnly = smoke && process.argv.includes('--perf-review');
 const drawReviewOnly = smoke && process.argv.includes('--draw-review');
-/** Any review views, photographed in turn: --review-views=brandy,brandy-close */
-const reviewViews = smoke ? (process.argv.find(arg => arg.startsWith('--review-views=')) ?? '').slice(15).split(',').filter(Boolean) : [];
+/**
+ * Any review views, photographed in turn: --review-views=brandy,brandy-close
+ *
+ * **Semicolons separate too, and a view that carries commas needs them.** `stand-at:x,z,facing`
+ * takes its arguments in commas, so splitting the list on commas tore it into four views named
+ * `-806.1`, `-521.0`, `-1.57` and `5`, each of which matched nothing and was photographed as
+ * wherever the traveler happened to be. A list with a semicolon in it is split on semicolons
+ * alone, so every call that has ever been written goes on working.
+ */
+const reviewArg = smoke ? (process.argv.find(arg => arg.startsWith('--review-views=')) ?? '').slice(15) : '';
+const reviewViews = reviewArg.split(reviewArg.includes(';') ? ';' : ',').map(view => view.trim()).filter(Boolean)
+  // A comma-split list also has to put `stand-at:x,z,facing` back together: only a view with a
+  // colon in it takes arguments, and every one of its arguments is a number, so a numeric piece
+  // belongs to the view in front of it.
+  .reduce((views, piece) => {
+    const last = views[views.length - 1];
+    if (last && last.includes(':') && /^-?\d+(\.\d+)?$/.test(piece)) views[views.length - 1] = `${last},${piece}`;
+    else views.push(piece);
+    return views;
+  }, []);
+/**
+ * A view's own name is its file name, and `stand-at:-806,-521,-1.57` is not one Windows will
+ * take: the colon makes it an alternate data stream and the write fails with no picture and no
+ * complaint. Everything but letters, digits and a dash becomes a dash.
+ */
+const shotName = view => String(view).replace(/[^A-Za-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'view';
 /** `--review-clean` hides the HUD for the review pictures; `--review-jpeg` saves them as .jpg, a fraction of the size. */
 const reviewClean = process.argv.includes('--review-clean'), reviewJpeg = process.argv.includes('--review-jpeg');
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
@@ -156,13 +180,13 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(regionalLifeReviewOnly){
         for(const view of ['mill-yard','mill-complete','mill-dialogue','mill-map','workshop','workshop-complete','workshop-dialogue','shelter','shelter-record','shelter-dialogue']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewRegional(${JSON.stringify(view)});(async()=>{for(let i=0;i<30;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[view]=await win.webContents.executeJavaScript('window.__AZHORA__.regionalLife()');
         }
         win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,300));
         for(const view of ['mill-dialogue','workshop-dialogue','shelter-choice','road-notes']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewRegional(${JSON.stringify(view)});(async()=>{for(let i=0;i<20;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}-compact.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}-compact.png`),(await win.webContents.capturePage()).toPNG());
           const layout=await win.webContents.executeJavaScript(`(()=>{const panel=document.getElementById(${JSON.stringify(view==='road-notes'?'journal':'dialogue')}),r=panel.getBoundingClientRect();return{top:r.top,bottom:r.bottom,left:r.left,right:r.right,scrollable:panel.scrollHeight>panel.clientHeight};})()`);
           if(layout.top<0||layout.bottom>640||layout.left<0||layout.right>900)throw new Error('Regional dialogue exceeds compact window: '+view);
           viewStats[view+'-compact']=layout;
@@ -177,13 +201,13 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(localMapReviewOnly){
         for(const view of ['local-nearby','local-trails','local-unknown','local-forest-pin','local-reedwater','local-world','local-zoom']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewLocalMap(${JSON.stringify(view)});(async()=>{for(let i=0;i<30;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[view]=await win.webContents.executeJavaScript('window.__AZHORA__.localMapState()');
         }
         win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,300));
         for(const view of ['local-trails','local-forest-pin','local-zoom']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewLocalMap(${JSON.stringify(view)});(async()=>{for(let i=0;i<20;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}-compact.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}-compact.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[`${view}-compact`]=await win.webContents.executeJavaScript('window.__AZHORA__.localMapState()');
         }
         fs.writeFileSync(path.join(artifactDir,'local-map-render.json'),JSON.stringify({views:viewStats,errors},null,2));
@@ -192,7 +216,7 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(hideoutReviewOnly){
         for(const view of ['hideout-approach','hideout-overview','hideout-supplies','hideout-dialogue','hideout-cleared','forest-thrush']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewHideout(${JSON.stringify(view)});(async()=>{for(let i=0;i<60;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[view]=await win.webContents.executeJavaScript('window.__AZHORA__.forestHideout()');
         }
         win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,350));
@@ -201,7 +225,7 @@ if (ownsInstance) app.whenReady().then(async () => {
           const layout=await win.webContents.executeJavaScript(`(()=>{const panel=document.getElementById('dialogue'),r=panel.getBoundingClientRect(),buttons=[...document.querySelectorAll('#dialogue-choices button')];return {top:r.top,bottom:r.bottom,width:r.width,choices:buttons.length,scrollable:panel.scrollHeight>panel.clientHeight};})()`);
           if(layout.top<0||layout.bottom>640||layout.width>900||layout.choices<2)throw new Error('Hideout dialogue does not fit the compact window');
           viewStats[`${view}-compact`]=layout;
-          fs.writeFileSync(path.join(artifactDir,`${view}-compact.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}-compact.png`),(await win.webContents.capturePage()).toPNG());
         }
         fs.writeFileSync(path.join(artifactDir,'hideout-render.json'),JSON.stringify({views:viewStats,errors},null,2));
         console.log(JSON.stringify({views:Object.keys(viewStats),errors},null,2));app.exit(errors.length?1:0);return;
@@ -219,7 +243,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         for(const view of ['ghost-atlas','ghost-local-atlas','cape-overview','cape-gate','cape-aerial','ghost-survey']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.reviewDeveloper(${JSON.stringify(view)});`);
           await win.webContents.executeJavaScript('(async()=>{for(let i=0;i<60;i++)await new Promise(requestAnimationFrame);})()');
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[view]=await win.webContents.executeJavaScript('window.__AZHORA__.developer()');
         }
         win.setSize(900,640);await win.webContents.executeJavaScript('window.__AZHORA__.reviewDeveloper("ghost-local-atlas")');await new Promise(resolve=>setTimeout(resolve,700));
@@ -230,7 +254,7 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(forestReviewOnly){
         for(const view of ['charcoal-hearth','bee-fold','fallen-oak','moss-shrine','fern-hollow','coast-lookout','forest-deer','forest-dialogue','forest-notes']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<60;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`forest-${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`forest-${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           viewStats[view]=await win.webContents.executeJavaScript('(()=>{const s=window.__AZHORA__.state();return {drawCalls:s.drawCalls,triangles:s.triangles};})()');
         }
         win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,500));
@@ -297,7 +321,7 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(wineryReviewOnly){
         for(const view of ['winery','winery','winery-cabin','winery-spring','winery-vines','rena-track']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({wineryViews:3,errors},null,2));app.exit(errors.length?1:0);return;
       }
@@ -373,14 +397,14 @@ if (ownsInstance) app.whenReady().then(async () => {
       if(troupeReviewOnly){
         for(const view of ['troupe-camp','troupe-camp','troupe-scene','troupe-stop-lumber-town','troupe-stop-moros','troupe-stop-nemmel','troupe-stop-ostel']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({troupeViews:6,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(atticReviewOnly){
         for(const view of ['wine-attic','wine-attic','wine-attic-inside','wine-attic-juan','wine-attic-nika','ed','ed-ridge','ed-cask']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({atticViews:4,errors},null,2));app.exit(errors.length?1:0);return;
       }
@@ -389,7 +413,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         await win.webContents.executeJavaScript(`window.__AZHORA__.review('lakota');(async()=>{for(let i=0;i<150;i++)await new Promise(requestAnimationFrame);})()`);
         for(const view of ['lakota','lakota-aloft']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<90;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({lakotaViews:2,errors},null,2));app.exit(errors.length?1:0);return;
       }
@@ -398,7 +422,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         await win.webContents.executeJavaScript(`window.__AZHORA__.review('cat-stand');(async()=>{for(let i=0;i<150;i++)await new Promise(requestAnimationFrame);})()`);
         for(const view of ['cat-stand','cat-sit','cat-nap','cat-groom','cat-crouch','cat-pounce','cat-eat','cat-rub','cat-low']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<75;i++)await new Promise(requestAnimationFrame);})()`);
-          fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         console.log(JSON.stringify({catViews:9,errors},null,2));app.exit(errors.length?1:0);return;
       }
@@ -406,7 +430,7 @@ if (ownsInstance) app.whenReady().then(async () => {
         for(const view of ['sunmeadow','reedwater','road-sign','threefold','north-relay','waymarker-before','waymarker-after','elod','elod-harbour','elod-quay','elod-city','elod-inner-gate']){
           await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<75;i++)await new Promise(requestAnimationFrame);})()`);
           viewStats[view]=await win.webContents.executeJavaScript('(()=>{const s=window.__AZHORA__.state();return {region:s.region,drawCalls:s.drawCalls,triangles:s.triangles};})()');
-          if(!unbatchedWorld)fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+          if(!unbatchedWorld)fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         }
         fs.writeFileSync(path.join(artifactDir,unbatchedWorld?'road-render-baseline.json':'road-render.json'),JSON.stringify({views:viewStats,errors},null,2));
         console.log(JSON.stringify({views:viewStats,errors},null,2));app.exit(errors.length?1:0);return;
@@ -446,12 +470,12 @@ if (ownsInstance) app.whenReady().then(async () => {
       for(const view of ['sunmeadow','reedwater','road-sign','river-fishing','threefold','north-relay','sheep','river-bird','rock-hare','road-dialogue','portrait-meadow-courier','portrait-crossing-keeper','portrait-ridge-keeper','portrait-relay-clerk','traveler','stick','weapons','repair','goblin','lysa','acorns','squirrel','pawpaw-patch','pawpaw','doomsayer','doomsayer-dialogue','pond','fishing','cooking','cooked-fish','testing']){
         await win.webContents.executeJavaScript(`window.__AZHORA__.review(${JSON.stringify(view)})`);
         await new Promise(resolve=>setTimeout(resolve,1400));
-        fs.writeFileSync(path.join(artifactDir,`${view}.png`),(await win.webContents.capturePage()).toPNG());
+        fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
         viewStats[view]=await win.webContents.executeJavaScript('(()=>{const s=window.__AZHORA__.state();return {region:s.region,drawCalls:s.drawCalls,triangles:s.triangles,averageFrameMs:s.averageFrameMs};})()');
         if(['road-dialogue','threefold','lysa','weapons','pawpaw','cooked-fish','fishing','cooking','testing'].includes(view)){
           win.setSize(900,640);await new Promise(resolve=>setTimeout(resolve,400));
           if(view==='pawpaw'||view==='cooked-fish'){await win.webContents.executeJavaScript(`document.getElementById('inventory-detail').scrollIntoView({block:'start',behavior:'instant'})`);await new Promise(resolve=>setTimeout(resolve,100));}
-          fs.writeFileSync(path.join(artifactDir,`compact-${view}.png`),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(artifactDir,`compact-${shotName(view)}.png`),(await win.webContents.capturePage()).toPNG());
           win.setSize(1440,960);
         }
       }

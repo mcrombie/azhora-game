@@ -466,3 +466,58 @@ test('the host asks for the bout’s ceiling and pays with it', () => {
   assert.match(main, /companions\.fought\(/, 'and for the fights come through together');
   assert.match(main, /teachers:teachers\.snapshot\(\)/, 'and the lessons given are written down');
 });
+
+test('a bout kills nobody, wins nothing, and is never a victory or a defeat', async () => {
+  const { createCombat } = await import('../src/combat.js');
+  const { maxHealth } = await import('../src/combat-skills.js');
+  const world = { bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 }, colliders: [], heightAt: () => 0, nearColliders: () => [] };
+  // Both ways round: the traveler has the better of it, and the traveler stands there and takes it.
+  for (const passenger of [false, true]) {
+    const position = { x: 0, y: 0, z: 0 };
+    const events = [];
+    // The country is level 2 under him, which a bout must not care about.
+    const combat = createCombat({ world, position, onEvent: event => events.push(event), getLevel: () => 2 });
+    assert.equal(combat.startEncounter({ id: 'sparring-bout', bout: true, level: 0,
+      center: { x: 0, z: 1.6 }, checkpoint: { x: 0, z: 0 }, retreatAxis: 'z', retreatLine: 25,
+      enemies: [{ id: 'spar-merc-altun', kind: 'sparring', name: 'Al the Tun', x: 0, z: 3.2, hp: Math.round(maxHealth(17)) }] }), true);
+    let lowMe = Infinity, lowHim = Infinity;
+    for (let frame = 0; frame < 120 * 60 && combat.state.phase === 'active'; frame++) {
+      const foe = combat.state.enemies[0];
+      if (foe) {
+        if (!passenger && combat.state.player.action === 'idle' && combat.state.player.stamina > 32)
+          combat.attack(Math.atan2(foe.x - position.x, foe.z - position.z));
+        lowHim = Math.min(lowHim, foe.hp);
+      }
+      combat.update(1 / 60);
+      lowMe = Math.min(lowMe, combat.state.player.hp);
+    }
+    const who = passenger ? 'teacher' : 'traveler';
+    assert.ok(lowMe >= 1, `nobody is killed in a bout: the traveler bottomed out at ${lowMe}`);
+    assert.ok(lowHim >= 1, `nor the teacher, who bottomed out at ${lowHim}`);
+    assert.deepEqual(events.filter(e => e.type === 'spar-over').map(e => e.winner), [who], 'it ends as a bout, with a winner');
+    for (const never of ['victory', 'defeat', 'enemy-defeated', 'retreat'])
+      assert.equal(events.filter(e => e.type === never).length, 0, `a bout never emits ${never}`);
+    assert.equal(combat.state.phase, 'peaceful', 'and the fight is simply over');
+  }
+});
+
+test('the dead and the sent-on teach nothing, and no ceiling passes the teacher', () => {
+  const { companions, teachers } = company();
+  for (const id of ['merc-matt', 'merc-ciaran']) {
+    companions.ask(id, { where: 'road' });
+    companions.travelled(id, 60 * 60 * 3);
+    assert.ok(teachers.owed(id), `${id} owes a lesson while he is here`);
+  }
+  companions.died('merc-matt', { where: 'the Moros Plain', what: 'The border battle' });
+  companions.sendOn('merc-ciaran');
+  for (const id of ['merc-matt', 'merc-ciaran']) {
+    assert.equal(teachers.owed(id), null, `${id} owes nothing`);
+    assert.equal(teachers.teach(id).ok, false, `${id} gives nothing`);
+    assert.equal(teachers.bout(id, { weapon: 'war-pike' }).reason, 'away', `${id} stands up with nobody`);
+    assert.equal(teachers.ceilingFor(id), 0, `${id} pays nothing`);
+  }
+  // Nobody can teach past what he knows, at any lesson count, for any teacher in the company.
+  for (const id of TEACHER_IDS) for (let lessons = 0; lessons <= LESSON_RUNGS.length; lessons++)
+    assert.ok(sparringCeiling(lessons, TEACHERS[id].level) <= TEACHERS[id].level,
+      `${TEACHERS[id].name} is ${TEACHERS[id].level} and would pay to ${sparringCeiling(lessons, TEACHERS[id].level)}`);
+});
