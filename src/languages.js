@@ -173,7 +173,7 @@ export const LANGUAGES = freeze({
     from: 'the world-builder profile `mittoli`',
     note: 'The great western family and the tongue of commerce, governance and scholarship. The traveler meets three of its dialects: Luscian, thick with Elagosi and plains loanwords; the Plain’s eastern Mittoli, with an older layer under its place names that nobody has traced; and Amodian, a foothill dialect carrying a terrace-country substrate and a set of water-measure words Standard Mittoli lacks.',
     borrows: ['ambroni', 'pyrosi'],
-    dialects: ['luscian', 'plain', 'amodian', 'vastos', 'meneth', 'caricas', 'nesdor'],
+    dialects: ['luscian', 'plain', 'amodian', 'vastos', 'meneth', 'caricas', 'nesdor', 'eer', 'isareos'],
     onsets: ['al', 'ar', 'azh', 'bel', 'cael', 'dael', 'dor', 'el', 'gal', 'hom', 'kael', 'mel', 'mir', 'nil', 'sor', 'tal', 'thal', 'trel', 'vel', 'zael'],
     middles: ['a', 'ae', 'e', 'i', 'o', 'oe', 'u'],
     suffixes: ['a', 'ael', 'an', 'ath', 'el', 'eth', 'in', 'ith', 'oe', 'ol', 'om', 'on', 'or', 'os', 'oss', 'um'],
@@ -486,6 +486,12 @@ export const DIALECTS = freeze({
   nesdor: dialect('nesdor', 'Nesdor Mittoli', 'mittoli',
     'Plains Mittoli facing the Moros approaches, with Compact legal terms off the branch country and pastoral words off the steppe. The name is the older layer: *nessar*, counted, and *dorath*, water-place.',
     word => word.replace('r', 'rr')),
+  eer: dialect('eer', 'Eer Mittoli', 'mittoli',
+    'Coastal-transitional Mittoli, nearer the Lizeem valley’s standard than the Iberos coast’s, and a stratigraphic record of every power that has administered the place: Pyrosi administrative terms, Iberos commercial vocabulary, Ascarth farming words, and an old layer for land, water and soil that belongs to no identified family. Its place names describe the ground and commemorate nobody.',
+    word => word.replace(/ee/, 'e').replace(/([aeiou])r$/, '$1er')),
+  isareos: dialect('isareos', 'Isareos Mittoli', 'mittoli',
+    'The western-interior Mittoli of the valley heads: unstressed syllables compressed, Elagosi loanwords kept in the formal registers of dispute and contract, and above all **the ford vocabulary** — single terms for water heights and crossing conditions that Standard Mittoli needs a compound for, and which grows every season anybody tries to finish writing it down.',
+    word => word.replace(/os$/, 'eos').replace(/([aeiou])([bcdfgklmnprstvz])([aeiou])\2/, '$1$2$3')),
   highland: dialect('highland', 'the highland Izoli', 'izoli',
     'Conservative where the coastal towns have moved on, and carrying shrine-keeping vocabulary the towns do not have and the tribes do not translate.',
     word => word.replace(/([bcdfgklmnprstvz])$/, '$1$1')),
@@ -500,7 +506,18 @@ export const dialectOf = id => DIALECTS[id] ?? null;
 
 const spoken = (language, dialect = null) => freeze({ language, dialect });
 
-/** Every playable region on the atlas, and the tongue its people speak in it. */
+/**
+ * Every playable region on the atlas, and the tongue its people speak in it.
+ *
+ * **A new region needs an entry here.** `tests/languages.test.js` walks the playable regions and
+ * asks each one what is spoken in it, so a region added to the atlas without a line below turns
+ * that test red — which is the point: it is a question for the lore, not a default. Nethereum,
+ * Ovesos, the Oves Desert and Gala are coming, and each of them wants its own line. Take the
+ * tongue from the country's own lore file (`azhora_lore/geography/regions/<name>.md`, the
+ * "Language" section), and if what the lore names is not a tongue `LANGUAGES` already has, map it
+ * to the nearest one the lore itself calls its parent or its neighbour and say so in the comment
+ * rather than inventing a language.
+ */
 export const REGION_LANGUAGE = freeze({
   Drent: spoken('drentish'),
   Pueth: spoken('drentish', 'pueth'),
@@ -519,6 +536,12 @@ export const REGION_LANGUAGE = freeze({
   Meneth: spoken('mittoli', 'meneth'),
   Caricas: spoken('mittoli', 'caricas'),
   Nesdor: spoken('mittoli', 'nesdor'),
+  // Regions fifteen and sixteen, from their own lore files and not from invention. Both are
+  // Mittoli country with a dialect of their own: Eer's is "a Mittoli dialect that linguists
+  // categorize as coastal-transitional", Isareos's "the western-interior dialect of Standard
+  // Mittoli, with the ford vocabulary". Neither needed a new language.
+  Eer: spoken('mittoli', 'eer'),
+  Isareos: spoken('mittoli', 'isareos'),
 });
 
 /**

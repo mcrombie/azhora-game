@@ -177,9 +177,10 @@ ground and inside the band the company walks in. Silas Garrow stands at the cros
 metre off the stream, not at the Toll House's own centre, because the toll house is a stone box
 with walls and a teacher needs five clear metres to be talked to in.
 
-**Open for the user:** whether the Toll House stream becomes a tenth named ground on the chart.
-It is the one long-road stop the chart has no name for; until it is decided, Silas is noticed by
-the forty-metre rule alone and nothing counts Drent's grounds by a hard-coded nine.
+**Open for the user, and since answered:** whether the Toll House stream becomes a tenth named
+ground on the chart. It was the one long-road stop the chart had no name for. **Answered yes**
+on 2026-09-21 (the top section) and built: `the-toll-house`, Drent's tenth, small because the
+Caloss Bank's reach comes within twenty metres of the stream crossing.
 
 ## 2026-09-21 — fighting, and the day
 

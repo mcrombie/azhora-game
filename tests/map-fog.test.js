@@ -65,7 +65,17 @@ test('every named area stands in the region it claims, and none of them swallow 
     // A border post, a harbour and a river bank are meant to straddle: ten areas sit between 63%
     // and 75%. Most of the disc inside is the real bar, and it catches the two that were half out.
     assert.ok(owned / samples > .6, `${area.name} is only ${Math.round(owned / samples * 100)}% inside ${area.region}`);
-    assert.ok(area.radius >= 28 && area.radius <= 130, `${area.id} is a believable size`);
+    assert.ok(area.radius >= 18 && area.radius <= 130, `${area.id} is a believable size`);
+    // The usual floor is 28. A ground under it has to have a *reason* to be small, and the reason
+    // is always the same one: a neighbour's reach is right there and the ground is sized to what
+    // is actually in it. The Toll House, Drent's tenth, is the first - the Caloss Bank's disc
+    // comes within twenty metres of the stream crossing.
+    if (area.radius < 28) {
+      const elbow = SUBREGIONS.filter(other => other !== area)
+        .map(other => Math.hypot(area.x - other.x, area.z - other.z) - other.radius - area.radius)
+        .sort((a, b) => a - b)[0];
+      assert.ok(elbow < 25, `${area.id} is only ${area.radius} m across with ${elbow.toFixed(0)} m of open ground round it`);
+    }
     assert.ok(area.note.length > 30 && area.name.length > 3, area.id);
   }
   for (const area of SUBREGIONS) for (const other of SUBREGIONS) {
