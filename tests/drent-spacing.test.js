@@ -183,9 +183,9 @@ test('src/main.js places the three from their own modules, and keeps no literal 
 test('the smithy\u2019s plot is the one the four measurements chose', () => {
   const forge = TIDEHAVEN_SMITHY;
   // It is where the sweep said, and the measurement that chose it is written down with it.
-  assert.deepEqual([forge.a, forge.b], [14, -11.5]);
+  assert.deepEqual([forge.a, forge.b], [16.5, -35]);
   assert.deepEqual([+forge.x.toFixed(1), +forge.z.toFixed(1)],
-    [+villageToWorld(14, -11.5).x.toFixed(1), +villageToWorld(14, -11.5).z.toFixed(1)]);
+    [+villageToWorld(16.5, -35).x.toFixed(1), +villageToWorld(16.5, -35).z.toFixed(1)]);
   // 1. Off the middle of the street - and still on a street, in the same band as the cottages,
   //    which stand 9 to 16 m off the road's centreline.
   const toRoad = (x, z) => {

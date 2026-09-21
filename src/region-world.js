@@ -103,22 +103,28 @@ export const villageToWorld = (lx, lz) => ({ x: lz + VILLAGE.x, z: VILLAGE.z - l
  * a country up (`smithStock`, src/gear.js).
  *
  * **The plot was chosen by measurement, not by eye.** Every standable half-metre of the village
- * was swept and scored on four things the brief asked for: a clear yard, off the middle of the
- * street, off the opening raid ground, and clear of the queue that comes down the pier. The
- * village is tight - no plot anywhere in it holds a full cottage-sized yard AND keeps off the
- * street, which is why this is an open-sided lean-to and not another cottage. Of the 61 plots
- * that passed at a lean-to's size, this one sits in the same band off the street as the cottages
- * (9-16 m) with the most room around it:
+ * was swept and scored on five things: a clear yard, off the middle of the street, off every
+ * footpath the village draws, off the opening raid ground, and clear of the queue that comes down
+ * the pier. The village is tight - no plot anywhere in it holds a full cottage-sized yard AND
+ * keeps off the street, which is why this is an open-sided lean-to and not another cottage.
  *
- *   5.8 m of clear ground to the nearest collider - 14.6 m off the road's centreline
- *   18.4 m from the nearest thing that must stay clear (the raid ground, the pier queue, a door)
+ * **The footpaths were the correction.** The first sweep measured `world.paths[0]` and stopped:
+ * the village draws forty-four paths, and the side lanes between the cottages are all of them
+ * but the first. The plot it chose put a corner post 0.14 m from a lane - a shelter post
+ * standing in the middle of somebody's footpath. Nothing within twenty metres of that plot
+ * passes once the lanes are counted, so this is a move and not a nudge. Of the 23 plots that do
+ * pass, this one has the most room and sits in the cottages' own band off the street:
+ *
+ *   5.8 m of clear ground to the nearest collider - 14.8 m off the road's centreline
+ *   6.5 m from the nearest post to the nearest footpath (a lane is 2.6 m wide)
+ *   15.2 m from the nearest thing that must stay clear (the raid ground, the pier queue, a door)
  */
-const SMITHY_AT = villageToWorld(14, -11.5), SMITHY_FACE = villageToWorld(0, 0);
+const SMITHY_AT = villageToWorld(16.5, -35), SMITHY_FACE = villageToWorld(0, 0);
 export const TIDEHAVEN_SMITHY = Object.freeze({
-  id: 'tidehaven-smithy', a: 14, b: -11.5, ...SMITHY_AT,
+  id: 'tidehaven-smithy', a: 16.5, b: -35, ...SMITHY_AT,
   // Facing in toward the village, so the open side of the shelter is the side people come from.
   yaw: Math.atan2(SMITHY_FACE.x - SMITHY_AT.x, SMITHY_FACE.z - SMITHY_AT.z),
-  clear: 5.8, offRoad: 14.6, offKept: 18.4,
+  clear: 5.8, offRoad: 14.8, offPath: 6.5, offKept: 15.2,
 });
 export const worldToVillage = (x, z) => ({ x: VILLAGE.z - z, z: x - VILLAGE.x });
 

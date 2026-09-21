@@ -280,15 +280,24 @@ Elagosi profile that covers Drent is a *place*-name register, while Drent's peop
 plainer one the game uses consistently.
 
 **The plot was chosen by measurement, not by eye** (`TIDEHAVEN_SMITHY`, `src/region-world.js`).
-Every standable half-metre of the village was swept and scored on the four things asked for: a
-clear yard, off the middle of the street, off the opening raid ground, and clear of the queue that
-comes down the pier. The finding worth keeping: **the village has no plot anywhere in it that
-holds a cottage-sized yard and still keeps off the street** — 474 plots have 6.2 m of clearance,
-1,198 are properly off the road, and the two sets do not intersect. That is why the smithy is an
-open-sided lean-to and not another cottage. Of the 61 plots that passed at a lean-to's size, the
-one taken sits in the same band off the street as the cottages (9–16 m) with the most room around
-it: **5.8 m of clear ground, 14.6 m off the road's centreline, 18.4 m from the nearest thing that
-must stay clear.**
+Every standable half-metre of the village was swept and scored on five things: a clear yard, off
+the middle of the street, **off every footpath the village draws**, off the opening raid ground,
+and clear of the queue that comes down the pier. Two findings worth keeping.
+
+**The village has no plot anywhere in it that holds a cottage-sized yard and still keeps off the
+street** — 474 plots have 6.2 m of clearance, 1,198 are properly off the road, and the two sets do
+not intersect. That is why the smithy is an open-sided lean-to and not another cottage: the ground
+decided it, not taste.
+
+**The footpaths were a correction, and an expensive one.** The first sweep measured
+`world.paths[0]` and stopped. The village draws **forty-four** paths: the first is the main road,
+and all the rest are the lanes between the cottages. The plot that sweep chose put a shelter post
+**0.14 m** from a lane — a post standing in the middle of somebody's way to their own door. It
+passed every test written, because every test written measured the same one path. Nothing within
+twenty metres of that plot passes once the lanes are counted, so the smithy moved rather than
+shifted. Of the 23 plots that do pass, the one taken has the most room and sits in the cottages'
+own band off the street: **5.8 m of clear ground, 14.8 m off the road's centreline, 6.5 m from the
+nearest post to the nearest footpath, 15.2 m from the nearest thing that must stay clear.**
 
 Built modest: a lean-to, a stone forge with its chimney and banked coals, an anvil on its stump,
 the quench barrel, a rack of bar stock, and a hanging board in the sign language of the rest of
