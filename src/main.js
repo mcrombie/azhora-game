@@ -1472,16 +1472,25 @@ function init() {
   // autosaves, and on the first province beyond Drent starts the map tutorial.
   const regionInfoCache=new Map();
   function regionInfo(name){if(!regionInfoCache.has(name))regionInfoCache.set(name,describeRegion(name)??null);return regionInfoCache.get(name);}
+  /**
+   * The header above the region name, which is on screen the whole time you are in a country.
+   * It says who holds the place and nothing about how hard it is: the difficulty is the region
+   * card's, in the ladder's words, once, on entering, and the number belongs to the cartography
+   * journal alone and only once the country is charted (docs/design-answers.md, and the note at
+   * the head of src/region-levels.js). It used to read LEVEL 0 · AMBRONI EMPIRE.
+   */
   function regionKicker(region){
     if(isOpenCountry(region))return 'AZHORA · NO COUNTRY CLAIMS THIS';
-    const info=regionInfo(region.name);return info?`LEVEL ${info.level} · ${info.faction.name.toUpperCase()}`:`AZHORA · ${region.name.toUpperCase()}`;}
+    const info=regionInfo(region.name);return info?info.faction.name.toUpperCase():`AZHORA · ${region.name.toUpperCase()}`;}
   function enterRegion(region){
     const open=isOpenCountry(region),info=open?null:regionInfo(region.name);
     $('region-card-name').textContent=region.name;$('region-card-subtitle').textContent=region.subtitle||'';
     // The card gives a country's difficulty in words; the number is the cartography journal's (docs/design-answers.md).
+    // A country the ladder has no words for - one off the atlas's 131 - says who holds it and
+    // nothing else, rather than falling back on the number the journal is the only place for.
     $('region-card-detail').textContent=open?'OUTSIDE EVERY BORDER THE ATLAS DRAWS'
       :levelWords(regionLevel(region.name))?`${levelWords(regionLevel(region.name)).toUpperCase()}${info?` · ${info.faction.name.toUpperCase()}`:''}`
-      :info?`LEVEL ${info.level} · ${info.levelName.toUpperCase()} · ${info.faction.name.toUpperCase()}`:'';
+      :info?info.faction.name.toUpperCase():'';
     $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
     if(questStage>=1)saveRoad(false);
     if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();

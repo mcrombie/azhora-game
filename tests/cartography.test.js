@@ -5,7 +5,7 @@ import {
   CHART_STATES, CHART_XP, EXPLORED_HEXES, STARTING_CHART, CARTOGRAPHY_DIRECTIONS, REGION_NEIGHBOURS,
   createCartography, startingChart, validateCartographySnapshot, chartShapes,
 } from '../src/cartography.js';
-import { regionLevel } from '../src/region-levels.js';
+import { regionLevel, levelWords } from '../src/region-levels.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -216,4 +216,37 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
   assert.match(main, /cartography\.directionsFrom\(homeRegion\(npc\)\)/, 'and only about the countries next door');
   assert.match(main, /const countries=cartography\.view\(\);/, 'the journal lists what is known of each country');
   assert.match(main, /A shape against the sea/);
+});
+
+test('the difficulty is a number in the journal and words everywhere else', () => {
+  // The user's ruling (docs/design-answers.md, and the note at the head of src/region-levels.js):
+  // the region card gives a country's difficulty in the ladder's words on first entering, and the
+  // number appears only in the cartography journal, once the country is charted, because finding
+  // out how dangerous a place is, is part of charting it. The HUD never shows the number at all.
+  const main = source('main.js');
+  const kicker = main.slice(main.indexOf('function regionKicker'), main.indexOf('function enterRegion'));
+  assert.doesNotMatch(kicker, /LEVEL/, 'the location header does not put a difficulty number on the screen');
+  assert.doesNotMatch(kicker, /\blevel\b/, 'nor a difficulty at all: the header says who holds the country');
+  assert.match(kicker, /info\.faction\.name\.toUpperCase\(\)/, 'which is the faction that holds it');
+
+  const card = main.slice(main.indexOf('function enterRegion'), main.indexOf("$('region-card').classList.add"));
+  assert.match(card, /levelWords\(regionLevel\(region\.name\)\)/, 'the card gives the ladder\u2019s words');
+  assert.doesNotMatch(card, /LEVEL \$\{/, 'and never the number, on any branch, including the one for a name the ladder has no words for');
+  assert.doesNotMatch(card, /info\.level/, 'nor the campaign table\u2019s own number by another name');
+
+  // Nowhere else in the game draws a region difficulty. The LEVEL kickers that remain are skill
+  // levels, which are the player's own and are meant to be read as numbers.
+  for (const line of main.split('\n')) {
+    const code = line.trim();
+    if (!/LEVEL /.test(code) || code.startsWith('*') || code.startsWith('//') || code.startsWith('/*')) continue;
+    assert.ok(/\$\{(found|result|landed|skill)\.level/.test(code) || /skill\.level/.test(code),
+      `a LEVEL on screen that is not a skill level: ${code.slice(0, 120)}`);
+  }
+
+  // And the one place the number does belong still has it, for a country whose shape is known.
+  const { chart } = fixture();
+  const drent = chart.view().entries.find(entry => entry.name === 'Drent');
+  assert.deepEqual([drent.state, drent.level, drent.words], ['charted', 0, 'A quiet country'],
+    'the journal keeps the number, and the words beside it');
+  assert.equal(levelWords(regionLevel('Drent')), 'A quiet country', 'which is what the card says instead');
 });
