@@ -105,6 +105,7 @@ const company = createMercenaryCompany({
     { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
     { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point),
   muster: ANCHORS.legionCamp, landing: world.spawn, shore: WORD_BEACH, seed: 0,
+  standable: (x, z) => canStand(x, z, world, BODY.person),
 });
 
 /** The height canStand wants under a body, from src/game-state.js. Below it is water. */
@@ -156,32 +157,75 @@ test('the hired swords wait on the boards, and the ring that would not fit is go
  * placement in every phase he is drawn in.
  */
 test('every man the company places is on ground a body can stand on', () => {
-  const blocked = { landing: [], mustered: [], road: 0 };
-  let checked = 0, onRoad = 0;
+  // Counted by phase, because the phases are not alike. A walking man's home moves every frame
+  // and he is past an obstacle in a second; a waiting, stopped or mustered man holds his place
+  // for a minute or more, is drawn and steered the whole time, and if he cannot reach it he
+  // spends the dwell walking on the spot against a hedge.
+  const seen = {}, blocked = {}, examples = {};
+  let checked = 0;
   for (let t = 0; t <= 25000; t += 5) for (const placement of company.placements(t)) {
     if (placement.phase === 'coming') continue;
     checked++;
-    const walking = placement.phase === 'walking' || placement.phase === 'stopped';
-    if (walking) onRoad++;
+    seen[placement.phase] = (seen[placement.phase] ?? 0) + 1;
     if (canStand(placement.x, placement.z, world, BODY.person)) continue;
-    const line = `${placement.id} ${placement.phase} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} ` +
-      `(ground ${world.heightAt(placement.x, placement.z).toFixed(2)}) at ${t}s`;
-    if (walking) blocked.road++;
-    else if (!blocked[placement.phase].some(had => had.startsWith(placement.id + ' '))) blocked[placement.phase].push(line);
+    blocked[placement.phase] = (blocked[placement.phase] ?? 0) + 1;
+    (examples[placement.phase] ??= []).push(`${placement.id} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} ` +
+      `(ground ${world.heightAt(placement.x, placement.z).toFixed(2)}) at ${t}s`);
   }
   assert.ok(checked > 40000, `only ${checked} placements checked`);
-  // The two that must be solid, because a man holds them for a minute or more and is drawn and
-  // steered the whole time. This is the half the ring got wrong.
-  assert.deepEqual(blocked.landing, [], 'a waiting man stands on ground');
-  assert.deepEqual(blocked.mustered, [], 'and so does a mustered one');
-  // The road is a different matter, and worth saying plainly rather than asserting away. A
-  // walking man's *home* moves along the road every frame with a lateral offset of up to 4.6 m,
-  // and now and then that offset lands inside a hedge, a post or a cart. He never stands in it:
-  // src/main.js steers him with `stepAround`, which goes through `moveCharacter` and stops him
-  // beside the thing. So this holds a ceiling rather than a zero - if it climbs, the scatter has
-  // moved into the road and somebody should look.
-  const share = blocked.road / onRoad;
-  assert.ok(share < .08, `${blocked.road} of ${onRoad} road placements (${(share * 100).toFixed(1)}%) are inside scenery`);
+  assert.ok(seen.landing > 400 && seen.stopped > 400 && seen.walking > 1000 && seen.mustered > 1000,
+    `the sweep saw ${JSON.stringify(seen)}`);
+  // The three that are held for a long time must be zero, and the message names the phase.
+  for (const phase of ['landing', 'stopped', 'mustered'])
+    assert.deepEqual(examples[phase]?.slice(0, 4) ?? [], [],
+      `${blocked[phase]} of ${seen[phase]} ${phase} placements are inside scenery`);
+  // Walking is a different matter, and worth saying plainly rather than asserting away: the home
+  // moves along the road every frame with a lateral offset of up to 4.6 m, and now and then that
+  // lands in a hedge for a moment. He never stands in it - src/main.js steers him with
+  // `stepAround`, which goes through `moveCharacter` and stops him beside the thing. A ceiling,
+  // then, not a zero: if it climbs, the scatter has moved into the road and somebody should look.
+  const share = (blocked.walking ?? 0) / seen.walking;
+  assert.ok(share < .05, `${blocked.walking} of ${seen.walking} walking placements (${(share * 100).toFixed(1)}%) are inside scenery`);
+});
+
+test('a stopped man is moved to ground he can reach, and nobody else moves at all', () => {
+  // He holds his place for 60, 90 or 120 seconds. One in six of them used to be a hedge, and of
+  // those, twelve were close enough that the host never stopped steering him: `pace` stayed above
+  // the tenth of a metre that ends the walk, so he marched on the spot against it for the whole
+  // dwell, in Lumber Town square and at the crossing. The company moves such a place once, when
+  // the formation is laid, to the nearest ground in half-metre rings - deterministic, so it is
+  // the same in every save.
+  const plain = createMercenaryCompany({
+    road: world.paths[0],
+    stops: [{ id: 'induction', point: world.npcPositions['meadow-courier'], dwell: 90 },
+      { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
+      { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point),
+    muster: ANCHORS.legionCamp, landing: world.spawn, shore: WORD_BEACH, seed: 0,
+  });
+  let moved = 0, others = 0, furthest = 0;
+  for (let t = 0; t <= 25000; t += 5) {
+    const was = plain.placements(t), is = company.placements(t);
+    for (let i = 0; i < was.length; i++) {
+      const shift = Math.hypot(was[i].x - is[i].x, was[i].z - is[i].z);
+      if (shift < 1e-9) continue;
+      if (was[i].phase === 'stopped') { moved++; furthest = Math.max(furthest, shift); } else others++;
+    }
+  }
+  assert.ok(moved > 0, 'some stopped man was standing in something');
+  assert.equal(others, 0, 'and nothing but a stopped place was touched');
+  assert.ok(furthest <= 6.01, `the furthest anybody was moved is ${furthest.toFixed(2)} m`);
+  // Deterministic: the same company, built twice, lays the same formation.
+  const again = createMercenaryCompany({
+    road: world.paths[0],
+    stops: [{ id: 'induction', point: world.npcPositions['meadow-courier'], dwell: 90 },
+      { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
+      { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point),
+    muster: ANCHORS.legionCamp, landing: world.spawn, shore: WORD_BEACH, seed: 0,
+    standable: (x, z) => canStand(x, z, world, BODY.person),
+  });
+  for (const t of [1500, 1900, 4000]) assert.deepEqual(again.placements(t), company.placements(t), `at ${t}s`);
+  // And without the predicate the formation is exactly what it always was: the sweep above
+  // compared every placement of both, and only stopped ones differed.
 });
 
 /** And Ed the Word, whom the sea put down, waits on his own strand rather than on the boards. */

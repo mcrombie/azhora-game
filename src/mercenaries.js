@@ -251,6 +251,10 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
  * @param shore where a man whose `route` is 'shore' comes out of the water instead
+ * @param standable `(x, z) => boolean` from the host, so a stopped man's place can be moved off
+ *   a hedge. A walking man's home moves every frame and he is past an obstacle in a second; a
+ *   stopped man holds his for 60, 90 or 120 seconds, and if he cannot reach it he spends the
+ *   whole dwell walking on the spot against it. Without this the formation is unchanged.
  * @param wild true to give a man whose `route` is 'wild' his own line across country
  * @param companion the one man off the traveler's own boat, while he is not on the clock:
  *   `{ id, with: true }` puts him at the traveler's shoulder and off the road altogether;
@@ -258,7 +262,7 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  *   **Undefined is today's clock, exactly** — a save written before the long road existed
  *   restores as undefined, and not a man of the company moves by a metre under it.
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, seed = 0, roster = MERCENARY_ROSTER, companion = undefined } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
   const companionId = companion?.id ?? null;
   const walksWithYou = !!companionId && companion.with === true;
@@ -310,6 +314,35 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
     return { ux, uz, px: -uz, pz: ux, yaw: Math.atan2(ux, uz) };
   })();
 
+  /**
+   * How far a stopped man may be moved to find ground, and in what order the ground is looked
+   * for. The order is fixed so the formation is the same on every run and in every save: out in
+   * half-metre rings, sixteen bearings to a ring, the first that holds him.
+   */
+  const NUDGE = Object.freeze({ step: .5, rings: 12, bearings: 16 });
+  const stoodAt = new Map();
+  if (standable) {
+    for (const stop of roadStops) {
+      const point = pointAlongRoad(road, stop.distance, lengths);
+      for (let index = 0; index < roster.length; index++) {
+        const off = lateral(index) * 2.2;
+        const home = { x: point.x + point.dz * off, z: point.z - point.dx * off };
+        if (standable(home.x, home.z)) continue;
+        let found = null;
+        for (let ring = 1; ring <= NUDGE.rings && !found; ring++) {
+          for (let turn = 0; turn < NUDGE.bearings; turn++) {
+            const angle = turn / NUDGE.bearings * Math.PI * 2, reach = ring * NUDGE.step;
+            const spot = { x: home.x + Math.sin(angle) * reach, z: home.z + Math.cos(angle) * reach };
+            if (standable(spot.x, spot.z)) { found = spot; break; }
+          }
+        }
+        // Nothing within six metres: leave him where the formation put him rather than invent a
+        // place. `tests/nobody-sealed-in.test.js` counts any of these and fails on the first.
+        if (found) stoodAt.set(`${stop.id}:${index}`, Object.freeze(found));
+      }
+    }
+  }
+
   function placements(playSeconds) {
     return roster.map((mercenary, index) => {
       // The companion is off the clock and off the road: he is wherever the traveler is, so he
@@ -355,6 +388,12 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
       const point = pointAlongRoad(road, wilding ? musterDistance : progress.distance, lengths);
       const off = progress.phase === 'stopped' ? side * 2.2 : progress.phase === 'mustered' ? 0 : side;
       let x = point.x + point.dz * off, z = point.z - point.dx * off;
+      // A stopped man whose place was a hedge was moved to the nearest ground when the formation
+      // was laid. Everything else is where it always was.
+      if (progress.phase === 'stopped') {
+        const moved = stoodAt.get(`${progress.stopId}:${index}`);
+        if (moved) { x = moved.x; z = moved.z; }
+      }
       if (progress.phase === 'mustered') { x = point.x + point.dz * lateral(index) * 1.6 - point.dx * (4 + Math.floor(index / 2) * 2.2); z = point.z - point.dx * lateral(index) * 1.6 - point.dz * (4 + Math.floor(index / 2) * 2.2); }
       return { id: mercenary.id, name: mercenary.name, ...progress, x, z, yaw: progress.phase === 'walking' ? point.yaw : point.yaw + (progress.phase === 'stopped' ? Math.PI / 2 * Math.sign(side) : Math.PI), walking: progress.phase === 'walking' };
     });
