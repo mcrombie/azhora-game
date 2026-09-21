@@ -40,7 +40,11 @@ test('everything subtracted from playSeconds is reset wherever playSeconds is', 
   for (const pin of pins) assert.match(pin.line, /view===/, `src/main.js:${pin.at} sets the clock outside a review view and outside the two starts`);
 
   // Whatever is subtracted from playSeconds anywhere in the file must be reset at both starts.
-  const offsets = new Set([...main.matchAll(/playSeconds\s*-\s*([a-zA-Z_$][\w$]*)/g)].map(m => m[1]));
+  // An offset of the clock is a bare counter, so the name has to end where it begins: a name
+  // followed by `.`, `[` or `(` is a member or a call of something else and is not one. The
+  // landing mate's overrun reads `playSeconds-entry.arrival-entry.departs`, where `entry` is a
+  // roster row and not a clock at all; without the lookahead this test asked for `entry += `.
+  const offsets = new Set([...main.matchAll(/playSeconds\s*-\s*([a-zA-Z_$][\w$]*)(?![\w$]*[.[(])/g)].map(m => m[1]));
   assert.ok(offsets.size >= 1, 'nothing is subtracted from playSeconds any more; drop this test');
   for (const name of offsets) {
     assert.match(main, new RegExp(`${name}\\s*\\+=`), `${name} is not a running total, so it is not an offset of the clock`);

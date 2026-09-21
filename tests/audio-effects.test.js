@@ -55,12 +55,32 @@ test('a sound the table does not have is refused rather than thrown', () => {
 });
 
 test('the geography of sound survives nonsense without a device', () => {
+  // Region 0 is not nonsense any more: it is open country, ground no country on the atlas
+  // claims, and src/road-audio.js keeps its id rather than falling back to Drent's, because
+  // falling back meant hearing Drent's forest a kilometre south of Nesdor. It is checked on
+  // its own below. Everything here is still a value that means nothing.
   for (const given of [undefined, { region: 3 }, { position: { x: NaN, z: Infinity }, region: 2 },
-    { position: { x: 0, z: 0 }, region: { id: 4 } }, { position: { x: 0, z: 0 }, region: 0 }, { position: { x: 0, z: 0 }, region: -1 }]) {
+    { position: { x: 0, z: 0 }, region: { id: 4 } }, { position: { x: 0, z: 0 }, region: -1 }]) {
     const profile = roadAudioProfile(given);
     assert.ok(Number.isInteger(profile.region) && profile.region > 0, `region came back as ${profile.region}`);
     assert.ok(['earth', 'wood', 'stone'].includes(profile.surface), `surface came back as ${profile.surface}`);
     for (const [key, value] of Object.entries(profile))
       if (typeof value === 'number') assert.ok(Number.isFinite(value) && value >= 0, `${key} came back as ${value}`);
   }
+});
+
+test('open country is a region, and the one that sounds of nothing', () => {
+  // It keeps its own id where a fallback would have handed it Drent's, and it plays none of
+  // Drent's beds: no sea off a coast it is not on, no forest, no river, no field, no ridge.
+  // Wind and earth underfoot, which is the whole of what the builder gave it (src/road-audio.js).
+  const open = roadAudioProfile({ position: { x: 0, z: 0 }, region: 0 });
+  assert.equal(open.region, 0, 'open country is not quietly turned into Drent');
+  assert.equal(open.surface, 'earth');
+  assert.deepEqual([open.sea, open.forest, open.river, open.field, open.ridge], [0, 0, 0, 0, 0],
+    'a country nobody claims has no bed of anybody else’s');
+  for (const [key, value] of Object.entries(open))
+    if (typeof value === 'number') assert.ok(Number.isFinite(value) && value >= 0, `${key} came back as ${value}`);
+  // The sentinel comes through the same door the host uses: world.regionAt(...) is passed whole.
+  assert.deepEqual(roadAudioProfile({ position: { x: 0, z: 0 }, region: { id: 0 } }), open,
+    'given the region object or its id, open country sounds the same');
 });
