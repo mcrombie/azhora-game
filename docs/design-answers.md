@@ -4,6 +4,38 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — companions (the user's answers to `docs/companions.md`)
+
+**As many as will come.** There is no limit on how many of the ten walk with the traveler: you
+may arrive at the muster with most of the company behind you. (The builder had proposed one on
+the road and two after; the user chose the generous end.) What follows from it: they walk in a
+file behind you and close up to single file on narrow ground; one of them speaks for an event,
+not all of them; they are allies in every fight, which is the design's own answer to hard
+country — and the price is that each of them can die there, and stays dead.
+
+**Kristen comes if you know the road.** Her condition stands: she will not leave Jerry and
+Ciarán unless you have charted it. It is the one recruitment that has to be earned, and it makes
+cartography matter to the story.
+
+**When the company musters short, the Marshal asks you what happened.** A short conversation,
+once for each who is missing, and what you say is remembered — by him and by the company. A lie
+is possible, and those who were walking with you when it happened know it for one.
+
+**A dead companion's weapon lies where they fell, and you can take it.** It stays on the ground
+there, marked, until it is picked up, and it is a named weapon — "Eliana's greatsword" — which is
+what the combat brief says a given weapon should be.
+
+## 2026-09-21 — the country's wall (coordinator's hold, the user's to lift)
+
+The bug hunter measured combat phase 2 against the main arc (`docs/known-issues.md`): fair through
+Luscia, not at level 2, because the traveler grows in a straight line while the country
+multiplies. The design's own arithmetic (`docs/combat-brief.md`) closes that gap with gear and
+with company, and neither exists yet. So, **until smiths, armour and companions are in, the
+story's set-piece battles with armies in them — the border battle and the day after — are
+authored at level 0, as they were tuned.** Everything else takes its country's level, Mallec
+included: he is a toll before he is a fight. This is a hold, not a retune: no number in the
+`ARMS` table or the ladder has changed, and it is one constant to lift.
+
 ## 2026-09-21 — names, and go-aheads
 
 **Names, in the user's spelling: Cromb the Barbarian (never "Crom"), and Kristen (never

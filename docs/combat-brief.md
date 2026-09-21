@@ -207,7 +207,7 @@ at 1. Proposed, for the user to correct when the character profiles are written:
 | Jerry | Bows 40 |
 | Kristen | Blades 25, Shield 35 |
 | Ciarán | Polearms 35 |
-| Lakota | Staves 30 (and the birding that is already hers) |
+| Lakota | Staves 30 (and the birding that is already his) |
 | Eliana | Heavy arms 40 |
 | Matt | Polearms 35 |
 | Al the Tun | Heavy arms 20 |
