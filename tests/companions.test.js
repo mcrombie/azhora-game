@@ -272,6 +272,32 @@ test('Kristen’s gate is not one that opens itself', async () => {
   assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
 });
 
+test('a hold is each man staying where he is, and the fallback is not one stone', async () => {
+  const { escortSpotFor, ESCORT_OFFSETS } = await import('../src/mercenaries.js');
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  // The hold was one closure variable, and `placeCompanion` runs once per companion per frame:
+  // the first man through set it from his own feet and the other nine were handed a copy. Ten
+  // solid men shoving at one point, for the whole of any fight and everywhere in Pueth and
+  // Peblos. A hold is a man staying where he is, which is one place per man.
+  assert.match(main, /const companionHold=new Map\(\);/, 'a place per man');
+  assert.match(main, /if\(!companionHold\.has\(npc\.id\)\)companionHold\.set\(npc\.id,\{x:pos\.x,z:pos\.z\}\);/, 'set from his own feet');
+  assert.match(main, /companionHold\.delete\(npc\.id\);/, 'and let go when he is walking again');
+  assert.doesNotMatch(main, /companionHold=\{x:pos\.x,z:pos\.z\}/, 'and never one shared point');
+  // The fallback walked a fixed list and returned the first standable offset, so every man who
+  // fell back got the same answer - two of ten onto one stone in Lumber Town square.
+  const at = { x: 0, z: 0, yaw: 0 };
+  const everywhere = () => true;
+  const spots = Array.from({ length: ESCORT_OFFSETS.length }, (_, place) => escortSpotFor(at, everywhere, place));
+  const seen = new Set(spots.map(spot => `${spot.x.toFixed(3)},${spot.z.toFixed(3)}`));
+  assert.equal(seen.size, ESCORT_OFFSETS.length, 'each place in the file is offered a different spot first');
+  // It still answers the old way for the man at the front, and still gives up honestly.
+  assert.deepEqual(escortSpotFor(at, everywhere), escortSpotFor(at, everywhere, 0), 'place 0 is what it always was');
+  assert.equal(escortSpotFor(at, () => false, 3), null, 'nowhere is still nowhere');
+  assert.ok(escortSpotFor(at, everywhere, 99), 'and a place past the end of the list wraps rather than throwing');
+  assert.match(main, /escortSpotFor\(\{x:p\.x,z:p\.z,yaw\},\(sx,sz\)=>canStand\(sx,sz,world\),Math\.max\(0,place\)\)/,
+    'and the host tells it which man is asking');
+});
+
 test('they walk in a file, one of them speaks, and none of them is ever a peg', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   // A file: the first where Chris has always been, the rest a stride behind him each, alternating
