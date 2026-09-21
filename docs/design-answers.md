@@ -4,6 +4,31 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — bows, the border battle, and the Nethermere (the user's answers)
+
+**The first bow is Jerry's spare.** When Jerry comes to like the traveler he gives him his spare
+bow with his first lesson: a named, given weapon, and the thing that shows the traveler the bow
+at all. Nobody else hands one out. **The smiths sell arrows** - the Tidehaven smith, Mern in Ostel
+and the camp armourer add them to their boards; there is no fletcher. Decided by the coordinator
+around those two: with a bow in hand the swing button is held to draw and released to loose (no
+new key); an arrow is a thing that travels and the first solid thing stops it; about two in
+three can be picked up again; Jerry shoots as an ally; no enemy archers yet; fights only, with
+the door left open for hunting.
+
+**The border battle's hold is lifted to level 2.** The hunter measured it over forty seeds a row:
+at level 0 a company wins it alone (ten companions, forty of forty, fifteen seconds, the
+traveler standing still); at level 2 with six companions it is thirty-six of forty, about two
+companions dead, and nought of forty if the traveler never swings. Seven companions come for the
+asking, so that is what a player arrives with. If a full company of ten is to stay a climax, the
+lever is the size of the battle, not the level - not asked for yet.
+
+**The Nethermere is a spring flood over meadow, not a lake.** The atlas has `lake` and `wetland`
+and uses neither in Nethereum, and the atlas wins. The lore is rewritten so that the Nethermere
+is a shallow sheet of water that spreads over the basin's grass each spring and is gone by
+midsummer. It keeps the Nethrani, the Flood Council, the Flood Recall and the cattle, and loses
+the fishery, the reed-grain and the reed goods. Nethereum may now be built. Still open: whether
+the one river the atlas draws in Isareos takes the lore's name, the Isa.
+
 ## 2026-09-21 — the company rides when you ride
 
 The user, from the Lumber Town stable yard with Chris standing beside the horse: **"My companion
