@@ -236,6 +236,31 @@ test('a country scales its dangers and never your side', async () => {
   assert.doesNotMatch(combatSource, /function makeAlly[\s\S]{0,400}countryHealth/, 'but the ally himself is not');
 });
 
+test('they walk in a file, one of them speaks, and none of them is ever a peg', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  // A file: the first where Chris has always been, the rest a stride behind him each, alternating
+  // shoulders - and closing to the centreline where the shoulders have nowhere to be.
+  assert.match(main, /function fileSpot\(p,yaw,place\)\{/, 'the file has a shape of its own');
+  assert.match(main, /const back=COMPANION_REACH\.shoulder\+place\*COMPANION_REACH\.stride;/, 'a stride apart');
+  assert.match(main, /const side=COMPANION_REACH\.side\*\(place%2\?-1:1\);/, 'and alternating shoulders');
+  assert.match(main, /if\(canStand\(shoulder\.x,shoulder\.z,world\)\)return shoulder;[\s\S]{0,160}return middle;/,
+    'narrow ground closes the file to single, by asking the ground rather than by a list of places');
+  assert.match(main, /placeCompanion\(npc,placement,fileOrder\.indexOf\(npc\.id\)\)/, 'and each man knows his place in it');
+  // One voice per event.
+  assert.match(main, /function oneVoice\(has\)\{/, 'one of them speaks');
+  assert.match(main, /for\(const id of fileOrder\)\{const said=has\(id\);if\(said\)return \{id,said\};\}/,
+    'the first in the file who has something to say says it, and the rest hold their peace');
+  // The stand-in: everybody walking with you is drawn in full, not only the man at the front.
+  assert.match(main, /npc\.walkingWith=true;/, 'walking with you is a flag of its own');
+  assert.match(main, /escorting:!!npc\.escorting\|\|!!npc\.walkingWith,/, 'and it counts for the stand-in');
+  assert.match(main, /npc\.walkingWith=false;/, 'and is cleared the moment he is not');
+  // A dead man is never placed.
+  assert.match(main, /npc\.hidden=placement\.phase==='coming'\|\|fallen\.has\(placement\.id\);/, 'nor is a dead one');
+  // The host hands the company the whole set, and empty is spelled as nothing.
+  assert.match(main, /companions:companionPlan\(\)/, 'the company takes the set');
+  assert.match(main, /return all\.length\?all:undefined;/, 'and empty is today’s clock, spelled as nothing');
+});
+
 test('the companion it hands the company is the one the long road already takes', () => {
   // The whole point of the design: this is not a second system. What `createMercenaryCompany`
   // wants is `{ id, with: true }`, and undefined when nobody walks with you - which is today's
