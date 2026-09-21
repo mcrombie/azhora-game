@@ -2506,12 +2506,19 @@ never rocks him, and it sets no invulnerability - a dodge is still the only thin
 miss. `TODAY` carries `hasShield: false`, so a combat wired to nothing has no guard and is the old
 game to the digit. This is the builder's ground, so it was read rather than changed.
 
-**One thing to know before anybody tunes it:** the host runs `combat.update(dt)` at
-`src/main.js:4076` and `combat.guard(key, facing)` at `:4085`, so **a blow is resolved against last
-frame's key and last frame's facing**. Sixteen milliseconds, and harmless in a fight. The one place
-it is visible in principle is the first playing frame after the defeat panel: `combat.guard` is
-inside `if(mode==='playing')`, so a player who let go of V while the panel was up has a stale
-`guardHeld` for exactly one `combat.update`. Not worth a change; worth not being surprised by.
+**One thing to know before anybody tunes it:** the host ran `combat.update(dt)` *before*
+`combat.guard(key, facing)`, so **a blow was resolved against last frame's key and last frame's
+facing**. Sixteen milliseconds, and harmless in a fight. The one place it was visible in principle
+was the first playing frame after the defeat panel: `combat.guard` is inside `if(mode==='playing')`,
+so a player who let go of V while the panel was up had a stale `guardHeld` for exactly one
+`combat.update`.
+
+**Fixed with phase 7's host work** (2026-09-21). The guard is now offered *before* the fight is
+stepped, and the latch is let go on any frame that is not play — `if(mode!=='playing')
+combat.guard(false, ...)`, above the playing branch, so nothing can read a held key the player is
+not holding. A frozen review is deliberately left alone, because `shield-guard` holds the guard by
+hand and then stops the clock. Both halves are pinned in `tests/shield-guard.test.js`
+("the guard is offered before the fight is stepped"), by *order* rather than by line number.
 
 ---
 

@@ -201,9 +201,11 @@ test('a weapon nobody wrote a place for is not lying at the world’s origin', (
 
 test('nobody can die in a fight the player is being taught alone in', () => {
   const source = main();
-  // Two authored fights by name, and the straw post, which is a phase of its own and has no
-  // allies to lose.
-  assert.match(source, /const TEACHING_FIGHTS=new Set\(\[GREENWAY_RAID\.id,AVREL_RAID\.id\]\);/);
+  // Two authored fights by name, the straw post, which is a phase of its own and has no allies
+  // to lose, and a bout with a teacher, which is a fight nobody can die in at all
+  // (`bout`, src/combat.js, docs/combat-brief.md phase 7).
+  assert.match(source, /const TEACHING_FIGHTS=new Set\(\[GREENWAY_RAID\.id,AVREL_RAID\.id,SPARRING_ID\]\);/);
+  assert.match(source, /const SPARRING_ID='sparring-bout';/, 'and the bout is one of them');
   assert.match(source, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'no companion is an ally in one');
   assert.match(source, /combat\.state\.phase==='active'&&TEACHING_FIGHTS\.has\(combat\.state\.encounterId\)/, 'and the file is held out of the box');
   // A man who is never an ally is never `ally-down`, which is the only thing that kills him.

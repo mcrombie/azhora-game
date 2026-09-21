@@ -234,8 +234,15 @@ test('the host gives a fight the level of the country it happens in', () => {
   // The four payments, each with a truthful source.
   assert.match(main, /if\(e\.type==='practice-hit'\)\{arms\.learn\('blades'\);armsPaid\(arms\.dealt\(\{[^}]*source:'post'\}\)\)/, 'the straw post pays as a post');
   assert.match(main, /if\(e\.type==='hit'&&e\.damage>0&&combat\.state\.phase==='active'\)/, 'a real blow pays as a fight');
-  assert.match(main, /arms\.hurt\(\{damage:e\.damage,countryLevel:e\.level\?\?0\}\)/, 'being hit pays Toughness');
+  assert.match(main, /arms\.hurt\(\{damage:e\.damage,countryLevel:e\.level\?\?0,\.\.\.sparringPay\(\)\}\)/, 'being hit pays Toughness');
   assert.match(main, /if\(e\.type==='dodged'\)\{arms\.learn\('toughness'\);/, 'and so does a step aside that worked');
+  // Phase 7: the same four payments, told whether this fight is a bout. `sparringPay()` is the
+  // one place that decides, so a blow struck in a lesson can never be paid as a blow struck in
+  // a fight, and a blow struck in a fight can never carry a ceiling.
+  assert.match(main, /const sparringPay=\(\)=>\(sparring&&combat\.state\.encounterId===SPARRING_ID\?\{source:'sparring',ceiling:sparring\.ceiling\}:\{\}\)/,
+    'a bout pays as sparring, with this teacher’s own ceiling, and nothing else does');
+  for (const paid of ['dealt', 'hurt', 'dodged', 'caught'])
+    assert.ok(new RegExp(`arms\\.${paid}\\(\\{[^}]*\\.\\.\\.sparringPay\\(\\)\\}\\)`).test(main), `${paid} is told which kind of fight it was`);
 });
 
 test('the host reads the margins rather than writing numbers of its own', () => {

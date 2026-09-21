@@ -56,7 +56,11 @@ export const ARMS = freeze({
     /** Shield, per point of a blow caught on it. */
     perCaught: 1.4,
   }),
-  /** Practice has a ceiling: nobody reaches 60 by hitting straw. */
+  /**
+   * Practice has a ceiling: nobody reaches 60 by hitting straw. `sparring` is the floor of the
+   * sparring ceiling - what a bout pays up to when nobody has said otherwise. A teacher hands in
+   * a higher one as he gives you his lessons, bounded by his own level (src/teachers.js).
+   */
   ceiling: freeze({ post: 5, sparring: 20 }),
 });
 
@@ -179,6 +183,11 @@ export function validateCombatSkillsSnapshot(data, { allowMissing = true } = {})
  * practice has a ceiling. Straw pays Blades to level 5 and no further, and sparring with a friend
  * pays to a level set by how good a friend the teacher is (phase 7). A fight has no ceiling.
  *
+ * **A bout's ceiling is handed in**, because only the host knows who the traveler is sparring
+ * with: `src/teachers.js` works it out from the lessons that man has given and from his own level
+ * in `MERCENARY_ARMS`, and nobody can teach past what he knows. Without one, sparring pays to
+ * `ARMS.ceiling.sparring`, which is what it has always done.
+ *
  * Everything else - the levels themselves - lives in `createSkills`, because these are skills like
  * any other. Nothing is banked in a skill that has not been shown to you, which `createSkills`
  * already enforces through `known()`.
@@ -188,7 +197,11 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
 
   const level = id => skills?.level?.(id) || 1;
   const known = id => !!skills?.known?.(id);
-  const ceilingFor = source => (source === 'post' ? ARMS.ceiling.post : source === 'sparring' ? ARMS.ceiling.sparring : null);
+  const ceilingFor = (source, ceiling) => (source === 'post' ? ARMS.ceiling.post
+    : source === 'sparring' ? (Number.isFinite(ceiling) && ceiling > 0 ? Math.floor(ceiling) : ARMS.ceiling.sparring)
+    : null);
+  /** The two sources that are practice and not a fight; a lesson is neither, and has no ceiling. */
+  const isPractice = source => source === 'post' || source === 'sparring';
 
   /** A teacher shows you the weapon. Until then it works, and teaches nothing. */
   function learn(id) {
@@ -199,12 +212,12 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
   }
 
   /** Pay a family, honouring the ceiling that practice has and a fight does not. */
-  function pay(id, amount, source = 'fight') {
+  function pay(id, amount, source = 'fight', ceiling = null) {
     if (!ARMS_IDS.includes(id) || !known(id) || !(amount > 0)) return { ok: true, xp: 0, levelled: false, level: level(id) };
-    const ceiling = ceilingFor(source);
-    if (ceiling !== null && level(id) >= ceiling) return { ok: true, xp: 0, levelled: false, level: level(id), capped: true };
+    const stops = ceilingFor(source, ceiling);
+    if (stops !== null && level(id) >= stops) return { ok: true, xp: 0, levelled: false, level: level(id), capped: true, ceiling: stops };
     const result = skills?.gain?.(id, Math.round(amount));
-    if (source !== 'fight') state.practice[id] = (state.practice[id] ?? 0) + Math.round(amount);
+    if (isPractice(source)) state.practice[id] = (state.practice[id] ?? 0) + Math.round(amount);
     return { ok: true, xp: Math.round(amount), levelled: !!result?.levelled, level: result?.level ?? level(id) };
   }
 
@@ -212,11 +225,11 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
    * Damage dealt with a weapon pays that weapon's family, scaled by the country's level, so hard
    * country teaches faster than goblins do. `countryLevel` is phase 2's; at 0 it is today.
    */
-  function dealt({ weapon, damage = 0, killed = false, countryLevel = 0, source = 'fight' } = {}) {
+  function dealt({ weapon, damage = 0, killed = false, countryLevel = 0, source = 'fight', ceiling = null } = {}) {
     const id = familyOf(weapon);
     if (!id || !(damage > 0)) return { ok: true, xp: 0, levelled: false, id };
     const scaled = damage * ARMS.xp.perDamage * (1 + .25 * Math.max(0, countryLevel));
-    return { id, ...pay(id, scaled * (killed ? 1 + ARMS.xp.killing : 1), source) };
+    return { id, ...pay(id, scaled * (killed ? 1 + ARMS.xp.killing : 1), source, ceiling) };
   }
 
   /**
@@ -225,12 +238,12 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
    * cannot hit back, and a friend sparring is not a goblin. Without it the default was 'fight'
    * and the ceiling never applied: dodging at the post alone took Toughness past 30.
    */
-  const dodged = ({ countryLevel = 0, source = 'fight' } = {}) =>
-    pay('toughness', ARMS.xp.dodged * (1 + .25 * Math.max(0, countryLevel)), source);
-  const hurt = ({ damage = 0, countryLevel = 0, source = 'fight' } = {}) =>
-    (damage > 0 ? pay('toughness', damage * ARMS.xp.perHurt * (1 + .25 * Math.max(0, countryLevel)), source) : { ok: true, xp: 0, levelled: false });
-  const caught = ({ damage = 0, countryLevel = 0, source = 'fight' } = {}) =>
-    (damage > 0 ? pay('shield', damage * ARMS.xp.perCaught * (1 + .25 * Math.max(0, countryLevel)), source) : { ok: true, xp: 0, levelled: false });
+  const dodged = ({ countryLevel = 0, source = 'fight', ceiling = null } = {}) =>
+    pay('toughness', ARMS.xp.dodged * (1 + .25 * Math.max(0, countryLevel)), source, ceiling);
+  const hurt = ({ damage = 0, countryLevel = 0, source = 'fight', ceiling = null } = {}) =>
+    (damage > 0 ? pay('toughness', damage * ARMS.xp.perHurt * (1 + .25 * Math.max(0, countryLevel)), source, ceiling) : { ok: true, xp: 0, levelled: false });
+  const caught = ({ damage = 0, countryLevel = 0, source = 'fight', ceiling = null } = {}) =>
+    (damage > 0 ? pay('shield', damage * ARMS.xp.perCaught * (1 + .25 * Math.max(0, countryLevel)), source, ceiling) : { ok: true, xp: 0, levelled: false });
 
   /** The margins he is fighting with right now. */
   const margins = () => marginsFor(Object.fromEntries(ARMS_IDS.map(id => [id, level(id)])));
