@@ -35,6 +35,8 @@ const caricasAnchor = point(1330.222, 2632, -7, 109);
 const nesdorAnchor = point(1441.066, 2728, -5, 113);
 // An Eer plains hex on the humid inland half, south of the Moros and east of the Lizeem.
 const eerAnchor = point(1524.198, 2824, -4, 117);
+// An Isareos grassland hex in the middle of the hill country, west of the Lizeem's head.
+const isareosAnchor = point(1150.081, 2560, -12, 106);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -60,6 +62,7 @@ const LOCALS = [
   [13, 'Caricas', 'caricas', 'Caricas', caricasAnchor],
   [14, 'Nesdor', 'nesdor', 'Nesdor', nesdorAnchor],
   [15, 'Eer', 'eer', 'Eer', eerAnchor],
+  [16, 'Isareos', 'isareos', 'Isareos', isareosAnchor],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
   ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),

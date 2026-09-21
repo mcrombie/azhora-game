@@ -153,9 +153,10 @@ test('The cattle of the Flats are the Vastos longhorn drawn smaller, as the lore
     assert.ok(Number.isFinite(animal.x + animal.y + animal.z), `${animal.id} went to NaN`);
     assert.ok(animal.x >= zone.minX - .5 && animal.x <= zone.maxX + .5
       && animal.z >= zone.minZ - .5 && animal.z <= zone.maxZ + .5, `${animal.id} left its range`);
-    // A hawk is thirty metres up and Eer's dolphins are out past the surf: neither has any
-    // ground under it to be measured against.
-    if (!zone.air && !zone.sea) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
+    // A hawk is thirty metres up, Eer's dolphins are out past the surf and its duck sits on
+    // the water rather than on the bed of the channel: none of the three has ground under it
+    // to be measured against.
+    if (!zone.air && !zone.sea && !zone.float) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
   }
   life.dispose();
 });

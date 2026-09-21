@@ -19,7 +19,7 @@ import { canStand } from '../src/game-state.js';
  * minutes whether or not anybody stayed to watch.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
 const world = createWorld(new THREE.Scene());
 const WALK = 4.2, RUN = 7.2, HZ = 60;
 // Everything a traveler could walk up to. A hawk holds its circle thirty metres up and Eer's
@@ -70,6 +70,34 @@ function chase(zone, pace, seconds, { bearing = Math.PI / 2, arm = 3 } = {}) {
   return report;
 }
 const fromHome = report => report.band().map(animal => { const home = report.homes.get(animal.id); return Math.hypot(animal.x - home.x, animal.z - home.z); });
+
+/**
+ * **No range may be wider than the reach it is run from.** A flock is ticked when the
+ * traveler is within `LIFE_REACH` of its *centre*, not of its animals, so an animal that
+ * flees to a far corner of a wide range takes the traveler out past that reach — and the
+ * whole band stops being ticked and freezes where it stands, which somebody can then walk
+ * up to and stand on.
+ *
+ * This is not hypothetical and it is not old. Isareos's red deer were given a range three
+ * hundred and sixty metres across so that a runner could not corner them, and the cure was
+ * worse: traced through a chase, a hind ran to a corner, the flock went quiet, and a walker
+ * closed the last hundred and forty metres onto an animal that had stopped moving. Every
+ * range in the west is held to the rule here so that the next country's are too.
+ */
+test('no band is given a range it can run out of the reach of', () => {
+  for (const zone of WEST_LIFE_ZONES) {
+    // The rule is about **fleeing**, so it is about the ones that flee. A hawk holds a
+    // circle round its own home whatever anybody does and the dolphins work a line up and
+    // down theirs; neither ever heads for a corner, and the hawk's range has been wider
+    // than this since Vastos was built.
+    if (zone.air || zone.sea) continue;
+    const half = Math.hypot(zone.maxX - zone.minX, zone.maxZ - zone.minZ) / 2;
+    assert.ok(half < LIFE_REACH, `${zone.id}: half its diagonal is ${half.toFixed(0)} m, past the ${LIFE_REACH} m it is run from`);
+    // And its animals start inside it, which is what makes the centre the middle of them.
+    for (const [x, z] of zone.sites)
+      assert.ok(x >= zone.minX && x <= zone.maxX && z >= zone.minZ && z <= zone.maxZ, `${zone.id}: a site lies outside its own range`);
+  }
+});
 
 test('nothing in the west can be walked down', () => {
   for (const zone of ground) {

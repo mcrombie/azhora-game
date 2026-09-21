@@ -54,7 +54,12 @@ const ATLAS_OWNERS = (() => {
 
 test('Eer is a registered region, and the atlas divides it once', () => {
   assert.ok(PLAYABLE_REGIONS.includes('Eer'));
-  assert.equal(PLAYABLE_REGIONS.at(-1), 'Eer', 'and last, so no region already built is re-seeded');
+  // Every country is appended, never inserted: `world-regions.js` walks this list with one
+  // seeded stream, so a name put anywhere but the end re-rolls every region after it and
+  // moves scatter that is already built. Eer came after the four; Isareos came after Eer.
+  const order = PLAYABLE_REGIONS.indexOf.bind(PLAYABLE_REGIONS);
+  for (const [before, after] of [['Vastos', 'Meneth'], ['Meneth', 'Caricas'], ['Caricas', 'Nesdor'], ['Nesdor', 'Eer']])
+    assert.ok(order(before) < order(after), `${after} was not appended after ${before}`);
   assert.equal(REGION_IDS.Eer, 15, 'Nesdor took 14 first');
   assert.equal(cells.length, 25, 'the atlas authors twenty-five Eer hexes');
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length);
@@ -192,6 +197,10 @@ test('the Neth is why the far four need a ford, and this pass does not build one
 
 test('two channels cross the plain to the sea, braiding where the gradient dies', () => {
   assert.equal(EER_CHANNELS.length, 2);
+  // **The North Channel and the South Channel** (the user's ruling, 2026-09-21): plain
+  // descriptive names, which is how the lore says Eer names things — "a village called
+  // Long-Drainage has a name that tells you something useful about the place".
+  assert.deepEqual(EER_CHANNELS.map(course => course.name), ['The North Channel', 'The South Channel']);
   const braids = WEST_BRAIDS.filter(braid => braid.id.startsWith('eer-'));
   assert.equal(braids.length, 2, 'one braided reach each');
   for (const channel of EER_CHANNELS) {
@@ -329,8 +338,23 @@ test('the birds of the Lizeem’s distributaries, the boar in the scrub, and the
     assert.ok(Number.isFinite(animal.x + animal.y + animal.z), `${animal.id} went to NaN`);
     assert.ok(animal.x >= zone.minX - .5 && animal.x <= zone.maxX + .5
       && animal.z >= zone.minZ - .5 && animal.z <= zone.maxZ + .5, `${animal.id} left its range`);
-    if (!zone.air && !zone.sea) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
+    if (!zone.air && !zone.sea && !zone.float) assert.ok(Math.abs(animal.groundY - world.heightAt(animal.x, animal.z)) < .05, `${animal.id} floats`);
   }
+  // The duck is the one that *should* float. A mallard sits on a river; it does not stand
+  // on the bed of one, and photographed before `zone.float` existed it was three-quarters
+  // submerged in its own channel. Its feet are on the water surface wherever there is water
+  // under it, and on the ground wherever there is not.
+  const ducks = life.snapshot().creatures.filter(animal => animal.species === 'duck');
+  assert.ok(ducks.length >= 3);
+  let afloat = 0;
+  for (const duck of ducks) {
+    const water = westWaterSurface(duck.x, duck.z), ground = world.heightAt(duck.x, duck.z);
+    if (water === null) { assert.ok(Math.abs(duck.groundY - ground) < .05, `${duck.id} is on dry land and not on it`); continue; }
+    afloat++;
+    assert.ok(Math.abs(duck.groundY - (water - .04)) < .05, `${duck.id} sits ${(duck.groundY - water).toFixed(2)} m off its own water`);
+    assert.ok(duck.groundY > ground, `${duck.id} is standing on the bed of the channel`);
+  }
+  assert.ok(afloat >= 2, `only ${afloat} of ${ducks.length} duck are on the water`);
   // The dolphins: out past the surf, at the sea's own level, and never anywhere a man could
   // get to. A flock only ticks with somebody inside its reach, so the traveler stands on the
   // nearest shore first — which is also the only place anybody ever watches one from.
