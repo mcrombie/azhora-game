@@ -2469,10 +2469,16 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
 }
 
 /** A scrawny woodland raider: a sunken glare, ragged ears and a wary lope. */
-export function createGoblin({ variant = 0 } = {}) {
+/**
+ * A bramble goblin. `wine` makes him Puck, the wine goblin of Solis (src/wine-goblin.js): the
+ * same rig, a head shorter, in dark glasses, with a long clay pipe in the corner of his mouth
+ * and a bottle in his off hand that is certainly not his. He carries no stick; he has never
+ * needed one, and the city has never managed to lay a finger on him anyway.
+ */
+export function createGoblin({ variant = 0, wine = false } = {}) {
   const variation = Math.abs(Math.floor(Number.isFinite(variant) ? variant : 0)) % 3;
   const group = new THREE.Group();
-  group.name = `goblin-${variation}`;
+  group.name = wine ? 'Puck' : `goblin-${variation}`;
   const body = new THREE.Group();
   body.name = 'Weight and hips';
   group.add(body);
@@ -2617,9 +2623,32 @@ export function createGoblin({ variant = 0 } = {}) {
     part(head, new THREE.TorusGeometry(0.026, 0.006, 4, 9), leather, [-0.333, 0.103, 0.014]);
   }
 
+  if (wine) {
+    const lens = material(0x101216, { roughness: .15, metalness: .6 }), brass = material(0xc9a24a, { metalness: .6, roughness: .35 });
+    const clay = material(0xd8cbb4), bottleGlass = material(0x24402a, { roughness: .3 }), cork = material(0xb08b56);
+    // The glasses: two dark lenses, a bridge between them and an arm back over each ear.
+    for (const side of [-1, 1]) {
+      const eye = round(head, lens, [side * 0.072, 0.152, 0.146], [0.055, 0.042, 0.021]);
+      eye.rotation.y = side * 0.24;
+      const arm = box(head, brass, [side * 0.122, 0.152, 0.068], [0.012, 0.009, 0.16]);
+      arm.rotation.y = side * 0.2;
+    }
+    box(head, brass, [0, 0.152, 0.153], [0.062, 0.01, 0.012]);
+    // The pipe: a stem out of the corner of his mouth, and a bowl on the end of it.
+    const stem = part(head, UNIT_CYLINDER, clay, [0.072, 0.07, 0.172], [0.011, 0.19, 0.011]);
+    stem.rotation.set(Math.PI / 2 - 0.42, 0, -0.22);
+    const bowl = part(head, UNIT_CYLINDER, clay, [0.112, 0.004, 0.258], [0.028, 0.055, 0.028]);
+    bowl.rotation.z = -0.22;
+    // A bottle in the off hand, held by the neck, the way somebody holds one they mean to finish.
+    const bottle = part(wrists[0], UNIT_CYLINDER, bottleGlass, [0, -0.072, 0.03], [0.036, 0.13, 0.036]);
+    bottle.rotation.x = 0.35;
+    const neck = part(wrists[0], UNIT_CYLINDER, cork, [0, -0.138, 0.055], [0.016, 0.03, 0.016]);
+    neck.rotation.x = 0.35;
+    group.scale.setScalar(0.82);
+  }
   const chest = addChestPivot(body, legs, 0.69);
   const weapon = makeWeaponMount(wrists[1], 'Raider stick grip');
-  makeStick(weapon, true);
+  if (!wine) makeStick(weapon, true);
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles, weapon];
   for (const [kind, joints] of Object.entries({ Shoulder: arms, Elbow: elbows, Wrist: wrists, Hip: legs, Knee: knees, Ankle: ankles })) {
     joints.forEach((joint, i) => { joint.name = `${i ? 'Right' : 'Left'} ${kind}`; });

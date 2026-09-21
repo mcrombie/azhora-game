@@ -111,8 +111,12 @@ export const terraceHeight = b => IZOLVETH_TERRACE.level + b * IZOLVETH_TERRACE.
 export const IZOL_QUAY = freeze({
   id: 'izolveth-quay', name: 'The Long Quay',
   minX: 30, maxX: 80, minZ: 1712, maxZ: 1730, deckY: 2.9,
-  /** Where a ship's boat sets the traveler ashore, and the boards they land on. */
-  landing: point(56, 1725),
+  /**
+   * Where a ship's boat sets the traveler ashore, and the boards they land on. At the landward end
+   * of the deck: the quay is built out over water the island's own outline does not cover, and a
+   * landing further out reads as open country rather than West Izol (src/region-world.js).
+   */
+  landing: point(56, 1730),
   bollards: freeze([point(34, 1715), point(45, 1715), point(56, 1715), point(67, 1715), point(77, 1715),
     point(34, 1728), point(68, 1728)]),
   capstan: point(77, 1727),

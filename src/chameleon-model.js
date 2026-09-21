@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Ed, the wine chameleon of Solis, as a figure: a big chameleon, tall and thin
+ * Ed the Chameleon as a figure: a big chameleon, tall and thin
  * the way they are, with a helmet crest, a spined back, turret eyes behind a
  * pair of dark sunglasses, a tie-dye toga of sorts slung over his back with a
  * sash across one shoulder, gripping feet, a tail curled round a bottle
@@ -10,8 +10,10 @@ import * as THREE from 'three';
  * sways, hiccups and flicks his tongue, his pipe smokes and he blows the odd
  * smoke ring; sober, he goes a flat grey, keeps still, and the pipe goes out.
  *
- * `createEdView` puts him in the world at a haunt (src/wine-chameleon.js) and
- * makes the purple puff he leaves behind when he goes.
+ * `createEdView` puts him in the world at one of his spots (src/chameleon.js) and
+ * makes the purple puff he leaves behind when he goes. The puff is `createPuffs`,
+ * exported because Puck the wine goblin took the trick with him when they split
+ * (src/wine-goblin.js) and there is no sense drawing it twice.
  */
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .7, ...extra });
 const ball = new THREE.IcosahedronGeometry(1, 2), tube = new THREE.CylinderGeometry(1, 1, 1, 10), cone = new THREE.ConeGeometry(1, 1, 8);
@@ -161,18 +163,13 @@ export function createEdModel() {
   return { group, animate, get colour() { return skin.color.getHexString(); }, get smoking() { return smoke.some(w => w.m.visible && w.m.material.opacity > 0); } };
 }
 
-export function createEdView(scene, { heightAt }) {
-  const model = createEdModel();
-  scene.add(model.group);
-  model.group.scale.setScalar(1.35);
+/**
+ * A puff of purple smoke and a smell of spilt wine, where somebody was a moment ago. Both of them
+ * do it: it was the chameleon's, and Puck kept it when they went their separate ways.
+ */
+export function createPuffs(scene) {
   const puffs = [], puffBall = new THREE.IcosahedronGeometry(1, 1);
-  /** Put him at a haunt: `lift` raises him onto a perch (the ridge of Tharganhom's roof). */
-  function place(haunt, lift = 0) {
-    model.group.position.set(haunt.x, heightAt(haunt.x, haunt.z) + lift, haunt.z);
-    model.group.rotation.y = haunt.yaw ?? 0;
-  }
-  /** A puff of purple smoke where he was, and a smell of spilt wine. */
-  function puff(at = model.group.position) {
+  function puff(at) {
     const cloud = new THREE.Group(); cloud.position.copy(at); scene.add(cloud);
     const parts = [];
     for (let k = 0; k < 16; k++) {
@@ -183,8 +180,7 @@ export function createEdView(scene, { heightAt }) {
     }
     puffs.push({ cloud, parts, age: 0 });
   }
-  function update(time, dt, state = {}) {
-    model.animate(time, dt, state);
+  function update(dt) {
     for (let i = puffs.length - 1; i >= 0; i--) {
       const p = puffs[i]; p.age += dt;
       const t = p.age / .9;
@@ -192,5 +188,22 @@ export function createEdView(scene, { heightAt }) {
       if (t >= 1) { scene.remove(p.cloud); for (const { m } of p.parts) m.material.dispose(); puffs.splice(i, 1); }
     }
   }
-  return { group: model.group, place, puff, update, get puffing() { return puffs.length; } };
+  return { puff, update, get puffing() { return puffs.length; } };
+}
+
+export function createEdView(scene, { heightAt }) {
+  const model = createEdModel();
+  scene.add(model.group);
+  model.group.scale.setScalar(1.35);
+  const puffs = createPuffs(scene);
+  /** Put him at one of his spots: `lift` raises him onto a branch or a wall. */
+  function place(spot, lift = 0) {
+    model.group.position.set(spot.x, heightAt(spot.x, spot.z) + lift, spot.z);
+    model.group.rotation.y = spot.yaw ?? 0;
+  }
+  function update(time, dt, state = {}) {
+    model.animate(time, dt, state);
+    puffs.update(dt);
+  }
+  return { group: model.group, place, puff: (at = model.group.position) => puffs.puff(at), update, get puffing() { return puffs.puffing; } };
 }

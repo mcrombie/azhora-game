@@ -5,7 +5,7 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { JOHN, SALT_PORTS, SALT_PORT_IDS, HULL, STAY, KEEP, SIGHT, PASTA_WATER, sailTime, passage, shipPose,
   createSaltSultan, johnConversation, saltToast, validateSaltSnapshot } from '../src/salt-sultan.js';
-import { ED, createEd, edConversation } from '../src/wine-chameleon.js';
+import { PUCK, createPuck, puckConversation } from '../src/wine-goblin.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -113,17 +113,17 @@ test('John: the Sultan of the Salt Trade, the sea is pasta water, and Ed is his 
 });
 
 test('Ed knows who he works for, and panics about the accounts when the Sultana is in at Solis', () => {
-  const ed = createEd(), { log, context } = talker();
-  ed.meet();
-  edConversation({ id: ED.id }, { ...context, ed });
-  assert.ok(!ids(log).includes('ed-john'), 'no word of John to a traveler who has not met him');
+  const puck = createPuck(), { log, context } = talker();
+  puck.meet();
+  puckConversation({ id: PUCK.id }, { ...context, puck });
+  assert.ok(!ids(log).includes('puck-john'), 'no word of John to a traveler who has not met him');
   const salt = createSaltSultan({ start: { port: 'solis' } }); salt.meet();
-  edConversation({ id: ED.id }, { ...context, ed, salt });
+  puckConversation({ id: PUCK.id }, { ...context, puck, salt });
   assert.match(log.opened.lines[0], /The Sultan’s in!/);
-  log.opened.options.choices.find(c => c.id === 'ed-john').action();
+  log.opened.options.choices.find(c => c.id === 'puck-john').action();
   assert.match(said(log), /Chief Taster to the Sultan of Salt/); assert.match(said(log), /pasta water/);
   const away = createSaltSultan({ start: { port: 'cobble' } }); away.meet();
-  edConversation({ id: ED.id }, { ...context, ed, salt: away });
+  puckConversation({ id: PUCK.id }, { ...context, puck, salt: away });
   assert.doesNotMatch(log.opened.lines[0], /Sultan/, 'only when he is in');
 });
 

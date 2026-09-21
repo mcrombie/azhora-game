@@ -8,7 +8,7 @@ import {
 } from './west-suval.js';
 import { createWineAtticScenery } from './wine-attic-world.js';
 import { wallStateAt, towerState, buildingState, SUN_HORSE_GATE } from './solis-sack.js';
-import { SEA_WALL_NICHE } from './wine-chameleon.js';
+import { SEA_WALL_NICHE } from './wine-goblin.js';
 
 /**
  * The scenery of West Suval: Solis and its walls, the Coalition's camp, and the
