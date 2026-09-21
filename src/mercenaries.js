@@ -258,6 +258,32 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, seed
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
 }
 
+/** The quest stage the letter of introduction is in your satchel at (src/game-state.js). */
+export const LETTER_STAGE = 2;
+/** The modes that are ordinary play: the traveler is in the world and the road is running. */
+export const ESCORT_MODES = Object.freeze(['playing', 'dialogue', 'inventory', 'journal', 'pause']);
+
+/**
+ * Whether the man off your boat is still walking you up the pier.
+ *
+ * Derived every frame and never remembered. A state that does not satisfy this is not
+ * escorting however it was arrived at — a checkpoint restored past the letter, a quest stage
+ * set straight to 10 by the testing tools or the road smoke, a story start in another chapter,
+ * a review view. None of those replay the moment the letter was taken, so anything that waited
+ * to be told would keep him at the traveler's shoulder for the rest of the game, stealing every
+ * site prompt on the road by standing inside its three-metre reach.
+ *
+ * The sign-off line is fired once on the transition; the escort itself never depends on it.
+ *
+ * Every default here is the safe answer. A caller who does not say where the traveler is gets
+ * "not escorting", because the failure that matters is a man left walking at your shoulder for
+ * the rest of the game, not a man who has to be asked for properly.
+ */
+export function mateIsEscorting({ mate = null, questStage = null, mode = null, arriving = false } = {}) {
+  if (!mate || arriving) return false;
+  return Number.isFinite(Number(questStage)) && Number(questStage) < LETTER_STAGE && ESCORT_MODES.includes(mode);
+}
+
 /**
  * How the harbourmaster describes the man who came up the pier with you. He is a slot and not
  * a name — Chris Gotwood for ten of the eleven, Cromb when you are Chris — so she must never

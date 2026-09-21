@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE, PLAYABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
   playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
-import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mercenaryById, mercenaryLines,
+import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mateIsEscorting,
+  LETTER_STAGE, ESCORT_MODES, mercenaryById, mercenaryLines,
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
 import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
 import { createLinguist, MAX_PROFICIENCY } from '../src/linguist.js';
@@ -453,4 +454,48 @@ test('the man at your shoulder is the interpreter, unless you are him', () => {
     'and as Chris there is nobody to ask');
   // Her line is foreign either way; the aside is what changes, not what she says.
   assert.notEqual(linguist.render('The road is not safe.', speech), 'The road is not safe.');
+});
+
+test('the escort ends by arithmetic, so no path can leave him walking at your shoulder for ever', () => {
+  // He is placed inside the traveler's own three-metre reach, which is what makes him audible and
+  // what would make him steal every site prompt on the road if he never stopped. The rule is
+  // derived every frame: nothing has to remember to tell him, because several ways of reaching
+  // the road never replay the moment the letter was taken.
+  const mate = MERCENARY_ROSTER[0];
+  assert.equal(LETTER_STAGE, 2);
+  assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing' }), true, 'he sets off with you');
+  assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), true, 'and stays while Mara is talking');
+  for (let stage = LETTER_STAGE; stage <= 10; stage++) {
+    assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `stage ${stage} is past the letter`);
+  }
+  // Every way the road is reached without replaying the letter.
+  for (const [how, stage] of [['the road smoke', 10], ['a review view', 10], ['the testing tools', 10],
+    ['start at the newest chapter', 10], ['a checkpoint taken after the letter', 10], ['the practice post', 2]]) {
+    assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `${how} leaves nobody escorting`);
+  }
+  // And the states that are not ordinary play, whatever the stage.
+  for (const mode of ['opening', 'arriving', 'fishing', 'defeated', 'ferry', 'testing', undefined]) {
+    assert.equal(mateIsEscorting({ mate, questStage: 0, mode }), false, `${mode} is not the road`);
+  }
+  for (const mode of ESCORT_MODES) assert.equal(mateIsEscorting({ mate, questStage: 0, mode }), true, `${mode} is`);
+  assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing', arriving: true }), false, 'the cutscene places him itself');
+  assert.equal(mateIsEscorting({ mate: null, questStage: 0 }), false, 'and a man who is not there does not walk');
+  assert.equal(mateIsEscorting({ mate, questStage: NaN, mode: 'playing' }), false);
+  assert.equal(mateIsEscorting(), false, 'the default is nobody escorting, not somebody');
+});
+
+test('a checkpoint taken after the letter restores with nobody at your shoulder', () => {
+  // The restore rebuilds the road from the save; it never replays accept-letter. If the escort
+  // waited to be told it was over, every continued game would have him glued to the traveler.
+  for (const stage of [10]) {
+    const { data, checkpoint } = fixture();
+    assert.equal(checkpoint.save({ ...data, questStage: stage }).ok, true);
+    const saved = checkpoint.read().data;
+    assert.equal(saved.questStage, stage);
+    assert.ok(saved.inventory.some(item => item.id === 'harbor-letter'), 'the letter is already in the satchel');
+    assert.equal(mateIsEscorting({ mate: MERCENARY_ROSTER[0], questStage: saved.questStage, mode: 'playing' }), false,
+      'a restored save past the letter has nobody escorting');
+  }
+  // A save from before the letter puts him back at your shoulder, which is the other half of it.
+  assert.equal(mateIsEscorting({ mate: MERCENARY_ROSTER[0], questStage: 1, mode: 'playing' }), true);
 });

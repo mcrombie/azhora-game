@@ -10,7 +10,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, escortSpotFor, landingMateNote, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -352,7 +352,7 @@ function init() {
       const placement=company.placements(playSeconds)[i];
       Object.assign(npc,mercNpc(merc,placement));world.npcPositions[merc.id]={x:placement.x,z:placement.z};
       npc.actor=createCharacter({tunic:npc.color,role:'mercenary',skin:npc.skin,look:npc.look});
-      npc.shadows=undefined;scene.add(npc.actor.group);npcById.set(npc.id,npc);
+      npc.shadows=undefined;npc.escorting=false;npc.pace=undefined;scene.add(npc.actor.group);npcById.set(npc.id,npc);
     }
     wearPlayerLook(playerId);settleMercenaries();
     characterSelect.select(playerId,{announce:false});
@@ -387,7 +387,7 @@ function init() {
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
-  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateReleased=false;
+  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
   /** Where the sequence wants the eye this frame, before the ordinary camera's lerp is bypassed. */
   const openingCamera={position:new THREE.Vector3(),target:new THREE.Vector3()};
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
@@ -1635,7 +1635,7 @@ function init() {
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
-    opening=variantFor(playerId);openingTime=0;openingFired=0;openingBells=0;mateReleased=false;player.group.visible=false;
+    opening=variantFor(playerId);openingTime=0;openingFired=0;openingBells=0;mateSaidGoodbye=false;player.group.visible=false;
     show('cutscene',true);$('cutscene-eyebrow').textContent='';$('cutscene-text').textContent='';$('cutscene').querySelector('.cutscene-caption').style.opacity='0';
     setTimeout(()=>show('opening',false),700);canvas.focus();
     if(autopilot.active)skipOpening();
@@ -1669,7 +1669,10 @@ function init() {
    */
   function escortLandingMate(){
     const mate=npcById.get(landingMateId());
-    const walking=!!mate&&!mateReleased&&questStage<2&&!opening&&['playing','dialogue','inventory','journal','pause'].includes(mode);
+    // Derived, not remembered (mateIsEscorting): every path that sets questStage without
+    // replaying the letter — a restored save, the testing tools, a story start, a review view —
+    // ends the escort by arithmetic rather than by being told.
+    const walking=mateIsEscorting({mate,questStage,mode,arriving:!!opening});
     if(!mate)return;
     if(!walking){if(mate.escorting){mate.escorting=false;mate.pace=undefined;}return;}
     const spot=escortSpotFor({x:player.group.position.x,z:player.group.position.z,yaw:player.group.rotation.y},(x,z)=>canStand(x,z,world));
@@ -1710,8 +1713,8 @@ function init() {
    * He is not moved: placeMercenaries() gives him the landing ring again and he walks back to it.
    */
   function releaseLandingMate(){
-    if(mateReleased)return;
-    mateReleased=true;
+    if(mateSaidGoodbye)return;
+    mateSaidGoodbye=true;
     const mateId=landingMateId(),mate=npcById.get(mateId);
     const entry=roster.find(man=>man.id===mateId);
     const overrun=entry?Math.max(0,playSeconds-entry.arrival-entry.departs):0;
@@ -2021,7 +2024,7 @@ function init() {
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
     // Who the adventure was being played as. A save from before anyone could choose is Cromb.
-    setPlayerCharacter(savedPlayerCharacter(saved.player));mateReleased=saved.questStage>=2;
+    setPlayerCharacter(savedPlayerCharacter(saved.player));mateSaidGoodbye=saved.questStage>=2;
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
@@ -3596,7 +3599,7 @@ function init() {
           for(const spot of [[18,29],[12,29],[6,28.6]]){warp(spot[0],spot[1]);await frames(24);
             assert(gap()<INTERPRETER.range,`He fell ${gap().toFixed(1)} m behind at ${spot[0]}, ${spot[1]}`);
             assert(canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'He walked off the pier into the water');}
-          assert(!mateReleased,'He left before the letter was handed over');}
+          assert(!mateSaidGoodbye,'He left before the letter was handed over');}
         warp(0,19);await frames();assert(questStage===1,'Arrival quest failed');
         // Measure travel against simulation time so busy machines do not affect
         // the comparison. Tab must run at Shift speed and never move UI focus.
