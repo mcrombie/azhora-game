@@ -80,6 +80,7 @@ import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, J
 import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
 import { createCombatSkills, familyOf } from './combat-skills.js';
+import { createCompanions, armsOf } from './companions.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -257,6 +258,12 @@ function init() {
   // The harbour cat naps in the sun, prowls its places, and comes to the traveler only on its own terms.
   // Who has died in a raid, and who has already been caught in one (src/bystanders.js).
   const fallen=createFallen(),raidSeen=new Set(),raid={ids:[],fell:false,outcome:[]};
+  // Who walks with you, how well they know you, and who is gone (src/companions.js). It shares
+  // `fallen` with the world's other dead on purpose: permanent death is one idea, not two.
+  const companions=createCompanions({fallen,onEvent:event=>{
+    if(event.type==='joined'||event.type==='sent-on'||event.type==='died'){rebuildCompany();placeMercenaries();}
+    if(event.type==='rung')toast(`${mercenaryById(event.id)?.name??event.id}: ${event.label}.`,'THE COMPANY');
+  }});
   // Seconds the refugees have stood waiting for a fight ahead of them to end. It is subtracted
   // from playSeconds, so it belongs to the same game as playSeconds does and is reset with it:
   // carried into a new game it makes their clock negative, and a negative clock is refused.
@@ -366,10 +373,13 @@ function init() {
   world.keepPropsClear([...Object.values(world.npcPositions),lakotaGarden,pierHead,...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
   const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
-  function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
-    if(placement.phase==='with-traveler'){placeCompanion(npc,placement);continue;}
+  function placeMercenaries(){
+    fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
+    for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
+    if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
-    world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
+    npc.walkingWith=false;
+    world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming'||fallen.has(placement.id);npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   /**
    * The companion, placed: two and a half metres behind the traveler's left shoulder, which is
    * inside the twelve the interpreter's aside needs and out of the reach of every site prompt.
@@ -381,9 +391,28 @@ function init() {
    * the ferry to Peblos and the road post over the Tessen are where he waits.
    */
   let companionHold=null;
-  function placeCompanion(npc,placement){
+  /**
+   * Where the n-th man of the file wants to be. The first is where Chris has always been, at the
+   * traveler's left shoulder; the rest are strung out behind him a stride apart, alternating
+   * shoulders so the file reads as a file and not as a queue of one man's shadow.
+   *
+   * On narrow ground - the pier, a bridge, a lane - the shoulders have nowhere to be, so the
+   * file closes up to the centreline and goes single. That is not a special case with a list of
+   * places in it: it falls out of asking whether the shoulder spot is ground, and taking the
+   * middle when it is not.
+   */
+  function fileSpot(p,yaw,place){
+    const back=COMPANION_REACH.shoulder+place*COMPANION_REACH.stride;
+    const side=COMPANION_REACH.side*(place%2?-1:1);
+    const at=off=>({x:p.x-Math.sin(yaw)*back+Math.cos(yaw)*off,z:p.z-Math.cos(yaw)*back-Math.sin(yaw)*off});
+    const shoulder=at(side);
+    if(canStand(shoulder.x,shoulder.z,world))return shoulder;
+    const middle=at(0);
+    if(canStand(middle.x,middle.z,world))return middle;
+    return null;}
+  function placeCompanion(npc,placement,place=0){
     const p=player.group.position,pos=npc.actor.group.position,yaw=player.group.rotation.y;
-    npc.hidden=false;npc.actor.group.visible=true;
+    npc.hidden=false;npc.actor.group.visible=true;npc.walkingWith=true;
     // Two other hands are on him at the start: the arrival sequence has him in the bow, and
     // escortLandingMate walks him up the pier at the tighter offsets a three-metre pier wants.
     // Both run after this one and both would be fighting it, so it stands aside for them.
@@ -400,7 +429,9 @@ function init() {
       npc.placement={...placement,x:companionHold.x,z:companionHold.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold=null;
-    let x=p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side,z=p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
+    const wanted=fileSpot(p,yaw,Math.max(0,place));
+    let x=wanted?wanted.x:p.x-Math.sin(yaw)*COMPANION_REACH.shoulder+Math.cos(yaw)*COMPANION_REACH.side;
+    let z=wanted?wanted.z:p.z-Math.cos(yaw)*COMPANION_REACH.shoulder-Math.sin(yaw)*COMPANION_REACH.side;
     if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world));if(spot){x=spot.x;z=spot.z;}}
     const gap=Math.hypot(pos.x-x,pos.z-z);
     world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=companionPace(gap);
@@ -408,6 +439,23 @@ function init() {
     // faster than the traveler does, so he closes rather than falls behind (companionPace).
     if(gap>COMPANION_REACH.setDown)pos.set(x,world.heightAt(x,z),z);
     npc.placement={...placement,x,z,yaw};}
+  /**
+   * The file, in the order they walk it: whoever the company says is at the traveler's shoulder,
+   * then the rest behind. It is read once a frame rather than per man so the order cannot change
+   * halfway down the file.
+   */
+  let fileOrder=[];
+  /**
+   * **One voice per event.** A remark on a landing, the long road's noticing, an aside from the
+   * interpreter: the first man in the file who has something to say says it, and the rest hold
+   * their peace. With one companion this is exactly what it always was; with nine it is the
+   * difference between a company and a crowd.
+   *
+   * `has` is asked of each id in turn and answers what that man would say, or null.
+   */
+  function oneVoice(has){
+    for(const id of fileOrder){const said=has(id);if(said)return {id,said};}
+    return null;}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
   function outsideTheFight(centre,at){
@@ -617,10 +665,17 @@ function init() {
    */
   let companionOffTheClock=false;
   const companionPlan=()=>{
-    if(!companionOffTheClock)return undefined;
+    // The long road's own man, on his own terms - he is the one who can be released and taken
+    // back - and then everybody else who said yes (src/companions.js). As many as will come.
     const release=longRoad.released;
-    return release?{id:landingMateId(),releasedAt:release.releasedAt,releasedDistance:release.releasedDistance}:{id:landingMateId(),with:true};};
-  const rebuildCompany=()=>{company=createMercenaryCompany({...companyPlan,roster,companion:companionPlan()});};
+    const mate=!companionOffTheClock?null
+      :release?{id:landingMateId(),releasedAt:release.releasedAt,releasedDistance:release.releasedDistance}
+      :{id:landingMateId(),with:true};
+    const others=companions.companions.filter(entry=>entry.id!==landingMateId());
+    const all=[...(mate?[mate]:[]),...others];
+    // Empty is today's clock, exactly, and is spelled as nothing rather than as an empty list.
+    return all.length?all:undefined;};
+  const rebuildCompany=()=>{company=createMercenaryCompany({...companyPlan,roster,companions:companionPlan()});};
   /** Where he was standing when he left you, so he walks on from there and not from the landing. */
   function releaseCompanion(distance,line){
     if(!companionOffTheClock||longRoad.released)return false;
@@ -3654,7 +3709,11 @@ function init() {
         // calls; there he is one mesh instead (src/figure-lod.js). `npc.marker.visible` is last
         // frame's, which is soon enough for a mark that is about to be looked at.
         {const detail=figureDetail(npc.detail,Math.hypot(pos.x-player.group.position.x,pos.z-player.group.position.z),
-            {kind:npc.dog?'dog':npc.cat?'cat':npc.horse?'horse':npc.ogre?'ogre':'person',talking:activeDialogue?.npc===npc,escorting:!!npc.escorting,
+            {kind:npc.dog?'dog':npc.cat?'cat':npc.horse?'horse':npc.ogre?'ogre':'person',talking:activeDialogue?.npc===npc,
+            // Anybody walking with you is drawn in full, wherever he is in the file. `escorting`
+            // is the pacing flag and the fight-hold clears it deliberately; `walkingWith` is the
+            // other question, and the tenth man at sixty-two metres is not a peg either.
+            escorting:!!npc.escorting||!!npc.walkingWith,
               fighting:alarm||!!npc.lastFight,fleeing,marked:npc.marker.visible,swimming:!!npc.swimming,posed:!!npc.sitting||!!npc.posture,made:!!npc.make});
           if(detail!==(npc.detail??'full'))showFigure(npc,detail);}
         let destX=home.x,destZ=home.z;
