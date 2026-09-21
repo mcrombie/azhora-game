@@ -5,6 +5,19 @@ import { CROPS, CROP_IDS, FARM_ROWS, FARM_ROW_IDS, ORCHARD_TREES, ORCHARD_ITEM, 
 import { SKILLS, createSkills, skillLevel } from '../src/skills.js';
 import { INVENTORY_ITEMS } from '../src/inventory.js';
 import { APPLEGARTH_WORKS } from '../src/rena.js';
+import { regionAt } from '../src/region-world.js';
+import { canStand } from '../src/game-state.js';
+import { sourceModule } from './module-loader.js';
+
+let world = null;
+const built = async () => {
+  world ??= await (async () => {
+    const THREE = await import('../vendor/three.module.js');
+    const { createWorld } = await sourceModule('../src/world.js');
+    return createWorld(new THREE.Scene());
+  })();
+  return world;
+};
 
 const satchel = () => { const bag = {}; return { bag, add: (id, n = 1) => { bag[id] = (bag[id] ?? 0) + n; return true; } }; };
 const fixture = ({ taught = true } = {}) => {
@@ -158,4 +171,18 @@ test('the farm tells the traveler what it is doing, and it is never a thing to s
   assert.deepEqual([view.sown, view.ripe], [0, 1]);
   assert.equal(view.fruiting, ORCHARD_TREES.length);
   assert.equal(view.crops.length, CROP_IDS.length);
+});
+
+test('every row and every kept tree has ground a person can work it from', async () => {
+  // A farm nobody can walk to is a dead skill, and the mill's own fences and sacks are drawn
+  // by a different pass than this one. So the rows are measured against the built clearing.
+  const here = await built();
+  const beside = (x, z) => { for (let d = 0; d < 8; d++) { const a = d * Math.PI / 4;
+    if (canStand(x + Math.cos(a) * 1.6, z + Math.sin(a) * 1.6, here, .45)) return true; } return false; };
+  for (const row of FARM_ROWS) {
+    assert.ok(canStand(row.x, row.z, here, .45), `${row.id} is inside something`);
+    assert.ok(beside(row.x, row.z), `${row.id} has nowhere to stand to work it`);
+    assert.equal(regionAt(row.x, row.z)?.name, 'Drent', row.id);
+  }
+  for (const tree of ORCHARD_TREES) assert.ok(beside(tree.x, tree.z), `${tree.id} cannot be reached`);
 });
