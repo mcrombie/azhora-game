@@ -25,11 +25,15 @@ it is. Beside it goes `canSwim`, with the same shape:
 
 - inside `world.bounds`, by the mover's radius;
 - not inside a collider (a hull, a pier, a rock is still solid);
-- and the point is inside one of `world.mapWaters` — the chart's own list of
-  every body of water in the game, polygons and circles in world space. That is
-  the cleanest predicate available: it is authored, it is already the truth the
-  minimap and the local map draw from, and it does not depend on terrain height
-  sampling at the shoreline, which is where height is least trustworthy.
+- and under the waterline, which is `heightAt < 0.45` — the very number
+  `canStand` already used to decide that ground would hold somebody up.
+
+That makes the two predicates exact complements: every point in the world is
+standable, or swimmable, or solid, and never two of those. It is a stronger
+thing to be able to say than "it is inside one of the chart's water polygons",
+and it is what lets a swimmer cross the line in either direction without a
+prompt or a key — `moveCharacter(..., { swimming: true })` accepts a step onto
+either side, so you swim at a beach and walk out of the sea.
 
 Nothing is "too deep to enter". Distance is what refuses you, and it refuses you
 by killing you.
@@ -39,13 +43,15 @@ by killing you.
 Walking is 4.2 m/s and running 7.2 m/s. Swimming is a fraction of walking that
 the skill improves, and costs wind that the skill also improves.
 
-| | level 1 | level 50 | level 99 |
-| --- | --- | --- | --- |
-| speed, as a share of walking | 0.55 | 0.675 | 0.80 |
-| speed, m/s | 2.31 | 2.84 | 3.36 |
-| wind spent, per second | 4.0 | 2.6 | 1.2 |
-| seconds on a full bar | 25 | 38 | 83 |
-| **metres on a full bar** | **58** | **109** | **279** |
+| | level 1 | level 25 | level 50 | level 99 |
+| --- | --- | --- | --- | --- |
+| speed, as a share of walking | 0.55 | 0.611 | 0.675 | 0.80 |
+| speed, m/s | 2.31 | 2.57 | 2.84 | 3.36 |
+| wind spent, per second | 4.0 | 3.31 | 2.6 | 1.2 |
+| seconds on a full bar | 25 | 30 | 38 | 83 |
+| **metres on a full bar** | **57.8** | **77.5** | **109.0** | **280.0** |
+| metres of drowning, on full health | 19.3 | 21.4 | 23.6 | 28.0 |
+| **metres before you die** | **77.0** | **98.8** | **132.7** | **308.0** |
 
 The two lines are linear in the level: `share = .55 + .25 * (level - 1) / 98`
 and `drain = 4.0 - 2.8 * (level - 1) / 98`, over the same 100-point stamina bar
@@ -66,13 +72,37 @@ checkpoint restart, on the nearest shore.
 There is no free push back to land. That was the first draft and the user
 overruled it.
 
-## Peblos
+## Peblos, measured
 
-The islands are the point of the mechanic. The shortest water gap between the
-mainland and Peblos is measured in `tests/swimming.test.js` against the table
-above, and the test states which level first makes the crossing survivable with
-wind to spare. The intent is that it is possible early and lethal if misjudged,
-and routine later — a real skill gate rather than a locked door.
+The islands are the point of the mechanic, so the crossings were measured rather
+than estimated: every landmass's shore was found by flooding for ground
+`canStand` itself accepts and keeping the points with water within three metres,
+and the gaps below are the shortest line from one shore to the other. Not from
+the hex outlines — those are hexagons, and the real shorelines sit inside them,
+so the water a swimmer actually crosses is wider than the atlas suggests.
+
+| crossing | shore to shore | survivable from | on wind alone from |
+|---|---|---|---|
+| Drent → Pilot's Stone | **61.3 m** | **level 1** | level 7 |
+| Drent → the Saltings | 62.6 m | level 1 | level 7 |
+| the Saltings → Pilot's Stone | 63.1 m | level 1 | level 8 |
+| **Pilot's Stone → Gull Scarp** | **98.0 m** | **level 25** | **level 43** |
+| Gull Scarp → Cobble Island | 59.8 m | level 1 | level 4 |
+| Gull Scarp → Longstone | 60.9 m | level 1 | level 6 |
+| Cobble Island → Longstone | 64.8 m | level 1 | level 9 |
+| Drent → Cobble Island, direct | 354.8 m | **never** | never |
+
+So the ladder the user asked for falls out of the ground as built. A brand-new
+swimmer can reach the nearest skerry: 61.3 m against a 57.8 m bar, so he arrives
+having drowned for a second and a half, with **81 of 100 health** — possible
+early, and plainly a thing you only just did. The hop on from there is 98 m, and
+that is the gate: **level 25** to survive it by drowning most of the way, level
+43 to make it on wind alone. And the open crossing to Cobble is 354.8 m against a
+range of 308 m at level 99, so nobody ever swims it, at any level, ever. You
+island-hop or you do not go.
+
+`tests/swimming.test.js` re-measures every one of those gaps against the real
+world and fails if the ground moves under them.
 
 ## Experience
 
@@ -82,19 +112,54 @@ and routine later — a real skill gate rather than a locked door.
   `world.mapWaters` are the names).
 - **150** for reaching Peblos by water.
 
+Nothing counts before Ed's lesson. The water does not ask whether anybody has
+shown you - you can walk into the sea on your first morning, and the toast says
+as much - but until `swimming.learn()` there is no skill to pay into, and the
+record is left unwritten, so the crossing made blind still pays once he knows
+how.
+
+## How it looks
+
+Swimming does not walk the seabed. While the ground under him is below the
+waterline the traveler floats at the surface, feet hanging `SWIM.sink` (1.06 m)
+down, which puts his head and shoulders above it. The rig has a posture for it
+(`pose.swimming` in `src/characters.js`): head up, chest back a little, the arms
+pulling over alternately and the legs kicking small and quick. No weapon is
+drawn, because both hands are busy.
+
 ## Ed the Word
 
-The mechanic is demonstrated before the traveler ever needs it. At 360 seconds a
-ship stands in toward Tidehaven, the village braces, the ship stops
-short, a figure goes over the side, and the ship turns and leaves without ever
-touching the pier. Ed swims the last of it ashore on this mechanic — the same
-posture, the same speed — climbs onto the landing and is the company's second
-hired sword from then on. He says he came for the adventure. It was a mutiny.
+Built, in `src/word-arrival.js`. The mechanic is demonstrated before the
+traveler ever needs it, and every part of it is a pure function of play time, so
+nothing new goes in the save.
 
-That ship is the rebel ship the Peblos faction quest later hides in a sea cave,
-and its crew are the mutineers who put him over the side
-(docs/design-answers.md). So it is built once, as a hull that can appear in both
-places: the same model that turns away from Tidehaven is the one found at
-Peblos, and whichever side the traveler takes there is also a verdict on Ed.
-Reuse the Sultana’s hull (src/salt-ship.js) with a different sail and no
-colours.
+| second | what happens |
+| --- | --- |
+| 300 | a sail out of the offing, standing straight in for the pier; the village braces (toast and bell) |
+| 348 | she rounds up 68 m short of the strand, backs her sail and lies there |
+| 360 | a man goes over her side — `ARRIVALS.word`, so the company's own clock says he has arrived |
+| 372 | her sail fills and she stands out again, without a word said to the shore |
+| 389 | he walks out of the water on the strand north of the pier |
+| 470 | she is hull down and out of the scene |
+| 1860 | he takes the road (`departs` 1500: twenty-five minutes of standing about) |
+
+He swims it on the ordinary mechanic: the same posture, the same speed, the same
+floating at the waterline. The distance is cut to his own level. His 260
+experience is swimming level 3, a full bar of wind carries level 3 fifty-nine
+metres, and the crossing is sixty-eight — so he spends the last nine drowning
+and walks out with about half his blood. That is the demonstration. It is
+survivable from level 1 and dry only from level 15, so a traveler who watches it
+and tries the same water learns the same lesson for the same price.
+
+Ask him how it is done and he gives the lesson (`SWIMMING_LESSON`), which is
+what calls `swimming.learn()`. Nothing else in the game teaches it.
+
+His ship is the rebel ship the Peblos faction quest later hides in a sea cave,
+and her crew are the mutineers who put him over the side
+(docs/design-answers.md). She is one hull on purpose: `createRebelShip()` is the
+Sultana with the salt off her waterline, the gold off her rail, no dome, no
+lantern, no name board, no cargo and a patched grey sail with a rust bar across
+it. Whichever side the traveler takes at Peblos is also a verdict on Ed.
+
+Two review views: `word-ship` (from the end of the pier, at the moment she
+rounds up) and `word-ashore` (the strand, a moment after he walks out).

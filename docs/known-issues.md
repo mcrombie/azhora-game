@@ -463,6 +463,14 @@ Christin.
 
 ## `route` is written on every hired sword and read by nothing
 
+**Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` now takes a `shore`
+point, and a man whose route is the shore waits there instead of among the people who came off
+boats. Ed the Word comes out of the water onto the strand north of the pier and stands on it,
+which is where `src/word-arrival.js` puts him and what `tests/word-arrival.test.js` checks.
+What follows is still true of `route: 'wild'` — Mus walks the road like everybody else — and
+of `swims`, which is read nowhere.
+
+
 `MERCENARY_ROSTER` gives each man a `route`: the `merc()` factory defaults it to `'road'`
 (`src/mercenaries.js:47`), Ed the Word is authored `route: 'shore', swims: true` (line 78) and
 Mus is authored `route: 'wild'` (line 120). The doc comment above the roster says "`route` is

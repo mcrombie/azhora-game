@@ -757,6 +757,24 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       stance = .8; chestX = .05 + gait * .2 + beat * .025 * gait; chestY = 0; chestZ = 0; bodyX = 0; bodyZ = 0;
       headX = -.03 - gait * .13; headY *= .5; bounce = beat * .018 * gait;
     }
+    if (pose.swimming) {
+      // In the water: head up, chest back a little, the arms pulling alternately and the legs
+      // kicking small and quick. The host sinks the whole figure to the chest (src/main.js), so
+      // what shows above the surface is a head, two shoulders and the arms coming over.
+      const pull = stridePhase * .62, kick = Math.sin(stridePhase * 1.9 + offset);
+      for (let i = 0; i < 2; i++) {
+        const reach = Math.sin(pull + i * Math.PI), over = Math.max(0, reach);
+        arm[i] = -.58 + reach * .92;
+        elbow[i] = -.46 - over * .62;
+        armOut[i] = (i ? 1 : -1) * (.46 + over * .22);
+        const beat = i ? kick : -kick;
+        hip[i] = -.22 + beat * .24;
+        knee[i] = .3 + Math.max(0, beat) * .46;
+        ankle[i] = -.18;
+      }
+      stance = .1; chestX = -.14; chestY = 0; chestZ = 0; bodyX = 0; bodyZ = 0;
+      headX = -.24; headY *= .3; bounce = Math.sin(seconds * 1.7 + offset) * .028;
+    }
     // Down on the ground, standing still: on both knees (`posture: 'kneel'`), or sat with the knees drawn up
     // (`posture: 'sit-ground'`); the head bowed and the hands in the lap or round the knees. The seat, not the soles, takes the weight.
     let seatY = null;

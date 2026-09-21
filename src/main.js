@@ -103,7 +103,8 @@ import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonT
 import { createEdView, createEdModel } from './chameleon-model.js';
 import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
 import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
-import { createJohn, createSultana } from './salt-ship.js';
+import { createJohn, createSultana, createRebelShip } from './salt-ship.js';
+import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt } from './word-arrival.js';
 import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
 import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
 import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
@@ -148,7 +149,8 @@ import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
 import { runDeveloperSmoke } from './developer-smoke.js';
-import { moveCharacter, canStand, advanceQuest, questSteps, getMovementInput } from './game-state.js';
+import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, getMovementInput } from './game-state.js';
+import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
 import { talkTarget, placeKeepsPrompt } from './prompt-priority.js';
 
@@ -236,7 +238,7 @@ function init() {
   // Eleven possible hired swords for ten places: whichever of them you are is not on the road,
   // and Cromb stands in the place you left (companyFor). A default game is the ten it always was.
   const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROMB.id]);
-  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn};
+  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn,shore:WORD_BEACH};
   let roster=companyFor(playerId),company=createMercenaryCompany({...companyPlan,roster});
   // Whoever stands first in the line came off your boat and carries the letter.
   const landingMateId=()=>roster[0].id;
@@ -480,6 +482,18 @@ function init() {
     refreshSkillsSheet();
   }});
   const wood=createWoodcutting({skills}),building=createConstruction({skills});
+  // Swimming: walking on water at a fraction of walking speed while the wind runs down, and
+  // drowning when it is gone (src/swimming.js, docs/swimming.md).
+  const swimming=createSwimming({skills,onEvent:event=>{
+    if(event.type==='water-crossed')toast(`Swimming +${event.xp}${event.levelled?` · level ${event.level}`:''}. Across, and out the other side.`,'A CROSSING OF YOUR OWN');
+    if(event.type==='peblos-swum')toast(`Swimming +${event.xp}${event.levelled?` · level ${event.level}`:''}. You swam to the Pebbles. Most people take a boat.`,'THE PEBBLES, THE HARD WAY');
+    refreshSkillsSheet();
+  }});
+  // Where the water has him, how far he has come through it, and whether he is out of wind.
+  let inWater=false,drowning=false,swimMetres=0,swimFrom=null;
+  // Ed the Word's ship, built the first time anybody is near enough to see her, and the last
+  // thing the village said about her (src/word-arrival.js).
+  let rebelShip=null,wordSaid=null;
   const birding=createBirding({skills});
   // Whether the traveler has got far enough with Lakota for any of his own things to be offered (src/lakota.js).
   const lakota=createLakota();
@@ -2016,7 +2030,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -2040,10 +2054,10 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2210,7 +2224,14 @@ function init() {
       {id:'merc-trade',label:'Would you trade weapons?',action:()=>offerTrade(npc)}];
   }
   function mercenaryConversation(npc){
-    const choices=[...mercenaryChoices(npc),{id:'leave-mercenary',label:'Good road to you.',action:closeDialogue}];
+    const choices=[...mercenaryChoices(npc)];
+    // Ed is the only man in Drent who has swum anything, and the only one who will explain it.
+    if(npc.id===WORD_ID&&!swimming.taught)choices.unshift({id:'word-swim',label:'Nobody swims that. How is it done?',
+      action:()=>openDialogue(npc,[...SWIMMING_LESSON],null,'Back to our conversation',{onComplete:()=>{
+        const learned=swimming.learn();
+        if(learned.first){toast('Swimming, level 1. Walk into the water and it will hold you up for as long as your wind lasts.','ED THE WORD TAUGHT YOU TO SWIM');refreshSkillsSheet();saveRoad(false);}
+        mercenaryConversation(npc);}}) });
+    choices.push({id:'leave-mercenary',label:'Good road to you.',action:closeDialogue});
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
   }
   function dogConversation(npc,line=villageDog.greeting()){
@@ -2590,6 +2611,45 @@ function init() {
   }
   // How many times the traveler has got back up after a beating: a retry puts them back where the fight forms up.
   let retriesTaken=0;
+  /**
+   * One frame of the water. The wind is combat's own stamina bar and the blood is its own
+   * health, so drowning ends in the ordinary defeat with the ordinary checkpoint behind it.
+   * Nothing here pushes anybody back to land: distance is what refuses a crossing.
+   */
+  function swimTick(dt,before){
+    const p=player.group.position;
+    // A horse will not go in, and `moveCharacter` will not carry one over the waterline, so a
+    // rider simply cannot get wet. This says so out loud the first time he tries.
+    if(riding.mounted){
+      if(canSwim(p.x,p.z,playerWorld,RIDE.radius)&&!drowning){drowning=true;toast('He will not go in, and he is right. Get down first.','YOUR HORSE');}
+      else if(!canSwim(p.x,p.z,playerWorld,RIDE.radius))drowning=false;
+      inWater=false;return;
+    }
+    const wet=canSwim(p.x,p.z,playerWorld,.34);
+    if(wet&&!inWater){
+      inWater=true;swimMetres=0;swimFrom=world.regionAt(before.x,before.z)?.name??null;
+      if(combat.state.phase==='active')combat.resetEncounter({});
+      toast(swimming.taught?'You are in the water. Watch your wind.'
+        :'You are in the water, and nobody has ever shown you how. Watch your wind, and do not go far.','SWIMMING');
+    }
+    if(!wet){
+      if(inWater){
+        // Out the other side. What it was worth is paid on dry land, which is the only place it counts.
+        const landed=world.regionAt(p.x,p.z)?.name??null;
+        const paid=swimming.swam(swimMetres);
+        if(paid.xp)toast(`Swimming +${paid.xp}${paid.levelled?` · level ${paid.level}`:''}. ${Math.round(swimMetres)} m of it.`,'OUT OF THE WATER');
+        if(swimMetres>12&&landed&&landed!==swimFrom)swimming.crossed(`${swimFrom??'open water'} to ${landed}`);
+        if(swimMetres>12&&landed==='Peblos')swimming.reachedPeblos();
+        if(paid.xp||swimMetres>12)saveRoad(false);
+      }
+      inWater=false;drowning=false;return;
+    }
+    swimMetres+=Math.hypot(p.x-before.x,p.z-before.z);
+    const step=swimStep({dt,level:skills.level(SWIMMING_SKILL)||1,wind:combat.state.player.stamina,health:combat.state.player.hp});
+    combat.exhaust(step.spent,step.damage);
+    if(step.drowning&&!drowning){drowning=true;audio?.effect('hurt');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
+    if(!step.drowning)drowning=false;
+  }
   function retry() {
     retriesTaken++;
     if(combat.state.encounterId===hideoutEncounter.id)forestHideout.begin({questStage});
@@ -2667,12 +2727,14 @@ function init() {
     }
   }
   function attack(){if(mode==='playing'&&grounded){
+    // A swimmer is a person with both hands busy (docs/swimming.md).
+    if(inWater){toast('Both your hands are busy keeping your head where the air is.','IN THE WATER');return;}
     if(riding.mounted){toast('He will carry you to a fight, not through one. Press G to step down.','IN THE SADDLE');return;}
     if(!weapons.profile().usable){toast('Repair your sword at any repair bench, or equip a gathered stick in I.','NO USABLE WEAPON');return;}
     combat.attack(player.group.rotation.y);canvas.focus();
   }}
   function dodge(){
-    if(mode!=='playing'||!grounded||riding.mounted)return;
+    if(mode!=='playing'||!grounded||riding.mounted||inWater)return;
     const {forward,side}=getMovementInput(keys);
     const dx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,dz=-Math.cos(yaw)*forward-Math.sin(yaw)*side;
     combat.dodge(Math.hypot(dx,dz)>.01?{x:dx,z:dz}:{x:-Math.sin(player.group.rotation.y),z:-Math.cos(player.group.rotation.y)});
@@ -3037,17 +3099,23 @@ function init() {
           if(magnitude>0){const wx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,wz=-Math.cos(yaw)*forward-Math.sin(yaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,playerWorld,RIDE.radius);}
           player.group.rotation.y=mountHeading;p.yaw=mountHeading;
         } else if(magnitude>0) {
-          const speed=((autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))?7.2:4.2)*combat.movementScale();
+          // A swimmer goes at his own pace, and running is not one of the things he can do.
+          const swimLevel=skills.level(SWIMMING_SKILL)||1;
+          const speed=inWater?swimSpeed(swimLevel)*combat.movementScale()
+            :((autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))?7.2:4.2)*combat.movementScale();
           const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt;
-          moveCharacter(player.group.position,dx,dz,playerWorld);
+          moveCharacter(player.group.position,dx,dz,playerWorld,undefined,{swimming:inWater});
           if(p.action==='idle'&&speed>0){const angle=Math.atan2(dx,dz);player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-15*dt));p.yaw=player.group.rotation.y;}
         }
         combatClock+=dt;combat.update(dt);handleCombatEvents();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
-        else player.group.position.y=floor+(riding.mounted?RIDE.seat.up:0);
+        // In the water he floats at the surface rather than walking the seabed: the feet hang a
+        // little over a metre down, which puts the head and shoulders above the waterline.
+        else player.group.position.y=(!riding.mounted&&floor<WATERLINE)?WATERLINE-SWIM.sink:floor+(riding.mounted?RIDE.seat.up:0);
         {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,CLOSED_BORDER_TITLE);}}
+        swimTick(dt,before);
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
@@ -3069,7 +3137,7 @@ function init() {
       const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
-      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted,fishing:mode==='fishing',riding:riding.mounted?{pace:movement}:null});
+      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:riding.mounted?{pace:movement}:null});
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
@@ -3167,15 +3235,18 @@ function init() {
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
         if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);if(npc.lent!==undefined){npc.actor.group.rotation.y=npc.lent;npc.lent=undefined;}npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         npc.actor.group.visible=true;onStage(npc,true);
+        // Ed in the water: no path, no colliders and no ground under him. He floats at the
+        // surface exactly as the traveler does, and swims a straight line for the strand.
+        if(npc.swimming){pos.set(npc.swimming.x,WATERLINE-SWIM.sink,npc.swimming.z);npc.actor.group.rotation.y=npc.swimming.yaw;}
         const alarm=!npc.cat&&combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
         const fleeing=!!fightAt&&civilian(npc)&&Math.hypot(home.x-fightAt.x,home.z-fightAt.z)<26;
         let destX=home.x,destZ=home.z;
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
-        if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
-        if(pace<=.1&&npc.face){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
-        npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer});
+        if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
+        if(pace<=.1&&npc.face&&!npc.swimming){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
+        npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
@@ -3282,6 +3353,20 @@ function init() {
         const pose=salt.pose(),seen=!!pose&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<340;
         if(seen!==(sultana.group.parent===scene)){if(seen)scene.add(sultana.group);else scene.remove(sultana.group);}
         if(seen){sultana.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);sultana.group.rotation.y=pose.yaw;sultana.update(elapsed,pose);}}
+      {// Ed the Word comes ashore. A sail stands straight in for the pier, the village braces,
+       // she rounds up a long way short, puts a man over her side and goes. He swims the last
+       // sixty-eight metres on the ordinary mechanic and walks out on the strand.
+        const pp=player.group.position,pose=shipAt(playSeconds);
+        const seen=pose.visible&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<420;
+        if(seen&&!rebelShip)rebelShip=createRebelShip();
+        if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
+        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
+        if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
+          if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
+        // While the water has him he is not an NPC walking to a home: he floats and swims a line.
+        const swim=swimmerAt(playSeconds),ed=npcById.get(WORD_ID);
+        if(ed){ed.swimming=swim.swimming?swim:null;
+          if(swim.swimming){world.npcPositions[WORD_ID]={x:swim.x,z:swim.z};ed.hidden=false;ed.placement={...(ed.placement??{}),phase:'landing'};}}}
       {// The Koopwood: the nearest standing tree in reach; stumps grow back; the lot moves only when somebody could see it.
         const pp=player.group.position;let best=CHOP_REACH;currentChop=null;
         if(mode==='playing'&&combat.state.phase!=='active'&&!chop)for(const t of WOODLOT_TREES){const d=Math.hypot(t.x-pp.x,t.z-pp.z);if(d<best&&wood.standing(t.id)){best=d;currentChop=t;}}
@@ -3386,7 +3471,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       // The opening sequence, for a harness that would rather not sit through forty-four seconds.
@@ -4047,6 +4132,18 @@ function init() {
           for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.actor.animate(t,0,true,{});
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.05,at.z);yaw=.18;pitch=.08;distance=targetDistance=5.2;}
         else if(reviewLineup&&!view.startsWith('cast-'))reviewLineup.visible=false;
+        // The rebel ship at the moment she rounds up, from the end of the pier; and Ed on the
+        // strand a moment after he walks out of the water.
+        if(view==='word-ship'||view==='word-ashore'){questStage=10;combat.finishPractice();player.group.visible=false;
+          playSeconds=view==='word-ship'?WORD_SHIP.turns+8:WORD_ASHORE+3;wordSaid=wordToastAt(playSeconds)?.key??null;
+          settleMercenaries();
+          const look=view==='word-ship'?WORD_TRACK.standOff:WORD_BEACH;
+          const spot=view==='word-ship'?{x:26,z:29}:{x:WORD_BEACH.x-7,z:WORD_BEACH.z-6};
+          const ground=Math.max(SEA_LEVEL,world.heightAt(spot.x,spot.z));
+          player.group.position.set(spot.x,ground,spot.z);
+          reviewTarget=new THREE.Vector3(look.x,view==='word-ship'?SEA_LEVEL+3.4:world.heightAt(look.x,look.z)+1.1,look.z);
+          yaw=Math.atan2(spot.x-look.x,spot.z-look.z);pitch=view==='word-ship'?.08:.12;
+          distance=targetDistance=view==='word-ship'?Math.hypot(spot.x-look.x,spot.z-look.z):9.2;}
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}

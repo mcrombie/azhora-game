@@ -72,7 +72,9 @@ export const MERCENARY_ROSTER = Object.freeze([
     ['Chris Gotwood. Same boat, same coin, and I have the letter they gave us both \u2014 you take it, you are the one they wrote it about. The army\u2019s post is up the road in the Avrel clearing.',
       'I will give the village a look and come after you. No sense the two of us crowding one quartermaster.'],
     { group: null, carriesLetter: true }),
-  merc('word', 'Ed the Word', 'no port he will name', ARRIVALS.word, 180, 1.34,
+  // He stands on that strand for twenty-five minutes before the road gets him, because he has
+  // just swum sixty-eight metres of open water and because he is Ed (src/word-arrival.js).
+  merc('word', 'Ed the Word', 'no port he will name', ARRIVALS.word, 1500, 1.34,
     { tunic: 0x7a5a4a, hair: 0xc9a84e, skin: 0xe2bd93, build: 'rangy', headgear: 'bandana', hairStyle: 'braid', facialHair: 'clean', garment: 'sash', marks: ['earring'] },
     ['Ed. Ed the Word. You saw the ship, everyone saw the ship, and the ship has gone, which I think we can all agree is the happiest possible outcome for the ship.',
       'I came ashore under my own power because I felt like it. A man wants a swim. A man wants an adventure. A man is absolutely not here for any other reason.'],
@@ -215,8 +217,9 @@ export function mercenaryProgress(mercenary, playSeconds, stops, musterDistance)
  * @param stops [{ id, point, dwell }] places where each mercenary pauses to do the traveler's business
  * @param muster the army camp's rendezvous point
  * @param landing where the boats put people ashore
+ * @param shore where a man whose `route` is 'shore' comes out of the water instead
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, seed = 0, roster = MERCENARY_ROSTER } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, seed = 0, roster = MERCENARY_ROSTER } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
   // Mus is the only one whose hour is not written down. It is drawn once from the seed the
   // game was started with and kept in the save, so he lands at the same moment on every
@@ -233,8 +236,13 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, seed
       const progress = mercenaryProgress(mercenary, playSeconds, roadStops, musterDistance);
       const side = lateral(index);
       if (progress.phase === 'coming' || progress.phase === 'landing') {
+        // Almost everybody steps off a boat at the landing and stands about near it. Ed the
+        // Word does not: `route: 'shore'` means the sea put him down somewhere else, and until
+        // this was read he waited for his own ship among people who came off boats.
+        const from = mercenary.route === 'shore' && shore ? shore : start;
         const angle = index * 1.9;
-        return { id: mercenary.id, name: mercenary.name, ...progress, x: start.x + Math.sin(angle) * (2.2 + index * .3), z: start.z + Math.cos(angle) * (2.2 + index * .3), yaw: angle + Math.PI, walking: false };
+        const spread = mercenary.route === 'shore' && shore ? 0 : 2.2 + index * .3;
+        return { id: mercenary.id, name: mercenary.name, ...progress, x: from.x + Math.sin(angle) * spread, z: from.z + Math.cos(angle) * spread, yaw: angle + Math.PI, walking: false };
       }
       const point = pointAlongRoad(road, progress.distance, lengths);
       const off = progress.phase === 'stopped' ? side * 2.2 : progress.phase === 'mustered' ? 0 : side;

@@ -105,6 +105,21 @@ const nameBoard = () => paint(256, 64, (g, w, h) => {
   g.fillStyle = '#e8c86a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '600 34px Georgia, serif'; g.fillText('SULTANA', w / 2, h / 2 + 2);
 }, 0x27306e);
 
+/**
+ * The rebel sail: old canvas gone grey, patched, with a rust-red bar across it and nothing
+ * else - no roundel, no port, no name. She is the ship the Peblos rebels later hide in a sea
+ * cave, and the crew who put Ed the Word over the side (docs/design-answers.md).
+ */
+const rebelCloth = () => paint(256, 256, (g, w, h) => {
+  g.fillStyle = '#b3ad9c'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(70,64,52,.22)'; g.lineWidth = 2; for (let k = 1; k < 8; k++) { g.beginPath(); g.moveTo(k * w / 8, 0); g.lineTo(k * w / 8, h); g.stroke(); }
+  // Patches: somebody has kept this sail alive rather than bought another.
+  g.fillStyle = 'rgba(146,139,121,.85)';
+  for (const [x, y, pw, ph] of [[24, 40, 46, 34], [150, 168, 62, 40], [96, 18, 34, 26], [188, 74, 30, 48]]) g.fillRect(x, y, pw, ph);
+  g.fillStyle = '#8d3226'; g.fillRect(0, h * .42, w, h * .16);
+  g.fillStyle = 'rgba(40,34,28,.35)'; g.fillRect(0, h - 10, w, 10);
+}, 0xb3ad9c);
+
 /** A hull from an outline in plan, lofted through rings of [y, scale]. */
 function lofted(outline, rings, material, parent) {
   const positions = [], indices = [], n = outline.length;
@@ -121,55 +136,75 @@ function lofted(outline, rings, material, parent) {
 /**
  * The Sultana, bow to +z. `update(time, pose)` rocks her, heels her under way,
  * sets or brails her sail (`pose.sail` 0 to 1) and flies her pennant.
+ *
+ * `createRebelShip()` is the same hull with everything worth seeing taken off her: no salt at
+ * the waterline, no gold at the rail, no dome, no name board, no cargo, and a patched grey
+ * sail with a rust bar across it. She is the ship that puts Ed the Word over the side off
+ * Tidehaven (src/word-arrival.js) and the one the Peblos rebels hide in a sea cave later, and
+ * she is one hull on purpose: whichever side the traveler takes there is a verdict on Ed.
  */
-export function createSultana() {
-  const group = new THREE.Group(); group.name = 'The Sultana';
+export function createSultana(rebel = false) {
+  const group = new THREE.Group(); group.name = rebel ? 'The rebel ship' : 'The Sultana';
   const ship = new THREE.Group(); group.add(ship);
   const L = HULL.length / 2, B = HULL.beam / 2, D = HULL.draft;
   const outline = [[0, -L * .92], [B * .8, -L * .78], [B, -L * .3], [B, L * .15], [B * .78, L * .6], [B * .35, L * .9], [0, L],
     [-B * .35, L * .9], [-B * .78, L * .6], [-B, L * .15], [-B, -L * .3], [-B * .8, -L * .78]];
   const blue = mat(0x1d3a66, { side: THREE.DoubleSide }), wood = mat(0x7a5638), dark = mat(0x4a3322), deckWood = mat(0xb08a5a);
   lofted(outline, [[1.55, 1.04, 1.02], [.5, 1, 1], [.1, .95, .98], [-D, .4, .82]], blue, ship);
-  // The crust of salt along her waterline, and gold at her rail.
-  lofted(outline, [[.48, 1.012, 1.008], [.02, .962, .988]], SALT, ship);
+  // The crust of salt along her waterline, and gold at her rail. The rebel has neither: a
+  // tarred strake and a plain wooden capping, because nobody has spent money on her in years.
+  lofted(outline, [[.48, 1.012, 1.008], [.02, .962, .988]], rebel ? mat(0x241d18) : SALT, ship);
   for (let i = 0; i < outline.length; i++) {
     const [ax, az] = outline[i], [bx, bz] = outline[(i + 1) % outline.length];
     const len = Math.hypot(bx - ax, bz - az);
-    add(ship, cube, GOLD, [(ax + bx) / 2 * 1.04, 1.5, (az + bz) / 2 * 1.02], [.1, .12, len + .06], [0, Math.atan2(bx - ax, bz - az), 0]);
+    add(ship, cube, rebel ? mat(0x5d452e) : GOLD, [(ax + bx) / 2 * 1.04, 1.5, (az + bz) / 2 * 1.02], [.1, .12, len + .06], [0, Math.atan2(bx - ax, bz - az), 0]);
   }
   // The deck, cut to her plan inside the bulwarks.
   const plan = new THREE.Shape(outline.map(([bx, bz]) => new THREE.Vector2(bx * .96, -bz * .96)));
   const deck = new THREE.Mesh(new THREE.ShapeGeometry(plan), deckWood); deck.rotation.x = -Math.PI / 2; deck.position.y = 1.16; deck.receiveShadow = true; ship.add(deck);
-  // The stern cabin under a gilt dome, a lantern, the name board and the rudder.
-  add(ship, cube, mat(0xe9dfc6), [0, 1.85, -L * .62], [B * 1.3, 1.3, L * .42]);
-  add(ship, cube, blue, [0, 2.54, -L * .62], [B * 1.42, .1, L * .46]);
-  add(ship, new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), GOLD, [0, 2.58, -L * .62], [.62, .75, .62]);
-  add(ship, new THREE.ConeGeometry(.08, .45, 8), GOLD, [0, 3.5, -L * .62]);
-  for (const s of [-1, 1]) add(ship, cube, mat(0x3b2a1f), [s * B * .66, 1.95, -L * .5], [.02, .4, .5]);
-  add(ship, cube, nameBoard(), [0, 1.35, -L * .93], [1.5, .38, .04]);
+  // The stern cabin under a gilt dome, a lantern, the name board and the rudder. The rebel's
+  // stern is a low deckhouse with a tarpaulin over it and no light showing.
+  add(ship, cube, mat(rebel ? 0x6f5a44 : 0xe9dfc6), [0, rebel ? 1.68 : 1.85, -L * .62], [B * 1.3, rebel ? .95 : 1.3, L * .42]);
+  add(ship, cube, rebel ? mat(0x3a352c) : blue, [0, rebel ? 2.2 : 2.54, -L * .62], [B * 1.42, .1, L * .46]);
+  if (!rebel) {
+    add(ship, new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), GOLD, [0, 2.58, -L * .62], [.62, .75, .62]);
+    add(ship, new THREE.ConeGeometry(.08, .45, 8), GOLD, [0, 3.5, -L * .62]);
+  }
+  for (const s of [-1, 1]) add(ship, cube, mat(0x3b2a1f), [s * B * .66, rebel ? 1.8 : 1.95, -L * .5], [.02, .4, .5]);
+  if (!rebel) {
+    add(ship, cube, nameBoard(), [0, 1.35, -L * .93], [1.5, .38, .04]);
+    add(ship, tube, GOLD, [0, 2.95, -L * .9], [.1, .25, .1]);
+    add(ship, ball, mat(0xffd98a, { emissive: 0xffb040, emissiveIntensity: .8 }), [0, 2.95, -L * .9], [.07, .1, .07]);
+  }
   add(ship, cube, dark, [0, .2, -L * .95], [.12, 1.9, .7]);
-  add(ship, tube, GOLD, [0, 2.95, -L * .9], [.1, .25, .1]);
-  add(ship, ball, mat(0xffd98a, { emissive: 0xffb040, emissiveIntensity: .8 }), [0, 2.95, -L * .9], [.07, .1, .07]);
-  // The bowsprit, and a gilt figurehead: a crystal.
-  add(ship, tube, wood, [0, 1.9, L * 1.05], [.08, 2.6, .08], [Math.PI / 2 - .3, 0, 0]);
-  crystal(ship, [0, 1.62, L * 1.0], .28);
-  // The cargo: sacks of salt, barrels, and an open crate heaped white.
-  const sack = mat(0xe9e2cf), sackTie = mat(0x9b7b4b);
-  const sacks = [[-.7, .3], [.7, .3], [-.7, 1.1], [.7, 1.1], [0, .7], [-.7, 1.9], [.7, 1.9], [0, 1.5], [-.55, -1.2], [.55, -1.2]];
-  sacks.forEach(([x, z], k) => { const y = 1.4 + (k === 4 || k === 7 ? .34 : 0);
-    add(ship, ball, sack, [x, y, z], [.34, .22, .28], [0, k * .7, 0]); add(ship, tube, sackTie, [x, y + .17, z], [.08, .08, .08]); });
-  for (const [x, z] of [[-.9, -2.2], [-.4, -2.4], [.9, -2.2]]) { add(ship, tube, wood, [x, 1.55, z], [.26, .72, .26]); add(ship, tube, dark, [x, 1.55, z], [.27, .06, .27]); }
-  add(ship, cube, wood, [.3, 1.4, 2.8], [1.1, .5, .8]);
-  add(ship, ball, SALT, [.3, 1.66, 2.8], [.5, .2, .36]);
-  crystal(ship, [.1, 1.8, 2.75], .09); crystal(ship, [.45, 1.78, 2.9], .07);
+  // The bowsprit, and a gilt figurehead: a crystal. The rebel carries a stump and nothing on it.
+  add(ship, tube, wood, [0, 1.9, L * 1.05], [.08, rebel ? 1.5 : 2.6, .08], [Math.PI / 2 - .3, 0, 0]);
+  if (!rebel) crystal(ship, [0, 1.62, L * 1.0], .28);
+  // The cargo: sacks of salt, barrels, and an open crate heaped white. The rebel carries a
+  // coil of rope, three water casks and a great deal of empty deck, which is its own answer to
+  // what she is for.
+  if (rebel) {
+    for (const [x, z] of [[-.9, -2.2], [-.35, -2.45], [.9, -2.2]]) { add(ship, tube, wood, [x, 1.55, z], [.26, .72, .26]); add(ship, tube, dark, [x, 1.55, z], [.27, .06, .27]); }
+    for (let k = 0; k < 3; k++) add(ship, tube, mat(0x6b5a44), [-.9, 1.31 + k * .08, 1.6], [.42 - k * .06, .07, .42 - k * .06]);
+    add(ship, cube, mat(0x4a3b2c), [.8, 1.32, 2.4], [.9, .3, 1.4]);
+  } else {
+    const sack = mat(0xe9e2cf), sackTie = mat(0x9b7b4b);
+    const sacks = [[-.7, .3], [.7, .3], [-.7, 1.1], [.7, 1.1], [0, .7], [-.7, 1.9], [.7, 1.9], [0, 1.5], [-.55, -1.2], [.55, -1.2]];
+    sacks.forEach(([x, z], k) => { const y = 1.4 + (k === 4 || k === 7 ? .34 : 0);
+      add(ship, ball, sack, [x, y, z], [.34, .22, .28], [0, k * .7, 0]); add(ship, tube, sackTie, [x, y + .17, z], [.08, .08, .08]); });
+    for (const [x, z] of [[-.9, -2.2], [-.4, -2.4], [.9, -2.2]]) { add(ship, tube, wood, [x, 1.55, z], [.26, .72, .26]); add(ship, tube, dark, [x, 1.55, z], [.27, .06, .27]); }
+    add(ship, cube, wood, [.3, 1.4, 2.8], [1.1, .5, .8]);
+    add(ship, ball, SALT, [.3, 1.66, 2.8], [.5, .2, .36]);
+    crystal(ship, [.1, 1.8, 2.75], .09); crystal(ship, [.45, 1.78, 2.9], .07);
+  }
   // The mast, the yard and the sail. The sail hangs from the yard and is brailed up to it in port.
   const mastZ = L * .08, top = 9.4, yardY = 8.2, sailW = 5.8, sailH = 5.2;
   add(ship, tube, wood, [0, top / 2 + .6, mastZ], [.14, top, .14]);
   add(ship, tube, wood, [0, yardY, mastZ + .12], [.09, sailW + .9, .09], [0, 0, Math.PI / 2]);
   const sailGeometry = new THREE.PlaneGeometry(sailW, sailH, 8, 6);
   const flat = sailGeometry.attributes.position.array.slice();
-  const sail = new THREE.Mesh(sailGeometry, sailCloth()); sail.castShadow = true; ship.add(sail);
-  const furled = add(ship, tube, mat(0xe8dfc6), [0, yardY - .14, mastZ + .2], [.22, sailW, .22], [0, 0, Math.PI / 2]);
+  const sail = new THREE.Mesh(sailGeometry, rebel ? rebelCloth() : sailCloth()); sail.castShadow = true; ship.add(sail);
+  const furled = add(ship, tube, mat(rebel ? 0xb3ad9c : 0xe8dfc6), [0, yardY - .14, mastZ + .2], [.22, sailW, .22], [0, 0, Math.PI / 2]);
   /** Belly the sail out to `fill` (0 slack to 1 drawing) and set it `set` of the way down from the yard. */
   function trimSail(set, fill) {
     const p = sailGeometry.attributes.position.array;
@@ -189,8 +224,8 @@ export function createSultana() {
   rope(new THREE.Vector3(0, top, mastZ), new THREE.Vector3(0, 2.1, L * 1.5));
   const pennantGeometry = new THREE.PlaneGeometry(2.4, .3, 8, 1); pennantGeometry.translate(1.2, 0, 0);
   const pennantFlat = pennantGeometry.attributes.position.array.slice();
-  const pennant = new THREE.Mesh(pennantGeometry, mat(0xe0a526, { side: THREE.DoubleSide })); pennant.position.set(0, top + .15, mastZ); ship.add(pennant);
-  add(ship, ball, GOLD, [0, top + .12, mastZ], [.12, .12, .12]);
+  const pennant = new THREE.Mesh(pennantGeometry, mat(rebel ? 0x2b241d : 0xe0a526, { side: THREE.DoubleSide })); pennant.position.set(0, top + .15, mastZ); ship.add(pennant);
+  add(ship, ball, rebel ? mat(0x5d452e) : GOLD, [0, top + .12, mastZ], [.12, .12, .12]);
   trimSail(0, 0);
 
   let lastSet = -1;
@@ -208,3 +243,6 @@ export function createSultana() {
   }
   return { group, update };
 }
+
+/** The hull that put Ed the Word over the side, and that the Peblos rebels hide later. */
+export const createRebelShip = () => createSultana(true);

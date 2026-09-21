@@ -10,7 +10,11 @@ export function getMovementInput(keys) {
   return length ? { forward: forward / length, side: side / length } : { forward: 0, side: 0 };
 }
 
-export function canStand(x, z, world, radius = 0.34) {
+/** The height at which ground stops holding a person up. Above it you walk; below it you swim. */
+export const WATERLINE = 0.45;
+
+/** Inside the world, and clear of everything solid in it. Both halves of the waterline need this. */
+function clearHere(x, z, world, radius) {
   const b = world.bounds;
   if (x < b.minX + radius || x > b.maxX - radius || z < b.minZ + radius || z > b.maxZ - radius) return false;
   // The shapes that could reach this point, from the world's grid (src/collider-grid.js);
@@ -21,14 +25,37 @@ export function canStand(x, z, world, radius = 0.34) {
     if (c.r !== undefined) { const dx = x - c.x, dz = z - c.z, reach = c.r + radius; if (dx * dx + dz * dz < reach * reach) return false; }
     else if (Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius) return false;
   }
-  return world.heightAt(x, z) >= 0.45;
+  return true;
 }
-// `radius` is the mover's footprint: a person by default, wider for a rider on a horse.
-export function moveCharacter(position, dx, dz, world, radius) {
+
+export function canStand(x, z, world, radius = 0.34) {
+  return clearHere(x, z, world, radius) && world.heightAt(x, z) >= WATERLINE;
+}
+
+/**
+ * Water a person can be in: inside the world, clear of every hull, pier and rock, and under the
+ * waterline. It is `canStand`'s exact complement, which is the point of writing it this way - every
+ * point of the world is standable, swimmable, or solid, and never two of those (docs/swimming.md).
+ * Depth is not a gate: nothing is too deep to enter. Distance is what refuses you, and it refuses
+ * you by drowning you.
+ */
+export function canSwim(x, z, world, radius = 0.34) {
+  return clearHere(x, z, world, radius) && world.heightAt(x, z) < WATERLINE;
+}
+
+/**
+ * `radius` is the mover's footprint: a person by default, wider for a rider on a horse. A swimmer
+ * may cross the waterline in either direction, which is what lets somebody swim to a beach and
+ * walk out of the sea without a prompt or a key.
+ */
+export function moveCharacter(position, dx, dz, world, radius, { swimming = false } = {}) {
+  const passable = swimming
+    ? (x, z) => canStand(x, z, world, radius) || canSwim(x, z, world, radius)
+    : (x, z) => canStand(x, z, world, radius);
   const steps = Math.max(1, Math.ceil(Math.hypot(dx,dz)/0.18));
   for(let i=0;i<steps;i++) {
-    if(canStand(position.x+dx/steps,position.z,world,radius)) position.x+=dx/steps;
-    if(canStand(position.x,position.z+dz/steps,world,radius)) position.z+=dz/steps;
+    if(passable(position.x+dx/steps,position.z)) position.x+=dx/steps;
+    if(passable(position.x,position.z+dz/steps)) position.z+=dz/steps;
   }
   return position;
 }
