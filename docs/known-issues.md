@@ -499,11 +499,13 @@ Kristen.
   rather than a man appearing on the sand when the ship lets him go.
 - `route: 'wild'` — Mus walks a line of his own, `src/wild-route.js`, by way out 1 below:
   `placements()` picks the polyline and `mercenaryProgress` is untouched, because it was already
-  written in distance along *a* path. **1,695 m against the road's 1,295, at 0.88 m/s against his
-  own 1.42**, so he musters between minute 32.4 and 96.1 instead of from 19.8. Every metre was
-  authored against the built world — A* over ground `canStand` accepts with the road fenced at
-  40 m, then simplified — and **the line never comes within 89 m of the main road** until it is
-  41 m from the camp, which is the join. He waits on his own strand, passes none of the road's
+  written in distance along *a* path. **1,598 m of authored line, 1,714 m with the muster leg,
+  against the road's 1,295, at 0.88 m/s against his own 1.42**, so he musters between minute 32.7
+  and 96.7 instead of from 19.8. Every metre was authored against the built world — A* over
+  ground `canStand` accepts, with each grid *edge* checked and not only each cell, then simplified
+  by taking only shortcuts that are themselves walkable — and **the authored line never comes
+  within 62.7 m of the main road**. The muster leg closes to 39.7 m about 41 m out and ends among
+  the camp's tents, which is the join and is meant to be near. He waits on his own strand, passes none of the road's
   stops, is never `stopped`, and musters with the company like anybody else.
 
 The user's ruling of 2026-09-20 is kept whole: **his draw is not clipped**, the half-minute
