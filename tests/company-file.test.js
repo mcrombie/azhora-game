@@ -10,7 +10,9 @@ import { RIDE } from '../src/riding.js';
 import { LUMBER_TOWN_STABLE } from '../src/region-world.js';
 import { COMPANION_REACH } from '../src/long-road.js';
 import { createMercenaryCompany, MERCENARY_ROSTER } from '../src/mercenaries.js';
-import { RIDE_FILE, FILE_RETREAT, fileSpotFor, companyHorses } from '../src/company-horses.js';
+import { RIDE_FILE, FILE_RETREAT, fileSpotFor, companyHorses, picketSpots } from '../src/company-horses.js';
+import { dismountSpot } from '../src/riding.js';
+import { COMPANION_IDS } from '../src/companions.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const { createWorld } = await sourceModule('../src/world.js');
@@ -111,6 +113,103 @@ test('Chris rides: the long road’s own man is in the file, and the file is wha
   assert.match(main, /fileOrder=company\.companionIds/, 'and the file is the company’s, mate included');
   // And the company is remade off the plan, which carries the mate, rather than off the
   // companions list, which never does.
-  assert.match(main, /companyBuiltWith=JSON\.stringify\(asked\?\?null\)/);
-  assert.match(main, /if\(JSON\.stringify\(companionPlan\(\)\?\?null\)!==companyBuiltWith\)rebuildCompany\(\);/);
+  assert.match(main, /const companySignature=\(\)=>JSON\.stringify\(\[companionPlan\(\)\?\?null,companyDead\(\)\]\);/,
+    'the signature is the plan and the dead');
+  assert.match(main, /companyBuiltWith=companySignature\(\);/, 'and rebuilding records what it built with');
+  assert.match(main, /if\(companySignature\(\)!==companyBuiltWith\)rebuildCompany\(\);/, 'and placeMercenaries asks every frame');
+});
+
+/**
+ * **A man on foot must not be given a place inside a horse.**
+ *
+ * The file's footing test is the static world; a picketed horse and the traveler's own bay are
+ * *bodies*, not colliders, so neither layout could see the other - and they are laid from two
+ * different origins, the file from the traveler and the picket from his horse. Measured at Bede
+ * Harrow's yard over all forty-eight facings, the blind file put men inside horses: one of three,
+ * four of ten. The ruling is that men yield to horses, because a picketed horse's place is a
+ * function of the traveler's own horse, which the save carries, while a man's is recomputed every
+ * frame.
+ */
+const CLOSE = BODY.person + BODY.horse;
+
+/** `companyHorseGround()` in src/main.js, on foot: the traveler's own bay and the picket line. */
+function horsesOnTheGround(horse, count) {
+  const picket = picketSpots(horse, COMPANION_IDS.slice(0, count), (x, z) => canStand(x, z, world, RIDE.radius));
+  return [{ x: horse.x, z: horse.z, room: CLOSE },
+    ...picket.filter(Boolean).map(spot => ({ x: spot.x, z: spot.z, room: CLOSE }))];
+}
+
+/** The host's loop for a file on foot, seeded with whatever ground is already taken. */
+function fileOnFoot(at, yaw, count, taken) {
+  const ground = [...taken], spots = [];
+  for (let place = 0; place < count; place++) {
+    const spot = fileSpotFor({ at, yaw, place, reach: COMPANION_REACH, room: BODY.person * 2, taken: ground,
+      canStand: (x, z) => canStand(x, z, world) });
+    if (spot) ground.push(spot);
+    spots.push(spot);
+  }
+  return spots;
+}
+
+test('a man on foot is never given a place inside a horse', () => {
+  for (const [name, horse] of [['the stable yard', LUMBER_TOWN_STABLE.hitch],
+    ['Lumber Town square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
+    for (const count of [3, 10]) {
+      const horses = horsesOnTheGround(horse, count);
+      assert.ok(horses.length > count / 2, `${name}: there are horses standing about to avoid`);
+      // He steps down beside his horse, the way `stepDown` does it, and then faces anywhere.
+      const stand = dismountSpot(horse, horse.yaw, (x, z) => canStand(x, z, world)) ?? { x: horse.x, z: horse.z };
+      let blind = 0;
+      for (let step = 0; step < 48; step++) {
+        const yaw = step / 48 * Math.PI * 2;
+        for (const man of fileOnFoot(stand, yaw, count, horses).filter(Boolean)) {
+          const near = Math.min(...horses.map(one => Math.hypot(one.x - man.x, one.z - man.z)));
+          assert.ok(near >= CLOSE,
+            `${name}, ${count} men, facing ${(yaw * 180 / Math.PI).toFixed(0)}\u00b0: a man stands ${near.toFixed(2)} m from a horse's centre`);
+        }
+        // The control: the same file with the horses hidden from it, which is what it was.
+        for (const man of fileOnFoot(stand, yaw, count, []).filter(Boolean))
+          if (horses.some(one => Math.hypot(one.x - man.x, one.z - man.z) < CLOSE)) blind++;
+      }
+      if (name === 'the stable yard') assert.ok(blind > 0, `${count} men: this is the ground the fault was measured on`);
+    }
+  }
+});
+
+test('yielding to the horses costs the file nothing', () => {
+  // A file that avoids eleven more bodies could have gone further back or lost a man. It does
+  // neither: at the yard, on the road and in the square the span and the count are unchanged.
+  const road = world.paths[0];
+  for (const [name, horse] of [['the stable yard', LUMBER_TOWN_STABLE.hitch],
+    ['the open road', { x: road[6].x, z: road[6].z, yaw: 0 }],
+    ['Lumber Town square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
+    const horses = horsesOnTheGround(horse, 10);
+    const stand = dismountSpot(horse, horse.yaw, (x, z) => canStand(x, z, world)) ?? { x: horse.x, z: horse.z };
+    let blindSpan = 0, yieldSpan = 0, blindOut = 0, yieldOut = 0;
+    for (let step = 0; step < 48; step++) {
+      const yaw = step / 48 * Math.PI * 2;
+      const span = file => { const on = file.filter(Boolean); return on.length ? Math.max(...on.map(s => Math.hypot(s.x - stand.x, s.z - stand.z))) : 0; };
+      const blind = fileOnFoot(stand, yaw, 10, []), yielded = fileOnFoot(stand, yaw, 10, horses);
+      blindSpan = Math.max(blindSpan, span(blind)); yieldSpan = Math.max(yieldSpan, span(yielded));
+      blindOut += 10 - blind.filter(Boolean).length; yieldOut += 10 - yielded.filter(Boolean).length;
+    }
+    assert.equal(yieldOut, blindOut, `${name}: nobody is left without ground who had it before`);
+    assert.ok(yieldSpan <= blindSpan + 0.01, `${name}: the file trails ${yieldSpan.toFixed(1)} m against ${blindSpan.toFixed(1)} m`);
+  }
+});
+
+test('the host lays the horses first, and every path that lays a file gets them', () => {
+  const main = source('main.js');
+  // One function, computed by both halves of the frame rather than stashed by one for the other,
+  // so no snapping path - settleMercenaries, a load, a story start, a review view - can run one
+  // without the other.
+  assert.match(main, /function companyHorseGround\(\)\{/, 'the horses are laid in one place');
+  assert.match(main, /const room=BODY\.horse\+BODY\.person,bodies=\[\];/, 'and a man is not inside a horse when their bodies do not overlap');
+  assert.match(main, /fileTaken=companyHorseGround\(\)\.bodies;/, 'the file starts on the ground they have taken');
+  assert.match(main, /const \{rule,picket\}=companyHorseGround\(\);/, 'and the drawing reads the same answer');
+  // A ridden horse is not an obstacle: its man already is, at a rider's own footprint.
+  assert.match(main, /if\(!spot\|\|\(npc\?\.mounted&&npc\.actor\.group\.visible\)\)continue;/);
+  assert.match(main, /if\(riding\.owned&&riding\.horse&&!riding\.mounted\)bodies\.push/, 'and his own bay only while he is off it');
+  // The fallback ring answers to the same taken ground, horses and their own room included.
+  assert.match(main, /fileTaken\.every\(other=>Math\.hypot\(other\.x-sx,other\.z-sz\)>=\(Number\.isFinite\(other\.room\)\?other\.room:room\)\)/);
 });

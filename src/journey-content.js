@@ -102,7 +102,7 @@ export function journeyConversation(npc,context) {
       registerLine(register)],[]);
     if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Mara and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
-      'the letter of introduction? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
+      'The letter of introduction? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
       registerLine(register),
       'Our orders are to secure this road for the campaign against the rebels in the south. Goblin raids spilling out of Pueth have made supply work dangerous too. Before we can move, I need three parcels recovered from this broken cart.',
       'The parcels spilled east of the main road, around the broken field walls. Look for crossed ties around each bundle. Mind the goblin raiders among them; you can withdraw and catch your breath before trying again.'

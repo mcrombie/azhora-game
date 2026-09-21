@@ -2590,3 +2590,142 @@ branch did.
 **The lesson, since both are the same one:** an assertion that pins a key's *position* in an object
 literal is an assertion about something nobody promised. Both of these went red on work that did
 exactly what it was supposed to do.
+
+
+---
+
+## Round 2: the four rulings, built
+
+### 1. Men yield to horses — fixed
+
+The file's footing test was the static world, and a picketed horse and the traveler's own bay are
+*bodies*, not colliders, so the two layouts were blind to each other. The ruling: the horses are
+laid first, because a picketed horse's place is a function of the traveler's own horse, which the
+save carries, while a man's place is recomputed every frame.
+
+**What was built.** One function, `companyHorseGround()` in `src/main.js`, answers with the rule,
+the picket line and **the bodies a man must not be given** — the traveler's bay while he is off
+it, and every horse standing on the picket. `placeMercenaries` seeds `fileTaken` from it before
+the first man is placed, and `refreshCompanyHorses` reads the same function to draw them. It is
+**computed by both, not stashed by one for the other**, so the two halves of a frame cannot fall
+out of step and every snapping path — `settleMercenaries`, a load, a story start, every review
+view — gets it for nothing.
+
+`fileSpotFor` (`src/company-horses.js`) and the per-man fallback ring now honour **a room on the
+entry**: `Number.isFinite(other.room) ? other.room : room`. A man needs `BODY.person + BODY.horse`
+= 0.80 m from a horse's centre and `BODY.person * 2` = 0.68 from another man, and a ridden horse
+is no obstacle at all because its man already is, at a rider's own footprint.
+
+**Measured on the real world, ten men and ten picketed horses, over all 48 facings:**
+
+| | men given a place inside a horse | left without ground | worst span |
+|---|---|---|---|
+| the yard, file blind to them | **4** | 0 | 54.5 m |
+| the yard, file yielding | **0** | 0 | 54.5 m |
+| the open road, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
+| Lumber Town square, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
+
+**It costs nothing.** Not one man loses his ground and the file trails no further, which is the
+column that would have said the repair was too expensive. In the picket review's own geometry the
+nearest man to a horse goes from **0.63 m to 1.26 m**. `tests/company-file.test.js` holds all
+three claims — nobody inside a horse, nothing lost by yielding, and the host's own wiring — with
+the blind file kept as the control, so the test fails if the fault is ever put back.
+
+**And the probe fault is mended where it shipped.** `tests/company-horses.test.js`'s flood seeded
+its grid at `round(span / step) * step` from the origin, which with span 29 and step 0.4 is 0.2 m
+from the point it had just tested. On its flat synthetic ground every cell is open and it could
+not matter; on the real world the same arithmetic reported two starts at Bede Harrow's yard sealed
+that were nothing of the kind. The grid is aligned to its own start now.
+
+### 2. The helmsman stands on the house — fixed
+
+He was inside her stern deckhouse with the roof cutting him off at the chest. The house is not
+moved, lowered or shortened: **her stern house is his steering platform**, which is what a low
+poop is.
+
+The numbers are now one description, `REBEL_STERN_HOUSE` in `src/salt-sultan.js`, beside the hull
+— because a thing that stands on her deck is something anybody standing on her deck has to know
+about. `src/salt-ship.js` builds the house from it, `src/rebel-crew.js` exports `POOP_Y` (2.25, the
+top of the tarpaulin) and `overTheHouse(x, z)`, and a man's row carries his own `y`, which is
+`DECK_Y` for the four on the deck and `POOP_Y` for the one at the tiller.
+
+`tests/rebel-crew.test.js` now checks every man **against what stands on the deck and not only
+against her bulwarks** — which is what let this pass: a beam-and-length box cannot see a
+deckhouse. Each man is either over the house with his feet on it, or on the deck and at least
+0.3 m clear of its sides; exactly one is up there and he is the one at the tiller; and the house's
+own four numbers are pinned so nobody makes room for him by shrinking it.
+
+**Looked at.** `--review-views=word-crew`: he reads whole, above the house, aft, at the tiller.
+
+### 3. The dead man's clock, in the company's own ground — fixed
+
+`createMercenaryCompany` takes `dead` the same way it takes `companions`, and for the same reason:
+a companion's death is permanent and the clock had no other way to learn of one.
+
+- **A dead man has no placement at all.** `placements()` returns the list with his hole closed and
+  **nothing else moved** — the roster index is still his, so nobody's formation shifts when he
+  falls.
+- `summary()` therefore counts him under nothing, `arrived` is the living less those still coming,
+  and there is a `dead` count for anybody who wants it.
+- `travelerRank` never has him ahead of the traveler, because he is not in the list it filters.
+- `companionId` / `companionIds` drop him too, so the file and the horses hung off it answer for
+  themselves whatever list still names him.
+- `musteredInCamp()` in the host is now **`company.summary(playSeconds).mustered`**: the host asks
+  instead of subtracting.
+
+**Undefined or empty is today's clock to the digit**, which is the rule every addition to that
+module has kept: with no dead the mapped array is handed back untouched, and
+`tests/death-lifecycle.test.js` drives `undefined`, `[]`, `null` and rubbish against a company
+built without the argument at seven moments of the clock, on `placements`, `summary`,
+`travelerRank` and `companionIds`.
+
+**Two places that indexed `placements()` by row**, and would have handed a man his neighbour's
+place the moment the list had a hole in it, are by name now: the figures built at the first frame
+(`src/main.js:381`) and the character swap (`:668`). Neither could be reached with a dead man
+today; the invariant is cheaper to keep than to remember.
+
+**And a dead man is put out of the world.** He has no placement, so the loop that used to hide him
+every frame never reaches him again — he would have gone on doing whatever he was doing the frame
+he fell. `placeMercenaries` sets `fallen` and `hidden` over the company's dead before it places
+anybody, which is the same pair of flags the Greenway raid sets over a villager it kills.
+
+### 4. The normal-mode pass
+
+**Swept:** speech and the aside, signs, the phrasebook, Chris's five sittings, the skill tile and
+what a character lands knowing, the journal, the character sheet, and every string in `src/`
+matching *interpret*, *phrasebook*, *tongue*, *cannot follow*, *does not speak*.
+
+**Every surface is shut, and each by its own gate.** The speech panel returns the authored line
+and clears the aside **before** anything is heard into a tongue, so nothing is even paid for;
+`setSignReader` is called only under the gate, and with no reader `signText` answers the label
+itself, for every word the atlas carries; Wendel's stock drops the phrasebook and his opening line
+is the one that does not mention one; the drill choice is not offered; the linguist's experience
+and Chris's starting tongues are both behind the gate, and the character sheet is handed the
+hidden list so nobody reads a Linguist level off it. Driven and pinned in
+`tests/game-mode.test.js` and `tests/signs.test.js` — the sign test sets a reader who has no
+tongues and watches the foreign boards come back, so the English one is the gate working and not
+the atlas being English anyway.
+
+**Rendered with the interface showing** (no `--review-clean`): `road-dialogue` and
+`waymarker-before`. Corvan's four lines, the quest panel, the region card, the two toasts and the
+key strip are all plain English, and there is no aside.
+
+**One line fixed, because it is unambiguous.** `src/journey-content.js:105` — Corvan's first
+line began *"the letter of introduction?"*, lower case, and reads on screen as a fragment with its
+opening words missing. Capitalised, and nothing else about it touched.
+
+**Reported, not fixed:**
+
+- **The lettering atlas still carries every foreign word in normal mode.** `FOREIGN_SIGN_LABELS`
+  is computed at module load in `src/signs.js`, with no mode in sight, and `SIGN_LABELS` is both
+  sets. Nothing can show them — `signText` answers the plain label with no reader — so this is
+  cost and not copy: the atlas is taller than a normal-mode game needs. **The sign atlas is
+  another agent's ground**, so it is written down here.
+- **Two lines gloss a place name with "in your tongue"** — `src/wine-attic.js:121` ("Tharganhom.
+  The Wine Attic, in your tongue.") and `src/wine.js:226` ("This is Paradise Springs. In your
+  tongue, …"). Left alone on purpose: a foreign *name* having a meaning is true in both modes,
+  and these are about a name and not about what the speaker is speaking. Worth a glance from
+  whoever owns the copy.
+- **`longRoad.view().finished` can never be true in normal mode**, because it wants five drills
+  and the drills are hard mode's. Checked every reader: nothing reads it, so nothing is blocked.
+  It is written down so that whoever gives it a reader knows.

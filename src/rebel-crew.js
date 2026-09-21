@@ -18,12 +18,26 @@
  *
  * Pure: no DOM, no three.
  */
-import { HULL } from './salt-sultan.js';
+import { HULL, REBEL_STERN_HOUSE } from './salt-sultan.js';
 
 const freeze = Object.freeze;
 const B = HULL.beam / 2, L = HULL.length / 2;
 /** The deck inside the bulwarks, in the ship's own frame: bow is +z, starboard is +x. */
 export const DECK_Y = 1.16;
+/**
+ * **Her poop**, which is the top of the stern house's tarpaulin.
+ *
+ * Her helmsman's station is abaft the house, where the tiller is, and the house is a solid box
+ * from 1.21 to 2.16 with a tarpaulin over it. Standing on the deck he was inside it, with the
+ * roof cutting him off at the chest, which is what `word-crew` showed. A low poop is exactly
+ * what a stern house on a hull this size is, so he stands on it and steers from up there. The
+ * house is not moved, lowered or shortened.
+ */
+export const POOP_Y = REBEL_STERN_HOUSE.roof;
+/** Whether a point in her own frame is over the stern house, and so is a place with a floor on it. */
+export const overTheHouse = (x, z) =>
+  Math.abs(x - REBEL_STERN_HOUSE.x) <= REBEL_STERN_HOUSE.roofWidth
+  && Math.abs(z - REBEL_STERN_HOUSE.z) <= REBEL_STERN_HOUSE.roofLength;
 
 /**
  * Which rail he goes over.
@@ -37,7 +51,11 @@ export const DECK_Y = 1.16;
  */
 export const DROP_RAIL = freeze({ x: -B * .78, z: .4 });
 
-const hand = (id, station, x, z, yaw, look) => freeze({ id, station, x, z, yaw, look: freeze(look) });
+/**
+ * `y` is where his feet are, and it is `DECK_Y` for everybody who stands on her deck. The one
+ * man it is not is the helmsman, whose station is over her stern house.
+ */
+const hand = (id, station, x, z, yaw, look, y = DECK_Y) => freeze({ id, station, x, z, yaw, y, look: freeze(look) });
 
 /**
  * Five of them, and no two alike: weathered colours, varied builds and skins, a headscarf and a
@@ -46,8 +64,10 @@ const hand = (id, station, x, z, yaw, look) => freeze({ id, station, x, z, yaw, 
  * the roster's men and the villagers vary theirs, so nothing new had to be invented to draw them.
  */
 export const REBEL_CREW = freeze([
+  // At the tiller, on the poop: his station is over her stern house, so the house's roof is his
+  // deck. On `DECK_Y` he stood inside it and showed from the chest up.
   hand('rebel-helm', 'tiller', 0, -L * .74, 0,
-    { tunic: 0x4f4636, skin: 0x8f6a4a, build: 'raw-boned', headgear: 'bare', hairStyle: 'lank', hair: 0x2a231b, facialHair: 'full', garment: 'jerkin' }),
+    { tunic: 0x4f4636, skin: 0x8f6a4a, build: 'raw-boned', headgear: 'bare', hairStyle: 'lank', hair: 0x2a231b, facialHair: 'full', garment: 'jerkin' }, POOP_Y),
   hand('rebel-rail-fore', 'rail', DROP_RAIL.x, DROP_RAIL.z + 1.1, -Math.PI / 2,
     { tunic: 0x6a5240, skin: 0xd7ad7e, build: 'broad', headgear: 'bandana', hairStyle: 'cropped', hair: 0x16120f, facialHair: 'stubble', garment: 'sash' }),
   hand('rebel-rail-aft', 'rail', DROP_RAIL.x, DROP_RAIL.z - 1.2, -Math.PI / 2,

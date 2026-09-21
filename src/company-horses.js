@@ -144,6 +144,12 @@ export const FILE_RETREAT = 6;
  * other: each is placed on his own, so two whose shoulder spots do not stand both fall back on
  * the same piece of ground and stand inside one another.
  *
+ * **An entry may carry its own `room`**, and the horses do. A picketed horse's place is a
+ * function of the traveler's own horse, which the save carries, while a man's is recomputed every
+ * frame - so the horses are laid first and handed to the file as ground that is taken, and a man
+ * needs more room from a horse than from another man. Without that the two layouts were blind to
+ * each other and a man on foot was given a place inside a horse.
+ *
  * `reach` is COMPANION_REACH for men on foot and RIDE_FILE for a mounted file. Returns null when
  * even the trailing centreline has nowhere to put him - the caller then leaves him where he is,
  * which is honest, rather than stacking him on somebody.
@@ -154,7 +160,8 @@ export function fileSpotFor({ at, yaw = 0, place = 0, reach, room = 0, taken = [
   const side = reach.side * (n % 2 ? -1 : 1);
   const spot = (off, back) => ({ x: at.x - Math.sin(turn) * back + Math.cos(turn) * off,
     z: at.z - Math.cos(turn) * back - Math.sin(turn) * off });
-  const free = one => canStand(one.x, one.z) && taken.every(other => Math.hypot(other.x - one.x, other.z - one.z) >= room);
+  const free = one => canStand(one.x, one.z)
+    && taken.every(other => Math.hypot(other.x - one.x, other.z - one.z) >= (Number.isFinite(other.room) ? other.room : room));
   for (let step = 0; step <= retreat; step++) {
     const back = reach.shoulder + (n + step) * reach.stride;
     // His own shoulder only at his own place; trailing back, the file closes to the centre.

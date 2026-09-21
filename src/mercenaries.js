@@ -267,12 +267,23 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  *
  *   **Undefined or empty is today's clock, exactly** — a save written before any of this
  *   existed restores as undefined, and not a man of the company moves by a metre under it.
+ * @param dead the ids of the men who are not coming (`createFallen()`, src/bystanders.js). Told
+ *   the same way it is told who walks with you, and for the same reason: a companion's death is
+ *   permanent, and the clock has no other way to learn of it. **A dead man has no placement at
+ *   all** — he is not on the road, not in the queue at the landing, not at the muster and never
+ *   ahead of the traveler. Struck off the walking list he would otherwise go straight back onto
+ *   the road schedule and muster on it, and `summary().mustered` would count him among the living
+ *   in the camp (docs/known-issues.md). Undefined or empty is today's clock to the digit.
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined, companions = undefined } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined, companions = undefined, dead = undefined } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
   // One man or many, it is one list. `companion` is the long road's own spelling of a list of
   // one and still works exactly as it did.
   const asked = (companions ?? (companion === undefined ? [] : [companion])).filter(entry => entry?.id);
+  // Who is not coming. Nothing below asks whether the set is empty except `placements`, which
+  // hands back the untouched array when it is, so a game in which nobody has died is the clock
+  // it always was.
+  const gone = new Set((Array.isArray(dead) ? dead : []).filter(id => typeof id === 'string' && id));
   const walkingWith = new Set(asked.filter(entry => entry.with === true).map(entry => entry.id));
   const released = new Map(asked.filter(entry => entry.with !== true).map(entry => [entry.id, entry]));
   // Released, a man is the same pure function of the clock as everybody else: he lands at the
@@ -353,7 +364,10 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   }
 
   function placements(playSeconds) {
-    return roster.map((mercenary, index) => {
+    const all = roster.map((mercenary, index) => {
+      // A man who is not coming is nowhere. His place in the roster still counts, so nobody
+      // else's formation moves when he falls: the list is thinned, never renumbered.
+      if (gone.has(mercenary.id)) return null;
       // The companion is off the clock and off the road: he is wherever the traveler is, so he
       // has no road distance and no position of his own here. The host puts him at the shoulder
       // and writes the real x and z back onto this placement, which is what the interpreter's
@@ -406,14 +420,19 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
       if (progress.phase === 'mustered') { x = point.x + point.dz * lateral(index) * 1.6 - point.dx * (4 + Math.floor(index / 2) * 2.2); z = point.z - point.dx * lateral(index) * 1.6 - point.dz * (4 + Math.floor(index / 2) * 2.2); }
       return { id: mercenary.id, name: mercenary.name, ...progress, x, z, yaw: progress.phase === 'walking' ? point.yaw : point.yaw + (progress.phase === 'stopped' ? Math.PI / 2 * Math.sign(side) : Math.PI), walking: progress.phase === 'walking' };
     });
+    // Nobody dead: the array the map made, untouched, which is the clock this module has always
+    // kept. One man dead: the same array with his hole closed and nothing else moved.
+    return gone.size ? all.filter(Boolean) : all;
   }
 
   function summary(playSeconds) {
     // A man walking beside you is counted under his own key and is ashore like anybody else, so
-    // `arrived` is still how many of the company are in this country.
+    // `arrived` is still how many of the company are in this country - and the dead are in none
+    // of these counts, because they have no placement to be counted under.
     const counts = { coming: 0, landing: 0, walking: 0, stopped: 0, mustered: 0, 'with-traveler': 0 };
     for (const placement of placements(playSeconds)) counts[placement.phase]++;
-    return { ...counts, arrived: roster.length - counts.coming, total: roster.length + 1, musterDistance, roadLength: lengths[lengths.length - 1] };
+    const living = roster.length - gone.size;
+    return { ...counts, arrived: living - counts.coming, dead: gone.size, total: roster.length + 1, musterDistance, roadLength: lengths[lengths.length - 1] };
   }
 
   /**
@@ -433,8 +452,10 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1],
     // The long road asks for one and gets the first, which is the man at the traveler's shoulder;
     // `companionIds` is everybody, in roster order, for a host that draws a file.
-    companionId: walkingWith.size ? (roster.find(entry => walkingWith.has(entry.id))?.id ?? null) : null,
-    companionIds: roster.filter(entry => walkingWith.has(entry.id)).map(entry => entry.id),
+    // A dead man does not walk with you either, whatever list he is still named on: the file is
+    // what the host draws and what the horses are hung off, so it answers for itself.
+    companionId: walkingWith.size ? (roster.find(entry => walkingWith.has(entry.id) && !gone.has(entry.id))?.id ?? null) : null,
+    companionIds: roster.filter(entry => walkingWith.has(entry.id) && !gone.has(entry.id)).map(entry => entry.id),
     stops: roadStops.map(stop => ({ ...stop })) };
 }
 

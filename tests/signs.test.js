@@ -4,7 +4,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 
-const { createSigns, SIGN_LABELS, SIGN_COLOURS, labelPixels, labelMetres } = await sourceModule('../src/signs.js');
+const { createSigns, SIGN_LABELS, SIGN_COLOURS, labelPixels, labelMetres, signText, setSignReader } = await sourceModule('../src/signs.js');
 
 /** The world's own toolkit, reduced to what signs use. */
 function kit() {
@@ -75,4 +75,18 @@ test('every sign in the world carries a known label, stands on solid posts, and 
   for (const label of ['The Avrel Clearing', 'The Caloss Bridge', 'The Army Camp', 'The Elodi Frontier', 'Elod'])
     assert.ok(world.roadSigns.some(sign => sign.kind === 'direction' && sign.label === label && sign.returnLabel), `${label} is signed both ways`);
   assert.equal(world.roadSigns.filter(sign => sign.label === 'Lumber Town' && sign.kind === 'place').length, 2, 'Lumber Town is named at both gates');
+});
+
+test('with nobody to ask, every sign letters in the traveler\u2019s own language', () => {
+  // Normal mode is the whole game we ship and it is all in English (src/game-mode.js). The host
+  // hands the world a reader only in hard mode, so this is what a normal-mode board says - and
+  // it has to be the label itself, for every word the atlas carries and not just the first few.
+  setSignReader(null);
+  const changed = SIGN_LABELS.filter(label => signText(label) !== label);
+  assert.deepEqual(changed, [], 'nothing is lettered in a tongue with no reader set');
+  // And with a reader that can read nothing, the foreign boards come back - which is what proves
+  // the line above is the gate doing its work and not the atlas being all English anyway.
+  setSignReader(() => false);
+  assert.ok(SIGN_LABELS.some(label => signText(label) !== label), 'a reader who has no tongues sees lettering he cannot read');
+  setSignReader(null);
 });

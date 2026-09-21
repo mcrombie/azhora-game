@@ -104,7 +104,12 @@ test('ten picketed horses never pen anybody in', () => {
   const spots = picketSpots(horse, COMPANION_IDS.slice(0, 10), () => true);
   const solid = [{ x: horse.x, z: horse.z }, ...spots];
   const stands = (x, z) => solid.every(body => Math.hypot(body.x - x, body.z - z) > BODY.horse + BODY.traveler);
-  const step = 0.4, escape = 25, span = escape + 4, columns = Math.ceil(span * 2 / step) + 1;
+  // **The grid is aligned to its own start.** It was `round(span / step) * step` from the origin,
+  // which with span 29 and step 0.4 is 0.2 m away from the point that had just been tested - so
+  // the fill answered for a cell that was not the start. On this flat ground every cell is open
+  // and it could not matter; on the real world it reported two starts at Bede Harrow's yard
+  // sealed that were nothing of the kind, and cost a round of chasing.
+  const step = 0.4, escape = 25, half = Math.ceil((escape + 4) / step), columns = half * 2 + 1;
   // Start from every open spot within four metres of every horse — inside the line, outside it,
   // and in each gap — and flood out. If any of them closes, somebody can be shut in.
   const starts = [];
@@ -114,9 +119,9 @@ test('ten picketed horses never pen anybody in', () => {
   }
   assert.ok(starts.length > 100, 'there is open ground around the picket to start from');
   for (const start of starts) {
-    const originX = start.x - span, originZ = start.z - span;
+    const originX = start.x - half * step, originZ = start.z - half * step;
     const seen = new Uint8Array(columns * columns);
-    const index = Math.round(span / step) * columns + Math.round(span / step);
+    const index = half * columns + half;
     const queue = [index]; seen[index] = 1;
     let out = false;
     while (queue.length && !out) {
@@ -229,9 +234,11 @@ test('a companion set walking by a restore is placed, and not lost between the t
   const main = source('main.js');
   // The signature is the **plan**, not the companions list. Watching the companions list alone
   // missed Chris entirely: the landing mate is filtered out of that list and carried separately.
-  assert.match(main, /if\(JSON\.stringify\(companionPlan\(\)\?\?null\)!==companyBuiltWith\)rebuildCompany\(\);/,
+  assert.match(main, /if\(companySignature\(\)!==companyBuiltWith\)rebuildCompany\(\);/,
     'placeMercenaries asks, so nobody has to remember');
-  assert.match(main, /companyBuiltWith=JSON\.stringify\(asked\?\?null\)/, 'and rebuilding records what it built with');
+  assert.match(main, /companyBuiltWith=companySignature\(\);/, 'and rebuilding records what it built with');
+  assert.match(main, /const companySignature=\(\)=>JSON\.stringify\(\[companionPlan\(\)\?\?null,companyDead\(\)\]\);/,
+    'and the signature is the plan and the dead, because the company is built off both');
   assert.doesNotMatch(main, /companyBuiltWith=companions\.companions/, 'never the companions list: it has no Chris in it');
   // The review views are the first callers to have needed it, and they say so. They ask for the
   // two who go through the companions list, and get Chris the way a real game gets him: off the

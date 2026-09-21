@@ -378,7 +378,12 @@ function init() {
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
   // Lakota is drawn as himself, hawk and all; the other nine wear the company's kit.
   const mercNpc=(merc,placement)=>({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:merc.modelRole??'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});
-  for(const [i,placement] of company.placements(0).entries()){const merc=roster[i];world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push(mercNpc(merc,placement));}
+  // By name rather than by row: `placements()` leaves the dead out altogether, so its order is
+  // the roster's order with holes in it and never a row number (src/mercenaries.js). Nobody is
+  // dead at the first frame - a save is loaded later - but the figures are made here once, and
+  // giving a man another man's place at build time is not a thing worth being able to do.
+  for(const placement of company.placements(0)){const merc=roster.find(man=>man.id===placement.id);
+    if(!merc)continue;world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push(mercNpc(merc,placement));}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
@@ -420,12 +425,22 @@ function init() {
     // through the `joined`/`sent-on`/`died` events that remake it. A call site that forgets gets
     // a company that silently places nobody: the men are walking with you in the save and
     // nowhere in the world. Asked here instead, no call site can forget.
-    if(JSON.stringify(companionPlan()??null)!==companyBuiltWith)rebuildCompany();
-    fileTaken=[];
+    if(companySignature()!==companyBuiltWith)rebuildCompany();
+    // **A dead man has no placement**, so the loop below will never reach him again. Whatever he
+    // was doing the frame he fell - drawn, solid, walking to a home - he would go on doing for
+    // ever, so he is put out of the world here rather than left standing on the road. It is the
+    // same pair of flags the Greenway raid sets over a villager it kills.
+    for(const id of fallen.ids){const npc=mercenaryIds.has(id)?npcById.get(id):null;
+      if(npc){npc.fallen=true;npc.hidden=true;npc.walkingWith=false;npc.escorting=false;npc.mounted=false;npc.lift=0;}}
     fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
     // The stagger is measured from the moment the traveler went up or came down, so it is the
     // same clock for every man in the file and nothing has to be told about it.
     if(riding.mounted!==companyWasMounted){companyWasMounted=riding.mounted;companyMountedAt=elapsed;}
+    // **The file starts on ground the horses have already taken** (companyHorseGround). Stepped
+    // down, a company has eleven animals standing about it whose places nothing in the file could
+    // see; now they are in `fileTaken` before the first man is placed, so every path that lays a
+    // file - walked or snapped - avoids them.
+    fileTaken=companyHorseGround().bodies;
     for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
     if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
@@ -517,8 +532,10 @@ function init() {
       return;}
     companionHold.delete(npc.id);
     const seat=companyUp(place),room=(seat?RIDE_FILE:COMPANION_REACH).room??BODY.person*2;
+    // The fallback ring answers to the same taken ground as the file, horses included: an entry
+    // that carries its own `room` is a horse and wants more of it than a man does.
     const stands=(sx,sz)=>canStand(sx,sz,world,seat?RIDE.radius:undefined)
-      &&fileTaken.every(other=>Math.hypot(other.x-sx,other.z-sz)>=room);
+      &&fileTaken.every(other=>Math.hypot(other.x-sx,other.z-sz)>=(Number.isFinite(other.room)?other.room:room));
     // His place in the file; failing that the escort ring, **asked for his own place in it**;
     // failing that he stands where he is. The old fallback was the man at the front's spot,
     // written out in full and the same for everybody, so a file that could not spread put every
@@ -655,7 +672,12 @@ function init() {
       if(merc.id===before[i].id)continue;
       const npc=npcById.get(before[i].id);if(!npc)continue;
       scene.remove(npc.actor.group);npcById.delete(npc.id);mercenaryWeapons.delete(npc.id);
-      const placement=company.placements(playSeconds)[i];
+      // **By name, not by row.** A dead man has no placement at all (src/mercenaries.js), so the
+      // list is no longer one entry per roster row and an index into it would hand this man the
+      // next man's place. Nobody can be dead this early, but the invariant is cheaper to keep
+      // than to remember.
+      const placement=company.placements(playSeconds).find(one=>one.id===merc.id);
+      if(!placement)continue;
       Object.assign(npc,mercNpc(merc,placement));world.npcPositions[merc.id]={x:placement.x,z:placement.z};
       npc.actor=createCharacter({tunic:npc.color,role:'mercenary',skin:npc.skin,look:npc.look});
       npc.shadows=undefined;npc.escorting=false;npc.pace=undefined;scene.add(npc.actor.group);npcById.set(npc.id,npc);
@@ -862,14 +884,21 @@ function init() {
     // Empty is today's clock, exactly, and is spelled as nothing rather than as an empty list.
     return all.length?all:undefined;};
   let companyBuiltWith=null;
+  /** The company's own dead, in roster order: who the clock must stop running. */
+  const companyDead=()=>roster.filter(man=>fallen.has(man.id)).map(man=>man.id);
   /**
    * The signature is **the plan, not the companions list**. Chris is not in the companions list:
    * the landing mate is filtered out of it and carried separately, on the long road's own terms,
    * because he is the one who can be released and taken back. Watching the companions list alone
    * therefore misses every change to the one companion the user actually has.
+   *
+   * The dead are in it too, and for the same reason: `createMercenaryCompany` reads both lists
+   * once, at construction, so a death that did not remake the company would leave a man's clock
+   * running inside it.
    */
-  const rebuildCompany=()=>{const asked=companionPlan();companyBuiltWith=JSON.stringify(asked??null);
-    company=createMercenaryCompany({...companyPlan,roster,companions:asked});};
+  const companySignature=()=>JSON.stringify([companionPlan()??null,companyDead()]);
+  const rebuildCompany=()=>{companyBuiltWith=companySignature();
+    company=createMercenaryCompany({...companyPlan,roster,companions:companionPlan(),dead:companyDead()});};
   /** Where he was standing when he left you, so he walks on from there and not from the landing. */
   function releaseCompanion(distance,line){
     if(!companionOffTheClock||longRoad.released)return false;
@@ -1495,11 +1524,38 @@ function init() {
     // one-time toast at the smithy is not enough for something held in every fight.
     document.body.classList.toggle('shielded',carried);
   }
-  function refreshCompanyHorses(){
+  /**
+   * **The horses first, and the file yields to them.**
+   *
+   * A picketed horse's place is a function of the traveler's own horse, which the save carries;
+   * a man's place is recomputed every frame from where the traveler is standing. So the horses
+   * are laid first, and this hands the file the bodies it must not be given - the traveler's own
+   * bay and every horse on the picket line - the same way `fileTaken` makes one man's ground not
+   * ground for the next. Before it, the two layouts were blind to each other and a man on foot
+   * was put inside a horse (three of forty-eight facings at Bede Harrow's yard, and Chris 0.32 m
+   * inside the traveler's own bay in the picket review).
+   *
+   * **Computed, not stashed.** Both callers work it out from `riding` and the file, so the two
+   * halves of a frame cannot fall out of step and no snapping path - `settleMercenaries`, a load,
+   * a story start, a review view - can run one without the other.
+   *
+   * A *ridden* horse is no obstacle: its man is already a body, at a rider's own footprint.
+   */
+  function companyHorseGround(){
     const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,
       walking:fileOrder.filter(id=>npcById.get(id)?.walkingWith)});
-    const here=new Set(rule.ids);
     const picket=picketSpots(riding.horse,rule.ids,(x,z)=>canStand(x,z,world,RIDE.radius));
+    // A man is not inside a horse when his body and its body do not overlap.
+    const room=BODY.horse+BODY.person,bodies=[];
+    if(riding.owned&&riding.horse&&!riding.mounted)bodies.push({x:riding.horse.x,z:riding.horse.z,room});
+    for(const [index,id] of rule.ids.entries()){
+      const npc=npcById.get(id),spot=picket[index];
+      if(!spot||(npc?.mounted&&npc.actor.group.visible))continue;
+      bodies.push({x:spot.x,z:spot.z,room});}
+    return {rule,picket,bodies};}
+  function refreshCompanyHorses(){
+    const {rule,picket}=companyHorseGround();
+    const here=new Set(rule.ids);
     for(const [index,id] of rule.ids.entries()){
       const npc=npcById.get(id),actor=companyHorseFor(id);
       if(npc?.mounted&&npc.actor.group.visible){
@@ -2529,16 +2585,16 @@ function init() {
   }
   function clearTrailPin(){trackedPlaceId=null;trailMarker.visible=false;updateHUD();}
   /**
-   * **How many of the company stand in this camp.** The men whose clock has them at the muster,
-   * less the ones who are never coming.
+   * **How many of the company stand in this camp**, which is now simply what the company says.
    *
-   * `summary().mustered` counts a phase, and the company's clock knows nothing about the dead: a
-   * man struck off the walking list goes back onto the road schedule and musters on it, hidden,
-   * like anybody else. So the Marshal said one more stood in front of him than did, for every man
-   * who had died, while living men were still on the road. The dead are in neither count - not
-   * among those in camp and not among those still coming (docs/companions.md).
+   * It used to be a correction: `summary().mustered` counted a phase, the company's clock knew
+   * nothing about the dead, and a man struck off the walking list went back onto the road
+   * schedule and mustered on it - so the Marshal said one more stood in front of him than did,
+   * for every man who had died, while living men were still on the road. The company is told who
+   * is gone now (`dead`, src/mercenaries.js), a dead man has no placement at all, and the host
+   * asks rather than subtracts.
    */
-  function musteredInCamp(){return company.placements(playSeconds).filter(p=>p.phase==='mustered'&&!fallen.has(p.id)).length;}
+  function musteredInCamp(){return company.summary(playSeconds).mustered;}
   // Where the traveler stands in the hired company: who has landed, who has mustered, and the traveler's place on the road.
   function companyStanding(){
     const s=company.summary(playSeconds),rank=company.travelerRank(playSeconds,distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}));
