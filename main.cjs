@@ -315,7 +315,7 @@ if (ownsInstance) app.whenReady().then(async () => {
           await settle(`stand-at:${x},${z},${facing}`,60);
           const sample=await run('window.__AZHORA__.draws()');
           results.push({name,facing,...sample});
-          console.log(`${name.padEnd(20)} facing ${facing.toFixed(2)} · ${sample.calls} draws · ${Math.round(sample.triangles/1000)}k tris · figures drawn ${sample.figuresDrawn}/${sample.figures}, within 30 m ${sample.figuresWithin30}, casting ${sample.shadowFigures} · figure meshes ${sample.figureMeshes}, casting ${sample.figureCasterMeshes} · visible meshes ${sample.visibleMeshes}, casters ${sample.visibleCasters} · F answers ${sample.talking} · ${sample.region}`);
+          console.log(`${name.padEnd(20)} facing ${facing.toFixed(2)} · ${sample.calls} draws · ${Math.round(sample.triangles/1000)}k tris · figures drawn ${sample.figuresDrawn}/${sample.figures} (30 m ${sample.figuresWithin30}, 60 m ${sample.figuresWithin60}, 100 m ${sample.figuresWithin100}, 120 m ${sample.figuresWithin120}), stand-ins ${sample.standIns}, casting ${sample.shadowFigures} · figure meshes ${sample.figureMeshes}, casting ${sample.figureCasterMeshes} · visible meshes ${sample.visibleMeshes}, casters ${sample.visibleCasters} · F answers ${sample.talking} · ${sample.region}`);
         }
         // The traveler steps inside the animal's fright distance with the camera behind him, looking at it: east of the
         // wader (its river is to the west), west of the otter (the Carica is to its east).

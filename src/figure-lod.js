@@ -32,10 +32,15 @@ export const FIGURE_LOD = Object.freeze({ out: 62, in: 56 });
  * looking straight at: whoever is being spoken to; anybody walking at the traveler's shoulder;
  * anybody in a fight or running from one, because that is movement and a peg does not move;
  * anybody wearing the mark the player is being sent to, because the eye goes to the mark and
- * then to what is under it; and a horse with somebody on it.
+ * then to what is under it; and a horse with somebody on it. Two more that are not about where
+ * the player is looking but about what a stand-in is: it stands, on the ground. Somebody swimming
+ * is up to the neck in the sea and a peg would stand on it; somebody kneeling at a grave or
+ * sitting on a wall is a third shorter than a peg, and would be seen to get up and sit down again
+ * as the traveler crossed the line.
  */
 export function alwaysInFull(figure = {}) {
-  return !!(figure.talking || figure.escorting || figure.fighting || figure.fleeing || figure.marked || figure.ridden);
+  return !!(figure.talking || figure.escorting || figure.fighting || figure.fleeing || figure.marked || figure.ridden
+    || figure.swimming || figure.posed);
 }
 
 /**

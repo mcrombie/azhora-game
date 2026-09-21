@@ -3524,11 +3524,13 @@ function init() {
       // What the last frame drew, and who was in it: the figures drawn, the ones near enough to cast their own
       // shadow (thirty metres, below), and how many meshes that is either way (main.cjs --draw-review).
       draws:()=>{const p=player.group.position,info=renderer.info,drawn=npcData.filter(n=>!n.hidden&&!n.fallen&&n.actor.group.visible);
-        const parts=n=>{let meshes=0,casters=0;n.actor.group.traverse(o=>{if(o.isMesh&&o.visible){meshes++;if(o.castShadow)casters++;}});return{meshes,casters};};
+        const shown=(o,top)=>{for(let a=o;a&&a!==top.parent;a=a.parent)if(!a.visible)return false;return true;};
+        const parts=n=>{let meshes=0,casters=0;n.actor.group.traverse(o=>{if(o.isMesh&&shown(o,n.actor.group)){meshes++;if(o.castShadow)casters++;}});return{meshes,casters};};
         let visibleMeshes=0,visibleCasters=0;scene.traverse(o=>{if(!o.isMesh)return;for(let a=o;a;a=a.parent)if(!a.visible)return;visibleMeshes++;if(o.castShadow)visibleCasters++;});
         const within=r=>drawn.filter(n=>n.actor.group.position.distanceTo(p)<r),shadowed=drawn.filter(n=>n.shadows);
         return{calls:info.render.calls,triangles:info.render.triangles,position:[+p.x.toFixed(1),+p.z.toFixed(1)],region:world.regionAt(p.x,p.z)?.name??null,
-          figures:npcData.length,figuresDrawn:drawn.length,figuresWithin30:within(30).length,figuresWithin60:within(60).length,shadowFigures:shadowed.length,
+          figures:npcData.length,figuresDrawn:drawn.length,figuresWithin30:within(30).length,figuresWithin60:within(60).length,figuresWithin100:within(100).length,figuresWithin120:within(120).length,
+          standIns:drawn.filter(n=>n.detail==='stand-in').length,shadowFigures:shadowed.length,
           figureMeshes:drawn.reduce((s,n)=>s+parts(n).meshes,0),figureCasterMeshes:shadowed.reduce((s,n)=>s+parts(n).casters,0),
           visibleMeshes,visibleCasters,shadowMap:renderer.shadowMap.enabled,who:within(30).map(n=>n.id),talking:currentNPC?.id??null};},
       // One of the west's animals as it is this frame, so a review shot can say what it is a picture of.
