@@ -2195,3 +2195,17 @@ row. It was wrong: an ally's strike calls the same `hurtEnemy` (`src/combat.js:7
 the same `hit` event, so I was counting every kill and calling it the player's. The passenger
 control replaced it and is the honest measure. That is the fifth time a probe of mine has modelled
 the game from outside and believed itself; the rule in this ledger keeps earning its place.
+
+## The traveler's buckler does not read on screen
+
+The shield the traveler buys is attached and correct — `tests/shield-guard.test.js` proves the
+buckler exists, hangs off the arm, toggles with the hand slot and is built once — but it does not
+show in `shield-guard.png` from any of the angles tried. It is small, it sits at the elbow, and
+the traveler's coat is around it. Six renders went on this before I stopped; the mechanic is
+finished and tested, the picture is not. Worth either a bigger or higher-slung buckler, or a pose
+that holds it out, whenever somebody is in `characters.js` anyway.
+
+Found the same day, and fixed: `player` in `src/main.js` is a facade over a replaceable body, and
+`setShield` was missing from it. The call was written `player.setShield?.(...)`, so it did nothing
+at all, quietly, for four renders. **An optional call on your own facade hides your own mistake**;
+it is now a plain call that would throw.

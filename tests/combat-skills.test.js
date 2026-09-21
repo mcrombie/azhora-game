@@ -68,8 +68,13 @@ test('level 1 is today, to the digit', () => {
   assert.equal(margins.swingCostFor('simple-sword'), 6);
   assert.equal(margins.damageFor('simple-sword'), 1);
   const combat = source('combat.js');
-  assert.match(combat, /const TODAY = Object\.freeze\(\{ maxHp: 100, maxStamina: 100, dodgeWindow: \.37, swingCost: 6 \}\);/,
+  assert.match(combat, /const TODAY = Object\.freeze\(\{ maxHp: 100, maxStamina: 100, dodgeWindow: \.37, swingCost: 6, armourTurns: 0, dodgeScale: 1,/,
     'combat still says what today is, and uses it when nobody says otherwise');
+  // The shield's own two numbers are today's too, and `hasShield` is false, so a combat wired to
+  // nothing has no guard at all and is exactly the game it was.
+  assert.match(combat, /guardShare: \.6, guardCost: 18, hasShield: false \}\);/);
+  assert.equal(margins.guardShare, ARMS.guard.low);
+  assert.equal(margins.guardCost, ARMS.guardCost.low);
   assert.match(combat, /actionTime < margins\(\)\.dodgeWindow/, 'the dodge window is read, not written twice');
   assert.match(combat, /player\.stamina -= cost;/, 'and so is what a swing costs');
   // A weapon with nobody's hand on it does exactly what its own table says.

@@ -427,6 +427,22 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
   let armed = goblin;
   if (weapon) weapon.visible = armed;
   const setArmed = value => { armed = Boolean(value); if (weapon) weapon.visible = armed; };
+  /**
+   * The buckler on his left arm, for the shield hand (`hand`, src/gear.js). It is built once and
+   * shown or hidden, because what he is wearing changes at a smith's and not every frame, and a
+   * shield made and thrown away on a toggle would be a new group every time he bought one.
+   */
+  let buckler = null;
+  const setShield = value => {
+    const on = Boolean(value);
+    if (on && !buckler && elbows[0]) {
+      // Pale hide on an iron rim, and a little wider than a soldier's: a small dark disc on a
+      // dark coat is a thing only a test can see.
+      buckler = makeShield(elbows[0], { face: 0xb59366, rim: 0x74787a, round: true, width: 0.33 });
+      buckler.name = 'The traveler\u2019s buckler';
+    }
+    if (buckler) buckler.visible = on;
+  };
   const upperLength = goblin ? 0.215 : 0.325;
   const lowerLength = goblin ? 0.18 : 0.29;
   const fallenBounds = new THREE.Box3();
@@ -859,7 +875,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       body.position.y += actorOrigin.y - fallenBounds.min.y;
     }
   }
-  return { animate, setArmed };
+  return { animate, setArmed, setShield };
 }
 
 /** An ordinary hired traveler in cloth. Feet rest at y=0, forward is +Z. */
@@ -2461,7 +2477,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     body.scale.set(mercBuild.girth, mercBuild.height, mercBuild.girth);
     head.scale.set(1 / Math.sqrt(mercBuild.girth), 1 / mercBuild.height, 1 / Math.sqrt(mercBuild.girth));
   }
-  const { animate: animatePose, setArmed } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot, offset: idleOffset, role });
+  const { animate: animatePose, setArmed, setShield } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot, offset: idleOffset, role });
   let fishing = isPondFisher, selectedWeapon = null;
   const rodTipWorld = new THREE.Vector3();
   function setWeapon(id) {
@@ -2495,7 +2511,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   if (isPlayer || fights) setWeapon('simple-sword');
   if (isMercenary && !isPlayer) setWeapon(KIT_HELD[look?.weapon] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
-  return { group, animate, setArmed, setWeapon, setFishing, fishingTip };
+  return { group, animate, setArmed, setShield, setWeapon, setFishing, fishingTip };
 }
 
 /** A scrawny woodland raider: a sunken glare, ragged ears and a wary lope. */

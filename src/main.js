@@ -3,6 +3,8 @@ import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole } from './characters.js';
 import { markerFor, markerGrade } from './quest-markers.js';
 import { createCombat, MAX_ALLIES } from './combat.js';
+/** Held, not pressed: the one new verb melee gets (docs/combat-brief.md, phase 4). */
+const GUARD_KEY='KeyV';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
 import { createWeapons, WEAPON_TYPES } from './weapons.js';
@@ -209,6 +211,9 @@ function init() {
   let playerId=DEFAULT_PLAYER,playerBody=null;
   const playerRig=new THREE.Group();playerRig.name='player';
   player={group:playerRig,animate:(...a)=>playerBody.animate(...a),setArmed:(...a)=>playerBody.setArmed(...a),
+    // The shield hand. This facade is the whole of what the game may ask the body to do, so a
+    // verb left out of it is a verb that silently does nothing.
+    setShield:(...a)=>playerBody.setShield(...a),
     setWeapon:(...a)=>playerBody.setWeapon(...a),setFishing:(...a)=>playerBody.setFishing(...a),fishingTip:(...a)=>playerBody.fishingTip(...a)};
   function wearPlayerLook(id){
     const look=playerLook(id);
@@ -689,7 +694,10 @@ function init() {
     getAllies:config=>companionAllies(config),
     getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id),
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
-      armourTurns:gear.turns,dodgeScale:gear.dodgeScale};}});
+      armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
+      // The shield: what a caught blow leaves him and what catching it costs in wind. `hasShield`
+      // is the hand slot, because the hand slot IS the shield (src/gear.js).
+      guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!gear.wearing('hand')};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
@@ -1432,6 +1440,11 @@ function init() {
    * which is already saved - so nothing here is written down and a reload puts every horse back
    * where it was. A line, never a ring: ten picketed horses cannot pen anybody in.
    */
+  /** What he is seen holding follows what he is wearing: the hand slot is the shield. */
+  // Not `setShield?.()`: the optional call hid the fact that the facade above had no such verb
+  // at all, so the buckler was quietly never built and four renders showed a man with no shield.
+  // If it ever goes missing again it should throw.
+  function refreshShield(){player.setShield(!!gear.wearing('hand'));}
   function refreshCompanyHorses(){
     const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,
       walking:fileOrder.filter(id=>npcById.get(id)?.walkingWith)});
@@ -2024,6 +2037,8 @@ function init() {
     if(!bought.ok){toast(bought.reason,'THE SMITHY');return bought;}
     inventory.refresh();audio?.effect('success');
     const swapped=bought.had?` He takes the old ${pieceName({slot,...bought.had}).toLowerCase()} off your hands.`:'';
+    // The shield is the one piece with a verb attached, so it is the one piece that says so.
+    if(slot==='hand')toast(`A shield on your arm. Hold V and it is between you and the blow · it catches most of a strike from the front, and costs you wind.`,'THE SMITHY');
     toast(`${pieceName(item)} \u00b7 ${bought.price} copper. It turns ${Math.round(bought.turns*100)} in a hundred off a blow.${swapped}`,'THE SMITHY');
     saveRoad(false);return bought;}
   function ridingAct(action){
@@ -3814,6 +3829,9 @@ function init() {
       // Toughness is taught by being hit and living, and by a step aside that actually worked.
       if(e.type==='player-hit'&&e.damage>0){arms.learn('toughness');armsPaid(arms.hurt({damage:e.damage,countryLevel:e.level??0}));}
       if(e.type==='dodged'){arms.learn('toughness');armsPaid(arms.dodged({countryLevel:e.level??0}));}
+      // Shield is paid by blows caught on it, by what the shield actually took off the blow -
+      // so a bigger blow caught teaches more, and catching nothing teaches nothing.
+      if(e.type==='caught'&&e.absorbed>0){arms.learn('shield');armsPaid(arms.caught({damage:e.absorbed,countryLevel:e.level??0}));}
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         if(combat.state.encounterId==='meadow-raiders'){meadowCleared=true;toast('The field road is quiet again. Recover Corvan’s parcels.','SUNMEADOW RAIDERS DRIVEN OFF');saveRoad(false);}
@@ -4005,6 +4023,12 @@ function init() {
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
         handleCombatEvents();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
+        // **Hold V to guard.** The shield is aimed by looking: while it is up he turns to face
+        // the way the camera does, so the player chooses which blow it is between him and. The
+        // combat module is told every frame and remembers no press of its own.
+        refreshShield();const guardKey=!autopilot.active&&keys.has(GUARD_KEY);
+        if(guardKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-14*dt));}
+        combat.guard(guardKey,player.group.rotation.y);
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
         // In the water he floats at the surface rather than walking the seabed: the feet hang a
@@ -4960,6 +4984,22 @@ function init() {
           reviewTarget=new THREE.Vector3(post.x,world.heightAt(post.x,post.z)+1.3,post.z);
           const shot=bestOf(reviewTarget,10,[post.yaw,post.yaw+.6,post.yaw-.6,post.yaw+1.1,post.yaw-1.1]);
           yaw=shot.yaw;pitch=.16;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
+        // The shield on his arm, at Mara’s straw post where the fighting is taught. The guard
+        // itself is a held key in a live fight and cannot be photographed; what can is that the
+        // hand slot is a thing he is seen carrying.
+        if(view==='shield-guard'){
+          questStage=10;combat.finishPractice();player.setArmed(true);
+          gear.wear('hand',{weight:'light',tier:0});refreshShield();
+          const post=world.training,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.4,3.2,4.2]})??post;
+          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          player.group.rotation.y=Math.atan2(post.x-stand.x,post.z-stand.z);
+          grounded=true;verticalSpeed=0;
+          reviewTarget=new THREE.Vector3(player.group.position.x,world.heightAt(stand.x,stand.z)+1.3,player.group.position.z);
+          // From his shield side - his left - or the buckler is behind him in the picture.
+          const shot=bestOf(reviewTarget,5.5,[player.group.rotation.y-1.5,player.group.rotation.y-1.9,player.group.rotation.y-1.1]);
+          yaw=shot.yaw;pitch=.12;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
         if(view==='tidehaven-smithy'){
