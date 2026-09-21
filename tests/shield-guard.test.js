@@ -211,7 +211,10 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   const main = source('main.js');
   // **Up iff `guard` says up.** The pose is drawn from what combat decided this frame, not from
   // whether V is held: no wind, mid-swing or rocked all put the key down and the arm with it.
-  assert.match(main, /guarding:!!combat\.state\.player\.guarding\}\);/, 'the picture reads the rule');
+  // The shield in the picture is the shield in the rules, and the bow beside it is the same idea
+  // read twice: `combat.drawn` is how far it is actually drawn, never how long the button is down.
+  assert.match(main, /guarding:!!combat\.state\.player\.guarding,/, 'the picture reads the rule');
+  assert.match(main, /draw:combat\.drawn\}\);/, 'and so does the bow');
   assert.doesNotMatch(main, /guarding:\s*guardKey/, 'and never the key');
   // The module sets the flag and returns the same answer, so nothing can read one and draw the other.
   const combat = source('combat.js');
@@ -286,10 +289,11 @@ test('the guard is offered before the fight is stepped, and nothing is held whil
   assert.ok(frame.indexOf('combat.guard(guardKey,player.group.rotation.y);') < frame.indexOf('combat.update(dt);'),
     'the guard is offered before the blow lands, not after it');
   // And outside play the latch is let go, on the same frame, before anything can read it.
-  assert.match(main, /if\(mode!=='playing'\)combat\.guard\(false,player\.group\.rotation\.y\);/,
-    'a mode that is not play holds no shield');
-  assert.ok(main.indexOf("if(mode!=='playing')combat.guard(false,player.group.rotation.y);") < from,
-    'and it is let go before the playing branch can step anything');
+  // The bow is the second held verb and is let go in the same breath (src/archery.js).
+  assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.draw\(false\);\}/,
+    'a mode that is not play holds no shield and draws no bow');
+  assert.ok(main.indexOf("if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.draw(false);}") < from,
+    'and both are let go before the playing branch can step anything');
   // The module still latches nothing of its own: the host is the only one who remembers a press.
   assert.match(source('combat.js'), /let guardHeld = false, guardYaw = 0;/);
   assert.match(source('combat.js'), /guardHeld = !!held;/);

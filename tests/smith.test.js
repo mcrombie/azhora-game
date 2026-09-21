@@ -26,7 +26,14 @@ function purse(copper) {
 }
 
 test('what a level-0 smith puts in front of you is what you landed with', () => {
-  const drent = smithOffers(0);
+  const board = smithOffers(0);
+  // Arrows first, at every forge in every country: a shaft is a shaft and the tier table is
+  // about armour (the user, 2026-09-21 - the smiths sell arrows and there is no fletcher).
+  assert.equal(board[0].kind, 'arrows');
+  assert.equal(board[0].id, 'arrow');
+  assert.equal(board[0].bundle, 12);
+  assert.ok(board[0].price > 0 && board[0].price < 24, 'a starting purse can buy a dozen');
+  const drent = board.filter(one => one.kind === 'armour');
   assert.equal(drent.length, 3, 'a jack, a cap and a buckler');
   assert.deepEqual(drent.map(one => one.slot).sort(), [...SLOTS].sort());
   for (const item of drent) {
@@ -42,9 +49,12 @@ test('what a level-0 smith puts in front of you is what you landed with', () => 
   assert.deepEqual([...drent].map(one => one.price).sort((a, b) => a - b), drent.map(one => one.price));
   assert.ok(drent[0].price <= STARTING_PURSE, 'the first thing on the board is within a starting purse');
   assert.ok(drent[drent.length - 1].price > STARTING_PURSE, 'and the last is something to save for');
-  // Nowhere he could ever stand sells an unnamed tier.
+  // Nowhere he could ever stand sells an unnamed tier — and arrows are the same everywhere.
   for (let level = 0; level <= 11; level++)
-    for (const item of smithOffers(level)) assert.ok(item.tier <= NAMED_TIERS && tierSoldAt(level) === item.tier);
+    for (const item of smithOffers(level)) {
+      if (item.kind === 'arrows') { assert.deepEqual(item, smithOffers(0)[0], 'a shaft is a shaft in any country'); continue; }
+      assert.ok(item.tier <= NAMED_TIERS && tierSoldAt(level) === item.tier);
+    }
 });
 
 test('buying is atomic: the money and the piece move together or not at all', () => {
@@ -99,9 +109,10 @@ test('the scene puts a price on every line and refuses to be opened by anybody e
   const { lines, options } = opened[0];
   assert.ok(lines.some(line => line.includes('copper')), 'he says what you are carrying');
   const buys = options.choices.filter(choice => choice.id.startsWith('smith-buy-'));
-  assert.equal(buys.length, 3);
+  assert.equal(buys.length, 4, 'three pieces of armour and a dozen arrows');
+  assert.equal(buys[0].id, 'smith-buy-arrows', 'and the arrows are the cheapest line on it');
   for (const choice of buys) assert.match(choice.label, /\d+ copper/, 'every line carries its price');
-  // With twenty copper the cap is affordable and the jack is not, and the board says so.
+  // With twenty copper the cap and the arrows are affordable and the jack is not, and the board says so.
   assert.equal(buys.filter(choice => choice.label.includes('cannot yet')).length, 2);
   assert.ok(options.choices.some(choice => choice.id === 'leave-smith'));
 });

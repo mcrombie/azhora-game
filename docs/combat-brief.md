@@ -252,7 +252,7 @@ Each phase stands alone and leaves the game working.
 3. **Tiers, armour and smiths.** Items, three armour slots, a smith's shop in Tidehaven first.
 4. **The shield's guard.**
 5. **Tempo and arc** for daggers, staves, spears and pikes, and the pike's wall rule.
-6. **Bows.**
+6. **Bows.** — **built 2026-09-21** (`src/archery.js`, `tests/archery.test.js`). See "Phase 6" below.
 7. **Teachers:** lessons at friendship milestones, sparring and its ceiling. — **built
    2026-09-21** (`src/teachers.js`, `tests/teachers.test.js`). See "Phase 7" below.
 
@@ -522,3 +522,79 @@ to 35 because 35 is what he is, and `loan: null` because the traveler's own swor
 craft. `sparring-pike` — Matt, the same bout with the loan in it: `own: simple-sword`,
 `held: war-pike`, `inSatchel: false`, and `feel: {tempo 1.2, arc .32, room 2}` arriving at the
 fight, which is the fix above seen from the outside.
+
+## Phase 6 — bows — built
+
+The brief called it the largest single piece, and the reason is that it is the only weapon that is
+not a swing: everything else in this game happens where the traveler is standing, and an arrow
+happens somewhere else, a moment later, and may never arrive. `src/archery.js` is the whole of the
+arithmetic; `combat.js` owns the shot inside a fight; nothing else knows anything about it.
+
+### The four rules
+
+**Hold to draw, release to loose**, on the swing button — no new key (the coordinator, from the
+user's answers). It is *held* exactly as the guard is held: the host offers the button and the
+facing every frame, the module latches nothing, and it is offered **before** `combat.update`, so
+the arrow leaves on the frame the player let go rather than the one after it. The draw fills in
+`ARMS.draw` seconds, 1.1 at level 1 down to .6 at 99, which was already wired through `marginsFor`
+and waiting. Let go early and the arrow still goes, weaker and shorter in proportion; below a
+third of a draw it does not go at all and the traveler is told the draw was wasted. A draw needs
+an arrow, the wind and an idle body, so a blow takes the bow down without sending anything.
+
+**An arrow is a thing that travels.** 46 m a second, 34 m at a full draw, swept in steps shorter
+than its own width so a fast arrow cannot pass through a thin tree between two frames.
+
+**The first solid thing stops it** — `world.nearColliders`, the same call the pike's room uses, so
+"in woodland I am a man holding a stick" is one rule and not two. An arrow that stops at a tree
+stops at the tree and the goblin behind it is untouched.
+
+**About two in three can be picked up again.** One shaft in three breaks where it lands, and
+*which* one is the arrow's own number rather than a roll, so the rule holds exactly over any run,
+a test can state it, and a reload cannot change what happened. A shaft that survives is a small
+thing stuck in the ground that the traveler gathers by walking over it — no prompt and no key,
+because stooping for an arrow is not a decision.
+
+### Where a bow comes from, and where arrows come from
+
+**The first bow is Jerry's spare**, given with his first lesson: a named, given weapon in the
+manner of the ones the dead leave behind, and the thing that shows the traveler the bow at all —
+before it, an arrow banks nothing. Nobody else hands one out and no smith sells one; a second can
+only come off the ground where an archer fell. **The smiths sell arrows**, a dozen for nine
+copper against a starting purse of twenty-four, at every forge in every country, because a shaft
+is a shaft and the tier table is about armour. There is no fletcher and no new person.
+
+### Jerry will not spar, and it is not an oversight
+
+A bout is three paces of melee: the teacher closes to a little over two metres and swings. Two men
+with bows at that range is not a lesson, it is an accident with a queue. Blunts at a mark would be
+a different thing altogether — a straw post with a bow, with no opponent, no exchange and nothing
+to yield — and is not built. So Jerry teaches by lesson and by the gift, says why in his own
+words, and the rest of Bows is paid for by using it on things that shoot back with something else.
+
+**He does shoot as an ally.** An `archer` stands off, draws and looses at whatever is nearest, and
+his arrow is the same arrow in the same list, stopped by the same trees. Measured: he draws from
+13 m, 0.0 degrees off his target, and his arrow hits. His shafts are his own and the traveler does
+not walk the field for them. There are no enemy archers.
+
+### The drawn bow, measured rather than admired
+
+A picture can be read generously, so the pose was measured first — and the first draft failed
+every part of it. **`arm` is positive *forward* in this rig** and the draft had it backwards,
+which put both hands level and a little behind him, 0.70 m apart across the body and **0.01 m**
+apart in depth: a man holding a washing line. The bow, which follows the forearm, lay flat — 0.08 m
+of limb where a bow is 1.14 — and the arrow pointed at him, head 0.77 m behind his own back.
+
+Fixed, and then pinned: at full draw the bow hand is 0.49 m out in front, the hands are 0.68 m
+apart in depth and level to within 0.01 m, the limbs stand 1.14 m, and the arrow's head leads,
+0.96 m out past the bow. A quarter of a radian of shoulder turn went too, because every degree the
+chest turns is a degree the arrow *looks* as though it will go and will not — the shot flies along
+the body's own facing. `tests/archery.test.js` measures all of it, for the traveler and for Jerry.
+
+The bow is the tenth weapon and six meshes; the figure's build budget moves from 44 to 49 (Matt is
+the dearest of the eleven), and the most anybody draws at full draw is 22.
+
+Review views: `bow-drawn` — the traveler at a full draw, bow standing in the off hand, shaft on
+the string, `drawn: 1` and `quiver: 12` in the facts beside it. `bow-jerry` — Jerry at his own
+draw as an ally, `action: windup, progress: .94`, 4.7 m off his goblin. Neither used the Greenway
+in the end: that raid is in `TEACHING_FIGHTS`, which is the set a companion is held *out* of, so
+the first draft of the Jerry shot photographed nobody and said so (`archerAlly: null`).

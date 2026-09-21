@@ -1,4 +1,5 @@
 import { tierScale } from './gear.js';
+import { BOW } from './archery.js';
 
 /**
  * **How a family feels** (docs/combat-brief.md, phase 5). The mercenaries' own lines are the
@@ -51,6 +52,18 @@ export const WEAPON_TYPES = Object.freeze({
     tempo: 1.2, arc: SWORD_ARC * .3, thrust: true, room: 2 }),
   quarterstaff: Object.freeze({ name: 'Quarterstaff', damage: Object.freeze([15, 17, 22]), reachMultiplier: 1.12, maxDurability: 32, wornAt: 8,
     tempo: .5, arc: SWORD_ARC * 1.15 }),
+  /**
+   * **The bow** (src/archery.js, phase 6). The only weapon that is not a swing: `ranged` is what
+   * tells the fight so, and combat refuses to swing it at anything. Its three damage figures are
+   * the same number three times, because a bow has no three-swing rhythm - one arrow, one figure -
+   * and having a triple at all is what lets it travel the same road every other weapon travels,
+   * through `profile()` and the traveler's skill in its family, to the hand that holds it.
+   *
+   * There is exactly one in the game and nobody sells it: Jerry gives the traveler his spare with
+   * his first lesson, and a second can only come off the ground where an archer fell.
+   */
+  'hunting-bow': Object.freeze({ name: 'Hunting bow', damage: Object.freeze([BOW.damage, BOW.damage, BOW.damage]),
+    reachMultiplier: 1, maxDurability: 30, wornAt: 8, ranged: true, tempo: 1, arc: SWORD_ARC }),
 });
 
 /**
@@ -60,7 +73,7 @@ export const WEAPON_TYPES = Object.freeze({
  * a doorway, the staff struck at a sword's pace, and phase 5 was true only of the module and of
  * the tests that built a weapon by hand.
  */
-export const WEAPON_FEEL = Object.freeze(['tempo', 'arc', 'room', 'locked', 'thrust']);
+export const WEAPON_FEEL = Object.freeze(['tempo', 'arc', 'room', 'locked', 'thrust', 'ranged']);
 export function feelOf(id) {
   const type = WEAPON_TYPES[id];
   if (!type) return {};

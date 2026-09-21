@@ -44,6 +44,16 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'The longest reach in the game, and furniture in a doorway.',
     description: 'Taken up from the ground. Nothing reaches you before you reach it, in open country. It will not swing at all within two metres of a wall, which is most of a village. Each landed strike wears it by 1 condition; the village workbench mends it.',
   }),
+  'hunting-bow': Object.freeze({
+    name: 'Hunting bow', type: 'Weapon', icon: 'stick',
+    brief: 'Jerry’s spare, given the day he decided you were worth it. Thirty paces, and useless in a wood.',
+    description: 'The only bow in the company that anybody will part with. Hold the attack button or R to draw and let go to loose; the longer you hold it, the further and harder the arrow goes, and letting go too early sends nothing. Arrows are bought from a smith and about two in three can be picked up again. Trees and walls stop arrows, which is Jerry’s whole complaint about woodland.',
+  }),
+  arrow: Object.freeze({
+    name: 'Arrows', type: 'Weapon', icon: 'stick', stackable: true,
+    brief: 'Ash shafts with iron heads. A bow without them is a stick with a string on it.',
+    description: 'Bought by the dozen from any smith. One goes with every arrow you loose; about two in three can be picked up again from the ground or from what you shot, and the rest break where they land. Walk over a spent shaft to gather it.',
+  }),
   quarterstaff: Object.freeze({
     name: 'Quarterstaff', type: 'Weapon', icon: 'sword',
     brief: 'Two ends, no edge. It strikes twice as often as a sword.',

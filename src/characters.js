@@ -332,6 +332,45 @@ function makeBow(body) {
   for (const [x, z] of [[-0.02, 0.01], [0.02, -0.015], [0, 0.02]]) ribbon(quiver, wood, [x, 0.15, z], [x, 0.36, z], 0.008, 0.008);
   return bow;
 }
+/**
+ * **A bow in the hand, rather than on the back.** `makeBow` slings one across the shoulders with
+ * the hands free, which is right for a man walking a road and useless for a man shooting. This is
+ * the other one: the grip sits in the mount, the limbs stand up and down from it, and the string
+ * runs between them where the drawing hand will be.
+ *
+ * It is the one weapon held in the **off** hand — every other thing the traveler carries hangs
+ * off the right wrist, because every other thing is swung. The right hand is for the string.
+ *
+ * The nocked arrow is a child of the bow and is shown only while he is actually drawing, so a man
+ * standing about with a bow is not standing about with an arrow on it (`pose.draw`).
+ */
+export const NOCKED_ARROW = 'Nocked arrow';
+function makeHeldBow(mount) {
+  const bow = new THREE.Group(); bow.name = 'Hunting bow (held)'; mount.add(bow);
+  /**
+   * **Turned so that it stands up in the pose it is used in.** The mount is a quarter over
+   * (`makeWeaponMount`) and the bow then follows the forearm, so an orientation that stands
+   * nicely with the arm hanging lies flat the moment the arm comes up to shoot. Measured, not
+   * guessed: at `-PI/2` the limbs spanned 1.14 m at rest and 0.08 m at full draw — a bow held
+   * like a tray. This stands it in the drawn pose, which is the only one that has to read.
+   */
+  bow.rotation.set(0, 0, 0);
+  const wood = material(0x6f5236), string = material(0xd8cfb4), leather = material(0x5b4130), head = material(0x9a9d96, { metalness: .5, roughness: .55 });
+  const limb = new THREE.CylinderGeometry(0.013, 0.019, 0.58, 6);
+  const upper = part(bow, limb, wood, [0, 0.3, 0]); upper.rotation.z = -0.24;
+  const lower = part(bow, limb, wood, [0, -0.3, 0]); lower.rotation.z = 0.24;
+  part(bow, UNIT_CYLINDER, leather, [0, 0, 0], [0.021, 0.14, 0.021]);
+  ribbon(bow, string, [0.07, 0.56, 0], [0.07, -0.56, 0], 0.007, 0.006);
+  /**
+   * The shaft lies across the grip with its nock back at the string hand and its head out past
+   * the bow. Measured rather than guessed: the first draft had it the other way round, with the
+   * head 0.77 m *behind* him and the flights pointing at the target.
+   */
+  const arrow = new THREE.Group(); arrow.name = NOCKED_ARROW; arrow.visible = false; bow.add(arrow);
+  ribbon(arrow, wood, [0.04, 0, -0.30], [0.04, 0, 0.46], 0.009, 0.009);
+  part(arrow, new THREE.ConeGeometry(0.018, 0.07, 5), head, [0.04, 0, 0.5]).rotation.x = Math.PI / 2;
+  return bow;
+}
 /** How the traveler's own buckler sits: out to the side at rest, turned forward on guard. */
 const GUARD_SHIELD = Object.freeze({ x: -0.5, z: 1.57, turn: -1.35 });
 /** The one name the host looks the buckler up by, so the two cannot drift apart. */
@@ -579,7 +618,41 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       elbow[0] = -0.5; elbow[1] = -0.7;
       armOut[0] = -0.3; armOut[1] = 0.25;
     }
-    if (action === 'idle' && movementBlend < .25) {
+    /**
+     * **Drawing a bow** (docs/combat-brief.md, phase 6). It comes after the action blocks and
+     * after `armed`, because both of those are written for a man swinging something and a man at
+     * full draw is doing the opposite: the bow arm goes out straight and stays there, and the
+     * string hand comes back past the ear as the draw fills.
+     *
+     * `pose.draw` is 0 to 1 and is the real draw, not the key - `combat.draw` answers whether the
+     * bow is actually drawing, which needs an arrow, the wind and an idle body.
+     */
+    const pull = THREE.MathUtils.clamp(Number(pose.draw) || 0, 0, 1);
+    if (pull > 0) {
+      // **A positive `arm` is forward**, which is the thing the first draft had backwards: it
+      // put both hands level and a little behind him, 0.70 m apart across the body and 0.01 m
+      // apart in depth — a man holding a washing line. A draw is the two hands far apart in
+      // *depth*: the bow arm out at the target and the string hand back beside the jaw.
+      arm[0] = 1.54; elbow[0] = -0.04; armOut[0] = -0.06;
+      // The string hand starts at the grip and travels back as the draw fills.
+      arm[1] = THREE.MathUtils.lerp(1.30, 0.34, pull);
+      elbow[1] = THREE.MathUtils.lerp(-0.42, -2.34, pull);
+      armOut[1] = 0.16 + pull * 0.46;
+      // He turns his shoulder into it a little - and only a little. The arms hang off the chest,
+      // so every degree the chest turns is a degree the arrow *looks* as though it will go and
+      // will not: the arrow flies along the body's own facing. A quarter of a radian of stance
+      // was enough to make a man at full draw look as if he were aiming at something else.
+      chestY = -0.07 - pull * 0.03;
+      chestX = 0.02;
+      chestZ = 0;
+      headY = -0.05 - pull * 0.02;
+      headX = -0.02;
+      hip[0] = -0.16; hip[1] = 0.12;
+      knee[0] = 0.24; knee[1] = 0.2;
+      stance = 0.07;
+      bounce = 0;
+    }
+    if (action === 'idle' && movementBlend < .25 && pull === 0) {
       if (role === 'doomsayer') {
         // Orris leans on his staff, then insists on a point with his free hand.
         const insist = Math.pow(Math.max(0, Math.sin(seconds * .92 + offset)), 3);
@@ -1661,6 +1734,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   }
 
   let staff = null;
+  /** A bow actually in the hand, the traveler's or a hired archer's, with the shaft on its string. */
+  let heldBow = null;
   if (isMiller) {
     const apron = material(0xa69a80), flour = material(0xe3dcc3), wrap = material(0xc8bb99);
     // Enna's apron is work-stained cloth, with a rolled headwrap rather than a
@@ -2445,7 +2520,9 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     else if (kit === 'pike') staff = makeSpearProp(wrists[1], 'Long spear', 2.85, 0.28);
     else if (kit === 'spears') { staff = makeSpearProp(wrists[1], 'Medium spear', 1.8); const javelin = makeSpearProp(body, 'Short spear', 1.25, 0.16); javelin.position.set(-0.18, 1.02, -0.19); javelin.rotation.set(0.12, 0, -0.42); }
     else if (kit === 'staff') staff = makeStaffProp(wrists[1]);
-    else if (kit === 'bow') makeBow(body);
+    // The bow rides on the back on a road and comes into the hand for a fight. Jerry standing
+    // off at thirty paces has to be seen drawing one, not carrying one (src/archery.js).
+    else if (kit === 'bow') { const slung = makeBow(body); if (armed) { slung.visible = false; heldBow = makeHeldBow(makeWeaponMount(wrists[0], 'Bow grip')); } }
     else if (kit === 'sword-shield') makeShield(elbows[0], { face: 0x6b4a2a, rim: 0x3f3128, round: true, width: 0.3 });
   }
 
@@ -2522,10 +2599,17 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
    * (tests/player-characters.test.js holds it at 34 meshes) and these three are only ever reached
    * by taking one off the ground where its owner fell. A traveler who never does pays nothing.
    */
+  /**
+   * The bow's own mount, on the **off** hand, made the first time he holds one. Everything else
+   * hangs off the right wrist because everything else is swung; a bow is held in the left and
+   * drawn with the right, and a bow on the sword hand reads as a man waving a harp about.
+   */
+  let bowHand = null;
   const LATE_WEAPONS = {
     'ash-spear': mount => makeSpearProp(mount, 'Ash spear', 1.9),
     'war-pike': mount => makeSpearProp(mount, 'War pike', 2.7, .26),
     quarterstaff: mount => makeStaffProp(mount),
+    'hunting-bow': () => (heldBow = makeHeldBow(bowHand ??= makeWeaponMount(wrists[0], 'Traveler bow grip'))),
   };
   function setWeapon(id) {
     if (isPlayer && weapon && LATE_WEAPONS[id] && !weapons[id]) weapons[id] = LATE_WEAPONS[id](weapon);
@@ -2546,6 +2630,15 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     if (typeof pose.fishing === 'boolean') setFishing(pose.fishing);
     animatePose(time, speed, grounded, { ...pose, fishing });
     if (weapon && fishing) weapon.visible = false;
+    // The shaft goes on the string only while he is actually drawing, so a man standing about
+    // with a bow is not standing about with an arrow on it. `pose.draw` is 0 to 1, and is the
+    // real draw rather than the button (`combat.drawn`). The traveler's bow is one of the things
+    // he can be holding; a hired archer's is the only thing he holds, so it needs no check.
+    if (heldBow) {
+      const nocked = heldBow.getObjectByName(NOCKED_ARROW);
+      const holding = !isPlayer || selectedWeapon === 'hunting-bow';
+      if (nocked) nocked.visible = holding && (Number(pose.draw) || 0) > 0;
+    }
     if (staff) {
       staff.rotation.x = -(arms[1].rotation.x + elbows[1].rotation.x + chest.rotation.x);
       staff.rotation.z = -(arms[1].rotation.z + elbows[1].rotation.z + chest.rotation.z);

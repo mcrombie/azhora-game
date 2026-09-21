@@ -67,7 +67,7 @@ import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { SMITH_NPC, MOROS_ARMOURER_NPC, smithConversation, buyFromSmith, pieceName, sellsHere } from './smith.js';
+import { SMITH_NPC, MOROS_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './smith.js';
 import { OUTPOST_LAYOUT } from './outpost.js';
 import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
@@ -87,6 +87,7 @@ import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_P
 import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
 import { createTeachers, TEACHERS } from './teachers.js';
+import { BOW, JERRYS_BOW } from './archery.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock, tierScale } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
@@ -597,7 +598,8 @@ function init() {
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id))return null;
       const back=5+(index%5)*3,side=(index<5?-1:1)*2.5;
-      return {id,name:merc.name,kind:'legionary',level:arms.level,toughness:arms.toughness,
+      // Jerry does not close: an ally whose craft is the bow stands off and looses (src/archery.js).
+      return {id,name:merc.name,kind:arms.weapon==='bows'?'archer':'legionary',level:arms.level,toughness:arms.toughness,
         [axis]:config.center[axis]-sign*back,[across]:config.center[across]+side,
         model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};
     }).filter(Boolean);}
@@ -740,6 +742,8 @@ function init() {
   }
   /** What is actually in his hand this frame, lent or his own. */
   const heldWeapon=()=>lentProfile()??weapons?.profile()??null;
+  /** Whether that thing is drawn rather than swung. One question, asked in four places. */
+  const ranged=()=>!!heldWeapon()?.ranged;
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>heldWeapon(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
@@ -747,6 +751,9 @@ function init() {
     // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
     getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
     getAllies:config=>companionAllies(config),
+    // How many arrows there are to shoot. The fight never touches the satchel; it only ever asks,
+    // exactly as it asks who walks with the traveler and how hard the country is (src/archery.js).
+    getArrows:()=>inventory.count(BOW.arrow),
     getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(heldWeapon()?.id),
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
       armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
@@ -760,6 +767,8 @@ function init() {
   /** Where the sequence wants the eye this frame, before the ordinary camera's lerp is bypassed. */
   const openingCamera={position:new THREE.Vector3(),target:new THREE.Vector3()};
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
+  // Whether the swing button is *down*, which only a bow needs to know: it is the draw as well.
+  let swingHeld=false;
   const cameraFocus=new THREE.Vector3(),cameraTarget=new THREE.Vector3(),cameraColliders=[];
   camera.position.set(16,14,59);camera.lookAt(0,3,13);
   let mapClock=0,frameCount=0,shake=0,combatClock=0,combatCamera=0;
@@ -2227,6 +2236,16 @@ function init() {
     if(!action.startsWith('smith-buy:'))return {ok:false,reason:''};
     const [slot,weight,tier]=action.slice(10).split(':');
     const level=regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0;
+    // **Arrows, at every forge** (the user, 2026-09-21: the smiths sell them and there is no
+    // fletcher). The same atomic buy, and the same rule that the host looks the line up in
+    // today's board rather than trusting the action string.
+    if(slot==='arrows'){
+      const shafts=smithOffers(level).find(one=>one.kind==='arrows');
+      const bought=buyFromSmith({inventory,gear,item:shafts});
+      if(!bought.ok){toast(bought.reason,'THE SMITHY');return bought;}
+      inventory.refresh();refreshQuiver();audio?.effect('success');
+      toast(`${bought.arrows} arrows · ${bought.price} copper. You have ${bought.quiver}.${inventory.has(BOW.id)?' Hold the attack button to draw and let go to loose.':' You have nothing to shoot them out of yet.'}`,'THE SMITHY');
+      saveRoad(false);return bought;}
     // Only ever what he actually has today: an action naming anything else buys nothing.
     const item=smithStock(level).find(one=>one.slot===slot&&one.weight===weight&&one.tier===Number(tier));
     const bought=buyFromSmith({inventory,gear,item});
@@ -2539,7 +2558,7 @@ function init() {
       releaseCompanion(distanceAlongRoad(world.paths[0],{x:p.x,z:p.z}),'The princes\u2019 boat is in, so that is all of us landed. Somebody has to tell Venmor the eleventh is on the road, or he will post you missing. I will go ahead.');}
   /** Any start that is not the boat: the harbour as built, the traveler on their feet. */
   function leaveOpening(){opening=null;world.restArrivalBoat();player.group.visible=true;document.body.classList.remove('cutscene');show('cutscene',false);}
-  function stopInput(){keys.clear();drag=false;}
+  function stopInput(){keys.clear();drag=false;swingHeld=false;}
   function settleCamera(){
     cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5,0));
     camera.position.set(cameraFocus.x+Math.sin(yaw)*distance*Math.cos(pitch),cameraFocus.y+Math.sin(pitch)*distance,cameraFocus.z+Math.cos(yaw)*distance*Math.cos(pitch));
@@ -2896,7 +2915,7 @@ function init() {
     // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
     // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
     // that loading one *during* a bout cannot leave a man holding somebody else's pike.
-    sparring=null;returnLoan();
+    sparring=null;returnLoan();clearArrows();
     // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
     // sheet, the sign lettering and the starting kit were settled when the page opened, and
     // switching them under a running game would leave half of it in the other mode. The field says
@@ -3230,6 +3249,20 @@ function init() {
     const given=teachers.teach(id);
     if(!given.ok)return;
     const name=mercenaryById(id)?.name??id,skill=SKILLS[given.family]?.name??given.family;
+    /**
+     * **The first bow is Jerry's spare** (the user, 2026-09-21), handed over with his first
+     * lesson. It is a *given* weapon, named the way the dead men's weapons are named, and it is
+     * the only bow anybody in this company will part with: a second can come only off the ground
+     * where an archer fell. Nothing else in the game is given this way, so this is one branch and
+     * not a system.
+     */
+    if(given.gives?.weapon&&!inventory.has(given.gives.weapon)){
+      inventory.add(given.gives.weapon,1);
+      weapons.setCondition(given.gives.weapon,WEAPON_TYPES[given.gives.weapon].maxDurability);
+      weapons.equip(given.gives.weapon);inventory.refresh();
+      toast(`${given.gives.name}. ${inventory.count(BOW.arrow)?`You have ${inventory.count(BOW.arrow)} arrows for it.`:'You have nothing to shoot out of it — any smith sells arrows.'}`,
+        `${name.toUpperCase()} GAVE YOU HIS SPARE BOW`);
+    }
     showSkillCard({kicker:`${name.toUpperCase()} TAUGHT YOU SOMETHING`,skill:given.family,
       name:given.first?`${skill}, shown to you at last`:`${skill}, and a longer bout`,
       note:given.first?'Nothing counted before somebody showed you. It counts now, and he will stand up with you.'
@@ -3818,6 +3851,52 @@ function init() {
     if(step.drowning&&!drowning){drowning=true;audio?.effect('player-hit');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
     if(!step.drowning)drowning=false;
   }
+  /**
+   * **Spent arrows, lying where they stopped.** About two in three survive the landing
+   * (src/archery.js decides which, by the arrow's own number rather than a roll), and the ones
+   * that do are small things stuck in the ground that the traveler gathers by walking over them.
+   * No prompt and no key: stooping for a shaft is not a decision.
+   *
+   * They live only as long as the session - an arrow is a thing you go and pick up now, not a
+   * thing the world remembers for you - so nothing here is saved.
+   */
+  const spentArrows=[];
+  const arrowShaft=(()=>{let shared=null;return()=>{
+    if(!shared){
+      shared=new THREE.Group();
+      const wood=new THREE.MeshLambertMaterial({color:0x6f5236}),iron=new THREE.MeshLambertMaterial({color:0x9a9d96});
+      const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.62,5),wood);shaft.position.y=.31;shared.add(shaft);
+      const head=new THREE.Mesh(new THREE.ConeGeometry(.02,.07,5),iron);head.position.y=.02;head.rotation.x=Math.PI;shared.add(head);
+    }
+    return shared.clone();};})();
+  function dropArrow(x,z){
+    if(spentArrows.length>=40)return;
+    const mesh=arrowShaft();
+    // Stuck at an angle, as a shaft that has hit something is: the pose is the whole of the read.
+    mesh.position.set(x,world.heightAt(x,z),z);
+    mesh.rotation.set(.42,(spentArrows.length*2.399)%(Math.PI*2),.22);
+    scene.add(mesh);
+    spentArrows.push({x,z,mesh});
+  }
+  /** Walk over one and it is yours again. */
+  function gatherArrows(){
+    if(!spentArrows.length)return;
+    const p=player.group.position;
+    let taken=0;
+    for(let i=spentArrows.length-1;i>=0;i--){
+      const shaft=spentArrows[i];
+      if(Math.hypot(shaft.x-p.x,shaft.z-p.z)>BOW.reach)continue;
+      scene.remove(shaft.mesh);spentArrows.splice(i,1);
+      if(inventory.add(BOW.arrow,1))taken++;
+    }
+    if(!taken)return;
+    inventory.refresh();refreshQuiver();audio?.effect('gather');
+    toast(`You pull ${taken===1?'a shaft':`${taken} shafts`} out of the ground. You have ${inventory.count(BOW.arrow)}.`,'ARROWS RECOVERED');
+  }
+  /** Clear the field: the shafts belong to the fight they were loosed in. */
+  function clearArrows(){for(const shaft of spentArrows)scene.remove(shaft.mesh);spentArrows.length=0;}
+  /** What the satchel says, so the HUD and the inventory agree about the quiver. */
+  function refreshQuiver(){document.body.classList.toggle('quivered',inventory.count(BOW.arrow)>0);}
   /** A blow at the straw post is worth what a light one is; the post's own ceiling does the rest. */
   const POST_BLOW=12;
   /** What an Arms payment shows: a level is worth saying, and the sheet follows it. */
@@ -3852,6 +3931,8 @@ function init() {
   }
   function retry() {
     retriesTaken++;
+    // The field is cleared with the fight: a shaft belongs to the try it was loosed in.
+    clearArrows();
     // Drowning is not a fight, so there is no fight to restart. `resetEncounter` would start
     // `lastEncounter`, which is DEFAULT_ENCOUNTER until somebody has fought, and a man who had
     // never drawn on anybody woke in a goblin raid a hundred metres from the water.
@@ -3954,6 +4035,9 @@ function init() {
     }
   }
   function attack(){if(mode==='playing'&&grounded){
+    // **A bow is not swung at anything.** The same button draws it, and the draw is held rather
+    // than pressed, so the press does nothing and the frame loop does the work (src/archery.js).
+    if(ranged())return;
     // A swimmer is a person with both hands busy (docs/swimming.md).
     if(inWater){toast('Both your hands are busy keeping your head where the air is.','IN THE WATER');return;}
     if(riding.mounted){toast('He will carry you to a fight, not through one. Press G to step down.','IN THE SADDLE');return;}
@@ -4124,11 +4208,16 @@ function init() {
     if(e.isTrusted&&autopilot.active)stopAutopilot('You took the reins.');
     if(mode==='fishing'&&e.button===0){endFishing();return;}
     if(mode!=='playing')return;
-    if(e.button===0){attack();return;}
+    if(e.button===0){swingHeld=true;attack();return;}
     if(e.button===2){drag=true;pointerX=e.clientX;pointerY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.focus();}
   });
   canvas.addEventListener('pointermove',e=>{if(drag){yaw-=(e.clientX-pointerX)*.006;pitch=THREE.MathUtils.clamp(pitch+(e.clientY-pointerY)*.004,.16,1.04);pointerX=e.clientX;pointerY=e.clientY;}});
-  canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('lostpointercapture',()=>drag=false);canvas.addEventListener('contextmenu',e=>e.preventDefault());
+  // The swing button is also the draw button, so whether it is *down* has to be known and not
+  // only when it went down. Every road out of holding it lets the bow go (src/archery.js).
+  canvas.addEventListener('pointerup',()=>{drag=false;swingHeld=false;});
+  canvas.addEventListener('pointercancel',()=>swingHeld=false);
+  canvas.addEventListener('pointerleave',()=>swingHeld=false);
+  canvas.addEventListener('lostpointercapture',()=>drag=false);canvas.addEventListener('contextmenu',e=>e.preventDefault());
   canvas.addEventListener('wheel',e=>{e.preventDefault();if(mode==='playing')targetDistance=THREE.MathUtils.clamp(targetDistance+e.deltaY*.008,4,19);},{passive:false});
   window.addEventListener('blur',()=>{stopInput();if(!location.search.includes('test')){if(mode==='fishing')endFishing(true);if(mode==='playing'&&!autopilot.active)modal('pause');}});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopInput();});
@@ -4196,6 +4285,11 @@ function init() {
       // Sparring is over. Nobody is dead, nobody is hurt, and neither of them has moved: the
       // bout has its own ending so that not one victory branch below can fire on a lesson.
       if(e.type==='spar-over')endSpar(e.winner);
+      // **Every arrow loosed leaves the quiver.** The fight only ever asks how many there are
+      // (`getArrows`); the satchel is the host's, and this is the one place it is emptied.
+      if(e.type==='loose'){inventory.remove(BOW.arrow,1);inventory.refresh();refreshQuiver();}
+      // And where it stopped, two shafts in three are still arrows lying on the ground.
+      if(e.type==='arrow-landed'&&e.recovered)dropArrow(e.x,e.z);
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         // **A fight come through together** is what moves a man's regard fastest, and a little
@@ -4369,7 +4463,7 @@ function init() {
       // (A frozen review is still `playing` and is left alone on purpose: `shield-guard` holds
       // the guard by hand and then stops the clock, and clearing it here would lower the shield
       // the picture exists to show.)
-      if(mode!=='playing')combat.guard(false,player.group.rotation.y);
+      if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.draw(false);}
       if(mode==='playing'&&!reviewFrozen) {
         const before=player.group.position.clone();
         const {forward,side}=autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
@@ -4407,6 +4501,16 @@ function init() {
         refreshShield();const guardKey=!autopilot.active&&keys.has(GUARD_KEY);
         if(guardKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-14*dt));}
         combat.guard(guardKey,player.group.rotation.y);
+        /**
+         * **Hold the swing button to draw; let go to loose** (the user's answers, 2026-09-21:
+         * no new key). With a bow in his hands the attack button is the draw, and everything
+         * else about it is the guard's rule read again - offered every frame, latched nowhere,
+         * aimed by looking, and offered *before* the fight is stepped so the arrow leaves on the
+         * frame the player let go rather than the one after it.
+         */
+        const drawKey=ranged()&&!inWater&&!riding.mounted&&(swingHeld||(!autopilot.active&&keys.has('KeyR')));
+        if(drawKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-16*dt));}
+        combat.draw(drawKey,player.group.rotation.y);
         const windBefore=combat.state.player.stamina;
         combatClock+=dt;combat.update(dt);
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
@@ -4416,6 +4520,9 @@ function init() {
         // drowning goes through `combat.revive()` and a fight can be ended from outside. This is
         // the belt to that brace, and it is cheap: one null check a frame.
         if(lent&&!(sparring&&combat.state.phase==='active'&&combat.state.encounterId===SPARRING_ID))returnLoan();
+        // Walk over a spent shaft and it is yours again. No prompt and no key: stooping for an
+        // arrow is not a decision (src/archery.js - about two in three survive the landing).
+        gatherArrows();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
@@ -4455,7 +4562,11 @@ function init() {
       player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:riding.mounted?{pace:movement}:null,
         // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
         // is what `combat.guard` decided this frame, not what the key is doing.
-        guarding:!!combat.state.player.guarding});
+        guarding:!!combat.state.player.guarding,
+        // And so is the bow. `combat.drawn` is how far it is *actually* drawn, which needs an
+        // arrow, the wind and an idle body - never the button. The shaft goes on the string with
+        // it (src/characters.js), so a man standing about with a bow is not nocked.
+        draw:combat.drawn});
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
@@ -4922,6 +5033,22 @@ function init() {
         guard:{up:!!combat.state.player.guarding,shield:!!gear.wearing('hand'),phase:combat.state.phase,action:combat.state.player.action,stamina:Math.round(combat.state.player.stamina),cost:arms?arms.margins().guardCost:null,shielded:document.body.classList.contains('shielded'),
         // What is on the screen, not what was decided: `up` beside a hip-height buckler is a bug.
         buckler:bucklerDrawn()},
+        /**
+         * The bow: what is in his hand, how far it is actually drawn, whether the shaft is on the
+         * string *in the scene*, how many arrows he has, what is in the air and what is lying on
+         * the ground. Numbers rather than intentions - "drawing: true" beside a nocked arrow that
+         * was never built would read as a working bow.
+         */
+        archery:(()=>{const bow=heldWeapon()?.ranged?heldWeapon():null;
+          const nocked=player.group.getObjectByName?.('Nocked arrow')??null;
+          const jerry=combat.state.allies.find(one=>one.kind==='archer')??null;
+          return{held:heldWeapon()?.id??null,bow:!!bow,drawn:+combat.drawn.toFixed(2),
+            drawing:!!combat.state.player.drawing,quiver:inventory.count(BOW.arrow),
+            nocked:nocked?{drawn:nocked.visible,at:[+nocked.getWorldPosition(new THREE.Vector3()).y.toFixed(2)]}:null,
+            flying:combat.state.arrows.length,onTheGround:spentArrows.length,
+            archerAlly:jerry?{id:jerry.id,action:jerry.action,progress:+(jerry.progress??0).toFixed(2),
+              apart:+Math.hypot(jerry.x-player.group.position.x,jerry.z-player.group.position.z).toFixed(1),
+              off:+Math.min(...combat.state.enemies.filter(one=>one.active).map(one=>Math.hypot(one.x-jerry.x,one.z-jerry.z))).toFixed(1)}:null};})(),
         // The bout, if one is on: who, in what family, how high it pays, what he can take and
         // what is left of it, and whether his road body has actually been taken off the ground.
         // Numbers, not intentions - a flag saying "sparring" would not have caught a twin.
@@ -5481,6 +5608,96 @@ function init() {
          * before the bout is laid on, so the second pass builds the same bout rather than finding
          * one already running.
          */
+        /**
+         * **The bow** (docs/combat-brief.md, phase 6). Three shots:
+         *
+         *   `bow-drawn` the traveler at full draw, bow in the off hand, shaft on the string;
+         *   `bow-jerry` Jerry standing off at his own distance and drawing on a goblin;
+         *   `bow-spent` the shafts that survived a volley, stuck in the ground to be picked up.
+         *
+         * The draw is a *held* verb, so these hold it rather than pressing it, and none of them
+         * ever calls `combat.draw(false)` — that is the loose, and it would fire the picture off
+         * down the clearing. Everything is laid afresh (`combat.revive()`, `clearArrows()`)
+         * because the runner composes the first view twice.
+         */
+        if(view==='bow-drawn'||view==='bow-jerry'||view==='bow-spent'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          questStage=10;combat.revive();sparring=null;returnLoan();clearArrows();
+          companionOffTheClock=true;
+          const jerry=view==='bow-jerry';
+          companions.restore({...createCompanions().snapshot(),walking:jerry?['merc-jerry']:[],regard:jerry?{'merc-jerry':60}:{}});
+          teachers.restore({version:1,lessons:jerry?{'merc-jerry':1}:{}});
+          rebuildCompany();
+          // His own bow and a quiver, granted rather than played for: Jerry's gift is a
+          // friendship away and this is a picture of what it looks like afterwards.
+          // **Settle the company before the fight is laid.** `placeMercenaries` only says where
+          // the file *should* be and `fileOrder` is filled while it does, so on the first pass
+          // `companionAllies` had nobody to add and the shot came back with `archerAlly: null` -
+          // and the runner composes the first view twice, so the two passes disagreed.
+          settleMercenaries();
+          if(!inventory.has(BOW.id))inventory.add(BOW.id,1);
+          weapons.setCondition(BOW.id,WEAPON_TYPES[BOW.id].maxDurability);weapons.equip(BOW.id);
+          if(inventory.count(BOW.arrow)<12)inventory.add(BOW.arrow,12-inventory.count(BOW.arrow));
+          inventory.refresh();refreshQuiver();player.setArmed(true);
+          const at=greenwayEncounter.center,me={x:at.x+(jerry?7:2),z:at.z+(jerry?9:14)};
+          player.group.position.set(me.x,world.heightAt(me.x,me.z),me.z);
+          const face=Math.atan2(at.x-me.x,at.z-me.z);
+          player.group.rotation.y=face;grounded=true;verticalSpeed=0;
+          /**
+           * **Not the Greenway.** That raid is in `TEACHING_FIGHTS`, which is exactly the set a
+           * companion is held *out* of, so the first draft of this stood Jerry a hundred metres
+           * away and photographed nobody (`archerAlly: null` said so). This is an ordinary fight
+           * on the same ground, with no `level` of its own so it takes the country's like every
+           * other authored fight does (tests/held-battles.test.js).
+           */
+          const mark={x:at.x,z:at.z-6};
+          combat.startEncounter({id:'bow-review',center:at,checkpoint:{x:me.x,z:me.z},
+            retreatAxis:'z',retreatLine:at.z+30,
+            enemies:[{id:'goblin-mark',x:mark.x,z:mark.z,hp:400,entry:0}]});
+          // A fight is only `active` a few frames in, and a draw only fills while one is on.
+          for(let step=0;step<10;step++)combat.update(1/60);
+          if(view==='bow-spent'){
+            // Loose into the wood and let the shafts land, then let go of nothing: the picture is
+            // of what is lying on the ground afterwards, which is about two arrows in three.
+            for(let shot=0;shot<6;shot++){
+              for(let step=0;step<80;step++){combat.draw(true,face);combat.update(1/60);}
+              combat.draw(false,face);
+              for(let step=0;step<90&&combat.state.arrows.length;step++)combat.update(1/60);
+              handleCombatEvents();
+            }
+          } else {
+            // Held, through the same door the player uses. If the rules say it is not drawing,
+            // the picture will show it not drawing, which is the point of the picture.
+            for(let step=0;step<90;step++){combat.draw(true,face);combat.update(1/60);}
+          }
+          if(jerry){
+            // Wind his own clock on until he is actually at his draw, and ease his arm in with
+            // it: a frozen review has no clock, so his pose is whatever the last frame left.
+            for(let step=0;step<420;step++){
+              combat.update(1/60);combatClock+=1/60;
+              combatView.update(1/60,combatClock,combat.state,player.group.position,true);
+              const him=combat.state.allies.find(one=>one.id==='merc-jerry');
+              if(him?.action==='windup'&&him.progress>.72)break;
+            }
+            /**
+             * **And then ease his arm in without letting the fight move on**, which is
+             * `settlePose` for somebody who is not the player: the view's clock is about to stop,
+             * and the animator's damping is `1 - exp(-rate * dt)` on the *change* in the time it
+             * is handed, so a pose reached on the last live frame is a pose barely begun. The
+             * first draft stopped the moment he reached his draw and photographed him carrying
+             * the bow at his hip with `action: windup, progress: .94` in the facts beside it.
+             */
+            for(let step=0;step<60;step++){combatClock+=1/60;combatView.update(1/60,combatClock,combat.state,player.group.position,true);}
+          }
+          settlePose({armed:true,draw:combat.drawn});
+          const him=jerry?combat.state.allies.find(one=>one.id==='merc-jerry'):null;
+          const focus=him?{x:him.x,z:him.z}:{x:me.x,z:me.z};
+          reviewTarget=new THREE.Vector3(focus.x,world.heightAt(focus.x,focus.z)+1.3,focus.z);
+          const shot=bestOf(reviewTarget,view==='bow-spent'?9:5.4,[face+1.4,face-1.4,face+1.9,face-1.9,face+2.5]);
+          yaw=shot.yaw;pitch=view==='bow-spent'?.42:.08;distance=targetDistance=shot.distance;reviewFrozen=true;
+          player.group.visible=!jerry;
+          $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
+          return;
+        }
         if(view==='sparring'||view==='sparring-pike'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
           // **Two bouts.** `sparring` is Ed the Word, who teaches the dagger and is therefore the
           // one man a traveler with the sword he landed with can already stand up against.
