@@ -1030,3 +1030,122 @@ Everyone else matches by construction: the figure is built with `tunic: npc.colo
 entry names no colour both sides now ask one exported question (`tunicForRole`, `skinForRole` in
 `src/characters.js`, which were `createCharacter`'s own parameter defaults and still are), so they
 cannot drift.
+
+---
+
+## The two shots wanted at the 56–62 m stand-in band
+
+Whoever next opens a window for the long road's end-of-build walk: please take these two, and
+nothing else is needed from the run. They are a pair that differs **only in distance**, so the
+two pictures can be laid side by side.
+
+**Subject: Maudry, the shrine keeper at the Lauvel** (`lauvel-keeper`, at −672.7, 325.4). She is
+chosen because she is the cleanest subject in the game for this: she stands still, she is never
+posed, escorting, marked, ridden, swimming or built by her own hand, and she wears a role colour
+(`rise-custodian`, 0x60677c) against open field, so a coat that changed would be obvious.
+
+```
+--review-views=stand-at:-672.7,389.4,3.1416     # 64 m: she is a stand-in
+--review-views=stand-at:-672.7,379.4,3.1416     # 54 m: she is herself
+```
+
+Both spots are standable and the ground between is clear the whole way (measured). The camera
+looks due south (π), straight down the field at her.
+
+**What the pair should show.** The same woman, the same colours, in the same place, twice: at 64 m
+one mesh with her silhouette and her coat, at 54 m the full figure. What would be wrong: a
+different colour between the two, a figure that has changed height or sunk into the ground, or a
+mark over the 64 m one. If anybody can spare a third, the same bearing at 59 m (`stand-at:-672.7,
+384.4,3.1416`) is inside the 56–62 m band and should show whichever she already was.
+
+---
+
+## Mus tells you the road is quicker while he is in the ruins of Rena
+
+**Seen:** you meet a hired sword in the woods a long way from any road — in the ruins at Rena, say
+— press F, and he says: *"Road today. It is quicker with company."*
+
+That is the one thing Mus would never say. His own second line, four words earlier in the same
+file, is *"I do not use the road. It goes where everybody knows it goes."* The whole of
+`src/wild-route.js` exists because the user ruled that he does not use it.
+
+**Cause.** `mercenaryLines` (`src/mercenaries.js:490`) picks a line by `placement.phase`, and a
+wild man's phase is `walking` for the whole of his 1,702 m — `createMercenaryCompany` gives him no
+stops, so he can never report `stopped`. His roster row (`src/mercenaries.js:130`) answers
+`walking` with the road line, because when it was written the road was the only thing he could be
+walking on.
+
+**Where a player meets him.** Measured off the route against every named place in the world:
+
+| | |
+|---|---|
+| The Well at Rena | **2 m** |
+| The Ruins of Rena | **5 m** |
+| The Row at Rena | 29 m |
+| Rena's Orchard | 43 m |
+| Applegarth | 43 m |
+
+So the likeliest place in the game to meet Mus is Rena — which has the archaeology digs and Rena's
+letters in it, and is somewhere a player has reason to stand about. He has a prompt there
+(mercenaries are ordinary talkers, ranked `passing` by `src/prompt-priority.js`), he answers F,
+and the first thing he says is the road.
+
+*Smallest repair:* a `walking` line for a man with no road under him. It is his roster row and one
+string — the builder's, not mine.
+
+---
+
+## Twenty-nine metres of Mus's line are ground he cannot stand on
+
+`src/wild-route.js`'s header says every metre was authored against the built world: *"A\* over
+ground `canStand` accepts, with the main road fenced off at 40 m, then simplified to the fewest
+waypoints that keep both rules."* Walked a metre at a time with `canStand` and a person's radius:
+
+| | |
+|---|---|
+| the whole line including the muster leg | **41 of 1,702 m blocked** |
+| the eleven authored waypoints alone | **29 m**, on legs 1, 2, 4, 5 and 8 |
+| the appended muster leg | 11 m |
+| in water | **0 m** — he never swims, which is right |
+
+The first is at (7.0, −60.3), barely off his own beach. The A\* was honest; the **simplification
+to fewest waypoints cut the corners back through the props the A\* had gone round**. Nothing
+catastrophic happens — `stepAround` shoulders him past and his home walks on without him — but the
+file's own promise is not kept, and a man visibly brushing through a thicket is what it buys.
+
+**And the 89 m claim is overstated.** The header: *"It never comes within 89 m of the main road
+until it is 41 m from the camp."* Measured against `world.paths[0]`:
+
+| | |
+|---|---|
+| closest approach of the eleven authored waypoints | **55.6 m**, at the last of them (−1000, 545) |
+| closest outside the 41 m join, with the muster leg | **39.7 m**, at a point 41 m from the muster |
+
+`WILD.clearance` is 40 m and the reason it exists is that *"the long road's companion remarks on
+any mercenary who passes within 40 m, and Mus must never be the one she remarks on."* That holds —
+but by **0.3 m at the join's own edge**, not by the 49 m of margin the header implies. Worth the
+long-road builder knowing the true number before anything else is built on it.
+
+---
+
+## The two golds: checked, and one near-miss killed
+
+**Both golds over one head is impossible.** `markerFor` gathers the grades somebody qualifies for
+and `strongestMarker` returns exactly one, by a rank table in which `main` (4) beats `main-open`
+(3) beats `plot` (2) beats `skill` (1). `mark()` then builds one object. A teacher who is also the
+long road's next stop wears the open gold and not the green leaf, which is what *"the open gold
+rides over whichever of them is next"* means.
+
+**No gold sits over somebody with nothing to say.** The eleven ids the long road's stops name —
+`harbormaster`, `garden-keeper`, `acorn-cook`, `pond-fisher`, `woodcutter-bowden`, `mycologist`,
+`meadow-courier`, `commons-miller`, `botanist`, `geologist`, `crossing-keeper` — all resolve to
+real people with conversations, and a stop that names no npc is given a marker at a *place*
+instead (`openAt`, `src/main.js:3261`), never a gold over a body. `tests/long-road.test.js:28`
+only asks that a stop is "somebody or somewhere", so nothing else was checking this.
+
+**The near-miss.** `markerFor` used to answer a bare word and now answers a fresh frozen
+`{ kind, open }` every call. The host's rebuild guard is `npc.markerKind !== <that>`, and against
+a new object every frame that is always true — every marked NPC's marker mesh would have been
+removed from the scene, rebuilt and re-added sixty times a second. It does not happen: the builder
+put `markerGrade(mark)` between them, which returns one word again, and the comparison is
+word-to-word (`src/main.js:3484`). Checked and cleared.
