@@ -1,20 +1,56 @@
 import { tierScale } from './gear.js';
 
+/**
+ * **How a family feels** (docs/combat-brief.md, phase 5). The mercenaries' own lines are the
+ * specification, and these three numbers are all of it:
+ *
+ *   `tempo` multiplies how long a swing takes. The sword is 1 and is the reference, so **a
+ *     traveler with a sword fights exactly the game he fought before**. Lakota says a staff
+ *     "strikes twice as often as your sword", so a staff is .5 and means it.
+ *   `arc` is the half-angle a swing actually reaches, the sword's being today's Math.PI * .34.
+ *     Eliana's greatsword takes "everything within a cart's width"; Ciaran's spear is two paces
+ *     of ash and nothing either side of it.
+ *   `room` is the clearance a swing needs. Only the pike has any: Matt says "in a doorway I am
+ *     furniture", so within two metres of a wall the pike will not swing at all.
+ *
+ * `locked` is the heavy families' third swing, which "cannot be stopped once it is going" -
+ * no stepping aside out of it.
+ */
+export const SWORD_ARC = Math.PI * .34;
+/** How much wider the reach a swing is aimed with is than the arc it lands in: today's ratio. */
+export const AIM_WIDER = .43 / .34;
+
 /** Equipment condition is separate from combat checkpoints and quest progress. */
 export const WEAPON_TYPES = Object.freeze({
   'simple-sword': Object.freeze({
     name: 'Simple sword', damage: Object.freeze([24, 26, 34]),
     reachMultiplier: 1, maxDurability: 24, wornAt: 6,
+    // The reference. Every number here is 1 or today's, which is what makes phase 5 invisible
+    // to a traveler carrying the sword he landed with.
+    tempo: 1, arc: SWORD_ARC,
   }),
   'forest-stick': Object.freeze({
     name: 'Forest stick', damage: Object.freeze([14, 16, 20]),
     reachMultiplier: .8, maxDurability: 6, wornAt: 2,
+    tempo: .5, arc: SWORD_ARC * 1.15,
   }),
   // Weapons the hired swords carry and will trade for. Same three-swing rhythm; different weight and reach.
-  'iron-mace': Object.freeze({ name: 'Iron mace', damage: Object.freeze([30, 32, 44]), reachMultiplier: 1, maxDurability: 30, wornAt: 8 }),
-  'long-dagger': Object.freeze({ name: 'Long dagger', damage: Object.freeze([16, 18, 24]), reachMultiplier: .72, maxDurability: 28, wornAt: 6 }),
-  'bearded-axe': Object.freeze({ name: 'Bearded axe', damage: Object.freeze([28, 30, 42]), reachMultiplier: 1.05, maxDurability: 20, wornAt: 5 }),
-  greatsword: Object.freeze({ name: 'Greatsword', damage: Object.freeze([34, 36, 50]), reachMultiplier: 1.3, maxDurability: 26, wornAt: 6 }),
+  'iron-mace': Object.freeze({ name: 'Iron mace', damage: Object.freeze([30, 32, 44]), reachMultiplier: 1, maxDurability: 30, wornAt: 8,
+    tempo: 1.35, arc: SWORD_ARC * 1.5, locked: true }),
+  'long-dagger': Object.freeze({ name: 'Long dagger', damage: Object.freeze([16, 18, 24]), reachMultiplier: .72, maxDurability: 28, wornAt: 6,
+    tempo: .72, arc: SWORD_ARC * .74 }),
+  'bearded-axe': Object.freeze({ name: 'Bearded axe', damage: Object.freeze([28, 30, 42]), reachMultiplier: 1.05, maxDurability: 20, wornAt: 5,
+    tempo: 1.3, arc: SWORD_ARC * 1.5, locked: true }),
+  greatsword: Object.freeze({ name: 'Greatsword', damage: Object.freeze([34, 36, 50]), reachMultiplier: 1.3, maxDurability: 26, wornAt: 6,
+    tempo: 1.4, arc: SWORD_ARC * 1.7, locked: true }),
+  // The polearms and the staff. Nobody who carries one will trade it (`trades: false`), so the
+  // only way one reaches the traveler's hand is off the ground where its owner fell.
+  'ash-spear': Object.freeze({ name: 'Ash spear', damage: Object.freeze([22, 24, 30]), reachMultiplier: 1.55, maxDurability: 24, wornAt: 6,
+    tempo: .95, arc: SWORD_ARC * .35, thrust: true }),
+  'war-pike': Object.freeze({ name: 'War pike', damage: Object.freeze([26, 28, 38]), reachMultiplier: 1.95, maxDurability: 22, wornAt: 5,
+    tempo: 1.2, arc: SWORD_ARC * .3, thrust: true, room: 2 }),
+  quarterstaff: Object.freeze({ name: 'Quarterstaff', damage: Object.freeze([15, 17, 22]), reachMultiplier: 1.12, maxDurability: 32, wornAt: 8,
+    tempo: .5, arc: SWORD_ARC * 1.15 }),
 });
 
 /** Weapons that change hands in a trade; sticks and the ranged or planted kits do not. */

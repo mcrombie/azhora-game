@@ -171,6 +171,21 @@ function encounterConfig(config) {
     retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, enemies, allies };
 }
 
+/**
+ * **How a family feels, read off the weapon** (docs/combat-brief.md, phase 5). A weapon that
+ * says nothing is the sword: tempo 1, today's arc, no room needed, nothing locked. That is what
+ * keeps every fight already built exactly as it was, and what lets a test hand `combat` a bare
+ * `{ id, damage, reach }` and get the game it has always got.
+ */
+const SWORD_ARC = Math.PI * .34, AIM_WIDER = .43 / .34;
+const tempoOf = weapon => (Number.isFinite(weapon?.tempo) && weapon.tempo > 0 ? weapon.tempo : 1);
+const arcOf = weapon => (Number.isFinite(weapon?.arc) && weapon.arc > 0 ? weapon.arc : SWORD_ARC);
+/** The swing this weapon actually makes: the same three, taken at its own pace. */
+const swingOf = (combo, weapon) => {
+  const swing = SWINGS[combo], tempo = tempoOf(weapon);
+  return { ...swing, duration: swing.duration * tempo, contact: swing.contact * tempo };
+};
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const angleDifference = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
@@ -219,6 +234,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   // Hold to guard. It is held rather than done: the host says every frame whether the key is
   // down and which way the traveler is facing, and nothing here remembers a press.
   let guardHeld = false, guardYaw = 0;
+  /**
+   * Whether there is `metres` of clear ground all round him to swing a long weapon in. Only the
+   * pike asks. A world with no colliders - a test's - is open ground, which is the right answer.
+   */
+  function roomToSwing(metres) {
+    for (const collider of world.nearColliders?.(position.x, position.z, metres + 2, []) ?? []) {
+      const radius = collider.r ?? Math.hypot(collider.hx ?? 0, collider.hz ?? 0);
+      if (Math.hypot(collider.x - position.x, collider.z - position.z) - radius < metres) return false;
+    }
+    return true;
+  }
   let hurtProtection = 0;
   let dodgeDirection = { x: 0, z: 1 };
   let nextAttackerAt = 0;
@@ -385,8 +411,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (player.stamina < cost) return false;
     const weapon = usableWeapon();
     if (!weapon) { bufferedAttack = false; return false; }
+    // A pike is two and a half paces of ash: "in a doorway I am furniture". Within `room` of
+    // anything solid it will not swing at all, and the traveler is told why rather than pressing
+    // a key that quietly does nothing.
+    if (weapon.room > 0 && !roomToSwing(weapon.room)) {
+      emit('no-room', { weaponId: weapon.id, room: weapon.room, x: position.x, z: position.z });
+      bufferedAttack = false;
+      return false;
+    }
     const candidates = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead'
-      && distance(position, enemy) <= 3.2 && facing(position, enemy, yaw, Math.PI * .43));
+      && distance(position, enemy) <= 3.2 * (weapon.reachMultiplier ?? 1)
+      && facing(position, enemy, yaw, arcOf(weapon) * AIM_WIDER));
     candidates.sort((a, b) => distance(position, a) - distance(position, b));
     if (candidates.length) yaw = Math.atan2(candidates[0].x - position.x, candidates[0].z - position.z);
     player.yaw = yaw;
@@ -408,7 +443,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (!weaponReady) return false;
     if (player.action === 'attack') {
       // A single late press is remembered; holding the mouse cannot queue a whole combo.
-      if (actionTime >= SWINGS[player.combo].duration * .55) {
+      if (actionTime >= swingOf(player.combo, attackWeapon).duration * .55) {
         if (!usableWeapon()) return false;
         bufferedAttack = true;
         return true;
@@ -423,7 +458,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (!weaponReady || state.phase === 'defeated' || player.stamina < 25) return false;
     if (player.action === 'dead' || player.action === 'hurt' || player.action === 'dodge') return false;
     // Attacks can be cancelled after contact, so a committed swing still has a readable cost.
-    if (player.action === 'attack' && actionTime < SWINGS[player.combo].contact) return false;
+    // "It is slow to start and it cannot be stopped once it is going." The heavy families'
+    // third swing commits: no stepping aside out of it, at any point in it.
+    if (player.action === 'attack' && attackWeapon?.locked && player.combo === SWINGS.length - 1) return false;
+    if (player.action === 'attack' && actionTime < swingOf(player.combo, attackWeapon).contact) return false;
     let x = Number.isFinite(direction.x) ? direction.x : 0;
     let z = Number.isFinite(direction.z) ? direction.z : 0;
     const length = Math.hypot(x, z);
@@ -489,12 +527,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function applyPlayerStrike() {
-    const swing = SWINGS[player.combo];
     const weapon = attackWeapon;
     if (!weapon) return;
+    const swing = swingOf(player.combo, weapon);
     const candidates = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead'
       && distance(position, enemy) <= swing.reach * weapon.reachMultiplier
-      && facing(position, enemy, player.yaw, Math.PI * .34));
+      && facing(position, enemy, player.yaw, arcOf(weapon)));
     candidates.sort((a, b) => distance(position, a) - distance(position, b));
     // A clean single target per swing keeps timing legible in the small first encounter.
     if (candidates[0]) {
@@ -568,7 +606,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const previousTime = actionTime;
     actionTime += dt;
     if (player.action === 'attack') {
-      const swing = SWINGS[player.combo];
+      const swing = swingOf(player.combo, attackWeapon);
       player.progress = clamp(actionTime / swing.duration, 0, 1);
       const advanceTime = Math.max(0, Math.min(actionTime, swing.contact) - Math.min(previousTime, swing.contact));
       const lungeSpeed = player.combo === 2 ? 1.8 : 1.4;

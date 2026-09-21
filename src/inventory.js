@@ -32,6 +32,23 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A hooked axe head on a long haft. Heavy, and it bites deep on the second swing.',
     description: 'Traded from a hired sword. Heavier blows than a sword with a little more reach, at the cost of wear. Each landed strike wears it by 1 condition; the village workbench mends it.',
   }),
+  // The polearms and the staff. Nobody who carries one will trade it, so every one of them
+  // comes off the ground where its owner fell (src/found-weapons.js).
+  'ash-spear': Object.freeze({
+    name: 'Ash spear', type: 'Weapon', icon: 'sword',
+    brief: 'Two paces of ash and a point. Long reach, and almost nothing to either side of it.',
+    description: 'Taken up from the ground. It thrusts rather than cuts: it reaches far in front of you and nowhere else, so it rewards facing what you are fighting and punishes being flanked. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
+  'war-pike': Object.freeze({
+    name: 'War pike', type: 'Weapon', icon: 'sword',
+    brief: 'The longest reach in the game, and furniture in a doorway.',
+    description: 'Taken up from the ground. Nothing reaches you before you reach it, in open country. It will not swing at all within two metres of a wall, which is most of a village. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
+  quarterstaff: Object.freeze({
+    name: 'Quarterstaff', type: 'Weapon', icon: 'sword',
+    brief: 'Two ends, no edge. It strikes twice as often as a sword.',
+    description: 'Taken up from the ground. It will not cut, so it goes for hands and knees: every blow is light and they come twice as fast as a sword\u2019s. Each landed strike wears it by 1 condition; the village workbench mends it.',
+  }),
   greatsword: Object.freeze({
     name: 'Greatsword', type: 'Weapon', icon: 'sword',
     brief: 'A two-handed blade as long as a man is tall. Reach and weight, slow to stop.',
