@@ -4,6 +4,16 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — the company rides when you ride
+
+The user, from the Lumber Town stable yard with Chris standing beside the horse: **"My companion
+should also get a horse."** The rule as briefed to the builder: when the traveler rides, everyone
+walking with him rides. The company has horses from the moment he owns one; their mounts are a
+function of his riding state and of who walks with him, so nothing new is saved; stepped down,
+their horses are picketed beside his and come when his is whistled; nobody fights from the
+saddle, so whatever brings him down brings them down. Each horse has its own natural coat and
+none is named.
+
 ## 2026-09-21 — normal mode, and a tentative hard mode
 
 **The game we build and test is "normal", and it is all in English.** The user is switching off
