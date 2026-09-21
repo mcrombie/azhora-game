@@ -248,7 +248,9 @@ test('the chart names Tidehaven, with Eastreena as its old name, and adds the ru
   for (const area of SUBREGIONS) {
     assert.doesNotMatch(area.name, /Eastreena/, `${area.id} does not use the old name as a title`);
     assert.equal(hexOwnerAt(area.x, area.z), area.region, `${area.name} stands in ${area.region}`);
-    assert.ok(area.radius >= 28 && area.radius <= 130, area.id);
+    // The floor is 18, not 28, since the Toll House: a ground may be that small only where a
+    // neighbour's disc leaves it no more room, and tests/map-fog.test.js holds that law.
+    assert.ok(area.radius >= 18 && area.radius <= 130, area.id);
   }
   for (const area of SUBREGIONS) for (const other of SUBREGIONS) {
     if (area === other) continue;
