@@ -54,6 +54,33 @@ The usual shape: `createLongRoad`, `view`, `act`, `snapshot`, `restore`, a valid
 - `view(state)` gives: the next spine stop (what wears the open gold), the legs with their stops
   done or open, whether a drill is on offer (its leg's spine stops done, Chris with you, drills <
   leg), and `finished`.
+
+**The play at Fernway, as built (2026-09-21).** `act('played')` was written and *nothing ever
+called it*, so the leg-3 spine stop could not be closed in the built game at all: with everything
+else in Drent done it was the only undone spine row, which made it the open gold for ever, left
+leg 3 open, and — because a drill is offered on `legs[drills + 1]` — meant Chris could only ever
+give **two** of his five sittings. What closes it now:
+
+- **The host says so.** A scene watched to the end (`troupe-tip-<n>` → `endScene`, in `troupeAct`)
+  at one of the company's camps in Drent calls `act('played')`. Walking out of a play
+  (`cancelScene`) counts nothing. The module is told; it does not watch the troupe itself.
+- **Both Drent camps serve it** (`PLAY_TROUPE_STOPS = ['fernway', 'avrel']`, kept beside the stop
+  so the two tables cannot drift). The route table on leg 4 names "the players' second camp" as a
+  branch on the way: **that branch was never built, and is not going to be** — the Avrel clearing
+  serves the leg-3 stop instead, which is what an older save with the wagon parked there needs.
+- **New games begin the wagon at Fernway** (`FIRST_CAMP`, `src/troupe.js`). It used to be a coin
+  toss with Avrel, and the toss decided at world creation whether the game could close a spine
+  stop at all: a traveler on the long road is never more than about 110 m from that verge, which
+  is inside `TROUPE_UNSEEN`, so a wagon that starts there is pinned there — and a camp that near
+  the traveler is not one the company will move *to* either, so a wagon that started at Avrel
+  could never come. Measured before the change: **51%** of fresh games. Only the first camp is
+  settled; everything after the first move is the wandering it always was.
+- **While the stop is open its gold is on the camp the wagon is actually at**, so it never stands
+  on an empty verge; and if the company has left Drent altogether the open gold **passes over**
+  the stop to the next undone spine stop, rather than holding the road up behind it. The stop
+  stays open, is offered again the moment they come back, and `finished` still wants it.
+- The host passes `troupe: { stop, x, z }` in `longRoadWorld()`. A caller that says nothing is not
+  claiming the company has left: the stop keeps the point the table gives it.
 - `notice(placements, travelerPoint, subregionOf)`: the mercenaries newly noticed this frame —
   `walking` or `stopped`, in the traveler's named ground or within 40 m, not yet in `seenAt` — and
   records the stop the traveler was nearest.

@@ -14,7 +14,7 @@ import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOPS } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -830,6 +830,9 @@ function init() {
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
+    // Where the players are camped: the leg-3 stop is their play, so its gold follows the wagon
+    // while it is open, and a wagon out of Drent does not hold the road up (src/long-road.js).
+    troupe:{stop:troupe.stop.id,x:troupe.stop.x,z:troupe.stop.z},
     companion:companionOffTheClock&&!longRoad.released?{with:true}:false});
   /**
    * Any of the eleven may be the player and every one of them lands knowing something, so a
@@ -1198,12 +1201,14 @@ function init() {
     if(action==='troupe-isaura-dies'){troupe.die();return;}
     const tip=/^troupe-tip-(\d+)$/.exec(action);
     if(tip){let n=Number(tip[1]);if(n&&!inventory.remove(COPPER_ITEM,n))n=0;troupe.tip(n);
-      // The long road's leg-3 stop is this play, watched to the end at the Fernway verge, and it
-      // has no view of its own: the host is the one that can say it happened (src/long-road.js
-      // `PLAY_TROUPE_STOP`). Read before the scene ends, because the wagon is where it was.
-      const onTheLongWay=troupe.stop.id===PLAY_TROUPE_STOP;
+      // The long road's leg-3 stop is this play, watched to the end at either of the company's
+      // camps in Drent - the Fernway verge it stands on, or the Avrel clearing, which is where an
+      // older save may have left them. It has no view of its own, so the host is the one that can
+      // say it happened (`PLAY_TROUPE_STOPS`). Read before the scene ends: the wagon is where it
+      // was when the play began, and `endScene` is the end of it.
+      const onTheLongWay=PLAY_TROUPE_STOPS.includes(troupe.stop.id),playedAt=troupe.stop.where;
       const done=troupe.endScene();placeTroupe(true);
-      if(onTheLongWay&&longRoad.act('played').ok)toast('A play on the verge at Fernway, watched to the end.',`${TALAELOS.name.toUpperCase()} · THE LONG WAY ROUND`);
+      if(onTheLongWay&&longRoad.act('played').ok)toast(`A play at ${playedAt}, watched to the end.`,`${TALAELOS.name.toUpperCase()} · THE LONG WAY ROUND`);
       if(done.gift)inventory.add(PLAYBILL_ITEM,1);inventory.refresh();audio?.effect('success');
       openDialogue(galeon,troupeThanks(n,done.gift),null,'Exit, pursued by nobody');
       if(done.gift)toast('You are a regular of Talaelos now. The playbill is in your satchel, signed by the whole company, and the dog.','THE PLAYERS OF NYLON');saveRoad(false);}

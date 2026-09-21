@@ -35,6 +35,27 @@ follow what is being said. A save that already holds linguist experience keeps i
 - There is no player-facing way to choose hard mode yet. That arrives when hard mode is
   something worth choosing.
 
+## Known wrinkles, untested by instruction
+
+Two things noticed while the gate was built and deliberately left alone, because hard mode is not
+developed or tested yet. Neither can be reached in normal mode. Whoever takes hard mode up should
+start here.
+
+1. **The first world of a session letters its signs in English, whatever the traveler knows.**
+   `setSignReader` runs *after* `createWorld` in `src/main.js`, and a sign takes its lettering
+   when it is built, so on the boot that builds the world there is nobody to ask and every board
+   reads plainly. `docs/languages.md` §10.4 already says signs are a snapshot taken at world
+   build; this is the same fact biting one step earlier than it reads there. The fix is to hand
+   the reader over before the world is built, which means the linguist has to exist before it —
+   moving one `const` up past several hundred lines of `init()`, with the temporal dead zone to
+   mind (a `const` read above its declaration crashes the first frame). Not attempted.
+2. **`saved.mode` is validated and saved, but not restored on continue.** The mode is settled at
+   page open — the skill sheet, the sign atlas and the starting kit are all decided from it before
+   a save is read — so switching it under a running game would leave half the game in the other
+   mode. The field says which game a save was written in and nothing acts on it. What *should*
+   happen when a hard-mode save is opened in a normal session (refuse it, offer to relaunch, or
+   carry on as normal) is undecided, and the coordinator has held it until hard mode is real.
+
 ## Candidates, not decided
 
 Nothing here is agreed. They are written down so they are not lost: lethal swimming was the
