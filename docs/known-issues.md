@@ -1149,3 +1149,158 @@ a new object every frame that is always true — every marked NPC's marker mesh 
 removed from the scene, rebuilt and re-added sixty times a second. It does not happen: the builder
 put `markerGrade(mark)` between them, which returns one word again, and the comparison is
 word-to-word (`src/main.js:3484`). Checked and cleared.
+
+---
+
+## Load-bearing: `revive()` leaves `encounterId` set, and the drowned branch now needs it
+
+**Read this before tidying `combat.revive()`.**
+
+`revive()` (`src/combat.js:791`) sets the phase to `peaceful`, empties the enemies, clears the
+allies and restores the player — and deliberately or not, it **leaves `state.encounterId` naming
+the fight that is over**. Reported here earlier as harmless: `#encounter-status` is hidden outside
+a fight and every other reader sits inside an event handler, so nothing shows it.
+
+It is not harmless any more. `retry()`'s drowned branch (`src/main.js:2838–2851`) now reads:
+
+```js
+if(inAftermathFight())aftermath.endEncounter(combat.state.encounterId);
+combat.revive();
+```
+
+`inAftermathFight()` (`src/main.js:942`) is `aftermath.spec && combat.state.encounterId ===
+aftermath.spec.encounterId`. Both the test and the argument are `combat.state.encounterId`, and
+the call sits **before** `revive()` on purpose. Clear the id inside `revive()`, or move that line
+below it, and a traveler who drowns inside one of the day-after fights leaves the aftermath
+believing its encounter is still running — which is the thing those two lines exist to prevent,
+and it will not let the commander be given the word again.
+
+Two ways to make it safe if `revive()` is ever tidied: have `revive()` return the id it cleared,
+or read the id into a local before either call. Neither is urgent; what is urgent is that nobody
+removes the line without knowing why it is where it is.
+
+*How near this is to being reachable:* not very, and by the same margin as everything else on this
+shore. Of the eleven fights the game can start, the aftermath's nearest swimmable water is 98 m
+(the Solis sweep) and the 45 m leash ends a fight long before a swimmer is wet — so drowning
+inside an aftermath fight cannot happen today. It is a guard against the geography changing, which
+is the right kind of guard to have, and `tests/swimming.test.js`'s beach-fight tripwire is what
+says when it stops being theoretical.
+
+---
+
+## Coming ashore never writes its checkpoint
+
+**Seen:** swim a crossing, walk out onto the far beach, and the game tells you what the swim was
+worth — *"Swimming +8. 18 m of it."* No checkpoint is written. Quit there and the crossing is not
+in the save.
+
+**It is meant to write one.** `payForTheSwim` (`src/main.js:2790`) ends with
+`if(paid.xp||swimMetres>12)saveRoad(false);` — the whole point of that line is the autosave after
+a crossing.
+
+**Why it never fires.** `saveRoad` refuses while `inWater` (`src/main.js:2030`), which is the
+repair that closed the reload-with-a-full-bar crossing and is right. But both calls to
+`payForTheSwim` sit *inside* the `if(inWater)` that is about to be cleared:
+
+```js
+if(!wet){ if(inWater)payForTheSwim(p.x,p.z);     // src/main.js:2821 — walking out
+          inWater=false; … }
+if(riding.mounted){ if(inWater)payForTheSwim(p.x,p.z);   // :2807 — mounting out
+                    … inWater=false; return; }
+```
+
+So the save is attempted one statement before the flag that forbids it is cleared, and is refused
+every time. Driven on the real world through `main.js`'s own frame, taught swimmer, 18 m out and
+back:
+
+| | xp paid | checkpoints attempted | written |
+|---|---|---|---|
+| walked out | **8** | `[{ok: false, wet: true}]` | **none** |
+| mounted out at the horse | **8** | `[{ok: false, wet: true}]` | **none** |
+
+The xp and the waters-crossed are paid correctly; only the save is lost. `docs/swimming.md` says
+*"No checkpoint is written from the water"* — true, and it turns out none is written on leaving it
+either, which is the one place the design wants one.
+
+*Smallest repair:* clear `inWater` before the payout rather than after it, in both branches — or
+let `payForTheSwim` clear it as its first act, since it is only ever called to end a swim. One
+line either way.
+
+---
+
+## A hired sword marches on the spot at a stop, and the ceiling hides it
+
+The builder recorded 140 of 2,523 walking/stopped placements (5.5 %) putting a man's *home* inside
+a prop, with a test ceiling of 8 %, and left it deliberately. Split by phase on the real world it
+is a different shape:
+
+| phase | blocked homes | rate |
+|---|---|---|
+| walking | 16 of 816 | 2.0 % |
+| **stopped** | **32 of 197** | **16.2 %** |
+
+**That split is the whole finding.** A walking man's home moves on down the road, so a prop only
+ever brushes him aside for a moment. A *stopped* man's home is fixed for his entire dwell — 60,
+90 or 120 s at the three stops — and one in six of those is somewhere he cannot stand.
+
+Driven through `main.js`'s own step (`stepAround`, 2.4 m/s), starting each man from ground
+`canStand` accepts within 12 m of his home: of the blocked *stopped* placements sampled, **12 march
+and 20 stand still.** Marching means he never gets inside the 0.1 m of his home that
+`main.js:3474` needs to stop, so `pace` stays above 0.1, so the walk cycle keeps playing and he
+keeps turning to face the home he cannot reach. A hired sword doing a walk cycle on the spot
+against a hedge, for up to two minutes, in Lumber Town square and at the crossing.
+
+So it is not only a number. The 8 % ceiling is over both phases together, and 5.5 % passes it
+while the phase that shows passes 16 %. *Smallest repair:* nudge a blocked **stop** position to
+the nearest standable point when the formation is laid, which is 197 placements rather than 2,523;
+or give the ceiling a per-phase half so the test says which phase it is talking about.
+
+---
+
+## Chris is set down beside you four times on a run down the road
+
+`src/main.js:372` explains the 40 m set-down as *"at forty there is a wall, a river or a boat
+between you."* A sustained run is a third way to reach it: the companion's top pace is 6.4 m/s
+(`main.js:401`) and the traveler's run is 7.2, so the gap opens at 0.8 m/s and forty metres is
+fifty seconds.
+
+Measured, following the real road polyline at a run from the landing: **1,668 m, gap reaching
+exactly 40.0 m, set down beside the traveler 4 times.** What a player sees is a man appearing at
+their shoulder out of nothing, four times, on the way to the muster. Not a fault in the rule —
+the rule is right for walls and rivers — but the running case was not in its reckoning.
+(Routed to the long road.)
+
+---
+
+## Mara and the cardinals: killed, and the rule underneath it is not what it says
+
+**The report was that Mara stands inside the cardinals' home ground (`west-fences`, radius 5.5)
+and takes their perches. She does not, by a wide margin.**
+
+| | |
+|---|---|
+| Mara's stand (`world.pierHead`, set `src/main.js:272`) | world (0, 25) |
+| `west-fences` as authored | village (−23.5, 2.5), radius 5.5 |
+| the same in world metres (`villageToWorld`, it carries no `world: true`) | (−17.5, 52.5) |
+| between them | **32.60 m** |
+| nearest of its eleven perches to her | **28.7 m** |
+
+It is not even a frame mix-up: comparing her world position against the raw authored centre gives
+32.53 m, so both readings agree she is far outside. The nearest bird ground she comes to at all is
+`green-robins` at 10.2 m against a 6 m radius — 4.2 m clear.
+
+**And a stand cannot take a perch from anybody.** `habitatSpots` (`src/drent-birds.js:500`)
+applies `avoid` — which `main.js:947` fills with every NPC's position — only to the **ground**
+foraging spots, at 1.6 m. `habitat.perches` are mapped through unconditionally. So the worry
+written at `src/rena.js:192-194`, *"nothing sits inside a bird's home ground … which would take its
+perches away"*, describes something the code cannot do. What a stand can take is ground spots.
+
+**Nothing takes any.** Built the world and ran `habitatSpots` for every habitat twice, once with
+`avoid` empty and once with every stand in the game: **not one habitat loses a single ground
+spot.** `west-fences` keeps 22 ground spots and 11 perches either way.
+
+Two things did come out of the sweep, and neither is the harbourmaster: the long road's
+`bird-garden` stop point sits 2.63 m inside `bramble-catbird` (radius 4) and `willowmere-fire`
+4.80 m inside `willowmere-reeds` (radius 6). Those are places the player is sent to stand, not
+stands, and they cost the birds nothing by the measurement above — noted only so the next person
+measuring this starts from the right two.
