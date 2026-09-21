@@ -144,9 +144,10 @@ profiles should leave his blank.
 
 ### 8. Eliana — two hands and one edge
 - **Opening:** standard; she comes alone at 2880 s, so the same lateness question as Lakota.
-- **Arc — undecided.** Three takes are with the user and none is chosen; do not invent a
-  fourth. What is fixed is the line: "I would have come sooner, but the boat I wanted was not the
-  boat that was leaving." Something she was trying to reach. Mechanically she is the most finished
+- **Arc — decided 2026-09-21: the surveyor with someone else's name** (`docs/design-answers.md`).
+  A marshal's daughter come home to Ambron under her mother's name, and a scholar of old stone
+  whose ruins all face north-west. Her line stands: "I would have come sooner, but the boat I
+  wanted was not the boat that was leaving." The boat she wanted was going home. Mechanically she is the most finished
   of the non-Cromb characters after Chris, because the greatsword is already playable.
 
 ### 9. Matt, Prince of Zorkys — a hall, a valley and four hundred people

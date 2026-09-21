@@ -4,6 +4,22 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — names, and go-aheads
+
+**Names, in the user's spelling: Cromb the Barbarian (never "Crom"), and Kristen (never
+"Christin" or "Christian").** Ids keep their old spelling (`merc-christin`); what is on screen
+and in the docs does not.
+
+**The combat design is approved to build** (`docs/combat-brief.md`), and the user may tweak it:
+keep its numbers in one table.
+
+**The eleven character profiles are good for now**; the user may tweak them later. Nobody needs to
+ask again.
+
+**Chris Gotwood may stand dead-centre in the sail-in shot.**
+
+**The long road is being built**, by its own builder, from `docs/drent-long-road-build.md`.
+
 ## 2026-09-21 — fighting, and the day
 
 **Combat skills are divided by weapon: you get good at what you carry.** Blades, Heavy arms,
@@ -66,7 +82,21 @@ side the traveler takes at Peblos is also a verdict on Ed.
 Thalmagar. If he travels with you, the sage in the Oremindi already knows your name; Mus is how
 the late story reaches back into chapter one. He never says so.
 
-**Eliana:** three takes drafted for the user to choose from; not yet decided.
+**Eliana is a splice: the surveyor with someone else's name** (2026-09-21; the Surveyor and the
+Daughter, the Creditor dropped). Born in Ambron to a marshal of the old emperor, sent abroad at
+twelve "for her education" the year her father fell. She has come home the only way nobody checks,
+on a mercenary's papers under her mother's name. What the education made of her is a scholar of
+old stone, from a Pyrosi academy that stopped paying when Pyros started falling: she measures
+ruins for a book nobody commissioned, the glasses are for inscriptions, she corrects people's
+dates, and the greatsword is how a scholar crosses a war with her papers in order. She keeps two
+secrets. Her name: she knows the Empire's forms of address too well and catches herself. And what
+the stones say: every ruin she has surveyed is older than the empires, and they all face the same
+way, north-west. She came home for that as much as for her father; the line the ruins draw runs
+through the country she was sent away from. Her fixed line stands ("I would have come sooner, but
+the boat I wanted was not the boat that was leaving"): the boat she wanted was going home. At the
+fork her loyalties are the hardest in the company: the Republic's renegade prince was her
+childhood friend, and the army is her father's life's work. On the road she takes archaeology
+deeper than Lakota does.
 
 **Anyone can be the player.** Eleven playable characters, Cromb first, then Chris Gotwood, Ed the
 Word, and on through the company; the ten not chosen are the NPC roster. Starting skills differ
