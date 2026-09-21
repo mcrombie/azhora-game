@@ -366,7 +366,7 @@ export function createWestLife(scene, world) {
         id: `${zone.id}-${i + 1}`, species: zone.species, region: zone.region, zone, index: i, scale,
         ...home, y: world.heightAt(home.x, home.z) + (zone.air ?? 0), home: { ...home },
         yaw: (i * 1.83 + .5) % TAU, action: zone.air ? 'soar' : 'graze', timer: 1.4 + i * .71,
-        clock: i * .43, speed: 0, lift: 0, watching: 0, detour: 0, blocked: 0, flight: 0, hidden: false, landing: null, homing: false, cornered: 0, breakYaw: 0,
+        clock: i * .43, speed: 0, lift: 0, watching: 0, detour: 0, blocked: 0, flight: 0, hidden: false, landing: null, homing: false, cornered: 0, breakYaw: 0, slip: 0, slipFrom: 0, slipTo: null,
       });
     }
     creatures.push(...animals);
@@ -477,7 +477,25 @@ export function createWestLife(scene, world) {
   }
 
   /** An otter gone into the water: under for a few seconds, and up again at whichever of its bank spots is furthest from the traveler. */
+  const SLIP = Object.freeze({ seconds: .5, pace: 2.2, sink: .42 });
   function dive(animal, dt, player, flock) {
+    if (animal.slip > 0) {
+      // Going in: it turns to the water, slides the last of the bank and sinks, where you can see it do it.
+      // Seen in the renderer before this, it simply was not there any more between one frame and the next.
+      animal.slip = Math.max(0, animal.slip - dt);
+      const to = animal.slipTo;
+      if (to) {
+        const yaw = Math.atan2(to.x - animal.x, to.z - animal.z);
+        animal.yaw += angleDelta(yaw, animal.yaw) * Math.min(1, dt * 10);
+        animal.speed = move(animal, SLIP.pace * dt, { offsets: [0], footing: inRange }) / dt;
+      }
+      // Its ground is whatever is under it, as for everything else here; what is seen goes down smoothly
+      // from the bank it left, however far the bed falls away beneath it.
+      animal.y = world.heightAt(animal.x, animal.z);
+      animal.lift = animal.slipFrom - animal.y - SLIP.sink * (1 - animal.slip / SLIP.seconds);
+      if (animal.slip > 0) return;
+      animal.hidden = true;
+    }
     animal.hidden = true; animal.lift = 0; animal.speed = 0;
     if (animal.timer > 0) return;
     let best = null;
@@ -487,7 +505,7 @@ export function createWestLife(scene, world) {
     }
     if (!best || best.d < 14) { animal.timer = 2; return; }   // nowhere safe to come up yet
     animal.x = best.x; animal.z = best.z; animal.y = world.heightAt(best.x, best.z);
-    animal.hidden = false; animal.action = 'graze'; animal.timer = 3;
+    animal.hidden = false; animal.lift = 0; animal.slip = 0; animal.action = 'graze'; animal.timer = 3;
   }
 
   /** Every way on is shut: of the ways that are open, the one that points least at whoever is coming. */
@@ -550,7 +568,11 @@ export function createWestLife(scene, world) {
           heading = Math.atan2(Math.sin(away) + bx / b * .55, Math.cos(away) + bz / b * .55);
       } else if (species === 'otter') {
         const water = nearestWater(animal);
-        if (water && water.edge < 1.6) { animal.action = 'dive'; animal.timer = 5; animal.hidden = true; return; }
+        if (water && water.edge < 1.6) {
+          animal.action = 'dive'; animal.timer = 5 + SLIP.seconds; animal.slip = SLIP.seconds;
+          animal.slipFrom = animal.y; animal.slipTo = { x: water.x, z: water.z };
+          return;
+        }
         if (water && water.edge < 40) {
           const to = Math.atan2(water.x - animal.x, water.z - animal.z);
           if (Math.abs(angleDelta(to, away)) < 1.75) heading = to;   // the water, unless you are standing in the way of it
@@ -630,7 +652,7 @@ export function createWestLife(scene, world) {
         if (s + 1 > reach) { animal.x = x; animal.z = z; }
       }
       animal.y = world.heightAt(animal.x, animal.z); animal.lift = 0; animal.flight = 0; animal.landing = null; animal.hidden = false;
-      animal.speed = 0; animal.detour = 0; animal.blocked = 0; animal.cornered = 0; animal.homing = false;
+      animal.speed = 0; animal.detour = 0; animal.blocked = 0; animal.cornered = 0; animal.homing = false; animal.slip = 0;
       animal.action = 'graze'; animal.timer = 1 + animal.index * .3;
     }
   }
