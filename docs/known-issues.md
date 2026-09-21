@@ -666,6 +666,39 @@ island now. `tests/map-fog.test.js` checks every named area's centre against its
 rather than against `regionAt`, and `tests/open-country.test.js` holds the four worst points the
 survey above measured.
 
+**Amended 2026-09-21: a shore fringe, and the figure above moves with it.** The sentinel was
+right about the west and wrong about a country's own coast. The atlas is drawn in 100 m hexes
+and the world is built in metres, so Drent's beach runs on east of the last hex Drent owns:
+south of Tidehaven the atlas ends Drent at about x = 0 for every z from 74 to 140, while the
+strand the traveler walks carries on past it. **1,055 standable cells of Drent's own shore sat
+on hexes Drent does not own**, among them 1,282 half-metre samples of the Weatherhead's disc,
+where Cabe sits and smokes — so a man on Tidehaven's beach, in sight of the pier, was told he
+was in no country at all (`tests/botany.test.js`, "Cabe sits on the Weatherhead", went red on
+exactly that). The user's ruling was about the unowned west, up to a kilometre past the
+outlines, not about a sliver of a country's own shore.
+
+So `regionAt` now gives a point whose hex nobody owns to the country beside it when it lies
+within **`SHORE_FRINGE` = 76 m of that hex's centre** — 26 m of fringe past a flat edge, about a
+quarter of a hex, less past a corner. 76 m is the measurement and not a guess: it is the
+smallest whole metre that takes in every standable cell of Drent's built coast, the worst being
+the south-east strand at (25, 127), **75.86 m** from the nearest Drent hex centre; the
+Weatherhead's standable disc needs 66.61 m and its stand 55.23 m. Only the six neighbouring
+hexes are consulted, which is provably enough: a point is never more than one circumradius
+(57.74 m) from its own hex's centre, so nothing two rings out can be within 115.5 m.
+
+It does not give the west its names back — that ground is hundreds of metres past the outlines,
+not tens — and every point pinned above is still open country. **The figure does move, and this
+is the new one:** re-sampling the same box (x −2310..−1100, z −868..2225, every fourth metre,
+`canStand` at the traveler's radius) gives 170,324 standable samples, of which **85,921 lie
+outside every outline: 50.4%**, where before the fringe the same sweep gave 90,415 of 170,324,
+**53.1%**. The fringe reclaims 4,494 samples, 2.6 points of the figure, and all of it is coast.
+(The 52.8% at the head of this entry is the original flood-fill from Ambron, 89,584 of 169,541;
+the sweep above reproduces it to within a third of a point without the reachability pass.)
+`insideRegion` is untouched and still strict — it promises no fringe and its callers rely on
+that — and `tests/open-country.test.js` holds the shore: the Weatherhead's whole standable disc
+is Drent, no standable step of the strand at z = 104, 120 or 127 is nowhere, and the sea and the
+west still are.
+
 **Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
 which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the
 card still says Nesdor a kilometre later.

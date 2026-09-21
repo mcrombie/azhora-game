@@ -42,6 +42,12 @@ const spot = (id, region, name, x, z, note) => freeze({ id, region, name, x, z, 
  * taking the one nearest that region's centre - so he is never on the road, never in the sea, and
  * never underfoot. The two open-country spots are on ground outside every outline the atlas draws
  * (`src/region-world.js`), which is a reasonable address for him.
+ *
+ * `open-north` moved 26 m, from (-1977, -273) to (-1991, -295), when open country was given its
+ * 76 m shore fringe (2026-09-21): the old rock turned out to be 50 m from a Meneth hex centre,
+ * which is inside Meneth's fringe, so a spot chosen for being in no country was in one. The new
+ * one is the nearest ground to it that is honestly open country and still holds him — same rock
+ * field west of the Lotharn, 724 m off the nearest road.
  */
 export const CHAMELEON_SPOTS = freeze([
   spot('drent-wood', 'Drent', 'a stump in the Greenway wood', -424, -17, 'He is lying along a stump with his eyes going different ways, which is a thing he can do and you cannot.'),
@@ -58,7 +64,7 @@ export const CHAMELEON_SPOTS = freeze([
   spot('meneth-ridge', 'Meneth', 'a ridge above the Meneth valleys', -1777, -105, 'He is on the spine of a ridge with the wind flattening him, holding on with all four hands.'),
   spot('caricas-reeds', 'Caricas', 'the reeds along the Lizeem', -1927, 206, 'He is in the reeds, striped like the reeds, and only the pipe gives him away.'),
   spot('nesdor-flats', 'Nesdor', 'a thorn on the Nesdor Flats', -1477, 588, 'He is on the one thorn bush for a kilometre in any direction, which he says is the point.'),
-  spot('open-north', 'Open country', 'a rock west of the Lotharn', -1977, -273, 'He is on a rock on ground no country on the atlas claims, which suits him down to the ground.'),
+  spot('open-north', 'Open country', 'a rock west of the Lotharn', -1991, -295, 'He is on a rock on ground no country on the atlas claims, which suits him down to the ground.'),
   spot('open-south', 'Open country', 'a dead tree in the far south-west', -1705, 1461, 'He is in a dead tree a long way past the last border anybody has drawn, and did not come here to be found.'),
 ]);
 export const CHAMELEON_SPOT_IDS = freeze(CHAMELEON_SPOTS.map(entry => entry.id));

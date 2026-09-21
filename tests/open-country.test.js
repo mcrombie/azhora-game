@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { regionAt, regionNameAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS } from '../src/region-world.js';
+import { regionAt, regionNameAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS,
+  SHORE_FRINGE, hexAt, hexCentre } from '../src/region-world.js';
 import { createMapTutorial } from '../src/map-tutorial.js';
+import { canStand } from '../src/game-state.js';
+import { WEATHERHEAD } from '../src/pipeweed.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 import { roadAudioProfile } from '../src/road-audio.js';
@@ -114,4 +117,58 @@ test('the trails tab opens the nearest sheet in open country, and says you are o
   // The caption is the one place a player reads it.
   const map = readFileSync(fileURLToPath(new URL('../src/trail-map.js', import.meta.url)), 'utf8');
   assert.match(map, /model\.outside \? `You are outside every border the atlas draws/, 'the sheet says so');
+});
+
+test('a country’s own shore is that country, and the fringe stops at the shore', async () => {
+  const world = await built();
+  // The atlas is drawn in 100 m hexes; the world is built in metres, so Drent's beach runs on
+  // east of the last hex Drent owns. That fringe is Drent (SHORE_FRINGE, src/region-world.js);
+  // the unowned west, which is hundreds of metres past the outlines, is not.
+  assert.equal(SHORE_FRINGE, 76, 'the fringe is the measured one, not a rounder guess');
+
+  // The Weatherhead, where Cabe sits: every standable cell of his hill is Drent, not nowhere.
+  const r = WEATHERHEAD.r ?? 14;
+  let standable = 0, offAtlas = 0;
+  for (let dx = -r; dx <= r; dx += 0.5) for (let dz = -r; dz <= r; dz += 0.5) {
+    if (Math.hypot(dx, dz) > r) continue;
+    const x = WEATHERHEAD.x + dx, z = WEATHERHEAD.z + dz;
+    if (!canStand(x, z, world, 0.5)) continue;
+    standable++;
+    if (!insideRegion('Drent', x, z)) offAtlas++;
+    assert.equal(regionNameAt(x, z), 'Drent', `the Weatherhead reads ${regionNameAt(x, z)} at ${x}, ${z}`);
+  }
+  assert.ok(standable > 1000, `the hill is walkable (${standable} cells)`);
+  assert.ok(offAtlas > 0, 'and a real part of it is off the atlas’s own hexes, which is the point');
+  assert.equal(regionNameAt(WEATHERHEAD.stand.x, WEATHERHEAD.stand.z), 'Drent', 'including the stand itself');
+
+  // Walking inland out to the water is not a border crossing: no standable step of it is
+  // nowhere, so the card, the kicker, the minimap caption and the autosave-on-enter never
+  // fire on a man walking down Tidehaven's own beach. Past the water's edge there is nothing
+  // to stand on and open country is the right answer again.
+  for (const z of [104, 120, 127]) {
+    let walked = 0;
+    for (let x = -30; x <= 40; x += 0.5) {
+      if (!canStand(x, z, world, 0.5)) continue;
+      walked++;
+      assert.equal(regionNameAt(x, z), 'Drent', `a hole in the shore at ${x}, ${z}`);
+    }
+    assert.ok(walked > 40, `the strand at z=${z} is walkable (${walked} steps)`);
+  }
+
+  // Well out to sea is still open country: the fringe is a fringe, not a claim on the water.
+  for (const at of [{ x: 200, z: 104 }, { x: 300, z: 40 }]) {
+    assert.ok(isOpenCountry(regionAt(at.x, at.z)), `(${at.x}, ${at.z}) at sea reads ${regionNameAt(at.x, at.z)}`);
+    assert.equal(canStand(at.x, at.z, world), false, 'and nobody can stand there anyway');
+  }
+  // And deep in the unowned west it changes nothing at all.
+  for (const at of UNOWNED) assert.ok(isOpenCountry(regionAt(at.x, at.z)), `${at.note} reads ${regionNameAt(at.x, at.z)}`);
+
+  // The fringe is never wider than it says: a point beyond it, off every hex, is open country.
+  const far = { x: -1600, z: 1600 }, home = hexAt(far.x, far.z), centre = hexCentre(home.q, home.r);
+  assert.ok(Math.hypot(centre.x - far.x, centre.z - far.z) < SHORE_FRINGE, 'even within a hex of its own centre');
+  assert.ok(isOpenCountry(regionAt(far.x, far.z)), 'it is the owner that is missing, not the distance');
+
+  // insideRegion stays strict: it promises no fringe and its callers rely on that.
+  assert.equal(insideRegion('Drent', WEATHERHEAD.stand.x, WEATHERHEAD.stand.z), false,
+    'the stand is genuinely outside the authored outline; only regionAt forgives it');
 });

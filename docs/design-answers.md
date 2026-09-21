@@ -64,6 +64,20 @@ outline it answers nothing (or an "open country" sentinel), and the region card,
 caption, the autosave-on-enter, the map tutorial's first-province check and the chart all say so.
 The ground itself does not change. (`docs/known-issues.md`, "Half of the walkable west…".)
 
+**Open country has a shore fringe of 76 m.** *Coordinator's reading of the ruling above,
+2026-09-21 — not a new answer from the user, and open to being overruled.* The ruling was about
+the unowned west, which runs up to a kilometre past the outlines. It was not about a country's
+own coast: the atlas is drawn in 100 m hexes and the world is built in metres, so Drent's beach
+carries on east of the last hex Drent owns, and 1,055 standable cells of Tidehaven's own strand
+— including the Weatherhead, where Cabe sits — were being called "Open country" in sight of the
+pier. So `regionAt` gives an unowned point to the country beside it when it lies within 76 m of
+that country's nearest hex centre, which is 26 m past a flat edge, about a quarter of a hex. 76
+is measured, not chosen: the smallest whole metre that takes in every standable cell of Drent's
+built coast (worst: the south-east strand at (25, 127), 75.86 m). It does not touch the west —
+every pinned point there is still open country — and it moves the share of the walkable west
+outside every outline from 53.1% to 50.4%. `insideRegion` stays strict.
+(`docs/known-issues.md`, "Amended 2026-09-21: a shore fringe".)
+
 **The Moros Horizon fence stays, as the army's line.** It stands where it is, 272 of its 344 m
 inside Nesdor, as an Ambroni line inside a country the Empire does not hold. Only its name, its
 minimap label and the build-status text change to say so. Nothing moves.

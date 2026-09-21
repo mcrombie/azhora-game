@@ -53,7 +53,10 @@ const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1
 const key = (q, r) => `${q},${r}`;
 const landHexes = new Set(LAND_HEXES.map(([q, r]) => key(q, r)));
 const cellRegion = new Map(), cellTerrain = new Map();
-for (const id of REGION_ORDER) for (const cell of SURVEY.regions.find(r => r.name === id).cells) { cellRegion.set(key(cell.q, cell.r), id); cellTerrain.set(key(cell.q, cell.r), cell.terrain); }
+// The world centre of every owned hex, once, so the shore fringe in `regionAt` costs six map
+// lookups and no arithmetic beyond a hypot.
+const cellCentre = new Map();
+for (const id of REGION_ORDER) for (const cell of SURVEY.regions.find(r => r.name === id).cells) { cellRegion.set(key(cell.q, cell.r), id); cellTerrain.set(key(cell.q, cell.r), cell.terrain); cellCentre.set(key(cell.q, cell.r), hexCentre(cell.q, cell.r)); }
 
 /** Axial hex containing a world point. */
 export function hexAt(x, z) {
@@ -682,14 +685,57 @@ export const OPEN_COUNTRY = Object.freeze({
 export const isOpenCountry = region => !!region && region.id === 0 && region.open === true;
 
 /**
- * Which region a world point belongs to, by authored hex. A point whose hex no region owns -
- * the sea, and the unowned ground past the outlines - is open country rather than the nearest
- * neighbour's name.
+ * How far past the atlas's own hexes a point may lie and still belong to the country beside it,
+ * measured from the centre of that hex. A hex is METRES_PER_HEX (100 m) flat to flat, so it
+ * already reaches 50 m to its edges and 57.7 m to its corners: 76 m is 26 m of fringe beyond a
+ * flat edge, about a quarter of a hex, and less than that past a corner.
+ *
+ * Why there is a fringe at all. The atlas is drawn in 100 m hexes and the world is built in
+ * metres, so a country's built shore does not stop where its hexes do. South of Tidehaven the
+ * atlas ends Drent at about x = 0 for every z from 74 to 140, while the beach the traveler
+ * walks runs on east of that: 1,055 standable cells of Drent's own coast sit on hexes Drent
+ * does not own, including 1,282 of the Weatherhead's disc, where Cabe sits and smokes. Since
+ * open country landed, all of that read "Open country" - a traveler on Tidehaven's own strand,
+ * in sight of the pier, told he was in no country at all.
+ *
+ * 76 m is the measurement, not a guess: it is the smallest whole metre that takes in every
+ * standable cell of Drent's built coast, the worst of which is the south-east strand at
+ * (25, 127), 75.86 m from the nearest Drent hex centre. The Weatherhead's standable disc needs
+ * 66.61 m, its stand 55.23 m.
+ *
+ * What it must not do is give the west its names back, and it does not: the unowned west is
+ * hundreds of metres past the outlines, not tens. Every point the builder pinned - a kilometre
+ * south of Nesdor, 606 m west of Caricas, the west edge past Meneth, West Izol's name on the
+ * mainland - is still open country. Over the western box the builder sampled, the share of
+ * standable ground outside every outline goes from 53.1% to 50.4% (docs/known-issues.md).
+ *
+ * This is the coordinator's reading of the user's ruling, which was about the unowned west and
+ * not about a sliver of a country's own shore (docs/design-answers.md, 2026-09-21).
+ */
+export const SHORE_FRINGE = 76;
+
+/**
+ * Which region a world point belongs to, by authored hex. A point whose hex no region owns is
+ * open country - the sea, and the unowned ground past the outlines - unless it lies within
+ * SHORE_FRINGE of an owned hex beside it, which is a country's own shore running past the
+ * atlas's grid rather than ground nobody claims.
+ *
+ * Only the six neighbours are looked at, and that is provably enough: a point is never more
+ * than one circumradius (57.7 m) from its own hex's centre, and a ring-two centre is at least
+ * 173.2 m from that, so nothing two rings out can ever be within 115.5 m, let alone 76.
  */
 export function regionAt(x, z) {
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   const home = hexAt(x, z), owner = cellRegion.get(key(home.q, home.r));
-  return owner ? regionByName.get(owner) : OPEN_COUNTRY;
+  if (owner) return regionByName.get(owner);
+  let near = null, nearest = SHORE_FRINGE;
+  for (const [dq, dr] of AXIAL_NEIGHBORS) {
+    const side = key(home.q + dq, home.r + dr), name = cellRegion.get(side);
+    if (!name) continue;
+    const centre = cellCentre.get(side), distance = Math.hypot(centre.x - x, centre.z - z);
+    if (distance < nearest) { nearest = distance; near = name; }
+  }
+  return near ? regionByName.get(near) : OPEN_COUNTRY;
 }
 export const regionNameAt = (x, z) => regionAt(x, z)?.name ?? null;
 export const regionInfo = id => regionById.get(id) ?? null;
