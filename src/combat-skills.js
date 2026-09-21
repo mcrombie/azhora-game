@@ -60,6 +60,21 @@ export const ARMS = freeze({
   ceiling: freeze({ post: 5, sparring: 20 }),
 });
 
+/**
+ * How hard the country itself is (docs/difficulty-ladder.md gives every region a level from 0 to
+ * 11, and `src/region-levels.js` is that table). An enemy met in a country of level L has more
+ * health and hits harder, and **the same tell, strike and recovery as its kind has anywhere**.
+ *
+ * Timing never scales. That is the whole of the design: a level-8 ogre is not faster and does not
+ * telegraph less, so a traveler who reads the tell can still dodge it - he simply cannot afford
+ * to miss. At level 0 both multipliers are exactly 1, so every fight already built is untouched.
+ */
+export const COUNTRY = freeze({ health: .45, damage: .30, top: 11 });
+const clampCountry = level => Math.max(0, Math.min(COUNTRY.top, Math.floor(Number(level) || 0)));
+/** What an enemy's health and damage are multiplied by, in a country of this level. */
+export const countryHealth = level => 1 + COUNTRY.health * clampCountry(level);
+export const countryDamage = level => 1 + COUNTRY.damage * clampCountry(level);
+
 /** The top of the table, so a level is never asked for beyond it. */
 export const TOP_LEVEL = 99;
 const clampLevel = level => Math.max(1, Math.min(TOP_LEVEL, Math.floor(Number(level) || 1)));
@@ -189,13 +204,18 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
     return { id, ...pay(id, scaled * (killed ? 1 + ARMS.xp.killing : 1), source) };
   }
 
-  /** Toughness: a dodge that actually avoided a strike, and damage taken and survived. */
-  const dodged = ({ countryLevel = 0 } = {}) => pay('toughness', ARMS.xp.dodged * (1 + .25 * Math.max(0, countryLevel)));
-  const hurt = ({ damage = 0, countryLevel = 0 } = {}) =>
-    (damage > 0 ? pay('toughness', damage * ARMS.xp.perHurt * (1 + .25 * Math.max(0, countryLevel))) : { ok: true, xp: 0, levelled: false });
-  /** Shield: blows caught on it. */
-  const caught = ({ damage = 0, countryLevel = 0 } = {}) =>
-    (damage > 0 ? pay('shield', damage * ARMS.xp.perCaught * (1 + .25 * Math.max(0, countryLevel))) : { ok: true, xp: 0, levelled: false });
+  /**
+   * Toughness: a dodge that actually avoided a strike, and damage taken and survived. Shield:
+   * blows caught on it. All three take `source` for the same reason `dealt` does - a straw post
+   * cannot hit back, and a friend sparring is not a goblin. Without it the default was 'fight'
+   * and the ceiling never applied: dodging at the post alone took Toughness past 30.
+   */
+  const dodged = ({ countryLevel = 0, source = 'fight' } = {}) =>
+    pay('toughness', ARMS.xp.dodged * (1 + .25 * Math.max(0, countryLevel)), source);
+  const hurt = ({ damage = 0, countryLevel = 0, source = 'fight' } = {}) =>
+    (damage > 0 ? pay('toughness', damage * ARMS.xp.perHurt * (1 + .25 * Math.max(0, countryLevel)), source) : { ok: true, xp: 0, levelled: false });
+  const caught = ({ damage = 0, countryLevel = 0, source = 'fight' } = {}) =>
+    (damage > 0 ? pay('shield', damage * ARMS.xp.perCaught * (1 + .25 * Math.max(0, countryLevel)), source) : { ok: true, xp: 0, levelled: false });
 
   /** The margins he is fighting with right now. */
   const margins = () => marginsFor(Object.fromEntries(ARMS_IDS.map(id => [id, level(id)])));
