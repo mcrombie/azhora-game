@@ -62,25 +62,61 @@ function resample(points, spacing) {
 }
 
 /**
- * The atlas's courses for these four regions, keyed by the regions their edges
- * run between. A key is the regions of one chain, sorted and joined, which is
- * stable whatever order the edges are read in and says plainly which map line
- * each river is. `riverCourses` breaks a chain wherever three edges meet a hex
- * corner, so a confluence arrives as two courses and is rejoined by hand.
+ * The atlas's courses, keyed by the regions their edges run between. A key is
+ * the regions of one chain, sorted and joined, which is stable whatever order
+ * the edges are read in and says plainly which map line each river is.
+ * `riverCourses` breaks a chain wherever three edges meet a hex corner, so a
+ * confluence arrives as two courses and is rejoined by hand.
+ *
+ * Which chains exist depends on which regions `scripts/build-region-rivers.mjs`
+ * was asked for, because a confluence with a river nobody asked for is not a
+ * confluence: it is one river going past. When the six southern countries were
+ * added to `RIVER_REGIONS` the Lizeem gained four new tributaries and its two
+ * chains became five, so `joinAtlas` below puts the Lizeem back together. Every
+ * point of it is the same point it was; `tests/west-rivers.test.js` holds it.
  */
 const ATLAS_COURSES = (() => {
   const courses = new Map();
   for (const course of riverCourses(PLAYABLE_SURVEY, RIVER_EDGES, undefined, { soften: 0 })) {
     const key = [...new Set(course.edges.flatMap(edge => edge.regions))].sort().join(',');
-    courses.set(key, course.points.map(p => point(p.x, p.z)));
+    courses.set(key, Object.freeze({ points: course.points.map(p => point(p.x, p.z)), edges: course.edges }));
   }
   return courses;
 })();
 
-function atlasCourse(key) {
-  const points = ATLAS_COURSES.get(key);
-  if (!points) throw new Error(`The atlas draws no river between ${key}. Is src/region-rivers.js stale?`);
-  return points;
+function atlasChain(key) {
+  const chain = ATLAS_COURSES.get(key);
+  if (!chain) throw new Error(`The atlas draws no river between ${key}. Is src/region-rivers.js stale?`);
+  return chain;
+}
+function atlasCourse(key) { return atlasChain(key).points; }
+
+const same = (a, b) => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.z - b.z) < 1e-6;
+/**
+ * One polyline out of several chains that meet end to end, in the order given.
+ * Each piece is turned to follow the one before it, and the shared corner is
+ * dropped, so the result is what `riverCourses` would have returned had the
+ * confluences not broken it. A piece that does not touch the line so far is an
+ * error rather than a gap: a river with a hole in it is worse than a crash.
+ */
+function joinAtlas(...pieces) {
+  let line = null;
+  for (const piece of pieces) {
+    const points = Array.isArray(piece) ? piece : atlasCourse(piece);
+    if (!line) { line = [...points]; continue; }
+    const end = line.at(-1);
+    if (same(end, points[0])) line.push(...points.slice(1));
+    else if (same(end, points.at(-1))) line.push(...[...points].reverse().slice(1));
+    else throw new Error(`Atlas chains do not meet at (${end.x}, ${end.z}).`);
+  }
+  return line;
+}
+/** The part of a chain whose edges still touch `region`, from whichever end it starts on. */
+function chainWithin(key, region) {
+  const { points, edges } = atlasChain(key);
+  let last = 0;
+  while (last < edges.length && edges[last].regions.includes(region)) last++;
+  return points.slice(0, last + 1);
 }
 
 /**
@@ -279,9 +315,15 @@ export const MENETH_BECKS = Object.freeze(MENETH_VALLEYS.map(valley => {
  * nothing here can be waded.
  */
 export const LIZEEM = river('lizeem', 'The Lizeem', (() => {
-  const upper = [...atlasCourse('Caricas,Isareos,Nethereum,Ovesos')].reverse();
-  const lower = atlasCourse('Gala,Nesdor,Ovesos');
-  // The two chains share the junction corner; drop the duplicate.
+  // Five chains now, where there were two. Down the Caricas bank the Oveth, the
+  // Neth and the Isareos border river each break the line where they come in;
+  // below Caricas the Nesdor bank runs on into the Eer-Gala reach, which belongs
+  // to a country that is not built yet. The Lizeem built here is exactly the
+  // river the four regions were built against and stops exactly where it did:
+  // at the last corner Nesdor's bank reaches.
+  const upper = [...joinAtlas('Caricas,Ovesos', 'Caricas,Nethereum', 'Caricas,Isareos')].reverse();
+  const lower = joinAtlas('Nesdor,Ovesos', chainWithin('Eer,Gala,Nesdor,Northern Ascarth', 'Nesdor'));
+  // The two halves share the junction corner; drop the duplicate.
   return [...upper, ...lower.slice(1)];
 })(), { halfWidth: 5, halfWidthEnd: 15, cut: 2.6, cutEnd: 3.4, bed: 2.2, fordUntil: 0 });
 

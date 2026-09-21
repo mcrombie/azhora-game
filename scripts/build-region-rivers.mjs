@@ -33,7 +33,8 @@ export const MAP_PATH = path.resolve(root, '../world-builder/map/resources/examp
  * naming them one at a time would chop those courses into pieces and then
  * silently re-join them, changing rivers that were already built.
  */
-export const RIVER_REGIONS = ['Pueth', 'Vastos', 'Meneth', 'Caricas', 'Nesdor'];
+export const RIVER_REGIONS = ['Pueth', 'Vastos', 'Meneth', 'Caricas', 'Nesdor',
+  'Isareos', 'Nethereum', 'Ovesos', 'Oves Desert', 'Gala', 'Eer'];
 const NEIGHBORS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
 const SIZES = new Set(['small', 'medium', 'large']);
 
