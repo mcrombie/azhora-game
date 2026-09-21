@@ -66,6 +66,14 @@
 /* The crossing to Peblos: the boat pulls out, the view fades, the traveler steps onto the other quay (src/ferry.js). */
 #crossing {position:fixed;inset:0;z-index:30;pointer-events:none;background:#0a1f24;display:grid;place-items:end center;padding-bottom:16vh;opacity:0;}
 #crossing p {font-family:Adventure,Georgia,serif;font-size:22px;letter-spacing:.02em;color:#f2e6c4;text-shadow:0 3px 18px #07171b;max-width:560px;text-align:center;}
+/* The opening sequence: the boat comes in, the traveler watches, the captions say what they know (src/opening-sequence.js, docs/opening-sequence.md). */
+#cutscene {position:fixed;inset:0;z-index:12;pointer-events:none;display:grid;place-items:end center;padding-bottom:18vh;}
+#cutscene .cutscene-caption {max-width:640px;padding:0 24px;text-align:center;text-shadow:0 3px 30px #102c37ab;opacity:0;}
+#cutscene .eyebrow {display:block;color:#f8df9f;margin-bottom:10px;}
+#cutscene p {font-family:Adventure,Georgia,serif;font-size:24px;line-height:1.4;color:#fffae8;}
+#skip-cutscene {position:absolute;right:34px;bottom:22px;pointer-events:auto;}
+body.cutscene #location,body.cutscene #compass,body.cutscene #map-wrap,body.cutscene #quest,body.cutscene #controls,body.cutscene #bottom-right,body.cutscene #lesson,body.cutscene #interaction {display:none!important;}
+@media(max-width:1100px){#cutscene p{font-size:20px;}#skip-cutscene{right:24px;bottom:15px;}}
 /* The line of eleven at the opening: which of the company you walk as (src/character-select.js). */
 #opening-characters {display:block;margin:0 0 20px;}
 #opening-characters .eyebrow {display:block;color:#f8df9f;font-size:11px;margin:0 0 9px;}

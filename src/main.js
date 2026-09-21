@@ -69,6 +69,8 @@ import { skillIconSVG } from './skill-icons.js';
 // Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
 import { DEFAULT_PLAYER, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
+// Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
+import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT } from './opening-sequence.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
@@ -183,6 +185,10 @@ function init() {
   }
   wearPlayerLook(playerId);scene.add(player.group);
   player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
+  // The title screen is the harbour as it stands: no traveler in it, and the arrival boat is
+  // already out in the roads where the sequence begins, so Step ashore cuts straight to the bow.
+  player.group.visible=false;
+  {const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
   // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
   const HARBOURMASTER='harbormaster';
   const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Mara',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
@@ -374,7 +380,9 @@ function init() {
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
-  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,arrivalProgress=0;
+  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null;
+  /** Where the sequence wants the eye this frame, before the ordinary camera's lerp is bypassed. */
+  const openingCamera={position:new THREE.Vector3(),target:new THREE.Vector3()};
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
   const cameraFocus=new THREE.Vector3(),cameraTarget=new THREE.Vector3(),cameraColliders=[];
   camera.position.set(16,14,59);camera.lookAt(0,3,13);
@@ -1548,6 +1556,7 @@ function init() {
     yaw=Math.atan2(-(stand.x-spot.x),-(stand.z-spot.z));pitch=.35;distance=targetDistance=8;
     if(entry.horse&&!riding.owned){const hitch=startingSpot(spot,(x,z)=>canStand(x,z,world,RIDE.radius),{reaches:[3,4.5,6]});if(hitch&&riding.grant(hitch,yaw).ok){riding.teach();placeOwnHorse();}}
     mapFog.reveal(spot.x,spot.z);
+    leaveOpening();
     mode='playing';document.body.classList.add('playing');show('opening',false);show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('testing-badge',true);
     refreshQuest();refreshChart();inventory.refresh();stopInput();settleCamera();canvas.focus();
     toast(`${entry.title}. Nothing is saved from this start; your saved adventure is untouched.`,entry.kicker);
@@ -1558,10 +1567,36 @@ function init() {
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
     playSeconds=0;refugeeHold=0;settleMercenaries();mercenaryWeapons.clear();
-    mode='arriving';document.body.classList.add('playing');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
-    world.ringBell?.(elapsed);audio?.effect('bell');
+    mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
+    // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
+    // still off the pier's end and the traveler can hear it come across the water.
+    opening=variantFor(playerId);openingTime=0;openingFired=0;openingBells=0;player.group.visible=false;
+    show('cutscene',true);$('cutscene-eyebrow').textContent='';$('cutscene-text').textContent='';$('cutscene').querySelector('.cutscene-caption').style.opacity='0';
     setTimeout(()=>show('opening',false),700);canvas.focus();
+    if(autopilot.active)skipOpening();
   }
+  /**
+   * Whoever is in the bow: the first man of the company, which is Chris Gotwood unless you are
+   * Chris, when it is Cromb standing in the slot you left (companyFor, src/player-characters.js).
+   */
+  const companionNpcId=()=>landingMateId();
+  /** The end of the opening, reached or skipped: the landing, exactly as src/opening-sequence.js says it. */
+  function landOpening(){
+    if(mode!=='arriving'||!opening)return;
+    for(const e of eventsBetween(openingFired,Infinity,opening.id))if(e.type==='bell'){openingBells++;world.ringBell?.(elapsed);audio?.effect('bell');}
+    const s=SKIP_BY_VARIANT[opening.id],landed=s.landed;
+    world.restArrivalBoat();
+    player.group.visible=true;player.group.position.set(landed.traveler.x,world.heightAt(landed.traveler.x,landed.traveler.z),landed.traveler.z);player.group.rotation.y=landed.traveler.yaw;
+    grounded=true;verticalSpeed=0;yaw=landed.view.yaw;pitch=landed.view.pitch;distance=targetDistance=landed.view.distance;
+    settleMercenaries();settleCamera();camera.position.set(s.camera.position.x,s.camera.position.y,s.camera.position.z);
+    opening=null;document.body.classList.remove('cutscene');show('cutscene',false);
+    mode='playing';stopInput();canvas.focus();refreshQuest();
+    toast(landed.toast.title,landed.toast.kicker);
+    if(pendingTesting){pendingTesting=false;modal('testing');}
+  }
+  function skipOpening(){landOpening();}
+  /** Any start that is not the boat: the harbour as built, the traveler on their feet. */
+  function leaveOpening(){opening=null;world.restArrivalBoat();player.group.visible=true;document.body.classList.remove('cutscene');show('cutscene',false);}
   function stopInput(){keys.clear();drag=false;}
   function settleCamera(){
     cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5,0));
@@ -1880,6 +1915,7 @@ function init() {
         ||quayHeight(saved.position.x,saved.position.z)!==null||izolDeckHeight(saved.position.x,saved.position.z)!==null);
     const point=onPlayableGround?saved.position:questStage<10?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
     player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
+    leaveOpening();
     mode='playing';testingEnabled=false;document.body.classList.add('playing');show('opening',false);show('testing-badge',false);show('modal-backdrop',false);
     syncJourney();refreshQuest();inventory.refresh();stopInput();settleCamera();canvas.focus();toast('The road is where you left it.','CONTINUING YOUR JOURNEY');return true;
   }
@@ -2286,7 +2322,7 @@ function init() {
   function testingMenu(){
     if(mode==='defeated')retry();
     if(mode==='opening'){pendingTesting=true;begin();return;}
-    if(mode==='arriving'){pendingTesting=true;return;}
+    if(mode==='arriving'){pendingTesting=true;skipOpening();return;}
     if(mode==='fishing')endFishing(true);
     if(mode==='inventory')inventory.close();
     if(mode==='dialogue')closeDialogue();
@@ -2464,6 +2500,7 @@ function init() {
   const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,
     onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
       $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
+  $('skip-cutscene').onclick=skipOpening;
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
@@ -2581,12 +2618,13 @@ function init() {
     }
     if(e.code==='KeyI'){e.preventDefault();toggleInventory();return;}
     if(e.code==='Escape'){
+      if(mode==='arriving'){e.preventDefault();skipOpening();return;}
       if(mode==='dialogue')closeDialogue();
       else if(mode==='playing')modal('pause');else if(['journal','pause','testing'].includes(mode))closeModal();return;
     }
     // While a level-up banner is up it is a door to that skill's guide.
     if(e.code==='Enter'&&mode==='playing'&&levelUpSkill&&$('level-up').classList.contains('visible')){e.preventDefault();openSkillGuide(levelUpSkill);return;}
-    if(e.code==='Enter'){if(mode==='opening'){if(document.activeElement?.closest('button'))return;e.preventDefault();begin();}else if(mode==='dialogue'){if(document.activeElement?.closest('#dialogue-choices'))return;e.preventDefault();nextSpeech();}else if(mode==='defeated')retry();return;}
+    if(e.code==='Enter'){if(mode==='opening'){if(document.activeElement?.closest('button'))return;e.preventDefault();begin();}else if(mode==='arriving'){e.preventDefault();skipOpening();}else if(mode==='dialogue'){if(document.activeElement?.closest('#dialogue-choices'))return;e.preventDefault();nextSpeech();}else if(mode==='defeated')retry();return;}
     if(e.code==='Tab'&&['pause','journal','testing','dialogue','defeated'].includes(mode)) {
       const container=mode==='dialogue'?$('dialogue'):mode==='defeated'?$('defeat'):$(mode);
       const buttons=[...container.querySelectorAll('button:not(:disabled), [tabindex="0"]')].filter(b=>b.getClientRects().length);
@@ -2801,16 +2839,6 @@ function init() {
       hideoutWatch.update(dt,player.group.position,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase),playing:mode==='playing'&&!reviewFrozen});
       let movement=0;
       {const bodies=gatherBodies();playerWorld.setBodies(bodies).moving(player.group.position,riding.mounted?RIDE.radius:BODY.traveler);npcWorld.setBodies(bodies);catWorld.setBodies(bodies);}
-      if(mode==='opening')player.group.position.y=world.boatStart.y+Math.sin(elapsed*.72)*.085;
-      if(mode==='arriving') {
-        arrivalProgress=Math.min(1,arrivalProgress+dt/1.9);
-        player.group.position.set(THREE.MathUtils.lerp(world.boatStart.x,world.spawn.x,arrivalProgress),THREE.MathUtils.lerp(world.boatStart.y,1.8,Math.min(1,arrivalProgress*1.5)),world.spawn.z);
-        player.group.rotation.y=Math.PI/2;movement=2.5;
-        // Whoever came off the same boat steps ashore beside you: Chris, or Cromb if you are Chris.
-        // The toast names Mara, because she is the one the traveler has to go and speak to now.
-        const mate=npcById.get(landingMateId());if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
-        if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO MARA AT THE HEAD OF THE PIER');if(pendingTesting){pendingTesting=false;modal('testing');}}
-      }
       if(autopilot.active&&!reviewFrozen){
         autopilot.step(dt);
         if(Number.isFinite(autopilot.yaw))yaw+=Math.atan2(Math.sin(autopilot.yaw-yaw),Math.cos(autopilot.yaw-yaw))*(1-Math.exp(-3.5*dt));
@@ -2877,8 +2905,29 @@ function init() {
       {const task=birding.task(),hook=world.birdGarden.hook;feederMarker.visible=task?.stage==='filled'&&combat.state.phase!=='active';if(feederMarker.visible){feederMarker.position.set(hook.x,hook.y+2.75+Math.sin(elapsed*2.5)*.1,hook.z);feederMarker.rotation.y=elapsed*.7;}}
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
-      if(!['opening','pause'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
+      // The roster counts arrivals from the landing, not from the title screen or the sail in.
+      if(!['opening','pause','arriving'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      // After placeMercenaries, and before the NPC loop. That call rewrites the companion's home to
+      // the landing ring every frame, and the loop snaps an NPC home and hides him when his home is
+      // more than 180 m from the player; the player is in a boat 170 m out. Setting his home to the
+      // boat here keeps him in the bow and drawn. The loop does not steer in 'arriving'.
+      if(mode==='arriving'&&opening){
+        openingTime+=dt;
+        const s=stateAt(openingTime,{variant:opening.id,companion:opening.companion}),bob=boatBob(elapsed);
+        for(const e of eventsBetween(openingFired,openingTime,opening.id))if(e.type==='bell'){openingBells++;world.ringBell?.(elapsed);audio?.effect('bell');}
+        openingFired=openingTime;
+        if(s.done)landOpening();
+        else{
+          world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);
+          player.group.position.set(s.traveler.x,s.traveler.y+bob*s.bobWeight,s.traveler.z);player.group.rotation.y=s.traveler.yaw;player.group.visible=false;
+          const mate=npcById.get(companionNpcId());
+          if(mate){const c=s.companion;mate.actor.group.position.set(c.x,c.y+(c.aboard?bob:0),c.z);mate.actor.group.rotation.y=c.yaw;mate.actor.group.visible=true;mate.hidden=false;world.npcPositions[mate.id]={x:c.x,z:c.z};}
+          openingCamera.position.set(s.camera.position.x,s.camera.position.y+bob*s.bobWeight,s.camera.position.z);openingCamera.target.set(s.camera.target.x,s.camera.target.y,s.camera.target.z);
+          const cap=$('cutscene').querySelector('.cutscene-caption');
+          if(s.caption){$('cutscene-eyebrow').textContent=s.caption.eyebrow;$('cutscene-text').textContent=s.caption.text;cap.style.opacity=String(s.caption.alpha);}else cap.style.opacity='0';
+        }
+      }
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing')mapFog.reveal(player.group.position.x,player.group.position.z);}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
@@ -3103,6 +3152,9 @@ function init() {
       const viewDistance=distance+combatCamera*1.2,viewPitch=THREE.MathUtils.lerp(pitch,Math.max(pitch,.56),combatCamera);
       cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5-combatCamera*.22+rideCamera*(RIDE.camera.up-RIDE.seat.up*.35),0));
       if(mode==='opening'){cameraTarget.set(15+Math.sin(elapsed*.09)*2,12.5,57);cameraFocus.set(0,3.5,14);}
+      // During the sequence the camera IS the traveler's eye, so the lerp below is bypassed: a fifth
+      // of a second of lag at five metres a second puts the view a metre astern, inside the stern.
+      else if(mode==='arriving'&&opening){cameraTarget.copy(openingCamera.position);cameraFocus.copy(openingCamera.target);camera.position.copy(cameraTarget);}
       else {
         if(reviewTarget)cameraFocus.copy(reviewTarget);
         let actualDistance=viewDistance;
@@ -3127,8 +3179,12 @@ function init() {
     const state=()=>({mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),ed:ed.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
+      // The opening sequence, for a harness that would rather not sit through forty-four seconds.
+      openingState:()=>opening&&stateAt(openingTime,{variant:opening.id,companion:opening.companion}),
+      advanceOpening:seconds=>{openingTime+=seconds;},
+      openingBells:()=>openingBells,
       prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
-        combat.startPractice(world.training);combat.finishPractice();mode='playing';document.body.classList.add('playing');
+        combat.startPractice(world.training);combat.finishPractice();leaveOpening();mode='playing';document.body.classList.add('playing');
         show('opening',false);{const p=toWorld(-198,26);player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);}refreshQuest();settleCamera();},
       press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code})),
       release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code})),
@@ -3139,7 +3195,7 @@ function init() {
     const forestHooks=()=>({...focusedRoadHooks(),forestStory,forestAct,forestEcology,woodlandLife,
       warp:(x,z)=>{player.group.position.set(x,world.heightAt(x,z),z);grounded=true;verticalSpeed=0;},
       prepareVillage:()=>{questStage=1;testingEnabled=false;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);combat.finishPractice();
-        mode='playing';document.body.classList.add('playing');show('opening',false);show('loading',false);
+        leaveOpening();mode='playing';document.body.classList.add('playing');show('opening',false);show('loading',false);
         player.group.position.set(FOREST_STORY_NPC.x+1.5,world.heightAt(FOREST_STORY_NPC.x+1.5,FOREST_STORY_NPC.z+1),FOREST_STORY_NPC.z+1);refreshQuest();settleCamera();}});
     const hideoutHooks=()=>({...forestHooks(),forestHideout,hideoutAct,hideoutWatch,handleCombatEvents,attack,
       prepareHideout:(stage=10)=>{forestHooks().prepareVillage();questStage=stage;journey.restore(createJourney().snapshot());if(stage>=10)journey.start();reviewFrozen=false;reviewTarget=null;forestHideout.restore();syncHideout();
@@ -3304,7 +3360,24 @@ function init() {
         const tap=code=>{press(code);release(code);};
         const warp=(x,z)=>{player.group.position.set(x,world.heightAt(x,z),z);};
         const finishDialogue=()=>{let limit=10;while(activeDialogue&&limit-->0)nextSpeech();};
-        await frames(3);$('begin').click();await until(()=>mode==='playing','Boat arrival did not finish');
+        // The opening sequence is forty-four seconds and `until` gives up after thirty, so the
+        // walkthrough checks it starts, steps its clock over the bell, and then skips it.
+        await frames(3);$('begin').click();await frames(2);
+        assert(mode==='arriving'&&!$('cutscene').classList.contains('hidden')&&$('skip-cutscene').getClientRects().length,'The opening sequence did not start with Skip on screen');
+        {const pose=world.arrivalBoatPose();assert(Math.hypot(pose.x-world.spawn.x,pose.z-world.spawn.z)>100,'The boat did not start out at sea');}
+        assert(!player.group.visible,'The traveler was drawn during the opening');
+        {const hooks=focusedRoadHooks();
+          hooks.advanceOpening(29.9);await frames(2);
+          assert(hooks.openingBells()===0,'The bell rang before the boat was off the pier');
+          assert(hooks.openingState()?.caption,'The sequence said nothing in its first thirty seconds');
+          hooks.advanceOpening(.2);await frames(2);
+          assert(hooks.openingBells()===1,'The bell did not ring at thirty seconds');}
+        $('skip-cutscene').click();await until(()=>mode==='playing','Boat arrival did not finish');
+        assert($('cutscene').classList.contains('hidden')&&!document.body.classList.contains('cutscene'),'The caption layer stayed up');
+        assert(player.group.visible&&Math.hypot(player.group.position.x-world.spawn.x,player.group.position.z-world.spawn.z)<.01,'Skip did not land the traveler at the spawn');
+        {const pose=world.arrivalBoatPose();assert(Math.hypot(pose.x-23,pose.z-34)<.01,'Skip did not moor the boat');}
+        {const mate=npcById.get(landingMateId());assert(mate.actor.group.visible&&Math.abs(mate.actor.group.position.y-1.8)<.05&&canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'The companion is not standing on the deck');}
+        assert(Math.abs(yaw-Math.PI/2)<1e-9&&Math.abs(player.group.rotation.y+Math.PI/2)<1e-9,'The landing does not face west with the camera behind');
         assert(inventory.has('simple-sword')&&weapons.profile().usable&&weapons.profile().durability===24,'Mercenary did not arrive equipped with a sound sword');
         assert(!inventory.has('tinderbox')&&!inventory.has('fishing-rod')&&!testingEnabled,'Normal game unexpectedly granted test supplies');
         assert(renderer.info.render.triangles>1000,'World did not draw');assert(canStand(world.spawn.x,world.spawn.z,world),'Spawn blocked');
@@ -3539,14 +3612,15 @@ function init() {
         campcraft.cancelFishing();show('testing',false);
         reviewFrozen=false;reviewTarget=null;reviewCat=null;player.group.visible=true;
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
-        document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
+        leaveOpening();document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
         // The opening screen itself, with the character line on it: --review-views=opening-characters
         // photographs Cromb selected, and opening-characters-lakota photographs any other of the eleven.
         if(view.startsWith('opening-characters')){
           const who=view.replace('opening-characters','').replace(/^-/,'');if(who)characterSelect.select(who);
           mode='opening';document.body.classList.remove('playing');show('opening',true);
           $('opening').style.opacity='1';$('opening').style.transform='none';
-          player.group.position.set(world.boatStart.x,world.boatStart.y,world.boatStart.z);player.group.rotation.y=Math.PI;
+          // The title screen shows the harbour with nobody in it and the boat still out at sea.
+          player.group.visible=false;{const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
           return;
         }
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}

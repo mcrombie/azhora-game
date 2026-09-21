@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
@@ -12,6 +14,7 @@ import {
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
+const file = rel => readFileSync(fileURLToPath(new URL(rel, new URL('../', import.meta.url))), 'utf8');
 const near = (a, b, tolerance, message) => assert.ok(Math.abs(a - b) <= tolerance, `${message}: ${a} vs ${b}`);
 const gap = (a, b) => Math.hypot(a.x - b.x, (a.y ?? 0) - (b.y ?? 0), a.z - b.z);
 /** Distance over the water, for things whose height the world decides. */
@@ -265,4 +268,55 @@ test('the world lets the host move the arrival boat and put it back', () => {
   world.placeArrivalBoat(100, 50, 1); const moved = world.arrivalBoatPose();
   near(moved.x, 100, 1e-9, 'x'); near(moved.z, 50, 1e-9, 'z'); near(moved.yaw, 1, 1e-9, 'yaw');
   world.restArrivalBoat(); near(flat(world.arrivalBoatPose(), BOAT_REST), 0, 1e-9, 'and back');
+});
+
+test('the host is wired to the sequence: the caption layer, the Skip button, and every way out of it', () => {
+  // The page and the stylesheet the sequence writes into (docs/opening-sequence-build.md step 2).
+  const page = file('index.html'), css = file('src/adventure.css'), main = file('src/main.js');
+  for (const id of ['cutscene', 'cutscene-eyebrow', 'cutscene-text', 'skip-cutscene']) {
+    assert.ok(page.includes(`id="${id}"`), `index.html has #${id}`);
+  }
+  assert.match(page, /<div id="cutscene" class="hidden"/, 'the layer starts hidden');
+  assert.match(css, /#cutscene \{[^}]*pointer-events:none/, 'the layer does not eat clicks');
+  assert.match(css, /#skip-cutscene \{[^}]*pointer-events:auto/, 'but the Skip button does');
+  assert.match(css, /body\.cutscene #location[^{]*\{display:none!important;\}/, 'and the HUD is out of the way');
+
+  // The drive: the clock, the events, the boat, the companion and the eye, every frame.
+  assert.match(main, /import \{ stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT \} from '\.\/opening-sequence\.js'/);
+  assert.match(main, /opening=variantFor\(playerId\)/, 'which of the eleven you are picks the variant');
+  assert.match(main, /world\.placeArrivalBoat\(s\.boat\.x,s\.boat\.z,s\.boat\.yaw\)/, 'the boat follows the path');
+  assert.match(main, /eventsBetween\(openingFired,openingTime,opening\.id\)/, 'and each event fires once');
+  // The bell rings from the sequence at thirty seconds and nowhere else.
+  assert.doesNotMatch(main.slice(main.indexOf('function begin()'), main.indexOf('function landOpening')), /ringBell/,
+    'Step ashore no longer rings the bell');
+  assert.equal(main.split('openingBells++').length - 1, 2, 'the bell is counted wherever the sequence rings it');
+
+  // Skipping, and every way in that is not the boat, put the harbour back as it was built.
+  assert.match(main, /function leaveOpening\(\)\{opening=null;world\.restArrivalBoat\(\);player\.group\.visible=true;/);
+  assert.equal(main.split('leaveOpening();').length - 1 >= 5, true, 'Continue, the newest chapter and the test hooks all use it');
+  assert.match(main, /\$\('skip-cutscene'\)\.onclick=skipOpening;/);
+  assert.match(main, /if\(mode==='arriving'\)\{e\.preventDefault\(\);skipOpening\(\);return;\}/, 'Esc lands you');
+  assert.match(main, /if\(autopilot\.active\)skipOpening\(\)/, 'and the computer does not sit through it');
+
+  // The clock the mercenary roster counts by does not run while the boat is still coming in.
+  assert.match(main, /if\(!\['opening','pause','arriving'\]\.includes\(mode\)&&!reviewFrozen\)playSeconds\+=dt;/);
+  // The camera is the eye exactly, with no lerp behind it.
+  assert.match(main, /else if\(mode==='arriving'&&opening\)\{cameraTarget\.copy\(openingCamera\.position\);cameraFocus\.copy\(openingCamera\.target\);camera\.position\.copy\(cameraTarget\);\}/);
+  // 'arriving' keeps its name: src/autopilot.js answers wait for it and the vitals stay hidden.
+  assert.match(file('src/autopilot.js'), /arriving/);
+});
+
+test('the boat starts a long way out and the sequence ends it at the berth', () => {
+  // What the title screen shows, and what the harness checks after Skip.
+  const start = stateAt(0);
+  assert.ok(Math.hypot(start.boat.x - world.spawn.x, start.boat.z - world.spawn.z) > 100, 'out in the roads');
+  assert.equal(start.traveler.visible, false, 'and nobody is drawn on the title screen');
+  for (const id of VARIANT_IDS) {
+    const end = SKIP_BY_VARIANT[id];
+    near(flat(end.boat, BOAT_REST), 0, 1e-9, `${id} moors the boat`);
+    assert.equal(end.done, true, `${id} is over`);
+    assert.equal(end.landed.toast.kicker, 'SPEAK TO MARA AT THE HEAD OF THE PIER', `${id} sends you to Mara`);
+    assert.equal(end.companion.aboard, false, `${id} puts the companion on the deck`);
+    assert.ok(canStand(end.companion.x, end.companion.z, world), `${id} puts him on footing`);
+  }
 });
