@@ -9,7 +9,7 @@ const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, impo
 
 const IDS = Object.freeze({
   harbourmaster: 'harbormaster', warden: 'warden', doomsayer: 'doomsayer', acornCook: 'acorn-cook',
-  pondFisher: 'pond-fisher', forestStory: 'forest-keeper', birdWatcher: 'bird-watcher', vintner: 'winery-vintner',
+  pondFisher: 'pond-fisher', forestStory: 'forest-keeper', gardenKeeper: 'garden-keeper', birdWatcher: 'merc-lakota', vintner: 'winery-vintner',
 });
 const view = extra => ({ ids: IDS, questStage: 0, ...extra });
 /** The state each role's own rule is waiting for. */
@@ -20,7 +20,8 @@ const OPENS = Object.freeze({
   acornCook: { questStage: 1, acornQuestOpen: true },
   pondFisher: { hasRod: false },
   forestStory: { questStage: 1, forestOpen: true },
-  birdWatcher: { questStage: 1, birdingLearned: false },
+  gardenKeeper: { questStage: 1, birdingLearned: false },
+  birdWatcher: { archaeologyReport: true },
   vintner: { wineRecommended: true },
 });
 

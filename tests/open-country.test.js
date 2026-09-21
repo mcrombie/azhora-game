@@ -6,6 +6,18 @@ import { regionAt, regionNameAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGI
 import { createMapTutorial } from '../src/map-tutorial.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
+import { roadAudioProfile } from '../src/road-audio.js';
+import { buildLocalMapModel } from '../src/local-map-data.js';
+import { projectTrailPoint } from '../src/trail-map.js';
+import * as THREE from '../vendor/three.module.js';
+import { sourceModule } from './module-loader.js';
+
+let world = null;
+const built = async () => (world ??= (async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  return createWorld(new THREE.Scene());
+})());
+
 
 /** The worst of the unowned west, measured in docs/known-issues.md. */
 const UNOWNED = [
@@ -62,4 +74,44 @@ test('the readers of regionAt say open country rather than borrowing a name', ()
   assert.match(main, /levelWords\(regionLevel\(region\.name\)\)/, 'the card says how hard a country is, in words');
   assert.match(world, /regionAt\(batchCenter\.x, batchCenter\.z\)\?\.id \|\| 1/, 'scenery batching keeps its old district');
   assert.match(minimap, /open: region\?\.open === true/, 'the minimap knows');
+});
+
+test('open country plays no country’s bed: wind, and earth underfoot', () => {
+  const at = { x: -1600, z: 1600 };
+  const open = roadAudioProfile({ position: at, region: OPEN_COUNTRY });
+  assert.equal(open.region, 0, 'it keeps its own id rather than falling back to Drent');
+  // Drent's forest bed was what the fallback used to play a kilometre south of Nesdor.
+  const drent = roadAudioProfile({ position: at, region: 1 });
+  assert.ok(drent.forest > 0, 'Drent has a forest bed');
+  for (const bed of ['sea', 'forest', 'field', 'river', 'ridge']) assert.equal(open[bed], 0, `open country plays no ${bed}`);
+  assert.equal(open.surface, 'earth');
+  // A region that is missing or nonsense still falls back to 1, as it always did.
+  for (const bad of [undefined, null, NaN, -1, 'somewhere']) assert.equal(roadAudioProfile({ position: at, region: bad }).region, 1, String(bad));
+  assert.equal(roadAudioProfile({ position: at, region: { id: 0, open: true } }).region, 0);
+});
+
+test('the trails tab opens the nearest sheet in open country, and says you are off it', async () => {
+  const world = await built();
+  // Nesdor's outline ends at z = 953; this is a kilometre past it, on ground nobody owns.
+  const away = { x: -1600, z: 1900 };
+  assert.ok(isOpenCountry(world.regionAt(away.x, away.z)), 'the ground under him is open country');
+  const model = buildLocalMapModel({ world, position: away });
+  assert.equal(model.outside, true, 'the model says he is outside every border');
+  const sheet = model.regions.find(region => region.id === model.currentRegionId);
+  assert.ok(sheet, 'and still opens somebody’s sheet');
+  // The nearest one, not Drent-by-default a thousand kilometres away.
+  const gapTo = region => Math.hypot(Math.max(region.bounds.minX - away.x, 0, away.x - region.bounds.maxX),
+    Math.max(region.bounds.minZ - away.z, 0, away.z - region.bounds.maxZ));
+  for (const other of model.regions) assert.ok(gapTo(sheet) <= gapTo(other) + 1e-6, `${other.name} is nearer than ${sheet.name}`);
+  assert.notEqual(sheet.name, 'Drent', 'the far west does not open Tidehaven’s sheet');
+  // And the player is honestly off the sheet rather than clamped onto its edge.
+  assert.equal(projectTrailPoint(model.player, model.bounds).inside, false, 'he is not pretended onto the border');
+  // Inside a country, nothing changed.
+  const home = buildLocalMapModel({ world, position: { x: -20, z: 29 } });
+  assert.equal(home.outside, false);
+  assert.equal(home.regions.find(region => region.id === home.currentRegionId).name, 'Drent');
+  assert.equal(projectTrailPoint(home.player, home.bounds).inside, true);
+  // The caption is the one place a player reads it.
+  const map = readFileSync(fileURLToPath(new URL('../src/trail-map.js', import.meta.url)), 'utf8');
+  assert.match(map, /model\.outside \? `You are outside every border the atlas draws/, 'the sheet says so');
 });

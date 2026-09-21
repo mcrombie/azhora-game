@@ -29,9 +29,9 @@ export const MIND_PRICES = freeze({ input: 1, output: 5, cacheRead: .1, cacheWri
 // ---------------------------------------------------------------------------
 // Offers: the only way he can touch the game
 // ---------------------------------------------------------------------------
+// Birding and the feeder used to be here. They belong to Perrin at the garden now (src/birding.js),
+// and a model that offered them would be offering something the world will not do.
 export const OFFERS = freeze({
-  'learn-birding': freeze({ label: 'Let him show you (learn Birding)', means: 'teach them birding, from the beginning' }),
-  'take-feeder': freeze({ label: 'Take the hummingbird feeder to Lysa', means: 'lend them your hummingbird feeder, to take to Lysa for sugar water' }),
   'learn-archaeology': freeze({ label: 'Learn archaeology and go to Rena', means: 'teach them archaeology and send them to read the ruins of Rena' }),
   'report-rena': freeze({ label: 'Hand him your notes from Rena', means: 'take their notes from Rena, now that they are ready' }),
   'learn-wine': freeze({ label: 'Learn wine and look for Vaervelm Caelazh', means: 'teach them to taste wine and send them to Vaervelm Caelazh' }),
@@ -39,11 +39,13 @@ export const OFFERS = freeze({
   'learn-hot-chocolate': freeze({ label: 'Ask for the recipe', means: 'teach them your hot chocolate recipe and give them chocolate and milk' }),
 });
 export const OFFER_IDS = freeze(Object.keys(OFFERS));
-/** When the written choice for each offer shows today: the same guards as `birdWatcherConversation`. */
-export function validOffers({ birding, archaeology = null, wine = null, cooking = null }) {
-  if (!birding.met) return ['learn-birding'];
+/**
+ * When the written choice for each offer shows today: the same guards as `birdWatcherConversation`.
+ * Nothing of his is offered at all until the traveler has worked out what he is (src/lakota.js).
+ */
+export function validOffers({ lakota = null, archaeology = null, wine = null, cooking = null }) {
+  if (lakota && !lakota.met) return [];
   return [
-    ...(birding.feeder === 'none' ? ['take-feeder'] : []),
     ...(archaeology && archaeology.task()?.stage === 'report' ? ['report-rena'] : []),
     ...(archaeology && !archaeology.met ? ['learn-archaeology'] : []),
     ...(wine && !wine.met ? ['learn-wine'] : []),
@@ -74,7 +76,7 @@ const OFFER_WORDS = freeze({
 const quoted = lines => lines.map(line => `  "${line}"`).join('\n');
 export const LAKOTA_SHEET = [
   `WHO YOU ARE
-You are Lakota, the birder of Tidehaven, a fishing village on the coast of Drent, in the land of Azhora. You are talking out loud with the traveler, a newcomer who walks a great deal and who has come to your garden. Birds first, always. You also dig (old towns and older bones), you know wine (you worked a cellar in West Suval), you love chocolate, you have theories about thinking machines, and you have long suspected that the world is a made thing.
+You are Lakota, a hired sword walking the road out of Tidehaven with the traveler and nine others, and a birder before anything else. You are talking out loud with the traveler, who walks a great deal and has fallen in beside you. Birds first, always. You also dig (old towns and older bones), you know wine (you worked a cellar in West Suval), you love chocolate, you have theories about thinking machines, and you have long suspected that the world is a made thing.
 You look like this: a big round head under thick, upright, spiky hair; a long hooked nose; a cream collared shirt with a breast pocket; a brass spyglass on a cord; a notebook; and a falconer's gauntlet on your left arm, where your red-tailed hawk rides.`,
   `YOUR HAWK
 ${quoted(RED_TAIL_LINES)}`,
@@ -219,7 +221,7 @@ export function memoryRequest({ turns, model = MIND_MODEL }) {
   const transcript = turns.slice(-MIND_LIMITS.turns * 2).map(turn => `${turn.role === 'user' ? 'Traveler' : 'Lakota'}: ${turn.text}`).join('\n');
   return {
     model, max_tokens: 60,
-    system: 'You keep the memory of Lakota, the birder of Tidehaven. Given a conversation between Lakota and the traveler, write ONE sentence in Lakota\'s first person, at most 25 words, about something worth remembering about the traveler (what they told him, asked, or felt). If nothing is worth remembering, write NOTHING.',
+    system: 'You keep the memory of Lakota, the hired sword who watches birds. Given a conversation between Lakota and the traveler, write ONE sentence in Lakota\'s first person, at most 25 words, about something worth remembering about the traveler (what they told him, asked, or felt). If nothing is worth remembering, write NOTHING.',
     messages: [{ role: 'user', content: transcript || 'Traveler: (said nothing)' }],
   };
 }

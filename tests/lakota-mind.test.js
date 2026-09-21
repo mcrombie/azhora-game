@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBirding, birdWatcherConversation, BIRD_WATCHER } from '../src/birding.js';
+import { createLakota } from '../src/lakota.js';
 import { createArchaeology, RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED } from '../src/archaeology.js';
 import { createWine } from '../src/wine.js';
 import { createCooking } from '../src/cooking.js';
@@ -9,9 +10,11 @@ import { LAKOTA_SHEET, OFFER_IDS, OFFER_TOOL, MIND_LIMITS, validOffers, lakotaSt
   memoryRequest, createLakotaMind, validateLakotaMindSnapshot } from '../src/lakota-mind.js';
 
 const satchel = () => { const bag = {}; return { add(id, n = 1) { bag[id] = (bag[id] ?? 0) + n; return true; }, has: id => (bag[id] ?? 0) > 0, remove(id, n = 1) { bag[id] -= n; return true; } }; };
-const world = () => ({ birding: createBirding(), archaeology: createArchaeology(), wine: createWine(), cooking: createCooking() });
+const world = () => ({ birding: createBirding(), lakota: known(), archaeology: createArchaeology(), wine: createWine(), cooking: createCooking() });
+/** The traveler has worked out what he is; nothing of his is offered before that (src/lakota.js). */
+const known = () => { const l = createLakota(); l.know(); return l; };
 /** The written menu's choices that lead to each offer. */
-const CHOICE_TO_OFFER = { 'learn-birding': 'learn-birding', 'ask-hummingbirds': 'take-feeder', 'report-rena': 'report-rena', 'learn-archaeology': 'learn-archaeology',
+const CHOICE_TO_OFFER = { 'report-rena': 'report-rena', 'learn-archaeology': 'learn-archaeology',
   'learn-wine': 'learn-wine', 'feeling-bad': 'hot-chocolate', 'ask-recipe': 'learn-hot-chocolate' };
 const writtenOffers = modules => {
   let choices = [];

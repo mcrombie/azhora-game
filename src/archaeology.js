@@ -1,6 +1,6 @@
 /**
- * Archaeology, taught by Lakota, Tidehaven's birder, who digs as well as he
- * watches: old towns and older bones. His first errand is the ruins of Rena at
+ * Archaeology, taught by Lakota, the hired sword who watches birds and digs as
+ * well: old towns and older bones. His first errand is the ruins of Rena at
  * the heart of Drent, burned eighty years ago and never rebuilt (src/rena.js).
  * He has pegged the places worth looking at; the traveler reads each one and
  * writes it up. Nothing is carried off: a thing out of its place is a thing with
@@ -100,7 +100,7 @@ export function createArchaeology({ skills, onEvent = () => {} } = {}) {
 
   /** A pegged place read properly and written up. Nothing is taken. */
   function find(id) {
-    if (!state.met) return { ok: false, reason: 'Somebody has pegged this spot and tied a ribbon to the peg. Lakota, the birder in Tidehaven, digs as well as he watches.' };
+    if (!state.met) return { ok: false, reason: 'Somebody has pegged this spot and tied a ribbon to the peg. Lakota, the man on the road with the hawk, digs as well as he watches.' };
     const entry = RENA_FINDS[id];
     if (!entry) return { ok: false, reason: 'There is nothing here to read.' };
     const first = !state.found[id];
@@ -125,7 +125,7 @@ export function createArchaeology({ skills, onEvent = () => {} } = {}) {
   function task() {
     if (state.quest === 'rena') {
       return foundCount() >= RENA_NEEDED
-        ? { title: 'The ruins of Rena', stage: 'report', target: 'bird-watcher', detail: `${foundCount()} finds written up. Take your notes back to Lakota in Tidehaven.` }
+        ? { title: 'The ruins of Rena', stage: 'report', target: 'bird-watcher', detail: `${foundCount()} finds written up. Take your notes back to Lakota, wherever the road has got him to.` }
         : { title: 'The ruins of Rena', stage: 'dig', target: RENA.id, detail: `Read the places Lakota has pegged at the ruins of Rena, in the forest at Drent’s heart: ${foundCount()} of ${RENA_NEEDED}.` };
     }
     return null;
@@ -135,7 +135,7 @@ export function createArchaeology({ skills, onEvent = () => {} } = {}) {
     return { met: state.met, quest: state.quest, foundCount: foundCount(), total: RENA_FIND_IDS.length, task: task(),
       entries: RENA_FIND_IDS.map(id => ({ id, found: !!state.found[id], kind: RENA_FINDS[id].kind,
         name: state.found[id] ? RENA_FINDS[id].name : 'A pegged place at Rena',
-        detail: state.found[id] ? RENA_FINDS[id].note : state.met ? `At the ${RENA_FINDS[id].site} of the old town.` : 'Lakota, the birder in Tidehaven, digs as well.' })) };
+        detail: state.found[id] ? RENA_FINDS[id].note : state.met ? `At the ${RENA_FINDS[id].site} of the old town.` : 'Lakota, the man on the road with the hawk, digs as well.' })) };
   }
 
   function snapshot() { return { version: ARCHAEOLOGY_VERSION, met: state.met, quest: state.quest, found: { ...state.found } }; }
