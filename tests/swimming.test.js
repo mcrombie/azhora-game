@@ -301,6 +301,14 @@ test('the two ways out of the water both pay for the swim, and drowning ends a q
   assert.match(main, /if\(inWater\)payForTheSwim\(p\.x,p\.z\);[\s\S]{0,40}\s*inWater=false;drowning=false;return;/,
     'as does walking out onto ground');
   assert.ok((main.match(/payForTheSwim\(/g) ?? []).length === 3, 'one payout, called from both ways out');
+  // And the payout says he is out of the water before it writes anything, because `saveRoad`
+  // refuses while `inWater`. It was the last line of the payout and the flag was cleared by the
+  // caller afterwards, so a crossing was paid for in experience and in waters crossed and then
+  // never written to the checkpoint - by either way out.
+  const payout = main.slice(main.indexOf('function payForTheSwim(x,z){'), main.indexOf('function swimTick('));
+  assert.match(payout, /^\s*function payForTheSwim\(x,z\)\{[\s\S]{0,400}?inWater=false;/, 'out of the water first');
+  assert.ok(payout.indexOf('inWater=false;') < payout.indexOf('saveRoad(false)'), 'and only then is the checkpoint written');
+  assert.match(payout, /saveRoad\(false\)/, 'which the payout does do');
   // A drowning does not restart the fight it interrupted, so whatever was told a fight had begun
   // must be told it has ended. The hideout and the toll are ended in the defeat handler; the
   // aftermath is not, because the ordinary retry restarts its fight and leaves it running.

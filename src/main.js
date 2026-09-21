@@ -2909,6 +2909,10 @@ function init() {
    * horse from the shallows.
    */
   function payForTheSwim(x,z){
+    // He is out. This has to be said before anything else, because the last thing the payout does
+    // is write the checkpoint, and `saveRoad` refuses while `inWater` - so the crossing was paid
+    // for in experience and in waters crossed, and then never written down, by either way out.
+    inWater=false;
     const landed=world.regionAt(x,z)?.name??null;
     const paid=swimming.swam(swimMetres);
     if(paid.xp)toast(`Swimming +${paid.xp}${paid.levelled?` · level ${paid.level}`:''}. ${Math.round(swimMetres)} m of it.`,'OUT OF THE WATER');
