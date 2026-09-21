@@ -2918,3 +2918,164 @@ everybody — a pillar he never stands near is not a doorway.)*
 carrying a mace, and the design's own sentence — "in a doorway I am furniture" — is Matt's line.
 Giving allies the feel of what they carry is the combat brief's ground and a tuning decision, so
 it is written down rather than taken.
+
+
+---
+
+## What gear and levels are worth at the border battle: nothing that closes the gap
+
+The lift left a question: a player who walks alone, or loses men, must not meet a wall on the main
+arc with no way through. Gear and levels both exist now, so they were measured. The kits are what a
+smith actually has on his board (`smithStock`), and the margins are built field for field the way
+`getMargins` in `src/main.js` builds them - armour, dodge scale, shield, wind.
+
+| the board | what a full set costs | turns | dodge | wind |
+|---|---|---|---|---|
+| wood and bone (level 0) | 84 copper | 18 % | x1 | x1 |
+| **bog iron (level 2, the Moros camp's armourer)** | **605 copper** | **35 %** | x0.9 | x1 |
+| the best the game will let anybody wear (tier 4, heavy) | not sold anywhere | 50 % | x0.75 | x2 |
+
+### Alone, and with three, at level 2
+
+| kit | arms | alone: won / enemies down | three: won / down |
+|---|---|---|---|
+| no armour | B1/T1 | 0/40, 1 of 8 | 0/40, 2 of 8 |
+| no armour | B20/T20 | 0/40, 1 of 8 | 0/40, 2 of 8 |
+| wood and bone + buckler | B20/T20 | 0/40, 2 of 8 | 0/40, 4 of 8 |
+| **bog iron + buckler** | **B20/T20** | **0/40, 2 of 8** | **0/40, 5 of 8** |
+| **tier 4 heavy + buckler** | **B99/T99** | **0/40, 3 of 8** | **40/40** |
+
+**Plainly: there is no plausible kit and level at which a traveler alone can win it**, and none at
+which three companions can. A traveler at the game's absolute ceiling - armour nothing sells,
+Blades and Toughness at 99 - still loses alone, having put three of eight down in thirty-two
+seconds. With three companions that same impossible traveler wins every time, so it is a continuum
+and not a hard wall; there is simply nothing on it a player can reach.
+
+**What a player plausibly has** is Blades 17 / Toughness 12 (measured in an earlier round and
+recorded above), sparring lifts a family to 20, and straw pays to 5. So the **B20/T20** rows are
+already the optimistic end of plausible, and the bog-iron set at 605 copper is a real purchase on
+the way - the armourer is in the camp the muster is held in.
+
+### Why, and it is not damage or health
+
+The binding constraint is the **dodge economy**, which no kit and no level touches:
+
+| | |
+|---|---|
+| a soldier's cycle (`ENEMY_KINDS.soldier`: tell .7 + attack .5 + recovery 1.0) | 2.2 s |
+| eight of them, so a blow arrives every | **0.275 s** |
+| a dodge costs | 25 wind |
+| wind comes back at 24 a second, after a 0.8 s delay, so a dodge is affordable every | **~1.85 s** |
+| which is one blow dodged in | **about seven** |
+
+Armour turns a share of the other six, health lets them land for longer, and Blades kills a soldier
+sooner - the "enemies down" column moves from 1 to 3 alone and from 2 to 5 with three, so the
+levers are real. They just never reach eight. **What decides this fight is how many bodies are on
+your side**, and at six companions it is won 40/40 whether the traveler is naked at Blades 1 or in
+bog iron at 20.
+
+**This is a design problem, not a tuning job**, so nothing was tuned. The levers, for whoever takes
+it to the user: fewer than eight in the first waves; a longer `recovery` on the soldier; a cheaper
+dodge or a faster wind; or accepting that the arc's climax requires a company and giving a player
+who has none another road to it.
+
+### A caveat that is mine, in plain sight
+
+The driver was wrong twice before these numbers were believed. It swung whenever a target was in
+reach, which left nothing for a dodge - **two dodges in a sixteen-second fight, wind on the floor**
+- so the first table measured a bad player and called the fight a wall. It now keeps
+`swingCost + 25` back, always. Read this table against itself and not against another round's.
+
+---
+
+## Teachers, bouts and the loan: sound, and one outright exploit in the regard
+
+**Driven against the real modules.** A lesson is given once and no more (Al the Tun gave three out
+of ten asks); the lessons survive the road and nonsense is refused; **the dead and the sent-on owe
+nothing, teach nothing, spar with nobody and pay a ceiling of 0**; and across every teacher and
+every lesson count **no sparring ceiling ever exceeds the teacher's own level** - Al the Tun's
+table figure is 60 and he pays 20, which is himself.
+
+**A bout, driven both ways round** - the traveler going at him, and the traveler standing there
+taking it:
+
+| | lowest player hp | lowest teacher hp | victory | defeat | enemy-defeated | retreat | ends |
+|---|---|---|---|---|---|---|---|
+| he has the better of it | 100 | 15 | 0 | 0 | 0 | 0 | `spar-over: traveler` |
+| he takes it | **4** | 149 | 0 | 0 | 0 | 0 | `spar-over: teacher` |
+
+Nobody's health reaches nought, on either side, and none of the four events a real fight emits is
+ever emitted. The country under him was level 2 throughout and a bout does not care.
+
+**The loan is well made.** Every teacher lends something that fits his own craft (Jerry alone lends
+nothing, because the game has no bow). It is never added to the satchel - `lent` is one variable
+with three readers - it is in no snapshot, and it is taken back by `returnLoan()` from four
+directions: the yield, the walk-away, a load, and a **belt-and-braces line in the frame loop** that
+returns it on any frame the bout is not actually running, which covers the teacher dying, drowning
+and everything else. *A reload mid-bout cannot happen at all*: `saveRoad` refuses while a fight is
+active, and a bout is an active fight.
+
+### The exploit: a weapon traded paid every time it was traded
+
+`REGARD.traded` is 14 and `traded()` had **no once-guard**, while `tradeOffer` refuses only a swap
+for the *same* weapon. So: hand him your sword, take his mace, offer again - different weapons, so
+he accepts - swap back, and again.
+
+| | to carry one man from asked to fond |
+|---|---|
+| walking with him | 1.4 a minute of movement, so **63 minutes** |
+| his own errand | 22, once, guarded |
+| a fight won together | 9, and only on a won fight; a bout never wins one |
+| **trading back and forth** | 14 a swap, unguarded: **7 swaps** |
+
+Fourteen dialogue clicks bought what the design spends a road, a war and a man's own business on -
+and at fond he owes all three lessons and the highest sparring ceiling he can give.
+
+**Fixed at the cause**, spelled the way `errand` already is: a trade is a state, not an act, so it
+pays once a man. It is carried in the save as its own list, a save written before it has none and
+is accepted, and a man restored from one may still be paid his one.
+
+**Not fixed, because it is the design:** walking in circles does accrue regard, at 63 minutes a man,
+bounded by `REGARD.top`. That is the "slow honest one" the table calls it, and an hour of walking
+in circles for one rung is its own punishment.
+
+---
+
+## The guard's frame order, verified
+
+The builder's fix is right, and both halves of it hold.
+
+- **Offered before the fight is stepped.** `combat.guard(...)` sits above `combat.update(dt)` in
+  the host's loop, so a blow is answered for with this frame's key rather than the last one's.
+- **Cleared whenever nothing is being played.** `if(mode!=='playing')combat.guard(false,...)` runs
+  above the playing branch, so the defeat panel, a dialogue and the pause menu cannot leave a
+  shield up that nobody is asking for. Driven: with the host still offering the key the first blow
+  is **caught**; with the hand off it, the same blow comes **through**, however it was latched
+  before.
+
+*And a correction to my own control.* I first tried to measure the order by offering the key a
+frame late and expecting the blow through. Both orders caught it - the latch is already set by the
+time a blow lands, because a soldier's tell is 0.7 s and the key was pressed on frame one. **The
+order cannot be measured that way and is pinned in the source instead; what is driven is the
+clear**, which is the thing that was actually going wrong.
+
+---
+
+## Two faults in the review tooling, found by trying to use `stand-at`
+
+Both fixed in `main.cjs`, and neither was the game.
+
+1. **`--review-views` split on commas, so `stand-at:x,z,facing` could not be passed at all.** It
+   was torn into four views named `-806.1`, `-521.0`, `-1.57` and `5`, each of which matched
+   nothing and was photographed as wherever the traveler happened to be standing - four pictures
+   of the wrong place, and `"errors": []`. The list now takes semicolons, and a comma-split list
+   puts a `stand-at:` view back together (only a view with a colon takes arguments, and all of its
+   arguments are numbers).
+2. **A view's name is its file name, and Windows will not take a colon in one.** The write failed
+   with no picture and no complaint. Every review shot's name is now sanitised.
+
+**Still owed:** with both fixed the `stand-at:` view parses as one and the run reports no error,
+but no picture is written for it. The cause was not found before this hand-back. The camp
+armourer's own view was rendered and is good - he stands under the smithy tent with *"F Speak with
+The armourer"* on screen, in the Moros Plain, all in English - so **the armourer half of that
+check is done and Mern's half is not.**

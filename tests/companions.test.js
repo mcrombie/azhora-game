@@ -655,3 +655,42 @@ test('the companion it hands the company is the one the long road already takes'
     assert.deepEqual(alone.summary(seconds), untouched.summary(seconds), `empty summary, at ${seconds} s`);
   }
 });
+
+test('a weapon traded is paid once, because swapping back is two clicks', () => {
+  // `tradeOffer` refuses only a swap for the *same* weapon, so a traveler could hand over his
+  // sword, take the mace, and swap straight back for ever. Measured at 14 a swap with no guard:
+  // **seven swaps** carried a man from asked to fond - the whole friendship design, which is a
+  // road walked and fights come through and his own errand, bought with fourteen clicks. Against
+  // sixty-three minutes of walking for the same climb.
+  const { companions } = fresh();
+  companions.ask('merc-altun', { where: 'road' });
+  const asked = companions.regardFor('merc-altun');
+  assert.equal(companions.traded('merc-altun').ok, true, 'the first trade is worth something');
+  const once = companions.regardFor('merc-altun');
+  assert.equal(once, asked + REGARD.traded);
+  for (let swap = 0; swap < 20; swap++) assert.equal(companions.traded('merc-altun').ok, false, 'and the next twenty are not');
+  assert.equal(companions.regardFor('merc-altun'), once, 'he is carrying something of yours, and he knows it once');
+  assert.equal(companions.view().find(man => man.id === 'merc-altun').traded, true);
+  // It survives the road, in the save's own list, and a save from before this has nobody in it.
+  const saved = companions.snapshot();
+  assert.deepEqual(saved.traded, ['merc-altun']);
+  assert.equal(validateCompanionsSnapshot(saved), true);
+  const { traded, ...older } = saved;
+  assert.equal(validateCompanionsSnapshot(older), true, 'a save from before a trade was paid once');
+  for (const bad of [{ ...saved, traded: 'merc-altun' }, { ...saved, traded: ['nobody'] }])
+    assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
+  const later = createCompanions({ fallen: createFallen() });
+  assert.equal(later.restore(saved), true);
+  assert.equal(later.traded('merc-altun').ok, false, 'and he does not pay again after a reload');
+  const fromOld = createCompanions({ fallen: createFallen() });
+  assert.equal(fromOld.restore(older), true);
+  assert.equal(fromOld.traded('merc-altun').ok, true, 'while an older save may still pay its one');
+  // Walking is the slow honest one and is bounded by the top, so it is not the same class.
+  const { companions: walker } = fresh();
+  walker.ask('merc-matt', { where: 'road' });
+  let minutes = 0;
+  while (walker.regardFor('merc-matt') < REGARD.top && minutes < 10000) { walker.travelled('merc-matt', 60); minutes++; }
+  assert.ok(minutes > 50, `${minutes} minutes of walking to carry one man from asked to fond`);
+  walker.travelled('merc-matt', 60 * 60);
+  assert.equal(walker.regardFor('merc-matt'), REGARD.top, 'and it stops at the top');
+});
