@@ -2789,3 +2789,132 @@ but it is what a company looks like if the traveler stops his horse in a street.
 all**: on open ground every man takes his own place at his own shoulder. Looked at, it is eleven
 riders in a single even file coming out through Lumber Town's gate, each on his own coat. That is
 the picture `docs/companions.md` describes, and it had never been seen.
+
+
+---
+
+## The hold, lifted — and what the day after is with a company
+
+The user's ruling: **"Lift it to level 2."** The measuring came first, because the constant also
+held the four day-after fights (`src/aftermath-chapter.js`) and nobody had ever run one with a
+company.
+
+### Two faults in my own harness, found before any number was believed
+
+**One: `attack` takes a yaw and `dodge` takes a point.** Called with neither they answer false for
+ever. The first run of the harness reported **nought swings in every row** and four tidy columns
+that looked like a measurement. Nothing in the output said "broken"; the tell was that the player
+never swung and every fight ended the same way.
+
+**Two, and worse, because it would have survived:** `startEncounter` asks the host's `getLevel`
+**only when the encounter authored no level of its own**, and both builders authored
+`level: HELD_AT_TUNED_LEVEL`. A harness that set `getLevel` and left the field alone measured the
+held fight twice and called one of them level 2 — and it printed **byte-identical rows for level 0
+and level 2**, which is the only reason it was caught. The lift is deleting the field, not setting
+it to 0; `level: 0` is the hold under another name.
+
+### The table, at last
+
+The traveler as the arc leaves him (Blades 17, Toughness 12), the side's own four soldiers, 40
+seeds a row, companions at their `MERCENARY_ARMS` numbers. **"Sitting still"** is the same fight
+with the player never swinging — he still closes and dodges.
+
+| fight | level | company | won | health | down | secs | companions dead | sitting still |
+|---|---|---|---|---|---|---|---|---|
+| the border battle | 0 (held) | 0 | 0/40 | — | 6/8 | 15.5 | 0 | 0/40 |
+| | 0 | 3 | **40/40** | 82 | 8/8 | 13.0 | 0 | 0/40 |
+| | 0 | 6 | 40/40 | 82 | 8/8 | 9.8 | 0 | **40/40** |
+| | 0 | 10 | 40/40 | 82 | 8/8 | 8.0 | 0 | 40/40 |
+| **the border battle** | **2** | 0 | **0/40** | — | 2/8 | 8.2 | 0 | 0/40 |
+| | 2 | 3 | **0/40** | — | 3/8 | 10.2 | 0 | 0/40 |
+| | **2** | **6** | **40/40** | **72** | 8/8 | **17.8** | 0 | 40/40 |
+| | 2 | 10 | 40/40 | 72 | 8/8 | 14.3 | 0 | 40/40 |
+
+And the four day-after variants, every one of them level 2 ground (`West Suval` and the
+`Moros Plain`), all four behaving alike:
+
+| | 0 | 3 | 6 | 10 |
+|---|---|---|---|---|
+| held at 0 | 0/40 | 40/40 in 11.3 s | 40/40 in 8.9 s | 40/40 in 7.1 s |
+| **at level 2** | **0/40**, 2 of 7 down | **0/40**, 3 of 7 down | **40/40**, 72 % health, 15.7 s | 40/40, 72 %, 12.6 s |
+
+**Every variant is fair with six**, so the constant is deleted and both take their country's level.
+**The border stockade's ground is the Moros Plain, level 2 — measured on the built world**
+(`regionAt(-690.6, 527.2)`), not assumed, so no explicit 2 is needed anywhere.
+
+**What the lift buys:** at level 2 the fight cannot be won alone or with three, and with six it is
+won at 72 % health over about eighteen seconds — the longest row in the table. Held at 0 it was
+won with **three**, at 82 % health, in thirteen seconds.
+
+### Two things to read the table with, and one I could not reproduce
+
+- **The absolute win counts are this harness's, not the last round's.** This driver closes to
+  1.5 m, dodges a tell it has seen past a per-seed reaction of 0.18–0.40 s, and swings when idle;
+  the round-one driver closed in single file with perfect facing. A lone traveler wins 20/40 at
+  level 0 under that one and 0/40 under this one. **Read the comparisons between rows, never the
+  absolute numbers across rounds.**
+- **No companion dies in any row**, where round one measured 2.0 at level 2 with six. A companion's
+  health is `maxHealth(toughness)` — 159 to 197 for these men against a legionary's 90 — and ten
+  allies spread eight soldiers' attention. Which of the two drivers is right about deaths is not
+  settled here, and the honest thing to say is that **this round found none and the last found
+  two**.
+- **"Sitting still" wins at six**, which round one did not find. Same caveat: a passenger who dodges
+  as reliably as this one does is a weak control. The row that matters is unchanged either way —
+  three is a wall, six is the fight.
+
+---
+
+## Weapon feel: it is the traveler's alone, and Matt's pike can never refuse him
+
+`weapons.profile()` was dropping `tempo`, `arc`, `room`, `locked` and `thrust` until `7e5b5b8`, so
+phase 5 was true of the module and of nothing anybody held. What moved, driven:
+
+| fight | weapon | now | before the fix |
+|---|---|---|---|
+| the wolves at the Lauvel | **sword** | 40/40, 100 %, 3.1 s, 6 swings | **identical** |
+| | war pike | 40/40, 87 %, 4.4 s | 40/40, 100 %, 3.1 s |
+| | iron mace | 40/40, 87 %, 4.7 s | 40/40, 100 %, 3.1 s |
+| | forest stick | 40/40, 100 %, 3.5 s | 40/40, 87 %, 6.8 s |
+| the border battle | **sword** | 9.3 s, 11 swings | **identical** |
+| | war pike | 10.6 s, 12 swings | 9.3 s, 11 swings |
+| | forest stick | 14.3 s, 28 swings | 9.3 s, 11 swings |
+| Mallec at the pass stones | **sword** | **identical** | |
+
+**The sword is unchanged to the digit in every authored fight**, which is what makes the fix
+invisible to the arc as it stands. Everything else moved, in the direction its row in
+`WEAPON_TYPES` says: the stick is quick and the pike and the mace are slow.
+
+### Allies' weapons take no road at all
+
+**Asked before any number was trusted, and then driven.** An ally's numbers come entirely from
+`ALLY_KINDS[kind]` plus `allyDamageScale(level)` and `maxHealth(toughness)`. `companionAllies`
+(`src/main.js`) hands `combat` a `kind`, a `level`, a `toughness`, a point and a `model` — and
+`model.look.weapon` is what the renderer draws. `updateAlly` uses a hard-coded `Math.PI * .3` for
+its arc; there is no `tempo`, no `locked`, no `thrust` and **no `room`** anywhere on that path.
+`roomToSwing` reads `position`, which is **the traveler's**, and its one call site is inside the
+player's `beginAttack`.
+
+So: **Matt cannot refuse to swing, ever, in any arena.** Driven, three polearm men (Matt's pike,
+Ciarán's spear, Mus's spears) as allies:
+
+| | ally hits | `no-room` refusals | won |
+|---|---|---|---|
+| boxed in by ten pillars at 2.3 m | 18 | **0** | 12/12 |
+| the same three on open ground | 18 | **0** | 12/12 |
+
+Identical, which is the proof that the pillars reached nothing of theirs. **And the control that
+shows the pillars were real:** the *traveler*, on that same ground,
+
+| | swings | `no-room` refusals |
+|---|---|---|
+| with a war pike | **0** | **1,548** |
+| with a sword | 11 | 0 |
+
+The pike's two metres bite, and they bite the traveler and nobody else. *(The first run of this
+control ringed the arena's centre, which the traveler never reaches, and measured 0 refusals for
+everybody — a pillar he never stands near is not a doorway.)*
+
+**Worth a decision, not a fix:** a companion carrying a pike fights exactly like a companion
+carrying a mace, and the design's own sentence — "in a doorway I am furniture" — is Matt's line.
+Giving allies the feel of what they carry is the combat brief's ground and a tuning decision, so
+it is written down rather than taken.

@@ -1,4 +1,3 @@
-import { HELD_AT_TUNED_LEVEL } from './border-chapter.js';
 /**
  * After the border battle: the four chapters the campaign can reach from it.
  * The Empire's sellsword either goes into Solis with the army (`solis-sweep`)
@@ -153,7 +152,10 @@ export function aftermathEncounter(variantId, arena, allies = []) {
   const sign = arena.retreatSign === -1 ? -1 : 1;
   const place = (across, along) => (arena.retreatAxis === 'x'
     ? { x: arena.center.x + sign * along, z: arena.center.z + across } : { x: arena.center.x + across, z: arena.center.z + sign * along });
-  return { id: spec.encounterId, level: HELD_AT_TUNED_LEVEL, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
+  // **No level of its own.** The hold that kept these at nought while phase 3 and companions
+  // were unbuilt is lifted (the user, 2026-09-21), so the day after takes the level of the ground
+  // it is fought on like everything else - West Suval and the Moros Plain, both level 2.
+  return { id: spec.encounterId, center: { x: arena.center.x, z: arena.center.z }, checkpoint: place(0, CHECKPOINT_ALONG),
     retreatAxis: arena.retreatAxis, retreatSign: sign, retreatLine: arena.center[arena.retreatAxis] + sign * RETREAT_ALONG,
     enemies: (spec.enemyOffsets ?? ENEMY_OFFSETS).map(([across, along, entry], index) => ({ id: `${spec.encounterId}-foe-${index + 1}`, ...place(across, along), entry, hp: 100, kind: 'soldier', look: spec.foe })),
     allies: allies.slice(0, ALLY_OFFSETS.length).map((ally, index) => ({ ...ally, ...place(...ALLY_OFFSETS[index]) })) };
