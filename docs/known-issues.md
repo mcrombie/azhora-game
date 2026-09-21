@@ -1610,3 +1610,68 @@ battle the traveler could actually win — which is what gear and company are fo
 be taking ×1.60 blows on unscaled health for a great deal longer, and that is where it would show.
 Whoever tunes phase 3 should decide whether a country's level is a property of its enemies or of
 its ground; today it is of its enemies only, and your own side is standing on the same ground.
+
+---
+
+## The recognised teachers never say their line: thirteen lines wired to nothing
+
+`src/long-road.js` exports three things for the traveler who already has a skill a stop teaches:
+`knowsAlready` (`:587`), `RECOGNISED` (`:595`, thirteen lines, one per spine teacher) and
+`recognisedAt` (`:611`). The design is in `docs/drent-long-road.md` §10: *"the teacher takes one
+recognising branch — 'you have done this before' — the first-find step is waived, the stop counts,
+and the talk still pays its Drentish."*
+
+**Nothing in `src/` reads any of the three.** Grepped the whole tree: the only importer is
+`tests/long-road.test.js`. `src/main.js` never asks whether a teacher should recognise anybody,
+and no conversation anywhere reaches those lines. So thirteen written lines — Bowden's
+*"YOU HAVE SWUNG ONE! Good! Then swing it at MY trees"*, Nell's *"You name things. I can hear
+it"* — cannot be reached by any player.
+
+**It matters because every one of the eleven lands knowing something.** Each closes one or two
+stops the moment they step ashore:
+
+| player | lands knowing | closes at t = 0 |
+|---|---|---|
+| Jerry | fishing | `bran-rod` |
+| Kristen | cooking | `lysa-acorns`, `willowmere-fire` |
+| Ciarán | geology | `silas-stream` |
+| Lakota | birding, archaeology, wine | `bird-garden`, `rena-dig` |
+| Eliana | woodcutting | `bowden-axe` |
+| Matt | construction | `house-plot` |
+| Altun | mycology | `odger-fernway` |
+| Mus | cartography | `pier-chart`, `village-corners` |
+| Cromb, Chris, Ed | — / linguist / swimming | nothing |
+
+And the stop is *closed*, not shortened: `done(state)` is re-derived from the skill being known
+(`src/long-road.js:270` — "nothing here is remembered"), so the stop is ticked before the teacher
+is met. Being closed, it is never `longWayNext()`, so the teacher never wears the open gold, so
+the player is never pointed at them at all. Play as Lakota and Perrin is an ordinary villager with
+no mark and nothing to say about birds — `markerFor` also drops his green leaf, because
+`view.birdingLearned` is already true. The acknowledgement the design asked for is written, tested
+for its prose, and unreachable.
+
+*Smallest repair:* the host asks `recognisedAt(stopId)` where a spine teacher's conversation is
+built, and says that line instead of the first-find one when `knowsAlready(skills, stop.skill)`.
+It is the long road's to wire; the content is all there.
+
+### And one hole in the table itself
+
+`RECOGNISED` covers thirteen stops: the twelve **spine** stops that teach a skill, and one more.
+It has no line for **`house-plot`**, which is a **branch** stop — and `house-plot` is exactly the
+stop **Matt** closes by landing with construction.
+
+`tests/long-road.test.js:422` is the guard for this (*"somebody lands already knowing `skill` and
+`stop.id` has nothing to say"*) and it does not catch it, because it sweeps spine stops only. One
+man of the eleven falls through the one hole the test does not look at.
+
+---
+
+## Checked and clean, on the same walk
+
+- **Nothing on the long road pays twice.** The walk is re-derived every time it is asked for rather
+  than remembered, so closing a closed stop closes nothing; and releasing the companion twice is a
+  no-op — the second call leaves `revision` and the stored release exactly as the first left them.
+- **The muster's two faces are right.** One or two standing gives the early face with the pegs
+  scene and the Marshal's work for early men; eleven gives the full turn and all ten company
+  lines; three to ten gives the plain count and no company lines, which is the quiet middle the
+  design asks for.
