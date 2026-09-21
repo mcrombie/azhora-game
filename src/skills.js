@@ -46,21 +46,21 @@ export const SKILLS = Object.freeze({
   botany: Object.freeze({
     id: 'botany', name: 'Botany',
     blurb: 'Everything that grows, from the plantain on the path to the oldest oak in the wood: what it is, where it stands, and what it is for. Every plant and tree you name for the first time teaches you something.',
-    teacher: 'Nell Harrow, on the outskirts of Tidehaven',
+    teacher: 'Nell Harrow, at the Sunken Lane where the old drove crosses the Caloss road',
     // Drent's thirty-four plants and trees together are worth 625: level 6.
     thresholds: RUNESCAPE_TABLE,
   }),
   geology: Object.freeze({
     id: 'geology', name: 'Geology',
     blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
-    teacher: 'Silas Garrow, digging marl under the Weatherhead',
+    teacher: 'Silas Garrow, with his marl cart at the Toll House stream on the Caloss road',
     // The eleven finds of Drent's coast together are worth 210: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
   mycology: Object.freeze({
     id: 'mycology', name: 'Mycology',
     blurb: 'Wood or ground, gills or folds, and what it smells of. Every kind of mushroom you name for the first time teaches you something — including the two you must never eat.',
-    teacher: 'Odger Pell, at the edge of the Greenway outside Tidehaven',
+    teacher: 'Odger Pell, at Fernway Rest, where the woodland paths meet',
     // The eleven mushrooms of Drent's woods together are worth 225: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),

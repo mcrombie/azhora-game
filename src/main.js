@@ -83,7 +83,7 @@ import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
 import { findBird } from './bird-finder.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
-import { MYCOLOGIST, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
+import { MYCOLOGIST, MYCOLOGIST_STAND, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
 import { createMushrooms } from './mushrooms.js';
 import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, createBotany, botanistConversation } from './botany.js';
 import { createDrentFlora } from './drent-flora.js';
@@ -300,10 +300,10 @@ function init() {
   {const homes=troupe.homes();for(const p of TROUPE_PEOPLE){const h=homes[p.id];world.npcPositions[p.id]={x:h.x,z:h.z};
     npcData.push({id:p.id,name:p.name,role:p.role,yaw:h.yaw,troupe:true,dog:p.model==='understudy',horse:p.model==='critic',greet:p.model==='critic'?'Greet the mare':undefined,
       make:()=>p.model==='understudy'?createUnderstudy():p.model==='critic'?createCritic():createPlayer(p.model)});}}
-  // Odger Pell dries mushrooms at the edge of the Greenway, a few steps outside the village (src/mycology.js).
-  world.npcPositions[MYCOLOGIST.id]={x:-50,z:25};npcData.push({...MYCOLOGIST,yaw:Math.PI*.42});
-  // Nell Harrow's drying shed on the western outskirts, Toft on his barrel in the
-  // village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
+  // Odger Pell dries mushrooms at Fernway Rest, where the woodland paths meet (src/mycology.js).
+  world.npcPositions[MYCOLOGIST.id]={x:MYCOLOGIST_STAND.x,z:MYCOLOGIST_STAND.z};npcData.push({...MYCOLOGIST,yaw:MYCOLOGIST_STAND.yaw});
+  // Nell Harrow's drying frames on the Sunken Lane's hedge bank (src/botany.js), Toft on his
+  // barrel in the village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
   world.npcPositions[BOTANIST.id]={x:BOTANIST_STAND.x,z:BOTANIST_STAND.z};npcData.push({...BOTANIST,yaw:BOTANIST_STAND.yaw});
   world.npcPositions[TOFT.id]={x:TOFT_STAND.x,z:TOFT_STAND.z};npcData.push({...TOFT,yaw:TOFT_STAND.yaw});
   world.npcPositions[PIPE_SMOKER.id]={x:WEATHERHEAD.stand.x,z:WEATHERHEAD.stand.z};npcData.push({...PIPE_SMOKER,yaw:Math.PI*.55});
@@ -1314,7 +1314,7 @@ function init() {
   }
   function gatherStone(){
     if(!currentStone)return;
-    if(!geology.met){toast('A stone that catches the eye. Silas Garrow, digging under the Weatherhead, could tell you what it is.','A STONE');return;}
+    if(!geology.met){toast('A stone that catches the eye. Silas Garrow, at the Toll House stream on the Caloss road, could tell you what it is.','A STONE');return;}
     const found=geology.find(currentStone.species,inventory);
     if(!found.ok){toast(found.reason,'A STONE');return;}
     stones.gather(currentStone.id,{take:found.taken});
@@ -1326,7 +1326,7 @@ function init() {
   // A tree is named, not taken: looking at one properly is the whole of it.
   function lookAtTree(){
     if(!currentTree)return;
-    if(!botany.met){toast('A tree worth looking at, and no name for it. Nell Harrow, on the outskirts of Tidehaven, has a name for every tree in this wood.','A TREE');return;}
+    if(!botany.met){toast('A tree worth looking at, and no name for it. Nell Harrow, at the Sunken Lane, has a name for every tree in this wood.','A TREE');return;}
     const found=botany.find(currentTree.species,inventory);
     if(!found.ok){toast(found.reason,'A TREE');return;}
     refreshSkillsSheet();audio?.effect('success');
@@ -1348,7 +1348,7 @@ function init() {
   }
   function gatherPlant(){
     if(!currentPlant)return;
-    if(!botany.met){toast('A plant, and no name for it. Nell Harrow, on the outskirts of the village, has a name for everything here.','SOMETHING GROWING');return;}
+    if(!botany.met){toast('A plant, and no name for it. Nell Harrow, at the Sunken Lane, has a name for everything here.','SOMETHING GROWING');return;}
     if(!jimson.canPick(currentPlant.stand)){toast('Nell is standing ten paces away with her arms folded. Ask her what it is before you put a hand on it.','HER GROUND, HER PLANT');return;}
     const found=botany.find(currentPlant.species,inventory);
     if(!found.ok){toast(found.reason,'SOMETHING GROWING');return;}
@@ -1366,7 +1366,7 @@ function init() {
   }
   function gatherMushroom(){
     if(!currentMushroom)return;
-    if(!mycology.met){toast('An unfamiliar mushroom. Odger Pell, at the edge of the Greenway, would name it for you.','A MUSHROOM');return;}
+    if(!mycology.met){toast('An unfamiliar mushroom. Odger Pell, at Fernway Rest where the paths meet, would name it for you.','A MUSHROOM');return;}
     const found=mycology.find(currentMushroom.species,inventory);
     if(!found.ok){toast(found.reason,'A MUSHROOM');return;}
     mushrooms.gather(currentMushroom.id,{take:found.species.edible});

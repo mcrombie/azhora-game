@@ -164,7 +164,7 @@ export const LONG_ROAD_STOPS = freeze([
   // The Toll House stream lies in no named ground at all: it is 113 m from the Avrel clearing's
   // centre and 84 m from the Caloss Bank's, outside the reach of both. So Silas is the one stop
   // the chart cannot name, and the only way he is noticed going past is the forty metres.
-  stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: null, point: { x: -510, z: 101.4 },
+  stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: null, point: { x: -513.43, z: 94.15 },
     reads: 'skills', done: state => learned(state, 'geology'),
     title: 'Silas Garrow at the Toll House stream', detail: 'A cart of marl on the road side of the house, and a stream cut that is a geologist’s section. Ironstone out of a furrow.' }),
   stop({ id: 'hollis-bridge', leg: 5, kind: 'spine', npc: 'crossing-keeper', system: 'the-bridge', subregion: 'caloss-crossing', point: { x: -628.1, z: 156.2 },
