@@ -4,6 +4,16 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — normal mode, and a tentative hard mode
+
+**The game we build and test is "normal", and it is all in English.** The user is switching off
+the linguist skill and all its translations in the game as played: speech and signs are in
+English, and nothing teaches or pays a tongue. The code is kept, reserved for an **optional,
+tentative hard mode** that a player could set instead of the default. What else hard mode holds
+is to be worked out over time; for now the one thing known is that **hard mode has the linguist
+skill in it**. Keep developing normal mode, and do not build out or test hard mode
+(`docs/hard-mode.md`).
+
 ## 2026-09-21 — the atlas is the authority
 
 **"Favor the atlas over what the lore says. Adjust what the lore says to fit the atlas."** Where
