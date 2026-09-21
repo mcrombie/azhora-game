@@ -133,6 +133,7 @@ import { createMapFog, subregionsAt } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
 import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
 import { regionLevel, levelWords } from './region-levels.js';
+import { DEFAULT_SKY, createSkyBlend } from './region-sky.js';
 import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
 import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './story-chapters.js';
@@ -186,7 +187,10 @@ function init() {
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.22;
-  scene=new THREE.Scene(); scene.background=new THREE.Color(0xaacfd3); scene.fog=new THREE.FogExp2(0xb3d3d0,.0062);
+  // The sky starts as it always was, and stays that way until a region asks for its own
+  // (src/region-sky.js). DEFAULT_SKY is these three numbers and no region declares another.
+  scene=new THREE.Scene(); scene.background=new THREE.Color(DEFAULT_SKY.background); scene.fog=new THREE.FogExp2(DEFAULT_SKY.fog,DEFAULT_SKY.density);
+  const sky=createSkyBlend();
   camera=new THREE.PerspectiveCamera(54,innerWidth/innerHeight,.1,650);
   scene.add(new THREE.HemisphereLight(0xd8efff,0x63783d,2));
   const sun=new THREE.DirectionalLight(0xffe2a8,3.1);sun.position.set(-45,90,38);sun.castShadow=true;
@@ -3689,6 +3693,13 @@ function init() {
         if(watching){birdPointer.position.set(birdWatch.x,birdWatch.y+.44+Math.sin(elapsed*3.1)*.05,birdWatch.z);birdPointer.rotation.y=elapsed*1.1;}}
       {const task=birding.task(),hook=world.birdGarden.hook;feederMarker.visible=task?.stage==='filled'&&combat.state.phase!=='active';if(feederMarker.visible){feederMarker.position.set(hook.x,hook.y+2.75+Math.sin(elapsed*2.5)*.1,hook.z);feederMarker.rotation.y=elapsed*.7;}}
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
+      // The horizon belongs to the country the traveler is *told* they are in, so it reads
+      // regionAt and not hexOwnerAt, and open country keeps the default. It comes round over
+      // a second or two when they walk over a border and snaps when they are put down
+      // somewhere - a review view, a travel button - which is what the position is for
+      // (src/region-sky.js). No region declares a sky yet, so today this changes nothing.
+      {const s=sky.step(world.regionAt(player.group.position.x,player.group.position.z),dt,player.group.position);
+        scene.background.setHex(s.background);scene.fog.color.setHex(s.fog);scene.fog.density=s.density;}
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(!['opening','pause','arriving'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
