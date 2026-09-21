@@ -7,7 +7,7 @@ import { PLACE_LANDMARKS, PLACE_CLEARINGS, LUMBER_TOWN_WORKS, STABLE_CLEARANCE, 
 import { WAYSIDE_PLACES, DRENT_WAYSIDE, MOROS_WAYSIDE, MOROS_MILESTONES } from '../src/wayside.js';
 import { FRONTIER_LANDMARKS } from '../src/frontier.js';
 import { OUTPOST_BENCH, OUTPOST_FIRE } from '../src/outpost.js';
-import { LUMBER_TOWN_STABLE, regionNameAt, insideRegion } from '../src/region-world.js';
+import { LUMBER_TOWN_STABLE, hexOwnerAt, insideRegion } from '../src/region-world.js';
 import { validateWoodlandProgress } from '../src/woodland-progress.js';
 
 const scene = new THREE.Scene();
@@ -50,7 +50,7 @@ test('the outpost’s smithy bench and mess fire are registered like every other
   assert.ok(world.repairBenches.some(bench => bench.id === OUTPOST_BENCH.id));
   assert.ok(world.firePits.some(fire => fire.id === OUTPOST_FIRE.id));
   for (const spot of [OUTPOST_BENCH, OUTPOST_FIRE]) assert.ok(canStand(spot.x, spot.z, world, .48), `${spot.id} has room to work`);
-  assert.equal(regionNameAt(OUTPOST_BENCH.x, OUTPOST_BENCH.z), 'Moros Plain');
+  assert.equal(hexOwnerAt(OUTPOST_BENCH.x, OUTPOST_BENCH.z), 'Moros Plain');
   // A checkpoint taken with the mess fire burning, after discovering every place there is, still saves.
   const camp = { version: 1, taught: false, catches: 0, fires: Object.fromEntries(world.firePits.map(fire => [fire.id, fire.id === OUTPOST_FIRE.id ? 30 : 0])) };
   const progress = { version: 1, acornStatus: 'available', practiceHits: 0, practiceDodges: 0, acorns: [], sticks: [], fruits: [], discoveries: world.landmarks.map(landmark => landmark.id), camp };
@@ -66,8 +66,8 @@ test('the empty roads have wayside places, each a landmark with discovery text i
     assert.doesNotMatch(place.description, /goblin/i);
     assert.ok(canStand(place.x, place.z, world, .3) || world.colliders.some(c => Math.hypot(c.x - place.x, c.z - place.z) < 6), `${place.id} is somewhere`);
   }
-  assert.equal(DRENT_WAYSIDE.length, 4); assert.ok(DRENT_WAYSIDE.every(place => regionNameAt(place.x, place.z) === 'Drent'));
-  assert.ok(MOROS_WAYSIDE.length >= 4 && MOROS_WAYSIDE.every(place => regionNameAt(place.x, place.z) === 'Moros Plain'));
+  assert.equal(DRENT_WAYSIDE.length, 4); assert.ok(DRENT_WAYSIDE.every(place => hexOwnerAt(place.x, place.z) === 'Drent'));
+  assert.ok(MOROS_WAYSIDE.length >= 4 && MOROS_WAYSIDE.every(place => hexOwnerAt(place.x, place.z) === 'Moros Plain'));
   assert.equal(MOROS_MILESTONES.length, 3);
   assert.equal(world.landmarks.filter(l => insideRegion('East Suval', l.x, l.z) && FRONTIER_LANDMARKS.includes(l)).length, 0, 'the frontier is discovered from Luscia');
 });
@@ -80,5 +80,5 @@ test('the scatter keeps clear of every new building, and the farmsteads stand wh
     assert.ok(gap > -.05, `a tree grows through ${b.kind} at ${b.x.toFixed(1)}, ${b.z.toFixed(1)}`);
   }
   assert.ok(PLACE_CLEARINGS.length > 10);
-  assert.equal(regionNameAt(AVREL_HAMLET.barn.x, AVREL_HAMLET.barn.z), 'Drent');
+  assert.equal(hexOwnerAt(AVREL_HAMLET.barn.x, AVREL_HAMLET.barn.z), 'Drent');
 });

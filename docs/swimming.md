@@ -35,6 +35,12 @@ and it is what lets a swimmer cross the line in either direction without a
 prompt or a key — `moveCharacter(..., { swimming: true })` accepts a step onto
 either side, so you swim at a beach and walk out of the sea.
 
+**On foot that flag is always true**, and it has to be. It was once passed as
+`inWater`, which only turns true once the traveler is already wet, and from dry
+land that is a closed loop: the sea was shut to anybody who had not been warped
+into it, while this page said "walk in". A rider is moved by a different line and
+never gets the flag, so a horse still refuses the water.
+
 Nothing is "too deep to enter". Distance is what refuses you, and it refuses you
 by killing you.
 
@@ -66,8 +72,26 @@ Wind comes back on land at the rate it already does after a fight.
 At zero wind, still in water, health drains at **12 a second**. A hundred health
 is eight and a third seconds, which is nineteen metres at level 1: enough to get
 back to a shore you have just left, not enough to finish a crossing you should
-not have started. Death goes through the ordinary defeat panel and the ordinary
-checkpoint restart, on the nearest shore.
+not have started. Death goes through the ordinary defeat panel, and "Try again"
+puts him **on the last dry ground he stood on**, whole. That is not the ordinary
+checkpoint restart, and it must not be: the ordinary one calls
+`combat.resetEncounter`, which restarts `lastEncounter`, and `lastEncounter` is
+DEFAULT_ENCOUNTER until somebody has fought — so a traveler who had never drawn
+on anybody, drowned at sea, woke a hundred metres away in an active goblin raid
+with three live goblins in it. Drowning calls `combat.revive()` instead: on your
+feet, whole, with nothing happening, and the host does the moving.
+
+Getting wet in the middle of a fight resets nothing either. Enemies are moved
+without the swimming flag, so the water stops them at the shore, and the 45 m
+leash in `src/combat.js` ends a fight properly for a traveler who swims away from
+one. The reset that used to fire here carried him back to the fight's checkpoint
+with every enemy healed, which made a pond a way to undo a fight you were losing.
+
+**No checkpoint is written from the water** (`saveRoad` refuses while `inWater`).
+That closes a crossing that autosaved 76 m out — the shore fringe puts a swimmer
+in the far country well before he lands — and reloaded with a full bar. It also
+settles the question of the save holding health and not wind: there is no save to
+make while wind is the thing that matters.
 
 There is no free push back to land. That was the first draft and the user
 overruled it.

@@ -27,7 +27,7 @@
  *    named right in the water court's book, and the dispute at the Dromel Gate is
  *    an ordinary week's work, not an event.
  */
-import { hexAt, regionNameAt } from './region-world.js';
+import { hexAt, hexOwnerAt } from './region-world.js';
 
 const point = (x, z) => Object.freeze({ x, z });
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -283,4 +283,4 @@ export const AMOD_BORDER_HEXES = Object.freeze([
   Object.freeze({ q: 11, r: 99 }), Object.freeze({ q: 10, r: 100 }), Object.freeze({ q: 9, r: 101 }),
 ]);
 
-export { hexAt, regionNameAt };
+export { hexAt, hexOwnerAt };

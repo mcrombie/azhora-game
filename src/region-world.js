@@ -715,10 +715,15 @@ export const isOpenCountry = region => !!region && region.id === 0 && region.ope
 export const SHORE_FRINGE = 76;
 
 /**
- * Which region a world point belongs to, by authored hex. A point whose hex no region owns is
- * open country - the sea, and the unowned ground past the outlines - unless it lies within
- * SHORE_FRINGE of an owned hex beside it, which is a country's own shore running past the
- * atlas's grid rather than ground nobody claims.
+ * **What country is the traveler standing in?** That is this function's question, and the
+ * answer is what he is told: the region card, the kicker, the minimap, the trails sheet and the
+ * ambient sound all read it. Its companion `hexOwnerAt` answers a different question and gives
+ * a different answer, and the two must not be swapped for each other.
+ *
+ * By authored hex. A point whose hex no region owns is open country - the sea, and the unowned
+ * ground past the outlines - unless it lies within SHORE_FRINGE of an owned hex beside it,
+ * which is a country's own shore running past the atlas's grid rather than ground nobody
+ * claims.
  *
  * Only the six neighbours are looked at, and that is provably enough: a point is never more
  * than one circumradius (57.7 m) from its own hex's centre, and a ring-two centre is at least
@@ -738,8 +743,11 @@ export function regionAt(x, z) {
   return near ? regionByName.get(near) : OPEN_COUNTRY;
 }
 /**
- * The region whose authored hex a point sits on, with **no shore fringe** — and so not always
- * the same answer as `regionAt(x, z).name`. Read that difference before using either.
+ * **Which region's hex is this point on?** A different question from `regionAt`'s, which is why
+ * it has a different name. It was called `regionNameAt` until the shore fringe landed, and that
+ * name then said it was `regionAt(x, z).name` with the object unwrapped. It is not: it carries
+ * **no shore fringe**, so along any built coast the two disagree, and 1,055 cells of Drent's
+ * own strand are a country to `regionAt` and nobody's hex to this.
  *
  * This is the builder's question, not the traveler's: every caller of it in src/ is a scatter
  * filter deciding where a region's trees, rocks and props may be put down
@@ -751,10 +759,10 @@ export function regionAt(x, z) {
  * advances the seeded stream - and the west's animals were retuned against the scatter as it
  * is (`tests/west-life.test.js`: nothing in the west can be walked down).
  *
- * What the traveler is *told* he is standing in is `regionAt`, which does carry the fringe, and
- * that is what the region card, the kicker, the minimap, the trails sheet and the sound read.
+ * So: scatter by this, and tell the traveler by `regionAt`. `tests/open-country.test.js` holds
+ * both halves, including that no scatter module may quietly move to the other one.
  */
-export const regionNameAt = (x, z) => {
+export const hexOwnerAt = (x, z) => {
   if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
   const home = hexAt(x, z);
   return cellRegion.get(key(home.q, home.r)) ?? OPEN_COUNTRY.name;

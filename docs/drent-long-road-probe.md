@@ -67,7 +67,7 @@ rule is 35 m); Nell–Enna 68 m, Nell–Silas 69 m.
 ## 2. The clock
 
 Road 1,677 m; muster at 1,277 m; stops at 432, 681 and 946 m. Muster times, in minutes, with the
-roster as it is: Chris 28.1, Ed 29.4, Ciarán 40.1, Jerry 40.4, Christin 40.9, Lakota 55.7, Eliana
+roster as it is: Chris 28.1, Ed 29.4, Ciarán 40.1, Jerry 40.4, Kristen 40.9, Lakota 55.7, Eliana
 69.4, Matt 87.0, Al the Tun 87.2; Mus 83.8 at his latest draw. **The design's table is right to a
 tenth of a minute.**
 

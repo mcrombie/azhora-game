@@ -62,7 +62,8 @@ export const PLAYABLE = Object.freeze([
   playable('jerry', 'Jerry', 'Thirty paces and no nearer', 'merc-jerry',
     'An archer who would rather settle a thing at a distance, and who has waited out more floats than most men have seen water.',
     'simple-sword', sword, { fishing: 140 }),
-  playable('christin', 'Christin', 'The one who feeds the company', 'merc-christin',
+  // Kristen on screen, `christin` in the save: see the note at her roster row in src/mercenaries.js.
+  playable('christin', 'Kristen', 'The one who feeds the company', 'merc-christin',
     'Sword and shield, and the only one of the eleven who can be relied on to put something hot in front of everybody afterwards.',
     'simple-sword', sword, { cooking: 90 }),
   playable('ciaran', 'Ciarán', 'Reads the ground he stands on', 'merc-ciaran',
@@ -157,7 +158,7 @@ export function playerLook(playerId = DEFAULT_PLAYER) {
 
 /**
  * What to call him in one word, on a tile or in a caption: the first word of his name, which
- * is how each of them introduces himself anyway — Cromb, Chris, Ed, Jerry, Christin, Ciarán,
+ * is how each of them introduces himself anyway — Cromb, Chris, Ed, Jerry, Kristen, Ciarán,
  * Lakota, Eliana, Matt, Al, Mus.
  */
 export const shortName = entry => String(entry?.name ?? '').split(/[ ,]/)[0];

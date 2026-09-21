@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { landDistance, regionNameAt, insideRegion } from './region-world.js';
+import { landDistance, hexOwnerAt, insideRegion } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   PRECINCT, SEA_ROAD_GATE, INNER_GATE, THRESHOLD, SEA_GATE, ELOD_QUAY, BREAKWATER,
@@ -600,7 +600,7 @@ export function createEastSuvalScenery(kit) {
       const sample = () => ({ x: cell.x + range(-52, 52), z: cell.z + range(-58, 58) });
       for (let i = 0; i < ROCKS; i++) {
         const { x, z } = sample();
-        if (regionNameAt(x, z) !== 'East Suval' || landDistance(x, z) < .5 || clear(x, z, 1.5)) continue;
+        if (hexOwnerAt(x, z) !== 'East Suval' || landDistance(x, z) < .5 || clear(x, z, 1.5)) continue;
         // Limestone comes through thickest on the high ground and at the waterline.
         const shore = landDistance(x, z), high = groundHeight(x, z) > 20;
         if (random() > (shore < 16 ? .85 : hills || high ? .6 : .3)) continue;
@@ -608,17 +608,17 @@ export function createEastSuvalScenery(kit) {
       }
       for (let i = 0; i < SCRUB; i++) {
         const { x, z } = sample();
-        if (regionNameAt(x, z) !== 'East Suval' || landDistance(x, z) < 1 || clear(x, z, 1.2)) continue;
+        if (hexOwnerAt(x, z) !== 'East Suval' || landDistance(x, z) < 1 || clear(x, z, 1.2)) continue;
         scrub.push({ x, z, s: range(.5, 1.5), rot: range(0, 6.28), flower: random() < .38 });
       }
       for (let i = 0; i < TUFTS; i++) {
         const { x, z } = sample();
-        if (regionNameAt(x, z) !== 'East Suval' || landDistance(x, z) < 1 || clear(x, z, .8)) continue;
+        if (hexOwnerAt(x, z) !== 'East Suval' || landDistance(x, z) < 1 || clear(x, z, .8)) continue;
         tufts.push({ x, z, s: range(.6, 1.6), rot: range(0, 6.28), dry: groundHeight(x, z) > 18 });
       }
       for (let i = 0; i < TREES * 5; i++) {
         const { x, z } = sample();
-        if (regionNameAt(x, z) !== 'East Suval' || landDistance(x, z) < 26 || clear(x, z, 4)) continue;
+        if (hexOwnerAt(x, z) !== 'East Suval' || landDistance(x, z) < 26 || clear(x, z, 4)) continue;
         // Olives and juniper live in the hollows, out of the wind, and nowhere else.
         if (groundHeight(x, z) > 18 || trees.some(t => Math.hypot(t.x - x, t.z - z) < 11)) continue;
         trees.push({ x, z, s: range(.85, 1.25), h: range(3.6, 5.4), rot: range(0, 6.28) });
@@ -697,7 +697,7 @@ export function createEastSuvalScenery(kit) {
     const yaw = range(-.5, .5), cos = Math.cos(yaw), sin = Math.sin(yaw), length = range(26, 46);
     for (let s = -length / 2; s <= length / 2; s += 1.7) {
       const x = centre.x + sin * s, z = centre.z + cos * s;
-      if (regionNameAt(x, z) !== 'East Suval' || landDistance(x, z) < 8 || eastSuvalClear(x, z, 6)) continue;
+      if (hexOwnerAt(x, z) !== 'East Suval' || landDistance(x, z) < 8 || eastSuvalClear(x, z, 6)) continue;
       const y = groundHeight(x, z);
       for (let course = 0; course < 2; course++)
         box(course % 2 ? rubble : stone, x, y + .2 + course * .36, z, 1.8, .36, .7, group).rotation.y = yaw;
@@ -709,4 +709,4 @@ export function createEastSuvalScenery(kit) {
   return { group, metrics };
 }
 
-export { regionNameAt };
+export { hexOwnerAt };

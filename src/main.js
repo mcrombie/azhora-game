@@ -491,6 +491,9 @@ function init() {
   }});
   // Where the water has him, how far he has come through it, and whether he is out of wind.
   let inWater=false,drowning=false,swimMetres=0,swimFrom=null;
+  // The last ground he stood on before the water took him, and whether the water is what beat
+  // him. Drowning puts him back here, whole, rather than into some fight's checkpoint.
+  let lastDry=null,drownedDefeat=false;
   // Ed the Word's ship, built the first time anybody is near enough to see her, and the last
   // thing the village said about her (src/word-arrival.js).
   let rebelShip=null,wordSaid=null;
@@ -2024,7 +2027,7 @@ function init() {
   }
   function saveRoad(notify=true){
     if(testingEnabled){if(notify)toast('Testing sessions leave your road checkpoint unchanged.','CHECKPOINT');return false;}
-    if(questStage<1||questStage===4||combat.state.phase==='active'||combat.state.player.hp<=0){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
+    if(questStage<1||questStage===4||combat.state.phase==='active'||combat.state.player.hp<=0||inWater){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
     if(questStage===10)journey.start();
     const gathered=woodlandLife.state();
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
@@ -2626,9 +2629,10 @@ function init() {
       inWater=false;return;
     }
     const wet=canSwim(p.x,p.z,playerWorld,.34);
+    if(!wet&&canStand(p.x,p.z,playerWorld,.34))lastDry={x:p.x,z:p.z};
+    else if(!lastDry&&canStand(before.x,before.z,playerWorld,.34))lastDry={x:before.x,z:before.z};
     if(wet&&!inWater){
       inWater=true;swimMetres=0;swimFrom=world.regionAt(before.x,before.z)?.name??null;
-      if(combat.state.phase==='active')combat.resetEncounter({});
       toast(swimming.taught?'You are in the water. Watch your wind.'
         :'You are in the water, and nobody has ever shown you how. Watch your wind, and do not go far.','SWIMMING');
     }
@@ -2655,6 +2659,18 @@ function init() {
   }
   function retry() {
     retriesTaken++;
+    // Drowning is not a fight, so there is no fight to restart. `resetEncounter` would start
+    // `lastEncounter`, which is DEFAULT_ENCOUNTER until somebody has fought, and a man who had
+    // never drawn on anybody woke in a goblin raid a hundred metres from the water.
+    if(drownedDefeat){
+      drownedDefeat=false;inWater=false;drowning=false;swimMetres=0;
+      combat.revive();
+      const ashore=lastDry??world.spawn;
+      player.group.position.set(ashore.x,world.heightAt(ashore.x,ashore.z),ashore.z);
+      mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;yaw=0;
+      player.group.rotation.y=Math.PI;toast('You are on the sand, coughing. The sea is still there.','FULL HEALTH · THE LAST DRY GROUND');canvas.focus();
+      return;
+    }
     if(combat.state.encounterId===hideoutEncounter.id)forestHideout.begin({questStage});
     combat.resetEncounter(combat.state.encounterId===greenwayEncounter.id?{allies:[]}:{});mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;yaw=0;
     player.group.rotation.y=Math.PI;toast('A fresh breath. Try again.','FULL HEALTH · YOUR LESSONS ARE KEPT');canvas.focus();
@@ -2984,10 +3000,12 @@ function init() {
         else{updateQuest('retreat');toast('Catch your breath in the village.','RETURN TO THE BELL WHEN READY');}
       }
       if(e.type==='defeat'){
+        drownedDefeat=!!e.drowned;
         $('defeat-checkpoint').textContent=combat.state.encounterId==='meadow-raiders'?'Full health · Restart beside the Avrel clearing road':combat.state.encounterId===LUSCIA_WOLVES.id?'Full health · Restart on the road at the Lauvel':combat.state.encounterId===BORDER_ENCOUNTER_ID?'Full health · Rejoin the line south of the stockade':inAftermathFight()?'Full health · Form up with your company again':'Full health · Restart at the woodland bell';
         if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);$('defeat-checkpoint').textContent='Full health · Retry from the Bramble Scout Camp approach';}
         // He does not finish people who have stopped: a defeat here is the ordinary one, on the Pueth side of the stones.
         if(combat.state.encounterId===OGRE_ENCOUNTER.id){ogreToll.endEncounter(OGRE_ENCOUNTER.id);$('defeat-checkpoint').textContent='Full health · Stand up again east of the pass stones';}
+        if(drownedDefeat)$('defeat-checkpoint').textContent='Full health · Back on the last dry ground you stood on';
         mode='defeated';stopInput();show('dialogue',false);show('modal-backdrop',true);show('journal',false);show('pause',false);show('defeat',true);$('retry').focus();
       }
     }
@@ -3107,7 +3125,11 @@ function init() {
           const speed=inWater?swimSpeed(swimLevel)*combat.movementScale()
             :((autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))?7.2:4.2)*combat.movementScale();
           const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt;
-          moveCharacter(player.group.position,dx,dz,playerWorld,undefined,{swimming:inWater});
+          // On foot the waterline is not a wall: `swimming:true` is what lets him walk in at all,
+          // and it must not be `inWater`, which only turns true once he is already wet - a closed
+          // loop that kept the sea shut to anybody who had not been warped into it. A rider is in
+          // the branch above and never gets this, so a horse still refuses the water.
+          moveCharacter(player.group.position,dx,dz,playerWorld,undefined,{swimming:true});
           if(p.action==='idle'&&speed>0){const angle=Math.atan2(dx,dz);player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-15*dt));p.yaw=player.group.rotation.y;}
         }
         combatClock+=dt;combat.update(dt);handleCombatEvents();

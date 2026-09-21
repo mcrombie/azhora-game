@@ -217,7 +217,7 @@ Mara's since `6fbd9c6`, and `LANDED.toast.kicker` says so.
 
 `openingCamera` is `{position:new THREE.Vector3(),target:new THREE.Vector3()}` declared with the
 state in 3a. `companionNpcId(opening)` returns `'merc-gotwood'` unless the traveler is Chris, in
-which case it returns the id the playable-characters module gives Crom's actor; until that
+which case it returns the id the playable-characters module gives Cromb's actor; until that
 module lands, it returns `'merc-gotwood'` always, with the `TODO` written on it.
 
 Why after `placeMercenaries()`: that call rewrites `world.npcPositions['merc-gotwood']` to the
@@ -302,7 +302,7 @@ end. Ask before any other Electron run: the user prefers tests batched at milest
 
 `variantFor(playerId)` takes the chosen traveler's id (`crom`, `merc-gotwood`, `Chris`, ...).
 Wire `currentPlayerId()` to it and `companionNpcId()` to whichever actor plays the companion
-when the traveler is Chris (the design: "you and Crom"). Nothing else changes; the shore variants
+when the traveler is Chris (the design: "you and Cromb"). Nothing else changes; the shore variants
 for Ed the Word and Mus are already in the data and end in the same `LANDED` state.
 
 ## What must not change

@@ -4,7 +4,7 @@ import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionNameAt, regions } from '../src/region-world.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/region-world.js';
 import { MENETH_RIDGES, MENETH_BECKS, menethTroughZ, WEST_REGION_LANDMARKS, westBareGround } from '../src/west-regions.js';
 import { WEST_PROFILES, menethRidge, menethBand, westGroundAt, westWaterSurface } from '../src/west-ground.js';
 import { groundWithRiver } from '../src/world-terrain.js';
@@ -103,7 +103,7 @@ test('Every hex of the upland is honest ground, and its ground is world-terrainâ
   }
   assert.ok(worst < 1e-9, `west-ground.js and world-terrain.js disagree by ${worst}`);
   const spawn = regions.find(region => region.name === 'Meneth').spawn;
-  assert.equal(regionNameAt(spawn.x, spawn.z), 'Meneth');
+  assert.equal(hexOwnerAt(spawn.x, spawn.z), 'Meneth');
   assert.ok(canStand(spawn.x, spawn.z, world, .5));
 });
 
@@ -137,7 +137,7 @@ test('Meneth is charted and listed, and nobody lives there', () => {
   for (const id of meneth.landmarks)
     assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
   for (const landmark of WEST_REGION_LANDMARKS.filter(item => item.id.startsWith('meneth-')))
-    assert.equal(regionNameAt(landmark.x, landmark.z), 'Meneth', `${landmark.id} stands in Meneth`);
+    assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Meneth', `${landmark.id} stands in Meneth`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Meneth').length >= 2);
   assert.equal(regionBuildStatus('Meneth').playable, true);
 });

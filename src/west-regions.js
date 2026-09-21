@@ -23,7 +23,7 @@
 import { PLAYABLE_SURVEY } from './region-survey.js';
 import { RIVER_EDGES } from './region-rivers.js';
 import { riverCourses } from './region-layout.js';
-import { regionNameAt, REGION_CELLS, METRES_PER_HEX } from './region-world.js';
+import { hexOwnerAt, REGION_CELLS, METRES_PER_HEX } from './region-world.js';
 import { ELAGOS_REACHES } from './elagos-world.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
@@ -512,7 +512,7 @@ function midpointIn(course, region, fraction = .5) {
   const points = course.points, middle = Math.floor(points.length * fraction);
   for (let step = 0; step < points.length; step++) for (const index of [middle - step, middle + step]) {
     const p = points[index];
-    if (p && regionNameAt(p.x, p.z) === region) return point(p.x, p.z);
+    if (p && hexOwnerAt(p.x, p.z) === region) return point(p.x, p.z);
   }
   return point(points[middle].x, points[middle].z);
 }

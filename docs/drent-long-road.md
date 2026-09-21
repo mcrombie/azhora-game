@@ -19,7 +19,7 @@ leaving as m:ss, the rest as decimal minutes):
 |---|---|---|---|---|---|---|---|
 | Chris Gotwood (today's clock) | 0:00 | 7:00 | 9.5 | 12.6 | 17.4 | 21.8 | 28.1 |
 | Ed the Word | 6:00 | 9:00 | 11.4 | 14.4 | 19.0 | 23.3 | 29.4 |
-| Jerry, Christin, Ciarán | 18:00 | 19:30 | 22.0 | 25.0 | 29.7 | 34.1 | 40.1 – 40.9 |
+| Jerry, Kristen, Ciarán | 18:00 | 19:30 | 22.0 | 25.0 | 29.7 | 34.1 | 40.1 – 40.9 |
 | Lakota | 33:00 | 34:00 | 36.6 | 39.8 | 44.7 | 49.2 | 55.7 |
 | Eliana | 48:00 | 49:18 | 51.6 | 54.5 | 59.1 | 63.3 | 69.4 |
 | Matt, and Al the Tun | 63:00 | 65:00 | 67.6 | 70.9 | 75.8 | 80.4 | 87.0, 87.2 |
@@ -253,7 +253,7 @@ line under the screen. Where you were standing is remembered for each of them (s
 | 5–9 | The raid. Eren | 6:00 one bell: Ed the Word wades out of the sea behind you |
 | 9–12 | The letter, the satchel: **the fork**, at the Watch | 9:00–11:30 Ed walks up the Greenway past the Watch, wet to the neck — the first of them you see go by. He musters at 29.4 |
 | 12–17 | Perrin's garden, thirty metres from the pier | |
-| 17–23 | Lysa's acorns, the tinderbox | 18:00 three bells: Jerry, Christin and Ciarán land arguing. 19:30 they go up the village street past Lysa's kitchen |
+| 17–23 | Lysa's acorns, the tinderbox | 18:00 three bells: Jerry, Kristen and Ciarán land arguing. 19:30 they go up the village street past Lysa's kitchen |
 | 23–28 | Mara's three corners; drill 1 | 25.0 the riders sign Corvan's register; 29.7 Hollis; in at 40–41 |
 | 29–37 | Willowmere: Bran, a fish, a fire | 33:00 one bell. 35:10 Lakota passes the Watch, 25 m from the pond, alone, looking up |
 | 37–46 | Bowden; Troy; drill 2 | 39.8 Lakota at Corvan's; 44.7 Hollis; in at 55.7 |
@@ -332,8 +332,8 @@ trust in `src/campaign.js`). Each road has something the other cannot get. Neith
    first-find step is waived, the stop counts, and the talk still pays its Drentish. One variant
    per spine teacher. Lakota at Perrin's garden: Perrin hands him Drent's list to tick, because a
    fen man at 40 has still never seen a Drent bird, and finds are finds.
-2. **Your companion is whoever landed with you**: Chris; or Crom, if you are Chris.
-3. **If you are Chris** there is no aside and no doubling — you *are* the interpreter, and Crom
+2. **Your companion is whoever landed with you**: Chris; or Cromb, if you are Chris.
+3. **If you are Chris** there is no aside and no doubling — you *are* the interpreter, and Cromb
    asks you what was said. You start ahead instead (Ambroni 40). The drills still run and still
    pay: you give them. (His starting table should also carry Drentish, since `INTERPRETER.knows`
    says he has it; flagged for whoever owns `docs/playable-characters.md`.)

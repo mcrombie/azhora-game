@@ -8,7 +8,7 @@ import {
 } from '../src/amod-ogre.js';
 import { AMOD_NPCS, AMOD_NPC_IDS, amodAmbientLines, amodConversation } from '../src/amod-people.js';
 import { OGRE_STAND, TOLL_STONE } from '../src/amod-world.js';
-import { regionNameAt } from '../src/region-world.js';
+import { hexOwnerAt } from '../src/region-world.js';
 
 const DT = 1 / 60;
 const world = () => ({ bounds: { minX: -960, maxX: -560, minZ: -700, maxZ: -320 }, colliders: [], heightAt: () => 17 });
@@ -191,7 +191,7 @@ test('he talks: a toll, opinions, a tally, and one choice that says what it is',
   assert.equal(OGRE_NPC.ogre, true, 'he is not drawn as a person with a bigger tunic');
   assert.deepEqual({ x: OGRE_SITE.stand.x, z: OGRE_SITE.stand.z }, { x: OGRE_STAND.x, z: OGRE_STAND.z });
   assert.equal(OGRE_SITE.stone.id, TOLL_STONE.id);
-  assert.equal(regionNameAt(OGRE_STAND.x, OGRE_STAND.z), 'Amod');
+  assert.equal(hexOwnerAt(OGRE_STAND.x, OGRE_STAND.z), 'Amod');
   assert.ok(OGRE_TOPIC_IDS.length >= 5, 'he can be asked about several things');
   for (const id of OGRE_TOPIC_IDS) {
     assert.ok(ogreTopicLines(id).length >= 2, id);
