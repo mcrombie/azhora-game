@@ -243,6 +243,9 @@ that was never checked.
 
 ## What is unverified
 
+**Superseded. The live list is at the end of this file** (*Addendum, rounds 5 and 6*); every entry
+below has since been answered or restated. Kept for the record of what was open when.
+
 - **Bows (`src/archery.js`) are entirely unhunted**, and the authored fights have not been
   re-measured with an archer in them.
 - **"Hard but winnable" at the file floor** - see the ledger entry; the driver cannot say.
@@ -262,3 +265,120 @@ round is this: **when a probe says something surprising, prove the probe first.*
 hunter's findings were faults in its own harness, and each was caught by one number that did not
 make sense - nought swings, identical rows, two dodges, no ally ever hit. Look for that number
 before writing the entry.
+
+---
+
+# Addendum, 2026-09-21 night: rounds 5 and 6, and what the fourth round's tables were worth
+
+Everything above this line is still true about **how** to work. What it says about the file, the
+`FILE_FLOOR` numbers and the unverified list is superseded here.
+
+## THE DRIVER, and how it was validated
+
+The single most useful thing built in these two rounds. It answers "is this fight hard" and "does
+the player matter", which no earlier driver could.
+
+**What it does.** It keeps its place in its own front rank:
+
+1. Each frame it finds the living allies and takes the `along` of the most advanced one (`front`).
+2. It walks toward `(front, the nearest enemy's across)` at 4.2 m/s times `combat.movementScale()`.
+3. Inside 5.5 m of an enemy it closes to `max(along(enemy) + 1.9, front - 0.5)` - so it fights
+   whoever comes to it and **never steps more than half a metre past its own front rank**.
+4. It dodges a `windup` aimed at it once `progress > reaction`, where reaction is `.5 + (seed%8)*.05`.
+5. It swings only with `stamina > swingCost + 25`, so a dodge is always affordable.
+6. 40 seeds a row; the seed sets the reaction time and which way it leans.
+
+**How it was validated - four numbers, every time, before any row was read out of it.**
+
+- **`swings` > 4.** A driver that never swings is not fighting. (The first hunter's harness printed
+  nought swings under four tidy columns and looked like a measurement.)
+- **`allyStruck` > 0.** The line is taking blows, not only the player.
+- **`swungAtMe` < 1.** The share of enemy tells whose nearest target is the player. The old
+  checkpoint-holding driver sat at 0.17-0.25; this one sits at **0.1-0.5**.
+- **`aheadOfTheLine` < 0.5.** The share of frames the player is at or past his own front rank.
+  This one sits at **0.00-0.08**.
+
+**Two false starts, both caught by their own numbers.**
+
+- **Dressing on the MIDDLE of the line is not a player.** It left the driver standing six metres
+  behind the fighting: 34 swings in 86 seconds. The front rank is where a player stands.
+- **The first "line" driver charged.** Its `gap < 5.5` branch sent it to `along(enemy) + 1.9` with
+  no clamp, so it ran past everybody - `aheadOfTheLine` 0.86, *worse* than the driver it was
+  replacing. The clamp to `front - 0.5` is the whole of the rule.
+
+## THE PASSENGER CONTROL
+
+**The same driver with the swinging switched off.** It still closes, still keeps its place, still
+dodges. It is the only honest answer to "does the player matter", because counting kills by the
+`hit` event counts the allies' kills too.
+
+What it said on the border battle at level 2, repaired placement, 40 seeds:
+
+| companions | assigned | passenger wins | enemies the allies kill without him |
+|---|---|---|---|
+| 0 | 6 | **0/40** | **0.7 of 8** |
+| 3 | 3 | 21/40 | 6.3 of 8 |
+| 6 | 0 | 36/40 | 7.8 of 8 |
+
+So a lone traveler with a filled file does **all** of the fighting, and a traveler with six
+companions is watching a battle his friends win 36 times in 40.
+
+**And count retreats and stalemates separately.** A **retreat** empties `state.enemies`
+(`src/combat.js:1112`), and a driver can walk itself out of a fight by following a line that
+wanders - the passenger rows above walked out 1 to 10 times in 40 and stalemated at the two-minute
+cap 2 to 39 times. Folding those into "lost" would have made the passenger look like a loser rather
+than a bystander. One row printing a total of **nought enemies** is what found it.
+
+## THE OLD `FILE_FLOOR` ROWS DO NOT REPRODUCE. DO NOT READ THEM.
+
+The fourth round's table - the one that reads *"0 companions + 6 fill = 40/40, and 40/40 sitting
+still"*, and every row in it - **could not be reproduced by anything**. Not by the line driver
+(15/40 on the placement it was taken on), not by the checkpoint-holding driver rebuilt
+field-for-field (0/40), at either placement of the file, at either count of the side's own men.
+Something in that harness was not this fight, and what it was has not been found.
+
+**The rows in `## \`FILE_FLOOR\`: six, and the measurement says six whatever the mix` are dead.**
+The conclusion happens to have survived - six is the right floor - but it survived on the strength
+of the round 6 table, not that one. Nobody should quote a number from it.
+
+*And one plausible story about it was killed by its own measurement.* The idea was that a traveler
+standing in front of his line turns every enemy's **back** to it, and that an unguarded ally blow
+(14 damage) against a guarded one (3) was the whole difference between the drivers. Measured: blows
+caught on a shield are only **9-15 %** of everything that lands on an enemy, in every row, either
+way. The mechanism is not the shields.
+
+## THE FILE WAS STANDING AMONG THE ENEMY, AND IS NOT ANY MORE
+
+`place(index)` in `companionAllies` put the companions **and** the army's assigned men at the enemy's
+end of every arena - at the border, 18 to 30 m from the traveler and 1.8 m from an enemy - while its
+own comment said the opposite. **Every table taken since companions became allies was measured on
+that**, including the whole of round four and the first half of round five. Repaired in round 6 and
+pinned in `tests/fights-with-company.test.js`; `placeFor` is exported there and any harness that
+needs the placement should import it rather than write a third copy.
+
+The arenas do not agree with each other and a sign was not the repair - the Lauvel forms up on the
+far side of its own wolves, Mallec forms up outside the ground an ally may stand on. If you touch
+this, read that test first.
+
+## WHAT IS UNVERIFIED, as it now stands
+
+- **Friendly fire.** Arrows pass through every ally, the traveler and everybody in the world, and
+  the code has no opinion. **With the user for a ruling.**
+- **The standoff.** An archer 12 to 30 m across an arena cannot be answered - the border battle is
+  won alone, never struck, on 304 arrows in 7.4 minutes. **With the user.** Measured on flat
+  ground: whether the footing 18 m across each real arena is standable was never checked.
+- **Mallec walked backwards from** - 24/24 with a bow, never struck. **With the user.**
+- **Arrows and the ground.** Proved that `updateArrows` never asks `heightAt`; not proved that any
+  particular authored fight has a rise in it. **Going to the builder.**
+- **No death has been driven through the real save** in Electron; the whole death lifecycle is
+  still module-level plus source checks.
+- **The aftermath arenas**: one variant (`moros-fallback`) is now driven on its own ground. The
+  other three are not.
+- **Buying from a smith in a render** needs a composed review view of its own; `stand-at:` only
+  stands. Mern is photographed but cannot be framed from the ground you can talk to him from - he
+  stands 0.1 m from the smithy's east wall.
+- **The melee rows in the weapon-feel table** come from a generic close-and-dodge driver and are
+  comparable to each other, not to any earlier table in the ledger.
+- **Companion deaths**: settled. On the repaired placement, level 2, 40 seeds, six companions:
+  **2.2 of 6 dead** when the player fights, 5.0 of 6 when he does not. The round-one/round-four
+  disagreement was the placement and the driver together.
