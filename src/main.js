@@ -1306,15 +1306,42 @@ function init() {
     if(view==='south-eer'){
       // The line the whole country is: standing on the black loam of the humid half,
       // looking south-east down the fall, across the change, to the dry grass and the
-      // standing olives beyond it. Aimed a little above the ground so the horizon is in
-      // frame, because the thing to see here is the colour of the far half.
-      return shot({x:-1250,z:1000},{x:-1060,z:1180},.035,4);
+      // standing olives beyond it. Aimed above the ground so the horizon is in frame,
+      // because the thing to see here is the colour of the far half.
+      //
+      // The camera stands between the two channels and clear of both — the first take
+      // was nineteen metres off the north one and had a gallery willow filling a third
+      // of the lens. Nearest water from here is forty-five metres.
+      //
+      // It looks from nine metres up rather than from head height, and that is the
+      // second correction rather than a taste: `cameraPullIn` drags a review camera
+      // forward to whatever stands on its line, and on a plain scattered with olives
+      // and cushion scrub something always does — the second take was hauled a hundred
+      // and twenty metres into the dry half and lost the very line it was taking. A
+      // focus above `heightAt + 7` is a focus nothing on the ground can clamp against,
+      // and the whole of both halves is in the frame because of it.
+      //
+      // The distance is fog rather than framing: `FogExp2` at Eer's own .0049 leaves
+      // about half the light at 184 m and a fifth at 250, so a longer look across this
+      // plain would show haze and not a country.
+      return shot({x:-1170,z:1080},{x:-1030,z:1200},.02,9);
     }
     if(view==='south-eer-coast'){
       // The low bays from the grass behind one, out over the water. No cliff and no
       // beach to speak of: the point of the shot is that the grass gives out and the
-      // sea is there. The dolphins' ground is a hundred and fifty metres beyond the look.
-      return shot({x:-985,z:1176},{x:-828,z:1176},.045,2.6);
+      // sea is there. The dolphins' ground is out past the look.
+      //
+      // **Aimed at the waterline, not at the water.** Two takes aimed out to sea and
+      // both lost it: a focus in the sea sits below sea level, which drags the whole
+      // sight line down until it grazes the last few metres of shore and the sea is
+      // behind the grass. Aiming at the last standable metre instead keeps the line
+      // descending past it, so everything beyond — the bay, the far headlands and the
+      // dolphins' water — falls below it and is in the frame.
+      //
+      // `cameraPullIn` clamps the camera to whatever stands nearest the focus, so on
+      // this shot it is not fought but used: it lands the camera just behind the last
+      // cushion bush above the water, which is where somebody looking at a bay stands.
+      return shot({x:-1000,z:1176},{x:-898,z:1176},.09,1.8);
     }
     if(view==='south-eer-braids'){
       // The north channel where the gradient dies: three threads round bars of sand,

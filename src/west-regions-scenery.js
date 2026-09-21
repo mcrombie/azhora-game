@@ -724,6 +724,23 @@ export function createWestScenery(kit) {
     return total ? dry / total : 1;
   }
 
+  /**
+   * Ground in Eer that something may be planted on. Four things have to be true and
+   * each of them caught a mistake:
+   *
+   *  - it is Eer's own hex (`hexOwnerAt`, never `regionAt`: the shore fringe is what
+   *    the traveler is *told*, and scatter belongs on the atlas's grid);
+   *  - it is not inside a watercourse by that course's widest half-width;
+   *  - it is not under water *here*, which `westBareGround` cannot answer, because
+   *    that measures from a centre line and knows nothing about braids — and the
+   *    last two-fifths of both channels braid out to fifteen metres either side;
+   *  - and it is above the waterline. Eer is the first of these regions with a
+   *    coast, and nothing else in the west has ever had to ask: photographed from
+   *    the shore, the cushion scrub was standing in the surf.
+   */
+  const eerPlantable = (x, z, margin) => hexOwnerAt(x, z) === 'Eer'
+    && !westBareGround(x, z, margin) && westWaterSurface(x, z) === null && landDistance(x, z) > 1.5;
+
   ribbon(WEST_PROFILES.get(LIZEEM_REACH.id), eer, LIZEEM_REACH.name);
   for (const channel of EER_CHANNELS) ribbon(WEST_PROFILES.get(channel.id), eer, channel.name);
   const EER_BRAIDS = WEST_BRAIDS.filter(item => item.id === 'eer-north' || item.id === 'eer-south');
@@ -775,26 +792,33 @@ export function createWestScenery(kit) {
    * looser, paler, and more shrub than tree.
    *
    * Planted off the water rather than off the hex grid, for the reason the Carica
-   * corridor is: a hex is a hundred metres and a gallery is fifteen, so scattering
-   * it from cell centres would put nearly every attempt on open grass and leave the
-   * one wooded thing in the country looking like an accident.
+   * corridor is: a hex is a hundred metres and a gallery is eight, so scattering it
+   * from cell centres would put nearly every attempt on open grass and leave the one
+   * wooded thing in the country looking like an accident.
+   *
+   * **A gallery, and nothing more.** The first pass planted this out to sixteen
+   * metres at under three metres' spacing, and photographed from the braided reach
+   * it was a wood — which is the one thing the atlas says Eer has not got, in a map
+   * that has `forest` and uses it two hexes away. So: half the reach, a quarter of
+   * the attempts, and spacing wide enough that a traveler on the bank is walking
+   * under trees and not through them.
    */
   const galleryTrees = [];
   for (const channel of EER_CHANNELS) for (const sample of WEST_PROFILES.get(channel.id)) {
-    for (let i = 0; i < 9; i++) {
-      const side = random() < .5 ? -1 : 1, offset = sample.half + range(1.2, 16);
+    for (let i = 0; i < 5; i++) {
+      const side = random() < .5 ? -1 : 1, offset = sample.half + range(.8, 7);
       const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
       // `westBareGround` measures from a course's own centre line and knows nothing
       // about braids, and the last two-fifths of both channels are braided out to
       // fifteen metres either side — which is exactly the band a gallery grows in.
       // So the water surface is asked as well, and it is the authority: a tree in a
       // side channel is a worse error than a bare metre of bar.
-      if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 2) || westWaterSurface(x, z) !== null) continue;
+      if (!eerPlantable(x, z, 2)) continue;
       const seaward = eerSeaward(x, z);
       // The gallery thins as it dries: a winter watercourse feeds fewer trees than a
       // river that runs all year, and the thinning is the climate showing on the ground.
-      if (random() > 1 - seaward * .45) continue;
-      if (galleryTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (seaward > .5 ? 3.4 : 2.8))) continue;
+      if (random() > 1 - seaward * .55) continue;
+      if (galleryTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (seaward > .5 ? 6.5 : 4.6))) continue;
       const scrubby = seaward > .5;
       galleryTrees.push({ x, z, scrubby, wide: scrubby, s: range(.8, scrubby ? 1.1 : 1.35),
         h: scrubby ? range(4.5, 7) : range(9, 14), rot: range(0, 6.28) });
@@ -836,7 +860,7 @@ export function createWestScenery(kit) {
       // means most of them fail. What survives is a scatter nothing in it touches.
       for (let i = 0; i < 26; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 4) || westWaterSurface(x, z) !== null) continue;
+        if (!eerPlantable(x, z, 4)) continue;
         const seaward = eerSeaward(x, z);
         if (random() > seaward * .5) continue;                 // the loam half carries none
         if (standingTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 44)) continue;
@@ -846,21 +870,30 @@ export function createWestScenery(kit) {
           h: holm ? range(8, 11) : range(5.5, 7.5), rot: range(0, 6.28) });
       }
       // Cushion scrub: the dry half, and thicker the nearer the sand behind a bay is.
-      for (let i = 0; i < 30; i++) {
+      // Photographed from the shore, the first pass's thirty attempts a hex left the
+      // ground behind the bays bare — a bush every six hundred square metres is not a
+      // scrub, it is an accident — so there are enough of them now to walk through.
+      for (let i = 0; i < 90; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 2) || westWaterSurface(x, z) !== null) continue;
-        const seaward = eerSeaward(x, z), shore = 1 - smooth(40, 210, landDistance(x, z));
-        if (random() > seaward * (.28 + shore * .5)) continue;
-        if (eerScrub.some(bush => Math.hypot(bush.x - x, bush.z - z) < 3.2)) continue;
-        eerScrub.push({ x, z, s: range(.55, 1.15), rot: random() * 6.28, seaward });
+        if (!eerPlantable(x, z, 2)) continue;
+        // Weighted hard toward the coast, because that is where the lore puts it:
+        // "aromatic cushion scrub on the sandy ground behind the bays". Inland of the
+        // sand it is a scatter on the dry grass and not a cover.
+        const seaward = eerSeaward(x, z), shore = 1 - smooth(40, 220, landDistance(x, z));
+        if (random() > seaward * (.28 + shore * .62)) continue;
+        if (eerScrub.some(bush => Math.hypot(bush.x - x, bush.z - z) < 4.4)) continue;
+        eerScrub.push({ x, z, s: range(.55, 1.2), rot: random() * 6.28, seaward });
       }
-      for (let i = 0; i < tuftsPerHex + 10; i++) {
+      for (let i = 0; i < tuftsPerHex + 44; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (hexOwnerAt(x, z) !== 'Eer' || westBareGround(x, z, 1.5) || westWaterSurface(x, z) !== null) continue;
-        tufts.push({ x, z, s: range(.7, 1.8), rot: range(0, 6.28), seaward: eerSeaward(x, z) });
+        if (!eerPlantable(x, z, 1.5)) continue;
+        const seaward = eerSeaward(x, z);
+        tufts.push({ x, z, s: range(.7, 1.8) * (1.28 - seaward * .38), rot: range(0, 6.28), seaward });
       }
     }
-    // The one continuous thing in the country: deep green on the loam, tawny on the sea.
+    // The one continuous thing in the country: deep green and knee-high on the loam,
+    // short and tawny on the sea. The height is the wetness as much as the colour is —
+    // "the grass on it stands to the knee", and it does not on the dry half.
     tuftBatch(tufts, eer, tuft => color.setHSL(
       .26 - tuft.seaward * .11 + range(-.015, .015),
       .38 - tuft.seaward * .12 + range(-.05, .05),
