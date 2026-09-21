@@ -145,7 +145,7 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
   assert.match(source('combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
   // The hand slot IS the shield, and what he is seen holding follows what he is wearing.
   assert.match(main, /hasShield:!!gear\.wearing\('hand'\)/);
-  assert.match(main, /function refreshShield\(\)\{player\.setShield\(!!gear\.wearing\('hand'\)\);\}/);
+  assert.match(main, /player\.setShield\(carried\);/);
   // Not an optional call. The player is a facade over a replaceable body, and a verb missing from
   // that facade did nothing at all, quietly: the buckler was never built and four renders showed
   // a traveler with no shield before I stopped believing the camera and read the code.
@@ -177,4 +177,51 @@ test('the buckler is a thing on his arm, built once and shown or hidden', () => 
   let bucklers = 0;
   actor.group.traverse(node => { if (node.name === 'The traveler\u2019s buckler') bucklers++; });
   assert.equal(bucklers, 1);
+});
+
+test('the picture tells the truth: the arm is up exactly when the rules say the shield is', () => {
+  const actor = createCharacter({ role: 'traveler' });
+  actor.setShield(true);
+  const buckler = actor.group.getObjectByName('The traveler\u2019s buckler');
+  // The animator settles over frames, so ask it the way the game does rather than once.
+  const settle = pose => {
+    for (let i = 0; i < 40; i++) actor.animate(i / 40, 0, true, { armed: true, ...pose });
+    actor.group.updateMatrixWorld(true);
+    const at = new THREE.Vector3(); buckler.getWorldPosition(at);
+    const face = new THREE.Vector3(0, 1, 0)
+      .applyQuaternion(buckler.getWorldQuaternion(new THREE.Quaternion())).normalize();
+    return { at, face };
+  };
+  const down = settle({}), up = settle({ guarding: true });
+  // Up: across the centreline, at about chin height, with the face turned to what is in front.
+  // He faces +z and his head is around 1.37, so these are the numbers of a shield actually held.
+  assert.ok(up.at.y - down.at.y > .35, `it rises ${(up.at.y - down.at.y).toFixed(2)} m`);
+  assert.ok(up.at.z - down.at.z > .15, 'and comes forward');
+  assert.ok(Math.abs(up.at.x) < Math.abs(down.at.x), 'and in across the body');
+  assert.ok(up.face.z > .6, `its face turns to the front (${up.face.z.toFixed(2)})`);
+  assert.ok(down.face.z < .3 && Math.abs(down.face.x) > .8, 'and hangs flat at his side when it is not up');
+  // And it goes back down: the pose is a function of the flag, not a thing that latches.
+  const again = settle({});
+  assert.ok(Math.abs(again.at.y - down.at.y) < .02, 'dropping the guard drops the arm');
+});
+
+test('the arm follows the rules and not the key, and the footer follows the shield', () => {
+  const main = source('main.js');
+  // **Up iff `guard` says up.** The pose is drawn from what combat decided this frame, not from
+  // whether V is held: no wind, mid-swing or rocked all put the key down and the arm with it.
+  assert.match(main, /guarding:!!combat\.state\.player\.guarding\}\);/, 'the picture reads the rule');
+  assert.doesNotMatch(main, /guarding:\s*guardKey/, 'and never the key');
+  // The module sets the flag and returns the same answer, so nothing can read one and draw the other.
+  const combat = source('combat.js');
+  assert.match(combat, /player\.guarding = guarding\(\);\s*\r?\n\s*return player\.guarding;/);
+  // The footer names the key only while there is a shield on the arm to use it with.
+  assert.match(main, /document\.body\.classList\.toggle\('shielded',carried\);/);
+  assert.match(main, /const carried=!!gear\.wearing\('hand'\);/, 'and "carried" is the hand slot');
+  const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+  assert.match(html, /<span class="shield-control"><kbd>V<\/kbd> Guard<\/span>/);
+  const css = readFileSync(fileURLToPath(new URL('../src/adventure.css', import.meta.url)), 'utf8');
+  assert.match(css, /\.shield-control \{display:none;\}body\.shielded \.shield-control \{display:inline;\}/,
+    'hidden until the body says he is carrying one');
+  // It is its own class, not the combat one: being armed is not being shielded.
+  assert.ok(!/combat-control[^<]*Guard/.test(html), 'the guard is not shown merely for being armed');
 });
