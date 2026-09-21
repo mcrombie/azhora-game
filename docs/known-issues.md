@@ -3470,3 +3470,63 @@ with the traveler's own body exactly between the camera and him. That is a note 
 `stand-at:` only stands - showing it needs a composed view of its own in the review switch, like
 `camp-armourer`, which is new host code beside the builder's smith wiring and trips the two pinned
 tests (`tests/session-clock.test.js`, `tests/held-battles.test.js`). Handed back rather than done.
+
+---
+
+# Round 5: the authored fights, re-measured with weapon feel and the bow
+
+**One world build**, so the pike is asked for its room on the ground each fight actually happens
+on. The traveler as the arc leaves him - Toughness 12, no armour, no shield - and **every family at
+17**, so what is being compared is the weapon and not the skill in it. 24 seeds a row. Nothing is
+tuned.
+
+**Read the melee rows against each other and not against any earlier table.** They come from a
+generic driver - close to this weapon's own reach, dodge a tell aimed at you at your own reaction
+time, swing with `swingCost + 25` of wind still in hand - which is not the driver any previous row
+in this ledger was taken with.
+
+| fight | sword | staff (tempo .5) | greatsword | pike | **bow** |
+|---|---|---|---|---|---|
+| **Lauvel wolves** | 24/24, 1.9 s, 4 swings | 24/24, 1.9 s, 7 | 24/24, 1.9 s, 3 | 24/24, **3.2 s**, 5 | **0/24** |
+| **Mallec the ogre** | **3/24** | 3/24 | **0/24** | 3/24 | **24/24, 16.7 s, 16 arrows, never struck** |
+| **Bramble scout camp** | 24/24, 5.0 s, 4 | 24/24, 5.6 s, 9 | 24/24, 4.8 s, 3 | 24/24, 6.0 s, 6 | 24/24, 4.5 s, **4 arrows** |
+| **Greenway raid** | 24/24, 6.6 s, 9 | 24/24, 6.1 s, 14 | 24/24, 6.1 s, 6 | 24/24, 6.7 s, 9 | 24/24, 6.5 s, 6 arrows |
+| **Avrel raid** | 24/24, 6.0 s, 5 | 24/24, 5.8 s, 9 | 24/24, 5.1 s, 3 | 24/24, **8.5 s**, 8.4 | 24/24, 7.4 s, 7 arrows |
+
+## What moved
+
+**The three teaching fights and the scout camp did not move at all.** Every melee family wins all
+24, at full health, untouched, within a second or two of the sword. The feel shows exactly where it
+should: the **staff** takes about twice the swings (tempo .5 buys speed, not weight), the
+**greatsword** takes about half (3 against the sword's 4–5), and the **pike** is a second or two
+slower everywhere and the only weapon that is ever struck in these fights at all (0.4 blows at the
+Avrel). That is the design working.
+
+**The pike's room rule bites in exactly one authored fight**: `no-room` fires **0.9 times a fight at
+Mallec's pass stones** and **nought times** at the wolves, the camp and both raids. So "in a doorway
+I am furniture" is real but almost never met on the ground these five fights are fought on.
+
+**Mallec is the only fight any melee weapon loses, and the greatsword loses it hardest.** Sword,
+staff and pike all take him 3 times in 24; the greatsword takes him **0** in 24, because `locked`
+means the third swing cannot be stepped out of and the ogre's `stagger: false` means nothing buys a
+free second. The ogre is the one authored fight where weapon feel changes the outcome rather than
+the tempo.
+
+## And the bow changes two of the five completely, in opposite directions
+
+**Mallec goes from the hardest authored fight to a walkover.** 24 of 24, in 16.7 seconds, with
+**sixteen arrows and not one blow taken**. Mallec's `speed` is 1.45 and his `engage` 3.3; a man
+walking backwards at 4.2 m/s can never be caught, and 620 health is sixteen arrows. This is the
+standoff written up above meeting the one fight in the game that was built around a creature you
+cannot out-trade.
+
+**The Lauvel wolves go the other way, and the reason is the best thing found this round.** 0 of 24.
+Driven and counted: of 29 arrows loosed, **2 hit a wolf and 26 stopped `solid`** on the field's own
+furniture. The wolves finish on 18 health each and simply keep coming. **The Lauvel is a burial
+field full of solid things at chest height, and it eats nine arrows in ten.** Jerry's complaint -
+*"in woodland I am a man holding a stick"* - is the rule, and here it is doing precisely what it was
+written to do, on ground nobody chose for it.
+
+So the bow's place among the authored fights is: **useless where the ground is cluttered, decisive
+where the enemy is slow and the ground is open, and merely another weapon in the three open-field
+raids** (4 to 7 arrows, the same six or seven seconds as a sword).
