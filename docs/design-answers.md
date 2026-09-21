@@ -4,6 +4,38 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — seven open questions, settled (the user's answers)
+
+**Smiths are named for the smiths of myth.** The user's words: "Name them things like Vulcan and
+other mythical terms for smiths." This is a naming register of the user's own, and it covers every
+smith and armourer in the game. As assigned and approved: the Tidehaven village smith is **Vulcan**;
+the army armourer at the Moros camp is **Wayland**; the new armourer in Ambron City is
+**Hephaestus**; and Mern in Ostel is renamed **Goibniu**, so that every smith follows the rule.
+Later smiths draw from the same well: Ilmarinen, Brokkr and Sindri (brothers), Tubal-cain, Svarog,
+Kothar.
+
+**The capital sells better gear, and your army rewards it.** Wrought iron and steel are sold by
+Ambron City's armourer even though Elagos is an easy country: a capital is the exception to "a
+smith sells what his country's level allows". Fine steel is not sold there; the side the traveler
+signed with gives it as a reward for service, beginning after the border battle. The rule for
+every other smith is unchanged.
+
+**Tiers 5 and 6: the user will name them.** Avite bronze was offered for tier 5 and not taken.
+Both stay unnamed and empty until the user gives the names.
+
+**Jerry teaches by shooting at a mark.** He cannot spar - two archers at three paces is not a
+lesson - so he sets up a straw target and the traveler shoots at it from a distance. It pays Bows
+up to his ceiling, as sparring pays the other weapons.
+
+**The border river of Isareos is the Isa.** The atlas draws one river there and the lore names one;
+they are the same. Isamouth stands where the Isa joins the Lizeem at Isareos's south-east corner.
+
+**Eer's two channels are the North Channel and the South Channel**, plain descriptive names, which
+is how the lore says Eer names things.
+
+**The Toll House is Drent's tenth named ground**, charted like the other nine, so Silas Garrow's
+spot by the stream is on the map and counts toward charting Drent.
+
 ## 2026-09-21 — the army fills your file (the user's answer)
 
 With the hold lifted the hunter measured the border battle at level 2 for a traveler alone and
