@@ -379,3 +379,36 @@ and levels only make it better: the share caught rises .6 → .9 and the wind it
 He is also *seen* carrying it: a buckler on the shield arm, built once and shown or hidden with
 the hand slot. Two things found by looking rather than by testing are written down in
 `docs/known-issues.md`.
+
+## Phase 5 — tempo and arc — built
+
+Three numbers on each weapon, and the mercenaries' own lines are the specification
+(`WEAPON_TYPES`, `src/weapons.js`):
+
+- **`tempo`** multiplies how long a swing takes. The sword is 1 and is the reference, so a
+  traveler with the sword he landed with fights exactly the game he fought before. Lakota says a
+  staff "strikes twice as often as your sword", so a staff is **.5** and means it, measured by
+  running both. The dagger is .72; mace, axe and greatsword are 1.3–1.4 — "slow to start".
+- **`arc`** is the half-angle a swing reaches, the sword's being today's `Math.PI * .34`. The
+  greatsword takes "everything within a cart's width" (×1.7); the dagger is narrow (×.74); the
+  spear and pike are narrower than a dagger (×.35, ×.3) and `thrust: true`.
+- **`room`** is the clearance a swing needs, and only the pike has any. "In a doorway I am
+  furniture": within **2 m** of anything solid the pike refuses, emits `no-room`, and spends no
+  wind. The same wall does not trouble a sword.
+
+`locked` is the heavy families' third swing — "it cannot be stopped once it is going" — which
+cannot be stepped out of at any point.
+
+**A weapon that says nothing is the sword.** `tempoOf`, `arcOf` and `swingOf` all default to
+today's numbers, so every fight already built, and every test that hands `combat` a bare
+`{ id, damage, reach }`, is untouched.
+
+### Three weapons, and a gap they closed
+
+`ash-spear`, `war-pike` and `quarterstaff` fill the `polearms` and `staves` lists the brief left
+empty for this phase. **Nobody who carries one will trade it** — Ciarán, Matt, Mus and Lakota all
+say no in their own words — so the only way one reaches the traveler's hand is off the ground
+where its owner fell.
+
+Which found a real gap: `KIT_WEAPON_ITEM` had no entry for `spear`, `spears`, `pike` or `staff`,
+so **four of the ten companions left nothing behind when they died**. They do now.

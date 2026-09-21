@@ -523,7 +523,10 @@ export function escortSpotFor(at, standable = () => true, place = 0) {
 }
 
 /** The inventory weapon a held kit corresponds to; bows, spears and staves are not held weapons. */
-export const KIT_WEAPON_ITEM = Object.freeze({ sword: 'simple-sword', 'sword-shield': 'simple-sword', mace: 'iron-mace', dagger: 'long-dagger', axe: 'bearded-axe', greatsword: 'greatsword' });
+export const KIT_WEAPON_ITEM = Object.freeze({ sword: 'simple-sword', 'sword-shield': 'simple-sword', mace: 'iron-mace', dagger: 'long-dagger', axe: 'bearded-axe', greatsword: 'greatsword',
+  // The four who will not trade still carry something real, so that what lies where they fell is
+  // a weapon and not a blank. Before this, Ciaran, Matt, Mus and Lakota left nothing behind.
+  spear: 'ash-spear', spears: 'ash-spear', pike: 'war-pike', staff: 'quarterstaff' });
 
 /**
  * Whether a mercenary swaps the weapon in his hand for the traveler's, and what he says.
