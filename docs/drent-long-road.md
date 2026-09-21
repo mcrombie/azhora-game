@@ -438,4 +438,23 @@ The bug hunter measured this design against the built world before anyone built 
   and Applegarth's orchard and the wild trees by the Avrel clearing give the apple real trees.
 - **"First is guaranteed" is broken by Mus, not by Ed.** His `route: 'wild'` is read by nothing,
   so today he walks the main road and at his earliest draw musters at minute 19.8; he is already
-  in for a direct traveler in roughly a quarter of games. Awaiting the user's ruling.
+  in for a direct traveler in roughly a quarter of games.
+
+  **Ruled by the user, 2026-09-20: his wild route is long, and he cannot beat the road.** Mus keeps
+  his whole draw, thirty seconds before the traveler included: he may well be ashore first. But he
+  goes by the wilderness, and the wilderness is honestly longer than the road, so a traveler who
+  walks straight to the muster is always in before him. What the builder owes:
+  - `route: 'wild'` is read. Mus gets an authored path from his own beach that keeps off the main
+    road the whole way (nobody on the road ever sees him pass) and joins the plain from the country
+    side, not by the gate the others use.
+  - The law, as a test: for every seed, Mus's muster time is later than a direct traveler's. Write
+    it against the measured direct walk (the probe has a traveler in at about minute 27) with a
+    margin, and sweep the draw's two ends and a few hundred seeds. If the path as authored cannot
+    hold the law at his earliest draw, lengthen the path or slow his pace through the rough; do
+    not clip his draw.
+  - He can be *found*. A traveler who leaves the road in the right country may come on him in the
+    woods, and that meeting is how he is recruited before the muster. He does not explain the
+    route. His arriving line stays: "I have been here a while" is now a thing he says about the
+    country, not the camp.
+  - The clock pin (5,234.5 s for the tenth in) will move if Mus becomes the last in on some seeds.
+    Pin the ten who use the road, and pin Mus separately as a range.
