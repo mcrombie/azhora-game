@@ -13,6 +13,7 @@ export const MOROS_LEGATE_ID = 'post-camp-legate';
 
 import { toWorld } from './world-scale.js';
 import { MERCENARY_COMPANY_SIZE } from './mercenaries.js';
+import { groundOfSighting } from './long-road.js';
 
 /**
  * The horse line: where the token is spent. Authored metres, and the point is
@@ -167,6 +168,12 @@ export const MUSTER_PLACES = freeze({
   'hollis-bridge': 'on the bridge, listening to a man you could not follow',
 });
 const PLACE_UNKNOWN = 'somewhere back down that road';
+/**
+ * A man who passed the traveler between stops saw a road and not a lesson, and says so. The
+ * ground is the chart's own name for where they were both standing (src/map-fog.js), which is
+ * the most he can honestly claim: he did not see what the traveler was doing there.
+ */
+const onTheRoad = ground => `on the road through ${ground.name}, going the other way`;
 
 /** What each of them says, once, when the eleventh walks in. `%s` is where you were. */
 export const MUSTER_GREETINGS = freeze({
@@ -214,7 +221,11 @@ const COUNT_WORDS = freeze(['none', 'one', 'two', 'three', 'four', 'five', 'six'
  */
 export function musterVoices({ musterCount = 1, seenAt = {}, roster = [] } = {}) {
   const count = Math.max(1, Math.min(MUSTER_FULL, Math.round(Number(musterCount) || 1)));
-  const place = id => MUSTER_PLACES[seenAt?.[id]] ?? PLACE_UNKNOWN;
+  const place = id => {
+    const where = seenAt?.[id];
+    const ground = groundOfSighting(where);
+    return MUSTER_PLACES[where] ?? (ground ? onTheRoad(ground) : PLACE_UNKNOWN);
+  };
   const greeting = id => (MUSTER_GREETINGS[id] ?? '').replace('%s', place(id));
   const early = count <= MUSTER_EARLY;
   const full = count >= MUSTER_FULL;

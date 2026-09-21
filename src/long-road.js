@@ -210,6 +210,13 @@ export const longRoadStop = id => STOP_BY_ID.get(id) ?? null;
 export const LONG_ROAD_SPINE = freeze(LONG_ROAD_STOPS.filter(row => row.kind === 'spine'));
 
 const isPlainObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
+/**
+ * What `seenAt` holds when the traveler was not at a stop: the named ground he was on, marked
+ * so it cannot be mistaken for a stop id. A man who saw him between stops says the road.
+ */
+export const GROUND_PREFIX = 'ground:';
+export const isGround = where => typeof where === 'string' && where.startsWith(GROUND_PREFIX) && !!subregion(where.slice(GROUND_PREFIX.length));
+export const groundOfSighting = where => isGround(where) ? subregion(where.slice(GROUND_PREFIX.length)) : null;
 
 /**
  * A save that says otherwise is not one the long road wrote. Five drills is all there are; the
@@ -228,7 +235,7 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
   if (!isPlainObject(data.seenAt)) return false;
   const seen = Object.entries(data.seenAt);
   if (seen.length > 16) return false;
-  if (!seen.every(([id, stopId]) => !!mercenaryById(id) && (stopId === null || STOP_BY_ID.has(stopId)))) return false;
+  if (!seen.every(([id, where]) => !!mercenaryById(id) && (where === null || STOP_BY_ID.has(where) || isGround(where)))) return false;
   if (data.chris === null || data.chris === undefined) return true;
   if (!isPlainObject(data.chris)) return false;
   return Number.isFinite(data.chris.releasedAt) && data.chris.releasedAt >= 0
@@ -255,7 +262,15 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
 
   const doneAt = (row, world) => !!row.done(world, state);
 
-  /** The stop the traveler is nearest. Ties go to the later leg, which is how far you had got. */
+  /**
+   * The stop the traveler is nearest, **within the same forty metres a man needs to notice him**.
+   * Ties go to the later leg, which is how far you had got.
+   *
+   * Without that reach a sighting anywhere on the road took the nearest stop however far off it
+   * was, so Jerry five metres away on open ground recorded Fernway Rest a hundred and twenty
+   * metres behind him, and told the whole camp the traveler had been at the bench holding a
+   * mushroom up to the light. He was not. A man says what he saw or he says the road.
+   */
   function nearestStop(point) {
     if (!Number.isFinite(point?.x) || !Number.isFinite(point?.z)) return null;
     let best = null, bestGap = Infinity;
@@ -263,7 +278,7 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
       const gap = Math.hypot(row.point.x - point.x, row.point.z - point.z);
       if (gap < bestGap - 1e-9 || (Math.abs(gap - bestGap) <= 1e-9 && best && row.leg > best.leg)) { best = row; bestGap = gap; }
     }
-    return best?.id ?? null;
+    return best && bestGap <= NOTICE_RANGE ? best.id : null;
   }
 
   /**
@@ -375,6 +390,12 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
     if (!Array.isArray(placements) || !Number.isFinite(travelerPoint?.x) || !Number.isFinite(travelerPoint?.z)) return [];
     const groundOf = point => { const found = subregionOf(point); return (found?.id ?? found) || null; };
     const here = groundOf(travelerPoint), at = nearestStop(travelerPoint), fresh = [];
+    // What a man who sees the traveler now can honestly say: the stop, if he was at one, and
+    // otherwise the ground they were both standing on (`ground:`, a named area of the chart).
+    const where = at ?? (here ? `${GROUND_PREFIX}${here}` : null);
+    // A man walking beside the traveler is not a man going past him. Every companion, however
+    // many the company lends you, is in the phase `with-traveler` and never `walking` or
+    // `stopped` (src/mercenaries.js), so the filter below already refuses them; this says so.
     for (const placement of placements) {
       if (!placement || state.seenAt.has(placement.id) || !mercenaryById(placement.id)) continue;
       if (placement.phase !== 'walking' && placement.phase !== 'stopped') continue;
@@ -382,8 +403,8 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
       const gap = Math.hypot(placement.x - travelerPoint.x, placement.z - travelerPoint.z);
       const shared = !!here && groundOf(placement) === here;
       if (!shared && gap > NOTICE_RANGE) continue;
-      state.seenAt.set(placement.id, at);
-      const seen = { id: placement.id, name: placement.name ?? mercenaryById(placement.id).name, stopId: at, phase: placement.phase, shared, metres: gap };
+      state.seenAt.set(placement.id, where);
+      const seen = { id: placement.id, name: placement.name ?? mercenaryById(placement.id).name, stopId: where, phase: placement.phase, shared, metres: gap };
       fresh.push(seen);
       onEvent({ type: 'mercenary-noticed', ...seen });
     }
