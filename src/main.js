@@ -65,7 +65,8 @@ import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { SMITH_NPC, smithConversation, buyFromSmith, pieceName } from './smith.js';
+import { SMITH_NPC, MOROS_ARMOURER_NPC, smithConversation, buyFromSmith, pieceName, sellsHere } from './smith.js';
+import { OUTPOST_LAYOUT } from './outpost.js';
 import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
@@ -258,6 +259,10 @@ function init() {
   world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
   // The smith of Tidehaven, at his own forge on the south street (src/smith.js).
   world.npcPositions[SMITH_NPC.id]={x:TIDEHAVEN_SMITHY.stand.x,z:TIDEHAVEN_SMITHY.stand.z};npcData.push({...SMITH_NPC,yaw:TIDEHAVEN_SMITHY.stand.yaw});
+  // The army's armourer, beside the Moros camp's smithy tent. Amod's forge needed nobody: it
+  // already had Mern, and a man who is evidently the smith is the smith (src/smith.js).
+  world.npcPositions[MOROS_ARMOURER_NPC.id]={x:OUTPOST_LAYOUT.armourer.x,z:OUTPOST_LAYOUT.armourer.z};
+  npcData.push({...MOROS_ARMOURER_NPC,yaw:OUTPOST_LAYOUT.armourer.yaw});
   npcData.push({...FOREST_STORY_NPC});
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
@@ -3088,7 +3093,7 @@ function init() {
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
-    if(npc.id===SMITH_NPC.id){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
+    if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
@@ -4944,6 +4949,19 @@ function init() {
          */
         // Tidehaven's smithy, from the street it stands on. The plot was chosen by measurement
         // (TIDEHAVEN_SMITHY, src/region-world.js); the shot is too.
+        // The army's armourer at the Moros camp's smithy tent, which was standing with nobody
+        // to sell from it. Amod's forge has no view of its own: Mern was already there.
+        if(view==='camp-armourer'){
+          questStage=10;combat.finishPractice();player.setArmed(false);
+          const post=OUTPOST_LAYOUT.armourer,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.4,3.4,4.6]})??post;
+          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          player.group.rotation.y=Math.atan2(post.x-stand.x,post.z-stand.z);
+          grounded=true;verticalSpeed=0;
+          reviewTarget=new THREE.Vector3(post.x,world.heightAt(post.x,post.z)+1.3,post.z);
+          const shot=bestOf(reviewTarget,10,[post.yaw,post.yaw+.6,post.yaw-.6,post.yaw+1.1,post.yaw-1.1]);
+          yaw=shot.yaw;pitch=.16;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
         if(view==='tidehaven-smithy'){
           questStage=10;combat.finishPractice();player.setArmed(false);
           const forge=TIDEHAVEN_SMITHY,stand=startingSpot(forge,(x,z)=>canStand(x,z,world),{reaches:[4,5.5,7]})??forge;

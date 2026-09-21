@@ -7,6 +7,8 @@ import { BODY } from '../src/bodies.js';
 import { MERCENARY_ROSTER, createMercenaryCompany } from '../src/mercenaries.js';
 import { ANCHORS } from '../src/regions.js';
 import { WORD_BEACH, WORD_ASHORE } from '../src/word-arrival.js';
+import { TIDEHAVEN_SMITHY } from '../src/region-world.js';
+import { OUTPOST_LAYOUT } from '../src/outpost.js';
 
 /**
  * Every other check on the people of this world is local: the ground under them holds a body, and
@@ -57,7 +59,10 @@ function opensOut(point, { step = .5, escape = 25, budget = 12000 } = {}) {
 const SEALED_IN = new Set(['suval-terrace-farmer']);
 
 test('nobody the world places is sealed into a pocket they cannot be reached in', () => {
-  const people = Object.entries(world.npcPositions);
+  // The two smiths are placed by the host rather than by the world, so they are not in
+  // `world.npcPositions` at build time and this would never have looked at either of them.
+  const people = [...Object.entries(world.npcPositions),
+    ['tidehaven-smith', TIDEHAVEN_SMITHY.stand], ['moros-armourer', OUTPOST_LAYOUT.armourer]];
   assert.ok(people.length > 140, `only ${people.length} people placed`);
   const stuck = [];
   for (const [id, place] of people) {

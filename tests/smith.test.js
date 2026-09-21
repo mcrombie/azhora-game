@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SMITH_NPC, SLOT_NOUNS, pieceName, smithOffers, buyFromSmith, smithGreeting, smithConversation } from '../src/smith.js';
-import { createGear, SLOTS, NAMED_TIERS, tierSoldAt, armourOf } from '../src/gear.js';
+import { createGear, SLOTS, NAMED_TIERS, armourOf } from '../src/gear.js';
 import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
+import { SMITH_VOICES, TIER_NOTES, sellsHere, AMOD_SMITH_ID, MOROS_ARMOURER_NPC } from '../src/smith.js';
+import { tiernamed, tierSoldAt } from '../src/gear.js';
+import { regionLevel } from '../src/region-levels.js';
+import { AMOD_NPCS } from '../src/amod-people.js';
 import { TIDEHAVEN_SMITHY } from '../src/region-world.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -80,9 +84,10 @@ test('the smith has no name, and says what he is and is not', () => {
   const said = smithGreeting(0, { worn: {} }).join(' ');
   assert.ok(said.includes('wood and bone'), 'he names the material honestly');
   assert.ok(/not mail|bog iron/.test(said), 'and says what he cannot do');
-  // He mentions what is on you only when something is.
-  assert.equal(smithGreeting(0, { worn: {} }).length, 2);
-  assert.equal(smithGreeting(0, { worn: { head: { weight: 'light', tier: 0 } } }).length, 3);
+  // Two lines of his own with the material named between them, and he mentions what is on you
+  // only when something is.
+  assert.equal(smithGreeting(0, { worn: {} }).length, 3);
+  assert.equal(smithGreeting(0, { worn: { head: { weight: 'light', tier: 0 } } }).length, 4);
 });
 
 test('the scene puts a price on every line and refuses to be opened by anybody else', () => {
@@ -104,7 +109,7 @@ test('the scene puts a price on every line and refuses to be opened by anybody e
 test('the host stands him at his forge and buys only what the table says he has', () => {
   const main = source('main.js');
   assert.match(main, /world\.npcPositions\[SMITH_NPC\.id\]=\{x:TIDEHAVEN_SMITHY\.stand\.x,z:TIDEHAVEN_SMITHY\.stand\.z\}/);
-  assert.match(main, /if\(npc\.id===SMITH_NPC\.id\)\{smithConversation\(/, 'and he has a conversation of his own');
+  assert.match(main, /if\(sellsHere\(npc\.id\)\)\{smithConversation\(/, 'and every smith goes through the one scene');
   // The level he sells at is the country he is standing in, not a number written beside him, so
   // the same smith in better country sells better iron without a line of his own.
   assert.match(main, /level:regionLevel\(world\.regionAt\(player\.group\.position\.x,player\.group\.position\.z\)\?\.name\)\?\?0/);
@@ -113,4 +118,49 @@ test('the host stands him at his forge and buys only what the table says he has'
   // He stands off his own forge, on the side the village comes from.
   const off = Math.hypot(TIDEHAVEN_SMITHY.stand.x - TIDEHAVEN_SMITHY.x, TIDEHAVEN_SMITHY.stand.z - TIDEHAVEN_SMITHY.z);
   assert.ok(off > 2.7 && off < 3.5, `${off.toFixed(2)} m out, clear of the shelter's own posts`);
+});
+
+test('three smiths, one scene, and each sells the country he is standing in', () => {
+  // Amod already had a smith - Mern, hooks and hinges and gate metal - so nobody was added
+  // there; the Moros camp's smithy tent had a rack of spears "waiting on the smith" and nobody
+  // to wait for, so it got one. Both countries are level 2, which is bog iron.
+  assert.deepEqual(Object.keys(SMITH_VOICES).sort(), ['moros-armourer', 'ostel-smith', 'tidehaven-smith']);
+  assert.equal(sellsHere(AMOD_SMITH_ID), true);
+  assert.equal(sellsHere(MOROS_ARMOURER_NPC.id), true);
+  assert.equal(sellsHere('ostel-vintner'), false, 'and nobody else in Ostel sells armour');
+  assert.equal(AMOD_NPCS.some(one => one.id === AMOD_SMITH_ID), true, 'Mern was already in the world');
+  assert.equal(AMOD_NPCS.some(one => one.id === MOROS_ARMOURER_NPC.id), false, 'the armourer is not one of Ostel\u2019s');
+  // The armourer is unnamed, as agreed; Mern keeps the name he already had.
+  assert.equal(MOROS_ARMOURER_NPC.name, 'The armourer');
+  // Each speaks for himself, and none of them says another's lines.
+  const voices = Object.values(SMITH_VOICES).map(lines => lines.join(' '));
+  assert.equal(new Set(voices).size, 3);
+  assert.ok(SMITH_VOICES[AMOD_SMITH_ID][0].startsWith('Mern.'), 'Mern keeps the words he already had');
+  assert.ok(/rolls|quartermaster|issue/i.test(SMITH_VOICES[MOROS_ARMOURER_NPC.id].join(' ')), 'the army man talks like the army');
+  // But the material is nobody's line: it is generated from the level, so the same man in better
+  // country tells the truth about his own iron without anybody rewriting him.
+  for (const [id, level] of [['tidehaven-smith', 0], [AMOD_SMITH_ID, 2], [MOROS_ARMOURER_NPC.id, 2]]) {
+    const said = smithGreeting(level, { id }).join(' ');
+    const mine = TIER_NOTES[tierSoldAt(level)];
+    assert.ok(said.includes(mine), `${id} names what he has`);
+    for (const note of Object.values(TIER_NOTES))
+      if (note !== mine) assert.ok(!said.includes(note), `${id} claims nothing else`);
+  }
+});
+
+test('the Tidehaven smith\u2019s pointer up the road is true', () => {
+  // He says mail wants bog iron and there is a smith with a country behind him past the Caloss.
+  // That has to be true of what the player then finds, or the line has to change.
+  const said = smithGreeting(0, { id: 'tidehaven-smith' }).join(' ');
+  assert.ok(said.includes('past the Caloss'), 'he points up the road');
+  assert.ok(said.includes('Mail wants bog iron'), 'and says what is up there');
+  // Past the Caloss is Luscia, then the Moros gate and the plain; Amod is further again. Both
+  // places that now sell are level 2, and level 2 sells bog iron - which is where mail begins.
+  for (const country of ['Moros Plain', 'Amod']) {
+    assert.equal(regionLevel(country), 2, country);
+    assert.equal(tiernamed(tierSoldAt(2)), 'bog iron', `${country} sells the thing he promised`);
+    assert.ok(smithOffers(2).some(one => one.weight === 'medium'), `${country} is where mail starts`);
+  }
+  // And his own country is not, so the pointer is not pointing at his own forge.
+  assert.equal(tiernamed(tierSoldAt(regionLevel('Drent'))), 'wood and bone');
 });

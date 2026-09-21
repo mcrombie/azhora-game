@@ -8,6 +8,7 @@ import { OPENING_FIGHT_GROUND } from '../src/opening-fights.js';
 const { createWorld, PROP_SOLID } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
 const { TIDEHAVEN_SMITHY, villageToWorld } = await import('../src/region-world.js');
+const { OUTPOST_LAYOUT } = await import('../src/outpost.js');
 const toRoad = (x, z) => {
   let best = Infinity;
   for (const path of world.paths) for (let i = 1; i < path.length; i++) {
@@ -84,7 +85,7 @@ test('the smithy stands on nobody’s footpath', () => {
   })) - forge.offPath) < 0.6, 'the constant says what was measured');
 });
 
-test('the smith has ground to stand on at his own forge', () => {
+test('every smith has ground to stand on at his own forge', () => {
   // He is placed by the host rather than by regionNpcPositions, so no other test covers his feet.
   const at = TIDEHAVEN_SMITHY.stand;
   assert.ok(canStand(at.x, at.z, world), 'the smith stands where the game says he does');
@@ -95,4 +96,16 @@ test('the smith has ground to stand on at his own forge', () => {
     if (canStand(at.x + Math.cos(angle) * 1.4, at.z + Math.sin(angle) * 1.4, world)) open++;
   }
   assert.ok(open >= 12, `${open} of 16 ways out of the forge yard`);
+  // And the army's armourer, beside the smithy tent that was already standing in the Moros camp.
+  const post = OUTPOST_LAYOUT.armourer;
+  assert.ok(canStand(post.x, post.z, world), 'the armourer stands where the game says he does');
+  let ways = 0;
+  for (let turn = 0; turn < 16; turn++) {
+    const angle = turn / 16 * Math.PI * 2;
+    if (canStand(post.x + Math.cos(angle) * 1.4, post.z + Math.sin(angle) * 1.4, world)) ways++;
+  }
+  assert.ok(ways >= 10, `${ways} of 16 ways out of the camp forge`);
+  // He is outside the tent, not inside its posts: the tent box reaches 3.6 m from its middle.
+  const tent = OUTPOST_LAYOUT.smithy;
+  assert.ok(Math.abs(post.x - tent.x) > tent.hx || Math.abs(post.z - tent.z) > tent.hz, 'clear of the tent itself');
 });
