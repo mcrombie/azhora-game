@@ -2647,7 +2647,10 @@ function init() {
     swimMetres+=Math.hypot(p.x-before.x,p.z-before.z);
     const step=swimStep({dt,level:skills.level(SWIMMING_SKILL)||1,wind:combat.state.player.stamina,health:combat.state.player.hp});
     combat.exhaust(step.spent,step.damage);
-    if(step.drowning&&!drowning){drowning=true;audio?.effect('hurt');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
+    // 'player-hit' and not 'hurt': the table has no sound of that name (src/road-audio.js), and a
+    // name it does not have is silence, which is what the moment your wind goes had been. This is
+    // the sound the game already makes when the traveler takes damage, and drowning is damage.
+    if(step.drowning&&!drowning){drowning=true;audio?.effect('player-hit');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
     if(!step.drowning)drowning=false;
   }
   function retry() {
