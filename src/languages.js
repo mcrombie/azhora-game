@@ -594,7 +594,21 @@ export const STARTING_PROFICIENCY = freeze(Object.fromEntries(LANGUAGE_IDS.map(i
 export const INTERPRETER = freeze({
   npcId: 'merc-gotwood', name: 'Chris Gotwood', knows: freeze(['ambroni', 'drentish', 'feradom']),
   range: 12, reached: 'mustered', bonus: 2,
+  /** Which of the eleven he is, when the traveler is choosing who to be (src/player-characters.js). */
+  playerId: 'gotwood',
 });
+
+/**
+ * Who interprets for the traveler, given which of the eleven the traveler is: Chris Gotwood's
+ * npc id, or **null when the traveler is Chris himself**. That is not a missing interpreter to
+ * be worked around — it is the right answer. Chris is not in the world when he is the player,
+ * and he does not need to be: the Ambroni is the traveler's own from the first step
+ * (`startingLanguages` in src/player-characters.js). A host that looks the id up without asking
+ * this first gets `undefined` and the same behaviour by accident, which is worse.
+ */
+export function interpreterFor(playerId) {
+  return String(playerId ?? '').trim().toLowerCase().replace(/^merc-/, '') === INTERPRETER.playerId ? null : INTERPRETER.npcId;
+}
 
 /**
  * The key that shows a line the way it was actually said. Free: the road already

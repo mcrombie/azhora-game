@@ -311,6 +311,26 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
     return { ok: true, language: id, dialect: spoken.dialect, gained, level: after, climbed, xp, levelled: !!gainedSkill?.levelled };
   }
 
+  /**
+   * A tongue the traveler already had when he stepped ashore: Chris Gotwood's Ambroni, and
+   * whatever the character profiles give the other ten (`startingLanguages` in
+   * src/player-characters.js, handed over by `grantStartingKit()` in src/main.js).
+   *
+   * A floor and never a ceiling, and silent: it earns no experience and rings no level, because
+   * a tongue learned before the game began was not learned on this road. `study` is the road's
+   * way of getting one; this is the way of having always had it.
+   */
+  function speakAlready(id, proficiency) {
+    if (!LANGUAGES[id]) return { ok: false, reason: 'Nobody speaks that.' };
+    const want = Math.min(MAX_PROFICIENCY, Math.max(0, Math.floor(Number(proficiency) || 0)));
+    const exposure = exposureForProficiency(want);
+    if (!(exposure > rawExposure(id))) return { ok: true, language: id, level: level(id), climbed: 0 };
+    const before = level(id);
+    state.exposure.set(id, exposure);
+    const after = level(id);
+    return { ok: true, language: id, level: after, climbed: Math.max(0, after - before) };
+  }
+
   /** A phrasebook, or a teacher: a lump of a tongue bought rather than overheard. */
   function study(id, exposure = PHRASEBOOK_EXPOSURE) {
     if (!LANGUAGES[id]) return { ok: false, reason: 'Nobody speaks that.' };
@@ -407,7 +427,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
   }
 
   return {
-    level, ownLevel, known, canRead, speech, hear, study, readBook, render, readSign, interpreterNearby, view, task, fluent,
+    level, ownLevel, known, canRead, speech, hear, study, speakAlready, readBook, render, readSign, interpreterNearby, view, task, fluent,
     snapshot, restore,
     comprehension: id => comprehension(level(id)),
     exposure: id => rawExposure(id),
