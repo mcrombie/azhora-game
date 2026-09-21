@@ -56,7 +56,7 @@ import { createIzolHost } from './izol-host.js';
 import { izolDeckHeight } from './izol-world.js';
 import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
-import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, morosConversation } from './moros-chapter.js';
+import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
@@ -2216,6 +2216,10 @@ function init() {
     refreshQuest();inventory.refresh();audio?.effect('success');
     if(result.reward?.id==='legion-horse'&&!riding.owned){const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
+    // First of eleven. Venmor remembers who came first, and it is the one thing the short road
+    // has that the long road cannot get (docs/drent-long-road.md §9). Once, and a little trust.
+    if(action==='join-muster'&&company.summary(playSeconds).mustered+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
+      toast('You are the first of the eleven into this camp, and the Marshal has noticed. The pegs behind the standard are still empty.','THE ARMY REMEMBERS EARLY MEN');
     const view=moros.view();
     toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
@@ -2595,7 +2599,7 @@ function init() {
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
     if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:company.summary(playSeconds).mustered+1}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
-    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1}))return;
+    if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,musterCount:company.summary(playSeconds).mustered+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id)}))return;
     if(LEGION_POST_IDS.has(npc.id)){openDialogue(npc,legionPostLines(npc.id),null,'Back to the road');return;}
     if(TOWN_LIFE_IDS.has(npc.id)){openDialogue(npc,townLifeLines(npc.id),null,'Back to the road');return;}
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}

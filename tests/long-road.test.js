@@ -4,8 +4,9 @@ import {
   LONG_ROAD_VERSION, LONG_ROAD_LEGS, LONG_ROAD_STOPS, LONG_ROAD_STOP_IDS, LONG_ROAD_SPINE, DRILL_COUNT, DRILL_EXPOSURE,
   NOTICE_RANGE, DRENT_GROUNDS, drentCharted, longRoadStop, stopGround, createLongRoad, validateLongRoadSnapshot,
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
-  companionPace, COMPANION_REACH, TRAVELER_RUN,
+  companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt,
 } from '../src/long-road.js';
+import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
 import { ARRIVALS } from '../src/mercenaries.js';
 import { renderLine } from '../src/linguist.js';
 import { SUBREGION_IDS, subregionsAt } from '../src/map-fog.js';
@@ -372,4 +373,43 @@ test('the companion keeps up with a running traveler, and the set-down is left f
   while (mounted <= COMPANION_REACH.setDown && seconds < 600) { mounted += (13 - companionPace(mounted)) * .1; seconds += .1; }
   assert.ok(mounted > COMPANION_REACH.setDown, 'a rider does leave him, and he is set down beside them');
   assert.ok(seconds < 60, `and it takes ${seconds.toFixed(0)} s of cantering, not a walk across Drent`);
+});
+
+test('a traveler who already has the skill finishes the stop in one conversation', () => {
+  // Any of the eleven may be the player and each lands with a different table. A lesson is
+  // shortened, never skipped: the stop still counts, and the talk still pays its Drentish.
+  const road = createLongRoad();
+  for (const stop of LONG_ROAD_SPINE) {
+    if (!stop.skill) continue;
+    assert.ok(recognisedAt(stop.id), `${stop.id} has no line for somebody who already does this`);
+    // Mara's second errand is the exception, and not an exception to the rule: its skill is
+    // learned at her first stop, so knowing cartography is how you arrive at it rather than a
+    // reason to waive it. She still has a line for a traveler who has kept a chart before.
+    if (stop.id === 'village-corners') continue;
+    const world = nothing({ skills: [stop.skill] });
+    assert.equal(knowsAlready(world.skills, stop.skill), true, stop.id);
+    assert.equal(road.view(world).stop(stop.id).done, true, `${stop.id} is not closed by knowing it already`);
+  }
+  assert.equal(knowsAlready([], 'birding'), false);
+  assert.equal(knowsAlready({ known: id => id === 'botany' }, 'botany'), true, 'a real skill sheet answers too');
+  assert.equal(recognisedAt('nowhere'), null);
+});
+
+test('every spine stop has a recognising line, and no two teachers say the same thing', () => {
+  const lines = Object.values(RECOGNISED);
+  assert.equal(new Set(lines).size, lines.length, 'somebody is repeating somebody else');
+  for (const [id, line] of Object.entries(RECOGNISED)) {
+    assert.ok(LONG_ROAD_SPINE.some(stop => stop.id === id), `${id} is not a spine stop`);
+    assert.ok(line.length > 60, `${id} says too little to be a scene`);
+  }
+  // Lakota at Perrin's garden is the design's own worked example: a fen man at forty has still
+  // never seen a Drent bird, and finds are finds.
+  assert.match(RECOGNISED['bird-garden'], /Drent’s list/);
+  assert.match(RECOGNISED['bird-garden'], /never seen these ones/);
+  // Every spine stop that teaches a skill has one, whoever the player turns out to be.
+  const starting = new Set(PLAYABLE_IDS.flatMap(id => Object.keys(startingSkills(id))));
+  for (const stop of LONG_ROAD_SPINE) {
+    if (!stop.skill || !starting.has(stop.skill)) continue;
+    assert.ok(RECOGNISED[stop.id], `somebody lands already knowing ${stop.skill} and ${stop.id} has nothing to say to them`);
+  }
 });

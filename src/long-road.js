@@ -136,7 +136,11 @@ export const LONG_ROAD_STOPS = freeze([
     reads: 'skills', done: state => learned(state, 'birding'),
     title: 'Perrin at the bird garden', detail: 'The feeder, the pointer, and the first garden bird you look at properly. Thirty metres from the pier you ran past.' }),
   stop({ id: 'lysa-acorns', leg: 1, kind: 'spine', npc: 'acorn-cook', skill: 'cooking', subregion: 'eastreena', point: { x: -10.9, z: 34.6 },
-    reads: 'acornQuest', done: state => acornsDone(state),
+    // Rule 1 of the eleven: a lesson is shortened, never skipped. Somebody who already cooks
+    // does not need the first-find step, so the errand is a swap rather than a lesson and the
+    // stop counts either way (docs/drent-long-road.md §10). Every other stop here derives from
+    // the skill already, so this is the only one the rule has to be written into.
+    reads: 'acornQuest', done: state => acornsDone(state) || learned(state, 'cooking'),
     title: 'Lysa’s acorns', detail: 'Five acorns off the Greenway floor, and the tinderbox she gives for them, which is every fire you light after this.' }),
   stop({ id: 'village-corners', leg: 1, kind: 'spine', npc: 'harbormaster', skill: 'cartography', subregion: 'eastreena', point: { x: 0, z: 25 },
     reads: 'longRoad', done: (state, own) => own.corners === 'signed',
@@ -566,3 +570,42 @@ export function drillScene(index, { render = line => line, name = 'Chris Gotwood
   return { index: entry.index, leg: entry.leg, title: entry.title, opening, lines, closing,
     study: freeze({ language: DRILL_LANGUAGE, exposure: DRILL_EXPOSURE }) };
 }
+
+/* ------------------------------------------------------------------ *
+ * The eleven: rules, not rewrites
+ * ------------------------------------------------------------------ */
+
+/**
+ * Whether the traveler already has the skill a stop teaches.
+ *
+ * Any of the eleven may be the player, and each of them lands with a different table: Lakota
+ * arrives a birder, Chris arrives with Ambroni. A lesson is then **shortened, never skipped**.
+ * The teacher takes one recognising branch — "you have done this before" — the first-find step
+ * is waived, the stop counts, and the talk still pays its Drentish, because listening to a
+ * Drent man name Drent birds is Drentish either way (docs/drent-long-road.md §10).
+ */
+export const knowsAlready = (skills, skillId) => learned({ skills }, skillId);
+
+/**
+ * What a spine teacher says to somebody who already does this. One line each, and every one of
+ * them says the same two things underneath: I can see you know, and there is still something
+ * here you have not seen — because a fen man at forty has still never seen a Drent bird, and
+ * finds are finds.
+ */
+export const RECOGNISED = freeze({
+  'pier-chart': 'You have kept a chart before. Then you know what mine is worth and what it is not. Take it anyway; the coast on it is right.',
+  'village-corners': 'You have surveyed. Good — then walk my three corners and hand me back something I can countersign without reading it twice.',
+  'bird-garden': 'Oh, you look. I can tell from where you are standing. Here — Drent’s list, and you may tick it: you have never seen these ones, whatever you have seen.',
+  'lysa-acorns': 'You have cooked over a fire that was not in a kitchen. Then this is a swap and not a lesson: five acorns, and a tinderbox you will be glad of.',
+  'bran-rod': 'You have held a rod. Fine. This water is not your water, and what comes out of it will surprise you at least once.',
+  'willowmere-fire': 'You have laid a fire before, so lay this one and I will say nothing. The fish is the same fish everywhere; the wood is not.',
+  'bowden-axe': 'YOU HAVE SWUNG ONE! Good! Then swing it at MY trees and we will find out what you actually know. BWAH HA HA!',
+  'odger-fernway': 'You know a stump from a root. Then I will not insult you. Fern Hollow is behind the Rest and there are two things in it that will kill you; come and let me point at them.',
+  'rena-dig': 'Somebody has taught you to leave it where it lies. Then the pegs are yours and I will only stand here and look pleased.',
+  'enna-rows': 'You have put a row in. Then you will know why I am standing here doing nothing: it is four minutes and it does not care whether I watch.',
+  'nell-hedge': 'You name things. I can hear it. So name these — eighty years unlaid, and half of it is not in anybody’s book.',
+  'silas-stream': 'You pick stones up. There are men who walk this coast their whole lives and never once bend over. Come and look at this section.',
+  'hollis-bridge': 'You have mended a bridge, have you. Then take the cord and I will hold the plank, and we will both pretend that is the usual way round.',
+});
+/** The one recognising line a stop has for somebody who already knows its skill, or null. */
+export const recognisedAt = id => RECOGNISED[id] ?? null;

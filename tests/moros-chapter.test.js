@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInventoryState } from '../src/inventory.js';
-import { MOROS_GATE_ID, MOROS_LEGATE_ID, MOROS_PAY, MOROS_SITES, MOROS_SITE_ACTIONS, createMorosChapter, morosConversation, validateMorosSnapshot } from '../src/moros-chapter.js';
+import { MOROS_GATE_ID, MOROS_LEGATE_ID, MOROS_PAY, MOROS_SITES, MOROS_SITE_ACTIONS, createMorosChapter, morosConversation, validateMorosSnapshot,
+  MUSTER_PLACES, MUSTER_GREETINGS, MUSTER_AFTER, MUSTER_FULL, musterVoices, musterArrivalLine } from '../src/moros-chapter.js';
+import { LONG_ROAD_SPINE } from '../src/long-road.js';
+import { MERCENARY_ROSTER, CROMB } from '../src/mercenaries.js';
+import { createCampaign } from '../src/campaign.js';
 
 function fixture({ token = true } = {}) {
   const inventory = createInventoryState(), events = [];
@@ -81,5 +85,91 @@ test('the gate and the Marshal speak for the chapter only while it is theirs, an
   assert.equal(morosConversation(legate, context), false);
   const alone = fixture().moros; alone.start(); alone.act('admit-to-camp');
   morosConversation(legate, { ...context, moros: alone, musterCount: 1 });
-  assert.match(screens.at(-1).lines[0], /one stands in this camp/);
+  // First in, the camp says so before the Marshal does: eleven pegs and nobody on them.
+  assert.match(screens.at(-1).lines[0], /eleven pegs/);
+  assert.match(screens.at(-1).lines.join(' '), /one stands in this camp/);
+});
+
+test('the camp has two faces, and it is the same camp', () => {
+  // First in: eleven pegs and nobody on them, and a Marshal with work for early men.
+  const early = musterVoices({ musterCount: 1 });
+  assert.equal(early.early, true);
+  assert.equal(early.full, false);
+  assert.match(early.turn.join(' '), /eleven pegs/);
+  assert.match(early.marshal, /work for early men/);
+  assert.match(early.marshal, /one stands? in this camp/);
+  assert.deepEqual(early.company, [], 'nobody is there to say anything to you');
+  assert.equal(musterVoices({ musterCount: 2 }).early, true, 'two is still early');
+  assert.equal(musterVoices({ musterCount: 3 }).early, false, 'three is a camp filling up');
+  // In between: the count, and nothing else.
+  const middle = musterVoices({ musterCount: 6 });
+  assert.match(middle.marshal, /six stand in this camp/);
+  assert.deepEqual(middle.turn, []);
+  assert.deepEqual(middle.company, []);
+});
+
+test('last in, the ten turn and each of them says where he last saw you', () => {
+  const roster = [...MERCENARY_ROSTER.map(man => man.id)];
+  const seenAt = { 'merc-word': 'bran-rod', 'merc-lakota': 'odger-fernway', 'merc-matt': 'nell-hedge' };
+  const full = musterVoices({ musterCount: MUSTER_FULL, seenAt, roster });
+  assert.equal(full.full, true);
+  assert.match(full.turn.join(' '), /they turn/);
+  assert.match(full.marshal, /That is eleven/);
+  assert.equal(full.company.length, roster.length, 'one line from each of the ten');
+  const said = Object.fromEntries(full.company.map(entry => [entry.id, entry.line]));
+  assert.match(said['merc-word'], /up to your knees in a pond/, 'where he saw you, in his own words');
+  assert.match(said['merc-lakota'], /holding a mushroom up to the light/);
+  assert.match(said['merc-matt'], /in a hedge\. In it\. Not beside it/);
+  // A man who never went past you cannot place you, and says so rather than inventing it.
+  assert.match(said['merc-eliana'], /somewhere back down that road/);
+  for (const entry of full.company) assert.ok(!entry.line.includes('%s'), entry.id + ' still has its slot in it');
+});
+
+test('every stop of the spine has a clause, and every man of the eleven has a line both ways', () => {
+  // Ten templates and a phrase a stop, which is what keeps this from being a hundred lines.
+  for (const stop of LONG_ROAD_SPINE) assert.ok(MUSTER_PLACES[stop.id], `no clause for ${stop.id}`);
+  const everybody = [...MERCENARY_ROSTER.map(man => man.id), CROMB.id];
+  for (const id of everybody) {
+    assert.ok(MUSTER_GREETINGS[id], `${id} has nothing to say when you come in last`);
+    assert.ok(MUSTER_AFTER[id], `${id} has nothing to say when he comes in after you`);
+    assert.notEqual(MUSTER_GREETINGS[id], MUSTER_AFTER[id], id + ' says the same thing either way');
+  }
+  // Mus is the one who can be the eleventh in himself, after Al the Tun, on a late draw.
+  assert.match(MUSTER_GREETINGS['merc-mus'], /I was not on it/, 'because he never walked the road');
+  assert.match(MUSTER_AFTER['merc-mus'], /I have been here a while/, 'which is a thing he says about the country');
+  assert.match(musterArrivalLine('merc-word'), /I swam/);
+  assert.ok(musterArrivalLine('nobody').length > 10, 'and anybody else gets something true');
+});
+
+test('coming in first is worth something the long road cannot have, once', () => {
+  const campaign = createCampaign();
+  const before = campaign.snapshot().trust.empire;
+  const first = campaign.earlyMuster();
+  assert.equal(first.ok !== false, true);
+  const after = campaign.snapshot().trust.empire;
+  assert.ok(after > before, 'Venmor remembers who came first');
+  assert.equal(campaign.earlyMuster().first, false, 'and remembers it once');
+  assert.equal(campaign.snapshot().trust.empire, after, 'the second time is worth nothing');
+  assert.equal(campaign.snapshot().early, true);
+  // A save from before anybody could be early loads, and simply was not.
+  const old = campaign.snapshot(); delete old.early;
+  const back = createCampaign();
+  assert.equal(back.restore(old), true);
+  assert.equal(back.snapshot().early, false);
+});
+
+test('the Marshal says the face the count calls for, and the company speak only when it is full', () => {
+  const { moros } = fixture();
+  moros.start(); moros.act('admit-to-camp');
+  let shown = null;
+  const context = { moros, openDialogue: (npc, lines) => { shown = lines; }, closeDialogue() {}, act() {} };
+  const roster = MERCENARY_ROSTER.map(man => man.id);
+  morosConversation({ id: MOROS_LEGATE_ID }, { ...context, musterCount: 1 });
+  assert.match(shown.join(' '), /eleven pegs/);
+  assert.doesNotMatch(shown.join(' '), /up to your knees/);
+  morosConversation({ id: MOROS_LEGATE_ID }, { ...context, musterCount: MUSTER_FULL, roster, seenAt: { 'merc-word': 'bran-rod' } });
+  const full = shown.join(' ');
+  assert.match(full, /That is eleven/);
+  assert.match(full, /up to your knees in a pond/);
+  assert.match(full, /muster rolls out of the Lauvel/, 'and it is still the same scene');
 });
