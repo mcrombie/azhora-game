@@ -63,6 +63,23 @@ const ALLY_KINDS = Object.freeze({
   villager: Object.freeze({ tell: .62, attack: .5, contact: .22, recovery: 2.1, damage: 13, speed: 2.2, engage: 1.95, reach: 2.1, hp: 60, level: 1 }),
   bystander: Object.freeze({ flees: true, freeze: 7, speed: 1.3, hp: 45, level: 1 }),
 });
+/**
+ * How many may stand with the traveler in one fight: the whole company, plus the largest side an
+ * encounter authors, and room over.
+ *
+ * It was six, which was right when the only allies were the ones an encounter wrote down. Then
+ * `getAllies` began adding whoever walks with the traveler to that list, and the cap counted the
+ * sum: the border battle authors four, so the **third** companion made the encounter invalid and
+ * `startEncounter` returned false. The border's caller answers a refusal by telling the traveler
+ * to go and stand where he is already standing, so with three or more companions the main arc
+ * could not be finished at all.
+ *
+ * Nothing may hand `encounterConfig` more than this - `companionAllies` in src/main.js takes only
+ * the room that is left, and the rest hold - so the cap is a bound on work and never a reason a
+ * fight does not happen.
+ */
+export const MAX_ALLIES = 16;
+
 const DEFAULT_ENCOUNTER = Object.freeze({
   id: 'tidehaven-raiders', center: Object.freeze({ x: 0, z: -36 }),
   checkpoint: Object.freeze({ x: 0, z: -25 }), retreatZ: -16,
@@ -132,7 +149,7 @@ function encounterConfig(config) {
   }
   const allies = [];
   if (config.allies !== undefined) {
-    if (!Array.isArray(config.allies) || config.allies.length > 6) return null;
+    if (!Array.isArray(config.allies) || config.allies.length > MAX_ALLIES) return null;
     for (const ally of config.allies) {
       if (!ally || !identifier(ally.id) || seen.has(ally.id) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
         || (ally.name !== undefined && typeof ally.name !== 'string')

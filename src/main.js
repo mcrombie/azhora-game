@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole } from './characters.js';
 import { markerFor, markerGrade } from './quest-markers.js';
-import { createCombat } from './combat.js';
+import { createCombat, MAX_ALLIES } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
 import { createWeapons, WEAPON_TYPES } from './weapons.js';
@@ -498,7 +498,12 @@ function init() {
     if(!config?.center||TEACHING_FIGHTS.has(config.id))return [];
     const axis=config.retreatAxis==='x'?'x':'z',across=axis==='x'?'z':'x';
     const sign=config.retreatSign===-1?-1:1;
-    return fileOrder.map((id,index)=>{
+    // Only the room the encounter has left. This can never be the reason a fight does not start:
+    // `encounterConfig` throws out a whole encounter whose ally list is too long, and the border
+    // authors four of its own, so handing it everybody would have made the arc unfinishable with
+    // three companions. If there is not room for all of them, the rest hold.
+    const room=Math.max(0,MAX_ALLIES-(config.allies?.length??0));
+    return fileOrder.slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id))return null;
       const back=5+(index%5)*3,side=(index<5?-1:1)*2.5;
@@ -2341,6 +2346,9 @@ function init() {
     if(result.startEncounter===LUSCIA_WOLVES.id){
       saveRoad(false);
       if(combat.startEncounter(LUSCIA_WOLVES)){stopInput();toast('Two wolves come off the burial line. Give their lunges room, or back east onto the open grass.','THE LAUVEL · WOLVES');audio?.effect('bell');}
+      // A refusal here was a silent no-op and the wolves simply never came, which is the one
+      // shape of failure a player cannot tell from nothing happening.
+      else toast('Something is wrong with the ground here and the wolves do not come. Step back onto the road and try again.','THE LAUVEL');
       return result;
     }
     if(action==='return-courier-satchel'&&campaign.view().chapterId==='luscia-aftermath')campaign.completeChapter('luscia-aftermath');
@@ -3752,6 +3760,7 @@ function init() {
         if(questStage===9&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<4.5)updateQuest('reach-border');
         if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-meadowEncounter.center.x,player.group.position.z-meadowEncounter.center.z)<14){
           if(combat.startEncounter(meadowEncounter)){toast('Two raiders among the field walls. Give their swings room.','THE AVREL CLEARING · WATCH THE AMBER TELLS');audio?.effect('bell');}
+          else toast('The raiders hold off. Step back to the road and come at the clearing again.','THE AVREL CLEARING');
         }
         for(const place of world.landmarks)if(!discoveries.has(place.id)&&Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<(place.radius||8)){
           discoveries.add(place.id);$('discovery-count').textContent=discoveries.size;$('area-name').textContent=place.name;
