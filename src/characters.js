@@ -840,7 +840,7 @@ export function createCharacter({ role = 'traveler', tunic = ROAD_CLOTH[role] ??
   // Any of the eleven mercenaries can be the player (src/player-characters.js). Given a roster
   // look, the traveler is built as that hired sword — build, hair, garment, marks, weapon —
   // and keeps only what is his alone: the satchel, the full weapon swap and the fishing grip.
-  // Crom, who is the traveler and has no look, is built exactly as he always was.
+  // Cromb, who is the traveler and has no look, is built exactly as he always was.
   const isPlayer = role === 'traveler';
   const isTraveler = isPlayer && !look;
   const isCook = role === 'acorn-cook';

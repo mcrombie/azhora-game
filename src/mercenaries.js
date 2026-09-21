@@ -49,7 +49,7 @@ const merc = (id, name, origin, arrival, departs, pace, look, lines, extra = {})
 
 /** Each man fights his own way; his weapon is modelled, and he will explain it. `trades` says whether he swaps his weapon for the traveler's sword. */
 export const MERCENARY_STYLES = Object.freeze({
-  crom: Object.freeze({ weapon: 'sword', style: 'One sword, and nothing else', trades: true, styleLines: Object.freeze(['One sword. I keep an edge on it and I keep it out of bone where I can. A man who tells you there is more to it than that is selling you something.', 'Swing all the way through or do not swing. Half a cut is how you get a whole one back.']), tradeLine: 'Your weapon for my sword. I will hold anything with a handle, and I will hand it back the moment it disappoints me.' }),
+  cromb: Object.freeze({ weapon: 'sword', style: 'One sword, and nothing else', trades: true, styleLines: Object.freeze(['One sword. I keep an edge on it and I keep it out of bone where I can. A man who tells you there is more to it than that is selling you something.', 'Swing all the way through or do not swing. Half a cut is how you get a whole one back.']), tradeLine: 'Your weapon for my sword. I will hold anything with a handle, and I will hand it back the moment it disappoints me.' }),
   gotwood: Object.freeze({ weapon: 'sword', style: 'The sword, same as yours', trades: true, styleLines: Object.freeze(['We carry the same blade, so I can actually be useful to you here. Three cuts in a row, each heavier than the last, and the third lands hardest. Keep something back for a step aside when the amber shows.', 'Mend it before the edge goes rather than after. I know that sounds obvious. I have watched four men die of not doing it.']), tradeLine: 'A trade? If it is not another sword like mine, I will try it. Yours for mine, and no hard feelings either way.' }),
   word: Object.freeze({ weapon: 'dagger', style: 'The dagger, and whatever else is to hand', trades: true, styleLines: Object.freeze(['A dagger! Everyone is very disappointed when they see it. Then I am inside the swing where their long beautiful weapon does nothing at all, and we have a completely different conversation.', 'The trick is never to be where the fight is. People think that is cowardice. People are usually dead.']), tradeLine: 'Your sword for my dagger? You are getting the worse end of that and I am delighted. Yes. Absolutely yes. Before you think about it.' }),
   jerry: Object.freeze({ weapon: 'bow', style: 'The bow', trades: false, styleLines: Object.freeze(['I put an arrow in it at thirty paces and then I do not have to think about it any more. That is the entire appeal.', 'In woodland I am a man holding a stick. Do not let anyone tell you an archer is worth anything in a wood.']), tradeLine: 'Trade the bow for a sword. So that I can be close to the fighting. No.' }),
@@ -124,15 +124,17 @@ export const MERCENARY_ROSTER = Object.freeze([
 ]);
 
 /**
- * Crom the Barbarian: the man the game has always put you inside, named and written down at last
+ * Cromb the Barbarian: the man the game has always put you inside, named and written down at last
  * so that he can stand on the road as one of the ten when you choose to be somebody else. He is
  * deliberately not in MERCENARY_ROSTER — the world only ever places the ten you did not choose,
  * and `companyFor` in src/player-characters.js is what puts him into the slot you vacated. His
- * colours are the traveler's own, so a game played as Crom looks exactly as it always has.
+ * colours are the traveler's own, so a game played as Cromb looks exactly as it always has.
+ * He is a blank slate on purpose (docs/design-answers.md): no written past, because the
+ * player's choices are his character. The lines below are the little he will say of himself.
  */
-export const CROM = merc('crom', 'Crom the Barbarian', 'the cold country north of the Lotharn', 0, 420, 1.3,
+export const CROMB = merc('cromb', 'Cromb the Barbarian', 'the cold country north of the Lotharn', 0, 420, 1.3,
   { tunic: 0x806042, hair: 0x806044, skin: 0xd7ad7e, build: 'broad', headgear: 'bare', hairStyle: 'lank', facialHair: 'stubble', garment: 'short-cloak', marks: [] },
-  ['Crom. From the cold country north of the Lotharn, where they pay a man in salt and there is never enough of it. I came for the coin and I brought a sword, and that is the whole of what I brought.',
+  ['Cromb. From the cold country north of the Lotharn, where they pay a man in salt and there is never enough of it. I came for the coin and I brought a sword, and that is the whole of what I brought.',
     'I have no letters, no trade and no opinion about this war. Point me at the border. I will be standing on it before most of them have finished arguing about it.']);
 
 /** Everyone who came ashore with somebody else, and is still talking to them about it. */
@@ -141,11 +143,13 @@ export const MERCENARY_GROUPS = Object.freeze({
   princes: Object.freeze(['merc-matt', 'merc-altun']),
 });
 /**
- * Any of the eleven by id. Ten of them are the roster; the eleventh is Crom, who stands on
+ * Any of the eleven by id. Ten of them are the roster; the eleventh is Cromb, who stands on
  * the road whenever he is not the one being played (see `companyFor`). Everything that asks
  * a hired sword what he carries or what he would say has to be able to ask him.
  */
-export const mercenaryById = id => (id === CROM.id ? CROM : MERCENARY_ROSTER.find(entry => entry.id === id));
+/** What Cromb's id was for one morning, before the b. Saves written then still name him. */
+export const CROMB_OLD_ID = 'merc-crom';
+export const mercenaryById = id => ((id === CROMB.id || id === CROMB_OLD_ID) ? CROMB : MERCENARY_ROSTER.find(entry => entry.id === id));
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /** Cumulative lengths along a polyline road. */
@@ -252,6 +256,58 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, seed
   }
 
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
+}
+
+/**
+ * How the harbourmaster describes the man who came up the pier with you. He is a slot and not
+ * a name — Chris Gotwood for ten of the eleven, Cromb when you are Chris — so she must never
+ * be made to send Chris to go and talk to Gotwood. She has met these two and has a word for
+ * each of them; anybody who ends up in the slot later gets the plain one.
+ */
+const LANDING_MATE_NOTE = Object.freeze({
+  'merc-gotwood': 'plain cloth and pleased with himself',
+  'merc-cromb': 'plain cloth and not much to say for himself',
+});
+export function landingMateNote(mate) {
+  if (!mate?.name) return 'plain cloth and a sword, and he came off your boat';
+  return `${LANDING_MATE_NOTE[mate.id] ?? 'plain cloth and a sword'}, ${mate.name}`;
+}
+
+/**
+ * Where the man who came off your boat walks while he is walking you up the pier: at your
+ * shoulder, a little behind, on whichever side there is ground for him. Tidehaven's pier is
+ * three metres wide, so the offsets start tight and fall in directly behind; a caller that
+ * finds none of them standable leaves him where he was rather than put him in the water.
+ *
+ * `lateral` is to the traveler's right and `back` is behind him, in metres.
+ */
+export const ESCORT_OFFSETS = Object.freeze([
+  Object.freeze({ lateral: .95, back: 1.25 }), Object.freeze({ lateral: -.95, back: 1.25 }),
+  Object.freeze({ lateral: .65, back: 1.75 }), Object.freeze({ lateral: -.65, back: 1.75 }),
+  Object.freeze({ lateral: 0, back: 1.6 }), Object.freeze({ lateral: 0, back: 1.05 }),
+  // The last resort is the traveler's own feet, which are standable by definition because he is
+  // standing on them. On a pier corner where nothing else is ground, a man briefly inside you is
+  // a worse picture than a man beside you and a much better one than a man in the water; the
+  // npc body separation in src/bodies.js pushes him clear on the next frame.
+  Object.freeze({ lateral: 0, back: 0 }),
+]);
+
+/**
+ * The first of ESCORT_OFFSETS that `standable(x, z)` accepts, in world metres, for a traveler
+ * at `at` facing `at.yaw` — forward is (sin, cos), the way every actor's rotation.y reads.
+ * Null when there is nowhere for him, which the caller must treat as "do not move him".
+ *
+ * Pure, so the pier can be proved walkable from every spot the traveler can stand on it
+ * without starting a renderer.
+ */
+export function escortSpotFor(at, standable = () => true) {
+  if (!at || !Number.isFinite(at.x) || !Number.isFinite(at.z)) return null;
+  const yaw = Number.isFinite(at.yaw) ? at.yaw : 0, sin = Math.sin(yaw), cos = Math.cos(yaw);
+  for (const { lateral, back } of ESCORT_OFFSETS) {
+    const x = at.x - sin * back + cos * lateral, z = at.z - cos * back - sin * lateral;
+    if (standable(x, z)) return { x, z };
+  }
+  return null;
 }
 
 /** The inventory weapon a held kit corresponds to; bows, spears and staves are not held weapons. */

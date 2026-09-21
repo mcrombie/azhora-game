@@ -18,7 +18,10 @@ test('the first person the traveler speaks to is Mara, the harbourmaster at the 
   assert.match(main, /if\(npc\.id===HARBOURMASTER\)\{maraOnTheLanding\(npc\);return;\}/, 'speaking to her is her own scene');
   assert.match(main, /questStage===1\)return\{\.\.\.npcById\.get\(HARBOURMASTER\)/, 'the arrow on the ground points at her');
   assert.match(main, /ids:\{harbourmaster:HARBOURMASTER,/, 'and so does the gold over her head (src/quest-markers.js)');
-  assert.match(main, /'SPEAK TO MARA AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
+  // The toast the moment the boat ties up. It moved into the arrival sequence's data when the
+  // cutscene was built (LANDED.toast); main.js shows whatever that says, and shows nothing else.
+  assert.match(file('src/opening-sequence.js'), /'SPEAK TO MARA AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
+  assert.match(main, /toast\(landed\.toast\.title,landed\.toast\.kicker\)/, 'which main.js puts on the screen at the landing');
   assert.doesNotMatch(main, /SPEAK TO CHRIS ON THE LANDING/);
   // The letter is hers to give, and the quest only moves when she gives it.
   const hers = main.slice(main.indexOf('function maraOnTheLanding'), main.indexOf('function chrisOnTheLanding'));

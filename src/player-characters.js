@@ -1,9 +1,9 @@
-import { MERCENARY_ROSTER, CROM } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROMB, CROMB_OLD_ID } from './mercenaries.js';
 
 /**
  * Who you are. The company is always the same eleven people called to the Moros muster; the
  * only question the opening screen asks is which of them you walk as. Choose Chris Gotwood
- * and Crom the Barbarian takes the slot you left — his look, his arrival, his lines — and
+ * and Cromb the Barbarian takes the slot you left — his look, his arrival, his lines — and
  * you land in Chris's cloth with Chris's sword and the Ambroni Chris already speaks.
  *
  * Pure data and pure functions: no DOM, no three, no skills module. The experience below is
@@ -12,12 +12,20 @@ import { MERCENARY_ROSTER, CROM } from './mercenaries.js';
  * level does not. Where a number is meant to read as a level it says so beside it.
  *
  * These are placeholders the user will rewrite from the character profiles. What is settled
- * here is the shape: eleven entries, in the user's order, Crom first.
+ * here is the shape: eleven entries, in the user's order, Cromb first.
  */
 export const PLAYER_CHARACTERS_VERSION = 1;
 
-/** The traveler as he has always been: the default, and the only one who starts with nothing. */
-export const DEFAULT_PLAYER = 'crom';
+/**
+ * The traveler as he has always been: the default, the only one who starts with nothing, and
+ * a blank slate on purpose (docs/design-answers.md). The other ten have arcs; he has yours.
+ */
+export const DEFAULT_PLAYER = 'cromb';
+/**
+ * Ids that are not canonical but name somebody real. `crom` was Cromb for one morning before
+ * the b; saves written then, and anything else that kept the old spelling, still load.
+ */
+export const PLAYER_ALIASES = Object.freeze({ crom: 'cromb', [CROMB_OLD_ID]: 'cromb', [CROMB.id]: 'cromb' });
 
 const sword = Object.freeze([Object.freeze({ id: 'simple-sword', quantity: 1 })]);
 const swordAnd = id => Object.freeze([...sword, Object.freeze({ id, quantity: 1 })]);
@@ -28,14 +36,13 @@ const playable = (id, name, title, roster, blurb, weapon, inventory, skills, ext
 
 /**
  * The eleven, in the order the user gave them. `roster` is the hired sword whose place in the
- * world this character is; Crom has none, because when you are Crom the ten on the road are
+ * world this character is; Cromb has none, because when you are Cromb the ten on the road are
  * already the ten. `skills` is experience at the moment you step ashore, by skill id; ids that
- * this build has not registered yet (swimming, linguist, cartography belong to other hands)
- * are simply not learned, which is what `createSkills` does with them anyway.
+ * every id here is registered in src/skills.js, so every number below is handed over whole.
  */
 export const PLAYABLE = Object.freeze([
-  playable('crom', 'Crom the Barbarian', 'One sword and no explanations', null,
-    'Came for the coin, brought a sword, and brought nothing else. Everything you learn on this road, you learn on this road.',
+  playable('cromb', 'Cromb the Barbarian', 'No past, and no explanations', null,
+    'Nothing is written about him and nothing is going to be. Everything he turns out to have been, you do on this road.',
     'simple-sword', sword, {}),
   playable('gotwood', 'Chris Gotwood', 'The one who can ask directions', 'merc-gotwood',
     'Sailed with the company’s papers in his coat and enough Ambroni to be understood at a gate. The letter is yours from the first step.',
@@ -77,30 +84,39 @@ export const PLAYABLE = Object.freeze([
     'simple-sword', sword, { cartography: 200 }),
 ]);
 
-/** The order the opening screen shows them in, which is the user's order, Crom first. */
+/** The order the opening screen shows them in, which is the user's order, Cromb first. */
 export const PLAYABLE_IDS = Object.freeze(PLAYABLE.map(entry => entry.id));
+
+/** The canonical id for anything that names one of the eleven, or null. */
+export function canonicalPlayerId(id) {
+  if (typeof id !== 'string') return null;
+  const named = PLAYER_ALIASES[id] ?? id;
+  return PLAYABLE.some(entry => entry.id === named) ? named : null;
+}
 
 /** One of the eleven by id, or null. Anything that is not a string is not a character. */
 export function playableCharacter(id) {
-  return PLAYABLE.find(entry => entry.id === id) ?? null;
+  const named = canonicalPlayerId(id);
+  return named ? PLAYABLE.find(entry => entry.id === named) : null;
 }
 
-/** Whether `id` names one of the eleven. */
-export const isPlayableId = id => PLAYABLE.some(entry => entry.id === id);
+/** Whether `id` names one of the eleven, by its own id or by an old one. */
+export const isPlayableId = id => canonicalPlayerId(id) !== null;
 
 /**
  * A saved character. A save written before anyone could choose has no field at all, and that
- * save is Crom, because Crom is who it was played as.
+ * save is Cromb, because Cromb is who it was played as. A save from the morning he was spelled
+ * `crom` names him that way, and is him.
  */
 export function validatePlayerCharacter(id, { allowMissing = true } = {}) {
   if (id === undefined) return allowMissing;
   return typeof id === 'string' && isPlayableId(id);
 }
-export const savedPlayerCharacter = id => (isPlayableId(id) ? id : DEFAULT_PLAYER);
+export const savedPlayerCharacter = id => canonicalPlayerId(id) ?? DEFAULT_PLAYER;
 
 /**
  * The ten hired swords the world places when you are `playerId`: the roster with the one you
- * chose taken out of it and Crom put in his place, keeping his own look, arrival and lines.
+ * chose taken out of it and Cromb put in his place, keeping his own look, arrival and lines.
  * The letter of introduction stays with the slot rather than the man, because it came off the
  * boat, not out of anybody's history.
  *
@@ -109,14 +125,14 @@ export const savedPlayerCharacter = id => (isPlayableId(id) ? id : DEFAULT_PLAYE
 export function companyFor(playerId = DEFAULT_PLAYER) {
   const chosen = playableCharacter(playerId);
   if (!chosen) throw new TypeError(`No such playable character: ${playerId}`);
-  // Playing as Crom leaves the roster exactly as it has always been.
+  // Playing as Cromb leaves the roster exactly as it has always been.
   if (chosen.roster === null) return MERCENARY_ROSTER;
   return Object.freeze(MERCENARY_ROSTER.map(entry => (entry.id === chosen.roster
-    ? Object.freeze({ ...CROM, ...(entry.carriesLetter ? { carriesLetter: true } : {}) })
+    ? Object.freeze({ ...CROMB, ...(entry.carriesLetter ? { carriesLetter: true } : {}) })
     : entry)));
 }
 
-/** The hired sword whose look, weapon and place you take; null when you are Crom. */
+/** The hired sword whose look, weapon and place you take; null when you are Cromb. */
 export function rosterEntryFor(playerId = DEFAULT_PLAYER) {
   const chosen = playableCharacter(playerId);
   if (!chosen || chosen.roster === null) return null;
@@ -125,7 +141,7 @@ export function rosterEntryFor(playerId = DEFAULT_PLAYER) {
 
 /**
  * What the player's own model is built from: the chosen character's look with his weapon and
- * whether he trades, in the shape `createCharacter({ role: 'traveler', look })` wants. Crom
+ * whether he trades, in the shape `createCharacter({ role: 'traveler', look })` wants. Cromb
  * has no look, and gets none: the traveler's own model is his, unchanged.
  */
 export function playerLook(playerId = DEFAULT_PLAYER) {
@@ -135,7 +151,7 @@ export function playerLook(playerId = DEFAULT_PLAYER) {
 
 /**
  * What to call him in one word, on a tile or in a caption: the first word of his name, which
- * is how each of them introduces himself anyway — Crom, Chris, Ed, Jerry, Christin, Ciarán,
+ * is how each of them introduces himself anyway — Cromb, Chris, Ed, Jerry, Christin, Ciarán,
  * Lakota, Eliana, Matt, Al, Mus.
  */
 export const shortName = entry => String(entry?.name ?? '').split(/[ ,]/)[0];
@@ -148,4 +164,13 @@ export function startingSkills(playerId = DEFAULT_PLAYER) {
 /** What is in the satchel at the first step ashore. */
 export function startingInventory(playerId = DEFAULT_PLAYER) {
   return (playableCharacter(playerId)?.inventory ?? []).map(item => ({ ...item }));
+}
+
+/**
+ * The tongues a character already has when he lands, by language id, as proficiency out of a
+ * hundred (src/linguist.js). Only Chris has any: he interprets for the company, so he begins
+ * the road able to hold a conversation in the Empire's own speech.
+ */
+export function startingLanguages(playerId = DEFAULT_PLAYER) {
+  return { ...(playableCharacter(playerId)?.startingLanguages ?? {}) };
 }

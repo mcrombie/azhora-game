@@ -133,7 +133,9 @@ test('Chris interprets what he knows, while he is beside you and still walking',
   assert.equal(linguist.interpreterNearby(chris, { interpreter: chris, languageId: 'drentish' }), false, 'and he does not interpret himself');
 });
 
-test('Chris Gotwood himself is the one person the traveler can always follow', () => {
+test('the company are the people the traveler can always follow, and Chris is only one of them', () => {
+  // The whole of the hired eleven share the language of the contract (docs/design-answers.md);
+  // tests/player-characters.test.js walks all of them for every traveler the game can be.
   const linguist = createLinguist();
   const chris = { id: INTERPRETER.npcId, name: 'Chris Gotwood', origin: 'Feradom' };
   const speech = linguist.speech(chris, 'Drent');

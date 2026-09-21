@@ -2,7 +2,7 @@ import { PLAYABLE, DEFAULT_PLAYER, isPlayableId, shortName } from './player-char
 import { SKILLS, skillLevel } from './skills.js';
 
 /**
- * The line of eleven at the opening: who you are, chosen before you step ashore. Crom stands
+ * The line of eleven at the opening: who you are, chosen before you step ashore. Cromb stands
  * first and selected, so clicking straight through plays exactly the game that was there
  * before anybody could choose.
  *
@@ -13,21 +13,17 @@ import { SKILLS, skillLevel } from './skills.js';
  */
 
 /**
- * Names for the skills other hands are still adding, which src/skills.js does not know yet.
- * When a skill is registered its own name wins and its line here can go.
+ * What a character already knows when he lands, for the line under his name. Every id the table
+ * names is registered in src/skills.js, so the skill's own name is always the one shown; an id
+ * this build does not know falls back to itself rather than disappearing from the tile.
  */
-const PENDING_SKILLS = Object.freeze({ swimming: 'Swimming', linguist: 'Languages', cartography: 'Cartography' });
-
-/** What a character already knows when he lands, for the line under his name. */
 export function describeStartingSkills(entry) {
-  const parts = Object.entries(entry?.skills ?? {}).map(([id, xp]) => (SKILLS[id]
-    ? `${SKILLS[id].name} ${skillLevel(id, xp).level}`
-    : PENDING_SKILLS[id] ?? id));
+  const parts = Object.entries(entry?.skills ?? {}).map(([id, xp]) => (SKILLS[id] ? `${SKILLS[id].name} ${skillLevel(id, xp).level}` : id));
   return parts.length ? parts.join(' · ') : 'Nothing but the sword';
 }
 
 const hex = value => `#${(Number(value) >>> 0).toString(16).padStart(6, '0')}`;
-/** Crom is the traveler, who has no roster look; these are the colours his model is built from. */
+/** Cromb is the traveler, who has no roster look; these are the colours his model is built from. */
 const TRAVELER_COLOURS = Object.freeze({ tunic: 0x806042, skin: 0xd7ad7e, hair: 0x806044 });
 
 /** The three colours a portrait is painted in, taken from the model the character is built as. */
@@ -39,7 +35,7 @@ export function tileColours(look) {
 /**
  * @param root      the element the eleven tiles go in
  * @param detail    an element to write the chosen one's name, line and skills into
- * @param lookFor   (id) => the roster look his model is built from, or null for Crom
+ * @param lookFor   (id) => the roster look his model is built from, or null for Cromb
  * @param onChange  called with the chosen id whenever the choice moves
  */
 export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER } = {}) {
