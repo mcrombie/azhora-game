@@ -59,7 +59,7 @@ import { izolDeckHeight } from './izol-world.js';
 import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, borderEncounter, borderConversation } from './border-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
@@ -87,7 +87,8 @@ import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_P
 import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
 import { createTeachers, TEACHERS } from './teachers.js';
-import { BOW, JERRYS_BOW } from './archery.js';
+import { BOW, JERRYS_BOW, flightOf } from './archery.js';
+import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock, tierScale } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
@@ -617,15 +618,36 @@ function init() {
     // authors four of its own, so handing it everybody would have made the arc unfinishable with
     // three companions. If there is not room for all of them, the rest hold.
     const room=Math.max(0,MAX_ALLIES-(config.allies?.length??0));
-    return fileOrder.slice(0,room).map((id,index)=>{
+    /** Where the n-th man of the file stands, whoever he is: two ranks wide, behind the centre. */
+    const place=index=>({[axis]:config.center[axis]-sign*(5+(index%5)*3),[across]:config.center[across]+(index<5?-1:1)*2.5});
+    const file=fileOrder.slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id))return null;
-      const back=5+(index%5)*3,side=(index<5?-1:1)*2.5;
       // Jerry does not close: an ally whose craft is the bow stands off and looses (src/archery.js).
       return {id,name:merc.name,kind:arms.weapon==='bows'?'archer':'legionary',level:arms.level,toughness:arms.toughness,
-        [axis]:config.center[axis]-sign*back,[across]:config.center[across]+side,
+        ...place(index),
         model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};
-    }).filter(Boolean);}
+    }).filter(Boolean);
+    /**
+     * **The army fills your file** (src/file-fill.js, the user's ruling of 2026-09-21). Only at
+     * the army's own battles, only when he is short, and only ever up to the room the fight has
+     * left - so company plus the side's own men plus the fill can never pass `MAX_ALLIES`, and a
+     * traveler with six friends is handed nobody and fights today's battle to the digit.
+     *
+     * They stand in the file because the file is the thing being filled, and they carry no level
+     * and no toughness, so they are the plain soldier the ally kind already is.
+     */
+    if(!isArmyBattle(config.id))return file;
+    const fill=fillFor({side:armySide(),walking:file.length,room:room-file.length});
+    return [...file,...fill.map((man,index)=>({...man,...place(file.length+index)}))];}
+  /** Whichever army he signed with: the one that would be assigning him men (src/border-chapter.js). */
+  const armySide=()=>border.view().side??campaign.view().side??'empire';
+  /**
+   * What his commander says about the men he is being assigned, in that man's own voice, and
+   * **only when it is actually happening**. The number is the true one: the same `fillCount` the
+   * fight itself will use, asked of the same file.
+   */
+  const fillSaid=()=>fillLines(armySide(),fillCount({walking:fileOrder.filter(id=>!fallen.has(id)).length}));
   /**
    * What killed him, in the plainest words the fight has. The Marshal asks what happened and the
    * answer is built from this rather than invented - "At the Lauvel. Wolves, at night."
@@ -3533,10 +3555,10 @@ function init() {
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
     if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
-    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct}))return;
+    if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid()}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
-    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1}))return;
+    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1,fill:fillSaid()}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
       musterCount:musteredInCamp()+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
@@ -3923,12 +3945,29 @@ function init() {
    * thing the world remembers for you - so nothing here is saved.
    */
   const spentArrows=[];
+  /**
+   * **A spent shaft has to be findable from where the player's eye actually is**, which is seven
+   * to nine metres back and thirty degrees up. The first draft was a 12 mm stick 0.62 m long and
+   * it simply was not there: against grass at that distance it is under two pixels across.
+   *
+   * It gets help rather than a prompt (the coordinator's ruling): the shaft is thicker and longer
+   * than a real arrow, and it carries **pale fletching** - three vanes of the same bleached cream
+   * the game already uses for a bowstring, which is the one colour nothing in Drent's grass has.
+   * A man who has loosed six arrows can see where four of them are from where he is standing.
+   */
   const arrowShaft=(()=>{let shared=null;return()=>{
     if(!shared){
       shared=new THREE.Group();
       const wood=new THREE.MeshLambertMaterial({color:0x6f5236}),iron=new THREE.MeshLambertMaterial({color:0x9a9d96});
-      const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.62,5),wood);shaft.position.y=.31;shared.add(shaft);
-      const head=new THREE.Mesh(new THREE.ConeGeometry(.02,.07,5),iron);head.position.y=.02;head.rotation.x=Math.PI;shared.add(head);
+      const feather=new THREE.MeshLambertMaterial({color:0xf0e6cc,side:THREE.DoubleSide});
+      const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.88,5),wood);shaft.position.y=.44;shared.add(shaft);
+      const head=new THREE.Mesh(new THREE.ConeGeometry(.032,.1,5),iron);head.position.y=.03;head.rotation.x=Math.PI;shared.add(head);
+      // Three vanes at the nock, where they stand clear of the grass and catch the light.
+      for(const turn of [0,2.094,4.189]){
+        const vane=new THREE.Mesh(new THREE.PlaneGeometry(.075,.24),feather);
+        vane.position.set(Math.sin(turn)*.034,.76,Math.cos(turn)*.034);
+        vane.rotation.y=turn;shared.add(vane);
+      }
     }
     return shared.clone();};})();
   function dropArrow(x,z){
@@ -5111,6 +5150,20 @@ function init() {
             archerAlly:jerry?{id:jerry.id,action:jerry.action,progress:+(jerry.progress??0).toFixed(2),
               apart:+Math.hypot(jerry.x-player.group.position.x,jerry.z-player.group.position.z).toFixed(1),
               off:+Math.min(...combat.state.enemies.filter(one=>one.active).map(one=>Math.hypot(one.x-jerry.x,one.z-jerry.z))).toFixed(1)}:null};})(),
+        /**
+         * The file, if a fight is on: who is actually standing with him, told apart into the
+         * friends who came and the soldiers the army assigned (src/file-fill.js). Numbers rather
+         * than intentions - "six were assigned" beside four men on the field is the bug the
+         * hunter warned about, and this is what would say so.
+         */
+        line:(()=>{if(combat.state.phase!=='active')return null;
+          const ours=combat.state.allies;
+          const fill=ours.filter(one=>one.id.startsWith('file-fill-'));
+          return{fight:combat.state.encounterId,army:isArmyBattle(combat.state.encounterId),side:armySide(),
+            allies:ours.length,companions:fileOrder.filter(id=>!fallen.has(id)).length,
+            assigned:fill.length,wanted:fillCount({walking:fileOrder.filter(id=>!fallen.has(id)).length}),floor:FILE_FLOOR,
+            drawn:fill.filter(one=>one.hp>0).length,
+            at:fill.map(one=>[+one.x.toFixed(1),+one.z.toFixed(1)])};})(),
         // The bout, if one is on: who, in what family, how high it pays, what he can take and
         // what is left of it, and whether his road body has actually been taken off the ground.
         // Numbers, not intentions - a flag saying "sparring" would not have caught a twin.
@@ -5682,6 +5735,43 @@ function init() {
          * down the clearing. Everything is laid afresh (`combat.revive()`, `clearArrows()`)
          * because the runner composes the first view twice.
          */
+        /**
+         * **A lone traveler going in with his file** (src/file-fill.js). Nobody walks with him,
+         * so his commander has assigned him six ordinary soldiers of the side he signed with, and
+         * the shot is of the file they stand in. `filled-file-coalition` is the other army's.
+         */
+        if(view==='filled-file'||view==='filled-file-coalition'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          const side=view==='filled-file-coalition'?'coalition':'empire';
+          questStage=10;combat.revive();sparring=null;returnLoan();clearArrows();player.setArmed(true);
+          companionOffTheClock=true;
+          companions.restore({...createCompanions().snapshot(),walking:[]});
+          rebuildCompany();settleMercenaries();
+          border.restore({...createBorderChapter().snapshot(),started:true,ordered:true,entered:true,side,ready:true,marched:true,revision:6});
+          const at=BORDER_ARENA.checkpoint;
+          player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);
+          player.group.rotation.y=Math.PI;grounded=true;verticalSpeed=0;
+          combat.startEncounter(borderEncounter(side,borderAllies(side)),{atCheckpoint:true});
+          // A few frames to bring the fight to `active` and let the file take its places.
+          for(let step=0;step<12;step++){combat.update(1/60);combatClock+=1/60;
+            combatView.update(1/60,combatClock,combat.state,player.group.position,true);}
+          settlePose({armed:true});
+          /**
+           * **Aimed across the file, not down it.** The first draft aimed at the traveler and let
+           * `bestOf` choose a bearing; it chose one looking at the enemy, and put the six men it
+           * was a picture of behind the camera. A file is a line, and a line reads side-on: the
+           * shot looks across the retreat axis, at the middle of everybody who is standing on
+           * the traveler's side of the field.
+           */
+          const me=player.group.position;
+          const mine=[{x:me.x,z:me.z},...combat.state.allies.map(one=>({x:one.x,z:one.z}))];
+          const heart={x:mine.reduce((s,o)=>s+o.x,0)/mine.length,z:mine.reduce((s,o)=>s+o.z,0)/mine.length};
+          reviewTarget=new THREE.Vector3(heart.x,world.heightAt(heart.x,heart.z)+1.2,heart.z);
+          const across=BORDER_ARENA.retreatAxis==='x'?0:Math.PI/2;
+          const shot=bestOf(reviewTarget,17,[across,across+Math.PI,across+.5,across-.5+Math.PI]);
+          yaw=shot.yaw;pitch=.3;distance=targetDistance=shot.distance;reviewFrozen=true;
+          $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
+          return;
+        }
         if(view==='bow-drawn'||view==='bow-jerry'||view==='bow-spent'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
           questStage=10;combat.revive();sparring=null;returnLoan();clearArrows();
           companionOffTheClock=true;
@@ -5700,9 +5790,41 @@ function init() {
           weapons.setCondition(BOW.id,WEAPON_TYPES[BOW.id].maxDurability);weapons.equip(BOW.id);
           if(inventory.count(BOW.arrow)<12)inventory.add(BOW.arrow,12-inventory.count(BOW.arrow));
           inventory.refresh();refreshQuiver();player.setArmed(true);
-          const at=greenwayEncounter.center,me={x:at.x+(jerry?7:2),z:at.z+(jerry?9:14)};
+          /**
+           * **`bow-spent` stands somewhere else, and its bearing is authored by hand.** The first
+           * draft put it on the Greenway with `bestOf`, which reads colliders - and **foliage is
+           * not a collider** (docs/builder-handover.md), so nothing measurable saw the canopy the
+           * camera ended up inside: a green polygon over the top half of the frame, two pairs of
+           * boots under it and no arrow anywhere. Nothing will find that automatically. This
+           * stands him on the open field the traveler lands on and looks down it from behind, and
+           * the bearing below is a number rather than a search.
+           */
+          const spent=view==='bow-spent';
+          /**
+           * **`bow-spent` finds its own open ground, by asking the arrow's own question.**
+           * `bestOf` is no use here twice over: it searches for a clear *camera*, and it reads
+           * colliders - and **foliage is not a collider** (docs/builder-handover.md), which is how
+           * the first draft ended up inside a canopy with a green polygon over half the frame.
+           * The second draft stood on the strand and every one of its nine arrows stopped inside
+           * a metre, because there are rocks there: `onTheGround: 6` with all six under his boots.
+           *
+           * So the view sweeps bearings with `flightOf` - the same arithmetic the arrow flies by,
+           * against the same colliders - and takes the first that carries a full draw the whole
+           * way. Measured, not guessed, and it will find new ground by itself if the world moves.
+           */
+          const clearShot=()=>{
+            for(const from of [world.training,{x:6,z:78},greenwayEncounter.center])
+              for(let turn=0;turn<24;turn++){
+                const bearing=turn/24*Math.PI*2;
+                if(flightOf({x:from.x,z:from.z,yaw:bearing,range:BOW.range,world}).stopped==='spent')return {from,bearing};
+              }
+            return {from:world.training,bearing:0};
+          };
+          const open=spent?clearShot():null;
+          const at=spent?open.from:greenwayEncounter.center;
+          const me=spent?{x:open.from.x,z:open.from.z}:{x:at.x+(jerry?7:2),z:at.z+(jerry?9:14)};
           player.group.position.set(me.x,world.heightAt(me.x,me.z),me.z);
-          const face=Math.atan2(at.x-me.x,at.z-me.z);
+          const face=spent?open.bearing:Math.atan2(at.x-me.x,at.z-me.z);
           player.group.rotation.y=face;grounded=true;verticalSpeed=0;
           /**
            * **Not the Greenway.** That raid is in `TEACHING_FIGHTS`, which is exactly the set a
@@ -5717,14 +5839,19 @@ function init() {
             enemies:[{id:'goblin-mark',x:mark.x,z:mark.z,hp:400,entry:0}]});
           // A fight is only `active` a few frames in, and a draw only fills while one is on.
           for(let step=0;step<10;step++)combat.update(1/60);
-          if(view==='bow-spent'){
-            // Loose into the wood and let the shafts land, then let go of nothing: the picture is
-            // of what is lying on the ground afterwards, which is about two arrows in three.
-            for(let shot=0;shot<6;shot++){
-              for(let step=0;step<80;step++){combat.draw(true,face);combat.update(1/60);}
-              combat.draw(false,face);
-              for(let step=0;step<90&&combat.state.arrows.length;step++)combat.update(1/60);
+          if(spent){
+            // Nine shafts down the open field, at slightly different bearings so they do not land
+            // on top of one another, and every one let fly and followed home. Six come back, which
+            // is the two-in-three rule, and they are what the picture is of.
+            for(let shot=0;shot<9;shot++){
+              const aim=face+(shot-4)*.045;
+              for(let step=0;step<80;step++){combat.draw(true,aim);combat.update(1/60);}
+              combat.draw(false,aim);
+              for(let step=0;step<120&&combat.state.arrows.length;step++)combat.update(1/60);
               handleCombatEvents();
+              // A quiver of twelve does not stretch to nine shots and a tenth: keep it filled, so
+              // the shot is of the shafts and not of a man who has run out.
+              if(inventory.count(BOW.arrow)<3)inventory.add(BOW.arrow,9);
             }
           } else {
             // Held, through the same door the player uses. If the rules say it is not drawing,
@@ -5752,10 +5879,37 @@ function init() {
           }
           settlePose({armed:true,draw:combat.drawn});
           const him=jerry?combat.state.allies.find(one=>one.id==='merc-jerry'):null;
-          const focus=him?{x:him.x,z:him.z}:{x:me.x,z:me.z};
-          reviewTarget=new THREE.Vector3(focus.x,world.heightAt(focus.x,focus.z)+1.3,focus.z);
-          const shot=bestOf(reviewTarget,view==='bow-spent'?9:5.4,[face+1.4,face-1.4,face+1.9,face-1.9,face+2.5]);
-          yaw=shot.yaw;pitch=view==='bow-spent'?.42:.08;distance=targetDistance=shot.distance;reviewFrozen=true;
+          if(spent){
+            /**
+             * **Stand where the player would be standing.** An arrow lands thirty-odd metres out,
+             * so a shot from where it was loosed is a shot of empty grass with six specks at the
+             * far end of it - which is what the first draft was, and it answered the wrong
+             * question. A player finds his arrows by *walking up to them*, so the traveler walks
+             * up to them: to the middle of where they fell, a few paces short, with the camera at
+             * the eight metres and third of a radian the game's own camera uses. That is the
+             * whole question - a shaft he cannot see from there is a shaft he never picks up.
+             *
+             * And the bearing is authored, not searched: `bestOf` reads colliders, **foliage is
+             * not a collider** (docs/builder-handover.md), and the first draft of this view ended
+             * up inside a canopy with a green polygon over half the frame.
+             */
+            const mid=spentArrows.length
+              ?{x:spentArrows.reduce((sum,one)=>sum+one.x,0)/spentArrows.length,z:spentArrows.reduce((sum,one)=>sum+one.z,0)/spentArrows.length}
+              :{x:at.x,z:at.z};
+            const stand={x:mid.x-Math.sin(face)*5,z:mid.z-Math.cos(face)*5};
+            player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+            player.group.rotation.y=face;
+            // Aimed between the two of them, so the man and what he is walking towards are both
+            // in it: aimed at the shafts alone he stands at the very bottom edge of the frame.
+            const between={x:(stand.x+mid.x)/2,z:(stand.z+mid.z)/2};
+            reviewTarget=new THREE.Vector3(between.x,world.heightAt(between.x,between.z)+.9,between.z);
+            yaw=face-Math.PI;pitch=.3;distance=targetDistance=9;reviewFrozen=true;
+          } else {
+            const focus=him?{x:him.x,z:him.z}:{x:me.x,z:me.z};
+            reviewTarget=new THREE.Vector3(focus.x,world.heightAt(focus.x,focus.z)+1.3,focus.z);
+            const shot=bestOf(reviewTarget,5.4,[face+1.4,face-1.4,face+1.9,face-1.9,face+2.5]);
+            yaw=shot.yaw;pitch=.08;distance=targetDistance=shot.distance;reviewFrozen=true;
+          }
           player.group.visible=!jerry;
           $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
           return;
