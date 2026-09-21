@@ -3165,6 +3165,18 @@ function init() {
       perf:()=>{let objects=0,meshes=0;scene.traverse(o=>{objects++;if(o.isMesh)meshes++;});const info=renderer.info;
         return{calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,programs:info.programs?.length??0,objects,meshes,
           npcs:npcData.length,visibleNpcs:npcData.filter(n=>n.actor.group.visible).length,colliders:world.colliders.length,shadows:renderer.shadowMap.enabled,pixelRatio:renderer.getPixelRatio(),size:renderer.getSize(new THREE.Vector2()).toArray()};},
+      // What the last frame drew, and who was in it: the figures drawn, the ones near enough to cast their own
+      // shadow (thirty metres, below), and how many meshes that is either way (main.cjs --draw-review).
+      draws:()=>{const p=player.group.position,info=renderer.info,drawn=npcData.filter(n=>!n.hidden&&!n.fallen&&n.actor.group.visible);
+        const parts=n=>{let meshes=0,casters=0;n.actor.group.traverse(o=>{if(o.isMesh&&o.visible){meshes++;if(o.castShadow)casters++;}});return{meshes,casters};};
+        let visibleMeshes=0,visibleCasters=0;scene.traverse(o=>{if(!o.isMesh)return;for(let a=o;a;a=a.parent)if(!a.visible)return;visibleMeshes++;if(o.castShadow)visibleCasters++;});
+        const within=r=>drawn.filter(n=>n.actor.group.position.distanceTo(p)<r),shadowed=drawn.filter(n=>n.shadows);
+        return{calls:info.render.calls,triangles:info.render.triangles,position:[+p.x.toFixed(1),+p.z.toFixed(1)],region:world.regionAt(p.x,p.z)?.name??null,
+          figures:npcData.length,figuresDrawn:drawn.length,figuresWithin30:within(30).length,figuresWithin60:within(60).length,shadowFigures:shadowed.length,
+          figureMeshes:drawn.reduce((s,n)=>s+parts(n).meshes,0),figureCasterMeshes:shadowed.reduce((s,n)=>s+parts(n).casters,0),
+          visibleMeshes,visibleCasters,shadowMap:renderer.shadowMap.enabled,who:within(30).map(n=>n.id),talking:currentNPC?.id??null};},
+      // One of the west's animals as it is this frame, so a review shot can say what it is a picture of.
+      westAnimal:id=>{const a=westLife.snapshot().creatures.find(c=>c.id===id);return a?{...a}:null;},
       timeRender:()=>{if(renderer.__timed)return;const draw=renderer.render.bind(renderer);window.__renderTimes=[];renderer.render=(s,c)=>{const t=performance.now();draw(s,c);window.__renderTimes.push(performance.now()-t);};renderer.__timed=true;},woodland:()=>woodlandLife.state(),roadLife:()=>roadLife.state(),roadVerges:()=>roadVerges.state(),forestEcology:()=>forestEcology.state(),forestStory:()=>forestStory.state,
       regionalLife:()=>({story:regionalLife.state,world:world.regionalPlaceState(),metrics:world.regionalPlaceMetrics}),
       runRegionalLifeChecks:()=>runRegionalLifeSmoke(regionalHooks()),verifyRegionalLifeReload:expected=>verifyRegionalLifeReload(regionalHooks(),expected),
@@ -3549,6 +3561,10 @@ function init() {
         }
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
+        // The traveler stood at a place and looking a given way, with nothing staged: for a measurement that
+        // wants the place as it is rather than a composed shot. stand-at:x,z,facing[,pitch,distance] (main.cjs --draw-review).
+        if(view.startsWith('stand-at:')){const [sx,sz,facing=0,tilt=.3,back=7]=view.slice(9).split(',').map(Number);
+          if(Number.isFinite(sx)&&Number.isFinite(sz)){questStage=10;combat.finishPractice();player.setArmed(false);player.group.position.set(sx,world.heightAt(sx,sz),sz);yaw=facing;pitch=tilt;distance=targetDistance=back;player.group.rotation.y=Math.PI+yaw;}}
         if(view==='walk'){questStage=10;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
         if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}

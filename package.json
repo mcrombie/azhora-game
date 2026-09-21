@@ -22,6 +22,7 @@
     "review:forest": "node scripts/launch.cjs --smoke-test --forest-review",
     "test:developer": "node scripts/launch.cjs --smoke-test --developer-checks",
     "review:developer": "node scripts/launch.cjs --smoke-test --developer-review",
+    "review:draws": "node scripts/launch.cjs --smoke-test --draw-review",
     "map:developer": "node scripts/export-developer-atlas.mjs",
     "test:hideout": "node scripts/launch.cjs --smoke-test --hideout-checks",
     "review:hideout": "node scripts/launch.cjs --smoke-test --hideout-review",

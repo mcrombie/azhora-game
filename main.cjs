@@ -14,6 +14,7 @@ const wineryReviewOnly = smoke && process.argv.includes('--winery-review');
 const atticReviewOnly = smoke && process.argv.includes('--attic-review');
 const troupeReviewOnly = smoke && process.argv.includes('--troupe-review');
 const perfReviewOnly = smoke && process.argv.includes('--perf-review');
+const drawReviewOnly = smoke && process.argv.includes('--draw-review');
 /** Any review views, photographed in turn: --review-views=brandy,brandy-close */
 const reviewViews = smoke ? (process.argv.find(arg => arg.startsWith('--review-views=')) ?? '').slice(15).split(',').filter(Boolean) : [];
 /** `--review-clean` hides the HUD for the review pictures; `--review-jpeg` saves them as .jpg, a fraction of the size. */
@@ -123,7 +124,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || drawReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -301,6 +302,37 @@ if (ownsInstance) app.whenReady().then(async () => {
           console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
         }
         console.log(JSON.stringify({views:reviewViews,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(drawReviewOnly){
+        // What is drawn where, and who is in it: draw calls, figures and shadow casters at four places, looking four ways;
+        // then a wader put up off the Lizeem and an otter sent into the Carica, photographed with what each was doing.
+        const run=code=>win.webContents.executeJavaScript(code);
+        const settle=(view,n)=>run(`window.__AZHORA__.review(${JSON.stringify(view)});(async()=>{for(let i=0;i<${n};i++)await new Promise(requestAnimationFrame);})()`);
+        const frames=n=>run(`(async()=>{for(let i=0;i<${n};i++)await new Promise(requestAnimationFrame);})()`);
+        const spots=[['Tidehaven landing',23,29],['the Lauvel field',-677.8,297.1],['Lumber Town square',-728.57,384.36],['the Moros camp',-980.65,598.9]];
+        const results=[],shots=[];
+        for(const [name,x,z] of spots)for(const facing of [0,1.5708,3.1416,4.7124]){
+          await settle(`stand-at:${x},${z},${facing}`,60);
+          const sample=await run('window.__AZHORA__.draws()');
+          results.push({name,facing,...sample});
+          console.log(`${name.padEnd(20)} facing ${facing.toFixed(2)} · ${sample.calls} draws · ${Math.round(sample.triangles/1000)}k tris · figures drawn ${sample.figuresDrawn}/${sample.figures}, within 30 m ${sample.figuresWithin30}, casting ${sample.shadowFigures} · figure meshes ${sample.figureMeshes}, casting ${sample.figureCasterMeshes} · visible meshes ${sample.visibleMeshes}, casters ${sample.visibleCasters} · F answers ${sample.talking} · ${sample.region}`);
+        }
+        // The traveler steps inside the animal's fright distance with the camera behind him, looking at it: east of the
+        // wader (its river is to the west), west of the otter (the Carica is to its east).
+        for(const [id,label,dx,facing,waits] of [['lizeem-waders-1','west-wader-flight',9,1.5708,[30,20,20]],['carica-otters-1','west-otter-dive',-7,4.7124,[15,20,30]]]){
+          const animal=await run(`window.__AZHORA__.westAnimal(${JSON.stringify(id)})`);
+          if(!animal){console.log(`${label}: ${id} is not in the world`);continue;}
+          await settle(`stand-at:${animal.x+dx},${animal.z},${facing},.1,9`,1);
+          for(const [i,wait] of waits.entries()){
+            await frames(wait);
+            const now=await run(`window.__AZHORA__.westAnimal(${JSON.stringify(id)})`),file=`${label}-${i+1}.png`;
+            fs.writeFileSync(path.join(artifactDir,file),(await win.webContents.capturePage()).toPNG());
+            const shot={file,id,action:now.action,lift:+now.lift.toFixed(2),hidden:now.hidden,speed:+now.speed.toFixed(1),moved:+Math.hypot(now.x-animal.x,now.z-animal.z).toFixed(1)};
+            shots.push(shot);console.log(JSON.stringify(shot));
+          }
+        }
+        fs.writeFileSync(path.join(artifactDir,'draws.json'),JSON.stringify({results,shots,errors},null,2));
+        console.log(JSON.stringify({drawSamples:results.length,shots:shots.length,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(perfReviewOnly){
         // Where the time goes: at each place, frame times, the game loop's own time, render time, what is drawn, and a CPU profile.
