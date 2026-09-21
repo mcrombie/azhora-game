@@ -42,7 +42,8 @@ function chase(zone, pace, seconds, { bearing = Math.PI / 2, arm = 3 } = {}) {
     for (const animal of band()) {
       seen.add(animal.action);
       // A bird that has taken off is over the water within a wingbeat; footing is for what is standing.
-      const grounded = !animal.hidden && animal.lift < 1, standing = !animal.hidden && animal.action !== 'fly';
+      // Nor for an otter on its way into the river: the water is where it is going.
+      const grounded = !animal.hidden && animal.lift < 1, standing = !animal.hidden && animal.action !== 'fly' && animal.action !== 'dive';
       if (standing && !(canStand(animal.x, animal.z, world, zone.radius)
         && animal.x >= zone.minX && animal.x <= zone.maxX && animal.z >= zone.minZ && animal.z <= zone.maxZ)) report.offFooting++;
       if (animal.id !== first.id) continue;
@@ -100,6 +101,33 @@ test('the quick ones cannot be run down either: the hare on its legs, the wader 
   const otters = chase(bySpecies('otter')[0], RUN, 30);
   assert.ok(otters.actions.has('dive'), 'the otter went into the water');
   otters.life.dispose();
+});
+
+test('an otter that is come upon goes into the water where you can see it go, and comes up somewhere else', () => {
+  // Photographed in the renderer before this, the otter was simply not there any more between
+  // one frame and the next: its bank spot is within a stride of the water, so it dived the
+  // moment it took fright. It cannot be caught either way; now there is half a second to watch.
+  const zone = bySpecies('otter')[0], life = createWestLife(new THREE.Scene(), world);
+  const otter = () => life.snapshot().creatures.find(animal => animal.id === `${zone.id}-1`);
+  const home = otter(), player = { x: home.x - 30, z: home.z }, seen = [];
+  for (let i = 0; i < 14 * HZ; i++) {
+    const at = otter(), dx = at.x - player.x, dz = at.z - player.z, d = Math.hypot(dx, dz);
+    if (!at.hidden && d > 3) { const step = Math.min(d - 3, WALK / HZ); player.x += dx / d * step; player.z += dz / d * step; }
+    life.update(1 / HZ, player, true);
+    seen.push(otter());
+  }
+  const slip = seen.filter(now => now.action === 'dive' && !now.hidden);
+  assert.ok(slip.length / HZ >= .3 && slip.length / HZ <= .8, `it was seen going in for ${(slip.length / HZ).toFixed(2)} s`);
+  for (let i = 1; i < slip.length; i++) assert.ok(slip[i].y <= slip[i - 1].y + 1e-6, 'it only ever goes down');
+  assert.ok(slip[0].y - slip.at(-1).y > .3, `it sank ${(slip[0].y - slip.at(-1).y).toFixed(2)} m before it was gone`);
+  for (const now of slip) assert.ok(Math.abs(now.groundY - world.heightAt(now.x, now.z)) < .05, 'its ground is still whatever is under it');
+  const under = seen.filter(now => now.hidden);
+  assert.ok(under.length / HZ > 3, 'and then it is under for a while');
+  const up = seen.at(-1);
+  assert.ok(!up.hidden && up.lift === 0 && up.action !== 'dive', `fourteen seconds on it is ${up.action}, ${up.hidden ? 'still under' : 'up'}`);
+  assert.ok(Math.hypot(up.x - player.x, up.z - player.z) >= 14, 'and it came up well away from whoever sent it in');
+  assert.ok(canStand(up.x, up.z, world, zone.radius), 'on a bank it can stand on');
+  life.dispose();
 });
 
 test('sheep can be herded by somebody running, and cattle give ground instead of bolting', () => {
