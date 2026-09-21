@@ -144,12 +144,21 @@ const angleDifference = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const facing = (a, b, yaw, arc) => Math.abs(angleDifference(Math.atan2(b.x - a.x, b.z - a.z), yaw)) <= arc;
 
 /** Small, deterministic combat simulation. Rendering and tutorial text live outside it. */
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {} }) {
+/**
+ * The margins the traveler fights with. Toughness owns the first three and the weapon's own
+ * family owns the last (src/combat-skills.js, docs/combat-brief.md); the defaults here are what
+ * the game has always used, so a combat built without them is today's combat to the digit.
+ */
+const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swingCost: 6 });
+
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null }) {
+  const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
+  const first = margins();
   const state = {
     phase: 'peaceful',
     encounterId: null,
     player: {
-      hp: 100, maxHp: 100, stamina: 100, maxStamina: 100,
+      hp: first.maxHp, maxHp: first.maxHp, stamina: first.maxStamina, maxStamina: first.maxStamina,
       action: 'idle', progress: 0, combo: 0, yaw: 0, invulnerable: false,
     },
     enemies: [],
@@ -201,6 +210,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function restorePlayer() {
+    // Toughness may have grown since the last fight, so the ceilings are read afresh; the bars are
+    // then filled to them, which is what restoring is.
+    const { maxHp, maxStamina } = margins();
+    player.maxHp = maxHp; player.maxStamina = maxStamina;
     player.hp = player.maxHp;
     player.stamina = player.maxStamina;
     player.action = 'idle';
@@ -284,7 +297,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function beginAttack(yaw) {
-    if (player.stamina < 6) return false;
+    // What a swing costs in wind: six today, four at the top of the weapon's own family.
+    const cost = margins().swingCost;
+    if (player.stamina < cost) return false;
     const weapon = usableWeapon();
     if (!weapon) { bufferedAttack = false; return false; }
     const candidates = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead'
@@ -295,7 +310,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     player.combo = time <= comboUntil ? comboNext : 0;
     player.action = 'attack';
     player.progress = 0;
-    player.stamina -= 6;
+    player.stamina -= cost;
     staminaDelay = .65;
     actionTime = 0;
     hitApplied = false;
@@ -428,7 +443,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function updatePlayer(dt) {
     staminaDelay = Math.max(0, staminaDelay - dt);
     hurtProtection = Math.max(0, hurtProtection - dt);
-    player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < .37);
+    // The part of a dodge that cannot be hurt. Toughness lengthens it, from .37 s to .48 s at
+    // level 99 - forgiving, never automatic, and never long enough to make a dodge unnecessary.
+    player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < margins().dodgeWindow);
     if (!staminaDelay && player.action !== 'dead') player.stamina = Math.min(player.maxStamina, player.stamina + 24 * dt);
     if (player.action === 'idle') { player.progress = 0; return; }
     const previousTime = actionTime;
@@ -461,7 +478,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       player.progress = clamp(actionTime / .46, 0, 1);
       if (actionTime >= .46) { player.action = 'idle'; player.progress = 0; }
     } else if (player.action === 'dead') player.progress = clamp(actionTime / .8, 0, 1);
-    player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < .37);
+    // The part of a dodge that cannot be hurt. Toughness lengthens it, from .37 s to .48 s at
+    // level 99 - forgiving, never automatic, and never long enough to make a dodge unnecessary.
+    player.invulnerable = hurtProtection > 0 || (player.action === 'dodge' && actionTime < margins().dodgeWindow);
   }
 
   function steerEnemy(enemy, target, step, separation = true) {

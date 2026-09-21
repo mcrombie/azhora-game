@@ -55,6 +55,17 @@ export const SKILL_ICONS = Object.freeze({
   linguist: '<path d="M18 9.6C14.4 6.8 9.6 5.8 4 6.2v20c5.6-.4 10.4.6 14 3.4 3.6-2.8 8.4-3.8 14-3.4v-20c-5.6-.4-10.4.6-14 3.4Z"/>'
     + '<path d="M18 9.6v20"/>'
     + '<path d="M7.8 12.8c2.4-.2 4.6.2 6.6 1.2M7.8 17.8c2.4-.2 4.6.2 6.6 1.2M21.6 14c2-1 4.2-1.4 6.6-1.2M21.6 19c2-1 4.2-1.4 6.6-1.2"/>',
+  // Arms: the seven fighting skills. Each is its own weapon in silhouette, drawn like the rest -
+  // one line, no fill - so a tile under the Arms heading reads as a tile and not as a badge.
+  blades: '<path d="M18 4 21 9v14h-6V9Z"/><path d="M12 23h12"/><path d="M18 23v7"/><path d="M15 30h6"/>',
+  'heavy-arms': '<path d="M18 5c4 0 7 3 7 6.5S22 18 18 18s-7-3-7-6.5S14 5 18 5Z"/>'
+    + '<path d="M13.4 8.6 8 6M22.6 8.6 28 6M13.4 14.4 8 17M22.6 14.4 28 17"/><path d="M18 18v13"/>',
+  polearms: '<path d="M18 3v29"/><path d="M18 3l3.2 6.4L18 12l-3.2-2.6Z"/><path d="M14.6 13.6h6.8"/>',
+  staves: '<path d="M9 31 27 5"/><path d="M10.6 8.2a2.6 2.6 0 1 0 0-.1"/><path d="M25.4 27.8a2.6 2.6 0 1 0 0-.1"/>',
+  bows: '<path d="M11 5c8 4 8 22 0 26"/><path d="M11 5c-2.6 8-2.6 18 0 26"/><path d="M11 18h16"/><path d="M23 14.4 27 18l-4 3.6"/>',
+  shield: '<path d="M18 4 29 8v9c0 7-4.6 11.6-11 15C11.6 28.6 7 24 7 17V8Z"/><path d="M18 4v29"/><path d="M7.6 15h20.8"/>',
+  toughness: '<path d="M18 5c3.2 2.4 6.6 3.4 10 3.2V19c0 6.4-4 10.4-10 13C12 29.4 8 25.4 8 19V8.2c3.4.2 6.8-.8 10-3.2Z"/>'
+    + '<path d="M13.6 17.6 17 21l5.6-6.4"/>',
 });
 
 /** A skill's mark as a whole `<svg>`, ready to drop into a tile. */

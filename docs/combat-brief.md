@@ -217,10 +217,16 @@ at 1. Proposed, for the user to correct when the character profiles are written:
 
 Each phase stands alone and leaves the game working.
 
-1. **The skills and their arithmetic.** A pure module (`src/combat-skills.js`): families, which
-   weapon belongs to which, the curves above, what pays what, snapshot and validation. Seven tiles
-   in the journal under "Arms". Wire the damage multiplier into `weapons.profile()` and Toughness
-   into the health, stamina and dodge numbers that are constants in `src/combat.js` today.
+1. **The skills and their arithmetic.** — **built 2026-09-21** (`src/combat-skills.js`,
+   `tests/combat-skills.test.js`). Seven families on the world's table, under "Arms" in the grid,
+   with every number in one frozen `ARMS` table at the top of the module so the user can tweak any
+   of it in one place. `weapons.profile()` multiplies the weapon's own three-swing damage by the
+   family's level; `createCombat` takes a `getMargins` and reads health, wind, the dodge window and
+   what a swing costs from it. **Level 1 is today to the digit** — `TODAY` is still written in
+   `src/combat.js` and is what a combat built without margins uses, so every fight test passed
+   untouched. Nothing is banked in a skill nobody has shown you, and the weapon works anyway.
+   Practice ceilings are in: the straw post pays Blades to 5, sparring to 20, a real fight has no
+   ceiling.
 2. **The country pushes back.** An encounter carries its country's level; health and damage scale
    by it. Level 0 is today's numbers.
 3. **Tiers, armour and smiths.** Items, three armour slots, a smith's shop in Tidehaven first.

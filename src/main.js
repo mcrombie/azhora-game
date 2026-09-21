@@ -78,6 +78,7 @@ import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint
 import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, JOB_FIRST, JOB_AGAIN, THE_GREEN_COAT, THE_BURYING, SON } from './lauvel-burying.js';
 import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
+import { createCombatSkills, familyOf } from './combat-skills.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -463,7 +464,13 @@ function init() {
   trailMarker.traverse(object=>{if(object.isMesh){object.material=object.material.clone();object.material.color.set(0x8acfc2);object.material.emissive.set(0x437d76);}});
   const combatEvents=[];
   let weapons,consumables;
-  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();}});
+  // The seven fighting skills, whose margins combat and the weapons both read. It is filled in
+  // below, once `skills` exists; until then the margins are the ones combat has always used.
+  let arms=null;
+  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
+    // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
+    // buys what a swing costs. All four are today's numbers while every skill is level 1.
+    getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id)};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
@@ -503,7 +510,9 @@ function init() {
   });
   inventory.grant('simple-sword');
   inventory.add(COPPER_ITEM,STARTING_PURSE);
-  weapons=createWeapons({inventory,onEvent(event){
+  // How hard he hits with a given weapon: his level in that weapon's family, which is 1 - and
+  // so a multiplier of exactly 1 - until somebody shows him how (src/combat-skills.js).
+  weapons=createWeapons({inventory,damageScale:id=>arms?.margins().damageFor(id)??1,onEvent(event){
     if(event.type==='weapon-worn')toast(`${event.name} is wearing thin. Repair it at the nearest repair bench.`,`${event.durability} HITS LEFT · I TO CHECK EQUIPMENT`);
     if(event.type==='weapon-broken')toast(event.id==='simple-sword'?'Your sword broke. Find a repair bench, or equip a stick.':event.remaining?'Your stick snapped. Another carried stick is ready.':'Your last stick snapped. Equip your sword or gather another.', 'WEAPON BROKEN');
   }});
@@ -523,6 +532,9 @@ function init() {
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
   const skills=createSkills({onEvent:skillEvent});
+  // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
+  // everything those margins are today's game to the digit, which is the law phase 1 rests on.
+  arms=createCombatSkills({skills,onEvent:()=>refreshSkillsSheet()});
   // Linguist: nobody in Azhora speaks the traveler's language, so what people say to
   // him arrives in theirs (src/languages.js, src/linguist.js). Chris Gotwood came off
   // the same boat with enough of the local speech to get two men up a road; while he is
@@ -1518,12 +1530,23 @@ function init() {
     return tile;
   }
   function renderSkillGrid(sheet,view){
+    // The skills of the world first, then each heading's own block. The seven that are about
+    // fighting sit under 'Arms'; everything else is ungrouped and comes first, exactly as it did
+    // when there were only thirteen.
     const grid=skillEl('div','skill-grid');
-    for(const skill of view)grid.append(skillTile(skill));
+    for(const skill of view)if(!SKILLS[skill.id]?.group)grid.append(skillTile(skill));
     const total=skillEl('div','skill-tile skill-tile-total'),learned=view.filter(skill=>skill.learned).length;
     total.append(skillEl('b','','Total level'),skillEl('span','skill-tile-level',String(skills.totalLevel())),
       skillEl('span','skill-tip',`Total level: ${skills.totalLevel()} · Skills learned: ${learned} / ${view.length}`));
     grid.append(total);sheet.append(grid);
+    const headings=[];
+    for(const skill of view){const group=SKILLS[skill.id]?.group;if(group&&!headings.includes(group))headings.push(group);}
+    for(const heading of headings){
+      sheet.append(skillEl('h3','skill-heading',heading));
+      const block=skillEl('div','skill-grid');
+      for(const skill of view)if(SKILLS[skill.id]?.group===heading)block.append(skillTile(skill));
+      sheet.append(block);
+    }
   }
   // One skill's page: what each of its levels opens, and everything that skill has collected.
   function renderSkillGuide(sheet,skill){
