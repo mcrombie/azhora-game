@@ -63,6 +63,9 @@ export const OUTPOST_LAYOUT = Object.freeze({
   stores: Object.freeze({ ...campPoint(-16, -12), hx: 3.1, hz: 2.2 }),
   smithy: Object.freeze({ ...campPoint(-30, -10), hx: 3.6, hz: 2.6 }),
   forge: Object.freeze(campPoint(-31.5, -11)),
+  // The armourer, outside the smithy tent on the camp side of it, so a man walking up from the
+  // parade meets him rather than his forge (src/smith.js). The tent reaches dx -26.4.
+  armourer: Object.freeze({ ...campPoint(-25, -10), yaw: Math.atan2(6.5, 1) }),
   granary: Object.freeze({ ...campPoint(15, 5), hx: 2.2, hz: 1.7 }),
   well: Object.freeze(campPoint(-40, -6.5)),
   trough: Object.freeze({ ...campPoint(-23, -24), hx: 1.3, hz: .4 }),

@@ -326,3 +326,30 @@ Two small decisions worth writing down:
 
 Review view: `tidehaven-smithy` shows the forge, the board, the anvil, the quench barrel and the
 smith watching the road.
+
+### Three smiths, one scene — built
+
+Two forges were already standing in the world with nobody selling from them, so they were staffed
+rather than invented.
+
+- **Amod (Ostel) needed nobody.** It already had **Mern**, "Smith: hooks, hinges and gate metal".
+  A man who is evidently the smith is the smith, so he sells, keeps his name and keeps the two
+  lines he already had; he gains one, reconciling his own "Not swords" with selling armour —
+  *armour is not a sword*.
+- **The Moros camp got an armourer.** Its smithy tent had a rack of spears "waiting on the smith"
+  and nobody to wait for. He is unnamed, army-voiced, and stands outside the tent on the camp
+  side so a man walking up from the parade meets him and not his forge.
+
+**The material is nobody's line.** Each man has one or two lines of his own; the sentence naming
+what he sells is generated from `tierSoldAt` of the country he stands in, so a smith moved to
+better country tells the truth about his own iron without being rewritten. Both Amod and the
+Moros Plain are level 2, which is **bog iron** — and bog iron is where `medium` becomes legal, so
+it is where mail begins.
+
+**That makes the Tidehaven pointer true.** He says mail wants bog iron and there is a smith with a
+country behind him *past the Caloss*; past the Caloss is Luscia, the Moros gate and the plain,
+and the armourer there sells exactly what was promised. A test asserts the pointer against the
+level table rather than trusting the prose, so if either country is ever re-levelled the line
+fails instead of quietly lying.
+
+Review view: `camp-armourer`. Amod has none — Mern was already there to be looked at.
