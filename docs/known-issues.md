@@ -1267,3 +1267,109 @@ Two things did come out of the sweep, and neither is the harbourmaster: the long
 4.80 m inside `willowmere-reeds` (radius 6). Those are places the player is sent to stand, not
 stands, and they cost the birds nothing by the measurement above — noted only so the next person
 measuring this starts from the right two.
+
+---
+
+## Three of the seven Arms skills can never be capped, because they take no source
+
+`ARMS.ceiling` (`src/combat-skills.js:60`) is the rule that nobody reaches 60 by hitting straw:
+`post: 5`, `sparring: 20`, and no ceiling at all in a real fight. `pay(id, amount, source)`
+honours it, and `dealt()` takes a `source` and passes it through. **The other three payers do
+not.**
+
+```js
+const dodged = ({ countryLevel = 0 } = {}) => pay('toughness', …);          // no source
+const hurt   = ({ damage = 0, … } = {}) => pay('toughness', …);             // no source
+const caught = ({ damage = 0, … } = {}) => pay('shield', …);                // no source
+```
+
+`pay`'s default is `source = 'fight'`, and `ceilingFor('fight')` is `null`. So Toughness and
+Shield have no ceiling by any route. Driven: `dealt` with `source:'post'` stops Blades **exactly
+at level 5** and returns `capped: true`, while the same blow in a real fight still pays at 5 —
+that half is right. `dodged` called over and over with no source takes **Toughness past level 30**,
+which is ten past even the sparring ceiling.
+
+**It is latent, and now is the cheap moment.** Nothing calls `dealt`, `dodged`, `hurt` or `caught`
+anywhere: `src/main.js:538` creates the module and then reads only `margins()` (`:474`, `:516`),
+so no Arms skill can be gained at all today and every one of them stays level 1. Phase 1 is the
+table, the margins and the save. The asymmetry costs nothing until phase 2 wires the callers, and
+then it costs a player grinding Toughness on a straw post that cannot hit back.
+
+*Smallest repair:* give the three the same `source` parameter `dealt` has, and pass it.
+
+**Checked and right, in the same sweep:**
+
+- **Level 1 is today's numbers**, exactly: `marginsFor` at all-ones gives `maxHp 100`,
+  `maxStamina 100`, `dodgeWindow 0.37`, damage multiplier `1`, against `combat.js`'s own
+  `maxHp 100 / maxStamina 100` at boot.
+- **Nothing pays a skill nobody has shown you.** `pay` returns 0 xp unless `known(id)`, and all
+  four entry points go through it: dealing 40 damage with an untaught sword, an untaught dodge and
+  an untaught caught blow all pay nothing.
+
+---
+
+## Farming's clock: it survives everything asked of it
+
+Driven on the pure module.
+
+- **A save and a reload.** Sown at play-second 1000, snapshotted, restored into a fresh module:
+  at 1000, 1239, 1240, 1241 and 5000 the row reads the same stage and the same seconds remaining
+  on both sides. The snapshot is `{version, met, reaped, rows:{id:{crop, sownAt}}, trees}` —
+  absolute play-seconds, and `main.js:2265` restores `playSeconds` from the same save.
+- **A long absence with no sleeping.** The row is ripe at its moment and stays ripe: checked out
+  to play-second 1,000,000,000.
+- **Playing as somebody else.** Nothing in the snapshot is keyed to a player; restored into a
+  game started as anybody, the row ripens on time.
+- **The checkpoint layer cannot reject it.** `validateFarmingSnapshot` refuses a snapshot whose
+  `sownAt` is later than the clock, which is right — and `src/road-checkpoint.js:148` passes the
+  **saved** `playSeconds`, not the live one, so a fresh session loading an old save can never
+  fail that check.
+
+One thing to note for whoever reads a probe of this next: `sow` refuses a crop above your level
+with a reason (`"Drent leaf wants farming level 5."`), and refuses an occupied row the same way.
+A first pass of mine read the bare row that came back as a clock failure; it was the level gate
+doing its job.
+
+---
+
+## Mara's three corners cannot be got without walking them
+
+- Each corner sits in **its own chart hex**: standing on the pier makes only the pier walked, and
+  so for the Weatherhead and the Koopwood. Swept every point of a 140 × 200 m box over the
+  village at 2 m: **no single spot ever counts for more than one corner.**
+- `reveal` (`src/map-fog.js:139-151`) adds **only the hex under the point** — no ring, no radius.
+  Walking all three gives the chart exactly three cells.
+- **Asking the way does not reveal fog.** `wayfindingChoice` (`src/main.js:2833`) calls
+  `cartography.hear(name)`, which feeds the cartography skill's knowledge of a *region name*.
+  `mapFog` is untouched by it.
+- The only other `mapFog.reveal` calls in the game are the traveler's own feet each frame
+  (`main.js:3527`), the spot "Start at the newest chapter" drops him on (`:1833`, one hex, and
+  nowhere near Tidehaven), and `chartRoad`, a `?test=1` harness hook (`:4003`).
+- A **warp** would count — the next frame reveals wherever he lands — but the testing panel's
+  travel buttons go to the village, the pond and the bird garden, none of which is the Weatherhead
+  or the Koopwood. The **developer horse** is only faster; the ground still passes under it.
+
+---
+
+## Mus, walked again: the authored line is clean, and 13 m of the appended leg is not
+
+The repairs hold, measured the same way as before:
+
+| | before | after |
+|---|---|---|
+| blocked metres on the authored legs | 29 | **0 of 1,610 m** |
+| closest the authored line comes to the road | 55.6 m | **62.7 m** (the claim, exactly) |
+| closest outside the 41 m join, whole line | 39.7 m | **40.2 m** — `WILD.clearance` 40 m now holds |
+| in water, anywhere | 0 | 0 |
+
+And he has stopped recommending the road. First meeting: *"You left the road. Most people never
+do."* then *"I will be at the muster. Do not wait for me there, and do not look for me here."*;
+after that, the short one alone. Other mercenaries are untouched — Chris and Ed still say their
+road lines. His roster `says.walking` still reads "Road today", now reached by nobody wild, which
+is what the comment beside it says.
+
+**What remains: 13 m.** They are all on the **muster leg** — the straight line
+`createMercenaryCompany` appends from his last authored waypoint to `ANCHORS.legionCamp`, which
+`src/wild-route.js` does not author and so did not fix. It runs (−996.5, 554.9) to (−991.1,
+569.9), a few metres of something solid on the approach to the camp. Small, and it is at the end
+where he is arriving anyway, but the file's promise covers the whole line a man walks.

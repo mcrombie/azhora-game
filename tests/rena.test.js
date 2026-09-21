@@ -172,9 +172,13 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
 });
 
 test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in front of an army post', async () => {
-  // A stand inside a habitat takes perches away from the birds that live there
-  // (habitatSpots drops any spot within 1.6 m of a stand), and the traveler
-  // cannot talk to a post he cannot walk up to.
+  // What this rule is for: a bird's home ground is where the birding skill sends the player to
+  // stand and look at that bird, so somebody standing in it is in the way of the thing they came
+  // for. It is *not* that a stand takes perches away — `habitatSpots` (src/drent-birds.js) maps a
+  // habitat's perches through untouched, and `avoid` thins only its ground foraging spots, within
+  // 1.6 m; swept over the built world with every stand in the game, no habitat loses even one.
+  // The comment here used to say the perches, and that cost a reader an afternoon.
+  // The second half is plainer: the traveler cannot talk to a post he cannot walk up to.
   const { BIRD_HABITATS, habitatSpots } = await sourceModule('../src/drent-birds.js');
   for (const npc of RENA_NPCS) {
     const stand = RENA_STANDS[npc.id];
@@ -183,6 +187,18 @@ test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in
       const gap = Math.hypot(centre.x - stand.x, centre.z - stand.z) - habitat.radius;
       assert.ok(gap > 1.6, `${npc.id} stands in the ${habitat.id} birds’ ground (${gap.toFixed(1)} m clear)`);
     }
+  }
+  // And the two facts the comment above rests on, so neither can quietly stop being true: a perch
+  // is never taken from anybody, and with every stand in the game standing about, no habitat loses
+  // a ground spot either. The second is the one that would go first if a person were ever placed
+  // on a bird's ground, and it covers everybody, not only this pass's people.
+  const everybody = Object.values(world.npcPositions);
+  for (const habitat of BIRD_HABITATS) {
+    const alone = habitatSpots(habitat, world, []), crowded = habitatSpots(habitat, world, everybody);
+    assert.equal(crowded.perches.length, alone.perches.length,
+      `${habitat.id} lost a perch to somebody standing about, which habitatSpots is not supposed to be able to do`);
+    assert.equal(crowded.ground.length, alone.ground.length,
+      `${habitat.id} lost ${alone.ground.length - crowded.ground.length} of its ${alone.ground.length} ground spots to somebody standing within 1.6 m`);
   }
   // And nothing this pass builds — props included — blocks an army post's stand.
   const ours = world.colliders.filter(collider => NEW_KINDS.test(collider.kind ?? ''));
