@@ -362,6 +362,23 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
   };
 }
 
+/**
+ * The fork, in the companion's own words, at the moment the satchel shuts.
+ *
+ * It is not a menu and it asks for no answer: you choose by walking. He speaks in your own
+ * tongue because he is the one man on this coast who can (`INTERPRETER`, src/languages.js), and
+ * he is a slot rather than a name — Chris Gotwood for ten of the eleven, Cromb when you are
+ * Chris — so the name is handed in.
+ */
+export const forkLines = (name = 'Chris Gotwood') => freeze([
+  `Before you set off. There are eleven of us on this contract and nine are still at sea — one swam ashore behind us this morning and the last pair are a boat and an hour away yet. Venmor is paying for eleven and he will not march short.`,
+  `So there is no hurry, and I mean that as a fact and not as comfort. Go straight up the road and you are first into an empty camp, or you walk Drent with me and learn the country you have been hired to fight over. The tongue first: you cannot hear what is being said to you and that will get somebody killed.`,
+  `Either way I am walking with you. — ${name}`,
+]);
+/** The same thing in one breath, for the notice at the corner of the screen. */
+export const forkNotice = () =>
+  'Eleven of us on this contract, and nine still at sea. Venmor will not march short, so the road west will keep. Go straight up it and be first into an empty camp, or walk Drent with me and learn the country first. Either way I am with you.';
+
 /** Every named ground of Drent the long road walks through, for Mara's countersign. */
 export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 'fernway', 'caloss-gate', 'avrel', 'rena', 'applegarth', 'caloss-bank']);
 /** Whether the chart holds all nine of them. */

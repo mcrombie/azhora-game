@@ -68,9 +68,11 @@ export const questSteps = [
   {title:'The road is safe', detail:'Report the three goblins to Eren at the Greenway Watch, farther along the road.', lesson:'Catch your breath', hint:'Follow the gold marker and press F to tell Eren what happened.'},
   {title:'What you carry', detail:'Open your satchel and read the letter of introduction. Eren has given you a road token.', lesson:'Your inventory', hint:'Press I for your satchel. Hover over an item for a hint, then select the letter of introduction to read it.'},
   {title:'Ready for the road', detail:'Dismiss your satchel to see the path ahead.', lesson:'Return to the world', hint:'Press I or Esc, or use Close, to dismiss your inventory.'},
-  {title:'Through the northern forest', detail:'Follow the forest road to Fernway Rest.', lesson:'Find your way', hint:'Follow the gold marker along the road. L shows local trails and lets you mark a known place; M opens the wider world.'},
+  // The fork: the road west, or the country either side of it. The company is eleven and the
+  // Marshal marches when the eleventh reports, so neither road is the late one (docs/drent-long-road.md).
+  {title:'Through the northern forest', detail:'Follow the forest road to Fernway Rest — or take Drent at walking pace. The company is eleven, the Marshal marches when the eleventh has reported, and the open gold marks what Drent will teach you on the way.', lesson:'Find your way', hint:'Follow the gold marker along the road. L shows local trails and lets you mark a known place; M opens the wider world.'},
   {title:'Where the forest opens', detail:'Continue to the Caloss Gate and look out across the Avrel clearing.', lesson:'The edge of the wood', hint:'Keep following the road south-west as the trees thin. The farm clearing marks the next leg.'},
-  {title:'Drent, from shore to gate', detail:'The tutorial is complete. Follow the open road through the Avrel clearing, cross the Caloss, and go on into Luscia.', lesson:'A journey begun', hint:'Find Corvan at the clearing. Press J to review the road ahead; you can return to Tidehaven at any time.'}
+  {title:'Drent, from shore to gate', detail:'The tutorial is complete. Follow the open road through the Avrel clearing, cross the Caloss, and go on into Luscia — and nothing behind you closes. Every teacher and errand in Drent stays where it is, and the road back is a minute and a half.', lesson:'A journey begun', hint:'Find Corvan at the clearing. Press J to review the road ahead; you can return to Tidehaven at any time.'}
 ];
 export function advanceQuest(stage, event) {
   if(stage===0 && event==='ashore') return 1;
