@@ -53,6 +53,13 @@ export const REGARD = freeze({
   traded: 14,
   /** The one errand each man has, which is his own business and is done once. */
   errand: 22,
+  /**
+   * **A shaft of yours in him, and he got up again** (the user, 2026-09-21: arrows hurt whoever
+   * they hit). Modest on purpose: it is an accident, he says one thing about it, and it costs
+   * about what one fight together is worth. Killing him is not on this table at all - that costs
+   * every man who saw it a whole rung, which is `costWitnesses`.
+   */
+  struck: 8,
   /** The most anybody can think of you. */
   top: 100,
 });
@@ -200,6 +207,23 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   }
 
   /**
+   * **Down a rung, and never by less than a rung's usual size.** Taking a fixed 35 off was the
+   * usual size of a rung and not the promise: a man at 95 to 99 is `friendly`, and 35 off leaves
+   * him at 60 to 64, which is `friendly` still - so a witness in that band paid nothing at all.
+   * He goes below the foot of the rung he is on, and never by less than that 35.
+   *
+   * One piece of arithmetic with two callers, because it is one idea: **the men who were walking
+   * with you know what you did.** A lie at the muster is the first (`report`); an arrow of yours
+   * in a friend's back is the second (`costWitnesses`), and the user's ruling is that it costs
+   * the same.
+   */
+  function dropRung(id) {
+    const at = regardOf(id), below = RUNG_AT[rungFor(at)] - 1;
+    state.regard[id] = Math.max(0, Math.min(at - (RUNG_AT.friendly - RUNG_AT.acquainted), below));
+    return state.regard[id];
+  }
+
+  /**
    * May he be asked here, and will he come? `where` is the host's word for the ground the
    * traveler is standing on, and `has` is what the host can say is true of him - `charted`,
    * `birded`, `edge`. Nothing here checks the world; it checks the answer the world gave.
@@ -289,6 +313,34 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   /** Where a man fell and against what, or null for somebody who has not. */
   const fellAt = id => (state.fell[id] ? { ...state.fell[id] } : null);
   /**
+   * **You killed him yourself, and they all saw it** (the user, 2026-09-21: a companion killed by
+   * the traveler's arrow is dead for good, and costs every living witness a rung, as a lie does).
+   *
+   * Called after `died`, which is what wrote down who was walking with you at the time. It is the
+   * lie's own cost, paid at the moment instead of at the muster, and it is deliberately the same
+   * mechanism: there is one idea here and it should never have two sizes.
+   */
+  function costWitnesses(id) {
+    const saw = (state.fell[id]?.witnesses ?? []).filter(witness => !dead(witness));
+    for (const witness of saw) dropRung(witness);
+    if (saw.length) onEvent({ type: 'saw-your-arrow', id, knows: [...saw] });
+    return [...saw];
+  }
+  /**
+   * **A shaft of yours in him, and he got up again.** He thinks a little less of you for it and
+   * says one thing about it; the host has his word. Nothing is remembered beyond the number, so a
+   * man may be hit twice and it costs twice - which is right, because the second time it is not
+   * an accident any more.
+   */
+  function struckByYou(id) {
+    if (!known(id) || dead(id)) return { ok: false, rung: rungFor(regardOf(id)) };
+    const before = rungFor(regardOf(id));
+    state.regard[id] = Math.max(0, regardOf(id) - REGARD.struck);
+    const rung = rungFor(state.regard[id]);
+    if (rung !== before) onEvent({ type: 'rung', id, rung, label: RUNG_LABELS[rung], why: 'struck' });
+    return { ok: true, rung, label: RUNG_LABELS[rung], fell: rung !== before, regard: state.regard[id] };
+  }
+  /**
    * What is lying on the ground where he fell, and not yet picked up. A dead man's weapon stays
    * where he went down, marked, as **a named weapon** - "Eliana's greatsword" - which is what the
    * combat brief says a given weapon should be, and these are the only named weapons in the game.
@@ -347,13 +399,8 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     const saw = (state.fell[id]?.witnesses ?? []).filter(witness => !dead(witness));
     for (const witness of saw) {
       state.knows[witness] = id;
-      // **A rung, not a point: it is the standing that changes**, and he will say why. Taking a
-      // fixed 35 off was the usual size of a rung and not the promise: a man at 95 to 99 is
-      // `friendly`, and 35 off leaves him at 60 to 64, which is `friendly` still - so the five
-      // witnesses in that band paid nothing at all. He goes below the foot of the rung he is on,
-      // and never by less than the 35 that was already taken.
-      const at = regardOf(witness), below = RUNG_AT[rungFor(at)] - 1;
-      state.regard[witness] = Math.max(0, Math.min(at - (RUNG_AT.friendly - RUNG_AT.acquainted), below));
+      // **A rung, not a point: it is the standing that changes**, and he will say why.
+      dropRung(witness);
     }
     onEvent({ type: 'lied', id, knows: [...saw], register: !saw.length });
     return { ok: true, kind, knows: [...saw], register: !saw.length };
@@ -410,6 +457,7 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   }
 
   return { ask, askable, sendOn, travelled, fought, traded, errand, died, fellAt, living, view, snapshot, restore,
+    costWitnesses, struckByYou,
     owed, truthAbout, answersFor, report, registerIsFalse, holdsAgainstYou, letGo,
     weaponOnTheGround, weaponsOnTheGround, takeWeapon,
     told: id => state.told[id] ?? null,

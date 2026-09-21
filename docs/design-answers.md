@@ -4,6 +4,34 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — the file's worth, and a battle that grows (the user's answers, after the hunter's round six)
+
+The hunter re-measured the border battle at level 2 on the repaired placement (the file used to
+form up among the enemy): a traveler alone with the six men the army assigns him wins 21 of 40 at
+half health, with every assigned man dead and **5 of 40 still going at the two-minute cap**; with
+three, six or ten companions it is 40 of 40. Asked four things:
+
+**The assigned men are trained a little.** An assigned soldier carries **level 15 / toughness
+12** instead of the kind's plain ninety. Measured by the hunter: alone becomes 32 of 40 at 59 %
+health, no stalemates, 5.9 of 6 assigned men still dead - so friends still matter, and an assigned
+stranger stays strictly weaker than the weakest companion (Altun is 20 / 17). Not chosen: leaving
+them plain; raising the floor from six to eight (29 of 40, no stalemates, a bigger army on your
+side and "fewer than six companions" becoming a number about nothing).
+
+**A full company meets a bigger battle.** Ten companions win the border battle 40 of 40 in
+seconds, a parade. The user chose: **the enemy line grows with the size of the company** - more
+soldiers, never a higher level - so that ten companions meet a fight worth ten and a full company
+is still a climax. To be built and measured: the size of the line at each company size is the
+hunter's number, not a guess, and a short company (the floor of six, filled) must meet exactly
+the battle measured above. Not chosen: the walkover as its own reward; parking it.
+
+**The arrow cap stays at forty.** Forty spent shafts may lie on the ground at once; in a long
+standoff the rest are dropped silently. A few dozen to walk over after a fight is plenty, and the
+cap keeps the world tidy. Not chosen: raising it to about 120.
+
+**No paid Electron run today** to drive a companion's death through a real save. The module
+tests cover the lifecycle; the real-save check waits for the next milestone batch.
+
 ## 2026-09-21 — what an arrow meets (the user's answers, after the hunter's round on bows)
 
 **Arrows hurt whoever they hit.** Real friendly fire, the traveler's and Jerry's alike. Offered and

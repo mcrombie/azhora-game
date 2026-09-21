@@ -3,8 +3,23 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
-import { REFUGEES, REFUGEE_IDS, REFUGEE_PACE, REFUGEE_REST, REFUGEE_RESTS, REFUGEE_START, REFUGEE_STANDS,
+import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_PACE, REFUGEE_REST, REFUGEE_RESTS, REFUGEE_START, REFUGEE_STANDS,
   refugee, speechFor, createRefugees, validateRefugeesSnapshot, refugeeConversation } from '../src/refugees.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Switched off at the user's request (2026-09-21, "they get in the way, just disable them for
+ * now"): the host must stand nobody in the world, move nobody, and say nothing when they arrive,
+ * while everything below still holds so the switch can be thrown back without a rebuild.
+ */
+test('the three are disabled for now: one switch, and the host reads it at every place it would show them', () => {
+  assert.equal(REFUGEES_ENABLED, false, 'the user asked for them off; turn this on only when asked');
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /if\(REFUGEES_ENABLED\)for\(const person of REFUGEES\)\{/, 'nobody is stood in the world unless the switch is on');
+  assert.match(main, /if\(REFUGEES_ENABLED&&event\.type==='refugees-arrived'\)toast\(/, 'the landing hears nothing unless the switch is on');
+  assert.match(main, /if\(REFUGEES_ENABLED\)for\(const walker of refugees\.positions\(\)\)\{/, 'nobody is moved unless the switch is on');
+});
 
 let built = null;
 async function road() {

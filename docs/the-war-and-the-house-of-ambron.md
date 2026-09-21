@@ -93,7 +93,48 @@ the kit. (Decided 2026-09-19; the game used Legion, Legate, Tribune and Latin na
 The Republic's own half of this history — Izol's war on Selemis, and the three generals who hold
 the island between them — is in `izol-and-the-triumvirate.md`, and is its equal in authority.
 
+## The high kingship, and the steward at Stonefist
+
+Added 2026-09-21 from the user's brief on the Crefs (the lore is in
+`../world-builder/azhora_lore/peoples/the_crefs.md` and
+`../world-builder/azhora_lore/history/the_cref_alliance.md`; Lond, Amod and the kingdom files
+carry short paragraphs).
+
+- **The Crefs** are a small ruling people who took Stonefist, the rock in the middle of the Lond
+  plateau, about three centuries ago and never lost it. A Cref king sits over every kingdom of
+  Northern Azhora — Lond, Endevor, Ganun, Nonoth, Witherst, Thoth, Orse, Sav (Riesov), Inseld,
+  the Acorwood, Cold Stones, Olo — and over five in the south taken afterwards: Mithala, Celder,
+  **Amod**, Feradom, Blizard. Each swore at the rock to the **high king**. The sworn fealty is the
+  **Cref Alliance**; the south calls it the High Kingdom of Tolgufeld (the novella's congress
+  guest). Seventeen crowns and the high king's above them.
+- **Stone Town** lies on the river south of the rock: the most populous town in the Alliance's
+  lands. The **king of Lond** sits there, under the high king, always a close kinsman of his.
+- **The House of Ambron is a Cref line.** A cadet branch of the high kings was given Amod, sat
+  lightly over the Terrace Compact for two centuries, then went down the Lotharn passes and took
+  the throne of Ambron in Elagos. Two reigns ago the last high king to sit in the rock died
+  without a son of his house, and the Amod-Ambron line claimed the high kingship by descent.
+  It never went north to be confirmed. **Valdemar the elder was high king** in the sense that
+  nobody in the north said otherwise in his hearing, and he held Stonefist through a **steward**,
+  a Cref of the rock appointed from Ambron. The steward still holds it.
+- **The legitimacy crisis.** The oath was sworn to a man in the rock, not a house on a lake. With
+  the old king dead and his sons at war — Valroy claiming from abroad, Cedric dead, Wilhelm
+  besieged in Nylon, Willard a king by a republic's leave, Ruzo having renounced the family —
+  the kings of the north are asking whether the oath has an object at all. This is the major
+  issue the traveler meets on going north into the Alliance's country.
+
+Rulings taken from the user: Tolgufeld and the Cref high kingdom are the same; the House of
+Ambron claims by Cref descent, not by marriage; Sav is Riesov. The user's tentative placings of
+Olo (Orsa) and Blizard (Witherst) collide with kingdoms already on the roll, so both are on the
+roll with no ground yet.
+
 ## Still open
+
+- **Who would the kings of the north recognise?** Valroy by descent, Willard by possession, Ruzo
+  by the old king's own judgment of him, none of them and a Cref of the north — or does the
+  steward simply hold and wait? The game turns on this when it goes north. Not decided.
+- **The steward's name**, and the name of the last high king who sat in the rock (Cref register:
+  Krefar, Stornul, Grethal, Fordun, Vrakel, Harsk, Vralketh, Skordun).
+- **Olo and Blizard**: which ground on the atlas.
 
 - Does the razed holy city in Isareos have a name? The lore does not give one.
 - Nanvir is new: he wants a place in `../world-builder/azhora_lore/culture/azhoran_religions.md`.

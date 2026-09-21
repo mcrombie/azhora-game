@@ -6,6 +6,7 @@ import { createCombat, MAX_ALLIES } from '../src/combat.js';
 import { BORDER_ENCOUNTER_ID, borderEncounter, borderConversation, BORDER_SIDES } from '../src/border-chapter.js';
 import { AFTERMATH_VARIANTS, AFTERMATH_IDS, aftermathEncounter, aftermathConversation, createAftermathChapter } from '../src/aftermath-chapter.js';
 import { FILE_FLOOR, FILL_KIND, FILL_LOOK, ARMY_BATTLE_IDS, isArmyBattle, fillCount, fillFor, fillLines } from '../src/file-fill.js';
+import { placeFor } from './fights-with-company.test.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -13,10 +14,13 @@ const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, impo
  * The host's own rule, written out once so the test measures what the game does rather than a
  * second copy of it: the file, then the fill, and never past the room the fight has left.
  */
-function fileFor({ id = BORDER_ENCOUNTER_ID, side = 'empire', companions = 0, authored = 0, centre = { x: 0, z: 0 } } = {}) {
+function fileFor({ id = BORDER_ENCOUNTER_ID, side = 'empire', companions = 0, authored = 0, config = null, centre = { x: 0, z: 0 } } = {}) {
   const room = Math.max(0, MAX_ALLIES - authored);
-  // The file's own geometry, as `companionAllies` lays it: two ranks wide, behind the centre.
-  const place = index => ({ x: centre.x + (index < 5 ? -1 : 1) * 2.5, z: centre.z - (5 + (index % 5) * 3) });
+  // The file's own geometry, as `companionAllies` lays it. Where a whole encounter is to hand it
+  // is that encounter's own placement (tests/fights-with-company.test.js, pinned against the host
+  // there); where this only needs somewhere legal to stand, two ranks a little behind the centre.
+  const place = config ? placeFor(config)
+    : index => ({ x: centre.x + ((index % 5) - 2) * 2.2 + (index < 5 ? 0 : 1.1), z: centre.z + 2.6 + (index < 5 ? 0 : 2.6) });
   const file = Array.from({ length: Math.min(companions, room) },
     (_, i) => ({ id: `merc-${i}`, kind: 'legionary', level: 35, toughness: 30, ...place(i) }));
   if (!isArmyBattle(id)) return file;
@@ -91,7 +95,7 @@ test('company plus the side’s own men plus the fill never passes the cap', () 
   // And an encounter handed that many allies is still a valid encounter.
   const world = { bounds: { minX: -999, maxX: 999, minZ: -999, maxZ: 999 }, colliders: [], heightAt: () => 1.5 };
   const position = { x: 0, y: 1.5, z: 0 };
-  const combat = createCombat({ world, position, getAllies: config => fileFor({ id: config.id, companions: 0, centre: config.center }) });
+  const combat = createCombat({ world, position, getAllies: config => fileFor({ id: config.id, companions: 0, config }) });
   assert.equal(combat.startEncounter(borderEncounter('empire', [])), true, 'the border battle starts with a filled file');
   assert.equal(combat.state.allies.filter(one => one.id.startsWith('file-fill-')).length, FILE_FLOOR);
   assert.ok(combat.state.allies.every(one => one.hp === 90), 'and every one of them is a plain soldier');
@@ -104,7 +108,7 @@ test('every day after the battle fills the same file, on both sides', () => {
     const arena = { center: { x: 0, z: 0 }, retreatAxis: 'z' };
     for (const companions of [0, 3, 6]) {
       const position = { x: 0, y: 1.5, z: 0 };
-      const combat = createCombat({ world, position, getAllies: config => fileFor({ id: config.id, side: spec.side, companions, centre: config.center }) });
+      const combat = createCombat({ world, position, getAllies: config => fileFor({ id: config.id, side: spec.side, companions, config }) });
       const fight = aftermathEncounter(id, arena, []);
       assert.ok(fight, `${id} has a fight`);
       assert.equal(combat.startEncounter(fight, { atCheckpoint: true }), true, `${id} starts`);

@@ -190,7 +190,23 @@ export const OSTEL_STANDS = Object.freeze({
   'ostel-muleteer-2': ostelPoint(-27, -8),
   'ostel-stonecutter': ostelPoint(25, 14),            // in the yard among the blocks
   'ostel-apprentice': ostelPoint(29, 8),
-  'ostel-smith': ostelPoint(12, 13),
+  /**
+   * **Goibniu stands clear of his own wall**, at the street corner of the smithy rather than in
+   * the yard behind it (the hunter's measurement, docs/known-issues.md round 5).
+   *
+   * He stood at `ostelPoint(12, 13)`: dead in front of the undercroft door, on the downhill side,
+   * with the whole building between him and the street. Measured, he was 0.9 m off the wall and
+   * 0.93 m off the house's own collider, and **he could not be framed from any ground a traveler
+   * can talk to him from** - three metres east put the camera where he was standing, north put it
+   * inside the smithy, and south-east put the traveler's own body between the camera and him.
+   *
+   * This is the corner where the street passes the end of the smithy: **1.36 m clear** of the
+   * house's collider and 1.4 m off the undercroft's own face, 2.7 m off the road's centreline,
+   * and 10.6 m from the nearest other person, with the outside stair (local +a, at b 8.2-10.2)
+   * uphill-clear of him. `facing` then turns him toward the town centre, which from here is
+   * straight up the street: a man at the corner of his shop, looking at the people coming.
+   */
+  'ostel-smith': ostelPoint(17, 7),
   'ostel-vintner': ostelPoint(-14, -17),              // at the press house door
   'ostel-cellarer': ostelPoint(-21, -24),             // at the cellar mouth
   'ostel-widow': ostelPoint(-1, -27),                 // on her wall, below the spring
