@@ -506,10 +506,16 @@ export const ESCORT_OFFSETS = Object.freeze([
  * Pure, so the pier can be proved walkable from every spot the traveler can stand on it
  * without starting a renderer.
  */
-export function escortSpotFor(at, standable = () => true) {
+export function escortSpotFor(at, standable = () => true, place = 0) {
   if (!at || !Number.isFinite(at.x) || !Number.isFinite(at.z)) return null;
   const yaw = Number.isFinite(at.yaw) ? at.yaw : 0, sin = Math.sin(yaw), cos = Math.cos(yaw);
-  for (const { lateral, back } of ESCORT_OFFSETS) {
+  // `place` is which man of the file is asking. Without it every man who falls back here is
+  // handed the same answer, because the list is fixed and the first standable offset wins - two
+  // of ten measured onto one stone in Lumber Town square. Starting each man that far down the
+  // list gives the fallback the shape the file already has.
+  const start = Math.max(0, Math.floor(Number(place) || 0)) % ESCORT_OFFSETS.length;
+  for (let step = 0; step < ESCORT_OFFSETS.length; step++) {
+    const { lateral, back } = ESCORT_OFFSETS[(start + step) % ESCORT_OFFSETS.length];
     const x = at.x - sin * back + cos * lateral, z = at.z - cos * back - sin * lateral;
     if (standable(x, z)) return { x, z };
   }
