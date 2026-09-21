@@ -122,6 +122,11 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    moves them; who walks with you; the dead; snapshot and validation.
 2. The company honours it: no dead man placed, the companion slot driven by it rather than by the
    long road's single argument.
-3. The asking, in each man's own conversation, with his own reason.
+3. The asking, in each man's own conversation, with his own reason. — **built.** One choice,
+   "Walk with me.", offered only where he is; his own refusal line where he wants something
+   first; nothing at all where he is somewhere else, rather than a greyed-out line. A man walking
+   with you is offered "Go on ahead of me." instead. The three gates are `explored` for Kristen
+   (charted would open itself — Drent is charted from the first morning), a bird seen for
+   Lakota, and an edge worth swapping for Eliana.
 4. The journal's company page.
 5. Death: the muster's faces and count, and the roster `musterVoices` is given.
