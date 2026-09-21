@@ -1719,6 +1719,15 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         radius: .38 * tree.s, trunkHeight: tree.h * tree.s * .82, trunkTopRadius: .21 * tree.s, ...tree.trunk }];
     }),
     ringBell(time = worldTime) { bellStarted = time; },
+    /**
+     * The arrival boat, for the opening sequence (src/opening-sequence.js): world metres and a world
+     * heading in. It is a child of the village root, so its own frame is the village's.
+     */
+    placeArrivalBoat(x, z, yaw) { const local = worldToVillage(x, z); arrivalBoat.position.x = local.x; arrivalBoat.position.z = local.z; arrivalBoat.rotation.y = yaw - VILLAGE.yaw; },
+    /** Back to where the boat has always lain, against the pier's south face with the gangplank up to the deck. */
+    restArrivalBoat() { arrivalBoat.position.x = -5.0; arrivalBoat.position.z = 43; arrivalBoat.rotation.y = -.12; },
+    /** Where the boat is now, in world terms, for tests. */
+    arrivalBoatPose() { const p = villageToWorld(arrivalBoat.position.x, arrivalBoat.position.z); return { x: p.x, z: p.z, yaw: arrivalBoat.rotation.y + VILLAGE.yaw }; },
     birdGarden: birdGardenSites(groundHeight),
     setFeederHung: hung => birdGarden.setFeederHung(hung),
     spawn: { x: worldSpawn.x, z: worldSpawn.z },
