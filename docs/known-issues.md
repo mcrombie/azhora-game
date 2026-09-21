@@ -1721,3 +1721,48 @@ lands with cartography does not have the letter scene skipped.
 **The two deliberate leftovers are exactly the two flagged**, and no others: `willowmere-fire`
 (Kristen) and `rena-dig` (Lakota) are places with no npc, so there is nobody to do the
 recognising and they stay ticked at t = 0.
+
+---
+
+## The six foods and Chris's five sittings: both clean, and two harness slips of my own
+
+### The six foods
+
+Nothing to report: `tests/larder-sources.test.js` already answers this, and answers it better than
+I first did. It sweeps every file in `src/` as text and accepts five ways a food can reach the
+satchel — the pedlar's stock, a recipe's output, a gathered plant, the farm, and **"somebody's
+hand"**, which is any module outside `inventory.js`, `consumables.js` and `foods.js` that names
+the id. It asserts that the only foods with nowhere to come from are **exactly eight**, all wines
+of countries recorded on the atlas and not built, and it names them so the list cannot quietly
+grow. 33 green across it and `foods`, `consumables`, `cooking`, `botany`.
+
+**My own first probe reported pawpaw, honeycomb and wood-sorrel as unreachable.** They are not:
+my version knew only four mechanisms and had no notion of "somebody's hand", so it re-invented a
+narrower test and then believed it. The repo's test is the right one; mine was noise.
+
+The six the long road gave sources to are all sourced: `avrel-apple` from Applegarth's kept
+orchard, `hazelnuts` and `bramble-berries` from the hedge at the Sunken Lane, and the rest through
+the skills that own them.
+
+### Chris's five sittings
+
+Five drills, one closing each leg but the harbour's (`DRILL_COUNT`, `src/long-road.js:37`), six
+lines apiece, `DRILL_EXPOSURE = 35` — **175 taught**, which is what `docs/languages.md:286` says
+and what makes the army's signs readable about as the traveler leaves Drent.
+
+The gating is right and is the interesting part: `act('drill')` is refused with *"Not here, and
+not without him."* unless the leg is finished **and** Chris is actually walking with you. The
+comment at `:262` says why — *"the failure that matters is a drill given to a man on his own"* —
+and a companion who has been released cannot teach.
+
+The save holds: a snapshot claiming **99** sittings is refused by the validator (`:237`, which
+bounds `drills` to `DRILL_COUNT` and to integers), and an honest one restores its count.
+
+**Second harness slip:** my probe read `exposure` off each drill row and reported "total taught:
+0". The exposure is one constant for all five, not a field on the row. Nothing was wrong but my
+reading of it.
+
+*Both slips are the same shape as the `landedWith` one and the `standable` one before it: a probe
+that models the game from the outside and then trusts its own model. The rule that keeps catching
+it is to find the thing from where the source builds it — and, where the repo already has a test,
+to read that test before writing a worse one.*
