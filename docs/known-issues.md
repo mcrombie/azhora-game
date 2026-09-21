@@ -2196,7 +2196,10 @@ the same `hit` event, so I was counting every kill and calling it the player's. 
 control replaced it and is the honest measure. That is the fifth time a probe of mine has modelled
 the game from outside and believed itself; the rule in this ledger keeps earning its place.
 
-## The traveler's buckler does not read on screen
+## The traveler's buckler did not read on screen — fixed
+
+*(kept for the lesson; the buckler now reads and the guard has a pose)*
+## The traveler's buckler, as it was
 
 The shield the traveler buys is attached and correct — `tests/shield-guard.test.js` proves the
 buckler exists, hangs off the arm, toggles with the hand slot and is built once — but it does not

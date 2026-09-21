@@ -42,6 +42,8 @@
 .enemy-badge.warning span {color:#ffe2a4;}
 #damage-flash {position:fixed;inset:0;box-shadow:inset 0 0 110px 30px #a24835;opacity:0;pointer-events:none;}
 .combat-control {display:none;}body.armed .combat-control {display:inline;}
+/* The guard is shown by the shield on the arm, not by being armed: it is the hand slot that gives it. */
+.shield-control {display:none;}body.shielded .shield-control {display:inline;}
 #controls {gap:13px;font-size:11px;bottom:26px;}#controls kbd {font-size:10px;}
 #interaction {bottom:31%;z-index:2;}
 #ride-prompt {bottom:31%;}

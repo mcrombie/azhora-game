@@ -332,6 +332,9 @@ function makeBow(body) {
   for (const [x, z] of [[-0.02, 0.01], [0.02, -0.015], [0, 0.02]]) ribbon(quiver, wood, [x, 0.15, z], [x, 0.36, z], 0.008, 0.008);
   return bow;
 }
+/** How the traveler's own buckler sits: out to the side at rest, turned forward on guard. */
+const GUARD_SHIELD = Object.freeze({ x: -0.5, z: 1.57, turn: -1.35 });
+
 function makeShield(parent, { face = 0x35507a, rim = 0xcbb98e, round: isRound = false, width = 0.43, height = 0.62 } = {}) {
   const shield = new THREE.Group(); shield.name = isRound ? 'Round shield' : 'Army shield';
   shield.position.set(0.13, -0.16, 0); shield.rotation.x = -0.6; parent.add(shield);
@@ -436,9 +439,17 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
   const setShield = value => {
     const on = Boolean(value);
     if (on && !buckler && elbows[0]) {
-      // Pale hide on an iron rim, and a little wider than a soldier's: a small dark disc on a
-      // dark coat is a thing only a test can see.
-      buckler = makeShield(elbows[0], { face: 0xb59366, rim: 0x74787a, round: true, width: 0.33 });
+      // Sized and hung like the legionaries' own (`makeHeaterShield`, which rides the off
+      // forearm device-outward): 0.45 m across, pale hide on an iron rim. The first draft was
+      // wider than a soldier's shield and still invisible, because size was never the problem -
+      // it sat at 0.18 m off the centreline, which is inside the traveler's coat.
+      buckler = makeShield(elbows[0], { face: 0xb59366, rim: 0x74787a, round: true, width: 0.225 });
+      // Out on the forearm and clear of the coat, rather than tucked against the ribs, with the
+      // face turned out to his shield side. Measured, not guessed: at rest the face points
+      // (-1.00, .10, .00) - straight out from the body - where the first draft had it lying
+      // nearly flat and reading as a thin ellipse from every angle.
+      buckler.position.set(-0.05, -0.20, 0.06);
+      buckler.rotation.set(GUARD_SHIELD.x, 0, GUARD_SHIELD.z);
       buckler.name = 'The traveler\u2019s buckler';
     }
     if (buckler) buckler.visible = on;
@@ -838,6 +849,24 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     }
     // A falconer carries the bird on the left fist: upper arm in at the side, forearm level and forward.
     if (pose.falconer) { arm[0] = -0.28; elbow[0] = -1.35; armOut[0] = -0.1; }
+    // The face turns to meet what is in front of him. The arm alone brings the shield up but
+    // leaves it edge-on to the blow, so the buckler is twisted on the forearm as it rises: on
+    // guard its face points (-.62, -.30, .72) - forward and a little outward, which is how a
+    // shield is actually carried across the body - and flat out to the side again when it drops.
+    if (buckler) buckler.rotation.y = pose.guarding ? GUARD_SHIELD.turn : 0;
+    // **On guard.** The off arm brings the shield up across the front of the body, the weapon
+    // hand drops back out of the way, and he turns a little shield-side-on. This is the picture
+    // of `combat.guard` being true and nothing else: when the shield is not up - no wind, mid
+    // swing, rocked - the host passes false and the arm hangs, so the player is never told he is
+    // covered when he is not. Pose only: no timing, no tell, no window.
+    if (pose.guarding) {
+      // Measured, not guessed: this puts the buckler at (-.16, 1.31, .36) with its face pointing
+      // .81 forward - across the centreline, at chin height, in front of him. The first draft
+      // raised it but left it out at his side, where it read as a man holding a plate.
+      arm[0] = -1.1; elbow[0] = -1.0; armOut[0] = .55;
+      arm[1] = -.22; elbow[1] = -.55; armOut[1] = .06;
+      chestY = .16; chestX = .05; headY = -.06;
+    }
     for (let i = 0; i < 2; i++) {
       const side = i ? 1 : -1;
       rotate(legs[i], hip[i], 0, side * stance);

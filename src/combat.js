@@ -367,7 +367,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function guard(held, yaw = guardYaw) {
     guardHeld = !!held;
     if (Number.isFinite(yaw)) guardYaw = yaw;
-    return guarding();
+    // The answer and the flag are set together, so nothing can ever read one and act on the
+    // other: the picture of the guard is drawn from `player.guarding` and must not lag it.
+    player.guarding = guarding();
+    return player.guarding;
   }
   /** Whether the shield is up and would catch something right now. */
   function guarding() {

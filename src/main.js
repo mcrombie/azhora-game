@@ -1444,7 +1444,13 @@ function init() {
   // Not `setShield?.()`: the optional call hid the fact that the facade above had no such verb
   // at all, so the buckler was quietly never built and four renders showed a man with no shield.
   // If it ever goes missing again it should throw.
-  function refreshShield(){player.setShield(!!gear.wearing('hand'));}
+  function refreshShield(){
+    const carried=!!gear.wearing('hand');
+    player.setShield(carried);
+    // The footer says which key only while there is a shield on the arm to use it with. A
+    // one-time toast at the smithy is not enough for something held in every fight.
+    document.body.classList.toggle('shielded',carried);
+  }
   function refreshCompanyHorses(){
     const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,
       walking:fileOrder.filter(id=>npcById.get(id)?.walkingWith)});
@@ -4058,7 +4064,10 @@ function init() {
       const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
-      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:riding.mounted?{pace:movement}:null});
+      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:riding.mounted?{pace:movement}:null,
+        // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
+        // is what `combat.guard` decided this frame, not what the key is doing.
+        guarding:!!combat.state.player.guarding});
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
@@ -4506,6 +4515,7 @@ function init() {
         // module say walks with him, who did the mercenary company actually place, and for each
         // of them - where he is, whether he is drawn, whether he is up, and whether his horse
         // exists and is in the frame.
+        guard:{up:!!combat.state.player.guarding,shield:!!gear.wearing('hand'),phase:combat.state.phase,action:combat.state.player.action,stamina:Math.round(combat.state.player.stamina),cost:arms?arms.margins().guardCost:null,shielded:document.body.classList.contains('shielded')},
         company:{owned:riding.owned,mounted:riding.mounted,grounded,seat:+player.group.position.y.toFixed(2),ground:+world.heightAt(player.group.position.x,player.group.position.z).toFixed(2),horse:riding.horse?[+riding.horse.x.toFixed(1),+riding.horse.z.toFixed(1)]:null,
           mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
           walking:companions.companions.map(one=>one.id),placed:[...(company.companionIds??[])],file:[...fileOrder],
@@ -4986,20 +4996,30 @@ function init() {
           yaw=shot.yaw;pitch=.16;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        // The shield on his arm, at Mara’s straw post where the fighting is taught. The guard
-        // itself is a held key in a live fight and cannot be photographed; what can is that the
-        // hand slot is a thing he is seen carrying.
+        // The shield up, in a real fight, seen from the shield side. It needs a live encounter:
+        // the guard is only ever up while one is on, which is the rule and not the view's choice.
         if(view==='shield-guard'){
           questStage=10;combat.finishPractice();player.setArmed(true);
           gear.wear('hand',{weight:'light',tier:0});refreshShield();
-          const post=world.training,stand=startingSpot(post,(x,z)=>canStand(x,z,world),{reaches:[2.4,3.2,4.2]})??post;
-          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
-          player.group.rotation.y=Math.atan2(post.x-stand.x,post.z-stand.z);
+          const at=greenwayEncounter.center;
+          player.group.position.set(at.x+2.6,world.heightAt(at.x+2.6,at.z+1.6),at.z+1.6);
+          combat.startEncounter(greenwayEncounter);
+          // The guard is only ever up in a fight that has actually begun, so let it begin: a
+          // handful of frames takes the encounter to `active`, and holding the key before that
+          // photographed a man with his shield down, correctly and uselessly.
+          for(let step=0;step<12;step++)combat.update(1/60);
           grounded=true;verticalSpeed=0;
-          reviewTarget=new THREE.Vector3(player.group.position.x,world.heightAt(stand.x,stand.z)+1.3,player.group.position.z);
-          // From his shield side - his left - or the buckler is behind him in the picture.
-          const shot=bestOf(reviewTarget,5.5,[player.group.rotation.y-1.5,player.group.rotation.y-1.9,player.group.rotation.y-1.1]);
-          yaw=shot.yaw;pitch=.12;distance=targetDistance=shot.distance;reviewFrozen=true;
+          const foe=combat.state.enemies.find(one=>one.active)??at;
+          const face=Math.atan2(foe.x-player.group.position.x,foe.z-player.group.position.z);
+          player.group.rotation.y=face;
+          // Held, through the same door the player uses. If the rules say it is not up, the
+          // picture will show it not up, which is the point of the picture.
+          combat.guard(true,face);
+          // His shield is on his left arm, so the camera stands off that side and a little in
+          // front: from anywhere else the man himself is in the way of the thing being shown.
+          reviewTarget=new THREE.Vector3(player.group.position.x,world.heightAt(player.group.position.x,player.group.position.z)+1.25,player.group.position.z);
+          const shot=bestOf(reviewTarget,4.4,[face-.85,face-1.15,face-.6,face-1.5]);
+          yaw=shot.yaw;pitch=.06;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
         if(view==='tidehaven-smithy'){
