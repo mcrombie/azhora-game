@@ -10,7 +10,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { createLongRoad, forkNotice } from './long-road.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
@@ -337,7 +337,56 @@ function init() {
   world.keepPropsClear([...Object.values(world.npcPositions),lakotaGarden,pierHead,...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
   const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
-  function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
+  function placeMercenaries(){for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
+    if(placement.phase==='with-traveler'){placeCompanion(npc,placement);continue;}
+    if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
+    world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming';npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
+  /**
+   * The companion, placed: two and a half metres behind the traveler's left shoulder, which is
+   * inside the twelve the interpreter's aside needs and out of the reach of every site prompt.
+   * He walks when he is more than four metres off it and is simply set down beside you when he
+   * is more than forty, because at forty there is a wall, a river or a boat between you.
+   *
+   * Two things stop him following. A fight: he keeps the street behind you and never steps in
+   * the box, because Drent is level 0 and nothing there is his. And water or another country:
+   * the ferry to Peblos and the road post over the Tessen are where he waits.
+   */
+  let companionHold=null;
+  function placeCompanion(npc,placement){
+    const p=player.group.position,pos=npc.actor.group.position,yaw=player.group.rotation.y;
+    npc.hidden=false;npc.actor.group.visible=true;
+    // Two other hands are on him at the start: the arrival sequence has him in the bow, and
+    // escortLandingMate walks him up the pier at the tighter offsets a three-metre pier wants.
+    // Both run after this one and both would be fighting it, so it stands aside for them.
+    if(mode==='arriving'||mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){
+      npc.placement={...placement,x:pos.x,z:pos.z,yaw:npc.actor.group.rotation.y};return;}
+    const here=world.regionAt(p.x,p.z)?.name??null;
+    const fight=combat.state.phase==='active'?combat.state.center:null;
+    if(here==='Pueth'||here==='Peblos'||fight){
+      if(!companionHold)companionHold={x:pos.x,z:pos.z};
+      // The widest fight box reaches 24.2 m from its centre (fightBox, src/combat.js), so a man
+      // kept COMPANION_KEEP_OUT metres off it is outside every one of them, whichever way it is laid.
+      if(fight)companionHold=outsideTheFight(fight,companionHold);
+      world.npcPositions[npc.id]={...companionHold};npc.pace=2.4;npc.escorting=false;
+      npc.placement={...placement,x:companionHold.x,z:companionHold.z,yaw:npc.actor.group.rotation.y};
+      return;}
+    companionHold=null;
+    let x=p.x-Math.sin(yaw)*2.5+Math.cos(yaw)*-.9,z=p.z-Math.cos(yaw)*2.5-Math.sin(yaw)*-.9;
+    if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},(sx,sz)=>canStand(sx,sz,world));if(spot){x=spot.x;z=spot.z;}}
+    const gap=Math.hypot(pos.x-x,pos.z-z);
+    world.npcPositions[npc.id]={x,z};npc.escorting=true;npc.pace=gap>4?6.4:4.2;
+    if(gap>40)pos.set(x,world.heightAt(x,z),z);
+    npc.placement={...placement,x,z,yaw};}
+  const COMPANION_KEEP_OUT=26;
+  /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
+  function outsideTheFight(centre,at){
+    const dx=at.x-centre.x,dz=at.z-centre.z,d=Math.hypot(dx,dz);
+    if(d>=COMPANION_KEEP_OUT)return at;
+    const bearing=d>.5?{x:dx/d,z:dz/d}:{x:0,z:1};
+    for(const reach of [COMPANION_KEEP_OUT,COMPANION_KEEP_OUT+4,COMPANION_KEEP_OUT+9]){
+      const spot={x:centre.x+bearing.x*reach,z:centre.z+bearing.z*reach};
+      if(canStand(spot.x,spot.z,world))return spot;}
+    return at;}
   function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
   /**
    * Become one of the eleven. Exactly one man on the road changes: the one whose place you
@@ -348,7 +397,7 @@ function init() {
     const chosen=savedPlayerCharacter(id);
     if(chosen===playerId&&playerBody)return chosen;
     const before=roster;
-    playerId=chosen;roster=companyFor(playerId);company=createMercenaryCompany({...companyPlan,roster});
+    playerId=chosen;roster=companyFor(playerId);rebuildCompany();
     for(const [i,merc] of roster.entries()){
       if(merc.id===before[i].id)continue;
       const npc=npcById.get(before[i].id);if(!npc)continue;
@@ -467,6 +516,31 @@ function init() {
   // to come in (src/long-road.js, docs/drent-long-road.md). It reads every other module's view
   // and writes to none of them; what it keeps is the handful of things nobody else can answer.
   const longRoad=createLongRoad();
+  /**
+   * Whether this game has a companion off the clock at all. A new game does, from the moment
+   * he stops walking you up the pier; a save written before the long road existed does not, and
+   * hands `createMercenaryCompany` an undefined companion, which is today's clock exactly.
+   */
+  let companionOffTheClock=false;
+  const companionPlan=()=>{
+    if(!companionOffTheClock)return undefined;
+    const release=longRoad.released;
+    return release?{id:landingMateId(),releasedAt:release.releasedAt,releasedDistance:release.releasedDistance}:{id:landingMateId(),with:true};};
+  const rebuildCompany=()=>{company=createMercenaryCompany({...companyPlan,roster,companion:companionPlan()});};
+  /** Where he was standing when he left you, so he walks on from there and not from the landing. */
+  function releaseCompanion(distance,line){
+    if(!companionOffTheClock||longRoad.released)return false;
+    const done=longRoad.act('release',{at:playSeconds,distance});
+    if(!done.ok)return false;
+    rebuildCompany();placeMercenaries();
+    if(line)toast(line,`${companionName().toUpperCase()} \u00b7 GOES ON`);
+    saveRoad(false);return true;}
+  /** Until the march to the border begins, he can be asked back out of the camp. */
+  function recallCompanion(){
+    if(!companionOffTheClock||!longRoad.act('recall').ok)return false;
+    rebuildCompany();placeMercenaries();
+    toast('Walk Drent, then. I have nothing better on and you have a country to learn.',`${companionName().toUpperCase()} \u00b7 WITH YOU AGAIN`);
+    saveRoad(false);return true;}
   /** Who came off your boat, by name: Chris Gotwood, or Cromb when you are Chris. */
   const companionName=()=>npcById.get(landingMateId())?.name??mercenaryById(landingMateId())?.name??'Chris Gotwood';
   // How Corvan's field register reads when he opens it: who of the eleven has already passed his
@@ -1663,7 +1737,7 @@ function init() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
-    playSeconds=0;refugeeHold=0;settleMercenaries();mercenaryWeapons.clear();
+    playSeconds=0;refugeeHold=0;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
@@ -1749,15 +1823,32 @@ function init() {
     mateSaidGoodbye=true;
     const mateId=landingMateId(),mate=npcById.get(mateId);
     const entry=roster.find(man=>man.id===mateId);
-    const overrun=entry?Math.max(0,playSeconds-entry.arrival-entry.departs):0;
+    const overrun=entry&&!companionOffTheClock?Math.max(0,playSeconds-entry.arrival-entry.departs):0;
     if(overrun>0){
       roster=roster.map(man=>man.id===mateId?Object.freeze({...man,arrival:man.arrival+overrun}):man);
-      company=createMercenaryCompany({...companyPlan,roster});
+      rebuildCompany();
     }
     if(!mate)return;
     mate.escorting=false;mate.pace=undefined;
-    toast('I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.',`${mate.name.toUpperCase()} \u00b7 ON THE LANDING`);
+    rebuildCompany();
+    toast(companionOffTheClock?'I am not going up that road ahead of you. Wherever you go in this country I am a step behind you, and I will tell you what they said.'
+      :'I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.',`${mate.name.toUpperCase()} \u00b7 ON THE LANDING`);
   }
+  /**
+   * The two places the road takes him off you without your saying anything. The muster ground:
+   * he musters a step behind you, which is what being last of eleven means. And the Caloss
+   * bridge once the last boat is in, because somebody has to tell Venmor the eleventh is on the
+   * road or he will post you missing (docs/drent-long-road.md \u00a73). The third way is your word,
+   * and that is a choice in his conversation.
+   */
+  function watchCompanion(){
+    if(!companionOffTheClock||longRoad.released||mode!=='playing')return;
+    const p=player.group.position;
+    if(Math.hypot(p.x-ROUTE_ANCHORS.legionCamp.x,p.z-ROUTE_ANCHORS.legionCamp.z)<70){
+      releaseCompanion(company.musterDistance,'That is the eleventh of us in, and I am the tenth. Go and let them write you down.');return;}
+    const bridge=world.npcPositions['crossing-keeper'];
+    if(bridge&&playSeconds>=ARRIVALS.princes&&Math.hypot(p.x-bridge.x,p.z-bridge.z)<25)
+      releaseCompanion(distanceAlongRoad(world.paths[0],{x:p.x,z:p.z}),'The princes\u2019 boat is in, so that is all of us landed. Somebody has to tell Venmor the eleventh is on the road, or he will post you missing. I will go ahead.');}
   /** Any start that is not the boat: the harbour as built, the traveler on their feet. */
   function leaveOpening(){opening=null;world.restArrivalBoat();player.group.visible=true;document.body.classList.remove('cutscene');show('cutscene',false);}
   function stopInput(){keys.clear();drag=false;}
@@ -2074,7 +2165,7 @@ function init() {
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2242,6 +2333,13 @@ function init() {
   }
   function mercenaryConversation(npc){
     const choices=[...mercenaryChoices(npc)];
+    // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
+    if(companionOffTheClock&&npc.id===landingMateId()){
+      if(!longRoad.released)choices.unshift({id:'companion-go-on',label:'Go on to the muster without me.',action:()=>{
+        closeDialogue();
+        releaseCompanion(distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}),
+          'Then I will see you at the plain. Take your time over this country; it is the last quiet one you will walk through.');}});
+      else if(border.view().stage!=='march')choices.unshift({id:'companion-come-back',label:'Walk Drent with me.',action:()=>{closeDialogue();recallCompanion();}});}
     // Ed is the only man in Drent who has swum anything, and the only one who will explain it.
     if(npc.id===WORD_ID&&!swimming.taught)choices.unshift({id:'word-swim',label:'Nobody swims that. How is it done?',
       action:()=>openDialogue(npc,[...SWIMMING_LESSON],null,'Back to our conversation',{onComplete:()=>{
@@ -3306,6 +3404,7 @@ function init() {
           npc.actor.group.rotation.y=turned.facing;npc.lent=turned.lent;}
       }
       keepLandingMateOnFooting();
+      watchCompanion();
       // Who answers F: the traveler's own business first, then whoever belongs there, and a hired sword of the
       // company last, because he is only passing and stops exactly where the traveler has business (src/prompt-priority.js).
       {const answers=talkTarget(talkers.map(t=>({...t,marked:t.npc.marker.visible,passing:mercenaryIds.has(t.npc.id)})));if(answers){currentNPC=answers.npc;nearest=answers.d;}}
