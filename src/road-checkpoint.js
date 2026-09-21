@@ -52,6 +52,7 @@ import { createFerry, validateFerrySnapshot } from './ferry.js';
 import { createRenaLetters, validateRenaLettersSnapshot } from './rena-letters.js';
 import { createOgreToll, validateOgreSnapshot } from './amod-ogre.js';
 import { createLinguist, validateLinguistSnapshot } from './linguist.js';
+import { createLongRoad, validateLongRoadSnapshot } from './long-road.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
@@ -142,6 +143,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateRenaLettersSnapshot(data.renaLetters)) return failed('The saved letters between the Ardrys are invalid.');
     if (!validateOgreSnapshot(data.ogreToll)) return failed('The saved toll at the Amod pass stones is invalid.');
     if (!validateLinguistSnapshot(data.linguist)) return failed('The saved tongues of Azhora are invalid.');
+    if (!validateLongRoadSnapshot(data.longRoad)) return failed('The saved long road through Drent is invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
       const held = data.mercenaryWeapons;
@@ -280,6 +282,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'cooking')) result.cooking = { ...data.cooking, known: [...data.cooking.known], made: { ...data.cooking.made } };
     if (Object.hasOwn(data, 'geology')) { const geology = createGeology(); geology.restore(data.geology); result.geology = geology.snapshot(); }
     if (Object.hasOwn(data, 'linguist')) { const linguist = createLinguist(); linguist.restore(data.linguist); result.linguist = linguist.snapshot(); }
+    if (Object.hasOwn(data, 'longRoad')) { const road = createLongRoad(); road.restore(data.longRoad); result.longRoad = road.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }
     if (Object.hasOwn(data, 'renaLetters')) { const letters = createRenaLetters(); letters.restore(data.renaLetters); result.renaLetters = letters.snapshot(); }

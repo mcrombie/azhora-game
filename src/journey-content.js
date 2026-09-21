@@ -12,8 +12,25 @@ export const SITE_ACTIONS = {
   'bridge-repair':'repair-bridge', 'beacon-west':'restore-beacon-west', 'beacon-east':'restore-beacon-east', 'beacon-north':'restore-beacon-north',
 };
 
+/**
+ * Corvan keeps the field register, so he is the one who says the rule for the army: how many of
+ * the eleven have signed his book ahead of you, how many boats are still out, and that nobody is
+ * posted late while one of them is. `signed` and `atSea` come in from the host, which reads them
+ * off the company's own clock (`company.placements`, src/mercenaries.js), the way `musterCount`
+ * reaches Venmor. He never asks the traveler to choose; he states the arithmetic.
+ */
+const COUNT_WORDS=['Nobody','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven'];
+const countWord=n=>COUNT_WORDS[Math.max(0,Math.min(COUNT_WORDS.length-1,Math.round(Number(n)||0)))];
+export function registerLine({signed=0,atSea=0}={}) {
+  const book=signed<=0?'You are the first name in it.'
+    :`${countWord(signed)} of them ${signed===1?'has':'have'} signed it ahead of you.`;
+  const sea=atSea<=0?'They are all ashore now, and the last of them is on this road behind you.'
+    :`${countWord(atSea)} ${atSea===1?'is':'are'} still at sea.`;
+  return `Eleven were hired under that letter, counting you. ${book} ${sea} Nobody is posted late while a boat is still out — the Marshal does not move until the company is in, so take the road at whatever pace suits you.`;
+}
+
 export function journeyConversation(npc,context) {
-  const {journey,inventory,openDialogue,closeDialogue,act,teachFishing,provideBridgeWood}=context;
+  const {journey,inventory,openDialogue,closeDialogue,act,teachFishing,provideBridgeWood,register}=context;
   const state=journey.state, view=journey.view();
   const done=id=>state.completedRegions.includes(id);
   const choice=(id,label)=>({id,label,action:()=>{closeDialogue();act(id);}});
@@ -81,10 +98,12 @@ export function journeyConversation(npc,context) {
   }
   const tell=(lines,choices)=>openDialogue(npc,lines,null,'Back to the road',{choices:[...choices,...(context.extraChoices?.(npc)||[]),...(flavor[npc.id]||[]),back]});
   if(npc.id==='meadow-courier') {
-    if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.'],[]);
+    if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.',
+      registerLine(register)],[]);
     if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Mara and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
       'the letter of introduction? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
+      registerLine(register),
       'Our orders are to secure this road for the campaign against the rebels in the south. Goblin raids spilling out of Pueth have made supply work dangerous too. Before we can move, I need three parcels recovered from this broken cart.',
       'The parcels spilled east of the main road, around the broken field walls. Look for crossed ties around each bundle. Mind the goblin raiders among them; you can withdraw and catch your breath before trying again.'
     ],[choice('meet-courier','Report for field service · recover the supplies')]);

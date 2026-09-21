@@ -3491,14 +3491,27 @@ export function groundShadow(opacity = 0.34) {
  * The gold over somebody's head, in one of three kinds (src/quest-markers.js):
  * `main` a cut stone, `plot` a rolled sheet, `skill` a leaf. Different shapes as
  * well as different colours, so the three read apart without colour.
+ *
+ * `open` is the arc's one variant: the same gold and the same cut stone, hollow — the long
+ * road's next stop rather than the muster road's. Two crossed outlines and not one, because a
+ * flat ring vanishes every time the marker turns side-on, and it turns all the time.
  */
-export function makeQuestMarker(kind = 'main') {
+export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   const look = MARKER_STYLE[kind] ?? MARKER_STYLE.main;
+  const hollow = !!open && look.shape === 'diamond';
   const group = new THREE.Group();
   group.name = 'quest-marker';
   group.userData.markerKind = look.kind;
+  group.userData.markerOpen = hollow;
   const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  if (look.shape === 'diamond') {
+  if (hollow) {
+    // A torus of four tubular segments is a diamond outline: its corners sit on the axes, so
+    // stretched the way the stone is stretched it is exactly the stone's silhouette, empty.
+    for (const turn of [0, Math.PI / 2]) {
+      const outline = part(group, new THREE.TorusGeometry(0.118, 0.019, 4, 4), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
+      outline.rotation.y = turn;
+    }
+  } else if (look.shape === 'diamond') {
     const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
     diamond.rotation.y = Math.PI / 4;
   } else if (look.shape === 'scroll') {

@@ -680,6 +680,9 @@ export function createInventory({
         element('p', '', 'Bramble goblin raiders have cut the road out of Tidehaven. Our watch is holding the northern path, but the village needs help keeping travelers safe.'),
         element('p', '', 'The bearer has answered the Ambroni Empire’s call for mercenaries. Receive them at your field post, record their service, and give them their first orders. They arrive with a plain sword and no armor.'),
         element('p', '', 'The army promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
+        // The rule the whole of the long road hangs on, stated where the traveler cannot miss it
+        // and ten minutes before anybody says it out loud (docs/drent-long-road.md §2).
+        element('p', '', 'The company called under this contract is eleven, the bearer among them, and the boats are still coming in. The Marshal marches when the eleventh has reported at the muster, and not before.'),
         element('p', 'inventory-letter-signature', 'Mara\nHarbourmaster of Tidehaven'),
       );
       detail.append(letter);

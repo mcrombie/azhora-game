@@ -14,6 +14,17 @@
  * the meshes from this table and src/main.js reads `markerFor` once a frame.
  */
 export const MARKER_KINDS = Object.freeze(['main', 'plot', 'skill']);
+/**
+ * One variant, and not a fourth kind: the arc's own gold, **open** — the ring with the cut
+ * stone taken out of it. Solid gold is the muster road. Open gold is the next thing Drent
+ * will teach you on the way there (`src/long-road.js`, docs/drent-long-road.md §2). Following
+ * one never closes the other, so a teacher keeps their green leaf and the open gold rides over
+ * whichever of them is next.
+ *
+ * It is a grade rather than a kind: the table above stays three, `MARKER_STYLE` stays three,
+ * and `markerFor` answers `{ kind: 'main', open: true }`.
+ */
+export const MARKER_OPEN = 'main-open';
 
 const style = (kind, shape, scale, colour, emissive, ring, ringEmissive, what) =>
   Object.freeze({ kind, shape, scale, colour, emissive, ring, ringEmissive, what });
@@ -27,14 +38,23 @@ export const MARKER_STYLE = Object.freeze({
     'Somebody who will teach you something, or an errand that pays a skill.'),
 });
 
-const RANK = Object.freeze({ main: 3, plot: 2, skill: 1 });
+// Open gold ranks under the solid stone and over a story of its own: the road the game is
+// about first, then the road Drent would rather you took, then everything else.
+const RANK = Object.freeze({ main: 4, [MARKER_OPEN]: 3, plot: 2, skill: 1 });
 
-/** Of the kinds somebody qualifies for, the one they wear: main beats plot beats skill. */
+/** Of the grades somebody qualifies for, the one they wear: main beats open beats plot beats skill. */
 export function strongestMarker(kinds) {
   let best = null;
   for (const kind of kinds ?? []) if (RANK[kind] && (!best || RANK[kind] > RANK[best])) best = kind;
   return best;
 }
+
+/** A mark as the host uses it: which gold, and whether it is the open ring. */
+const mark = grade => grade ? Object.freeze({ kind: grade === MARKER_OPEN ? 'main' : grade, open: grade === MARKER_OPEN }) : null;
+/** One word for a mark, so a mesh built for it can be cached and only rebuilt when it changes. */
+export const markerGrade = marker => !marker ? null : marker.open ? MARKER_OPEN : marker.kind;
+/** The look a mark wears. The open variant is the arc's own colours and shape; only the stone is missing. */
+export const markerStyle = marker => marker ? MARKER_STYLE[marker.kind] ?? MARKER_STYLE.main : null;
 
 /** The people who can carry a mark at all, by the name the host knows them under. */
 export const MARKER_ROLES = Object.freeze(['harbourmaster', 'warden', 'doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'gardenKeeper', 'birdWatcher', 'vintner']);
@@ -46,8 +66,11 @@ const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) 
  * `view` once a frame and every rule below is a plain read of it, so the rules
  * can be checked without a world to run them in.
  *
+ * Answers `{ kind, open }` or null, never a bare word: a mark is which gold and whether it is
+ * the open one, and the two are decided together.
+ *
  * `view`: { questStage, busy, heardDoom, ids: {…MARKER_ROLES}, arcDestinations,
- * chapterDestinations, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
+ * chapterDestinations, longWay, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
  * archaeologyReport, forestOpen, wineRecommended }.
  */
 export function markerFor(id, view = {}) {
@@ -57,6 +80,9 @@ export function markerFor(id, view = {}) {
   if (id === ids.warden && stage === 5) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
+  // The long road's next stop, which is gold because it is main quest too, and open because it
+  // is the road you may take rather than the one you must.
+  if (holds(view.longWay, id) && !busy) kinds.push(MARKER_OPEN);
   // Stories of their own.
   if (id === ids.doomsayer && !view.heardDoom) kinds.push('plot');
   if (id === ids.forestStory && stage >= 1 && !busy && view.forestOpen) kinds.push('plot');
@@ -68,5 +94,5 @@ export function markerFor(id, view = {}) {
   // Lakota's is up when he has notes to take back, which only happens once you know him.
   if (id === ids.birdWatcher && !busy && view.archaeologyReport) kinds.push('skill');
   if (id === ids.vintner && view.wineRecommended && !busy) kinds.push('skill');
-  return strongestMarker(kinds);
+  return mark(strongestMarker(kinds));
 }
