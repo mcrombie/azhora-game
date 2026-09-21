@@ -212,4 +212,10 @@ test('the host lays the horses first, and every path that lays a file gets them'
   assert.match(main, /if\(riding\.owned&&riding\.horse&&!riding\.mounted\)bodies\.push/, 'and his own bay only while he is off it');
   // The fallback ring answers to the same taken ground, horses and their own room included.
   assert.match(main, /fileTaken\.every\(other=>Math\.hypot\(other\.x-sx,other\.z-sz\)>=\(Number\.isFinite\(other\.room\)\?other\.room:room\)\)/);
+  // **And the traveler is in that ground.** `fileSpotFor` measures back from him and can never be
+  // given his spot, but the escort ring it falls back on is a list of close-in offsets and had
+  // nothing to stop it putting a man on top of him: on the road by Lumber Town it put Ciarán
+  // 1.9 m from the traveler's horse, where two riders want RIDE_FILE.room.
+  assert.match(main, /fileTaken\.push\(\{x:player\.group\.position\.x,z:player\.group\.position\.z,\s*room:riding\.mounted\?RIDE_FILE\.room:BODY\.person\*2\}\);/,
+    'the man at the front is a body like the rest');
 });

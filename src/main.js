@@ -441,6 +441,12 @@ function init() {
     // see; now they are in `fileTaken` before the first man is placed, so every path that lays a
     // file - walked or snapped - avoids them.
     fileTaken=companyHorseGround().bodies;
+    // **And the traveler is a body too.** `fileSpotFor` measures back from him and so can never
+    // be given his ground - but the escort ring the file falls back on is a list of close-in
+    // offsets, and nothing stopped it putting a man on top of him. On the road beside Lumber
+    // Town it put Ciarán 1.9 m from the traveler's horse, where two riders want 2.6.
+    fileTaken.push({x:player.group.position.x,z:player.group.position.z,
+      room:riding.mounted?RIDE_FILE.room:BODY.person*2});
     for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
     if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
@@ -5304,6 +5310,41 @@ function init() {
             ?bestOf(reviewTarget,20,[facing+1.35,facing-1.35,facing+1.1,facing-1.1,facing+1.6,facing-1.6])
             :clearestBearing(reviewTarget,21,{prefer:facing+Math.PI/2});
           yaw=shot.yaw;pitch=.2;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
+        // **The whole company, mounted, on a road.** The two views above are about the yard and
+        // carry three men on purpose; this one is the thing the arithmetic says is sixty metres
+        // long (RIDE_FILE.shoulder + 9 * stride) and that no render had ever shown.
+        if(view==='company-ten'){playSeconds=4000;
+          questStage=10;combat.finishPractice();player.setArmed(false);
+          companionOffTheClock=true;
+          // Nine asked, and Chris carried as the landing mate: ten in the file (companionPlan).
+          companions.restore({...companions.snapshot(),walking:Object.keys(ASKS).filter(id=>id!==landingMateId())});
+          rebuildCompany();
+          // The main road where it leaves Lumber Town, and the way it runs from there.
+          const road=world.paths[0],hitch=LUMBER_TOWN_STABLE.hitch;
+          let near=0;for(let i=0;i<road.length;i++)if(Math.hypot(road[i].x-hitch.x,road[i].z-hitch.z)<Math.hypot(road[near].x-hitch.x,road[near].z-hitch.z))near=i;
+          // Two waypoints on from the town: a file of ten is sixty metres long on open ground and
+          // near a hundred among houses, and the camera cannot stand back inside a street either.
+          const from=Math.min(road.length-2,near+2);
+          const at=road[from],next=road[from+1];
+          const facing=Math.atan2(next.x-at.x,next.z-at.z);
+          if(!riding.owned)riding.grant(at,facing);else riding.place(at,facing);
+          riding.teach();placeOwnHorse();
+          player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);
+          if(!riding.mounted)toggleMount();
+          // The seat is a fact, not a step - the runner composes a view twice.
+          mountHeading=facing;
+          const sx=at.x+Math.sin(facing)*RIDE.seat.forward,sz=at.z+Math.cos(facing)*RIDE.seat.forward;
+          player.group.position.set(sx,world.heightAt(sx,sz)+RIDE.seat.up,sz);
+          player.group.rotation.y=facing;grounded=true;verticalSpeed=0;
+          companyWasMounted=riding.mounted;companyMountedAt=-1e9;
+          settleMercenaries();refreshCompanyHorses();
+          // Framed on the middle of a sixty-metre file, from far enough back to hold both ends.
+          const p=player.group.position,back=(RIDE_FILE.shoulder+9*RIDE_FILE.stride)/2;
+          reviewTarget=new THREE.Vector3(p.x-Math.sin(facing)*back,world.heightAt(p.x,p.z)+2,p.z-Math.cos(facing)*back);
+          const shot=bestOf(reviewTarget,48,[facing+1.35,facing-1.35,facing+1.1,facing-1.1,facing+1.6,facing-1.6]);
+          yaw=shot.yaw;pitch=.26;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}

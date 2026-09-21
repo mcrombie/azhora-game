@@ -2729,3 +2729,56 @@ opening words missing. Capitalised, and nothing else about it touched.
 - **`longRoad.view().finished` can never be true in normal mode**, because it wants five drills
   and the drills are hard mode's. Checked every reader: nothing reads it, so nothing is blocked.
   It is written down so that whoever gives it a reader knows.
+
+
+---
+
+## The ten-man mounted file, rendered at last — and what the render found
+
+There was no view of the thing the arithmetic says is sixty metres long: `company-mounted` and
+`company-picket` are about the yard and carry three men on purpose. `company-ten` is the whole
+company, mounted, on the road out of Lumber Town.
+
+### The first shot found a rider under the traveler's horse
+
+The camera was buried in the town and the picture was of empty ground, so the facts line answered
+instead of another guess. It said the file had formed — ten up, ten ridden — and it said this:
+
+| | back from the traveler's horse |
+|---|---|
+| Chris | 4.7 m |
+| **Ciarán** | **1.9 m** |
+| Ed | 10.7 m |
+| … | … |
+| Mus | **97.5 m** |
+
+**1.9 m between two mounted men**, where `RIDE_FILE.room` is 2.6 because "a horse is about 2.4 m
+nose to tail". His own file spot did not stand, so he fell back on the escort ring — and the ring
+is a list of close-in offsets measured from the traveler, with nothing to stop it putting a man on
+top of him. **`fileTaken` never contained the traveler.** It is exactly the class the horses' fix
+had just closed, one body further in: `fileSpotFor` measures *back* from him and so can never be
+handed his ground, and that is precisely why nobody had ever had to put him in the list.
+
+**Fixed:** `placeMercenaries` pushes the traveler into `fileTaken` with a rider's room when he is
+mounted and a man's when he is not. It bites only on the fallback path, which is where it was
+wrong.
+
+**And 97.5 m is the retreat's own ceiling** (`shoulder + (9 + FILE_RETREAT) * stride` = 97.2, plus
+the seat offset). Beside a town the shoulder spots fail all the way down the file, so it goes
+single and trails to the end of its rope. Not a fault — that is what "single and long" is for —
+but it is what a company looks like if the traveler stops his horse in a street.
+
+### The second shot, two waypoints out of the gate
+
+| | |
+|---|---|
+| riders up, on their own horses | **10 of 10** |
+| closest pair, the traveler counted | **4.69 m** (room is 2.6) |
+| file length | **60.2 m** |
+| spacing, man to man | 6.2 m, every one of them |
+| camera, stood back | the full 48 m asked for |
+
+**60.2 m against the arithmetic's 60.0** (`shoulder 4.2 + 9 x stride 6.2`), with **no retreat at
+all**: on open ground every man takes his own place at his own shoulder. Looked at, it is eleven
+riders in a single even file coming out through Lumber Town's gate, each on his own coat. That is
+the picture `docs/companions.md` describes, and it had never been seen.
