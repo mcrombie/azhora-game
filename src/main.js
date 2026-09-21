@@ -4600,7 +4600,12 @@ function init() {
     for(const e of combatEvents.splice(0)) {
       combatView.event(e);audio?.effect(e.type);
       if(raid.ids.includes(e.id)){const npc=npcById.get(e.id);
-        if(e.type==='ally-down'&&fallen.fall(e.id)){npc.fallen=true;raid.fell=true;toast(`The goblins cut ${npc.name} down.`,'KILLED ON THE GREENWAY');}
+        // **And it says what actually killed her.** With arrows stopping on bodies the villager
+        // who took up an axe can be shot by the traveler, and "the goblins cut her down" would be
+        // a lie in the one place the raid is remembered (the user, 2026-09-21).
+        if(e.type==='ally-down'&&fallen.fall(e.id)){npc.fallen=true;raid.fell=true;
+          toast(e.arrow?(e.by==='traveler'?`Your arrow kills ${npc.name}.`:`An arrow from your own line kills ${npc.name}.`)
+            :`The goblins cut ${npc.name} down.`,'KILLED ON THE GREENWAY');}
         if(e.type==='ally-wounded')toast(`${npc.name} is down, badly hurt, but breathing.`,'THE GREENWAY');
         if(e.type==='ally-escaped')toast(`${npc.name} got clear of the fight.`,'THE GREENWAY');}
       // How each villager came through the Greenway, for Eren to speak of.
