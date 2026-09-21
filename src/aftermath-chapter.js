@@ -24,6 +24,45 @@ export const AFTERMATH_NPCS = Object.freeze([
 const SCRIP_NOTE = 'a note for forty more when the Republic has a treasury that is not a chest on a ship';
 
 /**
+ * **What your side gives you for the border** (the user, 2026-09-21; `docs/combat-brief.md`, where
+ * tier 4 comes from "officers, and gifts from a side you have served"). Fine steel is the one
+ * material no smith anywhere sells, and this is the only thing in the game that hands it over.
+ *
+ * **One piece, the body, in mail.** The arithmetic decided the weight, not the picture. At tier 4
+ * a light jack turns .096 of a blow and a mail coat turns .16; the best body piece on any board
+ * the traveler has stood at by the border is bog-iron mail at .115, so a *fine steel* jack would
+ * turn less than a thing he can buy for seventy-two copper — a reward weaker than a shop item is
+ * not a reward. Mail is a clear step above anything purchasable before Ambron, and it costs him
+ * the same tenth off his dodge that any mail costs, so the gift adds no penalty he is not already
+ * paying. Plate is legal at this tier (`WEIGHTS.heavy.fromTier` is 3) and would turn .224, but it
+ * takes a quarter off the dodge and **doubles the wind swimming spends**: a gift he cannot refuse
+ * that doubles his drowning is a trap, not a thank-you.
+ *
+ * **Nothing new is saved.** Nothing else in the game makes tier-4 armour and nothing in the host
+ * ever takes a piece off, so *wearing fine steel on that place* is the permanent record that the
+ * side gave it, and it is already in the gear snapshot.
+ */
+export const SIDE_GIFT = Object.freeze({ slot: 'body', weight: 'medium', tier: 4 });
+
+/** Whether the side still owes it, asked of what he has on that place. */
+export const sideGiftOwed = worn => (worn?.tier ?? -1) < SIDE_GIFT.tier;
+
+/**
+ * What each captain says as he hands it over, in the voice he already has: Brulan writes things
+ * off and writes them down, Voss is a Lauvel farmer who will not dress anything up.
+ */
+export const GIFT_LINES = Object.freeze({
+  'aftermath-tribune': Object.freeze([
+    'You held that corner. Before anything else: the quartermaster has a coat of fine steel that was written off as lost at the Lauvel, and I have written it off again. Put it on.',
+    'Fine steel is what officers wear, and it is not issued to men the army pays by the day. Do not thank me for it. Thank the eight who came at you and did not get through.',
+  ]),
+  'aftermath-captain': Object.freeze([
+    'Wait. This first. We took it off an imperial officer at the stockade this morning, and not one of my farmers can wear it without looking like a thief. Fine steel, and it is yours.',
+    'The Republic pays in copper and in paper. That is neither. That is what a side gives the sword that turned its first battle.',
+  ]),
+});
+
+/**
  * What the traveler can do with the orders, which is not the same on the two sides.
  * Ambron stands in Elagos and the ground between it and the Moros is walkable end to
  * end, so an Empire sellsword can ride there and stand in the city; what is missing is
@@ -279,14 +318,19 @@ export function createAftermathChapter({ onEvent = () => {} } = {}) {
 /** The commander, and whoever sends the traveler on, speak for the chapter while it is theirs. */
 export function aftermathConversation(npc, context) {
   // `fill` is what his commander says about the ordinary soldiers the army is putting in beside
-  // him for this day's fight, or nothing when it is not happening (src/file-fill.js).
-  const { aftermath, openDialogue, closeDialogue, act, fill = [] } = context;
+  // him for this day's fight, or nothing when it is not happening (src/file-fill.js). `gift` is
+  // the fine steel his side owes him for the border, said once and nothing after (`SIDE_GIFT`).
+  // Both are built by the **host**, because only the host knows who is walking with him today
+  // and what he already has on his back.
+  const { aftermath, openDialogue, closeDialogue, act, fill = [], gift = [] } = context;
   const chapter = aftermath.spec, current = aftermath.view().stage;
   if (!chapter) return false;
   const option = id => { const found = aftermath.availableActions().find(item => item.id === id); return found ? [{ ...found, action: () => { closeDialogue(); act(id); } }] : []; };
   const leave = { id: 'leave-aftermath', label: 'Not yet.', action: closeDialogue };
   if (npc.id === chapter.commanderId && current === 'rally') {
-    openDialogue(npc, [...chapter.orders, ...fill], null, 'Step back', { choices: [...option('begin-assault'), leave] });
+    // The gift comes first: a captain who has just watched a man hold the corner hands him the
+    // coat before he gives him the next piece of work.
+    openDialogue(npc, [...gift, ...chapter.orders, ...fill], null, 'Step back', { choices: [...option('begin-assault'), leave] });
     return true;
   }
   if (npc.id === chapter.principalId && current === 'report') {
