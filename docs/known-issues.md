@@ -1561,3 +1561,52 @@ of 8, and the smoke's own loop dodges on the amber tell before it swings). Neith
 fight; the smoke never reaches the border battle or the day after. The one thing that could still
 bite is the smoke's fixed `deadline` per fight, since a wolf now takes the same three swings but
 the traveler is closing on a stouter enemy — the wolves resolved comfortably inside the limit here.
+
+---
+
+## The border battle with its side, and a correction to my own reading of it
+
+**First, the caution answered: the harness did have the allies.** `borderEncounter('empire',
+allies)` attaches four, `startEncounter` builds them into `state.allies` at 90 hp each, active,
+and `combat.update` steps them every frame. The earlier rows were fought beside them.
+
+**But I framed the result badly, and the framing was the wrong half.** What I reported as "3 of 40
+even at level 0, before any of this" was fought with **no Arms skills at all** — which is the game
+*before* phase 2, not the game the hold restores. Fought at level 0 with the skills the arc
+actually pays by then (Blades 17, Toughness 12), it is a different battle:
+
+| | won | health left | allies up (of 4) | enemies down (of 8) |
+|---|---|---|---|---|
+| **level 0, with the Arms the arc pays** — what the hold restores | **29/40** | 42 % | 3.5 | 7.1 |
+| level 0, with no Arms at all — the old game | 4/40 | 16 % | 3.5 | 4.2 |
+| **level 2, with the same Arms** — what lifting the hold means | **0/40** | — | 3.3 | **1.4** |
+| level 2, a careless player | 0/40 | — | 3.3 | 1.4 |
+
+So **phase 2's fighting skills make the border battle much better than it was** — 4 of 40 becomes
+29 of 40, and it lands where a climax should: won most times, at 42 % health, having lost half a
+man. The hold does not restore the old game; it restores something better than the old game.
+
+**And at level 2 it is not a hard fight, it is a wall.** Not 0 of 40 by a margin — **1.4 of 8
+enemies down** before the traveler falls. Nothing about play closes that: the careless row is
+identical, because the fight is decided by whether 190 hp can be got through at all, not by
+dodging.
+
+**The number to lift the hold against:** gear and company have to carry the traveler from 1.4
+enemies down to 8. At level 2 a soldier is 190 hp and a three-hit combo at Blades 17 does about
+111, so it is a little over two full combos a man, eight times, inside a fight he currently
+survives about a fifth of.
+
+### One asymmetry for phase 3 to know about
+
+**An ally's health is not scaled by the country; the blow that kills him is.** `countryHealth` is
+applied in the *enemies* loop of `encounterConfig` (`src/combat.js:124`) and nowhere else, so at
+level 2 the man you are fighting has 190 and the man beside you still has 90 — while `hurtAlly`
+(`src/combat.js:647`) scales what hits him by `countryDamage`, ×1.60.
+
+It does not show in the rows above (3.3 allies still standing at level 2 against 3.5 at level 0),
+and the reason it does not is worth saying plainly: **the allies are not surviving because they
+are fine, they are surviving because the traveler dies first and ends the fight.** In a level-2
+battle the traveler could actually win — which is what gear and company are for — the side would
+be taking ×1.60 blows on unscaled health for a great deal longer, and that is where it would show.
+Whoever tunes phase 3 should decide whether a country's level is a property of its enemies or of
+its ground; today it is of its enemies only, and your own side is standing on the same ground.

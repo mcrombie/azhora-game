@@ -189,6 +189,14 @@ The third leg, and mostly built already: allies fight beside you.
 
 - A companion fights with their own weapon at their own level (each mercenary has one, between
   30 and 60 at the start, and they grow with the story).
+- **A country's level is a property of its dangers, not of its ground.** It scales what its
+  enemies are and what they do, to anybody. It does not scale your side. A companion's health and
+  damage come from *their own* levels through the same curves the traveler's do (Toughness for
+  health, their weapon's skill for damage), so a mercenary at 45 stands in level-2 country with
+  about 235 health and nearly double damage, which is what "survived by who walks with you" means
+  in arithmetic. A side's soldiers have the level of their kind. (Measured 2026-09-21: allies had
+  a flat 90 health while blows on them were scaled x1.6, which only failed to show because the
+  traveler died first.)
 - "Go armed, and not alone" (level 6 country) is meant literally: those countries are tuned for
   a traveler with one or two companions.
 - A side's soldiers stand with you on its ground.
