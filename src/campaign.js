@@ -154,7 +154,7 @@ const initialControl = () => Object.fromEntries(REGION_DESIGN.map(entry => [entr
 
 const emptyState = () => ({
   version: CAMPAIGN_VERSION, revision: 0, side: null, chapterId: 'drent-road', completed: [], battles: {}, attempts: {},
-  survey: [], arcs: {}, truces: [], control: {}, trust: { empire: 60, coalition: 15 }, crossings: 0, exposed: false, horse: false, missions: {},
+  survey: [], arcs: {}, truces: [], control: {}, trust: { empire: 60, coalition: 15 }, crossings: 0, exposed: false, horse: false, missions: {}, early: false,
 });
 
 function validateSnapshot(value) {
@@ -172,6 +172,8 @@ function validateSnapshot(value) {
   if (!isPlainObject(value.trust) || SIDES.some(side => !Number.isFinite(value.trust[side]) || value.trust[side] < 0 || value.trust[side] > 100)) return false;
   if (!Number.isSafeInteger(value.crossings) || value.crossings < 0 || typeof value.exposed !== 'boolean' || typeof value.horse !== 'boolean') return false;
   if (!isPlainObject(value.missions) || Object.entries(value.missions).some(([id, outcome]) => !Object.hasOwn(CAMPAIGN_MISSIONS, id) || !BATTLE_OUTCOMES.includes(outcome))) return false;
+  // A save from before anybody could be early simply was not (see `earlyMuster`).
+  if (Object.hasOwn(value, 'early') && typeof value.early !== 'boolean') return false;
   // Story invariants: a side exists exactly when the fork is behind us; the
   // current chapter belongs to the chosen side; the horse comes from Luscia.
   const chapter = CHAPTERS[value.chapterId];
@@ -209,7 +211,7 @@ export function createCampaign({ onEvent = () => {} } = {}) {
 
   const snapshot = () => ({
     ...state, completed: [...state.completed], battles: { ...state.battles }, attempts: { ...state.attempts }, survey: [...state.survey],
-    arcs: { ...state.arcs }, truces: [...state.truces], control: { ...state.control }, trust: { ...state.trust }, missions: { ...state.missions },
+    arcs: { ...state.arcs }, truces: [...state.truces], control: { ...state.control }, trust: { ...state.trust }, missions: { ...state.missions }, early: state.early,
   });
 
   function emit(actionId, detail = {}) {
@@ -354,6 +356,18 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     return emit('resolve-mission', { missionId, outcome });
   }
 
+  /**
+   * The traveler reached the muster before the company did. Venmor remembers who came first,
+   * and that is the one thing the short road has that the long road cannot get
+   * (docs/drent-long-road.md §9). A small gain in the army's trust, once and once only.
+   */
+  function earlyMuster() {
+    if (state.early) return { ok: true, first: false, trust: state.trust.empire };
+    state.early = true;
+    state.trust.empire = clamp(state.trust.empire + 4, 0, 100);
+    return emit('early-muster', { trust: state.trust.empire, first: true });
+  }
+
   function milestones(side = state.side) {
     if (!side) return { side: null, provinces: 0, threeOfFive: false, fiveOfFive: false };
     const provinces = arcCount(side, LEVEL_ONE_PROVINCES);
@@ -381,12 +395,12 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     state = { version: CAMPAIGN_VERSION, revision: data.revision, side: data.side, chapterId: data.chapterId,
       completed: [...data.completed], battles: { ...data.battles }, attempts: { ...data.attempts }, survey: [...data.survey],
       arcs: { ...data.arcs }, truces: [...data.truces], control: { ...data.control }, trust: { empire: data.trust.empire, coalition: data.trust.coalition },
-      crossings: data.crossings, exposed: data.exposed, horse: data.horse, missions: { ...data.missions } };
+      crossings: data.crossings, exposed: data.exposed, horse: data.horse, missions: { ...data.missions }, early: data.early ?? false };
     return true;
   }
 
   return {
-    chooseSide, completeChapter, surveyPoint, resolveArc, resolveMission, availableMissions, battleOdds, mapControl, milestones, view, snapshot, restore,
+    chooseSide, completeChapter, surveyPoint, resolveArc, resolveMission, availableMissions, battleOdds, mapControl, milestones, earlyMuster, view, snapshot, restore,
     get state() { return { ...snapshot(), chapter: current().id }; },
   };
 }

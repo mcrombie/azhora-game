@@ -31,7 +31,7 @@ async function country() {
 }
 
 test('every plant is one of this country’s, and says where it stands and what it is for', () => {
-  assert.equal(PLANT_IDS.length, 34, 'nineteen plants and fifteen trees');
+  assert.equal(PLANT_IDS.length, 36, 'twenty-one plants and fifteen trees');
   assert.equal(TREE_IDS.length, 15);
   for (const id of PLANT_IDS) {
     const species = PLANT_SPECIES[id];
@@ -111,7 +111,7 @@ test('the sheet only names what has been found, and every plant in Drent is wort
   for (const id of PLANT_IDS) botany.find(id);
   const full = botany.view();
   assert.equal(full.foundCount, PLANT_IDS.length);
-  assert.equal(skills.level('botany'), 6, 'the whole country’s thirty-four plants are 625 experience: six levels of ninety-nine');
+  assert.equal(skills.level('botany'), 7, 'the whole country’s thirty-six plants are 665 experience: seven levels of ninety-nine');
 });
 
 test('plant notes survive the road, and a bad note is refused', () => {
@@ -303,7 +303,11 @@ test('Drent’s plants stand where they should, off the road and out from under 
     for (const stand of Object.values(world.npcPositions)) {
       assert.ok(Math.hypot(stand.x - site.x, stand.z - site.z) > 2.6, `${site.id} grows under somebody's feet`);
     }
-    if (PLANT_PATCHES[site.species]) assert.ok(site.stand === null, `${site.id} should be scattered, not an authored stand`);
+    // A scattered species is not pinned by hand instead of scattering - with one exception, and
+    // it is a hedge. Hazel and bramble grow on any verge in Drent *and* stand where Nell works
+    // them, because a teacher with nothing to point at is not teaching (docs/drent-long-road.md).
+    if (PLANT_PATCHES[site.species] && !['hazel', 'bramble'].includes(site.species))
+      assert.ok(site.stand === null, `${site.id} should be scattered, not an authored stand`);
   }
 });
 

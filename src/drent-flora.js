@@ -115,6 +115,29 @@ export function plantShapes() {
     ...berries(0xc2312a, 5, .16, .6, .018),
   ]);
   // Old field: velvet antler branches, red cones standing up.
+  // Hazel: a stool of straight rods, round leaves, and husked nuts in twos and threes.
+  shapes.hazel = mergedGeometry([
+    ...Array.from({ length: 6 }, (_, i) => {
+      const a = i * PHI;
+      return [stalk, 0x7a6448, [Math.sin(a) * .07, .42, Math.cos(a) * .07], [.018, .84, .018], [Math.sin(a) * .22, 0, Math.cos(a) * .22]];
+    }),
+    ...foliage(0x6f9048, 0x7fa055, 14, .52, .07, .30, .115, .125),
+    ...Array.from({ length: 6 }, (_, i) => {
+      const a = i * PHI + .4, r = .16 + (i % 3) * .05;
+      return [ball, i % 2 ? 0xbfa76a : 0xa98c4e, [Math.sin(a) * r, .58 + (i % 4) * .08, Math.cos(a) * r], [.035, .04, .035]];
+    }),
+  ]);
+  // Bramble: arching canes that bend back to the ground, and three colours of fruit at once.
+  shapes.bramble = mergedGeometry([
+    ...Array.from({ length: 5 }, (_, i) => {
+      const a = i * PHI;
+      return [stalk, 0x5f5340, [Math.sin(a) * .18, .3, Math.cos(a) * .18], [.015, .62, .015], [Math.sin(a) * .9, 0, Math.cos(a) * .9]];
+    }),
+    ...foliage(0x4f7038, 0x5e7f43, 16, .3, .06, .34, .10, .10),
+    ...berries(0x241d28, 7, .2, .42, .032),
+    ...berries(0x8e2438, 4, .26, .34, .028),
+    ...berries(0x86985a, 3, .15, .48, .026),
+  ]);
   shapes.sumac = mergedGeometry([
     stem(0x6a5540, 0, 0, .5, .03),
     ...Array.from({ length: 4 }, (_, i) => {
@@ -255,6 +278,7 @@ export function plantShapes() {
 export const PLANT_PATCHES = Object.freeze({
   yarrow: 5, plantain: 5, jewelweed: 4, mullein: 4, boneset: 3, sassafras: 4, spicebush: 4,
   sumac: 3, elder: 3, 'witch-hazel': 3, 'wild-ginger': 3, maypop: 2, bloodroot: 3, mayapple: 3,
+  hazel: 3, bramble: 4,
   pokeweed: 4, ginseng: 2,
 });
 
@@ -275,6 +299,13 @@ export const AUTHORED_STANDS = Object.freeze([
   Object.freeze({ id: 'jimson-nell', species: 'jimson-weed', x: -484.34, z: 35.38, count: 1, spread: 0 }),
   Object.freeze({ id: 'jimson-drent', species: 'jimson-weed', x: -200, z: 46, count: 1, spread: 0 }),
   Object.freeze({ id: 'jimson-pueth', species: 'jimson-weed', x: 0, z: -226, count: 1, spread: 0 }),
+  // Nell's hedge at the Sunken Lane. The scatter places by habitat and no habitat rule would put
+  // hazel and bramble *at* the lane, which is the whole point of her standing there, so the hedge
+  // is authored the way the jimson weeds are (docs/drent-long-road-probe.md \u00a74).
+  Object.freeze({ id: 'hedge-lane-hazel', species: 'hazel', x: -481.2, z: 41.6, count: 5, spread: 7 }),
+  Object.freeze({ id: 'hedge-lane-bramble', species: 'bramble', x: -484.6, z: 34.4, count: 5, spread: 7 }),
+  // And bramble at the Caloss Gate, where the wood gives out and the thorn takes the field edge.
+  Object.freeze({ id: 'gate-bramble', species: 'bramble', x: -176, z: 29, count: 4, spread: 9 }),
 ]);
 
 /** Where each scattered kind is looked for. */

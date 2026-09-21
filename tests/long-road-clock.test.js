@@ -92,13 +92,14 @@ test('Mus is pinned as a range, because his hour is drawn and his road is not th
   });
   for (let i = 1; i < musters.length; i++) assert.ok(musters[i] > musters[i - 1], 'a later draw is a later muster');
   assert.ok(musters[0] > MUS_ARRIVAL.from && musters.at(-1) < 20000, 'he gets there on every draw');
-  // The measured range across three hundred seeds: 32.4 to 96.1 minutes. The floor is what
-  // matters - a traveler who walks straight up the road is in well before it - and the ceiling
-  // is the only time anybody comes in after Al the Tun.
+  // The measured range across three hundred seeds: 32.7 to 96.7 minutes, on an authored wild
+  // line of 1,598 m that never comes within 62 m of the road until it closes to 39.7 m at the
+  // join. The floor is what matters - a traveler who walks straight up the road is in well
+  // before it - and the ceiling is the only time anybody comes in after Al the Tun.
   const seeded = Array.from({ length: 300 }, (_, i) => mustersAt(company(MERCENARY_ROSTER, i + 1), 'merc-mus'));
   const low = Math.min(...seeded) / 60, high = Math.max(...seeded) / 60;
-  assert.ok(low > 30 && low < 34, `Mus's earliest is ${low.toFixed(1)} min. ` + WHY);
-  assert.ok(high > 94 && high < 98, `Mus's latest is ${high.toFixed(1)} min. ` + WHY);
+  assert.ok(low > 31 && low < 34, `Mus's earliest is ${low.toFixed(1)} min. ` + WHY);
+  assert.ok(high > 95 && high < 98, `Mus's latest is ${high.toFixed(1)} min. ` + WHY);
   assert.ok(Math.max(...seeded) > 5234.5, 'on a late draw he is the last of the eleven in, and the muster must have a line for that');
   // The seed is his and nobody else's: the nine keep their hour whatever he draws.
   const a = company(MERCENARY_ROSTER, 2), b = company(MERCENARY_ROSTER, 91);

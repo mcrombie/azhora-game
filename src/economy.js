@@ -46,6 +46,7 @@ export const PEDDLER_STOCK = Object.freeze([
   Object.freeze({ id: 'cooked-fish', price: 3 }),
   Object.freeze({ id: 'ewe-cheese', price: 4 }),
   Object.freeze({ id: 'dried-venison', price: 6 }),
+  Object.freeze({ id: 'roasted-chestnuts', price: 3 }),
   Object.freeze({ id: 'milk', price: 2 }),
   Object.freeze({ id: 'chocolate', price: 5 }),
   Object.freeze({ id: 'forest-stick', price: 1 }),
