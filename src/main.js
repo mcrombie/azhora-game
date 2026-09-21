@@ -63,7 +63,7 @@ import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEn
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
-import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor } from './company-horses.js';
+import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
 import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
@@ -397,8 +397,8 @@ function init() {
     // through the `joined`/`sent-on`/`died` events that remake it. A call site that forgets gets
     // a company that silently places nobody: the men are walking with you in the save and
     // nowhere in the world. Asked here instead, no call site can forget.
-    const walking=companions.companions.map(one=>one.id).join(',');
-    if(walking!==companyBuiltWith)rebuildCompany();
+    if(JSON.stringify(companionPlan()??null)!==companyBuiltWith)rebuildCompany();
+    fileTaken=[];
     fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
     // The stagger is measured from the moment the traveler went up or came down, so it is the
     // same clock for every man in the file and nothing has to be told about it.
@@ -452,19 +452,24 @@ function init() {
    * places in it: it falls out of asking whether the shoulder spot is ground, and taking the
    * middle when it is not.
    */
+  /**
+   * The ground each man of the file has taken this frame. `placeCompanion` runs once per
+   * companion per frame, so without this the men cannot see each other: two riders whose own
+   * shoulder spot does not stand both fall back on the same piece of ground and stand inside one
+   * another. The same class as the hold that was one closure variable - a file is one place per
+   * man, and the only way to mean that is to remember the places already taken.
+   */
+  let fileTaken=[];
+  /**
+   * Where the n-th man of the file wants to be. The arithmetic is `fileSpotFor`
+   * (src/company-horses.js), so the ground at a real place can be asked the same question a
+   * test asks it. A file of horses is the same file with a horse's room in it: further back,
+   * wider apart, and tested against the mount's own footprint rather than a man's.
+   */
   function fileSpot(p,yaw,place,mounted=false){
-    // A file of horses is the same file with a horse's room in it: further back, wider apart,
-    // and tested against the mount's own footprint rather than a man's (src/company-horses.js).
-    // Narrow ground still closes it to single file, by the same question asked of the same spot.
     const reach=mounted?RIDE_FILE:COMPANION_REACH,radius=mounted?RIDE.radius:undefined;
-    const back=reach.shoulder+place*reach.stride;
-    const side=reach.side*(place%2?-1:1);
-    const at=off=>({x:p.x-Math.sin(yaw)*back+Math.cos(yaw)*off,z:p.z-Math.cos(yaw)*back-Math.sin(yaw)*off});
-    const shoulder=at(side);
-    if(canStand(shoulder.x,shoulder.z,world,radius))return shoulder;
-    const middle=at(0);
-    if(canStand(middle.x,middle.z,world,radius))return middle;
-    return null;}
+    return fileSpotFor({at:p,yaw,place,reach,room:(mounted?RIDE.radius:BODY.person)*2,taken:fileTaken,
+      canStand:(x,z)=>canStand(x,z,world,radius)});}
   function placeCompanion(npc,placement,place=0){
     const p=player.group.position,pos=npc.actor.group.position,yaw=player.group.rotation.y;
     npc.hidden=false;npc.actor.group.visible=true;npc.walkingWith=true;
@@ -488,11 +493,18 @@ function init() {
       npc.placement={...placement,x:held.x,z:held.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold.delete(npc.id);
-    const seat=companyUp(place),reach=seat?RIDE_FILE:COMPANION_REACH,stands=(sx,sz)=>canStand(sx,sz,world,seat?RIDE.radius:undefined);
-    const wanted=fileSpot(p,yaw,Math.max(0,place),seat);
-    let x=wanted?wanted.x:p.x-Math.sin(yaw)*reach.shoulder+Math.cos(yaw)*reach.side;
-    let z=wanted?wanted.z:p.z-Math.cos(yaw)*reach.shoulder-Math.sin(yaw)*reach.side;
-    if(!stands(x,z)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},stands,Math.max(0,place));if(spot){x=spot.x;z=spot.z;}}
+    const seat=companyUp(place),room=(seat?RIDE.radius:BODY.person)*2;
+    const stands=(sx,sz)=>canStand(sx,sz,world,seat?RIDE.radius:undefined)
+      &&fileTaken.every(other=>Math.hypot(other.x-sx,other.z-sz)>=room);
+    // His place in the file; failing that the escort ring, **asked for his own place in it**;
+    // failing that he stands where he is. The old fallback was the man at the front's spot,
+    // written out in full and the same for everybody, so a file that could not spread put every
+    // rider on one stone - which is exactly what the yard did with three of them.
+    const wanted=fileSpot(p,yaw,Math.max(0,place),seat)
+      ??escortSpotFor({x:p.x,z:p.z,yaw},stands,Math.max(0,place))
+      ??{x:pos.x,z:pos.z};
+    const x=wanted.x,z=wanted.z;
+    fileTaken.push({x,z});
     const gap=Math.hypot(pos.x-x,pos.z-z);
     // In the saddle he sits a seat's height above the ground the mover puts him on, and he keeps
     // up with whatever the traveler asked for - the canter, and the testing panel's horse that
@@ -818,7 +830,13 @@ function init() {
     // Empty is today's clock, exactly, and is spelled as nothing rather than as an empty list.
     return all.length?all:undefined;};
   let companyBuiltWith=null;
-  const rebuildCompany=()=>{const asked=companionPlan();companyBuiltWith=companions.companions.map(one=>one.id).join(',');
+  /**
+   * The signature is **the plan, not the companions list**. Chris is not in the companions list:
+   * the landing mate is filtered out of it and carried separately, on the long road's own terms,
+   * because he is the one who can be released and taken back. Watching the companions list alone
+   * therefore misses every change to the one companion the user actually has.
+   */
+  const rebuildCompany=()=>{const asked=companionPlan();companyBuiltWith=JSON.stringify(asked??null);
     company=createMercenaryCompany({...companyPlan,roster,companions:asked});};
   /** Where he was standing when he left you, so he walks on from there and not from the landing. */
   function releaseCompanion(distance,line){
@@ -1314,14 +1332,31 @@ function init() {
     * toward a bearing that was wanted for another reason, because a line that is clear straight
     * down a file of men hides three of them behind the first.
     */
+  /**
+   * What stands between the camera and what it is looking at on this bearing, whether or not it
+   * is tall enough to push the camera in. A roof the camera clears still fills the frame, and
+   * the first company-mounted shot was taken from over the stable roof for exactly that reason:
+   * the line was the roomiest because nothing on it was tall enough to clamp against.
+   */
+  function cameraCrowding(focus,want,bearing){
+    let count=0;
+    for(const c of world.nearColliders(focus.x,focus.z,want+4,cameraColliders)){
+      const vx=c.x-focus.x,vz=c.z-focus.z,along=vx*Math.sin(bearing)+vz*Math.cos(bearing),across=Math.abs(vx*Math.cos(bearing)-vz*Math.sin(bearing));
+      const r=c.r??Math.max(c.hx,c.hz);
+      if(along>0&&along<want+2&&across<r+1.2)count++;}
+    return count;}
   function clearestBearing(focus,want,{turns=64,prefer=null}={}){
     const measured=[];
-    for(let turn=0;turn<turns;turn++){const bearing=turn/turns*Math.PI*2;measured.push({yaw:bearing,distance:cameraPullIn(focus,want,bearing)});}
+    for(let turn=0;turn<turns;turn++){const bearing=turn/turns*Math.PI*2;
+      measured.push({yaw:bearing,distance:cameraPullIn(focus,want,bearing),crowd:cameraCrowding(focus,want,bearing)});}
+    // Room first, then an empty foreground, then the bearing that was wanted for its own sake.
     const best=Math.max(...measured.map(one=>one.distance));
     const roomy=measured.filter(one=>one.distance>=best-1);
-    if(prefer===null)return roomy[0];
+    const clearest=Math.min(...roomy.map(one=>one.crowd));
+    const open=roomy.filter(one=>one.crowd===clearest);
+    if(prefer===null)return open[0];
     const off=bearing=>Math.abs(Math.atan2(Math.sin(bearing-prefer),Math.cos(bearing-prefer)));
-    return roomy.reduce((a,b)=>(off(b.yaw)<off(a.yaw)?b:a));}
+    return open.reduce((a,b)=>(off(b.yaw)<off(a.yaw)?b:a));}
   const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
   const border=createBorderChapter();
@@ -4882,9 +4917,12 @@ function init() {
         }
         if(view==='company-mounted'||view==='company-picket'){
           questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
-          companions.restore({...companions.snapshot(),walking:['merc-gotwood','merc-jerry','merc-christin']});
-          // placeMercenaries() rebuilds the company off a changed walking list by itself now, but
-          // say so here too: the file must exist before the shot is framed around it.
+          // **Chris is not in the companions list.** The landing mate is filtered out of it and
+          // carried on the long road's own terms, which is why the first render placed Jerry and
+          // Kristen and not him. A game that walked down the long road with him has him off the
+          // clock; so does this, or the shot would be of the two men the user did not ask about.
+          companionOffTheClock=true;
+          companions.restore({...companions.snapshot(),walking:['merc-jerry','merc-christin']});
           rebuildCompany();
           const hitch=LUMBER_TOWN_STABLE.hitch;
           if(!riding.owned)riding.grant(hitch,hitch.yaw);else riding.place(hitch,hitch.yaw);

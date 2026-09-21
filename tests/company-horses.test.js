@@ -227,11 +227,17 @@ test('a companion set walking by a restore is placed, and not lost between the t
   // and `died` go through the event hook that does; **`companions.restore` does not** — a loaded
   // save, a story start, a review view. Asking every frame is what stops a call site forgetting.
   const main = source('main.js');
-  assert.match(main, /const walking=companions\.companions\.map\(one=>one\.id\)\.join\(','\);/);
-  assert.match(main, /if\(walking!==companyBuiltWith\)rebuildCompany\(\);/, 'placeMercenaries asks, so nobody has to remember');
-  assert.match(main, /companyBuiltWith=companions\.companions\.map\(one=>one\.id\)\.join\(','\);/, 'and rebuilding records what it built with');
-  // The review views are the first callers to have needed it, and they say so.
-  assert.match(main, /companions\.restore\(\{\.\.\.companions\.snapshot\(\),walking:\['merc-gotwood','merc-jerry','merc-christin'\]\}\);/);
+  // The signature is the **plan**, not the companions list. Watching the companions list alone
+  // missed Chris entirely: the landing mate is filtered out of that list and carried separately.
+  assert.match(main, /if\(JSON\.stringify\(companionPlan\(\)\?\?null\)!==companyBuiltWith\)rebuildCompany\(\);/,
+    'placeMercenaries asks, so nobody has to remember');
+  assert.match(main, /companyBuiltWith=JSON\.stringify\(asked\?\?null\)/, 'and rebuilding records what it built with');
+  assert.doesNotMatch(main, /companyBuiltWith=companions\.companions/, 'never the companions list: it has no Chris in it');
+  // The review views are the first callers to have needed it, and they say so. They ask for the
+  // two who go through the companions list, and get Chris the way a real game gets him: off the
+  // clock, as the long road's own man.
+  assert.match(main, /companionOffTheClock=true;/);
+  assert.match(main, /companions\.restore\(\{\.\.\.companions\.snapshot\(\),walking:\['merc-jerry','merc-christin'\]\}\);/);
 });
 
 test('the two review views compose the same whether they are run once or twice', () => {

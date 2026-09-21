@@ -593,10 +593,16 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   // One shape, measured in whatever the file is made of: a man's stride on foot, a horse's
   // length in the saddle (RIDE_FILE, src/company-horses.js).
   assert.match(main, /const reach=mounted\?RIDE_FILE:COMPANION_REACH,radius=mounted\?RIDE\.radius:undefined;/, 'men or horses');
-  assert.match(main, /const back=reach\.shoulder\+place\*reach\.stride;/, 'a stride apart');
-  assert.match(main, /const side=reach\.side\*\(place%2\?-1:1\);/, 'and alternating shoulders');
-  assert.match(main, /if\(canStand\(shoulder\.x,shoulder\.z,world,radius\)\)return shoulder;[\s\S]{0,180}return middle;/,
+  // The arithmetic itself lives in the pure module now, so the ground at a real place can be
+  // asked the same question a test asks it (tests/company-file.test.js measures the stable yard).
+  const horses = readFileSync(fileURLToPath(new URL('../src/company-horses.js', import.meta.url)), 'utf8');
+  assert.match(horses, /const back = reach\.shoulder \+ \(n \+ step\) \* reach\.stride;/, 'a stride apart');
+  assert.match(horses, /const side = reach\.side \* \(n % 2 \? -1 : 1\);/, 'and alternating shoulders');
+  assert.match(horses, /if \(step === 0\) \{ const shoulder = spot\(side, back\); if \(free\(shoulder\)\) return shoulder; \}[\s\S]{0,180}if \(free\(middle\)\) return middle;/,
     'narrow ground closes the file to single, by asking the ground rather than by a list of places');
+  // And a man another has already been given ground cannot be given the same ground.
+  assert.match(horses, /taken\.every\(other => Math\.hypot\(other\.x - one\.x, other\.z - one\.z\) >= room\)/,
+    'one place per man, as the hold is one place per man');
   assert.match(main, /placeCompanion\(npc,placement,fileOrder\.indexOf\(npc\.id\)\)/, 'and each man knows his place in it');
   // One voice per event.
   assert.match(main, /function oneVoice\(has\)\{/, 'one of them speaks');

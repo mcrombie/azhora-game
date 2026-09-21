@@ -886,7 +886,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
    * with; the bog iron is a country up the road.
    */
   {
-    const a = 14, b = -11.5, turn = -.42;
+    const a = 16.5, b = -35, turn = -.42;
     const shelter = leanTo(a, b, '#8a7a5c', turn);
     const along = (da, db) => ({ x: a + da * Math.cos(turn) + db * Math.sin(turn), z: b - da * Math.sin(turn) + db * Math.cos(turn) });
     const stone = material('#6f6a63'), soot = material('#3b3531'), iron = material('#4a474a'), coals = material('#c65a22');

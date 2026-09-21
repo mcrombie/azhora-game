@@ -7,6 +7,7 @@ import { OPENING_FIGHT_GROUND } from '../src/opening-fights.js';
 
 const { createWorld, PROP_SOLID } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
+const { TIDEHAVEN_SMITHY, villageToWorld } = await import('../src/region-world.js');
 const toRoad = (x, z) => {
   let best = Infinity;
   for (const path of world.paths) for (let i = 1; i < path.length; i++) {
@@ -46,4 +47,39 @@ test('no prop stands on a road, a person’s place, a site, a bench, a fishing b
   for (const [name, point] of points) {
     assert.ok(props.every(c => Math.hypot(c.x - point.x, c.z - point.z) >= c.r + .8 - 1e-6), `a prop crowds ${name}`);
   }
+});
+
+test('the smithy stands on nobody’s footpath', () => {
+  // The village draws forty-four paths. The first is the main road; the rest are the lanes
+  // between the cottages, and a sweep that reads only `world.paths[0]` cannot see them - which
+  // is how the first smithy came to put a shelter post 0.14 m from a lane, in the middle of
+  // somebody's way to their own door.
+  const forge = TIDEHAVEN_SMITHY;
+  assert.ok(world.paths.length > 1, 'the village draws more than the main road');
+  const segTo = (x, z, a, b) => {
+    const dx = b.x - a.x, dz = b.z - a.z, len = dx * dx + dz * dz;
+    const t = len ? Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / len)) : 0;
+    return Math.hypot(x - (a.x + dx * t), z - (a.z + dz * t));
+  };
+  const toPath = (x, z) => Math.min(...world.paths.slice(1).map(line => {
+    let best = Infinity;
+    for (let i = 0; i + 1 < line.length; i++) best = Math.min(best, segTo(x, z, line[i], line[i + 1]));
+    return best;
+  }));
+  // A lane is 2.6 m wide, so 1.3 m of it each side of its line; a post wants to be off that.
+  const EDGE = 1.3 + 0.6, TURN = -0.42;
+  for (const [sa, sb] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+    const spot = villageToWorld(
+      forge.a + sa * 2.2 * Math.cos(TURN) + sb * 1.55 * Math.sin(TURN),
+      forge.b - sa * 2.2 * Math.sin(TURN) + sb * 1.55 * Math.cos(TURN));
+    const off = toPath(spot.x, spot.z);
+    assert.ok(off >= EDGE, `the post at (${sa}, ${sb}) is ${off.toFixed(2)} m off the nearest lane`);
+  }
+  // And the measurement written down with the plot is the one that was taken.
+  assert.ok(toPath(forge.x, forge.z) >= EDGE);
+  assert.ok(Math.abs(Math.min(...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([sa, sb]) => {
+    const spot = villageToWorld(forge.a + sa * 2.2 * Math.cos(TURN) + sb * 1.55 * Math.sin(TURN),
+      forge.b - sa * 2.2 * Math.sin(TURN) + sb * 1.55 * Math.cos(TURN));
+    return toPath(spot.x, spot.z);
+  })) - forge.offPath) < 0.6, 'the constant says what was measured');
 });

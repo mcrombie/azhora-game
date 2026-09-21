@@ -125,3 +125,37 @@ export function picketSpots(horse, ids = [], canStand = () => true) {
   }
   return freeze(out);
 }
+
+/** How many strides a file will trail before it gives up: single and long beats doubled up. */
+export const FILE_RETREAT = 6;
+
+/**
+ * Where the n-th man of a file stands: **his own shoulder, then the centreline, then further and
+ * further back down the centreline.** A file that cannot spread goes single and long, and never
+ * doubles up, because two men on one stone is worse than a file that trails.
+ *
+ * `taken` is the ground the men in front of him have already been given, and a spot inside `room`
+ * of one of them is not ground, exactly as a wall is not. Without it the men cannot see each
+ * other: each is placed on his own, so two whose shoulder spots do not stand both fall back on
+ * the same piece of ground and stand inside one another.
+ *
+ * `reach` is COMPANION_REACH for men on foot and RIDE_FILE for a mounted file. Returns null when
+ * even the trailing centreline has nowhere to put him - the caller then leaves him where he is,
+ * which is honest, rather than stacking him on somebody.
+ */
+export function fileSpotFor({ at, yaw = 0, place = 0, reach, room = 0, taken = [], canStand = () => true, retreat = FILE_RETREAT }) {
+  if (!at || !Number.isFinite(at.x) || !Number.isFinite(at.z) || !reach) return null;
+  const turn = Number.isFinite(yaw) ? yaw : 0, n = Math.max(0, Math.floor(Number(place) || 0));
+  const side = reach.side * (n % 2 ? -1 : 1);
+  const spot = (off, back) => ({ x: at.x - Math.sin(turn) * back + Math.cos(turn) * off,
+    z: at.z - Math.cos(turn) * back - Math.sin(turn) * off });
+  const free = one => canStand(one.x, one.z) && taken.every(other => Math.hypot(other.x - one.x, other.z - one.z) >= room);
+  for (let step = 0; step <= retreat; step++) {
+    const back = reach.shoulder + (n + step) * reach.stride;
+    // His own shoulder only at his own place; trailing back, the file closes to the centre.
+    if (step === 0) { const shoulder = spot(side, back); if (free(shoulder)) return shoulder; }
+    const middle = spot(0, back);
+    if (free(middle)) return middle;
+  }
+  return null;
+}
