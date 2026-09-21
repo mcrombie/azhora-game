@@ -4,6 +4,18 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — the atlas is the authority
+
+**"Favor the atlas over what the lore says. Adjust what the lore says to fit the atlas."** Where
+the World Builder atlas (hex ownership, per-hex climate, rivers, coasts) and the written lore
+disagree, the game is built from the atlas, and the lore file is rewritten to fit it — minimally,
+in its own voice, changing only what the atlas contradicts. It came up over the six new countries
+(`docs/six-regions-brief.md`): Isareos is landlocked, as the atlas draws it, not the sea coast the
+lore described; Ovesos is hot steppe, not cold apple country; the Oves Desert lies where the map
+puts it. What was changed in the lore, claim by claim, is in `docs/lore-adjusted-to-atlas.md`. The
+lore lives in the user's World Builder repository and is edited there in place and left
+uncommitted for them to review; nothing is ever committed there on their behalf.
+
 ## 2026-09-21 — companions (the user's answers to `docs/companions.md`)
 
 **As many as will come.** There is no limit on how many of the ten walk with the traveler: you
