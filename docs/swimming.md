@@ -129,17 +129,37 @@ drawn, because both hands are busy.
 
 ## Ed the Word
 
-The mechanic is demonstrated before the traveler ever needs it. At 360 seconds a
-ship stands in toward Tidehaven, the village braces, the ship stops
-short, a figure goes over the side, and the ship turns and leaves without ever
-touching the pier. Ed swims the last of it ashore on this mechanic — the same
-posture, the same speed — climbs onto the landing and is the company's second
-hired sword from then on. He says he came for the adventure. It was a mutiny.
+Built, in `src/word-arrival.js`. The mechanic is demonstrated before the
+traveler ever needs it, and every part of it is a pure function of play time, so
+nothing new goes in the save.
 
-That ship is the rebel ship the Peblos faction quest later hides in a sea cave,
-and its crew are the mutineers who put him over the side
-(docs/design-answers.md). So it is built once, as a hull that can appear in both
-places: the same model that turns away from Tidehaven is the one found at
-Peblos, and whichever side the traveler takes there is also a verdict on Ed.
-Reuse the Sultana’s hull (src/salt-ship.js) with a different sail and no
-colours.
+| second | what happens |
+| --- | --- |
+| 300 | a sail out of the offing, standing straight in for the pier; the village braces (toast and bell) |
+| 348 | she rounds up 68 m short of the strand, backs her sail and lies there |
+| 360 | a man goes over her side — `ARRIVALS.word`, so the company's own clock says he has arrived |
+| 372 | her sail fills and she stands out again, without a word said to the shore |
+| 389 | he walks out of the water on the strand north of the pier |
+| 470 | she is hull down and out of the scene |
+| 1860 | he takes the road (`departs` 1500: twenty-five minutes of standing about) |
+
+He swims it on the ordinary mechanic: the same posture, the same speed, the same
+floating at the waterline. The distance is cut to his own level. His 260
+experience is swimming level 3, a full bar of wind carries level 3 fifty-nine
+metres, and the crossing is sixty-eight — so he spends the last nine drowning
+and walks out with about half his blood. That is the demonstration. It is
+survivable from level 1 and dry only from level 15, so a traveler who watches it
+and tries the same water learns the same lesson for the same price.
+
+Ask him how it is done and he gives the lesson (`SWIMMING_LESSON`), which is
+what calls `swimming.learn()`. Nothing else in the game teaches it.
+
+His ship is the rebel ship the Peblos faction quest later hides in a sea cave,
+and her crew are the mutineers who put him over the side
+(docs/design-answers.md). She is one hull on purpose: `createRebelShip()` is the
+Sultana with the salt off her waterline, the gold off her rail, no dome, no
+lantern, no name board, no cargo and a patched grey sail with a rust bar across
+it. Whichever side the traveler takes at Peblos is also a verdict on Ed.
+
+Two review views: `word-ship` (from the end of the pier, at the moment she
+rounds up) and `word-ashore` (the strand, a moment after he walks out).

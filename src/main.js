@@ -101,7 +101,8 @@ import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonT
 import { createEdView, createEdModel } from './chameleon-model.js';
 import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
 import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
-import { createJohn, createSultana } from './salt-ship.js';
+import { createJohn, createSultana, createRebelShip } from './salt-ship.js';
+import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt } from './word-arrival.js';
 import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
 import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
 import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
@@ -230,7 +231,7 @@ function init() {
   // Eleven possible hired swords for ten places: whichever of them you are is not on the road,
   // and Crom stands in the place you left (companyFor). A default game is the ten it always was.
   const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROM.id]);
-  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn};
+  const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn,shore:WORD_BEACH};
   let roster=companyFor(playerId),company=createMercenaryCompany({...companyPlan,roster});
   // Whoever stands first in the line came off your boat and carries the letter.
   const landingMateId=()=>roster[0].id;
@@ -478,6 +479,9 @@ function init() {
   }});
   // Where the water has him, how far he has come through it, and whether he is out of wind.
   let inWater=false,drowning=false,swimMetres=0,swimFrom=null;
+  // Ed the Word's ship, built the first time anybody is near enough to see her, and the last
+  // thing the village said about her (src/word-arrival.js).
+  let rebelShip=null,wordSaid=null;
   const birding=createBirding({skills});
   // Whether the traveler has got far enough with Lakota for any of his own things to be offered (src/lakota.js).
   const lakota=createLakota();
@@ -1939,7 +1943,7 @@ function init() {
     skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -2105,7 +2109,14 @@ function init() {
       {id:'merc-trade',label:'Would you trade weapons?',action:()=>offerTrade(npc)}];
   }
   function mercenaryConversation(npc){
-    const choices=[...mercenaryChoices(npc),{id:'leave-mercenary',label:'Good road to you.',action:closeDialogue}];
+    const choices=[...mercenaryChoices(npc)];
+    // Ed is the only man in Drent who has swum anything, and the only one who will explain it.
+    if(npc.id===WORD_ID&&!swimming.taught)choices.unshift({id:'word-swim',label:'Nobody swims that. How is it done?',
+      action:()=>openDialogue(npc,[...SWIMMING_LESSON],null,'Back to our conversation',{onComplete:()=>{
+        const learned=swimming.learn();
+        if(learned.first){toast('Swimming, level 1. Walk into the water and it will hold you up for as long as your wind lasts.','ED THE WORD TAUGHT YOU TO SWIM');refreshSkillsSheet();saveRoad(false);}
+        mercenaryConversation(npc);}}) });
+    choices.push({id:'leave-mercenary',label:'Good road to you.',action:closeDialogue});
     openDialogue(npc,mercenaryLines(npc.id,npc.placement),null,'Back to the road',{choices});
   }
   function dogConversation(npc,line=villageDog.greeting()){
@@ -3090,15 +3101,18 @@ function init() {
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
         if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);if(npc.lent!==undefined){npc.actor.group.rotation.y=npc.lent;npc.lent=undefined;}npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         npc.actor.group.visible=true;onStage(npc,true);
+        // Ed in the water: no path, no colliders and no ground under him. He floats at the
+        // surface exactly as the traveler does, and swims a straight line for the strand.
+        if(npc.swimming){pos.set(npc.swimming.x,WATERLINE-SWIM.sink,npc.swimming.z);npc.actor.group.rotation.y=npc.swimming.yaw;}
         const alarm=!npc.cat&&combat.state.phase==='active'&&Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)<65;
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
         const fleeing=!!fightAt&&civilian(npc)&&Math.hypot(home.x-fightAt.x,home.z-fightAt.z)<26;
         let destX=home.x,destZ=home.z;
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
-        if(mode==='playing'&&dHome>.1){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
-        if(pace<=.1&&npc.face){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
-        npc.actor.animate(walkTime+2,pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer});
+        if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
+        if(pace<=.1&&npc.face&&!npc.swimming){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
+        npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
@@ -3201,6 +3215,20 @@ function init() {
         const pose=salt.pose(),seen=!!pose&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<340;
         if(seen!==(sultana.group.parent===scene)){if(seen)scene.add(sultana.group);else scene.remove(sultana.group);}
         if(seen){sultana.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);sultana.group.rotation.y=pose.yaw;sultana.update(elapsed,pose);}}
+      {// Ed the Word comes ashore. A sail stands straight in for the pier, the village braces,
+       // she rounds up a long way short, puts a man over her side and goes. He swims the last
+       // sixty-eight metres on the ordinary mechanic and walks out on the strand.
+        const pp=player.group.position,pose=shipAt(playSeconds);
+        const seen=pose.visible&&Math.hypot(pose.x-pp.x,pose.z-pp.z)<420;
+        if(seen&&!rebelShip)rebelShip=createRebelShip();
+        if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
+        if(seen){rebelShip.group.position.set(pose.x,SEA_LEVEL+.04,pose.z);rebelShip.group.rotation.y=pose.yaw;rebelShip.update(elapsed,pose);}
+        if(mode==='playing'){const owed=wordToastAt(playSeconds,wordSaid);
+          if(owed){wordSaid=owed.key;toast(owed.line,owed.title);if(owed.key!=='turns')audio?.effect('bell');if(owed.key==='ashore')saveRoad(false);}}
+        // While the water has him he is not an NPC walking to a home: he floats and swims a line.
+        const swim=swimmerAt(playSeconds),ed=npcById.get(WORD_ID);
+        if(ed){ed.swimming=swim.swimming?swim:null;
+          if(swim.swimming){world.npcPositions[WORD_ID]={x:swim.x,z:swim.z};ed.hidden=false;ed.placement={...(ed.placement??{}),phase:'landing'};}}}
       {// The Koopwood: the nearest standing tree in reach; stumps grow back; the lot moves only when somebody could see it.
         const pp=player.group.position;let best=CHOP_REACH;currentChop=null;
         if(mode==='playing'&&combat.state.phase!=='active'&&!chop)for(const t of WOODLOT_TREES){const d=Math.hypot(t.x-pp.x,t.z-pp.z);if(d<best&&wood.standing(t.id)){best=d;currentChop=t;}}
@@ -3897,6 +3925,18 @@ function init() {
           for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.actor.animate(t,0,true,{});
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.05,at.z);yaw=.18;pitch=.08;distance=targetDistance=5.2;}
         else if(reviewLineup&&!view.startsWith('cast-'))reviewLineup.visible=false;
+        // The rebel ship at the moment she rounds up, from the end of the pier; and Ed on the
+        // strand a moment after he walks out of the water.
+        if(view==='word-ship'||view==='word-ashore'){questStage=10;combat.finishPractice();player.group.visible=false;
+          playSeconds=view==='word-ship'?WORD_SHIP.turns+8:WORD_ASHORE+3;wordSaid=wordToastAt(playSeconds)?.key??null;
+          settleMercenaries();
+          const look=view==='word-ship'?WORD_TRACK.standOff:WORD_BEACH;
+          const spot=view==='word-ship'?{x:26,z:29}:{x:WORD_BEACH.x-7,z:WORD_BEACH.z-6};
+          const ground=Math.max(SEA_LEVEL,world.heightAt(spot.x,spot.z));
+          player.group.position.set(spot.x,ground,spot.z);
+          reviewTarget=new THREE.Vector3(look.x,view==='word-ship'?SEA_LEVEL+3.4:world.heightAt(look.x,look.z)+1.1,look.z);
+          yaw=Math.atan2(spot.x-look.x,spot.z-look.z);pitch=view==='word-ship'?.08:.12;
+          distance=targetDistance=view==='word-ship'?Math.hypot(spot.x-look.x,spot.z-look.z):9.2;}
         if(view==='traveler'){questStage=10;combat.finishPractice();player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='weapons'){questStage=10;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=10;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}
