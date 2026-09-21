@@ -271,3 +271,28 @@ Each phase stands alone and leaves the game working.
 - **Every curve rises** and ends where the table says.
 - **Armour never turns a whole blow**, and heavy armour doubles the wind swimming spends.
 - **A skill nobody has shown you banks nothing**, and the weapon still works.
+
+### The smithy in Tidehaven — built
+
+Drent is level 0, so the best thing in the village is what you landed with; bog iron is a country
+up the road (`smithStock`, `src/gear.js`). The smith stays **unnamed** — "the smith" — because the
+Elagosi profile that covers Drent is a *place*-name register, while Drent's people are named in a
+plainer one the game uses consistently.
+
+**The plot was chosen by measurement, not by eye** (`TIDEHAVEN_SMITHY`, `src/region-world.js`).
+Every standable half-metre of the village was swept and scored on the four things asked for: a
+clear yard, off the middle of the street, off the opening raid ground, and clear of the queue that
+comes down the pier. The finding worth keeping: **the village has no plot anywhere in it that
+holds a cottage-sized yard and still keeps off the street** — 474 plots have 6.2 m of clearance,
+1,198 are properly off the road, and the two sets do not intersect. That is why the smithy is an
+open-sided lean-to and not another cottage. Of the 61 plots that passed at a lean-to's size, the
+one taken sits in the same band off the street as the cottages (9–16 m) with the most room around
+it: **5.8 m of clear ground, 14.6 m off the road's centreline, 18.4 m from the nearest thing that
+must stay clear.**
+
+Built modest: a lean-to, a stone forge with its chimney and banked coals, an anvil on its stump,
+the quench barrel, a rack of bar stock, and a hanging board in the sign language of the rest of
+Drent. Review view: `tidehaven-smithy`.
+
+**Still to come:** the smith himself and the buying, which is where `smithStock`, `priceOf` and
+`gear.wear` finally meet the player. The place is built; nobody is standing in it yet.

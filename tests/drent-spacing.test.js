@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { MAIN_ROAD, regionNpcPositions, regionAt, villageToWorld } from '../src/region-world.js';
+import { MAIN_ROAD, regionNpcPositions, regionAt, villageToWorld, TIDEHAVEN_SMITHY } from '../src/region-world.js';
+import { OPENING_FIGHT_GROUND, GREENWAY_RAID } from '../src/opening-fights.js';
+import { LANDING_QUEUE } from '../src/mercenaries.js';
 import { subregionsAt } from '../src/map-fog.js';
 import { distanceAlongRoad, pointAlongRoad } from '../src/mercenaries.js';
 import { LONG_ROAD_SPINE, longRoadStop } from '../src/long-road.js';
@@ -176,4 +178,47 @@ test('src/main.js places the three from their own modules, and keeps no literal 
     ['skills.js', /Silas Garrow, digging marl under the Weatherhead'/], ['consumables.js', /edge of the Greenway/],
     ['mycology.js', /edge of the Greenway/], ['botany.js', /outskirts of Tidehaven/]])
     assert.doesNotMatch(source(file), gone, `${file} still says where somebody used to be`);
+});
+
+test('the smithy\u2019s plot is the one the four measurements chose', () => {
+  const forge = TIDEHAVEN_SMITHY;
+  // It is where the sweep said, and the measurement that chose it is written down with it.
+  assert.deepEqual([forge.a, forge.b], [14, -11.5]);
+  assert.deepEqual([+forge.x.toFixed(1), +forge.z.toFixed(1)],
+    [+villageToWorld(14, -11.5).x.toFixed(1), +villageToWorld(14, -11.5).z.toFixed(1)]);
+  // 1. Off the middle of the street - and still on a street, in the same band as the cottages,
+  //    which stand 9 to 16 m off the road's centreline.
+  const toRoad = (x, z) => {
+    let best = Infinity;
+    for (let i = 0; i + 1 < MAIN_ROAD.length; i++) {
+      const a = MAIN_ROAD[i], b = MAIN_ROAD[i + 1], dx = b.x - a.x, dz = b.z - a.z, len = dx * dx + dz * dz;
+      const t = len ? Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / len)) : 0;
+      best = Math.min(best, Math.hypot(x - (a.x + dx * t), z - (a.z + dz * t)));
+    }
+    return best;
+  };
+  const lane = toRoad(forge.x, forge.z);
+  assert.ok(lane >= 6, `${lane.toFixed(1)} m clear of the road's middle lane`);
+  assert.ok(lane <= 16, `${lane.toFixed(1)} m: on a street, not out in a field`);
+  assert.equal(Math.round(lane * 10) / 10, forge.offRoad, 'and the constant says what was measured');
+  // 2. Off the opening raid ground: the traveler's first fight is not in somebody's forge.
+  for (const spot of [...OPENING_FIGHT_GROUND, GREENWAY_RAID.center])
+    assert.ok(Math.hypot(spot.x - forge.x, spot.z - forge.z) > 14, 'clear of the opening fights');
+  // 3. Clear of the queue that comes down the pier, where ten mercenaries land one behind the
+  //    next. It runs from the pier head toward the road's first point, which is the arithmetic
+  //    `createMercenaryCompany` itself uses (`queue`, src/mercenaries.js).
+  const pier = villageToWorld(4, 20), head = MAIN_ROAD[0];
+  const span = Math.hypot(head.x - pier.x, head.z - pier.z);
+  const ux = (head.x - pier.x) / span, uz = (head.z - pier.z) / span;
+  for (let seat = 0; seat < 12; seat++) {
+    const along = LANDING_QUEUE.lead + seat * LANDING_QUEUE.spacing;
+    const off = LANDING_QUEUE.offset * ((seat + 1) % 2 ? 1 : -1);
+    const spot = { x: pier.x + ux * along - uz * off, z: pier.z + uz * along + ux * off };
+    assert.ok(Math.hypot(spot.x - forge.x, spot.z - forge.z) > 14, `clear of landing seat ${seat}`);
+  }
+  // 4. Nobody's doorstep: every person Drent places stands well off it.
+  for (const [id, spot] of Object.entries(regionNpcPositions))
+    assert.ok(Math.hypot(spot.x - forge.x, spot.z - forge.z) > 8, `${id} is not in the forge`);
+  // And it is in Drent, where a level-0 smith sells what you landed with.
+  assert.equal(regionAt(forge.x, forge.z)?.id ?? regionAt(forge.x, forge.z), regionAt(villageToWorld(0, 0).x, villageToWorld(0, 0).z)?.id ?? regionAt(villageToWorld(0, 0).x, villageToWorld(0, 0).z));
 });

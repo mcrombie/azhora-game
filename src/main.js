@@ -65,7 +65,7 @@ import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
 import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor } from './company-horses.js';
 import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { LUMBER_TOWN_STABLE, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
+import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
 import { skillIconSVG } from './skill-icons.js';
@@ -391,6 +391,14 @@ function init() {
   const wallWatch=createWallWatch({scene,createCharacter,heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
   function placeMercenaries(){
+    // **`createMercenaryCompany` reads the walking list once, at construction.** Every path that
+    // changes who walks with you therefore has to remake the company, and `companions.restore` -
+    // a loaded save, a story start, a review view - is a path that changes it without going
+    // through the `joined`/`sent-on`/`died` events that remake it. A call site that forgets gets
+    // a company that silently places nobody: the men are walking with you in the save and
+    // nowhere in the world. Asked here instead, no call site can forget.
+    const walking=companions.companions.map(one=>one.id).join(',');
+    if(walking!==companyBuiltWith)rebuildCompany();
     fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
     // The stagger is measured from the moment the traveler went up or came down, so it is the
     // same clock for every man in the file and nothing has to be told about it.
@@ -809,7 +817,9 @@ function init() {
     const all=[...(mate?[mate]:[]),...others];
     // Empty is today's clock, exactly, and is spelled as nothing rather than as an empty list.
     return all.length?all:undefined;};
-  const rebuildCompany=()=>{company=createMercenaryCompany({...companyPlan,roster,companions:companionPlan()});};
+  let companyBuiltWith=null;
+  const rebuildCompany=()=>{const asked=companionPlan();companyBuiltWith=companions.companions.map(one=>one.id).join(',');
+    company=createMercenaryCompany({...companyPlan,roster,companions:asked});};
   /** Where he was standing when he left you, so he walks on from there and not from the landing. */
   function releaseCompanion(distance,line){
     if(!companionOffTheClock||longRoad.released)return false;
@@ -1285,6 +1295,33 @@ function init() {
   const burying=createBurying();let selaVisits=0;
   const riding=createRiding();
   let mountHeading=0,rideCamera=0;
+  /**
+   * How far back the camera actually gets to stand on a given bearing. Anything solid between it
+   * and what it is looking at pulls it in - a wall, a roof, the stable at Bede Harrow's yard.
+   * One arithmetic, because a review view that chooses its shot with a different one would
+   * choose a shot the camera then refuses to take.
+   */
+  function cameraPullIn(focus,want,bearing){
+    let got=want;
+    for(const c of world.nearColliders(focus.x,focus.z,want+4,cameraColliders)){
+      const vx=c.x-focus.x,vz=c.z-focus.z,along=vx*Math.sin(bearing)+vz*Math.cos(bearing),across=Math.abs(vx*Math.cos(bearing)-vz*Math.sin(bearing));
+      const r=c.r??Math.max(c.hx,c.hz);
+      if(along>0&&along<want+2&&across<r+.6&&focus.y<world.heightAt(c.x,c.z)+(c.kind==='house'?6:7))got=Math.min(got,Math.max(3.1,along-r-.6));}
+    return got;}
+  /**
+    * The bearing that lets the camera stand furthest back from `focus`: a shot chosen by
+    * measurement rather than by eye. `prefer` breaks a near-tie - within a metre of the best -
+    * toward a bearing that was wanted for another reason, because a line that is clear straight
+    * down a file of men hides three of them behind the first.
+    */
+  function clearestBearing(focus,want,{turns=64,prefer=null}={}){
+    const measured=[];
+    for(let turn=0;turn<turns;turn++){const bearing=turn/turns*Math.PI*2;measured.push({yaw:bearing,distance:cameraPullIn(focus,want,bearing)});}
+    const best=Math.max(...measured.map(one=>one.distance));
+    const roomy=measured.filter(one=>one.distance>=best-1);
+    if(prefer===null)return roomy[0];
+    const off=bearing=>Math.abs(Math.atan2(Math.sin(bearing-prefer),Math.cos(bearing-prefer)));
+    return roomy.reduce((a,b)=>(off(b.yaw)<off(a.yaw)?b:a));}
   const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
   const border=createBorderChapter();
@@ -4294,8 +4331,7 @@ function init() {
       else if(mode==='arriving'&&opening){cameraTarget.copy(openingCamera.position);cameraFocus.copy(openingCamera.target);camera.position.copy(cameraTarget);}
       else {
         if(reviewTarget)cameraFocus.copy(reviewTarget);
-        let actualDistance=viewDistance;
-        for(const c of world.nearColliders(cameraFocus.x,cameraFocus.z,viewDistance+4,cameraColliders)){const vx=c.x-cameraFocus.x,vz=c.z-cameraFocus.z,along=vx*Math.sin(yaw)+vz*Math.cos(yaw),across=Math.abs(vx*Math.cos(yaw)-vz*Math.sin(yaw));const r=c.r??Math.max(c.hx,c.hz);if(along>0&&along<viewDistance+2&&across<r+.6&&cameraFocus.y<world.heightAt(c.x,c.z)+(c.kind==='house'?6:7))actualDistance=Math.min(actualDistance,Math.max(3.1,along-r-.6));}
+        const actualDistance=cameraPullIn(cameraFocus,viewDistance,yaw);
         cameraTarget.set(cameraFocus.x+Math.sin(yaw)*actualDistance*Math.cos(viewPitch),cameraFocus.y+Math.sin(viewPitch)*actualDistance,cameraFocus.z+Math.cos(yaw)*actualDistance*Math.cos(viewPitch));cameraTarget.y=Math.max(cameraTarget.y,world.heightAt(cameraTarget.x,cameraTarget.z)+1.2);
       }
       camera.position.lerp(cameraTarget,1-Math.exp(-5*dt));
@@ -4357,7 +4393,22 @@ function init() {
       // arrival sequence and anything else that runs after it can ask for it (PLAYABLE, companyFor).
       playerCharacter:()=>playerId,chooseCharacter:id=>characterSelect.select(id),
       // Where the camera is and what it is doing: main.cjs --review-views prints it beside each picture.
-      camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),mode}),
+      camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),
+        // What the camera was given and what it actually got: the difference is whatever it was
+        // pulled in against, and it is the difference that tells you the shot is wrong.
+        stoodBackBy:+cameraPullIn(cameraFocus,distance,yaw).toFixed(2),mode,
+        // Every link in the company's chain, so one render says which of them is broken rather
+        // than costing another guess: does he own a horse, is he on it, who does the companions
+        // module say walks with him, who did the mercenary company actually place, and for each
+        // of them - where he is, whether he is drawn, whether he is up, and whether his horse
+        // exists and is in the frame.
+        company:{owned:riding.owned,mounted:riding.mounted,grounded,
+          mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
+          walking:companions.companions.map(one=>one.id),placed:[...(company.companionIds??[])],file:[...fileOrder],
+          men:fileOrder.map(id=>{const npc=npcById.get(id),at=npc?.actor.group.position,horse=companyHorseActors.get(id);
+            return{id,known:!!npc,at:at?[+at.x.toFixed(1),+at.z.toFixed(1)]:null,drawn:!!npc?.actor.group.visible,
+              walkingWith:!!npc?.walkingWith,up:!!npc?.mounted,detail:npc?.detail??null,
+              horse:horse?(horse.group.visible?(horse.ridden?'ridden':'picketed'):'hidden'):'none'};})}}),
       // Performance: what is drawn and how much there is (main.cjs --perf-review), and render timing once asked for.
       perf:()=>{let objects=0,meshes=0;scene.traverse(o=>{objects++;if(o.isMesh)meshes++;});const info=renderer.info;
         return{calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,programs:info.programs?.length??0,objects,meshes,
@@ -4802,31 +4853,78 @@ function init() {
           player.group.visible=false;{const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
           return;
         }
+        /**
+         * The company's horses, at Bede Harrow's yard: the traveler up with three riders in file
+         * behind him (company-mounted), and the same four stepped down with the horses picketed
+         * beside his (company-picket).
+         *
+         * This runs **before** the unconditional practice branch below, which arms the traveler
+         * and starts a practice fight for every view that is not `battle`. The first draft ran
+         * after it and was photographed with a sword in hand.
+         *
+         * Everything here is idempotent, because the runner composes the first view twice
+         * (`[reviewViews[0], ...reviewViews]`, main.cjs) and photographs both. The first draft
+         * called `toggleMount()`, which on the second pass stepped him back down - which is why
+         * the picture showed him on the ground beside his horse.
+         */
+        // Tidehaven's smithy, from the street it stands on. The plot was chosen by measurement
+        // (TIDEHAVEN_SMITHY, src/region-world.js); the shot is too.
+        if(view==='tidehaven-smithy'){
+          questStage=10;combat.finishPractice();player.setArmed(false);
+          const forge=TIDEHAVEN_SMITHY,stand=startingSpot(forge,(x,z)=>canStand(x,z,world),{reaches:[4,5.5,7]})??forge;
+          player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          player.group.rotation.y=Math.atan2(forge.x-stand.x,forge.z-stand.z);
+          grounded=true;verticalSpeed=0;
+          reviewTarget=new THREE.Vector3(forge.x,world.heightAt(forge.x,forge.z)+1.6,forge.z);
+          const shot=clearestBearing(reviewTarget,12,{prefer:forge.yaw});
+          yaw=shot.yaw;pitch=.22;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
+        if(view==='company-mounted'||view==='company-picket'){
+          questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
+          companions.restore({...companions.snapshot(),walking:['merc-gotwood','merc-jerry','merc-christin']});
+          // placeMercenaries() rebuilds the company off a changed walking list by itself now, but
+          // say so here too: the file must exist before the shot is framed around it.
+          rebuildCompany();
+          const hitch=LUMBER_TOWN_STABLE.hitch;
+          if(!riding.owned)riding.grant(hitch,hitch.yaw);else riding.place(hitch,hitch.yaw);
+          riding.teach();placeOwnHorse();
+          grounded=true;verticalSpeed=0;
+          if(view==='company-mounted'){
+            // He must be within RIDE.reach of the horse to get on it, so he stands at the hitch
+            // and `toggleMount` puts him in the seat from there.
+            player.group.position.set(hitch.x,world.heightAt(hitch.x,hitch.z),hitch.z);
+            if(!riding.mounted)toggleMount();
+          }else{
+            if(riding.mounted)stepDown(true);
+            // Stepped down, he stands beside his horse and not inside it: the first draft put
+            // both on the hitch point and the traveler was standing in his own bay.
+            const stand=startingSpot(hitch,(x,z)=>canStand(x,z,world),{reaches:[2.6,3.6,5]})??hitch;
+            player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
+          }
+          player.group.rotation.y=hitch.yaw;
+          // A photograph, not a sequence: the stagger is spent, so the file is all up or all down.
+          companyWasMounted=riding.mounted;companyMountedAt=-1e9;
+          placeMercenaries();refreshCompanyHorses();
+          // The file trails behind him, so the shot is framed on the middle of it rather than on
+          // the man in front. The bearing is **measured, not guessed**: the camera pulls in
+          // against anything between it and the focus, and the stable roof did exactly that to
+          // the first draft - 17 m asked for, about 7 m given. `clearestBearing` sweeps the
+          // circle with the camera's own arithmetic and takes the line that lets it stand back.
+          const p=player.group.position,back=(RIDE_FILE.shoulder+2*RIDE_FILE.stride)/2;
+          reviewTarget=new THREE.Vector3(p.x-Math.sin(hitch.yaw)*back,world.heightAt(p.x,p.z)+1.4,p.z-Math.cos(hitch.yaw)*back);
+          // Perpendicular to the file is the shot that reads; the sweep takes it if it is clear
+          // and the nearest clear line to it if it is not.
+          const shot=clearestBearing(reviewTarget,21,{prefer:hitch.yaw+Math.PI/2});
+          yaw=shot.yaw;pitch=.2;distance=targetDistance=shot.distance;reviewFrozen=true;
+          return;
+        }
         if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
         // The traveler stood at a place and looking a given way, with nothing staged: for a measurement that
         // wants the place as it is rather than a composed shot. stand-at:x,z,facing[,pitch,distance] (main.cjs --draw-review).
         if(view.startsWith('stand-at:')){const [sx,sz,facing=0,tilt=.3,back=7]=view.slice(9).split(',').map(Number);
           if(Number.isFinite(sx)&&Number.isFinite(sz)){questStage=10;combat.finishPractice();player.setArmed(false);player.group.position.set(sx,world.heightAt(sx,sz),sz);yaw=facing;pitch=tilt;distance=targetDistance=back;player.group.rotation.y=Math.PI+yaw;}}
-        // The company's horses, at Bede Harrow's yard: the traveler up with three riders in
-        // file behind him (company-mounted), and the same four stepped down with the horses
-        // picketed beside his (company-picket). One frame places the file; nothing is staged
-        // beyond who is walking with him.
-        if(view==='company-mounted'||view==='company-picket'){
-          questStage=10;combat.finishPractice();player.setArmed(false);playSeconds=4000;
-          companions.restore({...companions.snapshot(),walking:['merc-gotwood','merc-jerry','merc-christin']});
-          const yard=LUMBER_TOWN_STABLE.hitch;
-          player.group.position.set(yard.x,world.heightAt(yard.x,yard.z),yard.z);player.group.rotation.y=yard.yaw;
-          if(!riding.owned)riding.grant(yard,yard.yaw);else riding.place(yard,yard.yaw);
-          riding.teach();placeOwnHorse();
-          if(view==='company-mounted')toggleMount();
-          // A photograph, not a sequence: the stagger is spent, so the file is all up or all down.
-          companyWasMounted=riding.mounted;companyMountedAt=-1e9;
-          placeMercenaries();refreshCompanyHorses();
-          // Off the flank and a little behind, so the whole file reads rather than the man in front.
-          yaw=yard.yaw+Math.PI*.62;pitch=.24;distance=targetDistance=17;
-          return;
-        }
         if(view==='walk'){questStage=10;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
         if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=10;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}

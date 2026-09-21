@@ -689,6 +689,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   cottage(29, 8, 5.5, 5.1, 3.0, '#73876b', '#eadcb9', -1.38);
   cottage(27, -20, 5.6, 4.6, 3.15, '#648d90', '#eddfb5', -.75);
 
+
   barrel(2.95, 19, .95); barrel(3.76, 18.6, .78); crate(5.0, 18.7, .88); crate(5.05, 18.7, .57, localGround(5.05, 18.7) + .89);
   crate(-1.15, 37.2, .68, 1.8); barrel(-1.24, 35.9, .62, villageRoot, 1.8);
   barrel(-15.0, 19.6, .85); crate(-16.0, 20.2, .75); barrel(19, 2, .85); crate(-19, -2, .84);
@@ -875,6 +876,41 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       toward: signTargets[label] ?? { x: x + along.x * 20, z: z + along.z * 20 }, back: signTargets[returnLabel] ?? { x: x - along.x * 20, z: z - along.z * 20 } });
   };
   // The Greenway's own fingerposts, in the village's local metres (north is -z here).
+  // The smithy is built here, not up with the cottages, because `signs` is declared above
+  // this line and not above those: its board would be a temporal dead zone.
+  /**
+   * The smithy on the south street (TIDEHAVEN_SMITHY, src/region-world.js, where the measurement
+   * that chose the plot is written down). Modest and open-sided, as a village forge is: a
+   * lean-to, a stone forge with its chimney and banked coals, an anvil on its stump, the quench
+   * barrel, and a rack of bar stock. Drent is level 0, so what is sold here is what you landed
+   * with; the bog iron is a country up the road.
+   */
+  {
+    const a = 14, b = -11.5, turn = -.42;
+    const shelter = leanTo(a, b, '#8a7a5c', turn);
+    const along = (da, db) => ({ x: a + da * Math.cos(turn) + db * Math.sin(turn), z: b - da * Math.sin(turn) + db * Math.cos(turn) });
+    const stone = material('#6f6a63'), soot = material('#3b3531'), iron = material('#4a474a'), coals = material('#c65a22');
+    // The forge, against the closed side of the shelter, with its chimney up through the roof.
+    const forge = along(-1.5, -1.1), forgeY = localGround(forge.x, forge.z);
+    box(stone, forge.x, forgeY + .45, forge.z, 1.9, .9, 1.25);
+    box(soot, forge.x, forgeY + .93, forge.z, 1.6, .07, 1.0);
+    box(coals, forge.x, forgeY + .99, forge.z, .8, .06, .5);
+    box(stone, forge.x, forgeY + 1.9, forge.z, .72, 2.0, .72);
+    vpush({ x: forge.x, z: forge.z, hx: .98, hz: .66, kind: 'forge' });
+    // The anvil, out where the light is, on an oak stump.
+    const anvil = along(1.0, .5), anvilY = localGround(anvil.x, anvil.z);
+    post(wood, anvil.x, anvilY + .3, anvil.z, .28, .6);
+    box(iron, anvil.x, anvilY + .72, anvil.z, .9, .24, .3);
+    box(iron, anvil.x, anvilY + .58, anvil.z, .42, .16, .24);
+    vpush({ x: anvil.x, z: anvil.z, r: .42, kind: 'anvil' });
+    // The quench barrel and a rack of bar stock along the back post.
+    const quench = along(-.2, 1.5); barrel(quench.x, quench.z, .78);
+    const rack = along(-2.1, .9), rackY = localGround(rack.x, rack.z);
+    for (const [dx, h] of [[-.22, 1.5], [0, 1.68], [.22, 1.4]]) box(iron, rack.x + dx, rackY + h / 2, rack.z, .05, h, .05);
+    // The board over the open side, in the sign language of the rest of Drent (src/signs.js).
+    const board = along(1.6, -1.9);
+    signs.hanging({ x: board.x, y: localGround(board.x, board.z) + 2.5, z: board.z, label: 'The Smithy', facing: turn, parent: villageRoot });
+  }
   signs.direction({ x: 4.4, z: 15.1, label: 'The Greenway', toward: { x: 0, z: -36 }, back: { x: 0, z: 29 }, backLabel: 'Tidehaven Landing', parent: villageRoot });
   signs.direction({ x: -6, z: -86, label: 'Fernway Rest', toward: northTrail, back: { x: -2, z: -60 }, backLabel: 'Tidehaven', parent: villageRoot });
   signs.direction({ x: -10.7, z: -105, label: 'The Caloss Gate', toward: border, back: { x: -8, z: -80 }, backLabel: 'Tidehaven', parent: villageRoot });
