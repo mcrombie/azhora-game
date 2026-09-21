@@ -93,7 +93,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
     if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
     // Which of the eleven you are. A save written before anyone could choose has no field
-    // at all; that game was played as Crom, and it is restored as Crom.
+    // at all; that game was played as Cromb, and it is restored as Cromb; a save from the one
+    // morning he was spelled `crom` names him that way and is still him.
     if (!validatePlayerCharacter(data.player)) return failed('The saved character is not one of the eleven.');
     if (!validateMorosSnapshot(data.moros)) return failed('The saved Moros camp chapter is invalid.');
     if (!validateBorderSnapshot(data.border)) return failed('The saved border chapter is invalid.');

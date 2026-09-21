@@ -199,21 +199,22 @@ const VARIANTS = freeze({
 // Who is in the boat
 // ---------------------------------------------------------------------------
 /**
- * The eleven the traveler may be: Crom the Barbarian by default, then the ten of the roster by
+ * The eleven the traveler may be: Cromb the Barbarian by default, then the ten of the roster by
  * their bare names. The playable-characters module may hand ids over with the roster's `merc-`
- * prefix or a first name; `normalisePlayer` takes all three.
+ * prefix or a first name; `normalisePlayer` takes all three, and `crom` as well, which is what
+ * Cromb was called for one morning before the b (src/player-characters.js).
  */
-export const DEFAULT_PLAYER = 'crom';
+export const DEFAULT_PLAYER = 'cromb';
 export const PLAYABLE_IDS = freeze([DEFAULT_PLAYER, ...MERCENARY_ROSTER.map(m => m.id.replace(/^merc-/, ''))]);
-export const COMPANIONS = freeze({ default: 'Chris Gotwood', whenGotwood: 'Crom' });
-const ALIASES = freeze({ chris: 'gotwood', ed: 'word', 'ed-the-word': 'word', 'al-the-tun': 'altun', al: 'altun' });
+export const COMPANIONS = freeze({ default: 'Chris Gotwood', whenGotwood: 'Cromb' });
+const ALIASES = freeze({ crom: DEFAULT_PLAYER, chris: 'gotwood', ed: 'word', 'ed-the-word': 'word', 'al-the-tun': 'altun', al: 'altun' });
 
 export function normalisePlayer(playerId) {
   const bare = String(playerId ?? DEFAULT_PLAYER).trim().toLowerCase().replace(/^merc-/, '').replace(/\s+/g, '-');
   const id = ALIASES[bare] ?? bare;
   return PLAYABLE_IDS.includes(id) ? id : DEFAULT_PLAYER;
 }
-/** Who steps ashore beside the traveler: Chris Gotwood, unless the traveler is Chris, when it is Crom. */
+/** Who steps ashore beside the traveler: Chris Gotwood, unless the traveler is Chris, when it is Cromb. */
 export function companionFor(playerId) {
   return normalisePlayer(playerId) === 'gotwood' ? COMPANIONS.whenGotwood : COMPANIONS.default;
 }

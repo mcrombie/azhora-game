@@ -120,22 +120,22 @@ test('the four facts are announced, and nothing else is claimed', () => {
   assert.match(LANDED.toast.kicker, /MARA/);
 });
 
-test('the companion slot names whoever came off the boat: Chris, or Crom when the traveler is Chris', () => {
+test('the companion slot names whoever came off the boat: Chris, or Cromb when the traveler is Chris', () => {
   assert.equal(normalisePlayer(undefined), DEFAULT_PLAYER);
   assert.equal(normalisePlayer('nobody-at-all'), DEFAULT_PLAYER);
   assert.equal(normalisePlayer('merc-gotwood'), 'gotwood');
   assert.equal(normalisePlayer('Chris'), 'gotwood');
   assert.equal(normalisePlayer('Ed the Word'), 'word');
-  assert.deepEqual(PLAYABLE_IDS, ['crom', ...MERCENARY_ROSTER.map(m => m.id.slice('merc-'.length))]);
+  assert.deepEqual(PLAYABLE_IDS, ['cromb', ...MERCENARY_ROSTER.map(m => m.id.slice('merc-'.length))]);
   assert.equal(PLAYABLE_IDS.length, 11);
   for (const id of PLAYABLE_IDS) {
-    const expected = id === 'gotwood' ? 'Crom' : 'Chris Gotwood';
+    const expected = id === 'gotwood' ? 'Cromb' : 'Chris Gotwood';
     assert.equal(companionFor(id), expected, id);
     assert.equal(companionFor(`merc-${id}`), expected, `merc-${id}`);
     const first = variantFor(id).captions[0].text;
     if (variantFor(id).id === 'standard') assert.match(first, new RegExp(`${expected} is in the bow`), `${id} sails with ${expected}`);
   }
-  assert.equal(stateAt(4, { companion: 'Crom' }).caption.text, 'The last morning of the crossing. Crom is in the bow, watching the coast come up.');
+  assert.equal(stateAt(4, { companion: 'Cromb' }).caption.text, 'The last morning of the crossing. Cromb is in the bow, watching the coast come up.');
 });
 
 test('two travelers never took the boat: Ed the Word and Mus get one card over the landed frame', () => {
@@ -257,4 +257,12 @@ test('SKIP is the end of the sequence, exactly', () => {
   assert.equal(SKIP.boat.moving, false);
   near(boatBob(0), 0, 1e-12, 'the bob is the world’s, starting level');
   near(boatBob(Math.PI / 2 / .72), .085, 1e-9, 'and its amplitude');
+});
+
+test('the world lets the host move the arrival boat and put it back', () => {
+  const rest = world.arrivalBoatPose();
+  near(flat(rest, BOAT_REST), 0, 1e-9, 'it rests at the berth'); near(Math.cos(rest.yaw - BOAT_REST.yaw), 1, 1e-9, 'bow east');
+  world.placeArrivalBoat(100, 50, 1); const moved = world.arrivalBoatPose();
+  near(moved.x, 100, 1e-9, 'x'); near(moved.z, 50, 1e-9, 'z'); near(moved.yaw, 1, 1e-9, 'yaw');
+  world.restArrivalBoat(); near(flat(world.arrivalBoatPose(), BOAT_REST), 0, 1e-9, 'and back');
 });

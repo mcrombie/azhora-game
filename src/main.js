@@ -10,7 +10,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, CROM, KIT_WEAPON_ITEM, mercenaryById, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -67,7 +67,7 @@ import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
 import { skillIconSVG } from './skill-icons.js';
 // Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
-import { DEFAULT_PLAYER, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingSkills } from './player-characters.js';
+import { DEFAULT_PLAYER, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
@@ -86,7 +86,7 @@ import { createDrentFlora } from './drent-flora.js';
 import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
-import { LANGUAGES, DIALECTS, INTERPRETER, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
+import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
 import { setSignReader } from './signs.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
@@ -177,7 +177,7 @@ function init() {
   function wearPlayerLook(id){
     const look=playerLook(id);
     if(playerBody)playerRig.remove(playerBody.group);
-    // Crom has no roster look and gets none: his model is the traveler's, exactly as it was.
+    // Cromb has no roster look and gets none: his model is the traveler's, exactly as it was.
     playerBody=createCharacter(look?{role:'traveler',tunic:look.tunic,skin:look.skin,look}:{});
     playerRig.add(playerBody.group);
   }
@@ -221,8 +221,8 @@ function init() {
   npcData.push(...REGIONAL_LIFE_NPCS.map(npc=>({...npc})));
   // The mercenary company walks the main road on its own clock; each man is an NPC whose home moves.
   // Eleven possible hired swords for ten places: whichever of them you are is not on the road,
-  // and Crom stands in the place you left (companyFor). A default game is the ten it always was.
-  const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROM.id]);
+  // and Cromb stands in the place you left (companyFor). A default game is the ten it always was.
+  const mercenaryIds=new Set([...MERCENARY_ROSTER.map(m=>m.id),CROMB.id]);
   const companyPlan={road:world.paths[0],stops:[{id:'induction',point:world.npcPositions['meadow-courier'],dwell:90},{id:'crossing',point:world.npcPositions['crossing-keeper'],dwell:60},{id:'relay',point:world.npcPositions['relay-clerk'],dwell:120}].filter(stop=>stop.point),muster:ROUTE_ANCHORS.legionCamp,landing:world.spawn};
   let roster=companyFor(playerId),company=createMercenaryCompany({...companyPlan,roster});
   // Whoever stands first in the line came off your boat and carries the letter.
@@ -324,7 +324,7 @@ function init() {
   function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
   /**
    * Become one of the eleven. Exactly one man on the road changes: the one whose place you
-   * have taken walks out of the world, and Crom walks into the slot he left with his own
+   * have taken walks out of the world, and Cromb walks into the slot he left with his own
    * model, his own hour and his own lines. Everything else about the company is untouched.
    */
   function setPlayerCharacter(id){
@@ -347,7 +347,7 @@ function init() {
   }
   /**
    * What you step ashore with: the weapon your fighting style uses, and whatever the life you
-   * had before this road already taught you (src/player-characters.js). Crom has neither, so a
+   * had before this road already taught you (src/player-characters.js). Cromb has neither, so a
    * default game begins with the sword and an empty skills sheet, exactly as it always has.
    */
   function grantStartingKit(){
@@ -358,9 +358,12 @@ function init() {
     const chosen=playableCharacter(playerId);
     if(chosen?.weapon&&inventory.has(chosen.weapon))weapons.equip(chosen.weapon);
     // Restored rather than learned: a life lived before the game began does not put level-up
-    // banners on the screen. Skills other hands have not registered yet are simply not known.
+    // banners on the screen. An id this build's skills module does not know is simply not known.
     const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)).map(([id,xp])=>[id,{xp}]));
     if(Object.keys(known).length)skills.restore({version:SKILLS_VERSION,skills:known});
+    // And the tongues he already had. Chris Gotwood interprets for the company, so when he is the
+    // player the Ambroni is his own from the first step and nobody has to lean in and repeat it.
+    for(const [id,proficiency] of Object.entries(startingLanguages(playerId)))linguist.speakAlready(id,proficiency);
     inventory.refresh();refreshSkillsSheet();updateHUD();
   }
   const objectiveMarker=makeQuestMarker();scene.add(objectiveMarker);
@@ -1841,7 +1844,7 @@ function init() {
   function continueRoad(){
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
-    // Who the adventure was being played as. A save from before anyone could choose is Crom.
+    // Who the adventure was being played as. A save from before anyone could choose is Cromb.
     setPlayerCharacter(savedPlayerCharacter(saved.player));
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
@@ -2192,9 +2195,9 @@ function init() {
   /**
    * The man who came ashore with you: the straw post, the dodge, what a blade costs, and where he
    * will be. He is a slot rather than a name - whoever stands first in the company, which is Chris
-   * Gotwood unless you are Chris, in which case it is Crom - so he introduces himself by npc.name.
+   * Gotwood unless you are Chris, in which case it is Cromb - so he introduces himself by npc.name.
    * The rest of the scene is written in Chris's voice, and docs/playable-characters.md records what
-   * Crom should say here instead. The letter is not his: Mara hands that over at the head of the pier.
+   * Cromb should say here instead. The letter is not his: Mara hands that over at the head of the pier.
    */
   function chrisOnTheLanding(npc){
     openDialogue(npc,[`${npc.name}. Same contract as you, same boat as you, and no, I do not know any more about it than you do.`,
@@ -2338,9 +2341,14 @@ function init() {
    * The review log and everything else keep the English: those are the traveler's
    * own notes, and nothing he has to do is ever gated on reading a language.
    */
+  /**
+   * Whoever interprets for you, if anybody does. When you are Chris Gotwood there is nobody, and
+   * nobody is needed: the Ambroni is yours already (src/languages.js `interpreterFor`).
+   */
+  function interpreterNpc(){const id=interpreterFor(playerId);return id?npcById.get(id)??null:null;}
   function heardSpeech(){
     const {npc,speech,heard,index,lines}=activeDialogue,line=lines[index],tongue=speech.language;
-    const helping=linguist.interpreterNearby(npc,{interpreter:npcById.get(INTERPRETER.npcId),languageId:tongue,at:player.group.position});
+    const helping=linguist.interpreterNearby(npc,{interpreter:interpreterNpc(),languageId:tongue,at:player.group.position});
     if(!heard.has(index)){heard.add(index);linguist.hear(npc,line,{language:tongue,dialect:speech.dialect,times:helping?INTERPRETER.bonus:1});}
     const aside=$('speech-aside'),interpreted=helping&&linguist.level(tongue)<MAX_PROFICIENCY;
     if(aside){aside.textContent=interpreted?`${INTERPRETER.name} leans in: “${line}”`:'';show('speech-aside',interpreted);}
@@ -2450,12 +2458,12 @@ function init() {
     const dx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,dz=-Math.cos(yaw)*forward-Math.sin(yaw)*side;
     combat.dodge(Math.hypot(dx,dz)>.01?{x:dx,z:dz}:{x:-Math.sin(player.group.rotation.y),z:-Math.cos(player.group.rotation.y)});
   }
-  // The character line above Step ashore: eleven tiles in the user's order, Crom chosen, so
+  // The character line above Step ashore: eleven tiles in the user's order, Cromb chosen, so
   // that clicking straight through plays the game that was there before anybody could choose.
-  const cromOpeningLine=$('opening-who').textContent;
+  const crombOpeningLine=$('opening-who').textContent;
   const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,
     onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
-      $('opening-who').textContent=id===DEFAULT_PLAYER?cromOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
+      $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
@@ -2798,7 +2806,7 @@ function init() {
         arrivalProgress=Math.min(1,arrivalProgress+dt/1.9);
         player.group.position.set(THREE.MathUtils.lerp(world.boatStart.x,world.spawn.x,arrivalProgress),THREE.MathUtils.lerp(world.boatStart.y,1.8,Math.min(1,arrivalProgress*1.5)),world.spawn.z);
         player.group.rotation.y=Math.PI/2;movement=2.5;
-        // Whoever came off the same boat steps ashore beside you: Chris, or Crom if you are Chris.
+        // Whoever came off the same boat steps ashore beside you: Chris, or Cromb if you are Chris.
         // The toast names Mara, because she is the one the traveler has to go and speak to now.
         const mate=npcById.get(landingMateId());if(mate){mate.actor.group.position.set(player.group.position.x+1.1,player.group.position.y,player.group.position.z+.9);mate.actor.group.rotation.y=Math.PI/2;mate.actor.group.visible=true;}
         if(arrivalProgress===1){mode='playing';player.group.rotation.y=Math.PI;toast('Goblins have attacked the northern road.','SPEAK TO MARA AT THE HEAD OF THE PIER');if(pendingTesting){pendingTesting=false;modal('testing');}}
@@ -3533,7 +3541,7 @@ function init() {
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
         document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
         // The opening screen itself, with the character line on it: --review-views=opening-characters
-        // photographs Crom selected, and opening-characters-lakota photographs any other of the eleven.
+        // photographs Cromb selected, and opening-characters-lakota photographs any other of the eleven.
         if(view.startsWith('opening-characters')){
           const who=view.replace('opening-characters','').replace(/^-/,'');if(who)characterSelect.select(who);
           mode='opening';document.body.classList.remove('playing');show('opening',true);

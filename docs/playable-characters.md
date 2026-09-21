@@ -6,49 +6,53 @@ What is here is the mechanism plus a placeholder table, and the table is meant t
 
 ## What was built
 
-- **`src/player-characters.js`** — `PLAYABLE`, the eleven in the user's order, Crom first. Each
+- **`src/player-characters.js`** — `PLAYABLE`, the eleven in the user's order, Cromb first. Each
   entry has a name, a title, a blurb, the roster id it maps to, a starting weapon, a starting
   satchel and starting skill experience. Nothing else in the game reads into this table; it is
   meant to be rewritten wholesale.
-- **`companyFor(playerId)`** — pure. The roster with the one you chose lifted out of it and Crom
+- **`companyFor(playerId)`** — pure. The roster with the one you chose lifted out of it and Cromb
   put into the place he left, keeping his own look, arrival and lines. Ten on the road, plus you,
   is eleven, however it is cast. The letter of introduction stays with the *slot*, not the man,
   because it came off the boat and not out of anybody's history.
-- **`CROM` in `src/mercenaries.js`** — Crom the Barbarian, of the cold country north of the
+- **`CROMB` in `src/mercenaries.js`** — Cromb the Barbarian, of the cold country north of the
   Lotharn, in the traveler's own colours. He is deliberately not in `MERCENARY_ROSTER`: the world
   only ever places the ten you did not choose.
 - **`src/characters.js`** — `createCharacter({ role: 'traveler', look })` now builds the player as
   that hired sword. Four things follow the *player* rather than the *body*, because they always
   were the traveler's alone: the satchel, the full weapon swap, the fishing grip, and the sword
-  already in his hand. Crom passes no look and is built exactly as he always was.
+  already in his hand. Cromb passes no look and is built exactly as he always was.
 - **`src/character-select.js` and `#opening-characters`** — eleven tiles above "Step ashore",
-  arrow-key navigable, Crom selected, portraits painted in each character's own three model
+  arrow-key navigable, Cromb selected, portraits painted in each character's own three model
   colours. Choosing one changes the model in the boat immediately.
 - **The checkpoint** keeps `player`. A save written before anyone could choose has no field at
-  all, and that game is restored as Crom.
+  all, and that game is restored as Cromb. He was spelled `crom` for one morning; `PLAYER_ALIASES`
+  in `src/player-characters.js` and `CROMB_OLD_ID` in `src/mercenaries.js` keep those saves loading.
 
 ## The starting table, as it stands
 
-Experience, not levels, because three of these skills belong to other hands and one table is
-about to grow underneath them.
+Experience, not levels, because the numbers were written before three of these skills existed
+and before every skill moved to the ninety-nine table. They survived both, which is the point.
 
 | | Character | Starts with | Why |
 |---|---|---|---|
-| 1 | Crom the Barbarian | nothing | Came for the coin and brought a sword. Everything he learns, he learns on this road. |
+| 1 | Cromb the Barbarian | nothing | A blank slate on purpose. Nothing is written about him and nothing is going to be. |
 | 2 | Chris Gotwood | `linguist` 200, `startingLanguages: { ambroni: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`. |
 | 3 | Ed the Word | `swimming` 260 | He came ashore under his own power off a ship that never docked. |
 | 4 | Jerry | `fishing` 140 | A man who settles things at thirty paces has waited out a lot of floats. |
 | 5 | Christin | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
 | 6 | Ciarán | `geology` 140 | Picks up what the road is made of and weighs it in his hand. |
-| 7 | Lakota | `birding` 37224, `archaeology` 90, `wine` 50 | 37,224 is level 40 on the ninety-nine table. Birding is on a ten-level table today, so it reads as the top of it now and as 40 when that table grows. |
+| 7 | Lakota | `birding` 37224, `archaeology` 90, `wine` 83 | 37,224 is level 40, and now reads as 40: every skill is on the ninety-nine table. 83 is level 2, which is where his wine belongs — he has opinions about it, a notch below the digs. |
 | 8 | Eliana | `woodcutting` 2411 | Level 15: white oak. |
 | 9 | Matt, Prince of Zorkys | `construction` 1584 | Level 12: the roof. A man who has raised one over four hundred people. |
 | 10 | Al the Tun | `mycology` 200 | You are looking at the robe. He will say what it is for when there is a reason to. |
 | 11 | Mus | `cartography` 200 | He does not use roads, so he is drawing his own. |
 
-`swimming`, `linguist` and `cartography` are not registered in `src/skills.js` yet. Until they
-are, they are simply not learned — `createSkills` refuses an id it does not know, and
-`tests/player-characters.test.js` reports which ones were skipped rather than asserting them away.
+`swimming`, `linguist` and `cartography` are all registered in `src/skills.js` now, so every
+number above is handed over whole. `tests/player-characters.test.js` still reports any id the
+table names that the skills module does not know, rather than asserting it away.
+
+Chris's `startingLanguages` is not a skill: it is proficiency in a named tongue, and
+`grantStartingKit()` in `src/main.js` hands it to `src/linguist.js` when he steps ashore.
 
 ## Per character: the arc, the opening, and how the computer should play them
 
@@ -57,17 +61,24 @@ column. Where a character is not chosen they walk the road as an NPC exactly as 
 already "behaving based on how their character acts"; what is listed under **diverge** is where
 that is not yet enough.
 
-### 1. Crom the Barbarian — the default
-- **Opening:** today's. He lands, Chris hands him the letter, the harbourmaster's scene stands.
-- **Arc:** the game as written. He is the blank the road writes on.
+### 1. Cromb the Barbarian — the default, and deliberately empty
+**The user's decision (`docs/design-answers.md`): Cromb has no written past, and is not going to
+get one. The player's choices are his character. The other ten have arcs; he has yours.** That is
+not a gap in this document to be filled in later; it is the point of him, and anybody writing the
+profiles should leave his blank.
+- **Opening:** today's. He lands, Mara gives him the letter at the head of the pier, Chris gives
+  the soldierly advice beside him.
+- **Arc:** the game as written, and nothing on top of it. Every other entry below describes a
+  story the character brought with him. Cromb brings none, so the road is the whole of it.
 - **As an NPC:** he has lines and a style but no `says` block, so he uses the shared road lines.
-  He needs his own — he would not say "no time to stand about", he would say almost nothing.
-- **Owed:** his closing line on the landing when the player is Chris. `chrisOnTheLanding` names
-  whoever is standing there, but the four lines before it are Chris's voice and Chris's errand.
-  Crom handing over a letter he was given on a boat should be three blunt sentences, not five.
+  He needs his own — he would not say "no time to stand about", he would say almost nothing. Even
+  these should stay incurious about himself: a man with no past does not allude to one.
+- **Owed:** his closing line on the landing when the player is Chris. The scene names whoever is
+  standing there, but the lines before it are Chris's voice and Chris's errand. Cromb standing on
+  a pier he has no feelings about should be three blunt sentences, not five.
 
 ### 2. Chris Gotwood — the one who can ask directions
-- **Opening:** the standard landing, with Crom beside him carrying the papers. Built.
+- **Opening:** the standard landing, with Cromb beside him carrying the papers. Built.
 - **Arc:** he already knows Ambroni, so the language barrier that shapes everyone else's first
   hours is not his. His arc should be the opposite problem: he is the one everybody asks, and the
   company leans on him. Consider a running cost — interpreting for ten people is a job.
@@ -79,8 +90,13 @@ that is not yet enough.
   at 360 s from a pirate ship that never docks. As the player he currently lands off the boat like
   everyone else, which is a lie about him. His opening should start in the water, off a ship
   standing out to sea, with the swim itself as the first thing the player does (`swimming`).
-- **Arc:** the ship. Somebody put him off it, or he left it; either way it is behind him and it
-  should come back. He is the only one of the eleven with a reason to avoid a port.
+- **Arc — decided (`docs/design-answers.md`): his old crew are the rebels at Peblos.** The
+  brief hides a rebel ship in a Peblos sea cave preparing to attack the Ambroni fleet there. That
+  ship is Ed's, under the mutineers who put him over the side at Tidehaven. His arc and the Peblos
+  faction quest are one story, and whichever side the traveler takes at Peblos is also a verdict
+  on Ed: back the rebels and you are backing the men who threw him in the sea. Whoever builds
+  Peblos and whoever builds Ed have to build the same ship (`src/ferry.js` already crosses to the
+  islands; the cave and the faction choice are not built).
 - **Diverge:** his `route` is `'shore'` and he `swims`. That is already modelled for the NPC.
 
 ### 4. Jerry — thirty paces and no nearer
@@ -117,9 +133,10 @@ that is not yet enough.
 
 ### 8. Eliana — two hands and one edge
 - **Opening:** standard; she comes alone at 2880 s, so the same lateness question as Lakota.
-- **Arc:** "I would have come sooner, but the boat I wanted was not the boat that was leaving."
-  Something she was trying to reach. The greatsword is already playable, so she is the most
-  finished of the non-Crom characters after Chris.
+- **Arc — undecided.** Three takes are with the user and none is chosen; do not invent a
+  fourth. What is fixed is the line: "I would have come sooner, but the boat I wanted was not the
+  boat that was leaving." Something she was trying to reach. Mechanically she is the most finished
+  of the non-Cromb characters after Chris, because the greatsword is already playable.
 
 ### 9. Matt, Prince of Zorkys — a hall, a valley and four hundred people
 - **Opening:** standard; he arrives with Al at 3780 s.
@@ -139,12 +156,31 @@ that is not yet enough.
   the pier with everybody else, which is precisely what he does not do. His opening should start
   on that strand, off the road, with no landing scene and no letter — and the letter has to reach
   him another way, or Tidehaven has to be reached from the wrong direction to get it.
-- **Arc:** a man who will not say where he is from and will not use a road. The map is his: he
-  starts with cartography, and the fogged chart (`src/map-fog.js`) should behave differently for
-  him.
+- **Arc — decided (`docs/design-answers.md`): Mus is the sage's eyes.** He is watching the
+  eleven for the one worth recruiting against Thalmagar, and **he never says so.** If he travels
+  with the traveler, the sage in the South Oremindi already knows their name when they finally
+  arrive; Mus is how the late story reaches back into chapter one. Nothing in his dialogue may
+  give it away, and nothing in the first ten regions may confirm it — the reveal belongs to the
+  sage. As the player, the watcher is the one being watched: his own arc is the question of what
+  he reports, and the map is his (cartography, and `src/map-fog.js` should behave differently
+  for him).
 - **Diverge:** his `route` is `'wild'` and his arrival is `drawn`. When he is the player, the seed
-  still has to draw something — for Crom, standing in his slot, arrival 0 is used instead, which
+  still has to draw something — for Cromb, standing in his slot, arrival 0 is used instead, which
   means the randomness quietly leaves the game. Decide whether that is right.
+
+## Companions die
+
+**Decided (`docs/design-answers.md`): a companion can die in any fight, anywhere** — wolves on a
+night road as surely as the border battle — and stays dead unless the player reloads. Deaths
+change the plot but not the main arc's direction. Nothing here is built, and it reaches into every
+entry above: each of the ten is a man who can be killed on the road in chapter one, including the
+one standing in the slot you vacated. Two consequences to design before anyone builds it:
+
+1. **Whoever dies takes their arc with them.** Ed dead before Peblos, Mus dead before the sage,
+   Chris dead and nobody interprets. The arcs above each need an answer for "and if he is dead".
+2. **`companyFor` does not know about death.** It is a pure function of who you chose; the roster
+   it returns is who *set out*. The living company is a separate, saved thing and does not exist
+   yet (`mercenaryWeapons` in the checkpoint is the only per-man state there is).
 
 ## Known holes
 
@@ -158,7 +194,7 @@ that is not yet enough.
    land at zero.
 4. **Skills without their modules.** Starting experience is given straight to `src/skills.js`.
    Birding, archaeology, wine, cooking, fishing, mycology and geology each have a *second* module
-   holding what was found (`src/birding.js` and the rest). Lakota begins at birding 10 with an
+   holding what was found (`src/birding.js` and the rest). Lakota begins at birding 40 with an
    empty list of birds seen. Either the profiles should say which finds he already has, or the
    skill sheet should say "before the road" against the experience he brought with him.
 5. **Teachers.** Several of the eleven teach a skill the player learns. When the player is that
