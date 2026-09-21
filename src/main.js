@@ -4590,11 +4590,12 @@ function init() {
         // villagers who wear one of the shared bodies in their own colours ('cast-folk'); and the
         // company of eleven as the road sees them, Cromb first and then the ten in the order they
         // land, each in their own build with their own weapon ('cast-company').
-        if(view==='cast-line'||view==='cast-folk'||view==='cast-company'){questStage=10;combat.finishPractice();player.group.visible=false;
-          if(reviewLineup&&reviewLineup.userData.cast!==view){scene.remove(reviewLineup);reviewLineup=null;}
+        if(view==='cast-line'||view==='cast-folk'||view.startsWith('cast-company')){questStage=10;combat.finishPractice();player.group.visible=false;
+          const lineup=view.startsWith('cast-company')?'cast-company':view;   // '-left' and '-right' look at the same line, closer
+          if(reviewLineup&&reviewLineup.userData.cast!==lineup){scene.remove(reviewLineup);reviewLineup=null;}
           if(!reviewLineup){
             const person=options=>()=>({actor:createCharacter(options),kind:'person'});
-            const cast=view==='cast-company'?[CROMB,...MERCENARY_ROSTER].map(m=>person({role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:m.trades}}))
+            const cast=lineup==='cast-company'?[CROMB,...MERCENARY_ROSTER].map(m=>person({role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:m.trades}}))
             :view==='cast-line'?[
               person({role:'bird-watcher',tunic:BIRD_WATCHER.color}),
               person({role:'rainbow-dyer',tunic:BRANDY.color,skin:BRANDY.skin}),
@@ -4620,7 +4621,7 @@ function init() {
               person({role:'acorn-cook',tunic:0xa08256}),
               person({role:'doomsayer'}),
             ];
-            reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';reviewLineup.userData.cast=view;
+            reviewLineup=new THREE.Group();reviewLineup.name='Review lineup';reviewLineup.userData.cast=lineup;
             cast.forEach((build,i)=>{const {actor,kind}=build();actor.group.position.set((i-(cast.length-1)/2)*1.5,0,0);
               actor.group.userData.actor=actor;actor.group.userData.kind=kind;reviewLineup.add(actor.group);});
             scene.add(reviewLineup);}
@@ -4630,7 +4631,8 @@ function init() {
           player.group.position.set(at.x,ground,at.z);
           // Settle every pose: a character reads its idle over a second or two, and Ed keeps his own clock.
           for(const g of reviewLineup.children)for(let t=0;t<3;t+=1/60)g.userData.kind==='ed'?g.userData.actor.animate(t,1/60,{}):g.userData.actor.animate(t,0,true,{});
-          reviewTarget=new THREE.Vector3(at.x,ground+1.05,at.z);yaw=.02;pitch=.04;distance=targetDistance=view==='cast-folk'?12.2:10.8;}
+          const half=view==='cast-company-left'?-4.1:view==='cast-company-right'?4.1:0;
+          reviewTarget=new THREE.Vector3(at.x+half,ground+1.05,at.z);yaw=.02;pitch=.04;distance=targetDistance=half?5.4:view==='cast-folk'?12.2:10.8;}
         // The Empire's soldiers in a row, close up: a footman at attention, one with his sword drawn, an officer, and a Suvali guard beside them for scale.
         if(view==='soldiers'||view==='soldiers-back'){questStage=10;combat.finishPractice();player.group.visible=false;
           if(reviewLineup&&reviewLineup.userData.cast!=='soldiers'){scene.remove(reviewLineup);reviewLineup=null;}
