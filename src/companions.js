@@ -90,6 +90,39 @@ export const ASKS = freeze({
     yes: 'You left the road. All right.' }),
 });
 
+/**
+ * What each of them is worth in a fight: the level of the weapon he carries, and his Toughness,
+ * which is a little under it. Their health and their damage come from these through the same
+ * `ARMS` curves as the traveler's, because **a country's level is a property of its dangers and
+ * not of its ground** - a mercenary is as good as he is, wherever he is standing.
+ *
+ * The numbers are the combat brief's "Who starts with what" (docs/combat-brief.md), which is
+ * where the user will want to tweak them; this is one frozen table beside the roster so that
+ * tweaking is one edit. They grow with the story, which is phase 7's business.
+ */
+export const MERCENARY_ARMS = freeze({
+  'merc-gotwood': freeze({ weapon: 'blades', level: 30, toughness: 26 }),
+  'merc-word': freeze({ weapon: 'blades', level: 35, toughness: 30 }),
+  'merc-jerry': freeze({ weapon: 'bows', level: 40, toughness: 34 }),
+  'merc-christin': freeze({ weapon: 'blades', level: 25, toughness: 28, shield: 35 }),
+  'merc-ciaran': freeze({ weapon: 'polearms', level: 35, toughness: 30 }),
+  'merc-lakota': freeze({ weapon: 'staves', level: 30, toughness: 26 }),
+  'merc-eliana': freeze({ weapon: 'heavy-arms', level: 40, toughness: 36 }),
+  'merc-matt': freeze({ weapon: 'polearms', level: 35, toughness: 32 }),
+  'merc-altun': freeze({ weapon: 'heavy-arms', level: 20, toughness: 17 }),
+  'merc-mus': freeze({ weapon: 'polearms', level: 45, toughness: 40 }),
+});
+
+/**
+ * What the host hands `combat` when it puts a companion in a fight as an ally: his kind, and the
+ * two levels his numbers come from. `level` is what he hits for; `toughness` is what he can take.
+ */
+export function armsOf(id) {
+  const arms = MERCENARY_ARMS[id];
+  if (!arms) return null;
+  return { weapon: arms.weapon, level: arms.level, toughness: arms.toughness, shield: arms.shield ?? 1 };
+}
+
 /** The ids of everyone who can ever walk with you, which is the whole roster. */
 export const COMPANION_IDS = freeze(MERCENARY_ROSTER.map(entry => entry.id).filter(id => ASKS[id]));
 /** Men who travel as a group and argue about it: asking one of them settles the argument. */

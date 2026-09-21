@@ -1,5 +1,5 @@
 import { canStand, moveCharacter } from './game-state.js';
-import { countryHealth, countryDamage, COUNTRY } from './combat-skills.js';
+import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -48,14 +48,20 @@ const ENEMY_KINDS = Object.freeze({
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
+/**
+ * `level` is the kind's own, and today's numbers are that kind at level 1 - so nothing in Drent
+ * and nothing at the border battle moves. A side's soldiers get better as the story does by
+ * raising these, not by standing on harder ground: the country scales its dangers, never your
+ * side (src/combat-skills.js).
+ */
 const ALLY_KINDS = Object.freeze({
-  legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90 }),
-  officer: Object.freeze({ tell: .5, attack: .48, contact: .2, recovery: 1.7, damage: 22, speed: 2.2, engage: 1.95, reach: 2.2, hp: 110 }),
+  legionary: Object.freeze({ tell: .55, attack: .5, contact: .22, recovery: 1.9, damage: 18, speed: 2.1, engage: 1.95, reach: 2.2, hp: 90, level: 1 }),
+  officer: Object.freeze({ tell: .5, attack: .48, contact: .2, recovery: 1.7, damage: 22, speed: 2.2, engage: 1.95, reach: 2.2, hp: 110, level: 1 }),
   // Villagers caught in a fight (src/bystanders.js). One who has a tool to hand fights, slower and
   // lighter than a soldier. One who has not freezes, then runs for its refuge, burdened, a little
   // slower than a goblin: without help it is caught.
-  villager: Object.freeze({ tell: .62, attack: .5, contact: .22, recovery: 2.1, damage: 13, speed: 2.2, engage: 1.95, reach: 2.1, hp: 60 }),
-  bystander: Object.freeze({ flees: true, freeze: 7, speed: 1.3, hp: 45 }),
+  villager: Object.freeze({ tell: .62, attack: .5, contact: .22, recovery: 2.1, damage: 13, speed: 2.2, engage: 1.95, reach: 2.1, hp: 60, level: 1 }),
+  bystander: Object.freeze({ flees: true, freeze: 7, speed: 1.3, hp: 45, level: 1 }),
 });
 const DEFAULT_ENCOUNTER = Object.freeze({
   id: 'tidehaven-raiders', center: Object.freeze({ x: 0, z: -36 }),
@@ -132,12 +138,14 @@ function encounterConfig(config) {
         || (ally.name !== undefined && typeof ally.name !== 'string')
         || (ally.model !== undefined && (!ally.model || typeof ally.model !== 'object' || Array.isArray(ally.model)))
         || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
+        || (ally.level !== undefined && (!Number.isInteger(ally.level) || ally.level < 1 || ally.level > TOP_LEVEL))
+        || (ally.toughness !== undefined && (!Number.isInteger(ally.toughness) || ally.toughness < 1 || ally.toughness > TOP_LEVEL))
         || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
         || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
         || (ally.refuge !== undefined && (!point(ally.refuge) || !insideBox(fightBox({ ...config, retreatSign: sign }), ally.refuge)))
         || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
         || along(ally) > 18 || beyond(ally)) return null;
-      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
+      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.level !== undefined ? { level: ally.level } : {}), ...(ally.toughness !== undefined ? { toughness: ally.toughness } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
         ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
@@ -621,8 +629,20 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   // strike with the same tell-then-swing rhythm. Enemies treat them as targets.
   function makeAlly(spec, index) {
     const profile = ALLY_KINDS[spec.kind];
-    const ally = { id: spec.id, name: spec.name, kind: spec.kind, ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
-      hp: spec.hp ?? profile.hp, maxHp: spec.hp ?? profile.hp, action: 'idle', progress: 0, speed: 0, active: true,
+    // His own level, and nothing of the country's. A companion is handed one from what he knows
+    // (MERCENARY_ARMS in src/companions.js); a side's soldier has his kind's. Health is worked
+    // out once, here, exactly as the enemy's is.
+    const level = spec.level ?? profile.level ?? 1;
+    // Two ways of being tough, because there are two kinds of ally. A **companion** is a person
+    // with a Toughness of his own, and his health is that skill's own number, exactly as the
+    // traveler's is - a mercenary at 42 stands anywhere with about 225. A **kind** - a
+    // legionary, a villager - has no name and no skills, so his kind's health is what he has and
+    // his kind's level scales it, which at level 1 is today's number untouched.
+    const hp = Number.isFinite(spec.toughness)
+      ? Math.round(maxHealth(spec.toughness))
+      : Math.round((spec.hp ?? profile.hp) * allyHealthScale(level));
+    const ally = { id: spec.id, name: spec.name, kind: spec.kind, level, ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
+      hp, maxHp: hp, action: 'idle', progress: 0, speed: 0, active: true,
       ...(spec.refuge ? { refuge: { ...spec.refuge }, frozen: profile.freeze ?? 0, escaped: false } : {}),
       ...(spec.spared ? { spared: true } : {}), ...(spec.armed !== undefined ? { armed: spec.armed } : {}) };
     allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
@@ -704,7 +724,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         timers.hitApplied = true;
         const struck = foes.filter(enemy => distance(ally, enemy) <= profile.reach && facing(ally, enemy, ally.yaw, Math.PI * .3))
           .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
-        if (struck) hurtEnemy(struck, profile.damage, ally.yaw);
+        // He hits for what he is worth, which is his own level and not the ground's.
+        if (struck) hurtEnemy(struck, profile.damage * allyDamageScale(ally.level ?? 1), ally.yaw);
         emit('ally-strike', { id: ally.id, targetId: struck?.id ?? null, x: ally.x, z: ally.z });
       }
       if (timers.actionTime >= profile.attack) { ally.action = 'idle'; ally.progress = 0; timers.cooldown = profile.recovery; }

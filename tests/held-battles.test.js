@@ -46,8 +46,11 @@ test('every other fight still takes the country it happens in', () => {
   }
   // Nothing but the two held builders authors a level at all.
   const authored = [];
+  // The files that author encounters. `combat.js` is not one of them: the `level:` fields in it
+  // are the ally *kinds'* own levels, which is a different idea the user ruled on - a country
+  // scales its dangers, never your side - and `tests/companions.test.js` holds those.
   for (const file of ['border-chapter.js', 'aftermath-chapter.js', 'main.js', 'moros-chapter.js',
-    'forest-hideout.js', 'luscia-chapter.js', 'ogre-toll.js', 'combat.js']) {
+    'forest-hideout.js', 'luscia-chapter.js', 'ogre-toll.js']) {
     let text = '';
     try { text = source(file); } catch { continue; }
     // `level:` as an encounter's own field, not `skill.level:0` in a ternary.

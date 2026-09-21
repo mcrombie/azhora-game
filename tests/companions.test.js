@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createFallen } from '../src/bystanders.js';
 import {
   COMPANION_LIMIT, COMPANION_IDS, ASKS, GROUPS, RUNGS, RUNG_LABELS, RUNG_AT, REGARD,
-  rungFor, rungLabel, createCompanions, validateCompanionsSnapshot,
+  rungFor, rungLabel, createCompanions, validateCompanionsSnapshot, MERCENARY_ARMS, armsOf,
 } from '../src/companions.js';
 
 const fresh = () => {
@@ -174,6 +176,64 @@ test('who walks with you survives the road, and the dead do not walk out of an o
     { ...saved, regard: { nobody: 10 } }, { ...saved, regard: { 'merc-mus': -1 } },
     { ...saved, regard: { 'merc-mus': 1e9 } }, { ...saved, errands: ['nobody'] }])
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
+});
+
+test('a country scales its dangers and never your side', async () => {
+  // The user's ruling, 2026-09-21. Phase 2 scaled the blows that land on an ally but not the ally
+  // - `countryHealth` was applied only in the enemies loop - so an ally was a flat 90 anywhere.
+  // A companion's health and damage now come from his *own* levels, through the same `ARMS`
+  // curves as the traveler's, because he is as good as he is wherever he is standing.
+  const { createCombat } = await import('../src/combat.js');
+  const { maxHealth, damageMultiplier, countryHealth } = await import('../src/combat-skills.js');
+  const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
+  const fight = (level, allies) => {
+    const position = { x: 0, z: 0, y: 0 };
+    const combat = createCombat({ world, position, getWeapon: () => ({ id: 'simple-sword', damage: [24, 26, 34], reachMultiplier: 1, usable: true }) });
+    combat.startEncounter({ id: 'trial', level, center: { x: 0, z: 0 }, checkpoint: { x: 0, z: -8 }, retreatLine: 20,
+      enemies: [{ id: 'foe', x: 0, z: 6, hp: 75 }], allies });
+    return combat.state;
+  };
+  // A companion at level 1 is exactly today's ally: a legionary's ninety, in any country.
+  for (const level of [0, 2, 8]) {
+    const state = fight(level, [{ id: 'friend', kind: 'legionary', x: -2, z: 2 }]);
+    assert.equal(state.allies[0].maxHp, 90, `a level-1 legionary in level-${level} country`);
+  }
+  // And the enemy in the same fight does grow with the country, so the sweep is not measuring
+  // a scale that is broken everywhere.
+  assert.equal(fight(8, []).enemies[0].maxHp ?? fight(8, []).enemies[0].hp, Math.round(75 * countryHealth(8)));
+  // A companion carries his own Toughness, and it is the traveler's own curve.
+  for (const toughness of [17, 30, 40]) {
+    const state = fight(2, [{ id: 'friend', kind: 'legionary', x: -2, z: 2, toughness }]);
+    assert.equal(state.allies[0].maxHp, Math.round(maxHealth(toughness)), `toughness ${toughness}`);
+  }
+  assert.equal(fight(0, [{ id: 'f', kind: 'legionary', x: -2, z: 2, toughness: 40 }]).allies[0].maxHp,
+    fight(9, [{ id: 'f', kind: 'legionary', x: -2, z: 2, toughness: 40 }]).allies[0].maxHp,
+    'no ally’s health depends on the country he is standing in');
+  // Mus at 45, Toughness 40, is about the 225 the ruling describes.
+  const mus = armsOf('merc-mus');
+  assert.deepEqual([mus.weapon, mus.level], ['polearms', 45]);
+  assert.ok(Math.round(maxHealth(mus.toughness)) > 215 && Math.round(maxHealth(mus.toughness)) < 240,
+    `${Math.round(maxHealth(mus.toughness))} health, wherever he is standing`);
+  assert.ok(damageMultiplier(mus.level) > 1.8, 'and nearly double damage');
+  // Everyone on the roster has numbers, each a little tougher than nothing and each with a family.
+  for (const id of COMPANION_IDS) {
+    const arms = armsOf(id);
+    assert.ok(arms, `${id} is worth something in a fight`);
+    assert.ok(arms.level >= 20 && arms.level <= 60, `${id} is between 20 and 60, as the brief says`);
+    // Toughness a little under the weapon, for everybody but Kristen: she carries the shield and
+    // stands in front of people who need it, so she is the one of them built to be hit.
+    if (id === 'merc-christin') {
+      assert.ok(arms.toughness > arms.level, 'Kristen is tougher than her blade, which is the whole of her');
+      assert.ok(arms.shield > arms.level, 'and her shield is better than either');
+    } else {
+      assert.ok(arms.toughness < arms.level, `${id}'s Toughness is a little under his weapon`);
+      assert.ok(arms.toughness > arms.level - 10, `${id}'s Toughness is a little under it, not far under`);
+    }
+  }
+  // The blows that land on them still take the country's level: that half was right already.
+  const combatSource = readFileSync(fileURLToPath(new URL('../src/combat.js', import.meta.url)), 'utf8');
+  assert.match(combatSource, /function hurtAlly[\s\S]{0,260}countryDamage/, 'a blow on an ally is the country’s');
+  assert.doesNotMatch(combatSource, /function makeAlly[\s\S]{0,400}countryHealth/, 'but the ally himself is not');
 });
 
 test('the companion it hands the company is the one the long road already takes', () => {
