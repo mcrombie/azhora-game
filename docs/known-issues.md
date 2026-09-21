@@ -964,3 +964,69 @@ when `inWater` was true — and it belongs with the code above.
 - **"`revive()` leaves `combat.state.encounterId` naming a fight that is over."** It does, but
   `#encounter-status` is hidden outside a fight and every other reader is inside an event handler,
   so nothing shows it.
+
+---
+
+## Distant figures: the stand-in is wired, and a shorter view range was rejected
+
+Two ways to stop drawing a belt buckle on somebody thirty pixels tall, measured against each
+other rather than argued: **(a)** bring the 180 m view range in, so distant people are not drawn at
+all, or **(b)** draw them as one mesh. They are alternatives — with (b) in, a distant figure
+already costs one call, so (a) would then save one call a head.
+
+**(b) was built. (a) was rejected, on three numbers and one thing a player sees.**
+
+| | landing | Lauvel | Lumber Town | Moros camp |
+|---|---|---|---|---|
+| figures drawn | 33 | 31 | 26 | 8 |
+| beyond 60 m | 18 | 18 | 14 | 0 |
+| **(b) saves, figure meshes** | **121** | **295** | **188** | 0 |
+| (a) at 120 m would drop | 8 figures | 5 | 0 | 0 |
+| (a) at 100 m would drop | 9 | 10 | 1 | 0 |
+
+(a) saves nothing at all at Lumber Town at 120 m and nothing anywhere at the camp, and where it
+does save it saves about half what (b) does. And its cost is the most visible artefact available:
+a crowd at a town's edge blinking out of existence at 100 m and back in again. (b)'s cost is a
+figure thirty pixels tall losing limbs that were two pixels across. The Moros plain is the place
+the argument turns on, and it settles it either way: nothing is beyond 60 m there, so (a) buys
+nothing on the one map whose whole point is a long sightline.
+
+**Measured after wiring** (`npm run review:draws`, 16 samples, no errors). `figureMeshes` is the
+honest column because it does not depend on which way the camera is pointed:
+
+| spot | figure meshes before | after | stand-ins | worst facing, draw calls |
+|---|---|---|---|---|
+| Tidehaven landing | 782 | **661** | 8 | 1,930 → 1,849 |
+| the Lauvel field | 536 | **241** | 18 | 1,071 → 859 |
+| Lumber Town square | 447 | **259** | 11 | 934 → 838 |
+| the Moros camp | 164 | **164** | 0 | 676 → 749 |
+
+1,929 figure meshes become 1,325 across the four: **31 % fewer**. The camp is the control — no
+figure there is beyond 62 m, so nothing converts — and it reconstructs exactly (20.5 × 8 = 164
+before, 164 after), which is what says the other three rows are the stand-in and not noise.
+
+**The camp's draw calls went up, and that is not the stand-in.** The before table was taken on
+`e071ccd`; this was taken on `348ba34`, which has the builder's queue and the long road's first
+five pieces in it. With zero stand-ins the camp still moved +72, +73, +154, +73 by facing. So the
+other spots' savings are *understated* by roughly that much, and the two tables are not the same
+base. Said here rather than quietly averaged away.
+
+**The landing converts least, and it is right to.** Eight of its eighteen distant figures became
+stand-ins; the other ten are the company — Chris walking at the traveler's shoulder is
+`escorting`, several wear the mark the player is being sent to, and John at the pier is built by
+his own hand. So the stand-in saves least exactly where the figures are heaviest, because the
+heavy ones there are the traveler's own business. Worth an eye later; not worth weakening the
+exemptions for.
+
+**One rule added on the evidence: somebody built by their own hand is never a stand-in.**
+`npc.make` — Bowden, John, the troupe, the gravedigger — wears whatever that maker chose and
+nothing records it. Reading the colour back off the built rig was tried and does not work: the
+parts are batched per pivot, so the commonest colour on a villager's chest is **0xd6ac7d, the skin
+of the arms it carries**, not his coat. Bowden is 83 meshes and reads `0xf1ead6` on the chest.
+A guessed colour is a man who changes coat at sixty-two metres, which is worse than the calls it
+saves. There are four of them and they stand alone.
+
+Everyone else matches by construction: the figure is built with `tunic: npc.color`, and where an
+entry names no colour both sides now ask one exported question (`tunicForRole`, `skinForRole` in
+`src/characters.js`, which were `createCharacter`'s own parameter defaults and still are), so they
+cannot drift.

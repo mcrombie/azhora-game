@@ -37,10 +37,17 @@ export const FIGURE_LOD = Object.freeze({ out: 62, in: 56 });
  * is up to the neck in the sea and a peg would stand on it; somebody kneeling at a grave or
  * sitting on a wall is a third shorter than a peg, and would be seen to get up and sit down again
  * as the traveler crossed the line.
+ *
+ * And one that is not about the player at all but about what can be known: somebody built by
+ * their own hand - `npc.make` in src/main.js, which is Bowden, John, the troupe and the
+ * gravedigger - wears whatever that maker chose, and nothing records it. Measured: Bowden is 83
+ * meshes and the colour on his chest pivot is mostly the skin of his arms, so a stand-in for him
+ * would have to be guessed, and a guess is a man who changes colour at sixty-two metres. He stays
+ * himself. There are four of them and they stand alone, so it costs almost nothing.
  */
 export function alwaysInFull(figure = {}) {
   return !!(figure.talking || figure.escorting || figure.fighting || figure.fleeing || figure.marked || figure.ridden
-    || figure.swimming || figure.posed);
+    || figure.swimming || figure.posed || figure.made);
 }
 
 /**
