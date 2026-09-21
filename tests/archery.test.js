@@ -197,6 +197,51 @@ test('about two in three come back, and which ones is arithmetic rather than a r
   assert.deepEqual(landed.map(one => one.n), [1, 2, 3, 4, 5, 6], 'and they are numbered in the order they left');
 });
 
+/**
+ * **And an archer beside him does not touch the count.** The rule above is worth exactly as much
+ * as it is true with Jerry on the field, and it was not: the ally's arrows took their id from the
+ * traveler's own tally, so every shot of Jerry's moved the traveler's next shaft along one. Thirty
+ * shots came back seventeen instead of twenty, and because Jerry's cadence is not the same twice,
+ * a reload changed which of the traveler's shafts broke - the one thing the arithmetic was chosen
+ * to prevent.
+ */
+test('an archer fighting beside him does not change which of his shafts break', () => {
+  const run = jerry => {
+    const world = { bounds: { minX: -99, maxX: 99, minZ: -99, maxZ: 99 }, colliders: [], heightAt: () => 1.5, nearColliders: () => [] };
+    const position = { x: 0, y: 1.5, z: 0 };
+    const events = [];
+    const quiver = { count: 200 };
+    const type = WEAPON_TYPES[BOW.id];
+    const weapon = { id: BOW.id, name: type.name, usable: true, owned: true,
+      damage: [...type.damage], reachMultiplier: type.reachMultiplier, ...feelOf(BOW.id) };
+    const combat = createCombat({ world, position, onEvent: e => events.push(e),
+      getWeapon: () => weapon, getArrows: () => quiver.count, getMargins: () => ({ ...marginsFor({ bows: 1 }), swingCost: 6 }) });
+    assert.equal(combat.startEncounter({ id: 'beside', level: 0, center: { x: 0, z: 10 }, checkpoint: { x: 0, z: 0 },
+      retreatAxis: 'z', retreatLine: 40,
+      // Tough enough to stand there and be shot at for the whole run, and held back so the
+      // measurement is of the shafts rather than of a fight.
+      enemies: [{ id: 'butt', x: 0, z: 26, hp: 10000, entry: jerry ? 0 : 60 }],
+      allies: jerry ? [{ id: 'merc-jerry', name: 'Jerry', kind: 'archer', x: -3, z: 2, level: 40, toughness: 34 }] : [] }), true);
+    for (let shot = 0; shot < 30; shot++) {
+      for (let t = 0; t < 1.3; t += 1 / 60) { combat.draw(true, 0); combat.update(1 / 60); }
+      combat.draw(false, 0);
+      for (let i = 0; i < 90 && combat.state.arrows.length; i++) combat.update(1 / 60);
+    }
+    const mine = events.filter(e => e.type === 'arrow-landed' && !e.owner);
+    return { numbers: events.filter(e => e.type === 'loose').map(e => e.n),
+      back: mine.filter(one => one.recovered).length, loosed: mine.length,
+      jerrysArrows: events.filter(e => e.type === 'arrow-landed' && e.owner).length };
+  };
+  const alone = run(false), beside = run(true);
+  assert.equal(alone.loosed, 30);
+  assert.equal(beside.loosed, 30);
+  assert.ok(beside.jerrysArrows > 0, 'Jerry is actually shooting, or this measures nothing');
+  assert.deepEqual(beside.numbers, alone.numbers,
+    'the traveler\'s shafts are numbered by his own shots and nobody else\'s');
+  assert.equal(alone.back, recoveredOf(30));
+  assert.equal(beside.back, recoveredOf(30), `two in three with an archer beside him too (${beside.back} of 30)`);
+});
+
 test('the smiths sell arrows, and a starting purse can afford some', () => {
   const board = smithOffers(0);
   const arrows = board.find(item => item.kind === 'arrows');

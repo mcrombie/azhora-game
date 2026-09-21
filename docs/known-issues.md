@@ -3155,3 +3155,378 @@ with an archer in them.
 **The `stand-at:` shot** now parses as one view and the run reports no error, but still writes no
 picture, and the cause is still not found. `camp-armourer` renders; **Mern has never been
 photographed.**
+
+---
+
+# Round 5: the bow, hunted
+
+Everything below was driven against the real modules. Two faults were small enough to fix at the
+cause and are on this branch (`d10a6c3`); the rest are reported and untouched.
+
+## An arrow goes through everybody except an enemy (no friendly fire, and no opinion in the code)
+
+**`updateArrows` (`src/combat.js`) looks for a hit in `state.enemies` and in nothing else.** There
+is no test against `state.allies` and none against the traveler, so an arrow - the traveler's or
+Jerry's - passes through every friendly body on the field and carries on.
+
+Driven, with a control that proves the probe can see a body at that spot at all:
+
+| what stands 6 m in front of him, pinned there | what the arrow does |
+|---|---|
+| an **enemy** (the control) | stops on him, `targetId: near-foe` |
+| a **legionary ally**, same spot | **carries through to the enemy 14 m further on**; `ally-hit` 0, his health untouched at 90 |
+
+And the other way round: Jerry at (0, 0), the traveler at (0, 8), a legionary at (0, 14) and the
+enemy at (0, 18), everybody pinned. Jerry loosed **nine** arrows, **all nine** hit the enemy,
+`player-hit` 0, `ally-hit` 0, the traveler at full health.
+
+**Nor is anybody in the world solid to an arrow.** The host builds the fight on the bare world -
+`createCombat({world, ...})` at `src/main.js:797` - while the traveler walks `playerWorld`, a
+`bodyWorld` that has the frame's bodies in its colliders. So `solidAt` never meets a villager, a
+horse, a companion or the traveler: they are not colliders in the world the arrow asks.
+
+**This is a design question and the code has no opinion on it.** The three answers are all
+defensible and none of them is written down anywhere: arrows pass through friends (today); arrows
+are stopped by friends and hurt them; arrows are stopped by friends and do not hurt them. It
+matters most for **Jerry**, who stands off at nine metres and looses at whatever is nearest, which
+in a scrum is very often straight down the traveler's back.
+
+## An arrow has no height, so nothing about the ground can stop one
+
+`arrow.y` is set once to `BOW.height` (1.25) and never read again. Neither `updateArrows` nor
+`src/archery.js` calls `heightAt` anywhere. Driven: with the world's floor set to 50 m everywhere,
+the arrow still flies 18 m at y = 1.25 and hits. So an arrow crosses a rise, a bank, a terrace wall
+and the far side of a ravine without noticing, and a shot downhill flies level over the target's
+head as far as the two-dimensional sweep is concerned. Only `nearColliders` - props, buildings,
+trees - stops one.
+
+Whether that is worth fixing is a judgement about how much of this game is on a slope. Every
+authored fight is on flat ground; the standoff below is not.
+
+## Stand twelve metres out of the arena and eight soldiers cannot answer
+
+**The arena bounds the enemy and does not bound the traveler.** An enemy chasing the traveler
+steers to a point clamped into a box of 8 m across the arena by 16 m along it (`src/combat.js:906`).
+The traveler is bounded only by the retreat line along the arena's own axis, and by the 45 m leash
+from the centre. **Across** the arena there is nothing at all between 8 m and 45 m - and the bow
+carries 34.
+
+Driven on the real border battle at level 2, eight soldiers, the traveler alone with a bow and a
+deep quiver. He stands still and looses at the nearest standing man:
+
+| where he stands | struck | health at the end | result |
+|---|---|---|---|
+| at the centre (the control) | **3** | dead in 9.9 s | **defeated** |
+| 12 m across | 0 | 100 % | nearest living soldier 3.8 m, and it cannot close |
+| 18 m across | **0** | **100 %** | **won: 8 of 8 down, 304 arrows, 7.4 minutes** |
+| 30 m across | 0 | 100 % | won: 8 of 8, 305 arrows, 8.7 minutes |
+
+**So the border battle can be won alone, without a scratch, from outside the fight.** The price is
+arrows and patience: 304 shafts at nine copper a dozen is about 230 copper, and the soldiers'
+shields turn 80 % of each one (30 damage becomes 5 against a 190-health soldier on guard), which is
+what makes it take seven minutes rather than one.
+
+The same shape works on a **sparring bout**: the partner's arena is the same box and his kind has
+no standoff, so from 12 or 20 m he is beaten in fifteen shots without laying a hand on the
+traveler (`closest: 12.0 m`). Bouts pay skill to a ceiling, so this is a slow grinder rather than a
+break in the economy, but it is the same hole.
+
+**Nothing in the code forbids it** and it is not a bug in anything in particular - it is what
+happens when a ranged weapon meets an arena that was drawn for men with swords. The cheapest
+repairs, in order of cost: bound the traveler across the arena as well as along it; give the enemy
+kinds a chase box that follows him; or let an enemy that cannot reach anybody give up and the fight
+end. All three are decisions, so none was taken here.
+
+## The bow can never touch the straw post
+
+The practice dummy exists only while `state.phase === 'practice'` (`startPractice`), and a draw
+needs `state.phase === 'active'` (`drawing()`, `src/combat.js:469`). So holding the button at the
+post does nothing, `combat.drawn` stays 0 and no arrow is ever loosed at it. And a bow cannot be
+swung either - `beginAttack` refuses a `ranged` weapon - so **a traveler holding a bow cannot make a
+mark on the post at all**, and `practice-hit` (which is what pays Blades) never fires.
+
+Nobody meets this in the arc as it stands: the post is quest stage 2 and Jerry's bow comes much
+later. It matters if anybody ever wants target practice, which is exactly what the builder is
+putting in `src/teachers.js` - so this is a note for them rather than a fault to repair here.
+
+## Letting go is the shot, and so is everything else that stops the game
+
+`combat.draw(false)` is the release, and the host calls it whenever the game stops being played:
+
+```js
+if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.draw(false);}
+```
+
+Driven: at full draw, that one line sends the arrow. So opening the pause menu, or alt-tabbing (the
+blur handler opens the pause modal), spends an arrow and puts it in the air to land while the game
+is paused. It is defensible - the hand did come off the button - and the author knew, because the
+review path works around it in a comment. **Reported rather than repaired**, because "the pause menu
+fires my bow" and "letting go is the shot" are the same rule read two ways, and choosing is not
+mine. If it should not fire, the repair is a `lowerBow()` that drops the draw without loosing, and
+that line calls it.
+
+**A blow that lands mid-draw is the opposite**, and silent: being struck makes `drawing()` false,
+`update` zeroes `drawTime`, and letting go afterwards emits nothing at all - no arrow, no
+`draw-spent`, no toast. The draw is simply gone and the player is told nothing. That is probably
+right and is written here so the next person does not spend an hour on it.
+
+## Two shafts in three come back, and forty of them is the whole world
+
+`dropArrow` refuses to lay a shaft once forty are lying. That is the stated rule. What it means
+with the standoff above is that of 120 arrows loosed, **80 are called recoverable and 40 of those
+are silently dropped**, because the traveler is 18 m away and never walks over them while the fight
+is on. Nothing is wrong; it is worth knowing before anybody reads the "two in three" line as an
+economy.
+
+The quiver and the bow themselves survive a reload without help: `arrow` is stackable, the save
+writes `{id, quantity}` for every item, and the checkpoint's validator takes any stackable item at
+a positive integer quantity. A traveler whose *only* weapon is Jerry's bow also passes the "you are
+not unarmed" check, because the bow is in `WEAPON_TYPES`. **Spent shafts are session-only by
+design** and `clearArrows()` is called on the load path (`src/main.js:3002`) and on a retry.
+
+## Fixed here: Jerry's arrows were numbered out of the traveler's own tally
+
+`survives(n)` is arithmetic and not a roll so that exactly two shafts in three come back and a
+reload cannot change which. But the ally archer's arrow took its id from `++loosed`, **the
+traveler's counter**. Driven, thirty shots each way:
+
+| | the traveler's shaft numbers | back |
+|---|---|---|
+| alone | 1, 2, 3, 4, … 30 | **20 of 30** |
+| with Jerry beside him | 1, 3, 5, 6, 8, 10, 11, 13, … 46 | **17 of 30** |
+
+And because Jerry's cadence is not the same twice, a reload changed which of the traveler's own
+shafts broke. An ally now keeps his own tally (`allyShafts`), which numbers nothing.
+`tests/archery.test.js` drives both rows.
+
+## Fixed here: a bout could run for ever, and with a bow it always did
+
+`hurtEnemy` answers a blow caught on a shield with `emit('blocked'); return` - and that return is
+**above** both the bout's yield and the victory check. It tested `enemy.hp`, which outside a bout is
+the same question as `enemy.active`, and inside one is not, because a bout's floor is one health.
+So the blow that beat a sparring partner set `active: false` and returned: he was beaten, no
+further blow could ever find him (every candidate list wants `active`), and no `spar-over` was ever
+sent. **The bout stayed on for ever** - the lesson never paid and the borrowed weapon never came
+back.
+
+Toe to toe it is occasional; forty driven sword bouts all ended properly. **With a bow it was every
+bout, every time**, because a partner who cannot be reached is idle and an idle man facing you is
+always on guard: driven at 12 m and at 20 m, the partner sat at one health with the bout still
+active after three hundred seconds. The condition now reads `enemy.active`, which is identical in
+every fight that is not a bout.
+
+---
+
+# Round 5: the army fills your file, driven
+
+## The file is placed on the ENEMY's side of the arena
+
+**`place(index)` in `companionAllies` (`src/main.js:622`) has the sign the wrong way round**, and it
+places both the companions and the assigned soldiers. Its own comment says *"on the traveler's side
+of the centre"*; the line says
+
+```js
+const place=index=>({[axis]:config.center[axis]-sign*(5+(index%5)*3), ...});
+```
+
+and `encounterConfig`'s own `along(p) = sign * (p[axis] - center[axis])` makes that **−5 to −17**,
+which is the enemy's end of the arena in every fight the game lays. The traveler is at +13, the
+side's own authored soldiers are at +10 to +14, the retreat line is at +21, and the eight enemies
+are at −12 to −20.
+
+Measured on the real border battle, in metres from the traveler at the checkpoint:
+
+| | distance from the traveler | distance from the nearest enemy |
+|---|---|---|
+| the side's own four (authored, `ALLY_SPOTS`) | 6.7, 6.7, 9.1 | - |
+| **the six the army assigns him** | **18.2, 21.1, 24.1, 27.1, 30.1, 18.2** | **7.8, 5.3, 3.6, 3.2, 1.8, 8.7** |
+
+The fifth assigned man starts **1.8 m from an enemy soldier and 30 m from the traveler he was
+assigned to**.
+
+**Confirmed in the running game, not only in a harness.** `node scripts/launch.cjs --smoke-test
+--review-views=filled-file --review-clean` reports
+`"line":{"assigned":5,"wanted":5,"floor":6,"drawn":5,"at":[[-693.3,518.9],[-693.5,516.1],[-692.7,513],[-693.2,510.2],[-687.9,521.8]]}`
+against an arena centred on z 527.2 - every one of them on the far side of the centre - and the
+picture is men scattered across a field rather than a file.
+
+It is one character (`-` for `+`), and it is **not** repaired here, because it silently re-balances
+every fight in the game that has anybody in it: the companion table at
+*"The border battle with a company"* and the whole `FILE_FLOOR` measurement were taken with the
+file standing among the enemy. What it is worth is measured below, both ways. **This one is the
+coordinator's to call.**
+
+*Two smaller things in the same function, both harmless today.* `place` repeats itself every ten
+men (`index % 5` and `index < 5`), so with more than ten in the file the eleventh stands exactly on
+the first; the room is twelve, so it is reachable. And `fillSaid()` counts the spoken number from
+the whole living roster while the fight counts it from `fileOrder.slice(0, room)`, so a very long
+file could be promised more men than it gets.
+
+## The table, with a driver that keeps its place in the line
+
+The last table was driven by a player who held the checkpoint. That driver takes every blow, so it
+could say *winnable* and not *hard*. **This one dresses on his own front rank**: he walks up with
+the line, never steps more than half a metre past its most advanced living man, fights whoever
+comes inside five metres, dodges what is aimed at him at his own reaction time, and keeps
+`swingCost + 25` of wind back so a dodge is always affordable.
+
+**Validated before any number was read out of it.** In the lone-traveler row he swings 31 times, he
+is in front of his own line on 1–8 % of frames, his line takes 24–30 blows to his 4, and only 40 %
+of the tells on the field are aimed at him. The old driver on the same seed: 9 swings, struck 0
+times, 17 % of tells aimed at him.
+
+Border battle, level 2 (asked of `getLevel`, not written into the config), traveler as the arc
+leaves him - Blades 17, Toughness 12, no armour, no shield - the side's own **four**, 40 seeds a row.
+
+| companions | assigned | allies | **won** | health | down | **assigned dead** | companions dead | side's four dead | seconds |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 | **6** | 10 | **15/40** | 30 % | 5.4/8 | **5.9 of 6** | - | 3.3 of 4 | 77 |
+| 3 | 3 | 10 | 40/40 | 72 % | 8/8 | **3 of 3** | 2.0 of 3 | 3.9 of 4 | 59 |
+| 5 | 1 | 10 | 40/40 | 88 % | 8/8 | **1 of 1** | 2.5 of 5 | 3.9 of 4 | 39 |
+| 6 | 0 | 10 | 40/40 | 96 % | 8/8 | - | 2.1 of 6 | 1.9 of 4 | 35 |
+| 10 | 0 | 14 | 40/40 | 100 % | 8/8 | - | 1.0 of 10 | 0.9 of 4 | 27 |
+
+**The control, with the mechanism switched off:** 0 companions and no fill is **0/40** at 1.9 of 8
+down. So the fill turns a certain loss into a fight won **15 times in 40**.
+
+**The passenger control** - the same player, closing and dodging, never swinging:
+
+| companions | assigned | won sitting still | enemies down |
+|---|---|---|---|
+| 0 | 6 | **0/40** | **0.0 of 8** |
+| 6 | 0 | **36/40** | 7.3 of 8 |
+
+### The answers to the three questions
+
+**Is it hard but winnable for a lone traveler with a filled file?** **Hard, and won about a third of
+the time.** 15 of 40, at 30 % health, over 77 seconds. It is neither a walkover nor a wall.
+
+**Does the player's fighting matter?** **It is the whole of it.** With a filled file the passenger
+wins **0 of 40 and kills 0 of 8** - the six assigned soldiers and the side's own four, between
+them, cannot kill a single enemy. Every enemy that dies in that row is killed by the traveler.
+That is the opposite of the six-companion row, which the companions win **36 times in 40 without
+him**.
+
+**How many die?** **Every assigned soldier dies, in every row, every time** - 5.9 of 6, 3 of 3,
+1 of 1 - along with 3.3 of the side's own four. Companions die far less: 2.0 of 3, 2.5 of 5, 2.1 of
+6, 1.0 of 10.
+
+### Why, in one line of arithmetic
+
+At level 2 a soldier's blow takes **38** off an assigned legionary's **90** health: dead in three.
+The assigned legionary's blow on a 190-health soldier is **14** unguarded and **3** through the
+shield. So he must land fourteen clean blows to kill one and dies to three. **They are three-hit
+speed bumps that buy the traveler time and kill nobody**, which is what "weaker than companions, on
+purpose" turned into at this level.
+
+### A correction to the last round's table, and to my own first pass
+
+The old `FILE_FLOOR` table read **0 companions + 6 fill = 40/40, and 40/40 sitting still**. That
+does not reproduce. Neither this driver (15/40, 0/40 sitting still) nor the old checkpoint-holding
+driver rebuilt here (0/40) gets near it, at either placement of the file. Something in that harness
+was not this fight; the rows in it should not be read against these.
+
+*And my own first hypothesis was wrong, killed by its own number.* I proposed that a traveler
+standing in front of his line turns every enemy's **back** to it, and that an unguarded ally blow
+(14) against a guarded one (3) was the whole difference between the drivers. Measured: blows caught
+on a shield are only **9–15 %** of everything that lands on an enemy in every row, and the mean blow
+is 14–20 either way. The mechanism is not the shields; it is that nine plain legionaries land only
+44–63 blows in ninety seconds at all.
+
+*And my first line driver was not a player.* Dressing on the **middle** of the line left it standing
+six metres behind the fighting: 34 swings in 86 seconds. Standing in the **front rank** is what a
+player does, and it is the row above.
+
+---
+
+# Round 5: the review tooling, and Mern
+
+## The `stand-at:` shot writes its picture now
+
+**Found.** `main.cjs` sanitises every shot name through `shotName(view)` - except in the one loop
+that `--review-views` actually reaches (`main.cjs:337`), which used the view's own text. So
+`stand-at:-806.1,-521,-1.57` wrote to `tests/artifacts/stand-at:-806.1,...`, which on Windows is
+the **alternate data stream** of a file called `stand-at`: the write succeeds, no picture appears
+and nothing is reported. The previous hunter wrote `shotName` and a comment naming that exact
+failure, and applied it everywhere but here.
+
+Fixed. Four `stand-at:` renders on this branch each wrote their picture.
+
+## Mern, photographed at last - and standing in a wall
+
+`stand-at:-806.1,-521,-1.57,0.28,6` puts the traveler in Ostel's street with **"F Speak with Mern"**
+on screen and the whole interface up: the Amod region card, the quest panel, the health and stamina
+bars, the key legend. That is the first picture of him.
+
+**He cannot be framed from any ground you can talk to him from.** Mern stands at (−809.1, −521);
+the `smithy` is at (−812.6, −518.9), 6.8 × 5.8 m, so **his back is 0.1 m from its east face**. Of
+four approaches: standing 3 m east gives the prompt but puts the camera where Mern is; standing
+3.5 m east loses the prompt (the talk radius is between 3.0 and 3.5 m) and shows the smithy's wall;
+standing north puts the camera **inside** the smithy; standing south-east at 2.8 m gives the prompt
+with the traveler's own body exactly between the camera and him. That is a note for whoever owns
+`src/smith.js`: he wants a metre of clear ground and a stand that faces the street.
+
+**Buying from him in a render is not done.** The buying panel opens from a dialogue, and
+`stand-at:` only stands - showing it needs a composed view of its own in the review switch, like
+`camp-armourer`, which is new host code beside the builder's smith wiring and trips the two pinned
+tests (`tests/session-clock.test.js`, `tests/held-battles.test.js`). Handed back rather than done.
+
+---
+
+# Round 5: the authored fights, re-measured with weapon feel and the bow
+
+**One world build**, so the pike is asked for its room on the ground each fight actually happens
+on. The traveler as the arc leaves him - Toughness 12, no armour, no shield - and **every family at
+17**, so what is being compared is the weapon and not the skill in it. 24 seeds a row. Nothing is
+tuned.
+
+**Read the melee rows against each other and not against any earlier table.** They come from a
+generic driver - close to this weapon's own reach, dodge a tell aimed at you at your own reaction
+time, swing with `swingCost + 25` of wind still in hand - which is not the driver any previous row
+in this ledger was taken with.
+
+| fight | sword | staff (tempo .5) | greatsword | pike | **bow** |
+|---|---|---|---|---|---|
+| **Lauvel wolves** | 24/24, 1.9 s, 4 swings | 24/24, 1.9 s, 7 | 24/24, 1.9 s, 3 | 24/24, **3.2 s**, 5 | **0/24** |
+| **Mallec the ogre** | **3/24** | 3/24 | **0/24** | 3/24 | **24/24, 16.7 s, 16 arrows, never struck** |
+| **Bramble scout camp** | 24/24, 5.0 s, 4 | 24/24, 5.6 s, 9 | 24/24, 4.8 s, 3 | 24/24, 6.0 s, 6 | 24/24, 4.5 s, **4 arrows** |
+| **Greenway raid** | 24/24, 6.6 s, 9 | 24/24, 6.1 s, 14 | 24/24, 6.1 s, 6 | 24/24, 6.7 s, 9 | 24/24, 6.5 s, 6 arrows |
+| **Avrel raid** | 24/24, 6.0 s, 5 | 24/24, 5.8 s, 9 | 24/24, 5.1 s, 3 | 24/24, **8.5 s**, 8.4 | 24/24, 7.4 s, 7 arrows |
+
+## What moved
+
+**The three teaching fights and the scout camp did not move at all.** Every melee family wins all
+24, at full health, untouched, within a second or two of the sword. The feel shows exactly where it
+should: the **staff** takes about twice the swings (tempo .5 buys speed, not weight), the
+**greatsword** takes about half (3 against the sword's 4–5), and the **pike** is a second or two
+slower everywhere and the only weapon that is ever struck in these fights at all (0.4 blows at the
+Avrel). That is the design working.
+
+**The pike's room rule bites in exactly one authored fight**: `no-room` fires **0.9 times a fight at
+Mallec's pass stones** and **nought times** at the wolves, the camp and both raids. So "in a doorway
+I am furniture" is real but almost never met on the ground these five fights are fought on.
+
+**Mallec is the only fight any melee weapon loses, and the greatsword loses it hardest.** Sword,
+staff and pike all take him 3 times in 24; the greatsword takes him **0** in 24, because `locked`
+means the third swing cannot be stepped out of and the ogre's `stagger: false` means nothing buys a
+free second. The ogre is the one authored fight where weapon feel changes the outcome rather than
+the tempo.
+
+## And the bow changes two of the five completely, in opposite directions
+
+**Mallec goes from the hardest authored fight to a walkover.** 24 of 24, in 16.7 seconds, with
+**sixteen arrows and not one blow taken**. Mallec's `speed` is 1.45 and his `engage` 3.3; a man
+walking backwards at 4.2 m/s can never be caught, and 620 health is sixteen arrows. This is the
+standoff written up above meeting the one fight in the game that was built around a creature you
+cannot out-trade.
+
+**The Lauvel wolves go the other way, and the reason is the best thing found this round.** 0 of 24.
+Driven and counted: of 29 arrows loosed, **2 hit a wolf and 26 stopped `solid`** on the field's own
+furniture. The wolves finish on 18 health each and simply keep coming. **The Lauvel is a burial
+field full of solid things at chest height, and it eats nine arrows in ten.** Jerry's complaint -
+*"in woodland I am a man holding a stick"* - is the rule, and here it is doing precisely what it was
+written to do, on ground nobody chose for it.
+
+So the bow's place among the authored fights is: **useless where the ground is cluttered, decisive
+where the enemy is slow and the ground is open, and merely another weapon in the three open-field
+raids** (4 to 7 arrows, the same six or seven seconds as a sword).
