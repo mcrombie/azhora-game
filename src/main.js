@@ -476,6 +476,9 @@ function init() {
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
+    // A fight is as hard as the country it happens in (docs/difficulty-ladder.md, and
+    // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
+    getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
     getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id)};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
@@ -2974,6 +2977,14 @@ function init() {
     if(step.drowning&&!drowning){drowning=true;audio?.effect('player-hit');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
     if(!step.drowning)drowning=false;
   }
+  /** A blow at the straw post is worth what a light one is; the post's own ceiling does the rest. */
+  const POST_BLOW=12;
+  /** What an Arms payment shows: a level is worth saying, and the sheet follows it. */
+  function armsPaid(paid){
+    if(!paid?.levelled)return;
+    refreshSkillsSheet();
+    if(questStage>=1)saveRoad(false);
+  }
   function retry() {
     retriesTaken++;
     // Drowning is not a fight, so there is no fight to restart. `resetEncounter` would start
@@ -3295,6 +3306,16 @@ function init() {
       if(e.type==='victory'&&combat.state.encounterId===greenwayEncounter.id)raid.outcome=combat.state.allies.map(a=>({name:a.name,fate:a.hp<=0?(a.wounded?'wounded':'dead'):a.escaped?'escaped':a.hp<a.maxHp?'hurt':'unhurt'}));
       if(['victory','retreat','defeat'].includes(e.type)&&raid.fell){raid.fell=false;saveRoad(false);}
       if(e.type==='practice-hit'&&questStage===2)practiceHits++;
+      // Mara's straw post is where Blades is shown, in the first ten minutes, and it is the one
+      // place a swing teaches without anything swinging back. A post pays as a light blow does,
+      // and stops at level 5 (`ARMS.ceiling.post`): nobody reaches sixty by hitting straw.
+      if(e.type==='practice-hit'){arms.learn('blades');armsPaid(arms.dealt({weapon:weapons?.profile()?.id,damage:POST_BLOW,source:'post'}));}
+      // A real blow pays the weapon's own family, by what it did and where it was done.
+      if(e.type==='hit'&&e.damage>0&&combat.state.phase==='active')
+        armsPaid(arms.dealt({weapon:e.weaponId,damage:e.damage,killed:!!e.killed,countryLevel:e.level??0}));
+      // Toughness is taught by being hit and living, and by a step aside that actually worked.
+      if(e.type==='player-hit'&&e.damage>0){arms.learn('toughness');armsPaid(arms.hurt({damage:e.damage,countryLevel:e.level??0}));}
+      if(e.type==='dodged'){arms.learn('toughness');armsPaid(arms.dodged({countryLevel:e.level??0}));}
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         if(combat.state.encounterId==='meadow-raiders'){meadowCleared=true;toast('The field road is quiet again. Recover Corvan’s parcels.','SUNMEADOW RAIDERS DRIVEN OFF');saveRoad(false);}
