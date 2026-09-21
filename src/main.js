@@ -468,7 +468,7 @@ function init() {
    */
   function fileSpot(p,yaw,place,mounted=false){
     const reach=mounted?RIDE_FILE:COMPANION_REACH,radius=mounted?RIDE.radius:undefined;
-    return fileSpotFor({at:p,yaw,place,reach,room:(mounted?RIDE.radius:BODY.person)*2,taken:fileTaken,
+    return fileSpotFor({at:p,yaw,place,reach,room:reach.room??BODY.person*2,taken:fileTaken,
       canStand:(x,z)=>canStand(x,z,world,radius)});}
   function placeCompanion(npc,placement,place=0){
     const p=player.group.position,pos=npc.actor.group.position,yaw=player.group.rotation.y;
@@ -493,7 +493,7 @@ function init() {
       npc.placement={...placement,x:held.x,z:held.z,yaw:npc.actor.group.rotation.y};
       return;}
     companionHold.delete(npc.id);
-    const seat=companyUp(place),room=(seat?RIDE.radius:BODY.person)*2;
+    const seat=companyUp(place),room=(seat?RIDE_FILE:COMPANION_REACH).room??BODY.person*2;
     const stands=(sx,sz)=>canStand(sx,sz,world,seat?RIDE.radius:undefined)
       &&fileTaken.every(other=>Math.hypot(other.x-sx,other.z-sz)>=room);
     // His place in the file; failing that the escort ring, **asked for his own place in it**;
@@ -617,7 +617,7 @@ function init() {
       const spot={x:centre.x+bearing.x*reach,z:centre.z+bearing.z*reach};
       if(canStand(spot.x,spot.z,world))return spot;}
     return at;}
-  function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
+  function settleMercenaries(){placeMercenaries();for(const npc of npcData)if(mercenaryIds.has(npc.id)){const p=world.npcPositions[npc.id];npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z)+(npc.lift??0),p.z);npc.actor.group.rotation.y=npc.placement?.yaw??0;}}
   /**
    * Become one of the eleven. Exactly one man on the road changes: the one whose place you
    * have taken walks out of the world, and Cromb walks into the slot he left with his own
@@ -1345,6 +1345,20 @@ function init() {
       const r=c.r??Math.max(c.hx,c.hz);
       if(along>0&&along<want+2&&across<r+1.2)count++;}
     return count;}
+  /**
+   * **A shot is composed, not discovered.** Sweeping the whole circle for room finds lines that
+   * are roomy and useless: over the stable roof with the roof filling the corner, or from inside
+   * a tree, since foliage is no collider and so nothing measurable is in the way at all. The few
+   * bearings that actually frame the subject are written down by hand, and the measurement only
+   * chooses between them - the one that stands furthest back with least in front of it.
+   */
+  function bestOf(focus,want,bearings){
+    let best=null;
+    for(const bearing of bearings){
+      const got=cameraPullIn(focus,want,bearing),crowd=cameraCrowding(focus,want,bearing);
+      const score=Math.min(got,want)-crowd*1.5;
+      if(!best||score>best.score)best={yaw:bearing,distance:got,crowd,score};}
+    return best;}
   function clearestBearing(focus,want,{turns=64,prefer=null}={}){
     const measured=[];
     for(let turn=0;turn<turns;turn++){const bearing=turn/turns*Math.PI*2;
@@ -4124,6 +4138,11 @@ function init() {
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
+        // A man in the saddle who has ARRIVED is still in the saddle. The line above only
+        // runs while he is moving, so a mounted companion who reached his place sank to the
+        // ground and left his horse standing beside him - which is what the render showed, four
+        // times over. His height is a fact about him, not about whether he is walking.
+        else if(!npc.swimming)pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);
         if(pace<=.1&&npc.face&&!npc.swimming){const turn=Math.atan2(npc.face.x-pos.x,npc.face.z-pos.z)-npc.actor.group.rotation.y;npc.actor.group.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*(1-Math.exp(-4*dt));}
         // A man in the saddle sits in it: his legs do not walk, and the pace goes to the horse
         // under him instead (refreshCompanyHorses).
@@ -4437,7 +4456,7 @@ function init() {
         // module say walks with him, who did the mercenary company actually place, and for each
         // of them - where he is, whether he is drawn, whether he is up, and whether his horse
         // exists and is in the frame.
-        company:{owned:riding.owned,mounted:riding.mounted,grounded,
+        company:{owned:riding.owned,mounted:riding.mounted,grounded,seat:+player.group.position.y.toFixed(2),ground:+world.heightAt(player.group.position.x,player.group.position.z).toFixed(2),horse:riding.horse?[+riding.horse.x.toFixed(1),+riding.horse.z.toFixed(1)]:null,
           mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
           walking:companions.companions.map(one=>one.id),placed:[...(company.companionIds??[])],file:[...fileOrder],
           men:fileOrder.map(id=>{const npc=npcById.get(id),at=npc?.actor.group.position,horse=companyHorseActors.get(id);
@@ -4910,9 +4929,15 @@ function init() {
           player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
           player.group.rotation.y=Math.atan2(forge.x-stand.x,forge.z-stand.z);
           grounded=true;verticalSpeed=0;
-          reviewTarget=new THREE.Vector3(forge.x,world.heightAt(forge.x,forge.z)+1.6,forge.z);
-          const shot=clearestBearing(reviewTarget,12,{prefer:forge.yaw});
-          yaw=shot.yaw;pitch=.22;distance=targetDistance=shot.distance;reviewFrozen=true;
+          // **The focus goes in front of the smithy, not on it.** The camera pulls in against
+          // whatever stands between it and what it looks at, and the shelter's own corner posts
+          // are 2.7 m from the forge on every bearing - so aiming at the forge clamped the camera
+          // to 3.1 m and photographed the inside of its own roof. Aimed at a spot out on the open
+          // side, nothing is in the way and the smithy sits just beyond it.
+          const out={x:forge.x+Math.sin(forge.yaw)*3.4,z:forge.z+Math.cos(forge.yaw)*3.4};
+          reviewTarget=new THREE.Vector3(out.x,world.heightAt(out.x,out.z)+1.3,out.z);
+          const shot=bestOf(reviewTarget,9,[forge.yaw,forge.yaw+.5,forge.yaw-.5,forge.yaw+.9,forge.yaw-.9]);
+          yaw=shot.yaw;pitch=.14;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
         if(view==='company-mounted'||view==='company-picket'){
@@ -4928,11 +4953,37 @@ function init() {
           if(!riding.owned)riding.grant(hitch,hitch.yaw);else riding.place(hitch,hitch.yaw);
           riding.teach();placeOwnHorse();
           grounded=true;verticalSpeed=0;
+          /**
+           * **Face him the way the file fits.** A yard with a stable in it has directions in
+           * which the second and third man cannot stand at their own places and have to trail:
+           * the first render strung the three of them over 22.8 m and put two of them out by the
+           * sawmill. This asks the ground which way a file of three actually goes, and takes the
+           * facing that needs no retreat - the same arithmetic the file itself uses.
+           */
+          const fits=(()=>{
+            let best={yaw:hitch.yaw,span:Infinity};
+            for(let step=0;step<48;step++){
+              const turn=step/48*Math.PI*2,taken=[];let span=0,all=true;
+              for(let place=0;place<3;place++){
+                const spot=fileSpotFor({at:hitch,yaw:turn,place,reach:RIDE_FILE,room:RIDE_FILE.room,taken,
+                  canStand:(x,z)=>canStand(x,z,world,RIDE.radius)});
+                if(!spot){all=false;break;}
+                taken.push(spot);span=Math.max(span,Math.hypot(spot.x-hitch.x,spot.z-hitch.z));}
+              if(all&&span<best.span)best={yaw:turn,span};}
+            return best;})();
           if(view==='company-mounted'){
             // He must be within RIDE.reach of the horse to get on it, so he stands at the hitch
-            // and `toggleMount` puts him in the seat from there.
+            // and `toggleMount` puts him in the seat from there, facing the way the file fits.
+            riding.place(hitch,fits.yaw);placeOwnHorse();
             player.group.position.set(hitch.x,world.heightAt(hitch.x,hitch.z),hitch.z);
             if(!riding.mounted)toggleMount();
+            // **He sits whether he mounted just now or was already up.** The runner composes the
+            // first view twice, and on the second pass the line above had just put him on the
+            // ground while `toggleMount` was skipped for being already mounted - so the picture
+            // was of a traveler standing beside his own horse. The seat is a fact, not a step.
+            mountHeading=fits.yaw;
+            const sx=hitch.x+Math.sin(mountHeading)*RIDE.seat.forward,sz=hitch.z+Math.cos(mountHeading)*RIDE.seat.forward;
+            player.group.position.set(sx,world.heightAt(sx,sz)+RIDE.seat.up,sz);
           }else{
             if(riding.mounted)stepDown(true);
             // Stepped down, he stands beside his horse and not inside it: the first draft put
@@ -4940,20 +4991,31 @@ function init() {
             const stand=startingSpot(hitch,(x,z)=>canStand(x,z,world),{reaches:[2.6,3.6,5]})??hitch;
             player.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);
           }
-          player.group.rotation.y=hitch.yaw;
+          // `fits` is for the mounted file. The picket shot was right as it stood, and the picket
+          // line is laid off the horse's yaw, so turning him would move it: it keeps the hitch's
+          // own facing.
+          const facing=view==='company-mounted'?fits.yaw:hitch.yaw;
+          player.group.rotation.y=facing;
           // A photograph, not a sequence: the stagger is spent, so the file is all up or all down.
           companyWasMounted=riding.mounted;companyMountedAt=-1e9;
-          placeMercenaries();refreshCompanyHorses();
+          // **Settle, do not place.** placeMercenaries only says where each man should be; he
+          // then walks there, and the file forms over a couple of seconds. The runner gives a
+          // view 120 frames, which is not enough to bring a man in from the muster road - the
+          // first render had Jerry and Kristen still out by the sawmill. settleMercenaries puts
+          // every one of them on his computed spot at once, which is what a photograph wants.
+          settleMercenaries();refreshCompanyHorses();
           // The file trails behind him, so the shot is framed on the middle of it rather than on
           // the man in front. The bearing is **measured, not guessed**: the camera pulls in
           // against anything between it and the focus, and the stable roof did exactly that to
           // the first draft - 17 m asked for, about 7 m given. `clearestBearing` sweeps the
           // circle with the camera's own arithmetic and takes the line that lets it stand back.
           const p=player.group.position,back=(RIDE_FILE.shoulder+2*RIDE_FILE.stride)/2;
-          reviewTarget=new THREE.Vector3(p.x-Math.sin(hitch.yaw)*back,world.heightAt(p.x,p.z)+1.4,p.z-Math.cos(hitch.yaw)*back);
+          reviewTarget=new THREE.Vector3(p.x-Math.sin(facing)*back,world.heightAt(p.x,p.z)+1.5,p.z-Math.cos(facing)*back);
           // Perpendicular to the file is the shot that reads; the sweep takes it if it is clear
           // and the nearest clear line to it if it is not.
-          const shot=clearestBearing(reviewTarget,21,{prefer:hitch.yaw+Math.PI/2});
+          const shot=view==='company-mounted'
+            ?bestOf(reviewTarget,20,[facing+1.35,facing-1.35,facing+1.1,facing-1.1,facing+1.6,facing-1.6])
+            :clearestBearing(reviewTarget,21,{prefer:facing+Math.PI/2});
           yaw=shot.yaw;pitch=.2;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }

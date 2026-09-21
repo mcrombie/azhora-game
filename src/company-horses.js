@@ -39,7 +39,12 @@ export const coatFor = id => COATS[hashOf(id) % COATS.length];
  * first rider far enough back that his horse's nose is not in the traveler's horse's tail, and
  * `stride` is **a horse's length, not a man's** (compare COMPANION_REACH.stride, 4).
  */
-export const RIDE_FILE = freeze({ shoulder: 4.2, side: -1.6, stride: 6.2 });
+export const RIDE_FILE = freeze({ shoulder: 4.2, side: -1.6, stride: 6.2,
+  // **Two horses cannot stand 1.24 m apart.** A rider's collision radius is 0.62, and twice that
+  // was all the room the file asked for - a body's width, not a horse's length. A horse is about
+  // 2.4 m nose to tail, so that is the least two of them may be from one another, however hard
+  // the ground is pushing the file about.
+  room: 2.6 });
 
 /**
  * The picket line. `side` is how far off the traveler's horse the line stands - far enough that
