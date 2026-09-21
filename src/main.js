@@ -7,7 +7,7 @@ import { createCombat, MAX_ALLIES } from './combat.js';
 const GUARD_KEY='KeyV';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
-import { createWeapons, WEAPON_TYPES } from './weapons.js';
+import { createWeapons, WEAPON_TYPES, feelOf } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
@@ -88,7 +88,7 @@ import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
 import { createTeachers, TEACHERS } from './teachers.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
-import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock } from './gear.js';
+import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock, tierScale } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -715,19 +715,44 @@ function init() {
    * is the bout that is on right now - who, in which family, and up to what.
    */
   let teachers=null,sparring=null;
-  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
+  /**
+   * **What a teacher has lent for the length of a bout**, and nothing else in the game has
+   * anything like it: `{weapon}` or `{shield:true}`. It is not in the satchel, it is not in
+   * `weapons`, it is not in `gear` and it is in no snapshot - the only thing that knows about it
+   * is this variable and the three readers below. The traveler's own weapon is back in his hand
+   * at `spar-over`, however the bout ended (src/teachers.js).
+   */
+  let lent=null;
+  /**
+   * The lent weapon as combat wants a weapon: a full profile, built from the weapon's own table
+   * rather than from what the traveler owns, because he owns none of it. The hand that holds it
+   * is still his, so his skill in that family still scales the damage.
+   */
+  function lentProfile(){
+    if(!lent?.weapon)return null;
+    const type=WEAPON_TYPES[lent.weapon];
+    if(!type)return null;
+    const scale=(arms?.margins().damageFor(lent.weapon)??1)*tierScale(type.tier??0);
+    return {id:lent.weapon,name:type.name,owned:false,equipped:true,lent:true,
+      durability:type.maxDurability,maxDurability:type.maxDurability,wornAt:type.wornAt,worn:false,usable:true,
+      damage:type.damage.map(hit=>hit*scale),reachMultiplier:type.reachMultiplier,...feelOf(lent.weapon)};
+  }
+  /** What is actually in his hand this frame, lent or his own. */
+  const heldWeapon=()=>lentProfile()??weapons?.profile()??null;
+  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>heldWeapon(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
     // A fight is as hard as the country it happens in (docs/difficulty-ladder.md, and
     // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
     getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
     getAllies:config=>companionAllies(config),
-    getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id),
+    getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(heldWeapon()?.id),
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
       armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
       // The shield: what a caught blow leaves him and what catching it costs in wind. `hasShield`
-      // is the hand slot, because the hand slot IS the shield (src/gear.js).
-      guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!gear.wearing('hand')};}});
+      // is the hand slot, because the hand slot IS the shield (src/gear.js) - or a shield lent
+      // for a bout, which is on his arm without ever being his.
+      guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!lent?.shield||!!gear.wearing('hand')};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
@@ -1517,7 +1542,10 @@ function init() {
     for(let step=0;step<frames;step++)player.animate(walkTime+step/60,0,true,pose);
   }
   function refreshShield(){
-    const carried=!!gear.wearing('hand');
+    // A shield lent for a bout is on his arm and is drawn, and is his for exactly as long as the
+    // bout lasts. This runs every frame, so it has to know about the loan or the borrowed boards
+    // would be taken off him again a sixtieth of a second after he was handed them.
+    const carried=!!lent?.shield||!!gear.wearing('hand');
     player.setShield(carried);
     // The footer says which key only while there is a shield on the arm to use it with. A
     // one-time toast at the smithy is not enough for something held in every fight.
@@ -2788,6 +2816,10 @@ function init() {
   function continueRoad(){
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
+    // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
+    // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
+    // that loading one *during* a bout cannot leave a man holding somebody else's pike.
+    sparring=null;returnLoan();
     // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
     // sheet, the sign lettering and the starting kit were settled when the page opened, and
     // switching them under a running game would leave half of it in the other mode. The field says
@@ -3059,7 +3091,11 @@ function init() {
     // bout once he has shown you anything at all. Both are offered only where he is - which is
     // beside you, because a man up the road teaches nothing until he is back.
     const spar=teachers.bout(npc.id,travelerHands());
-    if(spar.ok)choices.unshift({id:'teacher-spar',label:sparLabel(npc.id,spar),action:()=>{closeDialogue();startSpar(npc,spar);}});
+    // A man whose craft is not in the traveler's hands lends his spare, and says so before the
+    // bout rather than being found to have done it afterwards.
+    if(spar.ok)choices.unshift({id:'teacher-spar',label:sparLabel(npc.id,spar),action:()=>{
+      if(spar.loan)openDialogue(npc,[spar.loan.hand],null,'Take it and stand up',{onComplete:()=>{closeDialogue();startSpar(npc,spar);}});
+      else{closeDialogue();startSpar(npc,spar);}}});
     else if(spar.reason==='hands')choices.unshift({id:'teacher-spar-no',label:'Stand up and go a few with me.',
       action:()=>openDialogue(npc,[spar.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
     const lesson=teachers.owed(npc.id);
@@ -3107,7 +3143,7 @@ function init() {
    */
   const travelerHands=()=>({weapon:weapons?.profile()?.usable?weapons.profile().id:null,shield:!!gear.wearing('hand')});
   /** His own invitation, and what standing up with him is worth today. */
-  const sparLabel=(id,spar)=>`${spar.offer} (${SKILLS[spar.family]?.name??spar.family}, to ${spar.ceiling})`;
+  const sparLabel=(id,spar)=>`${spar.offer} (${SKILLS[spar.family]?.name??spar.family}, to ${spar.ceiling}${spar.loan?' — he lends you one':''})`;
   /**
    * He shows you something of his craft. The first one he gives is also the one that *shows* you
    * the weapon - until somebody has, it works and banks nothing - and every one of them raises
@@ -3144,12 +3180,44 @@ function init() {
         hp:Math.round(maxHealth(his.toughness)),
         model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}}]};
   }
+  /**
+   * He puts his spare in the traveler's hands, for the length of the bout. It is not added to
+   * anything: `lent` is the whole of it, and `lentProfile`, `getMargins` and `refreshShield` are
+   * the only three readers. The body is told, because a man holding a pike must be seen to be
+   * holding one - and `player.setWeapon` is called plainly, never with `?.`, because a verb
+   * missing from the facade does nothing quietly (docs/known-issues.md).
+   */
+  function takeLoan(loan){
+    if(!loan)return null;
+    lent=loan.weapon?{weapon:loan.weapon}:loan.shield?{shield:true}:null;
+    if(!lent)return null;
+    if(lent.weapon){player.setWeapon(lent.weapon);player.setArmed(true);}
+    refreshShield();
+    return lent;
+  }
+  /**
+   * And he takes it back. **However the bout ended** - a yield either way, a walk-away, or any
+   * other road out of a fight - the traveler's own weapon is in his hand again and the borrowed
+   * boards are off his arm. Safe to call when nothing is lent, which is what lets the frame loop
+   * call it as a belt and braces.
+   */
+  function returnLoan(){
+    if(!lent)return false;
+    const had=lent;lent=null;
+    if(had.weapon)player.setWeapon(weapons.equippedId);
+    refreshShield();inventory.refresh();
+    return true;
+  }
   function startSpar(npc,offer){
     const built=sparEncounter(npc);
     if(!built||!combat.startEncounter(built)){toast('Not here. There is not the ground for it.','SPARRING');return;}
-    sparring={id:npc.id,family:offer.family,ceiling:offer.ceiling,done:offer.done};
+    sparring={id:npc.id,family:offer.family,ceiling:offer.ceiling,done:offer.done,
+      loan:offer.loan?{...offer.loan}:null};
+    takeLoan(offer.loan);
     stopInput();audio?.effect('bell');
-    toast(`${mercenaryById(npc.id)?.name??npc.id} takes his guard, and pulls everything. Neither of you can be killed in this; it ends when one of you has had the better of it, and it teaches ${SKILLS[offer.family]?.name??offer.family} to ${offer.ceiling}.`,'SPARRING');
+    const held=lent?.weapon?` He has put his own ${(WEAPON_TYPES[lent.weapon]?.name??'weapon').toLowerCase()} in your hands and he will want it back.`
+      :lent?.shield?' He has strapped his own shield on your arm and he will want it back.':'';
+    toast(`${mercenaryById(npc.id)?.name??npc.id} takes his guard, and pulls everything. Neither of you can be killed in this; it ends when one of you has had the better of it, and it teaches ${SKILLS[offer.family]?.name??offer.family} to ${offer.ceiling}.${held}`,'SPARRING');
   }
   /**
    * A drill: six lines of the army's speech and what each one means, and no quiz at the end.
@@ -3691,15 +3759,18 @@ function init() {
   /** The bout is over: who had the better of it, and the one thing he says about it. */
   function endSpar(winner){
     const bout=sparring;sparring=null;
+    // **The loan dies with the bout**, before anything else happens and whichever way it ended.
+    returnLoan();
     if(!bout)return;
     const npc=npcById.get(bout.id),name=mercenaryById(bout.id)?.name??bout.id;
     const skill=SKILLS[bout.family]?.name??bout.family;
-    if(winner==='walked-away'){toast(`${name} lowers his guard and lets you go.`,'SPARRING · BROKEN OFF');return;}
+    const back=bout.loan?.back?[bout.loan.back]:[];
+    if(winner==='walked-away'){toast(`${name} lowers his guard and lets you go${bout.loan?', and holds his hand out for what he lent you':''}.`,'SPARRING · BROKEN OFF');return;}
     toast(winner==='traveler'
       ?`You had the better of it, and nobody is hurt — he is on his feet before you are. Practice with him pays ${skill} to ${bout.ceiling}.`
       :`He had the better of it, and nobody is hurt. Practice with him pays ${skill} to ${bout.ceiling}.`,
       `SPARRING · ${name.toUpperCase()}`);
-    if(npc&&mode==='playing'&&!reviewTarget)openDialogue(npc,[bout.done],null,'Back to the road',{onComplete:closeDialogue});
+    if(npc&&mode==='playing'&&!reviewTarget)openDialogue(npc,[bout.done,...back],null,'Back to the road',{onComplete:closeDialogue});
     saveRoad(false);
   }
   function retry() {
@@ -4263,6 +4334,11 @@ function init() {
         combatClock+=dt;combat.update(dt);
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
         handleCombatEvents();
+        // **A loan cannot outlive the bout it was made for**, by any road out of one: the yield
+        // either way and the walk-away all go through `spar-over` and are handled above, but a
+        // drowning goes through `combat.revive()` and a fight can be ended from outside. This is
+        // the belt to that brace, and it is cheap: one null check a frame.
+        if(lent&&!(sparring&&combat.state.phase==='active'&&combat.state.encounterId===SPARRING_ID))returnLoan();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
@@ -4778,6 +4854,13 @@ function init() {
             him:him?{at:[+him.x.toFixed(1),+him.z.toFixed(1)],hp:Math.round(him.hp),maxHp:Math.round(him.maxHp),action:him.action,active:!!him.active,
               apart:+Math.hypot(him.x-player.group.position.x,him.z-player.group.position.z).toFixed(2)}:null,
             roadBody:{drawn:!!npc?.actor.group.visible,hidden:!!npc?.hidden},
+            // The loan: what is in his hand against what he owns, what the fight was actually
+            // handed, and that none of it is in the satchel. A flag saying "lent" would not have
+            // caught a pike that swung in a doorway because the feel never reached combat.
+            loan:lent?{lent:lent.weapon??'shield',own:weapons?.equippedId??null,
+              held:heldWeapon()?.id??null,usable:!!heldWeapon()?.usable,
+              feel:lent.weapon?{tempo:heldWeapon()?.tempo??null,arc:+(heldWeapon()?.arc??0).toFixed(3),room:heldWeapon()?.room??null}:null,
+              inSatchel:!!lent.weapon&&inventory.has(lent.weapon),shield:!!lent.shield&&!gear.wearing('hand')}:null,
             given:teachers?teachers.given(sparring.id):0,level:TEACHERS[sparring.id]?.level??null,hp:Math.round(combat.state.player.hp)};})(),
         company:{owned:riding.owned,mounted:riding.mounted,grounded,seat:+player.group.position.y.toFixed(2),ground:+world.heightAt(player.group.position.x,player.group.position.z).toFixed(2),horse:riding.horse?[+riding.horse.x.toFixed(1),+riding.horse.z.toFixed(1)]:null,
           mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
@@ -5321,14 +5404,19 @@ function init() {
          * before the bout is laid on, so the second pass builds the same bout rather than finding
          * one already running.
          */
-        if(view==='sparring'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
-          questStage=10;combat.revive();sparring=null;player.setArmed(true);
+        if(view==='sparring'||view==='sparring-pike'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          // **Two bouts.** `sparring` is Ed the Word, who teaches the dagger and is therefore the
+          // one man a traveler with the sword he landed with can already stand up against.
+          // `sparring-pike` is Matt, whose craft is not in the traveler's hands at all - so he
+          // lends his spare pike, and the picture is of a borrowed weapon being used.
+          const teach=view==='sparring-pike'?'merc-matt':WORD_ID;
+          questStage=10;combat.revive();sparring=null;returnLoan();player.setArmed(true);
           companionOffTheClock=true;
           // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/companions.js) and a
-          // ceiling of min(35, his 35). Restored rather than played, so the shot is the same
+          // ceiling of min(35, his own 35). Restored rather than played, so the shot is the same
           // every time it is taken.
-          companions.restore({...createCompanions().snapshot(),walking:[WORD_ID],regard:{[WORD_ID]:60}});
-          teachers.restore({version:1,lessons:{[WORD_ID]:2}});
+          companions.restore({...createCompanions().snapshot(),walking:[teach],regard:{[teach]:60}});
+          teachers.restore({version:1,lessons:{[teach]:2}});
           rebuildCompany();
           const at=greenwayEncounter.center,me={x:at.x+4,z:at.z+6};
           player.group.position.set(me.x,world.heightAt(me.x,me.z),me.z);
@@ -5337,18 +5425,20 @@ function init() {
           // Put him where the bout wants him before it is laid on: `sparEncounter` stands the
           // teacher three paces down the line between the two of them, so putting him on that
           // line first is what makes the shot repeatable.
-          const npc=npcById.get(WORD_ID),spot={x:me.x+Math.sin(face)*3.2,z:me.z+Math.cos(face)*3.2};
-          world.npcPositions[WORD_ID]={x:spot.x,z:spot.z};
+          const npc=npcById.get(teach),spot={x:me.x+Math.sin(face)*3.2,z:me.z+Math.cos(face)*3.2};
+          world.npcPositions[teach]={x:spot.x,z:spot.z};
           npc.hidden=false;npc.actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
-          const may=teachers.bout(WORD_ID,travelerHands());
+          const may=teachers.bout(teach,travelerHands());
           if(may.ok)startSpar(npc,may);
           // A fight is only `active` a few frames in, which is what the guard's view found out
           // the expensive way: a bout photographed before then is two people standing about.
           for(let step=0;step<16;step++)combat.update(1/60);
           combatView.update(1/60,combatClock,combat.state,player.group.position,true);
-          const him=combat.state.enemies.find(one=>one.id===`spar-${WORD_ID}`);
+          const him=combat.state.enemies.find(one=>one.id===`spar-${teach}`);
           // He is drawn by the fight from here on, so his road body comes off the ground.
           npc.hidden=true;npc.lastFight={x:him?.x??spot.x,z:him?.z??spot.z};
+          // The lent weapon is on his wrist, so the arm has to be settled before the clock stops
+          // or the pose is whatever the last view left it (settlePose, and the frozen-clock trap).
           settlePose({armed:true});
           const mid={x:(me.x+(him?.x??spot.x))/2,z:(me.z+(him?.z??spot.z))/2};
           reviewTarget=new THREE.Vector3(mid.x,world.heightAt(mid.x,mid.z)+1.3,mid.z);

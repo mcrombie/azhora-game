@@ -8,11 +8,12 @@ import { ARMS, ARMS_IDS, createCombatSkills, marginsFor } from '../src/combat-sk
 import { createCompanions, RUNGS, RUNG_AT, MERCENARY_ARMS, COMPANION_IDS } from '../src/companions.js';
 import { createFallen } from '../src/bystanders.js';
 import { mercenaryById } from '../src/mercenaries.js';
-import { WEAPON_TYPES } from '../src/weapons.js';
+import { WEAPON_TYPES, WEAPON_FEEL, feelOf, createWeapons } from '../src/weapons.js';
+import { familyOf } from '../src/combat-skills.js';
 import {
   TEACHERS, TEACHER_IDS, TEACHING, TEACHABLE, LESSON_RUNGS, LESSON_XP, LESSON_LEVEL,
   SPARRING_CEILINGS, teachesOf, teachersOf, sparringCeiling, lessonXp, handsFor,
-  createTeachers, validateTeachersSnapshot,
+  lendOf, lendFits, createTeachers, validateTeachersSnapshot,
 } from '../src/teachers.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -185,11 +186,12 @@ test('a man will only spar in the craft he teaches, and only once he has shown i
   assert.equal(ready.ok, true);
   assert.equal(ready.family, 'polearms');
   assert.equal(ready.ceiling, sparringCeiling(1, TEACHERS['merc-matt'].level));
-  const wrong = teachers.bout('merc-matt', { weapon: 'simple-sword' });
-  assert.equal(wrong.ok, false);
-  assert.equal(wrong.reason, 'hands');
-  assert.equal(wrong.line, TEACHERS['merc-matt'].spar.wrong, 'and he says so in his own words');
-  assert.equal(teachers.bout('merc-matt', {}).ok, false, 'empty hands are the wrong hands');
+  assert.equal(ready.loan, null, 'a man carrying his own pole is lent nothing');
+  // Wrong hands are not a refusal any more: he lends his spare (see the loan's own test below).
+  const borrowed = teachers.bout('merc-matt', { weapon: 'simple-sword' });
+  assert.equal(borrowed.ok, true);
+  assert.equal(borrowed.loan.weapon, 'war-pike');
+  assert.equal(teachers.bout('merc-matt', {}).ok, true, 'and empty hands get the spare too');
   assert.equal(teachers.bout('merc-cromb', { weapon: 'simple-sword' }).reason, 'away', 'and a man who is not here is not here');
 
   // The shield is worn, not held, so its teacher asks for the arm and not the hand.
@@ -208,6 +210,121 @@ test('a man will only spar in the craft he teaches, and only once he has shown i
     if (family !== 'bows') assert.ok(meets, `${id} can be met with something the game has`);
     else assert.equal(meets, false, 'nobody can spar with Jerry until bows exist (phase 6)');
   }
+});
+
+/**
+ * The loan. Without it the only way to spar with a spear would be for a spearman to die first -
+ * nobody who carries a pole will trade one, so the traveler's hand reaches a polearm only off the
+ * ground where its owner fell, and the dead teach nothing. A teacher lends his spare instead.
+ */
+test('a teacher lends his spare for the bout, and it is his own craft he is lending', () => {
+  for (const id of TEACHER_IDS) {
+    const lent = lendOf(id), family = TEACHERS[id].family;
+    if (family === 'bows') {
+      assert.equal(lent, null, 'Jerry has one bow and the game has no other: nobody spars with him yet');
+      assert.ok(TEACHERS[id].spar.wrong.length > 20, 'and he says why, in his own words');
+      continue;
+    }
+    assert.ok(lent, `${id} has a spare`);
+    assert.ok(lendFits(id), `${id} lends something of his own craft`);
+    assert.ok(lent.hand && lent.back, `${id} says what he is handing over and asks for it back`);
+    if (family === 'shield') assert.equal(lent.shield, true, 'the shield’s teacher lends a shield');
+    else {
+      assert.ok(WEAPON_TYPES[lent.weapon], `${lent.weapon} is a weapon the game has`);
+      assert.equal(familyOf(lent.weapon), family, `${id} lends a ${family} weapon`);
+      assert.equal(lent.shield, undefined);
+    }
+  }
+  // Matt's spare pike and Mus's second spear are the two that were already in the fiction.
+  assert.equal(lendOf('merc-matt').weapon, 'war-pike');
+  assert.equal(lendOf('merc-mus').weapon, 'ash-spear');
+  // And none of them is a named weapon: the only named weapons are the ones the dead leave.
+  for (const id of TEACHER_IDS) {
+    const lent = lendOf(id);
+    if (lent?.weapon) assert.equal(WEAPON_TYPES[lent.weapon].name, WEAPON_TYPES[lent.weapon].name.trim());
+    if (lent) assert.doesNotMatch(JSON.stringify(lent), /’s /, `${id} lends nothing with somebody’s name on it`);
+  }
+
+  // Three of the ten teach a family the traveler cannot reach on his own today, and every one of
+  // them can now be sparred with all the same.
+  const { companions, teachers } = company({ walking: ['merc-ciaran'], regard: { 'merc-ciaran': RUNG_AT.friendly } });
+  teachers.teach('merc-ciaran');
+  const withSword = teachers.bout('merc-ciaran', { weapon: 'simple-sword' });
+  assert.equal(withSword.ok, true, 'a swordsman may be taught the spear');
+  assert.equal(withSword.loan.weapon, 'ash-spear');
+  assert.equal(withSword.loan.hand, lendOf('merc-ciaran').hand);
+  assert.equal(familyOf(withSword.loan.weapon), withSword.family, 'and the bout pays the family of what is in his hand');
+  // The loan is still gated on everything a bout is gated on.
+  const untaught = company({ walking: ['merc-mus'], regard: { 'merc-mus': RUNG_AT.fond } });
+  assert.equal(untaught.teachers.bout('merc-mus', {}).reason, 'untaught', 'he explains it before he lends it');
+  untaught.teachers.teach('merc-mus');
+  assert.equal(untaught.teachers.bout('merc-mus', {}).ok, true);
+  untaught.companions.sendOn('merc-mus');
+  assert.equal(untaught.teachers.bout('merc-mus', {}).reason, 'away', 'a man up the road lends nothing');
+  untaught.companions.ask('merc-mus', { where: 'wild' });
+  untaught.companions.died('merc-mus', { where: 'the wood', what: 'Wolves' });
+  assert.equal(untaught.teachers.bout('merc-mus', {}).reason, 'away', 'and a dead man lends nothing, ever');
+
+  // The shield's teacher lends a shield, and nothing else will do.
+  const guard = company({ walking: ['merc-christin'], regard: { 'merc-christin': RUNG_AT.acquainted } });
+  guard.teachers.teach('merc-christin');
+  assert.equal(guard.teachers.bout('merc-christin', { weapon: 'simple-sword' }).loan.shield, true);
+  assert.equal(guard.teachers.bout('merc-christin', { shield: true }).loan, null, 'a man with his own boards borrows none');
+});
+
+test('the loan lives inside the bout and nowhere else', () => {
+  const main = source('main.js');
+  // It is one closure variable with three readers, and it is in no snapshot anywhere.
+  assert.match(main, /let lent=null;/, 'the loan is one variable');
+  // And it is in no save: the one line that writes the checkpoint never mentions it, and the
+  // teaching snapshot holds lessons and nothing else (asserted from the module's side above).
+  const saveAt = main.indexOf('const result=checkpoint.save({');
+  assert.ok(saveAt > 0, 'the checkpoint is still written where it was');
+  const saveLine = main.slice(saveAt, main.indexOf('\n', saveAt));
+  assert.ok(saveLine.includes('teachers:teachers.snapshot()'), 'the lessons given are saved');
+  assert.ok(!/\blent\b/.test(saveLine), 'and nothing borrowed is');
+  assert.deepEqual(Object.keys(createTeachers().snapshot()).sort(), ['lessons', 'version']);
+  assert.match(main, /function lentProfile\(\)\{/, 'combat is handed a real weapon built from the table');
+  assert.match(main, /const heldWeapon=\(\)=>lentProfile\(\)\?\?weapons\?\.profile\(\)\?\?null;/,
+    'what is in his hand is the loan, or his own');
+  assert.match(main, /getWeapon:\(\)=>heldWeapon\(\)/, 'and that is what the fight swings');
+  assert.match(main, /swingCost:m\.swingCostFor\(heldWeapon\(\)\?\.id\)/, 'and what a swing costs is the loan’s family');
+  assert.match(main, /hasShield:!!lent\?\.shield\|\|!!gear\.wearing\('hand'\)/, 'a lent shield is on his arm');
+  assert.match(main, /const carried=!!lent\?\.shield\|\|!!gear\.wearing\('hand'\);/, 'and is drawn there');
+  // Nothing about it reaches the satchel, the weapon rack or the gear.
+  assert.doesNotMatch(main, /inventory\.add\(lent/, 'it is never put in the satchel');
+  assert.doesNotMatch(main, /weapons\.equip\(lent/, 'it is never equipped');
+  assert.doesNotMatch(main, /gear\.wear\('hand',lent/, 'and a lent shield is never worn');
+  // And it dies with the bout, by every road out of one.
+  assert.match(main, /function returnLoan\(\)\{/);
+  assert.match(main, /if\(had\.weapon\)player\.setWeapon\(weapons\.equippedId\);/, 'his own weapon comes back');
+  assert.doesNotMatch(main, /player\.setWeapon\?\./, 'plainly, never through the facade’s optional call');
+  const ends = main.slice(main.indexOf('function endSpar(winner){'));
+  assert.ok(ends.indexOf('returnLoan();') < ends.indexOf('if(!bout)return;'),
+    'the loan goes back before anything else, and even for a bout the host has forgotten');
+  assert.match(main, /if\(lent&&!\(sparring&&combat\.state\.phase==='active'&&combat\.state\.encounterId===SPARRING_ID\)\)returnLoan\(\);/,
+    'and a frame in which no bout is running holds nothing borrowed');
+  assert.match(main, /sparring=null;returnLoan\(\);/, 'a reload gives it back too');
+});
+
+test('a weapon carries how it feels all the way to the fight', () => {
+  // Found while building the loan: `profile()` handed combat the damage and the reach and left
+  // the tempo, the arc and the pike's room behind, so phase 5 was true of the module and of the
+  // tests that build a weapon by hand, and of nothing the player ever held.
+  const weapons = createWeapons({ inventory: { has: () => true, count: () => 1 } });
+  for (const id of Object.keys(WEAPON_TYPES)) {
+    weapons.equip(id);
+    const held = weapons.profile(), type = WEAPON_TYPES[id];
+    for (const key of WEAPON_FEEL) assert.equal(held[key], type[key], `${id} keeps its ${key}`);
+  }
+  weapons.equip('war-pike');
+  assert.equal(weapons.profile().room, 2, 'the pike still wants its two paces in the traveler’s own hand');
+  weapons.equip('quarterstaff');
+  assert.equal(weapons.profile().tempo, .5, 'and the staff still strikes twice as often');
+  weapons.equip('simple-sword');
+  assert.equal(weapons.profile().tempo, 1, 'while the sword is still the reference');
+  assert.equal(weapons.profile().room, undefined, 'and a weapon that says nothing still says nothing');
+  assert.deepEqual(feelOf('pawpaw'), {}, 'a thing that is not a weapon has no feel');
 });
 
 test('the ceiling a bout pays at rises with the lessons taken, and ends with the man', () => {
