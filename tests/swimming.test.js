@@ -14,6 +14,12 @@ import {
 } from '../src/swimming.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
+import { OGRE_ENCOUNTER } from '../src/amod-ogre.js';
+import { LUSCIA_WOLVES } from '../src/luscia-chapter.js';
+import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
+import { borderEncounter } from '../src/border-chapter.js';
+import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
+import { AFTERMATH_ARENAS } from '../src/aftermath-sites.js';
 
 let world = null;
 const built = async () => (world ??= (async () => {
@@ -303,4 +309,47 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
   // Nothing pushes him back to shore: that was the first draft and it was overruled.
   assert.doesNotMatch(main, /nearestStandable|pushBackToShore/, 'no free push back to land');
   assert.ok(SWIMMING_LESSON.length >= 4 && SWIMMING_LESSON.join(' ').includes('wind'), 'and somebody has words for it');
+});
+
+/**
+ * The 45 m leash in src/combat.js ends a fight a traveler has walked out of, and it does that
+ * with `restorePlayer()` - full health and a **full bar of wind**. Wind is what every crossing in
+ * the table above is priced in, so a swimmer who is still inside a live fight's leash when the
+ * water takes his wind is handed a second bar in the middle of the sea. Measured on the real
+ * world, off the Tidehaven strand at level 1: 77 m without a fight on, 108 m with one, which is
+ * 40% further than the design allows anyone at that level.
+ *
+ * Nothing in the code stops it. What stops it is that no fight is authored near enough to water,
+ * and the nearest - the Bramble scout camp - clears the leash by five metres. That is too thin a
+ * thing to leave un-nailed, so it is nailed here: the day somebody authors a fight on a beach,
+ * this fails and says which one, rather than the crossing table quietly becoming a lie.
+ *
+ * The same five metres hold a second one: retry()'s drowned branch returns before the line that
+ * tells a chapter module its fight is over, so drowning inside a quest fight would leave the
+ * module believing the fight was still running.
+ */
+test('no fight the game can start has water inside its leash, which is what keeps the crossings honest', async () => {
+  const w = await built();
+  const allies = Array.from({ length: 4 }, (_, i) => ({ id: `ally-${i}`, kind: 'legionary' }));
+  const fights = [['the ogre at the pass stones', OGRE_ENCOUNTER], ['the wolves on the burial line', LUSCIA_WOLVES],
+    ['the Bramble scout camp', FOREST_HIDEOUT_QUEST.encounter]];
+  for (const side of ['empire', 'coalition']) fights.push([`the border battle, for the ${side}`, borderEncounter(side, allies)]);
+  for (const spec of Object.values(AFTERMATH_VARIANTS)) {
+    const arena = AFTERMATH_ARENAS[spec.arena];
+    if (arena) fights.push([`the day after: ${spec.id}`, aftermathEncounter(spec.id, arena, allies)]);
+  }
+  assert.ok(fights.length >= 8, `only ${fights.length} fights found`);
+  // The leash, read off the source rather than guessed, so a change to it changes this.
+  const leash = Number(source('combat.js').match(/distance\(position, lastEncounter\.center\) > (\d+)/)?.[1]);
+  assert.equal(leash, 45, 'the leash is 45 m');
+  for (const [label, encounter] of fights) {
+    let nearest = Infinity;
+    for (let r = 2; r <= leash + 20; r += 2)
+      for (let i = 0; i < 64; i++) {
+        const a = i / 64 * Math.PI * 2, x = encounter.center.x + Math.sin(a) * r, z = encounter.center.z + Math.cos(a) * r;
+        if (canSwim(x, z, w, .34)) { nearest = Math.min(nearest, r); break; }
+      }
+    assert.ok(nearest > leash, `${label} (${encounter.id}) has swimmable water ${nearest} m from its centre, inside the ${leash} m leash: `
+      + 'a swimmer inside it is handed a full bar of wind by restorePlayer(), and the crossing table stops being true');
+  }
 });
