@@ -256,23 +256,32 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  *   stopped man holds his for 60, 90 or 120 seconds, and if he cannot reach it he spends the
  *   whole dwell walking on the spot against it. Without this the formation is unchanged.
  * @param wild true to give a man whose `route` is 'wild' his own line across country
- * @param companion the one man off the traveler's own boat, while he is not on the clock:
- *   `{ id, with: true }` puts him at the traveler's shoulder and off the road altogether;
- *   `{ id, releasedAt, releasedDistance }` puts him back on it from that second and that place.
- *   **Undefined is today's clock, exactly** — a save written before the long road existed
- *   restores as undefined, and not a man of the company moves by a metre under it.
+ * @param companions everyone walking with the traveler, while they are not on the clock. Each is
+ *   `{ id, with: true }`, which puts that man at the traveler's shoulder and off the road
+ *   altogether, or `{ id, releasedAt, releasedDistance }`, which puts him back on it from that
+ *   second and that place. The user's ruling: **as many as will come** - the traveler may reach
+ *   the muster with most of the company behind him, and the scarcity is that each says yes only
+ *   for his own reason at his own moment (docs/companions.md).
+ * @param companion the same thing for one man, which is what the long road wrote and what its
+ *   tests use. It is a list of one, and the two may not both be given.
+ *
+ *   **Undefined or empty is today's clock, exactly** — a save written before any of this
+ *   existed restores as undefined, and not a man of the company moves by a metre under it.
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined, companions = undefined } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
-  const companionId = companion?.id ?? null;
-  const walksWithYou = !!companionId && companion.with === true;
-  // Released, he is the same pure function of the clock as everybody else: he simply lands at
-  // the moment he was let go, has no hour to spend at a landing he left long ago, and starts
-  // from the road distance he was standing at.
-  if (companionId && !walksWithYou) roster = roster.map(entry => entry.id === companionId
-    ? Object.freeze({ ...entry, arrival: Math.max(0, Number(companion.releasedAt) || 0), departs: 0,
-      startDistance: Math.max(0, Number(companion.releasedDistance) || 0) })
-    : entry);
+  // One man or many, it is one list. `companion` is the long road's own spelling of a list of
+  // one and still works exactly as it did.
+  const asked = (companions ?? (companion === undefined ? [] : [companion])).filter(entry => entry?.id);
+  const walkingWith = new Set(asked.filter(entry => entry.with === true).map(entry => entry.id));
+  const released = new Map(asked.filter(entry => entry.with !== true).map(entry => [entry.id, entry]));
+  // Released, a man is the same pure function of the clock as everybody else: he lands at the
+  // moment he was let go, has no hour to spend at a landing he left long ago, and starts from the
+  // road distance he was standing at. Release and take-back are per person.
+  if (released.size) roster = roster.map(entry => (released.has(entry.id)
+    ? Object.freeze({ ...entry, arrival: Math.max(0, Number(released.get(entry.id).releasedAt) || 0), departs: 0,
+      startDistance: Math.max(0, Number(released.get(entry.id).releasedDistance) || 0) })
+    : entry));
   // Mus is the only one whose hour is not written down. It is drawn once from the seed the
   // game was started with and kept in the save, so he lands at the same moment on every
   // reload of that game and a different one in the next.
@@ -349,7 +358,7 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
       // has no road distance and no position of his own here. The host puts him at the shoulder
       // and writes the real x and z back onto this placement, which is what the interpreter's
       // twelve metres are measured from (`interpreterNearby`, src/linguist.js).
-      if (walksWithYou && mercenary.id === companionId)
+      if (walkingWith.has(mercenary.id))
         return { id: mercenary.id, name: mercenary.name, phase: 'with-traveler', distance: 0, stopId: null, x: null, z: null, yaw: 0, walking: false };
       // A wild man walks his own line, at the pace rough country allows, and passes none of the
       // road's stops, because he is never on the road to pass them.
@@ -421,7 +430,12 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
         || (!(wildRoute && mercenaryById(p.id)?.route === 'wild') && p.distance > travelerDistance))).length;
   }
 
-  return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], companionId: walksWithYou ? companionId : null, stops: roadStops.map(stop => ({ ...stop })) };
+  return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1],
+    // The long road asks for one and gets the first, which is the man at the traveler's shoulder;
+    // `companionIds` is everybody, in roster order, for a host that draws a file.
+    companionId: walkingWith.size ? (roster.find(entry => walkingWith.has(entry.id))?.id ?? null) : null,
+    companionIds: roster.filter(entry => walkingWith.has(entry.id)).map(entry => entry.id),
+    stops: roadStops.map(stop => ({ ...stop })) };
 }
 
 /** The quest stage the letter of introduction is in your satchel at (src/game-state.js). */

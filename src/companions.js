@@ -18,14 +18,15 @@ const freeze = Object.freeze;
 export const COMPANIONS_VERSION = 1;
 
 /**
- * How many may walk with you at once. One on the road, because the long road's noticing, its
- * prompts and its fight box were all tuned for one; two once the company has mustered, which is
- * the combat brief's "one or two" coming due as the country starts to climb.
+ * **As many as will come** (the user, 2026-09-21). There is no limit: a traveler may reach the
+ * muster with most of the company behind him, and that is the generous reading on purpose.
  *
- * **One place, on purpose.** It is the number most likely to be tweaked, and changing it is
- * meant to be a single edit rather than a search.
+ * The scarcity is not a number, then - it is that each man says yes only for his own reason at
+ * his own moment, and some of those moments are narrow. Ed is on his strand for twenty-five
+ * minutes; Mus is only ever found off the road. Keep that honest and the company stays something
+ * gathered rather than collected.
  */
-export const COMPANION_LIMIT = freeze({ road: 1, mustered: 2 });
+export const COMPANION_LIMIT = MERCENARY_ROSTER.length;
 
 /**
  * The four rungs this game already uses for standing - `src/rena-letters.js`, `src/acorn-quest.js`
@@ -111,7 +112,7 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== COMPANIONS_VERSION) return false;
   if (!Array.isArray(data.walking) || data.walking.some(id => !COMPANION_IDS.includes(id))) return false;
   if (new Set(data.walking).size !== data.walking.length) return false;
-  if (data.walking.length > COMPANION_LIMIT.mustered) return false;
+  if (data.walking.length > COMPANION_LIMIT) return false;
   if (!data.regard || typeof data.regard !== 'object' || Array.isArray(data.regard)) return false;
   for (const [id, at] of Object.entries(data.regard)) {
     if (!COMPANION_IDS.includes(id)) return false;
@@ -126,13 +127,11 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
 /**
  * @param fallen `createFallen()` from src/bystanders.js - the save's own list of the gone. It is
  *   shared with the world's other dead on purpose: permanent death is one idea, not two.
- * @param mustered `() => boolean`, because the limit is one before the muster and two after.
  */
-export function createCompanions({ fallen = null, mustered = () => false, onEvent = () => {} } = {}) {
+export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   const state = { walking: [], regard: {}, errands: [] };
 
   const dead = id => !!fallen?.has?.(id);
-  const limit = () => (mustered() ? COMPANION_LIMIT.mustered : COMPANION_LIMIT.road);
   const regardOf = id => state.regard[id] ?? 0;
   const known = id => COMPANION_IDS.includes(id);
 
@@ -158,15 +157,12 @@ export function createCompanions({ fallen = null, mustered = () => false, onEven
     const ask = ASKS[id];
     if (where && ask.where !== where) return { ok: false, reason: 'elsewhere' };
     if (ask.needs && !has[ask.needs]) return { ok: false, reason: 'needs', needs: ask.needs, line: ask.no ?? null };
-    if (state.walking.length >= limit()) return { ok: false, reason: 'full', full: state.walking.length, line: ask.yes };
+    // No refusal past this point: as many as will come. The only reasons anybody says no are his
+    // own - the wrong country, the thing he wants first, or being dead.
     return { ok: true, line: ask.yes };
   }
 
-  /**
-   * He comes. If the traveler is already at his limit this refuses rather than shuffling anybody:
-   * asking a second is asking the first to go on ahead, and that is the host's to put to the
-   * player in words, not this module's to do quietly.
-   */
+  /** He comes, and so may everybody else who will. */
   function ask(id, context = {}) {
     const may = askable(id, context);
     if (!may.ok) return may;
@@ -240,8 +236,11 @@ export function createCompanions({ fallen = null, mustered = () => false, onEven
     rung: id => rungFor(regardOf(id)), label: id => RUNG_LABELS[rungFor(regardOf(id))],
     regardFor: id => Math.round(regardOf(id)),
     get walking() { return [...state.walking]; },
-    get limit() { return limit(); },
     walksWith: id => state.walking.includes(id),
-    /** What `createMercenaryCompany` wants: the one man at your shoulder, or undefined. */
-    get companion() { return state.walking.length ? { id: state.walking[0], with: true } : undefined; } };
+    /**
+     * What `createMercenaryCompany` wants: everybody at the traveler's shoulder, in the order
+     * they were asked. Empty is today's clock exactly, which is the property the company's own
+     * snapshot test pins from the other side.
+     */
+    get companions() { return state.walking.map(id => ({ id, with: true })); } };
 }

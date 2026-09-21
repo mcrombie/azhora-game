@@ -7,10 +7,10 @@ import {
   rungFor, rungLabel, createCompanions, validateCompanionsSnapshot,
 } from '../src/companions.js';
 
-const fresh = ({ mustered = false } = {}) => {
+const fresh = () => {
   const fallen = createFallen();
   const heard = [];
-  return { fallen, heard, companions: createCompanions({ fallen, mustered: () => mustered, onEvent: e => heard.push(e) }) };
+  return { fallen, heard, companions: createCompanions({ fallen, onEvent: e => heard.push(e) }) };
 };
 
 test('everyone on the roster can be asked, each somewhere of his own', () => {
@@ -49,25 +49,33 @@ test('the rungs are the four this game already uses, and nothing in between', ()
   assert.equal(RUNGS.filter(rung => RUNG_AT[rung] > 0).length, 3);
 });
 
-test('one walks with you on the road, two once the company has mustered', () => {
-  assert.deepEqual([COMPANION_LIMIT.road, COMPANION_LIMIT.mustered], [1, 2]);
-  const road = fresh();
-  assert.equal(road.companions.limit, 1);
-  assert.equal(road.companions.ask('merc-word', { where: 'shore' }).ok, true);
-  const second = road.companions.askable('merc-mus', { where: 'wild' });
-  assert.deepEqual([second.ok, second.reason], [false, 'full'], 'asking a second is asking the first to go on ahead');
-  // And it refuses rather than shuffling: the choice belongs to the player, in words.
-  assert.deepEqual(road.companions.walking, ['merc-word']);
-  assert.equal(road.companions.sendOn('merc-word').ok, true);
-  assert.equal(road.companions.ask('merc-mus', { where: 'wild' }).ok, true);
-  assert.deepEqual(road.companions.walking, ['merc-mus']);
-  assert.equal(road.companions.sendOn('merc-mus').ok, true);
-  assert.equal(road.companions.sendOn('merc-mus').ok, false, 'nobody is sent on twice');
-  const camp = fresh({ mustered: true });
-  assert.equal(camp.companions.limit, 2);
-  assert.equal(camp.companions.ask('merc-word', { where: 'shore' }).ok, true);
-  assert.equal(camp.companions.ask('merc-mus', { where: 'wild' }).ok, true);
-  assert.equal(camp.companions.askable('merc-matt', { where: 'road' }).reason, 'full');
+test('as many as will come, and no number anywhere says otherwise', () => {
+  // The user's ruling. The traveler may reach the muster with most of the company behind him;
+  // the scarcity is that each says yes only for his own reason at his own moment.
+  assert.equal(COMPANION_LIMIT, COMPANION_IDS.length, 'the only limit is that there are only ten of them');
+  const { companions } = fresh();
+  const everybody = [
+    ['merc-word', { where: 'shore' }],
+    ['merc-mus', { where: 'wild' }],
+    ['merc-jerry', { where: 'road' }],
+    ['merc-ciaran', { where: 'road' }],
+    ['merc-christin', { where: 'road', has: { charted: true } }],
+    ['merc-lakota', { where: 'road', has: { birded: true } }],
+    ['merc-eliana', { where: 'road', has: { edge: true } }],
+    ['merc-matt', { where: 'road' }],
+    ['merc-altun', { where: 'road' }],
+    ['merc-gotwood', { where: 'landing' }],
+  ];
+  for (const [id, where] of everybody) assert.equal(companions.ask(id, where).ok, true, `${id} comes`);
+  assert.equal(companions.walking.length, COMPANION_IDS.length, 'the whole company walks with you');
+  // The three who rode in together can all come, and so can both of the last pair.
+  for (const id of GROUPS.riders) assert.ok(companions.walksWith(id), `${id} came`);
+  assert.ok(companions.walksWith('merc-matt') && companions.walksWith('merc-altun'));
+  // Nobody is ever refused for being a crowd.
+  assert.equal(companions.askable('merc-word', { where: 'shore' }).reason, 'already');
+  assert.equal(companions.sendOn('merc-word').ok, true);
+  assert.equal(companions.sendOn('merc-word').ok, false, 'nobody is sent on twice');
+  assert.equal(companions.ask('merc-word', { where: 'shore' }).ok, true, 'and may be asked again');
 });
 
 test('each says yes for his own reason, and no for his own reason', () => {
@@ -157,9 +165,12 @@ test('who walks with you survives the road, and the dead do not walk out of an o
   const after = createCompanions({ fallen, mustered: () => true });
   assert.equal(after.restore(saved), true);
   assert.deepEqual(after.walking, ['merc-ciaran'], 'the dead do not walk');
+  // Three walking with you is now perfectly ordinary; more than the company is still nonsense.
+  assert.equal(validateCompanionsSnapshot({ ...saved, walking: ['merc-word', 'merc-mus', 'merc-matt'] }), true,
+    'as many as will come');
   for (const bad of [null, [], { ...saved, version: 2 }, { ...saved, walking: ['nobody'] },
     { ...saved, walking: ['merc-word', 'merc-word'] },
-    { ...saved, walking: ['merc-word', 'merc-mus', 'merc-matt'] },
+    { ...saved, walking: [...COMPANION_IDS, 'merc-word'] },
     { ...saved, regard: { nobody: 10 } }, { ...saved, regard: { 'merc-mus': -1 } },
     { ...saved, regard: { 'merc-mus': 1e9 } }, { ...saved, errands: ['nobody'] }])
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
@@ -170,17 +181,27 @@ test('the companion it hands the company is the one the long road already takes'
   // wants is `{ id, with: true }`, and undefined when nobody walks with you - which is today's
   // clock, exactly, and is pinned by the company's own snapshot test.
   const { companions } = fresh();
-  assert.equal(companions.companion, undefined, 'nobody asked is nobody walking');
+  assert.deepEqual(companions.companions, [], 'nobody asked is nobody walking');
   companions.ask('merc-word', { where: 'shore' });
-  assert.deepEqual(companions.companion, { id: 'merc-word', with: true });
+  companions.ask('merc-mus', { where: 'wild' });
+  assert.deepEqual(companions.companions, [{ id: 'merc-word', with: true }, { id: 'merc-mus', with: true }]);
   const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -400, z: 0 }];
-  const walking = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: companions.companion });
-  assert.equal(walking.companionId, 'merc-word');
-  assert.equal(walking.placements(600).find(p => p.id === 'merc-word').phase, 'with-traveler');
-  companions.sendOn('merc-word');
-  const alone = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: companions.companion });
-  assert.equal(alone.companionId, null);
+  const walking = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companions: companions.companions });
+  assert.deepEqual([...walking.companionIds].sort(), ['merc-mus', 'merc-word'], 'both of them');
+  for (const id of ['merc-word', 'merc-mus'])
+    assert.equal(walking.placements(600).find(p => p.id === id).phase, 'with-traveler', id);
+  assert.equal(walking.summary(600)['with-traveler'], 2, 'and the summary counts them');
+  // The long road's own spelling still works, and is a list of one.
+  const one = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companion: { id: 'merc-gotwood', with: true } });
+  assert.equal(one.companionId, 'merc-gotwood');
+  assert.deepEqual(one.companionIds, ['merc-gotwood']);
+  // And the empty set is today's clock, exactly - the property the whole design rests on.
+  companions.sendOn('merc-word'); companions.sendOn('merc-mus');
+  const alone = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 }, companions: companions.companions });
+  assert.deepEqual([alone.companionId, alone.companionIds], [null, []]);
   const untouched = createMercenaryCompany({ road, muster: road[2], landing: { x: 3, z: 3 } });
-  for (const seconds of [0, 600, 1800, 5300])
-    assert.deepEqual(alone.placements(seconds), untouched.placements(seconds), `at ${seconds} s`);
+  for (const seconds of [0, 600, 1800, 5300]) {
+    assert.deepEqual(alone.placements(seconds), untouched.placements(seconds), `empty, at ${seconds} s`);
+    assert.deepEqual(alone.summary(seconds), untouched.summary(seconds), `empty summary, at ${seconds} s`);
+  }
 });
