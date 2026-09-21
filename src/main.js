@@ -3445,7 +3445,7 @@ function init() {
       nearFishing=!!currentFishingSpot;
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
-      show('interaction',mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active');
+      const prompting=mode==='playing'&&(!!currentNPC||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||nearRepair||nearBorder)&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Hollis':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -3466,6 +3466,11 @@ function init() {
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
       if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Inspect Bramble Scout Camp · optional';
+      // A prompt that is off the screen must not leave its words behind. Opening a conversation
+      // hides this panel on the spot (openDialogue), and everything that writes the label is
+      // gated on play, so the HUD otherwise keeps offering whatever it offered last. No player
+      // reads a hidden panel; a harness does, and a stale “Speak with Iven” sent two hunts wrong.
+      if(!prompting)$('interaction-label').textContent='';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
       rideCamera=THREE.MathUtils.lerp(rideCamera,riding.mounted?1:0,1-Math.exp(-4*dt));
@@ -3546,11 +3551,13 @@ function init() {
       // What the last frame drew, and who was in it: the figures drawn, the ones near enough to cast their own
       // shadow (thirty metres, below), and how many meshes that is either way (main.cjs --draw-review).
       draws:()=>{const p=player.group.position,info=renderer.info,drawn=npcData.filter(n=>!n.hidden&&!n.fallen&&n.actor.group.visible);
-        const parts=n=>{let meshes=0,casters=0;n.actor.group.traverse(o=>{if(o.isMesh&&o.visible){meshes++;if(o.castShadow)casters++;}});return{meshes,casters};};
+        const shown=(o,top)=>{for(let a=o;a&&a!==top.parent;a=a.parent)if(!a.visible)return false;return true;};
+        const parts=n=>{let meshes=0,casters=0;n.actor.group.traverse(o=>{if(o.isMesh&&shown(o,n.actor.group)){meshes++;if(o.castShadow)casters++;}});return{meshes,casters};};
         let visibleMeshes=0,visibleCasters=0;scene.traverse(o=>{if(!o.isMesh)return;for(let a=o;a;a=a.parent)if(!a.visible)return;visibleMeshes++;if(o.castShadow)visibleCasters++;});
         const within=r=>drawn.filter(n=>n.actor.group.position.distanceTo(p)<r),shadowed=drawn.filter(n=>n.shadows);
         return{calls:info.render.calls,triangles:info.render.triangles,position:[+p.x.toFixed(1),+p.z.toFixed(1)],region:world.regionAt(p.x,p.z)?.name??null,
-          figures:npcData.length,figuresDrawn:drawn.length,figuresWithin30:within(30).length,figuresWithin60:within(60).length,shadowFigures:shadowed.length,
+          figures:npcData.length,figuresDrawn:drawn.length,figuresWithin30:within(30).length,figuresWithin60:within(60).length,figuresWithin100:within(100).length,figuresWithin120:within(120).length,
+          standIns:drawn.filter(n=>n.detail==='stand-in').length,shadowFigures:shadowed.length,
           figureMeshes:drawn.reduce((s,n)=>s+parts(n).meshes,0),figureCasterMeshes:shadowed.reduce((s,n)=>s+parts(n).casters,0),
           visibleMeshes,visibleCasters,shadowMap:renderer.shadowMap.enabled,who:within(30).map(n=>n.id),talking:currentNPC?.id??null};},
       // One of the west's animals as it is this frame, so a review shot can say what it is a picture of.

@@ -28,7 +28,7 @@ test('somebody becomes a stand-in past 62 m and themselves again inside 56 m, an
 });
 
 test('the people the player is looking at are never stand-ins, however far off', () => {
-  for (const flag of ['talking', 'escorting', 'fighting', 'fleeing', 'marked', 'ridden']) {
+  for (const flag of ['talking', 'escorting', 'fighting', 'fleeing', 'marked', 'ridden', 'swimming', 'posed']) {
     assert.equal(alwaysInFull({ [flag]: true }), true, flag);
     assert.equal(figureDetail(undefined, 150, { [flag]: true }), 'full', `${flag} at 150 m`);
     assert.equal(figureDetail('stand-in', 150, { [flag]: true }), 'full', `${flag}, and already a stand-in`);

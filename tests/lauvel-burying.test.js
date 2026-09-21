@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BURIAL, HEWES_GRAVE, fieldPoint } from '../src/lauvel-aftermath.js';
 import { createBurying, validateBuryingSnapshot, selaConversation, workerChoice, SON, HAIL, HAIL_FROM, JOBS, JOB_IDS, JOB_FIRST, JOB_AGAIN, THE_QUESTION, NOTHING_SEEN, OFFER_HELP, THE_GREEN_COAT, TELLING, THE_BURYING, AFTER } from '../src/lauvel-burying.js';
+import { LUSCIA_SITES } from '../src/luscia-chapter.js';
 
 /** Take the quest as far as a stage, the way a traveler would. */
 function play(to = 'done') {
@@ -199,6 +202,28 @@ test('the burying survives a save, and a broken one is refused', () => {
   assert.equal(wrecked.restore({ version: 1, stage: 'nowhere', done: [], carried: 0 }), false);
   assert.equal(wrecked.stage, 'unknown');
   assert.equal(wrecked.carried, 0);
+});
+
+test('the wrecked cart stands inside her call, so the field speaks first and the prompt goes off the screen', () => {
+  // The chapter sends the traveler to a cart 29.5 m from her, and she calls 34. So the last step
+  // of the walk to the satchel is also the step that hails her, and her hail opens a conversation,
+  // which takes the F prompt off the screen until it is heard out. That is hers and it is right;
+  // what is not is anything - a harness, a later HUD - reading the prompt across it. It cost the
+  // road smoke a wrong diagnosis: a label left over from Iven, two hundred metres back.
+  const cart = LUSCIA_SITES['courier-satchel'];
+  const reach = Math.hypot(HAIL_FROM.x - cart.x, HAIL_FROM.z - cart.z);
+  assert.ok(reach < HAIL_FROM.reach, `the cart is ${reach.toFixed(1)} m from her and she calls ${HAIL_FROM.reach}`);
+  assert.ok(reach > 12, 'and she is not standing on the cart');
+  // Two lines, no choices, so hearing her out is two presses and control comes straight back.
+  assert.ok(HAIL.length <= 12, 'the hail is short enough to finish in one go');
+  const burying = createBurying();
+  assert.equal(burying.hail().ok, true, 'arriving at the cart is arriving up her road');
+  assert.equal(burying.hail().ok, false, 'and it happens once, so the second visit is quiet');
+  // So the walkthrough has to do what a player does: hear her, then read the cart.
+  const smoke = readFileSync(fileURLToPath(new URL('../src/road-smoke.js', import.meta.url)), 'utf8');
+  const step = smoke.slice(smoke.indexOf('const satchel = LUSCIA_SITES'), smoke.indexOf('the satchel prompt is missing'));
+  assert.ok(step, 'the walkthrough still goes to the cart');
+  assert.match(step, /getMode\(\) === 'dialogue'[\s\S]*finishDialogue\(\)/, 'it hears her out before it reads the prompt');
 });
 
 test('she can be heard from the road, and the grave her son goes into is the one being dug', async () => {

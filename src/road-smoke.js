@@ -255,13 +255,18 @@ export async function runRoadSmoke(h) {
     assert(state().luscia?.stage === 'find-satchel', 'Iven did not send the traveler to the field');
     const satchel = LUSCIA_SITES['courier-satchel'];
     await arrive(satchel.x + .5, satchel.z - .8);
+    // The cart is 29.5 m from Sela and her call carries 34 (src/lauvel-burying.js HAIL_FROM), so
+    // arriving here is coming up her road: she hails, that opens a conversation, and a conversation
+    // takes the prompt off the screen. Hear her out first, which is what a player does.
+    if (getMode() === 'dialogue') { await finishDialogue(); await frames(2); }
+    assert(getMode() === 'playing', `the field never gave control back at the wrecked cart; ${query('#speaker')?.textContent} is still speaking`);
     // The prompt is suppressed whenever anybody stands inside the traveler's three-metre reach,
     // so when it is missing, say who is standing there. A name is the whole diagnosis.
     if (!query('#interaction-label')?.textContent.includes('satchel')) {
       const near = npcData.filter(npc => !npc.hidden && !npc.fallen)
         .map(npc => ({ id: npc.id, d: Math.hypot(npc.actor.group.position.x - player.group.position.x, npc.actor.group.position.z - player.group.position.z) }))
         .filter(entry => entry.d < 6).sort((a, b) => a.d - b.d).map(entry => `${entry.id} at ${entry.d.toFixed(1)}m`);
-      assert(false, `the satchel prompt is missing at the wrecked cart; the label reads "${query('#interaction-label')?.textContent}" and within six metres stands: ${near.join(', ') || 'nobody'}`);
+      assert(false, `the satchel prompt is missing at the wrecked cart; in mode ${getMode()} the label reads "${query('#interaction-label')?.textContent}" and within six metres stands: ${near.join(', ') || 'nobody'}`);
     }
     tap('KeyF'); await frames(3);
     assert(state().luscia?.stage === 'return-satchel', 'the courier’s satchel was not lifted');

@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { talkTarget, placeKeepsPrompt } from '../src/prompt-priority.js';
+
+const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
 /**
  * Measured on the real road with the real company, two hours of play at a quarter-second step:
@@ -29,6 +33,25 @@ test('a hired sword still answers when he is the only one there, and when he is 
   assert.equal(talkTarget([{ ...chris, marked: true, d: 3 }, keeper]).npc, 'merc-gotwood', 'the man on the landing, say');
   assert.equal(talkTarget([]), null);
   assert.equal(talkTarget([{ npc: 'nobody', d: Number.NaN }]), null, 'a distance that is not a number is nobody');
+});
+
+/**
+ * The prompt is a panel and a line of words, and they used to be decided apart: the panel was
+ * hidden by anything that was not play - a conversation above all, which hides it the instant it
+ * opens - while every line that writes the words is gated on play, so nothing ever wrote over
+ * them. The words outlived the panel. Nobody playing sees a hidden panel, so this is not a bug
+ * anybody met; it is a bug that lies to whoever asks the HUD what it is offering, and it lied to
+ * two bug hunts in a row, with "Speak with Iven" at a wrecked cart two hundred metres from Iven.
+ */
+test('the prompt panel and its words are one decision, and the words go when the panel does', () => {
+  const main = source('main.js');
+  assert.match(main, /const prompting=mode==='playing'&&\(!!currentNPC\|\|/, 'one value decides whether there is a prompt at all');
+  assert.match(main, /&&combat\.state\.phase!=='active';show\('interaction',prompting\);/, 'and the panel is shown by it');
+  assert.match(main, /if\(!prompting\)\$\('interaction-label'\)\.textContent='';/, 'and the words are cleared by it');
+  // The clear has to come after everything that writes the label, or it clears the wrong frame.
+  assert.ok(main.indexOf("if(!prompting)$('interaction-label').textContent='';")
+    > main.lastIndexOf("$('interaction-label').textContent=currentHideoutSite"), 'the clear is the last word on the label');
+  assert.match(main, /mode='dialogue';stopInput\(\);show\('interaction',false\);/, 'a conversation still takes the panel down on the spot');
 });
 
 test('a place the traveler has business at keeps the prompt from a passer-by, and from nobody else', () => {

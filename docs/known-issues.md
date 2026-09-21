@@ -723,3 +723,70 @@ quietly move to `regionAt`).
 **Repro:** no test covers it. Headless: flood from Ambron as above and count reached cells for
 which no `insideRegion` is true. In play: walk south off the Nesdor Flats and keep going; the
 card still says Nesdor a kilometre later.
+
+---
+
+## "Speak with Iven" at a cart two hundred metres from Iven (fixed)
+
+**Seen:** the approved walkthrough, `npm run test:game`, fails at one step:
+
+```
+Road smoke: the satchel prompt is missing at the wrecked cart; the label reads
+"Speak with Iven" and within six metres stands: nobody
+```
+
+The stage is `find-satchel`, the objective `courier-satchel`, the traveler at the Lauvel field,
+and Iven is back in Lumber Town. So a talk prompt appeared to be showing where the man is not,
+and beating the cart's own prompt. Two hunters chased that reading — a hired sword stopped at
+the cart, then the companion still escorting — and both were dead ends, because the reading was
+wrong. Nobody was answering. Nothing was on the screen at all.
+
+**Cause: Sela.** `src/main.js:3339` hails the traveler the moment they come inside `HAIL_FROM`,
+and the hail is not a toast, it is `openDialogue`, which sets `mode='dialogue'` and calls
+`show('interaction',false)` on the spot. The cart is inside her call:
+
+| | |
+|---|---|
+| `HAIL_FROM` (`src/lauvel-burying.js:41`) | (−685.09, 325.72), reach **34 m** |
+| `courier-satchel` (`src/luscia-chapter.js:32`) | (−678.29, 297.92) |
+| where the walkthrough stands | (−677.79, 297.12) |
+| between them | **29.5 m** — inside her call |
+
+So the warp to the cart is also the step that hails her, on the first frame after it. The state
+dump agrees: `mode: 'dialogue'` and `burying: { stage: 'hailed' }`.
+
+**And then the label lied.** The panel is hidden, but `#interaction-label` is the one piece of
+HUD text nothing ever cleared. Every line that writes it (`src/main.js:3427–3446`) is gated on
+`mode==='playing'`, or on a `current*Site` that is itself null outside play (`3405–3411`), so
+in dialogue mode nothing writes over it and it keeps the last thing it offered — "Speak with
+Iven", from the relay hut two hundred metres back, written the frame before the traveler was
+warped away. The walkthrough read it, saw a name, and reported a talk prompt.
+
+**How bad, for a player: not at all.** `show` is `classList.toggle('hidden')`
+(`src/main.js:158`), so the stale words are behind `display:none`; and within a frame `show` and
+the label are written in that order with no paint between them, so there is no flash when a
+conversation ends either. This is a bug that lies to whoever asks the HUD what it is offering,
+and what it cost was two days of two bug hunts.
+
+**Could a player reach the cart without being hailed first?** No, and it does not matter that
+they cannot. Coming up the road from Lumber Town the hail fires forty-odd metres out, long
+before the cart; coming across country from the north-east it fires as they step onto the cart.
+Either way they hear her, control comes back, and the prompt is correct. Only a harness that
+warps in and reads the same frame sees the stale line.
+
+**Fixed, two lines and a test each.**
+
+- `src/main.js`: the panel and its words are now one decision. `const prompting = …;
+  show('interaction',prompting);` and, after everything that writes the label,
+  `if(!prompting)$('interaction-label').textContent='';`.
+- `src/road-smoke.js`: the cart step hears her out first, the way a player does, and its failure
+  message names the mode.
+- `tests/prompt-priority.test.js`: the panel and the words are decided by one value and the clear
+  is the last word on the label.
+- `tests/lauvel-burying.test.js`: the cart stands inside her call, and the walkthrough's cart step
+  finishes the conversation before it reads the prompt. Against the old `road-smoke.js` that
+  assertion fails, which is what it is for.
+
+**Repro:** stand at (−677.79, 297.12) with the burying at `unknown` and read
+`#interaction-label` on the next frame. Pure: `Math.hypot` of `HAIL_FROM` against
+`LUSCIA_SITES['courier-satchel']` is 29.5, and `HAIL_FROM.reach` is 34.
