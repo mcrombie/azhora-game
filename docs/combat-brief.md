@@ -275,9 +275,8 @@ Each phase stands alone and leaves the game working.
 ### The smithy in Tidehaven — built
 
 Drent is level 0, so the best thing in the village is what you landed with; bog iron is a country
-up the road (`smithStock`, `src/gear.js`). The smith stays **unnamed** — "the smith" — because the
-Elagosi profile that covers Drent is a *place*-name register, while Drent's people are named in a
-plainer one the game uses consistently.
+up the road (`smithStock`, `src/gear.js`). The smith is **Vulcan** — see "The smiths of myth"
+below, which settled the naming that this section first left open.
 
 **The plot was chosen by measurement, not by eye** (`TIDEHAVEN_SMITHY`, `src/region-world.js`).
 Every standable half-metre of the village was swept and scored on five things: a clear yard, off
@@ -305,7 +304,7 @@ Drent. Review view: `tidehaven-smithy`.
 
 ### The smith, and the buying — built
 
-He stands at his own forge, looks at the street, and has no name: `src/smith.js`. What he sells is
+He stands at his own forge and looks at the street: `src/smith.js`. What he sells is
 a function of **the country he is standing in** and nothing else — `regionLevel` of the region
 under the traveler's feet — so the same man in better country would sell better iron without a
 line of his own. Drent is level 0, so his whole board is three pieces of light wood and bone: a
@@ -332,13 +331,13 @@ smith watching the road.
 Two forges were already standing in the world with nobody selling from them, so they were staffed
 rather than invented.
 
-- **Amod (Ostel) needed nobody.** It already had **Mern**, "Smith: hooks, hinges and gate metal".
-  A man who is evidently the smith is the smith, so he sells, keeps his name and keeps the two
-  lines he already had; he gains one, reconciling his own "Not swords" with selling armour —
-  *armour is not a sword*.
+- **Amod (Ostel) needed nobody.** It already had a smith, "Smith: hooks, hinges and gate metal".
+  A man who is evidently the smith is the smith, so he sells and keeps the two lines he already
+  had; he gains one, reconciling his own "Not swords" with selling armour — *armour is not a
+  sword*. (He was Mern; he is **Goibniu** since the naming below. His id is untouched.)
 - **The Moros camp got an armourer.** Its smithy tent had a rack of spears "waiting on the smith"
-  and nobody to wait for. He is unnamed, army-voiced, and stands outside the tent on the camp
-  side so a man walking up from the parade meets him and not his forge.
+  and nobody to wait for. He is army-voiced, and stands outside the tent on the camp side so a
+  man walking up from the parade meets him and not his forge. He is **Wayland**.
 
 **The material is nobody's line.** Each man has one or two lines of his own; the sentence naming
 what he sells is generated from `tierSoldAt` of the country he stands in, so a smith moved to
@@ -352,7 +351,7 @@ and the armourer there sells exactly what was promised. A test asserts the point
 level table rather than trusting the prose, so if either country is ever re-levelled the line
 fails instead of quietly lying.
 
-Review view: `camp-armourer`. Amod has none — Mern was already there to be looked at.
+Review view: `camp-armourer`. Amod has none — its smith was already there to be looked at.
 
 ## Phase 4 — the shield's guard — built
 
@@ -602,6 +601,50 @@ the first draft of the Jerry shot photographed nobody and said so (`archerAlly: 
 ## After phase 7
 
 The seven phases are built. These are what came after them, or out of them.
+
+### The smiths of myth — built
+
+**The user, 2026-09-21: "name them things like Vulcan and other mythical terms for smiths."** It
+is a naming register of the user's own, and it covers every forge in the game, so no Azhoran
+place-name generator is asked for a person. Tidehaven's smith is **Vulcan**, the Moros camp's
+armourer **Wayland**, Ambron City's **Hephaestus**, and Mern of Ostel is **Goibniu** — his id
+(`ostel-smith`) and every word he says are untouched but his own name. Later forges draw from the
+same well: Ilmarinen, Brokkr and Sindri, Tubal-cain, Svarog, Kothar. The register is
+`MYTH_SMITHS` in `src/smith.js` and a test asserts every seller's shown name is in it; in prose
+they are still the smith and the armourer, because the name is a name and not a trade.
+
+### The capital sells better gear — built
+
+**A capital is the one exception to "a smith sells what his country's level allows"** (the user,
+2026-09-21). Ambron's armourer sells **wrought iron and steel both**, whatever level Elagos is,
+because an imperial capital's racks are stocked by an empire and not by the county outside its
+gate — and arrows, like every forge. **Not fine steel**: that is a gift from a side you have
+served.
+
+**The exception is one table and nothing else.** `SELLER_TIERS` in `src/smith.js` maps a seller to
+the materials he keeps; a seller with no entry falls through to `tierSoldAt` of the ground he
+stands on. `smithOffers(level, { id })` is the only board-builder there is, `smithStock` is now
+`stockOfTier(tierSoldAt(level))`, and a test compares every other smith's board against
+`smithStock` at every level 0–11, piece by piece and price by price. The host was the risk — it
+used to look a purchase up in `smithStock(level)`, which would have refused a capital's steel on
+Elagosi ground — so the action now names the seller (`smith-buy:<id>:<slot>:<weight>:<tier>`) and
+the host rebuilds *that man's* board from the man and the ground. Fifteen pieces and a dozen
+arrows: six of wrought iron (plate needs tier 3) and nine of steel, sorted dearest last across
+both grades, so it is one board and not two lists.
+
+**The plot was swept, not chosen** (`AMBRON_FORGE`, `src/ambron.js`). Every metre inside the walls
+was scored for a shed that keeps three metres clear of everything drawn, stands off every street
+corridor but within sight of one, and leaves standable ground at its door. **The east bank offers
+nothing at all** — the old city is solid warehouses, halls and the physic garden — and every plot
+that passes is on the timber strand, which is where a forge belongs anyway: fire and hammering go
+on the working bank with the boatyard, the sawpit and the ropewalk. The Strand Forge sits in the
+24 m gap between the poor row and the boatyard, nine metres clear of each, with the raft way
+climbing past its door. He stands 2.4 m out from the south face with six metres of standable
+ground round him, in `tests/nobody-sealed-in.test.js` and in the Plain Gate reachability flood,
+because a host-placed man is in neither list by default.
+
+Review view: `ambron-armourer`. The first draft used `startingSpot`, which rings the man — and the
+far side of that ring stood the traveler exactly behind him. He is placed off the shoulder now.
 
 ### The army fills your file — built
 

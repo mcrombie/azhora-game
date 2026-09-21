@@ -125,10 +125,14 @@ export const PRICES = freeze({ body: 40, head: 18, hand: 26, perTier: 4,
 export const priceOf = (slot, tier, weight = 'light') =>
   Math.round((PRICES[slot] ?? PRICES.body) * (PRICES.byWeight[weight] ?? 1) * PRICES.perTier ** clampTier(tier));
 
-/** The list a smith in a country of this level puts in front of you, dearest last. */
-export function smithStock(countryLevel) {
-  const top = tierSoldAt(countryLevel);
-  if (top < 0) return freeze([]);
+/**
+ * Everything that can be made of one material, dearest last. This is the unit a board is built
+ * from: a smith's board is one of these, and a capital's armourer sells two (`SELLER_TIERS`,
+ * `src/smith.js`). An unnamed tier makes nothing, so 5 and 6 stay empty however they are asked for.
+ */
+export function stockOfTier(tier) {
+  const top = clampTier(tier);
+  if (TIERS[top].name === null) return freeze([]);
   const stock = [];
   for (const slot of SLOTS) {
     for (const weight of WEIGHT_IDS) {
@@ -139,6 +143,12 @@ export function smithStock(countryLevel) {
     }
   }
   return freeze(stock.sort((a, b) => a.price - b.price || a.slot.localeCompare(b.slot)));
+}
+
+/** The list a smith in a country of this level puts in front of you, dearest last. */
+export function smithStock(countryLevel) {
+  const top = tierSoldAt(countryLevel);
+  return top < 0 ? freeze([]) : stockOfTier(top);
 }
 
 /** What the traveler has on, and what it is worth. */

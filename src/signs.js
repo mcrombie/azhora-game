@@ -67,7 +67,7 @@ export const ENGLISH_SIGN_LABELS = Object.freeze([
   // West Izol
   'Izolveth', 'The Hearth Road', 'Ardveth', 'Kelvath Cove', 'The camp',
   // Elagos
-  'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine',
+  'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine', 'The Strand Forge',
   // Amod
   'Amod', 'Ostel', 'The Pass Stones', 'Kelmod & Mavren', 'Sareth-am-Vel',
   // Milestones on the Moros

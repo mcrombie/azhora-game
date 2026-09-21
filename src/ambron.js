@@ -187,6 +187,10 @@ export const AMBRON_BUILDINGS = freeze([
   building({ id: 'poor-row-1', a: -75, b: -22, w: 20, d: 20, h: 5, layer: 'patched', kind: 'row', door: 'east' }),
   building({ id: 'boatyard', name: 'The Lake Boatyard', a: -71, b: 22, w: 14, d: 20, h: 6.5, layer: 'new', kind: 'shed', door: 'east' }),
   building({ id: 'poor-row-2', a: -75, b: 52, w: 20, d: 18, h: 4.8, layer: 'patched', kind: 'row', door: 'east' }),
+  // The armourer's forge, in the gap between the poor row and the boatyard, fronting the raft
+  // way. A forge is fire and hammering, so it stands on the working bank and not among the
+  // granaries: the plot was measured rather than chosen (see AMBRON_FORGE below).
+  building({ id: 'ambron-forge', name: 'The Strand Forge', a: -78, b: -3, w: 9, d: 7, h: 5.2, layer: 'patched', kind: 'shed', door: 'south' }),
 ]);
 
 /**
@@ -265,6 +269,24 @@ export function ambronColliders() {
 // ---------------------------------------------------------------------------
 const NORTH = Math.PI, SOUTH = 0, EAST = Math.PI / 2, WEST = -Math.PI / 2;
 const stand = (a, b, yaw) => freeze({ ...P(a, b), a, b, yaw });
+
+/**
+ * **The capital's forge, and the spot at its door** (`AMBRON_ARMOURER_NPC`, `src/smith.js`).
+ *
+ * The plot was swept rather than chosen. Every metre inside the walls was scored for a seven-
+ * by-six shed that keeps three metres clear of everything already drawn, stands off every street
+ * corridor but within sight of one, and leaves standable ground at its door: **the east bank
+ * offers nothing at all** — the old city is full of warehouses, halls and the physic garden — and
+ * every plot that passes is on the timber strand. That is the right answer for a forge anyway.
+ * This one sits in the twenty-four-metre gap between the poor row and the boatyard, nine metres
+ * clear of each, with the raft way climbing past its door to the Raft Gate.
+ *
+ * He stands 2.4 m out from the south face, facing the street with his forge behind him, a pace
+ * clear of the carriageway. Measured: 6 m of standable ground all round him.
+ */
+const FORGE_PLOT = AMBRON_BUILDINGS.find(entry => entry.id === 'ambron-forge');
+export const AMBRON_FORGE = freeze({ ...FORGE_PLOT, ...P(FORGE_PLOT.a, FORGE_PLOT.b),
+  stand: stand(FORGE_PLOT.a, FORGE_PLOT.b + FORGE_PLOT.d / 2 + 2.4, SOUTH) });
 
 /** Stands in the city's frame. Who each of them is, is in `src/ambron-people.js`. */
 export const AMBRON_STANDS = freeze({

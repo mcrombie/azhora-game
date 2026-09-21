@@ -35,7 +35,7 @@ export const AMOD_NPCS = Object.freeze([
   person('ostel-muleteer-2', 'Pell Kessel', 'Mule driver on the pass road', 'forest-woodcutter', 0x5c6a56),
   person('ostel-stonecutter', 'Hedda Marn', 'Stonecutter', 'forest-woodcutter', 0x6f6a58),
   person('ostel-apprentice', 'Corm', 'Apprentice at the stone yard', 'bridge-keeper', 0x7a7260),
-  person('ostel-smith', 'Mern', 'Smith: hooks, hinges and gate metal', 'forest-woodcutter', 0x55503f),
+  person('ostel-smith', 'Goibniu', 'Smith: hooks, hinges and gate metal', 'forest-woodcutter', 0x55503f),
   person('ostel-vintner', 'Tela Anset', 'Of the press house', 'commons-miller', 0x8a5f4e),
   person('ostel-cellarer', 'Old Garrec', 'Cellarer', 'shelter-keeper', 0x6b6150),
   person('ostel-widow', 'Isen Caerel', 'Who keeps her husband’s wall', 'rise-custodian', 0x5f5a4c),
@@ -99,7 +99,7 @@ export const AMOD_AMBIENT = Object.freeze({
     'She says a good wall is one nobody notices and a great wall is one that outlives the argument about who paid for it. Then she makes me take the barrow out again.',
   ]),
   'ostel-smith': Object.freeze([
-    'Mern. Pruning hooks, channel knives, hinge work, mill fittings, and the small metal that keeps a water gate honest.',
+    'Goibniu. Pruning hooks, channel knives, hinge work, mill fittings, and the small metal that keeps a water gate honest.',
     'Not swords. You can buy a sword in Mavren from somebody who will be glad of the money. I would rather make the pin that holds the gate that waters the field that feeds the man.',
   ]),
   'ostel-vintner': Object.freeze([
