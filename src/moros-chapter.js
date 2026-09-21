@@ -188,7 +188,7 @@ export const MUSTER_AFTER = freeze({
   'merc-gotwood': 'You beat me here, and I came off the same boat. I will not hear the end of that.',
   'merc-cromb': 'You were already here. Of course you were.',
   'merc-word': 'You are ALREADY here? I swam. I want that written in the book beside my name.',
-  'merc-jerry': 'Here before us. Christin owes me nothing and is somehow still pleased.',
+  'merc-jerry': 'Here before us. Kristen owes me nothing and is somehow still pleased.',
   'merc-christin': 'You again, and standing still this time. Good.',
   'merc-ciaran': 'Alone is quicker. You have settled the argument and I am not grateful.',
   'merc-lakota': 'You got here first. There was a bird on the mast for two days; I am not sorry.',

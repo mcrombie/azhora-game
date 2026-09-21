@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { wildJourney } from '../src/wild-route.js';
 
@@ -350,4 +350,31 @@ test('trades: held iron for the traveler’s iron, never for a stick, never like
   assert.equal(tradeOffer('merc-gotwood', 'simple-sword', 'bearded-axe').accepts, true, 'Chris will try an axe');
   assert.equal(tradeOffer('merc-eliana', 'greatsword', 'long-dagger').accepts, true);
   assert.deepEqual(tradeOffer('nobody', 'x', 'y'), { accepts: false, line: '' });
+});
+
+/**
+ * Her id is `christin` and `merc-christin`; her name is Kristen. Ids never change once a save has
+ * written them and names on screen change freely (src/mercenaries.js), which is the right rule and
+ * also a trap: the old spelling goes on being correct in half the tree and wrong in the other half.
+ * It was wrong in one place — the line Jerry says at the muster when he walks in behind you —
+ * where nothing was looking, because every test that knew her knew her by id.
+ *
+ * So: the old spelling may appear as an id, in lower case, and nowhere else in anything anybody
+ * says.
+ */
+test('nobody is called by an id: the old spelling stays in the ids and out of the writing', () => {
+  const dir = fileURLToPath(new URL('../src', import.meta.url));
+  const offenders = [];
+  for (const file of readdirSync(dir).filter(name => name.endsWith('.js'))) {
+    readFileSync(`${dir}/${file}`, 'utf8').split('\n').forEach((line, i) => {
+      // Capitalised and on a word boundary is a name, not an id: `merc-christin` is fine.
+      if (/\bChristin\b/.test(line)) offenders.push(`${file}:${i + 1}  ${line.trim().slice(0, 96)}`);
+    });
+  }
+  assert.deepEqual(offenders, [], `the old spelling is being used as a name:\n${offenders.join('\n')}`);
+  const kristen = MERCENARY_ROSTER.find(entry => entry.id === 'merc-christin');
+  assert.equal(kristen.name, 'Kristen', 'her name on screen');
+  assert.match(kristen.id, /christin/, 'and her id keeps the old spelling, on purpose');
+  // And nobody else is wearing an id either.
+  for (const entry of MERCENARY_ROSTER) assert.ok(entry.name && !entry.name.includes('-'), `${entry.id} has a name and not an id`);
 });

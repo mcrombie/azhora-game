@@ -1373,3 +1373,76 @@ is what the comment beside it says.
 `src/wild-route.js` does not author and so did not fix. It runs (−996.5, 554.9) to (−991.1,
 569.9), a few metres of something solid on the approach to the camp. Small, and it is at the end
 where he is arriving anyway, but the file's promise covers the whole line a man walks.
+
+---
+
+## Jerry calls her Christin at the muster (fixed)
+
+One line in `src/moros-chapter.js` — what Jerry says when he walks into the camp behind you —
+still used her old spelling: *"Here before us. Christin owes me nothing and is somehow still
+pleased."* She is **Kristen** on screen everywhere else; `christin` and `merc-christin` are ids,
+and ids never change once a save has written them.
+
+Fixed, and `tests/mercenaries.test.js` now sweeps every file in `src/` for the capitalised old
+spelling on a word boundary, so the id may keep it and the writing may not. Checked against the
+old source: the test fails there and names the file and line.
+
+Nothing was looking, because every test that knew her knew her by id.
+
+---
+
+## A man says he saw you at a stop you were never at
+
+`notice()` (`src/long-road.js:374`) records, for each of the ten, **the stop the traveler was
+nearest to** when they passed within 40 m or shared a named ground. `nearestStop` (`:259`) has no
+radius: it returns the nearest of all sixteen spine stops however far away it is.
+
+The lines those ids feed are written as sightings of an **activity**, not a place —
+`'bran-rod': 'up to your knees in a pond'`, `'nell-hedge': 'in a hedge. In it. Not beside it'`,
+`'odger-fernway': 'at the bench at Fernway, holding a mushroom up to the light'`. So the muster
+makes a man assert something that did not happen.
+
+**Driven:** traveler at (−250, 60), Jerry five metres off, standing on no named ground. Recorded:
+`odger-fernway` — whose bench is **123 m away**. At the muster Jerry says *"We passed you. You
+were at the bench at Fernway, holding a mushroom up to the light."* The traveler had never been
+to the bench.
+
+**How wide it can get:** the spine's widest gap is `fernway-play → corvan-register` at **305 m**,
+so a traveler halfway along is **153 m** from the nearest stop and will be placed there.
+
+The fallback already exists and is good: `PLACE_UNKNOWN` is *"somewhere back down that road"*, and
+with nobody seen anywhere, 9 of the 10 lines already use it. *Smallest repair:* give `nearestStop`
+a radius — `NOTICE_RANGE` (40 m) is the obvious one, since that is already how near a man has to
+be to notice you at all — and return null beyond it, so the honest clause is used.
+
+---
+
+## The two repairs, verified on the real world
+
+**The landing checkpoint is written.** A 22 m crossing, `swimming.learn()` first so the xp is real:
+
+| way out | xp | checkpoint |
+|---|---|---|
+| walked out | 11 | **written**, at (28.0, 30.0), dry ground |
+| mounted out at the horse | 11 | **written**, at (28.0, 30.0), dry ground |
+
+Both were refused before. `payForTheSwim` clearing `inWater` as its first act is the whole fix.
+
+**Blocked stop places: 32 → 0.** With `standable` passed as `main.js` passes it, **stopped is 0 of
+197**. (My first re-run said 32 of 197 because my harness had not passed the new callback — the
+nudge lives inside `createMercenaryCompany` and only runs when the host hands it a footing test.)
+
+**What remains, measured properly.** 14 of 816 *walking* homes are still blocked, and walking homes
+are deliberately not nudged. My earlier fixed-home sweep called nine of them "marching", but that
+sweep held a walking man's home still, which play never does. Driven instead with each man's home
+taken from `placements(t)` every frame over forty minutes of play, and counting only frames where
+he is walking, his home is blocked **and the gap is not closing**:
+
+| | |
+|---|---|
+| blocked-home frames, all ten men | 4,141 of 1,440,000 (**0.288 %**) |
+| longest any man is genuinely stuck | **3.88 s** (Kristen, 1.39 m from her home) |
+| next longest | 1.73 s (Ciarán), 0.95 s (Jerry), 0.88 s (Lakota) |
+
+Four seconds of a man not quite closing the last metre and a half, once in forty minutes, is not
+the two minutes of marching the stopped case was. The repair took the part that showed.
