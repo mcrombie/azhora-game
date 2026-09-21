@@ -2913,7 +2913,7 @@ function init() {
       // more than 180 m from the player; the player is in a boat 170 m out. Setting his home to the
       // boat here keeps him in the bow and drawn. The loop does not steer in 'arriving'.
       if(mode==='arriving'&&opening){
-        openingTime+=dt;
+        if(!reviewFrozen)openingTime+=dt;
         const s=stateAt(openingTime,{variant:opening.id,companion:opening.companion}),bob=boatBob(elapsed);
         for(const e of eventsBetween(openingFired,openingTime,opening.id))if(e.type==='bell'){openingBells++;world.ringBell?.(elapsed);audio?.effect('bell');}
         openingFired=openingTime;
@@ -3367,10 +3367,14 @@ function init() {
         {const pose=world.arrivalBoatPose();assert(Math.hypot(pose.x-world.spawn.x,pose.z-world.spawn.z)>100,'The boat did not start out at sea');}
         assert(!player.group.visible,'The traveler was drawn during the opening');
         {const hooks=focusedRoadHooks();
-          hooks.advanceOpening(29.9);await frames(2);
+          // Two seconds of slack either side of the bell at thirty: the frames this waits on also
+          // advance the clock, and on a loaded machine a frame is not sixteen milliseconds.
+          hooks.advanceOpening(28);await frames(2);
+          assert(hooks.openingState().t<30,'The sequence clock passed the bell before it could be checked');
           assert(hooks.openingBells()===0,'The bell rang before the boat was off the pier');
-          assert(hooks.openingState()?.caption,'The sequence said nothing in its first thirty seconds');
-          hooks.advanceOpening(.2);await frames(2);
+          assert(hooks.openingState().caption,'The sequence said nothing in its first thirty seconds');
+          hooks.advanceOpening(2.5);await frames(2);
+          assert(hooks.openingState().t>30,'The sequence clock did not reach the bell');
           assert(hooks.openingBells()===1,'The bell did not ring at thirty seconds');}
         $('skip-cutscene').click();await until(()=>mode==='playing','Boat arrival did not finish');
         assert($('cutscene').classList.contains('hidden')&&!document.body.classList.contains('cutscene'),'The caption layer stayed up');
@@ -3381,7 +3385,9 @@ function init() {
         assert(inventory.has('simple-sword')&&weapons.profile().usable&&weapons.profile().durability===24,'Mercenary did not arrive equipped with a sound sword');
         assert(!inventory.has('tinderbox')&&!inventory.has('fishing-rod')&&!testingEnabled,'Normal game unexpectedly granted test supplies');
         assert(renderer.info.render.triangles>1000,'World did not draw');assert(canStand(world.spawn.x,world.spawn.z,world),'Spawn blocked');
-        const startingZ=player.group.position.z;press('KeyW');await until(()=>player.group.position.z<startingZ-1,'WASD did not move');release('KeyW');
+        // Distance, not a compass point: the landing faces west up the pier now, so W walks in -x.
+        {const from={x:player.group.position.x,z:player.group.position.z};press('KeyW');
+          await until(()=>Math.hypot(player.group.position.x-from.x,player.group.position.z-from.z)>1,'WASD did not move');release('KeyW');}
         warp(0,19);await frames();assert(questStage===1,'Arrival quest failed');
         // Measure travel against simulation time so busy machines do not affect
         // the comparison. Tab must run at Shift speed and never move UI focus.
@@ -3615,6 +3621,18 @@ function init() {
         leaveOpening();document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
         // The opening screen itself, with the character line on it: --review-views=opening-characters
         // photographs Cromb selected, and opening-characters-lakota photographs any other of the eleven.
+        // The sequence itself: opening-ride holds the ride at twenty seconds (opening-ride-8 at
+        // eight, and so on), and opening-landed is the first frame the traveler controls.
+        if(view.startsWith('opening-ride')||view==='opening-landed'){
+          leaveOpening();mode='opening';document.body.classList.remove('playing');
+          // A picture of the first hour: the quest panel and the marker belong to the landing, not
+          // to whatever stage a previous review view left behind.
+          questStage=0;practiceHits=0;practiceDodges=0;journey.restore(createJourney().snapshot());
+          begin();
+          if(view==='opening-landed'){skipOpening();return;}
+          openingTime=Number(view.replace('opening-ride','').replace(/^-/,''))||20;reviewFrozen=true;
+          return;
+        }
         if(view.startsWith('opening-characters')){
           const who=view.replace('opening-characters','').replace(/^-/,'');if(who)characterSelect.select(who);
           mode='opening';document.body.classList.remove('playing');show('opening',true);
