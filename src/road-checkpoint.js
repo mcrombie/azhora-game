@@ -18,6 +18,7 @@ import { createRiding, validateRidingSnapshot } from './riding.js';
 import { createSkills, validateSkillsSnapshot } from './skills.js';
 import { createBirding, validateBirdingSnapshot } from './birding.js';
 import { createMapFog, validateMapFogSnapshot } from './map-fog.js';
+import { createCartography, validateCartographySnapshot } from './cartography.js';
 import { createFishing, validateFishingSnapshot } from './fishing-skill.js';
 import { createMycology, validateMycologySnapshot } from './mycology.js';
 import { createBotany, validateBotanySnapshot } from './botany.js';
@@ -102,6 +103,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateSkillsSnapshot(data.skills)) return failed('The saved skills are invalid.');
     if (!validateBirdingSnapshot(data.birding)) return failed('The saved birding notes are invalid.');
     if (!validateMapFogSnapshot(data.chart)) return failed('The saved chart is invalid.');
+    if (!validateCartographySnapshot(data.cartography)) return failed('The saved chart of countries is invalid.');
     if (!validateFishingSnapshot(data.fishing)) return failed('The saved fishing notes are invalid.');
     if (!validateMycologySnapshot(data.mycology)) return failed('The saved mushroom notes are invalid.');
     // Botany was herbology before it took in the trees; an older save keeps its notes.
@@ -241,6 +243,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'skills')) { const skills = createSkills(); skills.restore(data.skills); result.skills = skills.snapshot(); }
     if (Object.hasOwn(data, 'birding')) { const birding = createBirding(); birding.restore(data.birding); result.birding = birding.snapshot(); }
     if (Object.hasOwn(data, 'chart')) { const fog = createMapFog(); fog.restore(data.chart); result.chart = fog.snapshot(); }
+    if (Object.hasOwn(data, 'cartography')) { const chart = createCartography(); chart.restore(data.cartography); result.cartography = chart.snapshot(); }
     if (Object.hasOwn(data, 'fishing')) { const fishing = createFishing(); fishing.restore(data.fishing); result.fishing = fishing.snapshot(); }
     if (Object.hasOwn(data, 'mycology')) { const mycology = createMycology(); mycology.restore(data.mycology); result.mycology = mycology.snapshot(); }
     if (Object.hasOwn(data, 'botany') || Object.hasOwn(data, 'herbology')) { const botany = createBotany(); botany.restore(data.botany ?? data.herbology); result.botany = botany.snapshot(); }

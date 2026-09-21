@@ -56,6 +56,7 @@
 #atlas-legend li {line-height:1.5;}
 #atlas-legend li b {font-weight:600;color:#f2dfb9;}
 #atlas-legend li small {display:block;color:#a9b5a4;font-size:11px;line-height:1.45;}
+#atlas-legend .chart-countries {margin-bottom:12px;}
 #atlas-legend i.swatch {display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline;}
 #opening .opening-subtitle {margin:-2px 0 28px;font-size:14px;letter-spacing:.34em;text-transform:uppercase;}
 #journal-steps .done {color:#c8d9a5;}#journal-steps .current {color:#ffe0a0;}
