@@ -27,6 +27,7 @@ import { terrainMix, relief } from './region-world.js';
 import {
   WEST_RIVERS, WEST_POOLS, WEST_GROUND, VASTOS_SINTER, VASTOS_BRAID, VASTOS_RIVER,
   MENETH_RIDGES, menethRidgePhase, CARICAS_SHELF, WEST_BRAIDS, WEST_REGION_BOXES, inBox,
+  NETHEREUM_HOLLOW, ISAREOS_RIVER, LIZEEM,
   courseDistance, coursePosition, courseHalfAt, courseCutAt,
 } from './west-regions.js';
 
@@ -166,8 +167,65 @@ export function isareosLie(x, z) {
   return high - low < .2 ? .5 : clamp((here - low) / (high - low), 0, 1);
 }
 
+// ---------------------------------------------------------------------------
+// Nethereum: the hollow, which is the third landform of the same shape
+// ---------------------------------------------------------------------------
+/**
+ * How deep the hollow is at a point: 0 on the rim and outside it, `depth` on the
+ * floor. The third function of `menethRidge`'s and `caricasShelf`'s shape —
+ * gated by the region's own box, weighed by the region's own blend, and 0
+ * everywhere else — and the first of them that goes downward.
+ *
+ * "A broad depression in the interior plateau where multiple hill-streams
+ * converge and the water has no efficient route to the main Lizeem", says the
+ * lore, and that is a statement about shape rather than about water. The atlas
+ * has refused the lake: twenty-six `grassland` hexes and one `plains`, in a map
+ * that has `lake` and `wetland` and puts neither here. So what is built is the
+ * dish and not what stands in it.
+ *
+ * **Three gates, and the third is the one that is not like the others.**
+ *
+ *  - The region's **box**, which is the cheap rejection every landform here has.
+ *  - The region's **blend**, at the high threshold Meneth's is set at and for the
+ *    same reason: a point on the far side of a border still carries a quarter of
+ *    the region, and a quarter of a seven-metre dish is enough to cut a bank.
+ *  - **Distance from the Isa and the Lizeem** (`NETHEREUM_HOLLOW.clear`), which is
+ *    a hand-drawn edge and is there on purpose. Both rivers are built, and both
+ *    read `baseBeforeWater` to work out their own water surfaces; a dish that
+ *    reached either one would lower its bed, move its water and re-seed every
+ *    draw on both of its banks in a country somebody else has already finished.
+ *    It is also the honest shape: a basin with no efficient route out has a
+ *    divide between it and the next drainage, and the divide is exactly the
+ *    ground that does not fall into the dish.
+ */
+export function nethereumHollow(x, z) {
+  if (!inBox(WEST_REGION_BOXES.Nethereum, x, z)) return 0;
+  const weight = terrainMix(x, z).weights.Nethereum ?? 0;
+  const own = smooth(.28, .8, weight);
+  if (own <= 0) return 0;
+  const H = NETHEREUM_HOLLOW;
+  // An ellipse: 1 at the rim, 0 at the middle. The floor is flat out to `floor`
+  // of it and the fall is the rest, smoothed at both ends so neither the lip nor
+  // the floor's edge is a line anybody can see.
+  const r = Math.hypot((x - H.x) / H.rx, (z - H.z) / H.rz);
+  if (r >= 1) return 0;
+  const dip = 1 - smooth(H.floor, 1, r);
+  if (dip <= 0) return 0;
+  const near = Math.min(courseDistance(ISAREOS_RIVER, x, z, H.clear), courseDistance(LIZEEM, x, z, H.clear));
+  return H.depth * dip * own * smooth(0, H.clear, near);
+}
+
+/**
+ * How far into the hollow a point stands, 0 on the rim and 1 on the floor. The
+ * whole of Nethereum's scatter is read off this one number, the way the whole of
+ * Isareos's is read off `isareosLie`: the meadow is rank where the ground is
+ * lowest and ordinary where it is not, because that is where the water goes.
+ */
+export const nethereumWet = (x, z) => clamp(nethereumHollow(x, z) / NETHEREUM_HOLLOW.depth, 0, 1);
+
 /** The ground the water is measured against: the region's own relief, plus every landform on it. */
-const baseBeforeWater = (x, z) => westNaturalGround(x, z) + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z);
+const baseBeforeWater = (x, z) => westNaturalGround(x, z)
+  + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z) - nethereumHollow(x, z);
 
 // ---------------------------------------------------------------------------
 // Standing water
@@ -352,14 +410,16 @@ export function westShaping(x, z) {
 }
 
 /**
- * The western ground: the sinter apron, then the standing water, then the
- * channels, in that order — sinter first because the warm pool sits on top of
- * it, channels last because a river cuts through whatever it finds.
+ * The western ground: the landforms, then the standing water, then the channels,
+ * in that order — the sinter apron first because the warm pool sits on top of it,
+ * Nethereum's hollow with them because a hill-stream has to find its own floor,
+ * channels last because a river cuts through whatever it finds.
  * `natural` is the region's own blended relief; everything here only reshapes it.
  */
 export function westGround(x, z, natural) {
   if (!westShaping(x, z)) return natural;
-  return channel(x, z, pooled(x, z, natural + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z)));
+  return channel(x, z, pooled(x, z, natural
+    + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z) - nethereumHollow(x, z)));
 }
 
 /** The western ground of a point on its own, for the scenery and the tests. */

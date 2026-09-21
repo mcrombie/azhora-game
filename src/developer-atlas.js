@@ -37,6 +37,10 @@ const nesdorAnchor = point(1441.066, 2728, -5, 113);
 const eerAnchor = point(1524.198, 2824, -4, 117);
 // An Isareos grassland hex in the middle of the hill country, west of the Lizeem's head.
 const isareosAnchor = point(1150.081, 2560, -12, 106);
+// A Nethereum grassland hex on the floor of the hollow, south-west of the Lizeem's head.
+// x = 27.7128 * (q + r/2) + 13.856 and y = 24 * r + 16, which for (-14, 110) is this hex
+// and no other: a test asserts the anchor stands on the country's own authored ground.
+const nethereumAnchor = point(1150.081, 2656, -14, 110);
 const capeAnchor = point(1025.374, 1864, -2, 77);
 // The four playable regions sit on their own authored hexes now: Drent's coast,
 // Luscia across the Caloss, the Moros Plain west of it and East Suval to the south.
@@ -63,6 +67,7 @@ const LOCALS = [
   [14, 'Nesdor', 'nesdor', 'Nesdor', nesdorAnchor],
   [15, 'Eer', 'eer', 'Eer', eerAnchor],
   [16, 'Isareos', 'isareos', 'Isareos', isareosAnchor],
+  [17, 'Nethereum', 'nethereum', 'Nethereum', nethereumAnchor],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
   ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),

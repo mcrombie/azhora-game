@@ -5,9 +5,10 @@ import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_BECKS, LIZEEM, CARICA, CARICA_CORRIDOR, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_POOLS,
   LIZEEM_REACH, EER_CHANNELS, ISAREOS_RIVER, ISAREOS_BECKS, ISAMOUTH_GROUND,
+  NETH, NETH_HEAD, NETHEREUM_OUTLET, NETHEREUM_STREAMS, NETHEREUM_HOLLOW,
   westBareGround, courseDistance, caricaCorridorDistance,
 } from './west-regions.js';
-import { WEST_PROFILES, poolSurface, westWaterSurface, westGroundAt, menethBand, braidThreadOffset, isareosLie } from './west-ground.js';
+import { WEST_PROFILES, poolSurface, westWaterSurface, westGroundAt, menethBand, braidThreadOffset, isareosLie, nethereumWet } from './west-ground.js';
 
 /**
  * What the four western regions look like where the ground alone is not enough:
@@ -572,7 +573,15 @@ export function createWestScenery(kit) {
   // omission had two faces — a traveler could walk over the deep two-thirds of it, and the
   // otters on it had no water to go into when somebody came at them, which made them a slow
   // land animal that could be run down.
-  for (const course of [LIZEEM, CARICA, LIZEEM_REACH, ISAREOS_RIVER]) for (const sample of WEST_PROFILES.get(course.id)) {
+  //
+  // The Neth is the third of that shape and the one where it matters most: below its ford it
+  // is the border between Nethereum and Ovesos for the whole of its length, and the ford is the
+  // only dry way between them. A Neth a traveler could walk over anywhere would make the ford
+  // meaningless; a Neth with no blockers at all would make its otters walkable-down.
+  //
+  // **Nothing in this loop draws from the seeded stream**, so the array can be added to without
+  // moving a single thing already built.
+  for (const course of [LIZEEM, CARICA, LIZEEM_REACH, ISAREOS_RIVER, NETH]) for (const sample of WEST_PROFILES.get(course.id)) {
     if (sample.ford) continue;
     // Samples are five metres apart, so each blocker has to be wide enough to
     // meet the one in front of it as well as the ones beside it. A gap of even a
@@ -1088,6 +1097,162 @@ export function createWestScenery(kit) {
     }
     batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere();
     batch.name = 'Isareos hollow thorn'; isareos.add(batch); metrics.thorn += hollowThorn.length;
+  }
+
+  // -------------------------------------------------------------------------
+  // Nethereum: the hollow, the meadow in it, and the threads that feed it
+  // -------------------------------------------------------------------------
+  /**
+   * After Isareos, for the reason every country out here goes after the last one: this
+   * module has one seeded stream and it is consumed in the order the district blocks are
+   * written, so a country added anywhere but the end re-rolls every draw after it.
+   *
+   * Nethereum is grass and water and nothing else. The atlas gives it twenty-six
+   * `grassland` hexes and one `plains`, and it gives it neither a `lake` hex nor a
+   * `wetland` hex in a map that has both words and uses each of them twenty-eight times
+   * elsewhere. So there is no Nethermere here and no marsh round it, and what is drawn is
+   * the dry state of a basin that floods in spring and is grazed by midsummer: rank meadow
+   * on the floor, ordinary grass up the sides, wet threads of rush and sedge where the
+   * hill-streams run out, and a gallery on the water and nowhere else.
+   */
+  const nethereum = district('Nethereum');
+  const inNethereum = (x, z) => hexOwnerAt(x, z) === 'Nethereum';
+  /**
+   * Ground in Nethereum something may be planted on. The same four questions Eer's asks,
+   * and one more: Isamouth's reserved ground reaches across the Isa onto Nethereum's own
+   * hexes — the confluence it is measured from is the corner where Isareos, Nethereum and
+   * Caricas meet — so a country built after Isareos has to keep off it too.
+   */
+  const nethPlantable = (x, z, margin) => inNethereum(x, z)
+    && !westBareGround(x, z, margin) && westWaterSurface(x, z) === null && !atIsamouth(x, z);
+
+  const NETHEREUM_WATER = [NETH_HEAD, NETH, NETHEREUM_OUTLET, ...NETHEREUM_STREAMS];
+  for (const course of NETHEREUM_WATER) ribbon(WEST_PROFILES.get(course.id), nethereum, course.name);
+
+  /**
+   * Rush and sedge at every waterline, and gravel on the Neth's ford, which is gravel by
+   * definition — it is the only part of that river shallow enough to walk through.
+   *
+   * The Isa is in this loop as well as in Isareos's, and only its Nethereum bank comes of
+   * it: `hexOwnerAt` is strict, so the far bank's rushes belong to whichever country's hex
+   * they stand on. The river was built with Isareos and is not rebuilt here.
+   */
+  const nethSedge = [], nethGravel = [];
+  for (const course of [...NETHEREUM_WATER, ISAREOS_RIVER]) for (const sample of WEST_PROFILES.get(course.id)) {
+    if (sample.index % 2) continue;
+    for (const side of [-1, 1]) {
+      const offset = sample.half + range(.3, 2.6);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      if (!inNethereum(x, z) || westWaterSurface(x, z) !== null) continue;
+      if (course === NETH && sample.ford) nethGravel.push({ x, z, s: range(.2, .62), rot: random() * 6.28 });
+      else nethSedge.push({ x, z, s: range(.8, 1.7), rot: random() * 6.28 });
+    }
+  }
+
+  /**
+   * **The wet threads**, which are the thing this country has instead of a lake.
+   *
+   * Each hill-stream gives its channel up on the hollow's floor (`taper`), and what a
+   * stream that has stopped being a stream leaves behind is a line of wetter ground running
+   * on across the meadow. The lore has them by name — "the wet threads that remain in the
+   * basin after the water recedes yield rush and sedge" — and the brief is careful about
+   * what they are not: "not a marsh, a wet line in a field, of the kind that tells a walker
+   * where to put his feet".
+   *
+   * So each thread is carried on from where its stream dries, straight down the fall toward
+   * the floor's lowest ground, and sown with rush in a band six metres wide that frays as it
+   * goes. Nothing is cut and nothing stands in water: the ground under them is the ordinary
+   * floor of the hollow.
+   */
+  for (const stream of NETHEREUM_STREAMS) {
+    const end = WEST_PROFILES.get(stream.id).at(-1);
+    const toward = Math.atan2(NETHEREUM_HOLLOW.x - end.x, NETHEREUM_HOLLOW.z - end.z);
+    for (let along = 4; along < 150; along += 3.5) {
+      const fray = 2.2 + along * .035;
+      for (let i = 0; i < 3; i++) {
+        const across = range(-fray, fray);
+        const x = end.x + Math.sin(toward) * along + Math.cos(toward) * across;
+        const z = end.z + Math.cos(toward) * along - Math.sin(toward) * across;
+        if (!nethPlantable(x, z, 1.5)) continue;
+        // The thread is only a thread where the ground is low enough to hold water.
+        if (nethereumWet(x, z) < .55) continue;
+        nethSedge.push({ x, z, s: range(.7, 1.5), rot: random() * 6.28 });
+      }
+    }
+  }
+  gravelBatch(nethGravel, nethereum, 'Neth ford gravel');
+  sedgeBatch(nethSedge, nethereum, 'Nethereum rush and sedge');
+
+  /**
+   * The gallery: willow and alder on the water and nowhere else, which on the atlas's
+   * reading is the whole of the wood in the country. No `forest` hex here either, in a map
+   * that uses the word freely in the Ibenwood two hexes west.
+   *
+   * Planted off the water rather than off the hex grid, for the reason the Carica corridor
+   * is and Eer's channels were: a hex is a hundred metres and a gallery is eight, so
+   * scattering from cell centres would put nearly every attempt on open meadow. The three
+   * hill-streams get a thinner one than the rivers do — a stream a stride across on open
+   * grass carries a willow here and there, not a ribbon.
+   */
+  const nethGallery = [];
+  for (const course of [ISAREOS_RIVER, NETH, NETH_HEAD, NETHEREUM_OUTLET, ...NETHEREUM_STREAMS]) {
+    const narrow = course !== ISAREOS_RIVER && course !== NETH;
+    for (const sample of WEST_PROFILES.get(course.id)) for (let i = 0; i < (narrow ? 2 : 5); i++) {
+      const side = random() < .5 ? -1 : 1, offset = sample.half + range(.8, narrow ? 4.5 : 8);
+      const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+      if (!nethPlantable(x, z, 2)) continue;
+      if (nethGallery.some(tree => Math.hypot(tree.x - x, tree.z - z) < (narrow ? 8 : 4.4))) continue;
+      // Willow is a low broad-crowned thing on a wet bank; alder goes up straight beside it.
+      const willow = random() < .55;
+      nethGallery.push({ x, z, willow, wide: willow, s: range(.85, willow ? 1.15 : 1.3),
+        h: willow ? range(6.5, 9) : range(10, 14.5), rot: range(0, 6.28) });
+    }
+  }
+  // Willow is a paler, greyer, yellower green than alder, which is about as dark as a
+  // broadleaf gets. Hex rather than setHSL, for the reason every crown out here is: a
+  // lightness picked for sRGB comes back two stops paler through the working colour space.
+  woodBatch(nethGallery, nethereum, tree => tree.willow
+    ? color.set('#7f9a58').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.05, .05))
+    : color.set('#3e5f38').offsetHSL(range(-.03, .03), range(-.05, .06), range(-.06, .06)),
+    'nethereum-tree');
+
+  /**
+   * The meadow, which is nearly the whole of Nethereum. One number decides all of it —
+   * `nethereumWet`, which is how far into the hollow a point stands — and there are three
+   * things to say with it:
+   *
+   *  - **On the floor**, rank wet meadow: tall, bright, soft, "the richest pasture in the
+   *    inner branch country" and the greenest ground anywhere in the west. It is meant to be
+   *    a shock two countries east of a desert.
+   *  - **Up the sides and over the rim**, ordinary humid grass: shorter, harder, darker.
+   *  - **On the one `plains` hex** in the north-western corner, outside the catchment
+   *    altogether: thinner, shorter and greyer, the same thing Isareos's western rim does.
+   *
+   * No thorn, no scrub and no rock. The atlas gives this country no `hills` hex and the lore
+   * gives it a basin floor that is under water every spring; a woody thing that is not on the
+   * water would be a lie about both.
+   */
+  const nethereumCells = [...REGION_CELLS.Nethereum].sort((a, b) => a.z - b.z || a.x - b.x);
+  const nethereumTerrain = new Map(SURVEY.regions.find(region => region.name === 'Nethereum')
+    .cells.map(cell => [`${cell.q},${cell.r}`, cell.terrain]));
+  const onDryCorner = (x, z) => { const home = hexAt(x, z); return nethereumTerrain.get(`${home.q},${home.r}`) === 'plains'; };
+  for (let start = 0; start < nethereumCells.length; start += BLOCK) {
+    const block = nethereumCells.slice(start, start + BLOCK), tufts = [];
+    for (const cell of block) {
+      // Half again as much grass as Isareos carries, because this is the wettest open
+      // ground in the game and it should read as a crop somebody could cut twice.
+      for (let i = 0; i < tuftsPerHex + 58; i++) {
+        const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
+        if (!nethPlantable(x, z, 1.5)) continue;
+        const wet = nethereumWet(x, z), dry = onDryCorner(x, z);
+        tufts.push({ x, z, s: range(.8, 2) * (dry ? .68 : .95 + wet * .45), rot: range(0, 6.28), wet, dry });
+      }
+    }
+    // Deep wet green on the floor, harder and paler up the sides, grey on the dry corner.
+    tuftBatch(tufts, nethereum, tuft => color.setHSL(
+      (tuft.dry ? .19 : .28) + tuft.wet * .02 + range(-.015, .015),
+      (tuft.dry ? .17 : .34) + tuft.wet * .12 + range(-.05, .05),
+      (tuft.dry ? .42 : .30) - tuft.wet * .04 + range(-.04, .04)));
   }
 
   function update(time) {

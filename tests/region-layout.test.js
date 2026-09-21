@@ -79,14 +79,21 @@ test('points resolve to regions and cells, and the world bounds enclose all four
    * countries widened the world by nothing at all, and the budget was deliberately not
    * raised for it. **Isareos is the one that spends it**: its western rim stands at
    * x = -2850 against the Ibenwood, which takes the world's edge from -2310 to -2960
-   * and its width to 35.7 hexes. So the guard goes to 36 and no further; the five
-   * countries still to come reach further west again (the Nether Desert's own hexes
-   * are at -3050) and each will have to state its own case.
+   * and its width to 35.7 hexes.
+   *
+   * **Nethereum spends fifty metres more of it, and that is all it spends.** Its one
+   * `plains` hex, the north-western corner against the Nether Desert, has its centre at
+   * x = -2900 — half a hex west of Isareos's rim — so the world's edge goes from -2960 to
+   * -3010 and its width from 35.70 to 36.20 hexes, measured. North to south it changes
+   * nothing: 30.93 hexes, still set by West Izol and Amod. So the guard goes to 37 and no
+   * further, and the lower bound with it. The four countries still to come reach further
+   * west again (the Nether Desert's own hexes are at -3050) and each will have to state its
+   * own case.
    */
-  assert.ok(bounds.maxX - bounds.minX < 36 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX, 'the playable regions fit a walkable world');
+  assert.ok(bounds.maxX - bounds.minX < 37 * METRES_PER_HEX && bounds.maxZ - bounds.minZ < 32 * METRES_PER_HEX, 'the playable regions fit a walkable world');
   // And it is a budget rather than a shrug: a country that widened the world without
   // anybody noticing would sail through a guard with room in it.
-  assert.ok(bounds.maxX - bounds.minX > 35 * METRES_PER_HEX, 'the world is narrower than the budget says: raise nothing, lower this');
+  assert.ok(bounds.maxX - bounds.minX > 36 * METRES_PER_HEX, 'the world is narrower than the budget says: raise nothing, lower this');
 });
 
 test('route anchors follow the brief: Tidehaven on the coast, the Caloss on the Luscia border, the Moros west, Elod north-east', () => {
