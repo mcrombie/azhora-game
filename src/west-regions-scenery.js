@@ -1109,8 +1109,8 @@ export function createWestScenery(kit) {
    *
    * Nethereum is grass and water and nothing else. The atlas gives it twenty-six
    * `grassland` hexes and one `plains`, and it gives it neither a `lake` hex nor a
-   * `wetland` hex in a map that has both words and uses each of them twenty-eight times
-   * elsewhere. So there is no Nethermere here and no marsh round it, and what is drawn is
+   * `wetland` hex — in an export that spends fifteen of the first and twenty-eight of the
+   * second elsewhere. So there is no Nethermere here and no marsh round it, and what is drawn is
    * the dry state of a basin that floods in spring and is grazed by midsummer: rank meadow
    * on the floor, ordinary grass up the sides, wet threads of rush and sedge where the
    * hill-streams run out, and a gallery on the water and nowhere else.
@@ -1139,12 +1139,17 @@ export function createWestScenery(kit) {
    */
   const nethSedge = [], nethGravel = [];
   for (const course of [...NETHEREUM_WATER, ISAREOS_RIVER]) for (const sample of WEST_PROFILES.get(course.id)) {
-    if (sample.index % 2) continue;
-    for (const side of [-1, 1]) {
-      const offset = sample.half + range(.3, 2.6);
+    const ford = course === NETH && sample.ford;
+    if (!ford && sample.index % 2) continue;
+    // The ford is the one thing in this country a traveler has to be able to find, so it is
+    // sown at every sample and four deep rather than at every other one and two: photographed
+    // from the bank at the same rate as a waterline, twenty-three stones over a hundred metres
+    // of crossing read as a few pebbles and not as a place anybody walks through.
+    for (const side of ford ? [-1, -1, 1, 1] : [-1, 1]) {
+      const offset = sample.half + range(.3, ford ? 3.4 : 2.6);
       const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
       if (!inNethereum(x, z) || westWaterSurface(x, z) !== null) continue;
-      if (course === NETH && sample.ford) nethGravel.push({ x, z, s: range(.2, .62), rot: random() * 6.28 });
+      if (ford) nethGravel.push({ x, z, s: range(.2, .7), rot: random() * 6.28 });
       else nethSedge.push({ x, z, s: range(.8, 1.7), rot: random() * 6.28 });
     }
   }
@@ -1232,6 +1237,17 @@ export function createWestScenery(kit) {
    * gives it a basin floor that is under water every spring; a woody thing that is not on the
    * water would be a lie about both.
    */
+  /**
+   * **What was tried for the dish and taken out again, so nobody tries it twice.** A hollow
+   * eight metres deep and six hundred across is a gradient of one in forty, and the country's
+   * ground colour is one hex-blended green from rim to floor, so the fall has nothing to be
+   * read against: from nine metres up it is four degrees of sight line and comes out flat, and
+   * from thirty-five it is better and still not a bowl. The obvious answer is to paint the wet
+   * ground darker with `wornPatch`, the way Vastos's sinter crust stops the grass at a line.
+   * **Photographed, it is worse**: a patch is a disc of ground with a hard edge, and ninety of
+   * them over a floor read as mown blotches and not as wetness. The dish is left to the grass —
+   * which is denser and deeper-coloured on the floor than on the rim — and to the two views.
+   */
   const nethereumCells = [...REGION_CELLS.Nethereum].sort((a, b) => a.z - b.z || a.x - b.x);
   const nethereumTerrain = new Map(SURVEY.regions.find(region => region.name === 'Nethereum')
     .cells.map(cell => [`${cell.q},${cell.r}`, cell.terrain]));
@@ -1239,20 +1255,31 @@ export function createWestScenery(kit) {
   for (let start = 0; start < nethereumCells.length; start += BLOCK) {
     const block = nethereumCells.slice(start, start + BLOCK), tufts = [];
     for (const cell of block) {
-      // Half again as much grass as Isareos carries, because this is the wettest open
-      // ground in the game and it should read as a crop somebody could cut twice.
-      for (let i = 0; i < tuftsPerHex + 58; i++) {
+      /**
+       * **Three times what Isareos carries, and the count is the wetness.** Photographed from
+       * the northern shoulder at a hundred and forty-four tufts a hex — half again as much as
+       * the hills next door — this meadow came out a lawn with a few weeds on it: single blades
+       * a metre apart on flat green, which is not "the richest pasture in the inner branch
+       * country" and is not a crop anybody cuts twice. So the attempts go to two hundred and
+       * fifty-eight and the floor takes all of them while the rim takes half, which puts the
+       * density where the water is and is the one thing that tells the two apart at a distance.
+       */
+      for (let i = 0; i < tuftsPerHex * 3; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
         if (!nethPlantable(x, z, 1.5)) continue;
         const wet = nethereumWet(x, z), dry = onDryCorner(x, z);
-        tufts.push({ x, z, s: range(.8, 2) * (dry ? .68 : .95 + wet * .45), rot: range(0, 6.28), wet, dry });
+        if (random() > (dry ? .42 : .55 + wet * .45)) continue;
+        tufts.push({ x, z, s: range(.9, 2.1) * (dry ? .68 : .95 + wet * .5), rot: range(0, 6.28), wet, dry });
       }
     }
-    // Deep wet green on the floor, harder and paler up the sides, grey on the dry corner.
+    // Deep wet green on the floor, harder and paler up the sides, grey on the dry corner —
+    // and the step between them is wide on purpose. At four hundredths of lightness the floor
+    // and the rim were the same colour from a hundred metres and the dish had nothing to be
+    // seen by; at fifteen the wet ground reads as wet ground from the shoulder above it.
     tuftBatch(tufts, nethereum, tuft => color.setHSL(
-      (tuft.dry ? .19 : .28) + tuft.wet * .02 + range(-.015, .015),
-      (tuft.dry ? .17 : .34) + tuft.wet * .12 + range(-.05, .05),
-      (tuft.dry ? .42 : .30) - tuft.wet * .04 + range(-.04, .04)));
+      (tuft.dry ? .18 : .27) + tuft.wet * .03 + range(-.015, .015),
+      (tuft.dry ? .17 : .31) + tuft.wet * .16 + range(-.05, .05),
+      (tuft.dry ? .44 : .34) - tuft.wet * .11 + range(-.04, .04)));
   }
 
   function update(time) {

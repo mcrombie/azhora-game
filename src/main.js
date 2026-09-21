@@ -1579,18 +1579,32 @@ function init() {
       // the camera to whatever stands nearest the focus, and a focus above `heightAt + 7`
       // cannot be clamped against at all. Worked out from the hollow's own numbers rather than
       // typed in, so it follows the dish if the dish ever moves.
+      //
+      // **And from well above it, which is the third correction and the one that made it a
+      // picture.** Taken at .06 of pitch from nine metres up, a fall of seven and a half metres
+      // over a hundred and twenty-five is four degrees of sight line and reads as flat green
+      // carpet: the dish did not exist in the frame at all. A dish this shallow is only a dish
+      // from above it, so the camera goes up to about thirty-five metres - `shot` puts it at
+      // `distance * sin(pitch)` over the focus - and looks down at seventeen degrees.
       const H=NETHEREUM_HOLLOW;
-      return shot({x:H.x,z:H.z-H.rz*.80},{x:H.x,z:H.z+H.rz*.15},.06,9);
+      return shot({x:H.x,z:H.z-H.rz*.80},{x:H.x,z:H.z+H.rz*.15},.29,7);
     }
     if(view==='south-nethereum-hollow'){
       // Down on the floor, at a wet thread: where a hill-stream gives its channel up and what
       // runs on across the meadow is a line of rush and sedge in the grass. The subject is
       // knee-high, so the camera is low and near - the opposite of the view above, and the
       // reason there are two of them.
+      //
+      // **Out on the floor looking back up the thread**, and both halves of that are
+      // corrections. The first take stood sixteen metres behind the stream's last sample and
+      // photographed the inside of an alder: the gallery follows the water, so the ground
+      // behind a stream's mouth is the one place in this country with trees on it. And the
+      // thread itself is sown *forward* from there, out across the meadow, so looking back
+      // along it puts the rush in the frame with the gallery and the rim behind it.
       const end=NETHEREUM_STREAMS[0].samples.at(-1);
-      const to={x:end.x+(NETHEREUM_HOLLOW.x-end.x)*.30,z:end.z+(NETHEREUM_HOLLOW.z-end.z)*.30};
-      const back=Math.hypot(to.x-end.x,to.z-end.z)||1;
-      return shot({x:end.x-(to.x-end.x)/back*16,z:end.z-(to.z-end.z)/back*16},to,.14,1.1);
+      const to=Math.atan2(NETHEREUM_HOLLOW.x-end.x,NETHEREUM_HOLLOW.z-end.z);
+      const along=(d)=>({x:end.x+Math.sin(to)*d,z:end.z+Math.cos(to)*d});
+      return shot(along(112),along(34),.11,1.6);
     }
     if(view==='south-neth'){
       // The ford, from the Nethereum bank. **Which bank that is, is measured and not assumed**:

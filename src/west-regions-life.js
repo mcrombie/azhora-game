@@ -129,31 +129,45 @@ function models() {
      * short pair of horns that go forward rather than out. The longhorn's whole silhouette
      * is its horns and its height; this one's is its width and its want of both.
      *
-     * **Dun, and a stop or two up from what "dark" sounds like**, for the reason the boar
-     * is grizzled rather than black: on the greenest grass in the west a dark animal reads
-     * as a hole in the ground and not as a beast. The pale underline is what most wet-ground
-     * cattle carry and it is what gives flat shading something to separate.
+     * **Dun, and two stops up from what "dark" sounds like.** Photographed on its own meadow
+     * the first one was a charcoal lump: everything on it was within a few values of black,
+     * so flat shading had nothing to separate and the animal read as a hole in the grass. It
+     * is the boar's lesson exactly. Everything here is lighter now, and the pale underline —
+     * which is what most wet-ground cattle carry anyway — is what gives the shading an edge.
+     *
+     * **The neck is part of the head, and that is the deer's lesson.** A longhorn's body is
+     * deep enough to hide the gap that opens when the head swings down to graze; this one's
+     * is three-quarters of that depth and it is not, so the first Nethrani cow grazed with
+     * its head floating half a metre in front of its chest with nothing joining them. So the
+     * head geometry starts at the **shoulder joint** and carries its own short thick neck up
+     * and forward, and `GRAZER_RIG`'s `neck` and `high` are that joint rather than the base
+     * of a skull: the swing turns the whole of it, which is what a neck does.
      */
     'nethrani-cattle': {
       body: geometry([
-        S(0x6d6355, [0, .80, -.04], [.42, .35, .84]),
-        S(0x7b7062, [0, .87, .44], [.40, .32, .34]),
-        S(0x7b7062, [0, .96, .68], [.25, .20, .24], [.28, 0, 0]),
-        S(0x8e8574, [0, .64, .02], [.35, .21, .70]),
-        Y(0x564d42, [0, .72, -.84], [.042, .50, .042], [.95, 0, 0]),
-        S(0x342e27, [0, .50, -.98], [.05, .11, .055]),
+        S(0x8a7f6e, [0, .80, -.04], [.42, .35, .84]),
+        S(0x978b78, [0, .87, .42], [.40, .33, .34]),
+        S(0xb0a690, [0, .62, .02], [.35, .21, .70]),
+        Y(0x6b6154, [0, .72, -.84], [.042, .50, .042], [.95, 0, 0]),
+        S(0x4a4239, [0, .50, -.98], [.05, .11, .055]),
       ]),
       head: geometry([
-        S(0x6d6355, [0, .02, .06], [.21, .20, .29]),
-        S(0x5d5449, [0, -.08, .29], [.16, .14, .17]),
-        S(0xc8bfa8, [0, -.12, .39], [.11, .08, .08]),
-        S(0x877d6c, [0, .17, -.01], [.22, .12, .21]),
-        ...both(side => S(0x5d5449, [side * .23, .11, -.02], [.14, .07, .09])),
-        ...both(side => S(dark, [side * .16, .04, .20], [.027, .031, .028])),
-        ...both(side => Y(0xbfb49a, [side * .22, .19, .03], [.05, .17, .05], [-.25, 0, side * 1.15])),
-        ...both(side => C(0xd6ceb6, [side * .30, .28, .12], [.042, .14, .042], [-.55, 0, side * .55])),
+        // The neck, out of the shoulder and up: two lumps, because a cow's neck is a wedge.
+        S(0x978b78, [0, .05, .10], [.20, .18, .22]),
+        S(0x8a7f6e, [0, .14, .27], [.175, .16, .19]),
+        // The head on the end of it.
+        S(0x8a7f6e, [0, .18, .45], [.185, .17, .25]),
+        S(0x7a6f60, [0, .10, .66], [.14, .125, .155]),
+        S(0xd3cab4, [0, .065, .77], [.10, .075, .075]),
+        S(0xa2967f, [0, .32, .41], [.195, .10, .185]),
+        ...both(side => S(0x7a6f60, [side * .21, .26, .36], [.13, .065, .085])),
+        ...both(side => S(dark, [side * .145, .185, .585], [.026, .030, .027])),
+        // Short thick horns, forward and up in two lengths: nothing like the sweep the Vastos
+        // animal is named for, and the quickest way to tell the two apart at any distance.
+        ...both(side => Y(0xd8cdb2, [side * .20, .33, .43], [.048, .15, .048], [-.25, 0, side * 1.1])),
+        ...both(side => C(0xe8e0c8, [side * .275, .40, .52], [.042, .12, .042], [-.55, 0, side * .55])),
       ]),
-      leg: geometry([Y(0x4e463c, [0, -.16, 0], [.105, .32, .107]), B(0x2b2620, [0, -.32, .03], [.16, .10, .20])]),
+      leg: geometry([Y(0x6b6154, [0, -.16, 0], [.105, .32, .107]), B(0x3c352d, [0, -.32, .03], [.16, .10, .20])]),
     },
 
     /**
@@ -587,7 +601,21 @@ export const WEST_LIFE_ZONES = Object.freeze([
   // their spots are on the fox ground itself: the immediate bank of the middle reach.
   Object.freeze({
     id: 'carica-foxes-upper', species: 'river-fox', region: 'Caricas', radius: .32, scale: 1,
-    minX: -1740, maxX: -1650, minZ: 390, maxZ: 500,
+    /**
+     * **Forty metres wider to the west, because the fox was backing into its own wall.**
+     * The vel-caric gives ground at exactly the pace you come on and never turns its back, so
+     * it needs somewhere to give ground *to*: measured with a walker coming from the east, it
+     * backed to `minX` at -1740, slid north along that edge for ten seconds and was reached to
+     * 1.58 m — which `tests/west-life.test.js` calls being walked down, and rightly.
+     *
+     * It was marginal before and Nethereum's landing tipped it: registering that country moved
+     * the Lizeem's surface along its own bank, which re-seeded the `lizeemSedge` draw in
+     * Caricas's block and with it every scatter after it, so the trees this fox threads between
+     * are a few metres from where they were. The cure is room rather than a re-tune of anything
+     * it does: -1780 is 100% standable Caricas ground against 85% at -1740, and the range's
+     * half-diagonal goes from 71 m to 85, well inside the 130 it is ticked from.
+     */
+    minX: -1780, maxX: -1650, minZ: 390, maxZ: 500,
     sites: Object.freeze([[-1670, 400], [-1684, 409], [-1708, 436], [-1713, 469]]),
     note: 'caricas.md: the vel-caric, "found reliably only in the Carica corridor". It hunts the water’s edge and it does not run from you.',
   }),
@@ -895,8 +923,9 @@ const GRAZER_RIG = Object.freeze({
   // The Nethrani beast: the longhorn's row with every height at about three-quarters and
   // every width and length left alone, which is what "compact and short-legged" is. The
   // stride is shorter than three-quarters because a short leg swings through less ground,
-  // not less angle.
-  'nethrani-cattle': { neck: .88, high: 1.04, low: .50, shoulder: .55, hip: .26, fore: .50, stride: .34 },
+  // not less angle. `neck` and `high` are the **shoulder joint** and not the base of a head,
+  // as the red deer's are, because this one's head geometry carries its own neck.
+  'nethrani-cattle': { neck: .40, high: .92, low: .66, shoulder: .55, hip: .26, fore: .50, stride: .34 },
 });
 
 const BIRD_RIG = Object.freeze({

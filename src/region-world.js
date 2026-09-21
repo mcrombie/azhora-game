@@ -766,8 +766,8 @@ const REGION_TEXT = {
   // Flood Council, the Flood Recall, the weirs and the oats and hay on the flood meadow are all
   // somebody's, and somebody is not built — and two of them are impossible besides, because
   // **there is no Nethermere**. The atlas gives this country twenty-six `grassland` hexes and one
-  // `plains`, in a map that has `lake` and uses it 28 times and `wetland` and uses it 28 times,
-  // and it puts neither here. The user's ruling of 2026-09-21 settled it: the flood is a shallow
+  // `plains`, in a map that has both a `lake` terrain and a `wetland` terrain and spends them
+  // freely elsewhere, and it puts neither here. The user's ruling of 2026-09-21 settled it: the flood is a shallow
   // spring sheet over the basin's grass, gone by midsummer, and the game has no seasons to bring
   // it. So what is built is the dry state — a hollow, and the pasture the water leaves.
   //
