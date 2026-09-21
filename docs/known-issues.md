@@ -1934,3 +1934,77 @@ This was the thing I expected to be wrong and it is right.
 
 So the flag survives the fight-hold that deliberately clears `escorting`, and a man at the back of
 a ten-long file — 38.5 m off, which is inside the 62 m band — is a full figure like the rest.
+
+---
+
+## Walk into the muster with nine behind you and the Marshal says one man stands in this camp
+
+Driven with a company built the way the host builds it, nine of the ten given as `companions`
+walking with the traveler, the clock at the muster.
+
+### The count does not see them
+
+| | |
+|---|---|
+| placements at the muster | `{ "with-traveler": 9, "walking": 1 }` |
+| `company.summary().mustered` | **0** |
+| `musterCount` the host passes (`mustered + 1`) | **1** |
+
+`summary().mustered` counts men whose *phase* is `mustered`. A companion's phase is
+`with-traveler` and stays that way wherever he is, so **nine men standing in the camp at the
+traveler's shoulder count as none of them.**
+
+`MUSTER_EARLY` is 2, so a count of 1 is the **early** face, and what the game puts on the screen
+is the pegs:
+
+> *"The mercenaries' ground behind the standard has eleven pegs banged into it and nobody on them.
+> A quartermaster's boy is counting them again in case he got it wrong the first time."*
+
+— with ten of the eleven standing in front of him. And the Marshal: *"one stands in this camp,
+counting you, and the rest are somewhere on a road."*
+
+### And the lines are written for men who were somewhere else
+
+`notice()` (`src/long-road.js`) records only `walking` and `stopped` placements, so a companion is
+**never noticed**: `seenAt` is empty for all nine however far they walked with you. At a full
+muster that makes **9 of 10 company lines** fall back to *"somewhere back down that road"* —
+
+- *"We passed you. You were somewhere back down that road. I said you would be last…"* — from a
+  man who never left the traveler's shoulder;
+- *"Last I saw you, you were somewhere back down that road. I remember thinking: there is a
+  person who is not in a hurry."* — from a man who was looking at him the whole time.
+
+Neither table fits. `MUSTER_GREETINGS` is for men already in the camp when the traveler arrives;
+`MUSTER_AFTER` is for men who walk in behind him (*"You beat me here"*). A companion arrives
+**with** him, and there is no third thing to say.
+
+### Smallest repairs
+
+1. **Count them.** `mustered` should include a `with-traveler` man who is at the muster — he is in
+   the camp, whatever his phase is called. One predicate, and the early face stops firing at a
+   full camp.
+2. **Give the file its own greeting.** A short table keyed like the other two, for a man who
+   walked the whole way: nothing about passing, nothing about being beaten there. Until there is
+   one, the honest fallback would be to leave a companion out of `company` altogether rather than
+   have him say he last saw you somewhere else.
+
+Both are the muster's and the long road's, so they are written down rather than changed.
+
+---
+
+## Check 5, as far as it goes today
+
+- **`MERCENARY_ARMS` is in and is sensible**: every companion has a weapon family and a pair of
+  levels — 20 to 45 on the weapon, 17 to 40 on toughness, Mus the highest at 45/40, Altun the
+  lowest at 20/17 — and `armsOf` fills a shield of 1 for everyone but Kristen, who carries one at
+  35. So a companion is a seasoned fighter, not a level-1 one.
+- **"An ally at level 1 is exactly today's ally" holds on the curve**: `marginsFor` at all-ones
+  gives `maxHp 100`, `maxStamina 100`, `dodgeWindow 0.37` and damage ×1, which are `combat.js`'s
+  own boot numbers to the digit (measured in the phase-2 sweep above).
+- **No ally's health moves with the country**, still: `countryHealth` is applied in the enemies
+  loop of `encounterConfig` and nowhere else, and a level-2 `borderEncounter` builds its allies at
+  the authored 90 hp against enemies at 190.
+- **The third part is not measurable yet.** The border battle at level 2 with a side at its kind's
+  level needs the ally wiring — where a companion becomes `combat.state.allies` — which is still
+  with the builder. The level-0 and level-2 baselines to measure it against are already taken:
+  **29/40 at 42 % health** and **0/40 with 1.4 of 8 down**.
