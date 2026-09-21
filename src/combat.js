@@ -266,8 +266,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * button and the facing every frame and nothing here remembers a press. `drawHeld` is this
    * frame's button, `drawTime` how long it has actually been drawing, and `loosed` counts the
    * arrows this traveler has ever sent, which is what decides which shafts break.
+   *
+   * **`loosed` is the traveler's alone.** An ally archer keeps his own tally (`allyShafts`), which
+   * numbers nothing and only makes his arrows tell each other apart. They shared one counter until
+   * the hunt found it: every arrow Jerry sent moved the traveler's next shaft along one, so the
+   * rule `survives` states - exactly two in three, and the same two whatever happens - held only
+   * when nobody was shooting beside him. Driven: thirty shots with Jerry at his shoulder came back
+   * seventeen instead of twenty, and a reload that changed Jerry's cadence changed which of the
+   * traveler's own shafts broke.
    */
-  let drawHeld = false, drawYaw = 0, drawTime = 0, loosed = 0;
+  let drawHeld = false, drawYaw = 0, drawTime = 0, loosed = 0, allyShafts = 0;
   /**
    * Whether there is `metres` of clear ground all round him to swing a long weapon in. Only the
    * pike asks. A world with no colliders - a test's - is open ground, which is the right answer.
@@ -629,7 +637,16 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const floor = lastEncounter.bout ? 1 : 0;
     enemy.hp = Math.max(floor, enemy.hp - damage);
     enemy.active = enemy.hp > floor;
-    if (guarded && enemy.hp) {
+    // A blow he caught on his shield leaves him standing, and the fight goes on above this line.
+    // **But the blow that beats him is never merely blocked**, because everything that ends a
+    // fight is below here: the bout's yield, and the victory. This read `enemy.hp`, which in an
+    // ordinary fight is the same question - a man at nought is a man who is not active - and in a
+    // **bout** is not, because a bout's floor is one. So a guarded blow that put a sparring
+    // partner on the floor set `active: false` and then returned: he was beaten, he could no
+    // longer be a candidate for anything, and no `spar-over` was ever emitted. The bout ran for
+    // ever, and with a bow - a man who cannot be reached is idle, and an idle man is always on
+    // guard - that was every bout, every time (docs/known-issues.md).
+    if (guarded && enemy.active) {
       emit('blocked', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
       emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
       return;
@@ -1018,7 +1035,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
           if (aim) {
             const yaw = Math.atan2(aim.x - ally.x, aim.z - ally.z);
             ally.yaw = yaw;
-            state.arrows.push({ id: `ally-arrow-${ally.id}-${++loosed}`, n: 0, owner: ally.id,
+            state.arrows.push({ id: `ally-arrow-${ally.id}-${++allyShafts}`, n: 0, owner: ally.id,
               x: ally.x, z: ally.z, y: BOW.height, yaw, flown: 0, range: profile.reach,
               damage: Math.round(profile.damage * allyDamageScale(ally.level ?? 1)) });
           }

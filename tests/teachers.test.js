@@ -486,6 +486,67 @@ test('a bout really does kill nobody, on either side', () => {
   assert.equal(real.combat.state.phase, 'active', 'and the bout beside it is still a bout');
 });
 
+/**
+ * **And the blow that beats him is never merely blocked.** A sparring partner carries `guard`, so
+ * a man who is idle, off cooldown and facing the blow turns half of it and is not rocked - and the
+ * answer to a guarded blow used to be `emit('blocked'); return`, which sits *above* the bout's
+ * yield. The blow that put him on the floor of one therefore set `active: false` and returned: he
+ * was beaten, no further blow could ever reach him, and no `spar-over` was ever sent. The bout ran
+ * for ever. With a bow it was every bout, every time, because a man who cannot be reached is idle
+ * and an idle man is always on guard (docs/known-issues.md).
+ */
+test('a guarded blow that beats him still ends the bout', () => {
+  // **One swing.** Swinging every frame runs the combo on, and by the third stroke he has begun a
+  // swing of his own and guards nothing - which is how this test first passed against the bug.
+  const oneBlow = onGuard => {
+    const fix = bout({ hp: 2 });
+    fix.position.z = 1.4;                       // inside a sword's reach of the man at z 3.2
+    const foe = fix.combat.state.enemies[0];
+    let swung = false;
+    for (let i = 0; i < 240 && !fix.over().length; i++) {
+      // Held in the one state `guarded` asks for: idle, off cooldown, facing the blow. The
+      // control puts him mid-swing instead, where a shield is worth nothing.
+      foe.hp = Math.min(foe.hp, 2); foe.x = 0; foe.z = 3.2; foe.yaw = Math.PI;
+      foe.action = onGuard ? 'idle' : 'attack';
+      if (!swung) swung = fix.combat.attack(0);
+      fix.combat.update(1 / 60);
+    }
+    return { over: fix.over(), phase: fix.combat.state.phase,
+      struck: fix.events.filter(e => e.type === 'hit').map(e => e.damage) };
+  };
+  const open = oneBlow(false), caughtOnIt = oneBlow(true);
+  assert.equal(open.struck.length, 1);
+  assert.equal(caughtOnIt.struck.length, 1);
+  assert.ok(caughtOnIt.struck[0] < open.struck[0],
+    `the blow was caught on his shield, which is the whole point of the measurement (${caughtOnIt.struck[0]} against ${open.struck[0]})`);
+  assert.equal(open.over.length, 1, 'control: an unguarded finishing blow ends the bout');
+  assert.equal(caughtOnIt.over.length, 1, 'and so does one he caught on his shield');
+  assert.equal(caughtOnIt.over[0].winner, 'traveler');
+  assert.equal(caughtOnIt.phase, 'peaceful');
+  // **And an ordinary fight is untouched, to the digit.** Outside a bout the floor is nought, so
+  // `active` is `hp > 0` and the two readings are the same question: a man on guard still catches
+  // one on his shield and is still standing afterwards, and the last blow still kills and still
+  // wins the fight. Driven against a soldier, who is the kind that carries a guard at all.
+  const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 1.5 };
+  const position = { x: 0, y: 1.5, z: 0 }, events = [];
+  const fight = createCombat({ world, position, onEvent: event => events.push(event) });
+  fight.startEncounter({ id: 'guarded-soldier', level: 0, center: { x: 0, z: 1.6 }, checkpoint: { x: 0, z: 0 },
+    retreatAxis: 'z', retreatLine: 25.6, enemies: [{ id: 'soldier', kind: 'soldier', x: 0, z: 3.2, hp: 400 }] });
+  const guarded = fight.state.enemies[0];
+  let caught = 0;
+  for (let i = 0; i < 60 * 60 && fight.state.phase === 'active'; i++) {
+    // Held on guard until he has taken two on the shield, then let go and fought properly.
+    if (caught < 2 && guarded.hp > 40) { guarded.x = 0; guarded.z = 3.2; guarded.yaw = Math.PI; guarded.action = 'idle'; }
+    fight.attack(Math.atan2(guarded.x - position.x, guarded.z - position.z));
+    fight.update(1 / 60);
+    caught = events.filter(e => e.type === 'blocked').length;
+    if (caught >= 2 && guarded.hp > 40) guarded.hp = 40;   // straight to the end of it
+  }
+  assert.ok(caught >= 2, `a soldier on guard still catches one on his shield (${caught})`);
+  assert.ok(events.some(e => e.type === 'enemy-defeated'), 'and the blow that does for him still kills');
+  assert.ok(events.some(e => e.type === 'victory'), 'and still wins the fight');
+});
+
 test('a bout can kill nobody, and no victory is ever reported for one', () => {
   const combat = source('combat.js');
   assert.match(combat, /const floor = lastEncounter\.bout \? 1 : 0;/, 'health stops at one in a bout');
