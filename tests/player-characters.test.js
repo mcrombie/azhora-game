@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE, PLAYABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
   playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
-import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, mercenaryById, mercenaryLines,
+import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mercenaryById, mercenaryLines,
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
 import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
 import { createLinguist, MAX_PROFICIENCY } from '../src/linguist.js';
@@ -380,4 +380,66 @@ test('the company of eleven share the language of the contract, and the locals d
   assert.equal(speaksTheContract({ id: 'merc-nobody' }), false);
   assert.equal(speaksTheContract({}), false);
   assert.equal(speaksTheContract(null), false);
+});
+
+test('the harbourmaster names the man who actually walked up the pier with you', () => {
+  // He is a slot: Chris Gotwood for ten of the eleven, Cromb when you are Chris. Her fourth line
+  // used to say "pleased with himself, Gotwood" whoever it was, so as Chris she sent Chris
+  // Gotwood to go and talk to Gotwood.
+  for (const playerId of PLAYABLE_IDS) {
+    const mate = companyFor(playerId)[0];
+    const note = landingMateNote(mate);
+    assert.ok(note.includes(mate.name), `${playerId}: she names ${mate.name}`);
+    assert.ok(note.length > 20 && !note.includes('undefined'), `${playerId}: and says something of him`);
+    if (playerId === 'gotwood') {
+      assert.equal(mate.id, CROMB.id);
+      assert.ok(note.includes('Cromb the Barbarian'), 'as Chris, the man beside you is Cromb');
+      assert.ok(!note.includes('Gotwood'), 'and she does not send Chris to go and talk to Chris');
+      assert.ok(!note.includes('pleased with himself'), 'nor give Cromb a phrase that is Chris\u2019s');
+    } else {
+      assert.ok(note.includes('Chris Gotwood'), `${playerId}: the man beside you is Chris`);
+      assert.ok(note.includes('pleased with himself'), `${playerId}: which is the phrase she has for him`);
+    }
+  }
+  // Anybody who ends up in the slot later gets a plain phrase rather than somebody else's.
+  assert.equal(landingMateNote({ id: 'merc-mus', name: 'Mus' }), 'plain cloth and a sword, Mus');
+  for (const nobody of [null, undefined, {}, { id: 'merc-gotwood' }]) {
+    assert.ok(landingMateNote(nobody).length > 20, 'and she still says something when there is nobody');
+    assert.ok(!landingMateNote(nobody).includes('undefined'));
+  }
+});
+
+test('the man at your shoulder is the interpreter, unless you are him', () => {
+  // He walks you up the pier until the letter is taken, so Mara is glossed for the ten travelers
+  // who need it. When you are Chris there is nobody to gloss her and nobody who needs to be.
+  const localTongue = speechFor({ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' }, 'Drent').language;
+  assert.ok(LANGUAGES[localTongue], 'the harbourmaster speaks a tongue of this world');
+  assert.ok(INTERPRETER.knows.includes(localTongue), 'and one the interpreter has');
+  for (const playerId of PLAYABLE_IDS) {
+    const mate = companyFor(playerId)[0];
+    const who = interpreterFor(playerId);
+    if (playerId === 'gotwood') {
+      assert.equal(who, null, 'as Chris nobody interprets');
+      assert.equal(mate.id, CROMB.id, 'though Cromb still walks up with you');
+      // And you do not need one, because you brought the Empire's speech with you.
+      assert.ok(startingLanguages(playerId).ambroni >= 40);
+    } else {
+      assert.equal(who, mate.id, `${playerId}: the man who walked up with you is the one who leans in`);
+      assert.equal(who, INTERPRETER.npcId);
+    }
+  }
+  // What he is worth, measured the way src/linguist.js measures it: beside you and in range.
+  const linguist = createLinguist();
+  const speech = linguist.speech({ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' }, 'Drent');
+  const mara = { x: 0, z: 25 }, traveler = { x: 1.2, z: 25.4 };
+  const beside = { id: INTERPRETER.npcId, hidden: false, placement: { phase: 'landing', x: traveler.x - 1, z: traveler.z - 1 } };
+  const waiting = { id: INTERPRETER.npcId, hidden: false, placement: { phase: 'landing', x: 23, z: 31.2 } };
+  assert.equal(linguist.interpreterNearby(mara, { interpreter: beside, languageId: speech.language, at: traveler }), true,
+    'at your shoulder he is heard');
+  assert.equal(linguist.interpreterNearby(mara, { interpreter: waiting, languageId: speech.language, at: traveler }), false,
+    'waiting at the landing ring he never was');
+  assert.equal(linguist.interpreterNearby(mara, { interpreter: null, languageId: speech.language, at: traveler }), false,
+    'and as Chris there is nobody to ask');
+  // Her line is foreign either way; the aside is what changes, not what she says.
+  assert.notEqual(linguist.render('The road is not safe.', speech), 'The road is not safe.');
 });

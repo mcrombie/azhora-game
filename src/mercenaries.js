@@ -257,6 +257,58 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, seed
   return { placements, summary, travelerRank, musterDistance, roadLength: lengths[lengths.length - 1], stops: roadStops.map(stop => ({ ...stop })) };
 }
 
+/**
+ * How the harbourmaster describes the man who came up the pier with you. He is a slot and not
+ * a name — Chris Gotwood for ten of the eleven, Cromb when you are Chris — so she must never
+ * be made to send Chris to go and talk to Gotwood. She has met these two and has a word for
+ * each of them; anybody who ends up in the slot later gets the plain one.
+ */
+const LANDING_MATE_NOTE = Object.freeze({
+  'merc-gotwood': 'plain cloth and pleased with himself',
+  'merc-cromb': 'plain cloth and not much to say for himself',
+});
+export function landingMateNote(mate) {
+  if (!mate?.name) return 'plain cloth and a sword, and he came off your boat';
+  return `${LANDING_MATE_NOTE[mate.id] ?? 'plain cloth and a sword'}, ${mate.name}`;
+}
+
+/**
+ * Where the man who came off your boat walks while he is walking you up the pier: at your
+ * shoulder, a little behind, on whichever side there is ground for him. Tidehaven's pier is
+ * three metres wide, so the offsets start tight and fall in directly behind; a caller that
+ * finds none of them standable leaves him where he was rather than put him in the water.
+ *
+ * `lateral` is to the traveler's right and `back` is behind him, in metres.
+ */
+export const ESCORT_OFFSETS = Object.freeze([
+  Object.freeze({ lateral: .95, back: 1.25 }), Object.freeze({ lateral: -.95, back: 1.25 }),
+  Object.freeze({ lateral: .65, back: 1.75 }), Object.freeze({ lateral: -.65, back: 1.75 }),
+  Object.freeze({ lateral: 0, back: 1.6 }), Object.freeze({ lateral: 0, back: 1.05 }),
+  // The last resort is the traveler's own feet, which are standable by definition because he is
+  // standing on them. On a pier corner where nothing else is ground, a man briefly inside you is
+  // a worse picture than a man beside you and a much better one than a man in the water; the
+  // npc body separation in src/bodies.js pushes him clear on the next frame.
+  Object.freeze({ lateral: 0, back: 0 }),
+]);
+
+/**
+ * The first of ESCORT_OFFSETS that `standable(x, z)` accepts, in world metres, for a traveler
+ * at `at` facing `at.yaw` — forward is (sin, cos), the way every actor's rotation.y reads.
+ * Null when there is nowhere for him, which the caller must treat as "do not move him".
+ *
+ * Pure, so the pier can be proved walkable from every spot the traveler can stand on it
+ * without starting a renderer.
+ */
+export function escortSpotFor(at, standable = () => true) {
+  if (!at || !Number.isFinite(at.x) || !Number.isFinite(at.z)) return null;
+  const yaw = Number.isFinite(at.yaw) ? at.yaw : 0, sin = Math.sin(yaw), cos = Math.cos(yaw);
+  for (const { lateral, back } of ESCORT_OFFSETS) {
+    const x = at.x - sin * back + cos * lateral, z = at.z - cos * back - sin * lateral;
+    if (standable(x, z)) return { x, z };
+  }
+  return null;
+}
+
 /** The inventory weapon a held kit corresponds to; bows, spears and staves are not held weapons. */
 export const KIT_WEAPON_ITEM = Object.freeze({ sword: 'simple-sword', 'sword-shield': 'simple-sword', mace: 'iron-mace', dagger: 'long-dagger', axe: 'bearded-axe', greatsword: 'greatsword' });
 

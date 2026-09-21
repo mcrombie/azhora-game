@@ -10,7 +10,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
-import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
+import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, mercenaryById, escortSpotFor, landingMateNote, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -380,7 +380,7 @@ function init() {
   const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
-  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null;
+  let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateReleased=false;
   /** Where the sequence wants the eye this frame, before the ordinary camera's lerp is bypassed. */
   const openingCamera={position:new THREE.Vector3(),target:new THREE.Vector3()};
   let drag=false,pointerX=0,pointerY=0,fullQuality=true,activeDialogue=null,audio=null,lastModalFocus=null;
@@ -1523,7 +1523,7 @@ function init() {
   function updateQuest(event) {
     const previous=questStage;questStage=advanceQuest(questStage,event);
     if(previous===questStage)return;
-    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);}
+    if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);releaseLandingMate();}
     if(previous===2&&questStage===3){combat.finishPractice();audio?.effect('success');}
     if(questStage===5)audio?.effect('success');
     if(questStage===6)inventory.grant('road-token');
@@ -1570,7 +1570,7 @@ function init() {
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
-    opening=variantFor(playerId);openingTime=0;openingFired=0;openingBells=0;player.group.visible=false;
+    opening=variantFor(playerId);openingTime=0;openingFired=0;openingBells=0;mateReleased=false;player.group.visible=false;
     show('cutscene',true);$('cutscene-eyebrow').textContent='';$('cutscene-text').textContent='';$('cutscene').querySelector('.cutscene-caption').style.opacity='0';
     setTimeout(()=>show('opening',false),700);canvas.focus();
     if(autopilot.active)skipOpening();
@@ -1595,6 +1595,44 @@ function init() {
     if(pendingTesting){pendingTesting=false;modal('testing');}
   }
   function skipOpening(){landOpening();}
+  /**
+   * The man off your boat walks you up the pier until the letter is in your satchel, because he
+   * is the only person in Azhora who can tell you what the harbourmaster is saying (INTERPRETER,
+   * src/languages.js). He is placed at your shoulder every frame the way the hideout garrison is
+   * placed while escorting; the pier is three metres wide, so escortSpotFor tries each side and
+   * then directly behind, and leaves him where he is rather than put him in the water.
+   */
+  function escortLandingMate(){
+    const mate=npcById.get(landingMateId());
+    const walking=!!mate&&!mateReleased&&questStage<2&&!opening&&['playing','dialogue','inventory','journal','pause'].includes(mode);
+    if(!mate)return;
+    if(!walking){if(mate.escorting){mate.escorting=false;mate.pace=undefined;}return;}
+    const spot=escortSpotFor({x:player.group.position.x,z:player.group.position.z,yaw:player.group.rotation.y},(x,z)=>canStand(x,z,world,BODY.person));
+    if(spot){
+      world.npcPositions[mate.id]={x:spot.x,z:spot.z};
+      // His placement is what interpreterNearby measures from, so it has to follow him and not
+      // stay at the landing ring placeMercenaries() put it at a moment ago.
+      mate.placement={id:mate.id,name:mate.name,phase:'landing',distance:0,stopId:null,x:spot.x,z:spot.z,yaw:player.group.rotation.y,walking:true};
+    }
+    mate.hidden=false;mate.escorting=true;mate.pace=4.6;
+  }
+  /**
+   * The letter is taken, so he stops walking with you and says so. His hour at the landing starts
+   * now rather than when the boat tied up — the roster's clock is shifted by however long you
+   * spent on the pier — so a player who dawdled does not watch him jump half a mile up the road.
+   * He is not moved: placeMercenaries() gives him the landing ring again and he walks back to it.
+   */
+  function releaseLandingMate(){
+    if(mateReleased)return;
+    mateReleased=true;
+    const mateId=landingMateId(),mate=npcById.get(mateId);
+    const waited=Math.max(0,playSeconds);
+    roster=roster.map(entry=>entry.id===mateId?Object.freeze({...entry,arrival:entry.arrival+waited}):entry);
+    company=createMercenaryCompany({...companyPlan,roster});
+    if(!mate)return;
+    mate.escorting=false;mate.pace=undefined;
+    toast('I will give the village a look and come up the road after you. No sense the two of us crowding one quartermaster.',`${mate.name.toUpperCase()} \u00b7 ON THE LANDING`);
+  }
   /** Any start that is not the boat: the harbour as built, the traveler on their feet. */
   function leaveOpening(){opening=null;world.restArrivalBoat();player.group.visible=true;document.body.classList.remove('cutscene');show('cutscene',false);}
   function stopInput(){keys.clear();drag=false;}
@@ -1880,7 +1918,7 @@ function init() {
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
     // Who the adventure was being played as. A save from before anyone could choose is Cromb.
-    setPlayerCharacter(savedPlayerCharacter(saved.player));
+    setPlayerCharacter(savedPlayerCharacter(saved.player));mateReleased=saved.questStage>=2;
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
@@ -2225,7 +2263,7 @@ function init() {
     openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
       'Mara. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
       'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road, and I keep a rough chart of this coast if you ever want a look at it.',
-      'One of your own boat is still on the landing \u2014 plain cloth, pleased with himself, Gotwood. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to.'],
+      `One of your own boat came up the pier with you \u2014 ${landingMateNote(npcById.get(landingMateId()))}. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to.`],
       'accept-letter','Take the letter');
   }
   /**
@@ -2928,6 +2966,7 @@ function init() {
           if(s.caption){$('cutscene-eyebrow').textContent=s.caption.eyebrow;$('cutscene-text').textContent=s.caption.text;cap.style.opacity=String(s.caption.alpha);}else cap.style.opacity='0';
         }
       }
+      escortLandingMate();
       {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing')mapFog.reveal(player.group.position.x,player.group.position.z);}
       occupationClock-=dt;if(occupationClock<=0||!heldControl){occupationClock=.5;heldControl=occupationControl(campaign.mapControl(),aftermath.state);}
@@ -3388,6 +3427,14 @@ function init() {
         // Distance, not a compass point: the landing faces west up the pier now, so W walks in -x.
         {const from={x:player.group.position.x,z:player.group.position.z};press('KeyW');
           await until(()=>Math.hypot(player.group.position.x-from.x,player.group.position.z-from.z)>1,'WASD did not move');release('KeyW');}
+        // He walks you up the pier, because he is the only one who can tell you what Mara says.
+        {const mate=npcById.get(landingMateId());
+          const gap=()=>Math.hypot(mate.actor.group.position.x-player.group.position.x,mate.actor.group.position.z-player.group.position.z);
+          assert(mate.escorting,'The man off the boat did not set off up the pier with you');
+          for(const spot of [[18,29],[12,29],[6,28.6]]){warp(spot[0],spot[1]);await frames(24);
+            assert(gap()<INTERPRETER.range,`He fell ${gap().toFixed(1)} m behind at ${spot[0]}, ${spot[1]}`);
+            assert(canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'He walked off the pier into the water');}
+          assert(!mateReleased,'He left before the letter was handed over');}
         warp(0,19);await frames();assert(questStage===1,'Arrival quest failed');
         // Measure travel against simulation time so busy machines do not affect
         // the comparison. Tab must run at Shift speed and never move UI focus.

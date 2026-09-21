@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
-import { createMercenaryCompany, MERCENARY_ROSTER } from '../src/mercenaries.js';
+import { createMercenaryCompany, MERCENARY_ROSTER, ESCORT_OFFSETS, escortSpotFor } from '../src/mercenaries.js';
+import { BODY } from '../src/bodies.js';
+import { INTERPRETER } from '../src/languages.js';
 import {
   SEQUENCE_SECONDS, SHORE_SECONDS, BEATS, SHORE_BEATS, BOAT_PATH, BOAT, BOAT_REST, SPAWN, PIER_HEAD, BELL, LANDED, LOOKS, PHASES,
   CAPTION_LIMITS, PLAYABLE_IDS, DEFAULT_PLAYER, VARIANT_IDS, SEA_LEVEL,
@@ -319,4 +321,66 @@ test('the boat starts a long way out and the sequence ends it at the berth', () 
     assert.equal(end.companion.aboard, false, `${id} puts the companion on the deck`);
     assert.ok(canStand(end.companion.x, end.companion.z, world), `${id} puts him on footing`);
   }
+});
+
+/** Everywhere the traveler can stand and still be close enough to speak to somebody at `at`. */
+function talkableSpots(at, reach) {
+  const spots = [];
+  for (let x = at.x - reach; x <= at.x + reach + 1e-9; x += .1) {
+    for (let z = at.z - reach; z <= at.z + reach + 1e-9; z += .1) {
+      if (Math.hypot(x - at.x, z - at.z) > reach) continue;
+      if (canStand(x, z, world, BODY.traveler)) spots.push({ x: +x.toFixed(4), z: +z.toFixed(4) });
+    }
+  }
+  return spots;
+}
+
+test('the man off your boat is within earshot everywhere you can stand to speak to Mara', () => {
+  // The bug hunter measured this before he walked with you: from all 443 standable spots in her
+  // talk range he was 20.5–27.0 m away, because he waited at the landing ring and
+  // INTERPRETER.range is 12. The aside never showed, so the first conversation of the game — the
+  // one that teaches you what an interpreter is for — was unreadable. Now he is at your shoulder.
+  const mara = { x: PIER_HEAD.x, z: PIER_HEAD.z };
+  const TALK = 3.3;  // src/main.js picks the nearest npc inside this, in metres
+  const spots = talkableSpots(mara, TALK);
+  assert.ok(spots.length > 300, `only ${spots.length} standable spots in Mara's talk range`);
+  const standable = (x, z) => canStand(x, z, world, BODY.person);
+  let placed = 0, heard = 0, worst = 0;
+  for (const spot of spots) {
+    // Whichever way the traveler happens to be facing when he speaks to her.
+    for (let turn = 0; turn < 8; turn++) {
+      const mate = escortSpotFor({ ...spot, yaw: turn * Math.PI / 4 }, standable);
+      if (!mate) continue;
+      placed++;
+      assert.ok(standable(mate.x, mate.z), `he is over water at ${mate.x}, ${mate.z}`);
+      const gap = Math.hypot(mate.x - spot.x, mate.z - spot.z);
+      worst = Math.max(worst, gap);
+      if (gap <= INTERPRETER.range) heard++;
+    }
+  }
+  assert.equal(placed, spots.length * 8, 'there is ground for him from every spot and every facing');
+  assert.equal(heard, placed, 'and he is inside the interpreter range from every one of them');
+  assert.ok(worst < INTERPRETER.range, `the furthest he ever stands is ${worst.toFixed(2)} m`);
+});
+
+test('he walks the whole pier at your shoulder without once stepping off it', () => {
+  // The pier deck is the only ground between the boat and the shore, and it is three metres
+  // wide. Walking its length in both directions is the escort's whole job.
+  const standable = (x, z) => canStand(x, z, world, BODY.person);
+  assert.ok(ESCORT_OFFSETS.length >= 4 && ESCORT_OFFSETS.every(o => Math.hypot(o.lateral, o.back) < 2),
+    'he keeps to arm’s length, or he is not at your shoulder');
+  let steps = 0;
+  for (let x = SPAWN.x; x >= PIER_HEAD.x - 1e-9; x -= .25) {
+    if (!canStand(x, SPAWN.z, world, BODY.traveler)) continue;
+    for (const yaw of [-Math.PI / 2, Math.PI / 2]) {  // west up the pier, and back east
+      const mate = escortSpotFor({ x, z: SPAWN.z, yaw }, standable);
+      assert.ok(mate, `nowhere for him beside the traveler at ${x.toFixed(2)}, ${SPAWN.z}`);
+      assert.ok(standable(mate.x, mate.z), `he is over water at ${mate.x}, ${mate.z}`);
+      steps++;
+    }
+  }
+  assert.ok(steps > 40, `only ${steps} places checked along the pier`);
+  // And escortSpotFor is honest about nowhere: over open water it answers null rather than guess.
+  assert.equal(escortSpotFor({ x: 200, z: 60, yaw: 0 }, standable), null);
+  assert.equal(escortSpotFor(null, standable), null);
 });

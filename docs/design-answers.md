@@ -87,6 +87,14 @@ none of theirs. Chris Gotwood interprets while he is with you and you learn fast
 every new land is a new tongue to climb. Writing too: signs are in the local tongue until learned.
 A toggle shows any line in the local tongue. The player never has to learn a word.
 
+**The first conversation of the game is how the interpreter is taught.** The man off your boat —
+Chris Gotwood, or Cromb when you are Chris — walks up the pier at your shoulder from the moment
+you take control until the letter is in your satchel, so Mara is glossed while she gives it to
+you and you learn what an interpreter is for by being handed one. When the letter is taken he
+says his piece and goes back to the roster, his hour at the landing starting from that moment
+rather than from when the boat tied up. When you are Chris nobody walks up glossing her, because
+you have the Ambroni yourself.
+
 **Swimming is dangerous, and a skill.** Stamina drains in the water; at nothing you drown. The
 swim to Peblos is possible early and deadly if misjudged.
 
