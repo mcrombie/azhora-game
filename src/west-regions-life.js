@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
+import { SEA_LEVEL } from './region-world.js';
 
 /**
  * The animals of the four western regions.
@@ -55,6 +56,27 @@ const B = (tone, position, scale, rotation) => [box, tone, position, scale, rota
 const C = (tone, position, scale, rotation) => [cone, tone, position, scale, rotation];
 const Y = (tone, position, scale, rotation) => [cylinder, tone, position, scale, rotation];
 const both = build => [build(1), build(-1)];
+
+/**
+ * A heron-shaped bird in whatever colours it is handed. Head, neck and bill are
+ * part of the body: a heron's neck is its posture rather than a joint, and the two
+ * instanced batches it needs are its wings and its legs.
+ */
+function wader(t) {
+  return {
+    body: geometry([
+      S(t.body, [0, .78, 0], [.15, .17, .34]),
+      S(t.neck, [0, .96, .11], [.075, .26, .085]),
+      S(t.head, [0, 1.26, .16], [.10, .10, .115]),
+      C(t.bill, [0, 1.24, .38], [.038, .30, .034], [Math.PI / 2, 0, 0]),
+      S(t.crest, [0, 1.33, .05], [.055, .05, .10]),
+      S(t.tail, [0, .80, -.30], [.10, .07, .24]),
+      ...both(side => S(0x141210, [side * .082, 1.28, .225], [.013, .015, .014])),
+    ]),
+    wing: geometry([S(t.wingIn, [.24, 0, 0], [.32, .04, .24]), S(t.wingOut, [.46, -.01, -.08], [.24, .03, .17])]),
+    leg: geometry([Y(t.legUp, [0, -.28, 0], [.018, .56, .018]), B(t.foot, [0, -.56, .04], [.055, .024, .11])]),
+  };
+}
 
 function models() {
   const dark = 0x241f1a;
@@ -199,19 +221,138 @@ function models() {
      * A wading bird for the Lizeem's tributaries. The fauna overview calls the
      * Lizeem distributaries' assemblage "the richest avian assemblage documented
      * on the continent" and names herons and stilt-legged waders in it.
+     *
+     * One shape, two birds. The heron is the grey one the Carica and the Flats
+     * already have; the **egret** is the same bird in white, which is what stands on
+     * the Eer channels beside it and the only thing on that plain you can see from
+     * the far side of it. Every number below is the heron's, to the digit — the
+     * colours are the whole of the difference, and `tests/eer-world.test.js` holds
+     * the two geometries to the same vertex count so a change to one is a change to
+     * both on purpose rather than by accident.
      */
-    'wading-bird': {
+    'wading-bird': wader({ body: 0x8c9aa0, neck: 0xb9c2bd, head: 0xc9cfc6, bill: 0xd8c163, crest: 0x3a423f,
+      tail: 0x5e6b6c, wingIn: 0x67757a, wingOut: 0x4e5b62, legUp: 0x7c7448, foot: 0x8a8154 }),
+    egret: wader({ body: 0xf2f1ea, neck: 0xf6f5ee, head: 0xf8f7f1, bill: 0x1a1a18, crest: 0xe6e5dc,
+      tail: 0xe2e1d8, wingIn: 0xeceae1, wingOut: 0xd6d5cb, legUp: 0x2a2a26, foot: 0xcaa24e }),
+
+    /**
+     * The black-winged stilt, for the braided shallows: the lore's "range of
+     * stilt-legged species for which Standard Mittoli maintains separate names".
+     * Black above, white below, a needle of a bill, and legs longer than the rest
+     * of it put together, which is the entire reason it can work water a heron
+     * cannot be bothered with.
+     */
+    stilt: {
       body: geometry([
-        S(0x8c9aa0, [0, .78, 0], [.15, .17, .34]),
-        S(0xb9c2bd, [0, .96, .11], [.075, .26, .085]),
-        S(0xc9cfc6, [0, 1.26, .16], [.10, .10, .115]),
-        C(0xd8c163, [0, 1.24, .38], [.038, .30, .034], [Math.PI / 2, 0, 0]),
-        S(0x3a423f, [0, 1.33, .05], [.055, .05, .10]),
-        S(0x5e6b6c, [0, .80, -.30], [.10, .07, .24]),
-        ...both(side => S(0x141210, [side * .082, 1.28, .225], [.013, .015, .014])),
+        S(0xf2f0e9, [0, .40, 0], [.072, .080, .155]),
+        S(0x1d1f22, [0, .448, -.05], [.062, .036, .135]),
+        S(0xf4f2eb, [0, .455, .105], [.036, .10, .038]),
+        S(0xf4f2eb, [0, .565, .125], [.046, .044, .05]),
+        S(0x24262a, [0, .588, .098], [.038, .030, .045]),
+        C(0x141210, [0, .560, .215], [.010, .13, .010], [Math.PI / 2, 0, 0]),
+        ...both(side => S(0x0f0d0c, [side * .034, .575, .155], [.010, .011, .010])),
       ]),
-      wing: geometry([S(0x67757a, [.24, 0, 0], [.32, .04, .24]), S(0x4e5b62, [.46, -.01, -.08], [.24, .03, .17])]),
-      leg: geometry([Y(0x7c7448, [0, -.28, 0], [.018, .56, .018]), B(0x8a8154, [0, -.56, .04], [.055, .024, .11])]),
+      wing: geometry([S(0x1d1f22, [.14, 0, 0], [.20, .022, .11]), S(0x111316, [.28, -.006, -.05], [.12, .016, .07])]),
+      leg: geometry([Y(0xc8607a, [0, -.17, 0], [.010, .34, .010]), B(0xb8546c, [0, -.34, .02], [.03, .012, .055])]),
+    },
+
+    /**
+     * Grey dolphins off the Eer shore. The fauna overview documents them "in the
+     * Lizeem estuary at Nylon during upriver fish migrations", and the estuary is
+     * Eer's own south-west corner, so this is a placement and not an extension.
+     *
+     * A back, a fin and the top of a beak, and nothing else: everything under the
+     * waterline is drawn as though it is under the waterline, which is to say it is
+     * not drawn. They are out past the surf and there is no way to them — the whole
+     * of the animal, for a traveler on the shore, is the thing coming up and going
+     * down again some way out.
+     */
+    dolphin: {
+      body: geometry([
+        S(0x6f7c84, [0, 0, -.06], [.26, .28, .92]),
+        S(0xc3cbce, [0, -.14, .02], [.20, .13, .68]),
+        C(0x6f7c84, [0, .02, .70], [.135, .46, .125], [Math.PI / 2 - .12, 0, 0]),
+        C(0x5b686f, [0, .32, -.12], [.065, .38, .15], [.34, 0, 0]),
+        S(0x5b686f, [0, -.02, -.94], [.055, .065, .20]),
+        ...both(side => S(0x5b686f, [side * .24, -.05, -1.04], [.19, .034, .095], [0, 0, side * .26])),
+      ]),
+    },
+
+    /**
+     * Eer's duck, for the slow water of the Lizeem's last channels — mallard, and
+     * teal where a zone asks for it smaller. A duck sits *on* the water rather than
+     * standing beside it, so it is built low and broad with the legs short enough to
+     * read as tucked under rather than as a wader's stilts. The drake's head is the
+     * only strong colour on any animal in the west and has to be: at fifty metres it
+     * is the one thing that tells this bird from the herons standing round it.
+     */
+    duck: {
+      body: geometry([
+        S(0x6b5b45, [0, .22, -.02], [.13, .105, .25]),
+        S(0xbfb49a, [0, .175, .01], [.115, .072, .215]),
+        S(0x574a38, [0, .25, -.25], [.062, .055, .10], [.30, 0, 0]),
+        S(0x8e7e64, [0, .27, .13], [.075, .075, .085]),
+      ]),
+      head: geometry([
+        S(0x2f5b46, [0, .05, .03], [.062, .066, .07]),
+        S(0xd9d2c0, [0, -.005, .012], [.058, .024, .062]),
+        S(0xc9a74e, [0, -.008, .10], [.030, .020, .055]),
+        ...both(side => S(0x0f0d0c, [side * .042, .062, .045], [.012, .013, .011])),
+      ]),
+      leg: geometry([Y(0xc0913f, [0, -.05, 0], [.016, .10, .016]), B(0xd0a24c, [0, -.10, .022], [.055, .018, .075])]),
+      wing: geometry([S(0x7a6a52, [.13, 0, -.02], [.17, .028, .13]), S(0x4d6f7a, [.22, .005, -.09], [.07, .022, .05])]),
+    },
+
+    /**
+     * The wild boar of the tamarisk and the cushion scrub. Not the lore's "river
+     * boar", which is a semi-aquatic animal of the Mittoli wetlands and a different
+     * beast; this is the ordinary pig of a Mediterranean farmland, which is what
+     * lives in scrub like Eer's and what the brief puts here.
+     *
+     * Built the way a boar reads: all its mass in the front, a head that carries
+     * straight on out of the shoulder with no neck between them, a high hackled
+     * ridge, and short legs under it. Dark bristled brown with a grizzled back.
+     */
+    boar: {
+      body: geometry([
+        S(0x3f342a, [0, .50, .10], [.27, .30, .34]),
+        S(0x342b23, [0, .43, -.22], [.22, .23, .30]),
+        S(0x5a4c3c, [0, .74, -.02], [.09, .07, .38]),
+        S(0x2b2319, [0, .36, -.44], [.14, .13, .12]),
+        Y(0x2b2319, [0, .44, -.56], [.024, .12, .024], [1.15, 0, 0]),
+      ]),
+      head: geometry([
+        S(0x3f342a, [0, .02, .10], [.155, .165, .19]),
+        C(0x342b23, [0, -.04, .30], [.105, .26, .10], [Math.PI / 2 + .06, 0, 0]),
+        S(0xc8bda6, [0, -.075, .40], [.055, .038, .05]),
+        ...both(side => C(0x2b2319, [side * .105, .155, .02], [.055, .13, .04], [-.18, 0, side * .30])),
+        ...both(side => S(0x0f0d0c, [side * .088, .045, .175], [.017, .018, .015])),
+        // The tusks: short, pale and turned up, and the only bright thing on it.
+        ...both(side => C(0xd8cfb4, [side * .062, -.075, .345], [.017, .085, .016], [-.55, 0, side * .30])),
+      ]),
+      leg: geometry([Y(0x2b2319, [0, -.17, 0], [.055, .34, .056]), B(0x151210, [0, -.33, .02], [.10, .07, .13])]),
+    },
+
+    /**
+     * Gulls on the Eer shore. The game already names the species — Drent's bird
+     * garden keeps one (`src/drent-birds.js`) — but that is a different rig on a
+     * different module, so this is the same bird built once more in this file's
+     * house style: white, grey-backed, standing tall on dark legs.
+     *
+     * It is the only animal in the west that is placed on a country's shore rather
+     * than on its ground, which is why it is here and not in Peblos's salt islands.
+     */
+    gull: {
+      body: geometry([
+        S(0xf1efe8, [0, .40, 0], [.115, .125, .24]),
+        S(0x9aa3a8, [0, .455, -.07], [.10, .055, .21]),
+        S(0xf3f1ea, [0, .40, .16], [.085, .085, .09]),
+        S(0xe8e5dc, [0, .43, -.28], [.055, .045, .11], [.20, 0, 0]),
+        C(0xd8b455, [0, .405, .26], [.022, .11, .020], [Math.PI / 2 + .10, 0, 0]),
+        ...both(side => S(0x141210, [side * .062, .43, .195], [.013, .014, .012])),
+      ]),
+      wing: geometry([S(0x9aa3a8, [.20, 0, 0], [.26, .032, .16]), S(0x3d454a, [.40, -.008, -.06], [.16, .024, .10])]),
+      leg: geometry([Y(0xc4a05a, [0, -.11, 0], [.016, .22, .016]), B(0xbe9a56, [0, -.22, .03], [.05, .02, .09])]),
     },
   };
 }
@@ -318,6 +459,53 @@ export const WEST_LIFE_ZONES = Object.freeze([
     sites: Object.freeze([[-1662, 664], [-1684, 722], [-1642, 700]]),
     note: 'The braided water: shallow, slow and exactly what a stilt-legged wader wants.',
   }),
+  // Eer. The one direct statement the fauna overview makes about this water is the
+  // richest thing in it — the Lizeem distributaries carry "the richest avian
+  // assemblage documented on the continent", and it names herons, spoonbills and a
+  // range of stilt-legged species. Eer is where that sentence is true, so four of
+  // the six ranges here are birds on water, and they are the point of the country.
+  Object.freeze({
+    id: 'eer-herons', species: 'wading-bird', region: 'Eer', radius: .4, scale: 1,
+    minX: -1300, maxX: -1120, minZ: 990, maxZ: 1090,
+    sites: Object.freeze([[-1250, 1018], [-1205, 1026], [-1160, 1034]]),
+    note: 'The fauna overview: the Lizeem distributaries are "the richest avian assemblage documented on the continent", and herons are the first bird it names in it. The north channel’s slow upper water.',
+  }),
+  Object.freeze({
+    id: 'eer-egrets', species: 'egret', region: 'Eer', radius: .4, scale: .86,
+    minX: -1130, maxX: -940, minZ: 1210, maxZ: 1330,
+    sites: Object.freeze([[-1060, 1248], [-1020, 1272], [-988, 1292]]),
+    note: 'The same assemblage on the south channel, in white and a size smaller. On ground this flat a white bird is visible from the far side of the country, which is most of what an egret is for.',
+  }),
+  Object.freeze({
+    id: 'eer-stilts', species: 'stilt', region: 'Eer', radius: .3, scale: 1,
+    minX: -1010, maxX: -890, minZ: 1035, maxZ: 1110,
+    sites: Object.freeze([[-975, 1062], [-948, 1068], [-920, 1074]]),
+    note: 'The overview’s "range of stilt-legged species": the braided shallows at the foot of the north channel, which is the only water in Eer shallow enough for them.',
+  }),
+  Object.freeze({
+    id: 'eer-ducks', species: 'duck', region: 'Eer', radius: .3, scale: 1,
+    minX: -1420, maxX: -1280, minZ: 960, maxZ: 1060,
+    sites: Object.freeze([[-1380, 998], [-1352, 1004], [-1320, 1008], [-1400, 992]]),
+    note: 'Mallard and teal on the slow water where the channels leave the loam. Extension: the overview names waterfowl for the Lizeem plains in general ("high flood years correlate with exceptional hunting seasons for waterfowl") without naming a species, so the species is chosen and the place is the lore’s.',
+  }),
+  Object.freeze({
+    id: 'eer-boar', species: 'boar', region: 'Eer', radius: .7, scale: 1,
+    minX: -1160, maxX: -1010, minZ: 1120, maxZ: 1240,
+    sites: Object.freeze([[-1100, 1170], [-1075, 1186], [-1120, 1196]]),
+    note: 'Wild boar in the cushion scrub and the tamarisk, which is what lives in it. Extension: the overview’s "river boar" is a semi-aquatic animal of the Mittoli wetlands and a different beast; this is the ordinary pig of a Mediterranean farmland, and it is here because the scrub is.',
+  }),
+  Object.freeze({
+    id: 'eer-gulls', species: 'gull', region: 'Eer', radius: .3, scale: 1,
+    minX: -1000, maxX: -900, minZ: 1100, maxZ: 1210,
+    sites: Object.freeze([[-946, 1140], [-930, 1164], [-958, 1186]]),
+    note: 'Gulls on the eastern shore. The game already names the species in Drent; the coast of Eer is "a series of low headlands and small sheltered bays" and every one of them has them.',
+  }),
+  Object.freeze({
+    id: 'eer-dolphins', species: 'dolphin', region: 'Eer', radius: 0, scale: 1, sea: true,
+    minX: -836, maxX: -788, minZ: 1120, maxZ: 1235,
+    sites: Object.freeze([[-818, 1150], [-806, 1196]]),
+    note: 'The overview documents grey dolphins "in the Lizeem estuary at Nylon during upriver fish migrations", and the estuary is Eer’s own corner of the map. Out past the surf: seen from the shore and not reachable from it.',
+  }),
 ]);
 
 /**
@@ -326,6 +514,26 @@ export const WEST_LIFE_ZONES = Object.freeze([
  * from the ground on a plain with nothing to perch on.
  */
 const CIRCLE_RADIUS = 46, CIRCLE_PERIOD = 27;
+
+/**
+ * Where a standing bird's wings and legs hang off its body, per species, because a
+ * duck is not a heron drawn small: its shoulder is at a fifth of the height and its
+ * legs are tucked under it rather than under a metre of neck. `shoulder` and `hip`
+ * are heights above the animal's own feet, `out` is how far the wing sits from the
+ * mid-line and `apart` how far the legs do; `beat` is how wide the wingbeat is in
+ * the air, which is what tells a gull from a heron at distance more than size does.
+ *
+ * The heron's row is the numbers the four western regions were built with, to the
+ * digit. Membership of this table is also what says an animal is a bird: it is what
+ * decides two legs rather than four.
+ */
+const BIRD_RIG = Object.freeze({
+  'wading-bird': { shoulder: .84, hip: .58, out: .11, apart: .05, beat: 1.1, swing: .22, fold: .12 },
+  egret: { shoulder: .84, hip: .58, out: .11, apart: .05, beat: 1.1, swing: .22, fold: .12 },
+  stilt: { shoulder: .45, hip: .38, out: .07, apart: .035, beat: 1.25, swing: .30, fold: .10 },
+  duck: { shoulder: .23, hip: .12, out: .09, apart: .045, beat: 1.35, swing: .18, fold: .08 },
+  gull: { shoulder: .43, hip: .27, out: .08, apart: .042, beat: 1.2, swing: .20, fold: .10 },
+});
 
 /** Ambient creatures only: they cannot be attacked, collected or block a quest. */
 export function createWestLife(scene, world) {
@@ -338,7 +546,8 @@ export function createWestLife(scene, world) {
     && x >= zone.minX && x <= zone.maxX && z >= zone.minZ && z <= zone.maxZ;
   const valid = (x, z, zone) => inRange(x, z, zone) && canStand(x, z, world, zone.radius);
   function clearPoint(x, z, zone) {
-    if (zone.air) return inRange(x, z, zone) ? { x, z } : null;   // nothing in the air needs footing
+    // Nothing in the air needs footing, and nothing in the sea has any to need.
+    if (zone.air || zone.sea) return inRange(x, z, zone) ? { x, z } : null;
     if (valid(x, z, zone)) return { x, z };
     for (let radius = 1; radius <= 26; radius += 1) for (let i = 0; i < 16; i++) {
       const p = { x: x + Math.sin(i / 16 * TAU) * radius, z: z + Math.cos(i / 16 * TAU) * radius };
@@ -364,8 +573,8 @@ export function createWestLife(scene, world) {
       const scale = zone.scale ?? 1;
       animals.push({
         id: `${zone.id}-${i + 1}`, species: zone.species, region: zone.region, zone, index: i, scale,
-        ...home, y: world.heightAt(home.x, home.z) + (zone.air ?? 0), home: { ...home },
-        yaw: (i * 1.83 + .5) % TAU, action: zone.air ? 'soar' : 'graze', timer: 1.4 + i * .71,
+        ...home, y: zone.sea ? SEA_LEVEL : world.heightAt(home.x, home.z) + (zone.air ?? 0), home: { ...home },
+        yaw: (i * 1.83 + .5) % TAU, action: zone.air ? 'soar' : zone.sea ? 'swim' : 'graze', timer: 1.4 + i * .71,
         clock: i * .43, speed: 0, lift: 0, watching: 0, detour: 0, blocked: 0, flight: 0, hidden: false, landing: null, homing: false, cornered: 0, breakYaw: 0, slip: 0, slipFrom: 0, slipTo: null,
       });
     }
@@ -374,7 +583,7 @@ export function createWestLife(scene, world) {
     const meshes = { body: instances(group, `${zone.species} bodies`, shape.body, animals.length) };
     if (shape.head) meshes.head = instances(group, `${zone.species} heads`, shape.head, animals.length);
     if (shape.leg) meshes.legs = instances(group, `${zone.species} legs`, shape.leg,
-      animals.length * (zone.species === 'wading-bird' ? 2 : 4));
+      animals.length * (BIRD_RIG[zone.species] ? 2 : 4));
     if (shape.ear) meshes.ears = instances(group, `${zone.species} ears`, shape.ear, animals.length * 2);
     if (shape.wing) meshes.wings = instances(group, `${zone.species} wings`, shape.wing, animals.length * 2);
     flocks.push({ zone, group, animals, meshes, ticks: 0,
@@ -410,15 +619,24 @@ export function createWestLife(scene, world) {
    * all. They turn to face you and give ground at about a walk, which is truer than fleeing and
    * keeps them from being chased to the horizon. The fox still never flees.
    */
-  const FLEE_AT = { longhorn: 7.5, 'hill-sheep': 6.5, 'upland-hare': 9, otter: 8, 'wading-bird': 11, 'river-fox': 0 };
-  const WALK = { longhorn: .42, 'hill-sheep': .48, 'upland-hare': 1.9, otter: 1.1, 'wading-bird': .5, 'river-fox': .9 };
-  const RUN = { 'hill-sheep': 5.6, 'upland-hare': 9.6, otter: 8.2, 'wading-bird': 10 };
+  const FLEE_AT = { longhorn: 7.5, 'hill-sheep': 6.5, 'upland-hare': 9, otter: 8, 'wading-bird': 11, 'river-fox': 0,
+    egret: 12, stilt: 11, duck: 10, gull: 9, boar: 8.5 };
+  const WALK = { longhorn: .42, 'hill-sheep': .48, 'upland-hare': 1.9, otter: 1.1, 'wading-bird': .5, 'river-fox': .9,
+    egret: .5, stilt: .8, duck: .45, gull: .7, boar: .6 };
+  const RUN = { 'hill-sheep': 5.6, 'upland-hare': 9.6, otter: 8.2, 'wading-bird': 10,
+    egret: 10, stilt: 10.4, duck: 9.8, gull: 11, boar: 8.4 };
+  /**
+   * Everything that answers a traveler by getting off the ground. A bird cannot be
+   * run down, which is the whole of why they are all here and the hare is not.
+   */
+  const FLIES = new Set(['wading-bird', 'egret', 'stilt', 'duck', 'gull']);
   /** Cattle giving ground: a shade over the traveler's walk, so a walker never closes and a runner does. */
   const GIVE = 4.5;
   /** The fox drifts back as fast as you come on, up to `cap`: only a flat run gains on it, and slowly. */
   const FOX = Object.freeze({ floor: 1, cap: 6.6, lead: 1.06, arm: 2.8, notice: 10 });
   /** Going home is a purposeful walk, not a graze: a band chased a hundred metres is back in a minute or two. */
-  const RETURN = { longhorn: 1.3, 'hill-sheep': 1.5, 'upland-hare': 2.8, otter: 1.8, 'wading-bird': 1.4, 'river-fox': 1.5 };
+  const RETURN = { longhorn: 1.3, 'hill-sheep': 1.5, 'upland-hare': 2.8, otter: 1.8, 'wading-bird': 1.4, 'river-fox': 1.5,
+    egret: 1.4, stilt: 1.7, duck: 1.3, gull: 1.6, boar: 1.6 };
   const HOME = 16, SETTLED = 6;
   const BACK = [0, .35, -.35, .7, -.7], ALONG = [1.05, -1.05, 1.4, -1.4, 1.75, -1.75, 2.1, -2.1];
 
@@ -469,7 +687,7 @@ export function createWestLife(scene, world) {
       animal.x = animal.landing.x; animal.z = animal.landing.z; animal.lift = 0; animal.flight = 0; animal.landing = null; animal.homing = false;
       animal.action = 'graze'; animal.timer = 3; animal.speed = 0;
     } else {
-      animal.speed = move(animal, Math.min(RUN['wading-bird'] * dt, left), { footing: inRange }) / dt;
+      animal.speed = move(animal, Math.min(RUN[animal.species] * dt, left), { footing: inRange }) / dt;
       const height = animal.landing ? Math.min(5.5, left * .8) : 5.5;
       animal.lift += Math.max(-dt * 6, Math.min(dt * 5, height - animal.lift));
     }
@@ -558,7 +776,7 @@ export function createWestLife(scene, world) {
       animal.y = world.heightAt(animal.x, animal.z);
       return;
     } else if (near < FLEE_AT[species]) {
-      if (species === 'wading-bird') { animal.action = 'fly'; animal.flight = 0; animal.landing = null; fly(animal, dt, player, near); return; }
+      if (FLIES.has(species)) { animal.action = 'fly'; animal.flight = 0; animal.landing = null; fly(animal, dt, player, near); return; }
       animal.action = 'flee'; animal.timer = 1.9;
       let heading = away;
       if (species === 'hill-sheep') {
@@ -590,7 +808,7 @@ export function createWestLife(scene, world) {
     const wary = (FLEE_AT[species] || FOX.notice) + 12;
     if (animal.action !== 'flee' && animal.action !== 'return' && fromHome > HOME && near > wary) {
       // A wader does not walk home round a river. It gets up and flies there.
-      if (species === 'wading-bird') { animal.action = 'fly'; animal.flight = 2.3; animal.landing = null; animal.homing = true; fly(animal, dt, player, near); return; }
+      if (FLIES.has(species)) { animal.action = 'fly'; animal.flight = 2.3; animal.landing = null; animal.homing = true; fly(animal, dt, player, near); return; }
       animal.action = 'return'; animal.detour = 0; animal.blocked = 0;
     }
     if (animal.action === 'return') {
@@ -640,7 +858,7 @@ export function createWestLife(scene, world) {
    */
   function settle(flock, elapsed) {
     for (const animal of flock.animals) {
-      if (flock.zone.air) continue;
+      if (flock.zone.air || flock.zone.sea) continue;
       const dx = animal.home.x - animal.x, dz = animal.home.z - animal.z, d = Math.hypot(dx, dz);
       const aloft = animal.action === 'fly' || animal.action === 'dive';
       if (!aloft && d <= HOME / 2) continue;
@@ -655,6 +873,39 @@ export function createWestLife(scene, world) {
       animal.speed = 0; animal.detour = 0; animal.blocked = 0; animal.cornered = 0; animal.homing = false; animal.slip = 0;
       animal.action = 'graze'; animal.timer = 1 + animal.index * .3;
     }
+  }
+
+  /**
+   * A dolphin, which is the one animal in the game that is neither on the ground
+   * nor over it. It works a line back and forth across its own piece of sea and
+   * porpoises along it: up for a second, a back and a fin out of the water, and
+   * down again. It does not care about the traveler, because there is no way from
+   * the shore to where it is.
+   *
+   * Everything under the waterline is drawn by not being drawn: the body's own
+   * height is set so that the sea plane cuts it, and the arc lifts it through.
+   * `SEA_LEVEL` is the one number here, and it comes from `region-world.js` rather
+   * than a literal so that a world whose sea moves takes its dolphins with it.
+   */
+  const SWIM = Object.freeze({ pace: 2.3, period: 7.2, rise: .46, sink: .5 });
+  function tickSea(animal, dt) {
+    animal.clock += dt;
+    const zone = animal.zone;
+    const step = SWIM.pace * dt;
+    let x = animal.x + Math.sin(animal.yaw) * step, z = animal.z + Math.cos(animal.yaw) * step;
+    if (!inRange(x, z, zone)) {
+      // It has run out of its own water. Turn about and take the same line back.
+      animal.yaw += Math.PI;
+      x = animal.x + Math.sin(animal.yaw) * step; z = animal.z + Math.cos(animal.yaw) * step;
+      if (!inRange(x, z, zone)) { x = animal.x; z = animal.z; }
+    }
+    animal.x = x; animal.z = z;
+    animal.speed = SWIM.pace;
+    animal.y = SEA_LEVEL - SWIM.sink;
+    // One breath every few seconds: the arc is the top of a sine and nothing else.
+    const phase = Math.sin(animal.clock / SWIM.period * TAU + animal.index * 2.4);
+    animal.lift = Math.max(0, phase) * (SWIM.sink + SWIM.rise);
+    animal.action = 'swim';
   }
 
   /** A hawk holds its circle whatever the traveler does; it is far too high to care. */
@@ -711,17 +962,31 @@ export function createWestLife(scene, world) {
           walking ? -.4 : Math.sin(animal.clock * 1.5 + side) * .14, 0, (side ? 1 : -1) * .12);
         return;
       }
-      if (species === 'wading-bird') {
+      if (species === 'dolphin') return;   // a back and a fin: one piece, and no limb on it
+      const rig = BIRD_RIG[species];
+      if (rig) {
         // Head, neck and bill are part of the body: a heron's neck is its posture,
-        // not a joint, and the two instanced batches it needs are wings and legs.
+        // not a joint, and the two instanced batches a bird needs are wings and legs.
         for (let side = 0; side < 2; side++) {
           // In the air the wings are out and beating and the legs trail; on the water's edge they are folded.
           const flying = animal.action === 'fly';
-          place(flock.meshes.wings, i * 2 + side, side ? -.11 : .11, .84, -.02, 0, side ? Math.PI : 0,
-            (side ? -1 : 1) * (flying ? 1.1 + Math.sin(animal.clock * 9) * .42 : .12));
-          place(flock.meshes.legs, i * 2 + side, side ? .05 : -.05, .58, .02,
-            flying ? 1.15 : walking ? Math.sin(phase + side * Math.PI) * .22 : 0);
+          place(flock.meshes.wings, i * 2 + side, side ? -rig.out : rig.out, rig.shoulder, -.02, 0, side ? Math.PI : 0,
+            (side ? -1 : 1) * (flying ? rig.beat + Math.sin(animal.clock * 9) * .42 : rig.fold));
+          if (!flock.meshes.legs) continue;
+          place(flock.meshes.legs, i * 2 + side, side ? rig.apart : -rig.apart, rig.hip, .02,
+            flying ? 1.15 : walking ? Math.sin(phase + side * Math.PI) * rig.swing : 0);
         }
+        return;
+      }
+      if (species === 'boar') {
+        // No neck: the head carries straight on out of the shoulder, and a boar
+        // that is not running keeps its nose in the ground.
+        const grazing = animal.action === 'graze';
+        place(flock.meshes.head, i, 0, grazing ? .38 : .52, grazing ? .46 : .40,
+          grazing ? .52 + Math.sin(animal.clock * .9) * .07 : .12 + Math.sin(animal.clock * .9) * .06,
+          Math.sin(animal.clock * .7) * .09);
+        for (let leg = 0; leg < 4; leg++) place(flock.meshes.legs, i * 4 + leg, leg % 2 ? .17 : -.17, .36,
+          leg < 2 ? .26 : -.26, walking ? Math.sin(phase + (leg === 0 || leg === 3 ? 0 : Math.PI)) * .46 : 0);
         return;
       }
       // The fox and the otter: a low head that lifts and holds when the fox watches.
@@ -753,7 +1018,11 @@ export function createWestLife(scene, world) {
       flock.seen = clock; flock.ticks++;
       flock.cx = flock.animals.reduce((sum, animal) => sum + animal.x, 0) / Math.max(1, flock.animals.length);
       flock.cz = flock.animals.reduce((sum, animal) => sum + animal.z, 0) / Math.max(1, flock.animals.length);
-      for (const animal of flock.animals) flock.zone.air ? tickAir(animal, step) : tickGround(animal, step, player, flock, motion);
+      for (const animal of flock.animals) {
+        if (flock.zone.air) tickAir(animal, step);
+        else if (flock.zone.sea) tickSea(animal, step);
+        else tickGround(animal, step, player, flock, motion);
+      }
       render(flock);
     }
   }

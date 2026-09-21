@@ -199,35 +199,45 @@ export function westWaterDepth(x, z) {
  * forced twice, with a smoothing pass between, so the profile is both even and
  * monotonic — a river that climbs, however slightly, is not a river.
  */
-export const WEST_PROFILES = new Map(WEST_RIVERS.map(course => {
-  const last = Math.max(1, course.samples.length - 1);
-  const along = index => index / last;
-  const ground = course.samples.map(sample => baseBeforeWater(sample.x, sample.z));
-  const surfaces = course.samples.map((_, index) => {
-    const window = ground.slice(Math.max(0, index - 5), index + 6);
-    return window.reduce((sum, value) => sum + value, 0) / window.length - courseCutAt(course, along(index));
-  });
-  // A course that takes over another one's water starts at that water's level.
-  if (course.head !== null) surfaces[0] = Math.min(surfaces[0], course.head);
-  const fall = () => { for (let i = 1; i < surfaces.length; i++) surfaces[i] = Math.min(surfaces[i], surfaces[i - 1] - .01); };
-  fall();
-  for (let pass = 0; pass < 3; pass++) for (let i = 1; i < surfaces.length - 1; i++)
-    surfaces[i] = (surfaces[i - 1] + surfaces[i] * 2 + surfaces[i + 1]) / 4;
-  fall();
-  // Every question about a course is answered off its nearest sample, so the
-  // sample carries the width, the taper and the ford as well as the level. A
-  // river that widens as it goes has to be asked where along itself you are.
-  return [course.id, Object.freeze(course.samples.map((sample, index) => {
-    const at = along(index);
-    const length = course.samples.length * 5;
-    return Object.freeze({
-      x: sample.x, z: sample.z, nx: sample.nx, nz: sample.nz, index, along: at,
-      surface: surfaces[index], half: courseHalfAt(course, at),
-      strength: course.taper ? 1 - smooth(1 - course.taper / length, 1, at) : 1,
-      ford: at <= course.fordUntil,
+export const WEST_PROFILES = (() => {
+  // Built down `WEST_RIVERS` in order rather than all at once, because a course
+  // with `headOf` takes its first water level from the last sample of the course
+  // it names, and can only read it once that one is done. Every course written
+  // before Eer has `headOf: null` and comes out exactly as it did.
+  const profiles = new Map();
+  for (const course of WEST_RIVERS) {
+    const last = Math.max(1, course.samples.length - 1);
+    const along = index => index / last;
+    const ground = course.samples.map(sample => baseBeforeWater(sample.x, sample.z));
+    const surfaces = course.samples.map((_, index) => {
+      const window = ground.slice(Math.max(0, index - 5), index + 6);
+      return window.reduce((sum, value) => sum + value, 0) / window.length - courseCutAt(course, along(index));
     });
-  }))];
-}));
+    // A course that takes over another one's water starts at that water's level.
+    // `headOf` names the course to take it from; `head` gives the level outright.
+    const handover = course.headOf ? profiles.get(course.headOf)?.at(-1).surface ?? null : course.head;
+    if (handover !== null && handover !== undefined) surfaces[0] = Math.min(surfaces[0], handover);
+    const fall = () => { for (let i = 1; i < surfaces.length; i++) surfaces[i] = Math.min(surfaces[i], surfaces[i - 1] - .01); };
+    fall();
+    for (let pass = 0; pass < 3; pass++) for (let i = 1; i < surfaces.length - 1; i++)
+      surfaces[i] = (surfaces[i - 1] + surfaces[i] * 2 + surfaces[i + 1]) / 4;
+    fall();
+    // Every question about a course is answered off its nearest sample, so the
+    // sample carries the width, the taper and the ford as well as the level. A
+    // river that widens as it goes has to be asked where along itself you are.
+    profiles.set(course.id, Object.freeze(course.samples.map((sample, index) => {
+      const at = along(index);
+      const length = course.samples.length * 5;
+      return Object.freeze({
+        x: sample.x, z: sample.z, nx: sample.nx, nz: sample.nz, index, along: at,
+        surface: surfaces[index], half: courseHalfAt(course, at),
+        strength: course.taper ? 1 - smooth(1 - course.taper / length, 1, at) : 1,
+        ford: at <= course.fordUntil,
+      });
+    })));
+  }
+  return profiles;
+})();
 
 /** The nearest profile sample of a course. */
 export function courseSample(course, x, z) {

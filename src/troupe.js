@@ -37,6 +37,20 @@ export const TROUPE_STOPS = freeze([
   stop('ostel', 'Amod', 'the road below Ostel', -764, -504, .785),
 ]);
 export const TROUPE_STOP_IDS = freeze(TROUPE_STOPS.map(s => s.id));
+/**
+ * Where the wagon is camped when a game begins: the verge by Fernway Rest.
+ *
+ * It used to be a coin toss between there and the Avrel clearing, and the toss cost the long road
+ * its leg-3 stop. That stop is the play on this verge (`docs/drent-long-road.md` §4), and a
+ * traveler walking the long road is never more than about 110 m from this camp through the first
+ * three legs — inside `TROUPE_UNSEEN`, which pins the wagon where it stands. So a wagon that
+ * begins here is still here when he arrives, and a wagon that began at Avrel could never come:
+ * a camp within `TROUPE_UNSEEN` of the traveler is not one the company will move to either.
+ *
+ * Only the first camp is settled. Everything after the first move is the wandering it always was,
+ * and a traveler who takes the short road and walks out of sight leaves them free to go.
+ */
+export const FIRST_CAMP = 'fernway';
 /** A point in the wagon's frame: `lx` along its length (the mare is at +x), `lz` toward its audience. */
 export function wagonPoint(s, lx, lz) {
   const c = Math.cos(s.yaw), n = Math.sin(s.yaw);
@@ -83,7 +97,7 @@ export function validateTroupeSnapshot(data, { allowMissing = true } = {}) {
 }
 
 export function createTroupe({ random = Math.random, start = null } = {}) {
-  const firstStop = start ?? (random() < .5 ? 'avrel' : 'fernway');
+  const firstStop = start ?? FIRST_CAMP;
   const state = { stop: Math.max(0, TROUPE_STOP_IDS.indexOf(firstStop)), clock: 0, met: false, heard: false, scenes: 0, tips: 0, deaths: 412, gifted: false, performing: false };
   const here = () => TROUPE_STOPS[state.stop];
   const away = (s, t) => !t || Math.hypot(s.x - t.x, s.z - t.z) > TROUPE_UNSEEN;

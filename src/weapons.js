@@ -53,6 +53,20 @@ export const WEAPON_TYPES = Object.freeze({
     tempo: .5, arc: SWORD_ARC * 1.15 }),
 });
 
+/**
+ * **How a weapon feels, on its way to the fight.** `combat.js` reads `tempo`, `arc`, `room`,
+ * `locked` and `thrust` off the weapon it is handed, and a weapon that says nothing is the sword.
+ * The host hands it `profile()`, so these have to travel with it: without them the pike swung in
+ * a doorway, the staff struck at a sword's pace, and phase 5 was true only of the module and of
+ * the tests that built a weapon by hand.
+ */
+export const WEAPON_FEEL = Object.freeze(['tempo', 'arc', 'room', 'locked', 'thrust']);
+export function feelOf(id) {
+  const type = WEAPON_TYPES[id];
+  if (!type) return {};
+  return Object.fromEntries(WEAPON_FEEL.filter(key => type[key] !== undefined).map(key => [key, type[key]]));
+}
+
 /** Weapons that change hands in a trade; sticks and the ranged or planted kits do not. */
 export const TRADEABLE_WEAPONS = Object.freeze(['simple-sword', 'iron-mace', 'long-dagger', 'bearded-axe', 'greatsword']);
 const EXTRA_WEAPONS = Object.freeze(Object.keys(WEAPON_TYPES).filter(id => id !== 'simple-sword' && id !== 'forest-stick'));
@@ -124,7 +138,9 @@ export function createWeapons({ inventory, onEvent = () => {}, wear = WEAPON_WEA
     // is tier 0** - the sword is the reference the brief measures everything else against - so
     // the material multiplies by exactly one until a smith sells something better.
     const scale = damageScale(equipped) * tierScale(type.tier ?? 0);
-    return { ...status(equipped), damage: type.damage.map(hit => hit * scale), reachMultiplier: type.reachMultiplier };
+    return { ...status(equipped), damage: type.damage.map(hit => hit * scale), reachMultiplier: type.reachMultiplier,
+      // And how it feels in the hand, which combat reads off the weapon and cannot ask for.
+      ...feelOf(equipped) };
   }
 
   function equip(id) {

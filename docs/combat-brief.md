@@ -253,8 +253,8 @@ Each phase stands alone and leaves the game working.
 4. **The shield's guard.**
 5. **Tempo and arc** for daggers, staves, spears and pikes, and the pike's wall rule.
 6. **Bows.**
-7. **Teachers:** lessons at friendship milestones, sparring and its ceiling. (Needs the
-   companions and friendship work that is already queued.)
+7. **Teachers:** lessons at friendship milestones, sparring and its ceiling. — **built
+   2026-09-21** (`src/teachers.js`, `tests/teachers.test.js`). See "Phase 7" below.
 
 ## Laws, to be written as tests
 
@@ -412,3 +412,113 @@ where its owner fell.
 
 Which found a real gap: `KIT_WEAPON_ITEM` had no entry for `spear`, `spears`, `pike` or `staff`,
 so **four of the ten companions left nothing behind when they died**. They do now.
+## Phase 7 — teachers and sparring — built
+
+**The company is the faculty**, written down at last (`src/teachers.js`). Two things hang off it:
+a **lesson**, which is what a man gives at a regard milestone, and a **bout**, which is sparring.
+
+### Who teaches what, without a second table
+
+A man teaches **the thing he is best at**, out of the weapon he carries and the shield he carries
+it with. That is one rule read off `MERCENARY_ARMS`, and it gets Kristen right without an
+exception: her blade is 25 and her shield is 35, so the shield is her craft, which is exactly what
+*"I take the first blow on the boards"* says about her. Toughness is excluded, because nobody
+teaches it — it is taught by being hit and living. So: Chris 30 and Ed 35 for Blades, Eliana 40 and
+Al the Tun 20 for Heavy arms, Mus 45 / Ciarán 35 / Matt 35 for Polearms, Lakota 30 for Staves,
+Jerry 40 for Bows, Kristen 35 for Shield. Tweak the one table and the faculty follows.
+
+### A lesson
+
+Three each, one at each rung above a stranger, offered in his own conversation and taken once —
+the shape of Ed's swimming lesson, which is where the pattern came from. **The first one is what
+*shows* you the weapon**: before it the weapon works and banks nothing, and `arms.learn` is what
+changes that. Each is worth a lump of experience in his family, weighted by how good he is
+(`LESSON_XP`, against a reference of 30), and each raises how far a bout with him will take you.
+
+Three lessons from the best man in the game are about 3,150 experience, which is level 16. That is
+a beginning, not a shortcut: the rest is use, and sparring, and being hit.
+
+**The copy is each man's own voice**, taken from `MERCENARY_STYLES` — which was already the
+specification for phase 5's numbers — and says true things about how his weapon now behaves: the
+staff's `tempo: .5` ("it strikes twice as often as your sword", and it means it), the heavy
+families' locked third swing, the pike's two paces of room, the guard's sixty degrees and the fact
+that a caught blow does not rock you. Mus's are the shortest lines in the game, on purpose.
+
+### A bout
+
+**Sparring pays to a ceiling that rises with the lessons taken — 20, 35, 60 — and is then cut down
+to the teacher's own level.** Al the Tun can never take you past 20 and Mus never past 45: nobody
+can teach past what he knows. The top figure is headroom for the teachers the wider world will have
+later, not a promise anybody in this company can keep. A real fight still has no ceiling at all,
+and the straw post still stops at 5.
+
+A man only spars in the craft he teaches, so the bout asks what is in the traveler's hands: a
+weapon of his family, or — for Kristen alone — a shield on the arm, because the shield is worn
+rather than held.
+
+**And if the hands are wrong he lends his spare** (the coordinator's ruling, 2026-09-21). The
+first cut of this refused the bout instead, which meant the only way to be taught the spear was
+for a spearman to die first: nobody who carries a pole will trade one, so the traveler's hand
+reaches a polearm only off the ground where its owner fell, and the dead teach nothing. Matt's
+spare pike and Mus's short spear were already in the fiction; the rest are the plain equivalent — a
+blunted blade, a practice shaft, a coppiced stave, the second mace in the roll, the buckler Kristen
+learned on — and **none of them is a named weapon**, because the only named weapons in the game are
+the ones the dead leave behind. Jerry lends nothing: he has one bow and the game has no other, and
+he says so. That is the last thing waiting on phase 6.
+
+**A loan is not a gift.** It exists for the length of the bout and nowhere else: `lent` is one
+variable in the host with three readers (`lentProfile` for what combat swings, `getMargins` for
+what a swing costs and whether there is a shield, `refreshShield` for what is drawn). It never
+enters the satchel, never touches `weapons` or `gear`, is in no snapshot, and cannot be kept, sold
+or dropped. The traveler's own weapon is back in his hand at `spar-over` however the bout ended —
+and because a drowning leaves a fight by another road, the frame loop also gives it back on any
+frame in which no bout is running.
+
+**A bout can kill nobody.** `bout: true` on an encounter floors both sides at one and ends in a
+yield with its own event (`spar-over`), so **no victory and no defeat is ever reported for a
+lesson** and not one of the host's dozen victory branches can fire on one; walking out of a bout is
+not a retreat either. Both of them end it whole and standing where they stood. The partner is a new
+enemy kind with a soldier's honest tell — timing never scales, and a lesson least of all — drawn as
+himself, because enemies now take a `model` and a `name` exactly as allies already did. The bout is
+in `TEACHING_FIGHTS`, so you are taught by one man at a time and the other nine keep out of it.
+
+### Regard had to be made to move
+
+Nothing in the game moved a rung past the asking, so no milestone was ever reached and no lesson
+could ever have been owed. Regard now moves on **the road actually walked together** (paid only
+while he is moving, and not during a fight), on **fights come through together** — counted at the
+victory, which is the one moment that says the fight was survived — and on **a weapon traded**. A
+bout pays no regard at all, so sparring cannot be farmed for standing.
+
+### What is saved, and what is not
+
+One small section, `teachers`, holding how many lessons each man has given. Everything else is
+derived: the standing is the companions', the experience is the skills', the ceiling is arithmetic.
+It is saved rather than derived because **taking a lesson is a conversation**, and neither the
+standing that earned it nor the experience it paid records that the conversation happened — a
+traveler can reach *fond* and never ask.
+
+The dead teach nothing and a man sent on ahead teaches nothing until he is back, which is one
+question — is he here, walking with you — that `companions` already answers.
+
+### The loan found a real one: phase 5 never reached the fight
+
+`weapons.profile()` is what the host hands `createCombat`, and it returned the weapon's damage and
+its reach and **left `tempo`, `arc`, `room`, `locked` and `thrust` behind**. `combat.js` reads all
+five off the weapon it is given and defaults every one of them to the sword, so phase 5 was true of
+the module, and of the tests that build a weapon by hand, and of nothing the player ever held: the
+staff struck at a sword's pace, the greatsword's third swing could be stepped out of, and the pike
+swung happily in a doorway.
+
+It surfaced because lending a pike whose `room: 2` never arrives makes Matt's second lesson a lie.
+`feelOf(id)` in `src/weapons.js` is now the one list of the five, `profile()` spreads it, and
+`tests/teachers.test.js` walks every weapon the game has and checks each of the five survives the
+journey. The review view reports the three numbers it is actually fighting with, so a picture can
+be checked against them.
+
+Review views: `sparring` — Ed the Word, two lessons in, three paces off, the rest of the company
+out of it (`allies: 0`), his road body off the ground so there is no twin, the bout paying Blades
+to 35 because 35 is what he is, and `loan: null` because the traveler's own sword is already his
+craft. `sparring-pike` — Matt, the same bout with the loan in it: `own: simple-sword`,
+`held: war-pike`, `inSatchel: false`, and `feel: {tempo 1.2, arc .32, room 2}` arriving at the
+fight, which is the fix above seen from the outside.

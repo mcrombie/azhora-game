@@ -41,6 +41,34 @@ export const DRILL_EXPOSURE = 35;
 export const DRILL_LANGUAGE = 'ambroni';
 /** A mercenary is noticed inside the traveler's own named ground, or this near wherever they are. */
 export const NOTICE_RANGE = 40;
+/**
+ * The players' camps the leg-3 stop is served by: `fernway`, which it stands on and which every
+ * new game now starts the wagon at (`FIRST_CAMP`, src/troupe.js), and `avrel`, the other camp in
+ * Drent — the "players' second camp" the route table names on leg 4, which was never built as a
+ * branch stop of its own and serves here instead.
+ *
+ * The play is one of the two things here with no view of its own, so the host is the one that says
+ * a scene was watched to the end at one of these and calls `act('played')` for it — the module is
+ * told, and the host decides what it means. The pair is kept here, beside the stop, so the two
+ * tables cannot drift apart, and `tests/long-road.test.js` holds the stop's point against the
+ * camp's. `fernway` is first because it is the one the stop stands on.
+ */
+export const PLAY_TROUPE_STOPS = freeze(['fernway', 'avrel']);
+/** The camp the stop itself stands on, and where a new game finds the wagon. */
+export const PLAY_TROUPE_STOP = PLAY_TROUPE_STOPS[0];
+/** The stop the players' camps serve. */
+const PLAY_STOP = 'fernway-play';
+/**
+ * Which camp the players are at, as the host sees it, or null for a company that has left the
+ * country. A caller that says nothing at all gets the camp the stop stands on: silence is not a
+ * claim that the wagon is elsewhere, and the table's own answer is the one to fall back to.
+ */
+const playCamp = state => {
+  const at = state?.troupe;
+  if (at === undefined || at === null) return PLAY_TROUPE_STOP;
+  const id = typeof at === 'string' ? at : at?.stop ?? at?.id ?? null;
+  return PLAY_TROUPE_STOPS.includes(id) ? id : null;
+};
 /** The tongue turns readable here, which is what the East Rena Stone is for (src/languages.js). */
 const SIGN_READING = 50;
 /** What Mara's countersigned village chart is worth: one block of cartography, once. */
@@ -323,14 +351,29 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
   }
 
   function view(world = {}) {
-    const rows = LONG_ROAD_STOPS.map(row => ({ ...row, done: doneAt(row, world) }));
+    // The play is the one stop that is not where the table says: the players move, so while it is
+    // open its gold is on whichever Drent camp the wagon is actually at, and the host is the one
+    // that knows. With the wagon out of the country there is nothing to point at.
+    const camp = playCamp(world), campAt = camp && world?.troupe;
+    const rows = LONG_ROAD_STOPS.map(row => {
+      const done = doneAt(row, world);
+      if (row.id !== PLAY_STOP) return { ...row, done };
+      const point = !done && Number.isFinite(campAt?.x) && Number.isFinite(campAt?.z)
+        ? freeze({ x: campAt.x, z: campAt.z }) : row.point;
+      return { ...row, done, point, camp };
+    });
     const byId = new Map(rows.map(row => [row.id, row]));
     const legs = LONG_ROAD_LEGS.map(leg => {
       const stops = rows.filter(row => row.leg === leg.leg);
       const spine = stops.filter(row => row.kind === 'spine');
       return { ...leg, stops, spine, done: spine.every(row => row.done), of: spine.length, closed: spine.filter(row => row.done).length };
     });
-    const next = rows.find(row => row.kind === 'spine' && !row.done) ?? null;
+    // An open gold has to be somewhere the traveler can go and do the thing. The play is the only
+    // stop that can fail that, because the only way to watch one is for the company to be in the
+    // country: with the wagon abroad the gold passes over it to the next thing that is waiting.
+    // The stop stays open, is offered again the moment they come back, and `finished` still wants
+    // it — what it may not do is stand on an empty verge and stop the road behind it.
+    const next = rows.find(row => row.kind === 'spine' && !row.done && (row.id !== PLAY_STOP || !!camp)) ?? null;
     const spine = rows.filter(row => row.kind === 'spine');
     const walking = companionWith(world);
     // A drill closes a leg: the next one to give is `drills + 1`, and it is on offer when that

@@ -23,7 +23,10 @@ export const ATLAS_HEX_SIZE = 16;                       // circumradius in atlas
 export const ATLAS_HEX_WIDTH = ATLAS_HEX_SIZE * Math.sqrt(3);
 // Flat-to-flat width of one authored hex in the rebuilt world; world-scale.js owns it.
 export { METRES_PER_HEX };
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor']);
+// Eer is last on purpose, and every country added after it goes on the end too. The biome
+// scatter in `world-regions.js` walks this list with one seeded stream, so a name inserted
+// anywhere but the end re-rolls every region after it and moves scatter that is already built.
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -95,6 +98,14 @@ export const REGION_BIOMES = Object.freeze({
   Nesdor: Object.freeze({ id: 'braided-flats', name: 'The Nesdor Flats', ground: '#a3a86a', canopy: '#4f6b3e', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'open-grass', ownScatter: true, blockHexes: 4,
     relief: { amplitude: 1.6, wavelength: 200 }, clearings: ['nesdor-braids'],
     note: 'The transition out of the branch country into the Moros approach: shallow broad valleys with hazel and oak on their slopes in the north-west, and east and south of them the Flats — dark alluvial ground, relief measured in feet, braided shallow water crossing it, and an open horizon all the way to the plain.' }),
+  // Eer scatters its own ground (src/west-regions-scenery.js). The atlas divides the country
+  // once, diagonally, and the division is terrain and climate at the same line: `plains` and
+  // `Cfa` over the northern and north-western hexes, `grassland` and `Csa` over the southern
+  // and south-eastern ones. What grows on one half does not grow on the other, and a single
+  // count per hex cannot say which half a point is on or how far it stands from the sea.
+  Eer: Object.freeze({ id: 'coastal-loam', name: 'The Eer farmland', ground: '#6d8748', canopy: '#54703c', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'rank-grass', ownScatter: true, blockHexes: 4,
+    relief: { amplitude: .8, wavelength: 300 }, clearings: ['eer-braids'],
+    note: 'The Lizeem’s last farmland, and the first country in the game that stops being green: rank damp grass on deep alluvial loam in the humid north-west, dry tawny grass and aromatic cushion scrub on the Mediterranean coast, alder and willow along the inland channels and tamarisk and oleander along the seaward ones, wild olive and holm oak standing singly on the open grass, and a low soft shore of small bays. The great river is the western wall and cannot be crossed anywhere.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

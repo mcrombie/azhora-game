@@ -21,6 +21,7 @@ import { createMapFog, validateMapFogSnapshot } from './map-fog.js';
 import { createCartography, validateCartographySnapshot } from './cartography.js';
 import { createSwimming, validateSwimmingSnapshot } from './swimming.js';
 import { validateCompanionsSnapshot } from './companions.js';
+import { createTeachers, validateTeachersSnapshot } from './teachers.js';
 import { validateGearSnapshot } from './gear.js';
 import { createFishing, validateFishingSnapshot } from './fishing-skill.js';
 import { createMycology, validateMycologySnapshot } from './mycology.js';
@@ -114,6 +115,10 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateCartographySnapshot(data.cartography)) return failed('The saved chart of countries is invalid.');
     if (!validateSwimmingSnapshot(data.swimming)) return failed('The saved swimming is invalid.');
     if (!validateCompanionsSnapshot(data.companions)) return failed('The saved companions are invalid.');
+    // What the company has taught you. It is its own small section rather than something derived
+    // because taking a lesson is a conversation, and neither the standing that earned it nor the
+    // experience it paid records that the conversation happened (src/teachers.js).
+    if (!validateTeachersSnapshot(data.teachers)) return failed('The saved lessons are invalid.');
     if (!validateGearSnapshot(data.gear)) return failed('The saved gear is invalid.');
     if (!validateFishingSnapshot(data.fishing)) return failed('The saved fishing notes are invalid.');
     if (!validateMycologySnapshot(data.mycology)) return failed('The saved mushroom notes are invalid.');
@@ -265,6 +270,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'chart')) { const fog = createMapFog(); fog.restore(data.chart); result.chart = fog.snapshot(); }
     if (Object.hasOwn(data, 'cartography')) { const chart = createCartography(); chart.restore(data.cartography); result.cartography = chart.snapshot(); }
     if (Object.hasOwn(data, 'swimming')) { const swim = createSwimming(); swim.restore(data.swimming); result.swimming = swim.snapshot(); }
+    if (Object.hasOwn(data, 'teachers')) { const taught = createTeachers(); taught.restore(data.teachers); result.teachers = taught.snapshot(); }
     if (Object.hasOwn(data, 'fishing')) { const fishing = createFishing(); fishing.restore(data.fishing); result.fishing = fishing.snapshot(); }
     if (Object.hasOwn(data, 'mycology')) { const mycology = createMycology(); mycology.restore(data.mycology); result.mycology = mycology.snapshot(); }
     if (Object.hasOwn(data, 'botany') || Object.hasOwn(data, 'herbology')) { const botany = createBotany(); botany.restore(data.botany ?? data.herbology); result.botany = botany.snapshot(); }

@@ -7,14 +7,14 @@ import { createCombat, MAX_ALLIES } from './combat.js';
 const GUARD_KEY='KeyV';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
-import { createWeapons, WEAPON_TYPES } from './weapons.js';
+import { createWeapons, WEAPON_TYPES, feelOf } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad } from './mercenaries.js';
 import { ANCHORS as ROUTE_ANCHORS } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP } from './long-road.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOPS } from './long-road.js';
 import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
@@ -84,10 +84,11 @@ import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint
 import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, JOB_FIRST, JOB_AGAIN, THE_GREEN_COAT, THE_BURYING, SON } from './lauvel-burying.js';
 import { createGravedigger, createStretcher } from './lauvel-people-models.js';
 import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
-import { createCombatSkills, familyOf } from './combat-skills.js';
+import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
 import { createCompanions, armsOf, ASKS } from './companions.js';
+import { createTeachers, TEACHERS } from './teachers.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
-import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock } from './gear.js';
+import { createGear, TIERS, tierSoldAt, WEIGHTS, smithStock, tierScale } from './gear.js';
 import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota } from './lakota.js';
 import { createDrentBirds } from './drent-birds.js';
@@ -101,7 +102,7 @@ import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
 import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
-import { setSignReader } from './signs.js';
+import { setSignReader, setForeignLettering } from './signs.js';
 import { createGameMode } from './game-mode.js';
 import { createDrentStones } from './drent-stones.js';
 import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
@@ -113,7 +114,7 @@ import { PUCK, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, creat
 import { createPuckView } from './wine-goblin-view.js';
 import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonThanks, carryingForEd } from './chameleon.js';
 import { createEdView, createEdModel } from './chameleon-model.js';
-import { TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
+import { TALAELOS, TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
 import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
 import { createJohn, createSultana, createRebelShip } from './salt-ship.js';
 import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt } from './word-arrival.js';
@@ -157,7 +158,8 @@ import { runRoadCheckSmoke, verifyRoadReload } from './road-check-smoke.js';
 import { createRoadLife } from './road-life.js';
 import { createWestLife } from './west-regions-life.js';
 import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
-  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH } from './west-regions.js';
+  MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH,
+  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -215,6 +217,10 @@ function init() {
   // The skills no sheet shows in this mode. The registry in src/skills.js keeps every one of them,
   // so a save holding linguist experience still validates and keeps every point of it.
   const hiddenSkills=new Set(gameMode.hiddenSkills);
+  // The lettering atlas is cut once, when the world is built, so the answer has to be in before
+  // the next line. In normal mode no sign will ever letter in a tongue, so the foreign words are
+  // left out of it and the texture is halved (src/signs.js knows only yes or no, never the mode).
+  setForeignLettering(gameMode.has('linguist'));
   world=createWorld(scene,{spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
   // You may be any of the eleven, so the body has to be replaceable. The rig around it is not:
   // combat and everything else took hold of this one position object at boot and keeps holding it.
@@ -588,7 +594,13 @@ function init() {
    * wolves are a lesson in nothing. The long road's piece 4 kept Chris out of the raid for
    * exactly this reason, and this is that rule written down rather than implied by `fight`.
    */
-  const TEACHING_FIGHTS=new Set([GREENWAY_RAID.id,AVREL_RAID.id]);
+  /**
+   * Sparring with a teacher (docs/combat-brief.md, phase 7). One id, because only one bout is
+   * ever on: you stand up with one man, and the rest of the company stays out of it, which is
+   * exactly what `TEACHING_FIGHTS` is for.
+   */
+  const SPARRING_ID='sparring-bout';
+  const TEACHING_FIGHTS=new Set([GREENWAY_RAID.id,AVREL_RAID.id,SPARRING_ID]);
   /**
    * Where the n-th companion stands in a fight: on the traveler's side of the centre, spread two
    * ranks wide, inside every arena the game lays (`encounterConfig` allows 21 m behind the centre
@@ -726,19 +738,50 @@ function init() {
   // The seven fighting skills, whose margins combat and the weapons both read. It is filled in
   // below, once `skills` exists; until then the margins are the ones combat has always used.
   let arms=null;
-  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>weapons?.profile(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
+  /**
+   * The company is the faculty (src/teachers.js): who teaches what, the lessons each man owes at
+   * each rung, and how high a bout with him pays. Filled in below beside `arms`, and `sparring`
+   * is the bout that is on right now - who, in which family, and up to what.
+   */
+  let teachers=null,sparring=null;
+  /**
+   * **What a teacher has lent for the length of a bout**, and nothing else in the game has
+   * anything like it: `{weapon}` or `{shield:true}`. It is not in the satchel, it is not in
+   * `weapons`, it is not in `gear` and it is in no snapshot - the only thing that knows about it
+   * is this variable and the three readers below. The traveler's own weapon is back in his hand
+   * at `spar-over`, however the bout ended (src/teachers.js).
+   */
+  let lent=null;
+  /**
+   * The lent weapon as combat wants a weapon: a full profile, built from the weapon's own table
+   * rather than from what the traveler owns, because he owns none of it. The hand that holds it
+   * is still his, so his skill in that family still scales the damage.
+   */
+  function lentProfile(){
+    if(!lent?.weapon)return null;
+    const type=WEAPON_TYPES[lent.weapon];
+    if(!type)return null;
+    const scale=(arms?.margins().damageFor(lent.weapon)??1)*tierScale(type.tier??0);
+    return {id:lent.weapon,name:type.name,owned:false,equipped:true,lent:true,
+      durability:type.maxDurability,maxDurability:type.maxDurability,wornAt:type.wornAt,worn:false,usable:true,
+      damage:type.damage.map(hit=>hit*scale),reachMultiplier:type.reachMultiplier,...feelOf(lent.weapon)};
+  }
+  /** What is actually in his hand this frame, lent or his own. */
+  const heldWeapon=()=>lentProfile()??weapons?.profile()??null;
+  const combat=createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>heldWeapon(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
     // A fight is as hard as the country it happens in (docs/difficulty-ladder.md, and
     // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
     getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
     getAllies:config=>companionAllies(config),
-    getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(weapons?.profile()?.id),
+    getMargins:()=>{if(!arms)return {};const m=arms.margins();return {maxHp:m.maxHp,maxStamina:m.maxStamina,dodgeWindow:m.dodgeWindow,swingCost:m.swingCostFor(heldWeapon()?.id),
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
       armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
       // The shield: what a caught blow leaves him and what catching it costs in wind. `hasShield`
-      // is the hand slot, because the hand slot IS the shield (src/gear.js).
-      guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!gear.wearing('hand')};}});
+      // is the hand slot, because the hand slot IS the shield (src/gear.js) - or a shield lent
+      // for a bout, which is on his arm without ever being his.
+      guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!lent?.shield||!!gear.wearing('hand')};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
@@ -803,6 +846,11 @@ function init() {
   // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
   // everything those margins are today's game to the digit, which is the law phase 1 rests on.
   arms=createCombatSkills({skills,onEvent:()=>refreshSkillsSheet()});
+  // **The company is the faculty** (src/teachers.js, docs/combat-brief.md phase 7). A lesson at
+  // each rung, in the man's own voice, and a bout that pays up to what he himself knows. It owns
+  // nothing but which lessons have been given: the standing is the companions', the experience
+  // the skills'. The dead teach nothing and a man sent on ahead teaches nothing until he is back.
+  teachers=createTeachers({companions,arms,onEvent:()=>refreshSkillsSheet()});
   // Linguist: in hard mode nobody in Azhora speaks the traveler's language, so what people say to
   // him arrives in theirs (src/languages.js, src/linguist.js). Chris Gotwood came off
   // the same boat with enough of the local speech to get two men up a road; while he is
@@ -836,6 +884,9 @@ function init() {
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
+    // Where the players are camped: the leg-3 stop is their play, so its gold follows the wagon
+    // while it is open, and a wagon out of Drent does not hold the road up (src/long-road.js).
+    troupe:{stop:troupe.stop.id,x:troupe.stop.x,z:troupe.stop.z},
     companion:companionOffTheClock&&!longRoad.released?{with:true}:false});
   /**
    * Any of the eleven may be the player and every one of them lands knowing something, so a
@@ -1210,7 +1261,15 @@ function init() {
     if(action==='troupe-scene-begin'){troupe.beginScene();placeTroupe(true);return;}
     if(action==='troupe-isaura-dies'){troupe.die();return;}
     const tip=/^troupe-tip-(\d+)$/.exec(action);
-    if(tip){let n=Number(tip[1]);if(n&&!inventory.remove(COPPER_ITEM,n))n=0;troupe.tip(n);const done=troupe.endScene();placeTroupe(true);
+    if(tip){let n=Number(tip[1]);if(n&&!inventory.remove(COPPER_ITEM,n))n=0;troupe.tip(n);
+      // The long road's leg-3 stop is this play, watched to the end at either of the company's
+      // camps in Drent - the Fernway verge it stands on, or the Avrel clearing, which is where an
+      // older save may have left them. It has no view of its own, so the host is the one that can
+      // say it happened (`PLAY_TROUPE_STOPS`). Read before the scene ends: the wagon is where it
+      // was when the play began, and `endScene` is the end of it.
+      const onTheLongWay=PLAY_TROUPE_STOPS.includes(troupe.stop.id),playedAt=troupe.stop.where;
+      const done=troupe.endScene();placeTroupe(true);
+      if(onTheLongWay&&longRoad.act('played').ok)toast(`A play at ${playedAt}, watched to the end.`,`${TALAELOS.name.toUpperCase()} · THE LONG WAY ROUND`);
       if(done.gift)inventory.add(PLAYBILL_ITEM,1);inventory.refresh();audio?.effect('success');
       openDialogue(galeon,troupeThanks(n,done.gift),null,'Exit, pursued by nobody');
       if(done.gift)toast('You are a regular of Talaelos now. The playbill is in your satchel, signed by the whole company, and the dog.','THE PLAYERS OF NYLON');saveRoad(false);}
@@ -1351,21 +1410,92 @@ function init() {
       const {sample,spot}=beside(LIZEEM,.42,40);
       return shot(spot,sample,.08,1.5);
     }
+    // Eer, the first of the six south-western countries. Prefixed `south-` on the
+    // brief's naming, and worked out the same way: from the country's own numbers.
+    if(view==='south-eer'){
+      // The line the whole country is: standing on the black loam of the humid half,
+      // looking south-east down the fall, across the change, to the dry grass and the
+      // standing olives beyond it. Aimed above the ground so the horizon is in frame,
+      // because the thing to see here is the colour of the far half.
+      //
+      // The camera stands between the two channels and clear of both — the first take
+      // was nineteen metres off the north one and had a gallery willow filling a third
+      // of the lens. Nearest water from here is forty-five metres.
+      //
+      // It looks from nine metres up rather than from head height, and that is the
+      // second correction rather than a taste: `cameraPullIn` drags a review camera
+      // forward to whatever stands on its line, and on a plain scattered with olives
+      // and cushion scrub something always does — the second take was hauled a hundred
+      // and twenty metres into the dry half and lost the very line it was taking. A
+      // focus above `heightAt + 7` is a focus nothing on the ground can clamp against,
+      // and the whole of both halves is in the frame because of it.
+      //
+      // The distance is fog rather than framing: `FogExp2` at Eer's own .0049 leaves
+      // about half the light at 184 m and a fifth at 250, so a longer look across this
+      // plain would show haze and not a country.
+      return shot({x:-1170,z:1080},{x:-1030,z:1200},.02,9);
+    }
+    if(view==='south-eer-coast'){
+      // The low bays from the grass behind one, out over the water. No cliff and no
+      // beach to speak of: the point of the shot is that the grass gives out and the
+      // sea is there. The dolphins' ground is out past the look.
+      //
+      // **Aimed at the waterline, not at the water.** Two takes aimed out to sea and
+      // both lost it: a focus in the sea sits below sea level, which drags the whole
+      // sight line down until it grazes the last few metres of shore and the sea is
+      // behind the grass. Aiming at the last standable metre instead keeps the line
+      // descending past it, so everything beyond — the bay, the far headlands and the
+      // dolphins' water — falls below it and is in the frame.
+      //
+      // And looking from above the scrub rather than through it. `cameraPullIn` clamps
+      // to whatever stands *nearest the focus*, so on a shore with cushion bushes right
+      // down to the sand it does not nudge the camera, it hauls it to the waterline: one
+      // take of this view came out as nothing but sea and sand. A focus above
+      // `heightAt + 7` cannot be clamped against at all, and from sixteen metres the
+      // shape of the bay is in the frame with the grass and the scrub in front of it,
+      // which is what the lore means by "low headlands and small sheltered bays".
+      return shot({x:-990,z:1176},{x:-900,z:1176},.05,11);
+    }
+    if(view==='south-eer-braids'){
+      // The north channel where the gradient dies: three threads round bars of sand,
+      // from far enough back and high enough up to see all three at once, which is the
+      // same shot the Vastos braid takes and for the same reason.
+      //
+      // It differs from the Vastos one in the look height, and that is not taste: the
+      // Vastos braid has nothing growing anywhere near it, and this one has a gallery
+      // on both banks, so `cameraPullIn` clamped the camera to the first tamarisk and
+      // took the view from twenty-five metres out with a crown across a third of it.
+      // A focus ten metres up is above anything on this plain and cannot be clamped.
+      const braid=WEST_BRAIDS.find(item=>item.id==='eer-north');
+      const {sample,spot}=beside(EER_CHANNELS[0],(braid.from+braid.to)/2,58,-1);
+      return shot(spot,sample,.22,10);
+    }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
-      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird'}[view];
+      'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird',
+      'south-egret':'egret','south-stilt':'stilt','south-duck':'duck','south-boar':'boar',
+      'south-gull':'gull','south-dolphin':'dolphin'}[view];
     if(creature){
       const animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
-      const close=creature==='longhorn'?6:creature==='hill-sheep'?4.5:creature==='wading-bird'?4.5:3.2;
+      const close=creature==='longhorn'?6:creature==='boar'?5:creature==='hill-sheep'?4.5:
+        creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?14:3.2;
       // Half these animals live on a riverbank, so the camera has to go round to a
       // side of them there is ground on rather than to a fixed bearing off one shoulder.
+      // A dolphin has no side with ground on it at all: it is looked at from the shore,
+      // which is the only place anybody ever sees one from.
       let from=null;
-      for(let i=0;i<8&&!from;i++){
+      for(let i=0;i<8&&!from&&creature!=='dolphin';i++){
         const a=i/8*Math.PI*2,spot={x:animal.x+Math.sin(a)*close,z:animal.z+Math.cos(a)*close};
         if(canStand(spot.x,spot.z,world,.4))from=spot;
       }
+      if(creature==='dolphin'){
+        for(let out=close;out<220&&!from;out+=6){const spot={x:animal.x-out,z:animal.z};
+          if(canStand(spot.x,spot.z,world,.4))from=spot;}
+      }
       from=from??{x:animal.x+close*.8,z:animal.z-close*.6};
-      return shot(from,animal,.07,creature==='longhorn'?1.1:creature==='wading-bird'?.9:.35);
+      const height=creature==='longhorn'?1.1:creature==='wading-bird'||creature==='egret'?.9:
+        creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.4:.35;
+      return shot(from,animal,creature==='dolphin'?.01:.07,height);
     }
     return null;
   }
@@ -1524,7 +1654,10 @@ function init() {
     for(let step=0;step<frames;step++)player.animate(walkTime+step/60,0,true,pose);
   }
   function refreshShield(){
-    const carried=!!gear.wearing('hand');
+    // A shield lent for a bout is on his arm and is drawn, and is his for exactly as long as the
+    // bout lasts. This runs every frame, so it has to know about the loan or the borrowed boards
+    // would be taken off him again a sixtieth of a second after he was handed them.
+    const carried=!!lent?.shield||!!gear.wearing('hand');
     player.setShield(carried);
     // The footer says which key only while there is a shield on the arm to use it with. A
     // one-time toast at the smithy is not enough for something held in every fight.
@@ -2814,7 +2947,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -2822,6 +2955,10 @@ function init() {
   function continueRoad(){
     const result=checkpoint.read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
     const saved=result.data;
+    // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
+    // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
+    // that loading one *during* a bout cannot leave a man holding somebody else's pike.
+    sparring=null;returnLoan();
     // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
     // sheet, the sign lettering and the starting kit were settled when the page opened, and
     // switching them under a running game would leave half of it in the other mode. The field says
@@ -2849,7 +2986,7 @@ function init() {
     // loading a save written *before* a fight, in the same session as the death, struck the man
     // out of the file: he came back alive and no longer at your shoulder.
     fallen.restore(saved.fallen??createFallen().snapshot());
-    companions.restore(saved.companions??createCompanions().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    companions.restore(saved.companions??createCompanions().snapshot());teachers.restore(saved.teachers??createTeachers().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
     chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
@@ -3088,6 +3225,21 @@ function init() {
     if(holds){companions.letGo(npc.id);saveRoad(false);
       openDialogue(npc,[holds.line],null,'Back to the road',{onComplete:()=>mercenaryConversation(npc)});return;}
     const choices=[...mercenaryChoices(npc)];
+    // **The company is the faculty** (src/teachers.js). A man who has reached a new standing with
+    // you has something of his own craft to show, once each, and will stand up with you for a
+    // bout once he has shown you anything at all. Both are offered only where he is - which is
+    // beside you, because a man up the road teaches nothing until he is back.
+    const spar=teachers.bout(npc.id,travelerHands());
+    // A man whose craft is not in the traveler's hands lends his spare, and says so before the
+    // bout rather than being found to have done it afterwards.
+    if(spar.ok)choices.unshift({id:'teacher-spar',label:sparLabel(npc.id,spar),action:()=>{
+      if(spar.loan)openDialogue(npc,[spar.loan.hand],null,'Take it and stand up',{onComplete:()=>{closeDialogue();startSpar(npc,spar);}});
+      else{closeDialogue();startSpar(npc,spar);}}});
+    else if(spar.reason==='hands')choices.unshift({id:'teacher-spar-no',label:'Stand up and go a few with me.',
+      action:()=>openDialogue(npc,[spar.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
+    const lesson=teachers.owed(npc.id);
+    if(lesson)choices.unshift({id:'teacher-lesson',label:lesson.offer,
+      action:()=>openDialogue(npc,[...lesson.lines],null,'Back to our conversation',{onComplete:()=>{giveLesson(npc.id);mercenaryConversation(npc);}})});
     // Whether he will come, or go on ahead. It sits above the rest because it is the thing the
     // player came over to ask.
     const asking=askingChoice(npc);
@@ -3122,6 +3274,89 @@ function init() {
     // woods again is a new meeting as far as he is concerned.
     openDialogue(npc,mercenaryLines(npc.id,npc.placement,{met:!!npc.metInTheCountry}),null,'Back to the road',{choices});
     if(npc.placement?.phase==='walking')npc.metInTheCountry=true;
+  }
+  /**
+   * What the traveler has on him, in the teachers module's own words: the weapon actually in his
+   * hand, and whether there is anything on the shield arm. **The hand slot IS the shield**
+   * (src/gear.js), so a man who owns one is a man carrying one.
+   */
+  const travelerHands=()=>({weapon:weapons?.profile()?.usable?weapons.profile().id:null,shield:!!gear.wearing('hand')});
+  /** His own invitation, and what standing up with him is worth today. */
+  const sparLabel=(id,spar)=>`${spar.offer} (${SKILLS[spar.family]?.name??spar.family}, to ${spar.ceiling}${spar.loan?' — he lends you one':''})`;
+  /**
+   * He shows you something of his craft. The first one he gives is also the one that *shows* you
+   * the weapon - until somebody has, it works and banks nothing - and every one of them raises
+   * how far a bout with him will take you.
+   */
+  function giveLesson(id){
+    const given=teachers.teach(id);
+    if(!given.ok)return;
+    const name=mercenaryById(id)?.name??id,skill=SKILLS[given.family]?.name??given.family;
+    showSkillCard({kicker:`${name.toUpperCase()} TAUGHT YOU SOMETHING`,skill:given.family,
+      name:given.first?`${skill}, shown to you at last`:`${skill}, and a longer bout`,
+      note:given.first?'Nothing counted before somebody showed you. It counts now, and he will stand up with you.'
+        :`Sparring with him pays to ${given.ceiling}, and no further: nobody can teach past what he knows.`});
+    refreshSkillsSheet();saveRoad(false);
+  }
+  /**
+   * The ground a bout is fought on: the open metre or two between the two of them, with the
+   * teacher three paces off along the line the traveler is already looking down. `bout: true` is
+   * the whole of what makes it a lesson rather than a fight - **it can kill nobody**, on either
+   * side (src/combat.js) - and `level: 0` because a friend is not a danger of the country.
+   */
+  function sparEncounter(npc){
+    const me=player.group.position,merc=mercenaryById(npc.id),his=armsOf(npc.id);
+    if(!merc||!his)return null;
+    const him=npc.actor.group.position;
+    const apart=Math.hypot(him.x-me.x,him.z-me.z);
+    const face=apart>.4?Math.atan2(him.x-me.x,him.z-me.z):player.group.rotation.y;
+    const stand={x:me.x+Math.sin(face)*3.2,z:me.z+Math.cos(face)*3.2};
+    const centre={x:(me.x+stand.x)/2,z:(me.z+stand.z)/2};
+    return {id:SPARRING_ID,bout:true,level:0,center:centre,checkpoint:{x:me.x,z:me.z},
+      retreatAxis:'z',retreatLine:centre.z+24,
+      enemies:[{id:`spar-${npc.id}`,kind:'sparring',name:merc.name,x:stand.x,z:stand.z,
+        // What he can take is his own Toughness, exactly as it is when he stands beside you.
+        hp:Math.round(maxHealth(his.toughness)),
+        model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}}]};
+  }
+  /**
+   * He puts his spare in the traveler's hands, for the length of the bout. It is not added to
+   * anything: `lent` is the whole of it, and `lentProfile`, `getMargins` and `refreshShield` are
+   * the only three readers. The body is told, because a man holding a pike must be seen to be
+   * holding one - and `player.setWeapon` is called plainly, never with `?.`, because a verb
+   * missing from the facade does nothing quietly (docs/known-issues.md).
+   */
+  function takeLoan(loan){
+    if(!loan)return null;
+    lent=loan.weapon?{weapon:loan.weapon}:loan.shield?{shield:true}:null;
+    if(!lent)return null;
+    if(lent.weapon){player.setWeapon(lent.weapon);player.setArmed(true);}
+    refreshShield();
+    return lent;
+  }
+  /**
+   * And he takes it back. **However the bout ended** - a yield either way, a walk-away, or any
+   * other road out of a fight - the traveler's own weapon is in his hand again and the borrowed
+   * boards are off his arm. Safe to call when nothing is lent, which is what lets the frame loop
+   * call it as a belt and braces.
+   */
+  function returnLoan(){
+    if(!lent)return false;
+    const had=lent;lent=null;
+    if(had.weapon)player.setWeapon(weapons.equippedId);
+    refreshShield();inventory.refresh();
+    return true;
+  }
+  function startSpar(npc,offer){
+    const built=sparEncounter(npc);
+    if(!built||!combat.startEncounter(built)){toast('Not here. There is not the ground for it.','SPARRING');return;}
+    sparring={id:npc.id,family:offer.family,ceiling:offer.ceiling,done:offer.done,
+      loan:offer.loan?{...offer.loan}:null};
+    takeLoan(offer.loan);
+    stopInput();audio?.effect('bell');
+    const held=lent?.weapon?` He has put his own ${(WEAPON_TYPES[lent.weapon]?.name??'weapon').toLowerCase()} in your hands and he will want it back.`
+      :lent?.shield?' He has strapped his own shield on your arm and he will want it back.':'';
+    toast(`${mercenaryById(npc.id)?.name??npc.id} takes his guard, and pulls everything. Neither of you can be killed in this; it ends when one of you has had the better of it, and it teaches ${SKILLS[offer.family]?.name??offer.family} to ${offer.ceiling}.${held}`,'SPARRING');
   }
   /**
    * A drill: six lines of the army's speech and what each one means, and no quiz at the end.
@@ -3203,6 +3438,9 @@ function init() {
     if(!inventory.add(held.id,1)){inventory.add(giveId,1);weapons.setCondition(giveId,gone);closeDialogue();return;}
     weapons.setCondition(held.id,takeDurability);weapons.equip(held.id);inventory.refresh();
     mercenaryWeapons.set(npc.id,{id:giveId,durability:gone});npc.actor.setWeapon(giveId);
+    // He is carrying something of yours now, which is one of the things that moves a rung
+    // (REGARD.traded, src/companions.js) and therefore one of the ways a lesson is earned.
+    companions.traded(npc.id);
     toast(`${npc.name} takes your ${given.name.toLowerCase()} and hands over his ${INVENTORY_ITEMS[held.id].name.toLowerCase()}.`,'WEAPONS TRADED');saveRoad(false);
     openDialogue(npc,['Done. Mind it; it has seen more than you have.'],null,'Back to the road');
   }
@@ -3650,6 +3888,30 @@ function init() {
     refreshSkillsSheet();
     if(questStage>=1)saveRoad(false);
   }
+  /**
+   * What a blow in this fight counts as. A bout is practice: it pays the same skills a fight
+   * does, and **nothing it pays goes past the ceiling this teacher can take you to** - the rung
+   * he has reached with you, cut down to his own level in `MERCENARY_ARMS`, because nobody can
+   * teach past what he knows (src/teachers.js). A real fight has no ceiling at all.
+   */
+  const sparringPay=()=>(sparring&&combat.state.encounterId===SPARRING_ID?{source:'sparring',ceiling:sparring.ceiling}:{});
+  /** The bout is over: who had the better of it, and the one thing he says about it. */
+  function endSpar(winner){
+    const bout=sparring;sparring=null;
+    // **The loan dies with the bout**, before anything else happens and whichever way it ended.
+    returnLoan();
+    if(!bout)return;
+    const npc=npcById.get(bout.id),name=mercenaryById(bout.id)?.name??bout.id;
+    const skill=SKILLS[bout.family]?.name??bout.family;
+    const back=bout.loan?.back?[bout.loan.back]:[];
+    if(winner==='walked-away'){toast(`${name} lowers his guard and lets you go${bout.loan?', and holds his hand out for what he lent you':''}.`,'SPARRING · BROKEN OFF');return;}
+    toast(winner==='traveler'
+      ?`You had the better of it, and nobody is hurt — he is on his feet before you are. Practice with him pays ${skill} to ${bout.ceiling}.`
+      :`He had the better of it, and nobody is hurt. Practice with him pays ${skill} to ${bout.ceiling}.`,
+      `SPARRING · ${name.toUpperCase()}`);
+    if(npc&&mode==='playing'&&!reviewTarget)openDialogue(npc,[bout.done,...back],null,'Back to the road',{onComplete:closeDialogue});
+    saveRoad(false);
+  }
   function retry() {
     retriesTaken++;
     // Drowning is not a fight, so there is no fight to restart. `resetEncounter` would start
@@ -3986,15 +4248,24 @@ function init() {
       if(e.type==='practice-hit'){arms.learn('blades');armsPaid(arms.dealt({weapon:weapons?.profile()?.id,damage:POST_BLOW,source:'post'}));}
       // A real blow pays the weapon's own family, by what it did and where it was done.
       if(e.type==='hit'&&e.damage>0&&combat.state.phase==='active')
-        armsPaid(arms.dealt({weapon:e.weaponId,damage:e.damage,killed:!!e.killed,countryLevel:e.level??0}));
+        armsPaid(arms.dealt({weapon:e.weaponId,damage:e.damage,killed:!!e.killed,countryLevel:e.level??0,...sparringPay()}));
       // Toughness is taught by being hit and living, and by a step aside that actually worked.
-      if(e.type==='player-hit'&&e.damage>0){arms.learn('toughness');armsPaid(arms.hurt({damage:e.damage,countryLevel:e.level??0}));}
-      if(e.type==='dodged'){arms.learn('toughness');armsPaid(arms.dodged({countryLevel:e.level??0}));}
+      if(e.type==='player-hit'&&e.damage>0){arms.learn('toughness');armsPaid(arms.hurt({damage:e.damage,countryLevel:e.level??0,...sparringPay()}));}
+      if(e.type==='dodged'){arms.learn('toughness');armsPaid(arms.dodged({countryLevel:e.level??0,...sparringPay()}));}
       // Shield is paid by blows caught on it, by what the shield actually took off the blow -
       // so a bigger blow caught teaches more, and catching nothing teaches nothing.
-      if(e.type==='caught'&&e.absorbed>0){arms.learn('shield');armsPaid(arms.caught({damage:e.absorbed,countryLevel:e.level??0}));}
+      if(e.type==='caught'&&e.absorbed>0){arms.learn('shield');armsPaid(arms.caught({damage:e.absorbed,countryLevel:e.level??0,...sparringPay()}));}
+      // Sparring is over. Nobody is dead, nobody is hurt, and neither of them has moved: the
+      // bout has its own ending so that not one victory branch below can fire on a lesson.
+      if(e.type==='spar-over')endSpar(e.winner);
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
+        // **A fight come through together** is what moves a man's regard fastest, and a little
+        // more if he was hurt in it and lived (REGARD.fought, src/companions.js). It is counted
+        // here rather than where he is placed because this is the one moment that says the fight
+        // was survived; a bout never reaches it, so sparring can never be farmed for standing.
+        for(const ally of combat.state.allies)
+          if(companions.walksWith(ally.id))companions.fought(ally.id,{bled:ally.hp<ally.maxHp});
         if(combat.state.encounterId==='meadow-raiders'){meadowCleared=true;toast('The field road is quiet again. Recover Corvan’s parcels.','SUNMEADOW RAIDERS DRIVEN OFF');saveRoad(false);}
         else if(combat.state.encounterId===hideoutEncounter.id){
           const result=forestHideout.markCleared(hideoutEncounter.id);syncHideout();
@@ -4152,6 +4423,15 @@ function init() {
         if(Number.isFinite(autopilot.yaw))yaw+=Math.atan2(Math.sin(autopilot.yaw-yaw),Math.cos(autopilot.yaw-yaw))*(1-Math.exp(-3.5*dt));
         if(autopilot.intent!==autopilotIntent){autopilotIntent=autopilot.intent;$('autoplay-intent').textContent=autopilotIntent;}
       }
+      // **Nothing is held while nothing is being played.** `combat.guard` latches the key it was
+      // last offered, and it is only offered from inside the branch below - so the defeat panel,
+      // a dialogue or the pause menu left the last frame's key held, and the first playing frame
+      // after one resolved a blow against a shield the player was no longer asking for
+      // (docs/known-issues.md). A hand off the keyboard is a hand off the shield.
+      // (A frozen review is still `playing` and is left alone on purpose: `shield-guard` holds
+      // the guard by hand and then stops the clock, and clearing it here would lower the shield
+      // the picture exists to show.)
+      if(mode!=='playing')combat.guard(false,player.group.rotation.y);
       if(mode==='playing'&&!reviewFrozen) {
         const before=player.group.position.clone();
         const {forward,side}=autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
@@ -4179,17 +4459,26 @@ function init() {
         // out of a fight would come out of it with his breath back and the sea still to cross,
         // and nothing but the geography of where fights happen to be authored keeps that out of
         // reach. So the rule is code: while the water has him, his wind only ever goes down.
+        // **Hold V to guard.** The shield is aimed by looking: while it is up he turns to face
+        // the way the camera does, so the player chooses which blow it is between him and. The
+        // combat module is told every frame and remembers no press of its own.
+        //
+        // **It is offered before the fight is stepped.** `combat.update` is where blows land, so
+        // a guard answered for afterwards answers for the frame that has just been resolved -
+        // this frame's key against last frame's blow (docs/known-issues.md).
+        refreshShield();const guardKey=!autopilot.active&&keys.has(GUARD_KEY);
+        if(guardKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-14*dt));}
+        combat.guard(guardKey,player.group.rotation.y);
         const windBefore=combat.state.player.stamina;
         combatClock+=dt;combat.update(dt);
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
         handleCombatEvents();
+        // **A loan cannot outlive the bout it was made for**, by any road out of one: the yield
+        // either way and the walk-away all go through `spar-over` and are handled above, but a
+        // drowning goes through `combat.revive()` and a fight can be ended from outside. This is
+        // the belt to that brace, and it is cheap: one null check a frame.
+        if(lent&&!(sparring&&combat.state.phase==='active'&&combat.state.encounterId===SPARRING_ID))returnLoan();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
-        // **Hold V to guard.** The shield is aimed by looking: while it is up he turns to face
-        // the way the camera does, so the player chooses which blow it is between him and. The
-        // combat module is told every frame and remembers no press of its own.
-        refreshShield();const guardKey=!autopilot.active&&keys.has(GUARD_KEY);
-        if(guardKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-14*dt));}
-        combat.guard(guardKey,player.group.rotation.y);
         const floor=world.heightAt(player.group.position.x,player.group.position.z);
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
         // In the water he floats at the surface rather than walking the seabed: the feet hang a
@@ -4198,6 +4487,12 @@ function init() {
         {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,CLOSED_BORDER_TITLE);}}
         swimTick(dt,before);
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
+        // **The road actually walked together** (REGARD.perMinute, src/companions.js): the slow
+        // honest thing that moves a rung, paid by the metre rather than by the minute so that
+        // standing in a village all afternoon is not friendship. It is the only reason anybody
+        // in the company ever gets past `unfamiliar`, and therefore the only reason a lesson is
+        // ever owed - before this nothing in the game moved regard past the asking at all.
+        if(movement>.5&&combat.state.phase!=='active')for(const id of companions.walking)companions.travelled(id,dt);
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
         if(questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
@@ -4319,6 +4614,15 @@ function init() {
       const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;const talkers=[];
+      // The man you are sparring with is drawn by the fight, not by the road, exactly as a
+      // villager caught in the raid is: otherwise he is standing in two places at once
+      // (tests/no-avatar-twins.test.js), because `placeCompanion` holds a companion clear of
+      // any TEACHING_FIGHT and a bout is one.
+      if(sparring){const npc=npcById.get(sparring.id);
+        const him=combat.state.phase==='active'?combat.state.enemies.find(one=>one.id===`spar-${sparring.id}`):null;
+        if(npc&&him){npc.hidden=true;npc.lastFight={x:him.x,z:him.z};}}
+      else for(const id of mercenaryIds){const npc=npcById.get(id);
+        if(npc?.hidden&&npc.lastFight){npc.actor.group.position.set(npc.lastFight.x,world.heightAt(npc.lastFight.x,npc.lastFight.z),npc.lastFight.z);npc.lastFight=null;npc.hidden=false;}}
       // Villagers caught in the raid are drawn by the fight while it lasts, and stand where it left them after.
       for(const id of raid.ids){const npc=npcById.get(id),ally=['active','defeated'].includes(combat.state.phase)?combat.state.allies.find(a=>a.id===id):null;
         if(ally){npc.hidden=true;npc.lastFight={x:ally.x,z:ally.z};continue;}
@@ -4680,6 +4984,23 @@ function init() {
         guard:{up:!!combat.state.player.guarding,shield:!!gear.wearing('hand'),phase:combat.state.phase,action:combat.state.player.action,stamina:Math.round(combat.state.player.stamina),cost:arms?arms.margins().guardCost:null,shielded:document.body.classList.contains('shielded'),
         // What is on the screen, not what was decided: `up` beside a hip-height buckler is a bug.
         buckler:bucklerDrawn()},
+        // The bout, if one is on: who, in what family, how high it pays, what he can take and
+        // what is left of it, and whether his road body has actually been taken off the ground.
+        // Numbers, not intentions - a flag saying "sparring" would not have caught a twin.
+        teaching:(()=>{if(!sparring)return null;const him=combat.state.enemies.find(one=>one.id===`spar-${sparring.id}`)??null,npc=npcById.get(sparring.id);
+          return{with:sparring.id,family:sparring.family,ceiling:sparring.ceiling,encounter:combat.state.encounterId,phase:combat.state.phase,
+            bout:combat.state.encounterId===SPARRING_ID,heldOut:[...TEACHING_FIGHTS].includes(combat.state.encounterId),allies:combat.state.allies.length,
+            him:him?{at:[+him.x.toFixed(1),+him.z.toFixed(1)],hp:Math.round(him.hp),maxHp:Math.round(him.maxHp),action:him.action,active:!!him.active,
+              apart:+Math.hypot(him.x-player.group.position.x,him.z-player.group.position.z).toFixed(2)}:null,
+            roadBody:{drawn:!!npc?.actor.group.visible,hidden:!!npc?.hidden},
+            // The loan: what is in his hand against what he owns, what the fight was actually
+            // handed, and that none of it is in the satchel. A flag saying "lent" would not have
+            // caught a pike that swung in a doorway because the feel never reached combat.
+            loan:lent?{lent:lent.weapon??'shield',own:weapons?.equippedId??null,
+              held:heldWeapon()?.id??null,usable:!!heldWeapon()?.usable,
+              feel:lent.weapon?{tempo:heldWeapon()?.tempo??null,arc:+(heldWeapon()?.arc??0).toFixed(3),room:heldWeapon()?.room??null}:null,
+              inSatchel:!!lent.weapon&&inventory.has(lent.weapon),shield:!!lent.shield&&!gear.wearing('hand')}:null,
+            given:teachers?teachers.given(sparring.id):0,level:TEACHERS[sparring.id]?.level??null,hp:Math.round(combat.state.player.hp)};})(),
         company:{owned:riding.owned,mounted:riding.mounted,grounded,seat:+player.group.position.y.toFixed(2),ground:+world.heightAt(player.group.position.x,player.group.position.z).toFixed(2),horse:riding.horse?[+riding.horse.x.toFixed(1),+riding.horse.z.toFixed(1)]:null,
           mountBlock:riding.mountBlock(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'}),
           walking:companions.companions.map(one=>one.id),placed:[...(company.companionIds??[])],file:[...fileOrder],
@@ -5212,6 +5533,59 @@ function init() {
           yaw=shot.yaw;pitch=.06;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
+        /**
+         * **A bout.** Ed the Word, who teaches the dagger and is therefore the one man in the
+         * company a traveler with the sword he landed with can stand up against, two lessons in
+         * and holding his guard three paces off.
+         *
+         * Everything here is written to be run twice, because the runner composes the first view
+         * twice: `combat.revive()` and `sparring=null` put the game back to nothing-happening
+         * before the bout is laid on, so the second pass builds the same bout rather than finding
+         * one already running.
+         */
+        if(view==='sparring'||view==='sparring-pike'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          // **Two bouts.** `sparring` is Ed the Word, who teaches the dagger and is therefore the
+          // one man a traveler with the sword he landed with can already stand up against.
+          // `sparring-pike` is Matt, whose craft is not in the traveler's hands at all - so he
+          // lends his spare pike, and the picture is of a borrowed weapon being used.
+          const teach=view==='sparring-pike'?'merc-matt':WORD_ID;
+          questStage=10;combat.revive();sparring=null;returnLoan();player.setArmed(true);
+          companionOffTheClock=true;
+          // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/companions.js) and a
+          // ceiling of min(35, his own 35). Restored rather than played, so the shot is the same
+          // every time it is taken.
+          companions.restore({...createCompanions().snapshot(),walking:[teach],regard:{[teach]:60}});
+          teachers.restore({version:1,lessons:{[teach]:2}});
+          rebuildCompany();
+          const at=greenwayEncounter.center,me={x:at.x+4,z:at.z+6};
+          player.group.position.set(me.x,world.heightAt(me.x,me.z),me.z);
+          const face=Math.atan2(at.x-me.x,at.z-me.z);
+          player.group.rotation.y=face;grounded=true;verticalSpeed=0;
+          // Put him where the bout wants him before it is laid on: `sparEncounter` stands the
+          // teacher three paces down the line between the two of them, so putting him on that
+          // line first is what makes the shot repeatable.
+          const npc=npcById.get(teach),spot={x:me.x+Math.sin(face)*3.2,z:me.z+Math.cos(face)*3.2};
+          world.npcPositions[teach]={x:spot.x,z:spot.z};
+          npc.hidden=false;npc.actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+          const may=teachers.bout(teach,travelerHands());
+          if(may.ok)startSpar(npc,may);
+          // A fight is only `active` a few frames in, which is what the guard's view found out
+          // the expensive way: a bout photographed before then is two people standing about.
+          for(let step=0;step<16;step++)combat.update(1/60);
+          combatView.update(1/60,combatClock,combat.state,player.group.position,true);
+          const him=combat.state.enemies.find(one=>one.id===`spar-${teach}`);
+          // He is drawn by the fight from here on, so his road body comes off the ground.
+          npc.hidden=true;npc.lastFight={x:him?.x??spot.x,z:him?.z??spot.z};
+          // The lent weapon is on his wrist, so the arm has to be settled before the clock stops
+          // or the pose is whatever the last view left it (settlePose, and the frozen-clock trap).
+          settlePose({armed:true});
+          const mid={x:(me.x+(him?.x??spot.x))/2,z:(me.z+(him?.z??spot.z))/2};
+          reviewTarget=new THREE.Vector3(mid.x,world.heightAt(mid.x,mid.z)+1.3,mid.z);
+          const shot=bestOf(reviewTarget,7.5,[face+1.45,face-1.45,face+1.9,face-1.9]);
+          yaw=shot.yaw;pitch=.1;distance=targetDistance=shot.distance;reviewFrozen=true;
+          $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
+          return;
+        }
         if(view==='tidehaven-smithy'){
           questStage=10;combat.finishPractice();player.setArmed(false);
           const forge=TIDEHAVEN_SMITHY,stand=startingSpot(forge,(x,z)=>canStand(x,z,world),{reaches:[4,5.5,7]})??forge;
@@ -5359,6 +5733,10 @@ function init() {
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
         // The skills sheet as the journal draws it, for checking what this mode shows.
         if(view==='skills'){combat.finishPractice();modal('journal');journalTab('skills');}
+        // A lettered board, close enough to read: the Greenway fingerpost above the landing. What
+        // it is for is the lettering atlas, whose cells move when it is cut for fewer words.
+        if(view==='signpost'){questStage=10;combat.finishPractice();player.group.visible=false;
+          player.group.position.set(-4.9,world.heightAt(-4.9,29.4),29.4);yaw=0;pitch=.02;distance=targetDistance=3.2;}
         // Amod, for review by eye: the terraces from the Pueth road, the bridge, Ostel from below,
         // the street, and Mallec standing beside a person so the scale can be judged rather than asserted.
         if(view.startsWith('amod-')){
@@ -5377,10 +5755,12 @@ function init() {
             grounded=true;verticalSpeed=0;settleCamera();
           }
         }
-        // The western regions, for review by eye. The spots are worked out from the
-        // regions' own numbers rather than typed in, so a view cannot drift off the
-        // thing it is meant to show when the ground under it is adjusted.
-        if(view.startsWith('west-')){
+        // The western regions, for review by eye, and the south-western ones on the same
+        // machinery: Eer's ground and animals are built in the same modules, so its views
+        // are worked out by the same function. The spots come from the regions' own numbers
+        // rather than typed in, so a view cannot drift off the thing it is meant to show
+        // when the ground under it is adjusted.
+        if(view.startsWith('west-')||view.startsWith('south-')){
           questStage=10;combat.finishPractice();player.setArmed(true);
           const spot=westReviewSpot(view);
           if(spot){

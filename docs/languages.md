@@ -355,6 +355,14 @@ to 1536×4096 — 16 MB to 24 MB. That is the one place this feature costs memor
 `SIGN_TRANSLATION = false` in `src/languages.js` turns the whole of it off and
 puts the atlas back.
 
+**And normal mode pays none of it.** Since the mode gate (`docs/hard-mode.md`), the atlas is cut
+for the labels that will actually be shown. `setForeignLettering(false)` — what `src/main.js`
+says in normal mode, before the world is built — cuts it for the **95** English labels alone:
+1536×2048, **12 MB**. With the foreign lettering in, **154** labels, 1536×4096, **24 MB**. So
+normal mode gives twelve megabytes back, and the same switch settles `signText`, so a word the
+atlas was not cut for can never be asked of it. `src/signs.js` is told yes or no and never learns
+what a mode is.
+
 **The save.** One line in `checkpoint.save`, one in restore, and
 `validateLinguistSnapshot` in `src/road-checkpoint.js` beside the others. What is
 saved is the exposure per tongue and how many lines each speaker has said; the

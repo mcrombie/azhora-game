@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 
-const { createSigns, SIGN_LABELS, SIGN_COLOURS, labelPixels, labelMetres, signText, setSignReader } = await sourceModule('../src/signs.js');
+const { createSigns, SIGN_LABELS, SIGN_COLOURS, labelPixels, labelMetres,
+  ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, letteringAtlas, letteringLabels, setForeignLettering, setSignReader, signText } = await sourceModule('../src/signs.js');
 
 /** The world's own toolkit, reduced to what signs use. */
 function kit() {
@@ -47,6 +50,51 @@ test('one sign language: four shapes for four meanings, in the village’s woods
   const finger = made.direction.children.find(child => child.isGroup), ahead = new THREE.Vector3(1, 0, 0).applyEuler(finger.rotation);
   assert.ok(ahead.x > .99, 'the upper finger points at its place');
   assert.throws(() => signs.place({ x: 0, z: 0, label: 'A place nobody lettered', parent: root }), /SIGN_LABELS/);
+});
+
+test('the atlas is cut for the words this game will actually show, and halves when the tongues are not in it', () => {
+  // The module is shared by every test in the run, so whatever this does it puts back.
+  try {
+    setForeignLettering(true);
+    const hard = letteringAtlas();
+    assert.equal(hard.labels, SIGN_LABELS.length, 'every word any sign may show');
+    assert.deepEqual([hard.width, hard.height], [1536, 4096]);
+    assert.equal(hard.bytes, 24 * 1024 * 1024, '24 MB of texture, as docs/languages.md costs it');
+
+    setForeignLettering(false);
+    const normal = letteringAtlas();
+    assert.equal(normal.labels, ENGLISH_SIGN_LABELS.length, 'the English labels alone');
+    assert.deepEqual([normal.width, normal.height], [1536, 2048], 'half the rows, and still a power of two');
+    assert.equal(normal.bytes, 12 * 1024 * 1024, '12 MB of texture');
+    assert.equal(hard.bytes - normal.bytes, 12 * 1024 * 1024, 'twelve megabytes back, not the eight the doc guessed');
+    assert.equal(normal.labels < hard.labels, true);
+    assert.deepEqual([...letteringLabels()], [...ENGLISH_SIGN_LABELS], 'and it is cut for exactly those');
+
+    // The safety this rests on: with the foreign words out of the atlas, nothing can ask for one.
+    // `letters()` throws on a label it has no cell for, and that throw is a fatal panel.
+    setSignReader(() => false);
+    for (const [english, foreign] of FOREIGN_SIGN_LABELS) {
+      assert.equal(signText(english), english, `${english} letters plainly with no foreign atlas`);
+      assert.equal(ENGLISH_SIGN_LABELS.includes(foreign), false, `${foreign} is only ever in the larger atlas`);
+    }
+    // Every board the world puts up has a cell in the smaller atlas too, so it is never short.
+    const cut = new Set(letteringLabels());
+    for (const label of ENGLISH_SIGN_LABELS) assert.ok(cut.has(label), `${label} has a cell in normal mode`);
+    // And with the foreign words in, a reader that cannot read still gets them.
+    setForeignLettering(true);
+    assert.equal(signText('The Caloss Gate'), FOREIGN_SIGN_LABELS.get('The Caloss Gate'));
+  } finally { setSignReader(null); setForeignLettering(true); }
+});
+
+test('the host says which atlas to cut before the world is built, and says only yes or no', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  const signs = readFileSync(fileURLToPath(new URL('../src/signs.js', import.meta.url)), 'utf8');
+  const told = main.indexOf("setForeignLettering(gameMode.has('linguist'));"), built = main.indexOf('world=createWorld(scene,');
+  assert.ok(told > 0, 'the host answers');
+  assert.ok(told < built, 'and answers before the atlas is cut');
+  // src/signs.js is handed a yes or a no and never learns why: the gate stays the only reader.
+  assert.doesNotMatch(signs, /game-mode|gameMode|'hard'|'normal'/, 'signs.js does not know what a mode is');
+  assert.match(signs, /export const setForeignLettering = wanted => \{ foreignLettering = SIGN_TRANSLATION && !!wanted;/, 'a plain yes or no');
 });
 
 test('lettering is one height everywhere, and the board grows with the words rather than squeezing them', () => {
