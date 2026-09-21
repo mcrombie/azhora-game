@@ -143,8 +143,10 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
   assert.match(main, /const guardKey=!autopilot\.active&&keys\.has\(GUARD_KEY\);/);
   assert.match(main, /combat\.guard\(guardKey,player\.group\.rotation\.y\);/);
   assert.match(source('combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
-  // The hand slot IS the shield, and what he is seen holding follows what he is wearing.
-  assert.match(main, /hasShield:!!gear\.wearing\('hand'\)/);
+  // The hand slot IS the shield, and what he is seen holding follows what he is wearing — or,
+  // for the length of a bout and nowhere else, what the shield's teacher has strapped on his arm
+  // (src/teachers.js). Nothing else may ever put a shield there.
+  assert.match(main, /hasShield:!!lent\?\.shield\|\|!!gear\.wearing\('hand'\)/);
   assert.match(main, /player\.setShield\(carried\);/);
   // Not an optional call. The player is a facade over a replaceable body, and a verb missing from
   // that facade did nothing at all, quietly: the buckler was never built and four renders showed
@@ -216,7 +218,8 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   assert.match(combat, /player\.guarding = guarding\(\);\s*\r?\n\s*return player\.guarding;/);
   // The footer names the key only while there is a shield on the arm to use it with.
   assert.match(main, /document\.body\.classList\.toggle\('shielded',carried\);/);
-  assert.match(main, /const carried=!!gear\.wearing\('hand'\);/, 'and "carried" is the hand slot');
+  assert.match(main, /const carried=!!lent\?\.shield\|\|!!gear\.wearing\('hand'\);/,
+    'and "carried" is the hand slot, or the boards lent for a bout');
   const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
   assert.match(html, /<span class="shield-control"><kbd>V<\/kbd> Guard<\/span>/);
   const css = readFileSync(fileURLToPath(new URL('../src/adventure.css', import.meta.url)), 'utf8');

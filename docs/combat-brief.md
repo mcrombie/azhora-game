@@ -452,10 +452,27 @@ can teach past what he knows. The top figure is headroom for the teachers the wi
 later, not a promise anybody in this company can keep. A real fight still has no ceiling at all,
 and the straw post still stops at 5.
 
-A man will only spar in the craft he teaches, so the bout asks what is in the traveler's hands: a
+A man only spars in the craft he teaches, so the bout asks what is in the traveler's hands: a
 weapon of his family, or — for Kristen alone — a shield on the arm, because the shield is worn
-rather than held. He says so in his own words when the hands are wrong. Nobody can spar with Jerry
-until bows exist, which is phase 6.
+rather than held.
+
+**And if the hands are wrong he lends his spare** (the coordinator's ruling, 2026-09-21). The
+first cut of this refused the bout instead, which meant the only way to be taught the spear was
+for a spearman to die first: nobody who carries a pole will trade one, so the traveler's hand
+reaches a polearm only off the ground where its owner fell, and the dead teach nothing. Matt's
+spare pike and Mus's short spear were already in the fiction; the rest are the plain equivalent — a
+blunted blade, a practice shaft, a coppiced stave, the second mace in the roll, the buckler Kristen
+learned on — and **none of them is a named weapon**, because the only named weapons in the game are
+the ones the dead leave behind. Jerry lends nothing: he has one bow and the game has no other, and
+he says so. That is the last thing waiting on phase 6.
+
+**A loan is not a gift.** It exists for the length of the bout and nowhere else: `lent` is one
+variable in the host with three readers (`lentProfile` for what combat swings, `getMargins` for
+what a swing costs and whether there is a shield, `refreshShield` for what is drawn). It never
+enters the satchel, never touches `weapons` or `gear`, is in no snapshot, and cannot be kept, sold
+or dropped. The traveler's own weapon is back in his hand at `spar-over` however the bout ended —
+and because a drowning leaves a fight by another road, the frame loop also gives it back on any
+frame in which no bout is running.
 
 **A bout can kill nobody.** `bout: true` on an encounter floors both sides at one and ends in a
 yield with its own event (`spar-over`), so **no victory and no defeat is ever reported for a
@@ -484,6 +501,24 @@ traveler can reach *fond* and never ask.
 The dead teach nothing and a man sent on ahead teaches nothing until he is back, which is one
 question — is he here, walking with you — that `companions` already answers.
 
-Review view: `sparring`. Ed the Word, two lessons in, three paces off, on open ground with the rest
-of the company out of it (`allies: 0`), his road body off the ground so there is no twin, and the
-bout paying Blades to 35 because 35 is what he is.
+### The loan found a real one: phase 5 never reached the fight
+
+`weapons.profile()` is what the host hands `createCombat`, and it returned the weapon's damage and
+its reach and **left `tempo`, `arc`, `room`, `locked` and `thrust` behind**. `combat.js` reads all
+five off the weapon it is given and defaults every one of them to the sword, so phase 5 was true of
+the module, and of the tests that build a weapon by hand, and of nothing the player ever held: the
+staff struck at a sword's pace, the greatsword's third swing could be stepped out of, and the pike
+swung happily in a doorway.
+
+It surfaced because lending a pike whose `room: 2` never arrives makes Matt's second lesson a lie.
+`feelOf(id)` in `src/weapons.js` is now the one list of the five, `profile()` spreads it, and
+`tests/teachers.test.js` walks every weapon the game has and checks each of the five survives the
+journey. The review view reports the three numbers it is actually fighting with, so a picture can
+be checked against them.
+
+Review views: `sparring` — Ed the Word, two lessons in, three paces off, the rest of the company
+out of it (`allies: 0`), his road body off the ground so there is no twin, the bout paying Blades
+to 35 because 35 is what he is, and `loan: null` because the traveler's own sword is already his
+craft. `sparring-pike` — Matt, the same bout with the loan in it: `own: simple-sword`,
+`held: war-pike`, `inSatchel: false`, and `feel: {tempo 1.2, arc .32, room 2}` arriving at the
+fight, which is the fix above seen from the outside.

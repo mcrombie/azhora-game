@@ -86,10 +86,17 @@ export function teachesOf(id) {
  * and these say what those numbers now do in his hands.
  *
  * Three lessons each, one for each rung above a stranger, and one bout he will stand for.
- * `wrong` is what he says when the traveler turns up to spar with the wrong thing in his hands,
- * because a man can only spar in the craft he teaches.
+ *
+ * **`lends` is his spare, for the length of the bout.** Without it the only way to spar with a
+ * spear would be for a spearman to die first - nobody who carries a pole will trade one, so the
+ * traveler's hand reaches a polearm only off the ground where its owner fell, and the dead teach
+ * nothing. That is perverse, so a teacher hands you his second one and takes it back at the
+ * yield. Matt's spare pike and Mus's short spear are already in the fiction; the rest are the
+ * plain equivalent, and none of them is a named weapon. `wrong` is what the one man with nothing
+ * spare says instead: Jerry, until bows exist at all.
  */
 const teaching = (offer, ...lines) => freeze({ offer, lines: freeze(lines) });
+const loan = (what, hand, back) => freeze({ ...what, hand, back });
 export const TEACHING = freeze({
   'merc-gotwood': freeze({
     lessons: freeze([
@@ -106,6 +113,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Stand up and go a few with me.',
       wrong: 'With that? Put a sword in your hand and I will show you something. I cannot teach you mine with something else in the way.',
       done: 'Good. Do that when it is not me in front of you and I will be very pleased with both of us.' }),
+    lends: loan({ weapon: 'simple-sword' },
+      'Take my spare. Same blade, same weight, blunted at the point — I am not sending you to a war with a hole in you.',
+      'Give it back. You will have one of your own soon enough and you will want to have handled this one first.'),
   }),
   'merc-word': freeze({
     lessons: freeze([
@@ -122,6 +132,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Show me, then. Slowly.',
       wrong: 'Not with that. Come back with an edge you can actually get close with and I shall be insufferable about it.',
       done: 'There! You see? You were inside, and inside is a completely different conversation.' }),
+    lends: loan({ weapon: 'long-dagger' },
+      'Here. No, keep the big one on your back, you cannot learn this holding that. A man should own two knives and lend one out, it makes him look generous.',
+      'Mine, thank you. I am generous, not careless. There is a difference and I have spent years establishing it.'),
   }),
   'merc-jerry': freeze({
     lessons: freeze([
@@ -136,7 +149,7 @@ export const TEACHING = freeze({
         'So know where the open ground is before it matters. That is not archery. That is just not being an idiot in a forest.'),
     ]),
     spar: freeze({ offer: 'Put me through it.',
-      wrong: 'With a bow? At this range? No. I would have to be standing where you are and I have strong feelings about that.',
+      wrong: 'With what? I have one bow. One. I am not handing my one bow to a man who has never drawn one, and you cannot learn this on a borrowed stick. Find yourself a bow and I will make you worth something at thirty paces.',
       done: 'Well. You are not going to do that to me twice.' }),
   }),
   'merc-christin': freeze({
@@ -154,6 +167,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Come at me. I will keep it up.',
       wrong: 'Get something on that arm first. I cannot teach you the boards when you are not carrying any.',
       done: 'Better. You stopped flinching, which is most of it.' }),
+    lends: loan({ shield: true },
+      'Strap this on. It is the one I learned on and it is too small for me now. Arm through, hand on the grip, and do not hide behind it.',
+      'Off it comes. Buy yourself one — you will want it on your arm and not in a pack when it matters.'),
   }),
   'merc-ciaran': freeze({
     lessons: freeze([
@@ -170,6 +186,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Take the guard up. Thrust when I say.',
       wrong: 'Not with that in your hands. Find something with two paces of wood on it and we will do this properly.',
       done: 'Thrust, recover, thrust. You have it. Now do it when you are tired.' }),
+    lends: loan({ weapon: 'ash-spear' },
+      'Take the practice shaft. Same ash, same two paces, and a button on the point instead of a head. Hands where mine are.',
+      'Shaft back. I carry two so that I never have to learn this again with one.'),
   }),
   'merc-lakota': freeze({
     lessons: freeze([
@@ -186,6 +205,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'All right. Both ends. Try.',
       wrong: 'Not with that. Pick up a stick — a real one, off the road — and come back. You will feel it at once.',
       done: 'Twice as often. You felt it. Everybody feels it and nobody believes it until they do.' }),
+    lends: loan({ weapon: 'quarterstaff' },
+      'Use the spare. Not mine — mine has never let me down and I am not starting today — but the same length, and it will not cut you either.',
+      'Back to me. You can cut a stave off any coppice in Drent, which is the other thing I like about it.'),
   }),
   'merc-eliana': freeze({
     lessons: freeze([
@@ -202,6 +224,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Come on. Mind the width.',
       wrong: 'Not with that. Bring some weight and I will show you what the weight is for.',
       done: 'Slow to start, impossible to stop. You are beginning to swing it instead of carrying it.' }),
+    lends: loan({ weapon: 'greatsword' },
+      'Take the blunt one. Same length, same weight, no edge on it — the weight is the lesson and the edge is only the last half-inch of it.',
+      'Hand it over. Your back will thank me and your arms will not, and that is the correct order.'),
   }),
   'merc-matt': freeze({
     lessons: freeze([
@@ -218,6 +243,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Form up. Point at me.',
       wrong: 'Not with that — you would have to get past the point first and that is rather the argument against it. Find a pole.',
       done: 'That is the line. Hold that when there are four hundred people shouting and you are a soldier.' }),
+    lends: loan({ weapon: 'war-pike' },
+      'My spare. Every man in a phalanx carries a spare, because the first thing a phalanx does is break pikes. Feel how much of it is behind your hands.',
+      'And I will have it back. A prince with one pike is a man with a long stick; a prince with two is still a phalanx.'),
   }),
   'merc-altun': freeze({
     lessons: freeze([
@@ -234,6 +262,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'If we must. Gently.',
       wrong: 'Not with that. Bring something that breaks things and I will explain why I dislike it.',
       done: 'There. Now please put it down and let us go and find something to eat.' }),
+    lends: loan({ weapon: 'iron-mace' },
+      'There is a second one in the roll. I have never once been glad of that and today I suppose I am. Hold it low. Let it fall.',
+      'Back in the roll with it, and we will both hope it stays there.'),
   }),
   'merc-mus': freeze({
     lessons: freeze([
@@ -250,6 +281,9 @@ export const TEACHING = freeze({
     spar: freeze({ offer: 'Now.',
       wrong: 'Wrong thing in your hands. Come back with a shaft.',
       done: 'Better. Not good. Better.' }),
+    lends: loan({ weapon: 'ash-spear' },
+      'The medium one. Not the short one.',
+      'Mine.'),
   }),
 });
 
@@ -287,6 +321,22 @@ export function handsFor(family, { weapon = null, shield = false } = {}) {
   if (!TEACHABLE.includes(family)) return false;
   return familyOf(weapon) === family;
 }
+
+/**
+ * What he puts in your hands when they are wrong for his craft, or null for a man with nothing
+ * spare - which today is Jerry alone, because the game has no bow at all yet.
+ *
+ * **A loan is not a gift.** It exists for the length of the bout and nowhere else: it never
+ * enters the satchel, it cannot be kept, sold or dropped, nothing about it is written down, and
+ * the traveler's own weapon is back in his hand the moment the bout ends, however it ends.
+ */
+export const lendOf = id => TEACHERS[id]?.lends ?? null;
+/** Whether what he lends is a thing he could actually be teaching: his own craft, in his own hands. */
+export const lendFits = id => {
+  const lent = lendOf(id);
+  if (!lent) return false;
+  return handsFor(TEACHERS[id].family, { weapon: lent.weapon ?? null, shield: !!lent.shield });
+};
 
 export function validateTeachersSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
@@ -348,16 +398,23 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
   }
 
   /**
-   * May he stand up with you, and what would it be worth? He must be here, he must have shown you
-   * his craft at least once, and the traveler must have the right thing in his hands. `ceiling` is
-   * what the bout pays up to; **a real fight has no ceiling and this is not a real fight.**
+   * May he stand up with you, and what would it be worth? He must be here, and he must have shown
+   * you his craft at least once - a man does not spar you in something he has never explained.
+   *
+   * The traveler needs the right thing in his hands, and **if he has not got it the teacher lends
+   * his spare**, because otherwise the only way to spar with a spear would be for a spearman to
+   * die first. `loan` is what is put in his hand for the bout and taken back at the yield; a man
+   * with nothing spare says so in his own words instead. `ceiling` is what the bout pays up to;
+   * **a real fight has no ceiling and this is not a real fight.**
    */
   function bout(id, hands = {}) {
     if (!present(id)) return { ok: false, reason: 'away' };
     const { family, level, spar } = teacher(id);
     if (!given(id)) return { ok: false, reason: 'untaught' };
-    if (!handsFor(family, hands)) return { ok: false, reason: 'hands', line: spar.wrong, family };
-    return { ok: true, id, family, ceiling: sparringCeiling(given(id), level), offer: spar.offer, done: spar.done };
+    const own = handsFor(family, hands);
+    const lent = own ? null : lendOf(id);
+    if (!own && !lent) return { ok: false, reason: 'hands', line: spar.wrong, family };
+    return { ok: true, id, family, ceiling: sparringCeiling(given(id), level), offer: spar.offer, done: spar.done, loan: lent };
   }
 
   /** What a bout with this man pays up to today, or 0 for a man who will not stand up with you. */
@@ -365,7 +422,7 @@ export function createTeachers({ companions = null, arms = null, onEvent = () =>
 
   const view = () => TEACHER_IDS.map(id => ({ id, name: TEACHERS[id].name, family: TEACHERS[id].family,
     level: TEACHERS[id].level, given: given(id), earned: earned(id), here: present(id),
-    owed: !!owed(id), ceiling: ceilingFor(id) }));
+    owed: !!owed(id), ceiling: ceilingFor(id), lends: lendOf(id)?.weapon ?? (lendOf(id)?.shield ? 'shield' : null) }));
 
   function snapshot() { return { version: TEACHERS_VERSION, lessons: { ...state.lessons } }; }
 
