@@ -4,6 +4,31 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — fighting, and the day
+
+**Combat skills are divided by weapon: you get good at what you carry.** Blades, Heavy arms,
+Polearms, Staves, Bows, Shield, and a shared Toughness, all on the 99-level table. Each of the ten
+mercenaries carries a different weapon, so each is the teacher of theirs: the company is the
+faculty. (`docs/combat-brief.md`)
+
+**Levels widen the margins and never replace timing.** More damage, health, wind and a more
+forgiving dodge; a level-1 traveler with perfect timing can still kill a level-8 monster, slowly,
+and one mistake ends it. Hard country is dangerous, not locked. Tells never scale.
+
+**Gear is bought, found and given — for now.** No crafting yet, but the user means to add a skill
+for it later and sees nothing wrong with a long skill list, since not every skill is necessary.
+So gear is designed in material tiers that a later Smithing skill can make (geology already finds
+ironstone). The real cost of a new skill is filling 99 levels of it, not the length of the list.
+
+**A full day and night is 48 real minutes**, about 32 of daylight and 16 of night, and the
+traveler lands at first light. On that clock Lakota lands a minute after nightfall and Eliana at
+first light on day two. (`docs/day-night-brief.md`)
+
+**Mus's wild route is long, and he cannot beat the road.** He keeps his whole draw, thirty seconds
+before the traveler included, but his route is read at last, keeps off the main road, and is
+honestly longer: a traveler who walks straight to the muster is always in first. He can be found
+in the woods. (2026-09-20; the detail is in `docs/drent-long-road.md`.)
+
 ## 2026-09-20 — foundations
 
 **How the traveler gets stronger: all three at once.** Combat skills that level by use on the
