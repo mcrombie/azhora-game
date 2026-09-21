@@ -20,7 +20,7 @@
  * scale changes again, everything here needs a cluster of its own in the new
  * frame — see the head of `src/pueth-world.js`, which has the same problem.
  */
-import { MAIN_ROAD, AVREL_CLEARING, CALOSS_GATE, villageToWorld, regionNameAt } from './region-world.js';
+import { MAIN_ROAD, AVREL_CLEARING, CALOSS_GATE, villageToWorld, hexOwnerAt } from './region-world.js';
 import { roadFrame } from './wayside.js';
 
 const point = (x, z) => Object.freeze({ x, z });
@@ -288,4 +288,4 @@ export const RENA_SIGNS = Object.freeze([
 // ---------------------------------------------------------------------------
 /** Every place this pass adds, with the region each one must stand in. */
 export const RENA_PLACES = Object.freeze([RENA, APPLEGARTH]);
-export const renaRegion = place => regionNameAt(place.centre ? place.centre.x : place.x, place.centre ? place.centre.z : place.z);
+export const renaRegion = place => hexOwnerAt(place.centre ? place.centre.x : place.x, place.centre ? place.centre.z : place.z);

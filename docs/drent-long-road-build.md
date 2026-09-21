@@ -94,7 +94,7 @@ The one piece that touches the clock's code. It touches none of its numbers.
   once); the bridge vertex of `MAIN_ROAD` with `playSeconds >= ARRIVALS.princes`; a new choice in
   his conversation, "Go on to the muster without me". Taking him back: at the camp, until the
   border stage is `march`, "Walk Drent with me" clears the release.
-- Slot rule: the companion is whoever `companyFor(playerId)` has at arrival 0 — Chris, or Crom
+- Slot rule: the companion is whoever `companyFor(playerId)` has at arrival 0 — Chris, or Cromb
   when the player is Chris. Only Chris interprets.
 *Tests:* `tests/mercenaries.test.js` — released at the bridge at 4,800 s he musters ten minutes
 later, to the second the function gives; with no companion argument every placement at 0, 600,

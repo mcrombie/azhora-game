@@ -6,7 +6,7 @@ import {
   borderConversation, borderEncounter, createBorderChapter, validateBorderSnapshot, marchSlot,
 } from '../src/border-chapter.js';
 import { MOROS_PAY } from '../src/moros-chapter.js';
-import { regionNameAt } from '../src/region-world.js';
+import { hexOwnerAt } from '../src/region-world.js';
 
 test('the chapter runs terms, gate, envoy, report, march and battle; the side is chosen once, and winning the fight wins the day', () => {
   const events = [], border = createBorderChapter({ onEvent: event => events.push(event) });
@@ -172,11 +172,11 @@ test('the Marshal, the gate, the envoy and the commanders speak only in their tu
 test('the envoy and her escort wait in Solis, the line at the border, and a marching column keeps a file behind the traveler', () => {
   for (const id of ['coalition-envoy', 'envoy-guard-north', 'envoy-guard-south', 'solis-captain']) {
     const person = BORDER_NPCS.find(npc => npc.id === id);
-    assert.equal(regionNameAt(person.x, person.z), 'West Suval', `${person.name} is in West Suval`);
+    assert.equal(hexOwnerAt(person.x, person.z), 'West Suval', `${person.name} is in West Suval`);
   }
   for (const id of ['battle-tribune', 'coalition-captain']) {
     const person = BORDER_NPCS.find(npc => npc.id === id);
-    assert.equal(regionNameAt(person.x, person.z), 'Moros Plain', `${person.name} holds the line on the Moros side`);
+    assert.equal(hexOwnerAt(person.x, person.z), 'Moros Plain', `${person.name} holds the line on the Moros side`);
   }
   assert.deepEqual(BORDER_MARCHERS, ['march-legionary-1', 'march-legionary-2', 'march-valley-1', 'march-valley-2', 'march-valley-3', 'march-valley-4']);
   const traveler = { x: 10, z: 20 }, heading = Math.PI / 2;   // walking east

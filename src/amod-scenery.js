@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { REGION_CELLS, regionNameAt, hexAt, SURVEY } from './region-world.js';
+import { REGION_CELLS, hexOwnerAt, hexAt, SURVEY } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   OSTEL, ostelPoint, OSTEL_BUILDINGS, OSTEL_SPRING, OSTEL_STONE_YARD, OSTEL_TOLL_TABLE, OSTEL_STANDS,
@@ -199,7 +199,7 @@ export function createAmodScenery(kit) {
         .map(place => ({ x: place.x, z: place.z, r: 9 })),
     ];
     const ribbable = (x, z) => amodShaping(x, z) > .6 && !keepOut.some(spot => Math.hypot(spot.x - x, spot.z - z) < spot.r)
-      && tarvelDistance(x, z) > 4.5 && roadDistance(x, z) > 3.6 && regionNameAt(x, z) === 'Amod';
+      && tarvelDistance(x, z) > 4.5 && roadDistance(x, z) > 3.6 && hexOwnerAt(x, z) === 'Amod';
     const sample = (a, b) => heights[Math.min(rows - 1, Math.max(0, b)) * columns + Math.min(columns - 1, Math.max(0, a))];
     for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
       const here = heights[j * columns + i], level = terraceLevel(here);
@@ -560,7 +560,7 @@ export function createAmodScenery(kit) {
       for (let i = 0; i < attempts; i++) {
         const x = cell.x + range(-52, 52), z = cell.z + range(-58, 58);
         if (random() * 1.5 > woodland(x, z) / Math.max(1, density)) continue;
-        if (regionNameAt(x, z) !== 'Amod' || clearOf(x, z, 2.5)) continue;
+        if (hexOwnerAt(x, z) !== 'Amod' || clearOf(x, z, 2.5)) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 4.6)) continue;
         // Chestnut and oak hold the high ground; walnut is planted, and stands lower and alone.
         const walnut = amodShaping(x, z) > .4 && random() < .3;
@@ -569,7 +569,7 @@ export function createAmodScenery(kit) {
       // Orchard and vine only on the terraces, which is the only ground worth the work.
       for (let i = 0; i < 90; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (amodShaping(x, z) < .5 || regionNameAt(x, z) !== 'Amod' || clearOf(x, z, 2)) continue;
+        if (amodShaping(x, z) < .5 || hexOwnerAt(x, z) !== 'Amod' || clearOf(x, z, 2)) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 4)) continue;
         const vine = random() < .55;
         const list = vine ? vines : orchard;
@@ -579,12 +579,12 @@ export function createAmodScenery(kit) {
       const stony = terrainAt(cell.x, cell.z) === 'grassland' ? 26 : 58;
       for (let i = 0; i < stony; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Amod' || clearOf(x, z, 1.5)) continue;
+        if (hexOwnerAt(x, z) !== 'Amod' || clearOf(x, z, 1.5)) continue;
         rocks.push({ x, z, s: range(.4, terrainAt(x, z) === 'grassland' ? 1.1 : 2.4), rot: range(0, 6.28) });
       }
       for (let i = 0; i < tuftsPerHex; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Amod' || roadDistance(x, z) < 2.2) continue;
+        if (hexOwnerAt(x, z) !== 'Amod' || roadDistance(x, z) < 2.2) continue;
         tufts.push({ x, z, s: range(.7, 1.5), rot: range(0, 6.28) });
       }
     }

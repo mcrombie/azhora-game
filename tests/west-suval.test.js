@@ -5,7 +5,7 @@ import * as THREE from '../vendor/three.module.js';
 import { canStand, moveCharacter } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { REGION_IDS, REGION_OUTLINES, WORLD_BOUNDS, SOLIS, SOLIS_ROAD, solisPoint, regionNameAt, insideRegion, STORY_SITES, landDistance } from '../src/region-world.js';
+import { REGION_IDS, REGION_OUTLINES, WORLD_BOUNDS, SOLIS, SOLIS_ROAD, solisPoint, hexOwnerAt, insideRegion, STORY_SITES, landDistance } from '../src/region-world.js';
 import {
   FORT, SOLIS_CIRCUIT, SOLIS_GATES, SOLIS_FACES, SOLIS_TOWERS, SOLIS_STAIRS, SOLIS_BUILDINGS, SOLIS_STANDS, SOLIS_SQUARE, SOLIS_APPROACH,
   COALITION_CAMP, WEST_SUVAL_BORDER, WEST_SUVAL_PLACES, WEST_SUVAL_LANDMARKS, facePoint, wallRuns, gatePassage, solisHolder,
@@ -54,7 +54,7 @@ test('West Suval is the fifth playable region, true to the atlas', () => {
 test('the road runs from the border stockade over the border to the Gate of Sun Horses, with a signpost where it crosses', () => {
   const start = SOLIS_ROAD[0], end = SOLIS_ROAD.at(-1);
   assert.ok(Math.hypot(start.x - STORY_SITES.morosStockade.x, start.z - STORY_SITES.morosStockade.z) < 1e-6, 'the road leaves from the stockade');
-  assert.equal(regionNameAt(start.x, start.z), 'Moros Plain');
+  assert.equal(hexOwnerAt(start.x, start.z), 'Moros Plain');
   assert.ok(insideRegion('West Suval', end.x, end.z));
   const gate = P(0, -SOLIS_CIRCUIT.halfB);
   assert.ok(SOLIS_ROAD.some(p => Math.hypot(p.x - gate.x, p.z - gate.z) < 1e-6), 'the road passes through the gate');
@@ -62,7 +62,7 @@ test('the road runs from the border stockade over the border to the Gate of Sun 
   assert.deepEqual(world.solisRoute, SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })));
   assert.ok(world.paths.some(path => path.length === SOLIS_ROAD.length && path.every((p, i) => p.x === SOLIS_ROAD[i].x && p.z === SOLIS_ROAD[i].z)), 'drawn as a world path');
   assert.ok(WEST_SUVAL_BORDER, 'the road crosses into West Suval');
-  assert.equal(regionNameAt(WEST_SUVAL_BORDER.crossing.x, WEST_SUVAL_BORDER.crossing.z), 'West Suval');
+  assert.equal(hexOwnerAt(WEST_SUVAL_BORDER.crossing.x, WEST_SUVAL_BORDER.crossing.z), 'West Suval');
   const post = world.roadSigns.find(sign => sign.label === 'Solis');
   assert.ok(post && Math.hypot(post.x - WEST_SUVAL_BORDER.crossing.x, post.z - WEST_SUVAL_BORDER.crossing.z) < 8, 'a signpost stands at the crossing');
   const length = SOLIS_ROAD.reduce((sum, p, i) => i ? sum + Math.hypot(p.x - SOLIS_ROAD[i - 1].x, p.z - SOLIS_ROAD[i - 1].z) : 0, 0);
@@ -227,7 +227,7 @@ test('the camp outside the walls has every contingent under its own banner, and 
 
 test('the country between the border and Solis has places to find, and they stand in West Suval', () => {
   for (const place of Object.values(WEST_SUVAL_PLACES)) {
-    assert.equal(regionNameAt(place.x, place.z), 'West Suval', `${place.name} is in West Suval`);
+    assert.equal(hexOwnerAt(place.x, place.z), 'West Suval', `${place.name} is in West Suval`);
     assert.ok(place.description.length > 60);
     assert.ok(world.landmarks.some(landmark => landmark.id === place.id), `${place.name} can be discovered`);
     const toRoad = Math.min(...SOLIS_ROAD.slice(1).map((b, i) => { const a = SOLIS_ROAD[i], dx = b.x - a.x, dz = b.z - a.z, t = Math.max(0, Math.min(1, ((place.x - a.x) * dx + (place.z - a.z) * dz) / (dx * dx + dz * dz))); return Math.hypot(place.x - a.x - dx * t, place.z - a.z - dz * t); }));

@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/game-state.js';
+import { WORD_BEACH, WORD_SWIM as WORD_CROSSING } from '../src/word-arrival.js';
+const WORD_SWIM_FROM = WORD_CROSSING.from;
 import { createSkills } from '../src/skills.js';
 import {
   SWIM, SWIMMING_SKILL, SWIMMING_LESSON, SWIM_XP, swimSpeed, swimDrain, swimReach, swimGrace, swimRange,
@@ -46,18 +48,49 @@ test('the waterline divides the world in two, and nothing is on both sides of it
   assert.equal(canSwim(1e6, 0, w), false);
 });
 
-test('a swimmer crosses the waterline in either direction; a walker does not', async () => {
+test('the flag is what opens the waterline, and without it a body is stopped at it', async () => {
   const w = await built();
   // A point in the sea east of Tidehaven, and the beach behind it.
   let wet = null;
   for (let x = 60; x < 200 && !wet; x += 2) if (canSwim(x, 300, w, .34)) wet = { x, z: 300 };
   assert.ok(wet, 'there is sea off the Drent coast');
   const walker = { x: wet.x - 8, z: wet.z }, swimmer = { x: wet.x - 8, z: wet.z };
-  // Walk east into the water: a walker is stopped at the line.
   for (let i = 0; i < 40; i++) moveCharacter(walker, 1, 0, w, .34);
-  assert.ok(!canSwim(walker.x, walker.z, w, .34), 'a walker never gets wet');
+  assert.ok(!canSwim(walker.x, walker.z, w, .34), 'without the flag the primitive stops at the line');
   for (let i = 0; i < 40; i++) moveCharacter(swimmer, 1, 0, w, .34, { swimming: true });
-  assert.ok(swimmer.x > walker.x, `a swimmer goes on past where the ground stops (${walker.x.toFixed(1)} to ${swimmer.x.toFixed(1)})`);
+  assert.ok(swimmer.x > walker.x, `with it a body goes on past where the ground stops (${walker.x.toFixed(1)} to ${swimmer.x.toFixed(1)})`);
+});
+
+test('a traveler on his own two feet can walk off a beach into the sea', async () => {
+  // The bug this is here for: the game moved the traveler with `{swimming: inWater}`, and
+  // `inWater` only became true once he was already wet. From dry land that is a closed loop, so
+  // the sea was shut to anybody who had not been warped into it - while docs/swimming.md said
+  // "walk in, there is no prompt and no key". This walks a body from real dry ground through
+  // the same call src/main.js makes, and fails if the loop ever closes again.
+  const w = await built();
+  const beach = { x: WORD_BEACH.x, z: WORD_BEACH.z };
+  assert.ok(canStand(beach.x, beach.z, w, .34), 'he starts on the strand Ed comes out on');
+  const walk = (swimming) => {
+    const p = { ...beach };
+    let inWater = false, metres = 0;
+    for (let frame = 0; frame < 900; frame++) {
+      const before = { ...p };
+      // Exactly main.js: move first, then let swimTick decide whether he is wet.
+      moveCharacter(p, 4.2 / 30, 0, w, undefined, { swimming: swimming === 'always' ? true : inWater });
+      inWater = canSwim(p.x, p.z, w, .34);
+      metres += Math.hypot(p.x - before.x, p.z - before.z);
+      if (inWater) break;
+    }
+    return { inWater, metres, ...p };
+  };
+  const now = walk('always');
+  assert.equal(now.inWater, true, `he walks in: ${now.metres.toFixed(1)} m to (${now.x.toFixed(1)}, ${now.z.toFixed(1)})`);
+  assert.ok(w.heightAt(now.x, now.z) < WATERLINE, 'and the ground under him is below the waterline');
+  // The shape of the old bug, kept as the thing that must stay false.
+  assert.equal(walk('inWater').inWater, false, 'passing the state back to itself is the closed loop');
+  // And the game passes the flag unconditionally on foot.
+  assert.match(source('main.js'), /moveCharacter\(player\.group\.position,dx,dz,playerWorld,undefined,\{swimming:true\}\)/,
+    'the on-foot move opens the water every frame');
 });
 
 test('the crossings are where the doc says they are, shore to shore', async () => {
@@ -192,6 +225,57 @@ test('drowning ends the way a goblin ends it: the same defeat, the same checkpoi
   assert.equal(combat.exhaust(10, 10).defeated, true, 'a dead man cannot be drowned twice');
 });
 
+test('a drowned traveler does not wake up in somebody else’s fight', async () => {
+  // The bug this is here for: `retry()` called `combat.resetEncounter({})`, which moves the
+  // traveler to `lastEncounter.checkpoint` and *starts* `lastEncounter` - and that begins life
+  // as DEFAULT_ENCOUNTER. A traveler who had never drawn on anybody, drowned at sea, came back
+  // a hundred metres away in an active goblin raid with three live goblins in it.
+  const { createCombat } = await sourceModule('../src/combat.js');
+  const w = await built();
+  const position = { x: WORD_SWIM_FROM.x, z: WORD_SWIM_FROM.z };
+  const combat = createCombat({ world: w, position, onEvent: () => {} });
+  assert.ok(canSwim(position.x, position.z, w, .34), 'he drowns in real water');
+  assert.equal(combat.state.phase, 'peaceful', 'and he has never fought anybody');
+  combat.exhaust(100, 200);
+  assert.equal(combat.state.phase, 'defeated');
+  // The old repair, kept as the thing that must not be used for a drowning.
+  const shadow = createCombat({ world: w, position: { ...position }, onEvent: () => {} });
+  shadow.exhaust(100, 200);
+  shadow.resetEncounter({});
+  assert.equal(shadow.state.phase, 'active', 'resetEncounter starts a fight, which is the whole bug');
+  // What a drowning gets instead: on your feet, whole, with nothing happening and nobody moved.
+  const back = combat.revive();
+  assert.deepEqual([combat.state.phase, combat.state.enemies.length], ['peaceful', 0]);
+  assert.deepEqual([back.hp, back.stamina], [100, 100], 'full health and a full bar of wind');
+  assert.equal(combat.state.player.action, 'idle');
+  assert.deepEqual([position.x, position.z], [WORD_SWIM_FROM.x, WORD_SWIM_FROM.z], 'revive moves nobody; the host does');
+  // And the host puts him on the last dry ground, not at a checkpoint.
+  const main = source('main.js');
+  assert.match(main, /if\(drownedDefeat\)\{/, 'a drowning takes its own way out of the defeat panel');
+  assert.match(main, /combat\.revive\(\);/, 'which revives rather than restarting a fight');
+  assert.match(main, /const ashore=lastDry\?\?world\.spawn;/, 'and stands him on the last dry ground he was on');
+  assert.match(main, /drownedDefeat=!!e\.drowned;/, 'the defeat says what did it and the host believes it');
+  assert.match(main, /if\(!wet&&canStand\(p\.x,p\.z,playerWorld,\.34\)\)lastDry=/, 'which is remembered every dry frame');
+});
+
+test('getting wet in the middle of a fight resets nothing', async () => {
+  // `swimTick` used to call `combat.resetEncounter({})` the moment the traveler got wet, which
+  // carried him back to the fight's checkpoint with every goblin healed: stepping into a pond
+  // undid a fight you were losing. It was never needed. Enemies move with `moveCharacter` and
+  // no swimming flag, so the water stops them at the shore, and the 45 m leash ends a fight
+  // properly for a traveler who swims away from it.
+  const main = source('main.js');
+  assert.doesNotMatch(main, /if\(combat\.state\.phase==='active'\)combat\.resetEncounter\(\{\}\);/,
+    'nothing about water restarts a fight');
+  const combatSource = source('combat.js');
+  assert.doesNotMatch(combatSource, /moveCharacter\(enemy[^)]*swimming/, 'no enemy is given the water');
+  assert.match(combatSource, /distance\(position, lastEncounter\.center\) > 45/, 'and the leash is what lets you leave');
+  // A save is never written from the water, so no crossing can be reloaded with a fresh bar of
+  // wind - which is also why the save holding health and not wind does not matter.
+  assert.match(main, /combat\.state\.player\.hp<=0\|\|inWater\)\{if\(notify\)toast\('Step ashore/,
+    'and no checkpoint is written while he is in it');
+});
+
 test('the checkpoint takes a save made in deep water, which is now the right answer', async () => {
   // Before swimming, a save in the sea was a save the traveler could never be restored to standing
   // on. Now it is a save in the middle of a crossing, and refusing it would be the bug.
@@ -208,7 +292,7 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
   assert.match(main, /if\(riding\.mounted\)\{[\s\S]{0,400}He will not go in, and he is right/, 'a horse will not go in');
   assert.match(main, /if\(inWater\)\{toast\('Both your hands are busy/, 'and a swimmer cannot swing');
   assert.match(main, /riding\.mounted\|\|inWater\)return;/, 'nor dodge');
-  assert.match(main, /moveCharacter\(player\.group\.position,dx,dz,playerWorld,undefined,\{swimming:inWater\}\)/, 'and moves at his own pace');
+  assert.match(main, /const speed=inWater\?swimSpeed\(swimLevel\)/, 'and moves at his own pace once he is in');
   assert.match(main, /combat\.exhaust\(step\.spent,step\.damage\)/, 'the wind and the blood are combat’s');
   assert.match(main, /swimming:swimming\.snapshot\(\)/, 'and the skill is saved with the road');
   // He floats at the surface with a swimmer's posture, rather than walking the seabed.

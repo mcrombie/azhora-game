@@ -7,7 +7,7 @@ import {
   KELMOD_ROAD_END, tarvelDistance,
 } from '../src/amod-world.js';
 import { PUETH_ROAD } from '../src/pueth-world.js';
-import { regionNameAt, hexAt, hexCentre, REGION_IDS, WORLD_BOUNDS, regions } from '../src/region-world.js';
+import { hexOwnerAt, hexAt, hexCentre, REGION_IDS, WORLD_BOUNDS, regions } from '../src/region-world.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import { SUBREGIONS } from '../src/map-fog.js';
 import { BUILD_STATUS } from '../src/build-status.js';
@@ -37,20 +37,20 @@ test('Amod is a playable region of the atlas, entered from western Pueth over a 
   assert.ok(REGION_BIOMES.Amod.ownScatter, 'Amod scatters its own slopes');
   const region = regions.find(entry => entry.name === 'Amod');
   assert.ok(region && region.outline.length, 'the region takes its outline from the authored hexes');
-  assert.equal(regionNameAt(region.spawn.x, region.spawn.z), 'Amod', 'its spawn is inside it');
+  assert.equal(hexOwnerAt(region.spawn.x, region.spawn.z), 'Amod', 'its spawn is inside it');
   // The atlas draws the border for us: each named hex is Amod and touches Pueth.
   const neighbours = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
   for (const cell of AMOD_BORDER_HEXES) {
     const home = hexCentre(cell.q, cell.r);
-    assert.equal(regionNameAt(home.x, home.z), 'Amod', `${cell.q},${cell.r} is Amod`);
+    assert.equal(hexOwnerAt(home.x, home.z), 'Amod', `${cell.q},${cell.r} is Amod`);
     const touching = neighbours.map(([dq, dr]) => hexCentre(cell.q + dq, cell.r + dr))
-      .filter(point => regionNameAt(point.x, point.z) === 'Pueth');
+      .filter(point => hexOwnerAt(point.x, point.z) === 'Pueth');
     assert.ok(touching.length >= 1, `Amod ${cell.q},${cell.r} touches Pueth`);
   }
 });
 
 test('the road crosses the border at the pass stones and forks off an existing Pueth road vertex', () => {
-  assert.equal(regionNameAt(AMOD_BORDER.x, AMOD_BORDER.z), 'Amod', 'the crossing point is already Amod');
+  assert.equal(hexOwnerAt(AMOD_BORDER.x, AMOD_BORDER.z), 'Amod', 'the crossing point is already Amod');
   const home = hexAt(AMOD_BORDER.x, AMOD_BORDER.z);
   assert.ok(AMOD_BORDER_HEXES.some(cell => cell.q === home.q && cell.r === home.r),
     `the road crosses through one of the three border hexes, not ${home.q},${home.r}`);
@@ -62,19 +62,19 @@ test('the road crosses the border at the pass stones and forks off an existing P
 
 test('every place, person and sign of Amod stands in Amod, off the road and out of the water', () => {
   for (const place of AMOD_LANDMARKS) {
-    assert.equal(regionNameAt(place.x, place.z), 'Amod', place.id);
+    assert.equal(hexOwnerAt(place.x, place.z), 'Amod', place.id);
     assert.ok(place.description.length > 60, `${place.id} says what it is`);
     assert.ok(place.name.length > 3, place.id);
   }
   assert.equal(new Set(AMOD_LANDMARKS.map(place => place.id)).size, AMOD_LANDMARKS.length, 'each landmark once');
   for (const [id, stand] of Object.entries(AMOD_NPC_POSITIONS)) {
-    assert.equal(regionNameAt(stand.x, stand.z), 'Amod', id);
+    assert.equal(hexOwnerAt(stand.x, stand.z), 'Amod', id);
     assert.ok(roadDistance(stand.x, stand.z) > 1.6, `${id} does not stand in the middle of the road`);
     assert.ok(tarvelDistance(stand.x, stand.z) > 3, `${id} does not stand in the Tarvel`);
   }
   // Nobody stands inside a building, and no two buildings overlap.
   for (const building of OSTEL_BUILDINGS) {
-    assert.equal(regionNameAt(building.x, building.z), 'Amod', building.id);
+    assert.equal(hexOwnerAt(building.x, building.z), 'Amod', building.id);
     assert.ok(roadDistance(building.x, building.z) > 2.8, `${building.id} is clear of the road`);
     for (const other of OSTEL_BUILDINGS) {
       if (other === building) continue;
@@ -194,7 +194,7 @@ test('the terraces are in the ground, following the contours, and they stop wher
 test('the chart, the build status and the world bounds all know about Amod', () => {
   const areas = SUBREGIONS.filter(area => area.region === 'Amod');
   assert.ok(areas.length >= 5, 'the east end is charted in several named pieces');
-  for (const area of areas) assert.equal(regionNameAt(area.x, area.z), 'Amod', area.id);
+  for (const area of areas) assert.equal(hexOwnerAt(area.x, area.z), 'Amod', area.id);
   assert.ok(areas.some(area => area.id === 'ostel') && areas.some(area => area.id === 'amod-pass-stones'));
   assert.equal(BUILD_STATUS.Amod.state, 'early');
   assert.ok(BUILD_STATUS.Amod.work.includes('Mavren'), 'the status is honest about what is only a name on a sign');
@@ -208,12 +208,12 @@ test('the pass stones, the toll stone and the ogre stand together on the road in
   const stones = AMOD_LANDMARKS.find(place => place.id === 'amod-pass-stones');
   assert.ok(Math.hypot(stones.x - TOLL_STONE.x, stones.z - TOLL_STONE.z) < 22, 'the toll stone is one of the pass stones');
   assert.ok(Math.hypot(OGRE_STAND.x - TOLL_STONE.x, OGRE_STAND.z - TOLL_STONE.z) < 8, 'he stands at his stone');
-  assert.equal(regionNameAt(OGRE_STAND.x, OGRE_STAND.z), 'Amod');
+  assert.equal(hexOwnerAt(OGRE_STAND.x, OGRE_STAND.z), 'Amod');
   assert.ok(roadDistance(OGRE_STAND.x, OGRE_STAND.z) > 1.2, 'he is beside the road, not standing in it');
   assert.ok(roadDistance(OGRE_STAND.x, OGRE_STAND.z) < 6, 'and close enough to be the reason you stop');
   assert.ok(Number.isFinite(OGRE_STAND.yaw));
   // Everything about Vessen and the burial terrace stays out of the Elagos seam to the south-west.
-  for (const place of [VESSEN, TIR_OSTEL]) assert.equal(regionNameAt(place.x, place.z), 'Amod');
+  for (const place of [VESSEN, TIR_OSTEL]) assert.equal(hexOwnerAt(place.x, place.z), 'Amod');
   assert.ok(VESSEN.z < -560 && TIR_OSTEL.z < -520, 'both sit up the valley, away from the Elagos border');
 });
 

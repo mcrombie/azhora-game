@@ -4,7 +4,7 @@
  *
  * They do not come in a line. Chris Gotwood steps off the same boat as the traveler and
  * carries the letter that starts the whole thing. Ed the Word swims ashore out of a pirate
- * ship that never docks. Jerry, Christin and Ciaran ride in together and argue about whether
+ * ship that never docks. Jerry, Kristen and Ciaran ride in together and argue about whether
  * to stay together. Lakota comes alone, then Eliana alone after him, then Matt and Al the Tun
  * together at the end of it. And somewhere in that sequence — anywhere from half a minute
  * before the traveler lands to half a minute after the last of them — Mus beaches a small
@@ -87,9 +87,12 @@ export const MERCENARY_ROSTER = Object.freeze([
     ['Jerry. I came up with those two and I have heard every thought either of them has had since the crossing.',
       'Eleven of us for one border. Either it is a small border or somebody has done the arithmetic and not told us. I know which I would bet on.'],
     { group: 'riders' }),
-  merc('christin', 'Christin', 'the Selemi coast', ARRIVALS.riders, 90, 1.26,
+  // Her id stays `christin` and `merc-christin`. The name on screen is Kristen; the id is a
+  // save field and a key in MERCENARY_STYLES, and renaming it would strand every save that
+  // holds a weapon traded with her (the `eastreena` precedent).
+  merc('christin', 'Kristen', 'the Selemi coast', ARRIVALS.riders, 90, 1.26,
     { tunic: 0x6d7f6a, hair: 0x1f1a16, skin: 0x9d7350, build: 'broad', headgear: 'bare', hairStyle: 'ponytail', facialHair: 'clean', garment: 'gambeson', marks: [] },
-    ['Christin! You are the one who landed first, then. Good \u2014 you know the road and we do not, so that is settled, we go together.',
+    ['Kristen! You are the one who landed first, then. Good \u2014 you know the road and we do not, so that is settled, we go together.',
       'Jerry will tell you we should split up. Jerry tells everybody that. Jerry has never once been right about it.'],
     { group: 'riders' }),
   merc('ciaran', 'Ciar\u00e1n', 'Feradom', ARRIVALS.riders, 90, 1.32,

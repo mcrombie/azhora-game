@@ -88,7 +88,7 @@ its dialects.
 | **Feradom speech** | Chris Gotwood, Ciarán | derived: Drentish diverged, with the cold clusters of profile `crefs` |
 | **Maroshi** | Lakota, of the Marosh fens | profile `moreshi` |
 | **Pyrosi** | Eliana, of the Pyrosi hills | profile `pyrosi` |
-| **Selemi** | Christin, of the Selemi coast | derived: profile `tennoca`, whose coastal-trading sound fits the Iberos Sea's own maritime power |
+| **Selemi** | Kristen, of the Selemi coast | derived: profile `tennoca`, whose coastal-trading sound fits the Iberos Sea's own maritime power |
 | **Kellith** | Matt, Prince of Zorkys | profile `kellith` — the highland-passes tongue, for a man with a hall, a valley and four hundred people |
 | **Bouéni** | Al the Tun, of the southern islands | profile `boueni` |
 | **Harbour Cant** | Ed the Word, of no port he will name | a pidgin: every word is forged in whichever donor tongue the word itself picks, over a dozen of its own |
@@ -423,7 +423,7 @@ the whole of what a quay is.
    be wrong — Wendel does not stock a language nobody has placed. A teacher, or
    the forest, is the answer.
 2. **The Selemi, Kellith and Bouéni tongues are one mercenary each**, for the same
-   reason. Christin, Matt and Al talk plenty, but a single mouth caps out. These
+   reason. Kristen, Matt and Al talk plenty, but a single mouth caps out. These
    want either countrymen in a later region or a teacher.
 3. **No teachers exist.** `linguist.study(id, n)` is the hook; nothing is authored.
    The obvious first one is the Elodi, who "translate for commercial purposes"

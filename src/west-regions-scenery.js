@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { regionNameAt, REGION_CELLS, SURVEY, hexAt } from './region-world.js';
+import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
@@ -156,7 +156,7 @@ export function createWestScenery(kit) {
   // Vastos
   // -------------------------------------------------------------------------
   const vastos = district('Vastos');
-  const inVastos = (x, z) => regionNameAt(x, z) === 'Vastos';
+  const inVastos = (x, z) => hexOwnerAt(x, z) === 'Vastos';
 
   ribbon(WEST_PROFILES.get(VASTOS_RIVER.id), vastos, 'The Vastos River');
   ribbon(WEST_PROFILES.get(VASTOS_BECK.id), vastos, 'The snowmelt beck');
@@ -300,7 +300,7 @@ export function createWestScenery(kit) {
     for (const side of [-1, 1]) {
       const offset = beck.halfWidth + range(.2, 1.9);
       const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
-      if (regionNameAt(x, z) !== 'Meneth' || westWaterSurface(x, z) !== null) continue;
+      if (hexOwnerAt(x, z) !== 'Meneth' || westWaterSurface(x, z) !== null) continue;
       becksedge.push({ x, z, s: range(.5, 1.1), rot: random() * 6.28 });
     }
   }
@@ -409,7 +409,7 @@ export function createWestScenery(kit) {
     for (const cell of block) {
       for (let i = 0; i < 150; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Meneth' || westBareGround(x, z, 3)) continue;
+        if (hexOwnerAt(x, z) !== 'Meneth' || westBareGround(x, z, 3)) continue;
         const band = menethBand(x, z);
         if (band === 'floor') continue;
         const grove = band === 'grove';
@@ -422,12 +422,12 @@ export function createWestScenery(kit) {
       // Stone shows on the crests, where the soil is thinnest, and nowhere else.
       for (let i = 0; i < 28; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Meneth' || westBareGround(x, z, 2) || menethBand(x, z) !== 'wood') continue;
+        if (hexOwnerAt(x, z) !== 'Meneth' || westBareGround(x, z, 2) || menethBand(x, z) !== 'wood') continue;
         rocks.push({ x, z, s: range(.4, 1.5), rot: range(0, 6.28) });
       }
       for (let i = 0; i < tuftsPerHex; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Meneth' || westBareGround(x, z, 1.5)) continue;
+        if (hexOwnerAt(x, z) !== 'Meneth' || westBareGround(x, z, 1.5)) continue;
         tufts.push({ x, z, s: range(.7, 1.6), rot: range(0, 6.28), floor: menethBand(x, z) === 'floor' });
       }
     }
@@ -509,7 +509,7 @@ export function createWestScenery(kit) {
     for (let i = 0; i < 34; i++) {
       const side = random() < .5 ? -1 : 1, offset = sample.half + range(1.5, CARICA_CORRIDOR.bankReach);
       const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
-      if (regionNameAt(x, z) !== 'Caricas' || westBareGround(x, z, 2.5)) continue;
+      if (hexOwnerAt(x, z) !== 'Caricas' || westBareGround(x, z, 2.5)) continue;
       if (corridorTrees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 2.9)) continue;
       corridorTrees.push({ x, z, old: true, wide: false, s: range(.9, 1.5), h: range(12, 18), rot: range(0, 6.28) });
     }
@@ -531,7 +531,7 @@ export function createWestScenery(kit) {
     for (const cell of block) {
       for (let i = 0; i < 110; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Caricas' || westBareGround(x, z, 3)) continue;
+        if (hexOwnerAt(x, z) !== 'Caricas' || westBareGround(x, z, 3)) continue;
         const here = caricasWood(x, z);
         if (random() * 40 > here) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 5.4)) continue;
@@ -541,13 +541,13 @@ export function createWestScenery(kit) {
       // Stone belongs to the shelf, which the lore calls rougher and less well-watered.
       for (let i = 0; i < 34; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Caricas' || westBareGround(x, z, 2)) continue;
+        if (hexOwnerAt(x, z) !== 'Caricas' || westBareGround(x, z, 2)) continue;
         if (random() > smooth(-2050, -1780, x)) continue;
         rocks.push({ x, z, s: range(.4, 1.7), rot: range(0, 6.28) });
       }
       for (let i = 0; i < tuftsPerHex; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Caricas' || westBareGround(x, z, 1.5)) continue;
+        if (hexOwnerAt(x, z) !== 'Caricas' || westBareGround(x, z, 1.5)) continue;
         tufts.push({ x, z, s: range(.7, 1.6), rot: range(0, 6.28), floor: caricaCorridorDistance(x, z) < CARICA_CORRIDOR.woodReach });
       }
     }
@@ -599,7 +599,7 @@ export function createWestScenery(kit) {
       for (let i = 0; i < 6; i++) {
         const side = random() < .5 ? -1 : 1, out = range(sample.half + .5, offset + braid.half + 7);
         const x = sample.x + sample.nx * out * side, z = sample.z + sample.nz * out * side;
-        if (regionNameAt(x, z) !== 'Nesdor' || westWaterSurface(x, z) !== null) continue;
+        if (hexOwnerAt(x, z) !== 'Nesdor' || westWaterSurface(x, z) !== null) continue;
         if (i < 4) flatsSand.push({ x, z, s: range(.3, .95), rot: random() * 6.28 });
         else flatsSedge.push({ x, z, s: range(.8, 1.7), rot: random() * 6.28 });
       }
@@ -625,7 +625,7 @@ export function createWestScenery(kit) {
       const wooded = cell.terrain === 'forest' ? 58 : cell.terrain === 'grassland' ? 20 : 0;
       for (let i = 0; i < wooded * 2; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Nesdor' || westBareGround(x, z, 4)) continue;
+        if (hexOwnerAt(x, z) !== 'Nesdor' || westBareGround(x, z, 4)) continue;
         const kind = nesdorTerrainAt(x, z);
         if (kind === 'plains' || random() * 60 > (kind === 'forest' ? 58 : 20)) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 4.6)) continue;
@@ -635,7 +635,7 @@ export function createWestScenery(kit) {
       }
       for (let i = 0; i < tuftsPerHex + 6; i++) {
         const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
-        if (regionNameAt(x, z) !== 'Nesdor' || westBareGround(x, z, 1.5)) continue;
+        if (hexOwnerAt(x, z) !== 'Nesdor' || westBareGround(x, z, 1.5)) continue;
         tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28), floor: nesdorTerrainAt(x, z) === 'plains' });
       }
     }

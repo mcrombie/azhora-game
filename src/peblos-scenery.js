@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { landDistance, regionNameAt } from './region-world.js';
+import { landDistance, hexOwnerAt } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
   PEBLOS_ISLANDS, MAIN_ISLAND, COBBLE, COBBLE_QUAY, COBBLE_BUILDINGS, COBBLE_STANDS, COBBLE_WORKING, COBBLE_GULL_ROCKS,
@@ -558,4 +558,4 @@ export function createPeblosScenery(kit) {
   };
 }
 
-export { regionNameAt };
+export { hexOwnerAt };
