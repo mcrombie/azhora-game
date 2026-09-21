@@ -152,6 +152,14 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
     if (!Number.isFinite(at) || at < 0 || at > REGARD.top) return false;
   }
   if (!Array.isArray(data.errands) || data.errands.some(id => !COMPANION_IDS.includes(id))) return false;
+  if (data.fell !== undefined) {
+    if (!data.fell || typeof data.fell !== 'object' || Array.isArray(data.fell)) return false;
+    for (const [id, at] of Object.entries(data.fell)) {
+      if (!COMPANION_IDS.includes(id) || !at || typeof at !== 'object' || Array.isArray(at)) return false;
+      if (at.where !== null && typeof at.where !== 'string') return false;
+      if (at.what !== null && at.what !== undefined && typeof at.what !== 'string') return false;
+    }
+  }
   // A man cannot both walk with you and be dead. The dead live in `createFallen()`, which the
   // save already carries, so they are handed in rather than kept here.
   return true;
@@ -162,7 +170,7 @@ export function validateCompanionsSnapshot(data, { allowMissing = true } = {}) {
  *   shared with the world's other dead on purpose: permanent death is one idea, not two.
  */
 export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
-  const state = { walking: [], regard: {}, errands: [] };
+  const state = { walking: [], regard: {}, errands: [], fell: {} };
 
   const dead = id => !!fallen?.has?.(id);
   const regardOf = id => state.regard[id] ?? 0;
@@ -227,14 +235,25 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     return regardBy(id, REGARD.errand, 'errand');
   }
 
-  /** He is gone, in any fight, anywhere. He stops walking with you and never comes back. */
-  function died(id) {
+  /**
+   * He is gone, in any fight, anywhere. He stops walking with you and never comes back.
+   *
+   * `where` and `what` are remembered because the Marshal asks what happened, and the answer is
+   * built from them rather than invented: "At the Lauvel. Wolves, at night." They are also what
+   * the journal's company page says of him, and where his weapon is lying.
+   */
+  function died(id, { where = null, what = null, x = null, z = null } = {}) {
     if (!known(id) || dead(id)) return { ok: false };
     fallen?.fall?.(id);
     state.walking = state.walking.filter(walker => walker !== id);
-    onEvent({ type: 'died', id, name: mercenaryById(id)?.name ?? id });
-    return { ok: true, walking: [...state.walking] };
+    state.fell[id] = { where: typeof where === 'string' && where ? where : null,
+      what: typeof what === 'string' && what ? what : null,
+      ...(Number.isFinite(x) && Number.isFinite(z) ? { x, z } : {}) };
+    onEvent({ type: 'died', id, name: mercenaryById(id)?.name ?? id, ...state.fell[id] });
+    return { ok: true, walking: [...state.walking], fell: { ...state.fell[id] } };
   }
+  /** Where a man fell and against what, or null for somebody who has not. */
+  const fellAt = id => (state.fell[id] ? { ...state.fell[id] } : null);
 
   /**
    * The living of the company, in roster order. This is what the muster is given: `musterVoices`
@@ -244,7 +263,7 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
 
   const view = () => COMPANION_IDS.map(id => ({
     id, name: mercenaryById(id)?.name ?? id,
-    walking: state.walking.includes(id), dead: dead(id),
+    walking: state.walking.includes(id), dead: dead(id), fell: fellAt(id),
     regard: Math.round(regardOf(id)), rung: rungFor(regardOf(id)), label: RUNG_LABELS[rungFor(regardOf(id))],
     errand: state.errands.includes(id),
   }));
@@ -252,12 +271,13 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
   function snapshot() {
     return { version: COMPANIONS_VERSION, walking: [...state.walking],
       regard: Object.fromEntries(Object.entries(state.regard).map(([id, at]) => [id, Math.round(at * 10) / 10])),
-      errands: [...state.errands] };
+      errands: [...state.errands], fell: Object.fromEntries(Object.entries(state.fell).map(([id, at]) => [id, { ...at }])) };
   }
 
   function restore(data) {
-    Object.assign(state, { walking: [], regard: {}, errands: [] });
+    Object.assign(state, { walking: [], regard: {}, errands: [], fell: {} });
     if (!validateCompanionsSnapshot(data, { allowMissing: false })) return false;
+    state.fell = Object.fromEntries(Object.entries(data.fell ?? {}).map(([id, at]) => [id, { ...at }]));
     // A save written before somebody died, loaded after: the dead do not walk.
     state.walking = data.walking.filter(id => !dead(id));
     state.regard = { ...data.regard };
@@ -265,7 +285,7 @@ export function createCompanions({ fallen = null, onEvent = () => {} } = {}) {
     return true;
   }
 
-  return { ask, askable, sendOn, travelled, fought, traded, errand, died, living, view, snapshot, restore,
+  return { ask, askable, sendOn, travelled, fought, traded, errand, died, fellAt, living, view, snapshot, restore,
     rung: id => rungFor(regardOf(id)), label: id => RUNG_LABELS[rungFor(regardOf(id))],
     regardFor: id => Math.round(regardOf(id)),
     get walking() { return [...state.walking]; },

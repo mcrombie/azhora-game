@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole } from './characters.js';
 import { markerFor, markerGrade } from './quest-markers.js';
-import { createCombat } from './combat.js';
+import { createCombat, MAX_ALLIES } from './combat.js';
 import { createCombatView } from './combat-view.js';
 import { createInventory, INVENTORY_ITEMS } from './inventory.js';
 import { createWeapons, WEAPON_TYPES } from './weapons.js';
@@ -498,7 +498,12 @@ function init() {
     if(!config?.center||TEACHING_FIGHTS.has(config.id))return [];
     const axis=config.retreatAxis==='x'?'x':'z',across=axis==='x'?'z':'x';
     const sign=config.retreatSign===-1?-1:1;
-    return fileOrder.map((id,index)=>{
+    // Only the room the encounter has left. This can never be the reason a fight does not start:
+    // `encounterConfig` throws out a whole encounter whose ally list is too long, and the border
+    // authors four of its own, so handing it everybody would have made the arc unfinishable with
+    // three companions. If there is not room for all of them, the rest hold.
+    const room=Math.max(0,MAX_ALLIES-(config.allies?.length??0));
+    return fileOrder.slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id))return null;
       const back=5+(index%5)*3,side=(index<5?-1:1)*2.5;
@@ -506,6 +511,16 @@ function init() {
         [axis]:config.center[axis]-sign*back,[across]:config.center[across]+side,
         model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};
     }).filter(Boolean);}
+  /**
+   * What killed him, in the plainest words the fight has. The Marshal asks what happened and the
+   * answer is built from this rather than invented - "At the Lauvel. Wolves, at night."
+   */
+  function enemyWordFor(encounterId){
+    if(encounterId===LUSCIA_WOLVES.id)return 'Wolves';
+    if(encounterId===OGRE_ENCOUNTER.id)return 'The ogre at the pass stones';
+    if(encounterId===BORDER_ENCOUNTER_ID)return 'The border battle';
+    if(encounterId===hideoutEncounter.id)return 'The scouts at the Bramble camp';
+    return 'Goblins';}
   const COMPANION_KEEP_OUT=26;
   /** The nearest standable spot clear of a fight, for a man who is not in it and must not be. */
   function outsideTheFight(centre,at){
@@ -2111,6 +2126,46 @@ function init() {
     if(mode==='defeated')return;
     show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('defeat',false);mode='playing';stopInput();lastModalFocus?.focus();canvas.focus();
   }
+  /**
+   * Where a man is, in the journal's words rather than the clock's. A companion is wherever the
+   * traveler is, which is the one thing no phase can say, so it is asked first.
+   */
+  function whereHeStands(id,placement){
+    if(fallen.has(id))return null;
+    if(companions.walksWith(id))return 'Walking with you';
+    const phase=placement?.phase;
+    if(phase==='coming')return 'Not yet ashore';
+    if(phase==='landing')return mercenaryById(id)?.route==='shore'?'On the strand, getting his breath':'At the landing';
+    if(phase==='stopped')return 'Stopped on the road';
+    if(phase==='walking')return mercenaryById(id)?.route==='wild'?'Somewhere off the road':'On the road';
+    if(phase==='mustered')return 'At the muster';
+    if(phase==='with-traveler')return 'Walking with you';
+    return 'Somewhere on the road';}
+  /**
+   * The company, a line a man: where he is, how well he knows you, and the dead named as dead
+   * rather than quietly missing. It reads `fallen`, which is the same list the world keeps its
+   * own dead in, so a man cannot be alive on this page and dead anywhere else.
+   */
+  function refreshCompanyPage(){
+    const list=$('company-list');if(!list)return;
+    const placements=new Map(company.placements(playSeconds).map(p=>[p.id,p]));
+    const seen=companions.view();
+    list.replaceChildren();
+    for(const man of seen){
+      const li=document.createElement('li');
+      const where=whereHeStands(man.id,placements.get(man.id));
+      const name=document.createElement('b');name.textContent=man.name;li.append(name);
+      const said=document.createElement('span');
+      if(man.dead){
+        const fell=man.fell?.where?` · fell in ${man.fell.where}`:'';
+        const what=man.fell?.what?` · ${man.fell.what}`:'';
+        li.classList.add('company-dead');
+        said.textContent=` — Dead${fell}${what}. He will not be at the muster.`;
+      }else said.textContent=` — ${where} · ${man.label}`;
+      li.append(said);list.append(li);}
+    const walking=seen.filter(man=>man.walking).length,gone=seen.filter(man=>man.dead).length;
+    $('company-note').textContent=`${walking===0?'Nobody walks with you':walking===1?'One walks with you':`${walking} walk with you`}`
+      +`${gone?` · ${gone} ${gone===1?'is':'are'} dead`:''} · ${seen.length+1-gone} of eleven still coming to the muster.`;}
   function journalTab(tab){
     if(mapTutorial.noteJournalTab(tab)){renderMapTutorial();if(questStage>=1)saveRoad(false);}
     if(tab==='world'){const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),
@@ -2240,6 +2295,7 @@ function init() {
   }
   function refreshJournal() {
     refreshCampaign();
+    refreshCompanyPage();
     $('journal-quest-title').textContent=questSteps[questStage].title;$('journal-quest-detail').textContent=questSteps[questStage].detail;show('letter',inventory.has('harbor-letter'));
     $('journal-steps').replaceChildren();
     questSteps.slice(0,-1).forEach((step,i)=>{const li=document.createElement('li');li.textContent=(i<questStage?'✓ ':i===questStage?'→ ':'')+step.title;li.className=i<questStage?'done':i===questStage?'current':'';$('journal-steps').append(li);});
@@ -2290,6 +2346,9 @@ function init() {
     if(result.startEncounter===LUSCIA_WOLVES.id){
       saveRoad(false);
       if(combat.startEncounter(LUSCIA_WOLVES)){stopInput();toast('Two wolves come off the burial line. Give their lunges room, or back east onto the open grass.','THE LAUVEL · WOLVES');audio?.effect('bell');}
+      // A refusal here was a silent no-op and the wolves simply never came, which is the one
+      // shape of failure a player cannot tell from nothing happening.
+      else toast('Something is wrong with the ground here and the wolves do not come. Step back onto the road and try again.','THE LAUVEL');
       return result;
     }
     if(action==='return-courier-satchel'&&campaign.view().chapterId==='luscia-aftermath')campaign.completeChapter('luscia-aftermath');
@@ -2380,7 +2439,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -2404,7 +2463,7 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
+    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());companions.restore(saved.companions??createCompanions().snapshot());rebuildCompany();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
     chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);fallen.restore(saved.fallen??createFallen().snapshot());for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
@@ -3534,7 +3593,7 @@ function init() {
       if(e.type==='ally-down'&&companions.walksWith(e.id)){
         const name=mercenaryById(e.id)?.name??e.id;
         const where=world.regionAt(e.x,e.z)?.name??'the road';
-        companions.died(e.id);
+        companions.died(e.id,{where,what:enemyWordFor(combat.state.encounterId),x:e.x,z:e.z});
         showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
           note:'He does not get up, and he will not be at the muster. Nobody in this company comes back.'});
         audio?.effect('player-hit');saveRoad(false);}
@@ -3701,6 +3760,7 @@ function init() {
         if(questStage===9&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<4.5)updateQuest('reach-border');
         if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-meadowEncounter.center.x,player.group.position.z-meadowEncounter.center.z)<14){
           if(combat.startEncounter(meadowEncounter)){toast('Two raiders among the field walls. Give their swings room.','THE AVREL CLEARING · WATCH THE AMBER TELLS');audio?.effect('bell');}
+          else toast('The raiders hold off. Step back to the road and come at the clearing again.','THE AVREL CLEARING');
         }
         for(const place of world.landmarks)if(!discoveries.has(place.id)&&Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<(place.radius||8)){
           discoveries.add(place.id);$('discovery-count').textContent=discoveries.size;$('area-name').textContent=place.name;

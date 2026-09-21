@@ -272,6 +272,45 @@ test('Kristen’s gate is not one that opens itself', async () => {
   assert.equal(companions.askable('merc-christin', { where: 'road', has: { charted: true } }).ok, true);
 });
 
+test('the journal says where each man is, and names the dead as dead', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+  assert.match(html, /id="journal-company"/, 'the company has a page');
+  assert.match(html, /id="company-list"/, 'with a line a man');
+  assert.match(main, /function refreshCompanyPage\(\)\{/, 'which is filled from the module');
+  // A companion is wherever the traveler is, which no phase can say, so it is asked first.
+  assert.match(main, /if\(companions\.walksWith\(id\)\)return 'Walking with you';/, 'walking with you comes before any phase');
+  assert.match(main, /if\(fallen\.has\(id\)\)return null;/, 'and the dead are not anywhere');
+  assert.match(main, /He will not be at the muster/, 'the dead are named as dead, not quietly missing');
+  assert.match(main, /refreshCompanyPage\(\);/, 'and it is refreshed with the rest of the journal');
+});
+
+test('a man who falls is remembered where he fell, and it survives the road', () => {
+  const { companions, fallen } = fresh();
+  companions.ask('merc-eliana', { where: 'road', has: { edge: true } });
+  const gone = companions.died('merc-eliana', { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
+  assert.equal(gone.ok, true);
+  assert.deepEqual(companions.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
+  assert.equal(companions.fellAt('merc-mus'), null, 'a living man fell nowhere');
+  // The page and the Marshal both read it, so it has to come back off the road.
+  const saved = companions.snapshot();
+  assert.equal(validateCompanionsSnapshot(saved), true);
+  const later = createCompanions({ fallen });
+  assert.equal(later.restore(saved), true);
+  assert.deepEqual(later.fellAt('merc-eliana'), { where: 'Luscia', what: 'Wolves', x: -600, z: 140 });
+  assert.equal(later.view().find(man => man.id === 'merc-eliana').fell.where, 'Luscia');
+  // An older save has nobody fallen, and that is not nonsense.
+  const { fell, ...withoutFell } = saved;
+  assert.equal(validateCompanionsSnapshot(withoutFell), true, 'a save from before anybody died');
+  for (const bad of [{ ...saved, fell: [] }, { ...saved, fell: { nobody: { where: 'Luscia' } } },
+    { ...saved, fell: { 'merc-mus': { where: 7 } } }])
+    assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
+  // And the host tells it what killed him, in the fight's own plainest word.
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /companions\.died\(e\.id,\{where,what:enemyWordFor\(combat\.state\.encounterId\),x:e\.x,z:e\.z\}\)/, 'who, where and against what');
+  assert.match(main, /if\(encounterId===LUSCIA_WOLVES\.id\)return 'Wolves';/, 'and the words are the fight’s own');
+});
+
 test('the people walking with you are in the fight, at their own numbers', async () => {
   // The gap this closes: step 2 built the arithmetic of a companion in a fight - his health from
   // his own Toughness, his damage from his weapon's family - and nothing ever put one in a fight.
@@ -321,7 +360,7 @@ test('the three fights the player is taught alone in are a list, not a place', (
   assert.match(main, /if\(!merc\|\|!arms\|\|fallen\.has\(id\)\)return null;/, 'and a dead man is in no fight');
   // Losing one is unmistakable: who, where, and that it is final.
   assert.match(main, /if\(e\.type==='ally-down'&&companions\.walksWith\(e\.id\)\)\{/, 'a companion who goes down');
-  assert.match(main, /companions\.died\(e\.id\);/, 'is gone for good');
+  assert.match(main, /companions\.died\(e\.id,\{where,/, 'is gone for good, and it is remembered where');
   assert.match(main, /IS DEAD`,name:`\$\{name\} fell in \$\{where\}`/, 'and the game says who and where');
   assert.match(main, /Nobody in this company comes back/, 'and that it is final');
 });
