@@ -255,7 +255,14 @@ export async function runRoadSmoke(h) {
     assert(state().luscia?.stage === 'find-satchel', 'Iven did not send the traveler to the field');
     const satchel = LUSCIA_SITES['courier-satchel'];
     await arrive(satchel.x + .5, satchel.z - .8);
-    assert(query('#interaction-label')?.textContent.includes('satchel'), 'the satchel prompt is missing at the wrecked cart');
+    // The prompt is suppressed whenever anybody stands inside the traveler's three-metre reach,
+    // so when it is missing, say who is standing there. A name is the whole diagnosis.
+    if (!query('#interaction-label')?.textContent.includes('satchel')) {
+      const near = npcData.filter(npc => !npc.hidden && !npc.fallen)
+        .map(npc => ({ id: npc.id, d: Math.hypot(npc.actor.group.position.x - player.group.position.x, npc.actor.group.position.z - player.group.position.z) }))
+        .filter(entry => entry.d < 6).sort((a, b) => a.d - b.d).map(entry => `${entry.id} at ${entry.d.toFixed(1)}m`);
+      assert(false, `the satchel prompt is missing at the wrecked cart; the label reads "${query('#interaction-label')?.textContent}" and within six metres stands: ${near.join(', ') || 'nobody'}`);
+    }
     tap('KeyF'); await frames(3);
     assert(state().luscia?.stage === 'return-satchel', 'the courier’s satchel was not lifted');
     assert(combat.state.encounterId === LUSCIA_WOLVES.id && combat.state.phase === 'active', 'no encounter followed the satchel');
