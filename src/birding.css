@@ -50,6 +50,9 @@
    the fifth row. Three columns rather than four because "Construction" and "Cartography" have to fit
    on one line at the journal's width, and because three columns leave no hole: four would leave two. */
 #skills-sheet .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0}
+/* The heading over a block of skills that belong together — the seven fighting ones, under
+   'Arms'. Quiet: it is a divider, not a title. */
+#skills-sheet .skill-heading{margin:20px 0 8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.62;font-weight:600}
 #skills-sheet .skill-tile{position:relative;display:grid;justify-items:center;align-content:start;gap:4px;padding:13px 9px 11px;border:1px solid #d8c68c33;border-radius:4px;background:#e8cc8c0b;color:#f2dfb9;font:inherit;text-align:center;cursor:pointer}
 #skills-sheet .skill-tile:hover,#skills-sheet .skill-tile:focus-visible{border-color:#f0d79366;background:#e8cc8c1c;outline:none}
 #skills-sheet .skill-tile b{font-family:Adventure,Georgia,serif;font-weight:400;font-size:15px;color:#fff1cf;line-height:1.2}
