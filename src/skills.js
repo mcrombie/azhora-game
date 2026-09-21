@@ -131,6 +131,16 @@ export const SKILLS = Object.freeze({
       unlock(43, 'The same 98 m on wind alone'),
       unlock(99, '280 m on one breath — and the open crossing to Cobble is 355, so you still island-hop')]),
   }),
+  farming: Object.freeze({
+    id: 'farming', name: 'Farming', kind: 'working',
+    blurb: 'Putting a row in and coming back for it. The only skill with a clock of its own: a sown row ripens on the hours of your own game whether you are standing over it or three miles away, which is the first true thing Drent tells you about itself.',
+    teacher: 'Enna, at the Mill Commons in the Avrel clearing',
+    thresholds: RUNESCAPE_TABLE,
+    // What each level opens (src/farming.js holds the crops and the rows; the test keeps the two in step).
+    unlocks: Object.freeze([unlock(1, 'Barley · four minutes a row, 24 experience'), unlock(1, 'The four commons rows at the Avrel mill'),
+      unlock(1, 'Applegarth’s kept orchard · picked, not sown, and bearing again in ten minutes'),
+      unlock(5, 'Drent leaf · eight minutes a row, 45 experience')]),
+  }),
   linguist: Object.freeze({
     id: 'linguist', name: 'Linguist',
     blurb: 'Reading the tongues of Azhora. Every conversation in a language you do not have teaches you a little of it, whether or not you understood a word at the time.',

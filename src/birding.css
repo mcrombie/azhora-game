@@ -59,7 +59,7 @@
 #skills-sheet .skill-tile .skill-bar{width:100%;height:3px;margin:3px 0 0}
 #skills-sheet .skill-tile.unlearned{opacity:.5}
 #skills-sheet .skill-tile.unlearned .skill-tile-icon,#skills-sheet .skill-tile.unlearned b{color:#a9b5a4}
-#skills-sheet .skill-tile-total{grid-column:span 2;cursor:default;background:#e8cc8c18;grid-auto-flow:column;justify-content:center;align-items:baseline;gap:12px}
+#skills-sheet .skill-tile-total{grid-column:span 1;cursor:default;background:#e8cc8c18;grid-auto-flow:column;justify-content:center;align-items:baseline;gap:12px}
 #skills-sheet .skill-tile-total .skill-tile-level{font-family:Adventure,Georgia,serif;font-size:25px;color:#ffe7ac}
 #skills-sheet .skill-tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);z-index:3;width:max-content;max-width:250px;padding:6px 10px;border:1px solid #e5cb8566;border-radius:4px;background:#0e2a24f2;color:#f2dfb9;font-size:11.5px;line-height:1.5;opacity:0;pointer-events:none;transition:opacity .14s}
 #skills-sheet .skill-tile:hover .skill-tip,#skills-sheet .skill-tile:focus-visible .skill-tip{opacity:1}
