@@ -63,7 +63,15 @@ test('the traveler’s own model can show any tradeable weapon, and only one at 
       .filter(name => traveler.group.getObjectByName(name)?.visible);
     assert.equal(visible.length, 1, `holding ${id} shows exactly one weapon (${visible.join(', ')})`);
   }
-  assert.equal(traveler.setWeapon('hunting-bow'), false, 'bows are not held weapons yet');
+  // Bows became held weapons with combat phase 6: in the off hand, and alone like the rest.
+  const swung = ['Plain iron mercenary sword', 'Iron mace', 'Long dagger', 'Bearded axe', 'Greatsword', 'Picked forest stick'];
+  const shown = names => names.filter(name => traveler.group.getObjectByName(name)?.visible);
+  assert.equal(traveler.setWeapon('hunting-bow'), true, 'the traveler can hold a hunting bow');
+  assert.deepEqual(shown(['Hunting bow (held)']), ['Hunting bow (held)'], 'the bow is in his hand');
+  assert.deepEqual(shown(swung), [], 'and nothing he swings is out with it');
+  assert.equal(traveler.setWeapon('simple-sword'), true);
+  assert.deepEqual(shown(['Hunting bow (held)']), [], 'taking up the sword puts the bow away');
+  assert.equal(traveler.setWeapon('no-such-weapon'), false, 'a weapon the game does not have is refused');
 });
 
 test('no two hired swords share a build, a headgear, a hair, a jaw and a garment', () => {

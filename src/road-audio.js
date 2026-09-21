@@ -16,6 +16,9 @@ const EFFECTS=Object.freeze({
   // table did not have, so all twelve were silent. A success carried further: the same rise,
   // an octave instead of a fifth, held longer.
   discovery:[660,1320,.62,.085],
+  // Pulling spent shafts out of the ground asked for this and the table did not have it, so
+  // the quiver filled in silence. A short soft pluck, quieter than anything a fight makes.
+  gather:[360,470,.11,.05],
 });
 
 /** Geography and surface selection remain usable without opening an audio device. */
