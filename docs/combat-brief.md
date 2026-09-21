@@ -598,3 +598,51 @@ the string, `drawn: 1` and `quiver: 12` in the facts beside it. `bow-jerry` — 
 draw as an ally, `action: windup, progress: .94`, 4.7 m off his goblin. Neither used the Greenway
 in the end: that raid is in `TEACHING_FIGHTS`, which is the set a companion is held *out* of, so
 the first draft of the Jerry shot photographed nobody and said so (`archerAlly: null`).
+
+## After phase 7
+
+The seven phases are built. These are what came after them, or out of them.
+
+### The army fills your file — built
+
+**The user's ruling of 2026-09-21** (`docs/design-answers.md`), measured by the hunter: at level 2
+the border battle is nought wins in forty for a traveler alone or with three, across every kit a
+smith sells and every level the game can give, because eight soldiers land a blow every 0.3 s and
+a dodge is affordable every 1.9 s. Numbers on your side decide that fight, not gear. So it is the
+army's battle, and the army makes up the number.
+
+`src/file-fill.js`, pure. **One constant**: `FILE_FLOOR = 6`, which the hunter measured and
+confirmed — the line is identical for the border battle and `solis-sweep`, at a plausible kit and
+a prepared one, and it does not care *who* the six are (0+6, 3+3 and 6+0 all win; anything
+totalling five loses). Fewer than six walking with him and his commander assigns the difference as
+ordinary soldiers of the side he signed with, the same ally kind the battle's own men already are.
+They carry no level and no toughness, so they are the kind's plain ninety health — **weaker than
+companions on purpose**, so friends still matter.
+
+**They are not companions**: no regard, no lessons, no journal line, no file behind him
+afterwards, no death card, nothing owed to the Marshal's register, nothing saved. They are made
+where the fight is laid and forgotten with it.
+
+**Both sides**, and every day-after variant, because both go through `getAllies` and the rule asks
+the encounter's id rather than being written into either chapter. At most two short lines per
+side, said by the captain who already gives him the word — Oswin Brulan of the army's left, Arlen
+Voss of the Lauvel companies — only when it is actually happening, and truthful about the number.
+
+**It comes in through `getAllies`, as the company does, and never through `borderEncounter`.**
+The hunter's warning, and it is a real trap: `ALLY_SPOTS` has five places and the side already
+uses four, so a fill of two or more handed to the encounter would be silently sliced off — the
+traveler told six and given one, with nothing to say so. A test stands a filled file on the field
+and counts the men actually standing there.
+
+It touches nothing else: no encounter level moved, and no fight that is not an army's gained
+anybody. Wolves, Mallec and every raid are what they were.
+
+### Candidates, not built
+
+- **Allies take no weapon road at all** (found by the hunter). A companion with a pike fights
+  exactly like one with a mace: `ALLY_KINDS` carries one damage figure and one reach a kind, and
+  none of phase 5's tempo, arc, `locked` or `room` reaches an ally — `roomToSwing` is asked only
+  about the traveler, so Matt's pike swings happily in a doorway when Matt is the one holding it.
+  The traveler's own weapons went through `profile()`; allies never had an equivalent. Worth
+  doing, not asked for, and it would change what a company is worth in a way that wants measuring
+  first.

@@ -278,13 +278,15 @@ export function createAftermathChapter({ onEvent = () => {} } = {}) {
 
 /** The commander, and whoever sends the traveler on, speak for the chapter while it is theirs. */
 export function aftermathConversation(npc, context) {
-  const { aftermath, openDialogue, closeDialogue, act } = context;
+  // `fill` is what his commander says about the ordinary soldiers the army is putting in beside
+  // him for this day's fight, or nothing when it is not happening (src/file-fill.js).
+  const { aftermath, openDialogue, closeDialogue, act, fill = [] } = context;
   const chapter = aftermath.spec, current = aftermath.view().stage;
   if (!chapter) return false;
   const option = id => { const found = aftermath.availableActions().find(item => item.id === id); return found ? [{ ...found, action: () => { closeDialogue(); act(id); } }] : []; };
   const leave = { id: 'leave-aftermath', label: 'Not yet.', action: closeDialogue };
   if (npc.id === chapter.commanderId && current === 'rally') {
-    openDialogue(npc, chapter.orders, null, 'Step back', { choices: [...option('begin-assault'), leave] });
+    openDialogue(npc, [...chapter.orders, ...fill], null, 'Step back', { choices: [...option('begin-assault'), leave] });
     return true;
   }
   if (npc.id === chapter.principalId && current === 'report') {

@@ -274,7 +274,13 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
 
 /** The Marshal, the envoy, Voss and the line commanders speak for the chapter while it is theirs. */
 export function borderConversation(npc, context) {
-  const { border, openDialogue, closeDialogue, act, musterCount = 1 } = context;
+  /**
+   * `fill` is what his captain says about the ordinary soldiers the army is putting in beside
+   * him, or nothing at all when it is not happening (`fillLines`, src/file-fill.js). The **host**
+   * builds it, because only the host knows who is actually walking with him today - and because
+   * `file-fill.js` reads this module's own encounter id, so it cannot be imported back into it.
+   */
+  const { border, openDialogue, closeDialogue, act, musterCount = 1, fill = [] } = context;
   const view = border.view(), current = view.stage;
   const option = id => { const found = border.availableActions().find(item => item.id === id); return found ? [{ ...found, action: () => { closeDialogue(); act(id); } }] : []; };
   const leave = { id: 'leave-border', label: 'Not yet.', action: closeDialogue };
@@ -312,9 +318,10 @@ export function borderConversation(npc, context) {
     return true;
   }
   if ((npc.id === 'battle-tribune' || npc.id === 'coalition-captain') && current === 'march') {
-    openDialogue(npc, npc.id === 'battle-tribune'
-      ? ['Your column is up. Good. Form them on the left, south-west of the stockade, and hold that corner.']
-      : ['You brought them up the road. Good. Form them on the right, south-west of the stockade.'], null, 'Back to the line', { choices: [...option('reach-line'), leave] });
+    openDialogue(npc, [npc.id === 'battle-tribune'
+      ? 'Your column is up. Good. Form them on the left, south-west of the stockade, and hold that corner.'
+      : 'You brought them up the road. Good. Form them on the right, south-west of the stockade.',
+      ...fill], null, 'Back to the line', { choices: [...option('reach-line'), leave] });
     return true;
   }
   if ((npc.id === 'battle-tribune' || npc.id === 'coalition-captain') && current === 'join-line') {
