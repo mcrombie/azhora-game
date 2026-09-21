@@ -403,5 +403,7 @@ Asked the five questions above; these are the rulings, and they bind the build.
 4. **Archaeology's first lesson may be given at Rena by Hesta Ardry**, with Lorn sending you to
    her - the standing rule is that any specialist of a skill may introduce it. Lakota still can,
    once you know him.
-5. **Silas and the Weatherhead: not yet ruled.** The user asked what the Weatherhead is before
-   deciding whether he may leave it.
+5. **Silas moves to the Toll House stream.** The Weatherhead - the low head south of Tidehaven's
+   landing, a name that was the coordinator's reading rather than the user's word - keeps Cabe
+   Tolliver and his pipe, and the marl pit at its foot stays in the world as a place Silas sends
+   you back to for the coastal stones.
