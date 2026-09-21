@@ -20,6 +20,7 @@ import { createBirding, validateBirdingSnapshot } from './birding.js';
 import { createMapFog, validateMapFogSnapshot } from './map-fog.js';
 import { createCartography, validateCartographySnapshot } from './cartography.js';
 import { createSwimming, validateSwimmingSnapshot } from './swimming.js';
+import { validateCompanionsSnapshot } from './companions.js';
 import { createFishing, validateFishingSnapshot } from './fishing-skill.js';
 import { createMycology, validateMycologySnapshot } from './mycology.js';
 import { createBotany, validateBotanySnapshot } from './botany.js';
@@ -110,6 +111,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateMapFogSnapshot(data.chart)) return failed('The saved chart is invalid.');
     if (!validateCartographySnapshot(data.cartography)) return failed('The saved chart of countries is invalid.');
     if (!validateSwimmingSnapshot(data.swimming)) return failed('The saved swimming is invalid.');
+    if (!validateCompanionsSnapshot(data.companions)) return failed('The saved companions are invalid.');
     if (!validateFishingSnapshot(data.fishing)) return failed('The saved fishing notes are invalid.');
     if (!validateMycologySnapshot(data.mycology)) return failed('The saved mushroom notes are invalid.');
     // Botany was herbology before it took in the trees; an older save keeps its notes.
