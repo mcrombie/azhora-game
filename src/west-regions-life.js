@@ -665,6 +665,23 @@ export const WEST_LIFE_ZONES = Object.freeze([
     sites: Object.freeze([[-2590, 140], [-2520, 160]]),
     note: 'The great river otter on the Isa: the fauna overview places it "from the Oremindi meltwater sources through the forest-margin watercourses of Alezhor", and with the Ibenwood two hexes west this is a forest-margin watercourse even where the country itself is not forest. The Carica’s otter at a larger size; an extension by place, and flagged.',
   }),
+  // The country's own living, and the one part of its fauna the lore does name outright:
+  // "The stock is: cattle and sheep on grass that never dries out, and the hides and
+  // cheese that come off them." Loose on the valley grass with nobody near them, as
+  // Vastos's longhorns and Meneth's sheep are — the grazing communities that own them are
+  // people, and people are what this pass does not build.
+  Object.freeze({
+    id: 'isareos-cattle', species: 'longhorn', region: 'Isareos', radius: .8, scale: .78,
+    minX: -2460, maxX: -2290, minZ: 20, maxZ: 175,
+    sites: Object.freeze([[-2330, 72], [-2312, 96], [-2344, 110], [-2320, 140]]),
+    note: 'isareos.md: "cattle and sheep on grass that never dries out". Not the Vastos longhorn — the lore names no breed here, so these are the ordinary grassland beast at the size Nesdor’s are drawn, on the valley floor beside the east beck.',
+  }),
+  Object.freeze({
+    id: 'isareos-sheep', species: 'hill-sheep', region: 'Isareos', radius: .55, scale: 1,
+    minX: -2380, maxX: -2200, minZ: -215, maxZ: -70,
+    sites: Object.freeze([[-2300, -150], [-2278, -128], [-2322, -120], [-2260, -170], [-2296, -186]]),
+    note: 'isareos.md: the other half of the stock, on the valley-head grass in the north-east. "Each valley head has its herds"; the herds are here and the communities are not.',
+  }),
   Object.freeze({
     id: 'isareos-vultures', species: 'turkey-vulture', region: 'Isareos', radius: .3, scale: 1, air: 38,
     minX: -2700, maxX: -2320, minZ: -200, maxZ: 160,
