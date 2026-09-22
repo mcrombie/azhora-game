@@ -3732,3 +3732,33 @@ Going past twelve means raising `encounterConfig`'s cap, which nobody has asked 
 variants override, on four arenas, and each variant's copy names the number ("Seven of the
 Republic's best hold the Gate of Sun Horses"). Growing them is four sets of authored spots and four
 rewrites, which is not one small change.
+
+---
+
+## `init` builds; it does not play
+
+**Seen, 22 September 2026:** the whole game failed to start. A black window, no error panel,
+`npm run test:game` saying only `[Error: Game did not initialize]` after twenty-five seconds,
+and **1,446 unit tests green**.
+
+**What it was.** One line added near the top of `init()`:
+
+```js
+for (const [slot, piece] of Object.entries(startingGear(playerId) ?? {})) gear.wear(slot, piece);
+```
+
+`gear` is built with `createGear({ onEvent: () => saveRoad(false) })`. So wearing a piece saves
+the road, and `saveRoad` reads `testingEnabled` — a `let` declared about seventeen hundred lines
+below the place the shield was being put on. A temporal dead zone, thrown before
+`window.__AZHORA__` is ever assigned, which is why nothing downstream could be asked what
+happened. The renderer console had it (`Cannot access 'testingEnabled' before initialization`)
+and `tests/artifacts/failure.json` had the renderer console; the terminal printed neither.
+
+**The rule.** `init()` is one enormous function that **builds** the world: everything it touches
+must already exist above it. Anything that *plays* — granting a kit, saving, starting a fight,
+firing a module's `onEvent` — belongs in a function that runs later. The starting shield now
+lives in `grantStartingKit()`, which a new road calls when it begins.
+
+**How to see it next time.** The terminal's `[Error: Game did not initialize]` is not the error.
+Read `tests/artifacts/failure.json`: its `errors` array is the renderer's own console, and the
+real message is in there.

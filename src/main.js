@@ -838,10 +838,6 @@ function init() {
       npc.shadows=undefined;npc.escorting=false;npc.pace=undefined;scene.add(npc.actor.group);npcById.set(npc.id,npc);
     }
     wearPlayerLook(playerId);settleMercenaries();
-    // **His own shield, from the first step.** A loaded save puts its own gear on a moment after
-    // this (`gear.restore`), so this is the new road's kit and never an old road's.
-    for(const [slot,piece] of Object.entries(startingGear(playerId)??{}))if(!gear.wearing(slot))gear.wear(slot,piece);
-    refreshShield();
     characterSelect.select(playerId,{announce:false});
     return chosen;
   }
@@ -851,6 +847,14 @@ function init() {
    * default game begins with the sword and an empty skills sheet, exactly as it always has.
    */
   function grantStartingKit(){
+    // **The shield he landed with**, for whoever is being played: only Cromb has one
+    // (src/player-characters.js). It lives here and not beside the sword at the top of `init`,
+    // because wearing a piece fires gear's own event, which is `saveRoad`, which reads a `let`
+    // seventeen hundred lines below the sword - and the whole game failed to start, with nothing
+    // on the screen and `Cannot access 'testingEnabled' before initialization` in a console
+    // nobody was reading. `init` builds; it does not play (docs/known-issues.md).
+    for(const [slot,piece] of Object.entries(startingGear(playerId)??{}))if(!gear.wearing(slot))gear.wear(slot,piece);
+    refreshShield();
     for(const item of startingInventory(playerId)){
       if(!inventory.has(item.id))inventory.grant(item.id);
       if(WEAPON_TYPES[item.id])weapons.setCondition(item.id,WEAPON_TYPES[item.id].maxDurability);
@@ -982,11 +986,6 @@ function init() {
     }
   });
   inventory.grant('simple-sword');
-  // **And the shield he landed with**, for whoever is being played: only Cromb has one
-  // (src/player-characters.js). A loaded save puts its own gear on over this; a new road
-  // starts with it. `refreshShield` is called every frame by the loop, so the boards appear
-  // on the arm without anything here having to ask for them.
-  for(const [slot,piece] of Object.entries(startingGear(playerId)??{}))gear.wear(slot,piece);
   inventory.add(COPPER_ITEM,STARTING_PURSE);
   // How hard he hits with a given weapon: his level in that weapon's family, which is 1 - and
   // so a multiplier of exactly 1 - until somebody shows him how (src/combat-skills.js).

@@ -10,6 +10,10 @@ services:
     name: azhora
     buildCommand: node scripts/build-web.mjs
     staticPublishPath: ./public
+    # **Deploys are by hand** (the user, 22 September 2026). A push to main backs the work up
+    # to GitHub; it does not put it in front of anybody. Deploy from Render's dashboard when
+    # the build has actually been played. Turning this back on is one word.
+    autoDeploy: false
     pullRequestPreviewsEnabled: false
     headers:
       # The world map and the atlas are the two big files and neither changes often.
