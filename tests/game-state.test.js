@@ -28,8 +28,10 @@ test('Movement slides along obstacles while water and world edges remain impassa
   const p={x:5.5,z:0};moveCharacter(p,2,2,world);assert.ok(p.x<5.7);assert.ok(p.z>1.8);
   assert.equal(canStand(0,16,world),false);assert.equal(canStand(21,0,world),false);assert.equal(canStand(-5,-5,world),true);
 });
-const tutorialEvents=['ashore','accept-letter','trained','ambush','victory','meet-waykeeper','inspect-letter','close-inventory','reach-north-trail','reach-border'];
-test('The regional tutorial continues beyond Eren through inventory and the northern border',()=>{
+// Eren is out of the cast (src/cast.js) and the fifth step is the ground he stood on: the
+// Greenway Watch. Officer Glun hands over the road token with the chart (the user, 22 Sept 2026).
+const tutorialEvents=['ashore','accept-letter','trained','ambush','victory','reach-watch','inspect-letter','close-inventory','reach-north-trail','reach-border'];
+test('The regional tutorial continues past the Greenway Watch through inventory and the northern border',()=>{
   let stage=0;
   for(const [index,event] of tutorialEvents.entries()) {
     stage=advanceQuest(stage,event);
@@ -47,11 +49,11 @@ test('Quest events cannot skip the battle, inventory inspection, dismissal, or n
       assert.equal(advanceQuest(stage,event),stage,`${event} must not bypass stage ${stage}`);
     }
   }
-  const afterEren=advanceQuest(5,'meet-waykeeper');
-  assert.equal(afterEren,6);
-  assert.equal(advanceQuest(afterEren,'close-inventory'),6,'reading the message comes before closing the satchel');
-  assert.equal(advanceQuest(afterEren,'reach-border'),6,'speaking with Eren does not complete the region');
-  const afterReading=advanceQuest(afterEren,'inspect-letter');
+  const afterWatch=advanceQuest(5,'reach-watch');
+  assert.equal(afterWatch,6);
+  assert.equal(advanceQuest(afterWatch,'close-inventory'),6,'reading the message comes before closing the satchel');
+  assert.equal(advanceQuest(afterWatch,'reach-border'),6,'reaching the watch does not complete the region');
+  const afterReading=advanceQuest(afterWatch,'inspect-letter');
   assert.equal(advanceQuest(afterReading,'reach-north-trail'),7,'dismiss the inventory before continuing');
   const onTrail=advanceQuest(afterReading,'close-inventory');
   assert.equal(advanceQuest(onTrail,'reach-border'),8,'visit the north trail before the boundary');
