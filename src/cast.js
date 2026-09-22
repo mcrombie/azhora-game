@@ -33,19 +33,12 @@
  */
 
 /**
- * **Off for the moment, and not because the cull was reconsidered.**
- *
- * Everything below is built and works: turn this to `true` and the world empties to the list.
- * What is not finished is the rendered story walkthrough (`npm run test:game`), which visits a
- * village full of people and, with the cast trimmed, dies somewhere after the road smoke with
- * an error Electron will not carry back across its own IPC. Most of the walkthrough was made
- * cast-aware on 22 September 2026 - the village-life block, Smiths's round on the square, Eren's
- * step - and the last of it is a session's work rather than a puzzle.
- *
- * It is left off rather than on so that the game the user plays, and the check that guards it,
- * are both known-good. Flipping it is safe to look at; it is not safe to ship on.
+ * **On.** The world empties to the list below, and one word here puts every one of them back:
+ * nobody is deleted, every module still writes and places its own people, and the rendered
+ * story walkthrough was taught to run either way (`inCast` in src/main.js and src/road-smoke.js),
+ * so the check that guards the game is honest with the cast trimmed or whole.
  */
-export const TRIMMED = false;
+export const TRIMMED = true;
 
 /** Builds that are soldiers. A soldier is kept whatever his name is. */
 export const SOLDIER_ROLES = Object.freeze(['legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard']);
@@ -80,13 +73,14 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
-  'rainbow-dyer',        // Brandy Frank
+  'brandy-frank',        // Brandy Frank, dyer of impossible colours
   'bird-watcher',        // Lakota
   'boatman',             // Jess of the Stills
-  'wine-seller', 'wine-clerk',   // Juan and Nika at Tharganhom
+  'attic-juan', 'attic-nika',    // Juan and Nika at Tharganhom, the Wine Attic
+  'solis-secretary',     // Tancredi Vel, who the chameleon's arrangement runs through
   'john-salt',           // John, Sultan of the Salt Trade, and the Sultana he sails
   'katy',                // Katy, who goes looking for Batman at dusk
-  'winemaker', 'vine-keeper',    // Kat and the keeper at Vaervelm Caelazh
+  'vintner', 'winemaker', 'vine-keeper',   // Livia, Kat and the keeper at Vaervelm Caelazh
   'light-keeper', 'rival-keeper',// the two lighthouse keepers and their feud
 ]);
 

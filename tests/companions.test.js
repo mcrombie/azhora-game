@@ -259,12 +259,15 @@ test('each is asked where he is, and the three gates are real ones', () => {
 });
 
 test('Kristen’s gate is not one that opens itself', async () => {
-  // Drent is charted from the first morning (STARTING_CHART), so "charted" would have been a
-  // condition the traveler meets before he has walked anywhere. Explored is the real reading of
-  // "you know the road and we do not": he has walked the country's own hexes.
+  // Drent used to be charted from the first morning, so "charted" was a condition the traveler
+  // met before he had walked anywhere. He now lands with no chart at all (the user, 22 September
+  // 2026), and Officer Glun's one opens on the hex under his feet - so charted is the ground he
+  // is standing in, and explored is still the real reading of "you know the road and we do not".
   const { createCartography } = await import('../src/cartography.js');
   const chart = createCartography();
-  assert.equal(chart.state('Drent'), 'charted', 'he lands with Drent charted');
+  assert.equal(chart.state('Drent'), 'unknown', 'he lands with no chart at all');
+  chart.learn(); chart.noteHex('Drent');
+  assert.equal(chart.state('Drent'), 'charted', 'the chart opens on the ground he is standing in');
   assert.notEqual(chart.state('Drent'), 'explored', 'and not with it explored');
   // The module's side of the same gate.
   const { companions } = fresh();

@@ -194,6 +194,15 @@ const frameErrors = createFrameErrors({
   onNew: entry => console.error(`Frame error: ${entry.message}${entry.at ? ` (${entry.at})` : ''}`),
   onAny: entry => { try { if (testingEnabled || new URLSearchParams(location.search).has('test')) toast(entry.message, 'THE FRAME THREW'); } catch {} },
 });
+/**
+ * **Anything thrown outside the frame, recorded with its stack.** A throw in a click handler or a
+ * timer is not caught by the render loop's own guard, and all the runner ever heard of it was
+ * "Uncaught TypeError" with no line: an hour of the 22 September 2026 session went on chasing one
+ * of those. The window says where it came from now.
+ */
+addEventListener('error', event => { try { frameErrors.note(event.error ?? event.message, null); } catch {} });
+addEventListener('unhandledrejection', event => { try { frameErrors.note(event.reason, null); } catch {} });
+
 function fail(error) {
   console.error(error); show('loading',false); show('fatal',true); $('fatal').dataset.stack = String(error?.stack ?? error);
   $('fatal-message').textContent = 'Please close and reopen the game. ' + error.message;
@@ -5914,7 +5923,11 @@ function init() {
         // Anything thrown in here comes back through Electron's IPC, which loses a message it
         // cannot serialise and reports only "Script failed to execute". Re-throwing as a plain
         // Error with the text in it is the difference between a name and a shrug.
-        try{return await this.runSmokeBody();}catch(e){throw new Error(String(e&&e.stack||e&&e.message||e));}
+        let out;try{out=await this.runSmokeBody();}catch(e){throw new Error(String(e&&e.stack||e&&e.message||e));}
+        // The result crosses Electron's IPC, which clones it: a value it cannot clone is reported
+        // as "Script failed to execute" with nothing else, so the summary is checked here by name.
+        for(const [k,v] of Object.entries(out??{})){try{structuredClone(v);}catch{throw new Error(`summary field ${k} cannot cross the IPC: ${Object.prototype.toString.call(v)}`);}}
+        return out;
       },
       async runSmokeBody(){
         // This check is also the test of weapon wear, which play has switched off for now (WEAPON_WEAR).
@@ -6974,7 +6987,9 @@ function init() {
             westLife.update(.03,player.group.position,true);
           }
         }
-        if(view==='lysa'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
+        // A view of somebody who is out of the cast (src/cast.js) photographs nothing rather than
+        // throwing: the view is still written, and comes back with them.
+        if(view==='lysa'&&npcById.get('acorn-cook')){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
         // Anyone, close and face on: 'npc-<id>' (Toft is 'npc-jimson-toft').
         if(view.startsWith('npc-')&&npcById.has(view.slice(4))){questStage=10;combat.finishPractice();player.group.visible=false;
           const npc=npcById.get(view.slice(4)),g=npc.actor.group,turn=g.rotation.y+.35;g.visible=true;
@@ -7259,7 +7274,7 @@ function init() {
         if(view==='acorns'){questStage=10;combat.finishPractice();if(!inventory.count('acorn'))inventory.add('acorn');toggleInventory();inventory.select('acorn');}
         if(view==='pawpaw'){questStage=10;combat.finishPractice();if(!inventory.count('pawpaw'))inventory.add('pawpaw',2);combat.state.player.hp=62;toggleInventory();inventory.select('pawpaw');}
         if(view==='pawpaw-patch'){questStage=10;combat.finishPractice();woodlandLife.restoreCollectedFruit([]);const f=woodlandLife.state().fruits[0],patch=woodlandLife.state().fruitPatches[0];player.group.position.set(f.x+.5,world.heightAt(f.x+.5,f.z+1),f.z+1);reviewTarget=new THREE.Vector3(patch.x,world.heightAt(patch.x,patch.z)+1.2,patch.z);distance=targetDistance=6;pitch=.35;yaw=.4;}
-        if(view==='doomsayer'||view==='doomsayer-dialogue'){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='doomsayer'),home=world.npcPositions.doomsayer;player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+2),home.z+2);npc.actor.group.rotation.y=.25;yaw=.35;pitch=.2;distance=targetDistance=5;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.4,0));if(view==='doomsayer-dialogue')conversation(npc);}
+        if((view==='doomsayer'||view==='doomsayer-dialogue')&&npcById.get('doomsayer')){questStage=10;combat.finishPractice();const npc=npcData.find(n=>n.id==='doomsayer'),home=world.npcPositions.doomsayer;player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+2),home.z+2);npc.actor.group.rotation.y=.25;yaw=.35;pitch=.2;distance=targetDistance=5;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.4,0));if(view==='doomsayer-dialogue')conversation(npc);}
         if(view==='pond'||view==='fishing'){questStage=10;combat.finishPractice();currentFishingSpot=world.fishingSpots[0];const bank=world.pond.fishingSpot;player.group.position.set(bank.x,world.heightAt(bank.x,bank.z),bank.z);player.group.rotation.y=Math.PI/2;yaw=-Math.PI/2+.4;pitch=.38;distance=targetDistance=view==='pond'?11:6.2;if(view==='fishing'){campcraft.teachFishing();startFishing();campcraft.update(3.03);reviewFrozen=true;}}
         if(view==='river-fishing'){questStage=10;combat.finishPractice();currentFishingSpot=world.fishingSpots.find(spot=>spot.id==='reedwater');const bank=currentFishingSpot.fishingSpot;player.group.position.set(bank.x,world.heightAt(bank.x,bank.z),bank.z);yaw=.2;pitch=.34;distance=targetDistance=8;campcraft.teachFishing();startFishing();campcraft.update(3.03);reviewFrozen=true;}
         if(view==='cooking'){questStage=10;combat.finishPractice();inventory.grant('tinderbox');inventory.add('raw-fish',2);inventory.add('forest-stick',2);const fire=world.firePits[0];campcraft.light(fire.id);player.group.position.set(fire.x,world.heightAt(fire.x,fire.z),fire.z);yaw=.7;pitch=.5;distance=targetDistance=6.5;fireMenu(fire);}
