@@ -5,11 +5,15 @@
 #journey-regions small{display:block;color:#b6c7b6;font-size:12px;margin-top:5px;line-height:1.7}
 /* The go-anywhere row of the testing panel: a country, its named ground, and a coordinate
    pasted straight out of an agent's report. */
+/* The shortcut row was one unwrapped line of eleven, so the last few sat off the panel's
+   edge behind a scrollbar. A picture of the panel found it. */
+.test-travel{flex-wrap:wrap}.test-travel button{flex:1 1 128px;min-width:0}
 .test-goto{display:flex;gap:10px;align-items:center;margin:10px 0}
 .test-goto label{flex:0 0 108px;color:#b7cbb8;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 .test-goto select,.test-goto input{flex:1;min-width:0;padding:11px 10px;font:inherit;font-size:13px;color:#e6eedd;background:#1c2a20;border:1px solid #47603f;border-radius:4px}
+#test-country{flex:2}
 .test-goto input::placeholder{color:#7f9481}
-.test-goto button{margin:0!important;flex:0 0 74px;padding:11px 10px!important;font-size:13px;min-width:0}
+.test-goto button{margin:0!important;flex:0 0 74px;padding:11px 10px!important;font-size:13px;min-width:0;background:#f3daa0;color:#273e36;font-weight:600;border-radius:3px}
 #test-here{margin:6px 0 2px;color:#b7cbb8;font-size:12.5px;line-height:1.6}
 @media(max-width:1000px){.test-goto{flex-wrap:wrap}.test-goto label{flex-basis:100%}}
 .test-regions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
