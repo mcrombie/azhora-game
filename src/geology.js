@@ -130,12 +130,14 @@ export function createGeology({ skills, onEvent = () => {} } = {}) {
     state.met = true;
     const learned = skills?.learn?.(GEOLOGY_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'geology-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /** A stone looked at properly. Good specimens go in the satchel; the rest stay where they lie. */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'A stone. Silas Garrow, at the Toll House stream on the Caloss road, could tell you what kind.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     const species = ROCK_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a stone anyone here can name.' };
     const first = !state.found[id];

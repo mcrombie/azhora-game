@@ -320,7 +320,8 @@ test('the tongues a character already has are really his when he lands', () => {
       assert.equal(linguist.level('ambroni'), 40, 'Chris can hold a conversation at a gate from the first step');
       assert.ok(linguist.comprehension('ambroni') > 0, 'and follows some of what is said to him');
       // A tongue had before the road was not learned on it: no experience, no level banner.
-      assert.equal(skills.known('linguist'), false, 'having always spoken it teaches nothing');
+      assert.equal(skills.taught('linguist'), false, 'having always spoken it teaches nothing');
+      assert.equal(skills.xp('linguist'), 0, 'and banks no experience');
     } else assert.equal(linguist.level('ambroni'), before, `${id} lands with no Ambroni at all`);
   }
   // A floor and never a ceiling, and never a tongue nobody speaks.

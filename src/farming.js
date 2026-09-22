@@ -90,7 +90,7 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
 
   const now = playSeconds => Math.max(0, Number(playSeconds) || 0);
   const pay = amount => {
-    if (!state.met || !(amount > 0)) return null;
+    if (!(amount > 0)) return null;
     if (!skills?.known?.(FARMING_SKILL) && skills?.learn?.(FARMING_SKILL)?.ok !== true) return null;
     return skills?.gain?.(FARMING_SKILL, amount) ?? null;
   };
@@ -118,12 +118,13 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
 
   /** What a row may be sown with now: the crops the level opens, and nothing on a row in use. */
   function sowable(id) {
-    if (!state.met || state.rows.has(id) || !farmRow(id)) return [];
+    if (state.rows.has(id) || !farmRow(id)) return [];
     return CROP_IDS.filter(cropId => level() >= CROPS[cropId].level).map(cropId => ({ ...CROPS[cropId] }));
   }
 
   function sow(id, cropId, playSeconds) {
-    if (!state.met) return { ok: false, reason: 'Nobody has shown you how a row is put in.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     if (!farmRow(id)) return { ok: false, reason: 'There is no such row.' };
     if (state.rows.has(id)) return { ok: false, reason: 'Something is already in that row.' };
     const kind = CROPS[cropId];
@@ -142,7 +143,8 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
    */
   function reap(id, playSeconds) {
     const here = rowState(id, playSeconds);
-    if (!state.met) return { ok: false, reason: 'Nobody has shown you how a row is taken off.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     if (!here) return { ok: false, reason: 'There is no such row.' };
     if (here.stage === 'bare') return { ok: false, reason: 'There is nothing in that row.' };
     if (here.stage === 'sown') return { ok: false, reason: `Not for another ${Math.ceil(here.left)} seconds. It grows whether you are watching it or not.` };
@@ -167,7 +169,8 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
   /** Picking is farming with no sowing: somebody else kept the tree and you take what it has. */
   function pick(id, playSeconds) {
     const tree = treeState(id, playSeconds);
-    if (!state.met) return { ok: false, reason: 'You could take an apple. Somebody should show you what an orchard is first.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     if (!tree) return { ok: false, reason: 'There is no such tree.' };
     if (tree.stage === 'picked') return { ok: false, reason: `This one is picked out. It will bear again in about ${Math.ceil(tree.left)} seconds.` };
     state.trees.set(id, now(playSeconds));

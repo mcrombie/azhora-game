@@ -23,34 +23,60 @@ test('levels are read from the thresholds, with progress toward the next', () =>
   assert.equal(skillLevel('juggling', 5), null);
 });
 
-test('a skill is learned once, gains experience only once learned, and reports new levels', () => {
-  const events = [], skills = createSkills({ onEvent: e => events.push(e) });
-  assert.equal(skills.gain('birding', 10).ok, false);
-  assert.equal(skills.known('birding'), false);
-  assert.equal(skills.level('birding'), 0);
-  assert.equal(skills.learn('birding').first, true);
-  assert.equal(skills.learn('birding').first, false);
-  assert.equal(skills.learn('juggling').ok, false);
-  assert.deepEqual([skills.gain('birding', 40).levelled, skills.level('birding')], [false, 1]);
+/**
+ * The user's ruling of 21 September 2026: every skill the mode shows begins at level 1, and
+ * nobody has to be introduced to it before it pays. The teachers keep the teaching and lose
+ * the gate.
+ */
+test('a skill begins at level 1 and pays without being taught, and a teacher is still an occasion', () => {
+  const events = [], skills = createSkills({ onEvent: e => events.push(e), begins: ['birding', 'fishing'] });
+  assert.equal(skills.known('birding'), true, 'known from the first step');
+  assert.equal(skills.level('birding'), 1, 'and at level 1, not nought');
+  assert.equal(skills.gain('birding', 10).ok, true, 'and it pays with nobody watching');
+  assert.equal(skills.learn('juggling').ok, false, 'a skill the game does not have is still refused');
+  // A teacher's lesson is new the first time he gives it and never again, however much the
+  // traveler had already taught himself.
+  assert.equal(skills.taught('birding'), false, 'nobody has taught it');
+  assert.equal(skills.learn('birding').first, true, 'and Perrin is still the one who does');
+  assert.equal(skills.taught('birding'), true);
+  assert.equal(skills.learn('birding').first, false, 'once each');
+  // A skill outside `begins` is still practisable: nothing in the game is locked.
+  assert.equal(skills.gain('botany', 10).ok, true, 'a skill nobody seeded pays all the same');
+  assert.equal(skills.level('botany'), 1);
+  assert.deepEqual([skills.gain('birding', 30).levelled, skills.level('birding')], [false, 1]);
   const up = skills.gain('birding', 43);
   assert.deepEqual([up.levelled, up.level, up.xp], [true, 2, 83]);
-  assert.deepEqual(events.map(e => e.type), ['skill-learned', 'skill-gain', 'skill-gain']);
+  assert.deepEqual(events.map(e => e.type), ['skill-gain', 'skill-learned', 'skill-gain', 'skill-gain', 'skill-gain']);
   const view = skills.view().find(skill => skill.id === 'birding');
   assert.deepEqual([view.learned, view.level, view.xp, view.next], [true, 2, 83, 174]);
+});
+
+test('an old save, and one written by a traveler who met nobody, opens with the whole sheet', () => {
+  const begins = ['birding', 'fishing', 'botany'];
+  const old = { version: 1, skills: { birding: { xp: 200 } } };
+  const skills = createSkills({ begins });
+  assert.equal(skills.restore(old), true);
+  assert.equal(skills.level('birding'), 3, 'what was earned is kept');
+  for (const id of begins) assert.ok(skills.level(id) >= 1, `${id} is at least level 1 after a restore`);
+  assert.equal(skills.totalLevel() >= begins.length, true, 'and the total counts them all');
 });
 
 test('skills survive a save, and nonsense is refused', () => {
   const skills = createSkills();
   skills.learn('birding'); skills.gain('birding', 200);
-  const copy = createSkills();
+  const copy = createSkills({ begins: ['birding'] });
   assert.equal(copy.restore(skills.snapshot()), true);
-  assert.deepEqual(copy.snapshot(), { version: 1, skills: { birding: { xp: 200 } } });
+  assert.deepEqual(copy.snapshot(), { version: 1, skills: { birding: { xp: 200 } }, taught: ['birding'] });
+  // A save from before teaching and knowing parted says who taught by the skills it holds.
+  const older = createSkills({ begins: ['birding', 'fishing'] });
+  assert.equal(older.restore({ version: 1, skills: { birding: { xp: 5 } } }), true);
+  assert.deepEqual([older.taught('birding'), older.taught('fishing')], [true, false], 'the old meaning is kept');
   assert.equal(copy.level('birding'), 3);
   assert.equal(validateSkillsSnapshot(undefined), true, 'older saves have no skills');
   for (const bad of [null, [], { version: 2, skills: {} }, { version: 1, skills: { juggling: { xp: 1 } } }, { version: 1, skills: { birding: { xp: -1 } } }, { version: 1, skills: { birding: { xp: 1.5 } } }])
     assert.equal(validateSkillsSnapshot(bad), false, JSON.stringify(bad));
   assert.equal(copy.restore({ version: 1, skills: { birding: { xp: 'lots' } } }), false);
-  assert.equal(copy.known('birding'), false, 'a refused restore leaves nothing learned');
+  assert.equal(copy.level('birding'), 1, 'a refused restore leaves the floor this game begins with, and nothing earned');
 });
 
 test('every skill climbs the same table, and it is RuneScape’s', () => {

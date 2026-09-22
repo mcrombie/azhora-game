@@ -952,7 +952,9 @@ function init() {
   const woodlandSites=woodlandLife.state();
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
-  const skills=createSkills({onEvent:skillEvent});
+  // Every skill the mode shows begins at level 1 and pays from the first step (src/skills.js);
+  // the linguist, which normal mode does not show, is not among them and never pays.
+  const skills=createSkills({onEvent:skillEvent,begins:SKILL_IDS.filter(id=>!hiddenSkills.has(id))});
   // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
   // everything those margins are today's game to the digit, which is the law phase 1 rests on.
   arms=createCombatSkills({skills,onEvent:()=>refreshSkillsSheet()});
@@ -1259,7 +1261,7 @@ function init() {
   function woodAct(action){
     const npc=npcById.get(BOWDEN.id);
     if(action==='bowden-meet'){wood.meet();toast('Bowden Koop, King of the Koopwood: woodcutter, charcoal-burner, and louder than both.','THE KOOPWOOD');saveRoad(false);return;}
-    if(action==='bowden-teach'){if(skills.learn(WOODCUTTING_SKILL).first){inventory.add('bronze-axe',1);inventory.refresh();refreshSkillsSheet();toast('Woodcutting, a new skill, and a bronze hatchet in your satchel. Stand at a tree in the Koopwood and press F.','NEW SKILL');saveRoad(false);}return;}
+    if(action==='bowden-teach'){if(skills.learn(WOODCUTTING_SKILL).first||!AXES.some(a=>inventory.has(a.id))){if(!inventory.has('bronze-axe'))inventory.add('bronze-axe',1);inventory.refresh();refreshSkillsSheet();toast('Woodcutting, a new skill, and a bronze hatchet in your satchel. Stand at a tree in the Koopwood and press F.','NEW SKILL');saveRoad(false);}return;}
     const buy=/^bowden-buy-(.+)$/.exec(action);
     if(buy){const axe=AXES.find(a=>a.id===buy[1]);if(!axe||!axe.price||inventory.has(axe.id))return;
       if(!inventory.remove(COPPER_ITEM,axe.price)){toast(`That is ${axe.price} copper.`,'THE KOOPWOOD');return;}
@@ -1282,7 +1284,7 @@ function init() {
   function takePlanks(planks){for(const [id,n] of Object.entries(planks))inventory.remove(id,n);}
   function useWorkbench(){
     const bench={id:'workbench',name:'Bowden\u2019s workbench'};
-    openDialogue(bench,[skills.known(CONSTRUCTION_SKILL)?'A heavy bench with a vice, a plank in it, and Bowden\u2019s tools along the back. What will you make?':'Bowden\u2019s workbench. You would need to know how; ask him.'],null,'Step away',{choices:[
+    openDialogue(bench,[skills.taught(CONSTRUCTION_SKILL)?'A heavy bench with a vice, a plank in it, and Bowden\u2019s tools along the back. What will you make?':'Bowden\u2019s workbench. You would need to know how; ask him.'],null,'Step away',{choices:[
       ...WORKBENCH.map(recipe=>{const check=building.can(recipe,satchelCount);return{id:`make-${recipe.id}`,label:`${recipe.name} \u00b7 ${planksText(recipe.planks)} \u00b7 Construction ${recipe.level}`,disabled:!check.ok,reason:check.reason,
         action:()=>{const made=building.make(recipe.id,satchelCount);closeDialogue();if(!made.ok){toast(made.reason,'CONSTRUCTION');return;}
           takePlanks(made.planks);inventory.add(made.item,1);inventory.refresh();refreshSkillsSheet();audio?.effect('success');toast(`You make a ${recipe.name.toLowerCase()}. Hang it on a post in the Greenway.`,'CONSTRUCTION');saveRoad(false);}};}),
@@ -2479,10 +2481,13 @@ function init() {
     const card=skillEl('section','skill-card');
     const back=skillEl('button','skill-back','‹ All skills');back.type='button';back.onclick=()=>{openSkillId=null;refreshSkillsSheet();};
     const head=skillEl('header','skill-detail-head'),titles=skillEl('div');
-    titles.append(skillEl('span','eyebrow',skill.learned?`LEVEL ${skill.level} / ${skill.top}`:'NOT YET LEARNED'),skillEl('h3','',skill.name));
+    titles.append(skillEl('span','eyebrow',`LEVEL ${skill.level} / ${skill.top}`),skillEl('h3','',skill.name));
     head.append(skillMark(skill),titles);card.append(back,head);
     if(skill.learned)card.append(skillProgressBar(skill.progress),skillEl('p','skill-xp',skill.max?`${skill.xp} experience · the highest level`:`${skill.xp} / ${skill.next} experience to level ${skill.level+1}`));
-    card.append(skillEl('p','',skill.learned?skill.blurb:`${skill.teacher} can teach it.`));
+    card.append(skillEl('p','',skill.blurb));
+    // Nobody is locked out of a skill any more, so the teacher is an offer rather than a gate:
+    // named while the traveler has never done the thing, and out of the way once he has.
+    if(!skill.xp)card.append(skillEl('p','skill-teacher',`Nobody has shown you yet. ${skill.teacher} can.`));
     if(skill.guide.length){const guide=skillEl('ul','skill-guide');for(const entry of skill.guide){const li=skillEl('li',entry.open?'open':'locked');li.append(skillEl('b','',String(entry.level)),skillEl('span','',entry.text));guide.append(li);}
       card.append(skillEl('h3','','What each level opens'),guide);}
     appendSkillLog(card,skill);
@@ -3306,7 +3311,7 @@ function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
-    skills.restore(saved.skills??createSkills().snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());
+    skills.restore(saved.skills??skills.snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());
     // **The dead come back off the road before the company does.** `companions.restore` asks
     // `fallen` who is dead, to keep a dead man out of the walking list it is handed - so a stale
     // `fallen` answers for the save being loaded. Restoring it three lines later meant that
@@ -3829,7 +3834,7 @@ function init() {
       openDialogue(npc,[...LAUVEL_LINES[npc.id]],null,'Leave them to it',
         work?{choices:[work,{id:'leave-lauvel',label:'Leave them to it.',action:closeDialogue}]}:{});return;}
     if(npc.id===BOWDEN.id){wood.visit();bowdenConversation(npc,{wood,skills,purse:inventory.count(COPPER_ITEM),count:id=>inventory.count(id),has:id=>inventory.has(id),
-      builder:{known:skills.known(CONSTRUCTION_SKILL),saw:sawOffer(id=>inventory.count(id)),teach:BUILD_LINES.teach},openDialogue,closeDialogue,act:woodAct});return;}
+      builder:{known:skills.taught(CONSTRUCTION_SKILL),saw:sawOffer(id=>inventory.count(id)),teach:BUILD_LINES.teach},openDialogue,closeDialogue,act:woodAct});return;}
     if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,hunt,coppers:inventory.count(COPPER_ITEM),openDialogue,closeDialogue,act:saltAct});return;}
     if(npc.id===BRANDY.id){brandy.visit();brandyConversation(npc,{brandy,openDialogue,closeDialogue,act:brandyAct});return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,puckContext());return;}
@@ -7056,7 +7061,7 @@ function init() {
           else if(view==='bowden'){look={x:at.x,y:at.y+1.25,z:at.z};turn=face+.5;d=4.4;p=.08;}
           else if(view==='bowden-close'){look={x:at.x,y:at.y+1.85,z:at.z};turn=face+.35;d=2.3;p=.04;}
           else if(view==='bowden-back'){look={x:at.x,y:at.y+1.4,z:at.z};turn=face+Math.PI-.6;d=3.8;p=.1;}
-          else{if(!skills.known(WOODCUTTING_SKILL))skills.learn(WOODCUTTING_SKILL);if(skills.level(WOODCUTTING_SKILL)<15){skills.gain(WOODCUTTING_SKILL,2411);clearTimeout(levelUpTimer);}if(!inventory.has('steel-axe'))inventory.add('steel-axe',1);
+          else{if(!skills.taught(WOODCUTTING_SKILL))skills.learn(WOODCUTTING_SKILL);if(skills.level(WOODCUTTING_SKILL)<15){skills.gain(WOODCUTTING_SKILL,2411);clearTimeout(levelUpTimer);}if(!inventory.has('steel-axe'))inventory.add('steel-axe',1);
             const t=woodlotTree.get('koopwood-oak-1');world.woodlot.set(t.id,true);const sx=t.x-1.6,sz=t.z+1.1;player.group.position.set(sx,world.heightAt(sx,sz),sz);player.group.visible=true;
             if(view==='chopping'){chop={id:t.id,next:SWING*.3};look={x:t.x-.8,y:world.heightAt(t.x,t.z)+1.3,z:t.z+.55};turn=-2.1;d=5.2;p=.12;}
             else{world.woodlot.fell(t.id,{x:sx,z:sz});look={x:t.x+1.5,y:world.heightAt(t.x,t.z)+1.6,z:t.z-1.2};turn=-2.4;d=9;p=.22;}}
@@ -7081,7 +7086,7 @@ function init() {
           yaw=turn;pitch=pp;distance=targetDistance=d;}
         // Construction: the house at stage n ('house-3'), the workbench, and a birdhouse with somebody in it.
         if(/^house-\d$/.test(view)||view==='workbench'||view==='birdhouse'){questStage=10;combat.finishPractice();player.group.visible=false;
-          if(!skills.known(CONSTRUCTION_SKILL))skills.learn(CONSTRUCTION_SKILL);building.claimPlot();let look,turn,d,p;
+          if(!skills.taught(CONSTRUCTION_SKILL))skills.learn(CONSTRUCTION_SKILL);building.claimPlot();let look,turn,d,p;
           if(view.startsWith('house-')){const n=Number(view.slice(6));world.homestead.setStages(n);const c=HOUSE_PLOT;look={x:c.x,y:world.homestead.floorY+(n>3?1.8:1),z:c.z+1};turn=.55;d=n?12:9;p=.2;}
           else if(view==='workbench'){look={x:WORKBENCH_SPOT.x,y:world.heightAt(WORKBENCH_SPOT.x,WORKBENCH_SPOT.z)+1,z:WORKBENCH_SPOT.z};turn=.9;d=4.2;p=.25;}
           else{const spot=BIRDHOUSE_POSTS[0];building.hang(spot.id,'birdhouse');building.update(1e4);world.homestead.setPost(spot.id,building.post(spot.id));

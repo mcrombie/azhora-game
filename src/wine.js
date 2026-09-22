@@ -146,7 +146,8 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
     if (recommend && state.quest === 'none') state.quest = 'recommended';
     const learned = skills?.learn?.(WINE_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'wine-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /** Reaching the winery and meeting Livia. */
@@ -161,7 +162,8 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
 
   /** A wine tasted properly. */
   function taste(id) {
-    if (!state.met) return { ok: false, reason: 'You drank it. It was nice. Ask how to taste it properly, and you will get more out of the next glass.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     // Livia's eight, the five she makes from them in the cellar, or Juan's eight at Tharganhom in Solis.
     const entry = WINES[id] ?? CELLAR_WINES[id] ?? ATTIC_WINES[id];
     if (!entry) return { ok: false, reason: 'They do not pour that here.' };

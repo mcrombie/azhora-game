@@ -149,7 +149,8 @@ export function createWoodcutting({ skills, random = Math.random } = {}) {
     if (!t) return { ok: false, reason: 'There is no tree there.' };
     const k = TREE_KINDS[t.kind];
     if (trees.get(id).stump > 0) return { ok: false, reason: `Only a stump. The ${k.short} will grow back.`, tree: t, kind: k };
-    if (!skills?.known?.(WOODCUTTING_SKILL)) return { ok: false, reason: 'You swing, and not much happens. Somebody ought to show you how: Bowden Koop, at the woodlot on the edge of the wood.', tree: t, kind: k };
+    // No permission is needed to swing an axe (the user, 21 September 2026) - only an axe,
+    // which is a tool and not a lesson. Bowden still gives the first one away.
     const lv = level();
     if (lv < k.level) return { ok: false, reason: `You need a Woodcutting level of ${k.level} to chop down this ${k.short}.`, tree: t, kind: k };
     const axe = bestAxe(lv, has);
@@ -259,7 +260,9 @@ export function bowdenConversation(npc, context) {
   const talk = lines => openDialogue(npc, [...lines], null, 'Back to Bowden', { onComplete: again });
   const first = !wood.met;
   if (first) act('bowden-meet');
-  const learned = skills.known(WOODCUTTING_SKILL), lv = skills.level(WOODCUTTING_SKILL);
+  // He offers the lesson until he has actually given it. Asking `known` here would have taken
+  // his hatchet out of the game the day every skill began at level 1.
+  const learned = skills.taught?.(WOODCUTTING_SKILL) ?? skills.known(WOODCUTTING_SKILL), lv = skills.level(WOODCUTTING_SKILL);
   const master = lv >= 99;
   const opening = first ? [...FIRST] : context.back ? [master ? '“Anything else, Master Woodcutter?”' : '“Well, worm? Out with it.”'] : master ? [`“The Master of the Koopwood! ${LAUGH} I bow. Nobody sees. Good.”`] : [AGAIN[wood.visits % AGAIN.length]];
   const offer = wood.offer(count);

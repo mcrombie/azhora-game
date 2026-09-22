@@ -260,7 +260,8 @@ export function createBotany({ skills, onEvent = () => {} } = {}) {
     state.met = true;
     const learned = skills?.learn?.(BOTANY_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'botany-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /**
@@ -268,7 +269,8 @@ export function createBotany({ skills, onEvent = () => {} } = {}) {
    * goes into the satchel under its own item; the rest is named and left growing.
    */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'A plant, and no name for it. Nell Harrow, at the Sunken Lane, has a name for everything here.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     const species = PLANT_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a plant anyone here can name.' };
     const first = !state.found[id];

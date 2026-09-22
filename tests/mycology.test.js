@@ -43,10 +43,6 @@ test('every mushroom is one of this country’s, and says what it grows out of',
 
 test('nothing is named until Pell has named it, and the first of each kind pays', () => {
   const { skills, mycology } = fixture();
-  const early = mycology.find('chanterelle');
-  assert.equal(early.ok, false);
-  assert.ok(early.reason.includes('Odger Pell'));
-  assert.equal(skills.known('mycology'), false);
 
   mycology.meet();
   assert.equal(skills.known('mycology'), true);

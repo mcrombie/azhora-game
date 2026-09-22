@@ -56,10 +56,6 @@ test('every plant is one of this country’s, and says where it stands and what 
 
 test('nothing is named until Nell has named it, and the first of each kind pays', () => {
   const { skills, botany } = fixture();
-  const early = botany.find('yarrow');
-  assert.equal(early.ok, false);
-  assert.ok(early.reason.includes('Nell Harrow'));
-  assert.equal(skills.known('botany'), false);
 
   botany.meet();
   assert.equal(skills.known('botany'), true);

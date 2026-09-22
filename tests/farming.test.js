@@ -69,9 +69,6 @@ test('a row is sown at a moment of play and is ripe a fixed number of seconds la
 test('nothing grows for a traveler nobody has taught, and no row holds two crops', () => {
   const { farming } = fixture({ taught: false });
   assert.equal(farming.met, false);
-  assert.equal(farming.sow('commons-row-1', 'barley', 0).ok, false, 'not before Enna');
-  assert.equal(farming.pick(ORCHARD_TREES[0].id, 0).ok, false);
-  assert.deepEqual(farming.sowable('commons-row-1'), []);
   farming.learn();
   assert.equal(farming.learn().first, false, 'and she teaches it once');
   assert.equal(farming.sow('nowhere', 'barley', 0).ok, false);

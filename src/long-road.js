@@ -124,10 +124,16 @@ export const LONG_ROAD_LEGS = freeze([
 const stop = ({ id, leg, kind, npc = null, place = null, skill = null, system = null, subregion: ground = null, point, reads, done, title, detail }) =>
   freeze({ id, leg, kind, npc, place, skill, system, subregion: ground, point: freeze({ ...point }), reads, done, title, detail });
 
-/** Whether a skill has been learned, from `createSkills().known`, a list of ids, or a plain map. */
+/**
+ * **Whether the person who teaches this has taught it**, from `createSkills().taught`, a list of
+ * ids, or a plain map. It used to ask `known`, and could, because a skill was not known until
+ * somebody taught it. Since every skill begins at level 1 (the user, 21 September 2026) `known`
+ * is true of everything and would mark all twelve of the road's skill stops done on the pier.
+ */
 const learned = (state, id) => {
   const skills = state?.skills;
   if (!skills || !id) return false;
+  if (typeof skills.taught === 'function') return !!skills.taught(id);
   if (typeof skills.known === 'function') return !!skills.known(id);
   if (Array.isArray(skills)) return skills.includes(id);
   return !!skills[id];

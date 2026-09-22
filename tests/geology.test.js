@@ -41,9 +41,6 @@ test('every stone is one of this coast’s, and says where it lies', () => {
 
 test('nothing is named until Silas has named it, and specimens go in the satchel', () => {
   const { skills, geology } = fixture();
-  const early = geology.find('quartz');
-  assert.equal(early.ok, false);
-  assert.ok(early.reason.includes('Silas Garrow'));
   geology.meet();
   assert.equal(skills.known('geology'), true);
 

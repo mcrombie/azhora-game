@@ -75,7 +75,8 @@ test('RuneScape’s rules: a level for every tree, an axe you can swing, a log a
   const skills = createSkills(), satchel = new Set();
   const has = id => satchel.has(id), wood = createWoodcutting({ skills, random: sequence([0]) });
   const pine = WOODLOT_TREES.find(t => t.kind === 'pine'), oak = WOODLOT_TREES.find(t => t.kind === 'oak');
-  assert.match(wood.canChop(pine.id, has).reason, /Bowden Koop/, 'not before he teaches you');
+  // No permission is needed to swing an axe any more (the user, 21 September 2026); the axe is.
+  assert.equal(wood.canChop(pine.id, has).reason, 'You need an axe to chop down this tree.', 'an axe, not a lesson');
   skills.learn(WOODCUTTING_SKILL);
   assert.equal(wood.canChop(pine.id, has).reason, 'You need an axe to chop down this tree.');
   satchel.add('steel-axe');

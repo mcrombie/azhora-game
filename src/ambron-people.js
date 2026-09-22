@@ -385,7 +385,7 @@ export const TALKING_TREE_LINES = freeze({
 function specialistConversation(npc, context) {
   const entry = AMBRON_SPECIALISTS[npc.id];
   const { openDialogue, closeDialogue, skills, birding, act = () => ({ ok: true }) } = context;
-  const knows = entry.skill === 'birding' ? Boolean(birding?.met || skills?.known?.('birding')) : Boolean(skills?.known?.(entry.skill));
+  const knows = entry.skill === 'birding' ? Boolean(birding?.met || skills?.taught?.('birding')) : Boolean(skills?.taught?.(entry.skill));
   const again = () => specialistConversation(npc, context);
   const leave = { id: `leave-${npc.id}`, label: 'Good water to you.', action: closeDialogue };
   const choices = [];

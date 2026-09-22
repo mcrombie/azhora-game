@@ -103,9 +103,11 @@ test('a skill nobody has shown you banks nothing, and the weapon still works', (
   const heard = [];
   const skills = createSkills();
   const arms = createCombatSkills({ skills, onEvent: event => heard.push(event.type) });
+  // The Arms are the one family still opened by a teacher: banking before one had spoken would
+  // level the traveler through the opening and move numbers measured against him at level 1.
   const blind = arms.dealt({ weapon: 'simple-sword', damage: 40 });
   assert.equal(blind.xp, 0, 'nothing is banked before you are shown');
-  assert.equal(skills.known('blades'), false);
+  assert.equal(skills.taught('blades'), false);
   // And the weapon is a weapon all the same.
   assert.equal(arms.margins().damageFor('simple-sword'), 1);
   assert.equal(arms.learn('blades').first, true);

@@ -196,14 +196,16 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
   const state = { practice: {} };
 
   const level = id => skills?.level?.(id) || 1;
-  const known = id => !!skills?.known?.(id);
+  // Whether the man who teaches this weapon has taught it. Knowing it is no longer a question:
+  // every skill begins at level 1 and pays from the first swing (the user, 21 September 2026).
+  const known = id => !!(skills?.taught?.(id) ?? skills?.known?.(id));
   const ceilingFor = (source, ceiling) => (source === 'post' ? ARMS.ceiling.post
     : source === 'sparring' ? (Number.isFinite(ceiling) && ceiling > 0 ? Math.floor(ceiling) : ARMS.ceiling.sparring)
     : null);
   /** The two sources that are practice and not a fight; a lesson is neither, and has no ceiling. */
   const isPractice = source => source === 'post' || source === 'sparring';
 
-  /** A teacher shows you the weapon. Until then it works, and teaches nothing. */
+  /** A teacher shows you the weapon. It worked before he did, and it banked before he did too. */
   function learn(id) {
     if (!ARMS_IDS.includes(id) || known(id)) return { ok: ARMS_IDS.includes(id), first: false };
     skills?.learn?.(id);
@@ -213,6 +215,11 @@ export function createCombatSkills({ skills = null, onEvent = () => {} } = {}) {
 
   /** Pay a family, honouring the ceiling that practice has and a fight does not. */
   function pay(id, amount, source = 'fight', ceiling = null) {
+    // **The Arms stay taught.** Every other skill begins at level 1 and pays from the first step,
+    // but a weapon that banked before its teacher had spoken would level the traveler through
+    // the whole opening and move numbers that were measured against him at level 1 - the border
+    // battle's tables among them. Fighting works from the first swing, as it always did; what
+    // the teacher opens is the banking. Left alone deliberately, not overlooked.
     if (!ARMS_IDS.includes(id) || !known(id) || !(amount > 0)) return { ok: true, xp: 0, levelled: false, level: level(id) };
     const stops = ceilingFor(source, ceiling);
     if (stops !== null && level(id) >= stops) return { ok: true, xp: 0, levelled: false, level: level(id), capped: true, ceiling: stops };

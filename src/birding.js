@@ -236,12 +236,14 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
     state.met = true;
     const learned = skills?.learn?.(BIRDING_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'birding-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /** The traveler has looked properly at a bird of kind `id`. */
   function observe(id) {
-    if (!state.met) return { ok: false, reason: 'You do not yet know what to look for. Perrin, at the garden on the east side of Tidehaven, does.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     const bird = BIRD_SPECIES[id];
     if (!bird) return { ok: false, reason: 'That is not a bird anyone here can name.' };
     const first = !state.seen[id];
@@ -291,7 +293,7 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
     return {
       met: state.met, feeder: state.feeder, seenCount: seenCount(), total: DRENT_BIRDS.length,
       entries: DRENT_BIRDS.map(id => ({ id, seen: !!state.seen[id], count: state.seen[id] ?? 0, name: state.seen[id] ? BIRD_SPECIES[id].name : 'An unknown bird',
-        detail: state.seen[id] ? BIRD_SPECIES[id].note : state.met ? BIRD_SPECIES[id].hint : 'Perrin, at the garden on the eastern side of Tidehaven, knows what lives here.' })),
+        detail: state.seen[id] ? BIRD_SPECIES[id].note : BIRD_SPECIES[id].hint })),
       task: task(),
     };
   }

@@ -25,7 +25,6 @@ test('Drent has the country’s common birds, each worth experience the first ti
   }
   assert.ok(BIRD_SPECIES.crow.spook > BIRD_SPECIES.cardinal.spook && BIRD_SPECIES.hummingbird.spook < BIRD_SPECIES.wren.spook, 'crows are warier than songbirds; hummingbirds hardly care');
   const { skills, birding } = fixture();
-  assert.equal(birding.observe('cardinal').ok, false, 'nothing counts before Perrin has taught you');
   assert.equal(birding.meet().first, true);
   assert.equal(skills.level('birding'), 1);
   const first = birding.observe('cardinal');

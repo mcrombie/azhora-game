@@ -95,7 +95,8 @@ export function createArchaeology({ skills, onEvent = () => {} } = {}) {
     if (state.quest === 'none') state.quest = 'rena';
     const learned = skills?.learn?.(ARCHAEOLOGY_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'archaeology-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /** A pegged place read properly and written up. Nothing is taken. */

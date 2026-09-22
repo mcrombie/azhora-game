@@ -259,24 +259,62 @@ export function validateSkillsSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== SKILLS_VERSION) return false;
   if (!data.skills || typeof data.skills !== 'object' || Array.isArray(data.skills)) return false;
+  // `taught` arrived when knowing a skill stopped meaning anybody had taught it. A save from
+  // before that has none, and says the same thing with its keys.
+  if (data.taught !== undefined && (!Array.isArray(data.taught)
+    || !data.taught.every(id => typeof id === 'string' && Object.hasOwn(SKILLS, canonical(id))))) return false;
   return Object.entries(data.skills).every(([id, entry]) => Object.hasOwn(SKILLS, canonical(id)) && entry && typeof entry === 'object'
     && Number.isInteger(entry.xp) && entry.xp >= 0 && entry.xp <= MAX_XP);
 }
 
-export function createSkills({ onEvent = () => {} } = {}) {
+/**
+ * **Everything at level 1, and nobody's permission needed** (the user, 21 September 2026).
+ *
+ * A skill used to be locked until the person who teaches it had said so: `gain` refused with
+ * "that skill has not been learned", and the sheet showed a tile greyed out with a name under
+ * it. That made the teachers gatekeepers rather than teachers, and it meant a traveler who
+ * stood in front of a bird on his first morning could not see it.
+ *
+ * Now `begins` is every skill the mode shows, each at nought experience, which the table reads
+ * as **level 1**. Watch a bird, dig a hole, swing at a post, and it pays from the first step.
+ * A tool is still a tool: you cannot cut wood without an axe, and nobody hands one over for
+ * nothing. What the teachers keep is the teaching — the first time one of them shows you
+ * something you have never done, that is still an occasion, and `learn` still says so. It says
+ * it by the only honest measure left, which is that you have no experience in it yet, so the
+ * answer survives a save without a field to hold it.
+ */
+export function createSkills({ onEvent = () => {}, begins = [] } = {}) {
   const learned = new Map();
+  /** The skills this game begins knowing: seeded silently, because a life lived is not a banner. */
+  const seed = () => { for (const id of begins) if (Object.hasOwn(SKILLS, id) && !learned.has(id)) learned.set(id, 0); };
+  seed();
+  /**
+   * **Who has already shown the traveler something.** Knowing a skill is no longer the question
+   * - everyone knows everything from the first step - so this is what is left of the old flag,
+   * and it is the honest one: has the person who teaches this actually taught it to you. The
+   * long road's twelve skill stops read it (src/long-road.js), and it is saved, because a stop
+   * that closed on Tuesday must still be closed on Wednesday.
+   */
+  const taught = new Set();
 
+  /**
+   * A teacher shows you something. It is `first` only if you have never done it — which is the
+   * question every caller was really asking, and the one the save already answers.
+   */
   function learn(id) {
     if (!Object.hasOwn(SKILLS, id)) return { ok: false, reason: 'There is no such skill.' };
-    if (learned.has(id)) return { ok: true, first: false, ...skillLevel(id, learned.get(id)) };
-    learned.set(id, 0);
-    onEvent({ type: 'skill-learned', id });
-    return { ok: true, first: true, ...skillLevel(id, 0) };
+    // New the first time this teacher's own lesson lands, and never again: `taught` is saved.
+    const first = !taught.has(id);
+    if (!learned.has(id)) learned.set(id, 0);
+    taught.add(id);
+    if (first) onEvent({ type: 'skill-learned', id });
+    return { ok: true, first, ...skillLevel(id, learned.get(id)) };
   }
 
-  /** Add experience to a learned skill. Reports whether a new level was reached. */
+  /** Add experience. Any skill the game has can be practised, taught or not. */
   function gain(id, amount) {
-    if (!learned.has(id)) return { ok: false, reason: 'That skill has not been learned.' };
+    if (!Object.hasOwn(SKILLS, id)) return { ok: false, reason: 'There is no such skill.' };
+    if (!learned.has(id)) learned.set(id, 0);
     const points = Math.max(0, Math.floor(Number(amount) || 0));
     const before = skillLevel(id, learned.get(id)), after = skillLevel(id, Math.min(MAX_XP, before.xp + points));
     learned.set(id, after.xp);
@@ -285,28 +323,42 @@ export function createSkills({ onEvent = () => {} } = {}) {
     return { ok: true, gained: points, levelled, ...after };
   }
 
-  const known = id => learned.has(id);
-  const level = id => learned.has(id) ? skillLevel(id, learned.get(id)).level : 0;
+  // The floor is the law, not the seeding: every skill the game has is known and no lower than
+  // level 1, whether or not this game seeded it and whether or not anybody has taught it. A
+  // module asking `level` of a skill nobody has touched gets 1, which is what it now is.
+  const known = id => Object.hasOwn(SKILLS, id);
+  const level = id => learned.has(id) ? skillLevel(id, learned.get(id)).level : (Object.hasOwn(SKILLS, id) ? 1 : 0);
 
   /** Every skill, learned or not, for the journal, with its guide. */
   function view() {
     return SKILL_IDS.map(id => {
       const read = learned.has(id) ? skillLevel(id, learned.get(id)) : { level: 0, top: SKILLS[id].thresholds.length, xp: 0, floor: 0, next: null, max: false, progress: 0 };
       return { id, name: SKILLS[id].name, blurb: SKILLS[id].blurb, teacher: SKILLS[id].teacher, kind: SKILLS[id].kind ?? 'knowing',
-        learned: learned.has(id), ...read, guide: skillGuide(id, read.level) };
+        learned: learned.has(id), taught: taught.has(id), ...read, guide: skillGuide(id, read.level) };
     });
   }
   /** RuneScape's total level: every learned skill's level, added up. */
   const totalLevel = () => [...learned].reduce((sum, [id, xp]) => sum + skillLevel(id, xp).level, 0);
 
-  function snapshot() { return { version: SKILLS_VERSION, skills: Object.fromEntries([...learned].map(([id, xp]) => [id, { xp }])) }; }
+  function snapshot() {
+    return { version: SKILLS_VERSION, skills: Object.fromEntries([...learned].map(([id, xp]) => [id, { xp }])),
+      taught: [...taught].filter(id => Object.hasOwn(SKILLS, id)).sort() };
+  }
 
   function restore(data) {
-    learned.clear();
+    learned.clear(); taught.clear();
+    // The floor comes back first, and before the data is judged, so a save written before every
+    // skill began at level 1 - or a refused one - leaves the sheet a new game would have rather
+    // than an empty one.
+    seed();
     if (!validateSkillsSnapshot(data, { allowMissing: false })) return false;
     for (const [id, entry] of Object.entries(data.skills)) learned.set(canonical(id), Math.max(entry.xp, learned.get(canonical(id)) ?? 0));
+    // A save written before teaching and knowing were separate says who taught by which skills it
+    // holds, which is exactly what the field meant then.
+    for (const id of data.taught ?? Object.keys(data.skills)) if (Object.hasOwn(SKILLS, canonical(id))) taught.add(canonical(id));
     return true;
   }
 
-  return { learn, gain, known, level, view, totalLevel, snapshot, restore };
+  return { learn, gain, known, level, taught: id => taught.has(canonical(id)), xp: id => learned.get(canonical(id)) ?? 0,
+    view, totalLevel, snapshot, restore };
 }

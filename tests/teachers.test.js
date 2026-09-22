@@ -94,8 +94,9 @@ test('a lesson is given once, at a rung, and never by the dead', () => {
   assert.equal(first.index, 0);
   assert.equal(first.rung, 'acquainted');
   assert.equal(first.family, 'blades');
-  // The first lesson is what shows you the weapon: before it, nothing banks.
-  assert.equal(skills.known('blades'), false);
+  // The first lesson is what shows you the weapon: before it, nothing banks. (Every skill is
+  // known from the first step now; the Arms are the family a teacher still opens the banking of.)
+  assert.equal(skills.taught('blades'), false);
   const given = teachers.teach('merc-gotwood');
   assert.equal(given.ok, true);
   assert.equal(given.first, true, 'the first lesson shows you the weapon');
@@ -124,7 +125,7 @@ test('a lesson is given once, at a rung, and never by the dead', () => {
   dead.companions.died('merc-eliana', { where: 'the Lauvel', what: 'Wolves' });
   assert.equal(dead.teachers.owed('merc-eliana'), null, 'a dead teacher owes nothing');
   assert.equal(dead.teachers.teach('merc-eliana').ok, false);
-  assert.equal(dead.skills.known('heavy-arms'), false, 'and nothing of his was banked');
+  assert.equal(dead.skills.taught('heavy-arms'), false, 'and nothing of his was banked');
   // A man sent on ahead teaches nothing until he is back.
   const sent = company({ walking: ['merc-lakota'], regard: { 'merc-lakota': RUNG_AT.friendly } });
   assert.ok(sent.teachers.owed('merc-lakota'));
@@ -176,8 +177,8 @@ test('sparring pays to a ceiling, and the ceiling never passes the teacher’s o
   // A bout with no ceiling handed in is the old flat twenty, so nothing already written moves.
   const plain = createSkills(), bare = createCombatSkills({ skills: plain });
   for (let i = 0; i < 4000; i++) bare.dodged({ source: 'sparring', ceiling: 60 });
-  assert.equal(plain.known('toughness'), false, 'and a skill nobody has shown you banks nothing');
-  assert.equal(plain.level('toughness'), 0);
+  assert.equal(plain.taught('toughness'), false, 'and a weapon family nobody has shown you banks nothing');
+  assert.equal(plain.xp('toughness'), 0);
 });
 
 test('a man will only spar in the craft he teaches, and only once he has shown it to you', () => {
@@ -344,7 +345,7 @@ test('the first bow is Jerry’s spare, given with his first lesson', () => {
   for (const id of TEACHER_IDS) if (id !== 'merc-jerry') assert.equal(giftOf(id), null, `${id} gives nothing outright`);
   // It is the thing that shows him the bow at all: before it, Bows banks nothing.
   const { companions, teachers, skills, arms } = company({ walking: ['merc-jerry'], regard: { 'merc-jerry': RUNG_AT.acquainted } });
-  assert.equal(skills.known('bows'), false);
+  assert.equal(skills.taught('bows'), false);
   assert.equal(arms.dealt({ weapon: BOW.id, damage: 40 }).xp, 0, 'an arrow from nowhere teaches nothing');
   const first = teachers.teach('merc-jerry');
   assert.equal(first.first, true, 'and the lesson is what shows it to him');
@@ -516,7 +517,7 @@ test('what a teacher has given survives the road, and nonsense does not', () => 
 test('level 1 with no lessons is today’s game, to the digit', () => {
   const { teachers, skills, arms } = company({ walking: [...COMPANION_IDS] });
   for (const id of TEACHER_IDS) assert.equal(teachers.owed(id), null, `${id} owes a stranger nothing`);
-  for (const id of ARMS_IDS) assert.equal(skills.known(id), false, `${id} has not been shown to anybody`);
+  for (const id of ARMS_IDS) assert.equal(skills.taught(id), false, `${id} has not been shown to anybody`);
   const margins = arms.margins();
   assert.equal(margins.maxHp, 100);
   assert.equal(margins.maxStamina, 100);

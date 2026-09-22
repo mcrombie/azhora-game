@@ -121,7 +121,8 @@ export function createMycology({ skills, onEvent = () => {} } = {}) {
     state.met = true;
     const learned = skills?.learn?.(MYCOLOGY_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'mycology-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /**
@@ -129,7 +130,8 @@ export function createMycology({ skills, onEvent = () => {} } = {}) {
    * the satchel; the other two are noted and left standing.
    */
   function find(id, inventory = null) {
-    if (!state.met) return { ok: false, reason: 'You do not know one mushroom from another yet. Odger Pell, at Fernway Rest, does.' };
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; he is no longer the door.
     const species = MUSHROOM_SPECIES[id];
     if (!species) return { ok: false, reason: 'That is not a mushroom anyone here can name.' };
     const first = !state.found[id];

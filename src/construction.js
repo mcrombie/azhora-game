@@ -110,11 +110,13 @@ export function validateConstructionSnapshot(data, { allowMissing = true } = {})
 export function createConstruction({ skills, random = Math.random } = {}) {
   const state = { plot: false, stages: 0, posts: new Map(), emptied: 0 };
   const level = () => skills?.level?.(CONSTRUCTION_SKILL) ?? 0;
-  const known = () => !!skills?.known?.(CONSTRUCTION_SKILL);
+  /** Whether Bowden has actually taught it, which is what his own offer turns on. */
+  const known = () => !!(skills?.taught?.(CONSTRUCTION_SKILL) ?? skills?.known?.(CONSTRUCTION_SKILL));
 
   /** Whether `thing` (a workbench recipe or a house stage) can be built now, and why not. */
   function can(thing, count = () => 0) {
-    if (!known()) return { ok: false, reason: 'You would need to know how. Bowden Koop builds; ask him.' };
+    // Building needs a plot and tools, both of which Bowden hands over; it no longer needs his
+    // permission (the user, 21 September 2026).
     if (TOOLS.some(t => count(t) < 1)) return { ok: false, reason: 'You need a hammer and a saw.' };
     if (level() < thing.level) return { ok: false, reason: `You need a Construction level of ${thing.level} to build that.` };
     const short = Object.entries(thing.planks).filter(([id, n]) => count(id) < n);

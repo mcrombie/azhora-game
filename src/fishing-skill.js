@@ -115,7 +115,8 @@ export function createFishing({ skills, onEvent = () => {} } = {}) {
     state.taught = true;
     const learned = skills?.learn?.(FISHING_SKILL) ?? { ok: false };
     if (first) onEvent({ type: 'fishing-learned' });
-    return { ok: true, first, ...learned };
+    // `first` last: this is the teacher's own first time, not the skill's (src/skills.js).
+    return { ok: true, ...learned, first };
   }
 
   /** A fish on the line at `spotId`. Returns what it was and what it taught. */
