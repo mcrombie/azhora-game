@@ -3228,7 +3228,7 @@ function init() {
       // **The line is laid for the company that is actually there**, counted now and kept nowhere
       // (`borderLine`, src/border-chapter.js). Sounding the advance again counts again.
       if(!combat.startEncounter(borderEncounter(side,borderAllies(side),companyWalking()))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
-      stopInput();toast(side==='empire'?'The Coalition comes on in two waves. Hold your corner of the field.':'The army comes on in two waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
+      stopInput();toast(side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
     refreshQuest();audio?.effect('success');
