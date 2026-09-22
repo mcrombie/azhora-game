@@ -6128,8 +6128,12 @@ function init() {
           const heart={x:(front.x+facing.x)/2,z:(front.z+facing.z)/2};
           reviewTarget=new THREE.Vector3(heart.x,world.heightAt(heart.x,heart.z)+1.2,heart.z);
           const side=BORDER_ARENA.retreatAxis==='x'?0:Math.PI/2;
+          // **Thirty-four metres**, which is what it takes to hold both lines: they stand about
+          // thirty apart along the arena and at anything nearer one of them is out of the frame.
+          // The pitch below is the view's preference and not its angle - a fight of its own lifts
+          // the camera to at least .56 (`viewPitch`), and this shot is taken inside a live fight.
           const shot=bestOf(reviewTarget,34,[side,side+Math.PI]);
-          yaw=shot.yaw;pitch=.36;distance=targetDistance=shot.distance;reviewFrozen=true;
+          yaw=shot.yaw;pitch=.3;distance=targetDistance=shot.distance;reviewFrozen=true;
           $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
           return;
         }
