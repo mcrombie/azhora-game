@@ -4,7 +4,7 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
     name: 'Letter of introduction', type: 'Quest item', icon: 'letter',
-    brief: 'The report and letter of introduction Jojo the harbourmaster handed over at the head of the pier, for the Ambroni army post on the Avrel clearing.',
+    brief: 'The report and letter of introduction Jojo the harbourmaster handed over at the head of the pier, for the army’s relay post at Nothom, over the Caloss in Luscia.',
     description: 'The seal is already broken so you can read your errand. Keep the message with you for the road ahead.',
   }),
   'simple-sword': Object.freeze({
@@ -117,7 +117,7 @@ export const INVENTORY_ITEMS = Object.freeze({
   'horse-token': Object.freeze({
     name: 'Army horse token', type: 'Quest item', icon: 'token',
     brief: 'Iven’s mark on a strip of army leather: one horse, owed by the army.',
-    description: 'The relay clerk in Lumber Town pays in what the army owes him. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, keeps the army’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
+    description: 'The relay clerk in Nothom pays in what the army owes him. Bede Harrow, the ostler at the stable yard on the edge of Nothom, keeps the army’s remounts; hand him this token and he will give you a horse and show you how to ride it.',
   }),
   herbs: Object.freeze({
     name: 'Gathered herbs', type: 'Food', icon: 'leaf', stackable: true, eatName: 'herbs',
@@ -707,13 +707,13 @@ export function createInventory({
       detail.append(element('p', 'inventory-description', item.description));
       const letter = element('article', 'inventory-letter');
       letter.id = 'inventory-letter-body';
-      letter.setAttribute('aria-label', 'The letter of introduction to Quartermaster Corvan');
+      letter.setAttribute('aria-label', 'The letter of introduction to Iven, the army’s relay clerk at Nothom');
       letter.tabIndex = 0;
       letter.append(
-        element('p', 'inventory-letter-address', 'To Quartermaster Corvan, Ambroni army, The Avrel Clearing'),
+        element('p', 'inventory-letter-address', 'To Iven, relay clerk, Ambroni army, Nothom in Luscia'),
         element('p', '', 'Bramble goblin raiders have cut the road out of Tidehaven. Our watch is holding the northern path, but the village needs help keeping travelers safe.'),
         element('p', '', 'The bearer has answered the Ambroni Empire’s call for mercenaries. Receive them at your field post, record their service, and give them their first orders. They arrive with a plain sword and no armor.'),
-        element('p', '', 'The army promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. First report at the Avrel clearing, just beyond Tidehaven’s forest. Keep this letter as your introduction and proof of service; Corvan will arrange the copies needed farther up the road.'),
+        element('p', '', 'The army promises protection from the goblin raids spilling out of Pueth and says it needs hands against the rebels in the south. Report at the relay post on the square at Nothom, west out of Drent and over the Caloss. Keep this letter as your introduction and proof of service; Iven will arrange the copies needed farther up the road.'),
         // The rule the whole of the long road hangs on, stated where the traveler cannot miss it
         // and ten minutes before anybody says it out loud (docs/drent-long-road.md §2).
         element('p', '', 'The company called under this contract is eleven, the bearer among them, and the boats are still coming in. The Marshal marches when the eleventh has reported at the muster, and not before.'),

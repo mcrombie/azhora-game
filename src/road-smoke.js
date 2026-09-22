@@ -1,4 +1,4 @@
-import { canStand } from './game-state.js';
+import { canStand, QUEST_DONE } from './game-state.js';
 import { LUSCIA_SITES, LUSCIA_WOLVES } from './luscia-chapter.js';
 import { OSTLER_OBJECTIVE } from './ostler.js';
 
@@ -118,7 +118,7 @@ export async function runRoadSmoke(h) {
   }
 
   try {
-    assert(getMode() === 'playing' && state().questStage === 10, 'the first-shore tutorial must be finished');
+    assert(getMode() === 'playing' && state().questStage === QUEST_DONE, 'the first-shore tutorial must be finished');
     assert(!state().testingEnabled, 'the normal road smoke must run before F8 supplies');
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the road items are missing');
     assert(weapons.profile().id === 'simple-sword' && weapons.profile().usable, 'equip the repaired sword before the road test');
@@ -297,7 +297,7 @@ export async function runRoadSmoke(h) {
     assert(state().campaign?.chapterId === 'moros-camp', 'the campaign did not move on to the Moros camp');
     assert(state().luscia?.complete, 'the chapter did not finish');
 
-    // Lumber Town's square: Smiths, who begs until he is paid, and a stall
+    // Nothom's square: Smiths, who begs until he is paid, and a stall
     // keeper who is only a stall keeper until she is asked three careful things.
     const square = world.landmarks.find(place => place.id === 'lumber-town');
     const smiths = npcData.find(item => item.id === 'town-beggar');

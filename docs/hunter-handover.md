@@ -59,7 +59,7 @@ errors). Draw calls by facing (0, π/2, π, 3π/2), and figures by distance:
 |---|---|---|---|---|---|---|---|
 | Tidehaven landing (23, 29) | 678 / 1,930 / 842 / 568 | 33 | 7 | 15 | 24 | 25 | 23.7 |
 | Lauvel field (−677.8, 297.1) | 727 / 557 / 1,071 / 971 | 31 | 8 | 13 | 21 | 26 | 17.3 |
-| Lumber Town square (−728.57, 384.36) | 934 / 546 / 664 / 885 | 26 | 10 | 12 | 25 | 26 | 17.2 |
+| Nothom square (−728.57, 384.36) | 934 / 546 / 664 / 885 | 26 | 10 | 12 | 25 | 26 | 17.2 |
 | Moros camp (−980.65, 598.9) | 609 / 459 / 321 / 676 | 8 | 4 | 8 | 8 | 8 | 20.5 |
 
 Triangles for the same sixteen are in `tests/artifacts/draws.json` if nobody has overwritten it

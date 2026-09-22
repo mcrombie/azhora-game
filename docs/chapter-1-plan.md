@@ -1,3 +1,7 @@
+> **Superseded, 22 September 2026.** Chapter 1 was cut to three subquests - report to Jojo,
+> train with Glun, report to Nothom - and the road in between came off the slate. Nothing
+> below was built. See [chapter-one.md](chapter-one.md) for what is.
+
 # Chapter 1 redesign: the implementation plan
 
 The plan Codex's `docs/chapter-1-claude-prompt.md` asks for, against `docs/chapter-1-redesign.md`

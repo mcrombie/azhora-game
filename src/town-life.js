@@ -37,7 +37,7 @@ export const TOWN_LIFE_NPCS = Object.freeze([
     'The army buys our grain at its own price and calls it a kindness. Corvan is fair enough, for a quartermaster. The price is not his.',
     'The byre is new since the spring. The barn is older than my grandmother, and she would tell you so herself.',
   ], { color: 0x8a6f4a }),
-  person('life-town-smith', 'Rook', 'Lumber Town smith', 'forest-woodcutter', PLACE_STANDS['life-town-smith'], PLACE_STANDS['life-town-smith'].yaw, [
+  person('life-town-smith', 'Rook', 'Nothom smith', 'forest-woodcutter', PLACE_STANDS['life-town-smith'], PLACE_STANDS['life-town-smith'].yaw, [
     'Horseshoes, hinges, saw teeth and pots. I shoe the army’s horses too, and guess which of them pays on the day.',
     'Swords? Not here. There is a bench for that sort of thing at the army’s places, and they are welcome to it.',
   ], { color: 0x5f4a3a }),
@@ -47,7 +47,7 @@ export const TOWN_LIFE_NPCS = Object.freeze([
   ], { color: 0x6f6a5c }),
   person('life-town-watch-north', 'Watchman Tobias', 'Town watch, north gate', 'bridge-keeper', PLACE_STANDS['life-town-watch-north'], PLACE_STANDS['life-town-watch-north'].yaw, [
     'Town watch. We have shut both gates at dark since the Lauvel, and nobody has argued.',
-    'Travelers are welcome in Lumber Town. Armies go round it, if they know what is good for the timber.',
+    'Travelers are welcome in Nothom. Armies go round it, if they know what is good for the timber.',
     'The road south goes out to the Moros. The army leaves by that gate in a column and comes back in ones and twos.',
   ], { color: 0x6b5d45 }),
   person('life-crossing-ferryman', 'Cade', 'Ferryman of the Caloss', 'reed-worker', PLACE_STANDS['life-crossing-ferryman'], PLACE_STANDS['life-crossing-ferryman'].yaw, [

@@ -256,15 +256,15 @@ times and are not quoted.
 | Solis's market square, looking west | 94 / 263 k | 128 / 316 k |
 | The camp, looking east | 80 / 242 k | 113 / 300 k |
 | The border crossing, looking south-east | 113 / 266 k | 192 / 365 k |
-| Lumber Town, looking south toward the Moros | 166 / 298 k | 211 / 361 k |
+| Nothom, looking south toward the Moros | 166 / 298 k | 211 / 361 k |
 
 Solis first cost 176 draws at its gate: its many tints each became a batch. Its
 static scenery, the country along the road and each group that changes hands are
 now merged into vertex-coloured meshes (one per surface kind), which brought the
-gate to 95 and the Lumber Town view from 276 to 211. The remaining extra draws in
+gate to 95 and the Nothom view from 276 to 211. The remaining extra draws in
 distant views are the grown terrain grid (+6 tiles) and West Suval's regional
 scatter. World build: ~1.7 s → ~2.2 s in the browser; colliders 5 951 → 6 447.
-Every Solis view is lighter than Lumber Town's on either branch. A real frame-time
+Every Solis view is lighter than Nothom's on either branch. A real frame-time
 figure needs `npm run test:road` (not run; see below).
 
 ## Left as stubs, and what the lead must do on merge

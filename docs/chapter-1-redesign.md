@@ -1,3 +1,7 @@
+> **Superseded, 22 September 2026.** Chapter 1 was cut to three subquests - report to Jojo,
+> train with Glun, report to Nothom - and the road in between came off the slate. Nothing
+> below was built. See [chapter-one.md](chapter-one.md) for what is.
+
 # Chapter 1 redesign: instruction, the road, and the highway gang
 
 Status: design handoff for Claude Code; no gameplay changes made by this document.
@@ -18,7 +22,7 @@ This document separates the requested requirements from proposed implementation 
 
 ## 2. Scope and continuity
 
-This changes Chapter 1's introduction and one connected encounter in the current Chapter 2. In `story-chapters.js`, Chapter 1 ends on reporting to Iven in Lumber Town; the Lauvel courier task is already part of Chapter 2. Preserve those chapter boundaries unless the implementation plan identifies a concrete reason to change them.
+This changes Chapter 1's introduction and one connected encounter in the current Chapter 2. In `story-chapters.js`, Chapter 1 ends on reporting to Iven in Nothom; the Lauvel courier task is already part of Chapter 2. Preserve those chapter boundaries unless the implementation plan identifies a concrete reason to change them.
 
 The intended route is:
 

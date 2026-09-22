@@ -29,7 +29,7 @@ const stop = (id, region, where, x, z, yaw) => freeze({ id, region, where, x, z,
 export const TROUPE_STOPS = freeze([
   stop('avrel', 'Drent', 'the edge of the Avrel clearing', -430.4, 46.4, .785),
   stop('fernway', 'Drent', 'the verge by Fernway Rest', -110.6, 29.3, Math.PI),
-  stop('lumber-town', 'Luscia', 'the meadow outside Lumber Town', -679.1, 334.9, Math.PI / 2),
+  stop('lumber-town', 'Luscia', 'the meadow outside Nothom', -679.1, 334.9, Math.PI / 2),
   stop('moros', 'Moros Plain', 'a wayside on the Moros Plain', -867.1, 543.2, Math.PI),
   stop('solis-road', 'West Suval', 'the verge of the Solis road', -536.5, 865.7, .785),
   stop('rimeholt', 'Pueth', 'the green below Rimeholt', -339.7, -344.6, 3.927),

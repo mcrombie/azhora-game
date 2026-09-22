@@ -457,10 +457,10 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
   }
 
   // -------------------------------------------------------------------------
-  // Lumber Town: gates, smithy, hall, lived-in detail and the stable yard
+  // Nothom: gates, smithy, hall, lived-in detail and the stable yard
   // -------------------------------------------------------------------------
   {
-    const b = createSceneryBuilder('Lumber Town’s new works');
+    const b = createSceneryBuilder('Nothom’s new works');
     const T = LUMBER_TOWN_WORKS;
     const across = LUMBER_TOWN.across, along = LUMBER_TOWN.along;
     for (const gate of T.gates) {
@@ -553,7 +553,7 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
     signs.notice({ x: T.notice.x, z: T.notice.z, label: 'Notices', facing: T.notice.yaw, parent });
     for (const gate of T.gates) {
       const out = Math.sign(gate.a), spot = { x: gate.x + along.x * out * 6 + across.x * -7.5, z: gate.z + along.z * out * 6 + across.z * -7.5 };
-      signs.place({ x: spot.x, z: spot.z, label: 'Lumber Town', facing: Math.atan2(along.x * out, along.z * out) - .4 * out, parent });
+      signs.place({ x: spot.x, z: spot.z, label: 'Nothom', facing: Math.atan2(along.x * out, along.z * out) - .4 * out, parent });
     }
     const stableBoard = LUMBER_TOWN_WORKS.stable;
     signs.notice({ x: stableBoard.x - along.x * 5.8 - across.x * 2.2, z: stableBoard.z - along.z * 5.8 - across.z * 2.2, label: 'The Stable Yard', facing: Math.atan2(-across.x, -across.z), parent });

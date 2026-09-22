@@ -363,7 +363,7 @@ them: **walking is 56 of 2,192 (2.6%) and harmless** — the home moves every fr
 `stepAround` has him past the thing in a second — but **stopped was 78 of 486 (16.2%), and a
 stopped man holds his place for 60, 90 or 120 seconds**. Twelve of those were close enough that
 `pace` never fell below the tenth of a metre that ends the walk, so the man marched on the spot
-against a hedge for the whole dwell, in Lumber Town square and at the crossing. Kristen was one
+against a hedge for the whole dwell, in Nothom square and at the crossing. Kristen was one
 confirmed case, 0.08 m short of a place she could not reach.
 
 **Fixed 2026-09-21.** `createMercenaryCompany` takes an optional `standable` predicate from the
@@ -758,7 +758,7 @@ Road smoke: the satchel prompt is missing at the wrecked cart; the label reads
 ```
 
 The stage is `find-satchel`, the objective `courier-satchel`, the traveler at the Lauvel field,
-and Iven is back in Lumber Town. So a talk prompt appeared to be showing where the man is not,
+and Iven is back in Nothom. So a talk prompt appeared to be showing where the man is not,
 and beating the cart's own prompt. Two hunters chased that reading — a hired sword stopped at
 the cart, then the companion still escorting — and both were dead ends, because the reading was
 wrong. Nobody was answering. Nothing was on the screen at all.
@@ -791,7 +791,7 @@ conversation ends either. This is a bug that lies to whoever asks the HUD what i
 and what it cost was two days of two bug hunts.
 
 **Could a player reach the cart without being hailed first?** No, and it does not matter that
-they cannot. Coming up the road from Lumber Town the hail fires forty-odd metres out, long
+they cannot. Coming up the road from Nothom the hail fires forty-odd metres out, long
 before the cart; coming across country from the north-east it fires as they step onto the cart.
 Either way they hear her, control comes back, and the prompt is correct. Only a harness that
 warps in and reads the same frame sees the stale line.
@@ -939,7 +939,7 @@ already costs one call, so (a) would then save one call a head.
 
 **(b) was built. (a) was rejected, on three numbers and one thing a player sees.**
 
-| | landing | Lauvel | Lumber Town | Moros camp |
+| | landing | Lauvel | Nothom | Moros camp |
 |---|---|---|---|---|
 | figures drawn | 33 | 31 | 26 | 8 |
 | beyond 60 m | 18 | 18 | 14 | 0 |
@@ -947,7 +947,7 @@ already costs one call, so (a) would then save one call a head.
 | (a) at 120 m would drop | 8 figures | 5 | 0 | 0 |
 | (a) at 100 m would drop | 9 | 10 | 1 | 0 |
 
-(a) saves nothing at all at Lumber Town at 120 m and nothing anywhere at the camp, and where it
+(a) saves nothing at all at Nothom at 120 m and nothing anywhere at the camp, and where it
 does save it saves about half what (b) does. And its cost is the most visible artefact available:
 a crowd at a town's edge blinking out of existence at 100 m and back in again. (b)'s cost is a
 figure thirty pixels tall losing limbs that were two pixels across. The Moros plain is the place
@@ -961,7 +961,7 @@ honest column because it does not depend on which way the camera is pointed:
 |---|---|---|---|---|
 | Tidehaven landing | 782 | **661** | 8 | 1,930 → 1,849 |
 | the Lauvel field | 536 | **241** | 18 | 1,071 → 859 |
-| Lumber Town square | 447 | **259** | 11 | 934 → 838 |
+| Nothom square | 447 | **259** | 11 | 934 → 838 |
 | the Moros camp | 164 | **164** | 0 | 676 → 749 |
 
 1,929 figure meshes become 1,325 across the four: **31 % fewer**. The camp is the control — no
@@ -1211,7 +1211,7 @@ Driven through `main.js`'s own step (`stepAround`, 2.4 m/s), starting each man f
 and 20 stand still.** Marching means he never gets inside the 0.1 m of his home that
 `main.js:3474` needs to stop, so `pace` stays above 0.1, so the walk cycle keeps playing and he
 keeps turning to face the home he cannot reach. A hired sword doing a walk cycle on the spot
-against a hedge, for up to two minutes, in Lumber Town square and at the crossing.
+against a hedge, for up to two minutes, in Nothom square and at the crossing.
 
 So it is not only a number. The 8 % ceiling is over both phases together, and 5.5 % passes it
 while the phase that shows passes 16 %. *Smallest repair:* nudge a blocked **stop** position to
@@ -1902,7 +1902,7 @@ if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},…);if(spot
 
 `escortSpotFor` (`src/mercenaries.js:509`) walks a fixed list of offsets and returns **the first
 standable one**. It takes no place in the file, so every man who falls back to it gets the *same*
-answer. Measured in **Lumber Town square, 2 of 10** find no `fileSpot` and fall through to it —
+answer. Measured in **Nothom square, 2 of 10** find no `fileSpot` and fall through to it —
 and both land on the same stone.
 
 ### Smallest repair
@@ -2425,7 +2425,7 @@ the traveler on open ground with no retreat at all. Measured over 48 facings:
 | the yard, mounted | 60.0 m | **91.0 m** | 1 |
 | the yard, on foot | 38.5 m | 54.5 m | 0 |
 | the open road, mounted | 60.0 m | 78.6 m | 0 |
-| Lumber Town square, mounted | 66.2 m | 84.8 m | 0 |
+| Nothom square, mounted | 66.2 m | 84.8 m | 0 |
 
 The 60 is the design; the rest is the retreat, and it is bounded at 97.2 m
 (`shoulder + (9 + FILE_RETREAT) * stride`). Not reported as a fault - a file that cannot spread
@@ -2630,7 +2630,7 @@ is no obstacle at all because its man already is, at a rider's own footprint.
 | the yard, file blind to them | **4** | 0 | 54.5 m |
 | the yard, file yielding | **0** | 0 | 54.5 m |
 | the open road, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
-| Lumber Town square, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
+| Nothom square, blind / yielding | 3 / **0** | 0 / 0 | 50.5 m / 50.5 m |
 
 **It costs nothing.** Not one man loses his ground and the file trails no further, which is the
 column that would have said the repair was too expensive. In the picket review's own geometry the
@@ -2744,7 +2744,7 @@ opening words missing. Capitalised, and nothing else about it touched.
 
 There was no view of the thing the arithmetic says is sixty metres long: `company-mounted` and
 `company-picket` are about the yard and carry three men on purpose. `company-ten` is the whole
-company, mounted, on the road out of Lumber Town.
+company, mounted, on the road out of Nothom.
 
 ### The first shot found a rider under the traveler's horse
 
@@ -2787,7 +2787,7 @@ but it is what a company looks like if the traveler stops his horse in a street.
 
 **60.2 m against the arithmetic's 60.0** (`shoulder 4.2 + 9 x stride 6.2`), with **no retreat at
 all**: on open ground every man takes his own place at his own shoulder. Looked at, it is eleven
-riders in a single even file coming out through Lumber Town's gate, each on his own coat. That is
+riders in a single even file coming out through Nothom's gate, each on his own coat. That is
 the picture `docs/companions.md` describes, and it had never been seen.
 
 

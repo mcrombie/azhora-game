@@ -1,4 +1,4 @@
-import { canStand } from './game-state.js';
+import { canStand, QUEST_DONE } from './game-state.js';
 import { toWorld } from './world-scale.js';
 
 const detached = value => JSON.parse(JSON.stringify(value));
@@ -37,7 +37,7 @@ export async function runRoadCheckSmoke(h) {
 
   try {
     await prepare(); await frames(3);
-    assert(getMode() === 'playing' && readState().questStage === 10 && !readState().testingEnabled, 'fixture did not begin as normal road play');
+    assert(getMode() === 'playing' && readState().questStage === QUEST_DONE && !readState().testingEnabled, 'fixture did not begin as normal road play');
     assert(inventory.has('simple-sword') && inventory.has('harbor-letter') && inventory.has('road-token'), 'fixture is missing the road equipment');
     assert(!inventory.has('fishing-rod'), 'rod-teaching fixture must start without a rod');
     if (!journey.state.started) assert(journey.start().ok, 'fresh journey could not begin');
@@ -150,7 +150,7 @@ export async function verifyRoadReload(h, expected) {
   assert(stored.ok && same(stored.data, expected), 'the save slot changed or disappeared across renderer reload');
   assert(continueRoad(), 'Continue could not restore the saved road');
   await frames(6);
-  assert(getMode() === 'playing' && !readState().testingEnabled && readState().questStage === 10, 'Continue did not restore normal road play');
+  assert(getMode() === 'playing' && !readState().testingEnabled && readState().questStage === QUEST_DONE, 'Continue did not restore normal road play');
   assert(same(journey.snapshot(), expected.journey), 'Continue changed intermediate quest progress');
   assert(journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2]), 'Continue skipped the unfinished report to Hollis');
   assert(world.journeySiteState()['bridge-repair'] && canStand(damagedSpot.x, damagedSpot.z, world), 'Continue failed to restore the physical bridge repair');

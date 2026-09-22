@@ -7,7 +7,10 @@
  * walked anywhere. Now an Imperial officer stands at the post and does both jobs in order:
  *
  *   1. Jojo sends the traveler to him.
- *   2. He sets the lesson - two hits and a dodge - and watches it. Nothing counts until he has.
+ *   2. He sets the lesson - two strikes, one guard and one step - and watches it. Nothing counts
+ *      until he has. The guard is the user's, 22 September 2026: Cromb comes ashore with a shield
+ *      now (src/player-characters.js) and blocking is the third of the three things a sword,
+ *      a shield and a pair of feet can do.
  *   3. When it is done he says so, gives the map, and explains what the other skills are: the
  *      ground you walk draws itself, and anybody who lives somewhere can tell you which way the
  *      next country is. That map opens on Tidehaven and nothing else.
@@ -37,8 +40,14 @@ export const INSTRUCTOR = Object.freeze({
  */
 export const INSTRUCTOR_STAND = Object.freeze({ x: -32, z: 28.5, yaw: Math.PI });
 
-/** How much of the lesson is done, from the two numbers the host already keeps. */
-export const LESSON = Object.freeze({ hits: 2, dodges: 1 });
+/** How much of the lesson is done, from the three numbers the host already keeps. */
+export const LESSON = Object.freeze({ hits: 2, guards: 1, dodges: 1 });
+
+/**
+ * How long the shield has to be up to count for anything. A tap of the key is not a guard; this
+ * is about as long as a blow takes to arrive, which is the point of the exercise.
+ */
+export const GUARD_SECONDS = .7;
 
 /**
  * The state of the lesson, which is not remembered anywhere of its own: it is read off the
@@ -49,25 +58,27 @@ export const LESSON = Object.freeze({ hits: 2, dodges: 1 });
  *   `done`      two hits and a dodge, and he has not yet been back to
  *   `finished`  he has given the map
  */
-export function lessonStage({ briefed = false, hits = 0, dodges = 0, taught = false } = {}) {
+export function lessonStage({ briefed = false, hits = 0, guards = 0, dodges = 0, taught = false } = {}) {
   if (taught) return 'finished';
   if (!briefed) return 'waiting';
-  return hits >= LESSON.hits && dodges >= LESSON.dodges ? 'done' : 'set';
+  return hits >= LESSON.hits && guards >= LESSON.guards && dodges >= LESSON.dodges ? 'done' : 'set';
 }
 
 const BRIEF = Object.freeze([
   'Glun. I hold the post here, which this morning means I am the one who decides whether you go up that road or back on your boat.',
   'Hired swords come off every boat saying they can fight. Show me. That is a straw post; it does not hit back and it does not lie about you either.',
-  `Two clean strikes on it, and step out of the way once. The strike is the left button or R. The step is C and a direction, and it is the half of this that keeps you alive.`,
+  `Three things, and a sword is only the first of them. Two clean strikes on the straw: the left button, or R.`,
+  `Then the shield. Hold V and keep it there - not a tap, hold it, the way you would hold it while somebody who means it comes at you. Most of them never learn that a shield is something you decide to be behind.`,
+  `And the step: C and a direction. Strike, guard, step. Two of those three are how you are still standing at the end of a day, and it is not the sword.`,
 ]);
 
 const NOT_YET = Object.freeze([
-  'Not finished. Two strikes on the straw, and one step out of the way.',
+  'Not finished. Two strikes on the straw, the shield up and held, and one step out of the way.',
   'It is not a test of strength. It is a test of whether you can do the same thing twice and still be standing.',
 ]);
 
 const DONE = Object.freeze([
-  'That will do. You will not frighten anybody, but you know which end goes in, and you can get out of the way. That is more than half of them manage.',
+  'That will do. You will not frighten anybody, but you know which end goes in, you can get behind your own shield, and you can get out of the way. That is more than half of them manage.',
   'Now the other half of staying alive, which is knowing where you are. Take this.',
   'A chart. It is blank, and that is not a fault - it is blank because you have not been anywhere. Ground you walk draws itself on it. This village is on it already, because you are standing in it.',
   'For the rest: ask. Anybody who lives somewhere can tell you which way the next country is, and a name and a bearing is worth having before you need it. Same with everything else out there - the man who fishes will show you fishing, the woman with the hedge will name a plant for you. None of them will come and find you.',

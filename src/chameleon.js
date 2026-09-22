@@ -52,7 +52,7 @@ const spot = (id, region, name, x, z, note) => freeze({ id, region, name, x, z, 
  */
 export const CHAMELEON_SPOTS = freeze([
   spot('drent-wood', 'Drent', 'a stump in the Greenway wood', -424, -17, 'He is lying along a stump with his eyes going different ways, which is a thing he can do and you cannot.'),
-  spot('luscia-scrub', 'Luscia', 'a thorn bush north of Lumber Town', -693, 364, 'He is hanging under a thorn branch by four feet and a tail, upside down, entirely at ease.'),
+  spot('luscia-scrub', 'Luscia', 'a thorn bush north of Nothom', -693, 364, 'He is hanging under a thorn branch by four feet and a tail, upside down, entirely at ease.'),
   spot('moros-grass', 'Moros Plain', 'a fence post on the Moros', -975, 642, 'He is on a fence post in open grass with nothing to hide against, and has gone the colour of the post anyway, badly.'),
   spot('east-suval-rock', 'East Suval', 'a warm rock above Elod', -144, 727, 'He is flat on a rock that has had the sun on it all day, and appears to be asleep. He is not.'),
   spot('west-suval-vine', 'West Suval', 'a vine row above the coast road', -560, 900, 'He is in the vines, exactly the colour of the leaves, and gives himself away by moving one eye.'),

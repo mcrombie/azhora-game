@@ -548,7 +548,7 @@ export function escortSpotFor(at, standable = () => true, place = 0) {
   const yaw = Number.isFinite(at.yaw) ? at.yaw : 0, sin = Math.sin(yaw), cos = Math.cos(yaw);
   // `place` is which man of the file is asking. Without it every man who falls back here is
   // handed the same answer, because the list is fixed and the first standable offset wins - two
-  // of ten measured onto one stone in Lumber Town square. Starting each man that far down the
+  // of ten measured onto one stone in Nothom square. Starting each man that far down the
   // list gives the fallback the shape the file already has.
   const start = Math.max(0, Math.floor(Number(place) || 0)) % ESCORT_OFFSETS.length;
   for (let step = 0; step < ESCORT_OFFSETS.length; step++) {

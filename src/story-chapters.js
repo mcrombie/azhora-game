@@ -8,6 +8,7 @@
  * same views the journal already has. Pure: no DOM, no three.
  */
 import { LONG_ROAD_LEGS } from './long-road.js';
+import { questLive } from './quest-slate.js';
 
 export const STORY_CHAPTER_VERSION = 1;
 
@@ -55,15 +56,18 @@ const LONG_WAY = Object.freeze({
 export const STORY_CHAPTERS = Object.freeze([
   chapter({
     number: 1, id: 'road-to-luscia', title: 'The Road to Luscia', region: 'Drent',
-    goal: 'Report for duty. The Empire is gathering its hired swords at Lumber Town, across the Caloss in Luscia; get there and find the clerk who keeps the muster.',
+    goal: 'Report for duty. The Empire is gathering its hired swords at Nothom, across the Caloss in Luscia; get there and find the clerk who keeps the muster.',
+    // **Three subquests and nothing else** (the user, 22 September 2026). The five steps this
+    // replaced were the goblins in the Greenway, the report to Corvan, the supply parcels, the
+    // Caloss crossing and Iven; the middle three are off the slate (src/quest-slate.js) and the
+    // bridge among them is a side quest now. The steps here are `questSteps` under another name,
+    // which is the point: the journal and the card say the same three things.
     steps: [
-      'Come ashore at Tidehaven and clear the Greenway of raiders',
-      'Carry the letter of introduction to the army’s post in the Avrel clearing',
-      'Make the road sound as far as the Caloss crossing',
-      'Cross the river into Luscia and find Lumber Town',
-      'Report to Iven at the relay post on the town square',
+      'Report to Harbourmaster Jojo at the head of the pier',
+      'Train with Officer Glun at the straw post: sword, shield and feet',
+      'Report to Iven at the army’s relay post in Nothom, over the Caloss in Luscia',
     ],
-    longWay: LONG_WAY,
+    longWay: questLive('teachers') ? LONG_WAY : null,
     // Reporting to Iven is `deliver-report`, and `refreshQuest` opens the Luscia
     // chapter in the same beat, so `luscia.started` *is* the report. `briefed` is
     // one step further on — accepting the errand out to the Lauvel — and reading

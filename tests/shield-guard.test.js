@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { startingGear } from '../src/player-characters.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -364,4 +365,15 @@ test('the guard is offered before the fight is stepped, and a hand off the keybo
   assert.equal(held.caught, true, 'a hand on the key catches it');
   assert.equal(released.caught, false, 'and a hand off it does not, however it was latched before');
   assert.ok(held.damage < released.damage, `caught ${held.damage} against ${released.damage} through`);
+});
+
+/**
+ * And the man it is taught to has one. Blocking was built before anybody in the game owned a
+ * shield to do it with; Cromb lands with boards and hide on his arm (the user, 22 September 2026).
+ */
+test('Cromb comes ashore with a shield, and the others come ashore without one', () => {
+  const his = startingGear('cromb');
+  assert.deepEqual(his, { hand: { weight: 'light', tier: 0 } });
+  assert.equal(startingGear('gotwood'), null, 'the rest buy their own on the road');
+  assert.equal(startingGear('nobody-at-all'), null);
 });

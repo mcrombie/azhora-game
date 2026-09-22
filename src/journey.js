@@ -1,4 +1,18 @@
-/** Local Drent-to-Luscia errands beyond the first shore. No render or DOM dependencies. */
+/**
+ * Local Drent-to-Luscia errands beyond the first shore. No render or DOM dependencies.
+ *
+ * **Most of this is off the slate** (src/quest-slate.js, 22 September 2026). Chapter 1 is three
+ * subquests and the last of them is the road west, so Corvan's field register and his three
+ * supply parcels, and Sava's three waymarkers on the rise, are not steps of it any more. They are
+ * still written here and still tested, and one word in the slate puts them back in the ladder.
+ *
+ * **The bridge is different.** It was two of those steps - accept from Hollis, repair, report
+ * back - and it is a side quest of its own now, off the ladder entirely: a one-off that changes
+ * the world and does not move the plot. It can be done whenever, or never. Not done, the Caloss
+ * is crossed by swimming it, which the game allows and does not recommend.
+ */
+import { questLive } from './quest-slate.js';
+
 export const JOURNEY_VERSION = 1;
 export const PARCEL_IDS = Object.freeze(['cart-parcel-1', 'cart-parcel-2', 'cart-parcel-3']);
 export const BEACON_IDS = Object.freeze(['beacon-west', 'beacon-east', 'beacon-north']);
@@ -24,7 +38,7 @@ function validCollection(value, allowed) {
 }
 
 /** Reject inconsistent saves atomically; loading a save never grants rewards. */
-function validateSnapshot(value) {
+function validateSnapshot(value, live = questLive) {
   if (!value || typeof value !== 'object' || value.version !== JOURNEY_VERSION
     || !Number.isSafeInteger(value.revision) || value.revision < 0
     || booleanFields.some(key => typeof value[key] !== 'boolean')
@@ -32,12 +46,14 @@ function validateSnapshot(value) {
   if ((!value.started && value.courierAccepted)
     || (!value.courierAccepted && value.parcels.length)
     || (value.courierComplete && value.parcels.length !== PARCEL_IDS.length)
-    || (value.bridgeAccepted && !value.courierComplete)
+    // The bridge hangs off the courier's leg only while the courier is on the slate; on its own
+    // it is a side quest and may be accepted the day the road begins (src/quest-slate.js).
+    || (value.bridgeAccepted && !(live('courier') ? value.courierComplete : value.started))
     || (value.bridgeRepaired && !value.bridgeAccepted)
     || (value.bridgeComplete && !value.bridgeRepaired)
-    || (value.ridgeAccepted && !value.bridgeComplete)
+    || (value.ridgeAccepted && !(live('courier') ? value.bridgeComplete : value.started))
     || (value.beacons.length && !value.ridgeAccepted)
-    || (value.reportDelivered && value.beacons.length !== BEACON_IDS.length)) return false;
+    || (live('waymarkers') && value.reportDelivered && value.beacons.length !== BEACON_IDS.length)) return false;
   // Every accepted action advances exactly once. This also catches partial or
   // internally contradictory saves without inferring missing quest progress.
   const actions = booleanFields.reduce((count, key) => count + Number(value[key]), 0)
@@ -45,31 +61,50 @@ function validateSnapshot(value) {
   return value.revision === actions;
 }
 
-export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
+export function createJourney({ inventory, weapons, onEvent = () => {}, live = questLive } = {}) {
   let state = emptyState();
 
   function snapshot() {
     return { ...state, parcels: [...state.parcels], beacons: [...state.beacons] };
   }
 
+  /** The main road: what the traveler must do, in order, to finish Chapter 1. */
   function stage() {
     if (!state.started) return 'not-started';
-    if (!state.courierAccepted) return 'meet-courier';
-    if (state.parcels.length < PARCEL_IDS.length) return 'recover-parcels';
-    if (!state.courierComplete) return 'return-courier';
-    if (!state.bridgeAccepted) return 'meet-crossing-keeper';
-    if (!state.bridgeRepaired) return 'repair-bridge';
-    if (!state.bridgeComplete) return 'return-crossing-keeper';
-    if (!state.ridgeAccepted) return 'meet-ridge-keeper';
-    if (state.beacons.length < BEACON_IDS.length) return 'restore-beacons';
+    if (live('courier')) {
+      if (!state.courierAccepted) return 'meet-courier';
+      if (state.parcels.length < PARCEL_IDS.length) return 'recover-parcels';
+      if (!state.courierComplete) return 'return-courier';
+      if (!state.bridgeAccepted) return 'meet-crossing-keeper';
+      if (!state.bridgeRepaired) return 'repair-bridge';
+      if (!state.bridgeComplete) return 'return-crossing-keeper';
+    }
+    if (live('waymarkers')) {
+      if (!state.ridgeAccepted) return 'meet-ridge-keeper';
+      if (state.beacons.length < BEACON_IDS.length) return 'restore-beacons';
+    }
     if (!state.reportDelivered) return 'deliver-report';
     return 'complete';
+  }
+  /**
+   * The bridge, which is nobody's step. `on-the-road` is the slate with the old ladder switched
+   * back on, where it is a leg of the road and `stage()` above owns it; `closed` is the slate
+   * with it off. The rest is the errand standing on its own feet, and it runs whether or not the
+   * road has got anywhere.
+   */
+  function bridgeStage() {
+    if (live('courier')) return 'on-the-road';
+    if (!live('bridge') || !state.started) return 'closed';
+    if (!state.bridgeAccepted) return 'offered';
+    if (!state.bridgeRepaired) return 'accepted';
+    if (!state.bridgeComplete) return 'repaired';
+    return 'done';
   }
 
   function view() {
     const current = stage();
     const views = {
-      'not-started': [2, 0, 0, 'Beyond the first shore', 'Finish Eren’s road lessons and carry the letter of introduction out to the Caloss Gate.', ['border']],
+      'not-started': [2, 0, 0, 'Beyond the first shore', 'Carry the letter of introduction west out of Tidehaven and on past the Caloss Gate.', ['border']],
       'meet-courier': [2, 1, 1, 'Report for field service', 'Bring the letter of introduction to Corvan, the Ambroni army quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
       'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your army service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],
@@ -78,7 +113,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
       'return-crossing-keeper': [3, 6, 3, 'Whose road is this?', 'Report the finished repair to Hollis. The bridge serves the army, but the people crossing it have their own account of the rebels.', ['crossing-keeper']],
       'meet-ridge-keeper': [4, 7, 1, 'Voices on the rise', 'Cross the Caloss and continue your route assignment along the Luscian road beyond the river. Speak with Sava about the markers and the people the Empire calls rebels.', ['ridge-keeper']],
       'restore-beacons': [4, 8, 2, 'Three markers on the rise', `Straighten the three leaning waymarkers along the hill paths. ${state.beacons.length} of 3 restored. Press F at a marker to set it upright and uncover its reflective face. No fuel is needed.`, BEACON_IDS.filter(id => !state.beacons.includes(id))],
-      'deliver-report': [4, 9, 3, 'An uncomfortable report', 'Follow the road on past the field at the Lauvel to Lumber Town, and show the letter of introduction to Iven at the army’s relay post on its square. Report what Sava revealed about the battle at the Lauvel and the people the Empire calls rebels.', ['relay-clerk']],
+      'deliver-report': [4, 9, 3, 'Report to Nothom', 'The last of Chapter 1: west out of the forest, over the Caloss — by the bridge, by what is left of it, or by swimming — and on past the field at the Lauvel to Nothom. Show the letter of introduction to Iven at the army’s relay post on the square, and he will give you your assignment.', ['relay-clerk']],
       complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied the letter’s warning and recorded the people’s account, and the army has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
     };
     const [region, step, regionStep, title, detail, destinations] = views[current];
@@ -89,7 +124,22 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
     };
   }
 
+  /** The bridge's own offer, which is on nobody's ladder and is added to whatever is. */
+  function bridgeActions() {
+    switch (bridgeStage()) {
+      case 'offered': return [action('meet-crossing-keeper', 'Ask about the broken crossing', 'crossing-keeper')];
+      case 'accepted': return [action('repair-bridge', 'Repair the crossing · 3 sticks', 'bridge-repair',
+        (inventory?.count?.('forest-stick') ?? 0) < 3 ? 'Gather three sticks to repair the crossing.' : '')];
+      case 'repaired': return [action('return-crossing-keeper', 'Report the finished repair', 'crossing-keeper')];
+      default: return [];
+    }
+  }
+
   function availableActions() {
+    return [...mainActions(), ...bridgeActions()];
+  }
+
+  function mainActions() {
     switch (stage()) {
       case 'meet-courier': return [action('meet-courier', 'Report to the army quartermaster', 'meadow-courier')];
       case 'recover-parcels': return PARCEL_IDS.filter(id => !state.parcels.includes(id))
@@ -153,7 +203,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
   }
 
   function restore(data) {
-    if (!validateSnapshot(data)) return false;
+    if (!validateSnapshot(data, live)) return false;
     // Do not retain caller-owned arrays or arbitrary fields from stored JSON.
     state = { version: JOURNEY_VERSION, revision: data.revision,
       ...Object.fromEntries(booleanFields.map(key => [key, data[key]])),
@@ -163,7 +213,8 @@ export function createJourney({ inventory, weapons, onEvent = () => {} } = {}) {
 
   return {
     start, act, view, availableActions, snapshot, restore,
-    get state() { return { ...snapshot(), stage: stage(), complete: state.reportDelivered,
+    bridgeStage,
+    get state() { return { ...snapshot(), stage: stage(), bridge: bridgeStage(), complete: state.reportDelivered,
       completedRegions: [state.courierComplete ? 2 : null, state.bridgeComplete ? 3 : null, state.reportDelivered ? 4 : null].filter(Boolean) }; },
   };
 }

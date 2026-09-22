@@ -13,7 +13,7 @@ Four board shapes, four meanings, one lettering atlas, one set of woods:
 | Shape | Meaning | Where |
 | --- | --- | --- |
 | Pointed board (fingerpost) | A direction | The Greenway, the main road, the branch roads, Pueth's road |
-| Square board on two posts | A place name | Lumber Town's gates, the Caloss Gate, the Moros Gate, the outpost |
+| Square board on two posts | A place name | Nothom's gates, the Caloss Gate, the Moros Gate, the outpost |
 | Small plaque | A notice | "Notices", "Orders", "Truce", "Closed by Elod", "The Stable Yard" |
 | Painted stone | A border | Caloss Gate (Tidehaven / Avrel), the Moros Gate (Luscia / Moros Plain), the frontier (East Suval / Luscia) |
 
@@ -80,7 +80,7 @@ After: `tests/artifacts/towns-review/after-places-1.png` (farmsteads, gatehouse)
   cairn of the unclaimed, trampled ground and battle debris.
 - **The burned hamlet**: four roofless shells with doorway gaps and fallen
   timbers, a well, and a scorched orchard of twelve dead trees.
-- **Lumber Town**: a palisade gate with watch hut at each end of the road
+- **Nothom**: a palisade gate with watch hut at each end of the road
   (leaves open, wings running back into the trees), the smithy with Rook at his
   anvil, the town hall with a bell cote and Ceri keeping it, a notice board,
   carts, washing lines, and Watchman Tobias at the north gate. The ostler's
@@ -260,7 +260,7 @@ the branch:
 | `before-signs.png`, `before-towns.png`, `before-moros.png` | The old signs, the old places, and the Legion camp as a ring of stakes |
 | `after-signs-1.png`, `after-signs-2.png` | Fingerposts, the Caloss border stone, a milestone, place boards, notices |
 | `after-moros-1.png`, `after-moros-2.png` | The outpost from outside, its main gate, its interior, the stockade |
-| `after-places-1.png` … `after-places-5.png` | Avrel, the Caloss Gate, Lumber Town, the crossing, Sava's court, the Lauvel, the frontier, the Drent wayside, Fernway Rest |
+| `after-places-1.png` … `after-places-5.png` | Avrel, the Caloss Gate, Nothom, the crossing, Sava's court, the Lauvel, the frontier, the Drent wayside, Fernway Rest |
 | `after-people-1.png` | Elod's guards at the shut gate, the Legion on the outpost's walls, the smithy and mess |
 | `after-lineup.png` | An Elodi spearman and archer beside a legionary and a Coalition spearman |
 
@@ -346,7 +346,7 @@ plus the shadow camera at each spot, `main` at e4f814a against this branch):
 | Avrel clearing | 391 → 399 | 580 k → 605 k (+4 %) |
 | Caloss crossing | 363 → 376 | 518 k → 544 k (+5 %) |
 | The Lauvel | 337 → 359 | 413 k → 453 k (+10 %) |
-| Lumber Town | 317 → 335 | 396 k → 418 k (+5 %) |
+| Nothom | 317 → 335 | 396 k → 418 k (+5 %) |
 | Moros gate | 267 → 292 | 367 k → 397 k (+8 %) |
 | Moros road | 182 → 202 | 302 k → 346 k (+15 %) |
 | The outpost, outside | 155 → 172 | 226 k → 287 k (+27 %) |

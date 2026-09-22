@@ -59,34 +59,40 @@ export function moveCharacter(position, dx, dz, world, radius, { swimming = fals
   }
   return position;
 }
+/**
+ * **Chapter 1, in three subquests** (the user, 22 September 2026): report to Jojo, train with
+ * Glun, report to Nothom. That is the whole of it. What came out of the main quest: the goblins
+ * in the Greenway, the report to Quartermaster Corvan in the Avrel clearing, the supply parcels
+ * and the second goblin fight, the wolves at the cart, and the bridge over the Caloss - which is
+ * not gone from the game but is a side quest now, and an optional one (src/journey.js).
+ *
+ * A subquest is a **title**, and a title can span two steps: walking up the pier to Jojo and
+ * speaking to her are both `Report to Harbourmaster Jojo`, because the player has one thing to do
+ * and the second half of it is only the first half arrived at. The house spelling is harbour with
+ * a u, as everywhere else the game writes it.
+ *
+ * **These numbers are read in six places** - the save validator (src/road-checkpoint.js), the
+ * autopilot's ladder (src/autopilot.js), `TUTORIAL_DONE` in the marker rules
+ * (src/quest-markers.js), the road smoke, the chapter list (src/story-chapters.js) and every
+ * save. Renumbering means visiting all six, which is what going from eleven steps to four cost.
+ */
 export const questSteps = [
-  {title:'Goblins on the road', detail:'A goblin attack threatens the village. Walk ashore and find Jojo, the harbourmaster, at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
-  {title:'An urgent message', detail:'Speak to Jojo at the head of the pier about the goblin attack.', lesson:'Meet your neighbors', hint:'Approach Jojo and press F to speak. F or Enter continues a conversation.'},
-  {title:'A little preparation', detail:'Report to Officer Glun at the straw post at the village crossroads. He decides whether a hired sword goes up that road.', lesson:'Learn at your own pace', hint:'Left-click or R to swing. Hold a direction and press C to dodge. Land two hits on the post and try one dodge.'},
-  {title:'Into the Greenway', detail:'Follow the road inland toward the woodland bell.', lesson:'The road ahead', hint:'Right-drag to look around; scroll to zoom. Your next destination glows on the map.'},
-  {title:'Trouble in the trees', detail:'Drive off the three goblin raiders.', lesson:'Watch the windup', hint:'An amber arc warns of a strike. C and a direction to dodge; then left-click or R to counter. Space still jumps.'},
-  {title:'The road is safe', detail:'Carry on west up the Greenway, past the old watch post where the woodland road runs on.', lesson:'Catch your breath', hint:'Follow the gold marker along the road.'},
-  {title:'What you carry', detail:'Open your satchel and read the letter of introduction. Eren has given you a road token.', lesson:'Your inventory', hint:'Press I for your satchel. Hover over an item for a hint, then select the letter of introduction to read it.'},
-  {title:'Ready for the road', detail:'Dismiss your satchel to see the path ahead.', lesson:'Return to the world', hint:'Press I or Esc, or use Close, to dismiss your inventory.'},
-  // The fork: the road west, or the country either side of it. The company is eleven and the
-  // Marshal marches when the eleventh reports, so neither road is the late one (docs/drent-long-road.md).
-  {title:'Through the northern forest', detail:'Follow the forest road to Fernway Rest — or take Drent at walking pace. The company is eleven, the Marshal marches when the eleventh has reported, and the open gold marks what Drent will teach you on the way.', lesson:'Find your way', hint:'Follow the gold marker along the road. L shows local trails and lets you mark a known place; M opens the wider world.'},
-  {title:'Where the forest opens', detail:'Continue to the Caloss Gate and look out across the Avrel clearing.', lesson:'The edge of the wood', hint:'Keep following the road south-west as the trees thin. The farm clearing marks the next leg.'},
-  {title:'Drent, from shore to gate', detail:'The tutorial is complete. Follow the open road through the Avrel clearing, cross the Caloss, and go on into Luscia — and nothing behind you closes. Every teacher and errand in Drent stays where it is, and the road back is a minute and a half.', lesson:'A journey begun', hint:'Find Corvan at the clearing. Press J to review the road ahead; you can return to Tidehaven at any time.'}
+  {title:'Report to Harbourmaster Jojo', detail:'Goblins have come down the northern road. Walk ashore and find Jojo, the harbourmaster, at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
+  {title:'Report to Harbourmaster Jojo', detail:'Speak to Jojo at the head of the pier. She has the Empire’s letter, and she will tell you who to see before you take the road.', lesson:'Meet your neighbours', hint:'Approach Jojo and press F to speak. F or Enter continues a conversation.'},
+  {title:'Training with Officer Glun', detail:'Report to Officer Glun at the straw post by the village crossroads. He decides whether a hired sword goes up that road, and he will have all three of sword, shield and feet out of you first.', lesson:'Sword, shield and feet', hint:'Left-click or R to swing. Hold V to take a blow on your shield. Hold a direction and press C to step out of the way.'},
+  {title:'Report to Nothom', detail:'Glun has given you the chart and your orders: west out of Drent, over the Caloss, and on to Nothom in Luscia. Find Iven at the army’s relay post on the town square; he holds your assignment. Nothing behind you closes — Tidehaven and the whole of Drent stay where they are, and the road back is a minute and a half.', lesson:'A journey begun', hint:'Follow the gold marker west. Press J to review the road ahead; M opens the chart Glun gave you.'},
 ];
+/** The three by name, for anything that would rather name a subquest than count steps. */
+export const SUBQUESTS = Object.freeze([
+  Object.freeze({ id: 'report-jojo', title: questSteps[0].title, from: 0, to: 1 }),
+  Object.freeze({ id: 'train-glun', title: questSteps[2].title, from: 2, to: 2 }),
+  Object.freeze({ id: 'report-nothom', title: questSteps[3].title, from: 3, to: 3 }),
+]);
+/** The last step, which the tutorial does not close: the journey and the chapters take it from here. */
+export const QUEST_DONE = questSteps.length - 1;
 export function advanceQuest(stage, event) {
   if(stage===0 && event==='ashore') return 1;
   if(stage===1 && event==='accept-letter') return 2;
   if(stage===2 && event==='trained') return 3;
-  if(stage===3 && event==='ambush') return 4;
-  if(stage===4 && event==='retreat') return 3;
-  if(stage===4 && event==='victory') return 5;
-  // Eren was taken out of the cast with the rest of the teachers (src/cast.js), so the step he
-  // held is the ground he held it on: walk on west past the Greenway Watch.
-  if(stage===5 && event==='reach-watch') return 6;
-  if(stage===6 && event==='inspect-letter') return 7;
-  if(stage===7 && event==='close-inventory') return 8;
-  if(stage===8 && event==='reach-north-trail') return 9;
-  if(stage===9 && event==='reach-border') return 10;
   return stage;
 }

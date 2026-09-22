@@ -10,7 +10,7 @@
  * purpose and retries alone, wins, lifts Tidehaven's stolen stores and brings
  * them back to the Captain for thirty copper. The fight needs quest stage 10.
  */
-import { canStand } from './game-state.js';
+import { canStand, QUEST_DONE } from './game-state.js';
 import { FOREST_HIDEOUT_QUEST as QUEST, HIDEOUT_GARRISON } from './forest-hideout.js';
 import { FOREST_HIDEOUT as CAMP } from './forest-hideout-world.js';
 import { hideoutToWorld, HIDEOUT_APPROACH_TRAIL, RIMEHOLT } from './pueth-world.js';
@@ -92,7 +92,7 @@ export async function runHideoutSmoke(h) {
   let mainBefore = null;
   const assertSaved = () => {
     const data = saved(); assert(same(data.forestHideout, forestHideout.snapshot()), 'hideout progress was not autosaved exactly');
-    assert(data.questStage === 10 && same(data.journey, mainBefore), 'the optional camp advanced the main story'); autosaves++;
+    assert(data.questStage === QUEST_DONE && same(data.journey, mainBefore), 'the optional camp advanced the main story'); autosaves++;
   };
   const assertActive = allies => {
     assert(getMode() === 'playing' && combat.state.phase === 'active' && combat.state.encounterId === QUEST.id,
@@ -100,7 +100,7 @@ export async function runHideoutSmoke(h) {
     assert(forestHideout.state.active && combat.state.enemies.length === 2, 'optional fight does not own two active scouts');
     assert(combat.state.allies.length === allies, `the fight started with ${combat.state.allies.length} allies, not ${allies}`);
     assert(hideoutWatch.state().visible === 0, 'passive scouts duplicated the actual combatants');
-    assert(readState().questStage === 10, 'starting the optional camp changed the quest stage');
+    assert(readState().questStage === QUEST_DONE, 'starting the optional camp changed the quest stage');
   };
   const walkTo = async (end, { fighting = false } = {}) => {
     const deadline = performance.now() + 40000;
@@ -109,7 +109,7 @@ export async function runHideoutSmoke(h) {
     while (distance(player.group.position, end) > .65 && (!fighting || combat.state.phase === 'active')) {
       const p = player.group.position; setYaw(Math.atan2(p.x - end.x, p.z - end.z));
       assert(performance.now() < deadline, `walking the trail stalled before ${end.x.toFixed(1)}, ${end.z.toFixed(1)}`);
-      if (!fighting) assert(getMode() === 'playing' && readState().questStage === 10 && combat.state.phase !== 'active',
+      if (!fighting) assert(getMode() === 'playing' && readState().questStage === QUEST_DONE && combat.state.phase !== 'active',
         'the trail started combat or changed the main quest without consent');
       else assert(getMode() === 'playing', 'falling back down the trail unexpectedly defeated the player');
       await frames(3);
@@ -132,7 +132,7 @@ export async function runHideoutSmoke(h) {
       'an early visit started the optional battle');
 
     await prepareHideout(10); await frames(5);
-    assert(readState().questStage === 10 && !readState().testingEnabled && !forestHideout.state.inspected,
+    assert(readState().questStage === QUEST_DONE && !readState().testingEnabled && !forestHideout.state.inspected,
       'stage-ten fixture did not reset optional progress');
     assert(weapons.profile().id === 'simple-sword' && weapons.profile().usable, 'fixture sword is not ready');
     mainBefore = detached(journey.snapshot());
@@ -235,7 +235,7 @@ export async function runHideoutSmoke(h) {
     await talkTo(CAPTAIN); await choose('return-hideout-supplies');
     assert(forestHideout.state.returned && inventory.count('copper-piece') === copperBefore + QUEST.reward.quantity,
       'returning the stores did not pay exactly thirty copper'); assertSaved();
-    assert(same(journey.snapshot(), mainBefore) && readState().questStage === 10, 'the optional victory or return changed the main quest');
+    assert(same(journey.snapshot(), mainBefore) && readState().questStage === QUEST_DONE, 'the optional victory or return changed the main quest');
     await talkTo(CAPTAIN); await tap('KeyF');
     assert(/report to the Marshal/.test(document.getElementById('dialogue').textContent), 'the Captain did not remember the returned stores');
     assert(!document.querySelector('[data-choice="return-hideout-supplies"]'), 'the Captain offered to pay twice'); await leave();
@@ -245,7 +245,7 @@ export async function runHideoutSmoke(h) {
       && $('journal-hideout-detail').textContent === forestHideout.view().detail, 'journal omitted the completed optional encounter'); await leave();
     assert(saveRoad(false), 'completed optional errand could not be saved');
     const expected = detached(saved());
-    assert(expected.forestHideout.returned && expected.questStage === 10 && same(expected.journey, mainBefore),
+    assert(expected.forestHideout.returned && expected.questStage === QUEST_DONE && same(expected.journey, mainBefore),
       'final checkpoint lost the optional completion or changed the main quest');
     return { ok: true, hideoutAssertions: checks, hideoutAutosaves: autosaves,
       trailMeters: Math.round(walkedMeters * 10) / 10, trailWaypoints: HIDEOUT_APPROACH_TRAIL.length + CAMP.trail.length - 1,
@@ -262,14 +262,14 @@ export async function verifyHideoutReload(h, expected) {
   let checks = 0;
   const assert = (condition, message) => { checks++; if (!condition) throw new Error(`Hideout reload: ${message}`); };
   const { tap, moveTo, choose, leave, inspect, talkTo } = controls(h, assert);
-  assert(expected?.questStage === 10 && expected.forestHideout?.returned, 'expected completed hideout checkpoint missing');
+  assert(expected?.questStage === QUEST_DONE && expected.forestHideout?.returned, 'expected completed hideout checkpoint missing');
   assert(getMode() === 'opening' && !forestHideout.state.cleared && !world.forestHideoutState().recovered,
     'reload did not start as a fresh opening and unmodified camp');
   const stored = checkpoint.read(); assert(stored.ok && same(stored.data, expected), 'checkpoint changed across the renderer reload');
   const button = $('continue-road');
   assert(button && !button.disabled && button.getClientRects().length > 0, 'opening does not expose Continue for the hideout save');
   button.click(); await frames(5);
-  assert(getMode() === 'playing' && readState().questStage === 10 && !readState().testingEnabled, 'Continue changed the quest stage');
+  assert(getMode() === 'playing' && readState().questStage === QUEST_DONE && !readState().testingEnabled, 'Continue changed the quest stage');
   assert(same(forestHideout.snapshot(), expected.forestHideout) && !forestHideout.state.active && !forestHideout.state.escort, 'Continue lost hideout progress or resumed combat or the march');
   assert(world.forestHideoutState().cleared && world.forestHideoutState().recovered, 'Continue did not restore the cleared camp and missing stores');
   assert(distance(player.group.position, expected.position) < .01 && canStand(player.group.position.x, player.group.position.z, world),

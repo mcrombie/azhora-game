@@ -382,7 +382,7 @@ There are three maps and they answer different questions.
 
 [`src/inventory.js`](../src/inventory.js) is the satchel: every item that exists, what it is, what its hint says. [`src/economy.js`](../src/economy.js) is the money, and it is honest about being unfinished — copper is built, silver and gold and the Coalition's paper scrip are recorded so Wendel the peddler can explain them truthfully before they exist. [`src/consumables.js`](../src/consumables.js) governs food: it changes health and nothing else. [`src/campcraft.js`](../src/campcraft.js) is fires, the tinderbox, cooking and fishing tackle.
 
-[`src/riding.js`](../src/riding.js) is the horse. Its header is the best short statement of design intent in the project: *"The rules are small on purpose."* G mounts, H whistles. A horse walks faster than a man runs. It will not fight; a fight puts you on the ground. [`src/ostler.js`](../src/ostler.js) is the man in Lumber Town who turns the army's token into the horse.
+[`src/riding.js`](../src/riding.js) is the horse. Its header is the best short statement of design intent in the project: *"The rules are small on purpose."* G mounts, H whistles. A horse walks faster than a man runs. It will not fight; a fight puts you on the ground. [`src/ostler.js`](../src/ostler.js) is the man in Nothom who turns the army's token into the horse.
 
 [`src/road-audio.js`](../src/road-audio.js) is all the sound, and there is no audio file anywhere in the repository. Every sound is synthesized from a few numbers — the array `swing:[180,70,.13,.10]` is a frequency sweep, a length and a volume. The sea, the river, the camp, the bell, and every effect from a swing to a discovery come out of that one file.
 
@@ -573,7 +573,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/batman-model.js`](../src/batman-model.js) | Batman, as he actually is rather than as Katy draws him | People and fighting | 168 |
 | [`src/batman.js`](../src/batman.js) | The blue trade: Batman's hunt, and the traveler's part in it | People with a story | 313 |
 | [`src/beekeeper.js`](../src/beekeeper.js) | Troy, who keeps the bees at the Bee Fold in Drent's wood | People with a story | 109 |
-| [`src/beggar.js`](../src/beggar.js) | Smiths, the beggar of Lumber Town | People with a story | 152 |
+| [`src/beggar.js`](../src/beggar.js) | Smiths, the beggar of Nothom | People with a story | 152 |
 | [`src/bird-garden.js`](../src/bird-garden.js) | Lakota's garden on the eastern side of Tidehaven: a hook for the hummingbird feeder among red bee balm, a stone bird bath, and the bench where he keeps his notebook | The regions | 114 |
 | [`src/birding.css`](../src/birding.css) | The observe prompt, the first-sighting card and the journal’s skills sheet | Style | 38 |
 | [`src/birding.js`](../src/birding.js) | Birding, the first of the traveler's skills. Lakota, Tidehaven's bird-watcher, teaches it; every kind of bird the traveler observes for the first time is worth experience | Skills | 421 |
@@ -659,7 +659,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/long-road.js`](../src/long-road.js) | The long road through Drent: the optional walk that takes the whole of the company's day. The frame and never the lessons — which stops make up the walk, which wears the open gold next, and the handful of things no other module can answer | Optional life | 470 |
 | [`src/local-map-smoke.js`](../src/local-map-smoke.js) | Real UI checks: chart browsing must never become travel or a quest shortcut | The charts | 185 |
 | [`src/luscia-chapter.js`](../src/luscia-chapter.js) | The Luscia chapter: the field at the Lauvel. The campaign's second chapter (`luscia-aftermath`) made playable | The story | 277 |
-| [`src/luscia-town.js`](../src/luscia-town.js) | Lumber Town: the people of Luscia's market town | The regions | 137 |
+| [`src/luscia-town.js`](../src/luscia-town.js) | Nothom: the people of Luscia's market town | The regions | 137 |
 | [`src/main.js`](../src/main.js) | The host: builds the world, places every person, runs the render loop, owns the HUD, the dialogue panel, the keys, the saves and the test harness | The host | 3602 |
 | [`src/map-fog.js`](../src/map-fog.js) | What the traveler has charted. The world chart starts blank: a hex of the authored atlas is uncovered only when the traveler has walked into it | The charts | 178 |
 | [`src/map-tutorial.js`](../src/map-tutorial.js) | The lay-of-the-land tutorial: shown once, on first entering a region beyond Drent, it prompts the traveler to open the continental chart and then the local trail map | The story | 56 |
@@ -671,7 +671,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/mycology.js`](../src/mycology.js) | Mycology, the traveler's third skill. Odger Pell keeps a drying rack at the edge of the Greenway outside Tidehaven and will teach anyone who stops: what grows on a stump | Skills | 199 |
 | [`src/occupation.js`](../src/occupation.js) | Who stands where once places change hands. The campaign keeps the political map (`campaign.mapControl()`: region -> 'empire' / 'coalition' / ...) | The story | 51 |
 | [`src/opening-fights.js`](../src/opening-fights.js) | The two raids of the opening, in world metres: the goblins on the Greenway beside Tidehaven, and the raiders at the tumbled cart in the Avrel clearing | People and fighting | 24 |
-| [`src/ostler.js`](../src/ostler.js) | The ostler of Lumber Town. Iven pays for the Lauvel with a token for an army horse; this is the man who turns the token into the horse | Riding | 60 |
+| [`src/ostler.js`](../src/ostler.js) | The ostler of Nothom. Iven pays for the Lauvel with a token for an army horse; this is the man who turns the token into the horse | Riding | 60 |
 | [`src/outpost.js`](../src/outpost.js) | The Ambroni outpost on the Moros Plain: the army's timber fort at the exact centre of the plain, built to the shared fortification standard | Places and factions | 141 |
 | [`src/peblos-people.js`](../src/peblos-people.js) | The people of Cobble, the fishing village in the Pebbles, and the Empire's small garrison there | The regions | 100 |
 | [`src/peblos-scenery.js`](../src/peblos-scenery.js) | Peblos's scenery, in world metres: the quay and village of Cobble, the Empire's tally shed, the headland light, the seal cove and the drowned field | The regions | 562 |
@@ -696,7 +696,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/rena-people.js`](../src/rena-people.js) | The people this pass adds to Drent: the two Ardrys who remember Rena, the five villagers of Applegarth, two more in Tidehaven and one on the Greenway | Places and factions | 199 |
 | [`src/rena-works.js`](../src/rena-works.js) | Draws the ruins of Rena, the village of Applegarth, the three small places on the Avrel road and the East Rena stone (`src/rena.js`) | Places and factions | 417 |
 | [`src/rena.js`](../src/rena.js) | The three Renas: the razed town at the centre of Drent, the village west of it, and the old road that still joins them | Places and factions | 292 |
-| [`src/riding.js`](../src/riding.js) | Riding. The army pays the traveler for the Lauvel with a horse, handed over by the ostler in Lumber Town, and the long roads beyond are meant to be ridden | Riding | 197 |
+| [`src/riding.js`](../src/riding.js) | Riding. The army pays the traveler for the Lauvel with a horse, handed over by the ostler in Nothom, and the long roads beyond are meant to be ridden | Riding | 197 |
 | [`src/rival-light.js`](../src/rival-light.js) | The Elod Light, the woman who keeps it, and the thing Addison wants taken off her | People with a story | 297 |
 | [`src/road-audio.js`](../src/road-audio.js) | All the game’s sound, synthesized: the sea, the river, the camp, the bell, and every effect from a swing to a discovery | Sound | 156 |
 | [`src/road-check-smoke.js`](../src/road-check-smoke.js) | Focused renderer regressions; prepare supplies an isolated normal-road fixture | Testing and tools | 169 |
@@ -762,7 +762,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 
 Words the project uses in its own particular way.
 
-**The road.** The playable main route: Tidehaven → the Greenway → Fernway Rest → the Caloss Gate → across the Caloss into Luscia → Lumber Town → the Moros Plain → Solis. `world.paths[0]` is the main road and the autopilot follows it, so it must stay first in that list.
+**The road.** The playable main route: Tidehaven → the Greenway → Fernway Rest → the Caloss Gate → across the Caloss into Luscia → Nothom → the Moros Plain → Solis. `world.paths[0]` is the main road and the autopilot follows it, so it must stay first in that list.
 
 **The chart.** The continental atlas, opened with `M`. Blank at the start and uncovered as you walk. Not to be confused with the *local trail map* (`L`) or the *minimap* in the corner.
 

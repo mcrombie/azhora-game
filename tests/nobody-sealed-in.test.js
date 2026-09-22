@@ -199,7 +199,7 @@ test('a stopped man is moved to ground he can reach, and nobody else moves at al
   // He holds his place for 60, 90 or 120 seconds. One in six of them used to be a hedge, and of
   // those, twelve were close enough that the host never stopped steering him: `pace` stayed above
   // the tenth of a metre that ends the walk, so he marched on the spot against it for the whole
-  // dwell, in Lumber Town square and at the crossing. The company moves such a place once, when
+  // dwell, in Nothom square and at the crossing. The company moves such a place once, when
   // the formation is laid, to the nearest ground in half-metre rings - deterministic, so it is
   // the same in every save.
   const plain = createMercenaryCompany({

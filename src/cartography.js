@@ -95,8 +95,8 @@ export const REGION_NEIGHBOURS = Object.freeze({
  */
 export const CARTOGRAPHY_DIRECTIONS = Object.freeze({
   Drent: 'East to the sea and the landing; the Greenway runs north-west under the trees, and the Caloss is its far edge.',
-  Luscia: 'Over the Caloss, west and south. Sparse woods, reedcutters on the banks, and Lumber Town in the middle of it.',
-  'Moros Plain': 'South-west past Lumber Town, where the trees give out. Open grass the whole way to the border ditch.',
+  Luscia: 'Over the Caloss, west and south. Sparse woods, reedcutters on the banks, and Nothom in the middle of it.',
+  'Moros Plain': 'South-west past Nothom, where the trees give out. Open grass the whole way to the border ditch.',
   'East Suval': 'South, beyond the Suval border. Elod keeps the gate shut and the lowland quiet.',
   'West Suval': 'South-west, over the Moros. Vineyards on the hills, and an army on them at the moment.',
   Pueth: 'North from the Caloss Gate, up the Tessen road. Wooded in the south, bare hills at the top.',

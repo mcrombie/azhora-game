@@ -24,7 +24,7 @@ const status = (state, detail, work) => Object.freeze({ state, detail, work });
 export const BUILD_STATUS = Object.freeze({
   Drent: status('built', 'Tidehaven and its landing, the Greenway woods and their small places, Willowmere, the Avrel clearings, the road to the Caloss, the road north to the Tessen, the old Rena road with the ruins of Rena and Applegarth on it, deer, birds, insects and forage, the birding skill and Perrin’s bird garden.',
     'Nothing urgent. The southern farms and the coast north of the pier are still empty, and the old road gives out west of Applegarth.'),
-  Luscia: status('playable', 'The Caloss crossing, the reedcutters, the rise, the field at the Lauvel and its chapter, Lumber Town with the smiths, the relay clerk and the stable yard.',
+  Luscia: status('playable', 'The Caloss crossing, the reedcutters, the rise, the field at the Lauvel and its chapter, Nothom with the smiths, the relay clerk and the stable yard.',
     'The town is thin: few interiors, no market, no work to do. The valleys east and west are scatter and landmarks only.'),
   'Moros Plain': status('playable', 'The army camp at the plain’s centre with its gate, tents and horse lines, the Moros gate, the border stockade and the battle ground.',
     'Open plain between them. No settlements, no work, nothing off the road.'),

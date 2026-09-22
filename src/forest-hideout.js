@@ -11,11 +11,13 @@ const camp = (lx, lz) => Object.freeze(hideoutToWorld(lx, lz));
  * as the traveler can reach the Tessen post by road, and never before; the fight itself is north of
  * the river, so nothing attacks the traveler in Drent.
  */
+import { QUEST_DONE } from './game-state.js';
+
 export const FOREST_HIDEOUT_QUEST = Object.freeze({
   id: 'forest-hideout', siteId: 'bramble-scout-camp', name: 'Bramble Scout Camp', region: 'Pueth',
   approach: camp(45, -109),
   supplies: Object.freeze({ id: 'forest-hideout-supplies', ...hideoutToWorld(70, -123) }),
-  recipientId: 'garrison-captain', informantId: 'garrison-casso', minimumQuestStage: 10,
+  recipientId: 'garrison-captain', informantId: 'garrison-casso', minimumQuestStage: QUEST_DONE,
   reward: Object.freeze({ id: 'copper-piece', quantity: 30 }),
   // The camp's local frame retreats along its own -x, back down its trail: in the world that is south.
   encounter: Object.freeze({ id: 'forest-hideout', center: camp(60, -118),

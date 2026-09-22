@@ -18,7 +18,7 @@ Tidehaven, your village
 Drent
 - Forest country, broadleaf and old. The Greenway is the forest road out of Tidehaven. Bramble goblins raid it from the thorn tangles; lately they have been bolder.
 - The Avrel clearing is the one farm clearing in the forest: fields, orchards (the best apples in Drent), a windmill, shepherds and their ewes.
-- The Caloss is the river on Drent's border, with a timber bridge, a crossing, and reedcutters who dry reeds on its banks. You once lay in the mud of the Caloss reeds for an hour to see a bittern. Beyond the Caloss is Luscia, sparse woods and Lumber Town.
+- The Caloss is the river on Drent's border, with a timber bridge, a crossing, and reedcutters who dry reeds on its banks. You once lay in the mud of the Caloss reeds for an hour to see a bittern. Beyond the Caloss is Luscia, sparse woods and Nothom.
 - The ruins of Rena lie in the forest at the heart of Drent: a town burned eighty years ago and never rebuilt. Nobody has ever properly read it. You have pegged the places worth a digger's time. On the threshold slab of the hall there is a three-toed track, face up at the door.
 - You keep a list of every bird you have seen in Drent. It stands at one hundred and six.
 

@@ -153,7 +153,7 @@ function fileOnFoot(at, yaw, count, taken) {
 
 test('a man on foot is never given a place inside a horse', () => {
   for (const [name, horse] of [['the stable yard', LUMBER_TOWN_STABLE.hitch],
-    ['Lumber Town square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
+    ['Nothom square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
     for (const count of [3, 10]) {
       const horses = horsesOnTheGround(horse, count);
       assert.ok(horses.length > count / 2, `${name}: there are horses standing about to avoid`);
@@ -182,7 +182,7 @@ test('yielding to the horses costs the file nothing', () => {
   const road = world.paths[0];
   for (const [name, horse] of [['the stable yard', LUMBER_TOWN_STABLE.hitch],
     ['the open road', { x: road[6].x, z: road[6].z, yaw: 0 }],
-    ['Lumber Town square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
+    ['Nothom square', { x: -728.57, z: 384.36, yaw: 1.1 }]]) {
     const horses = horsesOnTheGround(horse, 10);
     const stand = dismountSpot(horse, horse.yaw, (x, z) => canStand(x, z, world)) ?? { x: horse.x, z: horse.z };
     let blindSpan = 0, yieldSpan = 0, blindOut = 0, yieldOut = 0;
@@ -214,7 +214,7 @@ test('the host lays the horses first, and every path that lays a file gets them'
   assert.match(main, /fileTaken\.every\(other=>Math\.hypot\(other\.x-sx,other\.z-sz\)>=\(Number\.isFinite\(other\.room\)\?other\.room:room\)\)/);
   // **And the traveler is in that ground.** `fileSpotFor` measures back from him and can never be
   // given his spot, but the escort ring it falls back on is a list of close-in offsets and had
-  // nothing to stop it putting a man on top of him: on the road by Lumber Town it put Ciarán
+  // nothing to stop it putting a man on top of him: on the road by Nothom it put Ciarán
   // 1.9 m from the traveler's horse, where two riders want RIDE_FILE.room.
   assert.match(main, /fileTaken\.push\(\{x:player\.group\.position\.x,z:player\.group\.position\.z,\s*room:riding\.mounted\?RIDE_FILE\.room:BODY\.person\*2\}\);/,
     'the man at the front is a body like the rest');

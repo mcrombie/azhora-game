@@ -22,7 +22,7 @@ function kit() {
 test('one sign language: four shapes for four meanings, in the village’s woods, lettered on both faces, nothing glossy or emissive', () => {
   const tools = kit(), root = new THREE.Group(), signs = createSigns(tools);
   const made = {
-    direction: signs.direction({ x: 0, z: 0, label: 'Lumber Town', toward: { x: 10, z: 0 }, back: { x: -10, z: 0 }, backLabel: 'Tidehaven', parent: root }),
+    direction: signs.direction({ x: 0, z: 0, label: 'Nothom', toward: { x: 10, z: 0 }, back: { x: -10, z: 0 }, backLabel: 'Tidehaven', parent: root }),
     place: signs.place({ x: 10, z: 0, label: 'The Moros Gate', facing: 1, parent: root }),
     notice: signs.notice({ x: 20, z: 0, label: 'Closed by Elod', parent: root }),
     border: signs.border({ x: 30, z: 0, faces: [{ label: 'East Suval', paint: SIGN_COLOURS.paint.elod }, { label: 'Luscia', paint: SIGN_COLOURS.paint.luscia }], parent: root }),
@@ -122,7 +122,7 @@ test('every sign in the world carries a known label, stands on solid posts, and 
     assert.ok(borders.some(sign => sign.label === pair[0] && sign.returnLabel === pair[1]), `a border stone reads ${pair.join(' | ')}`);
   for (const label of ['The Avrel Clearing', 'The Caloss Bridge', 'The Army Camp', 'The Elodi Frontier', 'Elod'])
     assert.ok(world.roadSigns.some(sign => sign.kind === 'direction' && sign.label === label && sign.returnLabel), `${label} is signed both ways`);
-  assert.equal(world.roadSigns.filter(sign => sign.label === 'Lumber Town' && sign.kind === 'place').length, 2, 'Lumber Town is named at both gates');
+  assert.equal(world.roadSigns.filter(sign => sign.label === 'Nothom' && sign.kind === 'place').length, 2, 'Nothom is named at both gates');
 });
 
 test('with nobody to ask, every sign letters in the traveler\u2019s own language', () => {

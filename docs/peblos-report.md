@@ -411,7 +411,7 @@ a deterministic answer where the traversal's frame times are not:
 | The Avrel clearing, looking east | 397 / 630 k | 371 / 621 k | +26, +9 k |
 | The Caloss crossing, looking east | 519 / 723 k | 501 / 718 k | +18, +5 k |
 | The Caloss crossing, looking west | 137 / 210 k | 137 / 210 k | **none** |
-| Lumber Town, looking east | 337 / 627 k | 333 / 625 k | +4, +2 k |
+| Nothom, looking east | 337 / 627 k | 333 / 625 k | +4, +2 k |
 | The Tessen bridge, looking south | 459 / 614 k | 414 / 596 k | +45, +18 k |
 
 Looking away from the sea it is nothing at all. Looking toward it, the worst case

@@ -359,7 +359,7 @@ away. Bushes and turf cast no shadows.
 | Camera | Base | This branch |
 | --- | --- | --- |
 | Solis, outside the Gate of Sun Horses, looking south | 82 draws / 154 k | **93 / 204 k** |
-| Lumber Town, looking south-west | 234 / 257 k | 231 / 268 k |
+| Nothom, looking south-west | 234 / 257 k | 231 / 268 k |
 | Tidehaven, looking west | 605 / 976 k | 592 / 983 k |
 
 Solis is the one place that pays, **+11 draws and +50 k triangles**, and none of it is

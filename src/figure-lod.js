@@ -5,7 +5,7 @@
  * enough to cast a shadow are drawn twice. They are switched on by distance alone, out to 180 m,
  * and measured in the renderer at the places people gather, more than half of the figures being
  * drawn were over sixty metres away: 18 of 33 at the Tidehaven landing, 18 of 31 on the field at
- * the Lauvel, 14 of 26 in Lumber Town square. At sixty metres somebody is about thirty pixels
+ * the Lauvel, 14 of 26 in Nothom square. At sixty metres somebody is about thirty pixels
  * tall on a 1080-line screen, at a hundred about twenty, at a hundred and eighty eleven. Nobody
  * can see a belt buckle at that size, and the renderer was drawing one.
  *

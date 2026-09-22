@@ -12,7 +12,7 @@
  * rules; it presses the same buttons a person would. Any trusted input from the
  * person stops it (the host enforces that).
  */
-import { canStand } from './game-state.js';
+import { canStand, QUEST_DONE } from './game-state.js';
 
 export const AUTOPILOT_VERSION = 1;
 export const AUTOPILOT_DEFAULTS = Object.freeze({
@@ -386,7 +386,7 @@ export function planGoal(snapshot, world) {
   if (mode === 'arriving') return { kind: 'wait', intent: 'Coming ashore' };
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
   if (mode === 'dialogue') return { kind: 'dialogue', intent: 'Talking' };
-  if (mode === 'inventory') return questStage === 6 ? { kind: 'inspect-letter', intent: 'Reading the letter of introduction' } : { kind: 'close-inventory', intent: 'Closing the satchel' };
+  if (mode === 'inventory') return { kind: 'close-inventory', intent: 'Closing the satchel' };
   // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
   if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };
@@ -412,7 +412,7 @@ export function planGoal(snapshot, world) {
   // The campaign says which chapter the traveler is on. Follow it: a game begun at a
   // later chapter (the opening screen offers one) has no earlier chapter to finish.
   const chapter = snapshot.campaign?.chapterId;
-  if (chapter && questStage >= 10) {
+  if (chapter && questStage >= QUEST_DONE) {
     if (snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
     // The envoy, the report, the march and the battle are one chapter of the border's.
     if ((chapter === 'suval-envoy' || chapter === 'border-battle') && snapshot.border) return borderGoal(snapshot, world);
@@ -431,15 +431,8 @@ export function planGoal(snapshot, world) {
     case 2: return snapshot.lessonSet === false
       ? { kind: 'talk', target: npc('instructor'), npcId: 'instructor', intent: 'Reporting to Officer Glun' }
       : { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post' : 'Practising a dodge' };
-    // The ambush clearing on the Greenway, a little past the warning bell.
-    case 3: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Following the Greenway to the bell' };
-    case 4: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Returning to the bell' };
-    // Eren is out of the cast (src/cast.js); the step is the ground he stood on.
-    case 5: return { kind: 'walk', target: world.watch ?? world.northTrail, radius: 8, intent: 'Walking on past the Greenway Watch' };
-    case 6: return { kind: 'open-inventory', intent: 'Opening the satchel' };
-    case 7: return { kind: 'close-inventory', intent: 'Closing the satchel' };
-    case 8: return { kind: 'walk', target: world.northTrail, radius: 4, intent: 'Walking to Fernway Rest' };
-    case 9: return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };
+    // And the third subquest is the road west: out of the forest, over the Caloss, on to
+    // Nothom, where Iven holds the assignment. The journey below takes it from the boundary.
     default: break;
   }
   if (!journey?.started) return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };

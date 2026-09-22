@@ -3754,6 +3754,11 @@ export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   } else if (look.shape === 'diamond') {
     const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
     diamond.rotation.y = Math.PI / 4;
+  } else if (look.shape === 'ring') {
+    // A plain ring, open in the middle: the shape of a thing done for somebody rather than for
+    // the story. Its hole is what tells it apart from the stone at a glance and at distance.
+    const ring = part(group, new THREE.TorusGeometry(0.108, 0.029, 8, 20), mat, [0, 0, 0]);
+    ring.rotation.x = Math.PI / 2 * 0.06;
   } else if (look.shape === 'scroll') {
     // A rolled sheet lying across, both ends showing: wide where the stone is tall.
     const roll = part(group, new THREE.CylinderGeometry(0.056, 0.056, 0.23, 10), mat, [0, 0, 0]);

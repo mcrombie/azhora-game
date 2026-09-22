@@ -1,6 +1,6 @@
 /**
  * Riding. The army pays the traveler for the Lauvel with a horse, handed over
- * by the ostler in Lumber Town, and the long roads beyond are meant to be
+ * by the ostler in Nothom, and the long roads beyond are meant to be
  * ridden. The rules are small on purpose:
  *
  *   G mounts a horse within reach and dismounts again; H whistles it up.

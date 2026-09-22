@@ -32,7 +32,7 @@ function fixture() {
   return api;
 }
 
-test('every townsperson stands in Lumber Town and says something of the town', () => {
+test('every townsperson stands in Nothom and says something of the town', () => {
   assert.ok(TOWN_NPCS.length >= 5 && TOWN_NPCS.length <= 8, `${TOWN_NPCS.length} townsfolk`);
   for (const npc of TOWN_NPCS) {
     const stand = regionNpcPositions[npc.id];

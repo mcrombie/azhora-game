@@ -307,7 +307,7 @@ whoever designs the cycle should know that. *Combat skills and gear:* the post, 
 scouts' camp are the three places their first levels belong. *The company:* `releasedAt` is the
 only thing standing in for "is recruited".
 
-**The first horse** stays the army's, at Lumber Town, on both roads. **The house plot** is the
+**The first horse** stays the army's, at Nothom, on both roads. **The house plot** is the
 long road's long tail: Bowden shows it at minute 40; nobody builds a house in a tutorial.
 
 **What the long road gives that the short road does not, beyond levels.**

@@ -178,7 +178,7 @@ uses, and the one that produces the brief's Solis figure. Camera at eye height,
 | --- | --- | --- |
 | **Solis, the Gate of Sun Horses** | **247** | 388 k |
 | Solis, the market square | 237 | 393 k |
-| Lumber Town square | 404 | 666 k |
+| Nothom square | 404 | 666 k |
 | Cobble quay (Peblos) | 129 | 90 k |
 | **Elod, the Sea-Road Gate** | **201** | 237 k |
 | **Elod, the Inner Gate** | **201** | 276 k |
@@ -196,7 +196,7 @@ comparison the brief asked for. (The brief's "about 95 at its gate" for Solis
 could not be reproduced by any method here — the nearest is the camera pass
 alone at a narrower field — so both cities were measured the same way, in the
 same run, and the ratio is what matters.) Standing *inside* the city looking along it
-costs 524–531, which is Lumber Town's order of magnitude (404) and less than the
+costs 524–531, which is Nothom's order of magnitude (404) and less than the
 Drent road views; most of that is not Elod but the 650 m far plane picking up
 other regions' batches down a 600 m coastline. The house palette was cut from
 twenty-five tints to four walls and three roofs part-way through for exactly

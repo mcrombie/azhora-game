@@ -2,21 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation, registerLine } from '../src/journey-content.js';
 import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/journey.js';
+import { questLive } from '../src/quest-slate.js';
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 
-function fixture({ started = true, sticks = 0, rod = false } = {}) {
+/**
+ * **The whole slate**, which is not the slate the game is playing on: Corvan's parcels and Sava's
+ * waymarkers are put away today and the bridge stands on its own (src/quest-slate.js). Everything
+ * here is still written, so it is still tested; the last test in this file is the trimmed one.
+ */
+const WHOLE = () => true;
+
+function fixture({ started = true, sticks = 0, rod = false, live = WHOLE } = {}) {
   const inventory = createInventoryState();
   for (const id of ['simple-sword', 'harbor-letter', 'road-token']) inventory.grant(id);
   if (sticks) inventory.add('forest-stick', sticks);
   if (rod) inventory.grant('fishing-rod');
   const weapons = createWeapons({ inventory });
-  const journey = createJourney({ inventory, weapons });
+  const journey = createJourney({ inventory, weapons, live });
   if (started) journey.start();
   const calls = { actions: [], teaching: 0, wood: 0, close: 0 };
   let shown = null;
   const context = {
-    journey, inventory,
+    journey, inventory, live,
     openDialogue(npc, lines, event, label, options) { shown = { npc, lines, event, label, options }; },
     closeDialogue() { shown = null; calls.close++; },
     act(id) { calls.actions.push(id); return journey.act(id); },
@@ -218,4 +226,26 @@ test('imperial induction precedes the gradual reveal that Luscia’s people want
   finishRise(f); f.talk('relay-clerk');
   assert.match(f.shown.lines.join(' '), /Ambroni service continues/);
   assert.equal(f.inventory.has('harbor-letter'), true);
+});
+
+/**
+ * And the slate as it stands: Corvan has nothing to give, Hollis asks for himself, and Iven
+ * takes the report the moment the letter reaches him.
+ */
+test('the trimmed slate: Corvan gives nothing, Hollis asks for himself, Iven takes the letter', () => {
+  const f = fixture({ live: questLive, sticks: 3 });
+  f.talk('meadow-courier');
+  assert.equal(f.shown.options.choices.some(one => one.id === 'meet-courier'), false, 'his field assignment is off the slate');
+  assert.match(f.shown.lines.join(' '), /Iven/, 'and he sends the traveler on west instead');
+  // Hollis, unbidden, and honest about the alternative.
+  f.talk('crossing-keeper');
+  assert.match(f.shown.lines.join(' '), /swim/, 'he says what the other ways over are');
+  f.choose('meet-crossing-keeper');
+  assert.equal(f.journey.act('repair-bridge').ok, true);
+  f.talk('crossing-keeper').choose('return-crossing-keeper');
+  assert.equal(f.journey.state.bridge, 'done');
+  assert.equal(f.journey.view().stage, 'deliver-report', 'and none of it moved the main road');
+  // Iven, with no waymarkers behind him.
+  f.talk('relay-clerk').choose('deliver-report');
+  assert.equal(f.journey.view().complete, true);
 });

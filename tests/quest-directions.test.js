@@ -18,7 +18,7 @@ import { REGION_DESIGN } from '../src/campaign-world.js';
 /**
  * A quest step that names a direction is the only instruction most players read. The
  * marker tests (`quest-destinations`, `story-stands`) prove the destination exists and
- * has footing; nothing proved that "west out of Lumber Town" was west. It was not: the
+ * has footing; nothing proved that "west out of Nothom" was west. It was not: the
  * road out of the square runs south-west for its whole length to the camp gate, and the
  * horse line the Marshal sends you to is at the *north* end of his camp. Both sent a
  * traveler off the road.
@@ -82,7 +82,7 @@ function lusciaAt(stage) {
 test('every compass word the main quest gives is the one the world would give', () => {
   const legs = [
     {
-      what: 'the road from Lumber Town square to the army camp on the Moros',
+      what: 'the road from Nothom square to the army camp on the Moros',
       from: where('relay-clerk'), to: where(MOROS_GATE_ID),
       texts: () => [
         ['the Moros chapter, before it opens', createMorosChapter({ inventory }).view().detail],
@@ -93,7 +93,7 @@ test('every compass word the main quest gives is the one the world would give', 
       ],
     },
     {
-      what: 'the road from Lumber Town square out to the field at the Lauvel',
+      what: 'the road from Nothom square out to the field at the Lauvel',
       from: where('relay-clerk'), to: where('courier-satchel'),
       texts: () => {
         const journey = createJourney({ inventory, weapons: { spendSticks: () => true } });
@@ -137,7 +137,7 @@ test('every compass word the main quest gives is the one the world would give', 
       // they are not directions; take them out before reading the sentence for one.
       const text = withoutPlaceNames(raw).toLowerCase();
       // A paragraph may name several roads, so the rule is that the one it gives for *this*
-      // leg is the true one — "west out of Lumber Town" fails because the word is south-west.
+      // leg is the true one — "west out of Nothom" fails because the word is south-west.
       assert.ok(text.includes(word),
         `${who} does not say ${word}, and ${leg.what} runs ${word} for ${metres.toFixed(0)} m: ${JSON.stringify(raw.slice(0, 200))}`);
     }

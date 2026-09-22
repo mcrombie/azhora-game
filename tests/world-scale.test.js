@@ -191,7 +191,7 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
   assert.ok(Math.hypot(regionNpcPositions['crossing-keeper'].x - bridge.x, regionNpcPositions['crossing-keeper'].z - bridge.z) < 22,
     'Hollis still keeps the Caloss bridge');
   assert.ok(Math.hypot(regionNpcPositions['relay-clerk'].x - LUMBER_TOWN.square.x, regionNpcPositions['relay-clerk'].z - LUMBER_TOWN.square.z) < LUMBER_TOWN.radius,
-    'Iven still keeps his desk on Lumber Town’s square');
+    'Iven still keeps his desk on Nothom’s square');
   // The goblin camp moved to Pueth: its side trail leaves the road north of the Tessen and meets the camp's own trail.
   const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/pueth-world.js');
   const distanceToRoad = (point, road) => Math.min(...road.slice(1).map((b, i) => { const a = road[i], dx = b.x - a.x, dz = b.z - a.z;

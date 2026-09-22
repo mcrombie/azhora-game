@@ -1,3 +1,4 @@
+import { QUEST_DONE } from './game-state.js';
 import { RIDE } from './riding.js';
 
 /**
@@ -109,7 +110,7 @@ export async function runAutoplaySmoke(h) {
     assert(performance.now() - started < deadlineMs, `autoplay did not finish the road within ${Math.round(deadlineMs / 1000)} s (stage ${state.questStage}, road ${state.journeyView?.stage}, luscia ${state.luscia?.stage}, intent “${autopilot.intent}”; last: ${milestones.slice(-12).map(m => m.at ? `${m.label} @${m.at}` : m.label).join(' | ')})`);
   }
   const final = readState();
-  assert(final.questStage === 10, 'the tutorial was not completed');
+  assert(final.questStage === QUEST_DONE, 'the tutorial was not completed');
   // Everything the whole road proves; a single leg cannot speak for the rest of it.
   if (!from) {
     assert(final.journeyView.complete, 'the road was not completed');

@@ -43,7 +43,7 @@ export const REGION_CLEARINGS = Object.freeze([
   Object.freeze({ ...at(-401, 196), r: 15 }),                                // the Lauvel relay
   Object.freeze({ x: STORY_SITES.lauvelField.x, z: STORY_SITES.lauvelField.z, r: 30 }),
   Object.freeze({ x: STORY_SITES.burnedHamlet.x, z: STORY_SITES.burnedHamlet.z, r: 18 }),
-  Object.freeze({ x: LUMBER_TOWN.square.x, z: LUMBER_TOWN.square.z, r: 36 }),               // Lumber Town
+  Object.freeze({ x: LUMBER_TOWN.square.x, z: LUMBER_TOWN.square.z, r: 36 }),               // Nothom
   Object.freeze({ x: STORY_SITES.morosGate.x, z: STORY_SITES.morosGate.z, r: 18 }),
   OUTPOST_CLEARING,                                                           // the Ambroni outpost and its ditch
   STOCKADE_CLEARING,                                                          // the forward stockade and its ditch
@@ -544,7 +544,7 @@ export function createRegionScenery(kit) {
   // Ten days on: the fallen still on the field, arrows in the turf, crows, and the valley's burial ground (src/lauvel-aftermath.js).
   const lauvelField = createLauvelField({ parent: luscia, material, box, mesh, post, groundHeight, colliders, roadDistance: kit.roadDistance });
   // -------------------------------------------------------------------------
-  // Lumber Town: Luscia's market town, with the main road through its square
+  // Nothom: Luscia's market town, with the main road through its square
   // -------------------------------------------------------------------------
   const square = LUMBER_TOWN.square, squareY = groundHeight(square.x, square.z);
   const roadAngle = Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z);

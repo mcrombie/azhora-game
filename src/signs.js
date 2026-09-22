@@ -50,7 +50,7 @@ export const ENGLISH_SIGN_LABELS = Object.freeze([
   'The Ruins of Rena', 'Applegarth', 'Rena', 'East Rena', 'Westerina',
   // Luscia
   'Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Return to bridge',
-  'The Lauvel', 'The Burned Hamlet', 'Lumber Town', 'The Stable Yard', 'Notices',
+  'The Lauvel', 'The Burned Hamlet', 'Nothom', 'The Stable Yard', 'Notices',
   // The Moros Plain
   'Moros Plain', 'The Moros Gate', 'The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
   'The Shepherd’s Fold', 'The Army Picket', 'Truce',

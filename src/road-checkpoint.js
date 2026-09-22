@@ -1,4 +1,5 @@
 import { INVENTORY_ITEMS } from './inventory.js';
+import { QUEST_DONE } from './game-state.js';
 import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
 import { mercenaryById } from './mercenaries.js';
@@ -74,8 +75,8 @@ const failed = reason => ({ ok: false, data: null, reason });
 export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}) {
   function validate(data) {
     if (!data || typeof data !== 'object' || data.version !== ROAD_CHECKPOINT_VERSION
-      || !Number.isInteger(data.questStage) || data.questStage < 1 || data.questStage > 10 || data.questStage === 4
-      || (data.questStage < 10 && !data.woodland))
+      || !Number.isInteger(data.questStage) || data.questStage < 1 || data.questStage > QUEST_DONE
+      || (data.questStage < QUEST_DONE && !data.woodland))
       return failed('This is not a supported road checkpoint.');
     if (!Array.isArray(data.inventory) || data.inventory.length > Object.keys(INVENTORY_ITEMS).length)
       return failed('The saved satchel is invalid.');
@@ -87,12 +88,13 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       stock.set(item.id, item.quantity);
     }
     // A traded sword is fine, an unarmed traveler is not.
-    const required = [...(data.questStage >= 2 ? ['harbor-letter'] : []), ...(data.questStage >= 6 ? ['road-token'] : [])];
+    // The token comes with the chart now, from Officer Glun, and the chart is the last step.
+    const required = [...(data.questStage >= 2 ? ['harbor-letter'] : []), ...(data.questStage >= QUEST_DONE ? ['road-token'] : [])];
     if (!required.every(id => stock.has(id)) || !Object.keys(WEAPON_TYPES).some(id => stock.has(id)))
       return failed('The road checkpoint is missing your sword, message, or travel token.');
     const inventory = { has: id => stock.has(id) };
     const journey = createJourney();
-    if (!journey.restore(data.journey) || journey.state.started !== (data.questStage === 10))
+    if (!journey.restore(data.journey) || journey.state.started !== (data.questStage === QUEST_DONE))
       return failed('The saved road quests are invalid.');
     if (!validateWeaponSnapshot(data.weapons, inventory)) return failed('The saved weapon condition does not match your satchel.');
     if (!Array.isArray(data.journeyGathered) || new Set(data.journeyGathered).size !== data.journeyGathered.length
@@ -188,10 +190,10 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateForestStorySnapshot(data.forestStory)) return failed('The saved woodland stories are invalid.');
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
-    if (data.forestHideout?.accepted && data.questStage < 10) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
+    if (data.forestHideout?.accepted && data.questStage < QUEST_DONE) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
     if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1))
       return failed('The saved combat lessons are incomplete.');
-    if (data.questStage < 10 && (data.meadowCleared || data.journeyGathered.length))
+    if (data.questStage < QUEST_DONE && (data.meadowCleared || data.journeyGathered.length))
       return failed('The saved onward journey has not begun.');
     // The civil-war campaign is optional in a save (older saves predate it) but
     // may not have moved past Drent before the road's final report was filed.

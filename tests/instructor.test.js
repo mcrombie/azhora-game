@@ -10,12 +10,16 @@ import { INSTRUCTOR, INSTRUCTOR_STAND, LESSON, lessonStage, instructorLines, ins
  * The opening used to point a quest card at an unattended straw post and give the traveler
  * Tidehaven's rough chart along with the letter.
  */
-test('the lesson is read off the two numbers the save already keeps', () => {
+test('the lesson is read off the three numbers the host already keeps', () => {
+  // Sword, shield and feet (the user, 22 September 2026). Cromb comes ashore with a shield now,
+  // so the guard is a third of the lesson and not a thing nobody mentions.
+  const whole = { briefed: true, hits: LESSON.hits, guards: LESSON.guards, dodges: LESSON.dodges };
   assert.equal(lessonStage(), 'waiting', 'nobody has spoken to him');
   assert.equal(lessonStage({ briefed: true }), 'set');
-  assert.equal(lessonStage({ briefed: true, hits: LESSON.hits, dodges: 0 }), 'set', 'a dodge is half of it');
-  assert.equal(lessonStage({ briefed: true, hits: 1, dodges: LESSON.dodges }), 'set', 'and so are the strikes');
-  assert.equal(lessonStage({ briefed: true, hits: LESSON.hits, dodges: LESSON.dodges }), 'done');
+  assert.equal(lessonStage({ ...whole, dodges: 0 }), 'set', 'a step is a third of it');
+  assert.equal(lessonStage({ ...whole, guards: 0 }), 'set', 'and so is the shield');
+  assert.equal(lessonStage({ ...whole, hits: 1 }), 'set', 'and so are the strikes');
+  assert.equal(lessonStage(whole), 'done');
   // Once the chart is handed over he is finished, whatever the tally says.
   assert.equal(lessonStage({ briefed: true, taught: true }), 'finished');
   assert.equal(lessonStage({ taught: true }), 'finished');
@@ -30,7 +34,9 @@ test('he says a different thing at each of the four, and the chart comes with th
     said.set(stage, lines.join(' '));
   }
   assert.equal(new Set(said.values()).size, 4, 'two of his four states say the same thing');
-  assert.match(said.get('waiting'), /straw post/, 'he sets the lesson');
+  assert.match(said.get('waiting'), /straw/, 'he sets the lesson');
+  assert.match(said.get('waiting'), /\bV\b/, 'and names the key the shield is on');
+  assert.match(said.get('waiting'), /\bC\b/, 'and the one the step is on');
   assert.match(said.get('done'), /chart/, 'and hands the chart over when it is done');
   assert.match(said.get('done'), /ask/, 'and says the rest of it has to be asked for');
 

@@ -15,7 +15,7 @@ import { toWorld } from './world-scale.js';
 const P = (x, z, extra = {}) => Object.freeze({ x, z, ...extra });
 const offset = origin => (dx, dz, extra = {}) => P(origin.x + dx, origin.z + dz, extra);
 const roadYaw = Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z);
-/** A point in Lumber Town's frame with a yaw that faces its front toward the road. */
+/** A point in Nothom's frame with a yaw that faces its front toward the road. */
 const town = (a, b, extra = {}) => { const p = townPoint(a, b); return P(p.x, p.z, { yaw: Math.atan2(Math.sign(b || 1) * LUMBER_TOWN.across.x, Math.sign(b || 1) * LUMBER_TOWN.across.z), a, b, ...extra }); };
 
 export const avrel = offset(AVREL_CLEARING);
@@ -103,7 +103,7 @@ export const HAMLET_RUINS = Object.freeze({
 });
 
 /**
- * Lumber Town grown along its road: palisade gates at either end, a smithy and
+ * Nothom grown along its road: palisade gates at either end, a smithy and
  * a hall, washing lines, carts and a notice board, and the ostler's stable yard
  * dressed round the stand the ostler already has.
  */
@@ -144,7 +144,7 @@ export const PLACE_LANDMARKS = Object.freeze([
     description: 'A patched tent at the edge of the field. Whoever was still breathing after the Lauvel was carried here, whichever side they fought on.' }),
   Object.freeze({ id: 'lauvel-cairn', name: 'The Cairn of the Unclaimed', ...LAUVEL_AFTERMATH.cairn, radius: 6,
     description: 'A heap of field stones over the dead nobody came to name. People passing add a stone.' }),
-  Object.freeze({ id: 'lumber-town-hall', name: 'Lumber Town Hall', ...LUMBER_TOWN_WORKS.hall, radius: 8,
+  Object.freeze({ id: 'lumber-town-hall', name: 'Nothom Hall', ...LUMBER_TOWN_WORKS.hall, radius: 8,
     description: 'The town’s hall and chapel in one: quarrels settled at one end, prayers said at the other, and a bell over both.' }),
 ]);
 

@@ -50,16 +50,14 @@ export const SOLDIER_ROLES = Object.freeze(['legion-soldier', 'legion-officer', 
 export const QUEST_IDS = Object.freeze([
   'harbormaster',        // Jojo, the letter
   'instructor',          // Officer Glun, the lesson and the chart
-  'meadow-courier',      // the courier's parcels in the Avrel clearing
-  'crossing-keeper',     // the Caloss bridge
-  'relay-clerk',         // Iven at Lumber Town
-  'ridge-keeper',        // the Rise
+  'crossing-keeper',     // Hollis, and the one side quest on the slate (src/quest-slate.js)
+  'relay-clerk',         // Iven at Nothom, who closes Chapter 1
   'lauvel-picket',       // the picket sergeant on the burial line
   'burial-searcher',     // the courier's satchel at the Lauvel
   'courier-satchel',     // the satchel itself, which the chapter turns on
   'hamlet-drover',       // the burned hamlet, on the same errand
   'lauvel-bearer-front', 'lauvel-bearer-back', 'lauvel-seeker',   // Sela and the burying on the Lauvel line
-  'timber-stall',        // Hara at the Lumber Town stall, who is the Republic's own contact
+  'timber-stall',        // Hara at the Nothom stall, who is the Republic's own contact
   'solis-captain', 'coalition-envoy', 'coalition-captain', 'battle-tribune',
   'aftermath-tribune', 'aftermath-captain', 'aftermath-envoy', 'post-camp-legate',
 ]);
@@ -85,11 +83,20 @@ export const OWN_IDS = Object.freeze([
 ]);
 
 /**
- * And one man kept out whatever else is true of him. Eren the waykeeper is built as a legionary,
- * so the soldier rule would hold him in the world; the user named him on 22 September 2026 among
- * the people to take out, and the tutorial step he held went to Officer Glun with him.
+ * And the two kept out whatever else is true of them.
+ *
+ * **Eren the waykeeper** is built as a legionary, so the soldier rule would hold him in the
+ * world; the user named him on 22 September 2026 among the people to take out, and the tutorial
+ * step he held went to Officer Glun with him.
+ *
+ * **Sava, keeper of the rise**, held the three waymarkers, which came off the slate with the
+ * rest of the middle of Chapter 1 later the same day (src/quest-slate.js). With nothing to give
+ * she is one more person standing in the way.
+ *
+ * Corvan is not on this list: his field register came off the slate too, but he is built as an
+ * officer and the soldier rule keeps him standing at his cart, which is where he belongs.
  */
-export const DROP_IDS = Object.freeze(['warden']);
+export const DROP_IDS = Object.freeze(['warden', 'ridge-keeper']);
 
 /** Ids kept whatever else is true of them. */
 export const KEEP_IDS = Object.freeze([...QUEST_IDS, ...SMITH_IDS, ...OWN_IDS]);

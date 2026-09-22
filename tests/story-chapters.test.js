@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/story-chapters.js';
+import { questLive } from '../src/quest-slate.js';
 import { LONG_ROAD_LEGS } from '../src/long-road.js';
 
 // `started` is the report to Iven itself; `briefed` is the Lauvel errand accepted after it.
@@ -21,7 +22,7 @@ test('the main quest reads as three chapters, each closing on a moment the playe
   assert.equal(chapterLabel(STORY_CHAPTERS[1], {}), 'Chapter 2 · Joining the War');
 });
 
-test('chapter one ends on reporting for duty at Lumber Town', () => {
+test('chapter one ends on reporting for duty at Nothom', () => {
   const fresh = chapterProgress({});
   assert.equal(fresh.number, 1);
   assert.equal(fresh.current.id, 'road-to-luscia');
@@ -36,19 +37,25 @@ test('chapter one ends on reporting for duty at Lumber Town', () => {
   assert.deepEqual(chapterProgress(reported).list.map(entry => entry.state), ['done', 'current', 'later']);
 });
 
-test('chapter one carries the long way round as a block and never as a step', () => {
+test('chapter one is the three subquests, and the long way hangs under them only when it is on the slate', () => {
   const one = STORY_CHAPTERS[0];
-  assert.equal(one.steps.length, 5, 'the five steps of the muster road are untouched');
-  assert.ok(one.longWay, 'and the long road hangs under them');
+  // The journal and the quest card say the same three things (`questSteps`, src/game-state.js).
+  assert.equal(one.steps.length, 3, 'Chapter 1 is three subquests');
+  for (const [index, word] of [[0, /Jojo/], [1, /Glun/], [2, /Nothom/]]) assert.match(one.steps[index], word);
+  // The teachers of Drent are off the slate (src/quest-slate.js), and the road that visits them
+  // went with them. Everything below is the block as it will read when they come back.
+  assert.equal(!!one.longWay, questLive('teachers'));
+  if (one.longWay) {
   assert.equal(one.longWay.legs.length, LONG_ROAD_LEGS.length, 'one line a leg');
   assert.match(one.longWay.title, /long way/i);
   assert.match(one.longWay.detail, /eleventh/, 'it says why the road west will keep');
   for (const leg of LONG_ROAD_LEGS) assert.ok(one.longWay.legs.some(line => line.startsWith(leg.title)), leg.title);
+  assert.equal(Object.isFrozen(one.longWay.legs), true);
+  }
   // The chapter closes on reporting for duty, and on nothing else: walking the whole of Drent
   // does not close it and skipping the whole of Drent does not hold it open.
   assert.equal(one.done({ luscia: { started: true } }), true);
   assert.equal(one.done({ luscia: { started: false } }), false);
-  assert.equal(Object.isFrozen(one.longWay.legs), true);
   for (const entry of STORY_CHAPTERS.slice(1)) assert.equal(entry.longWay, null, `chapter ${entry.number} has no long way`);
 });
 

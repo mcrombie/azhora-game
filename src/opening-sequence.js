@@ -103,7 +103,7 @@ export const LANDED = freeze({
   camera: thirdPersonCamera,
   view: freeze({ yaw: THIRD_PERSON.yaw, pitch: THIRD_PERSON.pitch, distance: THIRD_PERSON.distance }),
   /** The toast the landing shows, in the quest's own words; the errand is the harbourmaster's. */
-  toast: freeze({ title: 'Goblins have attacked the northern road.', kicker: 'SPEAK TO MARA AT THE HEAD OF THE PIER' }),
+  toast: freeze({ title: 'Goblins have attacked the northern road.', kicker: 'SPEAK TO JOJO AT THE HEAD OF THE PIER' }),
 });
 
 // ---------------------------------------------------------------------------

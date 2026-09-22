@@ -633,7 +633,7 @@ test('a hold is each man staying where he is, and the fallback is not one stone'
   assert.match(main, /companionHold\.delete\(npc\.id\);/, 'and let go when he is walking again');
   assert.doesNotMatch(main, /companionHold=\{x:pos\.x,z:pos\.z\}/, 'and never one shared point');
   // The fallback walked a fixed list and returned the first standable offset, so every man who
-  // fell back got the same answer - two of ten onto one stone in Lumber Town square.
+  // fell back got the same answer - two of ten onto one stone in Nothom square.
   const at = { x: 0, z: 0, yaw: 0 };
   const everywhere = () => true;
   const spots = Array.from({ length: ESCORT_OFFSETS.length }, (_, place) => escortSpotFor(at, everywhere, place));

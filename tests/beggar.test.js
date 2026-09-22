@@ -100,7 +100,7 @@ test('speaking to Smiths offers a coin only when one is carried, and both replie
   assert.deepEqual(acted, ['give-smiths-coin', 'dismiss-smiths']);
 });
 
-test('Smiths keeps to Lumber Town: his round is five points around the square', () => {
+test('Smiths keeps to Nothom: his round is five points around the square', () => {
   assert.equal(TOWN_BEGGAR_ROUTE.length, 5);
   const spread = TOWN_BEGGAR_ROUTE.map(point => Math.hypot(point.x - TOWN_BEGGAR_ROUTE[0].x, point.z - TOWN_BEGGAR_ROUTE[0].z));
   assert.ok(Math.max(...spread) < BEGGAR_DEFAULTS.leaveRange, 'he never wanders out of town');

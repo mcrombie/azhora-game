@@ -2,15 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/journey.js';
 import { createInventoryState } from '../src/inventory.js';
+import { questLive } from '../src/quest-slate.js';
 import { createWeapons } from '../src/weapons.js';
 
-function fixture({ ready = true, initialItems = {} } = {}) {
+/**
+ * **The whole ladder, whatever the slate says.** Most of the road out of Drent is off the slate
+ * today (src/quest-slate.js): Chapter 1 is Jojo, Glun and Nothom, and Corvan's parcels and Sava's
+ * waymarkers are put away until they are wanted again. They are still built and this is still
+ * their test, so the fixture hands the journey a slate of its own with everything on it. The
+ * tests at the foot of this file are the other half: what the trimmed slate actually does.
+ */
+const WHOLE = () => true;
+
+function fixture({ ready = true, initialItems = {}, live = WHOLE } = {}) {
   const inventory = createInventoryState();
   if (ready) { inventory.grant('harbor-letter'); inventory.grant('road-token'); }
   for (const [id, quantity] of Object.entries(initialItems)) inventory.add(id, quantity);
   const weapons = createWeapons({ wear: true, inventory });
   const events = [];
-  const journey = createJourney({ inventory, weapons, onEvent: event => events.push(event) });
+  const journey = createJourney({ inventory, weapons, live, onEvent: event => events.push(event) });
   return { inventory, weapons, events, journey };
 }
 
@@ -97,7 +107,7 @@ test('insufficient sticks and a failed spend leave repair and inventory untouche
   assert.equal(inventory.count('forest-stick'), 2);
   assert.deepEqual(journey.snapshot(), before);
   inventory.add('forest-stick', 1);
-  const rejecting = createJourney({ inventory, weapons: { spendSticks: () => false } });
+  const rejecting = createJourney({ inventory, weapons: { spendSticks: () => false }, live: WHOLE });
   assert.equal(rejecting.restore(before), true);
   assert.equal(rejecting.act('repair-bridge').ok, false);
   assert.equal(inventory.count('forest-stick'), 3);
@@ -108,7 +118,7 @@ test('failed rewards keep completed work ready for a safe retry without duplicat
   const inventory = createInventoryState();
   inventory.grant('harbor-letter'); inventory.grant('road-token'); inventory.add('forest-stick', 3);
   let allowReward = false;
-  const journey = createJourney({
+  const journey = createJourney({ live: WHOLE,
     inventory: { ...inventory, add: (...args) => allowReward && inventory.add(...args) },
     weapons: createWeapons({ wear: true, inventory }),
   });
@@ -200,4 +210,32 @@ test('invalid saves fail atomically, and snapshots or view arrays cannot mutate 
   journey.availableActions()[0].id = 'deliver-report';
   assert.deepEqual(journey.snapshot(), before);
   assert.equal(journey.availableActions()[0].id, 'meet-crossing-keeper');
+});
+
+/**
+ * And the slate as it actually stands: three subquests, and the bridge standing on its own feet.
+ */
+test('the trimmed slate: Chapter 1 is the letter and the report, and the bridge is nobody’s step', () => {
+  const { journey, inventory } = fixture({ live: questLive });   // the slate as it actually stands
+  assert.equal(journey.view().stage, 'not-started');
+  assert.equal(journey.start().ok, true);
+  assert.equal(journey.view().stage, 'deliver-report', 'the road west is the whole of what is left');
+  assert.equal(journey.view().title, 'Report to Nothom');
+  assert.equal(journey.act('meet-courier').ok, false, 'Corvan has no field assignment to give');
+  assert.equal(journey.act('meet-ridge-keeper').ok, false, 'and Sava has no waymarkers');
+  // The bridge is offered the day the road begins, and it is not on the way to anything.
+  assert.equal(journey.state.bridge, 'offered');
+  assert.deepEqual(journey.availableActions().map(one => one.id), ['deliver-report', 'meet-crossing-keeper']);
+  assert.equal(journey.act('meet-crossing-keeper').ok, true);
+  assert.equal(journey.view().stage, 'deliver-report', 'accepting it moved no step of the main road');
+  assert.equal(journey.act('repair-bridge').ok, false, 'and it still wants three sticks');
+  // Reporting to Iven closes the chapter with the bridge half-done and nobody minding.
+  assert.equal(journey.act('deliver-report').ok, true);
+  assert.equal(journey.view().stage, 'complete');
+  assert.equal(journey.state.bridge, 'accepted');
+  assert.ok(inventory.has('harbor-letter'), 'he keeps the original');
+  // And a save of exactly that round-trips, which the old chain of preconditions would have refused.
+  const copy = createJourney({ inventory, live: questLive });
+  assert.equal(copy.restore(journey.snapshot()), true);
+  assert.deepEqual(copy.snapshot(), journey.snapshot());
 });

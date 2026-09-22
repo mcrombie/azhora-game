@@ -58,8 +58,8 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
   function view() {
     const current = stage();
     const views = {
-      'not-started': [0, 'Out to the Moros', 'The army’s camp lies south-west of Lumber Town, past the Moros gate, out on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
-      'report-at-gate': [1, 'Name and contract', 'Follow the road south-west out of Lumber Town through the Moros gate and on across the plain. Report to the sentry at the camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
+      'not-started': [0, 'Out to the Moros', 'The army’s camp lies south-west of Nothom, past the Moros gate, out on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
+      'report-at-gate': [1, 'Name and contract', 'Follow the road south-west out of Nothom through the Moros gate and on across the plain. Report to the sentry at the camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
       'report-to-legate': [2, 'The Marshal’s muster', 'Marshal Hadric Venmor keeps the muster at the command tent beyond the tent lines. Sign it, and draw your first wage.', 'MOROS PLAIN · 2 / 3 · THE ARMY ON THE PLAIN', [MOROS_LEGATE_ID]],
       // A traveler who rode in pickets the horse they came on; one who walked the whole way with Iven's token still draws a horse here.
       'claim-horse': hasHorse()
@@ -79,7 +79,7 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
       case 'report-to-legate': return [action('join-muster', `Sign the muster · take ${MOROS_PAY} copper`, MOROS_LEGATE_ID)];
       case 'claim-horse': return [hasHorse() ? action('claim-legion-horse', 'Picket your horse and draw its fodder', 'legion-horse-line')
         : action('claim-legion-horse', 'Hand over the token and take your horse', 'legion-horse-line',
-          inventory?.has?.(MOROS_HORSE_TOKEN) ? '' : 'You need the army’s horse token from Iven in Lumber Town.')];
+          inventory?.has?.(MOROS_HORSE_TOKEN) ? '' : 'You need the army’s horse token from Iven in Nothom.')];
       default: return [];
     }
   }
@@ -111,7 +111,7 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
     } else if (actionId === 'claim-legion-horse') {
       if (hasHorse()) state.horseClaimed = true;
       else {
-        if (!inventory?.remove?.(MOROS_HORSE_TOKEN, 1)) return fail('You need the army’s horse token from Iven in Lumber Town.');
+        if (!inventory?.remove?.(MOROS_HORSE_TOKEN, 1)) return fail('You need the army’s horse token from Iven in Nothom.');
         state.horseClaimed = true; reward = { id: 'legion-horse', quantity: 1 };
       }
     }

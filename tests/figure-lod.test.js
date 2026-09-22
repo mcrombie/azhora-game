@@ -8,7 +8,7 @@ import { FIGURE_LOD, alwaysInFull, figureDetail, standInLook, figureDrawCalls } 
 /**
  * Measured in the renderer (npm run review:draws): figures are the largest cost where people
  * gather, and more than half of those drawn are over sixty metres off - 18 of 33 at the
- * Tidehaven landing, 18 of 31 on the field at the Lauvel, 14 of 26 in Lumber Town square - at
+ * Tidehaven landing, 18 of 31 on the field at the Lauvel, 14 of 26 in Nothom square - at
  * seventeen to twenty-four draw calls each, for somebody thirty pixels tall or less.
  */
 const luminance = colour => .299 * ((colour >> 16) & 255) + .587 * ((colour >> 8) & 255) + .114 * (colour & 255);

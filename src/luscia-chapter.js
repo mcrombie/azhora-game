@@ -15,7 +15,7 @@ import { toWorld, toWorldXIn } from './world-scale.js';
 
 export const LUSCIA_VERSION = 1;
 export const LUSCIA_CHAPTER_ID = 'luscia-aftermath';
-/** The army's promissory token for a horse, spent with the ostler in Lumber Town (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
+/** The army's promissory token for a horse, spent with the ostler in Nothom (`src/ostler.js`); a traveler who walked on regardless can still spend it at the Moros horse line. */
 export const LUSCIA_REWARD_ITEM = 'horse-token';
 /** The rest of the chapter's pay, in Ambroni copper. */
 export const LUSCIA_REWARD_COINS = 20;
@@ -89,11 +89,11 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
   function view() {
     const current = stage();
     const views = {
-      'not-started': [0, 'Across the Caloss', 'The road out of Drent is finished. Iven keeps the army’s relay post on Lumber Town’s square.', 'LUSCIA · THE FIELD AT THE LAUVEL', []],
-      'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Lumber Town’s square; an army courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Lumber Town, past the old relay hut, to the field at the Lauvel. Sergeant Talven holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
-      'return-satchel': [3, 'Carry the rolls back', 'Take the courier’s satchel back down the road to Iven in Lumber Town before anything else finds it.', 'LUSCIA · 3 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      complete: [4, 'The army’s horse', 'Iven has the muster rolls and you have the army’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Lumber Town, turns it into a horse. Then the road turns south-west for the Moros gate and the army’s outpost out on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
+      'not-started': [0, 'Across the Caloss', 'The road out of Drent is finished. Iven keeps the army’s relay post on Nothom’s square.', 'LUSCIA · THE FIELD AT THE LAUVEL', []],
+      'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Nothom’s square; an army courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
+      'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Nothom, past the old relay hut, to the field at the Lauvel. Sergeant Talven holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
+      'return-satchel': [3, 'Carry the rolls back', 'Take the courier’s satchel back down the road to Iven in Nothom before anything else finds it.', 'LUSCIA · 3 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
+      complete: [4, 'The army’s horse', 'Iven has the muster rolls and you have the army’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Nothom, turns it into a horse. Then the road turns south-west for the Moros gate and the army’s outpost out on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return {

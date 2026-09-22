@@ -482,7 +482,7 @@ export const BIRD_HABITATS = Object.freeze([
   // Luscia, the farm country across the Caloss: open field birds and the birds of a town.
   { id: 'reedcutter-thistles', species: 'goldfinch', birds: ['goldfinch', 'goldfinch'], world: true,
     center: { x: -660, z: 200 }, radius: 5, perches: [] },
-  // On the edge of Lumber Town rather than in its square: the square has people standing in it,
+  // On the edge of Nothom rather than in its square: the square has people standing in it,
   // and a bird's foraging ground may not be somebody's feet (tests/rena.test.js).
   { id: 'lumber-town-mockingbird', species: 'mockingbird', birds: ['mockingbird'], world: true,
     center: { x: -697, z: 344 }, radius: 4.5, perches: [] },

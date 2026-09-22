@@ -1,19 +1,28 @@
 /**
- * Three kinds of gold over a head, so a player can tell at a glance what a
+ * Four kinds of mark over a head, so a player can tell at a glance what a
  * conversation is for before walking all the way to it:
  *
- *   main   the road the game is about - the letter, the quartermaster, the
+ *   main   the road the game is about - the letter, the officer at the post, the
  *          chapters and the destinations a chapter names. Gold, a cut stone, biggest.
- *   plot   a story of its own, with its own state and its own ending - the
- *          forest, the hideout, the doomsayer's cape. Pale silver, a rolled sheet.
+ *   plot   a story of its own, with its own state and its own ending. Pale silver,
+ *          a rolled sheet. The user has reserved silver for these and asked that none
+ *          be built out yet (22 September 2026), so nothing wears it today.
+ *   deed   a one-off that changes the world and does not move the plot: the bridge
+ *          over the Caloss, which spares the next traveler the river. Copper, a ring.
  *   skill  somebody who will teach you something, or an errand that pays a skill -
  *          the rod, the acorns, the feeder, the pegs at Rena. Leaf green, a leaf.
  *
  * Each is a different silhouette as well as a different colour, because colour
  * on its own is not a signal everybody receives. Pure: src/characters.js builds
  * the meshes from this table and src/main.js reads `markerFor` once a frame.
+ *
+ * **What may be worn at all is the slate's business, not this file's**
+ * (src/quest-slate.js): today that is gold and copper, and nothing else.
  */
-export const MARKER_KINDS = Object.freeze(['main', 'plot', 'skill']);
+import { QUEST_DONE } from './game-state.js';
+import { questLive, BRIDGE_QUEST } from './quest-slate.js';
+
+export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill']);
 /**
  * One variant, and not a fourth kind: the arc's own gold, **open** — the ring with the cut
  * stone taken out of it. Solid gold is the muster road. Open gold is the next thing Drent
@@ -34,15 +43,17 @@ export const MARKER_STYLE = Object.freeze({
     'The road the game is about: the next thing that moves the story on.'),
   plot: style('plot', 'scroll', .88, 0xe7e3d1, 0x8e97a4, 0xf6f3e6, 0xa9b0ba,
     'A story of its own, with its own beginning and its own end.'),
+  deed: style('deed', 'ring', .84, 0xc87a3c, 0x8a4a18, 0xe6a163, 0xa65e22,
+    'A small good deed: it changes the world and does not move the plot.'),
   skill: style('skill', 'leaf', .82, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
     'Somebody who will teach you something, or an errand that pays a skill.'),
 });
 
 // Open gold ranks under the solid stone and over a story of its own: the road the game is
 // about first, then the road Drent would rather you took, then everything else.
-const RANK = Object.freeze({ main: 4, [MARKER_OPEN]: 3, plot: 2, skill: 1 });
+const RANK = Object.freeze({ main: 5, [MARKER_OPEN]: 4, plot: 3, deed: 2, skill: 1 });
 
-/** Of the grades somebody qualifies for, the one they wear: main beats open beats plot beats skill. */
+/** Of the grades somebody qualifies for, the one they wear: main, then open, plot, deed, skill. */
 export function strongestMarker(kinds) {
   let best = null;
   for (const kind of kinds ?? []) if (RANK[kind] && (!best || RANK[kind] > RANK[best])) best = kind;
@@ -57,7 +68,7 @@ export const markerGrade = marker => !marker ? null : marker.open ? MARKER_OPEN 
 export const markerStyle = marker => marker ? MARKER_STYLE[marker.kind] ?? MARKER_STYLE.main : null;
 
 /** The people who can carry a mark at all, by the name the host knows them under. */
-export const MARKER_ROLES = Object.freeze(['harbourmaster', 'warden', 'doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'gardenKeeper', 'birdWatcher', 'vintner']);
+export const MARKER_ROLES = Object.freeze(['harbourmaster', 'instructor', 'crossingKeeper', 'doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'gardenKeeper', 'birdWatcher', 'vintner']);
 
 const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) : list.includes(value));
 
@@ -87,18 +98,28 @@ const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) 
  * The arc itself is untouched: the harbourmaster, the waykeeper and the chapters' destinations
  * wear their gold whenever they hold it.
  */
-export const TUTORIAL_DONE = 10;
+export const TUTORIAL_DONE = QUEST_DONE;
 
 export function markerFor(id, view = {}) {
+  // `live` is the slate, injectable so the rules below can be read and tested whole while most
+  // of what they describe is switched off (src/quest-slate.js, and `live` in src/journey.js).
   const ids = view.ids ?? {}, busy = !!view.busy, stage = view.questStage ?? 0, kinds = [];
+  const live = view.live ?? questLive;
   const ashore = stage >= TUTORIAL_DONE;
-  // The arc. The harbourmaster holds it until the letter is in the satchel.
+  // The arc. The harbourmaster holds it until the letter is in the satchel, and Officer Glun
+  // from then until the chart is handed over, which is the whole of subquests one and two.
   if (id === ids.harbourmaster && stage < 2) kinds.push('main');
-  if (id === ids.warden && stage === 5) kinds.push('main');
+  if (id === ids.instructor && stage === 2) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
+  // **The one thing on the slate that is not the arc**: Hollis, while his bridge is unmended.
+  // It is copper wherever the traveler is in the story, because it is nobody's step and waits
+  // on nothing (`bridgeStage`, src/journey.js; src/quest-slate.js).
+  if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore) return mark(strongestMarker(kinds));
+  // Nor while the slate is trimmed, which is the gold and the copper above and nothing else.
+  if (!live('teachers')) return mark(strongestMarker(kinds));
   // The long road's next stop, which is gold because it is main quest too, and open because it
   // is the road you may take rather than the one you must.
   if (holds(view.longWay, id) && !busy) kinds.push(MARKER_OPEN);

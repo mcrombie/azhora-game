@@ -15,7 +15,7 @@
 2. **The Coalition's offer.** Brief: they offer more money than the Empire pays. Built: the envoy offers scrip and land, and the chapter after the battle pays the Coalition's sellsword 25 copper and a promise against the Empire's 40.
 3. **How the battle begins.** Brief: report back to the Legion on the Moros, the commander asks whether you are ready, the troops march and you go with them. Built: the fight begins where the commander stands.
 4. **"The outpost."** Brief: a Coalition victory takes the Ambroni outpost or town on the Moros Plain, and places change hands on the map (Solis becomes Ambroni after an Empire victory). Built: the Coalition's victory chapter storms the small border stockade; nobody's garrison changes anywhere afterwards. The Legion camp is exactly at the plain's centre, as the brief asks.
-5. **Goblins in Luscia.** Brief: no bramble goblins in Luscia, wolves are its danger; bramble goblins belong to Drent's one attack and to the south of Pueth. Built, on the user's later instruction: the goblin camp in north Luscia as a Lumber Town side quest.
+5. **Goblins in Luscia.** Brief: no bramble goblins in Luscia, wolves are its danger; bramble goblins belong to Drent's one attack and to the south of Pueth. Built, on the user's later instruction: the goblin camp in north Luscia as a Nothom side quest.
 6. **East Suval's border.** Brief: heavily guarded and hard to cross. Built: the road is open.
 
 ## The novella

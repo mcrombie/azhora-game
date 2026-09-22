@@ -20,14 +20,17 @@ test('the first person the traveler speaks to is Jojo, the harbourmaster at the 
   assert.match(main, /ids:\{harbourmaster:HARBOURMASTER,/, 'and so does the gold over her head (src/quest-markers.js)');
   // The toast the moment the boat ties up. It moved into the arrival sequence's data when the
   // cutscene was built (LANDED.toast); main.js shows whatever that says, and shows nothing else.
-  assert.match(file('src/opening-sequence.js'), /'SPEAK TO MARA AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
+  assert.match(file('src/opening-sequence.js'), /'SPEAK TO JOJO AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
   assert.match(main, /toast\(landed\.toast\.title,landed\.toast\.kicker\)/, 'which main.js puts on the screen at the landing');
   assert.doesNotMatch(main, /SPEAK TO CHRIS ON THE LANDING/);
   // The letter is hers to give, and the quest only moves when she gives it.
   const hers = main.slice(main.indexOf('function jojoOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
   assert.match(hers, /updateQuest\('ashore'\)/);
   assert.match(hers, /'accept-letter','Take the letter'/);
-  assert.match(hers, /letter of introduction, for Quartermaster Corvan/);
+  // The letter is addressed to Iven at Nothom now: Corvan's field register is off the slate with
+  // the rest of the middle of Chapter 1 (src/quest-slate.js, the user, 22 September 2026).
+  assert.match(hers, /letter of introduction, for Iven/);
+  assert.match(hers, /Officer Glun first/, 'and she sends him to the post before anything else');
   // Chris keeps the sword lesson and hands over nothing.
   const his = main.slice(main.indexOf('function chrisOnTheLanding'), main.indexOf('function doomsayerConversation'));
   assert.match(his, /straw post at the northern crossroads/);

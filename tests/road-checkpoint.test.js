@@ -4,6 +4,7 @@ import { createRoadCheckpoint, ROAD_CHECKPOINT_KEY } from '../src/road-checkpoin
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
+import { QUEST_DONE } from '../src/game-state.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
 import { createAftermathChapter } from '../src/aftermath-chapter.js';
@@ -28,9 +29,11 @@ function fixture() {
   const weapons = createWeapons({ wear: true, inventory });
   weapons.contact(); weapons.equip('forest-stick'); weapons.contact(); weapons.contact();
   const journey = createJourney({ inventory, weapons });
-  journey.start(); journey.act('meet-courier'); journey.act('collect-cart-parcel-2');
+  // The road begun and Hollis's bridge accepted and not yet mended: the one piece of unfinished
+  // business a Chapter 1 save can carry now that the middle of the road is off the slate.
+  journey.start(); journey.act('meet-crossing-keeper');
   const data = {
-    version: 1, worldScale: METRES_PER_HEX, questStage: 10, journey: journey.snapshot(),
+    version: 1, worldScale: METRES_PER_HEX, questStage: QUEST_DONE, journey: journey.snapshot(),
     inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
     weapons: weapons.snapshot(), journeyGathered: ['meadow-fruit'], meadowCleared: false,
     position: { x: 3, z: -190 }, heardDoom: true, lysaComplete: true, health: 74,
@@ -83,7 +86,7 @@ test('the search for Batman is kept, and a nonsense stage is refused', () => {
 test('optional hideout checkpoints preserve unfinished supplies and reject impossible progress without overwriting the adventure', () => {
   const { checkpoint, data, inventory, storage } = fixture();
   const hideout = createForestHideoutQuest({ inventory });
-  hideout.inspect(); hideout.begin({ questStage: 10 }); hideout.markCleared('forest-hideout'); hideout.recover();
+  hideout.inspect(); hideout.begin({ questStage: QUEST_DONE }); hideout.markCleared('forest-hideout'); hideout.recover();
   const withHideout = { ...data, forestHideout: hideout.snapshot() };
   assert.equal(checkpoint.save(withHideout).ok, true);
   assert.deepEqual(checkpoint.read().data.forestHideout, hideout.snapshot());
@@ -113,7 +116,7 @@ test('invalid data never overwrites an existing checkpoint', () => {
   checkpoint.save(data);
   const stored = storage.getItem(ROAD_CHECKPOINT_KEY);
   const malformed = [
-    null, {}, { ...data, version: 2 }, { ...data, questStage: 9 },
+    null, {}, { ...data, version: 2 }, { ...data, questStage: 9 },   // 9 was a step; the spine is four long now
     { ...data, inventory: [...data.inventory, data.inventory[0]] },
     { ...data, inventory: [{ id: 'invented-treasure', quantity: 1 }] },
     { ...data, inventory: data.inventory.filter(item => item.id !== 'harbor-letter') },

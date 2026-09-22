@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { QUEST_DONE } from '../src/game-state.js';
 import { createInventoryState } from '../src/inventory.js';
 import { FOREST_HIDEOUT_QUEST, createForestHideoutQuest, validateForestHideoutSnapshot,
   hideoutConversation, hideoutTamsinChoices, garrisonConversation, HIDEOUT_GARRISON } from '../src/forest-hideout.js';
@@ -11,28 +12,28 @@ function fixture() {
 }
 function win(quest) {
   assert.equal(quest.inspect().ok, true);
-  assert.equal(quest.begin({ questStage: 10 }).ok, true);
+  assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, true);
   assert.equal(quest.markCleared(FOREST_HIDEOUT_QUEST.id).ok, true);
 }
 
 test('the hideout can be observed early but requires inspection, original victory, and explicit opt-in to fight', () => {
   const { quest, inventory, events } = fixture();
   assert.equal(quest.view().task, null);
-  assert.equal(quest.begin({ questStage: 10 }).ok, false);
+  assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, false);
   assert.equal(quest.inspect({ questStage: 1 }).ok, true);
   assert.equal(quest.view().discovered, true);
   assert.equal(quest.view().task, null);
   assert.equal(quest.inspect().changed, false);
-  for (const questStage of [undefined, 0, 1, 5, 9, NaN, Infinity, '10'])
+  for (const questStage of [undefined, 0, 1, QUEST_DONE - 1, NaN, Infinity, '10'])
     assert.equal(quest.begin({ questStage }).ok, false);
-  const choice = quest.availableActions('bramble-scout-camp', { questStage: 9 }).find(choice => choice.id === 'challenge-hideout');
+  const choice = quest.availableActions('bramble-scout-camp', { questStage: QUEST_DONE - 1 }).find(choice => choice.id === 'challenge-hideout');
   assert.equal(choice.enabled, false);
   assert.match(choice.reason, /business in Tidehaven/);
   assert.equal(events.length, 1);
   assert.equal(quest.state.accepted, false);
   assert.equal(quest.state.active, false);
   assert.deepEqual(inventory.items(), []);
-  assert.equal(quest.begin({ questStage: 10 }).startEncounter, true);
+  assert.equal(quest.begin({ questStage: QUEST_DONE }).startEncounter, true);
   assert.equal(quest.state.active, true);
   assert.equal(quest.view().task.optional, true);
 });
@@ -41,8 +42,8 @@ test('a matching real encounter victory unlocks the stores and exactly thirty co
   const { quest, inventory, events } = fixture();
   assert.equal(quest.recover().ok, false);
   assert.equal(quest.turnIn().ok, false);
-  quest.inspect(); quest.begin({ questStage: 10 });
-  assert.equal(quest.begin({ questStage: 10 }).ok, false);
+  quest.inspect(); quest.begin({ questStage: QUEST_DONE });
+  assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, false);
   assert.equal(quest.markCleared('bramble-goblins').ok, false);
   assert.equal(quest.endEncounter('meadow-raiders').ok, false);
   assert.equal(quest.act('clear-hideout').ok, false, 'dialogue cannot award a combat victory');
@@ -50,7 +51,7 @@ test('a matching real encounter victory unlocks the stores and exactly thirty co
   assert.equal(quest.markCleared('forest-hideout').ok, true);
   assert.equal(quest.state.active, false);
   assert.equal(quest.markCleared('forest-hideout').ok, false);
-  assert.equal(quest.begin({ questStage: 10 }).ok, false);
+  assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, false);
   assert.deepEqual(quest.view().destinationIds, ['forest-hideout-supplies']);
   assert.equal(quest.turnIn().ok, false);
   assert.equal(quest.recover().ok, true);
@@ -69,7 +70,7 @@ test('a matching real encounter victory unlocks the stores and exactly thirty co
 
 test('retreat and defeat reset only transient activity; each retry requires a new begin', () => {
   const { quest, events } = fixture();
-  quest.inspect(); quest.begin({ questStage: 10 });
+  quest.inspect(); quest.begin({ questStage: QUEST_DONE });
   const accepted = quest.snapshot();
   for (let attempt = 0; attempt < 3; attempt++) {
     assert.equal(quest.endEncounter('forest-hideout').ok, true);
@@ -78,7 +79,7 @@ test('retreat and defeat reset only transient activity; each retry requires a ne
     assert.deepEqual(quest.snapshot(), accepted);
     assert.equal(quest.markCleared('forest-hideout').ok, false);
     assert.equal(quest.endEncounter('forest-hideout').ok, false);
-    assert.equal(quest.begin({ questStage: 10 }).ok, true);
+    assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, true);
     assert.equal(quest.state.active, true);
   }
   assert.equal(events.length, 2, 'retries do not repeat persistent progress or rewards');
@@ -88,7 +89,7 @@ test('retreat and defeat reset only transient activity; each retry requires a ne
 
 test('accepted checkpoints never serialize an active battle and resume ready for a new challenge', () => {
   const original = fixture();
-  original.quest.inspect(); original.quest.begin({ questStage: 10 });
+  original.quest.inspect(); original.quest.begin({ questStage: QUEST_DONE });
   const snapshot = original.quest.snapshot();
   assert.equal(Object.hasOwn(snapshot, 'active'), false);
   const loaded = fixture();
@@ -96,8 +97,8 @@ test('accepted checkpoints never serialize an active battle and resume ready for
   assert.equal(loaded.quest.state.active, false);
   assert.equal(loaded.quest.view().stage, 'ready-to-retry');
   assert.equal(loaded.quest.markCleared('forest-hideout').ok, false);
-  assert.equal(loaded.quest.begin({ questStage: 9 }).ok, false);
-  assert.equal(loaded.quest.begin({ questStage: 10 }).ok, true);
+  assert.equal(loaded.quest.begin({ questStage: QUEST_DONE - 1 }).ok, false);
+  assert.equal(loaded.quest.begin({ questStage: QUEST_DONE }).ok, true);
   assert.equal(loaded.quest.markCleared('forest-hideout').ok, true);
   assert.equal(loaded.events.length, 1);
   assert.equal(loaded.inventory.count('copper-piece'), 0);
@@ -177,7 +178,7 @@ test('returned views and snapshots cannot alter controller history or destinatio
   assert.deepEqual(quest.view().destinationIds, ['garrison-captain']);
 });
 
-function dialogueFixture(quest, questStage = 10) {
+function dialogueFixture(quest, questStage = QUEST_DONE) {
   const screens = [], actions = [];
   let closed = 0, back = 0;
   const context = { hideoutQuest: quest, questStage,
@@ -188,7 +189,7 @@ function dialogueFixture(quest, questStage = 10) {
 }
 
 test('approach dialogue offers a real opt-out and clearly gates the optional fight before tutorial victory', () => {
-  const { quest } = fixture(), early = dialogueFixture(quest, 3);
+  const { quest } = fixture(), early = dialogueFixture(quest, QUEST_DONE - 1);
   hideoutConversation(early.context);
   assert.match(early.screens[0].lines.join(' '), /Finish your business in Tidehaven/);
   assert.equal(early.screens[0].options.choices.find(choice => choice.id === 'challenge-hideout').enabled, false);

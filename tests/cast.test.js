@@ -25,8 +25,10 @@ test('the trim keeps the quest, the soldiers, the company and the user’s own, 
   assert.equal(keep(null), false);
 });
 
-test('Eren is dropped by name, because the soldier rule would otherwise keep him', () => {
-  assert.deepEqual([...DROP_IDS], ['warden']);
+test('Eren is dropped by name, because the soldier rule would otherwise keep him, and Sava with her waymarkers', () => {
+  assert.deepEqual([...DROP_IDS], ['warden', 'ridge-keeper']);
+  assert.equal(keepsNpc({ id: 'ridge-keeper', modelRole: 'rise-custodian' }, { trimmed: true }), false,
+    'the keeper of the rise had one errand and it is off the slate (src/quest-slate.js)');
   assert.equal(keepsNpc({ id: 'warden', modelRole: 'legion-soldier' }, { trimmed: true }), false,
     'the waykeeper is built as a legionary and must still be taken out');
   assert.equal(keepsNpc({ id: 'warden', modelRole: 'legion-soldier' }, { trimmed: false }), true,

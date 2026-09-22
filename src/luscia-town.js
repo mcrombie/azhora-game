@@ -1,5 +1,5 @@
 /**
- * Lumber Town: the people of Luscia's market town.
+ * Nothom: the people of Luscia's market town.
  *
  * Ambient conversation only — nobody here moves the road quest or the chapter —
  * except the timber-and-cloth stall, where a careful line of questioning finds
@@ -62,7 +62,7 @@ export function townConversation(npc, context) {
 
 /**
  * Hara keeps a stall of timber offcuts and cloth. She is the republic's contact
- * in Lumber Town, and she stays a stallholder unless the traveler asks what the
+ * in Nothom, and she stays a stallholder unless the traveler asks what the
  * town makes of the army, offers to hear the other side, and then says the
  * families out here did not ask for this. Any other reply leaves her a
  * stallholder, and nothing is recorded.

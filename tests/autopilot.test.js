@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { borderGoal, aftermathGoal } from '../src/autopilot.js';
+import { QUEST_DONE } from '../src/game-state.js';
 import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, clearLine, CHOICE_PRIORITY } from '../src/autopilot.js';
 
 /** A small flat world with the same collision rules as the game. */
@@ -66,7 +67,7 @@ test('a blocked straight line is replaced by the nearest free direction', () => 
   assert.ok(around.z < 0, 'the sidestep still makes progress');
 });
 
-test('the planner walks the tutorial: Jojo at the pier, Glun at the post, the bell, the watch, the satchel, the boundary', () => {
+test('the planner walks the tutorial: Jojo at the pier, Glun at the post, and the road west', () => {
   const world = fakeWorld();
   assert.equal(planGoal(snapshot({ mode: 'opening' }), world).kind, 'begin');
   assert.equal(planGoal(snapshot({ mode: 'arriving' }), world).kind, 'wait');
@@ -80,21 +81,18 @@ test('the planner walks the tutorial: Jojo at the pier, Glun at the post, the be
   assert.equal(planGoal(snapshot({ questStage: 2, lessonSet: false }), world).npcId, 'instructor');
   assert.equal(planGoal(snapshot({ questStage: 2 }), world).kind, 'practice');
   assert.match(planGoal(snapshot({ questStage: 2, practiceHits: 2 }), world).intent, /dodge/);
-  assert.equal(planGoal(snapshot({ questStage: 3 }), world).kind, 'walk');
-  assert.equal(planGoal(snapshot({ questStage: 4, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight');
-  // Eren is out of the cast (src/cast.js), so the fifth step is the ground he stood on.
-  assert.equal(planGoal(snapshot({ questStage: 5 }), world).kind, 'walk');
-  assert.equal(planGoal(snapshot({ questStage: 6 }), world).kind, 'open-inventory');
-  assert.equal(planGoal(snapshot({ questStage: 6, mode: 'inventory' }), world).kind, 'inspect-letter');
-  assert.equal(planGoal(snapshot({ questStage: 7, mode: 'inventory' }), world).kind, 'close-inventory');
-  assert.deepEqual(planGoal(snapshot({ questStage: 8 }), world).target, world.northTrail);
-  assert.deepEqual(planGoal(snapshot({ questStage: 9 }), world).target, world.border);
+  // And the third subquest is the road west, which the journey below takes from the boundary.
+  // The eight steps that used to sit between - the bell, the fight, the watch, the satchel,
+  // Fernway Rest - are off the slate with the quests that needed them (src/quest-slate.js).
+  assert.deepEqual(planGoal(snapshot({ questStage: QUEST_DONE }), world).target, world.border);
+  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight');
+  assert.equal(planGoal(snapshot({ mode: 'inventory' }), world).kind, 'close-inventory', 'the satchel is no longer a lesson');
   assert.equal(planGoal(snapshot({ mode: 'dialogue' }), world).kind, 'dialogue');
 });
 
 test('the planner follows the road quests, gathers sticks for the bridge, and stops when the road is done', () => {
   const world = fakeWorld();
-  const road = (extra, journey) => snapshot({ questStage: 10, journey: { started: true, stage: 'meet-courier', complete: false, destinationIds: ['meadow-courier'], actions: [], ...journey }, ...extra });
+  const road = (extra, journey) => snapshot({ questStage: QUEST_DONE, journey: { started: true, stage: 'meet-courier', complete: false, destinationIds: ['meadow-courier'], actions: [], ...journey }, ...extra });
   const courier = planGoal(road(), world);
   assert.equal(courier.kind, 'talk'); assert.equal(courier.npcId, 'meadow-courier'); assert.match(courier.intent, /Corvan/);
   const parcel = planGoal(road({}, { stage: 'recover-parcels', destinationIds: ['cart-parcel-1'] }), world);
@@ -194,7 +192,7 @@ test('a game begun at a later chapter is played from there, not from the road be
   world.npcNames['post-camp-legate'] = 'Marshal Venmor';
   // The road, Luscia and the Moros are behind this traveler: their chapters were never played here.
   const staged = snapshot({
-    questStage: 10, position: { x: -18, z: -296 },
+    questStage: QUEST_DONE, position: { x: -18, z: -296 },
     campaign: { chapterId: 'suval-envoy' },
     journey: { started: true, stage: 'meet-courier', complete: false, destinationIds: [], actions: [] },
     border: { stage: 'take-orders', complete: false, destinationIds: ['post-camp-legate'], actions: [], objectiveId: 'post-camp-legate' },
@@ -262,7 +260,7 @@ test('the autopilot drives the host through a talk, paces dialogue, and stops it
   state = { ...state, dialogue: { choices: [{ id: 'leave-road-neighbor', label: 'Back to the road.' }] } };
   calls.length = 0; pilot.step(2);
   assert.deepEqual(calls[0], { type: 'choose', id: 'leave-road-neighbor' });
-  state = snapshot({ questStage: 10, journey: { started: true, stage: 'complete', complete: true, destinationIds: [], actions: [] } });
+  state = snapshot({ questStage: QUEST_DONE, journey: { started: true, stage: 'complete', complete: true, destinationIds: [], actions: [] } });
   assert.equal(pilot.step(.016), null); assert.equal(pilot.active, false); assert.match(pilot.stopReason, /Luscia/);
   assert.deepEqual(events, ['start', 'stop']);
   pilot.start(); assert.equal(pilot.stop('You took the reins.'), true); assert.equal(pilot.stop(), false);
@@ -284,11 +282,11 @@ test('a stalled walk turns into a sidestep and a long stall gives control back',
 
 test('the map tutorial steers the autopilot through the chart and the trails, then out of the journal', () => {
   const world = fakeWorld();
-  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 1, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-chart');
-  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 2, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-trails');
+  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 1, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-chart');
+  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 2, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-trails');
   assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 2 }), world).kind, 'close-journal', 'a learned lesson closes the journal');
   assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 0 }), world).kind, 'wait', 'a journal the player opened is left alone');
-  assert.equal(planGoal(snapshot({ questStage: 10, mapTutorial: 3, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'a finished tutorial no longer interrupts the road');
+  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 3, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'a finished tutorial no longer interrupts the road');
   assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'no tutorial means the usual first goal');
   assert.equal(planGoal(snapshot({ mapTutorial: 1, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight', 'a fight comes before any reading');
 });
@@ -493,7 +491,7 @@ test('a broken blade is mended before the next fight, and a fight with one is le
   world.repairBenches = [{ x: 40, z: -40 }];
   world.npcPositions['aftermath-tribune'] = { x: 0, z: -10 };
   const broken = { usable: false, condition: 0 };
-  const base = snapshot({ questStage: 10, position: { x: 0, z: 0 }, campaign: { chapterId: 'solis-sweep', side: 'empire' },
+  const base = snapshot({ questStage: QUEST_DONE, position: { x: 0, z: 0 }, campaign: { chapterId: 'solis-sweep', side: 'empire' },
     aftermath: { stage: 'rally', variant: 'solis-sweep', complete: false, built: true, destinationIds: ['aftermath-tribune'], actions: [] } });
   // In the Solis assault the Empire's sword broke with two raiders left, and the autoplay
   // swung it at them for twenty minutes.

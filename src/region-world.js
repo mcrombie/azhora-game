@@ -521,16 +521,16 @@ export const FERNWAY_REST = Object.freeze({ ...at(-128, 34), name: 'Fernway Rest
 export const AVREL_CLEARING = Object.freeze({ ...at(-236, 30), radius: 38 });
 
 /**
- * Lumber Town, the market town at the centre of Luscia, between the field at
+ * Nothom, the market town at the centre of Luscia, between the field at
  * the Lauvel and the Moros gate. The main road runs through its square, and
  * everything in the town is placed in the square's own frame: `a` metres along
  * the road toward the Moros, `b` metres across it to the east.
  */
 export const LUMBER_TOWN = Object.freeze({
-  name: 'Lumber Town', square: at(-408, 228), radius: 30,
+  name: 'Nothom', square: at(-408, 228), radius: 30,
   along: point(-0.4472, 0.8944), across: point(0.8944, 0.4472),
 });
-/** A point in Lumber Town's frame. */
+/** A point in Nothom's frame. */
 export const townPoint = (a, b) => point(
   LUMBER_TOWN.square.x + LUMBER_TOWN.along.x * a + LUMBER_TOWN.across.x * b,
   LUMBER_TOWN.square.z + LUMBER_TOWN.along.z * a + LUMBER_TOWN.across.z * b);
@@ -547,8 +547,8 @@ export const regionNpcPositions = Object.freeze({
   'meadow-courier': at(-230, 17),         // Corvan, army quartermaster, at the farm clearing
   'crossing-keeper': at(-357, 106),       // Hollis, at the Caloss bridge
   'ridge-keeper': at(-372, 131),          // Sava, at her shrine on the Luscia side
-  'relay-clerk': townPoint(5, -6),        // Iven, at the army relay post on Lumber Town's square
-  // Lumber Town's people, around the square and the timber yard.
+  'relay-clerk': townPoint(5, -6),        // Iven, at the army relay post on Nothom's square
+  // Nothom's people, around the square and the timber yard.
   'town-innkeeper': townPoint(-8, 4),
   'town-carter': townPoint(-2, 9),
   'town-elder': townPoint(-16, 2),
@@ -606,8 +606,8 @@ export const regionLandmarks = Object.freeze([
   Object.freeze({ id: 'river-camp', name: 'The Reedcutters’ Camp', ...at(-372, 116), description: 'Drying reeds, tied boats, and a small raised shelter stand above the Luscian bank.' }),
   Object.freeze({ id: 'threefold', name: 'Sava’s Shrine', ...at(-377, 138), description: 'A swept step, clean water and straight road stones on the first open ground of Luscia.' }),
   Object.freeze({ id: 'beacon-ridge', name: 'The Three Waymarkers', ...at(-386, 152), description: 'Three reflective road stones once guided every traveler between the Caloss and the Lauvel.' }),
-  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The army’s old relay hut, empty since the clerk moved his desk down to Lumber Town’s square.' }),
-  Object.freeze({ id: 'lumber-town', name: 'Lumber Town', ...at(-408, 228), radius: 26, description: 'Luscia’s market town between its two palisade gates: a square of stalls and a well, an inn, a smithy and a hall, the timber yard above the sawpits, the stable yard, and the army’s relay post on the corner.' }),
+  Object.freeze({ id: 'north-relay', name: 'The Lauvel Relay', ...at(-401, 196), description: 'The army’s old relay hut, empty since the clerk moved his desk down to Nothom’s square.' }),
+  Object.freeze({ id: 'lumber-town', name: 'Nothom', ...at(-408, 228), radius: 26, description: 'Luscia’s market town between its two palisade gates: a square of stalls and a well, an inn, a smithy and a hall, the timber yard above the sawpits, the stable yard, and the army’s relay post on the corner.' }),
   // Story hooks placed as scenery for the chapter that follows.
   Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the army met a rebel army here.' }),
   Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', ...at(-348, 212), description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
@@ -653,7 +653,7 @@ const REGION_TEXT = {
     npcIds: ['meadow-courier', 'commons-miller', 'rena-lorn', 'rena-hesta', 'apple-reeve'],
     landmarks: ['sunmeadow', 'fallen-cart', 'old-mill', 'mill-commons', 'rena-ruins', 'applegarth', 'east-rena-stone'] },
   Luscia: { subtitle: 'Across the Caloss', spawn: at(-362, 110),
-    description: 'Rolling grass and thinning copses beyond the border river: the shrines of the valley, Lumber Town on the road, and the field at the Lauvel.',
+    description: 'Rolling grass and thinning copses beyond the border river: the shrines of the valley, Nothom on the road, and the field at the Lauvel.',
     palette: { ground: '#8fa35a', accent: '#dfc77d', fog: '#bdc9b5' },
     npcIds: ['crossing-keeper', 'ridge-keeper', 'relay-clerk', 'reed-worker', 'town-innkeeper', 'timber-stall', 'town-sawyer'],
     landmarks: ['reedwater', 'reed-bridge', 'reedwater-bank', 'river-camp', 'landing-workshop', 'threefold', 'beacon-ridge', 'north-relay', 'lauvel-field', 'lumber-town', 'burned-hamlet'] },

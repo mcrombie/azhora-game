@@ -41,9 +41,13 @@ const playable = (id, name, title, roster, blurb, weapon, inventory, skills, ext
  * every id here is registered in src/skills.js, so every number below is handed over whole.
  */
 export const PLAYABLE = Object.freeze([
+  // **And a shield on his arm** (the user, 22 September 2026): boards and hide, tier 0, which is
+  // the tier the gear table calls "what you land with". Blocking is a thing the game can already
+  // do - hold V with something in the shield hand (src/combat.js `guard`) - and until now the man
+  // it is taught to came ashore with nothing to do it with.
   playable('cromb', 'Cromb the Barbarian', 'No past, and no explanations', null,
     'Nothing is written about him and nothing is going to be. Everything he turns out to have been, you do on this road.',
-    'simple-sword', sword, {}),
+    'simple-sword', sword, {}, { gear: Object.freeze({ hand: Object.freeze({ weight: 'light', tier: 0 }) }) }),
   playable('gotwood', 'Chris Gotwood', 'The one who can ask directions', 'merc-gotwood',
     'Sailed with the company’s papers in his coat and enough Ambroni to be understood at a gate. The letter is yours from the first step.',
     'simple-sword', sword, { linguist: 200 },
@@ -119,6 +123,13 @@ export function playableCharacter(id) {
 
 /** Whether `id` names one of the eleven, by its own id or by an old one. */
 export const isPlayableId = id => canonicalPlayerId(id) !== null;
+
+/**
+ * What is strapped on at the start, by slot, for whoever is being played. Only Cromb has any:
+ * the rest of the eleven come ashore with a weapon and their own coat, and buy their armour on
+ * the road like everybody else (src/gear.js, src/smith.js).
+ */
+export const startingGear = (playerId = DEFAULT_PLAYER) => playableCharacter(playerId)?.gear ?? null;
 
 /**
  * A saved character. A save written before anyone could choose has no field at all, and that

@@ -1,5 +1,5 @@
 /**
- * Smiths, the beggar of Lumber Town.
+ * Smiths, the beggar of Nothom.
  *
  * Pure behaviour: no render, no DOM, no timers of its own. The host calls
  * `update(dt, { position })` once a frame with the traveler's position and gets
@@ -12,7 +12,7 @@
 export const BEGGAR_NPC = Object.freeze({
   // Not the traveler's own model: he is a woodcutter's build gone thin, in a coat
   // that was somebody else's first.
-  id: 'town-beggar', name: 'Smiths', role: 'Of Lumber Town', modelRole: 'forest-woodcutter', color: 0x5d564b, skin: 0xb98f68,
+  id: 'town-beggar', name: 'Smiths', role: 'Of Nothom', modelRole: 'forest-woodcutter', color: 0x5d564b, skin: 0xb98f68,
 });
 
 export const BEGGAR_DEFAULTS = Object.freeze({

@@ -146,7 +146,7 @@ the one river the atlas draws in Isareos takes the lore's name, the Isa.
 
 ## 2026-09-21 — the company rides when you ride
 
-The user, from the Lumber Town stable yard with Chris standing beside the horse: **"My companion
+The user, from the Nothom stable yard with Chris standing beside the horse: **"My companion
 should also get a horse."** The rule as briefed to the builder: when the traveler rides, everyone
 walking with him rides. The company has horses from the moment he owns one; their mounts are a
 function of his riding state and of who walks with him, so nothing new is saved; stepped down,

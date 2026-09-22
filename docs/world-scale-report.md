@@ -148,7 +148,7 @@ plus its shadow pass (draw calls / triangles):
 | Avrel clearing | 271 / 457 631 | 320 / 476 929 |
 | Caloss crossing | 201 / 242 904 | 226 / 320 444 |
 | The Lauvel | 209 / 176 940 | 229 / 220 218 |
-| Lumber Town | 183 / 157 586 | 211 / 184 274 |
+| Nothom | 183 / 157 586 | 211 / 184 274 |
 | The Moros | 77 / 85 627 | 66 / 77 394 |
 | East Suval | 197 / 164 152 | 248 / 195 158 |
 
@@ -289,7 +289,7 @@ covered is the computer playing them unattended.
 
 `src/forest-hideout-smoke.js` is **not** rewritten. It describes the goblin camp
 as a Drent errand of Tamsin's at quest stage 5 paid in pawpaws; the camp moved to
-north Luscia as a Lumber Town garrison side quest before this branch, and
+north Luscia as a Nothom garrison side quest before this branch, and
 `npm run test:hideout` has been failing since. Its coordinates all come from the
 camp's own modules, so they follow the new scale correctly - it is the flow that
 is gone. The file's header now lists exactly what a rewrite has to change
@@ -328,7 +328,7 @@ nothing to do.
 
 **Every place is now small for its region.** Nothing is cramped - each one kept
 the distances it was authored with - but the proportions changed underneath
-them. Lumber Town is a 30 m square with eleven buildings in a 700 m region; the
+them. Nothom is a 30 m square with eleven buildings in a 700 m region; the
 Legion camp is a 30 by 26 m palisade for a legion on an 850 m plain; the Avrel
 clearing is 38 m of radius in a 950 m Drent; Elod is a gate and three houses in a
 600 m region. This is the towns-and-signs pass's whole subject, and it is now

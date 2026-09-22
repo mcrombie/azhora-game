@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -42,14 +43,14 @@ test('everything the autopilot reads off its world is something main.js actually
   assert.deepEqual(forgotten, [], 'main.js builds autopilotWorld by hand; these names are read and never set');
 });
 
-test('the tutorial ambush is walked to where the world puts it, not where the source once did', () => {
+test('the last subquest is walked to the boundary, and the ambush clearing is walked to by nobody', () => {
   const encounter = { x: -54, z: 29, radius: 8 };
   const world = { npcPositions: {}, paths: [[{ x: 0, z: 0 }]], encounter, training: { x: 3, z: -12 }, northTrail: { x: -5, z: -108 }, border: { x: 0, z: -156 } };
-  for (const questStage of [3, 4]) {
-    const goal = planGoal(snapshot({ questStage }), world);
-    assert.equal(goal.kind, 'walk');
-    assert.deepEqual(goal.target, encounter, `stage ${questStage} walks to the world's own encounter`);
-  }
+  // Chapter 1's third subquest is the road west, and the goblins at the bell are off the slate
+  // (src/quest-slate.js): the planner walks past them to the Caloss Gate and into the journey.
+  const goal = planGoal(snapshot({ questStage: QUEST_DONE }), world);
+  assert.equal(goal.kind, 'walk');
+  assert.deepEqual(goal.target, world.border, 'the boundary, not the bell');
 });
 
 test('the ambush clearing on the Greenway is where the game builds it, and the old fallback is not', async () => {

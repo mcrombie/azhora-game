@@ -11,6 +11,7 @@ import { INTERPRETER, interpreterFor, LANGUAGES, ORIGIN_LANGUAGE, speaksTheContr
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
+import { QUEST_DONE } from '../src/game-state.js';
 import { createRoadCheckpoint } from '../src/road-checkpoint.js';
 import { METRES_PER_HEX } from '../src/world-scale.js';
 import { sourceModule } from './module-loader.js';
@@ -168,7 +169,7 @@ function fixture() {
   const values = new Map();
   const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
   const data = {
-    version: 1, worldScale: METRES_PER_HEX, questStage: 10, journey: journey.snapshot(),
+    version: 1, worldScale: METRES_PER_HEX, questStage: QUEST_DONE, journey: journey.snapshot(),
     inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
     weapons: weapons.snapshot(), journeyGathered: [], meadowCleared: false,
     position: { x: 3, z: -190 }, heardDoom: true,
@@ -482,12 +483,12 @@ test('the escort ends by arithmetic, so no path can leave him walking at your sh
   assert.equal(LANDING_ESCORT, false, 'the switch is off; turn it on only when asked');
   assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing' }), false, 'he does not set off with you');
   assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), false, 'nor while Jojo is talking');
-  for (let stage = LETTER_STAGE; stage <= 10; stage++) {
+  for (let stage = LETTER_STAGE; stage <= QUEST_DONE; stage++) {
     assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `stage ${stage} is past the letter`);
   }
   // Every way the road is reached without replaying the letter.
-  for (const [how, stage] of [['the road smoke', 10], ['a review view', 10], ['the testing tools', 10],
-    ['start at the newest chapter', 10], ['a checkpoint taken after the letter', 10], ['the practice post', 2]]) {
+  for (const [how, stage] of [['the road smoke', QUEST_DONE], ['a review view', QUEST_DONE], ['the testing tools', QUEST_DONE],
+    ['start at the newest chapter', QUEST_DONE], ['a checkpoint taken after the letter', QUEST_DONE], ['the practice post', 2]]) {
     assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `${how} leaves nobody escorting`);
   }
   // And the states that are not ordinary play, whatever the stage.
@@ -504,7 +505,7 @@ test('the escort ends by arithmetic, so no path can leave him walking at your sh
 test('a checkpoint taken after the letter restores with nobody at your shoulder', () => {
   // The restore rebuilds the road from the save; it never replays accept-letter. If the escort
   // waited to be told it was over, every continued game would have him glued to the traveler.
-  for (const stage of [10]) {
+  for (const stage of [QUEST_DONE]) {
     const { data, checkpoint } = fixture();
     assert.equal(checkpoint.save({ ...data, questStage: stage }).ok, true);
     const saved = checkpoint.read().data;

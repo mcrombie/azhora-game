@@ -8,10 +8,17 @@ import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, marke
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
 const IDS = Object.freeze({
-  harbourmaster: 'harbormaster', warden: 'warden', doomsayer: 'doomsayer', acornCook: 'acorn-cook',
+  harbourmaster: 'harbormaster', instructor: 'instructor', crossingKeeper: 'crossing-keeper',
+  doomsayer: 'doomsayer', acornCook: 'acorn-cook',
   pondFisher: 'pond-fisher', forestStory: 'forest-keeper', gardenKeeper: 'garden-keeper', birdWatcher: 'merc-lakota', vintner: 'winery-vintner',
 });
-const view = extra => ({ ids: IDS, questStage: 0, ...extra });
+/**
+ * **These tests read the rules with every quest on the slate**, which is not how the game is
+ * playing today: Chapter 1 and the bridge are live and the rest is put away (src/quest-slate.js).
+ * The rules for the rest are still written, so they are still tested; `the trimmed slate` at the
+ * foot of this file is the other half, and says what a player actually sees.
+ */
+const view = extra => ({ ids: IDS, questStage: 0, live: () => true, ...extra });
 /**
  * The state each role's own rule is waiting for. Everything but the arc also waits for the
  * tutorial to be behind the traveler (TUTORIAL_DONE): the user, 22 September 2026, on a
@@ -19,7 +26,8 @@ const view = extra => ({ ids: IDS, questStage: 0, ...extra });
  */
 const OPENS = Object.freeze({
   harbourmaster: { questStage: 0 },
-  warden: { questStage: 5 },
+  instructor: { questStage: 2 },
+  crossingKeeper: { questStage: TUTORIAL_DONE, bridge: 'offered' },
   doomsayer: { questStage: TUTORIAL_DONE, heardDoom: false },
   acornCook: { questStage: TUTORIAL_DONE, acornQuestOpen: true },
   pondFisher: { questStage: TUTORIAL_DONE, hasRod: false },
@@ -32,18 +40,18 @@ const OPENS = Object.freeze({
 test('the first shore wears one mark, and it is the road the game is about', () => {
   // Every side offer in Drent used to light up the moment the traveler stepped off the boat.
   for (const [role, open] of Object.entries(OPENS)) {
-    if (role === 'harbourmaster' || role === 'warden') continue;
+    if (['harbourmaster', 'instructor', 'crossingKeeper'].includes(role)) continue;
     assert.equal(markerFor(IDS[role], view({ ...open, questStage: 1 })), null, `${role} is marked before the tutorial is done`);
     assert.ok(markerFor(IDS[role], view(open)), `${role} never gets his mark at all`);
   }
   // And the arc keeps its gold the whole way through the tutorial.
   assert.equal(markerGrade(markerFor(IDS.harbourmaster, view({ questStage: 0 }))), 'main');
-  assert.equal(markerGrade(markerFor(IDS.warden, view({ questStage: 5 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.instructor, view({ questStage: 2 }))), 'main');
   assert.equal(markerGrade(markerFor('corvan', view({ questStage: 3, chapterDestinations: ['corvan'] }))), 'main');
 });
 
-test('three kinds of gold, each its own colour and its own shape, with the main arc the biggest', () => {
-  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'skill']);
+test('four kinds of mark, each its own colour and its own shape, with the main arc the biggest', () => {
+  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill']);
   assert.deepEqual(Object.keys(MARKER_STYLE), [...MARKER_KINDS]);
   const colours = new Set(), shapes = new Set();
   for (const kind of MARKER_KINDS) {
@@ -55,7 +63,8 @@ test('three kinds of gold, each its own colour and its own shape, with the main 
     colours.add(style.colour); shapes.add(style.shape);
   }
   assert.equal(MARKER_STYLE.main.scale, 1);
-  assert.ok(MARKER_STYLE.plot.scale < 1 && MARKER_STYLE.skill.scale < 1, 'the arc is the loudest of the three');
+  for (const kind of MARKER_KINDS.filter(one => one !== 'main'))
+    assert.ok(MARKER_STYLE[kind].scale < 1, `the arc is louder than ${kind}`);
 });
 
 test('each kind is built as a different set of shapes, and carries which kind it is', async () => {
@@ -91,7 +100,9 @@ test('every person with a mark has a kind, and main beats open beats plot beats 
   }
   // The four that were one rule before: the harbourmaster and Eren on the arc, Orris with his cape,
   // Bran with his rod. Lysa is a skill twice over - the acorns and the feeder - and never anything else.
-  assert.equal(markerGrade(markerFor(IDS.warden, view({ questStage: 5 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.instructor, view({ questStage: 2 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.crossingKeeper, view({ questStage: TUTORIAL_DONE, bridge: 'accepted' }))), 'deed');
+  assert.equal(markerGrade(markerFor(IDS.crossingKeeper, view({ questStage: TUTORIAL_DONE, bridge: 'done' }))), null, 'a mended bridge asks for nothing');
   assert.equal(markerGrade(markerFor(IDS.doomsayer, view({ questStage: TUTORIAL_DONE }))), 'plot');
   assert.equal(markerGrade(markerFor(IDS.pondFisher, view({ questStage: TUTORIAL_DONE }))), 'skill');
   assert.equal(markerGrade(markerFor(IDS.acornCook, view({ questStage: TUTORIAL_DONE, feederWantsCook: true }))), 'skill');
@@ -100,13 +111,14 @@ test('every person with a mark has a kind, and main beats open beats plot beats 
   assert.equal(markerGrade(markerFor(IDS.vintner, view({ wineRecommended: true, chapterDestinations: [IDS.vintner] }))), 'main');
   assert.deepEqual([strongestMarker(['skill', 'main', 'plot']), strongestMarker(['skill', 'plot']), strongestMarker([]), strongestMarker(['rumour'])],
     ['main', 'plot', null, null]);
+  assert.deepEqual([strongestMarker(['skill', 'deed']), strongestMarker(['deed', 'plot']), strongestMarker(['deed', 'main'])],
+    ['deed', 'plot', 'main'], 'a good deed outranks a lesson and nothing else');
   assert.deepEqual([strongestMarker([MARKER_OPEN, 'main']), strongestMarker([MARKER_OPEN, 'plot'])], ['main', MARKER_OPEN],
     'the road you must take outranks the road you may, and both outrank a story of their own');
 });
 
 test('the long road wears the arc’s own gold, open, and never instead of the arc itself', () => {
-  // Not a fourth kind: the table stays three and the open one is a variant of the first.
-  assert.equal(MARKER_KINDS.length, 3);
+  // Not a kind of its own: the open one is a variant of the first and is not in the table.
   assert.ok(!MARKER_KINDS.includes(MARKER_OPEN));
   const open = markerFor(IDS.gardenKeeper, view({ questStage: TUTORIAL_DONE, longWay: ['garden-keeper'], birdingLearned: true }));
   assert.deepEqual(open, { kind: 'main', open: true }, 'the long road’s next stop');
@@ -140,7 +152,23 @@ test('the open gold is the cut stone with nothing in it, and reads apart from th
 test('a fight takes down the marks that were always taken down in a fight, and leaves the rest', () => {
   const fighting = extra => view({ busy: true, ...extra });
   for (const role of ['acornCook', 'forestStory', 'birdWatcher', 'vintner']) assert.equal(markerFor(IDS[role], fighting(OPENS[role])), null, `${role} keeps a mark up mid-fight`);
-  for (const role of ['harbourmaster', 'warden', 'doomsayer', 'pondFisher']) assert.ok(markerFor(IDS[role], fighting(OPENS[role])), `${role} lost a mark a fight never used to take`);
+  for (const role of ['harbourmaster', 'instructor', 'doomsayer', 'pondFisher']) assert.ok(markerFor(IDS[role], fighting(OPENS[role])), `${role} lost a mark a fight never used to take`);
+  assert.equal(markerFor(IDS.crossingKeeper, fighting(OPENS.crossingKeeper)), null, 'and the copper goes down with the rest');
+});
+
+/**
+ * And the slate as it actually stands: gold on the arc, copper on Hollis, nothing else anywhere.
+ */
+test('the trimmed slate wears gold and copper and nothing else', () => {
+  const real = extra => ({ ids: IDS, questStage: TUTORIAL_DONE, ...extra });   // no `live`: the real one
+  for (const role of ['doomsayer', 'acornCook', 'pondFisher', 'forestStory', 'gardenKeeper', 'birdWatcher', 'vintner'])
+    assert.equal(markerFor(IDS[role], real(OPENS[role])), null, `${role} is still being advertised`);
+  assert.equal(markerGrade(markerFor(IDS.harbourmaster, real({ questStage: 0 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.instructor, real({ questStage: 2 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.crossingKeeper, real({ bridge: 'offered' }))), 'deed');
+  assert.equal(markerGrade(markerFor('iven', real({ arcDestinations: ['iven'] }))), 'main');
+  // A chapter's destination is still the arc, so a chapter still points at people.
+  assert.equal(markerGrade(markerFor(IDS.vintner, real({ wineRecommended: true, chapterDestinations: [IDS.vintner] }))), 'main');
 });
 
 test('src/main.js asks the table rather than keeping its own pile of rules', () => {
@@ -151,7 +179,7 @@ test('src/main.js asks the table rather than keeping its own pile of rules', () 
   assert.doesNotMatch(main, /o\.material\.color\.set\(0xa9dcb1\)/, 'the cook’s hand-painted green marker is back');
   assert.match(main, /makeQuestMarker\('skill'\);feederMarker/, 'the feeder errand is a skill errand');
   // Everybody the old rules named is named in the view the table reads.
-  for (const named of ['harbourmaster:HARBOURMASTER', "warden:'warden'", "doomsayer:'doomsayer'", "acornCook:'acorn-cook'",
+  for (const named of ['harbourmaster:HARBOURMASTER', 'instructor:INSTRUCTOR.id', "doomsayer:'doomsayer'", "acornCook:'acorn-cook'",
     "pondFisher:'pond-fisher'", 'forestStory:FOREST_STORY_NPC.id', 'birdWatcher:BIRD_WATCHER.id', 'vintner:VINTNER.id'])
     assert.ok(main.includes(named), `${named} is missing from the marker view`);
 });

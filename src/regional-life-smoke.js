@@ -1,4 +1,4 @@
-import { canStand } from './game-state.js';
+import { canStand, QUEST_DONE } from './game-state.js';
 import { REGIONAL_LIFE_NPCS, REGIONAL_LIFE_SITES } from './regional-life.js';
 
 const $ = id => document.getElementById(id);
@@ -59,11 +59,11 @@ export async function runRegionalLifeSmoke(h) {
     // preserves a completed fish reward alongside unfinished mill/shelter work.
     for (const mode of ['anonymous', 'signed']) {
       await h.prepareRegional(); await h.frames(6);
-      assert(h.getMode() === 'playing' && h.readState().questStage === 10 && !h.readState().testingEnabled, 'fixture is not ordinary post-tutorial play');
+      assert(h.getMode() === 'playing' && h.readState().questStage === QUEST_DONE && !h.readState().testingEnabled, 'fixture is not ordinary post-tutorial play');
       const main = copy(h.journey.snapshot()), weapons = copy(h.weapons.snapshot()), initial = stock(h.inventory), fish = h.inventory.count('raw-fish');
       assert(main.started && !main.courierAccepted, 'fixture must leave the original army assignment unaccepted');
       const preserved = () => {
-        assert(same(h.journey.snapshot(), main) && h.readState().questStage === 10, 'an optional story advanced the main army assignment');
+        assert(same(h.journey.snapshot(), main) && h.readState().questStage === QUEST_DONE, 'an optional story advanced the main army assignment');
         assert(same(h.weapons.snapshot(), weapons), 'helping a neighbor wore or changed equipment');
       };
       const autosaved = () => { const data = saved(); assert(same(data.regionalLife, h.regionalLife.snapshot()), 'local progress was not autosaved exactly'); preserved(); ui.visuals(); autosaves++; };
@@ -130,7 +130,7 @@ export async function verifyRegionalLifeReload(h, expected) {
   const saved = h.checkpoint.read(); assert(saved.ok && same(saved.data, expected), 'checkpoint changed between renderers');
   assert(!$('continue-road').disabled && $('continue-road').getClientRects().length > 0, 'Continue is unavailable');
   $('continue-road').click(); await h.frames(6);
-  assert(h.getMode() === 'playing' && h.readState().questStage === 10 && !h.readState().testingEnabled, 'Continue did not restore ordinary play');
+  assert(h.getMode() === 'playing' && h.readState().questStage === QUEST_DONE && !h.readState().testingEnabled, 'Continue did not restore ordinary play');
   assert(same(h.regionalLife.snapshot(), expected.regionalLife), 'Continue changed partial regional progress'); ui.visuals();
   assert(same(h.journey.snapshot(), expected.journey), 'Continue advanced the main road story');
   assert(same(stock(h.inventory), [...expected.inventory].sort((a, b) => a.id.localeCompare(b.id))), 'Continue changed inventory quantities');

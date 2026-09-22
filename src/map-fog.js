@@ -35,7 +35,11 @@ export const SUBREGIONS = Object.freeze([
   area('reedcutters', 'The Reedcutters’ Camp', 'Luscia', -675, 190, 50, 'Cut reed stacked to dry, a landing workshop, and the people who work the river’s edge.'),
   area('the-rise', 'The Rise', 'Luscia', -675, 230, 50, 'Sava’s shrine and the three waymarkers on the height above the river road.'),
   area('lauvel', 'The Field at the Lauvel', 'Luscia', -700, 315, 70, 'Where the army broke a rebel army: burial mounds, the relay, and the people who buried the losers.'),
-  area('lumber-town', 'Lumber Town', 'Luscia', -729, 384, 55, 'Luscia’s timber town: the square, the smiths, the relay clerk and the stable yard on its edge.'),
+  // **Nothom**, which is Luscian Mittoli for what the Empire's clerks used to call Lumber Town:
+  // `noth`, forest or timber, on `hom`, a settlement (azhoran_language_profiles.py, the Mittoli
+  // root list; the user, 22 September 2026). The id is the old one and stays the old one - it is
+  // in saves, in the road smoke and in a dozen modules, and nobody reads an id.
+  area('lumber-town', 'Nothom', 'Luscia', -729, 384, 55, 'Luscia’s timber town: the square, the smiths, the relay clerk and the stable yard on its edge.'),
   area('burned-hamlet', 'The Burned Hamlet', 'Luscia', -621, 356, 55, 'Roof beams standing in the grass, and a well somebody still keeps clean.'),
   // The Moros Plain
   area('moros-gate', 'The Moros Gate', 'Moros Plain', -763, 440, 45, 'Where the road leaves Luscia for open plain, under the army’s eyes.'),

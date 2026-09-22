@@ -122,7 +122,7 @@ test('the four facts are announced, and nothing else is claimed', () => {
   assert.doesNotMatch(text, /Jojo|letter|Corvan|Lakota|goblin/i);
   assert.doesNotMatch(text, /Legion|Legate/, 'the army is never the Legion');
   assert.doesNotMatch(LANDED.toast.kicker + LANDED.toast.title, /Lakota|CHRIS/, 'the landing sends the traveler to the harbourmaster');
-  assert.match(LANDED.toast.kicker, /MARA/);
+  assert.match(LANDED.toast.kicker, /JOJO/);
 });
 
 test('the companion slot names whoever came off the boat: Chris, or Cromb when the traveler is Chris', () => {
@@ -323,7 +323,7 @@ test('the boat starts a long way out and the sequence ends it at the berth', () 
     const end = SKIP_BY_VARIANT[id];
     near(flat(end.boat, BOAT_REST), 0, 1e-9, `${id} moors the boat`);
     assert.equal(end.done, true, `${id} is over`);
-    assert.equal(end.landed.toast.kicker, 'SPEAK TO MARA AT THE HEAD OF THE PIER', `${id} sends you to Jojo`);
+    assert.equal(end.landed.toast.kicker, 'SPEAK TO JOJO AT THE HEAD OF THE PIER', `${id} sends you to Jojo`);
     assert.equal(end.companion.aboard, false, `${id} puts the companion on the deck`);
     assert.ok(canStand(end.companion.x, end.companion.z, world), `${id} puts him on footing`);
   }

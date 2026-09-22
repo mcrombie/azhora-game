@@ -1,5 +1,5 @@
 /**
- * The ostler of Lumber Town. Iven pays for the Lauvel with a token for an army
+ * The ostler of Nothom. Iven pays for the Lauvel with a token for an army
  * horse; this is the man who turns the token into the horse, in the stable yard
  * at the edge of town, and who teaches the traveler to ride it. He will also
  * send a boy to bring the horse back to the yard if it has been left somewhere
@@ -8,14 +8,14 @@
 import { RIDING_LESSON } from './riding.js';
 
 export const OSTLER_TOKEN = 'horse-token';
-export const OSTLER_NPC = Object.freeze({ id: 'lumber-ostler', name: 'Bede Harrow', role: 'Ostler of the Lumber Town yard', modelRole: 'commons-miller', color: 0x6b5a3c });
+export const OSTLER_NPC = Object.freeze({ id: 'lumber-ostler', name: 'Bede Harrow', role: 'Ostler of the Nothom yard', modelRole: 'commons-miller', color: 0x6b5a3c });
 
 /** Whether the journal should send the traveler to the yard: a token in the satchel and no horse yet. */
 export const horseWaiting = ({ inventory, riding }) => !riding.owned && !!inventory?.has?.(OSTLER_TOKEN);
 
 export const OSTLER_OBJECTIVE = Object.freeze({
   title: 'What the army owes',
-  detail: 'Iven paid you with a token for an army horse. Take it to Bede Harrow, the ostler, at the stable yard on the edge of Lumber Town. The roads beyond Luscia are long, and they are meant to be ridden.',
+  detail: 'Iven paid you with a token for an army horse. Take it to Bede Harrow, the ostler, at the stable yard on the edge of Nothom. The roads beyond Luscia are long, and they are meant to be ridden.',
   kicker: 'LUSCIA · THE ARMY’S HORSE',
 });
 

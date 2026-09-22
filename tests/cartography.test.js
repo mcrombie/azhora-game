@@ -239,7 +239,8 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
   const hers = main.slice(main.indexOf('function jojoOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
   assert.doesNotMatch(hers, /own chart and it is not much/, 'Jojo is still handing out the old rough chart');
   assert.doesNotMatch(hers, /cartography\.learn\(\)/, 'and still teaching cartography on the landing');
-  assert.match(hers, /Officer Glun at the straw post/, 'she sends the traveler to the man who does');
+  assert.match(hers, /Officer Glun/, 'she sends the traveler to the man who does');
+  assert.match(hers, /straw post/, 'and says where he is standing');
   const his = main.slice(main.indexOf('function giveTheChart'), main.indexOf('function jojoOnTheLanding'));
   assert.match(his, /cartography\.learn\(\)\.first/, 'and that is the lesson');
   assert.match(his, /cartography\.noteHex\(here\.name\)/, 'the ground under his feet is the first thing on it');
