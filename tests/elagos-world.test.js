@@ -40,10 +40,13 @@ test('Elagos is the ninth playable region, true to the atlas', () => {
   // western approaches", one of which is this one; and Meneth's ridge country on
   // the mountain margin, which the lake country is reached by coming down from.
   const uplands = ['Elagos', 'Amod', 'Vastos', 'Meneth'];
-  // And one country that neither falls away nor stands over it: Isareos's hills rise "to the
-  // upland margins where the territory blurs into the southern edges of the lake country", so
-  // its ground comes up to the shelf's own level and the border between them is not a step.
-  const level = ['Isareos'];
+  // And two countries in the far west that neither fall away nor stand over it. Isareos's hills
+  // rise "to the upland margins where the territory blurs into the southern edges of the lake
+  // country"; Nethereum is the dish between the Isa and the Neth, whose *rim* is a metre over
+  // the shelf while its floor lies seven metres under it. Neither is next to Elagos and neither
+  // is a step on any border anybody can walk. The shelf is still the roof of the lake country
+  // and the road country; it stopped being the roof of the world when the west was built.
+  const level = ['Isareos', 'Nethereum'];
   for (const name of PLAYABLE_REGIONS) if (!uplands.includes(name) && !level.includes(name)) assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
   for (const name of level) assert.ok(Math.abs(REGION_TERRAIN[name].base - shelf.base) < 4, `${name} blurs into the shelf, within four metres of it`);
   for (const name of ['Amod', 'Vastos', 'Meneth']) assert.ok(REGION_TERRAIN[name].base > shelf.base, `${name} stands above the shelf`);
