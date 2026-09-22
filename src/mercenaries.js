@@ -465,6 +465,12 @@ export const LETTER_STAGE = 2;
 export const ESCORT_MODES = Object.freeze(['playing', 'dialogue', 'inventory', 'journal', 'pause']);
 
 /**
+ * **Whether the man who landed with you walks with you at all.** False at the user's request
+ * of 21 September 2026, while the main quest is built out along its least path of resistance.
+ */
+export const LANDING_ESCORT = false;
+
+/**
  * Whether the man off your boat is still walking you up the pier.
  *
  * Derived every frame and never remembered. A state that does not satisfy this is not
@@ -481,6 +487,11 @@ export const ESCORT_MODES = Object.freeze(['playing', 'dialogue', 'inventory', '
  * the rest of the game, not a man who has to be asked for properly.
  */
 export function mateIsEscorting({ mate = null, questStage = null, mode = null, arriving = false } = {}) {
+  // **Switched off** (the user, 21 September 2026: Chris Gotwood should not follow you right off
+  // the boat). He came up the pier at the traveler's shoulder and walked with him until Mara
+  // handed over the letter. He still lands, still stands at the landing, and still joins the
+  // company on the road; he simply does not walk the first minutes with you. One word back.
+  if (!LANDING_ESCORT) return false;
   if (!mate || arriving) return false;
   return Number.isFinite(Number(questStage)) && Number(questStage) < LETTER_STAGE && ESCORT_MODES.includes(mode);
 }

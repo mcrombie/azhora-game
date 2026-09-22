@@ -1,4 +1,4 @@
-import { PLAYABLE, DEFAULT_PLAYER, isPlayableId, shortName } from './player-characters.js';
+import { PLAYABLE, SELECTABLE, DEFAULT_PLAYER, isPlayableId, shortName } from './player-characters.js';
 import { SKILLS, skillLevel } from './skills.js';
 
 /**
@@ -53,7 +53,7 @@ export function createCharacterSelect({ root, detail = null, lookFor = () => nul
   root.textContent = '';
   root.setAttribute('role', 'radiogroup');
   root.setAttribute('aria-label', 'Who you are');
-  for (const entry of PLAYABLE) {
+  for (const entry of SELECTABLE) {
     const tile = doc.createElement('button');
     tile.type = 'button';
     tile.className = 'character-tile';

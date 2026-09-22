@@ -75,7 +75,7 @@ import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
 import { skillIconSVG } from './skill-icons.js';
 // Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
-import { DEFAULT_PLAYER, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
+import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
 import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT } from './opening-sequence.js';
@@ -4554,6 +4554,9 @@ function init() {
   const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,hidden:hiddenSkills,
     onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
       $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
+  // Only Cromb can be chosen for now (src/player-characters.js), so the row of tiles has
+  // nothing to choose between and the opening does not ask.
+  show('opening-characters',SELECTABLE.length>1);
   $('skip-cutscene').onclick=skipOpening;
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=retry;
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;

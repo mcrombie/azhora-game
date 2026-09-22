@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PLAYABLE, PLAYABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
+import { PLAYABLE, PLAYABLE_IDS, SELECTABLE, SELECTABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
   playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
 import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mateIsEscorting,
-  LETTER_STAGE, ESCORT_MODES, mercenaryById, mercenaryLines,
+  LETTER_STAGE, ESCORT_MODES, LANDING_ESCORT, mercenaryById, mercenaryLines,
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
 import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
 import { createLinguist, MAX_PROFICIENCY } from '../src/linguist.js';
@@ -476,8 +476,12 @@ test('the escort ends by arithmetic, so no path can leave him walking at your sh
   // the road never replay the moment the letter was taken.
   const mate = MERCENARY_ROSTER[0];
   assert.equal(LETTER_STAGE, 2);
-  assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing' }), true, 'he sets off with you');
-  assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), true, 'and stays while Mara is talking');
+  // **Nobody escorts at all while `LANDING_ESCORT` is false** (the user, 21 September 2026:
+  // Chris should not follow you right off the boat). The arithmetic below is the rule that
+  // governs it when the switch goes back on, and is still worth holding.
+  assert.equal(LANDING_ESCORT, false, 'the switch is off; turn it on only when asked');
+  assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing' }), false, 'he does not set off with you');
+  assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), false, 'nor while Mara is talking');
   for (let stage = LETTER_STAGE; stage <= 10; stage++) {
     assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `stage ${stage} is past the letter`);
   }
@@ -490,7 +494,7 @@ test('the escort ends by arithmetic, so no path can leave him walking at your sh
   for (const mode of ['opening', 'arriving', 'fishing', 'defeated', 'ferry', 'testing', undefined]) {
     assert.equal(mateIsEscorting({ mate, questStage: 0, mode }), false, `${mode} is not the road`);
   }
-  for (const mode of ESCORT_MODES) assert.equal(mateIsEscorting({ mate, questStage: 0, mode }), true, `${mode} is`);
+  for (const mode of ESCORT_MODES) assert.equal(mateIsEscorting({ mate, questStage: 0, mode }), LANDING_ESCORT, `${mode} follows the switch`);
   assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing', arriving: true }), false, 'the cutscene places him itself');
   assert.equal(mateIsEscorting({ mate: null, questStage: 0 }), false, 'and a man who is not there does not walk');
   assert.equal(mateIsEscorting({ mate, questStage: NaN, mode: 'playing' }), false);
@@ -509,6 +513,19 @@ test('a checkpoint taken after the letter restores with nobody at your shoulder'
     assert.equal(mateIsEscorting({ mate: MERCENARY_ROSTER[0], questStage: saved.questStage, mode: 'playing' }), false,
       'a restored save past the letter has nobody escorting');
   }
-  // A save from before the letter puts him back at your shoulder, which is the other half of it.
-  assert.equal(mateIsEscorting({ mate: MERCENARY_ROSTER[0], questStage: 1, mode: 'playing' }), true);
+  // A save from before the letter would put him back at your shoulder, when the switch is on.
+  assert.equal(mateIsEscorting({ mate: MERCENARY_ROSTER[0], questStage: 1, mode: 'playing' }), LANDING_ESCORT);
+});
+
+/**
+ * The user, 21 September 2026: only Cromb can be chosen for now, while the one main quest is
+ * built out. The cast is untouched - the other ten are the company's hired swords, and a save
+ * written as one of them still loads as him. This is the choosing, not the cast.
+ */
+test('only Cromb is offered at the opening, and the eleven are all still there', () => {
+  assert.deepEqual([...SELECTABLE_IDS], ['cromb'], 'put an id back and he is on the opening screen again');
+  assert.deepEqual(SELECTABLE.map(entry => entry.id), [...SELECTABLE_IDS]);
+  assert.equal(PLAYABLE.length, 11, 'and nobody has been removed from the game');
+  for (const id of SELECTABLE_IDS) assert.ok(isPlayableId(id), `${id} is one of the eleven`);
+  assert.ok(SELECTABLE_IDS.includes(DEFAULT_PLAYER), 'and the one offered is the one a save defaults to');
 });

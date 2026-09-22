@@ -94,6 +94,16 @@ export const PLAYABLE = Object.freeze([
 /** The order the opening screen shows them in, which is the user's order, Cromb first. */
 export const PLAYABLE_IDS = Object.freeze(PLAYABLE.map(entry => entry.id));
 
+/**
+ * **Who the opening screen offers.** The user, 21 September 2026: build out the one main quest
+ * first, so only Cromb can be chosen for now. The other ten are untouched - they are the hired
+ * swords of the company, they still have their own looks, kits, skills and lines, and a save
+ * written as one of them still loads as him. This is the choosing, not the cast. Put an id back
+ * in the list and he is on the opening screen again.
+ */
+export const SELECTABLE_IDS = Object.freeze(['cromb']);
+export const SELECTABLE = Object.freeze(PLAYABLE.filter(entry => SELECTABLE_IDS.includes(entry.id)));
+
 /** The canonical id for anything that names one of the eleven, or null. */
 export function canonicalPlayerId(id) {
   if (typeof id !== 'string') return null;
