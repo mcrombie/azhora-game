@@ -275,7 +275,11 @@ test('getting wet in the middle of a fight resets nothing', async () => {
     'nothing about water restarts a fight');
   const combatSource = source('combat.js');
   assert.doesNotMatch(combatSource, /moveCharacter\(enemy[^)]*swimming/, 'no enemy is given the water');
-  assert.match(combatSource, /distance\(position, lastEncounter\.center\) > 45/, 'and the leash is what lets you leave');
+  // The leash is one named number now (`const LEASH`), because the chase that came in with the
+  // archer had to use the same one: an enemy leaves its ground to follow a bowman, and stops
+  // exactly where a retreat begins. Read the name and the number both, so neither can drift.
+  assert.match(combatSource, /^const LEASH = 45;$/m, 'the leash is 45 m, named once');
+  assert.match(combatSource, /distance\(position, lastEncounter\.center\) > LEASH/, 'and the leash is what lets you leave');
   // But the leash ends a fight with `restorePlayer()`, which is full health and a full bar - and
   // the bar is wind. A traveler who swims out of a fight must not come out of it with his breath
   // back and the sea still to cross. Today nothing but the geography of where fights are
@@ -376,7 +380,7 @@ test('no fight the game can start has water inside its leash, which is what keep
   }
   assert.ok(fights.length >= 8, `only ${fights.length} fights found`);
   // The leash, read off the source rather than guessed, so a change to it changes this.
-  const leash = Number(source('combat.js').match(/distance\(position, lastEncounter\.center\) > (\d+)/)?.[1]);
+  const leash = Number(source('combat.js').match(/^const LEASH = (\d+);$/m)?.[1]);
   assert.equal(leash, 45, 'the leash is 45 m');
   for (const [label, encounter] of fights) {
     let nearest = Infinity;
