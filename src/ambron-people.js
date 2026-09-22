@@ -385,7 +385,10 @@ export const TALKING_TREE_LINES = freeze({
 function specialistConversation(npc, context) {
   const entry = AMBRON_SPECIALISTS[npc.id];
   const { openDialogue, closeDialogue, skills, birding, act = () => ({ ok: true }) } = context;
-  const knows = entry.skill === 'birding' ? Boolean(birding?.met || skills?.taught?.('birding')) : Boolean(skills?.taught?.(entry.skill));
+  // Whether somebody has already taught it. `taught` is the question since every skill begins at
+  // level 1 (src/skills.js); `known` is the fallback for a caller that only has the older shape.
+  const wasTaught = id => Boolean(skills?.taught ? skills.taught(id) : skills?.known?.(id));
+  const knows = entry.skill === 'birding' ? Boolean(birding?.met || wasTaught('birding')) : wasTaught(entry.skill);
   const again = () => specialistConversation(npc, context);
   const leave = { id: `leave-${npc.id}`, label: 'Good water to you.', action: closeDialogue };
   const choices = [];

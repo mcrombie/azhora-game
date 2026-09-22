@@ -482,10 +482,12 @@ export const BIRD_HABITATS = Object.freeze([
   // Luscia, the farm country across the Caloss: open field birds and the birds of a town.
   { id: 'reedcutter-thistles', species: 'goldfinch', birds: ['goldfinch', 'goldfinch'], world: true,
     center: { x: -660, z: 200 }, radius: 5, perches: [] },
+  // On the edge of Lumber Town rather than in its square: the square has people standing in it,
+  // and a bird's foraging ground may not be somebody's feet (tests/rena.test.js).
   { id: 'lumber-town-mockingbird', species: 'mockingbird', birds: ['mockingbird'], world: true,
-    center: { x: -729, z: 384 }, radius: 4.5, perches: [] },
+    center: { x: -697, z: 344 }, radius: 4.5, perches: [] },
   { id: 'hamlet-doves', species: 'mourning-dove', birds: ['mourning-dove', 'mourning-dove'], world: true,
-    center: { x: -621, z: 356 }, radius: 5, perches: [] },
+    center: { x: -619, z: 359 }, radius: 5, perches: [] },
   { id: 'rise-bluebirds', species: 'bluebird', birds: ['bluebird', 'bluebird'], world: true,
     center: { x: -675, z: 230 }, radius: 6, perches: [] },
   // The Moros Plain: the open country, where a bird is a speck a long way off.
@@ -500,7 +502,7 @@ export const BIRD_HABITATS = Object.freeze([
     center: { x: -1256, z: 182 }, radius: 7, perches: [] },
   // Amod, the terrace country above Ostel.
   { id: 'ostel-chickadees', species: 'chickadee', birds: ['chickadee', 'chickadee'], world: true,
-    center: { x: -814, z: -510 }, radius: 4, perches: [] },
+    center: { x: -813, z: -506 }, radius: 4, perches: [] },
   { id: 'landing-gulls', species: 'gull', birds: ['gull', 'gull', 'gull'], world: true,
     center: { x: -8, z: 49 }, radius: 8, perches: [] },
 ].map(h => Object.freeze({ ...h, birds: Object.freeze(h.birds), perches: Object.freeze(h.perches.map(p => Object.freeze(p))) })));

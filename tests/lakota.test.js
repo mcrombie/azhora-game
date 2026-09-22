@@ -98,7 +98,10 @@ test('archaeology: Lakota sends you to Rena, you write up five of his pegged pla
 
 test('wine: learned from Lakota with a warning, then the winery to visit and a wine from each of its eight grapes to taste', () => {
   const skills = createSkills(), wine = createWine({ skills });
-  assert.equal(wine.taste('norton').ok, false, 'drinking is not tasting');
+  // Tasting needs no introduction any more (the user, 21 September 2026): every skill begins at
+  // level 1 and pays from the first glass. Lakota's warning is still what starts the errand.
+  assert.equal(createWine({ skills: createSkills() }).taste('norton').ok, true,
+    'a glass drunk before anybody explained it still counts');
   wine.learn({ recommend: true });
   assert.equal(wine.quest, 'recommended');
   assert.match(wine.task().detail, /war/);
