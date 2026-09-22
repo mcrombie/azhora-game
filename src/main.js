@@ -78,7 +78,7 @@ import { skillIconSVG } from './skill-icons.js';
 import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
-import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT } from './opening-sequence.js';
+import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './opening-sequence.js';
 import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, bowdenConversation, bowdenLines } from './woodcutting.js';
 import { createBowden } from './woodcutter-model.js';
 import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
@@ -262,7 +262,7 @@ function init() {
   {const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
   // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
   const HARBOURMASTER='harbormaster';
-  let npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,slight:true,hairStyle:'mane',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  let npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,slight:true,hairStyle:'long',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -491,6 +491,18 @@ function init() {
     if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
     npc.walkingWith=false;npc.mounted=false;npc.lift=0;
+    // **A man on the road walks at his own pace.** His placement creeps forward at his roster
+    // pace - 1.28 m/s for Chris Gotwood - while the npc loop chased it at the default 2.4, so he
+    // caught it up, stalled inside the loop's tenth-of-a-metre dead zone, waited for the road to
+    // pull ahead of him and set off again, six times a second, legs starting and stopping the
+    // whole way up the road. Matched to the road he simply walks. `stride` also tells the loop
+    // that the dead zone - which is there to stop a man standing still from shuffling - does not
+    // apply to him; and a man who has been left behind (snapped home out of sight, or stepped
+    // round a cart) is allowed to hurry until he is back on his mark.
+    if(placement.walking&&placement.pace>0){const a=npc.actor.group.position;
+      npc.stride=placement.pace;
+      npc.pace=Math.hypot(placement.x-a.x,placement.z-a.z)>2?Math.max(2.4,placement.pace*2):placement.pace;}
+    else{npc.stride=undefined;npc.pace=undefined;}
     world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming'||fallen.has(placement.id);npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   /**
    * The companion, placed: two and a half metres behind the traveler's left shoulder, which is
@@ -5300,7 +5312,17 @@ function init() {
           world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);
           player.group.position.set(s.traveler.x,s.traveler.y+bob*s.bobWeight,s.traveler.z);player.group.rotation.y=s.traveler.yaw;player.group.visible=false;
           const mate=npcById.get(companionNpcId());
-          if(mate){const c=s.companion;mate.actor.group.position.set(c.x,c.y+(c.aboard?bob:0),c.z);mate.actor.group.rotation.y=c.yaw;mate.actor.group.visible=true;mate.hidden=false;world.npcPositions[mate.id]={x:c.x,z:c.z};}
+          // **`scripted` is the cutscene saying: he is mine this frame.** The npc loop below puts a
+          // standing character on the ground, and the ground under the bow of a boat halfway across
+          // the bay is the seabed - six metres under him - so he sailed in submerged and shot up out
+          // of the water the moment the boat crossed the shoreline. That is the glitchy walk
+          // (the user, 22 September 2026). His pace is measured off the place he was in last frame
+          // and only while the sequence says he is on his own feet: aboard he crosses the bay at the
+          // boat's speed without taking a step, and coming ashore he walks the last seven metres.
+          if(mate){const c=s.companion,was=mate.actor.group.position;
+            mate.scriptedPace=c.walking&&dt>0?Math.min(Math.hypot(c.x-was.x,c.z-was.z)/dt,ASHORE_PACE):0;
+            mate.scripted=true;
+            was.set(c.x,c.y+(c.aboard?bob:0),c.z);mate.actor.group.rotation.y=c.yaw;mate.actor.group.visible=true;mate.hidden=false;world.npcPositions[mate.id]={x:c.x,z:c.z};}
           openingCamera.position.set(s.camera.position.x,s.camera.position.y+bob*s.bobWeight,s.camera.position.z);openingCamera.target.set(s.camera.target.x,s.camera.target.y,s.camera.target.z);
           const cap=$('cutscene').querySelector('.cutscene-caption');
           if(s.caption){$('cutscene-eyebrow').textContent=s.caption.eyebrow;$('cutscene-text').textContent=s.caption.text;cap.style.opacity=String(s.caption.alpha);}else cap.style.opacity='0';
@@ -5372,6 +5394,11 @@ function init() {
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
         if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);if(npc.lent!==undefined){npc.actor.group.rotation.y=npc.lent;npc.lent=undefined;}npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         npc.actor.group.visible=true;onStage(npc,true);
+        // **A figure the cutscene is holding is not steered, not grounded and not marked**: his
+        // place, his height and his facing were all written a few lines up by the sequence that
+        // owns him, and everything below this would argue with them.
+        if(npc.scripted&&mode==='arriving'&&opening){npc.shownPace=npc.scriptedPace??0;
+          npc.actor.animate(walkTime+2,npc.shownPace,true,{});npc.marker.visible=false;continue;}
         // Ed in the water: no path, no colliders and no ground under him. He floats at the
         // surface exactly as the traveler does, and swims a straight line for the strand.
         if(npc.swimming){pos.set(npc.swimming.x,WATERLINE-SWIM.sink,npc.swimming.z);npc.actor.group.rotation.y=npc.swimming.yaw;}
@@ -5392,7 +5419,7 @@ function init() {
         let destX=home.x,destZ=home.z;
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
-        if(mode==='playing'&&dHome>.1&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
+        if(mode==='playing'&&dHome>(npc.stride?0:.1)&&!npc.swimming){const move=Math.min(dHome,dt*(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4)),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR);stepAround(pos,(destX-pos.x)/dHome*move,(destZ-pos.z)/dHome*move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(destX-pos.x,destZ-pos.z);}
         // A man in the saddle who has ARRIVED is still in the saddle. The line above only
         // runs while he is moving, so a mounted companion who reached his place sank to the
         // ground and left his horse standing beside him - which is what the render showed, four

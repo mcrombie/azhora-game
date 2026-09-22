@@ -4,7 +4,11 @@ import { VILLAGE_DOG, DOG_DISLIKES, DOG_APPETITE, createVillageDog } from '../sr
 
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 
-test('the dog sniffs from haunt to haunt around the green and comes over when someone is near', () => {
+/**
+ * The dog keeps to its green (the user, 22 September 2026: the dog gets in the way). It used to
+ * come over to anybody within seven metres and hold station a metre and a half off them.
+ */
+test('the dog sniffs from haunt to haunt around the green, and does not come over', () => {
   const dog = createVillageDog({ random: sequence([.3, .9, .1, .6]) });
   let target = dog.update(3, { x: 200, z: 200 });
   assert.ok(VILLAGE_DOG.haunts.some(h => h.x === target.x && h.z === target.z), 'it heads for a haunt');
@@ -13,11 +17,13 @@ test('the dog sniffs from haunt to haunt around the green and comes over when so
   assert.notEqual(dog.state.haunt, first, 'it moves on after a while');
   assert.ok(dog.state.sniffs >= 2);
   dog.place(-16, 33);
+  // A traveler standing right beside it changes nothing: it is at a haunt and stays there.
   target = dog.update(.1, { x: -13, z: 33 });
-  assert.equal(dog.state.mode, 'approaching');
-  assert.ok(Math.hypot(target.x + 13, target.z - 33) < 2.5, 'it stops just short of the traveler');
-  target = dog.update(.1, { x: -60, z: 33 });
-  assert.equal(dog.state.mode, 'sniffing', 'it loses interest when the traveler walks off');
+  assert.equal(dog.state.mode, 'sniffing');
+  const haunt = VILLAGE_DOG.haunts[dog.state.haunt];
+  assert.deepEqual([target.x, target.z], [haunt.x, haunt.z], 'it is going to its own haunt, not to him');
+  for (let i = 0; i < 20; i++) target = dog.update(.1, { x: -13, z: 33 });
+  assert.equal(dog.state.mode, 'sniffing', 'and it never sets off after him');
 });
 
 /**
@@ -46,7 +52,7 @@ test('a refusal makes it keep its distance for a while, and invalid time is igno
   const dog = createVillageDog({ random: sequence([.5]) });
   dog.place(-16, 33);
   dog.update(.1, { x: -14, z: 33 });
-  assert.equal(dog.state.mode, 'approaching');
+  assert.equal(dog.state.mode, 'sniffing');
   dog.feed({ itemId: 'tinderbox', isFood: false });
   dog.update(.1, { x: -60, z: 33 });
   dog.update(.1, { x: -14, z: 33 });

@@ -47,24 +47,22 @@ export function createVillageDog({ haunts = VILLAGE_DOG.haunts, random = Math.ra
       // ninety seconds of dog underfoot got in the way of everything (the user, 22 September
       // 2026). Greeting it, feeding it and the rest of its day are unchanged.
       if (state.timer <= 0) { state.mode = 'sniffing'; nextHaunt(); }
-    } else if (state.mode === 'following') {
-      if (state.clock >= state.followUntil || near > 40) { state.mode = 'sniffing'; nextHaunt(); }
-    } else if (state.mode === 'approaching') {
-      if (near > 12) { state.mode = 'sniffing'; nextHaunt(); }
+    } else if (state.mode === 'following' || state.mode === 'approaching') {
+      // Neither mode is entered any more; a save or a fixture holding one is put back on its round.
+      state.mode = 'sniffing'; nextHaunt();
     } else {
-      // Sniffing about: linger at a haunt, then wander to the next; come over when someone new is close.
+      // **It keeps to its own green.** It used to come over to anybody who got within seven metres
+      // and then hold station a metre and a half off them, which is a dog underfoot for as long as
+      // you stand there (the user, 22 September 2026: the dog gets in the way). It sniffs its
+      // haunts now and waits to be come to - greeting it and feeding it are unchanged, and both
+      // still want the traveler to walk up to the dog rather than the other way about.
       state.timer -= dt;
-      if (near < 7 && state.clock - state.lastRefusal > 20) state.mode = 'approaching';
-      else if (state.timer <= 0) nextHaunt();
+      if (state.timer <= 0) nextHaunt();
     }
     return target(player);
   }
 
-  function target(player) {
-    if (player && (state.mode === 'approaching' || state.mode === 'following')) {
-      const dx = point.x - player.x, dz = point.z - player.z, d = Math.hypot(dx, dz) || 1, keep = state.mode === 'following' ? 2.2 : 1.4;
-      return { x: player.x + dx / d * keep, z: player.z + dz / d * keep, pace: state.mode === 'following' ? 2.2 : 1.8, sitting: d <= keep + .3 };
-    }
+  function target() {
     const haunt = haunts[state.haunt];
     return { x: haunt.x, z: haunt.z, pace: 1.4, sitting: state.mode === 'sniffing' && state.timer > 0 && Math.hypot(haunt.x - point.x, haunt.z - point.z) < .6 };
   }

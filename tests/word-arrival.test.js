@@ -230,7 +230,9 @@ test('the host puts her on the water, floats him in it, and lets him teach it', 
   assert.match(main, /const owed=wordToastAt\(playSeconds,wordSaid\);/, 'the village braces once per thing');
   assert.match(main, /audio\?\.effect\('bell'\)/, 'with a bell');
   assert.match(main, /if\(npc\.swimming\)\{pos\.set\(npc\.swimming\.x,WATERLINE-SWIM\.sink,npc\.swimming\.z\)/, 'he floats where the traveler would');
-  assert.match(main, /dHome>\.1&&!npc\.swimming/, 'and is not walked there over the seabed');
+  // The dead zone is a tenth of a metre for a man standing at home and nothing at all for a man
+  // walking a road (`stride`, src/main.js); the clause that matters here is the last one.
+  assert.match(main, /dHome>\(npc\.stride\?0:\.1\)&&!npc\.swimming/, 'and is not walked there over the seabed');
   // Pinned to the call and not to the shape of the object: this asked for `swimming` to be the
   // last key in it, and the company's horses added `riding` after it, so the suite went red on a
   // sentence that was still true.

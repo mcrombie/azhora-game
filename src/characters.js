@@ -1365,6 +1365,33 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       band.rotation.x = Math.PI / 2;
       round(crop, hairMat, [0, 0.42, -0.06], [0.085, 0.09, 0.085]);
       round(crop, hairMat, [0.012, 0.478, -0.075], [0.046, 0.055, 0.046]);
+    } else if (hairStyle === 'long') {
+      // **Hair down the back, and nothing on the jaw.** The company's `mane` was the only long
+      // style there was, and it hangs its side locks at jaw height in front of the ear - on Jojo
+      // and on Jess that read as a beard, which is not a mistake to make twice about two women
+      // somebody real is behind (the user, 22 September 2026).
+      //
+      // So: a soft fringe across the brow, the crown covered, and the weight of it *behind* the
+      // head, falling past the nape to the shoulder line. The sides are swept back level with
+      // the ear and stop there; nothing sits forward of it, and nothing comes below the chin.
+      fringe(0.342, 0.208);
+      round(crop, hairMat, [0, 0.29, -0.03], [0.196, 0.132, 0.196]);
+      for (const side of [-1, 1]) {
+        const sweep = round(crop, hairMat, [side * 0.178, 0.216, -0.086], [0.07, 0.132, 0.116]);
+        sweep.rotation.z = side * 0.14;
+      }
+      // The fall: four lengths down the back of the head and neck, narrowing to the ends.
+      for (const [y, z, w, h] of [[0.15, -0.206, 0.186, 0.13], [0.01, -0.232, 0.176, 0.13],
+        [-0.13, -0.236, 0.156, 0.126], [-0.262, -0.228, 0.122, 0.11]]) {
+        round(crop, hairMat, [0, y, z], [w, h, 0.104]);
+      }
+      // And two lengths forward over the shoulders so the hair reads as long from the front as
+      // well as behind. They hang beside the neck and start below the chin, which is what keeps
+      // them hair and not whiskers.
+      for (const side of [-1, 1]) {
+        round(crop, hairMat, [side * 0.152, -0.09, -0.108], [0.066, 0.15, 0.084]);
+        round(crop, hairMat, [side * 0.146, -0.2, -0.03], [0.058, 0.126, 0.07]);
+      }
     } else if (hairStyle === 'curls') {
       for (const [x, y, z] of [[-0.12, 0.34, 0.07], [0.02, 0.365, 0.086], [0.136, 0.332, 0.056], [-0.176, 0.3, -0.05],
         [0.18, 0.298, -0.058], [-0.07, 0.35, -0.11], [0.07, 0.345, -0.118], [-0.1, 0.13, -0.174], [0.1, 0.128, -0.176]]) {
@@ -1894,7 +1921,9 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     part(head, UNIT_CYLINDER, bandanna, [0, .331, -.016], [.219, .06, .188]);
     round(head, bandanna, [-.207, .318, -.073], [.047, .04, .04]);
     ribbon(head, bandanna, [-.222, .31, -.076], [-.261, .191, -.082], .035, .021);
-    round(head, hairMat, [0, .067, .112], [.12, .049, .093]);
+    // The keeper's moustache belongs to the keeper, not to the build: Jess has the boat and the
+    // bandanna and no facial hair at all (the user, 22 September 2026).
+    if (look?.beard !== false) round(head, hairMat, [0, .067, .112], [.12, .049, .093]);
   } else if (isCustodian) {
     const cloak = material(0x626b81, { side: THREE.DoubleSide });
     const faded = material(0x8a8d96, { side: THREE.DoubleSide });
@@ -1904,7 +1933,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     const patch = box(clothPivot, faded, [-.13, -.49, -.29], [.11, .12, .016]); patch.rotation.y = -.24;
     for (const x of [-.165, -.112]) box(clothPivot, linen, [x, -.446, -.299], [.008, .022, .009]);
     ribbon(body, linen, [-.126, 1.254, .138], [.135, 1.247, .131], .024, .018);
-    round(head, hairMat, [0, .06, .112], [.141, .071, .117]);
+    if (look?.beard !== false) round(head, hairMat, [0, .06, .112], [.141, .071, .117]);   // the custodian's beard
     const book = new THREE.Group(); book.name = 'Custodian fieldbook'; book.position.set(0, -.02, .065); book.rotation.set(-.15, .05, .10); wrists[0].add(book);
     box(book, leather, [0, -.012, 0], [.21, .057, .27]);
     box(book, linen, [0, -.011, .008], [.184, .037, .246]);
@@ -2393,7 +2422,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     const scarfEnd = box(body, scarfMat, [-0.052, 1.225, 0.168], [0.084, 0.2, 0.027]);
     scarfEnd.rotation.z = -0.13;
     if (isPondFisher) {
-      round(head, hairMat, [0, .055, .105], [.134, .078, .113]);
+      if (look?.beard !== false) round(head, hairMat, [0, .055, .105], [.134, .078, .113]);   // the pond fisher's beard
       box(body, linen, [-.103, 1.015, .184], [.114, .13, .023]);
     }
   } else if (role === 'warden') {

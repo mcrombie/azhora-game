@@ -402,9 +402,14 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
       }
       // Walking, stopped or mustered: the same arithmetic, along whichever line is his. A wild
       // man never reports `stopped`, because he was handed no stops.
+      // **`pace` is on a walking placement and nowhere else**, because a walking placement is the
+      // only one that moves: the host's npc loop chases these points, and chasing a point that
+      // creeps at 1.28 m/s at a default 2.4 made every man on the road stutter (src/main.js,
+      // `placeMercenaries`). It is the pace the distance above was worked out with, so the two
+      // can never disagree - the wild man's rough-country pace here, the roster's on the road.
       if (wilding && progress.phase !== 'mustered') {
         const spot = pointAlongRoad(wildRoute.path, progress.distance, wildLengths);
-        return { id: mercenary.id, name: mercenary.name, ...progress, x: spot.x, z: spot.z, yaw: spot.yaw, walking: true };
+        return { id: mercenary.id, name: mercenary.name, ...progress, x: spot.x, z: spot.z, yaw: spot.yaw, walking: true, pace: WILD.pace };
       }
       // At the muster he is one of the company like anybody else, so he takes his place in the
       // same formation - measured along the road, because his own distance is along his own line.
@@ -418,7 +423,7 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
         if (moved) { x = moved.x; z = moved.z; }
       }
       if (progress.phase === 'mustered') { x = point.x + point.dz * lateral(index) * 1.6 - point.dx * (4 + Math.floor(index / 2) * 2.2); z = point.z - point.dx * lateral(index) * 1.6 - point.dz * (4 + Math.floor(index / 2) * 2.2); }
-      return { id: mercenary.id, name: mercenary.name, ...progress, x, z, yaw: progress.phase === 'walking' ? point.yaw : point.yaw + (progress.phase === 'stopped' ? Math.PI / 2 * Math.sign(side) : Math.PI), walking: progress.phase === 'walking' };
+      return { id: mercenary.id, name: mercenary.name, ...progress, x, z, yaw: progress.phase === 'walking' ? point.yaw : point.yaw + (progress.phase === 'stopped' ? Math.PI / 2 * Math.sign(side) : Math.PI), walking: progress.phase === 'walking', pace: progress.phase === 'walking' ? mercenary.pace : 0 };
     });
     // Nobody dead: the array the map made, untouched, which is the clock this module has always
     // kept. One man dead: the same array with his hole closed and nothing else moved.

@@ -270,7 +270,10 @@ test('released at the bridge, he walks on from where he stood and musters ten mi
   const expected = 4800 + 50 / chris.pace + 60 + 300 / chris.pace;
   assert.equal(at(expected - 1).phase, 'walking');
   assert.deepEqual(at(expected + 1), { id: chris.id, name: chris.name, phase: 'mustered', distance: 650, stopId: null,
-    x: at(expected + 1).x, z: at(expected + 1).z, yaw: at(expected + 1).yaw, walking: false });
+    x: at(expected + 1).x, z: at(expected + 1).z, yaw: at(expected + 1).yaw, walking: false, pace: 0 });
+  // A walking placement carries the pace its own distance was worked out with, because the host
+  // chases these points and has to chase them at the speed they move (src/main.js).
+  assert.equal(at(4801).pace, chris.pace, 'walking, he says how fast');
   // The induction stop at 130 m is behind him and is not made twice.
   assert.ok(!Array.from({ length: 400 }, (_, i) => at(4800 + i)).some(p => p.stopId === 'induction'), 'he has already been to Corvan');
 });

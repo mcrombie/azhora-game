@@ -284,7 +284,13 @@ test('the host is wired to the sequence: the caption layer, the Skip button, and
   assert.match(css, /body\.cutscene #location[^{]*\{display:none!important;\}/, 'and the HUD is out of the way');
 
   // The drive: the clock, the events, the boat, the companion and the eye, every frame.
-  assert.match(main, /import \{ stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT \} from '\.\/opening-sequence\.js'/);
+  assert.match(main, /import \{ stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE \} from '\.\/opening-sequence\.js'/);
+  // And the companion is the sequence's while it runs: the npc loop grounds a standing figure,
+  // and the ground under the bow of a boat is the seabed six metres down.
+  assert.match(main, /mate\.scripted=true/, 'the cutscene claims him');
+  assert.match(main, /if\(npc\.scripted&&mode==='arriving'&&opening\)/, 'and the npc loop leaves him alone');
+  assert.match(main, /mate\.scriptedPace=c\.walking&&dt>0\?Math\.min\(Math\.hypot\(c\.x-was\.x,c\.z-was\.z\)\/dt,ASHORE_PACE\):0/,
+    'his legs go at the speed he is actually covering ground, and only when he is on them');
   assert.match(main, /opening=variantFor\(playerId\)/, 'which of the eleven you are picks the variant');
   assert.match(main, /world\.placeArrivalBoat\(s\.boat\.x,s\.boat\.z,s\.boat\.yaw\)/, 'the boat follows the path');
   assert.match(main, /eventsBetween\(openingFired,openingTime,opening\.id\)/, 'and each event fires once');

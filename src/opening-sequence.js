@@ -68,6 +68,14 @@ export const BOAT = freeze({
   /** The companion stands in the bow on the starboard side, his feet on the bottom boards. */
   bow: freeze({ right: .3, forward: 2.3, floor: -.08 }),
 });
+/**
+ * The fastest his legs are drawn as he comes ashore. He has two seconds to cross the last seven
+ * metres from the bow to the head of the pier, which is a hurried walk at the ends of it and a
+ * run through the middle, and a run through the middle of a landing reads as a man being dragged.
+ * The legs are capped here; the man himself still arrives on the beat the captions are written to.
+ */
+export const ASHORE_PACE = 2.6;
+
 /** The arrival boat's bob, exactly as world.update applies it; `clock` is the game's `elapsed`. */
 export const boatBob = clock => Math.sin(clock * BOAT.bob.rate) * BOAT.bob.amplitude;
 
@@ -256,13 +264,20 @@ function aboard(boat, right, fwd, up = 0) {
   const f = forward(boat.yaw);
   return { x: boat.x + f.x * fwd - f.z * right, y: boat.y + up, z: boat.z + f.z * fwd + f.x * right };
 }
+/**
+ * `walking` is the one thing about him the host cannot work out for itself. Standing in the bow
+ * he crosses the bay at the boat's speed without taking a step, and coming ashore he covers the
+ * last seven metres on his own feet - the same movement on the screen, and only the sequence
+ * knows which is which. Without it he either slid ashore rigid or ran on the spot for a mile of
+ * open water.
+ */
 function companionAt(t, boat) {
   const facing = t < PHASES.companionTurns ? boat.yaw
     : lerpAngle(boat.yaw, boat.yaw + Math.PI, smooth(t - PHASES.companionTurns));
   const inBoat = aboard(boat, BOAT.bow.right, BOAT.bow.forward, BOAT.bow.floor);
-  if (t < PHASES.ashore) return { ...inBoat, yaw: facing, aboard: true };
+  if (t < PHASES.ashore) return { ...inBoat, yaw: facing, aboard: true, walking: false };
   const u = smooth((t - PHASES.ashore) / (PHASES.end - PHASES.ashore));
-  return { ...mix(inBoat, LANDED.companion, u), yaw: lerpAngle(facing, LANDED.companion.yaw, u), aboard: u < 1 };
+  return { ...mix(inBoat, LANDED.companion, u), yaw: lerpAngle(facing, LANDED.companion.yaw, u), aboard: u < 1, walking: u < 1 };
 }
 function eyeAt(t, boat) {
   const up = t < PHASES.stand ? BOAT.seat.eyeSeated
@@ -320,7 +335,7 @@ export function stateAt(seconds, { variant = 'standard', companion = COMPANIONS.
     return {
       t, seconds: v.seconds, variant: v.id, done, beat: v.beats[beatIndexAt(t, v.beats)].id,
       boat: { x: BOAT_REST.x, z: BOAT_REST.z, y: BOAT.float, yaw: BOAT_REST.yaw, moving: false },
-      companion: { ...LANDED.companion, aboard: false },
+      companion: { ...LANDED.companion, aboard: false, walking: false },
       traveler: { visible: true, ...LANDED.traveler },
       camera: { position: { ...LANDED.camera.position }, target: { ...LANDED.camera.target } },
       bobWeight: 0, caption: captionAt(t, v.beats, companion), landed: done ? LANDED : null,
@@ -336,7 +351,7 @@ export function stateAt(seconds, { variant = 'standard', companion = COMPANIONS.
   return {
     t, seconds: v.seconds, variant: v.id, done, beat: v.beats[beatIndexAt(t, v.beats)].id,
     boat: done ? { x: BOAT_REST.x, z: BOAT_REST.z, y: BOAT.float, yaw: BOAT_REST.yaw, moving: false } : boat,
-    companion: done ? { ...LANDED.companion, aboard: false } : companionState,
+    companion: done ? { ...LANDED.companion, aboard: false, walking: false } : companionState,
     traveler: done ? { visible: true, ...LANDED.traveler } : { visible: false, x: eye.x, y: eye.y, z: eye.z, yaw: boat.yaw },
     camera: done ? { position: { ...LANDED.camera.position }, target: { ...LANDED.camera.target } } : camera,
     bobWeight, caption: captionAt(t, v.beats, companion), landed: done ? LANDED : null,
