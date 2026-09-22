@@ -4242,8 +4242,11 @@ function init() {
   }
   function testTravel(destination){
     if(!testingEnabled)prepareTesting();
+    // Whatever of the road is on the slate is walked forward; what is off simply is not there,
+    // and `journey.act` refuses it rather than the panel pretending it happened (src/quest-slate.js).
     if(Number(destination)>=3){
-      journey.start();journey.act('meet-courier');for(const id of [1,2,3])journey.act(`collect-cart-parcel-${id}`);journey.act('return-courier');meadowCleared=true;
+      journey.start();
+      if(questLive('courier')){journey.act('meet-courier');for(const id of [1,2,3])journey.act(`collect-cart-parcel-${id}`);journey.act('return-courier');meadowCleared=true;}
     }
     if(Number(destination)>=4){
       journey.act('meet-crossing-keeper');if(inventory.count('forest-stick')<3)inventory.add('forest-stick',3-inventory.count('forest-stick'));
@@ -5106,15 +5109,6 @@ function init() {
         mode='defeated';stopInput();show('dialogue',false);show('modal-backdrop',true);show('journal',false);show('pause',false);show('defeat',true);$('retry').focus();
       }
     }
-    // **The guard, held.** The straw post does not hit back, so this is measured the way the step
-    // is: near the post, while the lesson is set, with the shield actually up - `player.guarding`
-    // is what the rules decided this frame and not what the key is doing (src/combat.js).
-    if(questStage===2&&lessonSet&&!practiceGuards&&combat.state.player.guarding
-      &&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9){
-      guardHeld+=dt;
-      if(guardHeld>=GUARD_SECONDS){practiceGuards=1;audio?.effect('success');
-        toast('The shield stays where you put it. Behind it you can see the whole of him and he can see none of you.','OFFICER GLUN · GUARD');}
-    } else if(!combat.state.player.guarding)guardHeld=0;
     if(questStage===2&&practiceHits>=2&&practiceGuards>=1&&practiceDodges>=1&&combat.state.player.action==='idle')updateQuest('trained');
   }
   function updateHUD() {
@@ -5277,6 +5271,18 @@ function init() {
         refreshShield();const guardKey=!autopilot.active&&keys.has(GUARD_KEY);
         if(guardKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-14*dt));}
         combat.guard(guardKey,player.group.rotation.y);
+        // **The guard, held.** Measured here and not with the other lesson tallies, because this
+        // one is a length of time and `dt` lives in the frame: a sibling function reading it
+        // threw every frame and stopped the render loop, which looks exactly like a lesson that
+        // will not complete. The straw post does not hit back, so the drill is the same shape as
+        // the step: near the post, lesson set, and the boards actually up - `player.guarding` is
+        // what the rules decided this frame and not what the key is doing (src/combat.js).
+        if(questStage===2&&lessonSet&&!practiceGuards&&combat.state.player.guarding
+          &&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9){
+          guardHeld+=dt;
+          if(guardHeld>=GUARD_SECONDS){practiceGuards=1;audio?.effect('success');
+            toast('The shield stays where you put it. Behind it you can see the whole of him and he can see none of you.','OFFICER GLUN · GUARD');}
+        } else if(!combat.state.player.guarding)guardHeld=0;
         /**
          * **Hold the swing button to draw; let go to loose** (the user's answers, 2026-09-21:
          * no new key). With a bow in his hands the attack button is the draw, and everything
@@ -6158,6 +6164,14 @@ function init() {
         warp(world.training.x,world.training.z+1.5);player.group.rotation.y=Math.PI;await frames();
         tap('KeyR');await until(()=>practiceHits===1,'First practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0}));await until(()=>practiceHits>=2,'Left-click practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
+        // **The shield, held.** Glun asks for three things now and this is the middle one: V is
+        // held, not tapped, and it counts only while the boards are actually up - which needs
+        // something in the shield hand, and Cromb lands with one (src/player-characters.js).
+        assert(!!gear.wearing('hand'),'the traveler came ashore with nothing in his shield hand');
+        press('KeyV');await until(()=>combat.state.player.guarding,'The shield would not come up');
+        await until(()=>practiceGuards>=1,'Guard lesson failed');release('KeyV');await frames(2);
+        assert(!combat.state.player.guarding,'the shield stayed up after the key was let go');
+        assert(questStage===2,'the guard alone finished the lesson');
         press('KeyA');tap('KeyC');release('KeyA');await until(()=>questStage===3,'Dodge lesson failed');await until(()=>combat.state.player.action==='idle','Dodge recovery failed');
         assert(weapons.status('simple-sword').durability===22,'Practice hits did not wear the sword exactly once each');
         // He acknowledges the lesson where it was set, and the chart comes with it: blank, and
@@ -7086,7 +7100,7 @@ function init() {
         if(view.startsWith('stand-at:')){const [sx,sz,facing=0,tilt=.3,back=7]=view.slice(9).split(',').map(Number);
           if(Number.isFinite(sx)&&Number.isFinite(sz)){questStage=QUEST_DONE;combat.finishPractice();player.setArmed(false);player.group.position.set(sx,world.heightAt(sx,sz),sz);yaw=facing;pitch=tilt;distance=targetDistance=back;player.group.rotation.y=Math.PI+yaw;}}
         if(view==='walk'){questStage=QUEST_DONE;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
-        if(view==='inventory'){questStage=6;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
+        if(view==='inventory'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=QUEST_DONE;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
         // The skills sheet as the journal draws it, for checking what this mode shows.
@@ -7416,7 +7430,7 @@ function init() {
             redTailFlight.update(60,{glove,anchor});redTailFlight.update(2.5,{glove,anchor});const step=redTailFlight.update(.1,{glove,anchor});redTail.pose(step,elapsed);
             // Hold her mid-circle and look at her, wings out, from a little below and to the side.
             reviewFrozen=true;reviewTarget=new THREE.Vector3(step.x,step.y,step.z);yaw=step.yaw+1.3;pitch=-.25;distance=targetDistance=3;}}
-        if(view==='goblin'){questStage=4;combat.finishPractice();combat.startEncounter(greenwayEncounter);const enemy=combat.state.enemies[0];reviewTarget=new THREE.Vector3(enemy.x,world.heightAt(enemy.x,enemy.z)+1.15,enemy.z);reviewFrozen=true;player.group.visible=false;yaw=0;pitch=.13;distance=targetDistance=3.8;}
+        if(view==='goblin'){questStage=QUEST_DONE;combat.finishPractice();combat.startEncounter(greenwayEncounter);const enemy=combat.state.enemies[0];reviewTarget=new THREE.Vector3(enemy.x,world.heightAt(enemy.x,enemy.z)+1.15,enemy.z);reviewFrozen=true;player.group.visible=false;yaw=0;pitch=.13;distance=targetDistance=3.8;}
         if(view==='stick'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('forest-stick');weapons.equip('forest-stick');player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='acorns'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('acorn'))inventory.add('acorn');toggleInventory();inventory.select('acorn');}
         if(view==='pawpaw'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('pawpaw'))inventory.add('pawpaw',2);combat.state.player.hp=62;toggleInventory();inventory.select('pawpaw');}

@@ -707,10 +707,19 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       if (arrow.flown >= arrow.range - 1e-6) landArrow(arrow, 'spent');
     }
   }
-  /** Whether the shield is up and would catch something right now. */
+  /**
+   * Whether the shield is up and would catch something right now.
+   *
+   * **A drill counts too.** This asked for `phase === 'active'`, which meant the boards could
+   * only come up when something was already swinging - and Officer Glun's lesson is a straw post
+   * that swings at nobody (src/instructor.js). A man raising his shield at a post is not catching
+   * anything and is not pretending to; he is learning which key it is on, with the same body and
+   * the same rules, and the same footer telling him so. Nothing is absorbed in a practice because
+   * nothing in a practice ever hits him.
+   */
   function guarding() {
     const { hasShield, guardCost } = margins();
-    return !!guardHeld && !!hasShield && state.phase === 'active'
+    return !!guardHeld && !!hasShield && (state.phase === 'active' || state.phase === 'practice')
       && player.action === 'idle' && player.hp > 0 && player.stamina >= (guardCost ?? 0);
   }
 

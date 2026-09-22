@@ -393,7 +393,8 @@ export async function runRoadTestingSmoke(h) {
     assert(canStand(point.x, point.z, world), `Region ${id} testing spawn is blocked`);
     await until(() => document.querySelector('#region-name')?.textContent === region.name, `Region ${id} title did not update`);
     assert(inventory.has('harbor-letter') && inventory.has('road-token') && inventory.has('fishing-rod') && inventory.has('tinderbox'), `Region ${id} test travel omitted essential tools`);
-    if (id >= 3) assert(journey.state.completedRegions.includes(2), 'Reedwater test travel did not finish the meadow prerequisites');
+    // Region 2 is Corvan's, and is off the slate (src/quest-slate.js).
+    if (id >= 3 && questLive('courier')) assert(journey.state.completedRegions.includes(2), 'Reedwater test travel did not finish the meadow prerequisites');
     if (id >= 4) assert(journey.state.completedRegions.includes(3), 'Threefold test travel did not finish the crossing prerequisites');
   }
   return { roadTestingChecks: checks, roadTestingRegions: [2, 3, 4] };
