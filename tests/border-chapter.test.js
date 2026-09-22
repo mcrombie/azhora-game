@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCombat } from '../src/combat.js';
 import {
-  BORDER_ENCOUNTER_ID, BORDER_LEGATE_ID, BORDER_GATE_ID, BORDER_NPCS, BORDER_MARCHERS, COALITION_SIGNING, MARCH,
-  borderConversation, borderEncounter, createBorderChapter, validateBorderSnapshot, marchSlot,
+  BORDER_ENCOUNTER_ID, BORDER_LEGATE_ID, BORDER_GATE_ID, BORDER_NPCS, BORDER_MARCHERS, BORDER_LINE, COALITION_SIGNING, MARCH,
+  borderConversation, borderEncounter, borderLine, borderLineSaid, createBorderChapter, validateBorderSnapshot, marchSlot,
 } from '../src/border-chapter.js';
+import { FILE_FLOOR } from '../src/file-fill.js';
+import { MERCENARY_COMPANY_SIZE } from '../src/mercenaries.js';
 import { MOROS_PAY } from '../src/moros-chapter.js';
 import { hexOwnerAt } from '../src/region-world.js';
 
@@ -131,6 +133,96 @@ test('each side’s encounter is a valid fight against the other side’s soldie
     assert.ok(combat.state.enemies.filter(enemy => enemy.kind === 'soldier').length === 8);
   }
   assert.equal(borderEncounter('empire', Array.from({ length: 9 }, (_, i) => ({ id: `a${i}`, kind: 'legionary' }))).allies.length, 5, 'five stand with the traveler at most');
+});
+
+/**
+ * **The battle grows with the company** (the user, 2026-09-21): the enemy line grows with the size
+ * of the traveler's company - more soldiers, never a higher level - so that ten companions meet a
+ * fight worth ten. The two halves of the ruling are both pinned here: a short company meets
+ * **exactly** today's eight, so the fill's own measurement is untouched; and every soldier the
+ * growth adds is the same soldier, in the same waves, on ground the fight will accept.
+ */
+test('the line grows with the company, and a short company meets exactly the eight it always met', () => {
+  // Below the floor the army is making his numbers up for him; a battle that grew at the same time
+  // would be taking back what it just gave. Every row up to the floor is the eight.
+  for (let company = 0; company <= FILE_FLOOR; company++)
+    assert.equal(borderLine(company), 8, `a company of ${company} meets the line it always met`);
+  assert.equal(borderLine(), 8, 'and so does a fight that does not say');
+  assert.equal(borderLine(-3), 8); assert.equal(borderLine('nonsense'), 8);
+  // Above it, one more soldier a companion, up to the largest line the fight can be given.
+  for (let company = FILE_FLOOR + 1; company < BORDER_LINE.length; company++)
+    assert.equal(borderLine(company), 8 + company - FILE_FLOOR, `a company of ${company}`);
+  assert.equal(borderLine(MERCENARY_COMPANY_SIZE - 1), 12, 'the whole roster meets twelve');
+  // And it never runs off the end: `encounterConfig` refuses a fight with more than twelve.
+  for (const absurd of [11, 20, 999]) assert.equal(borderLine(absurd), 12, `${absurd} is still twelve`);
+  assert.equal(borderEncounter('empire', [], 0).enemies.length, 8);
+  assert.equal(borderEncounter('empire', [], 10).enemies.length, 12);
+  // The eight a short company meets are the same eight, to the metre and the second.
+  const small = borderEncounter('empire', [], 3).enemies, big = borderEncounter('empire', [], 10).enemies;
+  assert.deepEqual(small, big.slice(0, 8), 'the authored eight are untouched by the growth');
+});
+
+test('every soldier the growth adds is the same soldier, in the same waves, on ground the fight accepts', () => {
+  const world = { bounds: { minX: -900, maxX: 200, minZ: -300, maxZ: 700 }, colliders: [], heightAt: () => 2 };
+  for (const side of ['empire', 'coalition']) for (let company = 0; company < BORDER_LINE.length; company++) {
+    const config = borderEncounter(side, [{ id: 'ally-1', kind: 'legionary' }, { id: 'ally-2', kind: 'legionary' }], company);
+    assert.equal(config.enemies.length, borderLine(company));
+    // **More soldiers, never a higher level.** Nothing an added man carries differs from the eight.
+    const kinds = new Set(config.enemies.map(foe => `${foe.kind}/${foe.look}/${foe.hp}`));
+    assert.equal(kinds.size, 1, `a company of ${company} meets more than one kind of soldier: ${[...kinds]}`);
+    assert.ok(config.enemies.every(foe => foe.level === undefined), 'and no man of it is authored a level');
+    assert.equal(new Set(config.enemies.map(foe => foe.id)).size, config.enemies.length, 'each is his own man');
+    // Three waves, however many come: a wave is entries with no gap of more than two seconds, and
+    // the captains promise three (tests/quest-directions.test.js).
+    const entries = config.enemies.map(foe => foe.entry).sort((a, b) => a - b);
+    let waves = 1;
+    for (let i = 1; i < entries.length; i++) if (entries[i] - entries[i - 1] > 2) waves++;
+    assert.equal(waves, 3, `a company of ${company} brings on ${waves} waves`);
+    // Nobody stands on anybody, theirs or ours, and the whole line is inside the ground
+    // `encounterConfig` will accept - which the fight starting proves, but say why it failed.
+    const along = p => p.z - config.center.z, across = p => p.x - config.center.x;
+    for (const foe of config.enemies) {
+      assert.ok(along(foe) >= -21 && along(foe) <= 18 && Math.abs(across(foe)) <= 12,
+        `${foe.id} stands at ${along(foe).toFixed(1)} along, ${across(foe).toFixed(1)} across`);
+      for (const mate of config.enemies) if (mate !== foe)
+        assert.ok(Math.hypot(foe.x - mate.x, foe.z - mate.z) >= 1.2, `${foe.id} stands on ${mate.id}`);
+      // And clear of every place a man of the traveler's side can be put: the side's own five
+      // (`ALLY_SPOTS`) and the file, which forms up on the checkpoint and behind it.
+      for (const spot of [...config.allies, config.checkpoint])
+        assert.ok(Math.hypot(foe.x - spot.x, foe.z - spot.z) >= 1.2, `${foe.id} stands where one of ours does`);
+    }
+    const position = { x: config.checkpoint.x, y: 2, z: config.checkpoint.z };
+    assert.equal(createCombat({ world, position }).startEncounter(config), true,
+      `${side} refuses the line for a company of ${company}`);
+  }
+});
+
+/**
+ * The captain is the one who says how many, because he is the man who already gives the traveler
+ * the word at the line - and he says nothing at all about the eight, because a captain who remarks
+ * on eight men every single time is a captain nobody listens to.
+ */
+test('the captain says how many, truthfully, and only when it has changed', () => {
+  for (const side of ['empire', 'coalition']) {
+    for (const company of [0, 3, 6]) assert.deepEqual(borderLineSaid(side, borderLine(company)), [],
+      `a company of ${company} is told nothing, because nothing has changed`);
+    for (const [company, word] of [[7, 'nine'], [8, 'ten'], [9, 'eleven'], [10, 'twelve']]) {
+      const said = borderLineSaid(side, borderLine(company));
+      assert.equal(said.length, 2, 'two short sentences and no more');
+      assert.ok(said.every(sentence => sentence.length < 160), 'short');
+      assert.match(said[0], new RegExp(word), `a company of ${company} is told there are ${word}`);
+      assert.match(said[0], /eight/, 'and what it was before');
+    }
+    assert.deepEqual(borderLineSaid(side, 99), [], 'and a number the table cannot make is not said');
+  }
+  assert.notDeepEqual(borderLineSaid('empire', 12), borderLineSaid('coalition', 12), 'each captain has his own voice');
+  // The panel names no number at all, because it is written once for every size of the line.
+  const border = createBorderChapter(); border.start();
+  for (const id of ['take-legate-terms', 'enter-solis', 'side-empire', 'march-out', 'reach-line']) border.act(id);
+  const fighting = border.view();
+  assert.equal(fighting.stage, 'fighting');
+  assert.doesNotMatch(fighting.detail, /Eight|eight|Ten|ten of/, 'the panel counts nobody');
+  assert.match(fighting.detail, /three waves/, 'and still promises the three waves that come');
 });
 
 test('the Marshal, the gate, the envoy and the commanders speak only in their turn, and the envoy names the Coalition truly', () => {

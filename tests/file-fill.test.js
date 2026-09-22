@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { createCombat, MAX_ALLIES } from '../src/combat.js';
 import { BORDER_ENCOUNTER_ID, borderEncounter, borderConversation, BORDER_SIDES } from '../src/border-chapter.js';
 import { AFTERMATH_VARIANTS, AFTERMATH_IDS, aftermathEncounter, aftermathConversation, createAftermathChapter } from '../src/aftermath-chapter.js';
-import { FILE_FLOOR, FILL_KIND, FILL_LOOK, ARMY_BATTLE_IDS, isArmyBattle, fillCount, fillFor, fillLines } from '../src/file-fill.js';
+import { FILE_FLOOR, FILL_KIND, FILL_LOOK, FILL_ARMS, ARMY_BATTLE_IDS, isArmyBattle, fillCount, fillFor, fillLines } from '../src/file-fill.js';
+import { MERCENARY_ARMS } from '../src/companions.js';
+import { maxHealth } from '../src/combat-skills.js';
 import { placeFor } from './fights-with-company.test.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -60,7 +62,7 @@ test('how many the army puts in, at 0, 3, 5, 6 and 10 companions', () => {
   }
 });
 
-test('they are ordinary soldiers of the side he signed with, and weaker than friends', () => {
+test('they are ordinary soldiers of the side he signed with, trained a little', () => {
   for (const side of BORDER_SIDES) {
     const fill = fillFor({ side, walking: 0 });
     assert.equal(fill.length, FILE_FLOOR);
@@ -68,10 +70,10 @@ test('they are ordinary soldiers of the side he signed with, and weaker than fri
       assert.equal(man.kind, FILL_KIND, 'the same kind the battle’s own side allies already are');
       assert.equal(man.name, FILL_LOOK[side].name, `${side} calls him what it already calls him`);
       assert.equal(man.model.role, FILL_LOOK[side].model.role);
-      // **Weaker than companions, on purpose**, so friends still matter: no level and no
-      // toughness of his own means the ally kind's plain ninety health.
-      assert.equal(man.level, undefined, 'he has no level of his own');
-      assert.equal(man.toughness, undefined, 'and no toughness of his own');
+      // **Trained a little** (the user, 2026-09-21): the hunter's measured lever, which took a
+      // lone traveler's border battle from 21/40 with five stalemates to 32/40 with none.
+      assert.equal(man.level, FILL_ARMS.level, 'he has the one level the army trains him to');
+      assert.equal(man.toughness, FILL_ARMS.toughness, 'and the toughness that goes with it');
       assert.equal(man.model.skin, undefined, 'and no face anybody would recognise');
     }
     assert.equal(new Set(fill.map(one => one.id)).size, fill.length, 'and each is his own man in the fight');
@@ -80,6 +82,31 @@ test('they are ordinary soldiers of the side he signed with, and weaker than fri
   assert.notEqual(FILL_LOOK.empire.model.role, FILL_LOOK.coalition.model.role);
   assert.notEqual(FILL_LOOK.empire.name, FILL_LOOK.coalition.name);
   assert.deepEqual(fillFor({ side: 'nowhere', walking: 0 })[0].model, { ...FILL_LOOK.empire.model }, 'and an unsigned traveler gets the Emperor’s');
+});
+
+/**
+ * **The law the training has to keep: an assigned stranger is strictly weaker than the weakest
+ * man who ever chose to walk with you.** The whole of what this module is for is that friends
+ * still matter, and the user's ruling says so in as many words. The numbers are read out of
+ * `MERCENARY_ARMS` rather than written down here, so that a companion added later who is weaker
+ * than Altun trips this test instead of quietly making the army's strangers his equal.
+ */
+test('the fill is strictly weaker than the weakest companion, whoever that comes to be', () => {
+  const arms = Object.values(MERCENARY_ARMS);
+  assert.ok(arms.length >= 10, `only ${arms.length} companions have numbers`);
+  const weakestLevel = Math.min(...arms.map(one => one.level));
+  const weakestToughness = Math.min(...arms.map(one => one.toughness));
+  // Altun, as it stands: level 20 / toughness 17, the two floors of the roster.
+  assert.ok(FILL_ARMS.level < weakestLevel,
+    `an assigned man at level ${FILL_ARMS.level} is not below the weakest companion's ${weakestLevel}`);
+  assert.ok(FILL_ARMS.toughness < weakestToughness,
+    `an assigned man at toughness ${FILL_ARMS.toughness} is not below the weakest companion's ${weakestToughness}`);
+  // And on the field it is real: his health is his toughness's own number, under every companion's.
+  for (const man of fillFor({ walking: 0 })) {
+    assert.equal(maxHealth(man.toughness), maxHealth(FILL_ARMS.toughness));
+    for (const one of arms) assert.ok(maxHealth(man.toughness) < maxHealth(one.toughness),
+      `an assigned man stands ${maxHealth(man.toughness)} to a companion's ${maxHealth(one.toughness)}`);
+  }
 });
 
 test('company plus the side’s own men plus the fill never passes the cap', () => {
@@ -98,7 +125,11 @@ test('company plus the side’s own men plus the fill never passes the cap', () 
   const combat = createCombat({ world, position, getAllies: config => fileFor({ id: config.id, companions: 0, config }) });
   assert.equal(combat.startEncounter(borderEncounter('empire', [])), true, 'the border battle starts with a filled file');
   assert.equal(combat.state.allies.filter(one => one.id.startsWith('file-fill-')).length, FILE_FLOOR);
-  assert.ok(combat.state.allies.every(one => one.hp === 90), 'and every one of them is a plain soldier');
+  // And each of them stands on his own toughness, as a companion does - the one pair of numbers
+  // the army trains him to, and nothing of the country's.
+  assert.ok(combat.state.allies.every(one => one.hp === maxHealth(FILL_ARMS.toughness)),
+    `every one of them is an assigned soldier at ${maxHealth(FILL_ARMS.toughness)}`);
+  assert.ok(combat.state.allies.every(one => one.level === FILL_ARMS.level), 'and hits at his own level');
 });
 
 test('every day after the battle fills the same file, on both sides', () => {
@@ -158,7 +189,7 @@ test('his captain says so, in his own voice, and only when it is happening', () 
   assert.match(fillLines('empire', 2)[0], /mine/, 'and Brulan for his own');
   // Said by the man who already gives him the word before that battle, and by nobody new.
   const border = source('border-chapter.js'), after = source('aftermath-chapter.js');
-  assert.match(border, /\.\.\.fill\], null, 'Back to the line'/, 'the captain at the line says it');
+  assert.match(border, /\.\.\.fill, \.\.\.line\], null, 'Back to the line'/, 'the captain at the line says it');
   // The commander at the rally says it, after the fine steel his side owes the traveler.
   assert.match(after, /openDialogue\(npc, \[\.\.\.gift, \.\.\.chapter\.orders, \.\.\.fill\]/, 'and the commander at the rally');
   assert.match(source('main.js'), /const fillSaid=\(\)=>fillLines\(armySide\(\),fillCount\(\{walking:fileOrder\.filter\(id=>!fallen\.has\(id\)\)\.length\}\)\);/,
@@ -168,9 +199,12 @@ test('his captain says so, in his own voice, and only when it is happening', () 
 test('it is a rule about the army’s battles and touches nothing else', () => {
   // No encounter level moved, and no other fight gained anybody.
   const fill = source('file-fill.js');
-  // It writes no level on anybody and no level on any fight: how hard a battle is stayed where
-  // it was (the country's), and the men it adds are the ally kind's own plain soldier.
-  assert.doesNotMatch(fill, /level:/, 'the fill gives nobody a level of his own');
+  // The men it adds carry one pair of numbers, written down in one place, and it moves no
+  // *fight's* level anywhere: how hard a battle is stayed where it was, which is the country's.
+  assert.equal((fill.match(/level: \d/g) ?? []).length, 1, 'the fill’s level is one number in one place');
+  assert.match(fill, /level: FILL_ARMS\.level, toughness: FILL_ARMS\.toughness/, 'and every man reads it from there');
+  assert.match(fill, /export const FILL_ARMS = freeze\(\{ level: 15, toughness: 12 \}\);/,
+    'the hunter’s measured lever, and the user’s answer');
   assert.doesNotMatch(fill, /countryHealth|countryDamage|HELD_AT_TUNED/, 'and moves no fight’s level');
   assert.match(source('main.js'), /if\(!isArmyBattle\(config\.id\)\)return file;/, 'every other fight returns before it');
   // A fight that is not the army's is exactly what it was.

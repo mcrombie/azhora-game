@@ -136,6 +136,14 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    whatever the fight already had, at his own `MERCENARY_ARMS` numbers. The border battle's own
    four soldiers keep their places and the company stands with them.
 
+   **And the border battle grows with the company** (the user, 2026-09-21; `BORDER_LINE`,
+   `src/border-chapter.js`). Up to six companions it is the eight it always was — which is the
+   fight the army's fill is sized against — and above that one more soldier a companion, to the
+   twelve `encounterConfig` will accept. Measured at level 2 over forty seeds: ten companions used
+   to win 40 of 40 at 96 % health in 36 seconds with **one** man down, and now win 40 of 40 at
+   91 % in 56 seconds with **4.8 of 10** down. More soldiers, never a higher level: a company buys
+   a bigger battle, and pays for it in its own men rather than in the traveler's health.
+
    **The three fights the player is taught alone in are a named list, not a place** — the
    Greenway raid and the Avrel clearing raiders, beside the straw post's practice. "The fights he
    is being taught alone in" is not a country: Drent has later fights that are no lesson, and

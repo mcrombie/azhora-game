@@ -3665,3 +3665,70 @@ men; floor 10 reaches 34/40 by putting **ten** men on the field, at 77 % health,
 hard and makes "fewer than six companions" a number about nothing.
 
 **Nothing is tuned.** `FILE_FLOOR` is still 6 and the fill still carries no level or toughness.
+
+# Round 7: the two levers built, and measured on the build
+
+The user's answers to round 6 (docs/design-answers.md) built and driven with **the hunter's own
+validated line driver**, copied field for field from the round-6 harness: level 2, 40 seeds a row,
+the traveler as the arc leaves him (Blades 17, Toughness 12, no armour, no shield), his side's own
+four beside him, retreats and two-minute stalemates counted apart from losses.
+
+**The driver was validated before a row was read out of it**, on the four numbers and on round 6's
+own baseline - lone traveler and six *plain* assigned men:
+
+| | swings | allyStruck | swungAtMe | aheadOfTheLine |
+|---|---|---|---|---|
+| wanted | > 4 | > 0 | < 1 (0.1-0.5) | < 0.5 (0.00-0.08) |
+| got | 42 | 30 | 0.53 | 0.016 |
+
+and the baseline came back **21/40, 14 lost, 0 walked out, 5 stalemates, 50 % health, 6.8/8 down,
+6.0 of 6 assigned dead, 92.9 s, 39.5 swings, 2.5 blows taken** - round 6's row to the digit.
+
+*A first rebuild of the driver from the handover's prose alone gave 40/40 at 75 %, because it
+dodged only the tells the `windup` event said were aimed at it, and so was never wrong-footed. The
+validated driver dodges any tell inside 3.4 m. The prose was not enough; the harness was.*
+
+## A. The assigned men are trained a little
+
+`FILL_ARMS = { level: 15, toughness: 12 }` in src/file-fill.js. The hunter's predicted row and the
+built row are the same row:
+
+| the assigned man is | won | lost | stalemate | health | down | assigned dead |
+|---|---|---|---|---|---|---|
+| plain 90 (round 6) | 21/40 | 14 | **5** | 50 % | 6.8/8 | 6.0 of 6 |
+| **level 15 / toughness 12 (built)** | **32/40** | 8 | **0** | **59 %** | 7.5/8 | **5.9 of 6** |
+
+**The passenger control says the fighting is still entirely his**: closing and dodging but never
+swinging, a lone traveler with the trained six wins **0/40** and his ten men kill **2.0 of 8**
+between them (plain: 0.7 of 8). Training the fill did not hand the battle to the line.
+
+## B. The battle grows with the company
+
+`BORDER_LINE` in src/border-chapter.js: companions 0-6 meet eight, and above the floor one more
+soldier a companion, to twelve. **Twelve is `encounterConfig`'s own cap** (src/combat.js refuses a
+fight with more than twelve enemies), so a full company meets the largest line the game will lay.
+
+| walking with him | the line | won | health | seconds | swings | blows taken | companions dead |
+|---|---|---|---|---|---|---|---|
+| six | 8 | 40/40 | 96 % | 41 | 24 | 0.1 | 2.2 of 6 |
+| eight | 8 (before) | 40/40 | 96 % | 37 | 23 | 0.1 | 1.0 of 8 |
+| eight | **10** | 40/40 | 95 % | **49** | 28 | 0.2 | **3.5 of 8** |
+| ten | 8 (before) | 40/40 | 96 % | 37 | 24 | 0.1 | 1.1 of 10 |
+| ten | **12** | 40/40 | 91 % | **56** | 31 | 0.3 | **4.8 of 10** |
+
+**The passenger, on the line the table lays**: six companions 36/40, eight companions 34/40, ten
+companions 32/40 - so a full company still wins it without him four times in five, which is what a
+full company is.
+
+**What twelve does and does not buy.** It costs a full company **half of itself** (1.1 dead becomes
+4.8) and half again as long a battle (37 s becomes 56). It does **not** make the traveler's own
+fight harder: he takes 0.3 blows instead of 0.1 and ends at 91 % instead of 96 %, because with
+fourteen men on his side only one tell in ten is aimed at him at all. **The chapter's own written
+climax - "won in about eighteen seconds at seventy-two per cent health" - cannot be reached by
+adding men inside the cap**, and on the round-6 evidence it was never a real measurement anyway.
+Going past twelve means raising `encounterConfig`'s cap, which nobody has asked for.
+
+**The day after was left alone.** `aftermathEncounter` lays seven from a table three of its four
+variants override, on four arenas, and each variant's copy names the number ("Seven of the
+Republic's best hold the Gate of Sun Horses"). Growing them is four sets of authored spots and four
+rewrites, which is not one small change.

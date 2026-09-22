@@ -59,7 +59,7 @@ import { izolDeckHeight } from './izol-world.js';
 import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderConversation } from './border-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderLine, borderLineSaid, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
@@ -686,8 +686,9 @@ function init() {
      * left - so company plus the side's own men plus the fill can never pass `MAX_ALLIES`, and a
      * traveler with six friends is handed nobody and fights today's battle to the digit.
      *
-     * They stand in the file because the file is the thing being filled, and they carry no level
-     * and no toughness, so they are the plain soldier the ally kind already is.
+     * They stand in the file because the file is the thing being filled, and they carry the one
+     * pair of numbers `FILL_ARMS` gives them - trained a little, and strictly weaker than the
+     * weakest man who ever chose to walk with him.
      */
     if(!isArmyBattle(config.id))return file;
     const fill=fillFor({side:armySide(),walking:file.length,room:room-file.length});
@@ -700,6 +701,18 @@ function init() {
    * fight itself will use, asked of the same file.
    */
   const fillSaid=()=>fillLines(armySide(),fillCount({walking:fileOrder.filter(id=>!fallen.has(id)).length}));
+  /**
+   * **How big his company is, for the two things that ask.** The men walking with him and still
+   * alive - not the strangers the army is lending him, and not the side's own soldiers, who are
+   * the side's whatever he brought. It is read at the moment it is wanted and saved nowhere.
+   */
+  const companyWalking=()=>fileOrder.filter(id=>!fallen.has(id)).length;
+  /**
+   * What his captain says when the other side has counted that company and answered it
+   * (`borderLineSaid`, src/border-chapter.js), and nothing at all while the line is the eight it
+   * has always been. The number he says is the number `borderEncounter` will lay.
+   */
+  const lineSaid=()=>borderLineSaid(armySide(),borderLine(companyWalking()));
   /**
    * What killed him, in the plainest words the fight has. The Marshal asks what happened and the
    * answer is built from this rather than invented - "At the Lauvel. Wolves, at night."
@@ -3204,7 +3217,9 @@ function init() {
     if(result.startEncounter){
       saveRoad(false);
       const side=border.view().side;
-      if(!combat.startEncounter(borderEncounter(side,borderAllies(side)))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      // **The line is laid for the company that is actually there**, counted now and kept nowhere
+      // (`borderLine`, src/border-chapter.js). Sounding the advance again counts again.
+      if(!combat.startEncounter(borderEncounter(side,borderAllies(side),companyWalking()))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
       stopInput();toast(side==='empire'?'The Coalition comes on in two waves. Hold your corner of the field.':'The army comes on in two waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
@@ -3830,7 +3845,7 @@ function init() {
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
-    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1,fill:fillSaid()}))return;
+    if((borderNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:musteredInCamp()+1,fill:fillSaid(),line:lineSaid()}))return;
     if(borderNpcIds.has(npc.id)){openDialogue(npc,[npc.id==='coalition-envoy'?'I wait for the Marshal’s man, under a flag both armies have agreed to respect until tomorrow.':npc.modelRole==='suvali-guard'?'We hold this ground under truce. Speak to the Envoy.':'Stand to your place in the line.'],null,'Back to the road');return;}
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
       musterCount:musteredInCamp()+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
@@ -6231,7 +6246,7 @@ function init() {
           const at=BORDER_ARENA.checkpoint;
           player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);
           player.group.rotation.y=Math.PI;grounded=true;verticalSpeed=0;
-          combat.startEncounter(borderEncounter(side,borderAllies(side)),{atCheckpoint:true});
+          combat.startEncounter(borderEncounter(side,borderAllies(side),companyWalking()),{atCheckpoint:true});
           // A few frames to bring the fight to `active` and let the file take its places.
           for(let step=0;step<12;step++){combat.update(1/60);combatClock+=1/60;
             combatView.update(1/60,combatClock,combat.state,player.group.position,true);}
@@ -6254,6 +6269,56 @@ function init() {
           reviewTarget=new THREE.Vector3(heart.x,world.heightAt(heart.x,heart.z)+1.2,heart.z);
           const across=BORDER_ARENA.retreatAxis==='x'?Math.PI/2:0;
           const shot=bestOf(reviewTarget,17,[across,across+Math.PI,across+.5,across-.5+Math.PI]);
+          yaw=shot.yaw;pitch=.3;distance=targetDistance=shot.distance;reviewFrozen=true;
+          $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
+          return;
+        }
+        /**
+         * **The battle a full company meets** (`borderLine`, src/border-chapter.js). Ten walk with
+         * him, so the other side has counted them and put **twelve** across the field - the largest
+         * line `encounterConfig` will accept - and the shot is of the two lines facing each other
+         * with the open ground between them.
+         *
+         * Aimed **across** the confrontation, which is the opposite of `filled-file`: that one
+         * photographs a rank abreast and so looks along the retreat axis; this one photographs two
+         * ranks thirty metres apart along that axis, and they only both fit from the side. The
+         * focus is the midpoint of the ground between the nearest man of each line rather than the
+         * arena's centre, so neither line is pushed out of frame by the other's depth.
+         *
+         * Written to be run twice, because the runner composes the first view twice: `revive`,
+         * `restore` and `startEncounter` all lay the thing afresh rather than adding to it.
+         */
+        if(view==='border-line-ten'){playSeconds=4000;   // on the view's own line: tests/session-clock.test.js reads a pin only where it names a view
+          questStage=10;combat.revive();sparring=null;endMark(null);returnLoan();clearArrows();player.setArmed(true);
+          companionOffTheClock=true;
+          // The whole company: nine asked and the landing mate carried, which is ten in the file.
+          companions.restore({...createCompanions().snapshot(),walking:Object.keys(ASKS).filter(id=>id!==landingMateId())});
+          rebuildCompany();settleMercenaries();
+          border.restore({...createBorderChapter().snapshot(),started:true,ordered:true,entered:true,side:'empire',ready:true,marched:true,revision:6});
+          const at=BORDER_ARENA.checkpoint;
+          player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);
+          player.group.rotation.y=Math.PI;grounded=true;verticalSpeed=0;
+          combat.startEncounter(borderEncounter('empire',borderAllies('empire'),companyWalking()),{atCheckpoint:true});
+          // A few frames to bring the fight to `active` and let both lines take their places. The
+          // last wave walks on late, so this is only the men who are already on the field.
+          for(let step=0;step<12;step++){combat.update(1/60);combatClock+=1/60;
+            combatView.update(1/60,combatClock,combat.state,player.group.position,true);}
+          settlePose({armed:true});
+          const me=player.group.position;
+          const ours=[{x:me.x,z:me.z},...combat.state.allies.map(one=>({x:one.x,z:one.z}))];
+          const theirs=combat.state.enemies.filter(one=>one.active).map(one=>({x:one.x,z:one.z}));
+          const near=(list,other)=>list.reduce((best,one)=>{
+            const far=Math.min(...other.map(o=>Math.hypot(o.x-one.x,o.z-one.z)));
+            return !best||far<best.far?{one,far}:best;},null).one;
+          const front=near(ours,theirs),facing=near(theirs,ours);
+          const heart={x:(front.x+facing.x)/2,z:(front.z+facing.z)/2};
+          reviewTarget=new THREE.Vector3(heart.x,world.heightAt(heart.x,heart.z)+1.2,heart.z);
+          const side=BORDER_ARENA.retreatAxis==='x'?0:Math.PI/2;
+          // **Thirty-four metres**, which is what it takes to hold both lines: they stand about
+          // thirty apart along the arena and at anything nearer one of them is out of the frame.
+          // The pitch below is the view's preference and not its angle - a fight of its own lifts
+          // the camera to at least .56 (`viewPitch`), and this shot is taken inside a live fight.
+          const shot=bestOf(reviewTarget,34,[side,side+Math.PI]);
           yaw=shot.yaw;pitch=.3;distance=targetDistance=shot.distance;reviewFrozen=true;
           $('toast').classList.remove('visible');show('dialogue',false);show('modal-backdrop',false);
           return;
