@@ -4,6 +4,21 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-21 — the highwayman is a man (the user's answer, on Codex's Chapter 1 brief)
+
+Michael asked Codex to write a Chapter 1 redesign brief, leave it in this codebase and hand it
+to Claude for an implementation plan: `docs/chapter-1-redesign.md`, with its prompt in
+`docs/chapter-1-claude-prompt.md`. The brief replaces the opening three-goblin raid with a
+single highway robber farther out on the road, and replaces the Lauvel wolves with that
+robber's gang. Codex drafted the robber as a woman, reading the spoken word that way.
+
+**The user's ruling: make the highwayman male.** Both documents are corrected throughout, and
+the correction is a requirement rather than a proposal. Nothing else about the encounter
+changed: still exactly one hostile actor, still farther from the village than the raid it
+replaces, still the first real fight, still the gang that turns up again in Luscia.
+
+Nothing of the brief is built. The plan Codex's prompt asks for has not been written.
+
 ## 2026-09-21 — the file's worth, and a battle that grows (the user's answers, after the hunter's round six)
 
 The hunter re-measured the border battle at level 2 on the repaired placement (the file used to

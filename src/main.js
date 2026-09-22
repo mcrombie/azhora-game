@@ -6800,6 +6800,9 @@ function init() {
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
         // The skills sheet as the journal draws it, for checking what this mode shows.
         if(view==='skills'){combat.finishPractice();modal('journal');journalTab('skills');}
+        // The testing panel itself, so the go-anywhere rows can be looked at rather than believed.
+        // Render this one WITHOUT --review-clean: that flag hides every element of the interface.
+        if(view==='testing-panel'){combat.finishPractice();testingWhereAmI();modal('testing');}
         // A lettered board, close enough to read: the Greenway fingerpost above the landing. What
         // it is for is the lettering atlas, whose cells move when it is cut for fewer words.
         if(view==='signpost'){questStage=10;combat.finishPractice();player.group.visible=false;
