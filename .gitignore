@@ -7,3 +7,5 @@ tests/.electron-profiles/
 .claude/worktrees/
 # The static build (scripts/build-web.mjs); Render makes its own on deploy.
 public/
+# Throwaway measuring scripts: probes for road distances, fight difficulty and the like.
+.tmpchk/

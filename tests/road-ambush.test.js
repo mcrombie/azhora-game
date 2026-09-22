@@ -191,6 +191,22 @@ test('the traveler’s own fight: three of them, and they are not goblins', asyn
   assert.equal(rebel.guard, undefined, 'no shields');
   assert.equal(rebel.armor, undefined, 'and no mail');
   assert.ok(rebel.tell >= soldier.tell, 'timing never scales: their tell is as honest as anybody’s');
+  // **Poise is what makes it a fight.** Without it a traveler who simply keeps swinging
+  // interrupts every windup and finishes all three untouched - measured, 200 runs a setting.
+  assert.equal(rebel.poise, true, 'they swing through a cut instead of flinching out of it');
+  assert.equal(rebel.pack, 2, 'two at a time, not the soldiers’ three');
+  // And the health they are authored with is the module’s, so the fight and its reason live together.
+  assert.equal(AMBUSH.hp, 120);
+  assert.ok(AMBUSH.hp > goblin.damage * 4, 'more man than the tutorial’s goblins');
+});
+
+test('the host authors them at the health the module names, and answers a refused fight', () => {
+  const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
+  assert.match(main, /const REBEL_HP=AMBUSH\.hp;/, 'one number, named where the reason for it is written');
+  assert.doesNotMatch(main, /kind:'rebel',name:'Rebel of the Lauvel',hp:\d/, 'and not a literal beside each of them');
+  // A refused fight that nothing answers is a fight that silently never happens.
+  assert.match(main, /else if\(!ambushHeldOff\)\{ambushHeldOff=true;/);
+  assert.match(main, /if\(!near\)ambushHeldOff=false;/, 'and he is told again if he walks away and comes back');
 });
 
 /**

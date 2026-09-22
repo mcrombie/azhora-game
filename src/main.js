@@ -1314,6 +1314,8 @@ function init() {
   const ambush=createRoadAmbush({seed:ambushSeed});
   /** Whoever's body the traveler has already walked up to, so he is told once and not every frame. */
   const bodiesFound=new Set();
+  /** Whether he has already been told they held off, so a refusal is said once and not every frame. */
+  let ambushHeldOff=false;
   const chameleon=createChameleon({seed:chameleonSeed,onEvent:event=>{if(event.type==='poof')chameleonPoof(event);}});
   const edView=createEdView(scene,{heightAt:(x,z)=>world.heightAt(x,z)});
   const edNpc={id:ED.id,name:ED.name,role:ED.role,actor:{group:edView.group}};
@@ -2717,6 +2719,7 @@ function init() {
    * them, off both verges, at the road's own bearing; no authored `level`, so it takes Drent's
    * (which is nought) exactly as every other fight in the country does.
    */
+  const REBEL_HP=AMBUSH.hp;
   const ambushGround=()=>({...AMBUSH.point,dx:AMBUSH.forward.dx,dz:AMBUSH.forward.dz});
   const ambushEncounter=(()=>{
     const {x,z}=AMBUSH.point,{dx,dz}=AMBUSH.forward;
@@ -2724,9 +2727,9 @@ function init() {
     return {id:'caloss-rebels',center:{x,z},checkpoint:at(-14,0),
       retreatAxis:Math.abs(dx)>Math.abs(dz)?'x':'z',retreatLine:at(-26,0)[Math.abs(dx)>Math.abs(dz)?'x':'z'],
       enemies:[
-        {id:'rebel-lane',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:.2,...at(3,-3.4),model:{role:'forest-woodcutter',tunic:0x6d5b43}},
-        {id:'rebel-hedge',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:1.4,...at(-2,3.6),model:{role:'town-carter',tunic:0x5a6350}},
-        {id:'rebel-stone',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:2.6,...at(6,2.8),model:{role:'forest-woodcutter',tunic:0x7a4f3c}},
+        {id:'rebel-lane',kind:'rebel',name:'Rebel of the Lauvel',hp:REBEL_HP,entry:.2,...at(3,-3.4),model:{role:'forest-woodcutter',tunic:0x6d5b43}},
+        {id:'rebel-hedge',kind:'rebel',name:'Rebel of the Lauvel',hp:REBEL_HP,entry:1.4,...at(-2,3.6),model:{role:'town-carter',tunic:0x5a6350}},
+        {id:'rebel-stone',kind:'rebel',name:'Rebel of the Lauvel',hp:REBEL_HP,entry:2.6,...at(6,2.8),model:{role:'forest-woodcutter',tunic:0x7a4f3c}},
       ]};
   })();
   const meadowEncounter=AVREL_RAID;
@@ -5333,11 +5336,18 @@ function init() {
           audio?.effect('bell');saveRoad(false);}
         // **They come off both verges at him.** No mark over anybody's head and nothing in the
         // journal: he walks into it or he never knows it was there (src/road-ambush.js).
-        if(ambush.alive&&combat.state.phase!=='active'&&mode==='playing'
-          &&Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach){
-          if(combat.startEncounter(ambushEncounter)){ambush.sprang();
-            toast(ambush.fell(landingMateId())?'Three of them come out of the hedges, over the body they left on the road.':'Three of them come out of the hedges on either side of the road. Nobody was waiting for you; somebody was waiting.','THE DRENT ROAD');
-            audio?.effect('bell');saveRoad(false);}
+        {const near=Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach;
+          if(!near)ambushHeldOff=false;
+          else if(ambush.alive&&combat.state.phase!=='active'&&mode==='playing'){
+            if(combat.startEncounter(ambushEncounter)){ambush.sprang();ambushHeldOff=false;
+              toast(ambush.fell(landingMateId())?'Three of them come out of the hedges, over the body they left on the road.':'Three of them come out of the hedges on either side of the road. Nobody was waiting for you; somebody was waiting.','THE DRENT ROAD');
+              audio?.effect('bell');saveRoad(false);}
+            // **A refused fight is a fight that silently never happens** (tests/fights-with-company.test.js).
+            // There is no ground for one only while he is in the middle of something else, so he is
+            // told once, and they are still there when he comes back to this stretch of road.
+            else if(!ambushHeldOff){ambushHeldOff=true;
+              toast('Something moves in the hedge, and thinks better of it. Come back down this stretch of road when your hands are free.','THE DRENT ROAD');}
+          }
         }
         // **The goblins at the woodland bell are off the slate** (`greenway`, src/quest-slate.js).
         // The fight is still built, still tested and still here; nothing walks into it.

@@ -53,6 +53,13 @@ export const AMBUSH = Object.freeze({
   point: Object.freeze({ x: -493.7, z: 68.3 }),
   rebels: 3,
   /**
+   * What each of them can take. Measured against a dodging player over 200 runs a setting
+   * (`poise` in src/combat.js has the numbers): at this he is finished at about forty health
+   * alone and about eighty with somebody at his shoulder, which is the fight the user asked
+   * for on 22 September 2026 - fairly difficult alone, not very hard with an ally.
+   */
+  hp: 120,
+  /**
    * The road's own bearing where they lie, measured on the built road: the points at 515 m
    * and 525 m are (-489.5, 65.6) and (-498.0, 70.9), which is this, and a test holds it to
    * what the world actually draws.
