@@ -4,6 +4,10 @@ import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint, S
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { SUBREGIONS } from '../src/map-fog.js';
 import { regions } from '../src/region-world.js';
+import * as THREE from '../vendor/three.module.js';
+import { sourceModule } from './module-loader.js';
+import { canStand } from '../src/game-state.js';
+import { BODY } from '../src/bodies.js';
 
 /** How far past the flat reach a wide ground's own radius lets the search go. */
 const RING_SLACK = 8;
@@ -80,4 +84,24 @@ test('a point written down anywhere in this project reads back', () => {
   assert.equal(parsePoint('nowhere'), null);
   assert.equal(parsePoint('12'), null, 'one number is not a place');
   assert.equal(parsePoint(null), null);
+});
+
+/**
+ * And the whole point of it, on the real ground rather than a pretend country: the panel must
+ * be able to put a body down at every place it offers. Measured when this was written: nought
+ * refused, seventeen landed off their centre, the furthest 60 m out at Lake Ela, whose middle
+ * is water and whose landing is therefore its shore.
+ */
+test('every place the panel offers has ground a body can stand on', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const standable = (x, z) => canStand(x, z, world, BODY.person);
+  const refused = [], far = [];
+  for (const country of travelCountries()) for (const place of travelPlaces(country.name)) {
+    const spot = place.radius ? landingSpot(place, standable) : { x: place.x, z: place.z, away: 0 };
+    if (!spot) { refused.push(`${country.name} · ${place.name}`); continue; }
+    if (spot.away > 0) far.push(place.name);
+  }
+  assert.deepEqual(refused, [], 'a place the panel offers and then refuses to travel to');
+  assert.ok(far.length <= 24, `${far.length} places are not standable at their own middle: ${far.join(', ')}`);
 });
