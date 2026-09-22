@@ -127,6 +127,15 @@ export function fightBox(encounter) {
 }
 const insideBox = (box, p) => p.x >= box.minX && p.x <= box.maxX && p.z >= box.minZ && p.z <= box.maxZ;
 
+/**
+ * **The fight's outer limit.** Forty-five metres from the centre is the leash a traveler who
+ * walks out of a fight is caught by, and it has been that since the first encounter was written.
+ * It is spelled here rather than typed twice because **the chase uses the same number**: enemies
+ * that leave their own ground to come after an archer stop exactly where a retreat begins, and
+ * there must not be a second radius for anybody to tune out of step with this one.
+ */
+const LEASH = 45;
+
 function encounterConfig(config) {
   if (!config || typeof config !== 'object') return null;
   const point = value => value && Number.isFinite(value.x) && Number.isFinite(value.z);
@@ -287,6 +296,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     return true;
   }
+  /** Past the fight's own line of retreat, along the axis it is laid on and the way it runs. */
+  const beyondTheLine = p => (lastEncounter.retreatSign ?? 1) * (p[lastEncounter.retreatAxis] - lastEncounter.retreatLine) > 0;
+  /**
+   * **Outside the fight altogether**: past its line, or past the leash from its centre. It is
+   * the traveler's own retreat test with the first encounter's exemption taken out, because that
+   * exemption is about not ending Tidehaven's little fight by accident and has nothing to say
+   * about how far a goblin will follow somebody.
+   */
+  const outsideTheFight = p => beyondTheLine(p) || distance(p, lastEncounter.center) > LEASH;
   let hurtProtection = 0;
   let dodgeDirection = { x: 0, z: 1 };
   let nextAttackerAt = 0;
@@ -991,10 +1009,24 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function steerEnemy(enemy, target, step, separation = true) {
     const yaw = Math.atan2(target.x - enemy.x, target.z - enemy.z);
     const offsets = [0, .45, -.45, .9, -.9, 1.4, -1.4];
+    /**
+     * **They leave their own ground to come after an archer** (the user, 2026-09-21), and never
+     * further than the fight's own outer limit; past that it is a retreat, as it already is.
+     *
+     * The arena was drawn for men with swords and it bounded the enemy without bounding the
+     * traveler, so a bow carrying thirty-four metres could be fired from twelve metres across a
+     * box eight metres wide: the hunter won the border battle alone and untouched, 304 arrows in
+     * seven minutes, with the nearest living soldier stuck 3.8 m away (docs/known-issues.md).
+     *
+     * **While what they are steering at is on the arena the bound is the arena**, to the metre -
+     * which is what keeps every melee already measured the melee it was, and it is the whole of
+     * the condition below.
+     */
+    const arena = fightBox(lastEncounter), loose = !insideBox(arena, target);
     for (const offset of offsets) {
       const x = enemy.x + Math.sin(yaw + offset) * step;
       const z = enemy.z + Math.cos(yaw + offset) * step;
-      if (!insideBox(fightBox(lastEncounter), { x, z }) || !canStand(x, z, world, .43)) continue;
+      if (!(insideBox(arena, { x, z }) || (loose && !outsideTheFight({ x, z }))) || !canStand(x, z, world, .43)) continue;
       if (separation && state.enemies.some(other => {
         if (other === enemy || !other.active) return false;
         // A lunge can briefly overlap a neighbor: allow movement that opens that gap,
@@ -1093,7 +1125,28 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const c = lastEncounter.center, wide = !!focus.ally?.refuge, alongX = lastEncounter.retreatAxis === 'x';
       const box = wide ? fightBox(lastEncounter)
         : { minX: c.x - (alongX ? 16 : 8), maxX: c.x + (alongX ? 16 : 8), minZ: c.z - (alongX ? 8 : 16), maxZ: c.z + (alongX ? 8 : 16) };
-      const target = { x: clamp(aim.x, box.minX, box.maxX), z: clamp(aim.z, box.minZ, box.maxZ) };
+      /**
+       * **Shot from where they cannot reach, they come after you** (the user, 2026-09-21).
+       *
+       * An enemy after the traveler steers at a point clamped into the middle of its ground, and
+       * that clamp is the standoff: a man twelve metres across the arena was chased to a spot
+       * eight metres across it and no further, so the hunter won the border battle alone and
+       * untouched with 304 arrows over seven minutes and the nearest living soldier stuck 3.8 m
+       * away, unable to close (docs/known-issues.md, round 5).
+       *
+       * The trigger is the user's own words, and it is **reach** and not a box: if standing on
+       * the edge of its ground would still leave it out of reach of him, the ground is the wrong
+       * bound and it leaves the ground. Where the clamp was doing its job - keeping a fight in
+       * the middle of the arena while the traveler is somewhere a man can still be met - it is
+       * untouched, and a point already inside the box clamps to itself, so a melee fought on the
+       * fight's own ground does not move at all.
+       *
+       * Nothing bounds the chase but the fight's own outer limit, which `steerEnemy` applies and
+       * which is the same line a traveler retreats over: no second radius, for nobody to tune out
+       * of step with the first.
+       */
+      const clamped = { x: clamp(aim.x, box.minX, box.maxX), z: clamp(aim.z, box.minZ, box.maxZ) };
+      const target = distance(clamped, aim) <= profile.engage ? clamped : { x: aim.x, z: aim.z };
       const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
       enemy.speed = amount / dt;
@@ -1309,8 +1362,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const step = Math.min(remaining, 1 / 120);
       remaining -= step;
       time += step;
-      if (state.phase === 'active' && ((lastEncounter.retreatSign ?? 1) * (position[lastEncounter.retreatAxis] - lastEncounter.retreatLine) > 0
-        || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > 45))) {
+      if (state.phase === 'active' && (beyondTheLine(position)
+        || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > LEASH))) {
         // Walking out of a bout is not a retreat and must never be reported as one: there is
         // nothing to catch your breath from and nobody held the ground without you.
         if (lastEncounter.bout) endBout('walked-away');
