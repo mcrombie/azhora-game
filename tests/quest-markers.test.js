@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker } from '../src/quest-markers.js';
+import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker , TUTORIAL_DONE} from '../src/quest-markers.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -12,17 +12,34 @@ const IDS = Object.freeze({
   pondFisher: 'pond-fisher', forestStory: 'forest-keeper', gardenKeeper: 'garden-keeper', birdWatcher: 'merc-lakota', vintner: 'winery-vintner',
 });
 const view = extra => ({ ids: IDS, questStage: 0, ...extra });
-/** The state each role's own rule is waiting for. */
+/**
+ * The state each role's own rule is waiting for. Everything but the arc also waits for the
+ * tutorial to be behind the traveler (TUTORIAL_DONE): the user, 22 September 2026, on a
+ * screenshot of the landing with half a dozen marks over the rooftops.
+ */
 const OPENS = Object.freeze({
   harbourmaster: { questStage: 0 },
   warden: { questStage: 5 },
-  doomsayer: { heardDoom: false },
-  acornCook: { questStage: 1, acornQuestOpen: true },
-  pondFisher: { hasRod: false },
-  forestStory: { questStage: 1, forestOpen: true },
-  gardenKeeper: { questStage: 1, birdingLearned: false },
-  birdWatcher: { archaeologyReport: true },
-  vintner: { wineRecommended: true },
+  doomsayer: { questStage: TUTORIAL_DONE, heardDoom: false },
+  acornCook: { questStage: TUTORIAL_DONE, acornQuestOpen: true },
+  pondFisher: { questStage: TUTORIAL_DONE, hasRod: false },
+  forestStory: { questStage: TUTORIAL_DONE, forestOpen: true },
+  gardenKeeper: { questStage: TUTORIAL_DONE, birdingLearned: false },
+  birdWatcher: { questStage: TUTORIAL_DONE, archaeologyReport: true },
+  vintner: { questStage: TUTORIAL_DONE, wineRecommended: true },
+});
+
+test('the first shore wears one mark, and it is the road the game is about', () => {
+  // Every side offer in Drent used to light up the moment the traveler stepped off the boat.
+  for (const [role, open] of Object.entries(OPENS)) {
+    if (role === 'harbourmaster' || role === 'warden') continue;
+    assert.equal(markerFor(IDS[role], view({ ...open, questStage: 1 })), null, `${role} is marked before the tutorial is done`);
+    assert.ok(markerFor(IDS[role], view(open)), `${role} never gets his mark at all`);
+  }
+  // And the arc keeps its gold the whole way through the tutorial.
+  assert.equal(markerGrade(markerFor(IDS.harbourmaster, view({ questStage: 0 }))), 'main');
+  assert.equal(markerGrade(markerFor(IDS.warden, view({ questStage: 5 }))), 'main');
+  assert.equal(markerGrade(markerFor('corvan', view({ questStage: 3, chapterDestinations: ['corvan'] }))), 'main');
 });
 
 test('three kinds of gold, each its own colour and its own shape, with the main arc the biggest', () => {
@@ -75,10 +92,11 @@ test('every person with a mark has a kind, and main beats open beats plot beats 
   // The four that were one rule before: the harbourmaster and Eren on the arc, Orris with his cape,
   // Bran with his rod. Lysa is a skill twice over - the acorns and the feeder - and never anything else.
   assert.equal(markerGrade(markerFor(IDS.warden, view({ questStage: 5 }))), 'main');
-  assert.equal(markerGrade(markerFor(IDS.doomsayer, view())), 'plot');
-  assert.equal(markerGrade(markerFor(IDS.pondFisher, view())), 'skill');
-  assert.equal(markerGrade(markerFor(IDS.acornCook, view({ questStage: 1, feederWantsCook: true }))), 'skill');
-  // A chapter's destination outranks anything else that person might be offering.
+  assert.equal(markerGrade(markerFor(IDS.doomsayer, view({ questStage: TUTORIAL_DONE }))), 'plot');
+  assert.equal(markerGrade(markerFor(IDS.pondFisher, view({ questStage: TUTORIAL_DONE }))), 'skill');
+  assert.equal(markerGrade(markerFor(IDS.acornCook, view({ questStage: TUTORIAL_DONE, feederWantsCook: true }))), 'skill');
+  // A chapter's destination outranks anything else that person might be offering - and it is the
+  // arc, so it is the one mark that does not wait for the tutorial to be over.
   assert.equal(markerGrade(markerFor(IDS.vintner, view({ wineRecommended: true, chapterDestinations: [IDS.vintner] }))), 'main');
   assert.deepEqual([strongestMarker(['skill', 'main', 'plot']), strongestMarker(['skill', 'plot']), strongestMarker([]), strongestMarker(['rumour'])],
     ['main', 'plot', null, null]);
@@ -90,17 +108,17 @@ test('the long road wears the arc’s own gold, open, and never instead of the a
   // Not a fourth kind: the table stays three and the open one is a variant of the first.
   assert.equal(MARKER_KINDS.length, 3);
   assert.ok(!MARKER_KINDS.includes(MARKER_OPEN));
-  const open = markerFor(IDS.gardenKeeper, view({ questStage: 8, longWay: ['garden-keeper'], birdingLearned: true }));
+  const open = markerFor(IDS.gardenKeeper, view({ questStage: TUTORIAL_DONE, longWay: ['garden-keeper'], birdingLearned: true }));
   assert.deepEqual(open, { kind: 'main', open: true }, 'the long road’s next stop');
   assert.equal(markerGrade(open), MARKER_OPEN);
   assert.equal(markerStyle(open).colour, MARKER_STYLE.main.colour, 'the same gold');
   assert.equal(markerStyle(open).shape, MARKER_STYLE.main.shape, 'and the same cut stone');
   // A teacher keeps their leaf; the open gold rides over whichever of them is next.
-  const teaching = markerFor(IDS.gardenKeeper, view({ questStage: 8, longWay: ['garden-keeper'], birdingLearned: false }));
+  const teaching = markerFor(IDS.gardenKeeper, view({ questStage: TUTORIAL_DONE, longWay: ['garden-keeper'], birdingLearned: false }));
   assert.deepEqual(teaching, { kind: 'main', open: true });
   // And it never takes the muster road's place.
-  assert.deepEqual(markerFor(IDS.vintner, view({ longWay: [IDS.vintner], chapterDestinations: [IDS.vintner] })), { kind: 'main', open: false });
-  assert.equal(markerFor(IDS.gardenKeeper, view({ questStage: 8, longWay: ['garden-keeper'], busy: true })), null, 'and a fight takes it down');
+  assert.deepEqual(markerFor(IDS.vintner, view({ questStage: TUTORIAL_DONE, longWay: [IDS.vintner], chapterDestinations: [IDS.vintner] })), { kind: 'main', open: false });
+  assert.equal(markerFor(IDS.gardenKeeper, view({ questStage: TUTORIAL_DONE, longWay: ['garden-keeper'], busy: true })), null, 'and a fight takes it down');
   assert.equal(markerGrade(null), null);
   assert.equal(markerStyle(null), null);
 });

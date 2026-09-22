@@ -2783,7 +2783,14 @@ function init() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
-    playSeconds=0;refugeeHold=0;landingSaid=null;companionOffTheClock=true;rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
+    playSeconds=0;refugeeHold=0;landingSaid=null;companionOffTheClock=true;
+    // **Nobody walks with you until you ask.** (The user, 22 September 2026: they should never
+    // follow without being asked first.) The long road made the man off your boat a companion
+    // from the first frame, so he was a step behind the traveler before a word had been said to
+    // him. He now begins released - on his own clock, walking the road to the muster like the
+    // other ten - and the choice he already offers, "Walk Drent with me.", is how he is asked.
+    longRoad.act('release',{at:0,distance:0});
+    rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
     mode='arriving';document.body.classList.add('playing','cutscene');$('opening').style.opacity='0';$('opening').style.transform='translateY(15px)';
     // The bell no longer rings here: the sequence rings it at thirty seconds, while the boat is
     // still off the pier's end and the traveler can hear it come across the water.
@@ -2867,6 +2874,9 @@ function init() {
   function releaseLandingMate(){
     if(mateSaidGoodbye)return;
     mateSaidGoodbye=true;
+    // He never walked you up the pier (LANDING_ESCORT) and was never at your shoulder, so there
+    // is nothing to say goodbye about and no overrun to give back to his clock.
+    if(longRoad.released)return;
     const mateId=landingMateId(),mate=npcById.get(mateId);
     const entry=roster.find(man=>man.id===mateId);
     const overrun=entry&&!companionOffTheClock?Math.max(0,playSeconds-entry.arrival-entry.departs):0;

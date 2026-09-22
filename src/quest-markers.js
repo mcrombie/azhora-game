@@ -73,24 +73,43 @@ const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) 
  * chapterDestinations, longWay, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
  * archaeologyReport, forestOpen, wineRecommended }.
  */
+/**
+ * **Nothing but the arc while the first shore is being walked** (the user, 22 September 2026,
+ * looking at a screenshot of the landing with half a dozen marks over the rooftops).
+ *
+ * Every teacher and every story in Drent used to light up from `questStage >= 1`, which is the
+ * moment the traveler steps off the boat: the garden keeper, the pond fisher, the acorn cook,
+ * the doomsayer and the forest all wore gold over the same village at once, before the player
+ * had been told what any of it was. The tutorial ends at the Caloss Gate (`TUTORIAL_DONE`),
+ * Drent opens, and that is when the country's own offers are worth pointing at. Until then
+ * there is one mark on the screen and it is the road the game is about.
+ *
+ * The arc itself is untouched: the harbourmaster, the waykeeper and the chapters' destinations
+ * wear their gold whenever they hold it.
+ */
+export const TUTORIAL_DONE = 10;
+
 export function markerFor(id, view = {}) {
   const ids = view.ids ?? {}, busy = !!view.busy, stage = view.questStage ?? 0, kinds = [];
+  const ashore = stage >= TUTORIAL_DONE;
   // The arc. The harbourmaster holds it until the letter is in the satchel.
   if (id === ids.harbourmaster && stage < 2) kinds.push('main');
   if (id === ids.warden && stage === 5) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
+  // And nothing else until the tutorial is behind the traveler.
+  if (!ashore) return mark(strongestMarker(kinds));
   // The long road's next stop, which is gold because it is main quest too, and open because it
   // is the road you may take rather than the one you must.
   if (holds(view.longWay, id) && !busy) kinds.push(MARKER_OPEN);
   // Stories of their own.
   if (id === ids.doomsayer && !view.heardDoom) kinds.push('plot');
-  if (id === ids.forestStory && stage >= 1 && !busy && view.forestOpen) kinds.push('plot');
+  if (id === ids.forestStory && !busy && view.forestOpen) kinds.push('plot');
   // Teachers, and the errands that pay a skill.
-  if (id === ids.acornCook && !busy && ((stage >= 1 && view.acornQuestOpen) || view.feederWantsCook)) kinds.push('skill');
+  if (id === ids.acornCook && !busy && (view.acornQuestOpen || view.feederWantsCook)) kinds.push('skill');
   if (id === ids.pondFisher && !view.hasRod) kinds.push('skill');
   // Perrin's garden is where birding is taught, so his mark is up until somebody has taught it.
-  if (id === ids.gardenKeeper && stage >= 1 && !busy && !view.birdingLearned) kinds.push('skill');
+  if (id === ids.gardenKeeper && !busy && !view.birdingLearned) kinds.push('skill');
   // Lakota's is up when he has notes to take back, which only happens once you know him.
   if (id === ids.birdWatcher && !busy && view.archaeologyReport) kinds.push('skill');
   if (id === ids.vintner && view.wineRecommended && !busy) kinds.push('skill');
