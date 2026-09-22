@@ -697,8 +697,15 @@ confirmed — the line is identical for the border battle and `solis-sweep`, at 
 a prepared one, and it does not care *who* the six are (0+6, 3+3 and 6+0 all win; anything
 totalling five loses). Fewer than six walking with him and his commander assigns the difference as
 ordinary soldiers of the side he signed with, the same ally kind the battle's own men already are.
-They carry no level and no toughness, so they are the kind's plain ninety health — **weaker than
-companions on purpose**, so friends still matter.
+
+**They are trained a little** (`FILL_ARMS`, the user's second ruling of 2026-09-21): **level 15,
+toughness 12**, and not the kind's plain ninety. Plain, a lone traveler's border battle was 21 of
+40 at half health with **five runs in forty still going at the two-minute cap**; trained, it is
+**32 of 40 at 59 %, no stalemates, and 5.9 of the 6 assigned men still dead**. Both rows are the
+hunter's validated line driver at level 2 over forty seeds, and the second was reproduced on the
+build. The law the numbers have to keep is **strictly weaker than the weakest companion** — Altun
+is 20 / 17 — so that friends still matter; it is pinned against `MERCENARY_ARMS` itself, and a
+future companion weaker than Altun trips the test rather than passing quietly.
 
 **They are not companions**: no regard, no lessons, no journal line, no file behind him
 afterwards, no death card, nothing owed to the Marshal's register, nothing saved. They are made
@@ -717,6 +724,49 @@ and counts the men actually standing there.
 
 It touches nothing else: no encounter level moved, and no fight that is not an army's gained
 anybody. Wolves, Mallec and every raid are what they were.
+
+### The battle grows with the company — built
+
+**The user's ruling of 2026-09-21** (`docs/design-answers.md`): *the enemy line grows with the size
+of the traveler's company — more soldiers, never a higher level — so that ten companions meet a
+fight worth ten and a full company is still a climax.* Ten companions won the eight-man line 40 of
+40 at 96 % health in 36 seconds with one man down: a parade.
+
+**One table in `src/border-chapter.js`**, `BORDER_LINE`, indexed by the number of companions
+walking with him: rows 0 to 6 are all **eight**, and above the floor it is **one more soldier a
+companion**, to twelve. A short company meets exactly the battle the fill was measured on, because
+below `FILE_FLOOR` the army is already making his numbers up for him and a battle that grew at the
+same time would take back what it just gave. The line is decided when `borderEncounter` is built
+for the fight, from the company present then, and nothing about it is saved.
+
+The four soldiers the growth can add are the same soldier at the same level — the ruling is more
+men, never a higher level — laid in the third wave (entries 15.5 to 18.5 s, so the line is still
+the three waves the captains promise), at least 1.2 m from the authored eight and from each other,
+inside the ground `encounterConfig` accepts and clear of every place one of the traveler's own can
+stand. Measured at level 2, forty seeds, on the same validated driver:
+
+| walking with him | the line | won | health | seconds | dead on his side |
+|---|---|---|---|---|---|
+| six companions | 8 | 40/40 | 96 % | 41 | 2.2 of 6 |
+| eight companions | 8 → **10** | 40/40 | 96 % → 95 % | 37 → **49** | 1.0 → **3.5 of 8** |
+| ten companions | 8 → **12** | 40/40 | 96 % → 91 % | 37 → **56** | 1.1 → **4.8 of 10** |
+
+**Twelve is the ceiling and it is not the chapter's**: `encounterConfig` refuses any fight with
+more than twelve enemies, so twelve is the largest line the game will lay and a full company meets
+it. What a big company buys at that size is a longer battle that kills half of itself, not a
+harder one for the traveler — with fourteen on his side one tell in ten is aimed at him, and his
+own health only falls from 96 % to 91 %. Going further would mean raising that cap, which nobody
+has asked for.
+
+**The day after is left at its authored line.** `aftermathEncounter` lays seven from a table each
+variant may override, on four different arenas, and each variant's own copy names the number
+("Seven of the Republic's best hold the Gate of Sun Horses"); growing them is four sets of authored
+spots and four rewrites, not one small change.
+
+**The captain says how many**, because he is the man who already gives the traveler the word at the
+line: two short sentences from Brulan or Voss, truthful about the number, and nothing at all while
+the line is the eight it has always been. The quest panel names no number, so that it is written
+once for every size of the line.
 
 ### Candidates, not built
 

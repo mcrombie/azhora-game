@@ -58,15 +58,75 @@ export const BORDER_ARENA = Object.freeze({ center: Object.freeze(toWorld(-392, 
 /** The column is up when the traveler comes this near the line's checkpoint. */
 export const BORDER_ARRIVAL_RADIUS = 16;
 
-// Eight of the other side's soldiers in three waves: three, three, then two more who come up behind.
-const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9], [-396, 290, 13], [-388, 289.5, 14.5]]
+// The eight the other side always sent, in three waves: three, three, then two more up behind.
+const ENEMY_SPOTS = [[-398, 296, .2], [-386, 295, .9], [-392, 292, 1.8], [-401, 291, 5.5], [-383, 290, 7], [-392, 288, 9], [-396, 290, 13], [-388, 289.5, 14.5]];
+/**
+ * **And four more, for a company big enough to be worth them** (`borderLine`). They are the same
+ * soldiers at the same level - the user's ruling is *more men, never a higher level* - and they
+ * come up behind, on the flanks and in the deepest rank the arena has, in the **third wave**: their
+ * entries run 15.5 to 18.5 s, no more than two seconds apart from each other or from the eighth
+ * man, so the line is still the three waves the captains promise however big it is (pinned in
+ * tests/quest-directions.test.js). Every one of them stands at least 1.2 m from the authored eight
+ * and from the others, inside the 21 m toward the enemy and the 12 m across that `encounterConfig`
+ * accepts, and nowhere near the ground an ally may stand on: the whole of the traveler's side
+ * forms up 10 to 18 m the other way (`ALLY_SPOTS`, `companionAllies`).
+ */
+const EXTRA_SPOTS = [[-403.5, 293.5, 15.5], [-380.5, 292.5, 16.5], [-398, 287, 17.5], [-386, 287, 18.5]];
+const LINE_SPOTS = [...ENEMY_SPOTS, ...EXTRA_SPOTS]
   .map(([x, z, entry]) => { const p = toWorld(x, z); return [p.x, p.z, entry]; });
 const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 324]]
   .map(([x, z]) => { const p = toWorld(x, z); return [p.x, p.z]; });
 
 /**
- * The encounter for a side: eight of the other side's soldiers in three waves, and the allies who
- * stand with the traveler.
+ * **The battle grows with the company** (the user, 2026-09-21, docs/design-answers.md): *the enemy
+ * line grows with the size of the traveler's company - more soldiers, never a higher level - so
+ * that ten companions meet a fight worth ten and a full company is still a climax.*
+ *
+ * One table, read straight: the index is how many companions are walking with him when the line is
+ * laid, and the number is how many of the other side come on. Nothing else about the fight moves,
+ * and nothing about it is saved - the line is decided when the encounter is built and forgotten
+ * with the fight.
+ *
+ * **A short company meets exactly today's eight.** Rows 0 to 6 are all eight on purpose: below
+ * `FILE_FLOOR` (six, src/file-fill.js) the army is making his numbers up for him, and a battle
+ * that grew while his commander was handing him strangers would be taking back what it just gave.
+ * So the fill's own measurement - a lone traveler at 32 of 40 - is untouched by any of this.
+ *
+ * **Above the floor, one more soldier a companion**, which is the plainest rule a player can feel:
+ * bring a friend, meet a man. It runs out at twelve because twelve is every enemy `encounterConfig`
+ * will accept in one fight (src/combat.js), so ten companions - the whole roster - meet the largest
+ * line this fight can be given.
+ */
+export const BORDER_LINE = Object.freeze([8, 8, 8, 8, 8, 8, 8, 9, 10, 11, 12]);
+/** How many come on against a company of this size, which is the table and nothing else. */
+export function borderLine(company = 0) {
+  const walking = Math.max(0, Math.floor(Number(company) || 0));
+  return BORDER_LINE[Math.min(walking, BORDER_LINE.length - 1)];
+}
+
+const LINE_WORDS = Object.freeze({ 9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve' });
+/**
+ * **What his captain says when the other side has counted his company**, in the voice of the man
+ * who already gives him the word at the line - Captain Oswin Brulan of the army's left, or Captain
+ * Arlen Voss of the Lauvel companies. Two short sentences, truthful about the number, and **nothing
+ * at all** while the line is the eight it has always been, because a captain who remarks on eight
+ * men every time is a captain nobody listens to.
+ */
+export function borderLineSaid(side, count) {
+  const many = Math.max(0, Math.floor(Number(count) || 0));
+  const word = LINE_WORDS[many];
+  if (!word || many <= BORDER_LINE[0]) return Object.freeze([]);
+  return side === 'coalition'
+    ? Object.freeze([`They have counted your company and answered it: ${word} across from us, where there were eight.`,
+      'It is the same corner of the same field. Hold it and the day is still ours.'])
+    : Object.freeze([`Their scouts counted your company, so there are ${word} of them across from us now, not eight.`,
+      'That is what a company is worth to them. Hold your corner and they can send fourteen.']);
+}
+
+/**
+ * The encounter for a side: the other side's line in waves, and the allies who stand with the
+ * traveler. `company` is how many companions are walking with him as the line is laid, and it
+ * decides how many come on (`borderLine`); nothing else in the fight depends on it.
  *
  * **The hold is lifted** (the user, 2026-09-21: "Lift it to level 2"). These battles carried
  * `HELD_AT_TUNED_LEVEL = 0` while phase 3 and companions were unbuilt, because a traveler with no
@@ -75,15 +135,31 @@ const ALLY_SPOTS = [[-398, 318], [-386, 318], [-401, 322], [-383, 322], [-392, 3
  * like every other fight in the game - which for the stockade is the Moros Plain, and **level 2**,
  * measured on the built world rather than assumed.
  *
- * What that is, driven: alone or with three it cannot be won; with six it is won every time in
- * about eighteen seconds at seventy-two per cent health, which is the climax the chapter was
- * written for (docs/known-issues.md).
+ * What that is, driven at level 2 over forty seeds with the hunter's validated line driver, the
+ * traveler as the arc leaves him (Blades 17, Toughness 12, no armour, no shield) and his side's own
+ * four beside him (docs/known-issues.md):
+ *
+ * | walking with him | the line | won | health | seconds | dead on his side |
+ * |---|---|---|---|---|---|
+ * | nobody, and the six the army assigns | 8 | **32/40** | 59 % | 80 | 5.9 of the 6 assigned |
+ * | six companions | 8 | 40/40 | 96 % | 41 | 2.2 of 6 |
+ * | eight companions | 10 | 40/40 | 95 % | 49 | **3.5 of 8** |
+ * | ten companions | 12 | 40/40 | 91 % | 56 | **4.8 of 10** |
+ *
+ * Against the eight alone, eight companions and ten both won 40 of 40 at 96 % in about 37 seconds
+ * with **one** man down: a parade. What the line costs a full company now is half of it.
+ *
+ * **Twelve is the ceiling, and it is not this module's.** `encounterConfig` refuses any fight with
+ * more than twelve enemies (src/combat.js), so twelve is the largest line the game will lay, and
+ * a full company meets it. The traveler's own health barely moves at that size - with fourteen on
+ * his side, one tell in ten is aimed at him - so what a big company buys is a longer battle that
+ * kills its friends, not a harder one for him.
  */
-export function borderEncounter(side, allies = []) {
+export function borderEncounter(side, allies = [], company = 0) {
   const foe = side === 'empire' ? 'coalition' : 'legion';
   return { id: BORDER_ENCOUNTER_ID, center: { ...BORDER_ARENA.center }, checkpoint: { ...BORDER_ARENA.checkpoint },
     retreatAxis: BORDER_ARENA.retreatAxis, retreatLine: BORDER_ARENA.retreatLine,
-    enemies: ENEMY_SPOTS.map(([x, z, entry], index) => ({ id: `border-foe-${index + 1}`, x, z, entry, hp: SOLDIER_HP, kind: 'soldier', look: foe })),
+    enemies: LINE_SPOTS.slice(0, borderLine(company)).map(([x, z, entry], index) => ({ id: `border-foe-${index + 1}`, x, z, entry, hp: SOLDIER_HP, kind: 'soldier', look: foe })),
     allies: allies.slice(0, ALLY_SPOTS.length).map((ally, index) => ({ ...ally, x: ALLY_SPOTS[index][0], z: ALLY_SPOTS[index][1] })) };
 }
 
@@ -157,7 +233,9 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
       'join-line': [5, empire() ? 'The army’s left' : 'The Republic’s right', empire()
         ? 'You kept the Empire’s contract. Captain Oswin Brulan commands the hired company on the army’s left, south-west of the stockade. Tell him when you are ready.'
         : 'You stand with the Republic. Captain Arlen Voss holds the Coalition’s right with the Lauvel companies, south-west of the stockade. Tell him when you are ready.', 'THE BORDER · 5 / 5 · THE BORDER BATTLE', [commander()]],
-      fighting: [5, 'Hold your corner of the field', 'Eight of theirs come on in three waves, shields up. Strike when they have swung; a soldier on guard turns a blade. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
+      // **No number in it.** The line is as big as the company he brought (`borderLine`), and the
+      // panel is written once for every size of it; the captain is the one who says how many.
+      fighting: [5, 'Hold your corner of the field', 'Their line comes on in three waves, shields up. Strike when they have swung; a soldier on guard turns a blade. Your allies fight beside you. Fall back south if you must; the line will wait.', 'THE BORDER BATTLE', []],
       complete: [6, won ? 'The field is yours' : 'The field is lost', (empire()
         ? (won ? 'The Coalition broke and fell back on Solis. The army rides after them into West Suval.' : 'The army lost the field and pulled back across the plain; the Coalition holds the stockade.')
         : (won ? 'The army broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
@@ -280,7 +358,7 @@ export function borderConversation(npc, context) {
    * builds it, because only the host knows who is actually walking with him today - and because
    * `file-fill.js` reads this module's own encounter id, so it cannot be imported back into it.
    */
-  const { border, openDialogue, closeDialogue, act, musterCount = 1, fill = [] } = context;
+  const { border, openDialogue, closeDialogue, act, musterCount = 1, fill = [], line = [] } = context;
   const view = border.view(), current = view.stage;
   const option = id => { const found = border.availableActions().find(item => item.id === id); return found ? [{ ...found, action: () => { closeDialogue(); act(id); } }] : []; };
   const leave = { id: 'leave-border', label: 'Not yet.', action: closeDialogue };
@@ -321,17 +399,17 @@ export function borderConversation(npc, context) {
     openDialogue(npc, [npc.id === 'battle-tribune'
       ? 'Your column is up. Good. Form them on the left, south-west of the stockade, and hold that corner.'
       : 'You brought them up the road. Good. Form them on the right, south-west of the stockade.',
-      ...fill], null, 'Back to the line', { choices: [...option('reach-line'), leave] });
+      ...fill, ...line], null, 'Back to the line', { choices: [...option('reach-line'), leave] });
     return true;
   }
   if ((npc.id === 'battle-tribune' || npc.id === 'coalition-captain') && current === 'join-line') {
-    openDialogue(npc, npc.id === 'battle-tribune' ? [
+    openDialogue(npc, [...(npc.id === 'battle-tribune' ? [
       'Oswin Brulan, captain of the left. You are the hired sword who carried the terms to Solis and came back ours. Good. Your company holds this corner; whoever of the eleven has arrived stands with you.',
       'They will come in three waves across the open ground. Hold, kill what reaches you, and fall back south to me if you must. Say when.',
     ] : [
       'Arlen Voss. Orren says you are ours now. Then you stand here, on the right, with what is left of the valley companies.',
       'Their soldiers will come in three waves across the open ground. Hold, and fall back south to me if you must. Say when.',
-    ], null, 'Back to the line', { choices: [...option('sound-advance'), leave] });
+    ]), ...line], null, 'Back to the line', { choices: [...option('sound-advance'), leave] });
     return true;
   }
   // Out of their turn, the chapter's people still answer.

@@ -189,7 +189,7 @@ test('his captain says so, in his own voice, and only when it is happening', () 
   assert.match(fillLines('empire', 2)[0], /mine/, 'and Brulan for his own');
   // Said by the man who already gives him the word before that battle, and by nobody new.
   const border = source('border-chapter.js'), after = source('aftermath-chapter.js');
-  assert.match(border, /\.\.\.fill\], null, 'Back to the line'/, 'the captain at the line says it');
+  assert.match(border, /\.\.\.fill, \.\.\.line\], null, 'Back to the line'/, 'the captain at the line says it');
   // The commander at the rally says it, after the fine steel his side owes the traveler.
   assert.match(after, /openDialogue\(npc, \[\.\.\.gift, \.\.\.chapter\.orders, \.\.\.fill\]/, 'and the commander at the rally');
   assert.match(source('main.js'), /const fillSaid=\(\)=>fillLines\(armySide\(\),fillCount\(\{walking:fileOrder\.filter\(id=>!fallen\.has\(id\)\)\.length\}\)\);/,
