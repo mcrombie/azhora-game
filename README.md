@@ -33,6 +33,7 @@ The launcher uses this project's Electron runtime if installed, otherwise the ru
 | K | Open your skills; **B** observes a bird you have in view |
 | Escape | Pause, dismiss a panel, or cancel fishing |
 | F8 | Open testing tools, including from the opening screen |
+| Esc | Pause. **Leaving the window does not pause** — Azhora goes on without you, so a fight you walk away from is still happening. Held keys are released and a cast is reeled in, because neither can be worked from another window. |
 | P | Start autoplay (also **Watch the computer play** on the opening screen or **Autoplay the road** in Pause); any key or click takes control back |
 | F11 / Alt+Enter | Toggle fullscreen |
 

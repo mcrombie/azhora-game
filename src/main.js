@@ -4759,7 +4759,19 @@ function init() {
   canvas.addEventListener('pointerleave',()=>swingHeld=false);
   canvas.addEventListener('lostpointercapture',()=>drag=false);canvas.addEventListener('contextmenu',e=>e.preventDefault());
   canvas.addEventListener('wheel',e=>{e.preventDefault();if(mode==='playing')targetDistance=THREE.MathUtils.clamp(targetDistance+e.deltaY*.008,4,19);},{passive:false});
-  window.addEventListener('blur',()=>{stopInput();if(!location.search.includes('test')){if(mode==='fishing')endFishing(true);if(mode==='playing'&&!autopilot.active)modal('pause');}});
+  /**
+   * **Leaving the window no longer pauses the game** (the user, 21 September 2026). Azhora goes
+   * on without you: the clock runs, the troupe moves on, the hired swords keep walking to the
+   * muster, and a fight you walk away from is a fight that is still happening. Esc still pauses
+   * when you want it. Two things the blur still does, and both are safety rather than policy:
+   * held keys are released, because the browser never delivers the keyup for a key let go in
+   * another window and the traveler would walk on for ever; and a cast is reeled in, because
+   * fishing is worked with the pointer and cannot be played from somewhere else.
+   *
+   * The window keeps drawing while it is unfocused because `backgroundThrottling` is off
+   * (main.cjs), and a long gap cannot jump the world because the frame step is clamped at 50 ms.
+   */
+  window.addEventListener('blur',()=>{stopInput();if(!location.search.includes('test')&&mode==='fishing')endFishing(true);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopInput();});
   window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
   canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();fail(new Error('The graphics device paused. Reopen the game to continue.'));});canvas.tabIndex=-1;
