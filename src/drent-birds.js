@@ -1,9 +1,13 @@
 /**
- * The birds about Tidehaven that the traveler can learn to see: a pair of
- * cardinals on the western fences, a wren on the barrels east of the square,
- * titmice where the village meets the woods, crows in the field behind the
- * western cottages, and a hummingbird that comes only to the feeder in Lakota's
- * garden. Each kind has its own model (body, head and wings, instanced per kind)
+ * The birds of Azhora that the traveler can learn to see: a pair of cardinals on Tidehaven's
+ * western fences, a wren on the barrels east of the square, woodpeckers down the Greenway,
+ * gulls at the landing, and a hummingbird that comes only to the feeder in Perrin's garden -
+ * and, since the user's ruling of 21 September 2026, nine kinds that are not in Drent at all.
+ * Goldfinches, doves, bluebirds and a mockingbird are across the Caloss in Luscia's farm
+ * country; crows and vultures are out on the Moros Plain; titmice and a kingfisher want the
+ * lake country; the chickadees are up in Amod's terraces. The village used to hold eleven
+ * habitats in sixty metres of street, so a traveler could fill the whole list without leaving
+ * the parish; it holds five now, and the list is a journey. Each kind has its own model (body, head and wings, instanced per kind)
  * and its own habits: songbirds hop and peck and fly up to a fence post, crows
  * walk, the hummingbird darts in, hovers at the feeder and darts away. All of them
  * keep their distance from the traveler. Birds are scenery: they never block.
@@ -443,23 +447,11 @@ export const BIRD_HABITATS = Object.freeze([
     perches: [...fencePosts(-23, 5, 6, -.12), ...fencePosts(-26.5, 1, 7, .12 + Math.PI / 2)] },
   { id: 'east-barrels', species: 'wren', birds: ['wren'], center: { x: 20, z: 1 }, radius: 4.2,
     perches: [{ x: 19, z: 2, base: { x: 19, z: 2 }, top: .843 }, ...fencePosts(23, -9, 6, -.08)] },
-  { id: 'eastern-woods-fence', species: 'titmouse', birds: ['titmouse', 'titmouse'], center: { x: 18, z: -31 }, radius: 6,
-    perches: fencePosts(18, -29, 6, -.08) },
-  { id: 'west-field', species: 'crow', birds: ['crow', 'crow', 'crow'], center: { x: -21, z: -21.5 }, radius: 8,
-    perches: fencePosts(-18, -23, 7, .1) },
   // Tidehaven, in the village's own metres.
   { id: 'green-robins', species: 'robin', birds: ['robin', 'robin'], center: { x: -6, z: 18 }, radius: 6, perches: [] },
-  { id: 'garden-chickadees', species: 'chickadee', birds: ['chickadee', 'chickadee'], center: { x: 31, z: -10 }, radius: 4,
-    perches: fencePosts(31, -8, 4, -.1) },
-  { id: 'square-mockingbird', species: 'mockingbird', birds: ['mockingbird'], center: { x: 9, z: 9 }, radius: 4.5,
-    perches: fencePosts(10, 10, 3, .1) },
-  { id: 'roof-doves', species: 'mourning-dove', birds: ['mourning-dove', 'mourning-dove'], center: { x: -9, z: 17 }, radius: 5,
-    perches: fencePosts(-10, 19, 4, .1) },
   { id: 'wood-edge-jays', species: 'blue-jay', birds: ['blue-jay', 'blue-jay'], center: { x: 13, z: -34 }, radius: 6,
     perches: fencePosts(13, -32, 5, -.08) },
   { id: 'bramble-catbird', species: 'catbird', birds: ['catbird'], center: { x: 25, z: -7 }, radius: 4, perches: [] },
-  { id: 'west-thistles', species: 'goldfinch', birds: ['goldfinch', 'goldfinch'], center: { x: -28, z: -16 }, radius: 5,
-    perches: fencePosts(-27, -14, 4, .1) },
 
   // The Greenway wood, the pond, the river, the fields and the shore: world metres.
   { id: 'greenway-downy', species: 'downy-woodpecker', birds: ['downy-woodpecker', 'downy-woodpecker'], world: true,
@@ -480,12 +472,35 @@ export const BIRD_HABITATS = Object.freeze([
     center: { x: -99, z: 18 }, radius: 7, perches: [] },
   { id: 'willowmere-ducks', species: 'mallard', birds: ['mallard-drake', 'mallard-duck', 'mallard-duck'], world: true,
     center: { x: -95, z: 5 }, radius: 6, perches: [] },
-  { id: 'caloss-kingfisher', species: 'kingfisher', birds: ['kingfisher'], world: true,
-    center: { x: -540, z: 174 }, radius: 7, perches: branches(-540, 174, 4, 5, 2.8) },
-  { id: 'gate-bluebirds', species: 'bluebird', birds: ['bluebird', 'bluebird'], world: true,
-    center: { x: -176, z: 34 }, radius: 8, perches: branches(-176, 34, 5, 6, 1.3) },
-  { id: 'avrel-vultures', species: 'turkey-vulture', birds: ['turkey-vulture', 'turkey-vulture'], world: true,
-    center: { x: -408, z: 60 }, radius: 9, perches: [] },
+
+  // **Out of Drent.** Nine kinds used to be findable inside the first country, most of them
+  // inside the village itself: eleven habitats in sixty metres of street meant a traveler on
+  // his first morning could not walk anywhere without a bird in front of him, and the whole
+  // list could be filled without leaving the parish. These nine now live where they belong,
+  // and the country they are in is checked by `tests/drent-birds.test.js` rather than assumed.
+  //
+  // Luscia, the farm country across the Caloss: open field birds and the birds of a town.
+  { id: 'reedcutter-thistles', species: 'goldfinch', birds: ['goldfinch', 'goldfinch'], world: true,
+    center: { x: -660, z: 200 }, radius: 5, perches: [] },
+  { id: 'lumber-town-mockingbird', species: 'mockingbird', birds: ['mockingbird'], world: true,
+    center: { x: -729, z: 384 }, radius: 4.5, perches: [] },
+  { id: 'hamlet-doves', species: 'mourning-dove', birds: ['mourning-dove', 'mourning-dove'], world: true,
+    center: { x: -621, z: 356 }, radius: 5, perches: [] },
+  { id: 'rise-bluebirds', species: 'bluebird', birds: ['bluebird', 'bluebird'], world: true,
+    center: { x: -675, z: 230 }, radius: 6, perches: [] },
+  // The Moros Plain: the open country, where a bird is a speck a long way off.
+  { id: 'moros-crows', species: 'crow', birds: ['crow', 'crow', 'crow'], world: true,
+    center: { x: -880, z: 560 }, radius: 8, perches: [] },
+  { id: 'moros-vultures', species: 'turkey-vulture', birds: ['turkey-vulture', 'turkey-vulture'], world: true,
+    center: { x: -760, z: 500 }, radius: 9, perches: [] },
+  // Elagos, the lake country: the woods above Nemmel, and the water at the Narrows.
+  { id: 'nemmel-titmice', species: 'titmouse', birds: ['titmouse', 'titmouse'], world: true,
+    center: { x: -1258, z: 120 }, radius: 6, perches: [] },
+  { id: 'narrows-kingfisher', species: 'kingfisher', birds: ['kingfisher'], world: true,
+    center: { x: -1256, z: 182 }, radius: 7, perches: [] },
+  // Amod, the terrace country above Ostel.
+  { id: 'ostel-chickadees', species: 'chickadee', birds: ['chickadee', 'chickadee'], world: true,
+    center: { x: -814, z: -510 }, radius: 4, perches: [] },
   { id: 'landing-gulls', species: 'gull', birds: ['gull', 'gull', 'gull'], world: true,
     center: { x: -8, z: 49 }, radius: 8, perches: [] },
 ].map(h => Object.freeze({ ...h, birds: Object.freeze(h.birds), perches: Object.freeze(h.perches.map(p => Object.freeze(p))) })));

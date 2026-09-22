@@ -32,14 +32,22 @@ test('Lakota’s garden is in Tidehaven: his stand, the feeder hook and the hove
   assert.equal(typeof world.setFeederHung, 'function');
 });
 
-test('every habitat has open ground and real perches, in Drent, clear of the roads’ people', async () => {
+/**
+ * The user, 21 September 2026: spread the birds through the world, and make Drent less dense -
+ * you observe one too easily there. Nine kinds left the first country, six of them out of the
+ * village itself, which went from eleven habitats in sixty metres of street to five. The whole
+ * list can no longer be filled without crossing the Caloss.
+ */
+test('every habitat has open ground and real perches, in the country it belongs to, clear of the roads’ people', async () => {
   const { world, BIRD_HABITATS, habitatSpots } = await fixture();
   const stands = Object.values(world.npcPositions);
-  const species = new Set();
+  const species = new Set(), countries = new Map();
   for (const habitat of BIRD_HABITATS) {
     const spots = habitatSpots(habitat, world, stands);
     species.add(habitat.species);
-    assert.equal(world.regionAt(spots.center.x, spots.center.z)?.name, 'Drent', habitat.id);
+    const country = world.regionAt(spots.center.x, spots.center.z)?.name ?? 'nowhere';
+    countries.set(country, (countries.get(country) ?? 0) + 1);
+    assert.ok(country !== 'nowhere', `${habitat.id} stands in no country at all`);
     assert.ok(spots.ground.length >= 6, `${habitat.id} has ground to forage (${spots.ground.length})`);
     for (const p of spots.ground) {
       assert.ok(canStand(p.x, p.z, world, .2), `${habitat.id} ground is open`);
@@ -56,10 +64,16 @@ test('every habitat has open ground and real perches, in Drent, clear of the roa
       assert.ok(rise > .6 && rise < ceiling, `${habitat.id} perch at ${rise.toFixed(2)} m is not on top of anything`);
     }
   }
-  assert.equal(species.size, 24, 'every bird in Drent but the hummingbird has somewhere to live');
+  assert.equal(species.size, 24, 'every bird but the hummingbird has somewhere to live');
   for (const id of ['cardinal', 'crow', 'heron', 'mallard', 'gull', 'barred-owl', 'turkey-vulture', 'kingfisher']) {
     assert.ok(species.has(id), `${id} lives nowhere`);
   }
+  // Spread, and measured: Drent keeps its forest and its shore, the farm birds are across the
+  // Caloss, the open-country birds are on the plain, and two want the lake country.
+  assert.deepEqual([...countries.entries()].sort(), [['Amod', 1], ['Drent', 15], ['Elagos', 2], ['Luscia', 4], ['Moros Plain', 2]],
+    'the birds are spread across five countries');
+  const village = BIRD_HABITATS.filter(habitat => !habitat.world);
+  assert.equal(village.length, 5, 'and Tidehaven itself keeps five, where it used to hold eleven');
 });
 
 test('Drent’s birds look different from one another: colour, size and silhouette', async () => {
