@@ -89,7 +89,7 @@ test('arc: a greatsword takes a cart’s width and a spear takes what is in fron
     const type = WEAPON_TYPES[id], position = { x: 0, y: 1.5, z: 0 }, events = [];
     const combat = createCombat({ world: open, position, onEvent: one => events.push(one),
       getWeapon: () => ({ id, ...type, usable: true, damage: [...type.damage] }) });
-    // Mara's own straw post: `startPractice` is what puts one up, and it stands where it is put.
+    // Jojo's own straw post: `startPractice` is what puts one up, and it stands where it is put.
     combat.startPractice({ x: 0, z: 1.3 });
     const post = combat.state.enemies[0];
     assert.ok(post, 'there is a post to swing at');

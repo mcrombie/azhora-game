@@ -233,7 +233,7 @@ Ardry may give archaeology's first lesson at Rena; and Silas Garrow moves to the
 stream while the marl pit under the Weatherhead stays his. The rulings are written out in full in
 `docs/drent-long-road.md` under *The user's answers*.
 
-**Mara's three corners is a lesson, and it is keyed to ground walked.** The design's leg 1 has her
+**Jojo's three corners is a lesson, and it is keyed to ground walked.** The design's leg 1 has her
 ask for the pier, the Weatherhead and the Koopwood charted. The chart cannot *name* the last two —
 neither is a landmark or a named ground — so the errand is keyed to the fog's own answer at each
 of the three points, which is what walking to a corner means. She countersigns on the return, once,
@@ -379,7 +379,7 @@ silhouette with no interior and no label; explored ground shows the real atlas. 
 Tidehaven, the coast Feradom → Pueth → Drent, and the coastlines of Luscia, East Suval and West
 Suval; only Drent is named.
 
-**The first person you speak to is Mara, the harbourmaster**, at the head of the pier. She gives
+**The first person you speak to is Jojo, the harbourmaster**, at the head of the pier. She gives
 the letter of introduction and a rough chart, and giving directions is the first cartography
 lesson. Chris Gotwood lands with you and gives the soldierly advice.
 
@@ -390,7 +390,7 @@ A toggle shows any line in the local tongue. The player never has to learn a wor
 
 **The first conversation of the game is how the interpreter is taught.** The man off your boat —
 Chris Gotwood, or Cromb when you are Chris — walks up the pier at your shoulder from the moment
-you take control until the letter is in your satchel, so Mara is glossed while she gives it to
+you take control until the letter is in your satchel, so Jojo is glossed while she gives it to
 you and you learn what an interpreter is for by being handed one. When the letter is taken he
 says his piece and goes back to the roster, his hour at the landing starting from that moment
 rather than from when the boat tied up. When you are Chris nobody walks up glossing her, because

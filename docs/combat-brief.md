@@ -69,7 +69,7 @@ still can — a side's drill sergeant, a hunter in Rena — but later, and furth
 - **A lesson** is what a teacher gives at friendship milestones: a lump of experience in their
   weapon, once each, and a raised sparring ceiling. It is the same shape as Lakota's birding
   conversations and Ed the Word's swimming lesson.
-- **Nothing counts before you are shown**, as with swimming. Blades is shown by Mara's straw post
+- **Nothing counts before you are shown**, as with swimming. Blades is shown by Jojo's straw post
   in the first ten minutes. Every other weapon skill begins the first time its teacher (or any
   later teacher) shows you the weapon; until then the weapon works at level 1 and the experience
   is not banked.
@@ -244,7 +244,7 @@ Each phase stands alone and leaves the game working.
    name for each of the nine durations.
 
    Phase 1's payments are wired here too, which is what makes an Arms skill gainable at all:
-   Mara's straw post shows Blades and pays as a post (ceiling 5), a real blow pays its weapon's
+   Jojo's straw post shows Blades and pays as a post (ceiling 5), a real blow pays its weapon's
    family by what it did and where, being hit and living pays Toughness, and so does a step aside
    that actually avoided a strike — which the engine is the only one who can know, so `combat`
    emits `dodged` for it. `dodged`, `hurt` and `caught` gained the `source` that only `dealt` had,

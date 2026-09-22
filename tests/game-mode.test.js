@@ -108,7 +108,7 @@ test('a normal-mode dialogue is the authored English, whatever tongue the speake
   // The speaker really does have a tongue of his own, and rendering through it really does change
   // the line — so a normal mode that rendered anyway would be caught here and not pass by luck.
   const spoken = speechFor({ id: 'harbormaster' }, 'Drent');
-  assert.equal(spoken.language, 'drentish', 'Mara is not an English speaker in this world');
+  assert.equal(spoken.language, 'drentish', 'Jojo is not an English speaker in this world');
   assert.notEqual(renderLine(LINE, spoken.language, { level: 0 }), LINE, 'and her tongue changes a line');
 
   // The panel's own line. The gate is the first thing in it, what it hands back is the line as

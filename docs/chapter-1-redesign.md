@@ -8,7 +8,7 @@ Implementation prompt: [chapter-1-claude-prompt.md](chapter-1-claude-prompt.md).
 
 ## 1. The requested change
 
-Mara, Tidehaven's harbourmaster, sends the newly arrived mercenary to an Imperial soldier responsible for combat instruction. The soldier actually teaches the player; a quest card pointing at an unattended dummy is not enough. Fighting is the first skill the opening teaches. Once the lesson is complete, the soldier gives directions to the Imperial rendezvous at the army post in Drent.
+Jojo, Tidehaven's harbourmaster, sends the newly arrived mercenary to an Imperial soldier responsible for combat instruction. The soldier actually teaches the player; a quest card pointing at an unattended dummy is not enough. Fighting is the first skill the opening teaches. Once the lesson is complete, the soldier gives directions to the Imperial rendezvous at the army post in Drent.
 
 On the road outside the village, farther inland than the current opening encounter, **one highwayman** attacks. This is the player's first real fight. Afterward the existing journey resumes. In **Luscia**, the bandits of his gang replace the wolves at the missing courier's cart. These human highway robbers should be tougher than goblins and less formidable than Coalition soldiers.
 
@@ -22,7 +22,7 @@ This changes Chapter 1's introduction and one connected encounter in the current
 
 The intended route is:
 
-**Land at Tidehaven → speak to Mara → report to the duty soldier → supervised combat lesson → receive onward directions → leave the village → fight one highwayman → report to Corvan in Drent → existing supplies/crossing/waymarkers/Iven sequence → recover the Luscia courier's satchel against the same gang → existing horse, muster, and war arc.**
+**Land at Tidehaven → speak to Jojo → report to the duty soldier → supervised combat lesson → receive onward directions → leave the village → fight one highwayman → report to Corvan in Drent → existing supplies/crossing/waymarkers/Iven sequence → recover the Luscia courier's satchel against the same gang → existing horse, muster, and war arc.**
 
 Replace the initial mandatory three-goblin fight; do not add the highwayman after it. Goblins remain part of the world and the northern threat. Keep the later Avrel supply assignment and its existing encounter, the optional goblin camp, the optional Drent learning route, companion stories, and the later faction choice. Do not perform a global goblin-to-bandit or wolf-to-bandit replacement.
 
@@ -30,9 +30,9 @@ Replace the initial mandatory three-goblin fight; do not add the highwayman afte
 
 ## 3. The opening, beat by beat
 
-### A. Mara makes the introduction
+### A. Jojo makes the introduction
 
-Keep the boat arrival and Mara as the first required conversation. She recognizes the mercenary's arrival, gives or retains the existing letter of introduction, and points to the duty soldier by a visible landmark. Her directions should name a person and a place, not only light a marker.
+Keep the boat arrival and Jojo as the first required conversation. She recognizes the mercenary's arrival, gives or retains the existing letter of introduction, and points to the duty soldier by a visible landmark. Her directions should name a person and a place, not only light a marker.
 
 Suggested register, not final dialogue: “Army contract? The duty soldier is beside the practice ground. Show him your letter. He will see you ready for the road to Corvan's post.”
 
@@ -54,7 +54,7 @@ Retain the current simple two-hit/one-dodge baseline where it fits the equipped 
 
 **Skill-system decision:** the code already has seven fighting skills under Arms, not one generic Fighting statistic. Teach “Fighting” as the first skill lesson and award the existing weapon-family skill appropriate to the chosen character (Blades for the default sword). Do not create an eighth duplicate combat progression system or reset a veteran character's background skills. Where that character already knows the skill, acknowledge competence and offer a short practical check. Handle bow starters using the current archery target/input; do not force every protagonist into a sword lesson.
 
-Mara currently teaches Cartography when handing over the letter. Defer that formal new-skill lesson/award until after the combat lesson so fighting is genuinely the first required skill introduction. The rough chart and basic directions can still be given immediately. Preserve existing chart exploration, optional learning, and starting character skills; this is an opening-sequence change, not a global ban on learning anything else.
+Jojo currently teaches Cartography when handing over the letter. Defer that formal new-skill lesson/award until after the combat lesson so fighting is genuinely the first required skill introduction. The rough chart and basic directions can still be given immediately. Preserve existing chart exploration, optional learning, and starting character skills; this is an opening-sequence change, not a global ban on learning anything else.
 
 ### C. Dispatch, letter and inventory
 
@@ -110,7 +110,7 @@ These are source-navigation hints, not guaranteed current line numbers:
 
 | Concern | Current locations and traps |
 | --- | --- |
-| Mara, instructor, Eren and training | `src/main.js`: `maraOnTheLanding`, `chrisOnTheLanding`, NPC conversation dispatch, practice counters/events; `src/legion-posts.js`; `src/world.js` training/NPC stands. |
+| Jojo, instructor, Eren and training | `src/main.js`: `jojoOnTheLanding`, `chrisOnTheLanding`, NPC conversation dispatch, practice counters/events; `src/legion-posts.js`; `src/world.js` training/NPC stands. |
 | Ordered tutorial | `src/game-state.js`: `questSteps`, `advanceQuest`; `src/main.js`: objective destinations, refresh/HUD, triggers. Add explicit instruction/completion state instead of relying only on post hits. |
 | First fight | `src/opening-fights.js`: `GREENWAY_RAID`, `OPENING_FIGHT_GROUND`; `main.js`: `startAmbush`, `TEACHING_FIGHTS`, bystanders, defeat/retry; world clearance and independent trigger coordinates. |
 | Skill lesson | `src/skills.js`, `combat-skills.js`, current `teachers.js`/archery support, player starting skills; remove the hardcoded assumption that any straw hit first teaches Blades. |
@@ -129,7 +129,7 @@ Plan a migration explicitly. Do not reinterpret an old quest-stage number as a d
 
 Acceptance checks:
 
-- New game: Mara names the instructor; instructor conversation begins the lesson; unsupervised earlier post hits do not bypass it.
+- New game: Jojo names the instructor; instructor conversation begins the lesson; unsupervised earlier post hits do not bypass it.
 - Fighting is the first required new-skill lesson; completion and any reward happen once. Alternate protagonists retain their existing skills and receive equipment-appropriate instruction.
 - Letter inspection/dismissal and onward directions still work; the correct Corvan objective appears.
 - The first mandatory hostile fight is exactly one human highwayman at the new location. No old three-goblin raid triggers at the village bell.

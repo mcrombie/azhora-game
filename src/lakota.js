@@ -3,7 +3,7 @@
  *
  * He used to be two people at once: the man at the head of the pier who handed
  * over the letter, and the birder in the garden who taught you to look. He is
- * neither now. Mara meets the boat, Perrin keeps the garden, and Lakota is the
+ * neither now. Jojo meets the boat, Perrin keeps the garden, and Lakota is the
  * seventh hired sword to come up the road (`src/mercenaries.js`, arrival 1980) -
  * a man with a quarterstaff, a red-tailed hawk on his glove and no intention of
  * hurrying to a war.

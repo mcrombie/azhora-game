@@ -52,7 +52,7 @@ lessons (eleven skills and six systems — moving, talking, fighting, the satche
 money), which is about five minutes a lesson: three times Tutorial Island's pace, because each of
 ours is a walk, a person and one thing done once; a quarter of the Plateau's, because Drent's road
 is 650 m and a man runs it in a minute and a half. Two things those four do that we copy: **you
-see a place before you are taught in it** (Mara's charting errand walks you past the Weatherhead
+see a place before you are taught in it** (Jojo's charting errand walks you past the Weatherhead
 and the Koopwood before anyone there is a lesson), and **something happens on a beat**. Ours is
 given free by the clock: a boat lands at 6, 18, 33, 48 and 63 minutes. Five bells, five legs.
 
@@ -71,7 +71,7 @@ Three voices, in this order, and none of them is a menu.
 3. **Corvan says it for the army**, at the Avrel post, on both roads: he copies the letter into
    the field register, reads out who has already signed it, and says nobody will be posted late
    while a boat is still out. He is the one who says *the Marshal will not move until the company
-   is in*. Mara seeds it on the pier with one clause ("ten more boats are due off the Stills");
+   is in*. Jojo seeds it on the pier with one clause ("ten more boats are due off the Stills");
    she cannot say more, because the village is under attack when you meet her.
 
 **You choose by walking.** There is no flag for "long" or "short". The tutorial's gold marker goes
@@ -131,8 +131,8 @@ branches wear their own leaf or scroll and are taken or not.
 
 | Leg | Minutes | Spine stops | Branches on the way |
 |---|---|---|---|
-| 0. The harbour (both roads) | 0–12 | Mara on the pier: the letter, the rough chart · the practice post · the raid · Eren · the letter read: **the fork** | — |
-| 1. Tidehaven, which you ran through | 12–28 | **Perrin** at the bird garden (birding) · **Lysa** (the acorn errand, the tinderbox) · **Mara** again: chart the village's three corners — pier, Weatherhead, Koopwood (cartography) · Ambroni drill 1 | Wendel (money, the phrasebook), Lorn Ardry's letter for his sister, Orris, Toft, Brandy and Bosco, Cabe, Corran's ferry, the Sultana if she is in |
+| 0. The harbour (both roads) | 0–12 | Jojo on the pier: the letter, the rough chart · the practice post · the raid · Eren · the letter read: **the fork** | — |
+| 1. Tidehaven, which you ran through | 12–28 | **Perrin** at the bird garden (birding) · **Lysa** (the acorn errand, the tinderbox) · **Jojo** again: chart the village's three corners — pier, Weatherhead, Koopwood (cartography) · Ambroni drill 1 | Wendel (money, the phrasebook), Lorn Ardry's letter for his sister, Orris, Toft, Brandy and Bosco, Cabe, Corran's ferry, the Sultana if she is in |
 | 2. The near wood | 29–46 | **Bran** at Willowmere (fishing; then the catch cooked on the stone firepit with Lysa's tinderbox: cooking) · **Bowden** at the Koopwood (woodcutting, the first skill you grind; he shows you the plot) · drill 2 at Willowmere's fire | Troy at the Bee Fold (honey, so honey cake), Tamsin and the forest story, the house plot once you can cut for it |
 | 3. Fernway | 46–57 | **Odger Pell**, now at Fernway Rest (mycology) · **the Talaelos players'** camp: a short play in Drentish, many mouths, Chris murmuring under it · drill 3 | the Old Tree, the Stormfall Oak and the shrine, the East Rena Stone, **the scouts' camp over the Tessen** (section 8) |
 | 4. The Avrel clearing | 57–72 | **Corvan** (the register; the parcels — solid gold as well) · **the ruins of Rena**, 110 m north (archaeology) · **Enna** at the Mill Commons (farming) · drill 4: you give Corvan your own name and rank in Ambroni | the players' second camp (never built as a branch of its own: as built it serves the leg-3 play — see the build doc), Applegarth and Hesta Ardry (the letter delivered; the orchard) |
@@ -153,7 +153,7 @@ Three people move. Everybody else stays. Ids do not change.
 | **Nell Harrow** (`botanist`) | Tidehaven's outskirts (−40, 44) | **the Sunken Lane**, 56 m past the Avrel clearing, where the old drove crosses the road | Two hedge banks eighty years unlaid are the best botany in Drent, and the tobacco is Avrel's. The hedge is also where hazel and bramble grow — two of the six foods (section 7). |
 | **Silas Garrow** (`geologist`) | the marl bank under the Weatherhead (−5, 97) | **the Toll House stream**, 112 m past the clearing, with a cart of marl | Marl is dug to be spread on fields. He digs it under the Weatherhead and the Avrel families pay him by the load; the stream cut below the Toll House is a geologist's section, and ironstone and clay are in the furrows behind him. The old pit stays as a place he sends you back to for sharks' teeth. |
 | Enna (`commons-miller`) | the Mill Commons | stays; **becomes farming's teacher** | She already stands between the crop rows and the mill. |
-| Mara, Perrin, Lysa, Orris, Toft, Lorn, Wendel, Brandy and Bosco, Cabe, Corran, the carter, the boy | Tidehaven | stay | The harbour's own lessons, and a village that is still a village: a dozen people after three have left. |
+| Jojo, Perrin, Lysa, Orris, Toft, Lorn, Wendel, Brandy and Bosco, Cabe, Corran, the carter, the boy | Tidehaven | stay | The harbour's own lessons, and a village that is still a village: a dozen people after three have left. |
 | Bowden, Troy, Tamsin, Bran, Eren | the near wood and the Watch | stay | Built places: a woodlot, a bee fold, a pond, a watch. |
 | Hesta and Applegarth's five, Hollis | the west of Drent | stay | Already where the road needs them. |
 
@@ -167,7 +167,7 @@ out this way — its stones run from the Weatherhead shingle to the granite at t
 
 | Skill | Introduced | By | The first thing done |
 |---|---|---|---|
-| Cartography | pier, 0 min; village, 23 min | Mara | The rough chart; then three corners of Tidehaven charted |
+| Cartography | pier, 0 min; village, 23 min | Jojo | The rough chart; then three corners of Tidehaven charted |
 | Linguist | pier, 0 min | anyone speaking; Chris beside you | Section 6 |
 | Birding | 12 min | Perrin | The feeder, the pointer, the first garden bird |
 | Cooking | 18 and 33 min | Lysa, then any fire | The tinderbox; a fish on Willowmere's firepit; later flatbread and honey cake |
@@ -248,13 +248,13 @@ line under the screen. Where you were standing is remembered for each of them (s
 
 | Minute | You | The company |
 |---|---|---|
-| 0 | Off the boat. Mara: the letter, the rough chart | Chris steps off with you. Mus beaches round the headland at a moment nobody knows and is never on the road |
+| 0 | Off the boat. Jojo: the letter, the rough chart | Chris steps off with you. Mus beaches round the headland at a moment nobody knows and is never on the road |
 | 2–5 | The practice post; into the Greenway | |
 | 5–9 | The raid. Eren | 6:00 one bell: Ed the Word wades out of the sea behind you |
 | 9–12 | The letter, the satchel: **the fork**, at the Watch | 9:00–11:30 Ed walks up the Greenway past the Watch, wet to the neck — the first of them you see go by. He musters at 29.4 |
 | 12–17 | Perrin's garden, thirty metres from the pier | |
 | 17–23 | Lysa's acorns, the tinderbox | 18:00 three bells: Jerry, Kristen and Ciarán land arguing. 19:30 they go up the village street past Lysa's kitchen |
-| 23–28 | Mara's three corners; drill 1 | 25.0 the riders sign Corvan's register; 29.7 Hollis; in at 40–41 |
+| 23–28 | Jojo's three corners; drill 1 | 25.0 the riders sign Corvan's register; 29.7 Hollis; in at 40–41 |
 | 29–37 | Willowmere: Bran, a fish, a fire | 33:00 one bell. 35:10 Lakota passes the Watch, 25 m from the pond, alone, looking up |
 | 37–46 | Bowden; Troy; drill 2 | 39.8 Lakota at Corvan's; 44.7 Hollis; in at 55.7 |
 | 46–52 | Odger at Fernway Rest | 48:00 one bell. 51:00 Eliana walks past the bench |
@@ -313,7 +313,7 @@ long road's long tail: Bowden shows it at minute 40; nobody builds a house in a 
 **What the long road gives that the short road does not, beyond levels.**
 
 1. *A country you can read.* Drent's signs, and the army's, for the rest of the game.
-2. *Mara's countersign.* With all ten named grounds of Drent charted, Mara signs your chart — an
+2. *Jojo's countersign.* With all ten named grounds of Drent charted, Jojo signs your chart — an
    item, a block of cartography experience — and Drent's level number, 0, appears in the journal,
    which is how that number was always meant to be found.
 3. *A full satchel* of the six foods, none of which can be bought together anywhere.
@@ -425,7 +425,7 @@ The bug hunter measured this design against the built world before anyone built 
 - **The clock.** The tenth mercenary musters at 5,234.5 s (pin that, not 5,233). With Ed the
   Word's `departs` at 1,500 he leaves at 31:00 and musters at 51.4 min, so the timeline row that
   had him as "the first of them you see go by" at the Watch is wrong: the first anybody sees are
-  the three riders, at minute 19.6, passing within 2-8 m of Mara and Lysa. Ed passes Willowmere at
+  the three riders, at minute 19.6, passing within 2-8 m of Jojo and Lysa. Ed passes Willowmere at
   32.2, three minutes ahead of Lakota.
 - **The five arrivals are announced, not left to be noticed.** Two of the five landings cannot be
   seen from where the player is (the fourth is about twelve pixels tall; the fifth, from Rena, is

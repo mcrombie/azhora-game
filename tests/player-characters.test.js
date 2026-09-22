@@ -308,7 +308,7 @@ test('the tongues a character already has are really his when he lands', () => {
   // The point of the Drentish: when you are Chris nobody interprets, and the first conversation
   // of the game is in Drent, so without it the opening would be a wall of a tongue with no gloss.
   assert.equal(interpreterFor('gotwood'), null, 'nobody interprets for Chris');
-  assert.ok(startingLanguages('gotwood').drentish > 0, 'so Chris follows Mara himself');
+  assert.ok(startingLanguages('gotwood').drentish > 0, 'so Chris follows Jojo himself');
 
   // What grantStartingKit() does with it, in the same order.
   for (const id of PLAYABLE_IDS) {
@@ -394,7 +394,7 @@ test('the company of eleven share the language of the contract, and the locals d
 
   // A local standing beside them is as foreign as ever.
   const linguist = createLinguist();
-  for (const local of [{ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' },
+  for (const local of [{ id: 'harbormaster', name: 'Jojo', modelRole: 'harbormaster' },
     { id: 'acorn-cook', name: 'Lysa' }, { id: 'warden', name: 'Eren', modelRole: 'legion-soldier' }]) {
     const speech = linguist.speech(local, 'Drent');
     assert.equal(speaksTheContract(local), false, `${local.name} is not of the company`);
@@ -435,9 +435,9 @@ test('the harbourmaster names the man who actually walked up the pier with you',
 });
 
 test('the man at your shoulder is the interpreter, unless you are him', () => {
-  // He walks you up the pier until the letter is taken, so Mara is glossed for the ten travelers
+  // He walks you up the pier until the letter is taken, so Jojo is glossed for the ten travelers
   // who need it. When you are Chris there is nobody to gloss her and nobody who needs to be.
-  const localTongue = speechFor({ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' }, 'Drent').language;
+  const localTongue = speechFor({ id: 'harbormaster', name: 'Jojo', modelRole: 'harbormaster' }, 'Drent').language;
   assert.ok(LANGUAGES[localTongue], 'the harbourmaster speaks a tongue of this world');
   assert.ok(INTERPRETER.knows.includes(localTongue), 'and one the interpreter has');
   for (const playerId of PLAYABLE_IDS) {
@@ -455,7 +455,7 @@ test('the man at your shoulder is the interpreter, unless you are him', () => {
   }
   // What he is worth, measured the way src/linguist.js measures it: beside you and in range.
   const linguist = createLinguist();
-  const speech = linguist.speech({ id: 'harbormaster', name: 'Mara', modelRole: 'harbormaster' }, 'Drent');
+  const speech = linguist.speech({ id: 'harbormaster', name: 'Jojo', modelRole: 'harbormaster' }, 'Drent');
   const mara = { x: 0, z: 25 }, traveler = { x: 1.2, z: 25.4 };
   const beside = { id: INTERPRETER.npcId, hidden: false, placement: { phase: 'landing', x: traveler.x - 1, z: traveler.z - 1 } };
   const waiting = { id: INTERPRETER.npcId, hidden: false, placement: { phase: 'landing', x: 23, z: 31.2 } };
@@ -481,7 +481,7 @@ test('the escort ends by arithmetic, so no path can leave him walking at your sh
   // governs it when the switch goes back on, and is still worth holding.
   assert.equal(LANDING_ESCORT, false, 'the switch is off; turn it on only when asked');
   assert.equal(mateIsEscorting({ mate, questStage: 0, mode: 'playing' }), false, 'he does not set off with you');
-  assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), false, 'nor while Mara is talking');
+  assert.equal(mateIsEscorting({ mate, questStage: 1, mode: 'playing' }), false, 'nor while Jojo is talking');
   for (let stage = LETTER_STAGE; stage <= 10; stage++) {
     assert.equal(mateIsEscorting({ mate, questStage: stage, mode: 'playing' }), false, `stage ${stage} is past the letter`);
   }

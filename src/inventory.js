@@ -4,7 +4,7 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 export const INVENTORY_ITEMS = Object.freeze({
   'harbor-letter': Object.freeze({
     name: 'Letter of introduction', type: 'Quest item', icon: 'letter',
-    brief: 'The report and letter of introduction Mara the harbourmaster handed over at the head of the pier, for the Ambroni army post on the Avrel clearing.',
+    brief: 'The report and letter of introduction Jojo the harbourmaster handed over at the head of the pier, for the Ambroni army post on the Avrel clearing.',
     description: 'The seal is already broken so you can read your errand. Keep the message with you for the road ahead.',
   }),
   'simple-sword': Object.freeze({
@@ -696,7 +696,7 @@ export function createInventory({
         element('h3', '', state.items().length ? 'Select an item above' : 'Room for a journey'),
         element('p', '', state.items().length
           ? 'Hover over an item for a quick description. Click it, or use Tab then Enter, to see what you are carrying.'
-          : 'Items given to you on the road will appear here. Speak with Mara, the harbourmaster at the head of the pier, to receive your first errand.'),
+          : 'Items given to you on the road will appear here. Speak with Jojo, the harbourmaster at the head of the pier, to receive your first errand.'),
       );
       return;
     }
@@ -717,7 +717,7 @@ export function createInventory({
         // The rule the whole of the long road hangs on, stated where the traveler cannot miss it
         // and ten minutes before anybody says it out loud (docs/drent-long-road.md §2).
         element('p', '', 'The company called under this contract is eleven, the bearer among them, and the boats are still coming in. The Marshal marches when the eleventh has reported at the muster, and not before.'),
-        element('p', 'inventory-letter-signature', 'Mara\nHarbourmaster of Tidehaven'),
+        element('p', 'inventory-letter-signature', 'Jojo\nHarbourmaster of Tidehaven'),
       );
       detail.append(letter);
     } else {

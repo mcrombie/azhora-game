@@ -51,7 +51,7 @@ export const PLAYABLE = Object.freeze([
     // already able to hold a conversation in the Empire's tongue (src/linguist.js, src/languages.js).
     // Drentish at the same level because it is what he is said to know: `INTERPRETER.knows` has
     // him glossing drentish, feradom and ambroni, and in Drent the tongue he would be glossing
-    // is Drentish — Mara speaks it. Without it, choosing Chris made the one conversation the
+    // is Drentish — Jojo speaks it. Without it, choosing Chris made the one conversation the
     // interpreter exists to teach you wholly foreign, with nobody in the world to gloss it,
     // because when you are Chris `interpreterFor` rightly answers nobody. Feradom is left out:
     // it is the user's to place with the rest of the profiles.

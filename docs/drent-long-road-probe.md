@@ -95,7 +95,7 @@ brief names (`MAIN_ROAD`, `regionNpcPositions`, `STORY_SITES.legionCamp`). The b
   second man who can be in first.
 
 The road itself is no obstacle: landing to muster is 1,295 m, 5.1 minutes at a walk (4.2 m/s) and
-3.0 at a run (7.2 m/s) without a stop. How long the *mandatory* beats take — Mara, the post, the
+3.0 at a run (7.2 m/s) without a stop. How long the *mandatory* beats take — Jojo, the post, the
 raid, Eren, Luscia's errands — cannot be measured headless; the design's own figure for the short
 road is about 27 minutes, which is the minute-27 row above. To guarantee first for a traveler who
 is in by minute *M*, Mus's draw needs a floor of *M* × 60 − 1,218 s (for *M* = 30, 582 s), or his
@@ -110,7 +110,7 @@ changes by a few metres.
 | Leg | Minutes allowed | Distance | At a walk | At a run | Stop to stop |
 |---|---|---|---|---|---|
 | 0 harbour | 12 | 98 m (85) | 0.4 min | 0.2 | practice post 39, Eren 59 |
-| 1 Tidehaven | 16 | 332 m (294) | 1.3 | 0.8 | bird garden 87, Lysa 44, Mara 21, Weatherhead 72, Koopwood 109 |
+| 1 Tidehaven | 16 | 332 m (294) | 1.3 | 0.8 | bird garden 87, Lysa 44, Jojo 21, Weatherhead 72, Koopwood 109 |
 | 2 near wood | 17 | 246 m (140) | 1.0 | 0.6 | Bran 123, Bowden 123 |
 | 3 Fernway | 11 | 173 m (127) | 0.7 | 0.4 | Odger 145, players' camp 28 |
 | 4 Avrel | 15 | 553 m (527) | 2.2 | 1.3 | Corvan 331, Rena 90, Enna 132 |
@@ -139,7 +139,7 @@ fires on every leg. It does:
 
 | Leg | Who comes within 40 m of a stop while the player is meant to be there (Ed at 1,500; Mus at his latest) |
 |---|---|
-| 1 Tidehaven | The three riders at 19.6–20.0: Mara 2–7 m, Lysa 3–8 m, the bird garden 22–28 m, the Koopwood 35–40 m. Nobody passes the Weatherhead. |
+| 1 Tidehaven | The three riders at 19.6–20.0: Jojo 2–7 m, Lysa 3–8 m, the bird garden 22–28 m, the Koopwood 35–40 m. Nobody passes the Weatherhead. |
 | 2 near wood | **Ed, 21 m from Bran at 32.2** and 36 m from Bowden at 31.4; Lakota, 20 m from Bran at 35.3. |
 | 3 Fernway | Eliana past the Rest at 51.0 and 13 m from the players' camp at 50.8. |
 | 4 Avrel | Matt 5 m from Corvan at 70.9, Al 18 m at 71.0; Al 19 m and Matt 33 m from Enna. Nobody passes Rena, which is 110 m north of the road. |

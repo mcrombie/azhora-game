@@ -1235,14 +1235,14 @@ the rule is right for walls and rivers — but the running case was not in its r
 
 ---
 
-## Mara and the cardinals: killed, and the rule underneath it is not what it says
+## Jojo and the cardinals: killed, and the rule underneath it is not what it says
 
-**The report was that Mara stands inside the cardinals' home ground (`west-fences`, radius 5.5)
+**The report was that Jojo stands inside the cardinals' home ground (`west-fences`, radius 5.5)
 and takes their perches. She does not, by a wide margin.**
 
 | | |
 |---|---|
-| Mara's stand (`world.pierHead`, set `src/main.js:272`) | world (0, 25) |
+| Jojo's stand (`world.pierHead`, set `src/main.js:272`) | world (0, 25) |
 | `west-fences` as authored | village (−23.5, 2.5), radius 5.5 |
 | the same in world metres (`villageToWorld`, it carries no `world: true`) | (−17.5, 52.5) |
 | between them | **32.60 m** |
@@ -1332,7 +1332,7 @@ doing its job.
 
 ---
 
-## Mara's three corners cannot be got without walking them
+## Jojo's three corners cannot be got without walking them
 
 - Each corner sits in **its own chart hex**: standing on the pier makes only the pier walked, and
   so for the Weatherhead and the Koopwood. Swept every point of a 140 × 200 m box over the
@@ -1700,9 +1700,9 @@ Every one closes once and cannot be said twice. **Matt's `house-plot` now has Bo
 the branch stop that fell through the old spine-only guard is covered.
 
 **Mus's second row is right, not a miss.** `village-corners` is done by `own.corners === 'signed'`,
-not by a skill, so recognising lifts the block and leaves the work: Mara says *"You have surveyed.
+not by a skill, so recognising lifts the block and leaves the work: Jojo says *"You have surveyed.
 Good — then walk my three corners"*, and he still has to walk them. The lesson is shortened and
-the work is not skipped, which is what §10 asked for. Mara says both her lines in one conversation
+the work is not skipped, which is what §10 asked for. Jojo says both her lines in one conversation
 (`src/main.js:589` filters `owed` by npc and maps them all), and the toast reads "can see you have
 done **both** of these before".
 
@@ -1715,7 +1715,7 @@ restores, and the stop stays closed with nothing still owed. **And a save from b
 — no `recognised` key at all — restores cleanly and then owes the recognising afresh, which is the
 right answer for a save written yesterday.
 
-**Mara is held until the letter** by `questStage<2` in the host (`src/main.js:588`), so a man who
+**Jojo is held until the letter** by `questStage<2` in the host (`src/main.js:588`), so a man who
 lands with cartography does not have the letter scene skipped.
 
 **The two deliberate leftovers are exactly the two flagged**, and no others: `willowmere-fire`

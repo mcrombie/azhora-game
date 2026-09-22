@@ -119,7 +119,7 @@ test('the four facts are announced, and nothing else is claimed', () => {
   assert.match(text, /a war in this country/);
   assert.match(text, /not understood it yet/);
   // The errand and the bell are the harbourmaster's to explain; the captions do not.
-  assert.doesNotMatch(text, /Mara|letter|Corvan|Lakota|goblin/i);
+  assert.doesNotMatch(text, /Jojo|letter|Corvan|Lakota|goblin/i);
   assert.doesNotMatch(text, /Legion|Legate/, 'the army is never the Legion');
   assert.doesNotMatch(LANDED.toast.kicker + LANDED.toast.title, /Lakota|CHRIS/, 'the landing sends the traveler to the harbourmaster');
   assert.match(LANDED.toast.kicker, /MARA/);
@@ -317,7 +317,7 @@ test('the boat starts a long way out and the sequence ends it at the berth', () 
     const end = SKIP_BY_VARIANT[id];
     near(flat(end.boat, BOAT_REST), 0, 1e-9, `${id} moors the boat`);
     assert.equal(end.done, true, `${id} is over`);
-    assert.equal(end.landed.toast.kicker, 'SPEAK TO MARA AT THE HEAD OF THE PIER', `${id} sends you to Mara`);
+    assert.equal(end.landed.toast.kicker, 'SPEAK TO MARA AT THE HEAD OF THE PIER', `${id} sends you to Jojo`);
     assert.equal(end.companion.aboard, false, `${id} puts the companion on the deck`);
     assert.ok(canStand(end.companion.x, end.companion.z, world), `${id} puts him on footing`);
   }
@@ -335,7 +335,7 @@ function talkableSpots(at, reach) {
   return spots;
 }
 
-test('the man off your boat is within earshot everywhere you can stand to speak to Mara', () => {
+test('the man off your boat is within earshot everywhere you can stand to speak to Jojo', () => {
   // The bug hunter measured this before he walked with you: from all 443 standable spots in her
   // talk range he was 20.5–27.0 m away, because he waited at the landing ring and
   // INTERPRETER.range is 12. The aside never showed, so the first conversation of the game — the
@@ -343,7 +343,7 @@ test('the man off your boat is within earshot everywhere you can stand to speak 
   const mara = { x: PIER_HEAD.x, z: PIER_HEAD.z };
   const TALK = 3.3;  // src/main.js picks the nearest npc inside this, in metres
   const spots = talkableSpots(mara, TALK);
-  assert.ok(spots.length > 300, `only ${spots.length} standable spots in Mara's talk range`);
+  assert.ok(spots.length > 300, `only ${spots.length} standable spots in Jojo's talk range`);
   const standable = (x, z) => canStand(x, z, world);
   let placed = 0, heard = 0, worst = 0;
   for (const spot of spots) {

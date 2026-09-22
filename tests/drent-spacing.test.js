@@ -46,7 +46,7 @@ const fromRoad = point => { const on = pointAlongRoad(MAIN_ROAD, distanceAlongRo
  * actually places, and the two must agree.
  */
 const TEACHERS = Object.freeze({
-  'pier-chart': villageToWorld(4, 20),                             // Mara, at the head of the pier
+  'pier-chart': villageToWorld(4, 20),                             // Jojo, at the head of the pier
   'bird-garden': villageToWorld(24.6, -4.4),                       // Perrin, in the bird garden
   'lysa-acorns': villageToWorld(-5.6, 9.1),                        // Lysa, at her kitchen
   'bran-rod': villageToWorld(20.4, -82),                           // Bran, at Willowmere
@@ -74,7 +74,7 @@ test('the long road’s table and the world’s own stands are the same places',
     assert.ok(gap(stop.point, stand) < 1.5,
       `${id}: the long road remembers (${stop.point.x.toFixed(1)}, ${stop.point.z.toFixed(1)}) and the world stands at (${stand.x.toFixed(1)}, ${stand.z.toFixed(1)})`);
   }
-  // Every spine stop with a person is one of these; the rest are places, and Mara is twice.
+  // Every spine stop with a person is one of these; the rest are places, and Jojo is twice.
   for (const stop of LONG_ROAD_SPINE) {
     if (!stop.npc || stop.id === 'village-corners') continue;   // her second errand, at her own stand
     assert.ok(Object.hasOwn(TEACHERS, stop.id), stop.id + ' has a person and no stand to check');
@@ -129,7 +129,7 @@ test('the three who moved are where the ground said they could stand, and not wh
   assert.ok(gap(MYCOLOGIST_STAND, woodpecker) > woodpecker.radius + 2, 'Odger is properly clear of the woodpecker');
   // Beside the cairn, which is where the design first put him, he would not have been.
   assert.ok(gap({ x: -132.3, z: 34.6 }, woodpecker) < woodpecker.radius, 'the cairn is inside the bird’s ground, which is why he is at the bench');
-  // And out of the 4.6 m either side of the centreline that the company walks in. Mara is the
+  // And out of the 4.6 m either side of the centreline that the company walks in. Jojo is the
   // exception and always was: the head of the pier is where the road starts, and the company
   // queues down it past her (LANDING_QUEUE, src/mercenaries.js).
   for (const id of MOVED) assert.ok(fromRoad(TEACHERS[id]) > 4.6, `${id} stands in the road`);

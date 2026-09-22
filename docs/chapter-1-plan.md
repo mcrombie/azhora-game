@@ -10,13 +10,13 @@ source today and is cited; everything proposed rather than confirmed says so.
 
 ## 1. What the player meets, before and after
 
-**Today.** Come ashore → Mara at the pier head gives the letter → a quest card points at a straw
+**Today.** Come ashore → Jojo at the pier head gives the letter → a quest card points at a straw
 post at the crossroads; hit it twice and dodge once, unsupervised → walk inland → **three goblins**
 ambush you on the Greenway 56 m from the village, with villagers caught in the open → report the
 goblins to Eren at the Greenway Watch, who gives the road token → read the letter → the fork →
 the Caloss Gate. In Luscia, **two wolves** take the courier's satchel at the Lauvel.
 
-**After.** Come ashore → Mara gives the letter **and sends you to Footman Ottar at the landing**
+**After.** Come ashore → Jojo gives the letter **and sends you to Footman Ottar at the landing**
 → Ottar briefs you, watches you work the post, and acknowledges it: fighting is the first skill
 anyone teaches you → Ottar dispatches you to Corvan's post in the Avrel clearing, and the letter
 and token business is unchanged → farther out on the Greenway, past Willowmere, **one highwayman**
@@ -28,7 +28,7 @@ Dialogue beats, as short as the road's other lines and in the register of the me
 
 | who | when | the beat |
 |---|---|---|
-| **Mara** | after the letter | Names Ottar and points down the pier. One line: the army's man at the landing signs hired swords in and will not let one walk west without knowing which end of a sword to hold. |
+| **Jojo** | after the letter | Names Ottar and points down the pier. One line: the army's man at the landing signs hired swords in and will not let one walk west without knowing which end of a sword to hold. |
 | **Ottar** | on arrival | Says what he is doing and what he wants: post, two hits, one dodge, and he is watching. This is the only lesson, so the hint copy the quest card carries today moves into his mouth. |
 | **Ottar** | on completion | Acknowledges it once, gives the road west and Corvan's name, and says the road is not safe — which is the setup for the fight. |
 | **the highwayman** | on the road | Demands the purse. Codex's register, kept: *"Army paper buys no passage here. Put your purse down."* No payment branch in this pass. |
@@ -127,7 +127,7 @@ Keep the numbers; change the meaning of two of them.
 
 | stage | today | after |
 |---|---|---|
-| 1 | Speak to Mara | unchanged; her copy names Ottar |
+| 1 | Speak to Jojo | unchanged; her copy names Ottar |
 | **2** | Find the straw post | **Report to Ottar; he sets the lesson and watches it.** `trained` still leaves it |
 | 3 | Into the Greenway | unchanged; the trigger box moves with the fight |
 | **4** | three goblins | **one highwayman** |

@@ -103,6 +103,7 @@ import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, cre
 import { createDrentFlora } from './drent-flora.js';
 import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
+import { INSTRUCTOR, INSTRUCTOR_STAND, lessonStage, instructorConversation } from './instructor.js';
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
 import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
 import { setSignReader, setForeignLettering } from './signs.js';
@@ -251,7 +252,7 @@ function init() {
   {const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
   // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
   const HARBOURMASTER='harbormaster';
-  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Mara',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,hairStyle:'mane',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -331,7 +332,7 @@ function init() {
   world.npcPositions[PEDDLER.id]={x:PEDDLER.stand.x,z:PEDDLER.stand.z};
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
   // Perrin keeps the bird garden on the eastern side of Tidehaven and teaches the traveler to look (src/birding.js).
-  // Mara the harbourmaster meets the traveler off the boat and hands over the letter.
+  // Jojo the harbourmaster meets the traveler off the boat and hands over the letter.
   // Lakota is at home in his bird garden from the first minute, and stays there.
   const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
   world.npcPositions[HARBOURMASTER]={x:pierHead.x,z:pierHead.z};
@@ -377,6 +378,9 @@ function init() {
   world.npcPositions[TOFT.id]={x:TOFT_STAND.x,z:TOFT_STAND.z};npcData.push({...TOFT,yaw:TOFT_STAND.yaw});
   world.npcPositions[PIPE_SMOKER.id]={x:WEATHERHEAD.stand.x,z:WEATHERHEAD.stand.z};npcData.push({...PIPE_SMOKER,yaw:Math.PI*.55});
   world.npcPositions[GEOLOGIST.id]={x:GEOLOGIST_STAND.x,z:GEOLOGIST_STAND.z};npcData.push({...GEOLOGIST,yaw:GEOLOGIST_STAND.yaw});
+  // Officer Glun at the straw post: he teaches the sword and then hands over the chart
+  // (src/instructor.js). The opening used to point a card at an unattended post.
+  world.npcPositions[INSTRUCTOR.id]={x:INSTRUCTOR_STAND.x,z:INSTRUCTOR_STAND.z};npcData.push({...INSTRUCTOR,yaw:INSTRUCTOR_STAND.yaw});
   // The three off the Lauvel road (src/refugees.js): they start where the battle
   // was and walk the main road east while the game is played, so where they are
   // when the traveler meets them depends entirely on what the traveler did first.
@@ -892,6 +896,8 @@ function init() {
       guardShare:m.guardShare,guardCost:m.guardCost,hasShield:!!lent?.shield||!!gear.wearing('hand')};}});
   const combatView=createCombatView(scene,world,camera);
   let practiceHits=0,practiceDodges=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
+  // Whether Officer Glun has set the lesson. Nothing at the straw post counts before he has.
+  let lessonSet=false;
   let yaw=0,pitch=.39,distance=9,targetDistance=9,verticalSpeed=0,grounded=true,walkTime=0,elapsed=0,lastTime=performance.now(),currentNPC=null,toastTimer,openingTime=0,openingFired=0,openingBells=0,opening=null,mateSaidGoodbye=false;
   /** Where the sequence wants the eye this frame, before the ordinary camera's lerp is bypassed. */
   const openingCamera={position:new THREE.Vector3(),target:new THREE.Vector3()};
@@ -1008,7 +1014,7 @@ function init() {
    * teacher's own conversation is built, and only ever once per stop.
    */
   function recogniseTeacher(npc){
-    // Never before the letter. Mara hands the letter and the rough chart to everybody, whatever
+    // Never before the letter. Jojo hands the letter and the rough chart to everybody, whatever
     // they already know, and a man who lands with cartography must not have that scene skipped.
     if(questStage<2)return false;
     const owed=longRoad.view(longRoadWorld()).recognising.filter(stop=>stop.npc===npc.id);
@@ -2742,7 +2748,12 @@ function init() {
     const previous=questStage;questStage=advanceQuest(questStage,event);
     if(previous===questStage)return;
     if(questStage===2){inventory.grant('harbor-letter');combat.startPractice(world.training);releaseLandingMate();}
-    if(previous===2&&questStage===3){combat.finishPractice();audio?.effect('success');}
+    if(previous===2&&questStage===3){combat.finishPractice();audio?.effect('success');
+      // **He acknowledges it on the spot, and the chart comes with the acknowledgment.** The
+      // straw post is two metres from where he is standing, so the lesson ends where it was
+      // set rather than leaving the traveler to remember to go back for the map.
+      const glun=npcById.get(INSTRUCTOR.id);
+      if(glun&&lessonSet&&!cartography.met)instructorConversation(glun,{stage:'done',openDialogue,finish:giveTheChart});}
     if(questStage===5)audio?.effect('success');
     if(questStage===6)inventory.grant('road-token');
     refreshQuest();
@@ -2765,7 +2776,7 @@ function init() {
     // without it the chapter count stays on Chapter 1 however well Chapter 2 is played.
     if(entry.completed.includes('luscia-aftermath')){const done=luscia.snapshot();luscia.restore({version:done.version,revision:5,started:true,briefed:true,satchelTaken:true,wolvesCleared:true,returned:true});}
     if(entry.completed.includes('moros-camp')){const done=moros.snapshot();moros.restore({version:done.version,revision:4,started:true,admitted:true,mustered:true,horseClaimed:true});}
-    questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=true;meadowCleared=true;
+    questStage=10;practiceHits=2;practiceDodges=1;lessonSet=true;cartography.learn();testingEnabled=true;meadowCleared=true;
     for(const id of ['harbor-letter','road-token','tinderbox'])inventory.grant(id);
     const purse=inventory.count(COPPER_ITEM);if(purse<entry.purse)inventory.add(COPPER_ITEM,entry.purse-purse);
     combat.startPractice(world.training);combat.finishPractice();weapons.repair();
@@ -2984,7 +2995,9 @@ function init() {
     if(tab==='trails'){trailMap.open();$('tab-trails').focus();}
     if(tab==='skills')$('tab-skills').focus();
   }
-  function mapTab(map){journalTab(map?'world':'journey');}
+  // **No chart, no map tab** (the user, 22 September 2026: you start with no map). Until Glun
+  // hands one over there is nothing to open, so the tab is not offered and M does not answer.
+  function mapTab(map){journalTab(map&&cartography.met?'world':'journey');}
   function openLocalMap(){
     if(!['playing','journal','pause'].includes(mode))return false;
     modal('journal');journalTab('trails');return true;
@@ -3289,7 +3302,7 @@ function init() {
     if(questStage<1||questStage===4||combat.state.phase==='active'||combat.state.player.hp<=0||inWater){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
     if(questStage===10)journey.start();
     const gathered=woodlandLife.state();
-    const woodland={version:1,acornStatus:acornQuest.status,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
+    const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
@@ -3314,6 +3327,9 @@ function init() {
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
     weapons.restore(saved.weapons);journey.restore(saved.journey);questStage=saved.questStage;practiceHits=saved.woodland?.practiceHits??2;practiceDodges=saved.woodland?.practiceDodges??1;
+    // A save from before Glun stood at the post has a traveler who was never briefed and is past
+    // it anyway; anything at stage 3 or beyond has done the lesson by definition.
+    lessonSet=saved.woodland?.lessonSet??(saved.questStage>2||practiceHits>0);
     journeyGathered.clear();saved.journeyGathered.forEach(id=>journeyGathered.add(id));
     meadowCleared=saved.meadowCleared;heardDoom=saved.heardDoom;
     acornQuest=createAcornQuest({status:saved.woodland?.acornStatus||(saved.lysaComplete?'complete':'available')});
@@ -3830,7 +3846,7 @@ function init() {
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
     if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
-    if(npc.id===HARBOURMASTER){maraOnTheLanding(npc);return;}
+    if(npc.id===HARBOURMASTER){jojoOnTheLanding(npc);return;}
     if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
     if(npc.id===GARDEN_KEEPER.id){gardenKeeperConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
     // Lakota is a hired sword too, so his own conversation carries the company's two choices rather than
@@ -3865,6 +3881,11 @@ function init() {
     if(npc.id===BOSCO.id){boscoConversation(npc,{bosco,carrying:BOSCO_TAKES.filter(id=>inventory.count(id)>0),openDialogue,closeDialogue,act:boscoAct,visits:boscoVisits++});return;}
     if(npc.id===TROY.id){troyConversation(npc,{troy,openDialogue,closeDialogue,act:troyAct,coppers:inventory.count(COPPER_ITEM),visits:troyVisits++});return;}
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
+    if(npc.id===INSTRUCTOR.id){
+      instructorConversation(npc,{stage:lessonStage({briefed:lessonSet,hits:practiceHits,dodges:practiceDodges,taught:cartography.met}),openDialogue,
+        begin:()=>{lessonSet=true;if(questStage===2)combat.startPractice(world.training);refreshQuest();if(questStage>=1)saveRoad(false);},
+        finish:()=>{giveTheChart();}});
+      return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
@@ -3900,7 +3921,7 @@ function init() {
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
     let lines,event=null,action='Until next time';
     if(npc.id==='fisher') {
-      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Mara has been at the head of the pier since it started, looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
+      lines=questStage>=5?['You cleared the road! Bran keeps a quieter fishing spot at Willowmere Pond, east of the forest road beyond Eren’s watch. He will lend you a rod if you want to learn. Orris by Lysa’s cottage can show you how to cook what you catch.','Those raiders came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.']:['The bell means goblins. They came down the woodland road this morning. Jojo has been at the head of the pier since it started, looking for somebody with a sword; that will be you.', 'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     } else if(questStage===5) {
       const said={dead:name=>`We lost ${name} out there. That is on the goblins, not on you, but I will not pretend it is nothing.`,wounded:name=>`${name} is badly hurt, but breathing. The healer is with them now.`,
         hurt:name=>`${name} has cuts to show for it, and is alive because you were there.`,unhurt:name=>`${name} came through without a scratch.`,escaped:name=>`${name} got clear of it.`};
@@ -3913,40 +3934,48 @@ function init() {
       event='meet-waykeeper';action='Take the token';
     } else if(questStage===6||questStage===7)lines=['Press I to open your satchel. Select the letter of introduction and read it; then press I or Escape to return to the road. Keep the message and my travel token together.'];
     else if(questStage>=8)lines=['Follow the cairns to Fernway Rest, and then the road south-west to the Caloss Gate. The forest thins there and the Avrel clearing opens out. Beyond the gate, the farm road begins the next leg of your journey.','If you want to know where the raiders came from, the army post at the Tessen bridge has been counting them. That road leaves ours just past the Caloss Gate and runs north into Pueth.'];
-    else if(questStage<2)lines=['Speak to Mara at the head of the pier before you head inland. She has a small errand for you, and something to help you on the road.'];
+    else if(questStage<2)lines=['Speak to Jojo at the head of the pier before you head inland. She has a small errand for you, and something to help you on the road.'];
     else if(questStage===2)lines=['Try the straw post by the northern crossroads first. Two hits and a dodge. Those simple habits will keep you on your feet.'];
     else lines=['There is movement near the woodland bell, south of here. Approach along the main road, and keep an eye on the trees.'];
     openDialogue(npc,lines,event,action);
   }
   /**
-   * Mara, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Corvan, and
+   * Jojo, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Corvan, and
    * which way the road goes. She is the first person the traveler speaks to, and the errand is hers
    * because it is her landing and her paperwork. Chris, who came off the same boat, keeps the sword
    * lesson below.
    */
-  function maraOnTheLanding(npc){
+  /**
+   * **The chart, handed over by Officer Glun when the lesson is done** (the user, 22 September
+   * 2026). It is blank, and the ground the traveler is standing on is the first thing on it:
+   * `noteHex` runs every frame on the hex under his feet and records nothing until there is a
+   * chart to record on, so Tidehaven's own hex draws itself the moment he owns one.
+   */
+  function giveTheChart(){
+    if(!cartography.learn().first)return;
+    const here=world.regionAt(player.group.position.x,player.group.position.z);
+    if(here&&!isOpenCountry(here))cartography.noteHex(here.name);
+    toast('Your own chart of Azhora, and nothing on it but the ground under your feet. Everything else is dark until you go and look. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
+    refreshSkillsSheet();refreshChart();if(questStage>=1)saveRoad(false);
+  }
+  function jojoOnTheLanding(npc){
     if(questStage>=2){
       openDialogue(npc,[questStage>=5
         ?'Road is clear, they tell me. Good. I have two boats waiting on a tide and a quartermaster waiting on you, so neither of us is finished.'
         :'Corvan. The Avrel clearing, past the forest. I have said it twice and I will not enjoy saying it a third time.'],
-        null,'Back to the landing',{choices:[...maraCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
+        null,'Back to the landing',{choices:[...jojoCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
       return;
     }
     updateQuest('ashore');
     openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
-      'Mara. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
+      'Jojo. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Quartermaster Corvan at the army post in the Avrel clearing, just past the forest. He puts you into service.',
       'The way is west. Up off the landing, through the village, and the Greenway takes you north-west under the trees; keep on it and you come out at the Avrel. Eren at the watch will point you at the road.',
-      'And take this. It is the village’s own chart and it is not much — this coast from Feradom down past Pueth to us, Luscia and the two Suvals as shapes, and Drent written on the only bit anybody here has walked. Everything past that is dark, and it stays dark until you go and look.',
-      'Mark it as you go. Ground you walk draws itself. For the rest of it, ask: anybody who lives somewhere can tell you which way the next country is, and a name and a bearing is worth having before you need it.',
+      'Before you go anywhere, go and see Officer Glun at the straw post at the crossroads. He looks at every hired sword that comes off a boat and decides whether they go up that road or back down the gangway, and he will not take my word for you.',
       `One of your own boat came up the pier with you \u2014 ${landingMateNote(npcById.get(landingMateId()))}. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to. And he will not be the last of you off the Stills — I have boats booked in on every tide today, and the paper says eleven.`],
-      'accept-letter','Take the letter',{onComplete:()=>{
-        if(!cartography.learn().first)return;
-        toast('Your own chart of Azhora. The coast you came along, and Drent. Everything else is dark. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
-        refreshSkillsSheet();refreshChart();if(questStage>=1)saveRoad(false);
-      }});
+      'accept-letter','Take the letter');
   }
   /**
-   * Mara's second cartography lesson, and the only errand she has after the letter: the three
+   * Jojo's second cartography lesson, and the only errand she has after the letter: the three
    * corners of Tidehaven. The first lesson was the rough chart she hands over on the pier, which
    * is somebody else's drawing; this is the traveler's own, and she countersigns what comes back.
    *
@@ -3955,7 +3984,7 @@ function init() {
    * the main journey and it is never in the way: it is a choice in a conversation she was going
    * to have anyway (docs/drent-long-road.md §4, leg 1).
    */
-  function maraCornerChoices(npc){
+  function jojoCornerChoices(npc){
     const errand=longRoad.corners(longRoadWorld());
     if(errand.signed)return [];
     const back=()=>{closeDialogue();conversation(npc);};
@@ -3964,7 +3993,7 @@ function init() {
       openDialogue(npc,['There is, and nobody ever asks. You have my chart of the coast and it is not yours until you have put something on it yourself.',
         'Three corners, and the village is inside them. The head of this pier, where you are standing. The Weatherhead, the low head south of the landing — Cabe Tolliver sits up there calling the weather, and he will talk your ear off. And the Koopwood, north-west, where Bowden takes the trees down.',
         'Walk to all three. The ground between them draws itself as you go; that is what a chart is. Bring it back and I will put my name on it, which means the next harbourmaster down the coast will take it seriously.'],
-        null,'I will walk it',{onComplete:()=>{toast('The head of the pier, the Weatherhead, the Koopwood. Walk to all three and bring the chart back to Mara.','MARA · THE THREE CORNERS');saveRoad(false);}});}}];
+        null,'I will walk it',{onComplete:()=>{toast('The head of the pier, the Weatherhead, the Koopwood. Walk to all three and bring the chart back to Jojo.','MARA · THE THREE CORNERS');saveRoad(false);}});}}];
     if(!errand.canSign){
       const left=errand.corners.filter(corner=>!corner.walked);
       return [{id:'mara-corners-report',label:`The three corners (${errand.walked} of ${errand.of})`,action:()=>openDialogue(npc,
@@ -3977,11 +4006,11 @@ function init() {
       const gained=skills.known(CARTOGRAPHY_SKILL)?skills.gain(CARTOGRAPHY_SKILL,CORNERS_XP):null;
       refreshSkillsSheet();refreshChart();
       openDialogue(npc,['So it is. Pier, head, woodlot, and the village sitting in the middle of them where it has always sat.',
-        'There. Mara, harbourmaster, Tidehaven — and the date, because a chart without a date is a rumour. Anybody on this coast will read that.',
+        'There. Jojo, harbourmaster, Tidehaven — and the date, because a chart without a date is a rumour. Anybody on this coast will read that.',
         'Now go and do the same to the rest of the country. It is a great deal bigger and nobody has signed any of it.'],
         null,'Back to the landing',{onComplete:()=>{
           const skill=gained;
-          toast(`Mara has countersigned your chart of Tidehaven. ${CORNERS_XP} cartography.`,skill?.levelled?`CARTOGRAPHY LEVEL ${skill.level}`:'THE THREE CORNERS');
+          toast(`Jojo has countersigned your chart of Tidehaven. ${CORNERS_XP} cartography.`,skill?.levelled?`CARTOGRAPHY LEVEL ${skill.level}`:'THE THREE CORNERS');
           audio?.effect('success');saveRoad(false);}});}}];
   }
   /**
@@ -3989,7 +4018,7 @@ function init() {
    * will be. He is a slot rather than a name - whoever stands first in the company, which is Chris
    * Gotwood unless you are Chris, in which case it is Cromb - so he introduces himself by npc.name.
    * The rest of the scene is written in Chris's voice, and docs/playable-characters.md records what
-   * Cromb should say here instead. The letter is not his: Mara hands that over at the head of the pier.
+   * Cromb should say here instead. The letter is not his: Jojo hands that over at the head of the pier.
    */
   function chrisOnTheLanding(npc){
     openDialogue(npc,[`${npc.name}. Same contract as you, same boat as you, and no, I do not know any more about it than you do.`,
@@ -4098,7 +4127,7 @@ function init() {
     for(const id of ['harbor-letter','road-token','tinderbox'])inventory.grant(id);
     campcraft.teachFishing();
     for(const [id,count] of [['acorn',5],['forest-stick',6],['raw-fish',2]])if(inventory.count(id)<count)inventory.add(id,count-inventory.count(id));
-    combat.startPractice(world.training);combat.finishPractice();weapons.repair();practiceHits=2;practiceDodges=1;questStage=10;refreshQuest();inventory.refresh();
+    combat.startPractice(world.training);combat.finishPractice();weapons.repair();practiceHits=2;practiceDodges=1;lessonSet=true;cartography.learn();questStage=10;refreshQuest();inventory.refresh();
     $('test-status').textContent='Ready: road tutorial skipped; tinderbox, rod, five acorns, six sticks, and two raw fish supplied. Lysa’s favor remains available if you want to test it. Reopen the game for a fresh normal run.';
     show('testing-badge',true);
   }
@@ -4123,7 +4152,7 @@ function init() {
     return here&&!isOpenCountry(here)?here.name:null;}
   /**
    * Which way to somewhere. Offered by anybody who lives in a country with countries next to it,
-   * once Mara has handed the chart over and while there is still something they can tell you.
+   * once Jojo has handed the chart over and while there is still something they can tell you.
    */
   function wayfindingChoice(npc,back){
     if(!cartography.met)return null;
@@ -4687,7 +4716,7 @@ function init() {
     // Walled places have gates, and the autopilot only knows that if it is told (src/autopilot.js).
     enclosures:world.enclosures,
     sideSeat:(side,conquest)=>sideSeat(side,conquest)};
-  const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,position:{x:player.group.position.x,z:player.group.position.z},
+  const autopilotRead=()=>({mode,questStage,practiceHits,practiceDodges,lessonSet,position:{x:player.group.position.x,z:player.group.position.z},
     combat:{phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,action:e.action,progress:e.progress,active:e.active,hp:e.hp,guarded:!!e.guarded}))},
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
@@ -4799,7 +4828,7 @@ function init() {
 
   function destination() {
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
-    if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Mara \u00b7 the harbourmaster'};
+    if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Jojo \u00b7 the harbourmaster'};
     if(questStage===2)return{...world.training,name:'Practice post'};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
     if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
@@ -4846,8 +4875,8 @@ function init() {
       // How each villager came through the Greenway, for Eren to speak of.
       if(e.type==='victory'&&combat.state.encounterId===greenwayEncounter.id)raid.outcome=combat.state.allies.map(a=>({name:a.name,fate:a.hp<=0?(a.wounded?'wounded':'dead'):a.escaped?'escaped':a.hp<a.maxHp?'hurt':'unhurt'}));
       if(['victory','retreat','defeat'].includes(e.type)&&raid.fell){raid.fell=false;saveRoad(false);}
-      if(e.type==='practice-hit'&&questStage===2)practiceHits++;
-      // Mara's straw post is where Blades is shown, in the first ten minutes, and it is the one
+      if(e.type==='practice-hit'&&questStage===2&&lessonSet)practiceHits++;
+      // Jojo's straw post is where Blades is shown, in the first ten minutes, and it is the one
       // place a swing teaches without anything swinging back. A post pays as a light blow does,
       // and stops at level 5 (`ARMS.ceiling.post`): nobody reaches sixty by hitting straw.
       // Jerry's mark runs in the same phase and is not that post: what it teaches is Bows, and it
@@ -5606,7 +5635,7 @@ function init() {
       openingState:()=>opening&&stateAt(openingTime,{variant:opening.id,companion:opening.companion}),
       advanceOpening:seconds=>{openingTime+=seconds;},
       openingBells:()=>openingBells,
-      prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
+      prepare:()=>{questStage=10;practiceHits=2;practiceDodges=1;lessonSet=true;cartography.learn();testingEnabled=false;inventory.grant('harbor-letter');inventory.grant('road-token');
         combat.startPractice(world.training);combat.finishPractice();leaveOpening();mode='playing';document.body.classList.add('playing');
         show('opening',false);{const p=toWorld(-198,26);player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);}refreshQuest();settleCamera();},
       press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code})),
@@ -5622,7 +5651,7 @@ function init() {
         player.group.position.set(FOREST_STORY_NPC.x+1.5,world.heightAt(FOREST_STORY_NPC.x+1.5,FOREST_STORY_NPC.z+1),FOREST_STORY_NPC.z+1);refreshQuest();settleCamera();}});
     const hideoutHooks=()=>({...forestHooks(),forestHideout,hideoutAct,hideoutWatch,handleCombatEvents,attack,
       prepareHideout:(stage=10)=>{forestHooks().prepareVillage();questStage=stage;journey.restore(createJourney().snapshot());if(stage>=10)journey.start();reviewFrozen=false;reviewTarget=null;forestHideout.restore();syncHideout();
-        if(stage>=2)inventory.grant('harbor-letter');if(stage>=6)inventory.grant('road-token');if(stage>=3){practiceHits=2;practiceDodges=1;}weapons.repair();
+        if(stage>=2)inventory.grant('harbor-letter');if(stage>=6)inventory.grant('road-token');if(stage>=3){practiceHits=2;practiceDodges=1;lessonSet=true;cartography.learn();}weapons.repair();
         const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;refreshQuest();settleCamera();},
       hideoutEncounter});
     const localMapHooks=()=>({...forestHooks(),trailMap,localMapModel,trackPlace,clearTrailPin,trackedPlace,openLocalMap,discoverySet:discoveries,
@@ -5892,7 +5921,7 @@ function init() {
           await until(()=>Math.hypot(player.group.position.x-from.x,player.group.position.z-from.z)>1,'WASD did not move');release('KeyW');}
         // **Nobody walks with you up the pier.** (The user, 22 September 2026: they should never
         // follow without being asked first.) He used to escort the traveler to the letter because
-        // in hard mode he is the only one who can say what Mara is saying; normal mode is all
+        // in hard mode he is the only one who can say what Jojo is saying; normal mode is all
         // English and the escort is switched off (LANDING_ESCORT, src/mercenaries.js), so he
         // lands, walks his own road to the muster, and is asked with "Walk Drent with me."
         {const mate=npcById.get(landingMateId());
@@ -5916,7 +5945,7 @@ function init() {
         const walkSpeed=await speedWith(),tabSpeed=await speedWith('Tab'),shiftSpeed=await speedWith('ShiftLeft');
         assert(Math.abs(walkSpeed-4.2)<.01&&Math.abs(tabSpeed-7.2)<.01&&Math.abs(tabSpeed-shiftSpeed)<.01,'Tab/Shift running speed or walking speed is wrong');
         warp(0,9);press('KeyQ');await until(()=>player.group.position.x<-.35&&player.group.position.z<8.65,'Q forward-left failed');release('KeyQ');
-        // Beside Mara at the head of the pier, on her open side: people and the harbour crates around her are solid now.
+        // Beside Jojo at the head of the pier, on her open side: people and the harbour crates around her are solid now.
         const harbor=npcById.get(HARBOURMASTER);player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(1.4,0,1));await frames();
         const diagonalStart=player.group.position.clone();press('KeyE');assert(mode==='playing','E triggered dialogue');await until(()=>player.group.position.x>diagonalStart.x+.35&&player.group.position.z<diagonalStart.z-.35,'E forward-right failed');release('KeyE');
         player.group.position.copy(harbor.actor.group.position).add(new THREE.Vector3(-1,0,0));await frames();tap('KeyF');assert(mode==='dialogue','F talk failed');finishDialogue();assert(questStage===2,'Message assignment failed');
@@ -5927,11 +5956,24 @@ function init() {
         assert(!inventoryTab.defaultPrevented&&!keys.has('Tab'),'Inventory Tab was captured as run input');release('Tab');
         const beforeInventory=player.group.position.clone();press('KeyW');await frames(3);release('KeyW');assert(player.group.position.distanceTo(beforeInventory)<.001,'Inventory allowed movement behind it');
         $('inventory-close').click();assert(mode==='playing'&&questStage===2,'Closing the early satchel skipped a lesson');
+        // Officer Glun sets the lesson, and the straw counts for nothing until he has
+        // (src/instructor.js): the post used to be an unattended card in the quest panel.
+        {const glun=npcById.get(INSTRUCTOR.id);
+          warp(glun.actor.group.position.x,glun.actor.group.position.z+1.6);await frames();
+          tap('KeyF');assert(mode==='dialogue','Officer Glun would not set the lesson');finishDialogue();
+          assert(lessonSet,'Talking to him did not set the lesson');}
         warp(world.training.x,world.training.z+1.5);player.group.rotation.y=Math.PI;await frames();
         tap('KeyR');await until(()=>practiceHits===1,'First practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0}));await until(()=>practiceHits>=2,'Left-click practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         press('KeyA');tap('ControlLeft');release('KeyA');await until(()=>questStage===3,'Dodge lesson failed');await until(()=>combat.state.player.action==='idle','Dodge recovery failed');
         assert(weapons.status('simple-sword').durability===22,'Practice hits did not wear the sword exactly once each');
+        // He acknowledges the lesson where it was set, and the chart comes with it: blank, and
+        // with the ground under the traveler's feet the only thing on it.
+        assert(mode==='dialogue','Officer Glun did not acknowledge the lesson');finishDialogue();
+        assert(cartography.met,'He did not hand the chart over');
+        assert(cartography.state('Drent')==='charted'&&cartography.named('Drent'),'The chart did not open on the ground he is standing on');
+        for(const dark of ['Luscia','Pueth','Feradom','East Suval','West Suval'])
+          assert(cartography.state(dark)==='unknown',`${dark} was on the chart before anybody went there`);
         warp(-47,29);await frames();assert(questStage===4&&combat.state.enemies.length===3,'Goblin ambush failed');
         // Pause freezes a committed encounter. A reduced-health fixture then
         // exercises an actual enemy strike, defeat screen, and checkpoint retry.

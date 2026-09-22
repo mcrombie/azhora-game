@@ -279,7 +279,7 @@ test('the mark is practice, it pays by the arrow, and walking away ends it', () 
   assert.match(main, /id:'teacher-mark'/);
   assert.match(main, /id:'teacher-mark-done'/, 'and he can put it away again');
   assert.match(main, /id:'teacher-mark-no'/);
-  // **Practice, not a fight**: the same call Mara's post makes, and nothing else.
+  // **Practice, not a fight**: the same call Jojo's post makes, and nothing else.
   assert.match(main, /combat\.startPractice\(at\);/, 'the straw stands in the practice phase');
   assert.doesNotMatch(main, /startEncounter\(\{id:'mark/, 'and nothing here lays a fight');
   // Only arrows pay, and only his own: the mark is not the village post with a sword at it.

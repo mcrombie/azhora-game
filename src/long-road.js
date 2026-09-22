@@ -71,11 +71,11 @@ const playCamp = state => {
 };
 /** The tongue turns readable here, which is what the East Rena Stone is for (src/languages.js). */
 const SIGN_READING = 50;
-/** What Mara's countersigned village chart is worth: one block of cartography, once. */
+/** What Jojo's countersigned village chart is worth: one block of cartography, once. */
 export const CORNERS_XP = 60;
 
 /**
- * Mara's second cartography lesson: the three corners of Tidehaven.
+ * Jojo's second cartography lesson: the three corners of Tidehaven.
  *
  * The first was the rough chart she hands over on the pier, which is somebody else's drawing.
  * This is the traveler's own: walk to the three corners of the village and the ground between
@@ -105,7 +105,7 @@ export function cornersWalked(state) {
  * and 63 minutes, and a leg is the walking between two bells.
  */
 export const LONG_ROAD_LEGS = freeze([
-  freeze({ leg: 0, title: 'The harbour', note: 'Both roads begin here: Mara, the practice post, the raid, and the letter read.' }),
+  freeze({ leg: 0, title: 'The harbour', note: 'Both roads begin here: Jojo, the practice post, the raid, and the letter read.' }),
   freeze({ leg: 1, title: 'Tidehaven, which you ran through', note: 'The village you came ashore in, at walking pace: a bird, a kitchen, and your own chart.' }),
   freeze({ leg: 2, title: 'The near wood', note: 'Willowmere and the Koopwood: a rod, a fire, and the first skill you grind.' }),
   freeze({ leg: 3, title: 'Fernway', note: 'Where the woodland paths meet: the damp ground behind the Rest, and players camped on the verge.' }),
@@ -165,7 +165,7 @@ export const LONG_ROAD_STOPS = freeze([
   // Leg 0 — the harbour. Both roads walk it, and it ends at the fork.
   stop({ id: 'pier-chart', leg: 0, kind: 'spine', npc: 'harbormaster', skill: 'cartography', subregion: 'eastreena', point: { x: 0, z: 25 },
     reads: 'skills', done: state => learned(state, 'cartography'),
-    title: 'Mara at the head of the pier', detail: 'The letter, and the rough chart the village keeps. Being given directions is the first cartography there is.' }),
+    title: 'Jojo at the head of the pier', detail: 'The letter, and the rough chart the village keeps. Being given directions is the first cartography there is.' }),
   stop({ id: 'the-fork', leg: 0, kind: 'spine', place: 'The Greenway Watch', system: 'the-letter', subregion: 'the-greenway', point: { x: -85, z: 29 },
     reads: 'longRoad', done: (state, own) => !!own.told,
     title: 'The letter read, at the Watch', detail: 'Nine of the eleven are still at sea and the Marshal will not march short. Go up the road now, or learn the country you are about to fight for.' }),
@@ -183,7 +183,7 @@ export const LONG_ROAD_STOPS = freeze([
     title: 'Lysa’s acorns', detail: 'Five acorns off the Greenway floor, and the tinderbox she gives for them, which is every fire you light after this.' }),
   stop({ id: 'village-corners', leg: 1, kind: 'spine', npc: 'harbormaster', skill: 'cartography', subregion: 'eastreena', point: { x: 0, z: 25 },
     reads: 'longRoad', done: (state, own) => own.corners === 'signed',
-    title: 'Mara again: the three corners', detail: 'The pier, the Weatherhead and the Koopwood, walked and drawn on your own chart instead of hers, and countersigned when you bring it back.' }),
+    title: 'Jojo again: the three corners', detail: 'The pier, the Weatherhead and the Koopwood, walked and drawn on your own chart instead of hers, and countersigned when you bring it back.' }),
 
   // Leg 2 — the near wood. One you do, one you make, one you grind.
   stop({ id: 'bran-rod', leg: 2, kind: 'spine', npc: 'pond-fisher', skill: 'fishing', subregion: 'willowmere', point: { x: -102, z: 8.6 },
@@ -270,7 +270,7 @@ export function validateLongRoadSnapshot(data, { allowMissing = true } = {}) {
   if (!Number.isInteger(data.revision) || data.revision < 0 || data.revision > 1e7) return false;
   if (typeof data.told !== 'boolean' || typeof data.played !== 'boolean') return false;
   if (!Number.isInteger(data.drills) || data.drills < 0 || data.drills > DRILL_COUNT) return false;
-  // A save from before Mara had a second errand simply has not been asked.
+  // A save from before Jojo had a second errand simply has not been asked.
   if (data.corners !== undefined && !CORNER_STAGES.includes(data.corners)) return false;
   // And a save from before anybody could be recognised simply has not been.
   if (data.recognised !== undefined && (!Array.isArray(data.recognised) || data.recognised.length > LONG_ROAD_STOPS.length
@@ -349,7 +349,7 @@ export function createLongRoad({ onEvent = () => {} } = {}) {
    * the walk is re-derived every time it is asked for, so a skill learned on the short road or a
    * ground charted years later closes its stop without anybody telling this module about it.
    */
-  /** Mara's errand: which stage it is at, which corners the chart has, and whether she may sign. */
+  /** Jojo's errand: which stage it is at, which corners the chart has, and whether she may sign. */
   function corners(world = {}) {
     const walked = cornersWalked(world), left = walked.filter(corner => !corner.walked).length;
     return { stage: state.corners, corners: walked, walked: walked.length - left, of: walked.length,
@@ -579,7 +579,7 @@ export const forkNotice = () =>
   'Eleven of us on this contract, and nine still at sea. Venmor will not march short, so the road west will keep. Go straight up it and be first into an empty camp, or walk Drent with me and learn the country first. Either way I am with you.';
 
 /**
- * Every named ground of Drent the long road walks through, for Mara's countersign. **Ten since
+ * Every named ground of Drent the long road walks through, for Jojo's countersign. **Ten since
  * 2026-09-21**: the Toll House was the one stop the chart could not name, and the user gave it a
  * ground of its own.
  */

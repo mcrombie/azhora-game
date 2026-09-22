@@ -66,7 +66,7 @@ that is not yet enough.
 get one. The player's choices are his character. The other ten have arcs; he has yours.** That is
 not a gap in this document to be filled in later; it is the point of him, and anybody writing the
 profiles should leave his blank.
-- **Opening:** today's. He lands, Mara gives him the letter at the head of the pier, Chris gives
+- **Opening:** today's. He lands, Jojo gives him the letter at the head of the pier, Chris gives
   the soldierly advice beside him.
 - **Arc:** the game as written, and nothing on top of it. Every other entry below describes a
   story the character brought with him. Cromb brings none, so the road is the whole of it.
@@ -90,7 +90,7 @@ profiles should leave his blank.
   right if the player really has what Chris has. He is written as knowing three tongues
   (`INTERPRETER.knows`: ambroni, drentish, feradom) and the user's words were that he knows
   enough of the local language to get around — and in Drent the local language is Drentish, which
-  is what Mara speaks. So `startingLanguages` gives him drentish at 40 beside the ambroni. With
+  is what Jojo speaks. So `startingLanguages` gives him drentish at 40 beside the ambroni. With
   ambroni alone, choosing Chris made the game's first conversation — the one the interpreter
   exists to teach you about — wholly foreign with nobody in the world to gloss it, which is the
   one outcome this design is meant to prevent. Feradom is deliberately left out: it is the user's

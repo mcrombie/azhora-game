@@ -113,7 +113,7 @@ export const SKILLS = Object.freeze({
   cartography: Object.freeze({
     id: 'cartography', name: 'Cartography',
     blurb: 'Keeping your own chart of Azhora: the ground you have walked drawn properly, the coasts you have only been shown as a shape against the sea, and the rest of it dark. Asking somebody the way is worth as much to a chart as walking it.',
-    teacher: 'Mara, the harbourmaster at the head of the pier in Tidehaven, with the rough chart the village keeps',
+    teacher: 'Jojo, the harbourmaster at the head of the pier in Tidehaven, with the rough chart the village keeps',
     thresholds: RUNESCAPE_TABLE,
     // A placeholder guide until src/cartography.js lands: the states a region passes through, in order.
     unlocks: Object.freeze([unlock(1, 'Your own chart, and the ground you walk drawn on it'),
@@ -160,7 +160,7 @@ export const SKILLS = Object.freeze({
   blades: Object.freeze({
     id: 'blades', name: 'Blades', group: ARMS_HEADING,
     blurb: 'The sword and the dagger: an edge, a point, and the sense to keep both out of bone. Every blow you land with one teaches you a little about the next.',
-    teacher: 'Mara\u2019s straw post on the pier, then Chris Gotwood for the sword and Ed the Word for the dagger',
+    teacher: 'Jojo\u2019s straw post on the pier, then Chris Gotwood for the sword and Ed the Word for the dagger',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'The sword as it has always been'), unlock(25, 'A third again the damage, and a swing that costs less'),
       unlock(50, 'Half as hard again as the man who landed off the boat'), unlock(75, 'Twice the damage of that first morning'),

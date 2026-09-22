@@ -1039,7 +1039,10 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // hair, facial hair, garment and small marks. Nothing here is keyed on his id.
   const mercBuild = isMercenary ? MERCENARY_BUILDS[look?.build] ?? MERCENARY_BUILDS.ordinary : null;
   const headgear = isMercenary ? look?.headgear ?? (look?.cap ? 'soft-cap' : 'bare') : '';
-  const hairStyle = isMercenary ? look?.hairStyle ?? 'cropped' : '';
+  // The thirteen heads of hair were built for the hired company, and anybody else got the
+  // village crop. A villager who asks for one of them by name now gets it: Jojo the harbourmaster
+  // wears her hair long (`look.hairStyle`), and the colour is hers too (`look.hair`).
+  const hairStyle = look?.hairStyle ?? (isMercenary ? 'cropped' : '');
   const facialHair = isMercenary ? look?.facialHair ?? (look?.beard ? 'full' : 'clean') : '';
   const garment = isMercenary ? look?.garment ?? 'jerkin' : '';
   const marks = isMercenary && Array.isArray(look?.marks) ? look.marks : [];
@@ -1061,7 +1064,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // A hired sword's legs take their colour from his own cloth, so eleven men do
   // not stand in eleven different tunics above one shared pair of olive trousers.
   const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isWinemaker ? 0x4d4a44 : isRivalKeeper ? 0x232427 : isLightKeeper ? 0x3c4a4e : isBirdWatcher ? 0x3b3129 : isGardenKeeper ? 0x4a4436 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
-  const hairMat = material(isMercenary && Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeperKin ? 0x9c8355 : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isGardenKeeper ? 0x877b62 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const hairMat = material(Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeperKin ? 0x9c8355 : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isGardenKeeper ? 0x877b62 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -1303,7 +1306,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       const lock = part(tousled, UNIT_HAIR_LOCK, sunlit ? sunlitHair : hairMat, position, scale);
       lock.rotation.set(...rotation);
     }
-  } else if (isMercenary) {
+  } else if (isMercenary || hairStyle) {
     // Thirteen heads of hair, none of them the traveler’s tousled brown.
     const crop = lookGroup(head, 'hair', hairStyle);
     const fringe = (height, width) => {
@@ -2347,7 +2350,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     box(body, linen, [0, 0.984, 0.18], [0.225, 0.434, 0.036]);
     ribbon(body, leather, [-0.113, 1.277, 0.126], [-0.101, 1.093, 0.19], 0.027);
     ribbon(body, leather, [0.113, 1.277, 0.126], [0.101, 1.093, 0.19], 0.027);
-    // Ovan Kell in Izolveth wears the salt-grey beard; Mara in Tidehaven wears her hair tied back,
+    // Ovan Kell in Izolveth wears the salt-grey beard; Jojo in Tidehaven wears her hair tied back,
     // so the same apron carries two people rather than one face in two ports.
     if (look?.beard === false) {
       round(head, hairMat, [0, 0.052, 0], [0.152, 0.128, 0.152]);
@@ -2478,7 +2481,10 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       plume.name = 'Officer plume';
       helmet.add(plume);
       part(plume, UNIT_CYLINDER, gold, [0, 0.555, -0.05], [0.03, 0.04, 0.03]);
-      const red = material(0xa53a2c), white = material(0xe8e2d4);
+      // A drill officer's plume is white through (`look.plume === 'white'`): Glun at the practice
+      // post is the army's teacher rather than one of its commanders, and reads as his own man
+      // at a glance without leaving the Ambroni build (src/instructor.js).
+      const white = material(0xe8e2d4), red = look?.plume === 'white' ? white : material(0xa53a2c);
       for (const [x, y, z, mat, lean] of [[0, 0.64, -0.09, red, -0.5], [-0.035, 0.62, -0.12, white, -0.8], [0.035, 0.62, -0.12, white, -0.8], [0, 0.6, -0.16, red, -1.1]]) {
         const feather = round(plume, mat, [x, y, z], [0.045, 0.1, 0.04]);
         feather.rotation.x = lean;

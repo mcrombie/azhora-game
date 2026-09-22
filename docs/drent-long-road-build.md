@@ -94,7 +94,7 @@ give **two** of his five sittings. What closes it now:
 - Corvan in `src/journey-content.js`: the register. His first meeting and his `done(2)` line gain
   the count, passed in through `context` from `company.summary(playSeconds)` the way `musterCount`
   already reaches the Moros conversation. Same choices, same ids, same rewards.
-- Mara: one clause on the pier.
+- Jojo: one clause on the pier.
 - `questSteps` in `src/game-state.js`: text of stages 8 and 10 only. **No new stage.**
 - While here: Corvan's `!state.started` line still says "finish your business with Lakota".
 *Tests:* `tests/journey-content.test.js`, `tests/journey.test.js`, `tests/story-spine.test.js`
@@ -210,9 +210,9 @@ drills cannot repeat; a drill without the companion is refused.
 variant (the count is 1 or 2: the empty pegs, Venmor's "early men"), the last-in variant (11:
 "That's eleven", then one line from each of the ten built from `seenAt` — ten templates, one
 phrase per stop), and one fresh line for each mercenary who musters after the traveler. First-in
-adds a small gain to the army's trust in `src/campaign.js`, once. Mara's countersign — an item and
+adds a small gain to the army's trust in `src/campaign.js`, once. Jojo's countersign — an item and
 cartography experience, once, when all ten Drent grounds are charted — belongs to whichever
-module holds Mara's conversation.
+module holds Jojo's conversation.
 *Tests:* `tests/moros-chapter.test.js`; `tests/every-fight.test.js` untouched and green.
 
 ### 12. The eleven

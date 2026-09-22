@@ -44,7 +44,7 @@ region-level state is a summary for the journal, not a gate on the drawing.
 ## Where the chart starts
 
 At the first minute the traveler has Tidehaven under their feet and a rough
-chart Mara the harbourmaster keeps. That chart shows:
+chart Jojo the harbourmaster keeps. That chart shows:
 
 - the coastline from **Feradom** through **Pueth** to **Drent**;
 - the coastlines of **Luscia**, **East Suval** and **West Suval**;
@@ -77,7 +77,7 @@ The starting chart pays nothing: it is where you begin, not something you did.
 
 ## Learning it, and asking the way
 
-Mara hands over the rough chart on the landing and gives directions, and that is
+Jojo hands over the rough chart on the landing and gives directions, and that is
 the lesson — learned on the spot, the way birding is. After that, any NPC can be
 asked **"Which way to …?"**: a choice that appears in a conversation once the
 traveler has the skill, offering regions near where that person lives. Asking

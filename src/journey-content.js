@@ -100,7 +100,7 @@ export function journeyConversation(npc,context) {
   if(npc.id==='meadow-courier') {
     if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.',
       registerLine(register)],[]);
-    if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Mara and Eren. This road will still be here.'],[]);
+    if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Jojo and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
       'The letter of introduction? Let me copy it into the field register. Keep the original. I am Corvan, quartermaster of the Ambroni army. You are the mercenary we hired from across the sea in the Ambroni Empire’s name; this report brings you onto the army’s field detail.',
       registerLine(register),

@@ -10,8 +10,8 @@ Read `docs/chapter-1-redesign.md` in full. Treat section 1 and the explicit requ
 
 Prepare a concrete implementation plan for the following:
 
-1. Mara directs the newly arrived traveler to an ordinary Imperial duty soldier who supervises combat instruction. Prefer reusing Footman Ottar (`post-landing`), with a short briefing, practical lesson and completion acknowledgment.
-2. Fighting becomes the first mandatory skill introduction. Integrate the existing weapon-family/Arms progression; do not invent a duplicate generic Fighting statistic or erase alternative protagonists' starting skills. Defer Mara's formal Cartography skill lesson until after combat instruction while retaining the chart and directions.
+1. Jojo directs the newly arrived traveler to an ordinary Imperial duty soldier who supervises combat instruction. Prefer reusing Footman Ottar (`post-landing`), with a short briefing, practical lesson and completion acknowledgment.
+2. Fighting becomes the first mandatory skill introduction. Integrate the existing weapon-family/Arms progression; do not invent a duplicate generic Fighting statistic or erase alternative protagonists' starting skills. Defer Jojo's formal Cartography skill lesson until after combat instruction while retaining the chart and directions.
 3. The soldier dispatches the player to Corvan's existing Drent post. Preserve the letter, required token, and readable/dismissible inventory lesson.
 4. Replace the initial three-goblin raid with exactly one **male highway robber** farther outside Tidehaven on the road to Corvan. This is the first real combat encounter. He openly attacks on the road; he is not a pickpocket or a group. One shared placement must drive world clearance, combat, trigger, checkpoint, markers and autoplay.
 5. Resume the existing Corvan/supplies/Caloss/waymarkers/Iven sequence. Keep unrelated goblins and optional content.

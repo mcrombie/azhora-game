@@ -11,31 +11,49 @@ import { fileURLToPath } from 'node:url';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
-const fixture = ({ taught = true } = {}) => {
+const fixture = ({ taught = true, charted = [] } = {}) => {
   const skills = createSkills(), chart = createCartography({ skills });
   if (taught) chart.learn();
+  // The chart begins empty now, so a test about what a drawn chart looks like draws one first.
+  for (const name of charted) chart.chart(name);
   return { skills, chart };
 };
+/** The coasts the traveler used to be handed on the pier, for the tests that need a chart with something on it. */
+const OLD_OPENING = ['Drent', 'East Suval', 'Feradom', 'Luscia', 'Pueth', 'West Suval'];
 const xp = skills => skills.view().find(entry => entry.id === 'cartography').xp;
 
-test('the chart starts as the rough one Tidehaven keeps, and nothing else', () => {
-  assert.deepEqual(Object.keys(STARTING_CHART).sort(),
-    ['Drent', 'East Suval', 'Feradom', 'Luscia', 'Pueth', 'West Suval'], 'Feradom to Pueth to Drent, and three more coasts');
+/**
+ * The user, 22 September 2026: you start with no map. The traveler used to land holding six
+ * countries already charted - this coast from Feradom past Pueth to Drent, Luscia and the two
+ * Suvals - which answered three-quarters of the map before he had walked anywhere.
+ */
+test('the chart starts empty: no coast, no name, nothing at all', () => {
+  assert.deepEqual(Object.keys(STARTING_CHART), [], 'a country is charted before the traveler owns a chart');
   const { chart } = fixture();
-  for (const name of Object.keys(STARTING_CHART)) assert.equal(chart.state(name), 'charted', name);
-  // Only Drent is named: you can see what you are standing in is called Drent, and nothing in it.
-  assert.deepEqual(Object.keys(STARTING_CHART).filter(name => chart.named(name)), ['Drent']);
-  for (const name of Object.keys(STARTING_CHART)) assert.equal(chart.hexes(name), 0, `${name} is a shape, not ground walked`);
-  // Everything else on the atlas is dark.
-  for (const name of ['Peblos', 'Moros Plain', 'Elagos', 'Amod', 'Cape Thalmagar', 'Nowhere At All']) {
+  for (const name of ['Drent', 'Feradom', 'Pueth', 'Luscia', 'East Suval', 'West Suval',
+    'Peblos', 'Moros Plain', 'Elagos', 'Amod', 'Cape Thalmagar', 'Nowhere At All']) {
     assert.equal(chart.state(name), 'unknown', name);
     assert.equal(chart.named(name), false, name);
     assert.equal(chart.knows(name), false, name);
+    assert.equal(chart.hexes(name), 0, name);
   }
-  // And the starting chart is a copy, not the table itself.
-  const fresh = startingChart();
-  fresh.Drent.state = 'explored';
-  assert.equal(STARTING_CHART.Drent.state, 'charted', 'the table is not written through');
+  assert.deepEqual(startingChart(), {}, 'and a fresh one is empty too');
+});
+
+test('a man with no chart draws nothing, and is told nothing was drawn', () => {
+  const { skills, chart } = fixture({ taught: false });
+  // Everything that writes on a chart, before there is one to write on.
+  assert.equal(chart.noteHex('Drent').first, false, 'ground walked unmapped is ground nobody recorded');
+  assert.equal(chart.hear('Luscia').first, false);
+  assert.equal(chart.chart('Pueth').first, false);
+  for (const name of ['Drent', 'Luscia', 'Pueth']) assert.equal(chart.state(name), 'unknown', name);
+  assert.equal(xp(skills), 0, 'and nothing is banked');
+  // The chart he is given is the ground he is standing on, and that one does pay.
+  chart.learn();
+  const first = chart.noteHex('Drent');
+  assert.deepEqual([first.first, first.xp, chart.state('Drent'), chart.named('Drent')],
+    [true, CHART_XP.firstHex, 'charted', true], 'the hex under his feet is the first thing on it');
+  assert.equal(xp(skills), CHART_XP.firstHex);
 });
 
 test('a chart only goes forward, and each step forward is paid for once', () => {
@@ -49,6 +67,7 @@ test('a chart only goes forward, and each step forward is paid for once', () => 
   assert.deepEqual([charted.state, charted.named, charted.xp], ['charted', true, CHART_XP.charted], 'a name once given is not taken back');
   assert.equal(chart.chart('Peblos').first, false);
   // Hearing about a country you have already charted still adds the name, and nothing else.
+  chart.chart('Feradom');
   const quiet = chart.hear('Feradom');
   assert.deepEqual([quiet.first, quiet.state, quiet.named, quiet.xp], [true, 'charted', true, 0], 'no step back, and nothing paid for standing still');
   assert.equal(chart.state('Feradom'), 'charted');
@@ -72,12 +91,13 @@ test('charted means a shape; explored means six hexes of your own', () => {
   assert.equal(chart.noteHex(null).ok, false);
 });
 
-test('nothing is paid until Mara has handed the chart over', () => {
+test('nothing is paid until Jojo has handed the chart over', () => {
   const { skills, chart } = fixture({ taught: false });
   assert.equal(chart.met, false);
   chart.hear('Peblos'); chart.noteHex('Drent');
-  assert.equal(skills.known('cartography'), false, 'the skill is not learned by walking about');
-  assert.equal(chart.state('Peblos'), 'heard', 'though the chart still remembers what you were told');
+  assert.equal(skills.taught('cartography'), false, 'the skill is not learned by walking about');
+  // And nothing is remembered either: there is no chart to remember it on until he is given one.
+  assert.equal(chart.state('Peblos'), 'unknown', 'a man with no chart wrote something down');
   assert.equal(chart.learn().first, true);
   assert.equal(chart.learn().first, false);
   assert.equal(skills.known('cartography'), true);
@@ -101,14 +121,14 @@ test('asking the way only reaches the countries next door, and every one of them
 });
 
 test('the journal says how hard a country is only once its shape is on the chart', () => {
-  const { chart } = fixture();
+  const { chart } = fixture({ charted: OLD_OPENING });
   chart.hear('Cape Thalmagar');
   const view = chart.view();
   const heard = view.entries.find(entry => entry.name === 'Cape Thalmagar');
   assert.deepEqual([heard.state, heard.level], ['heard', null], 'a name and a bearing is not a survey');
   const drent = view.entries.find(entry => entry.name === 'Drent');
   assert.deepEqual([drent.state, drent.level, drent.words], ['charted', 0, 'A quiet country']);
-  assert.equal(view.total, Object.keys(STARTING_CHART).length + 1);
+  assert.equal(view.total, OLD_OPENING.length + 1);
   assert.deepEqual([view.charted, view.heard, view.explored], [6, 1, 0]);
   chart.chart('Cape Thalmagar');
   assert.equal(chart.view().entries.find(entry => entry.name === 'Cape Thalmagar').level, 8);
@@ -128,7 +148,7 @@ test('the chart survives the road, and nonsense is refused', () => {
   // A save that has forgotten the starting chart still gets it back: it is where every game begins.
   const thin = createCartography();
   assert.equal(thin.restore({ version: 1, met: true, regions: { Peblos: { state: 'heard', named: true, hexes: 0 } } }), true);
-  assert.equal(thin.state('Drent'), 'charted', 'Tidehaven’s own chart cannot be lost');
+  assert.equal(thin.state('Drent'), 'unknown', 'nothing is given back that was never given');
   for (const bad of [null, [], { version: 2, met: true, regions: {} }, { version: 1, regions: {} },
     { version: 1, met: true, regions: { Drent: { state: 'mapped', named: true, hexes: 0 } } },
     { version: 1, met: true, regions: { Drent: { state: 'charted', named: 'yes', hexes: 0 } } },
@@ -144,8 +164,9 @@ test('the chart survives the road, and nonsense is refused', () => {
 const ATLAS = JSON.parse(readFileSync(fileURLToPath(new URL('../assets/azhora-dev-regions.json', import.meta.url)), 'utf8')).regions;
 
 test('the dark chart draws a shape for every coast you know and a name for every country you have been given', () => {
-  const { chart } = fixture();
-  // The chart Mara hands over: six coasts, one name.
+  const { chart } = fixture({ charted: OLD_OPENING });
+  chart.hear('Drent');
+  // A chart with six coasts drawn on it, and one of them named.
   const opening = chartShapes(chart.view().entries, ATLAS);
   assert.deepEqual(opening.silhouettes.map(s => s.name).sort(),
     ['Drent', 'East Suval', 'Feradom', 'Luscia', 'Pueth', 'West Suval'], 'six coasts against the sea');
@@ -213,10 +234,16 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
   assert.match(main, /cartography\.restore\(saved\.cartography\?\?createCartography\(\)\.snapshot\(\)\)/, 'and read back with it');
   assert.match(checkpoint, /validateCartographySnapshot\(data\.cartography\)/, 'and checked on the way in');
   assert.match(main, /if\(widened\.cells\.length&&here&&!isOpenCountry\(here\)\)cartography\.noteHex\(here\.name\)/, 'a new hex is a hex of some country');
-  const hers = main.slice(main.indexOf('function maraOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
-  assert.match(hers, /own chart and it is not much/, 'she hands over the rough chart');
-  assert.match(hers, /cartography\.learn\(\)\.first/, 'and that is the lesson');
-  assert.match(hers, /NEW SKILL . CARTOGRAPHY/);
+  // **Glun hands the chart over, not Jojo** (the user, 22 September 2026): she sends the traveler
+  // to him, he teaches the sword, and the chart comes with the acknowledgment at the end of it.
+  const hers = main.slice(main.indexOf('function jojoOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
+  assert.doesNotMatch(hers, /own chart and it is not much/, 'Jojo is still handing out the old rough chart');
+  assert.doesNotMatch(hers, /cartography\.learn\(\)/, 'and still teaching cartography on the landing');
+  assert.match(hers, /Officer Glun at the straw post/, 'she sends the traveler to the man who does');
+  const his = main.slice(main.indexOf('function giveTheChart'), main.indexOf('function jojoOnTheLanding'));
+  assert.match(his, /cartography\.learn\(\)\.first/, 'and that is the lesson');
+  assert.match(his, /cartography\.noteHex\(here\.name\)/, 'the ground under his feet is the first thing on it');
+  assert.match(his, /NEW SKILL . CARTOGRAPHY/);
   assert.match(main, /function wayfindingChoice\(npc,back\)/, 'anybody can be asked which way the next country is');
   assert.match(main, /if\(options\.choices\?\.length&&!options\.noWayfinding\)/, 'from the one place every conversation goes through');
   assert.match(main, /cartography\.directionsFrom\(homeRegion\(npc\)\)/, 'and only about the countries next door');
@@ -250,7 +277,7 @@ test('the difficulty is a number in the journal and words everywhere else', () =
   }
 
   // And the one place the number does belong still has it, for a country whose shape is known.
-  const { chart } = fixture();
+  const { chart } = fixture({ charted: ['Drent'] });
   const drent = chart.view().entries.find(entry => entry.name === 'Drent');
   assert.deepEqual([drent.state, drent.level, drent.words], ['charted', 0, 'A quiet country'],
     'the journal keeps the number, and the words beside it');

@@ -625,7 +625,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   /**
    * **A bout can kill nobody, and neither can practice**: a sparring partner, the traveler and
    * anybody else in one stops at a single point of health and yields. One rule, in one place, so
-   * that an arrow and a sword cannot disagree about it - Jerry's mark and Mara's straw post both
+   * that an arrow and a sword cannot disagree about it - Jerry's mark and Jojo's straw post both
    * run in the practice phase, and nothing shot at a lesson may take anyone below one.
    */
   const killFloor = () => (lastEncounter.bout || state.phase === 'practice' ? 1 : 0);

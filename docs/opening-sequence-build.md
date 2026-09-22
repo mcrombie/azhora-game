@@ -38,7 +38,7 @@ called every frame (line 2618) and rewrites `world.npcPositions` for the ten hir
 `company.placements(playSeconds)`; `settleMercenaries()` also moves their actors there.
 
 Line numbers below are from `main` at `1dfa80d`. The harbourmaster branch (`6fbd9c6`, "The
-harbourmaster meets the boat, and her name is Mara") shifts them by up to ~80 lines but changes
+harbourmaster meets the boat, and her name is Jojo") shifts them by up to ~80 lines but changes
 none of the shapes named here; build on whichever is merged first.
 
 ## What the data module gives you
@@ -190,7 +190,7 @@ the chosen traveler from the playable-characters module when that lands; until t
 `settleCamera()` computes the ordinary camera from `yaw/pitch/distance`; `LANDED.camera` is the
 same numbers, so the explicit `camera.position.set` only removes the lerp's lag on the first
 frame. The toast replaces today's *SPEAK TO CHRIS ON THE LANDING* (line 2554): the errand is
-Mara's since `6fbd9c6`, and `LANDED.toast.kicker` says so.
+Jojo's since `6fbd9c6`, and `LANDED.toast.kicker` says so.
 
 **3e. The frame.** Delete the `if(mode==='arriving'){...}` block at lines 2548–2555 (the
 `arrivalProgress` lerp and the Chris placement). Immediately **after** `placeMercenaries();`
@@ -335,7 +335,7 @@ for Ed the Word and Mus are already in the data and end in the same `LANDED` sta
    at the times in `docs/opening-sequence.md`; the bell is heard at 30 s while the boat is still off
    the pier's end; the boat rounds up south of the pier and stops at the gangplank, bow east; the
    view rises, cranes back to the ordinary camera behind the traveler on the pier; the toast reads
-   SPEAK TO MARA AT THE HEAD OF THE PIER; Chris stands on the deck's edge beside you; Mara is at the
+   SPEAK TO MARA AT THE HEAD OF THE PIER; Chris stands on the deck's edge beside you; Jojo is at the
    root of the pier.
 4. Esc at any second lands you in that same frame, with the bell rung and the boat moored.
 5. Continue adventure and Start at the newest chapter show the boat at the gangplank and never

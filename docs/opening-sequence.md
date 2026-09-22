@@ -26,7 +26,7 @@ turn from its own local frame: `villageToWorld(lx, lz) = (lz − 20, 29 − lx)`
 | --- | --- | --- |
 | The traveler's landing, `world.spawn` | (23, 29), deck at 1.80 m | `villageToWorld(0, 43)` |
 | The pier deck | x 2…28, z 26.8…31.2, 1.80 m; the ramp down to the shore at x = −1 | `heightAt`'s deck rule, local \|x\| < 2.2, z 22…48 |
-| The pier's root, `world.pierHead`, where Mara stands | (0, 25), ground 1.53 m, facing west (yaw −π/2) | `villageToWorld(4, 20)`; the builder's `pierHead.yaw` |
+| The pier's root, `world.pierHead`, where Jojo stands | (0, 25), ground 1.53 m, facing west (yaw −π/2) | `villageToWorld(4, 20)`; the builder's `pierHead.yaw` |
 | The arrival boat's berth | (23, 34), bow east, yaw π/2 − 0.12; the gangplank at (23, 32.25) up to the deck | world.js `boat(-5.0, 43, 1, -.12, true)`, a child of the village root |
 | Water at the berth | harbour floor −5.82 m; sea level 0.06 | `heightAt`, `SEA_LEVEL` |
 | Corran Sell's ferry boat and Corran | boat at (25, 24.8) on the pier's north face; he stands at (27, 30.6), the pier's end | `FERRY_MOORINGS.drent`, `FERRY_LANDINGS.drent.stand` |
@@ -110,7 +110,7 @@ The boat's bob and roll are the world's own (`world.update` gives the arrival bo
   road audio hears, the sun and shadows follow the boat, and every villager is far enough away to
   stand at home. At 44 s the traveler stands on the landing.
 - **The bell** rings at 30 s: `world.ringBell(elapsed)` and `audio.effect('bell')`, once. The swing
-  decays over six seconds. Mara's first line — *"That bell was going before you were tied up"* —
+  decays over six seconds. Jojo's first line — *"That bell was going before you were tied up"* —
   is true.
 - **The company's clock** (`playSeconds`) does not run during the sequence. The roster counts
   arrivals in seconds *after the traveler lands*; Mus's drawn hour may be as early as half a
@@ -125,7 +125,7 @@ The boat's bob and roll are the world's own (`world.update` gives the arrival bo
 Six captions, each inside its beat, fading in and out over 0.6 s. They announce the four things
 the traveler knows and nothing more: a mercenary hired from abroad by the Ambroni Empire against a
 rebellion; Drent, the quietest province left, and Tidehaven; the capital Ambron, a city in a lake,
-to the west; a war not yet understood. The bell, the goblins, the letter and Mara are Mara's to
+to the west; a war not yet understood. The bell, the goblins, the letter and Jojo are Jojo's to
 tell. `{companion}` is the slot for whoever came off the boat with the traveler.
 
 | Shown | Eyebrow | Text |
@@ -182,11 +182,11 @@ At 44 s, or on skip:
 - **The camera** is the game's own: yaw π/2, pitch 0.39, 9 m — at (31.32, 6.72, 29) looking at
   (23, 3.3, 29), from the pier's seaward end west along it. The boat is alongside on the left,
   bow toward the camera; the companion is on the left edge of the deck 2.2 m away, facing across
-  the pier; Mara is 23 m ahead at the pier's root, on the right; the village and its smoke beyond.
+  the pier; Jojo is 23 m ahead at the pier's root, on the right; the village and its smoke beyond.
 - **The companion** stands at (23, 31.2) facing north (`placements()` index 0).
 - **The toast**: *Goblins have attacked the northern road.* over the kicker **SPEAK TO MARA AT THE
   HEAD OF THE PIER** (`LANDED.toast`). This replaces today's *SPEAK TO CHRIS ON THE LANDING*, which
-  the harbourmaster change (`6fbd9c6`) made wrong: the errand is Mara's.
+  the harbourmaster change (`6fbd9c6`) made wrong: the errand is Jojo's.
 - Quest stage 0; `playSeconds` 0; nothing saved; the HUD returns; `mode = 'playing'`.
 
 ## What does not play the sequence
@@ -222,7 +222,7 @@ name; `normalisePlayer` also takes `merc-gotwood`, `Chris`, `Ed the Word`).
   landing and one harbourmaster; his shingle strand is not a built place, so he lands here too.
 
 Both shore variants end in `LANDED`, the same state as the standard sequence, so the tutorial
-and Mara's errand are untouched.
+and Jojo's errand are untouched.
 
 ## Defaults chosen here
 
@@ -245,7 +245,7 @@ and Mara's errand are untouched.
 11. **`playSeconds` frozen** for the ride; the company's clock starts on the pier.
 12. **Skip = `stateAt(end)` + the unfired events**; Esc and Enter both skip; F8 skips into
     testing; autoplay skips.
-13. **The landing toast sends the traveler to Mara**, not to Chris.
+13. **The landing toast sends the traveler to Jojo**, not to Chris.
 14. **The title screen shows the boat at sea and no traveler**; Continue, the newest chapter and
     testing show the boat at its berth and never play the sequence.
 15. **Ed and Mus get one card each over the landed frame**; everyone else gets the boat, with

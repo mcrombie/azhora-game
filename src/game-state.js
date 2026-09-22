@@ -60,9 +60,9 @@ export function moveCharacter(position, dx, dz, world, radius, { swimming = fals
   return position;
 }
 export const questSteps = [
-  {title:'Goblins on the road', detail:'A goblin attack threatens the village. Walk ashore and find Mara, the harbourmaster, at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
-  {title:'An urgent message', detail:'Speak to Mara at the head of the pier about the goblin attack.', lesson:'Meet your neighbors', hint:'Approach Mara and press F to speak. F or Enter continues a conversation.'},
-  {title:'A little preparation', detail:'Find the straw practice post at the village crossroads.', lesson:'Learn at your own pace', hint:'Left-click or R to swing. Hold a direction and press C to dodge. Land two hits on the post and try one dodge.'},
+  {title:'Goblins on the road', detail:'A goblin attack threatens the village. Walk ashore and find Jojo, the harbourmaster, at the head of the pier.', lesson:'A first step', hint:'WASD to walk · Q forward-left · E forward-right. Hold Shift or Tab to run.'},
+  {title:'An urgent message', detail:'Speak to Jojo at the head of the pier about the goblin attack.', lesson:'Meet your neighbors', hint:'Approach Jojo and press F to speak. F or Enter continues a conversation.'},
+  {title:'A little preparation', detail:'Report to Officer Glun at the straw post at the village crossroads. He decides whether a hired sword goes up that road.', lesson:'Learn at your own pace', hint:'Left-click or R to swing. Hold a direction and press C to dodge. Land two hits on the post and try one dodge.'},
   {title:'Into the Greenway', detail:'Follow the road inland toward the woodland bell.', lesson:'The road ahead', hint:'Right-drag to look around; scroll to zoom. Your next destination glows on the map.'},
   {title:'Trouble in the trees', detail:'Drive off the three goblin raiders.', lesson:'Watch the windup', hint:'An amber arc warns of a strike. C and a direction to dodge; then left-click or R to counter. Space still jumps.'},
   {title:'The road is safe', detail:'Report the three goblins to Eren at the Greenway Watch, farther along the road.', lesson:'Catch your breath', hint:'Follow the gold marker and press F to tell Eren what happened.'},

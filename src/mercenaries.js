@@ -488,7 +488,7 @@ export const LANDING_ESCORT = false;
  */
 export function mateIsEscorting({ mate = null, questStage = null, mode = null, arriving = false } = {}) {
   // **Switched off** (the user, 21 September 2026: Chris Gotwood should not follow you right off
-  // the boat). He came up the pier at the traveler's shoulder and walked with him until Mara
+  // the boat). He came up the pier at the traveler's shoulder and walked with him until Jojo
   // handed over the letter. He still lands, still stands at the landing, and still joins the
   // company on the road; he simply does not walk the first minutes with you. One word back.
   if (!LANDING_ESCORT) return false;

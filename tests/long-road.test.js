@@ -29,7 +29,7 @@ const everything = (over = {}) => ({
 });
 const nothing = (over = {}) => ({ skills: [], acornQuest: 'available', journey: {},
   mapFog: { found: [], knowsPoint: () => false }, linguist: {}, ...over });
-/** The three things the long road keeps itself, done: the fork, the play and Mara's countersign. */
+/** The three things the long road keeps itself, done: the fork, the play and Jojo's countersign. */
 const itsOwn = (road, world = everything()) => { road.act('told'); road.act('played'); road.act('corners-ask'); road.act('corners-sign', world); };
 const ground = point => subregionsAt(point.x, point.z)[0]?.id ?? null;
 
@@ -86,7 +86,7 @@ test('a stop is done when the world says so, and the long road never writes to t
   const all = road.view(everything());
   assert.equal(all.stop('the-fork').done, false, 'the fork is this module’s own');
   assert.equal(all.stop('fernway-play').done, false, 'so is the play');
-  assert.equal(all.stop('village-corners').done, false, 'and so is Mara’s countersign');
+  assert.equal(all.stop('village-corners').done, false, 'and so is Jojo’s countersign');
   assert.equal(all.next.id, 'the-fork');
 });
 
@@ -95,7 +95,7 @@ test('the open gold moves down the spine in order and the legs close behind it',
   // The spine is the curriculum, so it is walked leg by leg and never doubles back.
   const legs = LONG_ROAD_SPINE.map(row => row.leg);
   for (let i = 1; i < legs.length; i++) assert.ok(legs[i] >= legs[i - 1], 'the spine is in leg order');
-  assert.equal(road.view(nothing()).next.id, 'pier-chart', 'the first gold is Mara’s');
+  assert.equal(road.view(nothing()).next.id, 'pier-chart', 'the first gold is Jojo’s');
   // Give the world everything but one stop, and that stop is what the open gold points at.
   road.act('told'); road.act('corners-ask'); road.act('corners-sign', everything());
   assert.equal(road.view(everything()).next.id, 'fernway-play', 'the play is the only thing left');
@@ -153,7 +153,7 @@ test('the fork and the play are told once and refuse to be told twice', () => {
   assert.equal(road.act('nothing-of-the-kind').ok, false);
 });
 
-test('Mara asks for the three corners, and signs the chart only when all three are walked', () => {
+test('Jojo asks for the three corners, and signs the chart only when all three are walked', () => {
   // Her second cartography lesson. The first was the rough chart she hands over on the pier,
   // which is somebody else's drawing; this is the traveler's own ground, walked.
   const road = createLongRoad();
@@ -290,13 +290,13 @@ test('every man on the roster can be remembered, and Drent has ten grounds to ch
   assert.ok(validateLongRoadSnapshot(road.snapshot()));
   // Ten since 2026-09-21: the Toll House was the one stop the chart could not name, and the
   // user gave it a ground of its own.
-  assert.equal(DRENT_GROUNDS.length, 10, 'Mara signs your chart when all ten are on it');
+  assert.equal(DRENT_GROUNDS.length, 10, 'Jojo signs your chart when all ten are on it');
   assert.ok(DRENT_GROUNDS.includes('the-toll-house'));
   assert.equal(DRENT_GROUNDS.length, new Set(DRENT_GROUNDS).size, 'and no ground is counted twice');
   // Every named ground of Drent is one of them, so nobody can add a tenth-and-a-half and forget.
   assert.deepEqual([...DRENT_GROUNDS].sort(),
     SUBREGIONS.filter(one => one.region === 'Drent').map(one => one.id).sort(),
-    'Drent’s named ground and Mara’s countersign are the same list');
+    'Drent’s named ground and Jojo’s countersign are the same list');
   for (const id of DRENT_GROUNDS) assert.ok(SUBREGION_IDS.includes(id), id);
   assert.equal(drentCharted({ mapFog: DRENT_GROUNDS }), true);
   assert.equal(drentCharted({ mapFog: DRENT_GROUNDS.slice(1) }), false);
@@ -422,7 +422,7 @@ test('a stop whose skill the traveler landed with is open until its teacher has 
     assert.equal(said.line, recognisedAt(stop.id));
     assert.equal(road.act('recognise', { id: stop.id }).ok, false, 'and they say it once');
     // Recognised, the stop falls back to its own derivation. For all but one that is the skill,
-    // so it closes. Mara's second errand is the exception the design allows for: cartography is
+    // so it closes. Jojo's second errand is the exception the design allows for: cartography is
     // how you arrive at the three corners, not a reason to have walked them, and she still has
     // to countersign a chart she has actually been handed.
     const closes = stop.id !== 'village-corners';
@@ -549,7 +549,7 @@ test('src/main.js actually asks a teacher to recognise somebody', () => {
   assert.match(main, /if\(recogniseTeacher\(npc\)\)return;/, 'and ask before the teacher\u2019s own conversation is built');
   assert.match(main, /longRoad\.act\('recognise'/, 'and record it');
   assert.match(main, /startingSkills:startingSkills\(playerId\)/, 'and tell the long road what the traveler landed knowing');
-  // Never before the letter: Mara hands it to everybody, whatever they already know.
+  // Never before the letter: Jojo hands it to everybody, whatever they already know.
   assert.match(main, /if\(questStage<2\)return false;/);
 });
 
