@@ -171,6 +171,7 @@ import { runDeveloperSmoke } from './developer-smoke.js';
 import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, getMovementInput } from './game-state.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
+import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './testing-travel.js';
 import { talkTarget, placeKeepsPrompt } from './prompt-priority.js';
 import { createFrameErrors } from './frame-errors.js';
 import { figureDetail } from './figure-lod.js';
@@ -4064,7 +4065,14 @@ function init() {
     if(mode==='inventory')inventory.close();
     if(mode==='dialogue')closeDialogue();
     if(mode==='testing'){closeModal();return;}
-    if(['playing','pause','journal'].includes(mode))modal('testing');
+    if(['playing','pause','journal'].includes(mode)){testingWhereAmI();modal('testing');}
+  }
+  /** Where the traveler is standing, in the words the chart uses and in numbers you can paste back. */
+  function testingWhereAmI(){
+    const p=player.group.position,here=world.regionAt(p.x,p.z),near=nearestPlace(p);
+    const country=isOpenCountry(here)?'open country':here?.name??'off the sheet';
+    $('test-here').textContent=`You are at ${p.x.toFixed(1)}, ${p.z.toFixed(1)} — ${country}`
+      +(near?`, ${near.away<1?'in':`${Math.round(near.away)} m from`} ${near.name}.`:'.');
   }
   function prepareTesting(){
     testingEnabled=true;
@@ -4589,6 +4597,53 @@ function init() {
   $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
   $('ghost-dev-open').onclick=openDeveloper;
   for(const id of [2,3,4,9])$('test-region-'+id).onclick=()=>testTravel(id);
+  /**
+   * **Go anywhere the world is built.** The four buttons above are the countries somebody
+   * remembered; these two rows are every country and every named ground the game has, taken
+   * from the world itself (src/testing-travel.js), so the next one built is here the day it is
+   * built. The point box takes a coordinate in any of the shapes this project writes them in -
+   * a report's (-1050, 982), a log line's [-1050, 982], or the review runner's own
+   * stand-at:-806.1,-521,-1.57, whose third number is the facing.
+   */
+  function testGoTo(point,title,note){
+    const here=world.regionAt(point.x,point.z),id=Number(here?.id);
+    // The region shortcut closes the road errands behind you; open country has none to close.
+    if(Number.isFinite(id)&&id>0)testTravel(id);
+    else{if(!testingEnabled)prepareTesting();testingEnabled=true;show('testing-badge',true);}
+    if(riding.mounted)stepDown(true);
+    player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);
+    if(Number.isFinite(point.facing))yaw=point.facing;
+    pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
+    settleCamera();closeModal();toast(note,title);
+  }
+  {
+    const countryBox=$('test-country'),placeBox=$('test-place'),countries=travelCountries();
+    const standable=(x,z)=>canStand(x,z,world,BODY.person);
+    for(const country of countries)countryBox.add(new Option(`${country.id} · ${country.name} — ${country.subtitle}`,country.name));
+    const fillPlaces=()=>{const places=travelPlaces(countryBox.value);placeBox.replaceChildren();
+      places.forEach((place,index)=>placeBox.add(new Option(place.radius?`${place.name} · ${place.radius} m`:place.name,String(index))));};
+    countryBox.value=(countries.find(one=>one.id===1)??countries[0]).name;fillPlaces();
+    countryBox.onchange=fillPlaces;
+    $('test-goto').onclick=()=>{
+      const place=travelPlaces(countryBox.value)[Number(placeBox.value)||0];
+      if(!place)return;
+      // A ground's centre is a chart fact, not a standing place: the middle of the Caloss Bank
+      // is the river. The search is the panel's, the answer is the world's own canStand.
+      const spot=place.radius?landingSpot(place,standable):{x:place.x,z:place.z,away:0};
+      if(!spot){toast(`${place.name} has no ground a body fits on within ${Math.max(60,place.radius)} m of its middle. You have not moved.`,'TESTING · NOWHERE TO STAND');return;}
+      testGoTo(spot,`TESTING · ${countryBox.value.toUpperCase()}`,
+        `${place.name}${spot.away?` — set down ${Math.round(spot.away)} m off its middle, on ground that holds you`:''}. ${place.note}`);
+    };
+    const goToPoint=()=>{
+      const point=parsePoint($('test-point').value);
+      if(!point){toast('Give me two numbers: -1050, 982. A third is the facing, as the review runner writes it.','TESTING · NOT A PLACE');return;}
+      const here=world.regionAt(point.x,point.z),near=nearestPlace(point);
+      testGoTo(point,'TESTING · A POINT',
+        `${point.x.toFixed(1)}, ${point.z.toFixed(1)} — ${isOpenCountry(here)?'open country':here?.name??'off the sheet'}${near?`, ${Math.round(near.away)} m from ${near.name}`:''}.`);
+    };
+    $('test-point-go').onclick=goToPoint;
+    $('test-point').onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();goToPoint();}};
+  }
   for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]])$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};
   $('save-road').onclick=()=>saveRoad();$('continue-road').onclick=continueRoad;
   {const newest=newestStart();show('opening-newest',!!newest);if(newest){$('opening-newest').textContent=`Start at the newest chapter · ${newest.title}`;$('opening-newest').onclick=beginNewestChapter;}}
