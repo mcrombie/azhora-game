@@ -17,7 +17,7 @@ const ENEMY_CONTACT = .27;
 const ENEMY_RECOVERY = 1.35;
 // Each enemy kind has its own pace. Goblins keep the original timings; wolves
 // close faster, bite sooner and hit a little lighter.
-const ENEMY_KINDS = Object.freeze({
+export const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
   // A trained man with a blade and a shield, and nothing like a goblin. Four optional fields make the
@@ -51,7 +51,32 @@ const ENEMY_KINDS = Object.freeze({
   // (tests/amod-ogre.test.js), and a lighter ogre buys that by throwing himself further
   // instead of by standing further away. The timing is untouched: slow to start, slow to stop.
   ogre: Object.freeze({ tell: 1.18, attack: .44, contact: .2, recovery: 1.3, damage: 52, speed: 1.45, engage: 3.3, reach: 3.7, lunge: 8.6,
-    arc: Math.PI * .4, aimLock: .55, standoff: 2.2, stagger: false, knockback: .2 }),
+    arc: Math.PI * .4, aimLock: .55, standoff: 2.2, stagger: false, knockback: .2,
+    /**
+     * **A big slow creature charges** (the user, 2026-09-21). Kept out of reach for a few
+     * seconds, it makes one short fast rush with a tell as clear as its own swing, which a step
+     * aside beats. It keeps Mallec a timing fight instead of a creature you can simply walk
+     * away from: his `speed` is 1.45 and a man walks backwards at 4.2, so without this a bow
+     * took him 24 times in 24 without a blow landing (docs/known-issues.md, round 5).
+     *
+     * **It is a kind's property, not Mallec's**, so the next slow heavy thing gets it by
+     * writing these numbers and nothing else. Every field is its own, because a charge is not
+     * the creature's swing done faster:
+     *   `from`     how far out the target counts as out of reach. Comfortably past `engage`, so
+     *              a step back inside a melee is not a charge;
+     *   `after`    how long it must stay there, unbroken. A dodge that opens the gap for half a
+     *              second is not staying away;
+     *   `tell`     the telegraph, which is the whole of the counter. `aimLock` still applies,
+     *              so he follows a dodge thrown early and is beaten by one thrown late;
+     *   `arc`      **narrow**, because the counter is a step aside. His swing takes seventy-two
+     *              degrees; a rush in a straight line takes twenty-nine, and three metres of
+     *              sidestep at the far end of it is outside that;
+     *   `speed`    fast enough to catch a man who runs rather than steps aside, which is what
+     *              makes it worth telegraphing at all.
+     */
+    charge: Object.freeze({ from: 5, after: 2.2, tell: .8, attack: .95, contact: .6, speed: 14,
+      reach: 4.2, arc: Math.PI * .16, recovery: 1.8 }),
+  }),
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
@@ -1059,8 +1084,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (enemy.kind === 'dummy' || state.phase !== 'active') return;
     const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
+    // A charge has its own tell, its own rush and its own narrow lane; everything else about it
+    // is the kind's own swing, read from the same fields in the same order.
+    const rush = enemy.charging ? profile.charge : null;
     if (enemy.action === 'windup') {
-      enemy.progress = clamp(timers.actionTime / profile.tell, 0, 1);
+      const tell = rush ? rush.tell : profile.tell;
+      enemy.progress = clamp(timers.actionTime / tell, 0, 1);
       // Aim is locked for the whole tell; a sidestep or dodge can beat the actual strike.
       // A kind with an `aimLock` instead keeps turning until that much of the tell has
       // gone by, and only then commits: a dodge thrown the moment the arc appears is
@@ -1071,31 +1100,35 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         const aim = tracked ?? position;
         enemy.yaw += angleDifference(Math.atan2(aim.x - enemy.x, aim.z - enemy.z), enemy.yaw) * Math.min(1, dt * 5);
       }
-      if (timers.actionTime >= profile.tell) {
+      if (timers.actionTime >= tell) {
         enemy.action = 'attack';
         enemy.progress = 0;
-        timers.actionTime -= profile.tell;
+        timers.actionTime -= tell;
         timers.hitApplied = false;
       }
       return;
     }
     if (enemy.action === 'attack') {
-      enemy.progress = clamp(timers.actionTime / profile.attack, 0, 1);
+      const duration = rush ? rush.attack : profile.attack, contact = rush ? rush.contact : profile.contact;
+      enemy.progress = clamp(timers.actionTime / duration, 0, 1);
       // A committed lunge carries the strike forward, but stops short of standing
-      // inside whoever it is aimed at: a creature with reach does not need to.
-      if (timers.actionTime <= profile.contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
-        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
-      if (!timers.hitApplied && timers.actionTime >= profile.contact) {
+      // inside whoever it is aimed at: a creature with reach does not need to. A rush is the
+      // same movement with the charge's own speed under it, and it stops the same way.
+      if (timers.actionTime <= contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
+        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), Math.cos(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), world);
+      if (!timers.hitApplied && timers.actionTime >= contact) {
         timers.hitApplied = true;
         // The strike lands on whoever the tell was aimed at: the traveler, or an ally still standing.
         const aimedAlly = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
         const struckPoint = aimedAlly ?? position;
-        if (distance(enemy, struckPoint) <= profile.reach && facing(enemy, struckPoint, enemy.yaw, profile.arc ?? Math.PI * .25)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
+        const reach = rush ? rush.reach : profile.reach, arc = rush ? rush.arc : (profile.arc ?? Math.PI * .25);
+        if (distance(enemy, struckPoint) <= reach && facing(enemy, struckPoint, enemy.yaw, arc)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
       }
-      if (timers.actionTime >= profile.attack && state.phase === 'active') {
+      if (timers.actionTime >= duration && state.phase === 'active') {
         enemy.action = 'idle';
         enemy.progress = 0;
-        timers.cooldown = profile.recovery;
+        enemy.charging = false;
+        timers.cooldown = rush ? rush.recovery : profile.recovery;
         nextAttackerAt = time + .55;
       }
       return;
@@ -1110,12 +1143,33 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // Most kinds take turns; soldiers (`pack`) press two at a time.
     if (dist <= profile.engage && timers.cooldown <= 0 && swinging < (profile.pack ?? 1) && (time >= nextAttackerAt || swinging > 0)) {
       enemy.action = 'windup';
+      enemy.charging = false;
       enemy.yaw = targetYaw;
       enemy.progress = 0;
       timers.actionTime = 0;
       timers.targetId = focus.ally?.id ?? null;
       emit('windup', { id: enemy.id, targetId: timers.targetId });
       return;
+    }
+    /**
+     * **And a creature that charges, charges** (the user, 2026-09-21). The dwell is unbroken:
+     * `awayFor` is counted only here, in the one branch where it is neither swinging nor getting
+     * over a swing, and a single frame inside `from` puts it back to nought - so a step back in a
+     * melee is not a charge and a man who walks away is.
+     */
+    if (profile.charge) {
+      timers.awayFor = dist > profile.charge.from ? (timers.awayFor ?? 0) + dt : 0;
+      if (timers.awayFor >= profile.charge.after && timers.cooldown <= 0 && !someoneAttacking) {
+        timers.awayFor = 0;
+        enemy.action = 'windup';
+        enemy.charging = true;
+        enemy.yaw = targetYaw;
+        enemy.progress = 0;
+        timers.actionTime = 0;
+        timers.targetId = focus.ally?.id ?? null;
+        emit('windup', { id: enemy.id, targetId: timers.targetId, charge: true });
+        return;
+      }
     }
     const desiredDistance = Math.max(someoneAttacking ? 2.7 : 1.8, profile.standoff ?? 0);
     if (dist > desiredDistance) {
