@@ -70,7 +70,7 @@ import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversa
 import { SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './smith.js';
 import { AMBRON_FORGE } from './ambron.js';
 import { OUTPOST_LAYOUT } from './outpost.js';
-import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint } from './region-world.js';
+import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint, villageToWorld } from './region-world.js';
 import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
 import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine, skillTip } from './skills.js';
 import { skillIconSVG } from './skill-icons.js';
@@ -104,6 +104,7 @@ import { createDrentFlora } from './drent-flora.js';
 import { createDrentTrees } from './drent-trees.js';
 import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
 import { INSTRUCTOR, INSTRUCTOR_STAND, lessonStage, instructorConversation } from './instructor.js';
+import { trimCast } from './cast.js';
 import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
 import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
 import { setSignReader, setForeignLettering } from './signs.js';
@@ -252,7 +253,7 @@ function init() {
   {const s=stateAt(0);world.placeArrivalBoat(s.boat.x,s.boat.z,s.boat.yaw);}
   // The harbourmaster holds the landing and the paperwork, and is the first person the traveler speaks to.
   const HARBOURMASTER='harbormaster';
-  const npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,hairStyle:'mane',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
+  let npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,slight:true,hairStyle:'mane',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -381,6 +382,9 @@ function init() {
   // Officer Glun at the straw post: he teaches the sword and then hands over the chart
   // (src/instructor.js). The opening used to point a card at an unattended post.
   world.npcPositions[INSTRUCTOR.id]={x:INSTRUCTOR_STAND.x,z:INSTRUCTOR_STAND.z};npcData.push({...INSTRUCTOR,yaw:INSTRUCTOR_STAND.yaw});
+  // The Greenway Watch, in world metres: the ground that ends the fifth step now that the man who
+  // stood on it is out of the cast (src/cast.js).
+  const WATCH_POINT=villageToWorld(0,-66);
   // The three off the Lauvel road (src/refugees.js): they start where the battle
   // was and walk the main road east while the game is played, so where they are
   // when the traveler meets them depends entirely on what the traveler did first.
@@ -404,6 +408,13 @@ function init() {
   // giving a man another man's place at build time is not a thing worth being able to do.
   for(const placement of company.placements(0)){const merc=roster.find(man=>man.id===placement.id);
     if(!merc)continue;world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push(mercNpc(merc,placement));}
+  // **The cast, trimmed** (src/cast.js): while the main quest is built out, only the people it
+  // sends you to, the soldiers, the hired company and the user's own characters stand up. Nobody
+  // is deleted - every one of them is still written and still placed by their own module - and
+  // the ones left out have their stands taken off the world so nothing walks into a ghost.
+  {const kept=new Set(trimCast(npcData,{mercenaryIds}).map(npc=>npc.id));
+    for(const npc of npcData)if(!kept.has(npc.id))delete world.npcPositions[npc.id];
+    npcData=npcData.filter(npc=>kept.has(npc.id));}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
@@ -2755,7 +2766,7 @@ function init() {
       const glun=npcById.get(INSTRUCTOR.id);
       if(glun&&lessonSet&&!cartography.met)instructorConversation(glun,{stage:'done',openDialogue,finish:giveTheChart});}
     if(questStage===5)audio?.effect('success');
-    if(questStage===6)inventory.grant('road-token');
+
     refreshQuest();
     if(questStage===2)toast('the letter of introduction','ADDED TO SATCHEL · I TO OPEN');
     else if(questStage===6)toast('Eren’s travel token','ADDED TO SATCHEL · PRESS I');
@@ -3957,6 +3968,9 @@ function init() {
    */
   function giveTheChart(){
     if(!cartography.learn().first)return;
+    // The road token came from Eren, who is out of the cast (src/cast.js). The man who sets you on
+    // the road is the man who equips you for it.
+    if(!inventory.has('road-token'))inventory.grant('road-token');
     const here=world.regionAt(player.group.position.x,player.group.position.z);
     if(here&&!isOpenCountry(here))cartography.noteHex(here.name);
     toast('Your own chart of Azhora, and nothing on it but the ground under your feet. Everything else is dark until you go and look. M opens it; ask anybody which way the next country is.','NEW SKILL · CARTOGRAPHY');
@@ -4698,7 +4712,11 @@ function init() {
     $('test-point-go').onclick=goToPoint;
     $('test-point').onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();goToPoint();}};
   }
-  for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]])$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};
+  // The three lives along the road are out of the cast while the main quest is built out
+  // (src/cast.js), so their buttons go with them rather than warping the traveler to a ghost.
+  for(const [button,npcId,region] of [['test-mill-life','commons-miller',2],['test-reed-life','reed-worker',3],['test-shelter-life','shelter-keeper',4]]){
+    const here=world.npcPositions[npcId];show(button,!!here);
+    if(here)$(button).onclick=()=>{testTravel(region);const p=world.npcPositions[npcId];player.group.position.set(p.x+1.2,world.heightAt(p.x+1.2,p.z+1.2),p.z+1.2);settleCamera();toast('F to talk. These local activities are optional.','LIVES ALONG THE ROAD');};};
   $('save-road').onclick=()=>saveRoad();$('continue-road').onclick=continueRoad;
   {const newest=newestStart();show('opening-newest',!!newest);if(newest){$('opening-newest').textContent=`Start at the newest chapter · ${newest.title}`;$('opening-newest').onclick=beginNewestChapter;}}
   show('continue-road',checkpointAvailable.ok&&!!checkpointAvailable.data);
@@ -4716,7 +4734,7 @@ function init() {
   const autopilotWorld={bounds:world.bounds,colliders:world.colliders,nearColliders:(x,z,reach,out)=>playerWorld.nearColliders(x,z,reach,out),heightAt:(x,z)=>world.heightAt(x,z),paths:world.paths,npcPositions:world.npcPositions,
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
-    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),training:world.training,encounter:world.encounter,northTrail:world.northTrail,border:world.border,
+    repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),watch:WATCH_POINT,training:world.training,encounter:world.encounter,northTrail:world.northTrail,border:world.border,
     // Walled places have gates, and the autopilot only knows that if it is told (src/autopilot.js).
     enclosures:world.enclosures,
     sideSeat:(side,conquest)=>sideSeat(side,conquest)};
@@ -4841,7 +4859,7 @@ function init() {
     if(questStage===2)return lessonSet?{...world.training,name:'Practice post'}
       :{...INSTRUCTOR_STAND,name:`${INSTRUCTOR.name} · at the practice post`};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
-    if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
+    if(questStage===5)return{...WATCH_POINT,name:'The Greenway Watch'};
     if(questStage===8)return world.northTrail;
     if(questStage===9)return world.border;
     if(questStage===10){
@@ -5200,6 +5218,8 @@ function init() {
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
         if(questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
+        // The watch is a place now, not a man: the step ends where Eren used to stand.
+        if(questStage===5&&Math.hypot(player.group.position.x-WATCH_POINT.x,player.group.position.z-WATCH_POINT.z)<12)updateQuest('reach-watch');
         if(questStage===8&&Math.hypot(player.group.position.x-world.northTrail.x,player.group.position.z-world.northTrail.z)<5)updateQuest('reach-north-trail');
         if(questStage===9&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<4.5)updateQuest('reach-border');
         if(questStage===10&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-meadowEncounter.center.x,player.group.position.z-meadowEncounter.center.z)<14){
@@ -5319,7 +5339,7 @@ function init() {
         acornQuestOpen:acornQuest.status!=='complete',feederWantsCook:birding.task()?.target==='acorn-cook',hasRod:inventory.has('fishing-rod'),
         birdingLearned:birding.met,archaeologyReport:archaeology.task()?.stage==='report',
         forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
-      const beggarStep=mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
+      const beggarStep=smiths&&mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;const talkers=[];
       // The man you are sparring with is drawn by the fight, not by the road, exactly as a
@@ -5891,6 +5911,12 @@ function init() {
         return {ok:true,...result,...state()};
       },
       async runSmoke(){
+        // Anything thrown in here comes back through Electron's IPC, which loses a message it
+        // cannot serialise and reports only "Script failed to execute". Re-throwing as a plain
+        // Error with the text in it is the difference between a name and a shrug.
+        try{return await this.runSmokeBody();}catch(e){throw new Error(String(e&&e.stack||e&&e.message||e));}
+      },
+      async runSmokeBody(){
         // This check is also the test of weapon wear, which play has switched off for now (WEAPON_WEAR).
         weapons.setWear(true);
         const assert=(condition,message)=>{if(!condition)throw new Error(message);};
@@ -5975,7 +6001,7 @@ function init() {
         warp(world.training.x,world.training.z+1.5);player.group.rotation.y=Math.PI;await frames();
         tap('KeyR');await until(()=>practiceHits===1,'First practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0}));await until(()=>practiceHits>=2,'Left-click practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
-        press('KeyA');tap('ControlLeft');release('KeyA');await until(()=>questStage===3,'Dodge lesson failed');await until(()=>combat.state.player.action==='idle','Dodge recovery failed');
+        press('KeyA');tap('KeyC');release('KeyA');await until(()=>questStage===3,'Dodge lesson failed');await until(()=>combat.state.player.action==='idle','Dodge recovery failed');
         assert(weapons.status('simple-sword').durability===22,'Practice hits did not wear the sword exactly once each');
         // He acknowledges the lesson where it was set, and the chart comes with it: blank, and
         // with the ground under the traveler's feet the only thing on it.
@@ -6003,13 +6029,19 @@ function init() {
           if(!enemy){await frames();continue;}
           if(combat.state.player.action==='idle') {
             warp(enemy.x,enemy.z+1.35);player.group.rotation.y=Math.PI;
-            if(enemy.action==='windup'&&enemy.progress>.55&&combat.state.player.stamina>=25){press('KeyD');tap('ControlLeft');release('KeyD');}
+            if(enemy.action==='windup'&&enemy.progress>.55&&combat.state.player.stamina>=25){press('KeyD');tap('KeyC');release('KeyD');}
             else{tap('KeyR');landed++;}
           }
           await frames(2);assert(mode!=='defeated','Player lost the smoke fight');
         }
         assert(questStage===5,'Victory did not advance quest');
-        const warden=npcById.get('warden');player.group.position.copy(warden.actor.group.position).add(new THREE.Vector3(1,0,0));await frames();tap('KeyF');finishDialogue();assert(questStage===6&&inventory.has('road-token'),'Eren did not introduce inventory or grant the token');
+        // Eren is out of the cast (src/cast.js) and the fifth step is the ground he stood on:
+        // walk on west past the Greenway Watch. Glun handed the road token over with the chart.
+        assert(inventory.has('road-token'),'Officer Glun did not hand over the road token');
+        if(npcById.get('warden')){const warden=npcById.get('warden');   // the cast is whole (src/cast.js)
+          player.group.position.copy(warden.actor.group.position).add(new THREE.Vector3(1,0,0));await frames();tap('KeyF');finishDialogue();}
+        warp(WATCH_POINT.x,WATCH_POINT.z);await frames(2);
+        assert(questStage===6,'Reaching the Greenway Watch did not finish the fifth step');
         tap('KeyI');assert(mode==='inventory','Inventory lesson did not open');
         const letterButton=document.querySelector('[data-item-id="harbor-letter"]');
         letterButton.dispatchEvent(new PointerEvent('pointerenter'));await frames();
@@ -6058,10 +6090,19 @@ function init() {
         const pick=async acorn=>{warp(acorn.x,acorn.z);await frames(2);assert(currentAcorn?.id===acorn.id,'Acorn pickup not reachable');tap('KeyF');assert(woodlandLife.state().acorns.find(a=>a.id===acorn.id).collected,'F failed to gather acorn');};
         const sites=woodlandLife.state().acorns;assert(sites.length===24,'Woodland pickup count changed');
         await pick(sites[0]);assert(inventory.count('acorn')===1&&acornQuest.status==='available','Acorns cannot be gathered before accepting the favor');
-        const lysa=npcData.find(npc=>npc.id==='acorn-cook');
-        const visitLysa=async()=>{const home=world.npcPositions['acorn-cook'];warp(home.x+1,home.z+1);await frames(2);tap('KeyF');assert(activeDialogue?.npc===lysa,'Lysa is not reachable for conversation');};
+        const inCast=id=>!!world.npcPositions[id];
+        const bank=world.pond.fishingSpot;
         const choose=id=>{const button=document.querySelector(`[data-choice="${id}"]`);assert(button,'Missing conversation choice '+id);button.click();};
         const finishTangent=()=>{let limit=10;while(activeDialogue&&!activeDialogue.choices&&limit-->0)nextSpeech();};
+        // The two the run's summary counts, declared out here so the block above may be skipped.
+        let stickSites=woodlandLife.state().sticks,fruitSites=woodlandLife.state().fruits;
+        // **The village life of Drent is out of the cast** while the main quest is built out
+        // (src/cast.js): Lysa's acorns, the doomsayer's cape and Bran's rod belong to people who
+        // are not standing in the world. Every line of it is still written and still tested the
+        // day they come back; it is skipped here rather than failed.
+        if(inCast('acorn-cook')&&inCast('doomsayer')&&inCast('pond-fisher')){
+        const lysa=npcData.find(npc=>npc.id==='acorn-cook');
+        const visitLysa=async()=>{const home=world.npcPositions['acorn-cook'];warp(home.x+1,home.z+1);await frames(2);tap('KeyF');assert(activeDialogue?.npc===lysa,'Lysa is not reachable for conversation');};
         await visitLysa();choose('acorn-tangent');assert(acornQuest.status==='available','Optional tangent silently accepted quest');
         nextSpeech();assert($('speech').textContent.includes('tannins'),'Acorn cookery tangent missing');finishTangent();
         choose('pawpaw-tangent');assert($('speech').textContent.includes('pawpaw'),'Lysa did not explain forest fruit');
@@ -6080,7 +6121,7 @@ function init() {
         const squirrelCheck=woodlandLife.state().squirrels.find(s=>s.climbs>0&&['climb','perch'].includes(s.mode));assert(squirrelCheck.y>world.heightAt(squirrelCheck.x,squirrelCheck.z),'Squirrel did not leave the ground');
         // Real F pickups, satchel buttons, strike contacts, and the repair station
         // exercise the equipment flow. Accelerated wear below is a break fixture.
-        const stickSites=woodlandLife.state().sticks;
+        stickSites=woodlandLife.state().sticks;
         for(const stick of stickSites.slice(0,2)){
           warp(stick.x,stick.z);await frames(2);assert(currentStick?.id===stick.id,'Stick pickup not reachable');tap('KeyF');
           assert(woodlandLife.state().sticks.find(s=>s.id===stick.id).collected,'F failed to gather stick');
@@ -6101,13 +6142,13 @@ function init() {
         tap('KeyI');inventory.select('simple-sword');$('inventory-detail').querySelector('[data-equip]').click();tap('KeyI');
         while(weapons.status('simple-sword').usable)weapons.contact('simple-sword');
         tap('KeyR');assert(combat.state.player.action==='idle','Broken sword could still attack');
-        tap('ControlLeft');assert(combat.state.player.action==='dodge','Broken sword prevented escape dodge');
+        tap('KeyC');assert(combat.state.player.action==='dodge','Broken sword prevented escape dodge');
         await until(()=>combat.state.player.action==='idle','Broken-weapon dodge did not recover');
         tap('KeyI');inventory.select('simple-sword');assert($('inventory-detail').textContent.includes('Broken'),'Broken condition missing from satchel');tap('KeyI');
         warp(world.repairBench.x,world.repairBench.z);await frames(2);assert(nearRepair&&!currentNPC,'Repair bench not reachable');tap('KeyF');
         assert(weapons.profile().durability===24&&weapons.profile().usable,'Village bench did not repair a broken sword');
         combat.finishPractice();
-        const fruitSites=woodlandLife.state().fruits;
+        fruitSites=woodlandLife.state().fruits;
         assert(fruitSites.length===12&&fruitSites.filter(f=>f.z>-20).length>=2,'Forest fruit missing or unavailable before the ambush');
         combat.state.player.hp=57;
         for(const fruit of fruitSites.slice(0,3)){
@@ -6131,11 +6172,12 @@ function init() {
         tap('KeyI');assert(mode==='playing'&&questStage===10,'Eating changed the main tutorial or blocked dismissal');
         // The new optional loop uses real NPC choices, casts, catches, firewood,
         // cooking controls, and the food button without using testing supplies.
+        // While the cast is trimmed (src/cast.js) these people are not standing in the world, so
+        // the sections that visit them are skipped rather than failed: they are still written.
         const visit=async id=>{const npc=npcData.find(n=>n.id===id),home=world.npcPositions[id];warp(home.x+.8,home.z+.8);await frames(2);tap('KeyF');assert(activeDialogue?.npc===npc,'Could not talk to '+id);};
         await visit('doomsayer');choose('doom-warning');assert($('speech').textContent.includes('Cape Thalmagar'),'Doomsayer failed to introduce the far cape');nextSpeech();assert($('speech').textContent.includes('Oremindi'),'Doomsayer omitted the mountain barrier');finishTangent();
         assert(!document.querySelector('[data-choice="doom-map"]'),'The doomsayer must not point to Cape Thalmagar on the chart');choose('leave-doomsayer');await frames(2);assert(mode==='playing','Leaving Orris did not return to the road');
         await visit('doomsayer');choose('cooking-lesson');finishTangent();choose('leave-doomsayer');
-        const bank=world.pond.fishingSpot;
         assert(!canStand(world.pond.x,world.pond.z,world),'Pond water admits walking');
         warp(bank.x,bank.z);await frames(2);tap('KeyF');assert(mode==='playing'&&!inventory.has('fishing-rod'),'Fishing without a rod succeeded');
         await visit('pond-fisher');choose('learn-fishing');finishDialogue();assert(inventory.has('fishing-rod')&&campcraft.state.taught,'Bran failed to teach fishing and give one rod');
@@ -6162,6 +6204,7 @@ function init() {
         const fishEat=document.querySelector('[data-consume="cooked-fish"]');assert(fishEat&&!fishEat.disabled&&fishEat.textContent.includes('40'),'Cooked fish Eat control missing');fishEat.click();
         assert(combat.state.player.hp===90&&!inventory.has('cooked-fish')&&inventory.count('raw-fish')===1,'Cooked fish failed to restore 40 health and consume one');tap('KeyI');
         assert(!testingEnabled&&questStage===10&&acornQuest.status==='complete','Normal campcraft required override or changed completed quests');
+        }
         const roadResults=await runRoadSmoke({world,player,npcData,combat,journey,inventory,weapons,beggar,press,release,tap,until,frames,warp,getMode:()=>mode,finishDialogue:()=>{let n=0;while(mode==='dialogue'&&!(activeDialogue.choices&&activeDialogue.index===activeDialogue.lines.length-1)){assert(n++<12,'Road dialogue failed to reach its choices');nextSpeech();}},choose,setYaw:value=>yaw=value,readState:state});
         assert(saveRoad(false),'Completed road checkpoint did not save');const savedRoad=checkpoint.read().data;
         const savedWear=weapons.profile().durability;inventory.add('forest-stick',1);weapons.repair();warp(0,9);
@@ -7127,7 +7170,9 @@ function init() {
           const c=aftermathArena(spec.arena).center;reviewTarget=new THREE.Vector3(c.x,world.heightAt(c.x,c.z)+1.5,c.z+4);yaw=Math.PI-.35;pitch=.3;distance=targetDistance=19;}
         // The Koopwood: the lot from the road, Bowden, and the traveler cutting an oak.
         if(['woodlot','bowden','bowden-close','bowden-back','chopping','woodlot-felled'].includes(view)){questStage=10;combat.finishPractice();
-          const b=npcById.get(BOWDEN.id).actor.group,at=b.position,face=b.rotation.y;let look,turn,d,p;
+          const bowden=npcById.get(BOWDEN.id);
+          if(!bowden)return;   // out of the cast while the main quest is built (src/cast.js)
+          const b=bowden.actor.group,at=b.position,face=b.rotation.y;let look,turn,d,p;
           if(view==='woodlot'){look={x:at.x-Math.sin(face)*6,y:at.y+2.5,z:at.z-Math.cos(face)*6};turn=face+.45;d=22;p=.32;}
           else if(view==='bowden'){look={x:at.x,y:at.y+1.25,z:at.z};turn=face+.5;d=4.4;p=.08;}
           else if(view==='bowden-close'){look={x:at.x,y:at.y+1.85,z:at.z};turn=face+.35;d=2.3;p=.04;}

@@ -434,7 +434,8 @@ export function planGoal(snapshot, world) {
     // The ambush clearing on the Greenway, a little past the warning bell.
     case 3: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Following the Greenway to the bell' };
     case 4: return { kind: 'walk', target: world.encounter ?? { x: -58, z: 29 }, radius: 2.5, intent: 'Returning to the bell' };
-    case 5: return { kind: 'talk', target: npc('warden'), npcId: 'warden', intent: 'Reporting to Eren' };
+    // Eren is out of the cast (src/cast.js); the step is the ground he stood on.
+    case 5: return { kind: 'walk', target: world.watch ?? world.northTrail, radius: 8, intent: 'Walking on past the Greenway Watch' };
     case 6: return { kind: 'open-inventory', intent: 'Opening the satchel' };
     case 7: return { kind: 'close-inventory', intent: 'Closing the satchel' };
     case 8: return { kind: 'walk', target: world.northTrail, radius: 4, intent: 'Walking to Fernway Rest' };

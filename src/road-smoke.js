@@ -74,7 +74,7 @@ export async function runRoadSmoke(h) {
   async function fightMeadow() {
     assert(combat.state.encounterId === 'meadow-raiders', 'wrong encounter started beside the cart');
     assert(combat.state.enemies.length === 2, 'the meadow did not spawn two raiders');
-    press('KeyD'); tap('ControlLeft'); release('KeyD');
+    press('KeyD'); tap('KeyC'); release('KeyD');
     assert(combat.state.player.action === 'dodge', 'directional dodge did not begin in the meadow fight');
     battleDodges++;
     await until(() => combat.state.player.action === 'idle', 'Meadow dodge never recovered');
@@ -94,7 +94,7 @@ export async function runRoadSmoke(h) {
         warp(approach.x, approach.z);
         player.group.rotation.y = Math.atan2(enemy.x - position.x, enemy.z - position.z);
         if (enemy.action === 'windup' && enemy.progress > .55 && combat.state.player.stamina >= 25) {
-          press('KeyD'); tap('ControlLeft'); release('KeyD'); battleDodges++;
+          press('KeyD'); tap('KeyC'); release('KeyD'); battleDodges++;
         } else { tap('KeyR'); battleSwings++; }
       }
       await frames(2);
@@ -219,7 +219,10 @@ export async function runRoadSmoke(h) {
     await visit('crossing-keeper');
     choose('hollis-fishing'); await finishDialogue();
     assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the river fishing lesson did not return to Hollis');
-    assert(inventory.count('fishing-rod') === rodsBefore, 'Hollis duplicated the fishing rod already carried from Tidehaven');
+    // A traveler who already has Bran's rod is not given a second; one who has none - Bran is out
+    // of the cast while the main quest is built out (src/cast.js) - is given his first here.
+    assert(inventory.count('fishing-rod') === Math.max(1, rodsBefore),
+      rodsBefore ? 'Hollis duplicated the fishing rod already carried from Tidehaven' : 'Hollis did not hand over a rod to a traveler with none');
     assert(JSON.stringify(journey.snapshot()) === beforeFishingLesson, 'the fishing tangent advanced the road quest');
     choose('leave-road-neighbor'); await frames(2);
     const river = world.fishingSpots.find(spot => spot.id === 'reedwater');
@@ -299,21 +302,25 @@ export async function runRoadSmoke(h) {
     const square = world.landmarks.find(place => place.id === 'lumber-town');
     const smiths = npcData.find(item => item.id === 'town-beggar');
     // He has had the run of the square for the whole visit; start his round afresh.
-    beggar.reset();
-    await arrive(square.x, square.z);
-    await until(() => smiths.actor.group.position.distanceTo(position) < 3.4,
-      `Smiths never came over to beg (he is at ${smiths.actor.group.position.x.toFixed(1)}, ${smiths.actor.group.position.z.toFixed(1)}, ${Math.round(smiths.actor.group.position.distanceTo(position))} m off, ${JSON.stringify(beggar.state)})`);
-    assert(await standBeside(smiths.actor.group.position), 'no clear ground beside Smiths');
-    await frames(2); tap('KeyF');
-    assert(getMode() === 'dialogue' && query('#speaker')?.textContent === 'Smiths', 'Smiths did not answer on the square');
-    await finishDialogue();
-    const purse = inventory.count('copper-piece');
-    choose('give-smiths-coin'); await frames(3);
-    assert(getMode() === 'playing' && inventory.count('copper-piece') === purse - 1, 'the copper never left the satchel');
-    assert(beggar.state.resting && !beggar.state.following, 'a paid Smiths kept begging');
-    await arrive(square.x, square.z);
-    await frames(120);
-    assert(!beggar.state.following, 'Smiths went back to begging after his copper');
+    // Smiths is out of the cast while the main quest is built out (src/cast.js): his whole
+    // round is still written and is skipped here rather than failed.
+    if (smiths) {
+      beggar.reset();
+      await arrive(square.x, square.z);
+      await until(() => smiths.actor.group.position.distanceTo(position) < 3.4,
+        `Smiths never came over to beg (he is at ${smiths.actor.group.position.x.toFixed(1)}, ${smiths.actor.group.position.z.toFixed(1)}, ${Math.round(smiths.actor.group.position.distanceTo(position))} m off, ${JSON.stringify(beggar.state)})`);
+      assert(await standBeside(smiths.actor.group.position), 'no clear ground beside Smiths');
+      await frames(2); tap('KeyF');
+      assert(getMode() === 'dialogue' && query('#speaker')?.textContent === 'Smiths', 'Smiths did not answer on the square');
+      await finishDialogue();
+      const purse = inventory.count('copper-piece');
+      choose('give-smiths-coin'); await frames(3);
+      assert(getMode() === 'playing' && inventory.count('copper-piece') === purse - 1, 'the copper never left the satchel');
+      assert(beggar.state.resting && !beggar.state.following, 'a paid Smiths kept begging');
+      await arrive(square.x, square.z);
+      await frames(120);
+      assert(!beggar.state.following, 'Smiths went back to begging after his copper');
+    }
 
     const stall = world.npcPositions['timber-stall'];
     assert(await standBeside(stall), 'no clear ground beside the timber stall');
@@ -329,7 +336,7 @@ export async function runRoadSmoke(h) {
     return { roadChecks: checks, roadRegions: 3, roadNPCs: 4, roadParcels: 3, roadWaymarkers: 3,
       roadBridgeWalked: Math.round(bridgeWalked), roadBattleSwings: battleSwings, roadBattleDodges: battleDodges,
       roadRepairLoanChecks: 6, roadRiverFishingChecks: 10, lusciaChapter: 'complete', lusciaWolves: 2,
-      townChecks: 12, beggarPaid: true, rebelContact: 'coalition',
+      townChecks: 12, beggarPaid: !!smiths, rebelContact: 'coalition',
       roadComplete: true, roadLetterRetained: true };
   } finally {
     for (const key of ['KeyW', 'KeyD', 'ShiftLeft']) release(key);

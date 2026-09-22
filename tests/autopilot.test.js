@@ -66,7 +66,7 @@ test('a blocked straight line is replaced by the nearest free direction', () => 
   assert.ok(around.z < 0, 'the sidestep still makes progress');
 });
 
-test('the planner walks the tutorial: Jojo at the pier, the straw post, the bell, Eren, the satchel, the boundary', () => {
+test('the planner walks the tutorial: Jojo at the pier, Glun at the post, the bell, the watch, the satchel, the boundary', () => {
   const world = fakeWorld();
   assert.equal(planGoal(snapshot({ mode: 'opening' }), world).kind, 'begin');
   assert.equal(planGoal(snapshot({ mode: 'arriving' }), world).kind, 'wait');
@@ -76,11 +76,14 @@ test('the planner walks the tutorial: Jojo at the pier, the straw post, the bell
   assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'speaking to the harbourmaster is what brings the traveler ashore');
   const mara = planGoal(snapshot({ questStage: 1 }), world);
   assert.equal(mara.kind, 'talk'); assert.equal(mara.npcId, 'harbormaster');
+  // Officer Glun sets the lesson before the straw counts for anything (src/instructor.js).
+  assert.equal(planGoal(snapshot({ questStage: 2, lessonSet: false }), world).npcId, 'instructor');
   assert.equal(planGoal(snapshot({ questStage: 2 }), world).kind, 'practice');
   assert.match(planGoal(snapshot({ questStage: 2, practiceHits: 2 }), world).intent, /dodge/);
   assert.equal(planGoal(snapshot({ questStage: 3 }), world).kind, 'walk');
   assert.equal(planGoal(snapshot({ questStage: 4, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight');
-  assert.equal(planGoal(snapshot({ questStage: 5 }), world).npcId, 'warden');
+  // Eren is out of the cast (src/cast.js), so the fifth step is the ground he stood on.
+  assert.equal(planGoal(snapshot({ questStage: 5 }), world).kind, 'walk');
   assert.equal(planGoal(snapshot({ questStage: 6 }), world).kind, 'open-inventory');
   assert.equal(planGoal(snapshot({ questStage: 6, mode: 'inventory' }), world).kind, 'inspect-letter');
   assert.equal(planGoal(snapshot({ questStage: 7, mode: 'inventory' }), world).kind, 'close-inventory');

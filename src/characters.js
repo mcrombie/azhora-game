@@ -1027,7 +1027,10 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Nika, who works the floor.
   const isWineSeller = role === 'wine-seller', isWineClerk = role === 'wine-clerk';
   // Katy, at Vaervelm Caelazh: watching the birds, and looking for Batman (src/katy.js). Nika's slight build.
-  const isKaty = role === 'bat-seeker', slight = isWineClerk || isKaty;
+  // The slighter build - shorter, narrower through the shoulders, a lighter jaw. It was Nika's
+  // and Katy's; `look.slight` opens it to anybody, which is how Jojo the harbourmaster and Jess
+  // of the Stills read as the women they are (the user, 22 September 2026).
+  const isKaty = role === 'bat-seeker', slight = isWineClerk || isKaty || look?.slight === true;
   // Troy, who keeps the bees at the Bee Fold (src/beekeeper.js): curly red hair, a red beard and a grin.
   const isKeeper = role === 'bee-keeper';
   // Imani, who keeps the vines at Vaervelm Caelazh (src/vineyard.js): a blunt black bob, steel
@@ -2373,7 +2376,10 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     ribbon(body, leather, [0.113, 1.277, 0.126], [0.101, 1.093, 0.19], 0.027);
     // Ovan Kell in Izolveth wears the salt-grey beard; Jojo in Tidehaven wears her hair tied back,
     // so the same apron carries two people rather than one face in two ports.
-    if (look?.beard === false) {
+    if (look?.hairStyle) {
+      // She has hair of her own (`look.hairStyle`), so the apron's own scalp shapes are left off:
+      // drawn together they close round the jaw and read as a beard (the user, 22 September 2026).
+    } else if (look?.beard === false) {
       round(head, hairMat, [0, 0.052, 0], [0.152, 0.128, 0.152]);
       round(head, hairMat, [0, 0.026, -0.126], [0.078, 0.082, 0.08]);
     } else {

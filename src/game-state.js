@@ -65,7 +65,7 @@ export const questSteps = [
   {title:'A little preparation', detail:'Report to Officer Glun at the straw post at the village crossroads. He decides whether a hired sword goes up that road.', lesson:'Learn at your own pace', hint:'Left-click or R to swing. Hold a direction and press C to dodge. Land two hits on the post and try one dodge.'},
   {title:'Into the Greenway', detail:'Follow the road inland toward the woodland bell.', lesson:'The road ahead', hint:'Right-drag to look around; scroll to zoom. Your next destination glows on the map.'},
   {title:'Trouble in the trees', detail:'Drive off the three goblin raiders.', lesson:'Watch the windup', hint:'An amber arc warns of a strike. C and a direction to dodge; then left-click or R to counter. Space still jumps.'},
-  {title:'The road is safe', detail:'Report the three goblins to Eren at the Greenway Watch, farther along the road.', lesson:'Catch your breath', hint:'Follow the gold marker and press F to tell Eren what happened.'},
+  {title:'The road is safe', detail:'Carry on west up the Greenway, past the old watch post where the woodland road runs on.', lesson:'Catch your breath', hint:'Follow the gold marker along the road.'},
   {title:'What you carry', detail:'Open your satchel and read the letter of introduction. Eren has given you a road token.', lesson:'Your inventory', hint:'Press I for your satchel. Hover over an item for a hint, then select the letter of introduction to read it.'},
   {title:'Ready for the road', detail:'Dismiss your satchel to see the path ahead.', lesson:'Return to the world', hint:'Press I or Esc, or use Close, to dismiss your inventory.'},
   // The fork: the road west, or the country either side of it. The company is eleven and the
@@ -81,7 +81,9 @@ export function advanceQuest(stage, event) {
   if(stage===3 && event==='ambush') return 4;
   if(stage===4 && event==='retreat') return 3;
   if(stage===4 && event==='victory') return 5;
-  if(stage===5 && event==='meet-waykeeper') return 6;
+  // Eren was taken out of the cast with the rest of the teachers (src/cast.js), so the step he
+  // held is the ground he held it on: walk on west past the Greenway Watch.
+  if(stage===5 && event==='reach-watch') return 6;
   if(stage===6 && event==='inspect-letter') return 7;
   if(stage===7 && event==='close-inventory') return 8;
   if(stage===8 && event==='reach-north-trail') return 9;

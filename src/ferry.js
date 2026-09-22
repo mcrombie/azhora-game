@@ -38,7 +38,7 @@ export const FERRY_NPC = Object.freeze({
   // long black hair, the same boat, the same crossing, and the one person on this coast who
   // will tell you how to swim.
   id: 'boatman', name: 'Jess', role: 'Boatwoman of the Stills', modelRole: 'bridge-keeper', color: 0x4f6f78,
-  look: Object.freeze({ beard: false, hairStyle: 'mane', hair: 0x1a1613 }),
+  look: Object.freeze({ beard: false, slight: true, hairStyle: 'mane', hair: 0x1a1613 }),
 });
 
 const spot = (x, z, yaw = 0) => Object.freeze({ x, z, yaw });

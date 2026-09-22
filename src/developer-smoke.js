@@ -99,9 +99,9 @@ export async function runDeveloperSmoke(h) {
     const riseStart = developer.state().flight.position.y; press('Space');
     await waitFor(() => developer.state().flight.position.y - riseStart >= 12, 'Space did not raise the ghost');
     release('Space'); await frames(2); riseMeters = developer.state().flight.position.y - riseStart;
-    const descendStart = developer.state().flight.position.y; press('ControlLeft');
+    const descendStart = developer.state().flight.position.y; press('KeyC');
     await waitFor(() => descendStart - developer.state().flight.position.y >= 8, 'Ctrl did not lower the ghost');
-    release('ControlLeft'); await frames(2); descentMeters = descendStart - developer.state().flight.position.y;
+    release('KeyC'); await frames(2); descentMeters = descendStart - developer.state().flight.position.y;
     assert(riseMeters >= 12 && descentMeters >= 8, 'vertical flight controls did not travel the expected distance');
     unchanged('fortress flight');
 
@@ -168,7 +168,7 @@ export async function runDeveloperSmoke(h) {
       surveyRegion: survey.id, surveyCells: survey.cells.length, renderedSurveyCells: cellInstances,
       localRegion4Visited: true, adventureUnchanged: true, checkpointUnchanged: true };
   } finally {
-    for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Tab', 'ShiftLeft', 'Space', 'ControlLeft', 'KeyM', 'F8']) release(key);
+    for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Tab', 'ShiftLeft', 'Space', 'KeyC', 'KeyM', 'F8']) release(key);
     if (developer.active) developer.close();
   }
 }
