@@ -566,6 +566,11 @@ export const regionNpcPositions = Object.freeze({
   'town-sawyer': townPoint(4, 13),
   'town-yardhand': townPoint(0, 14),
   'town-beggar': townPoint(0, -4),        // Smiths, who wanders the square
+  // Ben of the sorcerer's guild, on the square by the inn, asking anybody who looks capable
+  // whether they have ever killed a spider (src/spider-quest.js). Measured: level ground,
+  // six metres clear of the innkeeper, which is near enough to have taken a room and far
+  // enough that the two prompts never argue.
+  'ben-sorcerer': townPoint(-10, -2),
   // Captain Drevan's garrison keeps the Tessen road post in Pueth now (src/pueth-world.js).
   // The field at the Lauvel and the burned hamlet, north-east of the town.
   'lauvel-picket': at(-392, 186),         // Talven, on the picket line

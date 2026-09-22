@@ -52,6 +52,14 @@ export const ENEMY_KINDS = Object.freeze({
   // which is far more man to get through than this.
   rebel: Object.freeze({ tell: .72, attack: .5, contact: .22, recovery: 1.08, damage: 20, speed: 2.2,
     engage: 2.15, reach: 2.2, lunge: 1.5, poise: true, pack: 2 }),
+  // **The giant spider in the thorns north-west of Nothom** (src/spider-quest.js). One creature
+  // the size of a cart, built on Mallec's shape rather than on a goblin's: it hits hard, it can
+  // be read a long way off, and a hit does not stop it - so there is no free second, and trading
+  // blows with it is how Ben dies. It leaps, and a long lunge is what makes backing straight up
+  // useless; you go sideways or you are under it. Harder than the rebels on the Drent road and a
+  // long way short of the border battle, which is the user's own ruling of 22 September 2026.
+  spider: Object.freeze({ tell: 1.0, attack: .46, contact: .22, recovery: 1.2, damage: 30, speed: 2.5,
+    engage: 2.9, reach: 3.0, lunge: 6.4, arc: Math.PI * .34, stagger: false, pack: 1 }),
   // Mallec, the ogre on the Amod road (src/amod-ogre.js): a different order of
   // creature, not a large goblin. Three optional fields carry the difference and
   // every other kind goes on ignoring them:

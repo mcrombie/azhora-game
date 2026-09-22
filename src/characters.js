@@ -1005,7 +1005,7 @@ const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword':
 // 'mercenary' is here because the hired company's eleven headgears are authored looks, and the
 // soft cap is the one they hang on; the traveler built from a roster look is role 'traveler'
 // and keeps his own bare head, exactly as before.
-const HATTED = Object.freeze(['warden', 'pond-fisher', 'mercenary']);
+const HATTED = Object.freeze(['warden', 'pond-fisher', 'mercenary', 'sorcerer']);
 
 export function createCharacter({ role = 'traveler', tunic = tunicForRole(role), skin = skinForRole(role), hat = HATTED.includes(role), armed = false, look = null, wields = null } = {}) {
   // Any of the eleven mercenaries can be the player (src/player-characters.js). Given a roster
@@ -1338,7 +1338,10 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       swept.rotation.z = -0.13;
     };
     const nape = () => round(crop, hairMat, [0, 0.096, -0.188], [0.152, 0.108, 0.094]);
-    if (hairStyle === 'cropped') { fringe(0.328, 0.194); nape(); }
+    // **Bald.** Not the same thing as having no `hairStyle`: that falls through to the role's own
+    // hair. This draws nothing, on purpose, and is Ben's (src/spider-quest.js).
+    if (hairStyle === 'bald') { /* nothing on top, which is the whole of it */ }
+    else if (hairStyle === 'cropped') { fringe(0.328, 0.194); nape(); }
     else if (hairStyle === 'receding') {
       // A high forehead: hair left only at the temples and the back of the head.
       for (const side of [-1, 1]) {
@@ -2630,6 +2633,18 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     part(glass, new THREE.CylinderGeometry(0.026, 0.022, 0.16, 8), brass, [0, 0.07, 0]);
     part(glass, new THREE.CylinderGeometry(0.034, 0.03, 0.12, 8), brass, [0, 0.2, 0]);
     part(glass, UNIT_CYLINDER, material(0x2a2622), [0, 0.262, 0], [0.03, 0.01, 0.03]);
+  }
+  if (role === 'sorcerer') {
+    // Round wire spectacles, a shade larger than Imani's: he reads at arm's length and he is not
+    // shy about it. The wand is in the off hand, held the way somebody holds a pen they are about
+    // to make a point with, because it is the only thing he carries (src/sorcery.js).
+    spectacles(head, 'Ben’s spectacles', material(0x6f6a60, { metalness: .5, roughness: .38 }),
+      material(0xe3ecef, { roughness: .1, metalness: .12 }), { radius: .056, y: .222, z: .204, spread: .072 });
+    const wandWood = material(0x4a3524, { roughness: .62 });
+    const wand = part(wrists[0], new THREE.CylinderGeometry(.012, .017, .42, 7), wandWood, [0, -.16, .04]);
+    wand.name = 'Ben’s wand';
+    wand.rotation.x = Math.PI * .46;
+    part(wand, new THREE.SphereGeometry(.026, 8, 6), material(0xd8b25a, { emissive: 0x6d3f12, emissiveIntensity: .45 }), [0, .21, 0]);
   }
   if (isVineKeeper) {
     // Steel, and smaller than Troy’s: they are for buds, mites and her own handwriting, and they

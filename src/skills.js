@@ -14,6 +14,8 @@
  */
 /** The heading the seven fighting skills sit under in the journal's grid. */
 export const ARMS_HEADING = 'Arms';
+/** The second table, beside Arms: the schools of sorcery (src/sorcery.js). */
+export const SORCERY_HEADING = 'Sorcery';
 
 export const SKILLS_VERSION = 1;
 /** RuneScape's cap on experience in one skill. */
@@ -219,6 +221,36 @@ export const SKILLS = Object.freeze({
     unlocks: Object.freeze([unlock(1, '100 health, 100 wind, and a step aside worth 0.37 s'), unlock(25, 'Half as much again to lose'),
       unlock(50, 'Twice the man who landed, and a longer step'), unlock(75, 'Three times, and the wind to use it'),
       unlock(99, '400 health, 180 wind, and 0.48 s of a dodge that cannot be touched')]),
+  }),
+  /**
+   * **Sorcery**, which is its own table beside Arms (the user, 22 September 2026). Fire is the
+   * only one anybody can teach: Ben, of the sorcerer's guild, and only if you help him with the
+   * spider and take the lesson instead of the money (src/sorcery.js, src/spider-quest.js). Frost
+   * and Wards are named so a spell arriving later has a home rather than a decision, and are not
+   * handed out by anybody - a skill nobody teaches is a skill nobody has.
+   */
+  fire: Object.freeze({
+    id: 'fire', name: 'Fire', group: SORCERY_HEADING,
+    blurb: 'A ball of fire thrown at what you are looking at, which is the whole of it and is a great deal. It wants a wand or a staff in your hand, and your hand has room for one thing.',
+    teacher: 'Ben, if you stand with him against the spider and ask for the lesson rather than the purse',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'One fireball, three of them before the focus is out'),
+      unlock(25, 'Half as much again, and it comes back quicker'), unlock(50, 'Twice the fire and twice the throwing of it'),
+      unlock(75, 'A pool deep enough to fight out of'), unlock(99, 'Three times the fire, and sixteen of them')]),
+  }),
+  frost: Object.freeze({
+    id: 'frost', name: 'Frost', group: SORCERY_HEADING,
+    blurb: 'Cold, and what cold does to a thing that was about to move. Nobody in Azhora has offered to show it to anybody yet.',
+    teacher: 'nobody yet',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Unlearned, and unteachable for now')]),
+  }),
+  wards: Object.freeze({
+    id: 'wards', name: 'Wards', group: SORCERY_HEADING,
+    blurb: 'Putting something between yourself and what is coming that is not a shield. Nobody in Azhora has offered to show it to anybody yet.',
+    teacher: 'nobody yet',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Unlearned, and unteachable for now')]),
   }),
 });
 

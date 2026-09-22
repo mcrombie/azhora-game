@@ -257,6 +257,6 @@ test('the host reads the margins rather than writing numbers of its own', () => 
   assert.match(source('weapons.js'), /damage: type\.damage\.map\(hit => hit \* scale\)/, 'the multiplier is on the weapon’s own damage');
   // Twenty-one in the registry (farming came with the long road), and the seven are the grouped
   // ones. Normal mode draws twenty of them: the Linguist is hard mode's (tests/game-mode.test.js).
-  assert.equal(SKILL_IDS.length, 21);
+  assert.equal(SKILL_IDS.length, 24, 'fourteen of the world, seven of fighting, three of sorcery');
   assert.equal(SKILL_IDS.filter(id => SKILLS[id].group === ARMS_HEADING).length, 7);
 });

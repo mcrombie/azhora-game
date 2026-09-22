@@ -68,7 +68,13 @@ export const SKILL_ICONS = Object.freeze({
   staves: '<path d="M9 31 27 5"/><path d="M10.6 8.2a2.6 2.6 0 1 0 0-.1"/><path d="M25.4 27.8a2.6 2.6 0 1 0 0-.1"/>',
   bows: '<path d="M11 5c8 4 8 22 0 26"/><path d="M11 5c-2.6 8-2.6 18 0 26"/><path d="M11 18h16"/><path d="M23 14.4 27 18l-4 3.6"/>',
   shield: '<path d="M18 4 29 8v9c0 7-4.6 11.6-11 15C11.6 28.6 7 24 7 17V8Z"/><path d="M18 4v29"/><path d="M7.6 15h20.8"/>',
-  toughness: '<path d="M18 5c3.2 2.4 6.6 3.4 10 3.2V19c0 6.4-4 10.4-10 13C12 29.4 8 25.4 8 19V8.2c3.4.2 6.8-.8 10-3.2Z"/>'
+  toughness: '<path d="M18 5c3.2 2.4 6.6 3.4 10 3.2V19c0 6.4-4 10.4-10 13C12 29.4 8 25.4 8 19V8.2c3.4.2 6.8-.8 10-3.2Z"/>',
+  // Sorcery (src/sorcery.js). A flame for fire; a six-armed flake for frost; a warding arc for
+  // wards. The two that nobody teaches wear their marks already, so the grid does not change
+  // shape on the day somebody does.
+  fire: '<path d="M18 4c1 5-2.6 7-2.6 11.4a4 4 0 0 0 7.4 2.2C25 21 26 23.6 26 25.4 26 30 22.4 33 18 33S10 30 10 25.4C10 18 18 15 18 4Z"/>',
+  frost: '<path d="M18 4v29"/><path d="M5.4 11.5 30.6 25.5"/><path d="M30.6 11.5 5.4 25.5"/><path d="M18 10.5 13.6 7M18 10.5 22.4 7M18 26.5 13.6 30M18 26.5 22.4 30"/>',
+  wards: '<path d="M6 21c0-8.3 5.4-14 12-14s12 5.7 12 14"/><path d="M11.5 21c0-4.9 2.9-8.2 6.5-8.2s6.5 3.3 6.5 8.2"/><path d="M6 26.5h24"/>'
     + '<path d="M13.6 17.6 17 21l5.6-6.4"/>',
 });
 

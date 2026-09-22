@@ -71,6 +71,7 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
+  'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
   'brandy-frank',        // Brandy Frank, dyer of impossible colours
   'bird-watcher',        // Lakota
   'boatman',             // Jess of the Stills
