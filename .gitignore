@@ -5,3 +5,5 @@ logs/
 saves/
 tests/.electron-profiles/
 .claude/worktrees/
+# The static build (scripts/build-web.mjs); Render makes its own on deploy.
+public/

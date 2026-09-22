@@ -1,0 +1,28 @@
+# Azhora as a static site on Render.
+#
+# The game is a plain web page - no bundler, no server, no build - so the "build" is a copy of
+# the four things a browser asks for into public/ (scripts/build-web.mjs). Saves fall back from
+# the desktop app's bridge to the browser's own localStorage, which means a save lives in the
+# browser it was made in and goes when that site's data is cleared.
+services:
+  - type: web
+    runtime: static
+    name: azhora
+    buildCommand: node scripts/build-web.mjs
+    staticPublishPath: ./public
+    pullRequestPreviewsEnabled: false
+    headers:
+      # The world map and the atlas are the two big files and neither changes often.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /vendor/*
+        name: Cache-Control
+        value: public, max-age=86400
+      # The game's own code changes every deploy; never hand back a stale module.
+      - path: /src/*
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
