@@ -6,6 +6,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/game-state.js';
 import { WORD_BEACH, WORD_SWIM as WORD_CROSSING } from '../src/word-arrival.js';
+import { BODY } from '../src/bodies.js';
 const WORD_SWIM_FROM = WORD_CROSSING.from;
 import { createSkills } from '../src/skills.js';
 import {
@@ -392,4 +393,58 @@ test('no fight the game can start has water inside its leash, which is what keep
     assert.ok(nearest > leash, `${label} (${encounter.id}) has swimmable water ${nearest} m from its centre, inside the ${leash} m leash: `
       + 'a swimmer inside it is handed a full bar of wind by restorePlayer(), and the crossing table stops being true');
   }
+});
+
+/**
+ * **Rivers are water you can be in** (the user, 22 September 2026: all rivers should be real
+ * swimmable water). They were not: `canSwim` judged wet against one global sea line, so a river
+ * flowing at two and three quarter metres of elevation read as dry land, and every river in the
+ * world was walled with colliders to keep people out of it. The beds were carved all along - the
+ * Caloss carries 0.96 m of water, the Tarvel 0.79, the Vastos 0.48 - and what was missing was
+ * that water has a local surface.
+ */
+test('a river is water at its own height, and walking is left exactly where it was', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const water = world.colliders.filter(collider => collider.kind === 'river-water');
+  assert.ok(water.length > 1000, `only ${water.length} river points in the world`);
+  // Every one of them says what the water there stands at, and it is not the sea's line.
+  assert.ok(water.every(one => Number.isFinite(one.surface)), 'a river point that does not say how high its water is');
+  const above = water.filter(one => one.surface > WATERLINE + .5).length;
+  assert.ok(above > water.length * .6, `only ${above} of ${water.length} river points run above the sea`);
+  // And the world answers it, so the predicates can ask.
+  const sample = water.find(one => one.surface > WATERLINE + 1);
+  assert.equal(world.waterAt(sample.x, sample.z), sample.surface);
+  assert.equal(world.waterAt(0, 0), WATERLINE, 'ground with no water over it is the sea’s line');
+  // Which makes the channel swimmable. Measured when this was written: 1,440 of 1,494.
+  const wet = water.filter(one => canSwim(one.x, one.z, world, .34)).length;
+  assert.ok(wet > water.length * .9, `only ${wet} of ${water.length} river points can be swum`);
+  // **And nothing that could be walked on has become water.** The whole-world sweep this was
+  // checked against counted 12,306 standable samples before the change and 12,306 after.
+  for (const one of water) assert.equal(canStand(one.x, one.z, world, BODY.person), false,
+    `a river point at ${one.x.toFixed(0)}, ${one.z.toFixed(0)} can be stood on`);
+});
+
+test('the Caloss can be swum beside its bridge, and the bridge is still walked', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const crossing = world.journeySites['bridge-repair'];
+  // The road's own bearing there, and the channel across it.
+  const along = { x: -.849, z: .529 }, across = { x: .529, z: .849 };
+  const widest = up => {
+    const base = { x: crossing.x + across.x * up, z: crossing.z + across.z * up };
+    let run = 0, best = 0;
+    for (let t = -20; t <= 20; t += .5) {
+      const x = base.x + along.x * t, z = base.z + along.z * t;
+      if (canSwim(x, z, world, .34)) { run += .5; best = Math.max(best, run); } else run = 0;
+    }
+    return best;
+  };
+  const swim = widest(30);
+  assert.ok(swim > 6 && swim < 30, `the swim beside the bridge is ${swim.toFixed(1)} m`);
+  // Well inside a level-1 swimmer's reach, and a real bite out of his wind.
+  const reach = SWIM.walk * SWIM.shareLow * (SWIM.wind / SWIM.drainLow);
+  assert.ok(swim < reach / 2, `${swim.toFixed(1)} m of a ${reach.toFixed(0)} m bar`);
+  // And the lane itself is still dry boards: a bridge is for walking over.
+  assert.equal(canStand(crossing.x, crossing.z, world, BODY.person), true, 'the bridge deck is not walkable');
 });

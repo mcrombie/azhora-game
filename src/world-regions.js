@@ -372,7 +372,9 @@ export function createRegionScenery(kit) {
           const push = radius + LANE_HALF - Math.abs(lane), away = Math.sign(lane) || 1;
           px += bridgeSide.x * away * push; pz += bridgeSide.z * away * push;
         }
-        colliders.push({ x: px, z: pz, r: radius, kind: 'river-water' });
+        // `surface` is the height of the water this marks, so the world can answer what is wet
+        // where (`waterAt`, src/world.js): a river is water at its own level, not the sea's.
+        colliders.push({ x: px, z: pz, r: radius, kind: 'river-water', surface: calossSurface(px, pz) });
       }
     }
   }

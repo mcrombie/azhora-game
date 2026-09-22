@@ -1,3 +1,7 @@
+// `WATERLINE` is the line the predicates judge wet by; `waterAt` below answers it for the sea
+// and each river's own surface for a river (src/game-state.js). game-state imports nothing, so
+// there is no cycle here.
+import { WATERLINE } from './game-state.js';
 import * as THREE from 'three';
 import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
 import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
@@ -1638,6 +1642,28 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     lauvelField: regionScenery.lauvelField,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
+    /**
+     * **The surface of whatever water is at this point**, or the sea's line where there is none.
+     *
+     * The sea lies at `WATERLINE`; a river lies at whatever height its own bed carried it to,
+     * which for the Caloss is a little under three metres above the sea and for one reach of hill
+     * country is twenty-eight. Every water collider carries the surface of the water it marks
+     * (`surface`, written where each river is built), so this is a grid lookup and not a search
+     * through a list of rivers: it runs inside `canStand`, which is the most-asked question in
+     * the game.
+     *
+     * Where two bodies overlap - a river's mouth in the sea - the higher surface wins, because
+     * the point is under both and the deeper of the two is what you are in.
+     */
+    waterAt(x, z) {
+      let surface = WATERLINE;
+      for (const c of colliderGrid().near(x, z, 0)) {
+        if (c.surface === undefined || c.r === undefined) continue;
+        const dx = x - c.x, dz = z - c.z;
+        if (dx * dx + dz * dz < c.r * c.r && c.surface > surface) surface = c.surface;
+      }
+      return surface;
+    },
     reindexColliders: () => { colliderIndex = null; },
     /** Leave props passable within `clear` metres of each point: a stand, a site, a bench. */
     keepPropsClear(points, clear = .8) {

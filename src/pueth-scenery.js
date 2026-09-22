@@ -44,7 +44,7 @@ export function createPuethScenery(kit) {
       const half = puethRiverHalfWidth(river, profile[index]), y = profile[index].surface;
       vertices.push(sample.x - sample.nx * half, y, sample.z - sample.nz * half, sample.x + sample.nx * half, y, sample.z + sample.nz * half);
       if (index) { const v = index * 2; indices.push(v - 2, v, v - 1, v - 1, v, v + 1); }
-      outline.push({ x: sample.x, z: sample.z, nx: sample.nx, nz: sample.nz, half });
+      outline.push({ x: sample.x, z: sample.z, nx: sample.nx, nz: sample.nz, half, surface: y });
     });
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -70,7 +70,7 @@ export function createPuethScenery(kit) {
             const push = radius + b.laneHalf - Math.abs(lane), away = Math.sign(lane) || 1;
             px += b.side.x * away * push; pz += b.side.z * away * push;
           }
-          colliders.push({ x: px, z: pz, r: radius, kind: 'river-water', river: river.id });
+          colliders.push({ x: px, z: pz, r: radius, kind: 'river-water', river: river.id, surface: outline[i - 1].surface });
           metrics.waterColliders++;
         }
       }

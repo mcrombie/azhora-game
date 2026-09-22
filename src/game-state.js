@@ -14,7 +14,14 @@ export function getMovementInput(keys) {
 export const WATERLINE = 0.45;
 
 /** Inside the world, and clear of everything solid in it. Both halves of the waterline need this. */
-function clearHere(x, z, world, radius) {
+/**
+ * **The shapes that are there to keep walkers out of water.** They line every river in the world
+ * and they are what made a river a wall rather than a thing you could be in. A swimmer is already
+ * in the water and is not stopped by them; everything else still is.
+ */
+const WATER_COLLIDERS = new Set(['river-water', 'pond-water']);
+
+function clearHere(x, z, world, radius, afloat = false) {
   const b = world.bounds;
   if (x < b.minX + radius || x > b.maxX - radius || z < b.minZ + radius || z > b.maxZ - radius) return false;
   // The shapes that could reach this point, from the world's grid (src/collider-grid.js);
@@ -22,14 +29,27 @@ function clearHere(x, z, world, radius) {
   const near = world.nearColliders ? world.nearColliders(x, z, radius) : world.colliders;
   for (let i = 0; i < near.length; i++) {
     const c = near[i];
+    if (afloat && WATER_COLLIDERS.has(c.kind)) continue;
     if (c.r !== undefined) { const dx = x - c.x, dz = z - c.z, reach = c.r + radius; if (dx * dx + dz * dz < reach * reach) return false; }
     else if (Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius) return false;
   }
   return true;
 }
 
+/**
+ * **Water has a surface, and it is not all at one height** (the user, 22 September 2026: all
+ * rivers should be real swimmable water). The sea lies at `WATERLINE`; a river lies wherever its
+ * own bed carried it, which for the Caloss is about two and three quarter metres above the sea
+ * and for one reach of hill country is twenty-eight. Asking one global line whether a point is
+ * wet answered "dry" for every river in the world, which is why they were walled instead.
+ *
+ * A world that does not know about water bodies — a test's stand-in — answers the sea, which is
+ * exactly what this did before.
+ */
+export const waterAt = (x, z, world) => world?.waterAt?.(x, z) ?? WATERLINE;
+
 export function canStand(x, z, world, radius = 0.34) {
-  return clearHere(x, z, world, radius) && world.heightAt(x, z) >= WATERLINE;
+  return clearHere(x, z, world, radius) && world.heightAt(x, z) >= waterAt(x, z, world);
 }
 
 /**
@@ -40,7 +60,7 @@ export function canStand(x, z, world, radius = 0.34) {
  * you by drowning you.
  */
 export function canSwim(x, z, world, radius = 0.34) {
-  return clearHere(x, z, world, radius) && world.heightAt(x, z) < WATERLINE;
+  return clearHere(x, z, world, radius, true) && world.heightAt(x, z) < waterAt(x, z, world);
 }
 
 /**

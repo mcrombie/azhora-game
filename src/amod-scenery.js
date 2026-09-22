@@ -81,7 +81,7 @@ export function createAmodScenery(kit) {
       const half = TARVEL.halfWidth * (.5 + .5 * smooth(0, 26, index));
       vertices.push(sample.x - nx * half, sample.surface, sample.z - nz * half, sample.x + nx * half, sample.surface, sample.z + nz * half);
       if (index) { const v = index * 2; indices.push(v - 2, v, v - 1, v - 1, v, v + 1); }
-      outline.push({ x: sample.x, z: sample.z, nx, nz, half });
+      outline.push({ x: sample.x, z: sample.z, nx, nz, half, surface: sample.surface });
     });
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -94,7 +94,7 @@ export function createAmodScenery(kit) {
       if (acrossBridge < b.halfSpan + 1.6) continue;
       // `river-water` so the minimap and the water tests treat it as water; `stream`, not
       // `river`, because `river` names one of Pueth's two authored rivers and this is not one.
-      colliders.push({ x: sample.x, z: sample.z, r: Math.max(1.2, sample.half * .8), kind: 'river-water', stream: TARVEL.id });
+      colliders.push({ x: sample.x, z: sample.z, r: Math.max(1.2, sample.half * .8), kind: 'river-water', stream: TARVEL.id, surface: sample.surface });
       metrics.waterColliders++;
     }
     // Bank stones and a few rushes where the water is slow.
