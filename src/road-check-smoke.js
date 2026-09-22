@@ -1,3 +1,4 @@
+import { questLive } from './quest-slate.js';
 import { canStand, QUEST_DONE } from './game-state.js';
 import { toWorld } from './world-scale.js';
 
@@ -41,13 +42,19 @@ export async function runRoadCheckSmoke(h) {
     assert(inventory.has('simple-sword') && inventory.has('harbor-letter') && inventory.has('road-token'), 'fixture is missing the road equipment');
     assert(!inventory.has('fishing-rod'), 'rod-teaching fixture must start without a rod');
     if (!journey.state.started) assert(journey.start().ok, 'fresh journey could not begin');
-    assert(journey.view().stage === 'meet-courier', 'fixture already advanced the new road');
+    // Corvan's leg is off the slate (src/quest-slate.js), so the trimmed road begins where it
+    // ends: the letter, and the report at Nothom. Every leg below that is off is skipped, not
+    // deleted, so this walkthrough is the same walkthrough whichever way the switch is set.
+    assert(journey.view().stage === (questLive('courier') ? 'meet-courier' : 'deliver-report'),
+      `fixture already advanced the new road (${journey.view().stage})`);
     // Authored metres: open Drent forest north of the village, clear of everyone.
     await moveTo(...(({ x, z }) => [x, z])(toWorld(0, -178)));
 
-    accepted('meet-courier');
-    accepted('collect-cart-parcel-1');
-    assert(saved().journey.parcels.length === 1 && !saved().journey.courierComplete, 'a partial parcel pickup was not saved independently');
+    if (questLive('courier')) {
+      accepted('meet-courier');
+      accepted('collect-cart-parcel-1');
+      assert(saved().journey.parcels.length === 1 && !saved().journey.courierComplete, 'a partial parcel pickup was not saved independently');
+    }
     assert(campcraft.teachFishing().ok, 'the fishing-teacher callback failed');
     handleCampEvents();
     assert(saved().inventory.some(item => item.id === 'fishing-rod' && item.quantity === 1), 'fishing-taught did not autosave the new rod');
@@ -100,10 +107,12 @@ export async function runRoadCheckSmoke(h) {
     endFishing(true); await frames(2);
     assert(getMode() === 'playing', 'fishing cancellation did not return to play');
 
-    accepted('collect-cart-parcel-2');
-    accepted('collect-cart-parcel-3');
-    accepted('return-courier');
-    assert(inventory.count('cooked-fish') === 2, 'Corvan did not add his one-time provisions');
+    if (questLive('courier')) {
+      accepted('collect-cart-parcel-2');
+      accepted('collect-cart-parcel-3');
+      accepted('return-courier');
+      assert(inventory.count('cooked-fish') === 2, 'Corvan did not add his one-time provisions');
+    }
     const sticksNeeded = Math.max(0, 3 - inventory.count('forest-stick'));
     if (sticksNeeded) assert(inventory.add('forest-stick', sticksNeeded), 'could not prepare bridge repair supplies');
     accepted('meet-crossing-keeper');
@@ -112,7 +121,12 @@ export async function runRoadCheckSmoke(h) {
     assert(damagedSpot && !canStand(damagedSpot.x, damagedSpot.z, world), 'the west bridge lane was open before repair');
     accepted('repair-bridge');
     assert(canStand(damagedSpot.x, damagedSpot.z, world), 'the repaired west bridge lane is still blocked');
-    assert(journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2]), 'the checkpoint fixture advanced beyond the partial crossing quest');
+    // Trimmed, the bridge is nobody's step (`bridgeStage`, src/journey.js): the road's own stage
+    // is still the report at Nothom, and the errand stands at `repaired`, waiting to be told.
+    assert(questLive('courier')
+      ? journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2])
+      : journey.view().stage === 'deliver-report' && journey.state.bridge === 'repaired',
+      `the checkpoint fixture advanced beyond the partial crossing quest (${journey.view().stage})`);
     await moveTo(damagedSpot.x, damagedSpot.z);
     combat.state.player.hp = 61;
     assert(saveRoad(false), 'saving on the repaired deck failed');
@@ -152,7 +166,10 @@ export async function verifyRoadReload(h, expected) {
   await frames(6);
   assert(getMode() === 'playing' && !readState().testingEnabled && readState().questStage === QUEST_DONE, 'Continue did not restore normal road play');
   assert(same(journey.snapshot(), expected.journey), 'Continue changed intermediate quest progress');
-  assert(journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2]), 'Continue skipped the unfinished report to Hollis');
+  assert(questLive('courier')
+    ? journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2])
+    : journey.view().stage === 'deliver-report' && journey.state.bridge === 'repaired',
+    'Continue skipped the unfinished report to Hollis');
   assert(world.journeySiteState()['bridge-repair'] && canStand(damagedSpot.x, damagedSpot.z, world), 'Continue failed to restore the physical bridge repair');
   assert(Math.abs(player.group.position.x - expected.position.x) < .001
     && Math.abs(player.group.position.z - expected.position.z) < .001, 'Continue moved the player off the saved repaired bridge lane');

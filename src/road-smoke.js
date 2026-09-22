@@ -1,4 +1,5 @@
 import { canStand, QUEST_DONE } from './game-state.js';
+import { questLive } from './quest-slate.js';
 import { LUSCIA_SITES, LUSCIA_WOLVES } from './luscia-chapter.js';
 import { OSTLER_OBJECTIVE } from './ostler.js';
 
@@ -71,6 +72,17 @@ export async function runRoadSmoke(h) {
     assert(query('#objective-distance')?.textContent?.trim(), `objective guidance is empty before ${id}`);
   }
 
+  /**
+   * A side errand is offered without being pointed at: the bridge over the Caloss is nobody's
+   * step while the slate is trimmed (`bridgeStage`, src/journey.js), so the road does not send
+   * the traveler to Hollis and Hollis is still there to be asked (src/quest-slate.js).
+   */
+  function checkSideErrand(id) {
+    const action = journey.availableActions().find(item => item.objectiveId === id);
+    assert(action, `no action exposes the side errand ${id}`);
+    assert(!journey.view().destinationIds.includes(id), `${id} is a side errand and the road is pointing at it`);
+  }
+
   async function fightMeadow() {
     assert(combat.state.encounterId === 'meadow-raiders', 'wrong encounter started beside the cart');
     assert(combat.state.enemies.length === 2, 'the meadow did not spawn two raiders');
@@ -122,43 +134,54 @@ export async function runRoadSmoke(h) {
     assert(!state().testingEnabled, 'the normal road smoke must run before F8 supplies');
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the road items are missing');
     assert(weapons.profile().id === 'simple-sword' && weapons.profile().usable, 'equip the repaired sword before the road test');
-    assert(journey.view().stage === 'meet-courier', 'the new road must start with Corvan');
+    // **Corvan's field register and his three parcels are off the slate** (src/quest-slate.js).
+    // Not deleted: the whole leg is here, behind the switch that turned it off, so this
+    // walkthrough runs on the trimmed road and on the whole one.
+    if (questLive('courier')) {
+      assert(journey.view().stage === 'meet-courier', 'the new road must start with Corvan');
 
-    await checkDestination('meadow-courier');
-    await visit('meadow-courier'); await chooseRoad('meet-courier');
-    const fishBefore = inventory.count('cooked-fish');
-    let fought = false;
-    for (const id of ['cart-parcel-1', 'cart-parcel-2', 'cart-parcel-3']) {
-      await checkDestination(id);
-      const site = sites[id];
-      await arrive(site.x, site.z);
-      if (combat.state.phase === 'active') { await fightMeadow(); fought = true; await arrive(site.x, site.z); }
-      assert(query('#interaction-label')?.textContent.includes('Recover parcel'), `parcel prompt missing at ${id}`);
-      tap('KeyF'); await frames(2);
-      assert(journey.state.parcels.includes(id) && world.journeySiteState()[id], `${id} was not recovered and hidden`);
-      const count = journey.state.parcels.length;
-      tap('KeyF'); await frames(2);
-      assert(journey.state.parcels.length === count, `${id} could be recovered twice`);
+      await checkDestination('meadow-courier');
+      await visit('meadow-courier'); await chooseRoad('meet-courier');
+      const fishBefore = inventory.count('cooked-fish');
+      let fought = false;
+      for (const id of ['cart-parcel-1', 'cart-parcel-2', 'cart-parcel-3']) {
+        await checkDestination(id);
+        const site = sites[id];
+        await arrive(site.x, site.z);
+        if (combat.state.phase === 'active') { await fightMeadow(); fought = true; await arrive(site.x, site.z); }
+        assert(query('#interaction-label')?.textContent.includes('Recover parcel'), `parcel prompt missing at ${id}`);
+        tap('KeyF'); await frames(2);
+        assert(journey.state.parcels.includes(id) && world.journeySiteState()[id], `${id} was not recovered and hidden`);
+        const count = journey.state.parcels.length;
+        tap('KeyF'); await frames(2);
+        assert(journey.state.parcels.length === count, `${id} could be recovered twice`);
+      }
+      assert(fought, 'walking to the parcels did not trigger the meadow encounter');
+      await visit('meadow-courier'); await chooseRoad('return-courier');
+      assert(inventory.count('cooked-fish') === fishBefore + 2, 'Corvan did not give exactly two cooked fish');
+      assert(journey.state.completedRegions.includes(2), 'the Avrel clearing errand was not completed');
+      await visit('meadow-courier');
+      assert(!query('[data-choice="return-courier"]'), 'Corvan offered a duplicate reward');
+      choose('leave-road-neighbor'); await frames(2);
+
+      // Inspect the real satchel tooltip and reward description on the new road.
+      tap('KeyI');
+      const food = query('[data-item-id="cooked-fish"]');
+      assert(food, 'Corvan’s provisions are absent from the satchel');
+      food.dispatchEvent(new PointerEvent('pointerenter')); await frames(2);
+      assert(query('#inventory-tooltip')?.textContent.includes('40 health'), 'cooked-fish tooltip omitted its healing');
+      food.click();
+      assert(query('#inventory-detail')?.textContent.includes('40 health'), 'cooked-fish detail omitted its healing');
+      tap('KeyI');
+    } else {
+      assert(journey.view().stage === 'deliver-report', 'the trimmed road is the letter and the report');
+      await visit('meadow-courier');
+      assert(!query('[data-choice="meet-courier"]'), 'Corvan offered an assignment that is off the slate');
+      choose('leave-road-neighbor'); await frames(2);
     }
-    assert(fought, 'walking to the parcels did not trigger the meadow encounter');
-    await visit('meadow-courier'); await chooseRoad('return-courier');
-    assert(inventory.count('cooked-fish') === fishBefore + 2, 'Corvan did not give exactly two cooked fish');
-    assert(journey.state.completedRegions.includes(2), 'the Avrel clearing errand was not completed');
-    await visit('meadow-courier');
-    assert(!query('[data-choice="return-courier"]'), 'Corvan offered a duplicate reward');
-    choose('leave-road-neighbor'); await frames(2);
 
-    // Inspect the real satchel tooltip and reward description on the new road.
-    tap('KeyI');
-    const food = query('[data-item-id="cooked-fish"]');
-    assert(food, 'Corvan’s provisions are absent from the satchel');
-    food.dispatchEvent(new PointerEvent('pointerenter')); await frames(2);
-    assert(query('#inventory-tooltip')?.textContent.includes('40 health'), 'cooked-fish tooltip omitted its healing');
-    food.click();
-    assert(query('#inventory-detail')?.textContent.includes('40 health'), 'cooked-fish detail omitted its healing');
-    tap('KeyI');
-
-    await checkDestination('crossing-keeper');
+    if (questLive('courier')) await checkDestination('crossing-keeper');
+    else checkSideErrand('crossing-keeper');
     await visit('crossing-keeper'); await chooseRoad('meet-crossing-keeper');
     // Simulate arriving after all loose wood has been spent on weapons or fire.
     // The repair quest must remain completable through Hollis's actual dialogue.
@@ -178,7 +201,8 @@ export async function runRoadSmoke(h) {
     choose('leave-road-neighbor'); await frames(2);
     await gather('bridge-debris-1', 'forest-stick', 2);
     await gather('bridge-debris-2', 'forest-stick', 2);
-    await checkDestination('bridge-repair');
+    if (questLive('courier')) await checkDestination('bridge-repair');
+    else checkSideErrand('bridge-repair');
     await arrive(sites['bridge-repair'].x, sites['bridge-repair'].z);
     const sticksBefore = inventory.count('forest-stick'), wearBefore = weapons.status('forest-stick').durability;
     const damagedLane = world.colliders.filter(c => c.kind === 'bridge-damage');
@@ -241,24 +265,33 @@ export async function runRoadSmoke(h) {
     assert(getMode() === 'playing' && inventory.count('raw-fish') === rawBefore + 1, 'Escape failed to cancel the second river cast without a catch');
     assert(JSON.stringify(journey.snapshot()) === beforeFishingLesson, 'river fishing changed the road quest');
 
-    await checkDestination('ridge-keeper');
-    await visit('ridge-keeper'); await chooseRoad('meet-ridge-keeper');
-    for (const id of ['beacon-west', 'beacon-east', 'beacon-north']) {
-      await checkDestination(id);
-      await arrive(sites[id].x, sites[id].z);
-      assert(query('#interaction-label')?.textContent.includes('Restore waymarker'), `waymarker prompt missing at ${id}`);
-      const sticks = inventory.count('forest-stick');
-      tap('KeyF'); await frames(2);
-      assert(journey.state.beacons.includes(id) && world.journeySiteState()[id], `${id} was not restored in the world`);
-      assert(inventory.count('forest-stick') === sticks, 'restoring a road stone consumed campfire fuel');
-      const count = journey.state.beacons.length;
-      tap('KeyF'); await frames(2);
-      assert(journey.state.beacons.length === count, `${id} could be restored twice`);
+    // **And Sava's three waymarkers with them.**
+    if (questLive('waymarkers')) {
+      await checkDestination('ridge-keeper');
+      await visit('ridge-keeper'); await chooseRoad('meet-ridge-keeper');
+      for (const id of ['beacon-west', 'beacon-east', 'beacon-north']) {
+        await checkDestination(id);
+        await arrive(sites[id].x, sites[id].z);
+        assert(query('#interaction-label')?.textContent.includes('Restore waymarker'), `waymarker prompt missing at ${id}`);
+        const sticks = inventory.count('forest-stick');
+        tap('KeyF'); await frames(2);
+        assert(journey.state.beacons.includes(id) && world.journeySiteState()[id], `${id} was not restored in the world`);
+        assert(inventory.count('forest-stick') === sticks, 'restoring a road stone consumed campfire fuel');
+        const count = journey.state.beacons.length;
+        tap('KeyF'); await frames(2);
+        assert(journey.state.beacons.length === count, `${id} could be restored twice`);
+      }
     }
+
     await checkDestination('relay-clerk');
     await visit('relay-clerk'); await chooseRoad('deliver-report');
     assert(journey.view().complete, 'Iven did not finish the road report');
-    assert(JSON.stringify(journey.state.completedRegions) === '[2,3,4]', 'all three new regions were not completed');
+    // Region 2 is Corvan's and is off the slate; region 3 is the crossing, which is walked either
+    // way, and region 4 closes on the report itself and not on Sava's markers (`completedRegions`,
+    // src/journey.js), so it is there whichever way the switch is set.
+    assert(JSON.stringify(journey.state.completedRegions)
+      === JSON.stringify([questLive('courier') ? 2 : null, 3, 4].filter(Boolean)),
+      `the road closed on regions ${JSON.stringify(journey.state.completedRegions)}`);
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the relay consumed the onward quest items');
     assert(inventory.count('copper-piece') >= 12, 'the army did not pay for the road report');
 
