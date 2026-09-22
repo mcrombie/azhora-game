@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/story-chapters.js';
@@ -28,7 +29,7 @@ test('chapter one ends on reporting for duty at Nothom', () => {
   assert.equal(fresh.current.id, 'road-to-luscia');
   assert.deepEqual(fresh.list.map(entry => entry.state), ['current', 'later', 'later']);
   // Walking the road is not enough; the chapter turns on the report itself.
-  assert.equal(chapterProgress({ questStage: 10, journey: { complete: true } }).number, 1);
+  assert.equal(chapterProgress({ questStage: QUEST_DONE, journey: { complete: true } }).number, 1);
   assert.equal(chapterProgress(reported).number, 2, 'reporting to Iven closes it');
   // And it closes on the report, not one step into the next chapter: a traveler who has
   // reported and not yet taken the Lauvel errand is on Chapter 2, not still on Chapter 1.

@@ -6983,7 +6983,7 @@ function init() {
           yaw=shot.yaw;pitch=.26;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        if(view==='battle'){questStage=4;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
+        if(view==='battle'){questStage=QUEST_DONE;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
         // The traveler stood at a place and looking a given way, with nothing staged: for a measurement that
         // wants the place as it is rather than a composed shot. stand-at:x,z,facing[,pitch,distance] (main.cjs --draw-review).

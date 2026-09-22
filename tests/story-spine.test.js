@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -30,7 +31,7 @@ function storyStateAfter(entry) {
     luscia.restore({ version: luscia.snapshot().version, revision: 5, started: true, briefed: true, satchelTaken: true, wolvesCleared: true, returned: true });
   if (entry.completed.includes('moros-camp'))
     moros.restore({ version: moros.snapshot().version, revision: 4, started: true, admitted: true, mustered: true, horseClaimed: true });
-  return { questStage: 10, luscia: { ...luscia.snapshot() }, moros: moros.view(), aftermath: createAftermathChapter().view(),
+  return { questStage: QUEST_DONE, luscia: { ...luscia.snapshot() }, moros: moros.view(), aftermath: createAftermathChapter().view(),
     side: campaign.view().side, home: false, campaign: campaign.view() };
 }
 
@@ -60,7 +61,7 @@ test('beginStoryStart repairs the story state for every chapter a start can clai
 });
 
 test('a chapter is only done when the thing it is about has happened', () => {
-  const base = { questStage: 10, luscia: {}, aftermath: {}, home: false };
+  const base = { questStage: QUEST_DONE, luscia: {}, aftermath: {}, home: false };
   assert.equal(chapterProgress(base).number, 1, 'nothing done yet is Chapter 1');
   assert.equal(chapterProgress({ ...base, luscia: { started: true } }).number, 2, 'reporting to Iven closes Chapter 1');
   // The second chapter needs both halves: the day after, and standing on your side's ground.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, moveCharacter, QUEST_DONE } from '../src/game-state.js';
 import { createCombat } from '../src/combat.js';
 import { RIDE } from '../src/riding.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES, riverCourses } from '../src/region-layout.js';
@@ -265,14 +265,14 @@ test('old saves keep the camp as they left it: scouted, accepted or cleared in L
     const weapons = createWeapons({ inventory }), journey = createJourney({ inventory, weapons });
     journey.start();
     const values = new Map(), storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
-    return { checkpoint: createRoadCheckpoint({ storage }), data: { version: 1, questStage: 10, journey: journey.snapshot(),
+    return { checkpoint: createRoadCheckpoint({ storage }), data: { version: 1, questStage: QUEST_DONE, journey: journey.snapshot(),
       inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })), weapons: weapons.snapshot(),
       journeyGathered: [], meadowCleared: false, heardDoom: false, lysaComplete: false, health: 100 } };
   };
   const paidQuest = createForestHideoutQuest({ inventory: { add: () => true } });
-  paidQuest.inspect(); paidQuest.begin({ questStage: 10 }); paidQuest.markCleared('forest-hideout'); paidQuest.recover(); paidQuest.turnIn();
+  paidQuest.inspect(); paidQuest.begin({ questStage: QUEST_DONE }); paidQuest.markCleared('forest-hideout'); paidQuest.recover(); paidQuest.turnIn();
   const acceptedQuest = createForestHideoutQuest({ inventory: { add: () => true } });
-  acceptedQuest.inspect(); acceptedQuest.begin({ questStage: 10 }); acceptedQuest.endEncounter('forest-hideout');
+  acceptedQuest.inspect(); acceptedQuest.begin({ questStage: QUEST_DONE }); acceptedQuest.endEncounter('forest-hideout');
   const scoutedQuest = createForestHideoutQuest({ inventory: { add: () => true } }); scoutedQuest.inspect();
   // Saves standing in the old camp in north Luscia: one from the 56 m world, two taken since the world grew.
   const oldCamp = { x: -456, z: 154 }, oldCampWorld = toWorld(oldCamp.x, oldCamp.z);

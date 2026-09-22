@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -213,7 +214,7 @@ test('The crossing is saved with the road, on either side, and nonsense is refus
   const journey = createJourney({ inventory, weapons });
   journey.start();
   const save = position => checkpoint.save({
-    version: 1, worldScale: 100, questStage: 10, journey: journey.snapshot(),
+    version: 1, worldScale: 100, questStage: QUEST_DONE, journey: journey.snapshot(),
     inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
     weapons: weapons.snapshot(), journeyGathered: [], meadowCleared: false, heardDoom: false,
     position, woodland: { version: 1, acornStatus: 'available', practiceHits: 2, practiceDodges: 1, acorns: [], sticks: [], fruits: [], discoveries: [],

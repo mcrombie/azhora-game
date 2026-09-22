@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -218,7 +219,7 @@ function fixture() {
   return {
     checkpoint: createRoadCheckpoint({ storage: memoryStorage() }),
     data: {
-      version: 1, worldScale: METRES_PER_HEX, questStage: 10, journey: journey.snapshot(),
+      version: 1, worldScale: METRES_PER_HEX, questStage: QUEST_DONE, journey: journey.snapshot(),
       inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
       weapons: weapons.snapshot(), journeyGathered: [], meadowCleared: false,
       position: { x: 3, z: -190 }, heardDoom: true, lysaComplete: true, health: 74,

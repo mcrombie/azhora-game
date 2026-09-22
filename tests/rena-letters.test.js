@@ -1,3 +1,4 @@
+import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
@@ -188,7 +189,7 @@ test('the road checkpoint keeps the letters, and rejects a save whose letters ar
   letters.take(LORN_ID, inventory);
   letters.deliver(HESTA_ID, inventory);
   const save = {
-    version: 1, worldScale: METRES_PER_HEX, questStage: 10, journey: journey.snapshot(),
+    version: 1, worldScale: METRES_PER_HEX, questStage: QUEST_DONE, journey: journey.snapshot(),
     inventory: inventory.items().map(id => ({ id, quantity: inventory.count(id) })),
     weapons: weapons.snapshot(),
     journeyGathered: [], meadowCleared: false, heardDoom: false, position: { x: -395, z: -70 },

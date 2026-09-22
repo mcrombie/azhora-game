@@ -32,6 +32,8 @@ test('first-shore save needs neither letter nor token and restores gathered site
 test('partial practice resumes but invalid lesson, gathering, camp and story data cannot replace a save',()=>{
   const {data,checkpoint}=fixture();data.questStage=2;data.inventory.push({id:'harbor-letter',quantity:1});data.woodland.practiceHits=1;
   assert.equal(checkpoint.save(data).ok,true);
+  // Stage 3 is the last step and refuses an unfinished lesson; 4 and 6 are off the end of a
+  // spine that is four long now, and are refused for that (src/game-state.js).
   const bad=[{...data,questStage:3},{...data,questStage:4},{...data,questStage:6},
     {...data,woodland:{...data.woodland,acorns:['acorn-1-1','acorn-1-1']}},
     {...data,woodland:{...data.woodland,sticks:['stick-8-1']}},

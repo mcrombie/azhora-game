@@ -269,7 +269,7 @@ test('the autopilot drives the host through a talk, paces dialogue, and stops it
 
 test('a stalled walk turns into a sidestep and a long stall gives control back', () => {
   const world = fakeWorld();
-  const state = snapshot({ questStage: 8, position: { x: 0, z: -12 } });
+  const state = snapshot({ questStage: QUEST_DONE, position: { x: 0, z: -12 } });
   const pilot = createAutopilot({ world, read: () => state, act: {}, options: { stuckAfter: .5, idleLimit: 3 } });
   pilot.start();
   const before = pilot.step(.1).move;
