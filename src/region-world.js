@@ -549,7 +549,13 @@ export const regionNpcPositions = Object.freeze({
   // on the Luscia side, and when six paces of the span went into the river (src/world-regions.js)
   // that put the man who mends the bridge on the far side of his own break, reachable only by
   // swimming past him. A carpenter stages his timber where he can carry it from.
-  'crossing-keeper': at(-334, 88),        // Chip, at the near end of the Caloss bridge
+  // Level ground, measured: he stood three metres up the bridge abutment at at(-334, 88), and
+  // talk range is a 3-D distance - a traveler a step away from him was 3.47 m off and could
+  // not speak to him at all. Here the ground around him does not move by a centimetre.
+  // Back from the bank as well as level. At at(-341, 90) he was close enough to the channel
+  // that the company's stopped formation put a man in the Caloss - which is water now, and
+  // was not when the stop was placed (tests/nobody-sealed-in.test.js).
+  'crossing-keeper': at(-343, 72),        // Chip, on the flat short of the Caloss bridge
   'ridge-keeper': at(-372, 131),          // Sava, at her shrine on the Luscia side
   'relay-clerk': townPoint(5, -6),        // Iven, at the army relay post on Nothom's square
   // Nothom's people, around the square and the timber yard.

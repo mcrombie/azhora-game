@@ -238,7 +238,7 @@ export const LONG_ROAD_STOPS = freeze([
   stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: 'the-toll-house', point: { x: -513.43, z: 94.15 },
     reads: 'skills', done: state => learned(state, 'geology'),
     title: 'Silas Garrow at the Toll House stream', detail: 'A cart of marl on the road side of the house, and a stream cut that is a geologist’s section. Ironstone out of a furrow.' }),
-  stop({ id: 'hollis-bridge', leg: 5, kind: 'spine', npc: 'crossing-keeper', system: 'the-bridge', subregion: 'caloss-crossing', point: { x: -605.1, z: 138.2 },
+  stop({ id: 'hollis-bridge', leg: 5, kind: 'spine', npc: 'crossing-keeper', system: 'the-bridge', subregion: 'caloss-crossing', point: { x: -614.1, z: 122.2 },
     reads: 'journey', done: state => !!state?.journey?.bridgeComplete,
     title: 'Chip, and the bridge', detail: 'He speaks Luscian Mittoli, which is none of Chris’s three. The aside under the line is empty for the first time, and Chris says so, and then goes on ahead.' }),
 ]);
