@@ -684,8 +684,9 @@ function init() {
      * left - so company plus the side's own men plus the fill can never pass `MAX_ALLIES`, and a
      * traveler with six friends is handed nobody and fights today's battle to the digit.
      *
-     * They stand in the file because the file is the thing being filled, and they carry no level
-     * and no toughness, so they are the plain soldier the ally kind already is.
+     * They stand in the file because the file is the thing being filled, and they carry the one
+     * pair of numbers `FILL_ARMS` gives them - trained a little, and strictly weaker than the
+     * weakest man who ever chose to walk with him.
      */
     if(!isArmyBattle(config.id))return file;
     const fill=fillFor({side:armySide(),walking:file.length,room:room-file.length});

@@ -14,8 +14,8 @@
  *     with him and his commander assigns the difference; six or more and nothing is added, so a
  *     player who gathered a company fights the battle exactly as it is today, to the digit.
  *   **Ordinary soldiers, of the side he signed with**, and the same ally kind the battle's own
- *     side allies already are. They carry no level and no toughness of their own, so they are the
- *     kind's plain 90 health - **weaker than companions, on purpose**, so friends still matter.
+ *     side allies already are. They are **trained a little** - `FILL_ARMS`, level 15 and toughness
+ *     12 - and **strictly weaker than the weakest companion**, so friends still matter.
  *   **They are not companions.** No regard, no lessons, no journal line, no file behind him
  *     afterwards, no death card, nothing owed to the Marshal's register, and nothing saved. They
  *     exist for the length of one fight and are forgotten with it.
@@ -39,6 +39,35 @@ export const FILE_FLOOR = 6;
 
 /** The kind the battle's own side allies already are, so the fill is not a different creature. */
 export const FILL_KIND = 'legionary';
+
+/**
+ * **The assigned men are trained a little** (the user, 2026-09-21, docs/design-answers.md).
+ *
+ * They used to carry nothing of their own, which made them the ally kind's plain ninety health,
+ * and the hunter measured what that was worth: a lone traveler with six of them won the border
+ * battle **21 of 40** at half health, with **five runs in forty still going at the two-minute
+ * cap** - a stalemate in a battle the chapter expects to last half a minute. The hunter drove both
+ * levers over forty seeds a row (docs/known-issues.md, "the lever that would remove it"):
+ *
+ * | the assigned man is | won | health | assigned dead | stalemates |
+ * |---|---|---|---|---|
+ * | plain 90 | 21/40 | 50 % | 6.0 of 6 | **5** |
+ * | level 10 / toughness 8 | 28/40 | 58 % | 6.0 of 6 | 0 |
+ * | **level 15 / toughness 12** | **32/40** | **59 %** | **5.9 of 6** | **0** |
+ * | level 20 / toughness 17 (= Altun's own) | 34/40 | 61 % | 5.8 of 6 | 0 |
+ * | level 40 / toughness 34 (= Jerry's) | 40/40 | 94 % | 3.1 of 6 | 0 |
+ *
+ * **Fifteen and twelve** is the row the user took: it keeps six men and keeps the cost - 5.9 of the
+ * 6 still die - it removes every stalemate, and it leaves the traveler at 59 % health having done
+ * all of the fighting himself. And it keeps an assigned stranger **strictly weaker than the weakest
+ * companion**, which is the whole of what this module is for: Altun is level 20 / toughness 17, and
+ * giving the fill 20/17 would make a man the army handed you exactly as good as a man who chose to
+ * walk with you. That law is pinned in tests/file-fill.test.js against `MERCENARY_ARMS` itself, so
+ * a future companion weaker than Altun trips it rather than passing quietly.
+ *
+ * Levels are the only thing here: nothing about any fight's own level moves.
+ */
+export const FILL_ARMS = freeze({ level: 15, toughness: 12 });
 
 /** The army's battles: the border, and every day after it. Nothing else fills anybody's file. */
 export const ARMY_BATTLE_IDS = freeze([BORDER_ENCOUNTER_ID,
@@ -75,6 +104,7 @@ export function fillFor({ side = 'empire', walking = 0, room = Infinity, floor =
   const look = FILL_LOOK[side] ?? FILL_LOOK.empire;
   return freeze(Array.from({ length: fillCount({ walking, room, floor }) }, (_, index) => freeze({
     id: `file-fill-${index + 1}`, name: look.name, kind: FILL_KIND,
+    level: FILL_ARMS.level, toughness: FILL_ARMS.toughness,
     model: { ...look.model },
   })));
 }
