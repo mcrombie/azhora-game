@@ -61,7 +61,7 @@ import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight }
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
 import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
-import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from './aftermath-chapter.js';
+import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFTS, giftOwed, GIFT_LINES, CAP_LINES } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
 import { occupationControl, isOut, stakeOf } from './occupation.js';
 import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
@@ -3075,27 +3075,35 @@ function init() {
     return mustered;
   }
   /**
-   * **The fine steel your side owes you for the border** (`SIDE_GIFT`, src/aftermath-chapter.js;
-   * the gear table's tier 4 is "officers, and gifts from a side you have served"). The first man
-   * who speaks to him after that victory is the captain who rallies him for the day after, and he
-   * hands it over in his own voice, once, before he gives him the next piece of work.
+   * **The fine steel your side owes you for the border** (`SIDE_GIFTS`, src/aftermath-chapter.js;
+   * the gear table's tier 4 is "officers, and gifts from a side you have served").
+   *
+   * **Two pieces, at the two moments the side has you in front of it.** The coat comes at the
+   * rally, from the captain who is about to give you the next piece of work, before he gives it.
+   * The cap comes at the debrief, **from whoever is counting out the pay** (the user, 2026-09-21:
+   * "a second gift ... when the traveler's side pays him after the day-after fight, from whoever
+   * already pays him in that scene"), which is the chapter's `principalId` and is not always the
+   * same man. One table, one rule, and the stage picks both the piece and the speaker.
    *
    * **Nothing new is saved.** Nothing else in the game makes tier-4 armour, no smith sells above
-   * steel, and nothing anywhere takes a piece off again — so the coat on his back *is* the record
-   * that it was given, and it is already in the gear snapshot. `sideGiftOwed` asks what he is
-   * wearing, so a second walk up to the same captain says nothing more about it.
+   * steel, and nothing anywhere takes a piece off again — so the fine steel on him *is* the
+   * record that it was given, and it is already in the gear snapshot. `giftOwed` asks what he is
+   * wearing on that place, so a second walk up to the same man says nothing more about it.
    */
   function giveSideGift(npc){
     const chapter=aftermath.spec;
-    if(!chapter||npc.id!==chapter.commanderId||aftermath.view().stage!=='rally')return [];
-    const lines=GIFT_LINES[chapter.commanderId];
-    if(!lines||!sideGiftOwed(gear.wearing(SIDE_GIFT.slot)))return [];
-    const had=gear.wearing(SIDE_GIFT.slot);
-    const worn=gear.wear(SIDE_GIFT.slot,{weight:SIDE_GIFT.weight,tier:SIDE_GIFT.tier});
+    if(!chapter)return [];
+    const stage=aftermath.view().stage;
+    const speaker=stage==='rally'?chapter.commanderId:stage==='report'?chapter.principalId:null;
+    if(!speaker||npc.id!==speaker)return [];
+    const gift=SIDE_GIFTS[stage],lines=stage==='rally'?GIFT_LINES[speaker]:CAP_LINES[speaker];
+    if(!gift||!lines||!giftOwed(gift,gear.wearing(gift.slot)))return [];
+    const had=gear.wearing(gift.slot);
+    const worn=gear.wear(gift.slot,{weight:gift.weight,tier:gift.tier});
     if(!worn.ok)return [];
     audio?.effect('success');
-    toast(`${pieceName(SIDE_GIFT)} · given, not sold. It turns ${Math.round(worn.turns*100)} in a hundred off a blow.`
-      +`${had?` He takes the old ${pieceName({slot:SIDE_GIFT.slot,...had}).toLowerCase()} off your hands.`:''}`,
+    toast(`${pieceName(gift)} · given, not sold. It turns ${Math.round(worn.turns*100)} in a hundred off a blow.`
+      +`${had?` He takes the old ${pieceName({slot:gift.slot,...had}).toLowerCase()} off your hands.`:''}`,
       chapter.side==='empire'?'THE ARMY ARMS YOU IN FINE STEEL':'THE REPUBLIC ARMS YOU IN FINE STEEL');
     saveRoad(false);
     return [...lines];
