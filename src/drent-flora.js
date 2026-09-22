@@ -416,6 +416,11 @@ export function createDrentFlora(scene, world, { avoid = [], random = null } = {
       // The water plants stand in mud the traveler cannot walk into; everything
       // else must be somewhere a person could kneel.
       if (!stand.water && !canStand(x, z, world, .5)) continue;
+      // An authored stand is placed on purpose, but not on top of somebody's feet or on a thing
+      // the road is read at: a bramble of this patch landed inside the Caloss Gate notice's own
+      // two metres and ate the F that should have read it, so the end of the tutorial pointed
+      // nowhere at all (found by the story smoke, 2026-09-22). Gathering reaches 2.2 m.
+      if (crowded(x, z, avoid, 3)) continue;
       add(stand.species, x, z, { id: stand.count > 1 ? `${stand.id}-${n + 1}` : stand.id, stand: stand.id });
     }
   }

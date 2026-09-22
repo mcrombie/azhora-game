@@ -1162,7 +1162,10 @@ function init() {
   function placeBatman(){const y=world.heightAt(BATMAN_PERCH.x,BATMAN_PERCH.z)+BATMAN_PERCH.lift;
     batman.group.position.set(BATMAN_PERCH.x,y,BATMAN_PERCH.z);batman.group.rotation.y=BATMAN_PERCH.yaw;}
   placeBatman();
-  const flora=createDrentFlora(scene,world,{avoid:Object.values(world.npcPositions)});
+  // Everywhere a person stands, and the one place on the road that is read rather than talked
+  // to: a bramble inside the Caloss Gate notice's own two metres ate the F that should have
+  // read it, so the end of the tutorial pointed nowhere (found by the story smoke, 2026-09-22).
+  const flora=createDrentFlora(scene,world,{avoid:[...Object.values(world.npcPositions),{x:world.border.x,z:world.border.z}]});
   let currentPlant=null,jimsonClock=0;
   // Geology: Silas Garrow's lesson, and the stones of Drent's coast (src/drent-stones.js).
   const geology=createGeology({skills});
@@ -5887,14 +5890,17 @@ function init() {
         // Distance, not a compass point: the landing faces west up the pier now, so W walks in -x.
         {const from={x:player.group.position.x,z:player.group.position.z};press('KeyW');
           await until(()=>Math.hypot(player.group.position.x-from.x,player.group.position.z-from.z)>1,'WASD did not move');release('KeyW');}
-        // He walks you up the pier, because he is the only one who can tell you what Mara says.
+        // **Nobody walks with you up the pier.** (The user, 22 September 2026: they should never
+        // follow without being asked first.) He used to escort the traveler to the letter because
+        // in hard mode he is the only one who can say what Mara is saying; normal mode is all
+        // English and the escort is switched off (LANDING_ESCORT, src/mercenaries.js), so he
+        // lands, walks his own road to the muster, and is asked with "Walk Drent with me."
         {const mate=npcById.get(landingMateId());
-          const gap=()=>Math.hypot(mate.actor.group.position.x-player.group.position.x,mate.actor.group.position.z-player.group.position.z);
-          assert(mate.escorting,'The man off the boat did not set off up the pier with you');
+          assert(!mate.escorting,'The man off the boat is walking with you unasked');
           for(const spot of [[18,29],[12,29],[6,28.6]]){warp(spot[0],spot[1]);await frames(24);
-            assert(gap()<INTERPRETER.range,`He fell ${gap().toFixed(1)} m behind at ${spot[0]}, ${spot[1]}`);
-            assert(canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'He walked off the pier into the water');}
-          assert(!mateSaidGoodbye,'He left before the letter was handed over');}
+            assert(!mate.escorting,`He started escorting at ${spot[0]}, ${spot[1]}`);
+            assert(canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'He is standing in the water');}
+          assert(longRoad.released,'He is not on his own road: something made him a companion unasked');}
         warp(0,19);await frames();assert(questStage===1,'Arrival quest failed');
         // Measure travel against simulation time so busy machines do not affect
         // the comparison. Tab must run at Shift speed and never move UI focus.
@@ -5996,7 +6002,7 @@ function init() {
         assert(discoveries.has('northTrail')&&discoveries.has('border'),'Northern landmarks missing');
         yaw=Math.PI/2;press('KeyW');await until(()=>player.group.position.x<world.border.barrierX-1,'Could not cross the open gate');release('KeyW');
         assert(world.regionAt(player.group.position.x,player.group.position.z).id===1,'Beyond the gate the road stays in Drent');
-        warp(world.border.x,world.border.z);await frames(2);tap('KeyF');assert(mode==='dialogue'&&$('speech').textContent.includes('Avrel'),'Border notice did not explain the onward road');finishDialogue();
+        warp(world.border.x,world.border.z);await frames(2);tap('KeyF');assert(mode==='dialogue'&&$('speech').textContent.includes('Avrel'),`Border notice did not explain the onward road - something else took the key (mode ${mode}, npc ${currentNPC?.id??'none'}, tree ${currentTree?.species??'none'}, plant ${currentPlant?.id??'none'}, stone ${currentStone?.id??'none'}, mushroom ${currentMushroom?.id??'none'})`);finishDialogue();
         const pick=async acorn=>{warp(acorn.x,acorn.z);await frames(2);assert(currentAcorn?.id===acorn.id,'Acorn pickup not reachable');tap('KeyF');assert(woodlandLife.state().acorns.find(a=>a.id===acorn.id).collected,'F failed to gather acorn');};
         const sites=woodlandLife.state().acorns;assert(sites.length===24,'Woodland pickup count changed');
         await pick(sites[0]);assert(inventory.count('acorn')===1&&acornQuest.status==='available','Acorns cannot be gathered before accepting the favor');
