@@ -44,8 +44,38 @@ const SCRIP_NOTE = 'a note for forty more when the Republic has a treasury that 
  */
 export const SIDE_GIFT = Object.freeze({ slot: 'body', weight: 'medium', tier: 4 });
 
-/** Whether the side still owes it, asked of what he has on that place. */
-export const sideGiftOwed = worn => (worn?.tier ?? -1) < SIDE_GIFT.tier;
+/**
+ * **And a fine steel cap with the pay** (the user, 2026-09-21: "a second gift ... when the
+ * traveler's side pays him after the day-after fight, from whoever already pays him in that
+ * scene"). The coat comes at the rally, before the work; this comes at the debrief, with the
+ * forty or sixty copper, from whoever is counting it out.
+ *
+ * **Medium again, and the arithmetic is the coat's own, measured on the gear table.** A head
+ * piece at tier 4 turns .096 light, .16 medium, .224 heavy. The best head piece on any board the
+ * traveler has stood at before Ambron is a bog-iron cap at .115 for 130 copper, so a *fine steel*
+ * light cap would turn less than a thing he can buy - a reward weaker than a shop item is not a
+ * reward. Heavy is legal at this tier and would turn .224, but it takes a quarter off the dodge
+ * and doubles the wind swimming spends, which is the trap the coat refused for the same reason.
+ *
+ * Medium is the one that costs him nothing new: **he is already wearing a medium coat**, so the
+ * tenth off his dodge is a tenth he is already paying and the cap adds no penalty at all. The two
+ * together turn .32 of every blow - a third - against `MOST_TURNED` of a half.
+ *
+ * Nothing new is saved, for the coat's own reason: nothing else in the game makes tier-4 armour,
+ * so *wearing fine steel on that place* is the record, and it is already in the gear snapshot.
+ */
+export const SIDE_CAP = Object.freeze({ slot: 'head', weight: 'medium', tier: 4 });
+
+/**
+ * What the side owes at each stage of the day after: the coat when you rally to your commander,
+ * the cap when you are paid. Nothing is owed at any other stage, and there is no third.
+ */
+export const SIDE_GIFTS = Object.freeze({ rally: SIDE_GIFT, report: SIDE_CAP });
+
+/** Whether the side still owes a piece, asked of what he has on that place. */
+export const giftOwed = (gift, worn) => (worn?.tier ?? -1) < gift.tier;
+/** The coat's own question, kept because the host and its test both ask it by name. */
+export const sideGiftOwed = worn => giftOwed(SIDE_GIFT, worn);
 
 /**
  * What each captain says as he hands it over, in the voice he already has: Brulan writes things
@@ -59,6 +89,30 @@ export const GIFT_LINES = Object.freeze({
   'aftermath-captain': Object.freeze([
     'Wait. This first. We took it off an imperial officer at the stockade this morning, and not one of my farmers can wear it without looking like a thief. Fine steel, and it is yours.',
     'The Republic pays in copper and in paper. That is neither. That is what a side gives the sword that turned its first battle.',
+  ]),
+});
+
+/**
+ * And what the man counting out the pay says as he adds the cap to it, in the voice he already
+ * has: Brulan writes things off and writes them down, the Marshal has lost a field and is exact
+ * about what that is worth, and the envoy prefers to pay rather than to vote thanks.
+ *
+ * Keyed by `principalId` rather than by the commander, because the debrief is not always the same
+ * man: on the Empire's won day Brulan gives both, and everywhere else the coat and the cap come
+ * from two different people.
+ */
+export const CAP_LINES = Object.freeze({
+  'aftermath-tribune': Object.freeze([
+    'Before the coin. There is a cap that goes with that coat, and the same ledger has already lost it. Put it on and stop making me write.',
+    'A man the Marshal wants to look at should arrive with his head on. Fine steel, both pieces, and nothing on paper about either.',
+  ]),
+  [AFTERMATH_LEGATE_ID]: Object.freeze([
+    'One more thing, and then the coin. Take the cap. It was an officer’s this morning and he has no further use for it.',
+    'You are carrying my account of a lost field to the capital. I would rather the road did not finish what the Coalition started.',
+  ]),
+  'aftermath-envoy': Object.freeze([
+    'Hard coin, and this with it: a cap of fine steel, off the same quartermaster’s cart as everything else in this tent.',
+    'The council would vote you a commendation and call it generous. I would rather you kept your skull. Wear it.',
   ]),
 });
 
@@ -319,9 +373,10 @@ export function createAftermathChapter({ onEvent = () => {} } = {}) {
 export function aftermathConversation(npc, context) {
   // `fill` is what his commander says about the ordinary soldiers the army is putting in beside
   // him for this day's fight, or nothing when it is not happening (src/file-fill.js). `gift` is
-  // the fine steel his side owes him for the border, said once and nothing after (`SIDE_GIFT`).
-  // Both are built by the **host**, because only the host knows who is walking with him today
-  // and what he already has on his back.
+  // the fine steel his side owes him, said once and nothing after: **the coat at the rally and
+  // the cap with the pay** (`SIDE_GIFTS`), which is why both the commander's branch and the
+  // debrief take it. Both are built by the **host**, because only the host knows who is walking
+  // with him today and what he already has on his back.
   const { aftermath, openDialogue, closeDialogue, act, fill = [], gift = [] } = context;
   const chapter = aftermath.spec, current = aftermath.view().stage;
   if (!chapter) return false;
@@ -334,7 +389,8 @@ export function aftermathConversation(npc, context) {
     return true;
   }
   if (npc.id === chapter.principalId && current === 'report') {
-    openDialogue(npc, chapter.debrief, null, 'Step back', { choices: [...option('close-aftermath'), leave] });
+    // The cap comes first for the coat's own reason: a man is armed before he is paid and sent on.
+    openDialogue(npc, [...gift, ...chapter.debrief], null, 'Step back', { choices: [...option('close-aftermath'), leave] });
     return true;
   }
   if (npc.id === chapter.principalId && current === 'complete') {

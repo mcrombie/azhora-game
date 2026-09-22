@@ -4,7 +4,7 @@ import { CHAPTERS } from '../src/campaign.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { AFTERMATH_VARIANTS, AFTERMATH_IDS, AFTERMATH_NPCS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, AFTERMATH_LEGATE_ID, aftermathFor, aftermathEncounter,
-  createAftermathChapter, validateAftermathSnapshot, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from '../src/aftermath-chapter.js';
+  createAftermathChapter, validateAftermathSnapshot, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES, CAP_LINES } from '../src/aftermath-chapter.js';
 import { armourOf, tierSoldAt, tiernamed, validPiece, WEIGHTS, NAMED_TIERS, TIERS } from '../src/gear.js';
 import { SELLER_TIERS } from '../src/smith.js';
 import { regionLevel } from '../src/region-levels.js';
@@ -221,20 +221,28 @@ test('your side arms you in fine steel for the border, once, from whoever rallie
     // Said once: the host stops handing it over, and the same conversation is the orders alone.
     assert.equal(aftermathConversation({ id: spec.commanderId }, { ...context, gift: [] }), true);
     assert.deepEqual(opened.at(-1).lines, spec.orders);
-    // And never at the debrief, whoever the principal is.
+    // **And the debrief has a gift of its own**: the fine steel cap that comes with the pay (the
+    // user, 2026-09-21). The scene says whatever the host hands it and decides nothing itself, so
+    // the coat is not repeated there - the host stops offering it - and the cap is.
     aftermath.act('begin-assault'); aftermath.winEncounter(spec.encounterId);
-    assert.equal(aftermathConversation({ id: spec.principalId }, context), true);
-    assert.deepEqual(opened.at(-1).lines, spec.debrief, `${id} repeats the gift at the debrief`);
+    assert.equal(aftermathConversation({ id: spec.principalId }, { ...context, gift: [] }), true);
+    assert.deepEqual(opened.at(-1).lines, spec.debrief, `${id} says something over the pay it was not handed`);
+    const cap = [...CAP_LINES[spec.principalId]];
+    assert.equal(aftermathConversation({ id: spec.principalId }, { ...context, gift: cap }), true);
+    assert.deepEqual(opened.at(-1).lines, [...cap, ...spec.debrief], `${id} drops the cap the host handed it`);
   }
 });
 
-test('the host gives the fine steel at the rally and nowhere else, and nothing new is saved', () => {
+test('the host gives the fine steel at the two moments the side has him, and nothing new is saved', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  // Only the captain who is rallying him, and only while he is rallying.
-  assert.match(main, /if\(!chapter\|\|npc\.id!==chapter\.commanderId\|\|aftermath\.view\(\)\.stage!=='rally'\)return \[\]/);
-  // The coat on his back is the record, asked of the gear that already saves.
-  assert.match(main, /!sideGiftOwed\(gear\.wearing\(SIDE_GIFT\.slot\)\)/);
-  assert.match(main, /gear\.wear\(SIDE_GIFT\.slot,\{weight:SIDE_GIFT\.weight,tier:SIDE_GIFT\.tier\}\)/);
+  // **The stage picks the piece and the speaker**: the captain who rallies him gives the coat,
+  // and whoever counts out the pay gives the cap. Nowhere else, and nobody else.
+  assert.match(main, /const speaker=stage==='rally'\?chapter\.commanderId:stage==='report'\?chapter\.principalId:null;/);
+  assert.match(main, /if\(!speaker\|\|npc\.id!==speaker\)return \[\];/);
+  assert.match(main, /const gift=SIDE_GIFTS\[stage\],lines=stage==='rally'\?GIFT_LINES\[speaker\]:CAP_LINES\[speaker\];/);
+  // The fine steel on him is the record, asked of the gear that already saves.
+  assert.match(main, /!giftOwed\(gift,gear\.wearing\(gift\.slot\)\)/);
+  assert.match(main, /gear\.wear\(gift\.slot,\{weight:gift\.weight,tier:gift\.tier\}\)/);
   assert.match(main, /gift:giveSideGift\(npc\)/, 'and the scene is handed it the way it is handed the file fill');
   // Nothing anywhere takes a piece of armour off again, which is what makes the record permanent.
   assert.ok(!/gear\.takeOff\(/.test(main), 'the host can take armour off now, so wearing it no longer proves it was given');

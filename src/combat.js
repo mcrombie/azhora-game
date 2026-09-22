@@ -17,7 +17,7 @@ const ENEMY_CONTACT = .27;
 const ENEMY_RECOVERY = 1.35;
 // Each enemy kind has its own pace. Goblins keep the original timings; wolves
 // close faster, bite sooner and hit a little lighter.
-const ENEMY_KINDS = Object.freeze({
+export const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
   // A trained man with a blade and a shield, and nothing like a goblin. Four optional fields make the
@@ -51,7 +51,32 @@ const ENEMY_KINDS = Object.freeze({
   // (tests/amod-ogre.test.js), and a lighter ogre buys that by throwing himself further
   // instead of by standing further away. The timing is untouched: slow to start, slow to stop.
   ogre: Object.freeze({ tell: 1.18, attack: .44, contact: .2, recovery: 1.3, damage: 52, speed: 1.45, engage: 3.3, reach: 3.7, lunge: 8.6,
-    arc: Math.PI * .4, aimLock: .55, standoff: 2.2, stagger: false, knockback: .2 }),
+    arc: Math.PI * .4, aimLock: .55, standoff: 2.2, stagger: false, knockback: .2,
+    /**
+     * **A big slow creature charges** (the user, 2026-09-21). Kept out of reach for a few
+     * seconds, it makes one short fast rush with a tell as clear as its own swing, which a step
+     * aside beats. It keeps Mallec a timing fight instead of a creature you can simply walk
+     * away from: his `speed` is 1.45 and a man walks backwards at 4.2, so without this a bow
+     * took him 24 times in 24 without a blow landing (docs/known-issues.md, round 5).
+     *
+     * **It is a kind's property, not Mallec's**, so the next slow heavy thing gets it by
+     * writing these numbers and nothing else. Every field is its own, because a charge is not
+     * the creature's swing done faster:
+     *   `from`     how far out the target counts as out of reach. Comfortably past `engage`, so
+     *              a step back inside a melee is not a charge;
+     *   `after`    how long it must stay there, unbroken. A dodge that opens the gap for half a
+     *              second is not staying away;
+     *   `tell`     the telegraph, which is the whole of the counter. `aimLock` still applies,
+     *              so he follows a dodge thrown early and is beaten by one thrown late;
+     *   `arc`      **narrow**, because the counter is a step aside. His swing takes seventy-two
+     *              degrees; a rush in a straight line takes twenty-nine, and three metres of
+     *              sidestep at the far end of it is outside that;
+     *   `speed`    fast enough to catch a man who runs rather than steps aside, which is what
+     *              makes it worth telegraphing at all.
+     */
+    charge: Object.freeze({ from: 5, after: 2.2, tell: .8, attack: .95, contact: .6, speed: 14,
+      reach: 4.2, arc: Math.PI * .16, recovery: 1.8 }),
+  }),
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
@@ -126,6 +151,15 @@ export function fightBox(encounter) {
   return { minX: Math.min(box.minX, c.x - 12), maxX: Math.max(box.maxX, c.x + 12), minZ: Math.min(box.minZ, c.z - 21), maxZ: Math.max(box.maxZ, c.z + 18) };
 }
 const insideBox = (box, p) => p.x >= box.minX && p.x <= box.maxX && p.z >= box.minZ && p.z <= box.maxZ;
+
+/**
+ * **The fight's outer limit.** Forty-five metres from the centre is the leash a traveler who
+ * walks out of a fight is caught by, and it has been that since the first encounter was written.
+ * It is spelled here rather than typed twice because **the chase uses the same number**: enemies
+ * that leave their own ground to come after an archer stop exactly where a retreat begins, and
+ * there must not be a second radius for anybody to tune out of step with this one.
+ */
+const LEASH = 45;
 
 function encounterConfig(config) {
   if (!config || typeof config !== 'object') return null;
@@ -287,6 +321,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     return true;
   }
+  /** Past the fight's own line of retreat, along the axis it is laid on and the way it runs. */
+  const beyondTheLine = p => (lastEncounter.retreatSign ?? 1) * (p[lastEncounter.retreatAxis] - lastEncounter.retreatLine) > 0;
+  /**
+   * **Outside the fight altogether**: past its line, or past the leash from its centre. It is
+   * the traveler's own retreat test with the first encounter's exemption taken out, because that
+   * exemption is about not ending Tidehaven's little fight by accident and has nothing to say
+   * about how far a goblin will follow somebody.
+   */
+  const outsideTheFight = p => beyondTheLine(p) || distance(p, lastEncounter.center) > LEASH;
   let hurtProtection = 0;
   let dodgeDirection = { x: 0, z: 1 };
   let nextAttackerAt = 0;
@@ -991,10 +1034,24 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   function steerEnemy(enemy, target, step, separation = true) {
     const yaw = Math.atan2(target.x - enemy.x, target.z - enemy.z);
     const offsets = [0, .45, -.45, .9, -.9, 1.4, -1.4];
+    /**
+     * **They leave their own ground to come after an archer** (the user, 2026-09-21), and never
+     * further than the fight's own outer limit; past that it is a retreat, as it already is.
+     *
+     * The arena was drawn for men with swords and it bounded the enemy without bounding the
+     * traveler, so a bow carrying thirty-four metres could be fired from twelve metres across a
+     * box eight metres wide: the hunter won the border battle alone and untouched, 304 arrows in
+     * seven minutes, with the nearest living soldier stuck 3.8 m away (docs/known-issues.md).
+     *
+     * **While what they are steering at is on the arena the bound is the arena**, to the metre -
+     * which is what keeps every melee already measured the melee it was, and it is the whole of
+     * the condition below.
+     */
+    const arena = fightBox(lastEncounter), loose = !insideBox(arena, target);
     for (const offset of offsets) {
       const x = enemy.x + Math.sin(yaw + offset) * step;
       const z = enemy.z + Math.cos(yaw + offset) * step;
-      if (!insideBox(fightBox(lastEncounter), { x, z }) || !canStand(x, z, world, .43)) continue;
+      if (!(insideBox(arena, { x, z }) || (loose && !outsideTheFight({ x, z }))) || !canStand(x, z, world, .43)) continue;
       if (separation && state.enemies.some(other => {
         if (other === enemy || !other.active) return false;
         // A lunge can briefly overlap a neighbor: allow movement that opens that gap,
@@ -1027,8 +1084,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (enemy.kind === 'dummy' || state.phase !== 'active') return;
     const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
+    // A charge has its own tell, its own rush and its own narrow lane; everything else about it
+    // is the kind's own swing, read from the same fields in the same order.
+    const rush = enemy.charging ? profile.charge : null;
     if (enemy.action === 'windup') {
-      enemy.progress = clamp(timers.actionTime / profile.tell, 0, 1);
+      const tell = rush ? rush.tell : profile.tell;
+      enemy.progress = clamp(timers.actionTime / tell, 0, 1);
       // Aim is locked for the whole tell; a sidestep or dodge can beat the actual strike.
       // A kind with an `aimLock` instead keeps turning until that much of the tell has
       // gone by, and only then commits: a dodge thrown the moment the arc appears is
@@ -1039,31 +1100,35 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         const aim = tracked ?? position;
         enemy.yaw += angleDifference(Math.atan2(aim.x - enemy.x, aim.z - enemy.z), enemy.yaw) * Math.min(1, dt * 5);
       }
-      if (timers.actionTime >= profile.tell) {
+      if (timers.actionTime >= tell) {
         enemy.action = 'attack';
         enemy.progress = 0;
-        timers.actionTime -= profile.tell;
+        timers.actionTime -= tell;
         timers.hitApplied = false;
       }
       return;
     }
     if (enemy.action === 'attack') {
-      enemy.progress = clamp(timers.actionTime / profile.attack, 0, 1);
+      const duration = rush ? rush.attack : profile.attack, contact = rush ? rush.contact : profile.contact;
+      enemy.progress = clamp(timers.actionTime / duration, 0, 1);
       // A committed lunge carries the strike forward, but stops short of standing
-      // inside whoever it is aimed at: a creature with reach does not need to.
-      if (timers.actionTime <= profile.contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
-        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * profile.lunge, Math.cos(enemy.yaw) * dt * profile.lunge, world);
-      if (!timers.hitApplied && timers.actionTime >= profile.contact) {
+      // inside whoever it is aimed at: a creature with reach does not need to. A rush is the
+      // same movement with the charge's own speed under it, and it stops the same way.
+      if (timers.actionTime <= contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
+        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), Math.cos(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), world);
+      if (!timers.hitApplied && timers.actionTime >= contact) {
         timers.hitApplied = true;
         // The strike lands on whoever the tell was aimed at: the traveler, or an ally still standing.
         const aimedAlly = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
         const struckPoint = aimedAlly ?? position;
-        if (distance(enemy, struckPoint) <= profile.reach && facing(enemy, struckPoint, enemy.yaw, profile.arc ?? Math.PI * .25)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
+        const reach = rush ? rush.reach : profile.reach, arc = rush ? rush.arc : (profile.arc ?? Math.PI * .25);
+        if (distance(enemy, struckPoint) <= reach && facing(enemy, struckPoint, enemy.yaw, arc)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
       }
-      if (timers.actionTime >= profile.attack && state.phase === 'active') {
+      if (timers.actionTime >= duration && state.phase === 'active') {
         enemy.action = 'idle';
         enemy.progress = 0;
-        timers.cooldown = profile.recovery;
+        enemy.charging = false;
+        timers.cooldown = rush ? rush.recovery : profile.recovery;
         nextAttackerAt = time + .55;
       }
       return;
@@ -1078,12 +1143,33 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // Most kinds take turns; soldiers (`pack`) press two at a time.
     if (dist <= profile.engage && timers.cooldown <= 0 && swinging < (profile.pack ?? 1) && (time >= nextAttackerAt || swinging > 0)) {
       enemy.action = 'windup';
+      enemy.charging = false;
       enemy.yaw = targetYaw;
       enemy.progress = 0;
       timers.actionTime = 0;
       timers.targetId = focus.ally?.id ?? null;
       emit('windup', { id: enemy.id, targetId: timers.targetId });
       return;
+    }
+    /**
+     * **And a creature that charges, charges** (the user, 2026-09-21). The dwell is unbroken:
+     * `awayFor` is counted only here, in the one branch where it is neither swinging nor getting
+     * over a swing, and a single frame inside `from` puts it back to nought - so a step back in a
+     * melee is not a charge and a man who walks away is.
+     */
+    if (profile.charge) {
+      timers.awayFor = dist > profile.charge.from ? (timers.awayFor ?? 0) + dt : 0;
+      if (timers.awayFor >= profile.charge.after && timers.cooldown <= 0 && !someoneAttacking) {
+        timers.awayFor = 0;
+        enemy.action = 'windup';
+        enemy.charging = true;
+        enemy.yaw = targetYaw;
+        enemy.progress = 0;
+        timers.actionTime = 0;
+        timers.targetId = focus.ally?.id ?? null;
+        emit('windup', { id: enemy.id, targetId: timers.targetId, charge: true });
+        return;
+      }
     }
     const desiredDistance = Math.max(someoneAttacking ? 2.7 : 1.8, profile.standoff ?? 0);
     if (dist > desiredDistance) {
@@ -1093,7 +1179,28 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const c = lastEncounter.center, wide = !!focus.ally?.refuge, alongX = lastEncounter.retreatAxis === 'x';
       const box = wide ? fightBox(lastEncounter)
         : { minX: c.x - (alongX ? 16 : 8), maxX: c.x + (alongX ? 16 : 8), minZ: c.z - (alongX ? 8 : 16), maxZ: c.z + (alongX ? 8 : 16) };
-      const target = { x: clamp(aim.x, box.minX, box.maxX), z: clamp(aim.z, box.minZ, box.maxZ) };
+      /**
+       * **Shot from where they cannot reach, they come after you** (the user, 2026-09-21).
+       *
+       * An enemy after the traveler steers at a point clamped into the middle of its ground, and
+       * that clamp is the standoff: a man twelve metres across the arena was chased to a spot
+       * eight metres across it and no further, so the hunter won the border battle alone and
+       * untouched with 304 arrows over seven minutes and the nearest living soldier stuck 3.8 m
+       * away, unable to close (docs/known-issues.md, round 5).
+       *
+       * The trigger is the user's own words, and it is **reach** and not a box: if standing on
+       * the edge of its ground would still leave it out of reach of him, the ground is the wrong
+       * bound and it leaves the ground. Where the clamp was doing its job - keeping a fight in
+       * the middle of the arena while the traveler is somewhere a man can still be met - it is
+       * untouched, and a point already inside the box clamps to itself, so a melee fought on the
+       * fight's own ground does not move at all.
+       *
+       * Nothing bounds the chase but the fight's own outer limit, which `steerEnemy` applies and
+       * which is the same line a traveler retreats over: no second radius, for nobody to tune out
+       * of step with the first.
+       */
+      const clamped = { x: clamp(aim.x, box.minX, box.maxX), z: clamp(aim.z, box.minZ, box.maxZ) };
+      const target = distance(clamped, aim) <= profile.engage ? clamped : { x: aim.x, z: aim.z };
       const speed = profile.speed + (enemy.id === 'goblin-scout' ? .15 : 0);
       const amount = steerEnemy(enemy, target, Math.min(speed * dt, Math.max(0, dist - desiredDistance)));
       enemy.speed = amount / dt;
@@ -1309,8 +1416,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const step = Math.min(remaining, 1 / 120);
       remaining -= step;
       time += step;
-      if (state.phase === 'active' && ((lastEncounter.retreatSign ?? 1) * (position[lastEncounter.retreatAxis] - lastEncounter.retreatLine) > 0
-        || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > 45))) {
+      if (state.phase === 'active' && (beyondTheLine(position)
+        || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > LEASH))) {
         // Walking out of a bout is not a retreat and must never be reported as one: there is
         // nothing to catch your breath from and nobody held the ground without you.
         if (lastEncounter.bout) endBout('walked-away');

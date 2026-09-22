@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { createCombat, ENEMY_KINDS } from '../src/combat.js';
 import {
   createOgreToll, validateOgreSnapshot, OGRE_ENCOUNTER, OGRE_NPC, OGRE_TOLL, OGRE_BOUNTY,
   OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, ogreTopicLabel, ogreGreeting,
@@ -114,6 +116,78 @@ test('a player who reads the tell wins it, and the greedy and the panicky and th
   // Greed: a swing that cannot be cancelled, thrown on top of the tell.
   const greedy = play({ reaction: .9, jitter: .06, swings: 6, sideways: true, food: 0, greedy: true, seed: 5 });
   assert.equal(greedy.phase, 'defeated', 'trading a swing for a blow kills you');
+});
+
+/**
+ * **Mallec charges** (the user, 2026-09-21). His `speed` is 1.45 and a man walks backwards at
+ * 4.2, so before this he could not be made to fight at all: the hunter took him 24 times in 24
+ * with a bow, in 16.7 seconds, without a blow landing. Kept out of reach for a few seconds he now
+ * makes one short fast rush with a tell as clear as his swing, and **the counter is a step aside**.
+ *
+ * It is a property of his kind and not of him, so the next slow heavy thing gets it by writing
+ * the numbers; nothing here knows the word "Mallec".
+ */
+test('kept out of reach he charges, and the charge is beaten by stepping aside', () => {
+  const charge = ENEMY_KINDS.ogre.charge;
+  assert.ok(charge, 'the ogre kind carries a charge, and it is a kind’s property');
+  // A kind's property, not one creature's: nothing else has one yet, and nothing in the rule
+  // names him. The next slow heavy thing gets it by writing these numbers.
+  assert.deepEqual(Object.keys(ENEMY_KINDS).filter(kind => ENEMY_KINDS[kind].charge), ['ogre']);
+  assert.ok(charge.from > 3.3, `he counts you away past his own engage of 3.3 (${charge.from})`);
+  assert.ok(charge.arc < Math.PI * .4, 'and the lane is narrower than his swing, because the counter is a sidestep');
+
+  /**
+   * Stand off at `keep` metres and wait for the rush. `answer` is what the traveler does when the
+   * tell appears: step aside late, keep running, or nothing at all.
+   */
+  const meet = answer => {
+    const position = { x: OGRE_ENCOUNTER.center.x, y: 17, z: OGRE_ENCOUNTER.center.z + 7 };
+    const events = [];
+    const combat = createCombat({ world: world(), position, getWeapon: () => SWORD, onEvent: e => events.push(e) });
+    assert.equal(combat.startEncounter(OGRE_ENCOUNTER), true);
+    const ogre = () => combat.state.enemies[0];
+    let time = 0, charges = 0, stepped = false, tellAt = null;
+    for (let step = 0; step < 60 * 40 && combat.state.phase === 'active'; step++) {
+      time += DT;
+      const enemy = ogre();
+      const bearing = Math.atan2(enemy.x - position.x, enemy.z - position.z);
+      const rushing = enemy.charging && enemy.action === 'windup';
+      if (rushing && tellAt === null) { tellAt = time; charges++; stepped = false; }
+      if (!enemy.charging && enemy.action === 'idle') tellAt = null;
+      // Late, after he has committed: `aimLock` is .55 of the tell and the tell is .8 s.
+      if (rushing && !stepped && time - tellAt >= charge.tell * .7) {
+        if (answer === 'aside') stepped = !!combat.dodge({ x: Math.cos(bearing), z: -Math.sin(bearing) });
+        else if (answer === 'back') stepped = !!combat.dodge({ x: -Math.sin(bearing), z: -Math.cos(bearing) });
+      }
+      // Otherwise he keeps his distance, which is the whole reason the charge exists.
+      if (combat.state.player.action === 'idle' && Math.hypot(enemy.x - position.x, enemy.z - position.z) < 6.5) {
+        const speed = 4.2 * combat.movementScale() * DT;
+        position.x -= Math.sin(bearing) * speed; position.z -= Math.cos(bearing) * speed;
+      }
+      combat.update(DT);
+    }
+    return { charges, struck: events.filter(e => e.type === 'player-hit').length, hp: combat.state.player.hp, seconds: time };
+  };
+
+  // He charges at all: standing off is no longer standing safe.
+  const still = meet('nothing');
+  assert.ok(still.charges >= 1, `he comes after a man who keeps away (${still.charges} charges)`);
+  assert.ok(still.struck >= 1, `and the rush lands on a man who does nothing (${still.struck} blows)`);
+  // A step aside beats it. A step *backwards* does not: the rush is faster than a man running.
+  const aside = meet('aside');
+  assert.ok(aside.charges >= 1, 'he still charges');
+  assert.ok(aside.struck < still.struck, `stepping aside beats it (${aside.struck} against ${still.struck})`);
+  assert.ok(aside.hp > 0, 'and he is still on his feet');
+  const back = meet('back');
+  assert.ok(back.struck >= aside.struck, `backing straight out of it is not the answer (${back.struck} against ${aside.struck})`);
+  // And the charge never fires in a melee: the dwell has to be unbroken, and it is counted in the
+  // one branch where he is neither swinging nor getting over a swing.
+  const source = readFileSync(fileURLToPath(new URL('../src/combat.js', import.meta.url)), 'utf8');
+  assert.match(source, /timers\.awayFor = dist > profile\.charge\.from \? \(timers\.awayFor \?\? 0\) \+ dt : 0;/);
+  assert.match(source, /if \(timers\.awayFor >= profile\.charge\.after && timers\.cooldown <= 0 && !someoneAttacking\)/);
+  // The picture says which it is: the lane is drawn long and narrow for a rush.
+  const view = readFileSync(fileURLToPath(new URL('../src/combat-view.js', import.meta.url)), 'utf8');
+  assert.match(view, /item\.tell\.scale\.set\(enemy\.charging\?\.42:1,1,enemy\.charging\?2\.1:1\);/);
 });
 
 test('he is peaceable unless challenged, and the challenge is only ever reached through dialogue', () => {

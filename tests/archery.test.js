@@ -8,6 +8,7 @@ import { createInventoryState } from '../src/inventory.js';
 import { createSkills } from '../src/skills.js';
 import { createCombatSkills, ARMS_SKILLS, familyOf, marginsFor, drawTime } from '../src/combat-skills.js';
 import { smithOffers, buyFromSmith, ARROWS } from '../src/smith.js';
+import { borderEncounter } from '../src/border-chapter.js';
 import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
 import { BOW, JERRYS_BOW, drawnBy, shotAt, solidAt, survives, recoveredOf, flightOf, inTheLine, groundAt } from '../src/archery.js';
 
@@ -673,4 +674,72 @@ test('an arrow cannot take anybody below one in a bout or at a mark', () => {
   // three questions - solid things, rising ground, and people - before the stake goes in.
   assert.match(source('main.js'), /const lineIsClear=\(from,at,ignore=\[\]\)=>flightOf\(/);
   assert.match(source('main.js'), /&&lineIsClear\(me,spot\)\)\{at=spot;break;\}/, 'startMark asks it');
+});
+
+/**
+ * **Enemies come after an archer** (the user, 2026-09-21). The hunter drove the hole: an enemy
+ * after the traveler steered at a point clamped into the middle of its ground - 8 m across the
+ * arena by 16 m along it - while the traveler was bounded only by the retreat line and the 45 m
+ * leash, and the bow carries 34. Standing 12 m across the border battle's arena he won it alone,
+ * **untouched, with 304 arrows over 7.4 minutes**, the nearest living soldier stuck 3.8 m away
+ * and unable to close (docs/known-issues.md, round 5).
+ *
+ * A bow buys a few free shots, not a free battle.
+ */
+test('a man shooting from where they cannot reach is come after, and the standoff is gone', () => {
+  const flat = () => ({ bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 }, colliders: [], heightAt: () => 1.5, nearColliders: () => [] });
+  /** The hunter's own fixture: he stands still, never fights back, and looses at the nearest man. */
+  const standoff = across => {
+    const fight = borderEncounter('empire', []);
+    const position = { x: 0, y: 1.5, z: 0 };
+    const events = [];
+    const type = WEAPON_TYPES[BOW.id];
+    const weapon = { id: BOW.id, name: type.name, usable: true, owned: true,
+      damage: [...type.damage], reachMultiplier: type.reachMultiplier, ...feelOf(BOW.id) };
+    const combat = createCombat({ world: flat(), position, onEvent: e => events.push(e),
+      getWeapon: () => weapon, getArrows: () => 9999, getLevel: () => 2,
+      getMargins: () => ({ ...marginsFor({ bows: 1, toughness: 1 }), swingCost: 6 }) });
+    assert.equal(combat.startEncounter(fight, { atCheckpoint: true }), true, 'the border battle starts');
+    const axis = fight.retreatAxis === 'x' ? 'x' : 'z', other = axis === 'x' ? 'z' : 'x';
+    position[axis] = fight.center[axis];
+    position[other] = fight.center[other] + across;
+    let loosed = 0, seconds = 0;
+    // Eight minutes of game time, which is longer than the seven the hunter's run lasted.
+    for (let frame = 0; frame < 60 * 480 && combat.state.phase === 'active'; frame++) {
+      seconds += 1 / 60;
+      const foe = combat.state.enemies.filter(one => one.active && one.action !== 'dead')
+        .sort((a, b) => Math.hypot(a.x - position.x, a.z - position.z) - Math.hypot(b.x - position.x, b.z - position.z))[0];
+      const yaw = foe ? Math.atan2(foe.x - position.x, foe.z - position.z) : 0;
+      if (combat.drawn >= 1) { combat.draw(false, yaw); loosed++; } else combat.draw(true, yaw);
+      combat.update(1 / 60);
+    }
+    const nearest = combat.state.enemies.filter(one => one.active)
+      .reduce((best, one) => Math.min(best, Math.hypot(one.x - position.x, one.z - position.z)), Infinity);
+    return { across, loosed, seconds, nearest, phase: combat.state.phase,
+      struck: events.filter(e => e.type === 'player-hit').length,
+      retreated: events.some(e => e.type === 'retreat'), won: events.some(e => e.type === 'victory') };
+  };
+  for (const across of [12, 18, 30]) {
+    const row = standoff(across);
+    assert.ok(row.struck > 0 || row.retreated,
+      `${across} m across: he is reached or he is retreating (struck ${row.struck}, ${row.loosed} arrows, ${row.seconds.toFixed(0)} s)`);
+    assert.equal(row.won, false, `${across} m across: the battle is not won from out there`);
+    assert.ok(row.loosed < 60, `${across} m across: ${row.loosed} arrows, against the hunter's 304`);
+    assert.ok(row.seconds < 60, `${across} m across: ${row.seconds.toFixed(0)} s, against the hunter's 444`);
+    assert.ok(!(row.phase === 'active') || row.nearest < 3,
+      `${across} m across: nothing is left standing off at ${row.nearest.toFixed(1)} m unable to close`);
+  }
+  // **And there is one outer limit, not two.** The leash the chase stops at is the leash a
+  // traveler retreats over, spelled once so nobody can tune them apart.
+  const combatSource = source('combat.js');
+  assert.match(combatSource, /^const LEASH = 45;$/m, 'the fight’s outer limit has a name');
+  assert.equal(combatSource.match(/distance\([^)]*lastEncounter\.center\) > \d/g), null,
+    'and nobody writes a radius of their own beside it');
+  assert.equal(combatSource.match(/lastEncounter\.center\) > LEASH/g).length, 2,
+    'the two readers of it: the traveler’s retreat, and the chase that stops where it begins');
+  assert.match(combatSource, /const outsideTheFight = p => beyondTheLine\(p\) \|\| distance\(p, lastEncounter\.center\) > LEASH;/);
+  assert.match(combatSource, /\(loose && !outsideTheFight\(\{ x, z \}\)\)/, 'the chase stops where a retreat begins');
+  // The trigger is reach, not a box: a man they can still be met on the edge of their own ground
+  // for is chased exactly as he was, which is what leaves every melee where it was.
+  assert.match(combatSource, /const target = distance\(clamped, aim\) <= profile\.engage \? clamped : \{ x: aim\.x, z: aim\.z \};/);
 });

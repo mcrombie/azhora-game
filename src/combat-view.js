@@ -117,6 +117,11 @@ export function createCombatView(scene, world, camera) {
       item.tell.visible=visible&&!dead&&warning;
       item.tell.position.set(enemy.x,world.heightAt(enemy.x,enemy.z)+.07,enemy.z);
       item.tell.rotation.y=enemy.yaw;
+      // **A charge is drawn as the lane it is**: long and narrow, where the swing is short and
+      // wide (`charge.arc` against `arc`, src/combat.js). The disc's own +Y lies along the
+      // group's +Z after the rotation above, so the length is z and the width is x - which means
+      // the creature's one tell mesh says both things without a second piece of geometry.
+      item.tell.scale.set(enemy.charging?.42:1,1,enemy.charging?2.1:1);
       const striking=enemy.action==='attack';
       item.sector.material.color.setHex(striking?0xdb754d:0xe9b550);
       item.edge.material.color.copy(item.sector.material.color);

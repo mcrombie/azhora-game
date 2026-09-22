@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createCampaign, settleBorderBattle } from '../src/campaign.js';
 import { createBorderChapter, BORDER_ENCOUNTER_ID } from '../src/border-chapter.js';
-import { createAftermathChapter, aftermathConversation, AFTERMATH_VARIANTS, SIDE_GIFT, sideGiftOwed, GIFT_LINES } from '../src/aftermath-chapter.js';
+import { createAftermathChapter, aftermathConversation, AFTERMATH_VARIANTS, SIDE_GIFT, SIDE_CAP, SIDE_GIFTS, sideGiftOwed, giftOwed, GIFT_LINES, CAP_LINES, AFTERMATH_LEGATE_ID } from '../src/aftermath-chapter.js';
 import { aftermathBuilt, aftermathSite } from '../src/aftermath-sites.js';
-import { createGear, validateGearSnapshot } from '../src/gear.js';
+import { createGear, validateGearSnapshot, WEIGHTS, smithStock, tierScale, MOST_TURNED, armourOf } from '../src/gear.js';
 
 const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
 
@@ -15,13 +15,20 @@ const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.ur
  * second idea of it** - and pinned against the host's own source below, the way
  * `tests/fights-with-company.test.js` pins `placeFor`. Everything the host does around it -
  * the toast, the sound, `saveRoad(false)` - is not a decision and is left out.
+ *
+ * **Two pieces, at the two moments the side has him in front of it**: the coat at the rally from
+ * the man who gives him the work, the cap at the debrief from the man who counts out the pay.
+ * One table, one rule, and the stage picks both the piece and the speaker.
  */
 function giveSideGift(npc, { aftermath, gear }) {
   const chapter = aftermath.spec;
-  if (!chapter || npc.id !== chapter.commanderId || aftermath.view().stage !== 'rally') return [];
-  const lines = GIFT_LINES[chapter.commanderId];
-  if (!lines || !sideGiftOwed(gear.wearing(SIDE_GIFT.slot))) return [];
-  const worn = gear.wear(SIDE_GIFT.slot, { weight: SIDE_GIFT.weight, tier: SIDE_GIFT.tier });
+  if (!chapter) return [];
+  const stage = aftermath.view().stage;
+  const speaker = stage === 'rally' ? chapter.commanderId : stage === 'report' ? chapter.principalId : null;
+  if (!speaker || npc.id !== speaker) return [];
+  const gift = SIDE_GIFTS[stage], lines = stage === 'rally' ? GIFT_LINES[speaker] : CAP_LINES[speaker];
+  if (!gift || !lines || !giftOwed(gift, gear.wearing(gift.slot))) return [];
+  const worn = gear.wear(gift.slot, { weight: gift.weight, tier: gift.tier });
   if (!worn.ok) return [];
   return [...lines];
 }
@@ -29,10 +36,13 @@ function giveSideGift(npc, { aftermath, gear }) {
 test('the copy of the host rule cannot drift from the host', () => {
   assert.match(main, /function giveSideGift\(npc\)\{/);
   assert.match(main, /const chapter=aftermath\.spec;/);
-  assert.match(main, /if\(!chapter\|\|npc\.id!==chapter\.commanderId\|\|aftermath\.view\(\)\.stage!=='rally'\)return \[\];/);
-  assert.match(main, /const lines=GIFT_LINES\[chapter\.commanderId\];/);
-  assert.match(main, /if\(!lines\|\|!sideGiftOwed\(gear\.wearing\(SIDE_GIFT\.slot\)\)\)return \[\];/);
-  assert.match(main, /const worn=gear\.wear\(SIDE_GIFT\.slot,\{weight:SIDE_GIFT\.weight,tier:SIDE_GIFT\.tier\}\);/);
+  assert.match(main, /if\(!chapter\)return \[\];/);
+  assert.match(main, /const stage=aftermath\.view\(\)\.stage;/);
+  assert.match(main, /const speaker=stage==='rally'\?chapter\.commanderId:stage==='report'\?chapter\.principalId:null;/);
+  assert.match(main, /if\(!speaker\|\|npc\.id!==speaker\)return \[\];/);
+  assert.match(main, /const gift=SIDE_GIFTS\[stage\],lines=stage==='rally'\?GIFT_LINES\[speaker\]:CAP_LINES\[speaker\];/);
+  assert.match(main, /if\(!gift\|\|!lines\|\|!giftOwed\(gift,gear\.wearing\(gift\.slot\)\)\)return \[\];/);
+  assert.match(main, /const worn=gear\.wear\(gift\.slot,\{weight:gift\.weight,tier:gift\.tier\}\);/);
   assert.match(main, /if\(!worn\.ok\)return \[\];/);
   assert.match(main, /return \[\.\.\.lines\];/);
   // And the one place it is called from: the same argument list that carries the file fill.
@@ -133,12 +143,93 @@ test('it is given once: walking up again, being driven off, and loading a save a
     assert.equal(loaded.campaign.view().chapterId, spec.id);
     assert.deepEqual(speakTo(commander, loaded).opened.at(-1).lines, spec.orders, `${side}: loading a save gives the coat over again`);
 
-    // And the fight and the debrief never mention it.
+    // And the fight never mentions it. The debrief hands over the *cap*, which is its own gift
+    // and is checked below; the coat is not offered a second time there.
     loaded.aftermath.act('begin-assault');
     loaded.aftermath.winEncounter(spec.encounterId);
     const debrief = speakTo({ id: spec.principalId }, loaded);
-    assert.deepEqual(debrief.opened.at(-1).lines, spec.debrief, `${side}: the gift comes back at the debrief`);
+    assert.deepEqual(debrief.opened.at(-1).lines, [...CAP_LINES[spec.principalId], ...spec.debrief],
+      `${side}: the cap comes with the pay, and the coat does not come back`);
     assert.deepEqual(loaded.gear.wearing('body'), { weight: 'medium', tier: 4 });
+  }
+});
+
+/**
+ * **A fine steel cap with the pay** (the user, 2026-09-21: "a second gift ... when the traveler's
+ * side pays him after the day-after fight, from whoever already pays him in that scene"). The
+ * coat comes at the rally from the captain who gives him the work; this comes at the debrief from
+ * whoever is counting out the forty or sixty copper, which is not always the same man.
+ */
+test('the cap is worth having, and its weight is the coat’s own arithmetic', () => {
+  assert.deepEqual(SIDE_CAP, { slot: 'head', weight: 'medium', tier: 4 });
+  assert.deepEqual(SIDE_GIFTS, { rally: SIDE_GIFT, report: SIDE_CAP }, 'two pieces, two moments, no third');
+  // **A reward weaker than a shop item is not a reward**, which is what decides the weight. The
+  // best head piece on any board the traveler has stood at before Ambron is bog iron at level 2.
+  const shop = [0, 1, 2].flatMap(level => smithStock(level)).filter(piece => piece.slot === 'head');
+  const best = Math.max(...shop.map(piece => piece.turns));
+  const turnsAt = weight => WEIGHTS[weight].turns * tierScale(SIDE_CAP.tier);
+  assert.ok(Math.abs(best - .115) < .001, `the best cap he can buy turns ${best.toFixed(3)}`);
+  assert.ok(turnsAt('light') < best, `a light fine steel cap would turn ${turnsAt('light').toFixed(3)}, less than one he can buy`);
+  assert.ok(turnsAt(SIDE_CAP.weight) > best, `and the one he is given turns ${turnsAt(SIDE_CAP.weight).toFixed(3)}`);
+  // Heavy is legal at this tier and is refused for the coat's own reason: it doubles the wind
+  // swimming spends, and a gift he cannot refuse that doubles his drowning is a trap.
+  assert.ok(SIDE_CAP.tier >= WEIGHTS.heavy.fromTier, 'plate is legal at tier 4');
+  assert.equal(WEIGHTS.heavy.wind, 2);
+  assert.equal(WEIGHTS[SIDE_CAP.weight].wind, 1, 'and what he is given costs him nothing in the water');
+  // And it costs him no dodge either, because the coat is already medium: the tenth is paid.
+  const coat = { body: { weight: SIDE_GIFT.weight, tier: SIDE_GIFT.tier } };
+  const both = armourOf({ ...coat, head: { weight: SIDE_CAP.weight, tier: SIDE_CAP.tier } });
+  assert.equal(both.dodge, armourOf(coat).dodge, 'the cap adds no penalty the coat is not already paying');
+  assert.equal(both.wind, armourOf(coat).wind);
+  assert.ok(Math.abs(both.turns - .32) < .001, `the two together turn ${both.turns.toFixed(2)} of a blow`);
+  assert.ok(both.turns < MOST_TURNED, 'and armour still never turns a whole one');
+  // Every man who can be the one paying has something to say, and nobody else does.
+  const payers = [...new Set(Object.values(AFTERMATH_VARIANTS).map(spec => spec.principalId))];
+  assert.deepEqual(payers.slice().sort(), Object.keys(CAP_LINES).slice().sort(), 'the payers and the voices are the same list');
+  assert.ok(payers.includes(AFTERMATH_LEGATE_ID), 'the Marshal is one of them, on the Empire’s lost day');
+  for (const [id, lines] of Object.entries(CAP_LINES)) {
+    assert.equal(lines.length, 2, `${id}: two lines, like the coat's`);
+    for (const line of lines) assert.ok(line.length > 40 && line.length < 260, `${id}: ${line.slice(0, 30)}…`);
+    assert.notDeepEqual(lines, GIFT_LINES[id], `${id}: he does not say the coat's words again`);
+  }
+});
+
+test('the cap arrives with the pay, once, on both sides, and survives a save', () => {
+  for (const side of ['empire', 'coalition']) {
+    const played = play(side);
+    const spec = AFTERMATH_VARIANTS[played.campaign.view().chapterId];
+    const { aftermath, gear } = played;
+    // Nothing on his head at the rally, and the rally does not hand it over.
+    assert.equal(gear.wearing('head'), null);
+    speakTo({ id: spec.commanderId }, played);
+    assert.equal(gear.wearing('head'), null, `${side}: the captain arms his body, not his head`);
+    assert.deepEqual(gear.wearing('body'), { weight: 'medium', tier: 4 });
+    // Nothing mid-fight either.
+    aftermath.act('begin-assault');
+    assert.deepEqual(giveSideGift({ id: spec.principalId }, played), [], `${side}: nothing is handed over mid-fight`);
+    assert.equal(aftermath.winEncounter(spec.encounterId).ok, true);
+    assert.equal(aftermath.view().stage, 'report');
+    // The debrief: the cap, then the pay, from the man who is paying.
+    const paid = speakTo({ id: spec.principalId }, played);
+    assert.deepEqual(paid.opened.at(-1).lines, [...CAP_LINES[spec.principalId], ...spec.debrief], `${side}: the cap before the coin`);
+    assert.deepEqual(gear.wearing('head'), { weight: SIDE_CAP.weight, tier: SIDE_CAP.tier });
+    assert.equal(gear.view().worn.head.tier, 4, `${side}: gear.wearing('head').tier === 4 is the record`);
+    assert.equal(giftOwed(SIDE_CAP, gear.wearing('head')), false);
+    // Once: walking up again is the debrief and nothing more.
+    assert.deepEqual(speakTo({ id: spec.principalId }, played).opened.at(-1).lines, spec.debrief, `${side}: the cap is offered twice`);
+    // Nobody else hands one over, at any stage.
+    for (const id of ['aftermath-tribune', 'aftermath-captain', 'aftermath-envoy', AFTERMATH_LEGATE_ID, 'battle-tribune', 'mara'])
+      if (id !== spec.principalId) assert.deepEqual(giveSideGift({ id }, played), [], `${id} hands over a cap on the ${side} road`);
+    // Through the save the host writes, into fresh modules: he is still wearing both.
+    const saved = JSON.parse(JSON.stringify({ aftermath: aftermath.snapshot(), gear: gear.snapshot() }));
+    assert.equal(validateGearSnapshot(saved.gear), true);
+    const loaded = { aftermath: createAftermathChapter(), gear: createGear() };
+    assert.equal(loaded.aftermath.restore(saved.aftermath), true);
+    assert.equal(loaded.gear.restore(saved.gear), true);
+    assert.deepEqual(loaded.gear.wearing('head'), { weight: SIDE_CAP.weight, tier: SIDE_CAP.tier }, `${side}: the cap did not survive the save`);
+    assert.deepEqual(loaded.gear.wearing('body'), { weight: SIDE_GIFT.weight, tier: SIDE_GIFT.tier });
+    assert.deepEqual(speakTo({ id: spec.principalId }, loaded).opened.at(-1).lines, spec.debrief,
+      `${side}: loading a save gives the cap over again`);
   }
 });
 
