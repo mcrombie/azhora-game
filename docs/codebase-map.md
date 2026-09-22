@@ -615,7 +615,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 | [`src/elagos-world.js`](../src/elagos-world.js) | Elagos, the Lake Lands, as water, roads and places | The regions | 452 |
 | [`src/elod-people.js`](../src/elod-people.js) | The people of Elod, and of East Suval outside it | The regions | 279 |
 | [`src/farming.js`](../src/farming.js) | Farming, the fourteenth skill, and the only one with a clock of its own: four rows at the Mill Commons sown on play-seconds, and Applegarth's kept orchard, picked rather than planted | Skills | 213 |
-| [`src/ferry.js`](../src/ferry.js) | The crossing to Peblos: Corran Sell's boat, the fee, and the short scene | People with a story | 251 |
+| [`src/ferry.js`](../src/ferry.js) | The crossing to Peblos: Jess's boat, the fee, and the short scene | People with a story | 251 |
 | [`src/fishing-skill.js`](../src/fishing-skill.js) | Fishing, the traveler's second skill. The rod, the float and the bite are campcraft's (`src/campcraft.js`); this is what comes up on the line | Skills | 160 |
 | [`src/forest-ecology.js`](../src/forest-ecology.js) | The wood as a living thing: instanced understory plants, mossy logs, deer that graze and flee, foraging thrushes, butterflies, bees and dragonflies | Optional life | 476 |
 | [`src/forest-hideout-smoke.js`](../src/forest-hideout-smoke.js) | The Bramble Scout Camp, played through the real game: keyboard, conversation buttons, combat and the save slot | Testing and tools | 295 |

@@ -267,7 +267,7 @@ function init() {
   npcData.push(...EAST_SUVAL_PEOPLE.map(npc=>({...npc})));
   // Ambron's people and the lake country's, in Elagos (src/ambron-people.js).
   npcData.push(...ELAGOS_NPCS.map(npc=>({...npc})));
-  // Corran Sell, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
+  // Jess, who rowed the traveler ashore in the opening and rows them out to the Pebbles for a fee (src/ferry.js).
   world.npcPositions[FERRY_NPC.id]={x:FERRY_LANDINGS.drent.stand.x,z:FERRY_LANDINGS.drent.stand.z};npcData.push({...FERRY_NPC,yaw:FERRY_LANDINGS.drent.stand.yaw});
   // The Tessen road post's garrison: they stand at the post, and march and fight beside the traveler on the goblin camp.
   npcData.push(...HIDEOUT_GARRISON.map(npc=>({...npc,armed:true})));
@@ -3787,7 +3787,7 @@ function init() {
   }
   function ferryAct(result){
     if(!result?.ok){if(result?.reason)toast(result.reason,'THE CROSSING');return;}
-    toast(result.fare?`${result.fare} copper to Corran. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'Corran takes no fare for the crossing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
+    toast(result.fare?`${result.fare} copper to Jess. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'Corran takes no fare for the crossing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
   }
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
@@ -3844,7 +3844,11 @@ function init() {
     if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
     if(izol.converse(npc,{control:heldControl??campaign.mapControl(),openDialogue,closeDialogue}))return;
     if(isElagosNpc(npc.id)&&elagosConversation(npc,{openDialogue,closeDialogue,skills,birding,teachSkill:teachFromAmbron,act:elagosAct}))return;
-    if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});return;}
+    if(npc.id===FERRY_NPC.id){ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct,
+      swimming,swimmingLesson:SWIMMING_LESSON,teachSwimming:()=>{
+        const learned=swimming.learn();
+        if(learned.first){toast('Swimming, level 1. Walk into the water and it will hold you up for as long as your wind lasts.','JESS TAUGHT YOU TO SWIM');refreshSkillsSheet();saveRoad(false);}
+        ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});}});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(npc.id===HARBOURMASTER){jojoOnTheLanding(npc);return;}
     if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
@@ -4610,7 +4614,7 @@ function init() {
     player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
     yaw=landing.yaw;pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
     ferry.settle();settleCamera();closeModal();
-    toast('Cobble, on the main island. Corran waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
+    toast('Cobble, on the main island. Jess waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
   };
   $('test-elod').onclick=()=>{
     if(!testingEnabled)prepareTesting();
@@ -4752,7 +4756,7 @@ function init() {
     else if(e.isTrusted&&e.code==='KeyP'&&!e.repeat&&['playing','pause','opening','journal'].includes(mode)){e.preventDefault();startAutopilot();return;}
     if(developer.active)return;
     if(e.code==='F8'&&!e.repeat){e.preventDefault();testingMenu();return;}
-    if(mode==='playing'&&['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ControlLeft','ControlRight','KeyR','KeyC'].includes(e.code))e.preventDefault();
+    if(mode==='playing'&&['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyR','KeyC'].includes(e.code))e.preventDefault();
     if(e.repeat)return;
     if(mode==='fishing'){
       if(['KeyF','Space','Enter','Escape'].includes(e.code)){e.preventDefault();endFishing(e.code==='Escape');}
@@ -4787,7 +4791,10 @@ function init() {
     if(e.code===RIDING_KEYS.mount){toggleMount();return;}
     if(e.code===RIDING_KEYS.whistle){whistleHorse();return;}
     if(e.code===BIRDING_KEY){observeBird();return;}
-    if(e.code==='KeyC'||e.code==='ControlLeft'||e.code==='ControlRight'){dodge();return;}   // C to dodge, easy from WASD; Ctrl still works
+    // **C alone.** Ctrl used to dodge as well, and every screenshot shortcut on the machine
+    // goes through Ctrl, so taking a picture of the game made the traveler jump sideways
+    // (the user, 22 September 2026).
+    if(e.code==='KeyC'){dodge();return;}
     if(mode==='playing'){
       keys.add(e.code);
       if(e.code==='Space'&&grounded&&!riding.mounted&&combat.state.player.action==='idle'){verticalSpeed=6.3;grounded=false;}
@@ -4829,7 +4836,10 @@ function init() {
   function destination() {
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
     if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Jojo \u00b7 the harbourmaster'};
-    if(questStage===2)return{...world.training,name:'Practice post'};
+    // The card says report to Officer Glun, so the gold stands over Glun until he has set the
+    // lesson; after that it is the straw he sent you to.
+    if(questStage===2)return lessonSet?{...world.training,name:'Practice post'}
+      :{...INSTRUCTOR_STAND,name:`${INSTRUCTOR.name} · at the practice post`};
     if(questStage===3)return{x:-48,z:29,name:'Woodland bell'};
     if(questStage===5)return{...npcById.get('warden').actor.group.position,name:'Eren · Greenway Watch'};
     if(questStage===8)return world.northTrail;

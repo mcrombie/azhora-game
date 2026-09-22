@@ -1,5 +1,5 @@
 /**
- * The crossing to Peblos: Corran Sell's boat, the fee, and the short scene.
+ * The crossing to Peblos: Jess's boat, the fee, and the short scene.
  *
  * The man who rowed the traveler ashore in the opening is still at Tidehaven's
  * landing. For three copper he takes them out to Cobble in the Pebbles, and for
@@ -26,7 +26,7 @@ import { COBBLE_QUAY, MAIN_ISLAND, FERRY_MOORINGS, quayHeight } from './peblos-w
  */
 export const FERRY_FARE = 3;
 /**
- * The crossing is free: Corran carries anyone who asks while the islands are
+ * The crossing is free: Jess carries anyone who asks while the islands are
  * young and worth showing. The fare above is what he would charge, and the
  * machinery that takes it is kept, so putting a price back is one flag.
  */
@@ -34,7 +34,11 @@ export const FERRY_FREE = true;
 export const FERRY_VERSION = 1;
 
 export const FERRY_NPC = Object.freeze({
-  id: 'boatman', name: 'Corran Sell', role: 'Boatman of the Stills', modelRole: 'bridge-keeper', color: 0x4f6f78,
+  // Jess, who was Corran Sell until the user renamed her on 22 September 2026: a woman with
+  // long black hair, the same boat, the same crossing, and the one person on this coast who
+  // will tell you how to swim.
+  id: 'boatman', name: 'Jess', role: 'Boatwoman of the Stills', modelRole: 'bridge-keeper', color: 0x4f6f78,
+  look: Object.freeze({ beard: false, hairStyle: 'mane', hair: 0x1a1613 }),
 });
 
 const spot = (x, z, yaw = 0) => Object.freeze({ x, z, yaw });
@@ -196,12 +200,12 @@ export function createFerry(hooks = {}) {
 }
 
 /**
- * Corran Sell's conversation, on either shore. `context` needs `ferry`,
+ * Jess's conversation, on either shore. `context` needs `ferry`,
  * `openDialogue`, `closeDialogue` and `act`, which is called with the result of
  * boarding so the host can toast and start the scene.
  */
 export function ferryConversation(npc, context) {
-  const { ferry, openDialogue, closeDialogue, act = noop } = context;
+  const { ferry, openDialogue, closeDialogue, act = noop, swimming = null, swimmingLesson = [], teachSwimming = noop } = context;
   const here = ferry.state.side, chance = ferry.offer();
   const lines = here === 'drent' ? drentLines(ferry.state) : peblosLines(ferry.state);
   // Why not, in his own mouth: a greyed-out choice with a tooltip is not an answer.
@@ -214,6 +218,13 @@ export function ferryConversation(npc, context) {
       action: () => { const result = ferry.board(); closeDialogue(); act(result); } },
     { id: 'leave-ferry', label: here === 'drent' ? 'Another day.' : 'Not yet. I have not seen it all.', action: closeDialogue },
   ];
+  // **She is the one who tells you how to swim** (the user, 22 September 2026). She is on this
+  // water every day of her life and the traveler came in over it the colour of the sea, so she is
+  // the obvious person to ask - and she is here on the first morning, which Ed the Word is not.
+  if (swimming && !swimming.taught && swimmingLesson.length) {
+    choices.unshift({ id: 'ferry-swim', label: 'What happens to a man who goes in off this coast?',
+      action: () => openDialogue(npc, [...swimmingLesson], null, 'Back to the shore', { onComplete: teachSwimming }) });
+  }
   openDialogue(npc, lines, null, 'Back to the shore', { choices });
   return true;
 }
@@ -221,7 +232,7 @@ export function ferryConversation(npc, context) {
 function drentLines(state) {
   if (!state.met) return [
     'You will not remember much of the crossing. You were the colour of the water the whole way in, and you did not once look up.',
-    'Corran Sell. That is my boat, and she is sound, whatever she looked like to you yesterday.',
+    'Jess. That is my boat, and she is sound, whatever she looked like to you yesterday.',
     FERRY_FREE
       ? 'I go out to the Pebbles and back while the tide serves. Cobble is the village, on the big island — my own people. Say the word and I will put you on the quay there, and bring you home after. You paid your passage across the sea; I am not taking your coin for a mile of flat water.'
       : `I go out to the Pebbles and back while the tide serves. Cobble is the village, on the big island — my own people. ${FERRY_FARE} copper and I will put you on the quay there, and ${FERRY_FARE} more when you want to come home.`,
@@ -231,7 +242,7 @@ function drentLines(state) {
     FERRY_FREE ? 'Out again whenever you like. The Pebbles do not get any further away.' : `Same fare out: ${FERRY_FARE} copper. The Pebbles do not get any further away.`,
   ];
   return [
-    'Corran Sell. The boat is sound and the water is quiet, which is as much as anyone gets on this coast.',
+    'Jess. The boat is sound and the water is quiet, which is as much as anyone gets on this coast.',
     FERRY_FREE ? 'Out to Cobble and back, and no charge for it. There is nothing on the islands that will eat you, whatever they tell you in the village.'
       : `${FERRY_FARE} copper out to Cobble, ${FERRY_FARE} back. There is nothing on the islands that will eat you, whatever they tell you in the village.`,
   ];

@@ -66,7 +66,7 @@ export const PEBLOS_AMBIENT = Object.freeze({
   ]),
   'cobble-runner': Object.freeze([
     'Dunnock. I take the lines and I run the tallies up to the shed and I watch the gulls off the racks. That is three jobs, and I am paid in fish for all three.',
-    'You came over with Corran? He is my mother’s cousin. Everybody on this quay is somebody’s cousin, and that is why nothing here stays quiet for long.',
+    'You came over with Jess? He is my mother’s cousin. Everybody on this quay is somebody’s cousin, and that is why nothing here stays quiet for long.',
   ]),
   'peblos-decurion': Object.freeze([
     'Lieutenant Berold Ossan, in command of the Empire’s presence in Peblos. The Empire’s presence in Peblos is myself and three men.',

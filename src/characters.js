@@ -986,7 +986,28 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
 /** What a villager's model can take up in a fight (`createCharacter({ wields })`). */
 const VILLAGER_WEAPONS = Object.freeze({ 'bearded-axe': makeAxe, 'simple-sword': makeSword, 'iron-mace': makeMace, 'long-dagger': makeDagger });
 
-export function createCharacter({ role = 'traveler', tunic = tunicForRole(role), skin = skinForRole(role), hat = !['traveler', 'acorn-cook', 'doomsayer', 'bridge-keeper', 'rise-custodian', 'forest-woodcutter', 'commons-miller', 'shelter-keeper', 'legion-soldier', 'legion-officer', 'suvali-guard', 'elodi-guard', 'wine-seller', 'wine-clerk', 'rainbow-dyer', 'bat-seeker', 'bee-keeper', 'vine-keeper', 'wine-maker', 'light-keeper', 'rival-keeper'].includes(role), armed = false, look = null, wields = null } = {}) {
+/**
+ * **Nobody wears a hat unless somebody asked for one** (the user, 22 September 2026: "so many
+ * characters have hats when I never said anything about wanting them to have hats").
+ *
+ * `hat` used to default to true for every role that was not on a list of twenty-one exceptions,
+ * so a soft country cap went on six villagers - the harbourmaster among them - that nobody had
+ * ever asked to be wearing one. It defaults to false now and is opt-in three ways: a caller that
+ * passes `hat: true`, a look that says `hat: true`, and the hired company, whose eleven headgears
+ * are part of eleven authored designs (`look.headgear`, tests/mercenary-characters.test.js).
+ *
+ * `HATTED` is the short list of people whose hat *is* the design - the badge on the waykeeper's
+ * cap, the brim and ribbon on the pond fisher's - and it is a list rather than a default, so
+ * adding to it is a decision somebody makes on purpose.
+ *
+ * A soldier's helmet is not a hat and is not affected: it is the Ambroni build (`isSoldier`).
+ */
+// 'mercenary' is here because the hired company's eleven headgears are authored looks, and the
+// soft cap is the one they hang on; the traveler built from a roster look is role 'traveler'
+// and keeps his own bare head, exactly as before.
+const HATTED = Object.freeze(['warden', 'pond-fisher', 'mercenary']);
+
+export function createCharacter({ role = 'traveler', tunic = tunicForRole(role), skin = skinForRole(role), hat = HATTED.includes(role), armed = false, look = null, wields = null } = {}) {
   // Any of the eleven mercenaries can be the player (src/player-characters.js). Given a roster
   // look, the traveler is built as that hired sword — build, hair, garment, marks, weapon —
   // and keeps only what is his alone: the satchel, the full weapon swap and the fishing grip.
@@ -1588,7 +1609,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     fringe.rotation.z = -0.18;
   }
 
-  if (hat && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper && !isBirdWatcher && !isGardenKeeper) {
+  if ((hat || look?.hat === true) && !isDoomsayer && !isWoodcutter && !isMiller && !isShelterKeeper && !isBirdWatcher && !isGardenKeeper) {
     // A soft, rounded country cap, with a short leather peak and folded crown.
     const cap = new THREE.Group();
     cap.position.set(-0.018, 0.371, -0.028);

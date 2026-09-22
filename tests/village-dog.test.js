@@ -20,21 +20,24 @@ test('the dog sniffs from haunt to haunt around the green and comes over when so
   assert.equal(dog.state.mode, 'sniffing', 'it loses interest when the traveler walks off');
 });
 
-test('it usually eats what it is given, refuses what is not food or not to its taste, and then follows for a while', () => {
+/**
+ * The dog does not follow (the user, 22 September 2026: it gets in the way). Being fed pleases
+ * it and sends it back to its own rounds; greeting it, feeding it and the rest of its day are
+ * unchanged.
+ */
+test('it usually eats what it is given, refuses what is not food or not to its taste, and goes back to its rounds', () => {
   const dog = createVillageDog({ random: sequence([.2]) });
   assert.equal(dog.feed({ itemId: 'tinderbox', isFood: false }).ate, false);
   assert.equal(dog.feed({ itemId: DOG_DISLIKES[0], isFood: true }).ate, false);
   assert.equal(dog.feed({ itemId: 'cooked-fish', isFood: true, roll: DOG_APPETITE + .01 }).ate, false, 'now and then it is not hungry');
   const meal = dog.feed({ itemId: 'cooked-fish', isFood: true, roll: .5 });
-  assert.equal(meal.ate, true); assert.match(meal.line, /following/);
+  assert.equal(meal.ate, true);
+  assert.doesNotMatch(meal.line, /following|beside you/, 'the line promised a dog at your heel');
   assert.equal(dog.state.mode, 'eating');
   dog.update(3, { x: 0, z: 0 });
-  assert.equal(dog.state.mode, 'following');
-  const target = dog.update(.1, { x: 0, z: 0 });
-  assert.ok(Math.hypot(target.x, target.z) < 3, 'it keeps to heel');
-  assert.ok(target.pace > 2);
-  for (let i = 0; i < 200; i++) dog.update(.5, { x: 0, z: 0 });
-  assert.equal(dog.state.mode, 'sniffing', 'after a while it goes back to the green');
+  assert.equal(dog.state.mode, 'sniffing', 'it eats and goes back to the green, and never follows');
+  // And it stays away: two hundred ticks with the traveler standing right there.
+  for (let i = 0; i < 200; i++) assert.notEqual(dog.update(.5, { x: 0, z: 0 }) && dog.state.mode, 'following');
   assert.equal(dog.state.fed, 1);
   assert.match(dog.greeting(), /sits/);
 });

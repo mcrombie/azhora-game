@@ -43,7 +43,10 @@ export function createVillageDog({ haunts = VILLAGE_DOG.haunts, random = Math.ra
     const near = player ? Math.hypot(player.x - point.x, player.z - point.z) : Infinity;
     if (state.mode === 'eating') {
       state.timer -= dt;
-      if (state.timer <= 0) { state.mode = 'following'; state.followUntil = state.clock + 90; }
+      // **It does not follow.** Fed, it is pleased with you and goes back to its own rounds:
+      // ninety seconds of dog underfoot got in the way of everything (the user, 22 September
+      // 2026). Greeting it, feeding it and the rest of its day are unchanged.
+      if (state.timer <= 0) { state.mode = 'sniffing'; nextHaunt(); }
     } else if (state.mode === 'following') {
       if (state.clock >= state.followUntil || near > 40) { state.mode = 'sniffing'; nextHaunt(); }
     } else if (state.mode === 'approaching') {
@@ -75,7 +78,9 @@ export function createVillageDog({ haunts = VILLAGE_DOG.haunts, random = Math.ra
     if (DOG_DISLIKES.includes(itemId)) { state.lastRefusal = state.clock; return { ate: false, line: 'The dog sniffs it twice and turns its head away, offended.' }; }
     if (roll >= DOG_APPETITE) { state.lastRefusal = state.clock; return { ate: false, line: 'The dog sniffs it, thinks about it, and decides against it. You keep it.' }; }
     state.fed++; state.mode = 'eating'; state.timer = 2.5;
-    return { ate: true, line: state.fed === 1 ? 'Gone in two bites. The dog looks at your satchel, then at you, and decides you are worth following.' : 'Gone at once. The dog falls in beside you as if it had always been there.' };
+    // It is pleased with you and it is not coming with you: the lines used to promise a dog at
+    // your heel, which is what was taken out (the user, 22 September 2026).
+    return { ate: true, line: state.fed === 1 ? 'Gone in two bites. The dog looks at your satchel, then at you, and decides you are all right.' : 'Gone at once. The dog thumps its tail twice and goes back to its rounds.' };
   }
 
   function greeting() { return VILLAGE_DOG.greetings[state.fed === 0 ? 0 : state.mode === 'following' ? 2 : 1]; }

@@ -251,7 +251,9 @@ test('a save that holds linguist experience keeps every point of it', () => {
   const skills = createSkills();
   assert.equal(skills.restore(held), true);
   assert.equal(skills.known('linguist'), true);
-  assert.deepEqual(skills.snapshot(), held, 'and it comes back untouched');
+  // The snapshot also carries who taught what now (src/skills.js); a save from before that says
+  // it with its own keys, so both skills come back taught.
+  assert.deepEqual(skills.snapshot(), { ...held, taught: ['birding', 'linguist'] }, 'and it comes back untouched');
   // It is simply not drawn: the sheet filters, it does not forget.
   assert.equal(skills.view().find(entry => entry.id === 'linguist').xp, 12_345);
   assert.equal(skills.view().filter(entry => !hiddenSkillsIn(GAME_MODE_NORMAL).includes(entry.id))

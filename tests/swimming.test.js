@@ -180,10 +180,10 @@ test('the skill is paid for metres, for waters crossed, and for the Pebbles', ()
   assert.equal(swimming.crossed('Drent to Peblos').first, false, 'nor a crossing made blind');
   assert.equal(swimming.reachedPeblos().first, false, 'nor the Pebbles');
   assert.equal(swimming.metres, 0, 'and the record is not written, so it all still pays once he knows how');
-  assert.equal(skills.known(SWIMMING_SKILL), false);
+  assert.equal(skills.taught(SWIMMING_SKILL), false);
   assert.equal(swimming.learn().first, true);
   assert.equal(swimming.learn().first, false);
-  assert.equal(skills.known(SWIMMING_SKILL), true);
+  assert.equal(skills.taught(SWIMMING_SKILL), true);
   // One point per four metres, paid as they accumulate and never paid twice.
   assert.equal(swimming.swam(3).xp, 0);
   assert.equal(swimming.swam(1).xp, 1, 'the fourth metre pays');

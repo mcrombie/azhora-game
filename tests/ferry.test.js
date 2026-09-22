@@ -35,7 +35,7 @@ function harness({ purse = STARTING_PURSE, free = false, charges = false, mounte
   return { ferry, state, log, run };
 }
 
-test('Corran Sell waits at Tidehaven’s landing and carries anyone who asks', () => {
+test('Jess waits at Tidehaven’s landing and carries anyone who asks', () => {
   assert.equal(FERRY_FARE, 3);
   assert.ok(FERRY_FARE * 2 < STARTING_PURSE / 2, 'the traveler lands with the fare for several return trips');
   assert.equal(FERRY_NPC.id, 'boatman');
@@ -165,7 +165,7 @@ test('His conversation offers the crossing and says plainly why it cannot happen
   const board = box.value.options.choices.find(choice => choice.id === 'board-ferry');
   assert.equal(board.enabled, true);
   assert.match(board.label, /3 copper/);
-  assert.match(box.value.lines.join(' '), /Corran Sell/);
+  assert.match(box.value.lines.join(' '), /Jess/);
   assert.match(box.value.lines.join(' '), /Cobble/);
   board.action();
   assert.equal(acted.ok, true);

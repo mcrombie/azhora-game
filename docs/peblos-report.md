@@ -46,7 +46,7 @@ its own scatter (`ownScatter`).
 
 ## The crossing
 
-**Corran Sell** (`src/ferry.js`) is the man who rowed the traveler ashore in the
+**Jess** (`src/ferry.js`) is the man who rowed the traveler ashore in the
 opening; he is still at the landing, on the pier deck beside his boat. He takes
 **three copper** to Cobble and three copper back.
 
@@ -74,14 +74,14 @@ more.
   otherwise: the free hook is `testingEnabled` and nothing else. The testing
   panel has **Cross to Peblos · the islands** (`#test-peblos`), which skips the
   tutorial as the other travel buttons do, puts the traveler on Cobble's quay at
-  once and leaves Corran at the quay head to bring them back — it does **not**
+  once and leaves Jess at the quay head to bring them back — it does **not**
   advance any road errand, because Peblos is meant to be reachable before any of
   them.
 - **The horse cannot come.** A mounted traveler is refused, and the refusal is
   spoken, not just greyed out: *"Not with the horse. He will not stand in a boat
   this size. Leave him ashore and I will take you."*
 - **He waits on the shore the traveler is on.** Each frame the ferry settles:
-  whichever side of the water the traveler stands on, that is where Corran and
+  whichever side of the water the traveler stands on, that is where Jess and
   his boat are. It costs nothing when nothing has changed.
 
 `FERRY_VERSION` 1 is saved with the road (`ferry: { crossings, met }`), validated
@@ -113,7 +113,7 @@ Stands: Bregga (330, 426), Hallin (324.5, 438.5), Maun (321.5, 432), Wyn
 (337.5, 433.2), Pell (332, 415), Sela (326.5, 446.5), Dunnock (335, 423.5),
 Bassus (330.5, 434.5), Ferro (321, 426.5), Nabo (339, 438), Crix (337, 444).
 
-On the Drent side: Corran stands at (27, 30.6) at the seaward end of Tidehaven's
+On the Drent side: Jess stands at (27, 30.6) at the seaward end of Tidehaven's
 pier, his boat lies at (25, 24.8) on the pier's north side, and a traveler coming
 home is set down at (14, 29) halfway along the boards, facing the village.
 
@@ -163,7 +163,7 @@ of them.
   the Pebbles worth the vellum, keep the Pilot's Stone on your left hand.
 - **Sela Vane**, keeper of the shrine, who lights the headland when a boat is
   out and has never seen the Empire pay for the wood.
-- **Dunnock**, the quay runner, paid in fish for three jobs, and Corran Sell's
+- **Dunnock**, the quay runner, paid in fish for three jobs, and Jess's
   cousin — which is how the traveler learns that everybody on the quay is
   somebody's cousin.
 - **Decurion Aulus Bassus** and legionaries **Ferro**, **Nabo** and **Crix**:
@@ -354,7 +354,7 @@ import map, since deleted: the quay from the water as the traveler arrives, the
 quay from its head, the village from above the bay, the tally shed and its
 soldiers, the shrine, the headland light, the view out to Longstone and Gull
 Scarp, the seal cove at eye level, the drowned field, Wrack Island, and
-Tidehaven's pier with Corran and his boat on it. Seven things were changed
+Tidehaven's pier with Jess and his boat on it. Seven things were changed
 because of what they showed: the reclaimed bay and the leaking village field
 above; the island ground was too pale, so the hills and plains tints are darker
 and greener; the seals were faceted stone and are now smooth dark hide with a

@@ -29,7 +29,7 @@ turn from its own local frame: `villageToWorld(lx, lz) = (lz − 20, 29 − lx)`
 | The pier's root, `world.pierHead`, where Jojo stands | (0, 25), ground 1.53 m, facing west (yaw −π/2) | `villageToWorld(4, 20)`; the builder's `pierHead.yaw` |
 | The arrival boat's berth | (23, 34), bow east, yaw π/2 − 0.12; the gangplank at (23, 32.25) up to the deck | world.js `boat(-5.0, 43, 1, -.12, true)`, a child of the village root |
 | Water at the berth | harbour floor −5.82 m; sea level 0.06 | `heightAt`, `SEA_LEVEL` |
-| Corran Sell's ferry boat and Corran | boat at (25, 24.8) on the pier's north face; he stands at (27, 30.6), the pier's end | `FERRY_MOORINGS.drent`, `FERRY_LANDINGS.drent.stand` |
+| Jess's ferry boat and Jess | boat at (25, 24.8) on the pier's north face; he stands at (27, 30.6), the pier's end | `FERRY_MOORINGS.drent`, `FERRY_LANDINGS.drent.stand` |
 | Tobin the fisher | (2, 44), on the shore south of the pier's root | `npcPositions.fisher` |
 | The Greenway warning bell | (−45, 25), the village's inland edge, 70 m west of the landing | world.js `bellX, bellZ` |
 | The cottages | between x −41 and −7, z 0 and 54; chimneys smoke | world.js `cottage(...)` |
@@ -84,7 +84,7 @@ ground under the boat is at least 0.8 m below the sea) and nothing exceeds the S
 | 1 | `open-water` | 0–7 | ahead, along the bow, a little down | The bow lifting. The coast a line ahead: the low shore, the rise north of the harbour to the right of the bow, the cape's shoulder beyond it. The companion in the bow, back to you. A sail at anchor off to port. |
 | 2 | `the-headland` | 7–14.5 | the rise north of the harbour, (30, 7, −70) | The head turns right: the headland, green over grey, the small boat under the cape. |
 | 3 | `drent` | 14.5–22 | the cottage roofs, (−20, 5, 29) | Back toward the bow: the village coming up out of the haze, chimney smoke, the pier a dark line on the water. |
-| 4 | `ambron` | 22–29.5 | ahead | The pier growing. Gulls over its end. A man at the end of it (Corran) watching you come. |
+| 4 | `ambron` | 22–29.5 | ahead | The pier growing. Gulls over its end. A man at the end of it (Jess) watching you come. |
 | 5 | `the-bell` | 29.5–35 | the bell, (−45, 3, 25) | **The bell rings at 30 s.** The eye goes to the village's inland edge. The pier's end passes close to starboard. |
 | 6 | `rounding-up` | 35–39 | the pier's middle, (15, 2.5, 29) | The helm goes over; the whole pier swings across the view from right to left as the boat turns through the north; the beach and the fisher's cottages close on the left; **the companion turns to face you at 36 s.** |
 | 7 | `alongside` | 39–44 | the companion, then the settle | The face of the pier sliding past to port. The companion facing you, the pier behind him. **At 40 s you stand** (the eye rises 0.13 m over two seconds); **at 42 s you step up**: the eye cranes back and up over two seconds to the game's own camera behind you on the pier, and the companion steps onto the deck beside you. **At 44 s the frame is yours.** |
@@ -117,7 +117,7 @@ The boat's bob and roll are the world's own (`world.update` gives the arrival bo
   minute before that, and it should not be spent watching the boat come in.
 - **Nothing is saved.** The sequence changes no quest, satchel, campaign or save state; quest stage
   is 0 throughout and stays 0 at the landing, as now.
-- **The Sultana** is at sea; Corran waits at the pier's end; the gulls circle; the smoke rises.
+- **The Sultana** is at sea; Jess waits at the pier's end; the gulls circle; the smoke rises.
   None of it is staged: it is the harbour as it already is.
 
 ## The captions
@@ -260,8 +260,8 @@ and Jojo's errand are untouched.
 - **The arrival boat's sail cannot be lowered**: one fixed mesh in `boat()`.
 - **The arrival boat is not reachable from outside `world.js`**; the host needs
   `world.placeArrivalBoat(x, z, yaw)` and `world.restArrivalBoat()` (in the brief).
-- **`src/ferry.js` says Corran Sell rowed the traveler ashore in the opening.** After this
-  sequence the traveler sailed in; Corran's boat is on the north face and his is a rowing boat.
+- **`src/ferry.js` says Jess rowed the traveler ashore in the opening.** After this
+  sequence the traveler sailed in; Jess's boat is on the north face and his is a rowing boat.
   The comment is a comment; his stand and lines do not depend on it. Left alone, noted.
 - **The companion's landed spot sits on the deck's very edge.** (23, 31.2) is local x −2.2 to
   within floating point, and `heightAt`'s deck rule is `< 2.2`; it lands on the deck only because

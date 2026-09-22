@@ -372,7 +372,7 @@ export function createPeblosScenery(kit) {
   // The ferryman's boat: a world-space prop the crossing moves (src/ferry.js)
   // -------------------------------------------------------------------------
   const ferryBoat = (() => {
-    const boat = new THREE.Group(); boat.name = 'Corran Sell’s boat'; root.add(boat);
+    const boat = new THREE.Group(); boat.name = 'Jess’s boat'; root.add(boat);
     movingGroups?.add(boat);
     const outline = [[0, -3.2], [1.1, -2.1], [1.3, .9], [.82, 2.55], [0, 3.1], [-.82, 2.55], [-1.3, .9], [-1.1, -2.1]];
     const bp = [], bi = [];
