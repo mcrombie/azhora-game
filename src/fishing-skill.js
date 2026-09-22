@@ -109,7 +109,7 @@ export function validateFishingSnapshot(data, { allowMissing = true } = {}) {
 export function createFishing({ skills, onEvent = () => {} } = {}) {
   const state = { taught: false, caught: {} };
 
-  /** Bran or Hollis hands over a rod: that is the lesson. */
+  /** Bran or Chip hands over a rod: that is the lesson. */
   function learn() {
     const first = !state.taught;
     state.taught = true;
@@ -141,7 +141,7 @@ export function createFishing({ skills, onEvent = () => {} } = {}) {
         name: state.caught[id] ? FISH_SPECIES[id].name : 'A fish you have not landed',
         detail: state.caught[id] ? FISH_SPECIES[id].note
           : state.taught ? `Found in ${Object.keys(FISH_SPECIES[id].waters).map(water => water.replace('-', ' ')).join(', ')} water.`
-          : 'Ask Bran at Willowmere Pond, or Hollis at the Caloss crossing, for a rod.' })),
+          : 'Ask Bran at Willowmere Pond, or Chip at the Caloss crossing, for a rod.' })),
     };
   }
 

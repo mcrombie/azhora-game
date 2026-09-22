@@ -69,7 +69,7 @@ After: `tests/artifacts/towns-review/after-places-1.png` (farmsteads, gatehouse)
 
 ## Luscia
 
-- **The Caloss crossing camp**: Hollis's timber stacks and sawhorses on the
+- **The Caloss crossing camp**: Chip's timber stacks and sawhorses on the
   Luscian bank, the ferryman's hut and his jetty with the boat still tied up;
   Cade the ferryman stands at the water.
 - **The reedcutters' landing**: drying racks, reed stacks, a punt carried up.

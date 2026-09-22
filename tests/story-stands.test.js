@@ -69,6 +69,10 @@ test('the day after the battle has ground under it wherever its places are built
 test('the roads can be ridden end to end, and the stable yard has room for a man and a horse', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
+  // **With the Caloss span down again.** Six paces of it are in the river until somebody mends
+  // it, and a horse will not go in the water at all (src/world-regions.js, src/swimming.js) -
+  // which is the point of the repair, and not a road that was built wrong.
+  world.setJourneySiteState?.('bridge-repair', true);
   // A mounted traveler is wider than a walker: the whole main road, the Caloss bridge included, must take the mount's footprint.
   const road = world.paths[0];
   for (let i = 1; i < road.length; i++) {

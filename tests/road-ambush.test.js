@@ -239,3 +239,37 @@ test('src/main.js walks the road, springs it, lays the bodies and saves all of i
   assert.match(main, /ambush:ambush\.snapshot\(\)\}\);/);
   assert.match(main, /ambush\.restore\(saved\.ambush\?\?createRoadAmbush\(\{seed:ambushSeed\}\)\.snapshot\(\)\);/);
 });
+
+/**
+ * **The Caloss, which is now a river and not a wall** (the user, 22 September 2026: all rivers
+ * should be real swimmable water, and the bridge is what saves you from swimming). Six paces of
+ * the middle of the span are in the water, so the crossing is a swim or a repair.
+ */
+test('the Caloss span is down, and the break leaves the repair within reach of sound planks', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const site = world.journeySites['bridge-repair'];
+  // The bridge's own line, taken from the break itself: Drent is the end at -13.5 (650 m along
+  // the road, against the far bank's 677), which is the bank the traveler arrives on.
+  const damage = world.colliders.filter(one => one.kind === 'bridge-damage');
+  assert.ok(damage.length > 20, `only ${damage.length} shapes close the break`);
+  const first = damage[0], last = damage.at(-1);
+  const axis = { x: -0.810, z: 0.587 };
+  const deck = along => {
+    const x = site.x + axis.x * along, z = site.z + axis.z * along;
+    return canStand(x, z, world, BODY.person);
+  };
+  // Walked from the Drent bank: sound planks, then nothing.
+  let reached = null;
+  for (let along = -13; along <= 13; along += .25) { if (deck(along)) reached = along; else if (reached !== null && along > reached + .4) break; }
+  assert.ok(reached !== null && reached < 1, `the deck carries on to ${reached}`);
+  assert.ok(Math.abs(reached) < 2.7, `the repair is ${Math.abs(reached).toFixed(2)} m past the last sound plank, and F reaches 2.7`);
+  // The far side is not walked to from here, at any point in the break.
+  for (let along = 1.5; along <= 6; along += .5) assert.equal(deck(along), false, `the break is walkable at ${along}`);
+  // Wider than a running jump: 6.3 m/s up against 17 of gravity is .74 s in the air.
+  const hole = damage.reduce((most, one) => Math.max(most, Math.hypot(one.x - first.x, one.z - first.z)), 0);
+  assert.ok(hole > 5, `the break is only ${hole.toFixed(1)} m across`);
+  // And mended, the bridge is a bridge again, end to end.
+  world.setJourneySiteState('bridge-repair', true);
+  for (let along = -13; along <= 13; along += .5) assert.equal(deck(along), true, `the mended deck is broken at ${along}`);
+});

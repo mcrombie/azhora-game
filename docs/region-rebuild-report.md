@@ -78,7 +78,7 @@ Sparse woodland: grass with seeded copses that thin toward the Moros.
   hills at `(-556, -2)` to the Stills at `(-182, 188)`, with a carved channel,
   a downhill surface profile and water that cannot be waded.
 - **The Caloss bridge** at the crossing, rotated onto the road heading, with the
-  original damaged western strip, its repair cord and the repaired deck. Hollis
+  original damaged western strip, its repair cord and the repaired deck. Chip
   keeps it from `(-357, 106)`; the reedcutters' camp and Merren's landing
   workshop sit on the Luscian bank; the marked fishing bank is upstream at
   `(-306, 104)`.
@@ -193,7 +193,7 @@ unchanged in every case.
   to the Moros, the Caloss bank and the East Suval hills.
 - **The Moros and East Suval have no quests.** `journey.js` still runs its three
   chapters (2, 3, 4) as quest-chapter ids, not region ids: chapter 2 is Corvan in
-  Drent, 3 is Hollis at the Caloss, 4 is Sava and Iven in Luscia. The same is
+  Drent, 3 is Chip at the Caloss, 4 is Sava and Iven in Luscia. The same is
   true of `regional-life.js`. Renaming those ids to match the region ids is a
   separate, larger change.
 - **Ground tinting is coarse near clearings.** Worn-patch circles and the road

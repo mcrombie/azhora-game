@@ -4,7 +4,11 @@ import { questLive } from './quest-slate.js';
 
 export const JOURNEY_NPCS = [
   {id:'meadow-courier',name:'Corvan',role:'Ambroni army quartermaster',modelRole:'legion-officer',color:0x832d2b},
-  {id:'crossing-keeper',name:'Hollis',role:'Crossing keeper',modelRole:'bridge-keeper',color:0x6b8c83},
+  // **Chip**, a carpenter, light brown hair (the user, 22 September 2026). The hair is on him and
+  // not on the `bridge-keeper` build, because Jess on the Stills is built from the same one and
+  // hers is black (src/ferry.js). His id stays what it always was, the way Kristen's does.
+  {id:'crossing-keeper',name:'Chip',role:'Carpenter, at the Caloss crossing',modelRole:'bridge-keeper',
+    color:0x6b8c83,look:{hair:0x8a6b45}},
   {id:'ridge-keeper',name:'Sava',role:'Keeper of the rise',modelRole:'rise-custodian',color:0x697589},
   {id:'relay-clerk',name:'Iven',role:'Imperial relay clerk',modelRole:'legion-soldier',color:0x8f3b30},
 ];
@@ -49,6 +53,14 @@ export function journeyConversation(npc,context) {
       ]),
     ],
     'crossing-keeper':[
+      // **Glun** (the user, 22 September 2026): the two of them grew up in Drent and fished it
+      // together, and the officer at the practice post is a Drent man who went into the army and
+      // came back up it (src/instructor.js). The id keeps the old prefix, like everything of his.
+      tangent('hollis-glun','You know the officer at the post?',[
+        'Glun? I have known Glun since before he could hold a rod straight. We were boys on this water — the slow reach above the mill, where the trout sit under the bank and think nobody can see them.',
+        'He went into the army at seventeen and I thought that was the end of it. Twenty-odd years and he is back, with grey in him and a plume on his helmet, and the whole of Drent to keep. They do not usually give a man his own country to look after. He asked for it.',
+        'He still comes down here when the light is right. He does not say much and he does not catch much either, and I have never once told him that.'
+      ]),
       tangent('hollis-river','Do you mend this bridge often?',[
         'Often enough that I know which plank complains before the rain. You listen to the river and you listen to the timber. Both will tell you what is wrong if you let them finish.',
         'People leave a sound branch here when they cross. One brings wood, another tightens a knot. Some of those hands belong to people your army calls rebels. Ask around before deciding that makes them strangers.'
@@ -105,7 +117,7 @@ export function journeyConversation(npc,context) {
     // His three parcels and his field register are off the slate (src/quest-slate.js). He is a
     // soldier and stays standing at his cart; he has nothing to give out until they come back.
     if(!live('courier'))return tell(['Quartermaster, Ambroni army, and today that means counting a cart nobody has come to collect. If you are the hire off the Tidehaven boat, you are Iven’s business, not mine — the relay at Nothom, over the Caloss. Keep walking west.'],[]);
-    if(done(2))return tell(['Your first field assignment is recorded. Hollis keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.',
+    if(done(2))return tell(['Your first field assignment is recorded. Chip keeps the Caloss crossing beyond the old mill; the army needs that supply road made sound. Then follow the markers to our relay on the rise, across the river. Stay alert: command expects resistance from the rebels as well as goblins.',
       registerLine(register)],[]);
     if(!state.started)return tell(['You came up from Tidehaven? Before carrying anyone else’s troubles, finish your business with Jojo and Eren. This road will still be here.'],[]);
     if(view.stage==='meet-courier'||!state.courierAccepted)return tell([
@@ -115,32 +127,32 @@ export function journeyConversation(npc,context) {
       'The parcels spilled east of the main road, around the broken field walls. Look for crossed ties around each bundle. Mind the goblin raiders among them; you can withdraw and catch your breath before trying again.'
     ],[choice('meet-courier','Report for field service · recover the supplies')]);
     if(state.parcels.length<3)return tell([`You have found ${state.parcels.length} of the three parcels. Look east of the main road, among the broken field walls and beside the cart track. F lifts a parcel. Your journal follows what remains; the gold marker points to the nearest one.`],[]);
-    return tell(['Three parcels, accounted for. Your first army assignment is complete. Take two cooked fish as provisions. Next, help Hollis put the Caloss crossing in order, then restore the route markers up Threefold Rise and report to Iven at our relay. Command needs a road into Luscia it can hold against the rebels.'],[choice('return-courier','Return the parcels · take provisions')]);
+    return tell(['Three parcels, accounted for. Your first army assignment is complete. Take two cooked fish as provisions. Next, help Chip put the Caloss crossing in order, then restore the route markers up Threefold Rise and report to Iven at our relay. Command needs a road into Luscia it can hold against the rebels.'],[choice('return-courier','Return the parcels · take provisions')]);
   }
   if(npc.id==='crossing-keeper') {
     // **The bridge is nobody's orders.** It used to be the fourth and fifth steps of Chapter 1,
-    // handed down by Corvan; it is a side quest now (src/quest-slate.js), so Hollis asks for
+    // handed down by Corvan; it is a side quest now (src/quest-slate.js), so Chip asks for
     // himself, and the traveler who says no crosses the Caloss by swimming it.
-    // On the old ladder Corvan hands this job down, and Hollis will not start it early.
+    // On the old ladder Corvan hands this job down, and Chip will not start it early.
     if(state.bridge==='on-the-road'&&!done(2))return tell(['The crossing needs work, but there is no hurry. An army quartermaster called Corvan has a broken cart back on Sunmeadow Plain. Give him a hand first; everyone on this road relies on the next traveler.'],[]);
-    if(state.bridge==='closed')return tell(['The crossing needs work, and it will keep. The river is down to what it always is, and anybody in a hurry can swim it — I would rather they did not.'],[]);
+    if(state.bridge==='closed')return tell(['The middle of it is in the river and it will keep. Anybody in a hurry swims, and I would rather they did not.'],[]);
     if(state.bridge==='done'||done(3))return tell(['Those lashings will hold for an army cart, and for the families trying to stay out of its way. Nobody swims the Caloss on my account now. Save your spare wood for a fire; the air gets cool on the rise.'],[]);
     if(!state.bridgeAccepted)return tell([
-      'I am Hollis, and this is the Caloss: Drent ends on this bank and Luscia begins on the other. The eastern walkway still holds — one man at a time, watching his feet. The damaged side is down to its stringers and wants three sound branches.',
-      'You do not have to, and you can cross either way. But nothing with a wheel is getting over on what is left, and the ones who will not trust a plank swim it instead — in this current, with a load, some of them only nearly. Mend it and nobody has to find out which kind they are.',
+      'I am Chip, and this is the Caloss: Drent ends on this bank and Luscia begins on the other. Or it did. Six paces of the middle went into the water in the spring and they have not come out of it, and what is left is two halves of a bridge looking at each other.',
+      'You do not have to. There is the river — people swim it, in this current, with a load, and some of them only nearly. Three sound branches and nobody has to find out which kind they are, and a cart gets over, which the river has never once managed.',
       'There is driftwood along this bank. Gather it with F. Bring three sticks to the bridge’s repair point and press F to lash them into place. I have the cord and tools.'
     ],[choice('meet-crossing-keeper','I’ll mend the crossing.')]);
     if(!state.bridgeRepaired)return tell([`Three branches will brace the planks. You carry ${inventory.count('forest-stick')} sticks. Driftwood lies along the bank; gather enough, then use the repair point at the bridge. Keep a few spares if you want to cook afterward.`],[]);
     return tell([
       'A straight brace and tight cord. Take four spare branches. Your army has its crossing, but you have helped the people on both banks as well.',
       'A quiet word: most households here shelter or feed the people the Empire calls rebels. They are our neighbors. Goblins take from us out of the north; the army takes grain and calls it protection. Speak with Sava on the rise before you decide whose side these families are on.'
-    ],[choice('return-crossing-keeper','Tell Hollis the bridge is repaired')]);
+    ],[choice('return-crossing-keeper','Tell Chip the bridge is repaired')]);
   }
   if(npc.id==='ridge-keeper') {
-    if(!done(3))return tell(['The river below shapes every journey up here. Ask Hollis what needs doing at Reedwater Crossing before you climb farther. We keep the road together, one small repair at a time.'],[]);
+    if(!done(3))return tell(['The river below shapes every journey up here. Ask Chip what needs doing at Reedwater Crossing before you climb farther. We keep the road together, one small repair at a time.'],[]);
     if(done(4))return tell(['The markers stand again. You are still in imperial service, but now you know whom those orders call rebels: Luscia’s own people, most of them, who wanted a republic and lost a battle for it. What you do with that knowledge is a longer road.'],[]);
     if(!state.ridgeAccepted)return tell([
-      'I am Sava. Hollis was right to send you. You stand on the Luscia side of the Caloss now. Ten days ago the army met a rebel army at the Lauvel crossing and broke it. Those rebels were farmers, drovers and market families from every valley of Luscia. Most of the population supports what they wanted: a republic in place of the emperor.',
+      'I am Sava. Chip was right to send you. You stand on the Luscia side of the Caloss now. Ten days ago the army met a rebel army at the Lauvel crossing and broke it. Those rebels were farmers, drovers and market families from every valley of Luscia. Most of the population supports what they wanted: a republic in place of the emperor.',
       'We are caught between goblin raids pressing down from the north and an empire that is losing its grip and squeezing harder as it slips. Your contract calls this a campaign against rebels. For the people living here, it is a fight for their own government and homes.',
       'Your route assignment can still help them. Rain loosened three waymarkers: western shelf, eastern bend, northern rise. Press F to straighten each reflective stone; no fuel is needed. Families escaping the fighting need those directions as much as soldiers do.',
       'Then carry the letter of introduction on to Iven. He keeps the army’s relay post on the square at Nothom, down the road past the field at the Lauvel. Tell him what you have heard here; he copies reports for the army, and let this one include the people’s account.'

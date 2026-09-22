@@ -61,7 +61,7 @@ export const FERNWAY_SHELTER = P(FERNWAY_REST.x - 8, FERNWAY_REST.z + 2, { yaw: 
 // ---------------------------------------------------------------------------
 // Luscia
 // ---------------------------------------------------------------------------
-/** The Caloss crossing camp on the Luscian bank: Hollis's timber yard and the ferryman's hut by the water. */
+/** The Caloss crossing camp on the Luscian bank: Chip's timber yard and the ferryman's hut by the water. */
 export const CROSSING_CAMP = Object.freeze({
   timber: Object.freeze([crossing(-32, 13, { yaw: .7 }), crossing(-26.6, 8.6, { yaw: .7 })]),
   sawhorses: crossing(-33.4, 6.7, { yaw: .7 }),

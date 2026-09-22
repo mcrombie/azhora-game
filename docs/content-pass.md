@@ -5,7 +5,7 @@ This is the brief for the pass that follows the region rebuild (`docs/region-reb
 ## Ground rules
 
 - Names and lore come from `src/campaign-world.js` (`REGION_DESIGN`, `FACTIONS`, `COALITION_MEMBERS`) and `docs/campaign-design.md`. Use authored atlas names. There is no South Pyros: West and East Pyros are one empire with a small Coalition contingent. Legion soldiers are men by default.
-- Tone: the Legion speaks in orders and requisitions and calls the republicans rebels; the people of Luscia and Suval speak plainly and most of them wanted the republic. Nobody lectures. Hollis and Sava in `src/journey-content.js` are the register to match.
+- Tone: the Legion speaks in orders and requisitions and calls the republicans rebels; the people of Luscia and Suval speak plainly and most of them wanted the republic. Nobody lectures. Chip and Sava in `src/journey-content.js` are the register to match.
 - Dialogue is authored as arrays of lines with `tangent(...)` and `choice(...)` helpers in `journeyConversation` (`src/journey-content.js`). Keep that shape for road NPCs. Regional colour (rumours, ambient lines, small favours) lives in `src/regional-life.js` and `src/road-life.js`; places in `src/regional-places.js`.
 - Quest wiring lives in `src/campaign.js` (`CHAPTERS`: `luscia-aftermath` → `moros-camp` → `suval-envoy` → `border-battle`) and `src/journey.js`. Do not change the state machine's rules; add the triggers and the text that advance it.
 - The autopilot (`src/autopilot.js`, `planGoal`) must be able to complete every chapter you make playable. If you add a chapter's triggers, add the matching goals and extend `src/autoplay-smoke.js` to assert the new chapter is reached.

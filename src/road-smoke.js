@@ -75,7 +75,7 @@ export async function runRoadSmoke(h) {
   /**
    * A side errand is offered without being pointed at: the bridge over the Caloss is nobody's
    * step while the slate is trimmed (`bridgeStage`, src/journey.js), so the road does not send
-   * the traveler to Hollis and Hollis is still there to be asked (src/quest-slate.js).
+   * the traveler to Chip and Chip is still there to be asked (src/quest-slate.js).
    */
   function checkSideErrand(id) {
     const action = journey.availableActions().find(item => item.objectiveId === id);
@@ -184,30 +184,45 @@ export async function runRoadSmoke(h) {
     else checkSideErrand('crossing-keeper');
     await visit('crossing-keeper'); await chooseRoad('meet-crossing-keeper');
     // Simulate arriving after all loose wood has been spent on weapons or fire.
-    // The repair quest must remain completable through Hollis's actual dialogue.
+    // The repair quest must remain completable through Chip's actual dialogue.
     const woodToSpend = inventory.count('forest-stick');
     if (woodToSpend > 0) assert(weapons.spendSticks(woodToSpend), 'could not create the empty-firewood fixture');
     inventory.refresh();
     const beforeLoan = JSON.stringify(journey.snapshot());
     await visit('crossing-keeper');
-    assert(query('[data-choice="hollis-repair-wood"]'), 'Hollis offered no repair timber after all sticks were spent');
+    assert(query('[data-choice="hollis-repair-wood"]'), 'Chip offered no repair timber after all sticks were spent');
     choose('hollis-repair-wood');
     assert(query('#speech')?.textContent.includes('marked repair timber'), 'the repair timber offer did not explain its source');
     await finishDialogue();
-    assert(inventory.count('forest-stick') === 3, 'Hollis did not replenish exactly three repair branches');
+    assert(inventory.count('forest-stick') === 3, 'Chip did not replenish exactly three repair branches');
     assert(JSON.stringify(journey.snapshot()) === beforeLoan, 'borrowing timber advanced the repair quest');
-    assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the repair timber conversation did not return to Hollis');
-    assert(!query('[data-choice="hollis-repair-wood"]'), 'Hollis offered more timber while the player already had enough');
+    assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the repair timber conversation did not return to Chip');
+    assert(!query('[data-choice="hollis-repair-wood"]'), 'Chip offered more timber while the player already had enough');
     choose('leave-road-neighbor'); await frames(2);
     await gather('bridge-debris-1', 'forest-stick', 2);
     await gather('bridge-debris-2', 'forest-stick', 2);
     if (questLive('courier')) await checkDestination('bridge-repair');
     else checkSideErrand('bridge-repair');
-    await arrive(sites['bridge-repair'].x, sites['bridge-repair'].z);
+    // **The repair is made from the last sound plank**, not from the middle of the hole: six
+    // paces of the span are in the river now (src/world-regions.js), so the site itself cannot be
+    // stood on and a walkthrough that warped onto it would be standing in the water.
+    const repair = sites['bridge-repair'];
+    let stand = null;
+    for (let out = .4; out <= 2.6 && !stand; out += .2)
+      for (let turn = 0; turn < 24 && !stand; turn++) {
+        const angle = turn / 24 * Math.PI * 2, x = repair.x + Math.cos(angle) * out, z = repair.z + Math.sin(angle) * out;
+        if (canStand(x, z, world)) stand = { x, z, out };
+      }
+    assert(stand, 'there is nowhere to stand within reach of the bridge repair');
+    assert(stand.out < 2.7, `the nearest footing is ${stand.out.toFixed(1)} m from the repair and F reaches 2.7`);
+    await arrive(stand.x, stand.z);
     const sticksBefore = inventory.count('forest-stick'), wearBefore = weapons.status('forest-stick').durability;
     const damagedLane = world.colliders.filter(c => c.kind === 'bridge-damage');
     const damagedSpot = damagedLane[Math.floor(damagedLane.length / 2)];
     assert(damagedSpot && !canStand(damagedSpot.x, damagedSpot.z, world), 'the damaged side of the bridge was already open');
+    // And the break is a break: the far bank is not walked to while it is open.
+    assert(!canStand(repair.x + (repair.x - stand.x) * 3, repair.z + (repair.z - stand.z) * 3, world),
+      'the broken span could be walked straight across');
     tap('KeyF'); await frames(2);
     assert(journey.state.bridgeRepaired && world.journeySiteState()['bridge-repair'], 'bridge repair did not update the world');
     assert(canStand(damagedSpot.x, damagedSpot.z, world), 'repair did not make the damaged bridge lane walkable');
@@ -236,17 +251,17 @@ export async function runRoadSmoke(h) {
     assert(bridgeWalked > 25 && canStand(position.x, position.z, world), 'the bridge was not crossed on foot');
     const woodBefore = inventory.count('forest-stick');
     await visit('crossing-keeper'); await chooseRoad('return-crossing-keeper');
-    assert(inventory.count('forest-stick') === woodBefore + 4, 'Hollis did not grant exactly four spare branches');
+    assert(inventory.count('forest-stick') === woodBefore + 4, 'Chip did not grant exactly four spare branches');
     assert(journey.state.completedRegions.includes(3), 'the Caloss crossing was not completed');
 
     const beforeFishingLesson = JSON.stringify(journey.snapshot()), rodsBefore = inventory.count('fishing-rod');
     await visit('crossing-keeper');
     choose('hollis-fishing'); await finishDialogue();
-    assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the river fishing lesson did not return to Hollis');
+    assert(getMode() === 'dialogue' && query('[data-choice="leave-road-neighbor"]'), 'the river fishing lesson did not return to Chip');
     // A traveler who already has Bran's rod is not given a second; one who has none - Bran is out
     // of the cast while the main quest is built out (src/cast.js) - is given his first here.
     assert(inventory.count('fishing-rod') === Math.max(1, rodsBefore),
-      rodsBefore ? 'Hollis duplicated the fishing rod already carried from Tidehaven' : 'Hollis did not hand over a rod to a traveler with none');
+      rodsBefore ? 'Chip duplicated the fishing rod already carried from Tidehaven' : 'Chip did not hand over a rod to a traveler with none');
     assert(JSON.stringify(journey.snapshot()) === beforeFishingLesson, 'the fishing tangent advanced the road quest');
     choose('leave-road-neighbor'); await frames(2);
     const river = world.fishingSpots.find(spot => spot.id === 'reedwater');

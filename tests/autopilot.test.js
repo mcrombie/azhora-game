@@ -13,7 +13,7 @@ function fakeWorld() {
     colliders: [{ x: 6, z: 0, r: 1.2 }, { x: 0, z: -12.5, hx: .5, hz: .5 }],
     paths: [trail, [{ x: -21, z: 13 }, { x: 0, z: 7 }]],
     npcPositions: { harbormaster: { x: 4, z: 20 }, 'bird-watcher': { x: 22, z: 34 }, warden: { x: 0, z: -65 }, 'meadow-courier': { x: -7, z: -190 }, 'crossing-keeper': { x: -9, z: -352 } },
-    npcNames: { harbormaster: 'Jojo', 'bird-watcher': 'Lakota', warden: 'Eren', 'meadow-courier': 'Corvan', 'crossing-keeper': 'Hollis' },
+    npcNames: { harbormaster: 'Jojo', 'bird-watcher': 'Lakota', warden: 'Eren', 'meadow-courier': 'Corvan', 'crossing-keeper': 'Chip' },
     journeySites: { 'cart-parcel-1': { id: 'cart-parcel-1', x: 15, z: -218, name: 'Cloth parcel' }, 'bridge-repair': { id: 'bridge-repair', x: 0, z: -400, name: 'Reedwater bridge' } },
     stickSites: [{ id: 'bridge-debris-1', x: -8, z: -383, collected: false }, { id: 'bridge-debris-2', x: 8, z: -389, collected: true }],
     repairBenches: [{ x: 3, z: -191 }],
@@ -101,7 +101,7 @@ test('the planner follows the road quests, gathers sticks for the bridge, and st
   assert.equal(sticks.siteId, 'bridge-debris-1', 'collected driftwood is skipped and the nearest remaining pile is chosen');
   const worldWithoutSticks = { ...world, stickSites: [] };
   const hollis = planGoal(road({ position: { x: 0, z: -380 } }, { stage: 'repair-bridge', destinationIds: ['bridge-repair'] }), worldWithoutSticks);
-  assert.equal(hollis.npcId, 'crossing-keeper', 'with no driftwood left, ask Hollis for timber');
+  assert.equal(hollis.npcId, 'crossing-keeper', 'with no driftwood left, ask Chip for timber');
   const bridge = planGoal(road({ inventory: { sticks: 3, cookedFish: 0, pawpaws: 0 } }, { stage: 'repair-bridge', destinationIds: ['bridge-repair'] }), world);
   assert.equal(bridge.siteId, 'bridge-repair');
   assert.equal(planGoal(road({}, { complete: true }), world).kind, 'done');
@@ -112,7 +112,7 @@ test('the planner follows the road quests, gathers sticks for the bridge, and st
   assert.equal(planGoal(road({ combat: { phase: 'peaceful', action: 'idle', stamina: 100, hp: 20, enemies: [] }, inventory: { sticks: 0, cookedFish: 1, pawpaws: 0 } }), world).item, 'cooked-fish');
 });
 
-test('replies prefer the quest action, ask Hollis for wood only when short, and otherwise leave politely', () => {
+test('replies prefer the quest action, ask Chip for wood only when short, and otherwise leave politely', () => {
   const choices = [{ id: 'nessa-caravans', label: 'What travels through these fields?' }, { id: 'meet-courier', label: 'Report for field service' }, { id: 'leave-road-neighbor', label: 'Back to the road.' }];
   assert.equal(chooseReply(choices, snapshot({ journey: { actions: [{ id: 'meet-courier', enabled: true }] } })), 'meet-courier');
   assert.equal(chooseReply(choices, snapshot({ journey: { actions: [] } })), 'leave-road-neighbor');

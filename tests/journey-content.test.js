@@ -133,7 +133,7 @@ test('every flavor tangent returns to its neighbor without progression before or
   check(); finishMeadow(f); finishCrossing(f); finishRise(f); check();
 });
 
-test('Hollis lends one rod after the fishing pages; repeat lessons only remind and never advance a quest', () => {
+test('Chip lends one rod after the fishing pages; repeat lessons only remind and never advance a quest', () => {
   const f = fixture(), before = f.journey.snapshot();
   f.talk('crossing-keeper').choose('hollis-fishing');
   assert.equal(f.shown.label, 'Borrow a spare rod');
@@ -229,15 +229,15 @@ test('imperial induction precedes the gradual reveal that Luscia’s people want
 });
 
 /**
- * And the slate as it stands: Corvan has nothing to give, Hollis asks for himself, and Iven
+ * And the slate as it stands: Corvan has nothing to give, Chip asks for himself, and Iven
  * takes the report the moment the letter reaches him.
  */
-test('the trimmed slate: Corvan gives nothing, Hollis asks for himself, Iven takes the letter', () => {
+test('the trimmed slate: Corvan gives nothing, Chip asks for himself, Iven takes the letter', () => {
   const f = fixture({ live: questLive, sticks: 3 });
   f.talk('meadow-courier');
   assert.equal(f.shown.options.choices.some(one => one.id === 'meet-courier'), false, 'his field assignment is off the slate');
   assert.match(f.shown.lines.join(' '), /Iven/, 'and he sends the traveler on west instead');
-  // Hollis, unbidden, and honest about the alternative.
+  // Chip, unbidden, and honest about the alternative.
   f.talk('crossing-keeper');
   assert.match(f.shown.lines.join(' '), /swim/, 'he says what the other ways over are');
   f.choose('meet-crossing-keeper');
@@ -248,4 +248,42 @@ test('the trimmed slate: Corvan gives nothing, Hollis asks for himself, Iven tak
   // Iven, with no waymarkers behind him.
   f.talk('relay-clerk').choose('deliver-report');
   assert.equal(f.journey.view().complete, true);
+});
+
+/**
+ * **Chip**, the carpenter at the Caloss, who was Hollis until the user renamed him on
+ * 22 September 2026, and who grew up on this river with the officer at the practice post.
+ */
+test('Chip is a carpenter with his own hair, and his ids are the ones he always had', () => {
+  const chip = JOURNEY_NPCS.find(one => one.id === 'crossing-keeper');
+  assert.equal(chip.name, 'Chip');
+  assert.match(chip.role, /[Cc]arpenter/);
+  // Light brown, and on him: Jess on the Stills is built from the same `bridge-keeper` and hers
+  // is black, so the hair cannot live on the role (src/ferry.js).
+  assert.equal(chip.look.hair, 0x8a6b45);
+  assert.equal(chip.modelRole, 'bridge-keeper');
+  // Nobody reads an id, and saves and the planner both hold these.
+  assert.equal(chip.id, 'crossing-keeper');
+});
+
+test('Chip will talk about Glun, and the two accounts of him agree', async () => {
+  const f = fixture({ live: questLive, sticks: 3 });
+  f.talk('crossing-keeper');
+  const said = [];
+  const choice = f.choice('hollis-glun');
+  assert.ok(choice, 'Chip has nothing to say about the officer at the post');
+  assert.match(choice.label, /officer|Glun/i);
+  choice.action();
+  const lines = f.shown.lines.join(' ');
+  said.push(lines);
+  // Boys on this water; the army at seventeen; back over twenty years later to keep Drent.
+  assert.match(lines, /fish|rod|trout|water/i, 'they were fishing buddies and he does not say so');
+  assert.match(lines, /seventeen/, 'the age he went into the army');
+  assert.match(lines, /Drent/);
+  // And Glun tells the same story about himself, in his own words (src/instructor.js).
+  const { instructorLines, INSTRUCTOR } = await import('../src/instructor.js');
+  const his = instructorLines('waiting').join(' ');
+  assert.match(his, /seventeen/, 'Glun gives a different age than Chip does');
+  assert.match(his, /born|from here/i, 'Glun does not say he is from Drent');
+  assert.match(INSTRUCTOR.role, /Drent/);
 });

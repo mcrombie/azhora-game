@@ -437,10 +437,28 @@ export function planGoal(snapshot, world) {
   }
   if (!journey?.started) return { kind: 'walk', target: world.border, radius: 3.5, intent: 'Walking to the forest boundary' };
   if (journey.complete) return lusciaGoal(snapshot, world);
-  if (journey.stage === 'repair-bridge' && (snapshot.inventory.sticks ?? 0) < 3) {
-    const site = easiestOf((world.stickSites ?? []).filter(site => !site.collected), snapshot.position, world);
-    if (site) return { kind: 'use', target: site, radius: 1.5, siteId: site.id, intent: 'Gathering driftwood' };
-    return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Asking Hollis for timber' };
+  /**
+   * **The bridge first, because the planner cannot swim.** Six paces of the Caloss span are in
+   * the river (src/world-regions.js), and everything over the water is on the far bank: Nothom,
+   * Iven, and the rest of the road. A traveler can swim it; this walks, and it routes by ground
+   * it can stand on, so it would walk to the near lip of the break and stop there for good.
+   *
+   * So the side errand becomes its route. It is the same three steps a player takes - ask
+   * Chip, gather the driftwood, lash the span - and it is only taken while the crossing is
+   * actually down: mended by anybody, by a player or by an earlier run, this falls straight
+   * through to the road (`bridge`, src/journey.js).
+   */
+  const mending = journey.bridge && !['done', 'closed', 'on-the-road'].includes(journey.bridge);
+  if (mending || journey.stage === 'repair-bridge') {
+    if (journey.bridge === 'offered') return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Asking Chip about the crossing' };
+    if (journey.bridge === 'repaired') return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Telling Chip the span is down again' };
+    if ((snapshot.inventory.sticks ?? 0) < 3) {
+      const site = easiestOf((world.stickSites ?? []).filter(site => !site.collected), snapshot.position, world);
+      if (site) return { kind: 'use', target: site, radius: 1.5, siteId: site.id, intent: 'Gathering driftwood' };
+      return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Asking Chip for timber' };
+    }
+    if (world.journeySites?.['bridge-repair'])
+      return { kind: 'use', target: world.journeySites['bridge-repair'], radius: 1.5, siteId: 'bridge-repair', intent: 'Laying the span back down' };
   }
   const id = journey.destinationIds?.[0];
   if (!id) return { kind: 'done', intent: 'Nothing left on the road' };

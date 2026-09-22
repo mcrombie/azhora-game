@@ -6,7 +6,7 @@
  * supply parcels, and Sava's three waymarkers on the rise, are not steps of it any more. They are
  * still written here and still tested, and one word in the slate puts them back in the ladder.
  *
- * **The bridge is different.** It was two of those steps - accept from Hollis, repair, report
+ * **The bridge is different.** It was two of those steps - accept from Chip, repair, report
  * back - and it is a side quest of its own now, off the ladder entirely: a one-off that changes
  * the world and does not move the plot. It can be done whenever, or never. Not done, the Caloss
  * is crossed by swimming it, which the game allows and does not recommend.
@@ -108,12 +108,12 @@ export function createJourney({ inventory, weapons, onEvent = () => {}, live = q
       'meet-courier': [2, 1, 1, 'Report for field service', 'Bring the letter of introduction to Corvan, the Ambroni army quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
       'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your army service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],
-      'meet-crossing-keeper': [3, 4, 1, 'The army’s crossing', 'Corvan’s next assignment is the Caloss supply route, where the river marks Drent’s edge. Speak with Hollis beside the boardwalk.', ['crossing-keeper']],
-      'repair-bridge': [3, 5, 2, 'A road above the water', 'Gather three forest sticks along the wetland paths, then press F at the damaged crossing to lash down fresh rails and decking.', ['bridge-repair']],
-      'return-crossing-keeper': [3, 6, 3, 'Whose road is this?', 'Report the finished repair to Hollis. The bridge serves the army, but the people crossing it have their own account of the rebels.', ['crossing-keeper']],
+      'meet-crossing-keeper': [3, 4, 1, 'The army’s crossing', 'Corvan’s next assignment is the Caloss supply route, where the river marks Drent’s edge. Speak with Chip beside the boardwalk.', ['crossing-keeper']],
+      'repair-bridge': [3, 5, 2, 'A road above the water', 'Gather three forest sticks along the wetland paths, then press F where the sound planks end to lash the missing span back down. Until it is done the only way over the Caloss is to swim it.', ['bridge-repair']],
+      'return-crossing-keeper': [3, 6, 3, 'Whose road is this?', 'Report the finished repair to Chip. The bridge serves the army, but the people crossing it have their own account of the rebels.', ['crossing-keeper']],
       'meet-ridge-keeper': [4, 7, 1, 'Voices on the rise', 'Cross the Caloss and continue your route assignment along the Luscian road beyond the river. Speak with Sava about the markers and the people the Empire calls rebels.', ['ridge-keeper']],
       'restore-beacons': [4, 8, 2, 'Three markers on the rise', `Straighten the three leaning waymarkers along the hill paths. ${state.beacons.length} of 3 restored. Press F at a marker to set it upright and uncover its reflective face. No fuel is needed.`, BEACON_IDS.filter(id => !state.beacons.includes(id))],
-      'deliver-report': [4, 9, 3, 'Report to Nothom', 'The last of Chapter 1: west out of the forest, over the Caloss — by the bridge, by what is left of it, or by swimming — and on past the field at the Lauvel to Nothom. Show the letter of introduction to Iven at the army’s relay post on the square, and he will give you your assignment.', ['relay-clerk']],
+      'deliver-report': [4, 9, 3, 'Report to Nothom', 'The last of Chapter 1: west out of the forest, over the Caloss — by swimming it, or by mending Chip’s bridge first — and on past the field at the Lauvel to Nothom. Show the letter of introduction to Iven at the army’s relay post on the square, and he will give you your assignment.', ['relay-clerk']],
       complete: [4, 10, 3, 'Service, and its cost', 'Iven has copied the letter’s warning and recorded the people’s account, and the army has paid you twelve copper. Most people here wanted the republic it calls rebellion. Between a failing empire and goblin raids from the north, who will your service protect? He has another errand for you: the field at the Lauvel, up the road from this square.', []],
     };
     const [region, step, regionStep, title, detail, destinations] = views[current];

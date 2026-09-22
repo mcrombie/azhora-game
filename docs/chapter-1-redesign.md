@@ -88,7 +88,7 @@ On victory, record the encounter once, allow a short recovery, and continue towa
 
 ### F. Resume the established road
 
-Corvan acknowledges the report about the robber and proceeds with the existing assignment. Preserve the three supply parcels, later Avrel encounter, Caloss repair, Hollis and Sava's testimony, waymarkers, and report to Iven. The new opening should feed this route rather than replace it with a new bandit campaign.
+Corvan acknowledges the report about the robber and proceeds with the existing assignment. Preserve the three supply parcels, later Avrel encounter, Caloss repair, Chip and Sava's testimony, waymarkers, and report to Iven. The new opening should feed this route rather than replace it with a new bandit campaign.
 
 ### G. Payoff in Luscia
 

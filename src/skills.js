@@ -42,7 +42,7 @@ export const SKILLS = Object.freeze({
   fishing: Object.freeze({
     id: 'fishing', name: 'Fishing',
     blurb: 'Reading water, waiting out a float, and knowing what you have landed. Every kind of fish you land for the first time teaches you something.',
-    teacher: 'Bran at Willowmere Pond, and Hollis at the Caloss crossing',
+    teacher: 'Bran at Willowmere Pond, and Chip at the Caloss crossing',
     // The ten fish of Drent, Luscia and Pueth together are worth 200: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),

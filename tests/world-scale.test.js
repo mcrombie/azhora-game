@@ -155,6 +155,10 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
   const { LUSCIA_WOLVES } = await sourceModule('../src/luscia-chapter.js');
   const { BORDER_ARENA, borderEncounter } = await sourceModule('../src/border-chapter.js');
   const world = createWorld(new THREE.Scene());
+  // **With the Caloss span down again.** Six paces of it are in the river until somebody mends it
+  // (src/world-regions.js), which is the one hole in the road that is there on purpose; the break
+  // has its own law in tests/road-ambush.test.js. This test is about roads scaled into buildings.
+  world.setJourneySiteState('bridge-repair', true);
   // Walk each road at a metre a step: no vertex and no span between two
   // vertices may have been scaled into a building or a fence.
   for (const road of [world.paths[0], world.suvalRoute]) for (let i = 1; i < road.length; i++) {
@@ -189,7 +193,7 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
   // The people who stand at a place are still beside the thing they belong to.
   const bridge = journeySites['bridge-repair'];
   assert.ok(Math.hypot(regionNpcPositions['crossing-keeper'].x - bridge.x, regionNpcPositions['crossing-keeper'].z - bridge.z) < 22,
-    'Hollis still keeps the Caloss bridge');
+    'Chip still keeps the Caloss bridge');
   assert.ok(Math.hypot(regionNpcPositions['relay-clerk'].x - LUMBER_TOWN.square.x, regionNpcPositions['relay-clerk'].z - LUMBER_TOWN.square.z) < LUMBER_TOWN.radius,
     'Iven still keeps his desk on Nothom’s square');
   // The goblin camp moved to Pueth: its side trail leaves the road north of the Tessen and meets the camp's own trail.
@@ -206,6 +210,10 @@ test('the only way over the Caloss is the bridge, and the road leads back to it'
   const { nextWaypoint, freeDirection } = await import('../src/autopilot.js');
   const { moveCharacter } = await import('../src/game-state.js');
   const world = createWorld(new THREE.Scene());
+  // The driftwood is all on the Drent bank now, with Chip, because the span is down and the man
+  // who mends it cannot stand on the far side of his own break (src/region-world.js). So this
+  // walks the mended bridge, which is what it was always about: the road leads back to it.
+  world.setJourneySiteState('bridge-repair', true);
   const road = world.paths[0];
   const at = road.reduce((best, point, index) => Math.hypot(point.x - CALOSS.crossing.x, point.z - CALOSS.crossing.z)
     < Math.hypot(road[best].x - CALOSS.crossing.x, road[best].z - CALOSS.crossing.z) ? index : best, 0);

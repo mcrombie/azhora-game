@@ -20,6 +20,12 @@
  * his own, because he is the one who teaches rather than the one who commands (src/characters.js,
  * `look.plume`).
  *
+ * **He is Drent's own** (the user, 22 September 2026). Born here, went into the army at seventeen,
+ * came back up it over twenty-odd years, and is older now and has the protection of the country he
+ * grew up in - which is not a posting the army usually gives a man, and he asked for it. He and
+ * Chip the carpenter at the Caloss were boys on that river together and still are, after a
+ * fashion: Chip will tell you the whole of it if you ask him (src/journey-content.js).
+ *
  * Pure: no DOM, no three, no world. The host places him, runs the practice and hands his lines
  * to the dialogue.
  */
@@ -27,7 +33,7 @@
 export const INSTRUCTOR_SKILL_LESSON = 'cartography';
 
 export const INSTRUCTOR = Object.freeze({
-  id: 'instructor', name: 'Officer Glun', role: 'Imperial officer, at the practice post',
+  id: 'instructor', name: 'Officer Glun', role: 'Imperial officer, and Drent’s own',
   modelRole: 'legion-officer', color: 0x9a3b30, skin: 0xd2a077,
   look: Object.freeze({ plume: 'white' }),
 });
@@ -66,6 +72,7 @@ export function lessonStage({ briefed = false, hits = 0, guards = 0, dodges = 0,
 
 const BRIEF = Object.freeze([
   'Glun. I hold the post here, which this morning means I am the one who decides whether you go up that road or back on your boat.',
+  'And before you ask it the way they all ask it: yes, I am from here. Born four miles up that road. I went off with the army at seventeen and they have sent me back grey to look after the place, which some of them think is a joke and is the only thing I ever asked them for.',
   'Hired swords come off every boat saying they can fight. Show me. That is a straw post; it does not hit back and it does not lie about you either.',
   `Three things, and a sword is only the first of them. Two clean strikes on the straw: the left button, or R.`,
   `Then the shield. Hold V and keep it there - not a tap, hold it, the way you would hold it while somebody who means it comes at you. Most of them never learn that a shield is something you decide to be behind.`,

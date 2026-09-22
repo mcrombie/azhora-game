@@ -114,5 +114,7 @@ test('the road, the three stops and the camp are where the clock was measured', 
   assert.ok(Math.abs(c.musterDistance - 1277.4) < 1, `the muster is ${c.musterDistance.toFixed(1)} m along the road. ` + WHY);
   assert.ok(Math.abs(c.roadLength - 1676.6) < 1, 'the main road is 1,677 m end to end');
   assert.deepEqual(c.stops.map(stop => [stop.id, Math.round(stop.distance), stop.dwell]),
-    [['induction', 432, 90], ['crossing', 681, 60], ['relay', 946, 120]], 'Corvan, Hollis and Iven, and how long each of them keeps a man. ' + WHY);
+    // Chip stands on the Drent bank now, at the near end of his own broken span rather than past
+    // it (src/region-world.js, 22 September 2026), which moves his stop 29 m back down the road.
+    [['induction', 432, 90], ['crossing', 652, 60], ['relay', 946, 120]], 'Corvan, Chip and Iven, and how long each of them keeps a man. ' + WHY);
 });

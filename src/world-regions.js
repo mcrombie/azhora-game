@@ -302,7 +302,24 @@ export function createRegionScenery(kit) {
     x: crossing.x + bridgeAxis.x * alongLocal + bridgeSide.x * sideLocal,
     z: crossing.z + bridgeAxis.z * alongLocal + bridgeSide.z * sideLocal,
   });
-  for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) box(woodLight, .8, deckY, along, 3.9, .18, .64, bridge);
+  /**
+   * **The middle of the span is in the river** (the user, 22 September 2026: the bridge is what
+   * saves you from swimming, so it has to be a thing you cannot simply walk over). The break sits
+   * just past the centre, on the Luscia side of it: `along` runs from the Drent bank at -13.5,
+   * which is the bank the traveler arrives on, so he walks out along sound planks and the gap is
+   * in front of him - and the repair site, which is the crossing's own centre, is under his feet
+   * rather than out in the hole where nothing could reach it.
+   *
+   * Six metres of it, which is wider than a running jump (6.3 m/s up against 17 of gravity is
+   * three quarters of a second in the air), and closed by `damagedColliders` besides, because a
+   * jump in this game is a hop: the horizontal movement still goes through the same mover.
+   */
+  const BREAK = { from: .6, to: 6.6 };
+  const broken = along => along >= BREAK.from && along <= BREAK.to;
+  for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) {
+    if (broken(along)) continue;
+    box(woodLight, .8, deckY, along, 3.9, .18, .64, bridge);
+  }
   for (const side of [-1, 1]) {
     box(darkWood, side * 2.55, deckY - .4, 0, .25, .5, HALF_SPAN * 2, bridge);
     for (let along = -HALF_SPAN; along <= HALF_SPAN; along += 4) post(wood, side * 2.6, deckY + .17, along, .12, 1.6, bridge);
@@ -324,19 +341,28 @@ export function createRegionScenery(kit) {
   repairedDeck.name = 'Caloss repaired western deck';
   luscia.add(repairedDeck); movingGroups.add(repairedDeck);
   repairedDeck.position.copy(bridge.position); repairedDeck.rotation.y = roadHeading;
-  for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) box(woodLight, -1.58, deckY, along, 1.2, .18, .64, repairedDeck);
+  for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) {
+    box(woodLight, -1.58, deckY, along, 1.2, .18, .64, repairedDeck);
+    // And the span itself, relaid: mended, the bridge is exactly the bridge it always was.
+    if (broken(along)) box(woodLight, .8, deckY, along, 3.9, .18, .64, repairedDeck);
+  }
   repairedDeck.visible = false;
   const brokenCord = new THREE.Group();
   brokenCord.name = 'Bridge repair cord';
   brokenCord.position.copy(bridge.position); brokenCord.rotation.y = roadHeading;
   luscia.add(brokenCord); movingGroups.add(brokenCord);
-  rope([new THREE.Vector3(-2.45, deckY + .59, -HALF_SPAN), new THREE.Vector3(-1.8, deckY + .44, -HALF_SPAN),
-    new THREE.Vector3(-1.08, deckY + .59, -HALF_SPAN)], .045, material('#cfaf6b'), brokenCord);
-  // The damaged western strip closes one side of the deck until it is repaired.
+  // A cord strung across the near lip of the break, which is what somebody does before they
+  // have the timber to do anything better.
+  rope([new THREE.Vector3(-2.45, deckY + .59, BREAK.from), new THREE.Vector3(.8, deckY + .38, BREAK.from),
+    new THREE.Vector3(2.75, deckY + .59, BREAK.from)], .045, material('#cfaf6b'), brokenCord);
+  // **The break closes the whole lane**, not one side of it: across the deck's full width and out
+  // to the rails, so there is no edge of plank to sidle along and no corner to be caught on.
   const damagedColliders = [];
-  for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .9) {
-    const spot = bridgePoint(along, -1.9);
-    damagedColliders.push({ x: spot.x, z: spot.z, r: .55, kind: 'bridge-damage' });
+  for (let along = BREAK.from; along <= BREAK.to; along += .8) {
+    for (const across of [-1.9, -.7, .5, 1.7, 2.7]) {
+      const spot = bridgePoint(along, across);
+      damagedColliders.push({ x: spot.x, z: spot.z, r: .7, kind: 'bridge-damage' });
+    }
   }
   colliders.push(...damagedColliders);
 

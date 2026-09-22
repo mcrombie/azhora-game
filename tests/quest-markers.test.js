@@ -157,7 +157,7 @@ test('a fight takes down the marks that were always taken down in a fight, and l
 });
 
 /**
- * And the slate as it actually stands: gold on the arc, copper on Hollis, nothing else anywhere.
+ * And the slate as it actually stands: gold on the arc, copper on Chip, nothing else anywhere.
  */
 test('the trimmed slate wears gold and copper and nothing else', () => {
   const real = extra => ({ ids: IDS, questStage: TUTORIAL_DONE, ...extra });   // no `live`: the real one

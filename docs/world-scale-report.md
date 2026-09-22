@@ -97,7 +97,7 @@ this table.
 | --- | --- | --- | --- | --- |
 | `tidehaven` | 190 | (0, 29) | **(0, 29)** | The village, the Greenway, Willowmere, the six woodland places, Fernway Rest and the Caloss Gate. Pivot = anchor, so nothing moves. |
 | `avrel` | 46 | (−236, 30) | (−421, 31) | Crop fields, the clearing mill, Corvan's post, the tumbled cart, the Mill Commons. |
-| `caloss-crossing` | 28 | (−345, 92.9) | (−616, 143) | The bridge, Hollis, the crossing's working camp, the driftwood. |
+| `caloss-crossing` | 28 | (−345, 92.9) | (−616, 143) | The bridge, Chip, the crossing's working camp, the driftwood. |
 | `caloss-bank` | 26 | (−306, 122) | (−546, 195) | The quiet fishing bank, its stool and rod rest, the riverside pawpaws. |
 | `reedcutters-landing` | 17 | (−381, 119) | (−680, 190) | The reedcutters' camp, Merren's workshop, the two net floats. |
 | `savas-shrine` | 15 | (−374, 134) | (−668, 217) | The shrine, Sava's stand, the shrine repair bench. |
@@ -274,7 +274,7 @@ What is left, in the order it bites:
   bank with two sticks, the nearest uncollected pile is the second one, across
   the water. The autopilot now walks back to the road from the bank correctly
   (a deterministic replay of its own stepper over the real world clears
-  `debris-1 -> the bridge`, `debris-1 -> Hollis`, `debris-2 -> the bridge` and
+  `debris-1 -> the bridge`, `debris-1 -> Chip`, `debris-2 -> the bridge` and
   every trip that starts from the road), but `debris-1 -> debris-2` still grinds
   at the channel. The cheap fix is in `planGoal`: order the driftwood by distance
   **along the road** rather than in a straight line, so the pile on this bank is

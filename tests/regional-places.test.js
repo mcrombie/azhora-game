@@ -59,8 +59,27 @@ test('Actual regional roads connect every new activity without removing existing
   const scene = new THREE.Scene(), world = createWorld(scene);
   assert.equal(world.regionalPlaces.length, 3); assertRoutes(world);
   assert.deepEqual(Object.keys(world.journeySites).sort(), Object.keys(journeySites).sort());
-  for (const target of [...Object.values(journeySites), ...Object.values(regionNpcPositions), ...regionFirePits, ...regionRepairBenches])
-    assert.ok(canStand(target.x, target.z, world, .48), `Old regional destination obstructed: ${target.id || ''}`);
+  /**
+   * **Reachable, which is not the same as standable on.** Every destination used to be a place
+   * you stand; the Caloss bridge repair is the one that is not, because six paces of the span are
+   * in the river and the repair is made from the last sound plank (src/world-regions.js). F reaches
+   * 2.7 m, so what the game actually requires is footing within that - which is what this asks.
+   */
+  const reachable = target => {
+    if (canStand(target.x, target.z, world, .48)) return 0;
+    for (let out = .4; out <= 2.6; out += .2)
+      for (let turn = 0; turn < 24; turn++) {
+        const angle = turn / 24 * Math.PI * 2;
+        if (canStand(target.x + Math.cos(angle) * out, target.z + Math.sin(angle) * out, world, .48)) return out;
+      }
+    return null;
+  };
+  for (const target of [...Object.values(journeySites), ...Object.values(regionNpcPositions), ...regionFirePits, ...regionRepairBenches]) {
+    const out = reachable(target);
+    assert.ok(out !== null, `Old regional destination obstructed: ${target.id || ''}`);
+    if (out) assert.equal(target.id, 'bridge-repair',
+      `${target.id || ''} is stood beside rather than on, and only the broken span may be`);
+  }
   // Connect each new spur to the old road, using the old mill/ruin approach
   // where appropriate. The bridge's deliberately broken strip is elsewhere.
   const connectors = [[at(-230, 38), at(-230, 50)], [at(-374, 124)], [at(-176, 308), at(-150, 318)]];

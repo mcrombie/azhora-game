@@ -29,7 +29,7 @@ function fixture() {
   const weapons = createWeapons({ wear: true, inventory });
   weapons.contact(); weapons.equip('forest-stick'); weapons.contact(); weapons.contact();
   const journey = createJourney({ inventory, weapons });
-  // The road begun and Hollis's bridge accepted and not yet mended: the one piece of unfinished
+  // The road begun and Chip's bridge accepted and not yet mended: the one piece of unfinished
   // business a Chapter 1 save can carry now that the middle of the road is off the slate.
   journey.start(); journey.act('meet-crossing-keeper');
   const data = {

@@ -169,7 +169,7 @@ export async function verifyRoadReload(h, expected) {
   assert(questLive('courier')
     ? journey.view().stage === 'return-crossing-keeper' && same(journey.state.completedRegions, [2])
     : journey.view().stage === 'deliver-report' && journey.state.bridge === 'repaired',
-    'Continue skipped the unfinished report to Hollis');
+    'Continue skipped the unfinished report to Chip');
   assert(world.journeySiteState()['bridge-repair'] && canStand(damagedSpot.x, damagedSpot.z, world), 'Continue failed to restore the physical bridge repair');
   assert(Math.abs(player.group.position.x - expected.position.x) < .001
     && Math.abs(player.group.position.z - expected.position.z) < .001, 'Continue moved the player off the saved repaired bridge lane');

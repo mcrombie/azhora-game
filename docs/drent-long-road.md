@@ -11,11 +11,11 @@ and the Marshal waiting for you.
 ## 1. The number: 87 minutes
 
 The company's clock is `src/mercenaries.js`. With the road the game uses (`MAIN_ROAD`), the three
-stops `main.js` gives the company (Corvan 90 s, Hollis 60 s, Iven 120 s) and the muster at the army
+stops `main.js` gives the company (Corvan 90 s, Chip 60 s, Iven 120 s) and the muster at the army
 camp (1,277 m along a 1,677 m road), each of the ten does this, in minutes of play (landing and
 leaving as m:ss, the rest as decimal minutes):
 
-| Who | Lands | Leaves the landing | Caloss Gate | Corvan | Hollis | Iven | Musters |
+| Who | Lands | Leaves the landing | Caloss Gate | Corvan | Chip | Iven | Musters |
 |---|---|---|---|---|---|---|---|
 | Chris Gotwood (today's clock) | 0:00 | 7:00 | 9.5 | 12.6 | 17.4 | 21.8 | 28.1 |
 | Ed the Word | 6:00 | 9:00 | 11.4 | 14.4 | 19.0 | 23.3 | 29.4 |
@@ -111,12 +111,12 @@ minutes, so:
   (b) You set foot on the Caloss bridge after the last boat is in (3,780 s): he goes ahead.
   (c) You tell him to go on. From that second he is a pure function of the clock again, walking
   from where he stood — one saved pair, `releasedAt` and `releasedDistance`. From the bridge he
-  musters about ten minutes later (some 600 m at 1.28 m/s, Hollis's 60 s and Iven's 120 s).
+  musters about ten minutes later (some 600 m at 1.28 m/s, Chip's 60 s and Iven's 120 s).
 - **Old saves** have no such pair and keep him on the old clock, so nothing moves under them.
 - **He fights nothing in Drent.** In the raid he keeps the street behind you; over the Tessen he
   waits at the road post. This is a holding rule until the company design exists (question 2).
 
-**What the bridge teaches.** Hollis stands on the Luscian bank and speaks Luscian Mittoli. Chris
+**What the bridge teaches.** Chip stands on the Luscian bank and speaks Luscian Mittoli. Chris
 has three tongues and that is not one of them: for the first time the aside under the line stays
 empty, and he says so — "Not one of mine." Then, on the long road: the princes' boat is in, that
 is all of us landed, somebody has to tell Venmor the eleventh is on the road or he will post you
@@ -136,7 +136,7 @@ branches wear their own leaf or scroll and are taken or not.
 | 2. The near wood | 29–46 | **Bran** at Willowmere (fishing; then the catch cooked on the stone firepit with Lysa's tinderbox: cooking) · **Bowden** at the Koopwood (woodcutting, the first skill you grind; he shows you the plot) · drill 2 at Willowmere's fire | Troy at the Bee Fold (honey, so honey cake), Tamsin and the forest story, the house plot once you can cut for it |
 | 3. Fernway | 46–57 | **Odger Pell**, now at Fernway Rest (mycology) · **the Talaelos players'** camp: a short play in Drentish, many mouths, Chris murmuring under it · drill 3 | the Old Tree, the Stormfall Oak and the shrine, the East Rena Stone, **the scouts' camp over the Tessen** (section 8) |
 | 4. The Avrel clearing | 57–72 | **Corvan** (the register; the parcels — solid gold as well) · **the ruins of Rena**, 110 m north (archaeology) · **Enna** at the Mill Commons (farming) · drill 4: you give Corvan your own name and rank in Ambroni | the players' second camp (never built as a branch of its own: as built it serves the leg-3 play — see the build doc), Applegarth and Hesta Ardry (the letter delivered; the orchard) |
-| 5. The Caloss road | 72–85 | **Nell Harrow**, now at the Sunken Lane (botany; the hedge) · **Silas Garrow**, now at the Toll House stream (geology) · drill 5 · **Hollis** and the bridge (solid gold as well): Chris goes ahead | the Pedlar's Stone, the Quiet Bank (river fishing), the granite in the riverbed |
+| 5. The Caloss road | 72–85 | **Nell Harrow**, now at the Sunken Lane (botany; the hedge) · **Silas Garrow**, now at the Toll House stream (geology) · drill 5 · **Chip** and the bridge (solid gold as well): Chris goes ahead | the Pedlar's Stone, the Quiet Bank (river fishing), the granite in the riverbed |
 
 The order is the curriculum: two *knowing* skills where the village is (a chart, a bird), then one
 you *do* (a rod), one you *make* (a fire, a fish), one you *grind* (an axe), then the knowing
@@ -155,7 +155,7 @@ Three people move. Everybody else stays. Ids do not change.
 | Enna (`commons-miller`) | the Mill Commons | stays; **becomes farming's teacher** | She already stands between the crop rows and the mill. |
 | Jojo, Perrin, Lysa, Orris, Toft, Lorn, Wendel, Brandy and Bosco, Cabe, Jess, the carter, the boy | Tidehaven | stay | The harbour's own lessons, and a village that is still a village: a dozen people after three have left. |
 | Bowden, Troy, Tamsin, Bran, Eren | the near wood and the Watch | stay | Built places: a woodlot, a bee fold, a pond, a watch. |
-| Hesta and Applegarth's five, Hollis | the west of Drent | stay | Already where the road needs them. |
+| Hesta and Applegarth's five, Chip | the west of Drent | stay | Already where the road needs them. |
 
 Today seven teachers stand within a hundred metres of the pier and the 245 m from the Caloss Gate
 to the clearing teaches nothing. After: three at the harbour, two in the near wood, one at
@@ -171,7 +171,7 @@ out this way — its stones run from the Weatherhead shingle to the granite at t
 | Linguist | pier, 0 min | anyone speaking; Chris beside you | Section 6 |
 | Birding | 12 min | Perrin | The feeder, the pointer, the first garden bird |
 | Cooking | 18 and 33 min | Lysa, then any fire | The tinderbox; a fish on Willowmere's firepit; later flatbread and honey cake |
-| Fishing | 29 min | Bran; Hollis for the river | One fish out of the pond |
+| Fishing | 29 min | Bran; Chip for the river | One fish out of the pond |
 | Woodcutting | 37 min | Bowden | Logs until level 2 shows what the 99 table is |
 | Construction | when woodcutting allows | Bowden, the plot | A branch, not a stop: the house is the long road's long tail |
 | Mycology | 46 min | Odger | One find in Fern Hollow |
@@ -223,7 +223,7 @@ army's signs turn readable about as you cross into Luscia.
 
 | Leaving Drent | Drentish | Ambroni | Mittoli |
 |---|---|---|---|
-| Long road | 60–65 | 51–56 | 0 — first heard from Hollis, with Chris silent beside you |
+| Long road | 60–65 | 51–56 | 0 — first heard from Chip, with Chris silent beside you |
 | Short road | about 15 | about 7 | 0 |
 
 ## 7. The six foods
@@ -254,17 +254,17 @@ line under the screen. Where you were standing is remembered for each of them (s
 | 9–12 | The letter, the satchel: **the fork**, at the Watch | 9:00–11:30 Ed walks up the Greenway past the Watch, wet to the neck — the first of them you see go by. He musters at 29.4 |
 | 12–17 | Perrin's garden, thirty metres from the pier | |
 | 17–23 | Lysa's acorns, the tinderbox | 18:00 three bells: Jerry, Kristen and Ciarán land arguing. 19:30 they go up the village street past Lysa's kitchen |
-| 23–28 | Jojo's three corners; drill 1 | 25.0 the riders sign Corvan's register; 29.7 Hollis; in at 40–41 |
+| 23–28 | Jojo's three corners; drill 1 | 25.0 the riders sign Corvan's register; 29.7 Chip; in at 40–41 |
 | 29–37 | Willowmere: Bran, a fish, a fire | 33:00 one bell. 35:10 Lakota passes the Watch, 25 m from the pond, alone, looking up |
-| 37–46 | Bowden; Troy; drill 2 | 39.8 Lakota at Corvan's; 44.7 Hollis; in at 55.7 |
+| 37–46 | Bowden; Troy; drill 2 | 39.8 Lakota at Corvan's; 44.7 Chip; in at 55.7 |
 | 46–52 | Odger at Fernway Rest | 48:00 one bell. 51:00 Eliana walks past the bench |
 | 52–57 | The players' play; drill 3. Drentish crosses 50: the East Rena Stone reads | 54.5 Eliana at Corvan's; in at 69.4 |
 | 57–62 | Corvan: he reads you the register — seven names | |
 | 62–67 | Rena | 63:00 two bells: the last boat. Matt, Prince of Zorkys, and Al the Tun |
 | 67–72 | Enna: a row sown; drill 4 at Corvan's desk | 70.9–72.4 the prince and the sorcerer stand at Corvan's desk, 45 m from the mill |
-| 72–77 | Nell's hedge, where the lane crosses the road | 73.3 they walk through the lane past you. 75.8 Hollis. Over the bridge at 76.8 |
+| 72–77 | Nell's hedge, where the lane crosses the road | 73.3 they walk through the lane past you. 75.8 Chip. Over the bridge at 76.8 |
 | 77–81 | Silas at the stream; drill 5 | everyone landed is now west of you |
-| 81–85 | Hollis: Mittoli, and Chris with nothing to say. The bridge. **Chris goes ahead** | 87.2 the tenth musters |
+| 81–85 | Chip: Mittoli, and Chris with nothing to say. The bridge. **Chris goes ahead** | 87.2 the tenth musters |
 | 85–97 | Luscia alone: the waymarkers, Iven in Ambroni you half follow, the Lauvel, the horse | about 95 Chris musters |
 | 95–100 | The camp | **Ten standing. You are the eleventh** |
 

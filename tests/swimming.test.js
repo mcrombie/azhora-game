@@ -445,6 +445,9 @@ test('the Caloss can be swum beside its bridge, and the bridge is still walked',
   // Well inside a level-1 swimmer's reach, and a real bite out of his wind.
   const reach = SWIM.walk * SWIM.shareLow * (SWIM.wind / SWIM.drainLow);
   assert.ok(swim < reach / 2, `${swim.toFixed(1)} m of a ${reach.toFixed(0)} m bar`);
-  // And the lane itself is still dry boards: a bridge is for walking over.
-  assert.equal(canStand(crossing.x, crossing.z, world, BODY.person), true, 'the bridge deck is not walkable');
+  // And the bridge itself is still dry boards as far as the break, which is what a traveler
+  // walks out along to mend it (tests/road-ambush.test.js has the break's own law).
+  const onDeck = { x: crossing.x + along.x * -4, z: crossing.z + along.z * -4 };
+  assert.equal(canStand(onDeck.x, onDeck.z, world, BODY.person), true, 'the sound half of the deck is not walkable');
+  assert.equal(canSwim(onDeck.x, onDeck.z, world, .34), false, 'and it is boards, not water');
 });

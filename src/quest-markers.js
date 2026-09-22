@@ -112,7 +112,7 @@ export function markerFor(id, view = {}) {
   if (id === ids.instructor && stage === 2) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
-  // **The one thing on the slate that is not the arc**: Hollis, while his bridge is unmended.
+  // **The one thing on the slate that is not the arc**: Chip, while his bridge is unmended.
   // It is copper wherever the traveler is in the story, because it is nobody's step and waits
   // on nothing (`bridgeStage`, src/journey.js; src/quest-slate.js).
   if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');

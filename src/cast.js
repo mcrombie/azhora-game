@@ -50,7 +50,7 @@ export const SOLDIER_ROLES = Object.freeze(['legion-soldier', 'legion-officer', 
 export const QUEST_IDS = Object.freeze([
   'harbormaster',        // Jojo, the letter
   'instructor',          // Officer Glun, the lesson and the chart
-  'crossing-keeper',     // Hollis, and the one side quest on the slate (src/quest-slate.js)
+  'crossing-keeper',     // Chip, and the one side quest on the slate (src/quest-slate.js)
   'relay-clerk',         // Iven at Nothom, who closes Chapter 1
   'lauvel-picket',       // the picket sergeant on the burial line
   'burial-searcher',     // the courier's satchel at the Lauvel

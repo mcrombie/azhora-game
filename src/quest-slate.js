@@ -59,12 +59,12 @@ export const questLive = id => !TRIMMED || LIVE.includes(id);
 
 /**
  * The bridge over the Caloss, which is the one thing on the slate that is not the arc. It was
- * the fourth and fifth steps of the old Chapter 1 - Corvan's assignment, then Hollis's repair -
+ * the fourth and fifth steps of the old Chapter 1 - Corvan's assignment, then Chip's repair -
  * and it is a side quest now: "helpful for the main quest because it repairs the bridge, so you
  * don't have to swim across. You can swim across, even though swimming across is dangerous."
  */
 export const BRIDGE_QUEST = Object.freeze({
-  id: 'bridge', giver: 'crossing-keeper', name: 'Hollis', grade: 'deed',
+  id: 'bridge', giver: 'crossing-keeper', name: 'Chip', grade: 'deed',
   title: 'The crossing at the Caloss',
-  detail: 'The bridge over the Caloss is down to its stringers on one side. A careful man still gets over on the eastern walkway; a cart does not, and the ones who will not chance it swim. Bring Hollis three forest sticks and the decking goes back on.',
+  detail: 'Six paces of the middle of the Caloss bridge are in the river, and two halves of a bridge are no bridge. Until it is mended the crossing is a swim. Bring Chip three forest sticks and the span goes back down.',
 });

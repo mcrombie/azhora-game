@@ -52,7 +52,7 @@ export const TOWN_LIFE_NPCS = Object.freeze([
   ], { color: 0x6b5d45 }),
   person('life-crossing-ferryman', 'Cade', 'Ferryman of the Caloss', 'reed-worker', PLACE_STANDS['life-crossing-ferryman'], PLACE_STANDS['life-crossing-ferryman'].yaw, [
     'Before the bridge there was me. When the bridge is down, there is still me.',
-    'Hollis thinks timber solves everything. The river thinks otherwise, every spring.',
+    'Chip thinks timber solves everything. The river thinks otherwise, every spring.',
   ], { color: 0x4f6a66 }),
   person('life-lauvel-healer', 'Maud', 'Healer at the field hospital', 'shelter-keeper', PLACE_STANDS['life-lauvel-healer'], PLACE_STANDS['life-lauvel-healer'].yaw, [
     'Rebel, soldier, farmer: I stitch whoever is still breathing. There are fewer of them every day.',

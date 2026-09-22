@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, canSwim, moveCharacter } from '../src/game-state.js';
 import {
   regions, regionAt, northernRoad, regionNpcPositions, journeySites, regionRepairBenches,
   SUVAL_ROAD, CALOSS, FRONTIER, ANCHORS, WORLD_BOUNDS, insideRegion,
@@ -46,6 +46,11 @@ test('The authored playable regions carry the atlas into the world, with Drent o
 });
 
 test('The whole road out of Drent is walkable in both directions, including the Caloss bridge', () => {
+  // **With the Caloss span down again.** Six paces of it are in the river until somebody mends
+  // it (src/world-regions.js), and a road with a hole in it is the point of that, not a fault of
+  // this one: the break has its own law in tests/road-ambush.test.js. Everything below asks the
+  // question this test was written to ask - whether the road itself runs unbroken bank to bank.
+  assert.equal(world.setJourneySiteState('bridge-repair', true), true);
   const walk = route => {
     const p = { x: route[0].x, z: route[0].z };
     assert.ok(canStand(p.x, p.z, world), `road start blocked at ${p.x}, ${p.z}`);
@@ -72,9 +77,12 @@ test('The whole road out of Drent is walkable in both directions, including the 
   assert.ok(hills.reduce((sum, y) => sum + y, 0) / hills.length > world.heightAt(CALOSS.crossing.x, CALOSS.crossing.z) + 5,
     'East Suval rises above the border river');
   assert.equal(world.regionAt(ANCHORS.morosGate.x, ANCHORS.morosGate.z).id, 3);
+  world.setJourneySiteState('bridge-repair', false);
 });
 
 test('Every NPC, activity, pickup, repair bench and firepit has a clear reachable approach', () => {
+  // Mended, for the same reason as the walk above: everything past the Caloss is reached over it.
+  assert.equal(world.setJourneySiteState('bridge-repair', true), true);
   const objectives = [...Object.values(regionNpcPositions), ...Object.values(journeySites),
     ...regionRepairBenches, ...world.firePits, world.fishingSpots[1].fishingSpot];
   for (const target of objectives) assert.ok(canStand(target.x, target.z, world, .48), `Blocked objective ${target.id || ''} at ${target.x}, ${target.z}`);
@@ -108,6 +116,7 @@ test('Every NPC, activity, pickup, repair bench and firepit has a clear reachabl
   for (const fire of world.firePits.filter(f => f.x < -180)) for (const npc of Object.values(regionNpcPositions))
     assert.ok(Math.hypot(fire.x - npc.x, fire.z - npc.z) > 3.3, `Fire ${fire.id} conflicts with an NPC prompt`);
   for (const point of [toWorld(-253, 8), toWorld(-256, 18)]) assert.ok(canStand(point.x, point.z, world, .6), 'Raider spawn must remain clear');
+  world.setJourneySiteState('bridge-repair', false);
 });
 
 test('The river bank retargets fishing while preserving the original pond API', () => {
@@ -125,19 +134,28 @@ test('The river bank retargets fishing while preserving the original pond API', 
   assert.equal(world.activeFishingSpot().castPoint, world.pond.castPoint);
 });
 
-test('The Caloss cannot be waded and repairing the bridge opens its western deck', () => {
+/**
+ * **The Caloss is a river now and the span across it is down** (the user, 22 September 2026: all
+ * rivers should be real swimmable water, and the bridge is what saves you from swimming). It used
+ * to be a wall of colliders with one side of the deck missing; it is water you can be in, with six
+ * paces of the middle of the bridge in it.
+ */test('The Caloss cannot be waded and repairing the bridge opens its western deck', () => {
   const crossing = CALOSS.crossing;
   const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 });
   const upstream = midpoint(CALOSS.points[3], CALOSS.points[2]), downstream = midpoint(CALOSS.points[5], CALOSS.points[6]);
   assert.equal(canStand(upstream.x, upstream.z, world), false, 'the channel upstream of the bridge is water');
   assert.equal(canStand(downstream.x, downstream.z, world), false, 'the channel downstream of the bridge is water');
-  assert.ok(canStand(crossing.x, crossing.z, world), 'the bridge lane is walkable');
+  // The crossing's own middle is the break now, so the lane is walked as far as that and no
+  // further; `canSwim` is what the channel answers, because it is water (src/game-state.js).
+  assert.equal(canSwim(upstream.x, upstream.z, world), true, 'the channel upstream cannot be swum');
+  assert.equal(canSwim(downstream.x, downstream.z, world), true, 'the channel downstream cannot be swum');
   const damaged = world.colliders.filter(c => c.kind === 'bridge-damage');
-  assert.ok(damaged.length > 8, 'the damaged strip is closed along the whole deck');
+  assert.ok(damaged.length > 8, 'the break is closed across the lane');
   const spot = damaged[Math.floor(damaged.length / 2)];
   assert.equal(canStand(spot.x, spot.z, world), false);
   assert.equal(world.setJourneySiteState('bridge-repair', true), true);
   assert.equal(canStand(spot.x, spot.z, world), true);
+  assert.ok(canStand(crossing.x, crossing.z, world), 'the mended lane is walkable end to end');
   assert.equal(scene.getObjectByName('Caloss repaired western deck').visible, true);
   assert.equal(scene.getObjectByName('Bridge repair cord').visible, false);
   world.setJourneySiteState('bridge-repair', false);

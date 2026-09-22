@@ -545,7 +545,11 @@ export const LUMBER_TOWN_STABLE = Object.freeze({
 
 export const regionNpcPositions = Object.freeze({
   'meadow-courier': at(-230, 17),         // Corvan, army quartermaster, at the farm clearing
-  'crossing-keeper': at(-357, 106),       // Hollis, at the Caloss bridge
+  // **Chip works from the Drent bank**, which is the bank a traveler arrives on. He used to stand
+  // on the Luscia side, and when six paces of the span went into the river (src/world-regions.js)
+  // that put the man who mends the bridge on the far side of his own break, reachable only by
+  // swimming past him. A carpenter stages his timber where he can carry it from.
+  'crossing-keeper': at(-334, 88),        // Chip, at the near end of the Caloss bridge
   'ridge-keeper': at(-372, 131),          // Sava, at her shrine on the Luscia side
   'relay-clerk': townPoint(5, -6),        // Iven, at the army relay post on Nothom's square
   // Nothom's people, around the square and the timber yard.
@@ -572,7 +576,9 @@ export const journeySites = Object.freeze({
   'beacon-east': Object.freeze({ id: 'beacon-east', ...at(-364, 150), name: 'Second waymarker', type: 'beacon', region: 4 }),
   'beacon-north': Object.freeze({ id: 'beacon-north', ...at(-404, 172), name: 'Third waymarker', type: 'beacon', region: 4 }),
   'bridge-debris-1': Object.freeze({ id: 'bridge-debris-1', ...at(-330, 76), name: 'Dry driftwood', type: 'sticks', quantity: 2, region: 3 }),
-  'bridge-debris-2': Object.freeze({ id: 'bridge-debris-2', ...at(-366, 112), name: 'Fallen branches', type: 'sticks', quantity: 2, region: 3 }),
+  // On the Drent bank with the other pile, and for the same reason as Chip: everything the
+  // repair needs is on the side the repair is reached from.
+  'bridge-debris-2': Object.freeze({ id: 'bridge-debris-2', ...at(-322, 70), name: 'Fallen branches', type: 'sticks', quantity: 2, region: 3 }),
   'meadow-fruit': Object.freeze({ id: 'meadow-fruit', ...at(-258, 46), name: 'Pawpaw windfalls', type: 'fruit', quantity: 2, region: 2 }),
   'river-fruit': Object.freeze({ id: 'river-fruit', ...at(-330, 130), name: 'Riverside pawpaws', type: 'fruit', quantity: 2, region: 3 }),
   'ridge-fruit': Object.freeze({ id: 'ridge-fruit', ...at(-412, 152), name: 'Sheltered pawpaws', type: 'fruit', quantity: 2, region: 4 }),

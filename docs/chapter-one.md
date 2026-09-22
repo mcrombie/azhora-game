@@ -75,10 +75,32 @@ other one.
 
 ## The one other quest
 
-**The bridge over the Caloss**, from Hollis. It was the fourth and fifth steps of the old
-Chapter 1; it is a side quest now, off every ladder (`bridgeStage()` in `src/journey.js`). Hollis
-asks for himself, it can be done whenever or never, and the alternative is swimming the river,
-which he says out loud and does not recommend.
+**The bridge over the Caloss**, from Chip. It was the fourth and fifth steps of the old
+Chapter 1; it is a side quest now, off every ladder (`bridgeStage()` in `src/journey.js`). Chip
+asks for himself and it can be done whenever, or never.
+
+**And the alternative is real.** Six paces of the middle of the span are in the river, so the
+crossing is a swim until somebody mends it. That took two changes worth knowing about:
+
+- **All rivers are real swimmable water** (`c1ed69c`). `canSwim` used to judge wet against one
+  global sea line at 0.45 m, and rivers do not run at sea level — measured across all 1,494 river
+  points in the world, the terrain under them sits at a median of 2.76 m. So every river read as
+  dry land and was walled with colliders. The beds were carved all along (the Caloss carries
+  0.96 m of water). Water has a local surface now: each water collider carries it, `world.waterAt`
+  answers it, and the two predicates read it. Standable ground over the whole world was 12,306
+  samples before and 12,306 after — nothing walkable became water.
+- **The span is broken across the whole lane**, just past the centre on the Luscia side. `along`
+  runs from the Drent bank at -13.5, which is the bank you arrive on, so you walk out on sound
+  planks and mend it from the last of them — the repair site is 0.5 m past your feet, well inside
+  F's 2.7 m. The hole is six metres, wider than a running jump, and closed besides.
+
+Beside the bridge the swim is 9.5 to 16 m against a level-one swimmer's 58 m bar. A horse will
+not go in at all, so a mounted traveler has no crossing until the span is down again.
+
+**The autopilot mends it rather than swimming it**, because it routes by ground it can stand on
+and would otherwise walk to the near lip and stop there for good (`src/autopilot.js`). Ask Chip,
+gather the driftwood, lay the span — the same three steps a player takes, and only while the
+crossing is actually down.
 
 ## Marks over heads
 
@@ -89,7 +111,7 @@ which he says out loud and does not recommend.
 | `deed` | copper | ring | a one-off that changes the world and does not move the plot |
 | `skill` | leaf green | leaf | a teacher or an errand that pays a skill — off the slate |
 
-Today that is gold on Jojo, on Glun, and on whatever the chapter names, and copper on Hollis.
+Today that is gold on Jojo, on Glun, and on whatever the chapter names, and copper on Chip.
 
 ## Turning things back on
 

@@ -114,7 +114,7 @@ changes by a few metres.
 | 2 near wood | 17 | 246 m (140) | 1.0 | 0.6 | Bran 123, Bowden 123 |
 | 3 Fernway | 11 | 173 m (127) | 0.7 | 0.4 | Odger 145, players' camp 28 |
 | 4 Avrel | 15 | 553 m (527) | 2.2 | 1.3 | Corvan 331, Rena 90, Enna 132 |
-| 5 Caloss road | 13 | 345 m (267) | 1.4 | 0.8 | Nell 95, Silas 96, Hollis 154 |
+| 5 Caloss road | 13 | 345 m (267) | 1.4 | 0.8 | Nell 95, Silas 96, Chip 154 |
 
 About 1,750 m and **seven minutes of walking in eighty-four**. The length is in the lessons, as
 the design says; nothing here depends on a player being slow on their feet.
@@ -143,11 +143,11 @@ fires on every leg. It does:
 | 2 near wood | **Ed, 21 m from Bran at 32.2** and 36 m from Bowden at 31.4; Lakota, 20 m from Bran at 35.3. |
 | 3 Fernway | Eliana past the Rest at 51.0 and 13 m from the players' camp at 50.8. |
 | 4 Avrel | Matt 5 m from Corvan at 70.9, Al 18 m at 71.0; Al 19 m and Matt 33 m from Enna. Nobody passes Rena, which is 110 m north of the road. |
-| 5 Caloss road | Matt 15 m from Nell at 73.3, Al 24 m at 73.4; Al 16 m and Matt 25 m from Silas at 74.0–74.1; Matt 6 m from Hollis at 75.8, Al 2 m at 77.0. |
+| 5 Caloss road | Matt 15 m from Nell at 73.3, Al 24 m at 73.4; Al 16 m and Matt 25 m from Silas at 74.0–74.1; Matt 6 m from Chip at 75.8, Al 2 m at 77.0. |
 
 The design's timeline is borne out where it names a moment: Lakota by the pond at 35.3 (the
 design says 35:10, 25 m; measured 20 m), Eliana past the bench at 51.0, the princes at Corvan's
-desk from 70.9 (19–33 m from the mill, not 45), through the lane past Nell at 73.3, Hollis at
+desk from 70.9 (19–33 m from the mill, not 45), through the lane past Nell at 73.3, Chip at
 75.8. **One row the ruling has made false:** "9–12 … Ed walks up the Greenway past the Watch, wet
 to the neck — the first of them you see go by. He musters at 29.4." He now leaves at 31:00, passes
 Willowmere at 32.2 three minutes ahead of Lakota, and musters at 51.4; the first of them anybody
