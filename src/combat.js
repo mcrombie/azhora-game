@@ -35,6 +35,12 @@ export const ENEMY_KINDS = Object.freeze({
   // as long and as honest as anybody's, because **timing never scales** and a lesson least of all.
   sparring: Object.freeze({ tell: .7, attack: .5, contact: .22, recovery: 1.15, damage: 12, speed: 2.3, engage: 2.15, reach: 2.25, lunge: 1.5,
     guard: .5, pack: 1 }),
+  // The rebels who lie up on the road out of Drent (src/road-ambush.js). Farmers, drovers and
+  // market families who lost a battle at the Lauvel ten days ago and kept their swords: they hit
+  // harder than a goblin and press two at a time, and they have none of the army's answers -
+  // no shield to turn a blow, no mail, and a hit stops them mid-swing like anybody else.
+  rebel: Object.freeze({ tell: .72, attack: .5, contact: .22, recovery: 1.08, damage: 20, speed: 2.2,
+    engage: 2.15, reach: 2.2, lunge: 1.5, pack: 2 }),
   // Mallec, the ogre on the Amod road (src/amod-ogre.js): a different order of
   // creature, not a large goblin. Three optional fields carry the difference and
   // every other kind goes on ignoring them:

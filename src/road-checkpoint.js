@@ -1,5 +1,6 @@
 import { INVENTORY_ITEMS } from './inventory.js';
 import { QUEST_DONE } from './game-state.js';
+import { createRoadAmbush, validateRoadAmbushSnapshot } from './road-ambush.js';
 import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
 import { mercenaryById } from './mercenaries.js';
@@ -188,6 +189,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'woodland') && !validateWoodlandProgress(data.woodland, stock))
       return failed('The saved woodland progress is invalid.');
     if (!validateForestStorySnapshot(data.forestStory)) return failed('The saved woodland stories are invalid.');
+    // The rebels on the Drent road are an event, not a quest, and an old save has none.
+    if (data.ambush !== undefined && !validateRoadAmbushSnapshot(data.ambush)) return failed('The saved road ambush is invalid.');
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
     if (data.forestHideout?.accepted && data.questStage < QUEST_DONE) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
@@ -308,6 +311,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }
     if (Object.hasOwn(data, 'renaLetters')) { const letters = createRenaLetters(); letters.restore(data.renaLetters); result.renaLetters = letters.snapshot(); }
     if (Object.hasOwn(data, 'ogreToll')) { const toll = createOgreToll(); toll.restore(data.ogreToll); result.ogreToll = toll.snapshot(); }
+    if (Object.hasOwn(data, 'ambush')) { const road = createRoadAmbush(); road.restore(data.ambush); result.ambush = road.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();

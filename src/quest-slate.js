@@ -19,6 +19,16 @@
  *   `deed`   a one-off that changes the world and does not move the plot - the bridge over the
  *            Caloss. Copper.
  *
+ * **Events are not quests and this file does not govern them** (the user, 22 September 2026).
+ * An event is a thing the world does on its own clock whether the traveler is there or not: no
+ * mark over anybody's head, nothing in the journal, nobody asking you to go. There are two:
+ *
+ *   `road-ambush`   three rebels on the emptiest stretch of the Drent road, who by default kill
+ *                   Chris Gotwood and leave him on it (src/road-ambush.js).
+ *   `word-arrival`  Ed the Word swimming ashore from the rebel ship (src/word-arrival.js).
+ *
+ * Both are live, and neither is in `LIVE` or `CLOSED` below, because neither is a quest.
+ *
  * **What is off**, so that bringing it back is a reading exercise and not an excavation:
  *   `courier`     Corvan in the Avrel clearing, the letter, the three supply parcels and the
  *                 raiders among the field walls (src/journey.js, `meadowEncounter` in main.js).

@@ -172,6 +172,7 @@ import { createDeveloperMode } from './developer-mode.js';
 import { runDeveloperSmoke } from './developer-smoke.js';
 import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, QUEST_DONE, SUBQUESTS, getMovementInput } from './game-state.js';
 import { questLive } from './quest-slate.js';
+import { createRoadAmbush, AMBUSH, PARTIES, bodyPlace } from './road-ambush.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
 import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './testing-travel.js';
@@ -472,7 +473,16 @@ function init() {
     // ever, so he is put out of the world here rather than left standing on the road. It is the
     // same pair of flags the Greenway raid sets over a villager it kills.
     for(const id of fallen.ids){const npc=mercenaryIds.has(id)?npcById.get(id):null;
-      if(npc){npc.fallen=true;npc.hidden=true;npc.walkingWith=false;npc.escorting=false;npc.mounted=false;npc.lift=0;}}
+      if(npc){npc.fallen=true;npc.hidden=true;npc.lying=false;npc.walkingWith=false;npc.escorting=false;npc.mounted=false;npc.lift=0;}}
+    // **A man killed on the Drent road lies on it.** Everybody else who falls is put out of the
+    // world by the loop above, which is right for a man who fell where the traveler was standing
+    // and watched him fall. These did not: the whole point of the event is that you come up the
+    // road afterwards and find him (src/road-ambush.js).
+    for(const id of ambush.state.fallen){const npc=npcById.get(id);if(!npc)continue;
+      const spot=bodyPlace(id,ambushGround());if(!spot)continue;
+      npc.fallen=true;npc.hidden=false;npc.lying=true;npc.lift=0;npc.walkingWith=false;npc.escorting=false;npc.mounted=false;
+      npc.placement=null;world.npcPositions[id]={x:spot.x,z:spot.z};
+      npc.actor.group.rotation.y=spot.yaw;}
     fileOrder=company.companionIds??(company.companionId?[company.companionId]:[]);
     // The stagger is measured from the moment the traveler went up or came down, so it is the
     // same clock for every man in the file and nothing has to be told about it.
@@ -1067,6 +1077,29 @@ function init() {
       saveRoad(false);closeDialogue();conversation(npc);}});
     return true;
   }
+  /**
+   * **The company walks the Drent road whether the traveler does or not** (src/road-ambush.js).
+   * A party is settled the moment one of its men is level with the ambush; a man walking at the
+   * traveler's shoulder is not on that road at all and is left out of it, which is the whole of
+   * what saving Chris amounts to. Nothing is announced: a death out of sight is not news, and
+   * the point of the event is that you come up the road later and find him.
+   */
+  function walkTheAmbush(){
+    const open=PARTIES.filter(party=>!ambush.state.settled.includes(party.id));
+    if(!open.length)return;
+    const placements=company.placements(playSeconds);
+    const withTraveler=new Set(companions.walking),dead=fallen.ids;
+    let lost=false;
+    for(const party of open){
+      const reached=party.men.some(id=>{const one=placements.find(place=>place.id===id);
+        return !!one&&one.phase!=='with-traveler'&&one.phase!=='coming'&&one.phase!=='landing'
+          &&(one.distance>=AMBUSH.distance||one.phase==='mustered');});
+      if(!reached)continue;
+      const told=ambush.reach(party.id,{withTraveler,dead});
+      for(const id of told?.fallen??[]){if(fallen.fall(id))lost=true;}
+    }
+    if(lost){rebuildCompany();placeMercenaries();saveRoad(false);}
+  }
   /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
   function longWayNext(){
     // **The long way round is off the slate** with the teachers it visits (src/quest-slate.js):
@@ -1271,6 +1304,16 @@ function init() {
   // whole built world on a schedule drawn from the game's seed, poofs when an empty-handed traveler
   // comes at him, and stays for anybody carrying something worth having.
   const chameleonSeed=Math.floor(Math.random()*1e6);
+  /**
+   * **The rebels on the Drent road** (src/road-ambush.js): an event, not a quest. It runs on the
+   * company's own clock whether or not the traveler is anywhere near it, and by default it kills
+   * Chris Gotwood, who walks that road first and alone. The seed is the playthrough's: the same
+   * game always loses the same man, and a reload never rolls again.
+   */
+  const ambushSeed=Math.floor(Math.random()*1e6);
+  const ambush=createRoadAmbush({seed:ambushSeed});
+  /** Whoever's body the traveler has already walked up to, so he is told once and not every frame. */
+  const bodiesFound=new Set();
   const chameleon=createChameleon({seed:chameleonSeed,onEvent:event=>{if(event.type==='poof')chameleonPoof(event);}});
   const edView=createEdView(scene,{heightAt:(x,z)=>world.heightAt(x,z)});
   const edNpc={id:ED.id,name:ED.name,role:ED.role,actor:{group:edView.group}};
@@ -2669,6 +2712,23 @@ function init() {
   let currentHideoutSite=null;
   let meadowCleared=false;
   const greenwayEncounter=GREENWAY_RAID;
+  /**
+   * What the traveler walks into if he goes up that road while they are still on it. Three of
+   * them, off both verges, at the road's own bearing; no authored `level`, so it takes Drent's
+   * (which is nought) exactly as every other fight in the country does.
+   */
+  const ambushGround=()=>({...AMBUSH.point,dx:AMBUSH.forward.dx,dz:AMBUSH.forward.dz});
+  const ambushEncounter=(()=>{
+    const {x,z}=AMBUSH.point,{dx,dz}=AMBUSH.forward;
+    const at=(along,across)=>({x:x+dx*along+dz*across,z:z+dz*along-dx*across});
+    return {id:'caloss-rebels',center:{x,z},checkpoint:at(-14,0),
+      retreatAxis:Math.abs(dx)>Math.abs(dz)?'x':'z',retreatLine:at(-26,0)[Math.abs(dx)>Math.abs(dz)?'x':'z'],
+      enemies:[
+        {id:'rebel-lane',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:.2,...at(3,-3.4),model:{role:'forest-woodcutter',tunic:0x6d5b43}},
+        {id:'rebel-hedge',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:1.4,...at(-2,3.6),model:{role:'town-carter',tunic:0x5a6350}},
+        {id:'rebel-stone',kind:'rebel',name:'Rebel of the Lauvel',hp:85,entry:2.6,...at(6,2.8),model:{role:'forest-woodcutter',tunic:0x7a4f3c}},
+      ]};
+  })();
   const meadowEncounter=AVREL_RAID;
   let roadStorage;try{roadStorage=window.azhoraRoadStorage||localStorage;}catch{/* Play remains available when storage is disabled. */}
   const checkpoint=createRoadCheckpoint({storage:roadStorage});
@@ -3348,7 +3408,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot(),ambush:ambush.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -3393,7 +3453,7 @@ function init() {
     companions.restore(saved.companions??createCompanions().snapshot());teachers.restore(saved.teachers??createTeachers().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -4926,6 +4986,8 @@ function init() {
         if(e.type==='ally-wounded')toast(`${npc.name} is down, badly hurt, but breathing.`,'THE GREENWAY');
         if(e.type==='ally-escaped')toast(`${npc.name} got clear of the fight.`,'THE GREENWAY');}
       // How each villager came through the Greenway, for Eren to speak of.
+      // The road is clear, and everybody the clock sends up it after this walks it safely.
+      if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id){ambush.cleared();saveRoad(false);}
       if(e.type==='victory'&&combat.state.encounterId===greenwayEncounter.id)raid.outcome=combat.state.allies.map(a=>({name:a.name,fate:a.hp<=0?(a.wounded?'wounded':'dead'):a.escaped?'escaped':a.hp<a.maxHp?'hurt':'unhurt'}));
       if(['victory','retreat','defeat'].includes(e.type)&&raid.fell){raid.fell=false;saveRoad(false);}
       if(e.type==='practice-hit'&&questStage===2&&lessonSet)practiceHits++;
@@ -5259,6 +5321,24 @@ function init() {
         if(movement>.5&&combat.state.phase!=='active')for(const id of companions.walking)companions.travelled(id,dt);
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
+        // **And the body, found.** This is the whole point of an event that happens whether you
+        // are there or not: you come up the road a quarter of an hour later and he is lying on it.
+        // Once each, and saved, so a reload does not tell you again (src/road-ambush.js).
+        for(const id of ambush.state.fallen){if(bodiesFound.has(id))continue;
+          const npc=npcById.get(id);if(!npc?.lying)continue;
+          const at=npc.actor.group.position;
+          if(Math.hypot(player.group.position.x-at.x,player.group.position.z-at.z)>11)continue;
+          bodiesFound.add(id);
+          toast(`${mercenaryById(id)?.name??npc.name} is lying in the road. Nobody has been along since; nothing has been taken off him but his sword.`,'ON THE DRENT ROAD');
+          audio?.effect('bell');saveRoad(false);}
+        // **They come off both verges at him.** No mark over anybody's head and nothing in the
+        // journal: he walks into it or he never knows it was there (src/road-ambush.js).
+        if(ambush.alive&&combat.state.phase!=='active'&&mode==='playing'
+          &&Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach){
+          if(combat.startEncounter(ambushEncounter)){ambush.sprang();
+            toast(ambush.fell(landingMateId())?'Three of them come out of the hedges, over the body they left on the road.':'Three of them come out of the hedges on either side of the road. Nobody was waiting for you; somebody was waiting.','THE DRENT ROAD');
+            audio?.effect('bell');saveRoad(false);}
+        }
         // **The goblins at the woodland bell are off the slate** (`greenway`, src/quest-slate.js).
         // The fight is still built, still tested and still here; nothing walks into it.
         if(questLive('greenway')&&questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
@@ -5315,6 +5395,7 @@ function init() {
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(!['opening','pause','arriving'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
       placeMercenaries();
+      if(mode==='playing'&&!reviewFrozen)walkTheAmbush();
       // Which stop wears the open gold this frame: the HUD, the npc marks and both charts read it.
       longWayStop=longWayNext();
       // After placeMercenaries, and before the NPC loop. That call rewrites the companion's home to
@@ -5410,7 +5491,7 @@ function init() {
       if(raid.ids.length&&!['active','defeated'].includes(combat.state.phase))raid.ids=[];
       const fightAt=combat.state.phase==='active'?combat.state.center:null;
       for(const npc of npcData) {
-        if(npc.hidden||npc.fallen){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
+        if((npc.hidden||npc.fallen)&&!npc.lying){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         const pos=npc.actor.group.position,home=npc.id===BEGGAR_NPC.id&&beggarStep?beggarStep.target:world.npcPositions[npc.id];
         // Characters far from the traveler neither animate nor draw; they stand at their home until approached.
         if(Math.hypot(home.x-player.group.position.x,home.z-player.group.position.z)>(npc.viewRange??180)){pos.set(home.x,world.heightAt(home.x,home.z)+(npc.lift??0),home.z);if(npc.lent!==undefined){npc.actor.group.rotation.y=npc.lent;npc.lent=undefined;}npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
@@ -5420,6 +5501,12 @@ function init() {
         // owns him, and everything below this would argue with them.
         if(npc.scripted&&mode==='arriving'&&opening){npc.shownPace=npc.scriptedPace??0;
           npc.actor.animate(walkTime+2,npc.shownPace,true,{});npc.marker.visible=false;continue;}
+        // **A body on the road.** He is not steered, not turned, and never talks: his place was
+        // decided the day he walked into it and the animator holds the fall at its end.
+        if(npc.lying){const home=world.npcPositions[npc.id];
+          pos.set(home.x,world.heightAt(home.x,home.z),home.z);
+          npc.actor.animate(walkTime+2,0,true,{action:'dead',progress:1});
+          npc.marker.visible=false;npc.shownPace=0;continue;}
         // Ed in the water: no path, no colliders and no ground under him. He floats at the
         // surface exactly as the traveler does, and swims a straight line for the strand.
         if(npc.swimming){pos.set(npc.swimming.x,WATERLINE-SWIM.sink,npc.swimming.z);npc.actor.group.rotation.y=npc.swimming.yaw;}
