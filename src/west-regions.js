@@ -572,6 +572,120 @@ export const ISAREOS_BECKS = Object.freeze([
   ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
 ]);
 
+// ---------------------------------------------------------------------------
+// Nethereum: the Neth, the hollow, and the water that gathers in it
+// ---------------------------------------------------------------------------
+/**
+ * **The Neth above the plateau.** The atlas draws two small edges along the
+ * Nethereum–Nether Desert border, from (-2450, 577) east to (-2350, 577), and then
+ * hands the line on as `medium` at that corner. The brief's river list names only
+ * the medium part; the map draws both, and the map wins. So this is the same river
+ * a size smaller and a reach earlier: narrow, cut into the desert margin, and a
+ * step across anywhere along it.
+ *
+ * It is built as a course of its own rather than as the head of one long river so
+ * that the ford below can be a third of the *medium* reach, which is where the
+ * decision was made (docs/six-regions-brief.md, "The Neth's ford, and why it is
+ * there"). `NETH` takes its water level over at the corner by naming this one, so
+ * the two are one river with no step at the handover.
+ */
+export const NETH_HEAD = river('neth-head', 'The Neth', atlasCourse('Nether Desert,Nethereum'),
+  { halfWidth: 1.8, halfWidthEnd: 2.6, cut: 1.1, cutEnd: 1.5, bed: .45 });
+
+/**
+ * **The Neth.** Off the Nether Desert's edge at (-2350, 577), east and north along
+ * the Nethereum–Ovesos line, and into the Lizeem at (-2100, 491). The lore gives it
+ * two characters and the region's whole drainage rests on the second: "a short, fast
+ * lower section that gives the Neth a split character: gentle and spreading in the
+ * middle country, quick and navigable in its lower reach". So it widens and stops
+ * cutting as it goes, which is what a river that is about to be navigable does.
+ *
+ * **Waded for its upper third, and a wall below it**, which is the Carica's rule for
+ * a medium river and the Isa's after it. Here it is also the only way between two
+ * countries: every one of the five Nethereum–Ovesos hex edges is this river and not
+ * one of them is dry, so a Neth built unfordable would make the Nether Desert — which
+ * nobody has built — the only land bridge out of Nethereum. A third of this course is
+ * 115 m, which takes the ford past the corner at (-2250, 577) and over the first two
+ * Nethereum–Ovesos edges; `tests/nethereum-world.test.js` holds that arithmetic.
+ */
+export const NETH = river('neth', 'The Neth', atlasCourse('Nether Desert,Nethereum,Ovesos'),
+  { halfWidth: 3.2, halfWidthEnd: 7, cut: 1.8, cutEnd: 1.4, bed: .85, fordUntil: .33, headOf: 'neth-head' });
+
+/**
+ * The hollow: the largest piece of quiet landform in the job, and the whole of what
+ * Nethereum is now that the atlas has refused it a lake.
+ *
+ * The lore's mechanism survives the loss of the water because it was always a
+ * statement about shape — "a broad depression in the interior plateau where multiple
+ * hill-streams converge and the water has no efficient route to the main Lizeem …
+ * the basin's flat bottom means water that enters has nowhere urgent to go". So: a
+ * dish, `rx` by `rz` metres, flat over its inner part and falling `depth` metres from
+ * the rim over `fall` metres of ground, which is a gradient of one in twenty-five and
+ * is nothing anybody would call a bank.
+ *
+ * **It is an ellipse and not a circle, and that is the country's doing.** Nethereum
+ * is seven hundred and fifty metres wide and three hundred and fifty tall, with the
+ * Isa on its northern border and the Lizeem on its eastern one, and a round dish six
+ * hundred metres across would have its rim in both rivers. Both are built, and a
+ * landform that reaches a built river re-cuts that river's profile and re-seeds every
+ * tree on both of its banks. So the dish is long east to west, where there is room,
+ * and short north to south, where there is not.
+ *
+ * `clear` is the second half of the same promise and is measured, not chosen: the
+ * hollow is nothing at all within that many metres of the Isa or the Lizeem, so
+ * neither river's ground moves by a picometre. It is also the honest shape — a basin
+ * with no efficient route out has a divide between it and the next drainage, and the
+ * divide is exactly the ground that does not fall into the dish.
+ */
+export const NETHEREUM_HOLLOW = Object.freeze({
+  x: -2545, z: 372, rx: 300, rz: 132, floor: .34, depth: 7.4, fall: 200, clear: 120,
+});
+
+/**
+ * Nethereum's own water, and every metre of it is either the atlas's or the ground's.
+ *
+ * **The outlet** is the one watercourse the atlas draws *inside* Nethereum: a single
+ * small hex edge between the two southern hexes, from (-2350, 520) down to the Neth's
+ * head at (-2350, 577). Fifty-seven metres of authored river is not a river, so the
+ * derived part carries it up onto the hollow's floor, where the country's water
+ * actually is — "the Neth itself exits through a narrow channel to the southeast,
+ * where it drops off the plateau edge", which is the lore's own sentence about the
+ * basin's drainage and is now the whole of it.
+ *
+ * **Three hill-streams**, one to each of the rims that has ground above the dish —
+ * the north-west shoulder, the north-east shoulder and the south-west margin against
+ * the Nether Desert. The atlas draws none of them, so they are derived the way
+ * Meneth's becks and Isareos's were, from the ground: water on a slope runs down it.
+ * Each `taper`s out on the hollow floor rather than ending in a bank, because that is
+ * what a stream reaching flat ground does, and the wet threads of rush and sedge the
+ * brief puts on the floor are where they run out.
+ *
+ * **The outlet is barely cut, and that is measured rather than modest.** The hollow's floor
+ * stands about a metre above the water in the Neth's head, so a channel cut a metre
+ * and a half into it comes out *below* the river it is supposed to join — which was
+ * the first version, and a stream whose mouth is half a metre under the water it
+ * joins is a stream running the wrong way. Fifty-five centimetres of cut at the floor
+ * and ninety at the mouth leaves it a hand's breadth above the Neth all the way down,
+ * and a channel that hardly cuts is what a basin whose water has nowhere urgent to go
+ * actually drains through.
+ */
+export const NETHEREUM_OUTLET = river('nethereum-outlet', 'The outlet', [
+  point(-2470, 392), point(-2430, 412), point(-2392, 442), point(-2366, 478),
+  ...atlasCourse('Nethereum'),
+], { halfWidth: 1.6, halfWidthEnd: 2.4, cut: .55, cutEnd: .9, bed: .3 });
+
+export const NETHEREUM_STREAMS = Object.freeze([
+  river('nethereum-stream-north', 'The north-west thread', [
+    point(-2700, 248), point(-2688, 288), point(-2670, 324), point(-2646, 352), point(-2620, 370),
+  ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
+  river('nethereum-stream-east', 'The north-east thread', [
+    point(-2352, 284), point(-2372, 316), point(-2394, 344), point(-2420, 364), point(-2448, 376),
+  ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
+  river('nethereum-stream-south', 'The south-west thread', [
+    point(-2734, 486), point(-2700, 466), point(-2664, 444), point(-2628, 424), point(-2600, 410),
+  ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
+]);
+
 /**
  * The braided reaches. A braid is what a river does when it has more bed than
  * water, and the Flats give both of theirs more bed than they know what to do
@@ -600,7 +714,8 @@ export const WEST_BRAIDS = Object.freeze([
  * reach is therefore after the Lizeem.
  */
 export const WEST_RIVERS = Object.freeze([VASTOS_RIVER, VASTOS_BECK, ...MENETH_BECKS, LIZEEM, CARICA,
-  ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS, ISAREOS_RIVER, ...ISAREOS_BECKS]);
+  ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS, ISAREOS_RIVER, ...ISAREOS_BECKS,
+  NETH_HEAD, NETH, NETHEREUM_OUTLET, ...NETHEREUM_STREAMS]);
 /** Standing water: pans, basins and the warm pool, as circles with their own depth. */
 export const WEST_POOLS = Object.freeze([
   ...VASTOS_PANS, ...VASTOS_BASINS,
@@ -608,7 +723,7 @@ export const WEST_POOLS = Object.freeze([
 ]);
 
 /** The regions this module shapes, in the order they were built. */
-export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer', 'Isareos']);
+export const WEST_REGION_NAMES = Object.freeze(['Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer', 'Isareos', 'Nethereum']);
 
 const boxOf = () => ({ minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity });
 const grow = (box, x, z, reach) => {
@@ -801,6 +916,18 @@ export const WEST_REGION_LANDMARKS = Object.freeze([
     description: 'A beck on the floor of every valley, running south off the shoulders to the Isa, which takes all three of them. You step over any of them without thinking about it; the lore says the country has no defining river and means it.' }),
   Object.freeze({ id: 'isareos-west-rim', name: 'The Western Rim', x: -2800, z: 30,
     description: 'Where the hills give out against the Ibenwood: the grass goes thin, short and grey, the shoulders flatten, and the wind comes off the forest with nothing to break it. The country stops being hills here and nobody has ever drawn the line.' }),
+  Object.freeze({ id: 'nethereum-hollow', name: 'The Hollow', x: -2600, z: 300,
+    description: 'The northern shoulder of the dish, where the ground stops being ordinary and starts going down. Six hundred metres of it, eight metres deep, and the fall spread over two hundred paces, so there is no bank anywhere and no moment at which you have arrived: the grass simply gets greener under you and the horizon gets further away.' }),
+  Object.freeze({ id: 'nethereum-basin', name: 'The Deep Basin', x: -2545, z: 372,
+    description: 'The bottom of it, which the Nethrani call the *nethoss* and use for any situation that cannot get worse. The richest pasture in the inner branch country, knee-deep and soft, standing in its own damp long after the spring sheet has gone off it — and under water again every year without fail, which is why nothing is built on it and nobody is here but the cattle.' }),
+  Object.freeze({ id: 'nethereum-threads', name: 'The Wet Threads', x: -2620, z: 370,
+    description: 'Where the hill-streams give up being streams: the channel spreads, the water goes into the ground, and what runs on across the meadow is a line of rush and sedge a few paces wide. Not a marsh — a wet line in a field, of the kind that tells a walker where to put his feet.' }),
+  Object.freeze({ id: 'neth-ford', name: 'The Neth Ford', ...midpointIn(NETH, 'Nethereum', .26),
+    description: 'Gravel, shin-deep, a hundred paces of it below where the river comes off the desert edge. It is the only dry-shod way out of this country to the south, and it is the only place on the Neth that is: everything below runs deep and navigable to the Lizeem, and there is no bridge anywhere on it.' }),
+  Object.freeze({ id: 'neth-lower', name: 'The Lower Neth', ...midpointIn(NETH, 'Nethereum', .82),
+    description: 'The short, fast lower section that gives the Neth its split character: gentle and spreading in the middle country, quick and deep-banked here, running east to the Lizeem between banks nobody has bridged. The weirs the lore hangs its fishery on are works, and works are people; the river is the river.' }),
+  Object.freeze({ id: 'nethereum-dry-corner', name: 'The Dry Corner', x: -2880, z: 206,
+    description: 'The one corner of the country the basin does not drain: the north-western hex against the Nether Desert, two metres lower than the rim and outside its catchment altogether. The grass goes short, thin and grey, and the wind off the desert margin comes across it with nothing at all to break it.' }),
   Object.freeze({ id: 'lizeem-reach', name: 'The Lower Lizeem', ...midpointIn(LIZEEM_REACH, 'Eer'),
     description: 'The last reach of the great river, wide and slow and going grey with what it is carrying. Gala is on the far bank and there is no way to it: not here, not anywhere along this side. Below the last bend the water spreads into the estuary and stops being a river.' }),
 ]);

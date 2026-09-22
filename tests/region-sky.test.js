@@ -31,8 +31,14 @@ test('the default sky is the three numbers src/main.js has always used', () => {
  * horizon is where that shows. Every other region is still on the default, and the promise
  * this file was written to hold is the *"nothing that exists changes"* half, so it is now
  * written as an allow-list: a second name appearing here is a deliberate act and not a drift.
+ *
+ * Nethereum is that second name, and it asks for the opposite of Eer's: the lore's one
+ * observation that survives the loss of its lake is that "the sky over Nethereum is often
+ * overcast. The light has a quality that travelers describe as muffled." So a flat grey-green
+ * horizon and a density above the default where Eer's is below it — the two of them together
+ * are what the feature was built for.
  */
-const OWN_SKY = new Set(['Eer']);
+const OWN_SKY = new Set(['Eer', 'Nethereum']);
 
 test('every region but the ones that asked for their own gets the default sky, to the digit', () => {
   for (const region of regions) {

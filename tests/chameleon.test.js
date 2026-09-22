@@ -36,7 +36,10 @@ const inPolygon = (points, x, z) => {
 
 test('every one of his spots is somewhere a chameleon can be: dry ground, off the road, in its own country', async () => {
   const w = await built();
-  assert.equal(CHAMELEON_SPOTS.length, 16, 'one per region, and two in open country');
+  // One per region, and two in open country — so this number goes up by one with every
+  // country that is built, and the country's own builder is the one who raises it.
+  assert.equal(CHAMELEON_SPOTS.length, regions.length + 2, 'one per region, and two in open country');
+  assert.equal(CHAMELEON_SPOTS.length, 19);
   assert.equal(new Set(CHAMELEON_SPOT_IDS).size, CHAMELEON_SPOTS.length, 'no two spots share an id');
   const roads = [...(w.paths ?? []), MAIN_ROAD, SUVAL_ROAD, SOLIS_ROAD].filter(Boolean);
   const onLand = (x, z) => (w.mapLands ?? []).some(land => inPolygon(land.points ?? [], x, z));

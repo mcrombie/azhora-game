@@ -173,7 +173,7 @@ export const LANGUAGES = freeze({
     from: 'the world-builder profile `mittoli`',
     note: 'The great western family and the tongue of commerce, governance and scholarship. The traveler meets three of its dialects: Luscian, thick with Elagosi and plains loanwords; the Plain’s eastern Mittoli, with an older layer under its place names that nobody has traced; and Amodian, a foothill dialect carrying a terrace-country substrate and a set of water-measure words Standard Mittoli lacks.',
     borrows: ['ambroni', 'pyrosi'],
-    dialects: ['luscian', 'plain', 'amodian', 'vastos', 'meneth', 'caricas', 'nesdor', 'eer', 'isareos'],
+    dialects: ['luscian', 'plain', 'amodian', 'vastos', 'meneth', 'caricas', 'nesdor', 'eer', 'isareos', 'nethrani'],
     onsets: ['al', 'ar', 'azh', 'bel', 'cael', 'dael', 'dor', 'el', 'gal', 'hom', 'kael', 'mel', 'mir', 'nil', 'sor', 'tal', 'thal', 'trel', 'vel', 'zael'],
     middles: ['a', 'ae', 'e', 'i', 'o', 'oe', 'u'],
     suffixes: ['a', 'ael', 'an', 'ath', 'el', 'eth', 'in', 'ith', 'oe', 'ol', 'om', 'on', 'or', 'os', 'oss', 'um'],
@@ -492,6 +492,9 @@ export const DIALECTS = freeze({
   isareos: dialect('isareos', 'Isareos Mittoli', 'mittoli',
     'The western-interior Mittoli of the valley heads: unstressed syllables compressed, Elagosi loanwords kept in the formal registers of dispute and contract, and above all **the ford vocabulary** — single terms for water heights and crossing conditions that Standard Mittoli needs a compound for, and which grows every season anybody tries to finish writing it down.',
     word => word.replace(/os$/, 'eos').replace(/([aeiou])([bcdfgklmnprstvz])([aeiou])\2/, '$1$2$3')),
+  nethrani: dialect('nethrani', 'Nethrani', 'mittoli',
+    'An inner-branch Mittoli variant, plain to any Standard speaker, whose whole distinctive vocabulary is the flood: *nethvel*, "the return of the deep water", against *nethmorr* for one that exceeds its bounds and *nethgell* for one that fails to come; *haethoss*, the reliable line a family builds above; *nethoss*, the deep basin, used of any situation that cannot get worse. It borrows the Pyrosi elevated register *kael-* for the Flood Recall alone, which linguists find remarkable and the Nethrani explain by saying the flood has the standing of the land.',
+    word => word.replace(/e([bcdfgklmnprstvz])/, 'eh$1')),
   highland: dialect('highland', 'the highland Izoli', 'izoli',
     'Conservative where the coastal towns have moved on, and carrying shrine-keeping vocabulary the towns do not have and the tribes do not translate.',
     word => word.replace(/([bcdfgklmnprstvz])$/, '$1$1')),
@@ -542,6 +545,10 @@ export const REGION_LANGUAGE = freeze({
   // Mittoli, with the ford vocabulary". Neither needed a new language.
   Eer: spoken('mittoli', 'eer'),
   Isareos: spoken('mittoli', 'isareos'),
+  // Seventeen, from its own lore file's Language section: "Nethrani is an inner-branch
+  // Mittoli variant, recognizable to any Standard Mittoli speaker, with a vocabulary shaped
+  // by the basin environment and the flood tradition." Mittoli again, and no new language.
+  Nethereum: spoken('mittoli', 'nethrani'),
 });
 
 /**

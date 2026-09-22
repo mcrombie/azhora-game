@@ -26,7 +26,7 @@ export { METRES_PER_HEX };
 // Eer is last on purpose, and every country added after it goes on the end too. The biome
 // scatter in `world-regions.js` walks this list with one seeded stream, so a name inserted
 // anywhere but the end re-rolls every region after it and moves scatter that is already built.
-export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer', 'Isareos']);
+export const PLAYABLE_REGIONS = Object.freeze(['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West Suval', 'Pueth', 'Peblos', 'West Izol', 'Elagos', 'Amod', 'Vastos', 'Meneth', 'Caricas', 'Nesdor', 'Eer', 'Isareos', 'Nethereum']);
 /** Scatter is per hex, so a hex worth k times more ground carries k² times as much of it. */
 const perHex = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
@@ -113,6 +113,15 @@ export const REGION_BIOMES = Object.freeze({
   Isareos: Object.freeze({ id: 'grass-hills', name: 'The Isareos hills', ground: '#6f9150', canopy: '#4c6f3e', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'humid-grass', ownScatter: true, blockHexes: 4,
     relief: { amplitude: 4.5, wavelength: 120 }, clearings: ['isareos-gallery'],
     note: 'The most ordinary rolling country in the west, and deliberately so: low grass hills with a valley between every pair, deep humid grass to the top of every shoulder, hawthorn and blackthorn in the hollows and nowhere else, and a gallery of alder, willow and hazel two trees deep on the water. No forest hex anywhere, and no coast: the atlas makes this country landlocked and the lore’s inlets are gone with it. The western rim against the Ibenwood is thinner, shorter and greyer.' }),
+  // Nethereum scatters its own meadow (src/west-regions-scenery.js): what grows here is decided
+  // by how deep in the hollow a point stands — rank wet meadow on the floor, ordinary humid grass
+  // up the sides and over the rim, rush and sedge in the low threads — and by how near the water
+  // it is, and a per-hex count can say neither. The atlas is unanimous about the hex itself:
+  // twenty-six `grassland` and one `plains`, in a map that has `lake` and `wetland` and puts
+  // neither here.
+  Nethereum: Object.freeze({ id: 'flood-meadow', name: 'The Nethereum meadow', ground: '#5f8c46', canopy: '#44663a', treesPerHex: 0, rocksPerHex: 0, undergrowth: 'wet-meadow', ownScatter: true, blockHexes: 4,
+    relief: { amplitude: 1.1, wavelength: 210 }, clearings: ['nethereum-hollow'],
+    note: 'The wet grass country: a broad shallow hollow six hundred metres across with the richest pasture in the inner branch country on its floor, ordinary humid grass up the sides and over the rim, rush and sedge in the low threads where the hill-streams run out, and willow and alder on the water and nowhere else. There is no Nethermere: the flood is a spring sheet over meadow that the game, having no seasons, never shows. Cattle loose on all of it.' }),
 });
 
 const AXIAL_NEIGHBORS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);

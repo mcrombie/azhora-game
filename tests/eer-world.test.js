@@ -169,10 +169,10 @@ test('the Lizeem is a wall on the Eer bank, and its last reach takes the water o
   }
 });
 
-test('the Neth is why the far four need a ford, and this pass does not build one', () => {
-  // Not Eer's water, and stated here because the next builder needs it and the atlas has it:
-  // every Nethereum-Ovesos hex edge is the Neth, so a Neth built as a wall would make the
-  // unbuilt Nether Desert the only land bridge between two countries that are built
+test('the Neth is why the far four need a ford, and Nethereum built one', () => {
+  // Not Eer's water, and stated here because the atlas has it and it is the reason the ford
+  // exists: every Nethereum-Ovesos hex edge is the Neth, so a Neth built as a wall would make
+  // the unbuilt Nether Desert the only land bridge between two countries that are built
   // (docs/six-regions-brief.md, "The Neth's ford, and why it is there").
   const owner = ATLAS_OWNERS;
   const wet = new Set();
@@ -189,10 +189,13 @@ test('the Neth is why the far four need a ford, and this pass does not build one
   }
   assert.equal(shared, 5, 'five hex edges between Nethereum and Ovesos');
   assert.equal(dry, 0, 'and every one of them is the Neth');
-  // Neither country is built, so there is no course to ford yet, and nothing here pretends
-  // otherwise. The ford lands with Nethereum and Ovesos. (`meneth-beck` is not the Neth.)
-  assert.equal(WEST_RIVERS.find(course => course.id.startsWith('neth')), undefined);
-  assert.ok(!PLAYABLE_REGIONS.includes('Nethereum') && !PLAYABLE_REGIONS.includes('Ovesos'));
+  // Nethereum is built now and the ford is on it. Ovesos is not, so the far side of the ford
+  // is still open country — which is ground, and which is the whole point of the ford being
+  // there. `tests/nethereum-world.test.js` holds the crossing itself.
+  const neth = WEST_RIVERS.find(course => course.id === 'neth');
+  assert.ok(neth, 'the Neth is built');
+  assert.ok(neth.fordUntil > .2 && neth.fordUntil < .5, 'waded in its upper third, like the Carica and the Isa');
+  assert.ok(PLAYABLE_REGIONS.includes('Nethereum') && !PLAYABLE_REGIONS.includes('Ovesos'));
 });
 
 test('two channels cross the plain to the sea, braiding where the gradient dies', () => {
@@ -304,9 +307,14 @@ test('Eer is the first country with a sky of its own, and it takes it the way th
   assert.notDeepEqual({ ...evening }, { ...plain }, 'the hour swallowed the country');
   assert.equal(evening.density, sky.density * 1.3);
   assert.deepEqual({ ...composeSky(sky) }, { ...sky }, 'no tint, no change');
-  // Every other region is still on the three numbers the game has always used.
-  for (const region of regions) if (region.name !== 'Eer')
+  // Every region that has not asked for one is still on the three numbers the game has always
+  // used. Nethereum is the second to ask (`tests/nethereum-world.test.js`), and it asks for the
+  // opposite of this one: a grey overcast and a closer horizon where Eer has a clear far one.
+  const OWN_SKY = new Set(['Eer', 'Nethereum']);
+  for (const region of regions) if (!OWN_SKY.has(region.name))
     assert.deepEqual({ ...regionSky(region) }, { ...DEFAULT_SKY }, `${region.name} lost the default sky`);
+  assert.ok(regionSky(regions.find(region => region.name === 'Nethereum')).density > sky.density,
+    'the muffled basin does not see further than the dry coast');
 });
 
 test('the birds of the Lizeem’s distributaries, the boar in the scrub, and the dolphins nobody can reach', () => {

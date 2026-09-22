@@ -118,6 +118,88 @@ function models() {
     },
 
     /**
+     * The Nethrani beast: "a compact, short-legged breed adapted to wet ground". Not the
+     * Vastos longhorn and not to be read as one at any distance — the lore of Nethereum
+     * introduces its cattle by what they are for, and what they are for is standing about
+     * in a meadow that is under water every spring and the best pasture in the branch
+     * country for the rest of it.
+     *
+     * So: the longhorn's barrel at three-quarters the height and the full width and length
+     * (the brief's own description), on legs a third shorter and half again as thick, and a
+     * short pair of horns that go forward rather than out. The longhorn's whole silhouette
+     * is its horns and its height; this one's is its width and its want of both.
+     *
+     * **Dun, and two stops up from what "dark" sounds like.** Photographed on its own meadow
+     * the first one was a charcoal lump: everything on it was within a few values of black,
+     * so flat shading had nothing to separate and the animal read as a hole in the grass. It
+     * is the boar's lesson exactly. Everything here is lighter now, and the pale underline —
+     * which is what most wet-ground cattle carry anyway — is what gives the shading an edge.
+     *
+     * **The neck is part of the head, and that is the deer's lesson.** A longhorn's body is
+     * deep enough to hide the gap that opens when the head swings down to graze; this one's
+     * is three-quarters of that depth and it is not, so the first Nethrani cow grazed with
+     * its head floating half a metre in front of its chest with nothing joining them. So the
+     * head geometry starts at the **shoulder joint** and carries its own short thick neck up
+     * and forward, and `GRAZER_RIG`'s `neck` and `high` are that joint rather than the base
+     * of a skull: the swing turns the whole of it, which is what a neck does.
+     */
+    'nethrani-cattle': {
+      body: geometry([
+        S(0x8a7f6e, [0, .80, -.04], [.42, .35, .84]),
+        S(0x978b78, [0, .87, .42], [.40, .33, .34]),
+        S(0xb0a690, [0, .62, .02], [.35, .21, .70]),
+        Y(0x6b6154, [0, .72, -.84], [.042, .50, .042], [.95, 0, 0]),
+        S(0x4a4239, [0, .50, -.98], [.05, .11, .055]),
+      ]),
+      head: geometry([
+        // The neck, out of the shoulder and up: two lumps, because a cow's neck is a wedge.
+        S(0x978b78, [0, .05, .10], [.20, .18, .22]),
+        S(0x8a7f6e, [0, .14, .27], [.175, .16, .19]),
+        // The head on the end of it.
+        S(0x8a7f6e, [0, .18, .45], [.185, .17, .25]),
+        S(0x7a6f60, [0, .10, .66], [.14, .125, .155]),
+        S(0xd3cab4, [0, .065, .77], [.10, .075, .075]),
+        S(0xa2967f, [0, .32, .41], [.195, .10, .185]),
+        ...both(side => S(0x7a6f60, [side * .21, .26, .36], [.13, .065, .085])),
+        ...both(side => S(dark, [side * .145, .185, .585], [.026, .030, .027])),
+        // Short thick horns, forward and up in two lengths: nothing like the sweep the Vastos
+        // animal is named for, and the quickest way to tell the two apart at any distance.
+        ...both(side => Y(0xd8cdb2, [side * .20, .33, .43], [.048, .15, .048], [-.25, 0, side * 1.1])),
+        ...both(side => C(0xe8e0c8, [side * .275, .40, .52], [.042, .12, .042], [-.55, 0, side * .55])),
+      ]),
+      leg: geometry([Y(0x6b6154, [0, -.16, 0], [.105, .32, .107]), B(0x3c352d, [0, -.32, .03], [.16, .10, .20])]),
+    },
+
+    /**
+     * The harrier over Nethereum's meadow. An extension, and flagged as one on its range:
+     * the fauna overview names no raptor or scavenger for this country at all. What the
+     * ground argues for is a bird that hunts by quartering rather than by soaring — a basin
+     * of long wet grass is a harrier's whole living — and the shape of one from below is
+     * unmistakable: long narrow wings held in a deep V, a white rump, and black tips.
+     *
+     * It is on the plateau hawk's rig, which carries a body and two wings and nothing else,
+     * so it is in `SOAR` and therefore in `SOARERS`. Anything that falls past that set into
+     * the four-legged tail of `render` asks an instanced mesh that was never made for it and
+     * takes the render loop down; that is what the vulture did the first time.
+     */
+    harrier: {
+      body: geometry([
+        S(0x8e97a0, [0, 0, -.02], [.065, .062, .22]),
+        S(0xe6e6df, [0, -.022, .04], [.055, .045, .15]),
+        S(0xf2f1ea, [0, .012, -.17], [.055, .026, .07]),
+        S(0x7d8792, [0, .012, -.31], [.055, .022, .16], [.05, 0, 0]),
+        S(0x9aa3ac, [0, .03, .16], [.05, .05, .058]),
+        C(0x3a3a38, [0, .012, .225], [.02, .06, .019], [Math.PI / 2 + .35, 0, 0]),
+        ...both(side => S(0xe2c65a, [side * .032, .05, .19], [.012, .013, .011])),
+      ]),
+      wing: geometry([
+        S(0x8e97a0, [.28, 0, .01], [.32, .018, .095]),
+        S(0xa7b0b8, [.58, -.004, -.03], [.30, .014, .07]),
+        S(0x1d1f22, [.86, -.008, -.07], [.16, .012, .045]),
+      ]),
+    },
+
+    /**
      * Hill sheep for Meneth's ridge commons and Nesdor's margins: the lore of
      * both puts sheep on the open grazing and says nothing else about them, so
      * this is an upland sheep and not a breed.
@@ -519,7 +601,21 @@ export const WEST_LIFE_ZONES = Object.freeze([
   // their spots are on the fox ground itself: the immediate bank of the middle reach.
   Object.freeze({
     id: 'carica-foxes-upper', species: 'river-fox', region: 'Caricas', radius: .32, scale: 1,
-    minX: -1740, maxX: -1650, minZ: 390, maxZ: 500,
+    /**
+     * **Forty metres wider to the west, because the fox was backing into its own wall.**
+     * The vel-caric gives ground at exactly the pace you come on and never turns its back, so
+     * it needs somewhere to give ground *to*: measured with a walker coming from the east, it
+     * backed to `minX` at -1740, slid north along that edge for ten seconds and was reached to
+     * 1.58 m — which `tests/west-life.test.js` calls being walked down, and rightly.
+     *
+     * It was marginal before and Nethereum's landing tipped it: registering that country moved
+     * the Lizeem's surface along its own bank, which re-seeded the `lizeemSedge` draw in
+     * Caricas's block and with it every scatter after it, so the trees this fox threads between
+     * are a few metres from where they were. The cure is room rather than a re-tune of anything
+     * it does: -1780 is 100% standable Caricas ground against 85% at -1740, and the range's
+     * half-diagonal goes from 71 m to 85, well inside the 130 it is ticked from.
+     */
+    minX: -1780, maxX: -1650, minZ: 390, maxZ: 500,
     sites: Object.freeze([[-1670, 400], [-1684, 409], [-1708, 436], [-1713, 469]]),
     note: 'caricas.md: the vel-caric, "found reliably only in the Carica corridor". It hunts the water’s edge and it does not run from you.',
   }),
@@ -688,6 +784,56 @@ export const WEST_LIFE_ZONES = Object.freeze([
     sites: Object.freeze([[-2560, -60], [-2450, 60]]),
     note: 'Extension: the fauna overview names no raptor or scavenger for Isareos. The species is the game’s own (src/drent-birds.js, src/birding.js) and the shape in the sky is the overview’s black soar-bird, "technically a vulture-relative", held flat and circling a long way up.',
   }),
+  // Nethereum. With the Nethermere gone the fishery and the wildfowl go with it, and the one
+  // animal the lore names outright is the one that never needed the water: "Nethrani cattle —
+  // a compact, short-legged breed adapted to wet ground". Everything else here is what lives
+  // on a wet meadow and the two rivers that bound it, and every range says which it is.
+  Object.freeze({
+    id: 'nethereum-cattle', species: 'nethrani-cattle', region: 'Nethereum', radius: .8, scale: 1,
+    // **On the floor, which is the whole point of the beast.** Swept rather than guessed: every
+    // one of the six stands where `nethereumWet` is .96 or better — the rank meadow, not the
+    // sides — on ground measured standable, and none is within ninety metres of deep water.
+    // A hundred and ten metres of half-diagonal, well inside the 130 a flock is ticked from.
+    minX: -2648, maxX: -2462, minZ: 328, maxZ: 446,
+    sites: Object.freeze([[-2620, 358], [-2576, 384], [-2532, 356], [-2490, 386], [-2556, 418], [-2604, 400]]),
+    note: 'nethereum.md: "Nethrani cattle — a compact, short-legged breed adapted to wet ground — are moved onto this post-flood pasture as soon as the footing is reliable." The pasture is the hollow’s floor and the cattle are loose on it; the communities that own them are people, and people are what this pass does not build.',
+  }),
+  Object.freeze({
+    id: 'nethereum-hares', species: 'upland-hare', region: 'Nethereum', radius: .3, scale: 1,
+    // The rim, not the floor: `nethereumWet` is .07 or less at all three, and a hare on ground
+    // that is under water every spring is a drowned hare.
+    minX: -2346, maxX: -2252, minZ: 282, maxZ: 368,
+    sites: Object.freeze([[-2300, 330], [-2276, 318], [-2322, 306]]),
+    note: 'Extension: the same Ganoss upland hare as on the Vastos plain, the Meneth ridges and the Isareos shoulders, here on the dry north-eastern rim above the basin — which is the only ground in this country that is not under water in a wet spring.',
+  }),
+  Object.freeze({
+    id: 'nethereum-otters', species: 'otter', region: 'Nethereum', radius: .35, scale: 1.25,
+    // **Below the ford, where the Neth is deep**, which is the lesson the Isa's otters taught:
+    // `waterOf` looks for deep-water colliders, and a river has those only where it cannot be
+    // waded. All three of these stand within three and a half metres of one.
+    minX: -2229, maxX: -2124, minZ: 466, maxZ: 525,
+    sites: Object.freeze([[-2176, 494], [-2207, 488], [-2146, 503]]),
+    note: 'The great river otter on the lower Neth, which the lore calls "quick and navigable in its lower reach" and which carried the fishery the flood adjustment took away. The same animal as the Isa’s, at the same size; an extension by place, as that one is, and on the only reach of this country’s water deep enough for it.',
+  }),
+  Object.freeze({
+    id: 'nethereum-herons', species: 'wading-bird', region: 'Nethereum', radius: .4, scale: 1,
+    // A stride from water and on the floor, swept for both: these stand where the outlet leaves
+    // the hollow and the threads run out across it.
+    minX: -2493, maxX: -2408, minZ: 353, maxZ: 428,
+    sites: Object.freeze([[-2469, 389], [-2450, 377], [-2432, 404]]),
+    note: 'Three, and not thirty. The brief is exact about why: "a wet line in a field feeds one heron, where a marsh would have fed a hundred" — and the atlas has refused this country both the lake and the marsh. They work the threads where the hill-streams give their channels up on the hollow’s floor.',
+  }),
+  Object.freeze({
+    id: 'nethereum-harrier', species: 'harrier', region: 'Nethereum', radius: .3, scale: 1,
+    // **Low, and following the ground it hunts.** Nine metres over whatever is under it, on a
+    // thirty-four metre turn carried seventy metres east and west — which is quartering, and is
+    // what a harrier does instead of soaring. Measured: the ground under the turn rises at most
+    // 0.62 m from its middle, so nine metres is nine metres and not a collision.
+    minX: -2610, maxX: -2390, minZ: 340, maxZ: 420,
+    air: 9, circle: 34, period: 19, quarter: 70, bob: 1.6, follow: true,
+    sites: Object.freeze([[-2500, 380]]),
+    note: 'Extension: the fauna overview names no raptor for Nethereum at all. What the ground argues for is the bird that hunts it — a basin of long wet grass is a harrier’s whole living, and a harrier quarters rather than soars, which is why it has the plateau hawk’s rig and none of its flight.',
+  }),
 ]);
 
 /**
@@ -736,7 +882,18 @@ const CIRCLE_RADIUS = 46, CIRCLE_PERIOD = 27;
  * matrix and takes the render loop down with it. That is what the vulture did the
  * first time it was added.
  */
-const SOARERS = new Set(['plateau-hawk', 'turkey-vulture']);
+/**
+ * How each of them holds its wings, and how slowly it rocks on them. The hawk's and the
+ * vulture's rows are the numbers the west was built with, to the digit; the harrier's is new
+ * and is the reason the two ternaries in `render` became a table. A harrier's deep V is the
+ * whole of how it is told from anything else in the sky, so it is the loudest of the three.
+ */
+const SOAR = Object.freeze({
+  'plateau-hawk': { slow: .4, rock: .12, dihedral: .16 },
+  'turkey-vulture': { slow: .26, rock: .16, dihedral: .26 },
+  harrier: { slow: .55, rock: .20, dihedral: .38 },
+});
+const SOARERS = new Set(Object.keys(SOAR));
 
 /**
  * How near a traveler has to be to a band's middle before the band is drawn and run.
@@ -763,6 +920,12 @@ const GRAZER_RIG = Object.freeze({
   // carries the whole neck down with the head. `low` drops the joint a little as well,
   // because a deer that puts its nose in the grass lowers its shoulders to do it.
   'red-deer': { neck: .30, high: 1.00, low: .68, shoulder: .62, hip: .20, fore: .42, stride: .52 },
+  // The Nethrani beast: the longhorn's row with every height at about three-quarters and
+  // every width and length left alone, which is what "compact and short-legged" is. The
+  // stride is shorter than three-quarters because a short leg swings through less ground,
+  // not less angle. `neck` and `high` are the **shoulder joint** and not the base of a head,
+  // as the red deer's are, because this one's head geometry carries its own neck.
+  'nethrani-cattle': { neck: .40, high: .92, low: .66, shoulder: .55, hip: .26, fore: .50, stride: .34 },
 });
 
 const BIRD_RIG = Object.freeze({
@@ -882,11 +1045,18 @@ export function createWestLife(scene, world) {
    * keeps them from being chased to the horizon. The fox still never flees.
    */
   const FLEE_AT = { longhorn: 7.5, 'hill-sheep': 6.5, 'upland-hare': 9, otter: 8, 'wading-bird': 11, 'river-fox': 0,
-    egret: 12, stilt: 11, duck: 10, gull: 9, boar: 8.5, 'red-deer': 18 };
+    egret: 12, stilt: 11, duck: 10, gull: 9, boar: 8.5, 'red-deer': 18, 'nethrani-cattle': 7.5 };
   const WALK = { longhorn: .42, 'hill-sheep': .48, 'upland-hare': 1.9, otter: 1.1, 'wading-bird': .5, 'river-fox': .9,
-    egret: .5, stilt: .8, duck: .45, gull: .7, boar: .6, 'red-deer': .7 };
+    egret: .5, stilt: .8, duck: .45, gull: .7, boar: .6, 'red-deer': .7, 'nethrani-cattle': .38 };
   const RUN = { 'hill-sheep': 5.6, 'upland-hare': 9.6, otter: 8.2, 'wading-bird': 10,
     egret: 10, stilt: 10.4, duck: 9.8, gull: 11, boar: 8.4, 'red-deer': 10.5 };
+  /**
+   * Cattle, whatever breed. They do not bolt: they put their heads up, turn to face whoever
+   * it is, and give ground at a shade over a walking pace. This used to be a test on the
+   * word `longhorn`, which was true of exactly one animal until the Nethrani beast landed —
+   * and a Nethrani cow that fled would have been the only cow in the world that did.
+   */
+  const CATTLE = new Set(['longhorn', 'nethrani-cattle']);
   /**
    * Everything that answers a traveler by getting off the ground. A bird cannot be
    * run down, which is the whole of why they are all here and the hare is not.
@@ -898,7 +1068,7 @@ export function createWestLife(scene, world) {
   const FOX = Object.freeze({ floor: 1, cap: 6.6, lead: 1.06, arm: 2.8, notice: 10 });
   /** Going home is a purposeful walk, not a graze: a band chased a hundred metres is back in a minute or two. */
   const RETURN = { longhorn: 1.3, 'hill-sheep': 1.5, 'upland-hare': 2.8, otter: 1.8, 'wading-bird': 1.4, 'river-fox': 1.5,
-    egret: 1.4, stilt: 1.7, duck: 1.3, gull: 1.6, boar: 1.6, 'red-deer': 2.4 };
+    egret: 1.4, stilt: 1.7, duck: 1.3, gull: 1.6, boar: 1.6, 'red-deer': 2.4, 'nethrani-cattle': 1.2 };
   const HOME = 16, SETTLED = 6;
   const BACK = [0, .35, -.35, .7, -.7], ALONG = [1.05, -1.05, 1.4, -1.4, 1.75, -1.75, 2.1, -2.1];
 
@@ -1031,7 +1201,7 @@ export function createWestLife(scene, world) {
         return;
       }
       animal.watching = Math.max(0, animal.watching - dt);
-    } else if (species === 'longhorn' && near < FLEE_AT.longhorn) {
+    } else if (CATTLE.has(species) && near < FLEE_AT[species]) {
       // Cattle do not bolt. They put their heads up, turn to face you, and give ground.
       animal.action = 'yield'; animal.timer = 1.2;
       backOff(animal, player, GIVE, dt, GIVE * 1.3);
@@ -1170,15 +1340,33 @@ export function createWestLife(scene, world) {
     animal.action = 'swim';
   }
 
-  /** A hawk holds its circle whatever the traveler does; it is far too high to care. */
+  /**
+   * A hawk holds its circle whatever the traveler does; it is far too high to care.
+   *
+   * **A harrier does not hold one circle over one spot, and that is what the five optional
+   * fields are for.** It quarters: a tight turn carried slowly east and west across the
+   * ground it is hunting, a few metres over the grass, keeping its height above whatever is
+   * under it rather than above the point it started from. So `circle` and `period` are the
+   * turn, `quarter` is how far the turn's own centre slides while the bird goes round it,
+   * `follow` takes the height off the ground beneath rather than beneath home — a low flier
+   * over a dish six hundred metres across would otherwise fly into the side of it — and
+   * `bob` is how much the height wanders, which has to be small for a bird nine metres up.
+   *
+   * Every one of them is absent on the hawk and the vulture, whose flight is the same
+   * arithmetic it has been since Vastos.
+   */
   function tickAir(animal, dt) {
     animal.clock += dt;
-    const angle = animal.clock / CIRCLE_PERIOD * TAU + animal.index * 2.1;
-    animal.x = animal.home.x + Math.sin(angle) * CIRCLE_RADIUS;
-    animal.z = animal.home.z + Math.cos(angle) * CIRCLE_RADIUS;
-    animal.y = world.heightAt(animal.home.x, animal.home.z) + animal.zone.air + Math.sin(animal.clock * .21) * 3;
+    const zone = animal.zone;
+    const radius = zone.circle ?? CIRCLE_RADIUS, period = zone.period ?? CIRCLE_PERIOD;
+    const angle = animal.clock / period * TAU + animal.index * 2.1;
+    const slide = zone.quarter ? Math.sin(animal.clock / (period * 3.4) * TAU + animal.index * 1.3) * zone.quarter : 0;
+    animal.x = animal.home.x + slide + Math.sin(angle) * radius;
+    animal.z = animal.home.z + Math.cos(angle) * radius;
+    const under = zone.follow ? world.heightAt(animal.x, animal.z) : world.heightAt(animal.home.x, animal.home.z);
+    animal.y = under + zone.air + Math.sin(animal.clock * .21) * (zone.bob ?? 3);
     animal.yaw = angle + Math.PI / 2;
-    animal.speed = CIRCLE_RADIUS * TAU / CIRCLE_PERIOD;
+    animal.speed = radius * TAU / period;
     animal.action = 'soar';
   }
 
@@ -1201,11 +1389,11 @@ export function createWestLife(scene, world) {
       // vulture is on the hawk's rig with a wider wing and a slower tilt to it — that
       // is the whole of the difference, and it is the difference you see from below.
       if (SOARERS.has(species)) {
-        // Wings held out and barely moving: a bird that is circling is not flapping.
-        const slow = species === 'turkey-vulture' ? .26 : .4;
-        const tilt = Math.sin(animal.clock * slow) * (species === 'turkey-vulture' ? .16 : .12);
-        // A turkey vulture holds its wings in a shallow V and rocks; a hawk holds them flat.
-        const dihedral = species === 'turkey-vulture' ? .26 : .16;
+        // Wings held out and barely moving: a bird that is circling is not flapping. A hawk
+        // holds them flat, a vulture in a shallow V, a harrier in a deep one and rocking.
+        const soar = SOAR[species];
+        const tilt = Math.sin(animal.clock * soar.slow) * soar.rock;
+        const dihedral = soar.dihedral;
         for (let side = 0; side < 2; side++) place(flock.meshes.wings, i * 2 + side,
           side ? -.06 : .06, .01, -.01, 0, side ? Math.PI : 0, (side ? -1 : 1) * (dihedral + tilt));
         return;
@@ -1281,7 +1469,8 @@ export function createWestLife(scene, world) {
     const motion = strode < 6 ? { vx: (player.x - lastPlayer.x) / step, vz: (player.z - lastPlayer.z) / step } : { vx: 0, vz: 0 };
     lastPlayer = { x: player.x, z: player.z };
     for (const flock of flocks) {
-      const near = Math.hypot(player.x - flock.centre.x, player.z - flock.centre.z) <= REACH + (flock.zone.air ? CIRCLE_RADIUS : 0);
+      const aloft = flock.zone.air ? (flock.zone.circle ?? CIRCLE_RADIUS) + (flock.zone.quarter ?? 0) : 0;
+      const near = Math.hypot(player.x - flock.centre.x, player.z - flock.centre.z) <= REACH + aloft;
       flock.group.visible = near;
       if (!near) continue;
       if (flock.seen !== undefined && clock - flock.seen > 1) settle(flock, clock - flock.seen);

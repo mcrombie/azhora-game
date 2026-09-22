@@ -28,6 +28,13 @@ const WALK = 4.2, RUN = 7.2, HZ = 60;
 // can come at either of those. `tests/eer-world.test.js` holds the dolphins to their own law.
 const ground = WEST_LIFE_ZONES.filter(zone => !zone.air && !zone.sea);
 const bySpecies = species => ground.filter(zone => zone.species === species);
+/**
+ * Every cow in the world, whatever breed. The cattle laws below used to read `longhorn`,
+ * which was true of every cow there was until Nethereum's short-legged beast landed — and a
+ * law that says "cattle do not bolt" has to be about cattle and not about one name for them.
+ */
+const CATTLE = new Set(['longhorn', 'nethrani-cattle']);
+const cattle = ground.filter(zone => CATTLE.has(zone.species));
 const turn = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
 
 /**
@@ -101,7 +108,7 @@ test('no band is given a range it can run out of the reach of', () => {
 
 test('nothing in the west can be walked down', () => {
   for (const zone of ground) {
-    const arm = zone.species === 'river-fox' ? 2 : zone.species === 'longhorn' ? 5 : 3;
+    const arm = zone.species === 'river-fox' ? 2 : CATTLE.has(zone.species) ? 5 : 3;
     const walked = chase(zone, WALK, 30, { arm });
     if (zone.species !== 'hill-sheep')
       assert.ok(walked.closest >= arm, `${zone.id}: somebody walking got within ${walked.closest.toFixed(2)} m of ${walked.target}`);
@@ -168,7 +175,7 @@ test('sheep can be herded by somebody running, and cattle give ground instead of
     assert.ok(run.reachedAt !== null, `${zone.id}: somebody running never got among the sheep (closest ${run.closest.toFixed(1)} m)`);
     run.life.dispose();
   }
-  for (const zone of bySpecies('longhorn')) {
+  for (const zone of cattle) {
     const walked = chase(zone, WALK, 30);
     assert.ok(walked.actions.has('yield') && !walked.actions.has('flee'), `${zone.id}: cattle ${[...walked.actions].join(', ')}`);
     const settled = walked.facing.slice(HZ);   // a second to get its head round

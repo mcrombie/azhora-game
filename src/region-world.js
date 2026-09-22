@@ -23,7 +23,7 @@ import { toWorld, toWorldRoad, toWorldIn, AUTHORED_METRES_PER_HEX, WORLD_SCALE }
 export const SURVEY = PLAYABLE_SURVEY;
 export const TRANSFORM = HEX_WORLD_TRANSFORM;
 export const REGION_ORDER = PLAYABLE_REGIONS;
-export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14, Eer: 15, Isareos: 16 });
+export const REGION_IDS = Object.freeze({ Drent: 1, Luscia: 2, 'Moros Plain': 3, 'East Suval': 4, 'West Suval': 5, Pueth: 6, Peblos: 7, 'West Izol': 8, Elagos: 9, Amod: 10, Vastos: 11, Meneth: 12, Caricas: 13, Nesdor: 14, Eer: 15, Isareos: 16, Nethereum: 17 });
 export const REGION_NAME_BY_ID = Object.freeze(Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name])));
 
 export const ANCHORS = Object.freeze(routeAnchors(SURVEY));
@@ -237,6 +237,27 @@ export const REGION_TERRAIN = Object.freeze({
   // twice the wavelength, and a greyer ground under a wind with nothing to break it.
   Isareos: Object.freeze({ base: 22, amp: 4.5, wave: 120, ground: REGION_BIOMES.Isareos.ground, byTerrain: Object.freeze({
     plains: Object.freeze({ base: 18, amp: 2.2, wave: 210, ground: '#8a9470' }),
+  }) }),
+  // Nethereum is the rim of its own basin, and the basin itself is a landform
+  // (`nethereumHollow`, src/west-ground.js) rather than a level: twenty-one metres is what
+  // the country stands at where the ground is not falling into the middle of it, and the
+  // hollow takes eight metres out of that over a fall two hundred metres wide.
+  //
+  // Twenty-one sits between the two built countries it hands itself to — Isareos's hills at
+  // 22 on the north side of the Isa and Caricas's corridor at 17 on the far side of the
+  // Lizeem — so neither border is a step. It is also the first time the ground south of the
+  // Isa has been anything but `outland`, and the Isa rises with it; the amount is measured in
+  // `tests/nethereum-world.test.js`.
+  //
+  // The relief is deliberately quiet, as Meneth's and Caricas's are: the shape of this country
+  // is the dish in it, and noise on top of a dish is just noise. Under two metres over a
+  // hundred and ninety is enough to keep the floor from reading as a table and no more.
+  //
+  // The atlas's one `plains` hex is the north-western corner against the Nether Desert and the
+  // Ibenwood, outside the hollow's catchment: two metres lower, flatter still, and a paler and
+  // drier ground, which is the same thing Isareos's western rim does for the same reason.
+  Nethereum: Object.freeze({ base: 21, amp: 1.1, wave: 210, ground: REGION_BIOMES.Nethereum.ground, byTerrain: Object.freeze({
+    plains: Object.freeze({ base: 19, amp: .9, wave: 260, ground: '#7f9459' }),
   }) }),
   outland: Object.freeze({ base: 11.5, amp: 6, wave: 150, ground: '#8d9a6d' }),
 });
@@ -741,6 +762,26 @@ const REGION_TEXT = {
     description: 'Low grass hills west of the Lizeem’s head, with a valley between every pair of shoulders and deep humid grass to the top of all of them. Hawthorn and blackthorn keep to the hollows and the lee sides; alder, willow and hazel keep to the water and go two trees deep and no further. There is no dramatic backdrop, no defining river and no particularly fertile valley — it is the most ordinary country in the west, which after four hundred metres of it is the thing worth noticing. Red deer on the open grass, hares on the shoulders, and the shadow of something circling.',
     palette: { ground: '#6f9150', accent: '#d3dca6', fog: '#b7c8ac' },
     npcIds: [], landmarks: ['isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim'] },
+  // Nethereum is terrain and wildlife only, like the six before it. The ridge communities, the
+  // Flood Council, the Flood Recall, the weirs and the oats and hay on the flood meadow are all
+  // somebody's, and somebody is not built — and two of them are impossible besides, because
+  // **there is no Nethermere**. The atlas gives this country twenty-six `grassland` hexes and one
+  // `plains`, in a map that has both a `lake` terrain and a `wetland` terrain and spends them
+  // freely elsewhere, and it puts neither here. The user's ruling of 2026-09-21 settled it: the flood is a shallow
+  // spring sheet over the basin's grass, gone by midsummer, and the game has no seasons to bring
+  // it. So what is built is the dry state — a hollow, and the pasture the water leaves.
+  //
+  // **The second country in the game with a sky of its own** (src/region-sky.js), and it asks for
+  // the opposite of Eer's: the lore's one observation that survives the loss of the lake is that
+  // "the sky over Nethereum is often overcast. The light has a quality that travelers describe as
+  // muffled." So a flat grey-green horizon instead of the lake country's soft blue, and a density
+  // a shade above the default, which is what a damp basin under cloud actually looks like. Not so
+  // much above it that the hollow disappears: at .0071 the far side of the dish is still ground
+  // and not fog. `palette.fog` is the chart legend's colour and is left as every region has it.
+  Nethereum: { subtitle: 'The wet grass country', spawn: point(-2650, 289),
+    description: 'A broad shallow dish of grass between the Isa and the Neth, and the greenest ground in the west. Water gathers in the middle of it every spring and leaves slowly, and what it leaves is the richest pasture in the inner branch country: rank wet meadow on the floor, ordinary humid grass up the sides and over the rim, and wet threads of rush and sedge in the low ground where the hill-streams run out and stop. Willow and alder on the water and nowhere else. There is no lake here and there never was one on this map — only the hollow, the cattle loose on it, and an overcast that makes the light feel like something held.',
+    palette: { ground: '#5f8c46', accent: '#cfdaa2', fog: '#b0c3ac', sky: 0xa7b3ad, haze: 0xb4bcb1, hazeDensity: .0071 },
+    npcIds: [], landmarks: ['nethereum-hollow', 'nethereum-basin', 'nethereum-threads', 'neth-ford', 'neth-lower', 'nethereum-dry-corner'] },
 };
 
 export const regions = Object.freeze(REGION_ORDER.map(name => {

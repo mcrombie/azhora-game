@@ -162,7 +162,8 @@ import { createRoadLife } from './road-life.js';
 import { createWestLife } from './west-regions-life.js';
 import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH,
-  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS, ISAREOS_RIVER } from './west-regions.js';
+  LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS, ISAREOS_RIVER,
+  NETH, NETHEREUM_HOLLOW, NETHEREUM_STREAMS } from './west-regions.js';
 import { createRoadVerges } from './road-verges.js';
 import { createRoadAudio as createAudio } from './road-audio.js';
 import { createDeveloperMode } from './developer-mode.js';
@@ -1614,11 +1615,88 @@ function init() {
         ??beside(ISAREOS_RIVER,.60,24,-1);
       return shot(bank.spot,bank.sample,.12,10);
     }
+    // Nethereum, the third of the six, and the one the atlas took a whole country away from.
+    if(view==='south-nethereum'){
+      // The dish, across its short axis, which is the only axis it fits on. Standing on the
+      // northern shoulder and looking south, the ground falls away over a hundred and twenty
+      // metres and does not stop; that fall is the whole of what this country is, and a lake
+      // is what used to be at the bottom of it.
+      //
+      // **Across, and not along.** The long axis is six hundred metres and Nethereum's own
+      // fog is .0071 - a shade thicker than the default, which is the lore's "muffled" light
+      // and is deliberate - so at two hundred metres there is about a tenth of the light left
+      // and the far rim is weather. The short axis is a hundred and twenty and reads.
+      //
+      // Nine metres up for the reason every landscape view out here is: `cameraPullIn` clamps
+      // the camera to whatever stands nearest the focus, and a focus above `heightAt + 7`
+      // cannot be clamped against at all. Worked out from the hollow's own numbers rather than
+      // typed in, so it follows the dish if the dish ever moves.
+      //
+      // **And from well above it, which is the third correction and the one that made it a
+      // picture.** Taken at .06 of pitch from nine metres up, a fall of seven and a half metres
+      // over a hundred and twenty-five is four degrees of sight line and reads as flat green
+      // carpet: the dish did not exist in the frame at all. A dish this shallow is only a dish
+      // from above it, so the camera goes up to about thirty-five metres - `shot` puts it at
+      // `distance * sin(pitch)` over the focus - and looks down at seventeen degrees.
+      const H=NETHEREUM_HOLLOW;
+      return shot({x:H.x,z:H.z-H.rz*.80},{x:H.x,z:H.z+H.rz*.15},.29,7);
+    }
+    if(view==='south-nethereum-hollow'){
+      // Down on the floor, at a wet thread: where a hill-stream gives its channel up and what
+      // runs on across the meadow is a line of rush and sedge in the grass. The subject is
+      // knee-high, so the camera is low and near - the opposite of the view above, and the
+      // reason there are two of them.
+      //
+      // **Out on the floor looking back up the thread**, and both halves of that are
+      // corrections. The first take stood sixteen metres behind the stream's last sample and
+      // photographed the inside of an alder: the gallery follows the water, so the ground
+      // behind a stream's mouth is the one place in this country with trees on it. And the
+      // thread itself is sown *forward* from there, out across the meadow, so looking back
+      // along it puts the rush in the frame with the gallery and the rim behind it.
+      const end=NETHEREUM_STREAMS[0].samples.at(-1);
+      const to=Math.atan2(NETHEREUM_HOLLOW.x-end.x,NETHEREUM_HOLLOW.z-end.z);
+      const along=(d)=>({x:end.x+Math.sin(to)*d,z:end.z+Math.cos(to)*d});
+      return shot(along(112),along(34),.11,1.6);
+    }
+    if(view==='south-neth'){
+      // The ford, from the Nethereum bank. **Which bank that is, is measured and not assumed**:
+      // the Neth runs the Ovesos line for all of its length below the corner, and Ovesos is not
+      // built, so one side of this river has nothing at all on it. Isareos's river view was
+      // taken from exactly that empty side the first time it was taken.
+      //
+      // A fifth of the way along, which is inside the fordable third, and from twenty-two
+      // metres out - just beyond the gallery, which is planted to `sample.half + 8` and so
+      // stands about fifteen metres off the water.
+      const bank=[1,-1].map(side=>beside(NETH,.20,22,side))
+        .find(({spot})=>world.regionAt(spot.x,spot.z)?.name==='Nethereum')
+        ??beside(NETH,.20,22,-1);
+      return shot(bank.spot,bank.sample,.13,6);
+    }
+    if(view==='south-harrier'){
+      // The one animal in this country that is never on the ground. The creature sweep below
+      // works the front quarter at head height and would photograph nine metres of empty
+      // meadow, so this one is worked out from the bird: settle it to a point of its own turn
+      // where it is side on - which is where the wing V shows - stand well off, and aim at
+      // where it then is. `look.y` is measured up from the ground under the subject, so for a
+      // bird it is the whole of its height.
+      let bird=westLife.snapshot().creatures.find(a=>a.species==='harrier');
+      if(!bird)return null;
+      for(let step=0;step<200;step++){
+        westLife.update(1/30,{x:bird.x,z:bird.z},true);
+        bird=westLife.snapshot().creatures.find(a=>a.id===bird.id);
+        if(Math.abs(Math.sin(bird.yaw))>.96)break;
+      }
+      const off=bird.yaw+Math.PI/2;
+      const from={x:bird.x+Math.sin(off)*30,z:bird.z+Math.cos(off)*30};
+      return shot(from,bird,-.08,bird.y-world.heightAt(bird.x,bird.z),false,
+        {x:bird.x+Math.sin(off)*34,z:bird.z+Math.cos(off)*34});
+    }
     const creature={'west-longhorn':'longhorn','west-hare':'upland-hare','west-sheep':'hill-sheep',
       'west-fox':'river-fox','west-otter':'otter','west-wader':'wading-bird',
       'south-egret':'egret','south-stilt':'stilt','south-duck':'duck','south-boar':'boar',
       'south-gull':'gull','south-dolphin':'dolphin',
-      'south-reddeer':'red-deer','south-vulture':'turkey-vulture'}[view];
+      'south-reddeer':'red-deer','south-vulture':'turkey-vulture',
+      'south-nethrani':'nethrani-cattle'}[view];
     if(creature){
       let animal=westLife.snapshot().creatures.find(a=>a.species===creature);
       if(!animal)return null;
@@ -1634,7 +1712,7 @@ function init() {
         westLife.update(1/30,{x:animal.x,z:animal.z},true);
         animal=westLife.snapshot().creatures.find(a=>a.id===animal.id);
       }
-      const close=creature==='longhorn'?6:creature==='red-deer'?7:creature==='boar'?5:creature==='hill-sheep'?4.5:
+      const close=creature==='longhorn'||creature==='nethrani-cattle'?6:creature==='red-deer'?7:creature==='boar'?5:creature==='hill-sheep'?4.5:
         creature==='wading-bird'||creature==='egret'?4.5:creature==='dolphin'?9:3.2;
       /**
        * **Round to the front quarter of it, and to the side with room.** Sweeping the
@@ -1664,7 +1742,7 @@ function init() {
       // is the view of one from where a traveler can actually be.
       if(creature==='dolphin')from={x:animal.x+Math.sin(animal.yaw+1.15)*close,z:animal.z+Math.cos(animal.yaw+1.15)*close};
       from=from??{x:animal.x+Math.sin(animal.yaw+.85)*close,z:animal.z+Math.cos(animal.yaw+.85)*close};
-      const height=creature==='longhorn'?1.1:creature==='red-deer'?1.25:creature==='wading-bird'||creature==='egret'?.9:
+      const height=creature==='longhorn'?1.1:creature==='nethrani-cattle'?.85:creature==='red-deer'?1.25:creature==='wading-bird'||creature==='egret'?.9:
         creature==='boar'?.7:creature==='stilt'?.45:creature==='dolphin'?.5:.35;
       /**
        * `look.y` is measured up from the ground under the subject, and for a dolphin

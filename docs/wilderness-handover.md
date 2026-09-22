@@ -35,7 +35,13 @@ journal are already in `src/cartography.js`.
 6. **`src/west-regions-life.js`** — models and `WEST_LIFE_ZONES` entries.
 7. **`src/build-status.js`**, **`src/map-fog.js`** (three or more chart subregions, each of which
    must land on the country's own hexes — a test checks), **`src/developer-atlas.js`** (one
-   anchor; see below).
+   anchor; see below), **`src/languages.js`** (one `REGION_LANGUAGE` entry, taken from the lore
+   file's own Language section and mapped to an existing tongue; a new dialect must also be
+   named in its parent language's `dialects` list), and **`src/chameleon.js`** — **a chameleon
+   spot, or `tests/chameleon.test.js` goes red.** One per region plus two in open country, and
+   the count assertion in that test rises with the list. Sweep for it the way the others were
+   found: standable ground `canStand` accepts at `.34`, out of water, above the tide line, more
+   than twenty-five metres off every road, and nearest the region's centre.
 8. **`src/main.js`** — review views only, in the block at `view.startsWith('west-')||
    view.startsWith('south-')`. Touch nothing else in that file.
 9. **`tests/<country>-world.test.js`**, and **name it in `package.json`**. It is dropped
@@ -86,6 +92,9 @@ there was only one of a thing, and each one broke when there were two:
 | `WEST_LIFE_ZONES.filter(species === 'otter')` | Isareos's otters asserted onto the Caricas bank | scoped by `region` |
 | `WEST_LIFE_ZONES.filter(!zone.air)` | dolphins chased for footing they have none of | `!air && !sea` |
 | `PLAYABLE_REGIONS.at(-1) === 'Eer'` | broke the moment Isareos landed | asserts the appending *order* |
+| `species === 'longhorn'` in `tickGround` | true of every cow there was, until Nethereum's short-legged breed | `CATTLE`, a set |
+| `tests/chameleon.test.js`'s bare count of 16 | red as soon as a seventeenth region landed | `regions.length + 2` |
+| `species === 'turkey-vulture' ? … : …` in `render` | two soarers, twice, in two ternaries | the `SOAR` table, and `SOARERS` off its keys |
 | every otter/wader/longhorn `bySpecies` in a region test | — | check yours before you add a species another region already has |
 
 **Take the dump before and after.** Build the world headlessly, write every collider as
@@ -315,31 +324,62 @@ are LF, and a `\n` pattern simply will not match in the CRLF ones. Commits end w
 
 ## 8. What remains, and what each will trip over
 
-### Nethereum — next
+### Nethereum — built, and the three things it found out
 
-**The user has ruled: a spring flood over meadow. There is no Nethermere and no lake.** The
-atlas gives it 26 `grassland` hexes and one `plains`, in a map that has `lake` (28 uses) and
-`wetland` (28 uses) and puts neither here. **A Sonnet agent is adjusting `nethereum.md` and
-`nether_desert.md` to match; read them when you get there, and never write there.** As of this
-writing the lore file still describes the basin as standing water — do not build from it.
+Done as the brief asks: the dish is 600 m by 264, its floor measures 13 m against a rim at 21,
+the Neth is waded in its upper third and walled below it, the Nethrani beast is its own model,
+and there is no Nethermere anywhere. What is worth carrying forward is not any of that; it is
+the three things nobody had hit before, and **every one of them will happen again with Ovesos.**
 
-Build the broad shallow hollow the brief describes: about 600 m across, floor at ~13 m against a
-rim at 21, the fall spread over two hundred metres so nothing about it is a bank. **The game
-shows the dry state** — it has no seasons to bring the flood — so: rank wet meadow on the floor,
-ordinary humid grass up the sides, rush and sedge in the low threads, and never standing water.
+**1 · Registering a country moves the river on its border, and the move runs downstream.** The
+ground west of the Lizeem was `outland` at 11.5 m and is now Nethereum at 21, so the blend on
+the river's own centre line rose — and because `WEST_PROFILES` forces each course to fall
+monotonically, the clamp that was holding the reach *below* it down was released as well.
+Measured: **the Lizeem's surface rose by up to 7.0 m over its Nethereum reach and by about 3.7 m
+along the Caricas and Nesdor banks below it**; 203 of its 363 samples moved. Its last sample did
+not move at all, so `LIZEEM_REACH` and the whole of Eer are untouched. The Isa rose by up to
+3.14 m. Every course still holds water over every sample and none of them climbs.
 
-* The hollow is a `west-ground.js` function of the `caricasShelf` shape. It is not `south-ground.js`.
-* **The Neth's ford lands here**, in its upper reach at about (-2270, 565): every one of the five
-  Nethereum–Ovesos hex edges is the river and none is dry, so an unfordable Neth would make the
-  unbuilt Nether Desert the only land bridge between two countries that are built.
-  `tests/eer-world.test.js` already asserts that arithmetic — borrow it.
-* **Remember the blocker loop** for whatever of the Neth is below the ford.
-* Nethereum wants a sky: `Cfa` and the lore's "muffled" overcast, which is a sky call and not a
-  ground call. Eer is the worked example — `palette.sky` / `haze` / `hazeDensity`, never
-  `palette.fog`, which is the chart legend's colour. Update the allow-list in
-  `tests/region-sky.test.js`.
-* The Nethrani cattle are the longhorn's geometry at three-quarters the height and full width on
-  short legs, which is what "a compact, short-legged breed adapted to wet ground" describes.
+*There is no base for a new country that leaves this alone except `outland`'s own 11.5*, so the
+question is only how much. Ovesos and the Oves Desert are on the Lizeem's bank for the whole of
+its middle reach and will move it again; **build them as a pair and measure the river once.**
+
+**2 · Isareos's scatter reads the ground, so it re-seeds when a neighbour is built.** `isareosLie`
+asks `westNaturalGround` for a ring around each point, and the thorn's acceptance turns on the
+answer; 715 of 2,896 sampled Isareos points changed their lie when Nethereum stopped being
+`outland`. A rejected candidate still advances the seeded stream, so **the whole of Isareos's
+thorn moved and everything drawn after it with it.** Eer, Caricas and Nesdor moved too, and for
+a second reason: the `lizeemSedge` loop in Caricas's block asks `westWaterSurface` on both banks
+of the great river, including the Nethereum one. The collider dump for this country is therefore
+**not** identical; it is a diff of five known kinds with a cause each, and the report says so.
+Anything you build next to Isareos will do this again.
+
+**3 · The atlas has holes, and the coast field calls them sea.** `LAND_HEXES` is every *claimed*
+hex in the window, so an unclaimed one reads as water. There are four such holes inside the
+window — 13 hexes, **every one ringed entirely by grassland, forest, plains or hills** — and one
+of them, three hexes at (-17,110), (-17,111), (-18,111), is hard against Nethereum's
+south-western corner. It pulls 4.1% of this country's own ground toward a beach, down to 0.93 m
+from a rim at 21. Nothing goes under water and nobody is sealed in, and the region test skips
+`landDistance < 45` the way Eer's does. **The fix is one rule in
+`scripts/build-region-survey.mjs` — an unclaimed hex with no path out of the window is land —
+and it is thirteen hexes of water turned to ground and nothing turned the other way. It is also
+a change to four built countries' coastlines** (the largest hole is an eight-hex bay between
+Drent, Pueth, Elagos and Amod), so it belongs to the coordinator and not to a country's builder.
+
+Smaller things that cost time:
+
+* The hollow's floor sits about a metre above the water in the Neth's head, so **the outlet that
+  drains it can barely be cut**: at a metre and a half it came out half a metre *below* the river
+  it joins. 0.55 m at the floor and 0.9 m at the mouth leaves it level with the Neth, measured.
+* A landform that reaches a built river re-cuts it. `NETHEREUM_HOLLOW.clear` is 120 m of hard
+  zero round the Isa and the Lizeem, and it is also the honest shape: a basin with no efficient
+  route out has a divide between it and the next drainage.
+* The Neth doubles back on itself at (-2250, 577), so two limbs of it come within a few metres
+  and a blocker on the deep one sits beside a sample on the fordable one. **Test the crossing,
+  not the samples**: walk the normal bank to bank and ask for a line nothing stops.
+* Three enclosed unclaimed hexes also mean `regionAt` answers *Open country* there, which is why
+  the hex-budget guard went to 37: Nethereum's one `plains` hex at x = -2900 took the world's
+  edge from -2960 to -3010 and its width from 35.70 to 36.20 hexes. That is all it spent.
 
 ### Ovesos and the Oves Desert — as a pair
 

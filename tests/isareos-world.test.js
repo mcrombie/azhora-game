@@ -50,7 +50,12 @@ const ATLAS_OWNERS = (() => {
 
 test('Isareos is a registered region, landlocked, and without a tree the atlas did not refuse', () => {
   assert.ok(PLAYABLE_REGIONS.includes('Isareos'));
-  assert.equal(PLAYABLE_REGIONS.at(-1), 'Isareos', 'and last, so no region already built is re-seeded');
+  // **The appending order, not the last name.** This used to pin "Isareos is last", which was
+  // true for exactly one country and broke the moment Nethereum landed. What actually has to
+  // hold is that nothing is ever *inserted*: the biome scatter walks this list with one seeded
+  // stream, so a country put anywhere but the end re-rolls every region after it.
+  assert.deepEqual(PLAYABLE_REGIONS.slice(13), ['Nesdor', 'Eer', 'Isareos', 'Nethereum'],
+    'the south-western countries are appended in the order they were built');
   assert.equal(REGION_IDS.Isareos, 16, 'Eer took 15 first');
   assert.equal(cells.length, 31, 'the atlas authors thirty-one Isareos hexes');
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length);
@@ -83,16 +88,17 @@ test('the Köppen field says one thing over the whole country, and the traveler 
   assert.deepEqual({ ...regionSky(regions.find(region => region.name === 'Isareos')) }, { ...DEFAULT_SKY });
 });
 
-test('Isareos is the country that spends the hex budget, and it is the only thing that changed', () => {
+test('Isareos is the country that spent most of the hex budget', () => {
   // Eer lay inside the box Caricas already made. Isareos's western rim against the
-  // Ibenwood is what takes the world's edge out, and the guard in region-layout.test.js
-  // was raised from 30 to 36 for it and for nothing else.
+  // Ibenwood is what takes the world's edge out, from -2310 to -2960, and the guard in
+  // region-layout.test.js was raised from 30 to 36 for it and for nothing else. Nethereum's
+  // one `plains` hex then took it fifty metres further, to -3010, and the guard to 37.
   const west = Math.min(...cells.map(cell => cell.x));
   assert.ok(west < -2840, `Isareos reaches x = ${west.toFixed(0)}`);
   assert.ok(WORLD_BOUNDS.minX < -2900, `the world's western edge is ${WORLD_BOUNDS.minX.toFixed(0)}`);
   const wide = (WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / METRES_PER_HEX;
   const tall = (WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ) / METRES_PER_HEX;
-  assert.ok(wide > 35 && wide < 36, `the world is ${wide.toFixed(2)} hexes wide`);
+  assert.ok(wide > 36 && wide < 37, `the world is ${wide.toFixed(2)} hexes wide`);
   assert.ok(Math.abs(tall - 30.93) < .05, `north to south is still ${tall.toFixed(2)} hexes: nothing here touched it`);
 });
 
