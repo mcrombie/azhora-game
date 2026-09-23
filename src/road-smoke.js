@@ -175,9 +175,11 @@ export async function runRoadSmoke(h) {
       tap('KeyI');
     } else {
       assert(journey.view().stage === 'deliver-report', 'the trimmed road is the letter and the report');
-      await visit('meadow-courier');
-      assert(!query('[data-choice="meet-courier"]'), 'Corvan offered an assignment that is off the slate');
-      choose('leave-road-neighbor'); await frames(2);
+      // **And the clearing is a farm.** He stood here with nothing to give until the user took the
+      // army out of it (23 September 2026); now nobody is posted in the crop, and the walkthrough
+      // checks that rather than checking what he does not say.
+      assert(!npcData.some(item => item.id === 'meadow-courier'), 'the quartermaster is still standing in the crop');
+      assert(!world.npcPositions['meadow-courier'], 'and the world still keeps a place for him');
     }
 
     if (questLive('courier')) await checkDestination('crossing-keeper');

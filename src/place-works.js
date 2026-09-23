@@ -155,22 +155,8 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       for (let i = 0; i < 3; i++) fenceLine(b, corners[i], corners[i + 1], 'stack-yard-fence', '#8a7a55', 1.0);
     }
     for (const [a, c] of A.fieldWalls) stoneWall(b, a, c);
-    // Corvan's post, now a proper lean-to with the army's flag on a crossbar.
-    {
-      const p = A.corvanPost, py = y(p.x, p.z);
-      b.frame(p.x, py, p.z, p.yaw, () => {
-        for (const sx of [-1, 1]) { b.block(WOOD, sx * 2.3, 0, -1.7, .18, 2.9, .18); b.block(WOOD, sx * 2.3, 0, 1.7, .18, 2.0, .18); }
-        b.sheet('#b8a374', [-2.7, 3.0, -2.1], [2.7, 3.0, -2.1], [2.7, 2.05, 2.1], [-2.7, 2.05, 2.1]);
-        b.block('#8b6c4a', 0, 0, 1.65, 4.6, 1.9, .12);
-        b.block(WOOD, 3.4, 0, 0, .14, 4.4, .14);
-        b.box(WOOD_DARK, 3.4, 4.2, .55, .08, .08, 1.3);
-        b.sheet('#8c3f38', [3.43, 4.15, 0], [3.43, 4.15, 1.15], [3.43, 2.95, 1.1], [3.43, 2.95, .05]);
-        b.sheet(SIGN_COLOURS.paint.empire, [3.45, 3.8, .35], [3.45, 3.8, .8], [3.45, 3.35, .8], [3.45, 3.35, .35]);
-      });
-      circle(p.x + 3.4, p.z, .25, 'legion-standard');
-      for (const sx of [-1, 1]) circle(p.x + sx * 2.3, p.z - 1.7, .2, 'shelter-post');
-      footprint(p.x, p.z + 1.65, 0, 4.6, .4, 'shelter-wall');
-    }
+    // Corvan's lean-to and the Empire's flag stood between the fields until the user took the
+    // army out of the clearing (23 September 2026).
     // The farm's well by the farmhouse.
     {
       const w = A.well, wy = y(w.x, w.z);

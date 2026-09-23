@@ -7657,7 +7657,10 @@ function init() {
           reviewTarget=new THREE.Vector3(site.x-2.1,world.heightAt(site.x-2.1,site.z)+1,site.z);
           yaw=.15;pitch=.18;distance=targetDistance=5;reviewFrozen=true;
         }
-        if(view==='road-dialogue'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('road-token');journey.start();const npc=npcData.find(n=>n.id==='meadow-courier'),p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+1.8),p.z+1.8);yaw=.5;pitch=.3;distance=targetDistance=6;conversation(npc);}
+        if(view==='road-dialogue'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('road-token');journey.start();// Corvan held this view until the army left the Avrel clearing (23 September 2026); Chip is
+          // the man on the road with an errand now, and the view is a dialogue on the road.
+          const npc=npcData.find(n=>n.id==='meadow-courier')??npcData.find(n=>n.id==='crossing-keeper');
+          if(npc){const p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+1.8),p.z+1.8);yaw=.5;pitch=.3;distance=targetDistance=6;conversation(npc);}}
         if(view.startsWith('portrait-')){const npc=npcData.find(n=>n.id===view.slice(9));if(npc){questStage=QUEST_DONE;combat.finishPractice();const p=world.npcPositions[npc.id];player.group.position.set(p.x,world.heightAt(p.x,p.z+2),p.z+2);player.group.visible=false;npc.actor.group.rotation.y=.3;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.3,0));yaw=.3;pitch=.15;distance=targetDistance=4;reviewFrozen=true;}}
         if(['sheep','river-bird','rock-hare'].includes(view)){questStage=QUEST_DONE;combat.finishPractice();const animal=roadLife.state().creatures.find(a=>a.species===({sheep:'sheep','river-bird':'bank-bird','rock-hare':'rock-hare'})[view]);if(animal){player.group.position.set(animal.x+4,world.heightAt(animal.x+4,animal.z+3),animal.z+3);roadLife.update(.03,player.group.position,true);reviewTarget=new THREE.Vector3(animal.x,animal.groundY+.6,animal.z);yaw=.6;pitch=.18;distance=targetDistance=view==='sheep'?5:3.4;player.group.visible=false;reviewFrozen=true;}}
         roadLife.update(.001,player.group.position,true);westLife.update(.001,player.group.position,true);

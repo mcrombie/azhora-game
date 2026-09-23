@@ -21,10 +21,8 @@ export const LEGION_POSTS = Object.freeze([
   ]),
   // Footman Bram and Footman Dusk stood at the Caloss Gate until the user took the place out
   // (22 September 2026). There is nothing there to keep now, so the army does not keep it.
-  post('avrel', 'Footman Renn', 'legionary', -226, 14, -Math.PI / 2, [
-    'The quartermaster is at his post. Speak to him before you touch a cart or a parcel; he counts everything twice.',
-    'Two raiders were seen among the field walls this morning. Corvan will want them dealt with before the carts move.',
-  ]),
+  // Footman Renn stood in the Avrel clearing until the user took the army out of it
+  // (23 September 2026). It is a farm, and it is farmed now.
   post('caloss-bank', 'Footman Hesk', 'legionary', -330, 90, Math.PI / 2, [
     'Drent ends at this bank. Luscia is the far side, and Luscia did not ask for us.',
     'The bridge takes wagons; it will take you. Do not leave the road on the other side after dark. Wolves, and worse.',

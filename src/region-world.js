@@ -626,8 +626,7 @@ export const regionFirePits = Object.freeze([
 export const CALOSS_BANK = Object.freeze({ spot: at(-306, 104), cast: at(-300, 114) });
 
 export const regionLandmarks = Object.freeze([
-  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', ...at(-236, 30), description: 'The one farm clearing cut out of Drent’s forest: crop rows, a canvas field camp, and the army’s supply post.' }),
-  Object.freeze({ id: 'fallen-cart', name: 'The Tumbled Cart', ...at(-243, 19), description: 'A courier’s wheel gave way on the farm track. Scattered parcels lie among the stubble.' }),
+  Object.freeze({ id: 'sunmeadow', name: 'The Avrel Clearing', ...at(-236, 30), description: 'The one farm clearing cut out of Drent’s forest: a cottage, a mill, a barn and byre, and five fields of wheat on the rim of it.' }),
   Object.freeze({ id: 'old-mill', name: 'The Clearing Mill', ...at(-227, 57), description: 'Slow canvas sails turn above the Avrel grain rows and a stone-lined well.' }),
   Object.freeze({ id: 'reedwater', name: 'Caloss Crossing', ...at(-334, 84), description: 'The road drops to the Caloss. Drent ends on this bank; Luscia begins on the far one.' }),
   Object.freeze({ id: 'reed-bridge', name: 'The Caloss Bridge', ...at(-345, 92.9), description: 'An old timber bridge crosses the border river. Its sound eastern walkway remains passable.' }),
@@ -680,7 +679,7 @@ const REGION_TEXT = {
     description: 'All of Drent is broadleaf forest: ferns, sorrel and deer, with Tidehaven on the eastern shore, one farm clearing inland, and the ruins of Rena at its centre, where the region’s principal town stood until eighty years ago.',
     palette: { ground: '#4d7a3e', accent: '#c9d3a0', fog: '#b6c6ad' },
     npcIds: ['meadow-courier', 'commons-miller', 'rena-lorn', 'rena-hesta', 'apple-reeve'],
-    landmarks: ['sunmeadow', 'fallen-cart', 'old-mill', 'mill-commons', 'rena-ruins', 'applegarth', 'east-rena-stone'] },
+    landmarks: ['sunmeadow', 'old-mill', 'mill-commons', 'rena-ruins', 'applegarth', 'east-rena-stone'] },
   Luscia: { subtitle: 'Across the Caloss', spawn: at(-362, 110),
     description: 'Rolling grass and thinning copses beyond the border river: the shrines of the valley, Nothom on the road, and the field at the Lauvel.',
     palette: { ground: '#8fa35a', accent: '#dfc77d', fog: '#bdc9b5' },

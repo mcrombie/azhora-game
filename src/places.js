@@ -30,7 +30,7 @@ const shrine = offset(SHRINE_CENTRE), relay = offset(RELAY_CENTRE), landing = of
 // ---------------------------------------------------------------------------
 // Drent
 // ---------------------------------------------------------------------------
-/** The Avrel farm hamlet round the clearing's existing cottage, mill, fields and Corvan's post. East is along the road toward Tidehaven. */
+/** The Avrel farm hamlet round the clearing's cottage, mill and five fields. East is along the road toward Tidehaven. */
 export const AVREL_HAMLET = Object.freeze({
   barn: avrel(29, -25, { yaw: 0, width: 10, depth: 7 }),
   byre: avrel(46, -15, { yaw: Math.PI / 2, width: 8, depth: 5.5 }),
@@ -41,7 +41,6 @@ export const AVREL_HAMLET = Object.freeze({
     [avrel(20, 36), avrel(41, 36)], [avrel(41, 36), avrel(41, 17)],
     [avrel(-42, -28), avrel(-42, -8)],
   ]),
-  corvanPost: avrel(4, -8, { yaw: 0 }),
   well: avrel(21, 26),
 });
 

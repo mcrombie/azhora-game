@@ -445,7 +445,11 @@ export function createRegionScenery(kit) {
   leanTo(...xz(-224, 14), '#c3aa72', .3, drent);
   barrel(...xz(-220, 10), .9, drent);
   const farmCrate = at(-221.4, 12); crate(farmCrate.x, farmCrate.z, .7, groundHeight(farmCrate.x, farmCrate.z), drent);
-  for (const [{ x: fx, z: fz }, width, depth] of [[at(-262, 58), 22, 20], [at(-206, 56), 18, 16], [at(-268, 12), 18, 18]]) {
+  // Five fields on the clearing's rim, because the road runs through its middle. The last two
+  // stand where the army's ground was (the user, 23 September 2026): measured 28 m and 30 m off
+  // the road, on ground flat to 1.3 and 2.0 metres.
+  for (const [{ x: fx, z: fz }, width, depth] of [[at(-262, 58), 22, 20], [at(-206, 56), 18, 16], [at(-268, 12), 18, 18],
+    [at(-238, -6), 18, 16], [at(-216, -8), 18, 16]]) {
     wornPatch(fx, fz, width * .6, '#9f8d57', depth / width);
     for (let x = -width / 2; x < width / 2; x += 2.4) for (let z = -depth / 2; z < depth / 2; z += 1.6) {
       const px = fx + x + .6, pz = fz + z, y = groundHeight(px, pz);
@@ -475,21 +479,9 @@ export function createRegionScenery(kit) {
     for (let r = 2; r <= 5; r += .75) box(woodLight, .43, r, .07, 1.12, .055, .065, sail);
   }
   pebble(darkWood, 0, 0, .04, .35, .35, .2, millSails);
-  const cart = new THREE.Group();
-  cart.name = 'Tumbled courier cart';
-  const cartSpot = at(-248, 14);
-  cart.position.set(cartSpot.x, groundHeight(cartSpot.x, cartSpot.z) + .75, cartSpot.z);
-  cart.rotation.set(.14, -.6, -.16); drent.add(cart);
-  box(woodLight, 0, 0, 0, 2.4, .2, 3.1, cart);
-  for (const side of [-1, 1]) {
-    box(wood, side * 1.17, .45, 0, .12, .9, 3.15, cart);
-    const wheel = mesh(new THREE.TorusGeometry(.75, .12, 5, 12), darkWood, side * 1.45, -.05, .35, 1, 1, 1, cart);
-    wheel.rotation.y = Math.PI / 2;
-    for (let k = 0; k < 4; k++) { const spoke = box(wood, side * 1.45, -.05, .35, .1, .1, 1.45, cart); spoke.rotation.x = k * Math.PI / 4; }
-    box(wood, side * .7, -.05, 2.8, .11, .13, 2.5, cart);
-  }
-  crate(0, -.5, .8, .13, cart); barrel(-.65, .6, .65, cart, .15);
-  colliders.push({ x: cartSpot.x, z: cartSpot.z, r: 2.3, kind: 'cart' });
+  // The courier's cart lay tumbled here, with three army parcels spilled out of it, until the
+  // user took the army out of the clearing (23 September 2026). Silas's marl cart below is a
+  // farm cart and stays.
   // Silas Garrow's marl cart, at the Toll House stream (src/geology.js). He digs the marl out of
   // the bank under the Weatherhead and the Avrel families pay him by the load; the cart is how it
   // gets here. It stands on the road side of the house, because the house hides him from anybody
@@ -516,16 +508,6 @@ export function createRegionScenery(kit) {
       pebble(marl, mx, my, mz, r, r * .62, r * .9, marlCart);
     colliders.push({ x: marlSpot.x, z: marlSpot.z, r: 1.5, kind: 'marl-cart' });
   }
-  // Corvan's army supply post: a canvas awning, a standard and a stack of stores.
-  const postPoint = at(-232, 22), postY = groundHeight(postPoint.x, postPoint.z);
-  wornPatch(postPoint.x, postPoint.z, 4.6, '#b2a881');
-  // The lean-to over the table and the flag beside it are drawn with the Avrel farmsteads (place-works.js).
-  box(woodLight, postPoint.x - 1.2, postY + .78, postPoint.z - .8, 2.0, .14, .9, drent);
-  colliders.push({ x: postPoint.x - 1.2, z: postPoint.z - .8, hx: 1.05, hz: .5, kind: 'legion-table' });
-  crate(postPoint.x - 3.0, postPoint.z + 1.6, .82, groundHeight(postPoint.x - 3.0, postPoint.z + 1.6), drent);
-  barrel(postPoint.x - 3.4, postPoint.z + .2, .85, drent);
-
-  // -------------------------------------------------------------------------
   // Luscia: the shrine, the relay, the field at the Lauvel and a burned hamlet
   // -------------------------------------------------------------------------
   const shrine = at(-374, 134), shrineY = groundHeight(shrine.x, shrine.z);

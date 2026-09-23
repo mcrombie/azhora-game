@@ -99,10 +99,12 @@ export const OWN_IDS = Object.freeze([
  * rest of the middle of Chapter 1 later the same day (src/quest-slate.js). With nothing to give
  * she is one more person standing in the way.
  *
- * Corvan is not on this list: his field register came off the slate too, but he is built as an
- * officer and the soldier rule keeps him standing at his cart, which is where he belongs.
+ * **Quartermaster Corvan** was not on this list, because he is built as an officer and the
+ * soldier rule held him standing at his cart long after his field register came off the slate.
+ * He is on it now: the user took the army out of the Avrel clearing on 23 September 2026, and an
+ * officer with no errand standing in somebody's crop is exactly what the rule was not for.
  */
-export const DROP_IDS = Object.freeze(['warden', 'ridge-keeper']);
+export const DROP_IDS = Object.freeze(['warden', 'ridge-keeper', 'meadow-courier']);
 
 /**
  * **Talaelos, the players of Nylon** (the user, 22 September 2026: switch them back on). They

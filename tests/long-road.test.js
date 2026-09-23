@@ -281,19 +281,20 @@ test('the save carries what cannot be derived, and refuses what the long road wo
   assert.equal(fresh.released, null);
 });
 
-test('every man on the roster can be remembered, and Drent has ten grounds to chart', () => {
+test('every man on the roster can be remembered, and Drent has nine grounds to chart', () => {
   const road = createLongRoad();
   for (const mercenary of MERCENARY_ROSTER) {
     road.notice([{ id: mercenary.id, name: mercenary.name, phase: 'stopped', x: -102, z: 9 }], { x: -102, z: 8.6 }, ground);
   }
   assert.equal(Object.keys(road.snapshot().seenAt).length, MERCENARY_ROSTER.length);
   assert.ok(validateLongRoadSnapshot(road.snapshot()));
-  // Ten since 2026-09-21: the Toll House was the one stop the chart could not name, and the
-  // user gave it a ground of its own.
-  assert.equal(DRENT_GROUNDS.length, 10, 'Jojo signs your chart when all ten are on it');
+  // Ten from 2026-09-21, when the Toll House - the one stop the chart could not name - was given
+  // a ground of its own; nine from the 22nd, when the Caloss Gate came out of the world and took
+  // its ground with it (src/region-world.js, WOOD_EDGE).
+  assert.equal(DRENT_GROUNDS.length, 9, 'Jojo signs your chart when all nine are on it');
   assert.ok(DRENT_GROUNDS.includes('the-toll-house'));
   assert.equal(DRENT_GROUNDS.length, new Set(DRENT_GROUNDS).size, 'and no ground is counted twice');
-  // Every named ground of Drent is one of them, so nobody can add a tenth-and-a-half and forget.
+  // Every named ground of Drent is one of them, so nobody can add one more and forget.
   assert.deepEqual([...DRENT_GROUNDS].sort(),
     SUBREGIONS.filter(one => one.region === 'Drent').map(one => one.id).sort(),
     'Drent’s named ground and Jojo’s countersign are the same list');
