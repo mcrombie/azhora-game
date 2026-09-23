@@ -36,7 +36,7 @@
  *   `greenway`    the three goblins at the woodland bell (`startAmbush` in main.js).
  *   `acorns`      Lysa's five acorns (src/acorn-quest.js).
  *   `forest`      the forest story and the Bramble hideout (src/forest-story.js, forest-hideout.js).
- *   `doomsayer`   the cape on the shore.
+ *   ~~`doomsayer`~~  the cape on the shore - back on, with Orris, 22 September 2026.
  *   `teachers`    every errand that pays a skill - the rod, the feeder, the hedge, the pegs.
  * The people who gave most of them are already out of the world (src/cast.js); this is what
  * closes the rest, and what keeps a save from a fuller game from re-opening one.
@@ -48,11 +48,11 @@
 export const TRIMMED = true;
 
 /** What may be started while the slate is trimmed. */
-export const LIVE = Object.freeze(['main', 'bridge']);
+export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer']);
 
 /** Everything the trim closes, by the name this file knows it under. */
 export const CLOSED = Object.freeze(['courier', 'waymarkers', 'greenway', 'acorns', 'forest',
-  'doomsayer', 'teachers']);
+  'teachers']);
 
 /** Whether a quest can be started, offered, marked or listed today. */
 export const questLive = id => !TRIMMED || LIVE.includes(id);

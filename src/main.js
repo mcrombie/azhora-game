@@ -4141,7 +4141,7 @@ function init() {
     openDialogue(npc,lines,event,action);
   }
   /**
-   * Jojo, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Corvan, and
+   * Jojo, harbourmaster of Tidehaven, at the head of the pier: the bell, the letter for Iven, and
    * which way the road goes. She is the first person the traveler speaks to, and the errand is hers
    * because it is her landing and her paperwork. Chris, who came off the same boat, keeps the sword
    * lesson below.
@@ -4230,17 +4230,18 @@ function init() {
   function jojoOnTheLanding(npc){
     if(questStage>=2){
       openDialogue(npc,[questStage>=QUEST_DONE
-        ?'Glun has passed you, they tell me. Good. I have two boats waiting on a tide and a clerk in Nothom waiting on you, so neither of us is finished.'
-        :'Officer Glun. The straw post, at the crossroads. I have said it twice and I will not enjoy saying it a third time.'],
+        ?'Glun has passed you, they tell me, and I am glad of it. I have two boats waiting on a tide and a clerk in Nothom waiting on you, so neither of us is finished standing here.'
+        :'Officer Glun, at the straw post by the crossroads. I have told you where he is; go along now, and do it properly the first time.'],
         null,'Back to the landing',{choices:[...jojoCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
       return;
     }
     updateQuest('ashore');
-    openDialogue(npc,['That bell was going before you were tied up. Goblins \u2014 bramble goblins, on Tidehaven this morning, and three of them still out on the Greenway north of the village. The landing is safe enough. The road is not.',
-      'Jojo. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours: the letter of introduction, for Iven, the army’s relay clerk at Nothom over the Caloss. He holds your assignment and he does not hold it long.',
-      'Nothom is a long way west of here and you are not walking it yet. Officer Glun first — the straw post at the crossroads, up through the village. He looks at every hired sword that comes off a boat and decides whether they go up that road or back down the gangway, and he will not take my word for you.',
-      'Do what he asks and he will give you a chart and the rest of it. Then west: the Greenway under the trees, the Avrel clearing, the Caloss crossing, Luscia, Nothom.',
-      `One of your own boat came up the pier with you \u2014 ${landingMateNote(npcById.get(landingMateId()))}. Talk to him before you go inland. He knows what to do with a sword and you look like somebody who is about to need to. And he will not be the last of you off the Stills — I have boats booked in on every tide today, and the paper says eleven.`],
+    openDialogue(npc,['That bell was going before you were tied up. Bramble goblins, in the drying yards before light — they took what they could carry and went back over the Tessen, and there is nothing left of it now but a broken gate and a great deal of talk. The landing is safe. I would not have let your boat tie up if it were not.',
+      'Jojo. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours, and keep it dry: the letter of introduction, for Iven, the army’s relay clerk at Nothom. He holds your assignment, and he will not hold it long.',
+      'Nothom is a long way west of here and you are not walking it yet. Officer Glun first — the straw post at the crossroads, up through the village. He looks at every hired sword that comes off a boat and decides whether they go up that road or back down the gangway. He will not take my word for you, and he is right not to.',
+      'Do as he asks and he will give you a chart and the rest of it. Then west: the Greenway under the trees, the Avrel clearing, and the Caloss. The bridge there is down — the middle of the span went into the water, and the man who keeps it is mending it on his own. You will get across one way or the other. Wet, if you are in a hurry.',
+      `One of your own boat came up the pier with you — ${landingMateNote(npcById.get(landingMateId()))}. Speak to him before you go inland; he knows what to do with a sword, and you have the look of somebody who is shortly going to need to. He will not be the last of you off the Stills either — I have boats booked on every tide today, and the paper says eleven.`,
+      'And eat something before you go up that hill. It is a poor start to anything on an empty stomach.'],
       'accept-letter','Take the letter');
   }
   /**
@@ -4259,14 +4260,14 @@ function init() {
     const back=()=>{closeDialogue();conversation(npc);};
     if(!errand.asked)return [{id:'mara-corners-ask',label:'Is there anything else worth drawing here?',action:()=>{
       longRoad.act('corners-ask');
-      openDialogue(npc,['There is, and nobody ever asks. You have my chart of the coast and it is not yours until you have put something on it yourself.',
-        'Three corners, and the village is inside them. The head of this pier, where you are standing. The Weatherhead, the low head south of the landing — Cabe Tolliver sits up there calling the weather, and he will talk your ear off. And the Koopwood, north-west, where Bowden takes the trees down.',
-        'Walk to all three. The ground between them draws itself as you go; that is what a chart is. Bring it back and I will put my name on it, which means the next harbourmaster down the coast will take it seriously.'],
+      openDialogue(npc,['There is, and nobody ever asks. You have my chart of the coast, and it is not yours until you have put something on it with your own hand.',
+        'Three corners, and the village sits inside them. The head of this pier, where you are standing. The Weatherhead, the low head south of the landing — Cabe Tolliver sits up there calling the weather, and he will talk your ear off, and you will let him. And the Koopwood, north-west, where Bowden takes the trees down.',
+        'Walk to all three. The ground between them draws itself as you go; that is what a chart is. Bring it back and I will put my name to it, and a chart with a harbourmaster’s name on it is taken seriously the length of this coast.'],
         null,'I will walk it',{onComplete:()=>{toast('The head of the pier, the Weatherhead, the Koopwood. Walk to all three and bring the chart back to Jojo.','JOJO · THE THREE CORNERS');saveRoad(false);}});}}];
     if(!errand.canSign){
       const left=errand.corners.filter(corner=>!corner.walked);
       return [{id:'mara-corners-report',label:`The three corners (${errand.walked} of ${errand.of})`,action:()=>openDialogue(npc,
-        [`${errand.walked} of the three, and you know it as well as I do. Still to walk: ${left.map(corner=>corner.name).join(', ')}.`,
+        [`${errand.walked} of the three, and you know that as well as I do. Still to walk: ${left.map(corner=>corner.name).join(', ')}.`,
           left[0].hint],null,'Back to our conversation',{onComplete:back})}];
     }
     return [{id:'mara-corners-sign',label:'All three corners are on the chart.',action:()=>{
@@ -4274,9 +4275,9 @@ function init() {
       if(!paid.ok){openDialogue(npc,[paid.reason],null,'Back to our conversation',{onComplete:back});return;}
       const gained=skills.known(CARTOGRAPHY_SKILL)?skills.gain(CARTOGRAPHY_SKILL,CORNERS_XP):null;
       refreshSkillsSheet();refreshChart();
-      openDialogue(npc,['So it is. Pier, head, woodlot, and the village sitting in the middle of them where it has always sat.',
-        'There. Jojo, harbourmaster, Tidehaven — and the date, because a chart without a date is a rumour. Anybody on this coast will read that.',
-        'Now go and do the same to the rest of the country. It is a great deal bigger and nobody has signed any of it.'],
+      openDialogue(npc,['So it is. Pier, head and woodlot, and the village sitting in the middle of them where it has always sat.',
+        'There. Jojo, harbourmaster, Tidehaven — and the date, because a chart without a date is only a rumour. Anybody on this coast will read that and know what it is worth.',
+        'Now go and do the same for the rest of the country. It is a great deal bigger, and nobody has signed any of it.'],
         null,'Back to the landing',{onComplete:()=>{
           const skill=gained;
           toast(`Jojo has countersigned your chart of Tidehaven. ${CORNERS_XP} cartography.`,skill?.levelled?`CARTOGRAPHY LEVEL ${skill.level}`:'THE THREE CORNERS');
@@ -4306,11 +4307,11 @@ function init() {
         'The cape lies beyond the northern end of the Oremindi: mountains that climb until the sky gives up. Their passes close for whole seasons. Even the coast gives way to cliffs. You will not stroll there with a borrowed map and a brave expression.',
         'First find your feet here. The cape lies far to the northwest, past every province of the failing Empire and the Oremindi beyond them, and no chart a traveler carries marks it; the mapmakers stopped where their courage did. It is a destination for the end of your travels. Today, help the people along the road through Drent.'
       ],null,'Back to Orris',back)},
-      {id:'cooking-lesson',label:'You also teach cooking?',action:()=>openDialogue(npc,[
+      ...(npcById.has('pond-fisher')&&npcById.has('acorn-cook')?[{id:'cooking-lesson',label:'You also teach cooking?',action:()=>openDialogue(npc,[
         'Doom comes for us all. A decent supper may as well come first. Bran fishes at the pond east of the forest road, beyond the watch. Ask him for a rod and bring back a raw fish.',
         'Lysa will trade you a tinderbox for five acorns. Gather two fallen sticks with F, then approach the stone fire ring beside me and press F. Choose Light fire. The tinderbox stays with you; the two sticks become fuel.',
         'A fire burns for two minutes while you explore; it waits while you read your satchel or talk. At a lit fire, choose Cook one fish. Then open I, select the cooked fish, and choose Eat. It restores up to 40 health. There is another fire ring by the pond.'
-      ],null,'Back to Orris',back)},
+      ],null,'Back to Orris',back)}]:[]),
       {id:'leave-doomsayer',label:'May your supper outlast the doom.',action:closeDialogue}
     ]});
   }

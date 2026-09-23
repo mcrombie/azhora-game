@@ -72,6 +72,7 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
+  'doomsayer',           // Orris, who reads the signs on Tidehaven's shore and feeds you first
   'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
   'liz-beekeeper',       // Liz, who keeps the Pueth skeps and the game's honeycomb
   'cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster',   // Cobble, and the murder
