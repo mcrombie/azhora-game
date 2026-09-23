@@ -1,5 +1,14 @@
 # The long road through Drent
 
+> Opening revision, 23 September 2026: the timing tables below describe the earlier long-road
+> proposal. Chapter 1 now starts the pirate ship when the landing companion finishes training.
+> Ed is put over the side one minute later; the remaining groups arrive three minutes apart
+> (at 4, 7, 10 and 13 minutes after that scene starts). Ed swims ashore, answers the guard and
+> sets off, rather than waiting twenty-five minutes. Arrival notices and bells reach only
+> Tidehaven's own atlas hex and the six adjacent hexes. **Events still happen while you are
+> elsewhere; faraway arrivals are silent, and returning does not replay old announcements.**
+> The ship, swimming, company placements and notices all use the same departure anchor.
+
 A design, not code. The builder's brief is `docs/drent-long-road-build.md`. Everything the user
 has already decided is in `docs/design-answers.md` and wins over anything here.
 

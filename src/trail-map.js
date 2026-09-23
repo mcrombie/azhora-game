@@ -40,7 +40,7 @@ export function trailMapSelection(model, id) {
       : 'Visit this place to learn what is here. You can mark it after you discover it.',
     known: isKnown, discovered: marker.discovered === true, trackable: isKnown && marker.trackable === true,
     tracked: model.tracked?.id === marker.id, objective: model.goal?.id === marker.id,
-    // The long road's next stop wears the same gold, open (src/quest-markers.js).
+    // The long road's next stop wears the same filled gold quest symbol.
     openObjective: model.openGoal?.id === marker.id,
     x: marker.x, z: marker.z };
 }

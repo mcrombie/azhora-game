@@ -3754,54 +3754,18 @@ export function groundShadow(opacity = 0.34) {
   return mesh;
 }
 
-/**
- * The gold over somebody's head, in one of three kinds (src/quest-markers.js):
- * `main` a cut stone, `plot` a rolled sheet, `skill` a leaf. Different shapes as
- * well as different colours, so the three read apart without colour.
- *
- * `open` is the arc's one variant: the same gold and the same cut stone, hollow — the long
- * road's next stop rather than the muster road's. Two crossed outlines and not one, because a
- * flat ring vanishes every time the marker turns side-on, and it turns all the time.
- */
+/** One shared filled diamond and lower ring, tinted for the quest category.
+ * `open` is retained as optional-road metadata, never a different silhouette. */
 export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   const look = MARKER_STYLE[kind] ?? MARKER_STYLE.main;
-  const hollow = !!open && look.shape === 'diamond';
+  const optionalRoad = !!open && look.kind === 'main';
   const group = new THREE.Group();
   group.name = 'quest-marker';
   group.userData.markerKind = look.kind;
-  group.userData.markerOpen = hollow;
+  group.userData.markerOpen = optionalRoad;
   const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  if (hollow) {
-    // A torus of four tubular segments is a diamond outline: its corners sit on the axes, so
-    // stretched the way the stone is stretched it is exactly the stone's silhouette, empty.
-    for (const turn of [0, Math.PI / 2]) {
-      const outline = part(group, new THREE.TorusGeometry(0.118, 0.019, 4, 4), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
-      outline.rotation.y = turn;
-    }
-  } else if (look.shape === 'diamond') {
-    const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
-    diamond.rotation.y = Math.PI / 4;
-  } else if (look.shape === 'ring') {
-    // A plain ring, open in the middle: the shape of a thing done for somebody rather than for
-    // the story. Its hole is what tells it apart from the stone at a glance and at distance.
-    const ring = part(group, new THREE.TorusGeometry(0.108, 0.029, 8, 20), mat, [0, 0, 0]);
-    ring.rotation.x = Math.PI / 2 * 0.06;
-  } else if (look.shape === 'scroll') {
-    // A rolled sheet lying across, both ends showing: wide where the stone is tall.
-    const roll = part(group, new THREE.CylinderGeometry(0.056, 0.056, 0.23, 10), mat, [0, 0, 0]);
-    roll.rotation.z = Math.PI / 2;
-    for (const side of [-1, 1]) {
-      const cap = part(group, new THREE.TorusGeometry(0.06, 0.019, 5, 14), mat, [side * 0.115, 0, 0]);
-      cap.rotation.y = Math.PI / 2;
-    }
-  } else {
-    // A leaf: two cones back to back, flattened, with a stem under it.
-    for (const way of [1, -1]) {
-      const half = part(group, new THREE.ConeGeometry(0.084, 0.148, 6), mat, [0, way * 0.074, 0], [1, 1, 0.34]);
-      if (way < 0) half.rotation.x = Math.PI;
-    }
-    part(group, new THREE.CylinderGeometry(0.011, 0.011, 0.075, 5), mat, [0, -0.185, 0]);
-  }
+  const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
+  diamond.rotation.y = Math.PI / 4;
   const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(look.ring, { emissive: look.ringEmissive, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
   ring.rotation.x = Math.PI / 2;
   group.scale.setScalar(look.scale);

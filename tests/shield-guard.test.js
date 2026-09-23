@@ -141,7 +141,7 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
     'paid by what the shield actually took off the blow');
   // Held, not pressed: the key is read every frame and combat remembers no press of its own.
   assert.match(main, /const GUARD_KEY='KeyV';/);
-  assert.match(main, /const guardKey=!autopilot\.active&&keys\.has\(GUARD_KEY\);/);
+  assert.match(main, /const guardKey=autopilot\.active\?autopilot\.guard:keys\.has\(GUARD_KEY\);/);
   assert.match(main, /combat\.guard\(guardKey,player\.group\.rotation\.y\);/);
   assert.match(source('combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
   // The hand slot IS the shield, and what he is seen holding follows what he is wearing — or,
@@ -376,4 +376,24 @@ test('Cromb comes ashore with a shield, and the others come ashore without one',
   assert.deepEqual(his, { hand: { weight: 'light', tier: 0 } });
   assert.equal(startingGear('gotwood'), null, 'the rest buy their own on the road');
   assert.equal(startingGear('nobody-at-all'), null);
+});
+
+
+test('holding a ready shield works on a quiet road, through recovery, and after the fight', () => {
+  const position = { x: 0, y: 1.5, z: 0 };
+  const combat = createCombat({ world, position, getMargins: () => ({ hasShield: true, guardCost: 18 }) });
+  assert.equal(combat.state.phase, 'peaceful');
+  assert.equal(combat.guard(true, 0), true, 'V can ready the shield before an attacker arrives');
+  assert.equal(combat.guard(false, 0), false);
+  combat.startPractice({ x: 0, z: 2 });
+  combat.guard(true, 0); combat.attack(0); combat.update(.01);
+  assert.equal(combat.state.player.guarding, false, 'swinging still opens the guard');
+  combat.update(1.5);
+  assert.equal(combat.state.player.guarding, true, 'holding V raises it again after recovery');
+  combat.finishPractice();
+  assert.equal(combat.guard(true, 0), true, 'ending practice does not disable the key');
+  combat.state.phase = 'won';
+  assert.equal(combat.guard(true, 0), true, 'the same input works after victory');
+  combat.state.phase = 'defeated';
+  assert.equal(combat.guard(true, 0), false);
 });

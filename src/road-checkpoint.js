@@ -165,6 +165,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateGameModeSnapshot(data.mode)) return failed('The saved game mode is not one this build knows.');
     if (!validateLinguistSnapshot(data.linguist)) return failed('The saved tongues of Azhora are invalid.');
     if (!validateLongRoadSnapshot(data.longRoad)) return failed('The saved long road through Drent is invalid.');
+    if (Object.hasOwn(data, 'companionOffTheClock') && typeof data.companionOffTheClock !== 'boolean') return failed('The saved road partnership is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
@@ -325,6 +326,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'cat')) { const mop = createCatQuest(); mop.restore(data.cat); result.cat = mop.snapshot(); }
     if (Object.hasOwn(data, 'vastos')) { const water = createVastosCivilWar(); water.restore(data.vastos); result.vastos = water.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
+    if (Object.hasOwn(data, 'companionOffTheClock')) result.companionOffTheClock = data.companionOffTheClock;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
     if (Object.hasOwn(data, 'luscia')) result.luscia = luscia.snapshot();
     return { ok: true, data: result, reason: '' };

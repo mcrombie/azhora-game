@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { CREW_IDS } from '../src/rebel-crew.js';
+import { hexAt, hexCentre } from '../src/region-world.js';
 import { canStand, canSwim, WATERLINE } from '../src/game-state.js';
 import { ARRIVALS, MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
 import { PLAYABLE } from '../src/player-characters.js';
@@ -12,7 +13,7 @@ import { skillLevel } from '../src/skills.js';
 import { SWIM, swimSpeed, swimStep, levelForCrossing, levelForDryCrossing, SWIMMING_LESSON } from '../src/swimming.js';
 import {
   WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_SWIM, WORD_LINGERS, WORD_ASHORE,
-  WORD_TOASTS, shipAt, swimmerAt, wordToastAt,
+  WORD_TOASTS, WORD_RELEASE, shipAt, swimmerAt, wordToastAt, harborNoticeNearby,
 } from '../src/word-arrival.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -23,12 +24,33 @@ const built = async () => (world ??= (async () => {
   return createWorld(new THREE.Scene());
 })());
 
+test('harbour notices reach the home hex and six neighbours, never distant countries', () => {
+  const harbor = { x: -6, z: 29 }, cell = hexAt(harbor.x, harbor.z);
+  const around = [[0, 0], [1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  for (const [q, r] of around) assert.equal(harborNoticeNearby(hexCentre(cell.q + q, cell.r + r)), true);
+  for (const [q, r] of [[2, 0], [1, 1], [0, -2], [-2, 1]]) {
+    assert.equal(harborNoticeNearby(hexCentre(cell.q + q, cell.r + r)), false);
+  }
+  assert.equal(harborNoticeNearby({ x: -1387, z: -268 }), false, 'Vastos cannot hear Tidehaven');
+  assert.equal(harborNoticeNearby({ x: NaN, z: 0 }), false);
+  assert.equal(harborNoticeNearby(null), false);
+  // The host always consumes a due event, and only its presentation depends on locality.
+  let said = null;
+  for (let time = 0; time < WORD_RELEASE + 1; time++) {
+    const owed = wordToastAt(time, said);
+    if (owed) said = owed.key;
+  }
+  assert.equal(wordToastAt(WORD_RELEASE + 2, said), null, 'returning to the harbour does not replay old news');
+});
+
 test('the hour is the roster’s hour, and the loitering is the roster’s too', () => {
   const ed = mercenaryById(WORD_ID);
   assert.equal(WORD_SHIP.drops, ed.arrival, 'the moment he goes over the side is the moment he arrives');
   assert.equal(WORD_SHIP.drops, ARRIVALS.word);
   assert.equal(WORD_LINGERS, ed.departs);
-  assert.equal(WORD_LINGERS, 1500, 'twenty-five minutes on the beach before the road gets him');
+  assert.equal(WORD_LINGERS, 65, 'he takes the road after the guard exchange');
+  assert.ok(WORD_SHIP.drops + WORD_LINGERS > WORD_RELEASE);
+  assert.ok(WORD_SHIP.drops + WORD_LINGERS < WORD_RELEASE + 10);
   assert.equal(ed.route, 'shore');
   // The clock runs forwards and nothing overlaps.
   const order = [WORD_SHIP.sighted, WORD_SHIP.turns, WORD_SHIP.drops, WORD_SHIP.away, WORD_SHIP.gone];
@@ -85,7 +107,7 @@ test('every metre of it is real water, and the strand is real ground', async () 
 
 test('the ship stands in, rounds up, waits, and goes', () => {
   const seen = t => shipAt(t);
-  assert.equal(seen(0).visible, false);
+  assert.equal(seen(-1).visible, false, 'the scene stays offstage before the companion sets off');
   assert.equal(seen(WORD_SHIP.sighted - 1).visible, false);
   assert.equal(seen(WORD_SHIP.gone).visible, false, 'hull down and taken out of the scene');
   const phases = [WORD_SHIP.sighted, WORD_SHIP.sighted + 20, WORD_SHIP.turns, WORD_SHIP.drops, WORD_SHIP.away, WORD_SHIP.gone - 1]
@@ -130,15 +152,15 @@ test('he swims it at his own speed and then stands on the beach', () => {
   assert.ok(Math.abs(second.metres - swimSpeed(WORD_LEVEL)) < 1e-9);
 });
 
-test('the village says its five things once each, in order, and a reload does not replay them', () => {
+test('the village and the guard speak once each, in order, and a reload does not replay them', () => {
   const keys = [];
   let said = null;
   for (let t = 0; t <= WORD_SHIP.gone + 60; t += 1) {
     const owed = wordToastAt(t, said);
     if (owed) { keys.push(owed.key); said = owed.key; }
   }
-  assert.deepEqual(keys, ['sighted', 'turns', 'drops', 'away', 'ashore']);
-  assert.equal(wordToastAt(99999, 'ashore'), null, 'and then it is over with');
+  assert.deepEqual(keys, ['sighted', 'turns', 'drops', 'away', 'ashore', 'challenge', 'answer', 'directions']);
+  assert.equal(wordToastAt(99999, 'directions'), null, 'and then it is over with');
   for (const key of keys) {
     assert.ok(WORD_TOASTS[key].line.length > 40 && WORD_TOASTS[key].title === WORD_TOASTS[key].title.toUpperCase(),
       `${key} has a line and a banner`);
@@ -146,8 +168,8 @@ test('the village says its five things once each, in order, and a reload does no
   // A game reloaded in the middle of it catches up silently: the host asks with no marker and is
   // told the last thing that was owed, which it stores instead of saying.
   assert.equal(wordToastAt(WORD_SHIP.drops + 1)?.key, 'drops');
-  assert.equal(wordToastAt(99999)?.key, 'ashore');
-  assert.equal(wordToastAt(0), null, 'and a game reloaded before any of it hears all of it');
+  assert.equal(wordToastAt(99999)?.key, 'directions');
+  assert.equal(wordToastAt(-1), null, 'and a game reloaded before any of it hears all of it');
 });
 
 test('a shore route means a shore: he waits on the beach, and everybody else at the landing', () => {
@@ -161,7 +183,7 @@ test('a shore route means a shore: he waits on the beach, and everybody else at 
   const gotwood = at(1, 'merc-gotwood');
   assert.ok(Math.hypot(gotwood.x - landing.x, gotwood.z - landing.z) < 6, 'a man off a boat stands by the boats');
   assert.ok(Math.hypot(gotwood.x - WORD_BEACH.x, gotwood.z - WORD_BEACH.z) > 6, 'and not on Ed’s beach');
-  // Twenty-five minutes of standing there, and then the road.
+  // The swim and guard exchange, and then the road.
   assert.equal(at(WORD_SHIP.drops + WORD_LINGERS - 5, WORD_ID).phase, 'landing');
   assert.equal(at(WORD_SHIP.drops + WORD_LINGERS + 5, WORD_ID).phase, 'walking');
   assert.equal(at(WORD_SHIP.drops - 5, WORD_ID).phase, 'coming', 'and nothing of him before the ship');
@@ -224,10 +246,10 @@ test('the rebel ship is the Sultana’s hull with everything worth seeing taken 
 
 test('the host puts her on the water, floats him in it, and lets him teach it', () => {
   const main = source('main.js');
-  assert.match(main, /const pp=player\.group\.position,pose=shipAt\(playSeconds\);/, 'the ship rides the play clock');
+  assert.match(main, /arrivalSeconds=arrivalClock\(\),nearHarbour=harborNoticeNearby\(pp\),pose=shipAt\(arrivalSeconds\)/, 'the ship rides the play clock');
   assert.match(main, /if\(seen&&!rebelShip\)rebelShip=createRebelShip\(\);/, 'and is built only when somebody could see her');
   assert.match(main, /rebelShip\.group\.position\.set\(pose\.x,SEA_LEVEL\+\.04,pose\.z\)/, 'and sits on the sea like the Sultana');
-  assert.match(main, /const owed=wordToastAt\(playSeconds,wordSaid\);/, 'the village braces once per thing');
+  assert.match(main, /const owed=wordToastAt\(arrivalSeconds,wordSaid\);/, 'the village braces once per thing');
   assert.match(main, /audio\?\.effect\('bell'\)/, 'with a bell');
   assert.match(main, /if\(npc\.swimming\)\{pos\.set\(npc\.swimming\.x,WATERLINE-SWIM\.sink,npc\.swimming\.z\)/, 'he floats where the traveler would');
   // The dead zone is a tenth of a metre for a man standing at home and nothing at all for a man
@@ -239,7 +261,7 @@ test('the host puts her on the water, floats him in it, and lets him teach it', 
   assert.match(main, /npc\.actor\.animate\([^\n]*swimming:!!npc\.swimming/, 'with the swimmer’s posture');
   assert.match(main, /id:'word-swim',label:'Nobody swims that\. How is it done\?'/, 'and he will say how it is done');
   assert.match(main, /const learned=swimming\.learn\(\);/, 'which is what teaches it');
-  assert.match(main, /wordSaid=wordToastAt\(playSeconds\)\?\.key\?\?null;/, 'a reload catches up without saying a word');
+  assert.match(main, /wordSaid=wordToastAt\(arrivalClock\(\)\)\?\.key\?\?null;/, 'a reload catches up without saying a word');
   assert.match(main, /view==='word-ship'\|\|view==='word-ashore'/, 'and there is a view of it to look at');
   assert.match(main, /landing:world\.spawn,shore:WORD_BEACH[,}]/, 'the company knows where the sea puts a man down');
   // The lesson is Ed's, in his own words, and it is the swimming module's copy.

@@ -23,7 +23,17 @@ export const MERCENARY_COMPANY_SIZE = 11;
  * When each group comes ashore, in seconds of play after the traveler lands. Three of the six
  * are groups: people who travelled together and arrive still talking to each other.
  */
-export const ARRIVALS = Object.freeze({ gotwood: 0, word: 360, riders: 1080, lakota: 1980, eliana: 2880, princes: 3780 });
+export const ARRIVALS = Object.freeze({ gotwood: 0, word: 60, riders: 240, lakota: 420, eliana: 600, princes: 780 });
+
+/** The second sail is sighted when the landing companion finishes training and sets off.
+ * The host uses this same clock for the ship, swimmer and notices, and supplies the same
+ * start to the company below. Undefined retains the direct clock used by isolated previews.
+ * A pending start is before the scene, so waiting never reveals the ship accidentally. */
+export function arrivalTime(playSeconds, startedAt = undefined) {
+  const time = Number.isFinite(playSeconds) ? playSeconds : 0;
+  if (startedAt === undefined) return time;
+  return Number.isFinite(startedAt) && startedAt >= 0 ? time - startedAt : -1;
+}
 
 /**
  * Mus lands on his own beach at a time nobody can predict, drawn once per game and kept in
@@ -74,9 +84,8 @@ export const MERCENARY_ROSTER = Object.freeze([
     ['Chris Scotwood. Same boat, same coin, and I have the letter they gave us both \u2014 you take it, you are the one they wrote it about. The army\u2019s post is up the road in the Avrel clearing.',
       'I will give the village a look and come after you. No sense the two of us crowding one quartermaster.'],
     { group: null, carriesLetter: true }),
-  // He stands on that strand for twenty-five minutes before the road gets him, because he has
-  // just swum sixty-eight metres of open water and because he is Ed (src/word-arrival.js).
-  merc('word', 'Ed the Word', 'no port he will name', ARRIVALS.word, 1500, 1.34,
+  // The swim, a short exchange with the guard, and then the road.
+  merc('word', 'Ed the Word', 'no port he will name', ARRIVALS.word, 65, 1.34,
     { tunic: 0x7a5a4a, hair: 0xc9a84e, skin: 0xe2bd93, build: 'rangy', headgear: 'bandana', hairStyle: 'braid', facialHair: 'clean', garment: 'sash', marks: ['earring'] },
     ['Ed. Ed the Word. You saw the ship, everyone saw the ship, and the ship has gone, which I think we can all agree is the happiest possible outcome for the ship.',
       'I came ashore under my own power because I felt like it. A man wants a swim. A man wants an adventure. A man is absolutely not here for any other reason.'],
@@ -275,7 +284,7 @@ export const LANDING_QUEUE = Object.freeze({ lead: 2.4, spacing: 1.9, offset: .4
  *   the road schedule and muster on it, and `summary().mustered` would count him among the living
  *   in the camp (docs/known-issues.md). Undefined or empty is today's clock to the digit.
  */
-export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined, companions = undefined, dead = undefined } = {}) {
+export function createMercenaryCompany({ road, stops = [], muster, landing, shore = null, wild = true, standable = null, seed = 0, roster = MERCENARY_ROSTER, companion = undefined, companions = undefined, dead = undefined, arrivalStartedAt = undefined, landingQuest = null } = {}) {
   if (!Array.isArray(road) || road.length < 2) throw new TypeError('The mercenaries need the main road.');
   // One man or many, it is one list. `companion` is the long road's own spelling of a list of
   // one and still works exactly as it did.
@@ -286,6 +295,15 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
   const gone = new Set((Array.isArray(dead) ? dead : []).filter(id => typeof id === 'string' && id));
   const walkingWith = new Set(asked.filter(entry => entry.with === true).map(entry => entry.id));
   const released = new Map(asked.filter(entry => entry.with !== true).map(entry => [entry.id, entry]));
+  const mateRelease = released.get(landingQuest?.id);
+  const followsLesson = landingQuest && (!mateRelease || (mateRelease.releasedAt === 0 && mateRelease.releasedDistance === 0));
+  // Only the later arrivals wait for the opening training. Initial companions and Mus's own
+  // beach keep their clocks; a companion released below keeps the real moment of release.
+  if (arrivalStartedAt !== undefined) {
+    const offset = Number.isFinite(arrivalStartedAt) && arrivalStartedAt >= 0 ? arrivalStartedAt : Infinity;
+    roster = roster.map(entry => entry.arrival > 0 && !entry.drawn
+      ? Object.freeze({ ...entry, arrival: entry.arrival + offset }) : entry);
+  }
   // Released, a man is the same pure function of the clock as everybody else: he lands at the
   // moment he was let go, has no hour to spend at a landing he left long ago, and starts from the
   // road distance he was standing at. Release and take-back are per person.
@@ -293,6 +311,8 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
     ? Object.freeze({ ...entry, arrival: Math.max(0, Number(released.get(entry.id).releasedAt) || 0), departs: 0,
       startDistance: Math.max(0, Number(released.get(entry.id).releasedDistance) || 0) })
     : entry));
+  if (followsLesson) roster = roster.map(entry => entry.id === landingQuest.id
+    ? Object.freeze({ ...entry, arrival: landingQuest.departureAt, departs: 0, startDistance: landingQuest.roadDistance }) : entry);
   // Mus is the only one whose hour is not written down. It is drawn once from the seed the
   // game was started with and kept in the save, so he lands at the same moment on every
   // reload of that game and a different one in the next.
@@ -374,6 +394,10 @@ export function createMercenaryCompany({ road, stops = [], muster, landing, shor
       // twelve metres are measured from (`interpreterNearby`, src/linguist.js).
       if (walkingWith.has(mercenary.id))
         return { id: mercenary.id, name: mercenary.name, phase: 'with-traveler', distance: 0, stopId: null, x: null, z: null, yaw: 0, walking: false };
+      if (followsLesson && mercenary.id === landingQuest.id) {
+        const lesson = landingQuest.placement(playSeconds);
+        if (lesson) return lesson;
+      }
       // A wild man walks his own line, at the pace rough country allows, and passes none of the
       // road's stops, because he is never on the road to pass them.
       const wilding = !!wildRoute && mercenary.route === 'wild';

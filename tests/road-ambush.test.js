@@ -209,6 +209,60 @@ test('the host authors them at the health the module names, and answers a refuse
   assert.match(main, /if\(!near\)ambushHeldOff=false;/, 'and he is told again if he walks away and comes back');
 });
 
+test('a live rebel ambush draws three armed people, readable tells, and draws them again after retry', async () => {
+  const { createCombat } = await import('../src/combat.js');
+  const { createCombatView } = await sourceModule('../src/combat-view.js');
+  // Only the badge DOM is stubbed: the encounter, actors, meshes and view update are the real
+  // game modules. The regression was a renderer whitelist that silently skipped every rebel.
+  const element = () => ({ children: [], style: {}, classList: { toggle() {} },
+    append(...children) { this.children.push(...children); } });
+  const labels = element(), damage = element();
+  const previous = Object.fromEntries(['document', 'innerWidth', 'innerHeight']
+    .map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  Object.assign(globalThis, {
+    document: { createElement: element, getElementById: id => id === 'enemy-labels' ? labels : damage },
+    innerWidth: 1280, innerHeight: 720,
+  });
+  try {
+    const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(60, 16 / 9, .1, 200);
+    const world = { bounds: { minX: -1000, maxX: 100, minZ: -100, maxZ: 400 }, colliders: [], heightAt: () => 1.5 };
+    const { x, z } = AMBUSH.point, { dx, dz } = AMBUSH.forward;
+    const at = (along, across) => ({ x: x + dx * along + dz * across, z: z + dz * along - dx * across });
+    const position = { ...at(-14, 0), y: 1.5 };
+    const combat = createCombat({ world, position });
+    const view = createCombatView(scene, world, camera);
+    camera.position.set(x, 7, z + 18); camera.lookAt(x, 1.5, z); camera.updateMatrixWorld();
+    const encounter = { id: 'caloss-rebels', center: { x, z }, checkpoint: at(-14, 0), retreatAxis: 'x', retreatLine: at(-26, 0).x,
+      enemies: [
+        { id: 'rebel-lane', kind: 'rebel', name: 'Rebel ambusher', hp: AMBUSH.hp, entry: .2, ...at(3, -3.4), model: { role: 'forest-woodcutter', tunic: 0x6d5b43 } },
+        { id: 'rebel-hedge', kind: 'rebel', name: 'Rebel ambusher', hp: AMBUSH.hp, entry: 1.4, ...at(-2, 3.6), model: { role: 'town-carter', tunic: 0x5a6350 } },
+        // The same enemy kind without an authored model still needs a human, never a goblin.
+        { id: 'rebel-stone', kind: 'rebel', hp: AMBUSH.hp, entry: 2.6, ...at(6, 2.8) },
+      ] };
+    assert.equal(combat.startEncounter(encounter), true);
+    view.update(1 / 60, 0, combat.state, position);
+    const actors = scene.children.filter(object => object.name.startsWith('character-'));
+    assert.equal(actors.length, AMBUSH.rebels, 'every spawned rebel has a human body in the scene');
+    assert.ok(actors.every(actor => actor.visible && actor.position.y === 1.5));
+    assert.deepEqual(labels.children.map(badge => badge.children[0].textContent), Array(3).fill('Rebel ambusher'));
+    assert.ok(labels.children.every(badge => !badge.hidden), 'their labels appear at encounter distance');
+    combat.state.enemies[0].action = 'windup'; combat.state.enemies[0].progress = .5;
+    view.update(1 / 60, 1, combat.state, position);
+    assert.ok(labels.children[0].children[2].textContent.includes('Winding up'));
+    assert.equal(scene.children.filter(object => object.isGroup && object.visible && object.children.some(child => child.geometry?.type === 'RingGeometry')).length, 1,
+      'the incoming strike has a visible ground warning');
+    combat.revive(); view.update(1 / 60, 2, combat.state, position);
+    assert.ok(actors.every(actor => !actor.visible), 'leaving the fight hides its old actors');
+    assert.equal(combat.resetEncounter(), true); view.update(1 / 60, 3, combat.state, position);
+    assert.ok(actors.every(actor => actor.visible), 'retry restores the existing actors');
+    assert.equal(labels.children.length, 3, 'retry reuses the badges rather than doubling them');
+  } finally {
+    for (const [key, descriptor] of Object.entries(previous)) {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key];
+    }
+  }
+});
+
 /**
  * And the host, which is where an event is the difference between a rule and a thing that happens.
  */

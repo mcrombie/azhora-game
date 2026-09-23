@@ -34,15 +34,15 @@ function mustersAt(c, id, hi = 20000) {
 /** The nine whose hour is written down. Mus draws his, so he is pinned apart, below. */
 const WRITTEN = MERCENARY_ROSTER.filter(m => !m.drawn);
 
-test('the last man up the road musters at 5,234.5 seconds, which is how long the long road is', () => {
+test('the last man up the road musters at 2,234.5 seconds, which is how long the long road is', () => {
   const c = company();
   const times = WRITTEN.map(m => ({ name: m.name, at: mustersAt(c, m.id) })).sort((a, b) => a.at - b.at);
   const last = times.at(-1);
   assert.equal(last.name, 'Al the Tun', 'the last of them up the road is the sorcerer off the last boat. ' + WHY);
-  assert.ok(Math.abs(last.at - 5234.5) <= 2, `Al the Tun musters at ${last.at.toFixed(1)} s, not 5,234.5 ± 2. ` + WHY);
-  // Eighty-seven minutes and a quarter. The road is cut so a walker is on the Caloss bridge at
-  // 80 to 85 minutes and through the camp gate some ten minutes after this.
-  assert.ok(Math.abs(last.at / 60 - 87.2) < .05, `${(last.at / 60).toFixed(2)} minutes. ` + WHY);
+  assert.ok(Math.abs(last.at - 2234.5) <= 2, `Al the Tun musters at ${last.at.toFixed(1)} s, not 2,234.5 ± 2. ` + WHY);
+  // Thirty-seven minutes and a quarter on the compact opening schedule, before its start anchor.
+  // Optional exploring never requires waiting an hour between arrivals.
+  assert.ok(Math.abs(last.at / 60 - 37.2) < .05, `${(last.at / 60).toFixed(2)} minutes. ` + WHY);
 });
 
 test('each of the nine comes in at the minute the design gives him', () => {
@@ -50,8 +50,8 @@ test('each of the nine comes in at the minute the design gives him', () => {
   // docs/drent-long-road.md §1, as amended by the ground probe: Ed waits out his
   // twenty-five minutes on the shingle, so he walks in between the riders and Lakota.
   const expected = {
-    'merc-gotwood': 28.1, 'merc-ciaran': 40.1, 'merc-jerry': 40.4, 'merc-christin': 40.9,
-    'merc-word': 51.4, 'merc-lakota': 55.7, 'merc-eliana': 69.4, 'merc-matt': 87.0, 'merc-altun': 87.2,
+    'merc-gotwood': 28.1, 'merc-ciaran': 26.1, 'merc-jerry': 26.4, 'merc-christin': 26.9,
+    'merc-word': 22.5, 'merc-lakota': 29.7, 'merc-eliana': 31.4, 'merc-matt': 37.0, 'merc-altun': 37.2,
   };
   for (const mercenary of WRITTEN) {
     const minutes = mustersAt(c, mercenary.id) / 60;
@@ -60,47 +60,47 @@ test('each of the nine comes in at the minute the design gives him', () => {
   }
 });
 
-test('five boats land, at six, eighteen, thirty-three, forty-eight and sixty-three minutes', () => {
+test('five groups arrive three minutes apart after the first ship', () => {
   // Five bells and five legs: each leg of the long road holds one landing, so the road is cut
   // to these five numbers and not to any other.
   assert.deepEqual([ARRIVALS.word, ARRIVALS.riders, ARRIVALS.lakota, ARRIVALS.eliana, ARRIVALS.princes],
-    [360, 1080, 1980, 2880, 3780], 'the five landings after the traveler’s. ' + WHY);
+    [60, 240, 420, 600, 780], 'the five landings after the traveler’s. ' + WHY);
   assert.equal(ARRIVALS.gotwood, 0, 'the man with the letter steps off with you');
   const landings = new Set(WRITTEN.map(m => m.arrival));
   assert.equal(landings.size, 6, 'six moments, because three of the nine ride in together and two sail in together');
 });
 
-test('Ed the Word sits on the shingle for twenty-five minutes, so first is first', () => {
+test('Ed takes the road soon after the guard hears him out', () => {
   // The user's ruling of 2026-09-20: a traveler who walks straight to the muster is always the
   // first of the eleven in, and this is the number that buys it. He is also swimming's teacher,
   // which keeps him on Tidehaven's beach through the whole of the long road's first leg.
   const ed = MERCENARY_ROSTER.find(m => m.id === 'merc-word');
-  assert.equal(ed.departs, 1500, 'Ed leaves the strand at 31:00. ' + WHY);
-  assert.ok(mustersAt(company(), 'merc-word') > mustersAt(company(), 'merc-ciaran'), 'the riders are in before him');
+  assert.equal(ed.departs, 65, 'The swim and guard exchange precede his departure. ' + WHY);
+  assert.ok(mustersAt(company(), 'merc-word') < mustersAt(company(), 'merc-ciaran'), 'Ed gets on with his own journey before the riders');
 });
 
 test('Mus is pinned as a range, because his hour is drawn and his road is not the road', () => {
   // He is the one man whose arrival is not written down, and he does not walk this road at all:
   // `route: 'wild'` takes him through the country, off the main road the whole way, and he passes
   // none of its stops (src/wild-route.js). On a late draw he is the last of the eleven in, after
-  // the 5,234.5 s above - so the long road's length is the nine who use the road, and Mus is a
+  // the 2,234.5 s above - so the long road's length is the nine who use the road, and Mus is a
   // range beside it and never a number it is cut to.
   assert.deepEqual([MUS_ARRIVAL.from, MUS_ARRIVAL.to], [-30, ARRIVALS.princes + 30], 'half a minute either side of the whole company');
-  const musters = [MUS_ARRIVAL.from, 0, 1200, 2400, MUS_ARRIVAL.to].map(arrival => {
+  const musters = [MUS_ARRIVAL.from, 0, MUS_ARRIVAL.to / 3, 2 * MUS_ARRIVAL.to / 3, MUS_ARRIVAL.to].map(arrival => {
     const roster = MERCENARY_ROSTER.map(m => m.drawn ? { ...m, arrival, drawn: false } : m);
     return mustersAt(company(roster), 'merc-mus');
   });
   for (let i = 1; i < musters.length; i++) assert.ok(musters[i] > musters[i - 1], 'a later draw is a later muster');
   assert.ok(musters[0] > MUS_ARRIVAL.from && musters.at(-1) < 20000, 'he gets there on every draw');
-  // The measured range across three hundred seeds: 32.7 to 96.7 minutes, on an authored wild
+  // The measured range across three hundred seeds: 32.7 to 46.7 minutes, on an authored wild
   // line of 1,598 m that never comes within 62 m of the road until it closes to 39.7 m at the
   // join. The floor is what matters - a traveler who walks straight up the road is in well
   // before it - and the ceiling is the only time anybody comes in after Al the Tun.
   const seeded = Array.from({ length: 300 }, (_, i) => mustersAt(company(MERCENARY_ROSTER, i + 1), 'merc-mus'));
   const low = Math.min(...seeded) / 60, high = Math.max(...seeded) / 60;
   assert.ok(low > 31 && low < 34, `Mus's earliest is ${low.toFixed(1)} min. ` + WHY);
-  assert.ok(high > 95 && high < 98, `Mus's latest is ${high.toFixed(1)} min. ` + WHY);
-  assert.ok(Math.max(...seeded) > 5234.5, 'on a late draw he is the last of the eleven in, and the muster must have a line for that');
+  assert.ok(high > 45 && high < 48, `Mus's latest is ${high.toFixed(1)} min. ` + WHY);
+  assert.ok(Math.max(...seeded) > 2234.5, 'on a late draw he is the last of the eleven in, and the muster must have a line for that');
   // The seed is his and nobody else's: the nine keep their hour whatever he draws.
   const a = company(MERCENARY_ROSTER, 2), b = company(MERCENARY_ROSTER, 91);
   assert.notEqual(drawMusArrival(2), drawMusArrival(91), 'two seeds, two beaches');

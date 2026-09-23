@@ -416,3 +416,13 @@ test('a save may not hold a chapter the campaign it carries never reached', () =
   assert.equal(checkpoint.save({ ...base, campaign: fought, luscia: luscia.snapshot(), moros: moros.snapshot(),
     border: border('empire').snapshot() }).ok, true, 'the border battle fought and the morning not yet begun');
 });
+
+
+test('Chapter 1 preserves whether the landing mate was invited, independently of his route', () => {
+  const {checkpoint,data}=fixture();
+  for(const invited of [false,true]){
+    assert.equal(checkpoint.save({...data,companionOffTheClock:invited}).ok,true);
+    assert.equal(checkpoint.read().data.companionOffTheClock,invited);
+  }
+  assert.equal(checkpoint.save({...data,companionOffTheClock:'yes'}).ok,false);
+});

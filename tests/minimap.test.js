@@ -66,7 +66,9 @@ test('the long road’s next stop is a second, ringed target beside the arc’s 
   // Two golds: the muster road's filled diamond and the long road's open one, both drawn, so
   // following one never hides the other (src/quest-markers.js, docs/drent-long-road.md §2).
   const world = fixture(), position = { x: -80, z: 29 };
-  const view = drawMinimap(context(), { world, position, goal: { x: -75, z: 29 }, openGoal: { id: 'long-road-bird-garden', x: -30, z: 20 } });
+  const ctx = context();
+  const view = drawMinimap(ctx, { world, position, goal: { x: -75, z: 29 }, openGoal: { id: 'long-road-bird-garden', x: -30, z: 20 } });
+  assert.equal(ctx.calls.filter(call => call.method === 'fill' && call.fill === '#ffe0a0').length, 2, 'both quest destinations use the same filled gold symbol');
   assert.ok(view.goal, 'the arc is still drawn');
   assert.ok(view.openGoal, 'and so is the long road');
   assert.equal(view.openGoal.id, 'long-road-bird-garden');

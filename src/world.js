@@ -278,9 +278,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   function addPath(points, width, parent = world) {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
     const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 1.1)));
-    const positions = [], indices = [];
+    const positions = [], indices = [], overCaloss = [];
     for (let i = 0; i < samples.length; i++) {
       const p = samples[i];
+      // The timber is the road surface here. A dirt ribbon raised above the
+      // deck hid the missing span and made the broken bridge look walkable.
+      overCaloss.push(deckAt(p.x, p.z) === bridgeDeck);
       const direction = samples[Math.min(i + 1, samples.length - 1)].clone().sub(samples[Math.max(0, i - 1)]).normalize();
       const left = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(width / 2 * (1 + Math.sin(i * .61) * .025));
       for (const sign of [-1, 1]) {
@@ -288,7 +291,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         const deck = deckAt(x, z);
         positions.push(x, (deck ? deck.deckY + .05 : groundHeight(x, z)) + .045, z);
       }
-      if (i) { const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1); }
+      if (i && !overCaloss[i - 1] && !overCaloss[i]) {
+        const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1);
+      }
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));

@@ -11,6 +11,7 @@ import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world-scale.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { REGION_IDS } from '../src/region-world.js';
 import { BUILD_STATUS } from '../src/build-status.js';
+import { CALOSS_BRIDGE } from '../src/world-terrain.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -160,6 +161,30 @@ test('The river bank retargets fishing while preserving the original pond API', 
   assert.equal(scene.getObjectByName('Bridge repair cord').visible, false);
   world.setJourneySiteState('bridge-repair', false);
   assert.equal(canStand(spot.x, spot.z, world), false);
+});
+
+test('The broken Caloss span reveals water, and repair reveals timber rather than a floating road', () => {
+  const b = CALOSS_BRIDGE;
+  const surfaceAt = (along, across) => {
+    scene.updateMatrixWorld(true);
+    const visible = []; scene.traverseVisible(object => { if (object.isMesh) visible.push(object); });
+    const x = b.crossing.x + b.axis.x * along + b.side.x * across;
+    const z = b.crossing.z + b.axis.z * along + b.side.z * across;
+    return new THREE.Raycaster(new THREE.Vector3(x, b.deckY + 4, z), new THREE.Vector3(0, -1, 0), 0, 12)
+      .intersectObjects(visible, false)[0];
+  };
+  world.setJourneySiteState('bridge-repair', false);
+  for (const across of [-1.8, 0, 1.8]) {
+    const surface = surfaceAt(2.6, across);
+    assert.equal(surface?.object.name, 'The Caloss', `the broken span is concealed at ${across}`);
+    assert.ok(surface.point.y < b.deckY - 1, 'open water lies visibly below the missing deck');
+  }
+  world.setJourneySiteState('bridge-repair', true);
+  for (const across of [-1.8, 0, 1.8]) {
+    const surface = surfaceAt(2.6, across);
+    assert.ok(Math.abs(surface.point.y - (b.deckY + .09)) < .015, 'repair puts timber back across the hole');
+  }
+  world.setJourneySiteState('bridge-repair', false);
 });
 
 test('Parcel, supply and waymarker visuals respond independently and remain finite', () => {

@@ -41,7 +41,7 @@ test('The map separates the main objective, player heading and optional marker w
   const m = model(), before = structuredClone(m), svg = trailMapSVG(m, { selectedId: 'bee-fold' });
   assert.ok(svg.includes('trail-goal-marker')); assert.ok(svg.includes('trail-tracked-marker')); assert.ok(svg.includes('trail-player-marker'));
   // Two golds on the sheet as well: the muster road's pin, and the long road's next stop drawn
-  // with the same diamond and no fill (src/quest-markers.js, the open variant).
+  // with the same filled diamond (src/quest-markers.js).
   assert.ok(svg.includes('trail-open-goal-marker'), 'the long road is not on the sheet');
   assert.ok(svg.includes('the long way round'));
   const openSelection = trailMapSelection(m, 'long-road-bird-garden');

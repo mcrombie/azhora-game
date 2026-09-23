@@ -718,16 +718,13 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   /**
    * Whether the shield is up and would catch something right now.
    *
-   * **A drill counts too.** This asked for `phase === 'active'`, which meant the boards could
-   * only come up when something was already swinging - and Officer Glun's lesson is a straw post
-   * that swings at nobody (src/instructor.js). A man raising his shield at a post is not catching
-   * anything and is not pretending to; he is learning which key it is on, with the same body and
-   * the same rules, and the same footer telling him so. Nothing is absorbed in a practice because
-   * nothing in a practice ever hits him.
+   * The same held input works before, during and after a fight, including the practice post.
+   * Raising the shield while the road is quiet costs no wind and absorbs no imaginary blow.
+   * A dead or defeated traveler cannot guard; attacks, recovery and low stamina still lower it.
    */
   function guarding() {
     const { hasShield, guardCost } = margins();
-    return !!guardHeld && !!hasShield && (state.phase === 'active' || state.phase === 'practice')
+    return !!guardHeld && !!hasShield && state.phase !== 'defeated'
       && player.action === 'idle' && player.hp > 0 && player.stamina >= (guardCost ?? 0);
   }
 

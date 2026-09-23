@@ -1,5 +1,5 @@
 /**
- * Ed the Word comes ashore. Six minutes into the game a sail stands straight in for
+ * Ed the Word comes ashore. When the first companion sets off, a sail stands straight in for
  * Tidehaven, the village braces, and then she rounds up well short of the pier, puts a man
  * over her side and stands out again without ever touching the boards. He swims the last
  * sixty-eight metres on the ordinary swimming mechanic (`src/swimming.js`), climbs out on
@@ -19,9 +19,20 @@
  */
 import { mercenaryById } from './mercenaries.js';
 import { swimSpeed } from './swimming.js';
+import { hexAt } from './region-world.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
+
+/** Harbour reports are local: this hex and its six neighbours, measured on the world atlas.
+ * The event clock and consumed-notice cursor still advance elsewhere. Returning from Vastos
+ * must not replay a boat arrival that happened while the traveler was away. */
+export function harborNoticeNearby(observer, harbor = { x: -6, z: 29 }) {
+  if (![observer?.x, observer?.z, harbor?.x, harbor?.z].every(Number.isFinite)) return false;
+  const a = hexAt(observer.x, observer.z), b = hexAt(harbor.x, harbor.z);
+  const q = a.q - b.q, r = a.r - b.r;
+  return Math.max(Math.abs(q), Math.abs(r), Math.abs(q + r)) <= 1;
+}
 
 /** The hired sword this is all about, and how well he swims when he does it. */
 export const WORD_ID = 'merc-word';
@@ -77,7 +88,7 @@ export const WORD_SWIM = freeze({
   get seconds() { return this.metres / swimSpeed(WORD_LEVEL); },
 });
 
-/** How long he stands on that beach before he takes the road: twenty-five minutes of it. */
+/** From the drop through the brief guard exchange; the swim is part of that time. */
 export const WORD_LINGERS = ED.departs;
 
 /** What Tidehaven says while it happens, in the order it says it. */
@@ -92,6 +103,12 @@ export const WORD_TOASTS = freeze({
     line: 'Her sail fills and she goes, without a word said to the shore and without once coming near it. Whatever she left is swimming.' }),
   ashore: freeze({ at: null, title: 'HE CAME ASHORE UNDER HIS OWN POWER',
     line: 'He walks out of the water on the strand north of the pier, stands there a while getting his breath back, and does not appear to be in any hurry at all.' }),
+  challenge: freeze({ at: WORD_SHIP.drops + WORD_SWIM.seconds + 4, title: 'THE SHORE GUARD',
+    line: 'Name and business. Are you here to raid us?' }),
+  answer: freeze({ at: WORD_SHIP.drops + WORD_SWIM.seconds + 11, title: 'ED THE WORD',
+    line: 'Ed. A mercenary, if the army is hiring. That ship and I have parted company.' }),
+  directions: freeze({ at: WORD_SHIP.drops + WORD_SWIM.seconds + 20, title: 'THE SHORE GUARD',
+    line: 'Then take the west road to the muster. Keep your blade sheathed here.' }),
 });
 
 const clamp01 = t => (t < 0 ? 0 : t > 1 ? 1 : t);
@@ -159,6 +176,8 @@ export function swimmerAt(playSeconds) {
 
 /** The moment he steps out of the water, which nothing else in the clock names. */
 export const WORD_ASHORE = WORD_SHIP.drops + WORD_SWIM.seconds;
+/** The village returns to its work after the guard has heard him out. */
+export const WORD_RELEASE = WORD_ASHORE + 30;
 
 /**
  * The lines for the toast that is owed at a moment, given the last one already said. The host
@@ -166,7 +185,7 @@ export const WORD_ASHORE = WORD_SHIP.drops + WORD_SWIM.seconds;
  */
 export function wordToastAt(playSeconds, said = null) {
   const t = Number.isFinite(playSeconds) ? playSeconds : 0;
-  const order = ['sighted', 'turns', 'drops', 'away', 'ashore'];
+  const order = ['sighted', 'turns', 'drops', 'away', 'ashore', 'challenge', 'answer', 'directions'];
   const at = key => (key === 'ashore' ? WORD_ASHORE : WORD_TOASTS[key].at);
   const from = said ? order.indexOf(said) + 1 : 0;
   let owed = null;

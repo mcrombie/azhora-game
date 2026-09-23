@@ -151,19 +151,19 @@ const roadNetworks = new WeakMap();
 function roadNetwork(paths) {
   let network = roadNetworks.get(paths);
   if (network) return network;
-  const nodes = [], edges = [];
+  const nodes = [], edges = [], segments = [];
   const link = (a, b) => { const w = distance(nodes[a], nodes[b]); edges[a].push([b, w]); edges[b].push([a, w]); };
   for (const path of paths) {
     let previous = -1;
     for (const point of path) {
       const index = nodes.push({ x: point.x, z: point.z }) - 1; edges.push([]);
-      if (previous >= 0) link(previous, index);
+      if (previous >= 0) { link(previous, index); segments.push([previous, index]); }
       previous = index;
     }
   }
   for (let a = 0; a < nodes.length; a++) for (let b = a + 1; b < nodes.length; b++)
     if (distance(nodes[a], nodes[b]) < JOIN) link(a, b);
-  network = { nodes, edges };
+  network = { nodes, edges, segments };
   roadNetworks.set(paths, network);
   return network;
 }
@@ -175,12 +175,18 @@ function roadNetwork(paths) {
  * do not join the Moros road) still takes the traveler as near as the roads go.
  */
 export function roadRoute(paths, from, to) {
-  const { nodes, edges } = roadNetwork(paths);
-  let start = -1, gap = NETWORK_REACH;
-  nodes.forEach((node, index) => { const d = distance(node, from); if (d < gap) { gap = d; start = index; } });
-  if (start < 0) return null;
+  const { nodes, edges, segments } = roadNetwork(paths);
+  // Join a road where we actually stand, even halfway along a 200 m stretch.
+  // Routing from the nearest vertex sent travelers across the inside of bends.
+  let entry = null;
+  for (const [a, b] of segments) {
+    const point = nearestOnPath([nodes[a], nodes[b]], from);
+    if (!entry || point.distance < entry.point.distance) entry = { a, b, point };
+  }
+  if (!entry || entry.point.distance >= NETWORK_REACH) return null;
   const cost = new Float64Array(nodes.length).fill(Infinity), previous = new Int32Array(nodes.length).fill(-1), done = new Uint8Array(nodes.length);
-  cost[start] = 0;
+  cost[entry.a] = distance(entry.point, nodes[entry.a]);
+  cost[entry.b] = distance(entry.point, nodes[entry.b]);
   for (;;) {
     let current = -1;
     for (let i = 0; i < nodes.length; i++) if (!done[i] && cost[i] < Infinity && (current < 0 || cost[i] < cost[current])) current = i;
@@ -188,12 +194,25 @@ export function roadRoute(paths, from, to) {
     done[current] = 1;
     for (const [next, weight] of edges[current]) if (cost[current] + weight < cost[next]) { cost[next] = cost[current] + weight; previous[next] = current; }
   }
-  let end = -1;
-  for (let i = 0; i < nodes.length; i++) if (cost[i] < Infinity && (end < 0 || distance(nodes[i], to) < distance(nodes[end], to))) end = i;
-  if (end < 0 || distance(nodes[end], to) >= distance(nodes[start], to) - 20) return null;
+  let exit = null;
+  for (const [a, b] of segments) {
+    if (!Number.isFinite(cost[a])) continue;
+    const point = nearestOnPath([nodes[a], nodes[b]], to);
+    const viaA = cost[a] + distance(nodes[a], point), viaB = cost[b] + distance(nodes[b], point);
+    const end = viaA <= viaB ? a : b;
+    let travel = Math.min(viaA, viaB), direct = false;
+    if (a === entry.a && b === entry.b) {
+      travel = distance(entry.point, point); direct = true;
+    }
+    if (!exit || point.distance < exit.point.distance - .5 || (Math.abs(point.distance - exit.point.distance) <= .5 && travel < exit.travel))
+      exit = { point, end, travel, direct };
+  }
+  if (!exit || exit.point.distance >= distance(from, to) - 3) return null;
   const route = [];
-  for (let i = end; i >= 0; i = previous[i]) route.unshift(nodes[i]);
-  return route;
+  if (!exit.direct) for (let i = exit.end; i >= 0; i = previous[i]) route.unshift(nodes[i]);
+  route.unshift({ x: entry.point.x, z: entry.point.z });
+  route.push({ x: exit.point.x, z: exit.point.z });
+  return route.filter((point, index) => !index || distance(point, route[index - 1]) > .1);
 }
 
 /** The next route vertex to walk at: past the one we are beside, never one behind us. */
@@ -213,50 +232,21 @@ export function nextWaypoint(position, target, world, memory = {}) {
   // seen from Solis) is a destination: take the road there, as for any other place.
   if (gateway && distance(position, gateway.point) > GATE_REACH) return nextWaypoint(position, gateway.point, world, memory);
   if (gateway) return gateway;
-  // Whichever road serves this leg, not only the road out of Drent: the way from
-  // the outpost to Solis runs along the stockade spur and the Solis road.
+  const gap = distance(position, target);
   const trail = bestTrail(world.paths, position, target);
-  if (trail.length > 1) {
-    const here = nearestVertex(trail, position), there = nearestVertex(trail, target);
-    const onRoad = nearestOnPath(trail, position), goal = nearestOnPath(trail, target);
-    const alongTrail = Math.abs(there.index - here.index) >= 2
-      && onRoad.distance < ROAD_CORRIDOR && goal.distance < ROAD_CORRIDOR;
-    if (alongTrail) {
-      const step = Math.sign(there.index - here.index);
-      let index = here.index;
-      // Do not walk back to the vertex behind us; aim one ahead, and skip a vertex we are already beside.
-      if (distance(trail[index], position) < 1.4 || (index !== there.index && isBehind(position, trail[index], trail[index + step]))) index += step;
-      index = step > 0 ? Math.min(index, there.index) : Math.max(index, there.index);
-      if (index !== there.index) return { point: trail[index], onTrail: true };
-    }
-    // Both ends are on the road, but the straight line between them is not
-    // walkable: the Caloss lies across it and the only way over is the bridge,
-    // or the traveler has strayed onto a bank. Follow the road toward the
-    // destination's own place on it rather than grinding at the water.
-    // A cart or a post in the way of a place a few steps off is walked round, not
-    // routed round: only water or a drop between them sends a near leg to the road.
-    if (!alongTrail && goal.distance < ROAD_CORRIDOR && onRoad.distance < ROAD_CORRIDOR * 2
-      && distance(position, target) > 6 && !clearLine(position, target, world)
-      && (distance(position, target) > NEAR_DETOUR || !clearLine(position, target, bareGround(world)))) {
-      // Step back onto the road by the shortest way first. Standing on a bank
-      // beside the bridge, walking at the far vertex only grinds at the water;
-      // the way back to the road runs the other way, round the end of the deck.
-      if (onRoad.distance > 1.5 && clearLine(position, onRoad, world))
-        return { point: { x: onRoad.x, z: onRoad.z }, onTrail: true };
-      const forward = goal.along > onRoad.along;
-      const clamp = index => Math.max(0, Math.min(trail.length - 1, index));
-      let index = clamp(forward ? onRoad.index + 1 : onRoad.index);
-      if (distance(trail[index], position) < 1.4) index = clamp(index + (forward ? 1 : -1));
-      return { point: trail[index], onTrail: true };
-    }
-  }
-  // Far off, and the way straight ahead is blocked: go by the road network, however
-  // many roads that takes. Nothing changes where the straight line already works.
-  if (distance(position, target) > 80) {
-    const heading = distance(position, target), ahead = { x: position.x + (target.x - position.x) / heading * 40, z: position.z + (target.z - position.z) / heading * 40 };
-    if (!clearLine(position, ahead, world)) {
-      const route = roadRoute(world.paths ?? [], position, target);
-      if (route && route.length > 1) return { point: stepAlong(route, position), onTrail: true };
+  const goal = nearestOnPath(trail, target);
+  // Leave the road for a nearby person, parcel or workbench. A cart can be
+  // walked around; water still requires the crossing, even on a short leg.
+  const approach = gap <= NEAR_DETOUR && goal.distance > 2
+    && clearLine(position, target, bareGround(world));
+  if (gap > 6 && !approach) {
+    const route = roadRoute(world.paths ?? [], position, target);
+    if (route?.length > 1) {
+      // Return to the centre before advancing along it. This is also how a
+      // traveler beside a bridge gets back to its mouth instead of its water.
+      if (distance(position, route[0]) > 2 && clearLine(position, route[0], world))
+        return { point: route[0], onTrail: true };
+      return { point: stepAlong(route, position), onTrail: true };
     }
   }
   return { point: target, onTrail: false };
@@ -360,8 +350,10 @@ export function fightCommand(snapshot) {
   enemies.sort((a, b) => distance(position, a) - distance(position, b));
   const nearest = enemies[0], gap = distance(position, nearest);
   const yaw = angleTo(position, nearest);
-  const threat = enemies.find(enemy => (enemy.action === 'windup' && enemy.progress >= .45 && distance(position, enemy) < 3.4)
-    || (enemy.action === 'attack' && enemy.progress < .45 && distance(position, enemy) < 2.9));
+  const threat = enemies.find(enemy => (enemy.action === 'windup' && enemy.progress >= (combat.hasShield ? .18 : .45) && distance(position, enemy) < 3.4)
+    || (enemy.action === 'attack' && enemy.progress < (combat.hasShield ? 1 : .45) && distance(position, enemy) < 2.9));
+  if (threat && combat.hasShield && combat.action === 'idle' && combat.stamina >= (combat.guardCost ?? 18))
+    return { intent: 'Catching the strike on the shield', move: null, yaw: angleTo(position, threat), guard: true, actions: [] };
   if (threat && combat.action !== 'dodge' && combat.stamina >= 25) {
     // Step aside, across the line of the strike.
     const tx = threat.x - position.x, tz = threat.z - position.z, length = Math.hypot(tx, tz) || 1;
@@ -374,7 +366,7 @@ export function fightCommand(snapshot) {
   if (combat.action === 'idle' && gap <= 2.3 && nearest.guarded) return { intent: 'Waiting for him to swing', move: null, yaw, actions: [] };
   if (gap > 2.0 && combat.action === 'idle') {
     const dx = nearest.x - position.x, dz = nearest.z - position.z;
-    return { intent: 'Closing on a raider', move: moveInput(yaw, dx, dz, false), yaw, actions: [] };
+    return { intent: 'Closing on the enemy', move: moveInput(yaw, dx, dz, false), yaw, actions: [] };
   }
   return { intent: 'Waiting for an opening', move: null, yaw, actions: [] };
 }
@@ -430,7 +422,8 @@ export function planGoal(snapshot, world) {
     // Officer Glun sets the lesson, and nothing at the straw counts until he has (src/instructor.js).
     case 2: return snapshot.lessonSet === false
       ? { kind: 'talk', target: npc('instructor'), npcId: 'instructor', intent: 'Reporting to Officer Glun' }
-      : { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post' : 'Practising a dodge' };
+      : { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post'
+        : (snapshot.practiceGuards ?? 0) < 1 && snapshot.combat.hasShield ? 'Practising with the shield' : 'Practising a dodge' };
     // And the third subquest is the road west: out of the forest, over the Caloss, on to
     // Nothom, where Iven holds the assignment. The journey below takes it from the boundary.
     default: break;
@@ -548,23 +541,23 @@ function nearestOf(points, position) {
  */
 export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
-  let active = false, intent = '', reason = '', lastYaw = null, move = { forward: 0, side: 0, run: false };
+  let active = false, intent = '', reason = '', lastYaw = null, guard = false, walkPoint = null, move = { forward: 0, side: 0, run: false };
   let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
-  let progressKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
+  let progressKey = '', goalKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
-    active = true; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
-    progressKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
+    active = true; guard = false; walkPoint = null; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
+    progressKey = ''; goalKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
   }
 
   function stop(why = 'stopped') {
     if (!active) return false;
-    active = false; stopReason = why; move = { forward: 0, side: 0, run: false }; lastYaw = null; intent = '';
+    active = false; guard = false; walkPoint = null; stopReason = why; move = { forward: 0, side: 0, run: false }; lastYaw = null; intent = '';
     notify({ type: 'stop', reason: why });
     return true;
   }
@@ -574,6 +567,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     const gap = distance(position, target);
     if (gap <= radius) { move = { forward: 0, side: 0, run: false }; return true; }
     const waypoint = nextWaypoint(position, target, world);
+    walkPoint = waypoint.point;
     let direction = freeDirection(position, waypoint.point, world, detourSide);
     if (detour > 0) {
       // Swap to a sidestep for a moment when progress has stalled.
@@ -629,6 +623,9 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
   }
 
   function trackProgress(snapshot, key, gap, dt) {
+    // Progress toward the next road corner counts even when the road bends away
+    // from the final destination. Otherwise every such bend triggers a sidestep.
+    if (walkPoint) { key += `:${walkPoint.x.toFixed(1)},${walkPoint.z.toFixed(1)}`; gap = distance(snapshot.position, walkPoint); }
     if (key !== progressKey) { progressKey = key; bestDistance = gap; timers.stuck = 0; timers.idle = 0; detour = 0; return; }
     // Ground gained toward the goal is progress, however long the road: only standing still runs the idle clock.
     if (gap < bestDistance - .05) { bestDistance = gap; timers.stuck = 0; timers.idle = 0; }
@@ -639,6 +636,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
 
   function step(dt = 1 / 60) {
     if (!active) return null;
+    guard = false; walkPoint = null;
     const snapshot = read();
     if (!snapshot) return null;
     timers.dialogue += dt; timers.interact += dt; timers.swing += dt; timers.idle += dt; timers.whistle += dt; timers.afoot = Math.max(0, timers.afoot - dt);
@@ -647,7 +645,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     const actions = [];
     lastYaw = null; move = { forward: 0, side: 0, run: false };
     const key = `${snapshot.questStage}:${goal.kind}:${goal.npcId ?? goal.siteId ?? ''}:${snapshot.journey?.stage ?? ''}`;
-    if (key !== progressKey) timers.idle = 0;
+    if (key !== goalKey) { goalKey = key; timers.idle = 0; }
     switch (goal.kind) {
       case 'begin': actions.push({ type: 'begin' }); timers.idle = 0; break;
       case 'retry': actions.push({ type: 'retry' }); timers.idle = 0; break;
@@ -668,7 +666,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'eat': if (timers.interact >= config.interactEvery) { actions.push({ type: 'eat', id: goal.item }); timers.interact = 0; } break;
       case 'fight': {
         const command = fightCommand(snapshot);
-        intent = command.intent; lastYaw = command.yaw; if (command.move) move = command.move;
+        intent = command.intent; lastYaw = command.yaw; guard = !!command.guard; if (command.move) move = command.move;
         for (const action of command.actions) {
           if (action.type === 'attack') { if (timers.swing >= config.swingEvery) { actions.push(action); timers.swing = 0; } }
           else actions.push(action);
@@ -723,6 +721,8 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
           if (snapshot.combat.action === 'idle' && snapshot.combat.stamina >= 6 && timers.swing >= config.swingEvery) {
             actions.push({ type: 'attack', yaw: Math.atan2(goal.target.x - snapshot.position.x, goal.target.z - snapshot.position.z) }); timers.swing = 0;
           }
+        } else if ((snapshot.practiceGuards ?? 0) < 1 && snapshot.combat.hasShield) {
+          guard = true;
         } else if (snapshot.practiceDodges < 1 && snapshot.combat.action === 'idle' && snapshot.combat.stamina >= 25) {
           const dx = goal.target.x - snapshot.position.x, dz = goal.target.z - snapshot.position.z, length = Math.hypot(dx, dz) || 1;
           actions.push({ type: 'dodge', x: -dz / length, z: dx / length });
@@ -744,6 +744,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     get intent() { return intent; },
     get move() { return move; },
     get yaw() { return lastYaw; },
+    get guard() { return guard; },
     get stopReason() { return stopReason; },
     get reason() { return reason; },
     onEvent(listener) { listeners.add(listener); return () => listeners.delete(listener); },

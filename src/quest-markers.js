@@ -1,38 +1,15 @@
 /**
- * Four kinds of mark over a head, so a player can tell at a glance what a
- * conversation is for before walking all the way to it:
- *
- *   main   the road the game is about - the letter, the officer at the post, the
- *          chapters and the destinations a chapter names. Gold, a cut stone, biggest.
- *   plot   a story of its own, with its own state and its own ending. Pale silver,
- *          a rolled sheet. The user has reserved silver for these and asked that none
- *          be built out yet (22 September 2026), so nothing wears it today.
- *   deed   a one-off that changes the world and does not move the plot: the bridge
- *          over the Caloss, which spares the next traveler the river. Copper, a ring.
- *   skill  somebody who will teach you something, or an errand that pays a skill -
- *          the rod, the acorns, the feeder, the pegs at Rena. Leaf green, a leaf.
- *
- * Each is a different silhouette as well as a different colour, because colour
- * on its own is not a signal everybody receives. Pure: src/characters.js builds
- * the meshes from this table and src/main.js reads `markerFor` once a frame.
- *
- * **What may be worn at all is the slate's business, not this file's**
- * (src/quest-slate.js): today that is gold and copper, and nothing else.
+ * Every quest uses the same filled diamond and lower ring. Its colour tells
+ * the category: gold for the main road, silver for an independent story,
+ * copper for a good deed, and green for a lesson. The live quest slate still
+ * controls which offers appear; this table only controls their appearance.
  */
 import { QUEST_DONE } from './game-state.js';
 import { questLive, BRIDGE_QUEST } from './quest-slate.js';
 
 export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill']);
-/**
- * One variant, and not a fourth kind: the arc's own gold, **open** — the ring with the cut
- * stone taken out of it. Solid gold is the muster road. Open gold is the next thing Drent
- * will teach you on the way there (`src/long-road.js`, docs/drent-long-road.md §2). Following
- * one never closes the other, so a teacher keeps their green leaf and the open gold rides over
- * whichever of them is next.
- *
- * It is a grade rather than a kind: the table above stays three, `MARKER_STYLE` stays three,
- * and `markerFor` answers `{ kind: 'main', open: true }`.
- */
+/** The optional long-road grade remains distinct for priority and saves, but
+ * wears the same filled gold symbol as the main road. */
 export const MARKER_OPEN = 'main-open';
 
 const style = (kind, shape, scale, colour, emissive, ring, ringEmissive, what) =>
@@ -41,15 +18,15 @@ const style = (kind, shape, scale, colour, emissive, ring, ringEmissive, what) =
 export const MARKER_STYLE = Object.freeze({
   main: style('main', 'diamond', 1, 0xf3c46a, 0xc17f24, 0xffeac1, 0xe5be70,
     'The road the game is about: the next thing that moves the story on.'),
-  plot: style('plot', 'scroll', .88, 0xe7e3d1, 0x8e97a4, 0xf6f3e6, 0xa9b0ba,
+  plot: style('plot', 'diamond', 1, 0xe7e3d1, 0x8e97a4, 0xf6f3e6, 0xa9b0ba,
     'A story of its own, with its own beginning and its own end.'),
-  deed: style('deed', 'ring', .84, 0xc87a3c, 0x8a4a18, 0xe6a163, 0xa65e22,
+  deed: style('deed', 'diamond', 1, 0xc87a3c, 0x8a4a18, 0xe6a163, 0xa65e22,
     'A small good deed: it changes the world and does not move the plot.'),
-  skill: style('skill', 'leaf', .82, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
+  skill: style('skill', 'diamond', 1, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
     'Somebody who will teach you something, or an errand that pays a skill.'),
 });
 
-// Open gold ranks under the solid stone and over a story of its own: the road the game is
+// The optional road ranks under the main road and over a story of its own: the road the game is
 // about first, then the road Drent would rather you took, then everything else.
 const RANK = Object.freeze({ main: 5, [MARKER_OPEN]: 4, plot: 3, deed: 2, skill: 1 });
 
@@ -60,11 +37,11 @@ export function strongestMarker(kinds) {
   return best;
 }
 
-/** A mark as the host uses it: which gold, and whether it is the open ring. */
+/** A mark as the host uses it: which category, and whether it belongs to the optional road. */
 const mark = grade => grade ? Object.freeze({ kind: grade === MARKER_OPEN ? 'main' : grade, open: grade === MARKER_OPEN }) : null;
 /** One word for a mark, so a mesh built for it can be cached and only rebuilt when it changes. */
 export const markerGrade = marker => !marker ? null : marker.open ? MARKER_OPEN : marker.kind;
-/** The look a mark wears. The open variant is the arc's own colours and shape; only the stone is missing. */
+/** The look a mark wears. The optional-road variant uses the same filled gold symbol. */
 export const markerStyle = marker => marker ? MARKER_STYLE[marker.kind] ?? MARKER_STYLE.main : null;
 
 /** The people who can carry a mark at all, by the name the host knows them under. */

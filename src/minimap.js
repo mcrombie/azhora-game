@@ -253,10 +253,9 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     dot(ctx, p.x, p.y, 3.2, '#ef9a72', '#533c2e'); counts.enemies++;
   }
 
-  // Three targets, and each is a different mark rather than a different colour: a filled gold
-  // diamond for the muster road, the same diamond drawn hollow for the long road's next stop
-  // (src/quest-markers.js, the open variant), and a green ring for a place the traveler pinned.
-  const drawTarget = (target, optional, hollow = false) => {
+  // Both quest destinations use the same filled gold diamond. A player-pinned
+  // place keeps its separate green ring because it is not a quest category.
+  const drawTarget = (target, optional) => {
     const p = project(target, { clampToRing: true, inset: 7 }); if (!p) return null;
     const color = optional ? '#8acfc2' : '#ffe0a0';
     ctx.lineWidth = 2;
@@ -266,8 +265,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
       const r = 4.5 + Math.sin((Number.isFinite(time) ? time : 0) * 3) * .55;
       ctx.beginPath(); ctx.moveTo(p.x, p.y - r); ctx.lineTo(p.x + r, p.y);
       ctx.lineTo(p.x, p.y + r); ctx.lineTo(p.x - r, p.y); ctx.closePath();
-      if (hollow) { ctx.strokeStyle = color; ctx.lineWidth = 1.7; ctx.stroke(); ctx.lineWidth = 2; }
-      else { ctx.fillStyle = color; ctx.fill(); }
+      ctx.fillStyle = color; ctx.fill();
     }
     if (p.clamped) {
       const dx = Math.sin(p.bearing), dy = -Math.cos(p.bearing);
@@ -279,7 +277,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     return { ...p, id: target.id || null };
   };
   result.optional = drawTarget(tracked, true);
-  result.openGoal = drawTarget(openGoal, false, true);
+  result.openGoal = drawTarget(openGoal, false);
   result.goal = drawTarget(goal, false);
   // The bird the traveler is watching, handed in by the host from src/bird-finder.js.
   // A pair of wings rather than a pin, because it is not a place and will not wait;

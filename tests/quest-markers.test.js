@@ -50,24 +50,24 @@ test('the first shore wears one mark, and it is the road the game is about', () 
   assert.equal(markerGrade(markerFor('corvan', view({ questStage: 3, chapterDestinations: ['corvan'] }))), 'main');
 });
 
-test('four kinds of mark, each its own colour and its own shape, with the main arc the biggest', () => {
+test('four quest categories share one symbol and size, each with its own colour', () => {
   assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill']);
   assert.deepEqual(Object.keys(MARKER_STYLE), [...MARKER_KINDS]);
-  const colours = new Set(), shapes = new Set();
+  const colours = new Set();
   for (const kind of MARKER_KINDS) {
     const style = MARKER_STYLE[kind];
     assert.equal(style.kind, kind);
     assert.ok(style.what.length > 20, `${kind} says what it means`);
     assert.ok(!colours.has(style.colour), `${kind} has a colour of its own`);
-    assert.ok(!shapes.has(style.shape), `${kind} has a shape of its own, so colour is not the only signal`);
-    colours.add(style.colour); shapes.add(style.shape);
+    assert.equal(style.shape, 'diamond');
+    colours.add(style.colour);
   }
   assert.equal(MARKER_STYLE.main.scale, 1);
   for (const kind of MARKER_KINDS.filter(one => one !== 'main'))
-    assert.ok(MARKER_STYLE[kind].scale < 1, `the arc is louder than ${kind}`);
+    assert.equal(MARKER_STYLE[kind].scale, MARKER_STYLE.main.scale, `${kind} uses the same size`);
 });
 
-test('each kind is built as a different set of shapes, and carries which kind it is', async () => {
+test('each category uses the same diamond and ring geometry, carrying its own colour and kind', async () => {
   const { makeQuestMarker } = await sourceModule('../src/characters.js');
   const built = new Map();
   for (const kind of MARKER_KINDS) {
@@ -75,12 +75,14 @@ test('each kind is built as a different set of shapes, and carries which kind it
     assert.equal(marker.name, 'quest-marker');
     assert.equal(marker.userData.markerKind, kind);
     assert.equal(marker.scale.x, MARKER_STYLE[kind].scale);
+    assert.equal(marker.children[0].material.color.getHex(), MARKER_STYLE[kind].colour);
     const shapes = [];
     marker.traverse(object => { if (object.isMesh) { shapes.push(object.geometry.type); assert.equal(object.castShadow, false, `${kind} casts no shadow`); } });
     assert.ok(shapes.length >= 2, `${kind} is drawn`);
     built.set(kind, shapes.sort().join(','));
   }
-  assert.equal(new Set(built.values()).size, MARKER_KINDS.length, `two kinds share a silhouette: ${[...built].map(([k, s]) => `${k}=${s}`).join(' | ')}`);
+  assert.equal(new Set(built.values()).size, 1, 'every quest category shares one silhouette');
+  assert.equal(built.get('main'), 'OctahedronGeometry,TorusGeometry');
   assert.equal(makeQuestMarker().userData.markerKind, 'main', 'the arc is what you get if nobody says');
   assert.equal(makeQuestMarker('rumour').userData.markerKind, 'main', 'and what you get for a kind that does not exist');
 });
@@ -135,7 +137,7 @@ test('the long road wears the arc’s own gold, open, and never instead of the a
   assert.equal(markerStyle(null), null);
 });
 
-test('the open gold is the cut stone with nothing in it, and reads apart from the solid one', async () => {
+test('the optional-road grade preserves its metadata but uses the same filled symbol', async () => {
   const { makeQuestMarker } = await sourceModule('../src/characters.js');
   const solid = makeQuestMarker('main'), hollow = makeQuestMarker('main', { open: true });
   assert.equal(hollow.userData.markerKind, 'main', 'the same kind');
@@ -143,9 +145,9 @@ test('the open gold is the cut stone with nothing in it, and reads apart from th
   assert.equal(solid.userData.markerOpen, false);
   assert.equal(hollow.scale.x, solid.scale.x, 'and the same size');
   const shapes = marker => { const out = []; marker.traverse(o => { if (o.isMesh) out.push(o.geometry.type); }); return out.sort().join(','); };
-  assert.notEqual(shapes(hollow), shapes(solid), 'a hollow stone is not a solid one');
-  assert.ok(!shapes(hollow).includes('Octahedron'), 'the stone is what is missing');
-  // Only the arc has an open variant; a leaf asked to be hollow is still a leaf.
+  assert.equal(shapes(hollow), shapes(solid), 'optional and main quests share their icon');
+  assert.ok(shapes(hollow).includes('Octahedron'), 'the optional-road stone is filled too');
+  // Only the main road can carry optional-road metadata; a lesson keeps its category.
   assert.equal(makeQuestMarker('skill', { open: true }).userData.markerOpen, false);
 });
 

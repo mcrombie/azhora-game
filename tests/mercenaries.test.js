@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { wildJourney } from '../src/wild-route.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
+import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, arrivalTime, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
@@ -13,6 +13,41 @@ const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 
 // gives both, and the queue at the landing is the men who actually came off a boat.
 const shore = { x: 40, z: -30 };
 const company = () => createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore });
+
+test('the ship and later company arrivals share the companion departure anchor', () => {
+  const start = 230;
+  assert.equal(arrivalTime(start - 1, start), -1);
+  assert.equal(arrivalTime(start, start), 0);
+  assert.equal(arrivalTime(start + ARRIVALS.word, start), ARRIVALS.word);
+  assert.equal(arrivalTime(500, null), -1, 'a pending event stays offstage');
+  assert.equal(arrivalTime(500), 500, 'direct preview clocks still work');
+  const before = company();
+  const anchored = createMercenaryCompany({ road, stops, muster: { x: -400, z: 250 }, landing: { x: 3, z: 3 }, shore, arrivalStartedAt: start });
+  const at = (clock, t, id) => clock.placements(t).find(person => person.id === id);
+  for (const entry of MERCENARY_ROSTER.filter(person => person.arrival > 0)) {
+    assert.equal(at(anchored, start + entry.arrival - 1, entry.id).phase, 'coming', entry.id);
+    assert.equal(at(anchored, start + entry.arrival + 1, entry.id).phase, 'landing', entry.id);
+    assert.deepEqual(at(anchored, start + entry.arrival + entry.departs + 20, entry.id),
+      at(before, entry.arrival + entry.departs + 20, entry.id), 'the actual journey shifts with its announcement');
+  }
+  assert.deepEqual(at(anchored, 100, 'merc-gotwood'), at(before, 100, 'merc-gotwood'), 'the first companion keeps his own lesson clock');
+  const released = createMercenaryCompany({ road, stops, muster: road.at(-1), landing: road[0], arrivalStartedAt: start,
+    companions: [{ id: 'merc-word', releasedAt: 500, releasedDistance: 200 }] });
+  assert.equal(at(released, 501, 'merc-word').phase, 'walking', 'an actual companion release is already in play time');
+});
+
+test('the landing lesson controls the initial mate until he sets off, without reclaiming later companions', () => {
+  const landingQuest = { id: 'merc-gotwood', departureAt: 200, roadDistance: 80,
+    placement: t => t < 200 ? { id: 'merc-gotwood', name: 'Chris Scotwood', phase: 'training', x: -80, z: 0, distance: 80 } : null };
+  const make = companions => createMercenaryCompany({ road, stops, muster: road.at(-1), landing: road[0], landingQuest, companions });
+  const at = (clock, t) => clock.placements(t).find(person => person.id === landingQuest.id);
+  assert.equal(at(make(), 199).phase, 'training');
+  assert.equal(at(make([{ id: landingQuest.id, releasedAt: 0, releasedDistance: 0 }]), 199).phase, 'training', 'new-game release sentinel still follows the lesson');
+  assert.equal(at(make(), 201).phase, 'walking');
+  assert.ok(at(make(), 201).distance >= 80, 'he sets off from the training stretch of road');
+  assert.equal(at(make([{ id: landingQuest.id, with: true }]), 199).phase, 'with-traveler', 'saved companions stay companions');
+  assert.equal(at(make([{ id: landingQuest.id, releasedAt: 170, releasedDistance: 220 }]), 199).phase, 'walking', 'a later real release is not forced back into training');
+});
 
 test('the company is eleven including the traveler, and the written arrivals never go backwards', () => {
   assert.equal(MERCENARY_ROSTER.length, MERCENARY_COMPANY_SIZE - 1);
@@ -24,7 +59,7 @@ test('the company is eleven including the traveler, and the written arrivals nev
   assert.equal(written[0].arrival, 0, 'Chris Scotwood lands beside the traveler');
   assert.equal(written[0].id, 'merc-gotwood');
   assert.equal(written.at(-1).arrival, ARRIVALS.princes);
-  assert.ok(ARRIVALS.princes >= 3600, 'the last pair arrive more than an hour of play later');
+  assert.equal(ARRIVALS.princes, 780, 'the last pair arrive within thirteen minutes of the ship being sighted');
   for (const m of MERCENARY_ROSTER) {
     assert.ok(m.pace > 1 && m.pace < 1.6 && m.departs > 0 && m.lines.length === 2 && m.origin && Number.isInteger(m.look.tunic), m.id);
     assert.ok(['road', 'shore', 'wild'].includes(m.route), m.name + ' gets here somehow');
@@ -191,9 +226,9 @@ test('placements keep the men on or beside the road, off the traveler’s landin
   }
   assert.equal(everWalked.size, MERCENARY_ROSTER.length, 'every man is on his way at some point');
   assert.ok(everWalked.has('merc-mus'), 'including the one who is on a line of his own');
-  // Three, and it is the three riders, who arrive together and argue the whole way. On this
+  // Nine at once on this short test road after the arrival schedule was tightened. On this
   // road, with these arrivals, that is as crowded as it gets.
-  assert.equal(busiest.count, 3, `the road is busiest with ${busiest.count} men on it, at ${busiest.t}s`);
+  assert.equal(busiest.count, 9, `the road is busiest with ${busiest.count} men on it, at ${busiest.t}s`);
   // Distances stay on the line they are measured along, all the way through. The wild man's is
   // his own and longer, which is the point of him.
   for (let t = 0; t <= 20000; t += 25) for (const p of c.placements(t)) {
@@ -212,8 +247,8 @@ test('placements keep the men on or beside the road, off the traveler’s landin
 
 test('a brisk traveler stays first; a slow one is passed; the rank says so', () => {
   const c = company();
-  // A traveler at the muster after 15 minutes is first of eleven.
-  assert.equal(c.travelerRank(900, c.musterDistance), 1);
+  // A traveler at the muster after 10 minutes is first of eleven.
+  assert.equal(c.travelerRank(600, c.musterDistance), 1);
   // A traveler still at the landing after two hours has been passed by everyone.
   assert.equal(c.travelerRank(7200, 0), MERCENARY_COMPANY_SIZE);
   // Between: some ahead, some behind.
@@ -251,7 +286,7 @@ test('a companion walking with you is off the road, never musters, and is behind
   assert.equal(walking.summary(50000).arrived, MERCENARY_ROSTER.length, 'he is ashore all the same');
   assert.equal(walking.companionId, 'merc-gotwood');
   // First of eleven means first: a man at your shoulder is not somebody who beat you to it.
-  assert.equal(walking.travelerRank(900, walking.musterDistance), 1);
+  assert.equal(walking.travelerRank(600, walking.musterDistance), 1);
   assert.match(mercenaryLines('merc-gotwood', { phase: 'with-traveler' })[1], /Right behind you/);
 });
 

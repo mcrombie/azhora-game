@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createCharacter, createGoblin, createWolf, createOgre, setShadowCasting, groundShadow } from './characters.js';
 // Every kind that has an articulated actor here. A kind without one (the practice
 // dummy) is drawn by the world instead, so the list is checked rather than assumed.
-const ACTOR_KINDS = ['goblin', 'wolf', 'soldier', 'ogre', 'sparring'];
+const ACTOR_KINDS = ['goblin', 'wolf', 'soldier', 'ogre', 'sparring', 'rebel'];
 
 // A handful of pooled effects and three articulated actors; nothing allocates
 // new geometry during a swing. Combat rules remain independent of the renderer.
@@ -44,7 +44,7 @@ export function createCombatView(scene, world, camera) {
   function createEnemy(enemy,index) {
     // A named body on the other side of a fight is drawn as himself, exactly as an ally is: that
     // is how a man you are sparring with looks like the man you are sparring with (src/teachers.js).
-    const actor=enemy.model?createCharacter({...enemy.model,armed:true}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):createGoblin({variant:index});scene.add(actor.group);
+    const actor=enemy.model?createCharacter({...enemy.model,armed:true}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):enemy.kind==='rebel'?createCharacter({role:'forest-woodcutter',armed:true}):createGoblin({variant:index});scene.add(actor.group);
     // A fight is a crowd of articulated figures: each shadow costs as much as the figure.
     setShadowCasting(actor,false);const enemyShade=groundShadow(enemy.kind==='wolf'?.3:.34);
     // The disc is a person's footprint; a creature this size needs its own.
@@ -60,7 +60,7 @@ export function createCombatView(scene, world, camera) {
     const edge=new THREE.Mesh(new THREE.RingGeometry(reach-.09,reach,40,1,from,span),new THREE.MeshBasicMaterial({color:0xf6c867,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
     edge.rotation.copy(sector.rotation);tell.add(edge);
     const badge=document.createElement('div');badge.className='enemy-badge';
-    const name=document.createElement('span');name.textContent=enemy.name||(enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='ogre'?'Mallec':enemy.kind==='soldier'?(enemy.look==='legion'?'Soldier':'Coalition soldier'):index===0?'Bramble scout':'Bramble raider');
+    const name=document.createElement('span');name.textContent=enemy.name||(enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='ogre'?'Mallec':enemy.kind==='soldier'?(enemy.look==='legion'?'Soldier':'Coalition soldier'):enemy.kind==='rebel'?'Rebel ambusher':index===0?'Bramble scout':'Bramble raider');
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
     const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;

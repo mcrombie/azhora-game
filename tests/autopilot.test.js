@@ -399,7 +399,7 @@ test('the roads are one network: a journey is routed across as many of them as i
   ];
   const route = roadRoute(paths, { x: 5, z: 3 }, { x: 255, z: 225 });
   assert.ok(route, 'there is a way');
-  assert.deepEqual(route[0], { x: 0, z: 0 });
+  assert.deepEqual(route[0], { x: 5, z: 0 }, 'join at the nearest point on the road, not the previous corner');
   assert.ok(route.some(p => p.x === 100 && p.z === 100), 'it turns up the second road');
   assert.deepEqual(route.at(-1), { x: 250, z: 202 }, 'as near as the connected roads go, not the lane that joins nothing');
   assert.equal(roadRoute(paths, { x: -500, z: -500 }, { x: 255, z: 225 }), null, 'nowhere near a road: no route');
@@ -448,12 +448,14 @@ test('from the Court of Oaths the way to the outpost on the Moros goes by the ro
     heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };
   const hall = aftermathSite('solis-hall'), home = sideSeat('empire');
   const position = { x: hall.x, z: hall.z };
-  let side = 1, best = Infinity, stalled = 0, arrived = false;
+  let side = 1, best = Infinity, stalled = 0, arrived = false, waypointKey = '';
   for (let step = 0; step < 6000 && !arrived; step++) {
     const gap = Math.hypot(home.x - position.x, home.z - position.z);
     if (gap < home.reach - 12) { arrived = true; break; }
-    if (gap < best - .05) { best = gap; stalled = 0; } else if ((stalled += .05) > 12) break;
     const waypoint = nextWaypoint(position, home, adapter);
+    const key = `${waypoint.point.x.toFixed(1)},${waypoint.point.z.toFixed(1)}`;
+    const leg = Math.hypot(waypoint.point.x - position.x, waypoint.point.z - position.z);
+    if (key !== waypointKey || leg < best - .05) { waypointKey = key; best = leg; stalled = 0; } else if ((stalled += .05) > 12) break;
     const dir = freeDirection(position, waypoint.point, adapter, side);
     if (!dir || (!dir.x && !dir.z)) { side = -side; continue; }
     moveCharacter(position, dir.x * 7.2 * .05, dir.z * 7.2 * .05, adapter);
@@ -505,4 +507,79 @@ test('a broken blade is mended before the next fight, and a fight with one is le
   const mended = planGoal({ ...base, weapon: broken }, world);
   assert.equal(mended.kind, 'use', `the blade is mended first, not ${mended.intent}`);
   assert.equal(planGoal({ ...base, weapon: { usable: true, condition: 20 } }, world).kind, 'talk', 'with a sound blade, back to the commander');
+});
+
+
+test('clear open ground is no excuse to cut a road bend or a junction', () => {
+  const world = { ...fakeWorld(), bounds: { minX: -200, maxX: 200, minZ: -600, maxZ: 200 }, colliders: [], paths: [
+    [{ x: 0, z: 0 }, { x: 0, z: -200 }, { x: 100, z: -200 }],
+    [{ x: 100, z: -200 }, { x: 100, z: -400 }],
+  ] };
+  assert.deepEqual(nextWaypoint({ x: 0, z: -80 }, { x: 100, z: -190 }, world),
+    { point: { x: 0, z: -200 }, onTrail: true }, 'keep the bend with a destination just off the road');
+  assert.deepEqual(nextWaypoint({ x: 0, z: -80 }, { x: 100, z: -350 }, world),
+    { point: { x: 0, z: -200 }, onTrail: true }, 'enter the next road by its junction on open ground');
+  assert.deepEqual(nextWaypoint({ x: 7, z: -80 }, { x: 100, z: -350 }, world),
+    { point: { x: 0, z: -80 }, onTrail: true }, 'a sidestep round a tree rejoins the road');
+  assert.deepEqual(nextWaypoint({ x: 100, z: -340 }, { x: 112, z: -350 }, world),
+    { point: { x: 112, z: -350 }, onTrail: false }, 'the last few steps to someone off the road stay direct');
+});
+
+test('autoplay raises a carried shield toward the threat and releases it to attack', () => {
+  const threat = { id: 'rebel', x: 0, z: -2.6, action: 'windup', progress: .3, active: true, hp: 50 };
+  const state = snapshot({ questStage: QUEST_DONE, position: { x: 0, z: 0 },
+    combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, hasShield: true, guardCost: 18, enemies: [threat] } });
+  const block = fightCommand(state);
+  assert.equal(block.guard, true);
+  assert.ok(Number.isFinite(block.yaw));
+  assert.equal(block.actions.length, 0, 'do not start an attack while the shield is needed');
+  threat.action = 'attack'; threat.progress = .65;
+  assert.equal(fightCommand(state).guard, true, 'hold through the whole swing, including kinds with late contact');
+  threat.action = 'windup'; threat.progress = .3;
+  // The nearest man is harmless; the one to the side is winding up.
+  state.combat.enemies.unshift({ ...threat, id: 'recovering', x: 1, z: 0, action: 'recover' });
+  assert.equal(fightCommand(state).yaw, block.yaw, 'face the strike, not simply the nearest enemy');
+  const pilot = createAutopilot({ world: fakeWorld(), read: () => state });
+  pilot.start(); pilot.step(.5); assert.equal(pilot.guard, true);
+  threat.action = 'recover'; threat.x = 0; threat.z = -2;
+  const counter = pilot.step(.5);
+  assert.equal(pilot.guard, false); assert.equal(counter.actions[0]?.type, 'attack');
+  threat.action = 'windup'; threat.progress = .8; state.combat.enemies = [threat]; state.combat.stamina = 26; state.combat.guardCost = 30;
+  assert.equal(fightCommand(state).actions[0]?.type, 'dodge', 'an unaffordable block falls back to a dodge');
+  state.combat.guardCost = 18; pilot.step(.1); assert.equal(pilot.guard, true);
+  pilot.stop(); assert.equal(pilot.guard, false, 'taking manual control never leaves a held shield behind');
+});
+
+test('autoplay completes the held-shield lesson before practising its dodge', () => {
+  const world = fakeWorld();
+  const state = snapshot({ questStage: 2, lessonSet: true, practiceHits: 2, practiceGuards: 0,
+    position: { x: world.training.x, z: world.training.z + 1.5 },
+    combat: { phase: 'peaceful', action: 'idle', stamina: 100, hp: 100, hasShield: true, enemies: [] } });
+  const pilot = createAutopilot({ world, read: () => state });
+  pilot.start();
+  for (let i = 0; i < 10; i++) {
+    const command = pilot.step(.1);
+    assert.equal(pilot.guard, true); assert.ok(Number.isFinite(command.yaw));
+    assert.deepEqual(command.actions, []);
+  }
+  state.practiceGuards = 1;
+  const dodge = pilot.step(.1);
+  assert.equal(pilot.guard, false); assert.equal(dodge.actions[0]?.type, 'dodge');
+  state.mode = 'dialogue'; pilot.step(.1); assert.equal(pilot.guard, false);
+});
+
+
+test('a road that first bends away from the goal does not trigger false stuck detours', () => {
+  const world = { ...fakeWorld(), bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 }, colliders: [],
+    paths: [[{ x: 0, z: 0 }, { x: 0, z: 100 }, { x: 100, z: 100 }, { x: 100, z: 0 }]], border: { x: 100, z: 0 } };
+  const state = snapshot({ questStage: QUEST_DONE, position: { x: 0, z: 0 } });
+  const pilot = createAutopilot({ world, read: () => state });
+  pilot.start();
+  for (let i = 0; i < 70; i++) {
+    const command = pilot.step(.1), yaw = command.yaw, move = command.move;
+    state.position.x += (-Math.sin(yaw) * move.forward + Math.cos(yaw) * move.side) * .72;
+    state.position.z += (-Math.cos(yaw) * move.forward - Math.sin(yaw) * move.side) * .72;
+    assert.ok(Math.abs(state.position.x) < .01, 'hold the first leg instead of detouring sideways');
+  }
+  assert.ok(state.position.z > 40); assert.equal(pilot.active, true);
 });

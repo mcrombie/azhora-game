@@ -318,12 +318,21 @@ export function createRegionScenery(kit) {
   const broken = along => along >= BREAK.from && along <= BREAK.to;
   for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) {
     if (broken(along)) continue;
-    box(woodLight, .8, deckY, along, 3.9, .18, .64, bridge);
+    box(woodLight, 0, deckY, along, 5.1, .18, .64, bridge);
   }
+  // Both the floor and its silhouette must be broken. Unbroken handrails and
+  // girders across a missing deck read as a usable bridge from the Drent road.
+  const spanTimber = (parent, from, to, side) => {
+    const middle = (from + to) / 2, length = to - from;
+    box(darkWood, side * 2.55, deckY - .4, middle, .25, .5, length, parent);
+    box(wood, side * 2.6, deckY + .71, middle, .13, .13, length, parent);
+  };
   for (const side of [-1, 1]) {
-    box(darkWood, side * 2.55, deckY - .4, 0, .25, .5, HALF_SPAN * 2, bridge);
-    for (let along = -HALF_SPAN; along <= HALF_SPAN; along += 4) post(wood, side * 2.6, deckY + .17, along, .12, 1.6, bridge);
-    box(wood, side * 2.6, deckY + .71, 0, .1, .1, HALF_SPAN * 2 - 1, bridge);
+    spanTimber(bridge, -HALF_SPAN, BREAK.from, side);
+    spanTimber(bridge, BREAK.to, HALF_SPAN, side);
+    for (let along = -HALF_SPAN; along <= HALF_SPAN; along += 4) {
+      if (!broken(along)) post(wood, side * 2.6, deckY + .17, along, .12, 1.6, bridge);
+    }
     // Thin rails: a line of small colliders, because the deck runs at an angle
     // to the world axes and an axis-aligned box would swallow the whole lane.
     // They reach from the deck's own edge out to where the water blockers begin
@@ -342,19 +351,54 @@ export function createRegionScenery(kit) {
   luscia.add(repairedDeck); movingGroups.add(repairedDeck);
   repairedDeck.position.copy(bridge.position); repairedDeck.rotation.y = roadHeading;
   for (let along = -HALF_SPAN; along <= HALF_SPAN; along += .7) {
-    box(woodLight, -1.58, deckY, along, 1.2, .18, .64, repairedDeck);
-    // And the span itself, relaid: mended, the bridge is exactly the bridge it always was.
-    if (broken(along)) box(woodLight, .8, deckY, along, 3.9, .18, .64, repairedDeck);
+    if (broken(along)) box(woodLight, 0, deckY, along, 5.1, .18, .64, repairedDeck);
+  }
+  for (const side of [-1, 1]) {
+    spanTimber(repairedDeck, BREAK.from, BREAK.to, side);
+    for (let along = -HALF_SPAN; along <= HALF_SPAN; along += 4) {
+      if (broken(along)) post(wood, side * 2.6, deckY + .17, along, .12, 1.6, repairedDeck);
+    }
   }
   repairedDeck.visible = false;
   const brokenCord = new THREE.Group();
   brokenCord.name = 'Bridge repair cord';
   brokenCord.position.copy(bridge.position); brokenCord.rotation.y = roadHeading;
   luscia.add(brokenCord); movingGroups.add(brokenCord);
-  // A cord strung across the near lip of the break, which is what somebody does before they
-  // have the timber to do anything better.
-  rope([new THREE.Vector3(-2.45, deckY + .59, BREAK.from), new THREE.Vector3(.8, deckY + .38, BREAK.from),
-    new THREE.Vector3(2.75, deckY + .59, BREAK.from)], .045, material('#cfaf6b'), brokenCord);
+  // Short splintered ends and fallen beams frame open water; no decorative
+  // timber bridges the hole. All damage vanishes when the crossing is mended.
+  const splinterGeometry = new THREE.BufferGeometry();
+  splinterGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
+    -.28, -.08, 0, .28, -.08, 0, .08, -.08, 1,
+    -.28, .08, 0, .28, .08, 0, .08, .08, 1,
+  ], 3));
+  splinterGeometry.setIndex([0, 1, 2, 3, 5, 4, 0, 3, 4, 0, 4, 1, 1, 4, 5, 1, 5, 2, 2, 5, 3, 2, 3, 0]);
+  splinterGeometry.computeVertexNormals();
+  const snappedWood = material('#c59a66');
+  for (const [lip, direction] of [[BREAK.from, 1], [BREAK.to, -1]]) {
+    for (let i = 0; i < 7; i++) {
+      const shard = mesh(splinterGeometry, snappedWood, -2.1 + i * .7, deckY - .03,
+        lip - direction * .23, 1, 1, .3 + ((i * 3) % 5) * .1, brokenCord);
+      shard.rotation.y = direction < 0 ? Math.PI : 0;
+      shard.rotation.x = direction * (.12 + (i % 3) * .16);
+    }
+    for (const side of [-1, 1]) {
+      const fallen = box(darkWood, side * 2.55, deckY - .66, lip + direction * .52,
+        .28, .35, 1.45, brokenCord);
+      fallen.rotation.x = direction * .58;
+      const rail = box(wood, side * 2.6, deckY + .35, lip + direction * .28,
+        .14, .14, 1.05, brokenCord);
+      rail.rotation.x = direction * .68;
+    }
+  }
+  // A conspicuous low warning cord stops at the same near lip as the collider.
+  // The repair marker is still reachable from the sound planks before it.
+  for (const side of [-1, 1]) post(wood, side * 2.45, deckY + .05, BREAK.from - .25, .1, 1.05, brokenCord);
+  rope([new THREE.Vector3(-2.45, deckY + .9, BREAK.from), new THREE.Vector3(0, deckY + .62, BREAK.from),
+    new THREE.Vector3(2.45, deckY + .9, BREAK.from)], .055, material('#d6b86e'), brokenCord);
+  for (const side of [-1, 1]) {
+    const warning = box(material('#b36e3b'), side * 1.8, deckY + .53, BREAK.from, .3, .47, .035, brokenCord);
+    warning.rotation.z = side * .12;
+  }
   // **The break closes the whole lane**, not one side of it: across the deck's full width and out
   // to the rails, so there is no edge of plank to sidle along and no corner to be caught on.
   const damagedColliders = [];

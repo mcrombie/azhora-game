@@ -321,16 +321,16 @@ test('a boat landing is announced, in the traveler\u2019s own notes and in the c
 
 test('the clock owes each landing once, and a game loaded past one owes nothing', () => {
   assert.equal(landingAt(0), null, 'nothing at the start');
-  assert.equal(landingAt(359), null);
-  assert.equal(landingAt(360).key, 'word');
-  assert.equal(landingAt(1079, 'word'), null, 'said once');
-  assert.equal(landingAt(1080, 'word').key, 'riders');
+  assert.equal(landingAt(ARRIVALS.word - 1), null);
+  assert.equal(landingAt(ARRIVALS.word).key, 'word');
+  assert.equal(landingAt(ARRIVALS.riders - 1, 'word'), null, 'said once');
+  assert.equal(landingAt(ARRIVALS.riders, 'word').key, 'riders');
   // Loading a save at minute fifty: everything up to then has already happened, so the next
   // thing owed is the next boat and not four bells at once.
-  const caughtUp = landingAt(3000);
+  const caughtUp = landingAt(ARRIVALS.eliana + 1);
   assert.equal(caughtUp.key, 'eliana', 'the latest one passed, not the earliest');
-  assert.equal(landingAt(3000, 'eliana'), null, 'and then nothing until the princes');
-  assert.equal(landingAt(3780, 'eliana').key, 'princes');
+  assert.equal(landingAt(ARRIVALS.eliana + 1, 'eliana'), null, 'and then nothing until the princes');
+  assert.equal(landingAt(ARRIVALS.princes, 'eliana').key, 'princes');
   assert.equal(landingAt(99999, 'princes'), null, 'there is no sixth boat');
   assert.equal(landingAt(NaN), null);
   assert.deepEqual(LANDING_KEYS, ['word', 'riders', 'lakota', 'eliana', 'princes']);

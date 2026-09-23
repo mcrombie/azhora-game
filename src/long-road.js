@@ -29,7 +29,7 @@
  * Pure: no DOM, no three.
  */
 import { subregion } from './map-fog.js';
-import { mercenaryById } from './mercenaries.js';
+import { ARRIVALS, mercenaryById } from './mercenaries.js';
 
 const freeze = Object.freeze;
 
@@ -594,25 +594,22 @@ export const stopGround = id => subregion(longRoadStop(id)?.subregion ?? '') ?? 
  * ------------------------------------------------------------------ */
 
 /**
- * A boat comes in at 6, 18, 33, 48 and 63 minutes, and each one closes a leg.
- *
- * Two of the five cannot be seen from where the player is meant to be standing — the fourth is
- * about twelve pixels tall from Fernway and the fifth is 430 m away from Rena, past the draw
- * range — and the harbour bell is silent until somebody has turned the sound on. So a landing is
- * *announced*: a caption in the traveler's own notes, and a line from whoever is walking with
- * him. Sight and the bell are a bonus (docs/drent-long-road-probe.md, the amendments).
+ * After the first companion finishes training, the ship is sighted and Ed comes ashore a
+ * minute later. Subsequent groups arrive three minutes apart. The host advances these notices
+ * silently outside the harbour hex and its neighbours; distance never stops the actual event.
+ * The dormant long-road route can still use its five arrivals without imposing hour-long waits.
  */
 const landing = (key, at, title, caption, said) => freeze({ key, at, title, caption, said });
 export const LANDINGS = freeze([
-  landing('word', 360, 'A BELL OFF THE STILLS', 'The harbour bell, once. Something came ashore that was not a boat.',
+  landing('word', ARRIVALS.word, 'A BELL OFF THE STILLS', 'The harbour bell, once. Something came ashore that was not a boat.',
     'That is the bell. No boat in the roads, so somebody has swum it — which narrows it to one man, and he will tell you about it for an hour.'),
-  landing('riders', 1080, 'THREE BELLS', 'Three at once, and an argument coming up the village street.',
+  landing('riders', ARRIVALS.riders, 'THREE BELLS', 'Three at once, and an argument coming up the village street.',
     'Three bells, three of ours. They came overland and they have been arguing since the crossing; you will hear them before you see them.'),
-  landing('lakota', 1980, 'A BELL OFF THE STILLS', 'One more off the Stills. Six still to come.',
+  landing('lakota', ARRIVALS.lakota, 'A BELL OFF THE STILLS', 'One more off the Stills. Six still to come.',
     'One more in. That is over half of us on this coast now, and the Marshal is still waiting on the eleventh, who is you.'),
-  landing('eliana', 2880, 'A BELL OFF THE STILLS', 'Another one landed, and the light is going a little.',
+  landing('eliana', ARRIVALS.eliana, 'A BELL OFF THE STILLS', 'Another one landed, and the light is going a little.',
     'Another. She came on her own, by the sound of it — and she will have walked past you before you notice her.'),
-  landing('princes', 3780, 'TWO BELLS · THE LAST BOAT', 'Two bells, and no more boats are due. Everybody who is coming is ashore.',
+  landing('princes', ARRIVALS.princes, 'TWO BELLS · THE LAST BOAT', 'Two bells, and no more boats are due. Everybody who is coming is ashore.',
     'Two bells, and that is the last boat. Everyone on the contract is in this country now except the man at the far end of it, and the Marshal is holding the whole thing for you.'),
 ]);
 export const LANDING_KEYS = freeze(LANDINGS.map(entry => entry.key));
