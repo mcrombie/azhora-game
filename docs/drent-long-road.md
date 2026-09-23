@@ -15,9 +15,9 @@ stops `main.js` gives the company (Corvan 90 s, Chip 60 s, Iven 120 s) and the m
 camp (1,277 m along a 1,677 m road), each of the ten does this, in minutes of play (landing and
 leaving as m:ss, the rest as decimal minutes):
 
-| Who | Lands | Leaves the landing | Caloss Gate | Corvan | Chip | Iven | Musters |
+| Who | Lands | Leaves the landing | Wood’s edge | Corvan | Chip | Iven | Musters |
 |---|---|---|---|---|---|---|---|
-| Chris Gotwood (today's clock) | 0:00 | 7:00 | 9.5 | 12.6 | 17.4 | 21.8 | 28.1 |
+| Chris Scotwood (today's clock) | 0:00 | 7:00 | 9.5 | 12.6 | 17.4 | 21.8 | 28.1 |
 | Ed the Word | 6:00 | 9:00 | 11.4 | 14.4 | 19.0 | 23.3 | 29.4 |
 | Jerry, Kristen, Ciarán | 18:00 | 19:30 | 22.0 | 25.0 | 29.7 | 34.1 | 40.1 – 40.9 |
 | Lakota | 33:00 | 34:00 | 36.6 | 39.8 | 44.7 | 49.2 | 55.7 |
@@ -157,7 +157,7 @@ Three people move. Everybody else stays. Ids do not change.
 | Bowden, Troy, Tamsin, Bran, Eren | the near wood and the Watch | stay | Built places: a woodlot, a bee fold, a pond, a watch. |
 | Hesta and Applegarth's five, Chip | the west of Drent | stay | Already where the road needs them. |
 
-Today seven teachers stand within a hundred metres of the pier and the 245 m from the Caloss Gate
+Today seven teachers stand within a hundred metres of the pier and the 245 m from the wood’s edge
 to the clearing teaches nothing. After: three at the harbour, two in the near wood, one at
 Fernway, two in the clearing, two on the Caloss road, one at the bridge. Geology was already laid
 out this way — its stones run from the Weatherhead shingle to the granite at the crossing

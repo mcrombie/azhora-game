@@ -410,7 +410,7 @@ men are placed at 2.2 m or more.
 | 7 | Matt | 4.3 m | 25.9, 32.2 | −5.74 | 120 s from t=3780 |
 | 8 | Al the Tun | 4.6 m | 25.2, 25.0 | −5.53 | 120 s from t=3780 |
 
-The other five land on the pier. Chris Gotwood at index 0 needs 2.2 m and his bearing is
+The other five land on the pier. Chris Scotwood at index 0 needs 2.2 m and his bearing is
 standable to exactly 2.2 m, so he is on the edge of it.
 
 **What it looks like in play** depends on where the traveler is, and both readings are wrong.
@@ -3651,7 +3651,7 @@ numbers for both levers, lone traveler, 40 seeds:
 | level 10 / toughness 8 | 28/40 | 58 % | 6.0 of 6 | 0 |
 | **level 15 / toughness 12** | **32/40** | **59 %** | **5.9 of 6** | **0** |
 | level 20 / toughness 17 (= Altun's own) | 34/40 | 61 % | 5.8 of 6 | 0 |
-| level 30 / toughness 26 (= Gotwood's) | 39/40 | 83 % | 5.0 of 6 | 0 |
+| level 30 / toughness 26 (= Scotwood's) | 39/40 | 83 % | 5.0 of 6 | 0 |
 | level 40 / toughness 34 (= Jerry's) | 40/40 | 94 % | 3.1 of 6 | 0 |
 
 **The honest single lever is B at level 15 / toughness 12.** It keeps six men and keeps the cost -

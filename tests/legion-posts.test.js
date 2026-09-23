@@ -5,10 +5,12 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from '../src/legion-posts.js';
 
-test('eleven army posts line the road, each with a name, a rank, a model and two lines', () => {
-  assert.equal(LEGION_POSTS.length, 11, 'with the picket sergeant at the Lauvel that makes twelve Empire soldiers');
-  assert.equal(LEGION_POST_IDS.size, 11);
-  assert.equal(new Set(LEGION_POSTS.map(entry => entry.name)).size, 11);
+test('nine army posts line the road, each with a name, a rank, a model and two lines', () => {
+  // Eleven until 22 September 2026, when the Caloss Gate came out of the world and Footman Bram
+  // and Footman Dusk went with it: the army does not keep a place that is not there.
+  assert.equal(LEGION_POSTS.length, 9, 'with the picket sergeant at the Lauvel that makes ten Empire soldiers');
+  assert.equal(LEGION_POST_IDS.size, 9);
+  assert.equal(new Set(LEGION_POSTS.map(entry => entry.name)).size, 9);
   for (const entry of LEGION_POSTS) {
     assert.ok(['legionary', 'officer'].includes(entry.rank), entry.id);
     assert.equal(entry.modelRole, entry.rank === 'officer' ? 'legion-officer' : 'legion-soldier');

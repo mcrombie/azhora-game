@@ -65,6 +65,9 @@ export const TROUPE_PEOPLE = freeze([
   member('troupe-pim', 'pim', 'Pim Belloss', 'Clown of Talaelos', [1.6, 2.5, -.4], [1.6, .3, -.35]),
   member('troupe-nilor', 'nilor', 'Old Nilor', 'Book-holder of Talaelos (the book is blank)', [-3.1, 1.3, .9]),
   member('troupe-zaela', 'zaela', 'Zaela Caeren', 'Musician of Talaelos', [3.0, 1.7, -.7]),
+  // **Amanda, and no surname** (the user, 22 September 2026: keep it unknown for now). Everybody
+  // else in the company has one; hers has not been said, and nobody is to invent one.
+  member('troupe-amanda', 'amanda', 'Amanda', 'Player of every other part in Talaelos', [-1.0, 3.6, .1], [-.3, .62, .18]),
   member('troupe-understudy', 'understudy', 'Understudy', 'The company dog (he understudies every part)', [.9, 3.6, 2.4]),
   member('troupe-critic', 'critic', 'The Critic', 'The company mare', [4.9, 0, Math.PI / 2]),
 ]);
@@ -297,6 +300,14 @@ const UNDERSTUDY_GREETINGS = freeze([
   'Understudy offers you a paw, then the other paw, then a third paw from somewhere, which is not his.',
   'Understudy sniffs your hand, decides you are a supporting part, and wags.',
 ]);
+/** What she becomes when somebody asks her to, without standing up or taking a breath first. */
+const AMANDA_PARTS = freeze([
+  'Her shoulders come up, her voice goes flat and careful, and she is a customs man at a river crossing who has decided to be difficult about your cart. It takes about a second. She does not blink out of it for some time.',
+  'She holds her own elbow, looks somewhere past your ear, and is a widow at a graveside being extremely polite to the man who did it.',
+  'She is suddenly enormous \u2014 nothing has changed but the way she is standing \u2014 and she asks you, as the first king of somewhere, whether you have brought the thing you promised.',
+  'She is an innkeeper who has run out of everything and is very pleased about it. You catch yourself apologising to her.',
+  'She becomes a crowd. One woman, four voices, all of them wanting to know what happened, and you can hear how many of them there are.',
+]);
 const CRITIC_GREETINGS = freeze([
   'The Critic looks at you for a long moment, and sighs.',
   'The Critic has seen better. She makes sure you know it.',
@@ -344,6 +355,19 @@ export function troupeConversation(npc, context) {
       { id: 'nilor-prompt', label: 'Prompt me.', action: () => talk([`He runs a finger down an empty page, frowns, and whispers: “${pick(random, NILOR_PROMPTS)}”`]) },
       { id: 'nilor-goat', label: 'What happened to the goat?', action: () => talk(['We left her in Luscia, with a good family and a bad review.']) },
       { id: 'leave-nilor', label: 'Good reading.', action: closeDialogue },
+    ] });
+    return true;
+  }
+  if (who.model === 'amanda') {
+    openDialogue(npc, [context.again ? 'Who now?' : 'Amanda. I am the innkeeper, the widow, the second king, the customs man and the crowd. Galeon is only ever Galeon, which is a living but it is not a range.'], null, 'Let her get on', { choices: [
+      { id: 'amanda-play', label: 'Play somebody.', action: () => talk([pick(random, AMANDA_PARTS)]) },
+      { id: 'amanda-keep', label: 'How do you keep them straight?', action: () => talk([
+        'One thing each. The widow holds her elbow. The customs man never finishes a sentence. The second king is frightened of the first one.',
+        'That is all a person is from thirty feet. Up close you would want more, but up close nobody is paying.']) },
+      { id: 'amanda-self', label: 'Do you ever play yourself?', action: () => talk([
+        'I tried it once, in Nemmel. Nobody believed a word of it and Pim asked afterwards who I was supposed to be.',
+        'So no. I will be anybody you like and I would rather not be me in front of two hundred people.']) },
+      { id: 'leave-amanda', label: 'Until tonight.', action: closeDialogue },
     ] });
     return true;
   }

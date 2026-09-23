@@ -155,7 +155,7 @@ a comment naming that failure. Not a bug.
   `tests/save-round-trip.test.js` already covers it (49 files export a validator; all six new ones
   pass).
 - **Playing as somebody other than Cromb.** All eleven companies are well formed (ten distinct
-  men, never the player, everybody musters). Play as anybody but Cromb or Gotwood and Cromb is on
+  men, never the player, everybody musters). Play as anybody but Cromb or Scotwood and Cromb is on
   the landing at t = 0 beside Chris whatever boat the man he replaced came on — the code's comment
   says "his own hour", so design. Untested: a save made as one character loaded as another.
 - Open from earlier rounds, all reported, none mine to fix: five of the company wait on the

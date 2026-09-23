@@ -35,7 +35,9 @@ export const REFUGEE_REST = 90;
  */
 export const REFUGEE_RESTS = Object.freeze([
   Object.freeze({ id: 'caloss-crossing', at: 230, note: 'They are sitting on the parapet of the Caloss bridge with their boots off.' }),
-  Object.freeze({ id: 'caloss-gate', at: 700, note: 'They are sitting against the field gate where Tidehaven’s wood begins.' }),
+  // The stop's id is older than the ground: the gate that stood here came out on 22 September
+  // 2026 and the id stays, because a saved column is walking to it.
+  Object.freeze({ id: 'caloss-gate', at: 700, note: 'They are sitting in the last of the shade where Tidehaven’s wood gives out.' }),
 ]);
 
 export const REFUGEES = Object.freeze([

@@ -312,7 +312,7 @@ An **encounter** is a named fight with a place and a list of who is in it. [`src
 
 There are three layers stacked on each other, and they are genuinely different things.
 
-**The tutorial** is the smallest and oldest: eleven steps in [`questSteps`](../src/game-state.js#L35), advanced by [`advanceQuest(stage, event)`](../src/game-state.js#L48), which is a plain list of `if (stage === 3 && event === 'ambush') return 4;`. That runs from the boat to the Caloss Gate and then stops.
+**The tutorial** is the smallest and oldest: four steps in [`questSteps`](../src/game-state.js#L35), advanced by [`advanceQuest(stage, event)`](../src/game-state.js#L48), which is a plain list of `if (stage === 2 && event === 'trained') return 3;`. That runs from the boat to Nothom and then stops.
 
 **The chapters** are what the player reads. [`src/story-chapters.js`](../src/story-chapters.js) numbers them and gives each a goal, and a chapter is finished when its own `done(state)` function says so, from the same views the journal already has. Each chapter that is playable in 3D has a module: [`luscia-chapter.js`](../src/luscia-chapter.js) (the field at the Lauvel), [`moros-chapter.js`](../src/moros-chapter.js) (the army on the plain), [`border-chapter.js`](../src/border-chapter.js) (the envoy and the battle), [`aftermath-chapter.js`](../src/aftermath-chapter.js) (the four ways the day after can go).
 
@@ -762,7 +762,7 @@ All 198 files, alphabetically. The description is taken from the file's own head
 
 Words the project uses in its own particular way.
 
-**The road.** The playable main route: Tidehaven → the Greenway → Fernway Rest → the Caloss Gate → across the Caloss into Luscia → Nothom → the Moros Plain → Solis. `world.paths[0]` is the main road and the autopilot follows it, so it must stay first in that list.
+**The road.** The playable main route: Tidehaven → the Greenway → Fernway Rest → the edge of the wood → across the Caloss into Luscia → Nothom → the Moros Plain → Solis. `world.paths[0]` is the main road and the autopilot follows it, so it must stay first in that list.
 
 **The chart.** The continental atlas, opened with `M`. Blank at the start and uncovered as you walk. Not to be confused with the *local trail map* (`L`) or the *minimap* in the corner.
 

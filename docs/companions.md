@@ -5,7 +5,7 @@ with a mercenary is how you learn the weapon they carry, so companions must exis
 can. Written before any code, as briefed.
 
 **The rule that shapes everything else:** the long road already built one companion — Chris
-Gotwood walking Drent at your shoulder, `phase: 'with-traveler'`, released and taken back. This
+Scotwood walking Drent at your shoulder, `phase: 'with-traveler'`, released and taken back. This
 is not a second system beside it. It is the same system, in which Chris walking Drent with you is
 simply the first case and the only one that is automatic.
 
@@ -47,7 +47,7 @@ each has one moment where asking is natural. Nobody is recruited from a menu.
 
 | Who | Where he is asked | What makes him say yes |
 |---|---|---|
-| **Chris Gotwood** | off the boat, automatic | he is already walking with you; the long road's slot rule (or Cromb, when you are Chris) |
+| **Chris Scotwood** | off the boat, automatic | he is already walking with you; the long road's slot rule (or Cromb, when you are Chris) |
 | **Ed the Word** | on his own strand, minute 6 to 31 | "A man wants an adventure." He is the easiest yes in the game and says so |
 | **The three riders** | on the road together, from minute 18 | they are arguing about whether to stay together, and asking settles it. **Ciarán** goes with whoever is going. **Jerry** wants to split up anyway. **Kristen** will not leave the other two unless you can tell her the road — she says "you know the road and we do not", so she needs you to have charted it |
 | **Lakota** | Tidehaven's bird garden or the road | he stops for anything worth looking at; he comes if you have looked at one with him |

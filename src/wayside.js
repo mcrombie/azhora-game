@@ -8,7 +8,7 @@
  * left of the direction of travel). Drent is level 0: nothing here attacks.
  * Pure: no three, no DOM.
  */
-import { MAIN_ROAD, CALOSS_GATE, STORY_SITES } from './region-world.js';
+import { MAIN_ROAD, WOOD_EDGE, STORY_SITES } from './region-world.js';
 
 /** A frame on a road `arc` metres past `from`: position, heading and left-hand normal. */
 export function roadFrame(road, from, arc, offset = 0) {
@@ -27,12 +27,12 @@ export function roadFrame(road, from, arc, offset = 0) {
   return null;
 }
 
-const drent = (arc, offset) => roadFrame(MAIN_ROAD, CALOSS_GATE, arc, offset);
+const drent = (arc, offset) => roadFrame(MAIN_ROAD, WOOD_EDGE, arc, offset);
 const moros = (arc, offset) => roadFrame(MAIN_ROAD, STORY_SITES.morosGate, arc, offset);
 
 const place = (id, name, frame, radius, description, extra = {}) => Object.freeze({ id, name, x: frame.x, z: frame.z, radius, description, frame, ...extra });
 
-/** The forest road between the Caloss Gate and the Avrel clearing. Left of the road is south here. */
+/** The forest road between the edge of Tidehaven's wood and the Avrel clearing. Left of the road is south here. */
 export const DRENT_WAYSIDE = Object.freeze([
   place('charcoal-burners', 'The Charcoal Burners’ Clearing', drent(48, -22), 11,
     'Two turf-covered stacks smoke gently in a clearing cut back from the road. The burners sleep in a bark hut beside their mound and sell charcoal to the Avrel smith.'),

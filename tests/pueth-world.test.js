@@ -181,10 +181,10 @@ test('the Tessen bridge carries the road north over the water, rideable end to e
   assert.equal(blocked, sampled, 'no ford: the rivers are water everywhere but the bridge');
 });
 
-test('the road north leaves the main road past the Caloss Gate, clear of Tidehaven, and ends at the army’s Feradom barrier', () => {
+test('the road north leaves the main road past the edge of Tidehaven’s wood, clear of the village, and ends at the army’s Feradom barrier', () => {
   assert.ok(segmentDistance(PUETH_JUNCTION, MAIN_ROAD) < 1e-6, 'the junction is on the main road');
   assert.ok(Math.hypot(PUETH_JUNCTION.x, PUETH_JUNCTION.z - 29) > 190, 'the junction is outside the rigid Tidehaven ground');
-  assert.deepEqual(toWorld(-176, 29), { x: -176, z: 29 }, 'the Caloss Gate has not moved');
+  assert.deepEqual(toWorld(-176, 29), { x: -176, z: 29 }, 'the edge of the wood has not moved');
   for (const point of PUETH_ROAD) assert.ok(['Drent', 'Pueth'].includes(regionAt(point.x, point.z).name));
   assert.equal(regionAt(PUETH_ROAD.at(-1).x, PUETH_ROAD.at(-1).z).name, 'Pueth');
   assert.ok(Math.hypot(PUETH_ROAD.at(-1).x - FERADOM_BARRIER.x, PUETH_ROAD.at(-1).z - FERADOM_BARRIER.z) < 6);

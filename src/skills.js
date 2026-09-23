@@ -162,7 +162,7 @@ export const SKILLS = Object.freeze({
   blades: Object.freeze({
     id: 'blades', name: 'Blades', group: ARMS_HEADING,
     blurb: 'The sword and the dagger: an edge, a point, and the sense to keep both out of bone. Every blow you land with one teaches you a little about the next.',
-    teacher: 'Jojo\u2019s straw post on the pier, then Chris Gotwood for the sword and Ed the Word for the dagger',
+    teacher: 'Jojo\u2019s straw post on the pier, then Chris Scotwood for the sword and Ed the Word for the dagger',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'The sword as it has always been'), unlock(25, 'A third again the damage, and a swing that costs less'),
       unlock(50, 'Half as hard again as the man who landed off the boat'), unlock(75, 'Twice the damage of that first morning'),
@@ -237,6 +237,24 @@ export const SKILLS = Object.freeze({
     unlocks: Object.freeze([unlock(1, 'One fireball, three of them before the focus is out'),
       unlock(25, 'Half as much again, and it comes back quicker'), unlock(50, 'Twice the fire and twice the throwing of it'),
       unlock(75, 'A pool deep enough to fight out of'), unlock(99, 'Three times the fire, and sixteen of them')]),
+  }),
+  mind: Object.freeze({
+    id: 'mind', name: 'Mind', group: SORCERY_HEADING,
+    blurb: 'Hearing the thing somebody decided not to say. It gives you a second way to answer in any conversation, and what it turns up is theirs and not yours.',
+    teacher: 'Troy, in Cobble, if you find his murderer for him and ask for the lesson rather than the purse',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'One reading, and it costs a good deal of focus'),
+      unlock(25, 'Cheaper, so you can afford to be curious'), unlock(50, 'Half the focus of that first one'),
+      unlock(75, 'You can read a room rather than a man'), unlock(99, 'Ten focus, and almost nobody is closed to you')]),
+  }),
+  beast: Object.freeze({
+    id: 'beast', name: 'Beast', group: SORCERY_HEADING,
+    blurb: 'Asking something with more legs than you for a favour. At the first level that is bees, who come when called and leave when there is nothing to sting.',
+    teacher: 'Liz, in the woods of Pueth, if you bring her cat back alive and ask for the lesson rather than the purse',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'A swarm, for seven seconds, that goes for whoever goes for you'),
+      unlock(25, 'They stay longer and sting harder'), unlock(50, 'Twice the swarm of that first one'),
+      unlock(75, 'They come quicker and cost less'), unlock(99, 'Sixteen seconds of them, and they do not lose interest')]),
   }),
   frost: Object.freeze({
     id: 'frost', name: 'Frost', group: SORCERY_HEADING,

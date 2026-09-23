@@ -42,7 +42,7 @@ that moves, and that is fine.
 
 | Skill | Weapons | Who teaches it |
 |---|---|---|
-| **Blades** | simple sword, long dagger, and better swords | Chris Gotwood (sword), Ed the Word (dagger), Cromb when he is not you |
+| **Blades** | simple sword, long dagger, and better swords | Chris Scotwood (sword), Ed the Word (dagger), Cromb when he is not you |
 | **Heavy arms** | greatsword, mace, axe | Eliana (greatsword), Al the Tun (mace) |
 | **Polearms** | spear, pike, the thrown spear | Ciarán (spear), Matt (pike), Mus (the one that leaves the hand) |
 | **Staves** | quarterstaff, forest stick, walking club | Lakota |
@@ -210,7 +210,7 @@ at 1. Proposed, for the user to correct when the character profiles are written:
 | | Starts with |
 |---|---|
 | Cromb | nothing: Blades 1. The blank slate, and the only one who learns everything from the ground |
-| Chris Gotwood | Blades 30 |
+| Chris Scotwood | Blades 30 |
 | Ed the Word | Blades 35 (the dagger), Swimming 3 |
 | Jerry | Bows 40 |
 | Kristen | Blades 25, Shield 35 |

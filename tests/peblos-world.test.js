@@ -244,7 +244,9 @@ test('The islands carry their own scatter, and none of it stands in the village 
 
 test('Peblos is level one: fishing people, a bored garrison, and nothing that can kill the first hour', () => {
   assert.equal(REGION_DESIGN.find(entry => entry.id === 'Peblos').level, 1);
-  assert.equal(PEBLOS_NPCS.length, 11);
+  // Four islanders and four soldiers: the six who stood with Bregga Sell went with her when the
+  // murder took her out of the world (the user, 22 September 2026; src/murder-quest.js).
+  assert.equal(PEBLOS_NPCS.length, 8);
   assert.equal(PEBLOS_NPCS.filter(npc => npc.modelRole?.startsWith('legion')).length, 4, 'a lieutenant and three soldiers');
   assert.equal(PEBLOS_NPCS.every(npc => !npc.armed), true, 'nobody on the quay has a blade out');
   for (const npc of PEBLOS_NPCS) {
@@ -258,7 +260,7 @@ test('Peblos is level one: fishing people, a bored garrison, and nothing that ca
   const said = Object.values(PEBLOS_AMBIENT).flat().join(' ');
   assert.match(said, /one barrel in five|fifth barrel|barrel in five/i);
   assert.match(PEBLOS_AMBIENT['peblos-decurion'].join(' '), /count|share|barrel/i);
-  assert.match(PEBLOS_AMBIENT['cobble-netmistress'].join(' '), /Empire/);
+  assert.match(PEBLOS_AMBIENT['cobble-ari'].join(' '), /Empire/);
   // Nothing in the Pebbles fights: no enemy stands, no encounter arena, no armed collider.
   assert.equal(world.colliders.some(collider => collider.kind === 'enemy' && islandAt(collider.x, collider.z)), false);
   let opened = null;
@@ -273,7 +275,7 @@ test('The region card, the developer’s chart and the spawn tell the truth abou
   assert.ok(peblosRegion.description.includes('Cobble'));
   assert.ok(canStand(peblosRegion.spawn.x, peblosRegion.spawn.z, world), 'the region spawn is standable');
   assert.equal(regionAt(peblosRegion.spawn.x, peblosRegion.spawn.z).name, 'Peblos');
-  assert.equal(peblosRegion.npcIds.length, 12, 'eleven islanders and soldiers, and the boatman');
+  assert.equal(peblosRegion.npcIds.length, 10, 'four islanders, Troy, four soldiers, and the boatman');
   for (const id of peblosRegion.landmarks) assert.ok(PEBLOS_LANDMARKS.some(place => place.id === id), `${id} is not a place in Peblos`);
   assert.equal(BUILD_STATUS.Peblos.state, 'early');
   const status = regionBuildStatus('Peblos');

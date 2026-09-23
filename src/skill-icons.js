@@ -73,6 +73,9 @@ export const SKILL_ICONS = Object.freeze({
   // wards. The two that nobody teaches wear their marks already, so the grid does not change
   // shape on the day somebody does.
   fire: '<path d="M18 4c1 5-2.6 7-2.6 11.4a4 4 0 0 0 7.4 2.2C25 21 26 23.6 26 25.4 26 30 22.4 33 18 33S10 30 10 25.4C10 18 18 15 18 4Z"/>',
+  // A head in profile with a thread leaving it, for Mind; a bee over a skep, for Beast.
+  mind: '<path d="M23.5 6.5c-5.4 0-9.6 4-9.6 9.1 0 2.6-1 4-2.4 5.4-.9.9-.6 2.1.7 2.4l2.3.5v4.3c0 1.6 1.3 2.9 2.9 2.9h6.1"/><path d="M27.5 12.5c2.6 1.4 4 4.4 3.2 7.2"/>',
+  beast: '<path d="M9 28.5c0-6 4-10.5 9-10.5s9 4.5 9 10.5Z"/><path d="M11.8 24.2h12.4M13.4 20.6h9.2"/><ellipse cx="24.8" cy="10.4" rx="3.1" ry="2.2"/><path d="M24.8 8.2v4.4M22.2 7.6c-1.6-1.2-3.4-1.2-4.6 0M27.4 7.6c1.6-1.2 3.4-1.2 4.6 0"/>',
   frost: '<path d="M18 4v29"/><path d="M5.4 11.5 30.6 25.5"/><path d="M30.6 11.5 5.4 25.5"/><path d="M18 10.5 13.6 7M18 10.5 22.4 7M18 26.5 13.6 30M18 26.5 22.4 30"/>',
   wards: '<path d="M6 21c0-8.3 5.4-14 12-14s12 5.7 12 14"/><path d="M11.5 21c0-4.9 2.9-8.2 6.5-8.2s6.5 3.3 6.5 8.2"/><path d="M6 26.5h24"/>'
     + '<path d="M13.6 17.6 17 21l5.6-6.4"/>',

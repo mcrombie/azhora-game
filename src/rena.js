@@ -20,7 +20,7 @@
  * scale changes again, everything here needs a cluster of its own in the new
  * frame — see the head of `src/pueth-world.js`, which has the same problem.
  */
-import { MAIN_ROAD, AVREL_CLEARING, CALOSS_GATE, villageToWorld, hexOwnerAt } from './region-world.js';
+import { MAIN_ROAD, AVREL_CLEARING, WOOD_EDGE, villageToWorld, hexOwnerAt } from './region-world.js';
 import { roadFrame } from './wayside.js';
 
 const point = (x, z) => Object.freeze({ x, z });
@@ -57,12 +57,12 @@ export const applePoint = (a, b) => framePoint(APPLEGARTH.centre, a, b);
 // The old road: off the modern road, through the ruins, on to Applegarth
 // ---------------------------------------------------------------------------
 /**
- * The fork, 186 m along the main road past the Caloss Gate: past the timber
+ * The fork, 186 m along the main road past the edge of Tidehaven's wood: past the timber
  * landing, short of the Avrel clearing, and 360 m out from Tidehaven's landing,
  * so nothing of the rigid village ground is touched and no wayside place is
  * crowded.
  */
-export const RENA_JUNCTION = (() => { const frame = roadFrame(MAIN_ROAD, CALOSS_GATE, 186, 0); return point(frame.x, frame.z); })();
+export const RENA_JUNCTION = (() => { const frame = roadFrame(MAIN_ROAD, WOOD_EDGE, 186, 0); return point(frame.x, frame.z); })();
 
 /** The ruins' gates: the burnt east gate the old road comes in by, and the west gate it leaves by. */
 export const RENA_EAST_GATE = renaPoint(-34, 0);
@@ -288,7 +288,7 @@ export const RENA_CLEARINGS = Object.freeze([
 /** Fingerposts in the one sign language (src/signs.js): where they stand and what each finger points at. */
 export const RENA_SIGNS = Object.freeze([
   Object.freeze({ ...point(RENA_JUNCTION.x - 5.2, RENA_JUNCTION.z - 6), label: 'The Ruins of Rena', toward: RENA.centre,
-    back: (() => { const frame = roadFrame(MAIN_ROAD, CALOSS_GATE, 146, 0); return point(frame.x, frame.z); })(), backLabel: 'Tidehaven' }),
+    back: (() => { const frame = roadFrame(MAIN_ROAD, WOOD_EDGE, 146, 0); return point(frame.x, frame.z); })(), backLabel: 'Tidehaven' }),
   Object.freeze({ ...renaPoint(38, -6.5), label: 'Applegarth', toward: APPLEGARTH.centre, back: RENA.centre, backLabel: 'The Ruins of Rena' }),
 ]);
 

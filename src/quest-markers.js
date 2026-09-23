@@ -91,7 +91,7 @@ const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) 
  * Every teacher and every story in Drent used to light up from `questStage >= 1`, which is the
  * moment the traveler steps off the boat: the garden keeper, the pond fisher, the acorn cook,
  * the doomsayer and the forest all wore gold over the same village at once, before the player
- * had been told what any of it was. The tutorial ends at the Caloss Gate (`TUTORIAL_DONE`),
+ * had been told what any of it was. The tutorial ends where Tidehaven's wood does (`TUTORIAL_DONE`),
  * Drent opens, and that is when the country's own offers are worth pointing at. Until then
  * there is one mark on the screen and it is the road the game is about.
  *

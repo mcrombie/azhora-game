@@ -158,14 +158,18 @@ export const COBBLE_BUILDINGS = Object.freeze([
 export const SEA_SHRINE = Object.freeze({ id: 'sea-shrine', name: 'The Sea Shrine', ...point(324, 445), yaw: -Math.PI / 2 + .4 });
 
 /** Where each of Cobble's people stands, and the way each one faces. */
+/**
+ * **Cobble, after the murder** (the user, 22 September 2026). The six islanders who used to talk
+ * about the tally are gone and five people stand in their places, on the same measured ground:
+ * three suspects, the man who did it, and the sorcerer who was sent to find out which is which
+ * (src/murder-quest.js). The ids are new because the people are; the ground is not.
+ */
 export const COBBLE_STANDS = Object.freeze({
-  'cobble-netmistress': Object.freeze({ ...point(330, 426), yaw: -Math.PI / 2 }),       // outside the net loft, facing the quay
-  'cobble-boatwright': Object.freeze({ ...point(324.5, 438.5), yaw: -2.2 }),            // at the slip, over an upturned boat
-  'cobble-lobsterman': Object.freeze({ ...point(321.5, 432), yaw: -Math.PI / 2 }),      // at the quay root, by his pots
-  'cobble-salter': Object.freeze({ ...point(337.5, 433.2), yaw: -Math.PI / 2 }),        // by the drying racks at the salt house
-  'cobble-oldhand': Object.freeze({ ...point(332, 415), yaw: -1.1 }),                   // on the turf above the bay, watching the water
-  'cobble-keeper': Object.freeze({ ...point(326.5, 446.5), yaw: -Math.PI / 2 }),        // at the shrine
-  'cobble-runner': Object.freeze({ ...point(335, 423.5), yaw: 2.6 }),                   // on the village ground, between the two
+  'cobble-jessi': Object.freeze({ ...point(330, 426), yaw: -Math.PI / 2 }),             // outside the net loft, facing the quay
+  'cobble-weighmaster': Object.freeze({ ...point(321.5, 432), yaw: -Math.PI / 2 }),     // at the quay root, where the barrels are landed
+  'cobble-imani': Object.freeze({ ...point(337.5, 433.2), yaw: -Math.PI / 2 }),         // by the drying racks, where her kelp is
+  'cobble-ari': Object.freeze({ ...point(332, 415), yaw: -1.1 }),                       // on the turf above the bay, watching the water
+  'bee-keeper': Object.freeze({ ...point(335, 423.5), yaw: 2.6 }),                      // Troy, on the village ground, watching everybody
   'peblos-decurion': Object.freeze({ ...point(330.5, 434.5), yaw: -Math.PI / 2 }),      // at the tally table outside his shed
   'peblos-legionary-1': Object.freeze({ ...point(321, 426.5), yaw: -Math.PI / 2 }),     // on the quay, where the barrels come ashore
   'peblos-legionary-2': Object.freeze({ ...point(339, 438), yaw: 1.4 }),                // by the barrels at the racks, counting

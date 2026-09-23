@@ -82,7 +82,7 @@ test('the atlas is cut for the words this game will actually show, and halves wh
     for (const label of ENGLISH_SIGN_LABELS) assert.ok(cut.has(label), `${label} has a cell in normal mode`);
     // And with the foreign words in, a reader that cannot read still gets them.
     setForeignLettering(true);
-    assert.equal(signText('The Caloss Gate'), FOREIGN_SIGN_LABELS.get('The Caloss Gate'));
+    assert.equal(signText('Fernway Rest'), FOREIGN_SIGN_LABELS.get('Fernway Rest'));
   } finally { setSignReader(null); setForeignLettering(true); }
 });
 

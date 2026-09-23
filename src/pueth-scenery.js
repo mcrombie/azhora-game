@@ -4,6 +4,7 @@ import { WORLD_SCALE } from './world-scale.js';
 import {
   PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, TESSEN_POST, RIMEHOLT, RIMEHOLT_BUILDINGS, RIMEHOLT_YARD, rimeholtPoint,
   PUETH_NPC_POSITIONS, PUETH_SIGNS, HIDEOUT_TRAIL_PENNANTS, FERADOM_BARRIER, PUETH_LANDMARKS, puethRiverDistance,
+  LIZ_CLEARING, LIZ_SKEPS, LIZ_BENCH,
 } from './pueth-world.js';
 import { PUETH_RIVER_PROFILES, puethRiverSample, puethRiverHalfWidth, TESSEN_DECK_Y } from './world-terrain.js';
 import { SURVEY } from './region-world.js';
@@ -262,6 +263,30 @@ export function createPuethScenery(kit) {
   colliders.push({ x: cartSpot.x, z: cartSpot.z, r: 2.1, kind: 'cart' });
   for (const [a, b2, length, turn] of [[-20, 20, 9, 0], [20, -21, 8, 0], [-33, 3, 6, Math.PI / 2]]) {
     const spot = rimeholtPoint(a, b2); fence(spot.x, spot.z, length, alongAngle + Math.PI / 2 + turn, group);
+  }
+
+  // -------------------------------------------------------------------------
+  // Liz's skeps, in a clearing off the camp trail (src/cat-quest.js)
+  // -------------------------------------------------------------------------
+  {
+    const straw = material('#c9a886'), plank = woodLight;
+    wornPatch(LIZ_CLEARING.x, LIZ_CLEARING.z, 4.2, '#8f9068');
+    // The bench: two short posts and a plank, turned so the skeps face away from the trail.
+    const benchY = groundHeight(LIZ_BENCH.x, LIZ_BENCH.z);
+    for (const end of [-1, 1]) post(wood, LIZ_BENCH.x, benchY + .22, LIZ_BENCH.z + end * (LIZ_BENCH.length / 2 - .4), .09, .44, group);
+    const plankMesh = box(plank, LIZ_BENCH.x, benchY + .46, LIZ_BENCH.z, .9, .1, LIZ_BENCH.length, group);
+    plankMesh.name = 'Liz\u2019s bench';
+    // Three straw skeps: a dome of coiled rope, a little lopsided, each with a landing board.
+    for (const [i, skep] of LIZ_SKEPS.entries()) {
+      const y = groundHeight(skep.x, skep.z) + .5;
+      const dome = mesh(round, straw, skep.x, y + .3, skep.z, .46, .54 + i * .02, .46, group);
+      dome.rotation.y = i * 1.1;
+      dome.name = `Liz\u2019s skep ${i + 1}`;
+      mesh(cylinder, straw, skep.x, y + .62, skep.z, .1, .1, .1, group);
+      pebble(plank, skep.x + .42, y - .02, skep.z, .3, .04, .34, group);
+      colliders.push({ x: skep.x, z: skep.z, r: skep.r, kind: 'bee-skep' });
+    }
+    colliders.push({ x: LIZ_BENCH.x, z: LIZ_BENCH.z, r: .8, kind: 'bee-bench' });
   }
 
   // -------------------------------------------------------------------------

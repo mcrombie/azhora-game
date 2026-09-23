@@ -586,7 +586,7 @@ export const ORIGIN_LANGUAGE = freeze({
  * eleventh is the player. So this needs no playerId and cannot go stale when the
  * player changes: whoever is standing in whichever slot, he is one of yours.
  *
- * Chris Gotwood is not special here any more. He still interprets the *locals* for
+ * Chris Scotwood is not special here any more. He still interprets the *locals* for
  * you while he is beside you (INTERPRETER), and when you are Chris nobody needs to.
  */
 export const speaksTheContract = npc => Boolean(npc?.id && mercenaryById(npc.id));
@@ -629,13 +629,13 @@ export const CANT_SHARE = .25;
 
 /**
  * What the traveler lands knowing. Nothing: he came on an Ambroni contract and
- * not one word of the contract's language, which is what Chris Gotwood is for.
+ * not one word of the contract's language, which is what Chris Scotwood is for.
  * Kept as a table so it can be tuned in one place without touching the rules.
  */
 export const STARTING_PROFICIENCY = freeze(Object.fromEntries(LANGUAGE_IDS.map(id => [id, 0])));
 
 /**
- * Chris Gotwood stepped off the traveler's boat with the Empire's letter and
+ * Chris Scotwood stepped off the traveler's boat with the Empire's letter and
  * enough of the local tongue to get two men up a road. While he is beside you he
  * interprets — the speaker's words as you hear them, and under that what they
  * meant — and you learn twice as fast for it. He knows three tongues and not the
@@ -646,14 +646,14 @@ export const STARTING_PROFICIENCY = freeze(Object.fromEntries(LANGUAGE_IDS.map(i
  * the rest of this.
  */
 export const INTERPRETER = freeze({
-  npcId: 'merc-gotwood', name: 'Chris Gotwood', knows: freeze(['ambroni', 'drentish', 'feradom']),
+  npcId: 'merc-gotwood', name: 'Chris Scotwood', knows: freeze(['ambroni', 'drentish', 'feradom']),
   range: 12, reached: 'mustered', bonus: 2,
   /** Which of the eleven he is, when the traveler is choosing who to be (src/player-characters.js). */
   playerId: 'gotwood',
 });
 
 /**
- * Who interprets for the traveler, given which of the eleven the traveler is: Chris Gotwood's
+ * Who interprets for the traveler, given which of the eleven the traveler is: Chris Scotwood's
  * npc id, or **null when the traveler is Chris himself**. That is not a missing interpreter to
  * be worked around — it is the right answer. Chris is not in the world when he is the player,
  * and he does not need to be: the Ambroni is the traveler's own from the first step
@@ -765,7 +765,7 @@ export function speechFor(npc, regionName) {
  * knows the country says what it should say, rather than breaking the road.
  */
 export const SIGN_LANGUAGE = freeze(Object.fromEntries([
-  [spoken('drentish'), ['Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'The Caloss Gate', 'Village road',
+  [spoken('drentish'), ['Tidehaven', 'Tidehaven Landing', 'The Greenway', 'Fernway Rest', 'Village road',
     'Old Charcoal Hearth', 'The Bee Fold', 'Stormfall Oak', 'Mosskeeper’s Shrine', 'Fern Hollow', 'Saltwind Lookout',
     'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel', 'Charcoal Burners',
     'The Forester’s Hut', 'The Wayside Shrine', 'The Timber Landing', 'Drent', 'The Ruins of Rena', 'Applegarth',

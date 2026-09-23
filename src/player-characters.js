@@ -2,7 +2,7 @@ import { MERCENARY_ROSTER, CROMB, CROMB_OLD_ID } from './mercenaries.js';
 
 /**
  * Who you are. The company is always the same eleven people called to the Moros muster; the
- * only question the opening screen asks is which of them you walk as. Choose Chris Gotwood
+ * only question the opening screen asks is which of them you walk as. Choose Chris Scotwood
  * and Cromb the Barbarian takes the slot you left — his look, his arrival, his lines — and
  * you land in Chris's cloth with Chris's sword and the Ambroni Chris already speaks.
  *
@@ -48,7 +48,7 @@ export const PLAYABLE = Object.freeze([
   playable('cromb', 'Cromb the Barbarian', 'No past, and no explanations', null,
     'Nothing is written about him and nothing is going to be. Everything he turns out to have been, you do on this road.',
     'simple-sword', sword, {}, { gear: Object.freeze({ hand: Object.freeze({ weight: 'light', tier: 0 }) }) }),
-  playable('gotwood', 'Chris Gotwood', 'The one who can ask directions', 'merc-gotwood',
+  playable('gotwood', 'Chris Scotwood', 'The one who can ask directions', 'merc-gotwood',
     'Sailed with the company’s papers in his coat and enough Ambroni to be understood at a gate. The letter is yours from the first step.',
     'simple-sword', sword, { linguist: 200 },
     // The language module reads this: Chris interprets for the company, so he begins the road

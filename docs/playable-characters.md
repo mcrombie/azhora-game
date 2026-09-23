@@ -36,7 +36,7 @@ and before every skill moved to the ninety-nine table. They survived both, which
 | | Character | Starts with | Why |
 |---|---|---|---|
 | 1 | Cromb the Barbarian | nothing | A blank slate on purpose. Nothing is written about him and nothing is going to be. |
-| 2 | Chris Gotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
+| 2 | Chris Scotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
 | 3 | Ed the Word | `swimming` 260 | He came ashore under his own power off a ship that never docked. |
 | 4 | Jerry | `fishing` 140 | A man who settles things at thirty paces has waited out a lot of floats. |
 | 5 | Kristen | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
@@ -77,7 +77,7 @@ profiles should leave his blank.
   standing there, but the lines before it are Chris's voice and Chris's errand. Cromb standing on
   a pier he has no feelings about should be three blunt sentences, not five.
 
-### 2. Chris Gotwood — the one who can ask directions
+### 2. Chris Scotwood — the one who can ask directions
 - **Opening:** the standard landing, with Cromb beside him carrying the papers. Built.
 - **Arc:** he already knows Ambroni, so the language barrier that shapes everyone else's first
   hours is not his. His arc should be the opposite problem: he is the one everybody asks, and the

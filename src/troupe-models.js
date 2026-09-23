@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createCharacter, createDog, createHorse } from './characters.js';
 
 /**
- * Talaelos, the players of Nylon (src/troupe.js), as figures. Five players dressed in the
+ * Talaelos, the players of Nylon (src/troupe.js), as figures. Six players dressed in the
  * game's own figures with Elizabethan kit hung on their joints (ruffs, doublet
  * buttons, capes, trunk hose, caps and plumes, props), their dog Understudy
  * in a ruff, The Critic (their grey mare), and a painted pageant wagon whose
@@ -55,7 +55,7 @@ function plume(parent, color, [x, y, z], lean = -.8) {
 }
 
 // ---------------------------------------------------------------------------
-// The five players
+// The six players
 // ---------------------------------------------------------------------------
 export const TROUPE = Object.freeze([
   Object.freeze({ id: 'galeon', name: 'Galeon Trell, “the Magnificent”', part: 'Actor-manager', tunic: 0x8c1f2e }),
@@ -63,6 +63,9 @@ export const TROUPE = Object.freeze([
   Object.freeze({ id: 'pim', name: 'Pim Belloss', part: 'Clown', tunic: 0xd9a52b }),
   Object.freeze({ id: 'nilor', name: 'Old Nilor', part: 'Book-holder (the book is blank)', tunic: 0x2a3552 }),
   Object.freeze({ id: 'zaela', name: 'Zaela Caeren', part: 'Musician', tunic: 0x3d6b45 }),
+  // Amanda (the user, 22 September 2026): brown hair in a ponytail, and the player who is
+  // everybody the other five are not.
+  Object.freeze({ id: 'amanda', name: 'Amanda', part: 'Player of every other part', tunic: 0xb0526f }),
 ]);
 
 export function createPlayer(id) {
@@ -72,9 +75,11 @@ export function createPlayer(id) {
     pim: { build: 'short-stocky', hairStyle: 'cropped', facialHair: 'stubble', hair: 0xa0522d, headgear: 'bare', garment: 'jerkin' },
     nilor: { build: 'slight', hairStyle: 'receding', facialHair: 'bushy', hair: 0xdedad0, headgear: 'bare', garment: 'jerkin' },
     zaela: { build: 'slight', hairStyle: 'braid', facialHair: 'clean', hair: 0x7a4a2a, headgear: 'bare', garment: 'jerkin' },
+    amanda: { build: 'slight', hairStyle: 'long-tied', facialHair: 'clean', hair: 0x6b4a2e, headgear: 'bare', garment: 'jerkin', slight: true },
   };
   const entry = TROUPE.find(player => player.id === id);
-  const actor = createCharacter({ role: 'mercenary', tunic: entry.tunic, skin: id === 'zaela' ? 0xc99873 : id === 'isaura' ? 0xe9d2bd : id === 'nilor' ? 0xd9b894 : 0xd7ad7e, look: looks[id] });
+  const skins = { zaela: 0xc99873, isaura: 0xe9d2bd, nilor: 0xd9b894, amanda: 0xdcb392 };
+  const actor = createCharacter({ role: 'mercenary', tunic: entry.tunic, skin: skins[id] ?? 0xd7ad7e, look: looks[id] });
   actor.group.name = `player-${id}`;
   const head = actor.group.getObjectByName('Head');
   if (id === 'galeon') {
@@ -120,6 +125,19 @@ export function createPlayer(id) {
     add(head, cube, GOLD, [0, .228, .21], [.04, .006, .006]);
     hang(actor, 'Left Wrist', (h, at) => { const w = at('Left Wrist');
       for (const s of [-1, 1]) { add(h, cube, mat(0x6b2e22), [w.x + s * .09, w.y - .02, w.z + .14], [.17, .012, .24], [0, 0, s * -.12]); add(h, cube, WHITE, [w.x + s * .085, w.y - .008, w.z + .14], [.15, .014, .22], [0, 0, s * -.12]); } });
+  }
+  if (id === 'amanda') {
+    // A player's gown over a small ruff: she changes in the open and the gown is what stays on.
+    hang(actor, 'Chest', h => { ruff(h, { radius: .15, depth: .05, pleats: 14 }); buttons(h, 6);
+      add(h, new THREE.CylinderGeometry(.23, .38, 1.02, 12, 1, true), mat(0xb0526f, { side: THREE.DoubleSide }), [0, .74, 0]);
+      add(h, new THREE.CylinderGeometry(.235, .27, .2, 12, 1, true), mat(0x7c3550, { side: THREE.DoubleSide }), [0, 1.12, 0]); });
+    // The properties she plays everybody with: a wooden crown, a false beard on a stick, a veil.
+    hang(actor, 'Left Wrist', (h, at) => { const w = at('Left Wrist');
+      add(h, new THREE.TorusGeometry(.055, .012, 4, 10), GOLD, [w.x - .02, w.y - .12, w.z + .06], [1, 1, .6], [Math.PI / 2, 0, .3]);
+      for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2;
+        add(h, cube, GOLD, [w.x - .02 + Math.cos(a) * .052, w.y - .09, w.z + .06 + Math.sin(a) * .03], [.012, .045, .012]); }
+      add(h, tube, WOOD_DARK, [w.x + .06, w.y - .16, w.z + .02], [.009, .22, .009], [.35, 0, .2]);
+      add(h, ball, mat(0x4a3a2c), [w.x + .1, w.y - .27, w.z + .06], [.05, .045, .03]); });
   }
   if (id === 'zaela') {
     hang(actor, 'Chest', h => { ruff(h, { radius: .16, depth: .05, pleats: 14 }); buttons(h, 5);

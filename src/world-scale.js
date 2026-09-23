@@ -56,7 +56,7 @@ const cluster = (id, centre, radius, extra = {}) => Object.freeze({
  */
 export const CLUSTERS = Object.freeze([
   cluster('tidehaven', [0, 29], 190, { rigidRoad: true,
-    note: 'The carried-over village, its Greenway, Willowmere, the woodland places, Fernway Rest and the Caloss Gate. Its pivot is the anchor, so none of it moves.' }),
+    note: 'The carried-over village, its Greenway, Willowmere, the woodland places, Fernway Rest and the edge of its wood. Its pivot is the anchor, so none of it moves.' }),
   cluster('avrel', [-236, 30], 46, { note: 'The Avrel clearing: crop fields, the mill, Corvan’s post, the tumbled cart and the Mill Commons.' }),
   cluster('caloss-crossing', [-345, 92.9], 28, { note: 'The Caloss bridge, Chip and the crossing’s working camp.' }),
   cluster('caloss-bank', [-306, 122], 26, { note: 'The quiet fishing bank. Its centre is a river vertex, so the stool and the cast keep their place on the water.' }),

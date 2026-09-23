@@ -19,14 +19,8 @@ export const LEGION_POSTS = Object.freeze([
     'Hired sword? The quartermaster signs you in at the Avrel clearing, west along the road past the woods. Keep to it.',
     'The bell means goblins. It has rung twice this week, and the second time we lost a cart.',
   ]),
-  post('caloss-gate-north', 'Footman Bram', 'legionary', -174, 24.4, Math.PI / 2, [
-    'This is the Caloss Gate. Past it the forest thins and the fields begin. Tidehaven ends here as far as the army is concerned.',
-    'The bridge is most of a day on foot. A local keeps it. He is not one of ours, but the bridge stands, so nobody complains.',
-  ]),
-  post('caloss-gate-south', 'Footman Dusk', 'legionary', -172.2, 32.2, Math.PI / 2, [
-    'Move along, mercenary. The gate is not a place to stand and think.',
-    'If you see the raiders in the fields, that is your induction. The quartermaster will tell you the same with more words.',
-  ]),
+  // Footman Bram and Footman Dusk stood at the Caloss Gate until the user took the place out
+  // (22 September 2026). There is nothing there to keep now, so the army does not keep it.
   post('avrel', 'Footman Renn', 'legionary', -226, 14, -Math.PI / 2, [
     'The quartermaster is at his post. Speak to him before you touch a cart or a parcel; he counts everything twice.',
     'Two raiders were seen among the field walls this morning. Corvan will want them dealt with before the carts move.',

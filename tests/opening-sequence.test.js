@@ -134,7 +134,7 @@ test('the companion slot names whoever came off the boat: Chris, or Cromb when t
   assert.deepEqual(PLAYABLE_IDS, ['cromb', ...MERCENARY_ROSTER.map(m => m.id.slice('merc-'.length))]);
   assert.equal(PLAYABLE_IDS.length, 11);
   for (const id of PLAYABLE_IDS) {
-    const expected = id === 'gotwood' ? 'Cromb' : 'Chris Gotwood';
+    const expected = id === 'gotwood' ? 'Cromb' : 'Chris Scotwood';
     assert.equal(companionFor(id), expected, id);
     assert.equal(companionFor(`merc-${id}`), expected, `merc-${id}`);
     const first = variantFor(id).captions[0].text;

@@ -26,7 +26,7 @@ const { AUTHORED_STANDS } = await sourceModule('../src/drent-flora.js');
  * The long road is spaced, and this is what keeps it spaced.
  *
  * Today seven teachers stood within a hundred metres of Tidehaven's pier and the two hundred and
- * forty-five metres from the Caloss Gate to the Avrel clearing taught nothing. Three people moved
+ * forty-five metres from the edge of the wood to the Avrel clearing taught nothing. Three people moved
  * — Odger Pell to Fernway Rest, Nell Harrow to the Sunken Lane, Silas Garrow to the Toll House
  * stream — and the road now teaches something every few minutes of walking. A stand that drifts
  * back toward the harbour undoes the whole shape, so the shape is stated here.

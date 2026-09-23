@@ -5,7 +5,7 @@
  * the contract he came on, and nothing at all of Drentish, which is what the
  * village speaks. Every line anybody says to him arrives in their own tongue,
  * and the only reason the first hour of the game is followable is that Chris
- * Gotwood stepped off the same boat, has enough of the local speech to get two
+ * Scotwood stepped off the same boat, has enough of the local speech to get two
  * men up a road, and stands close enough to say what it meant.
  *
  * Then it is exposure. Every line heard in a tongue teaches a little of it,
@@ -176,8 +176,8 @@ export function renderLine(line, languageId, { level = 0, full = false, dialect 
   const twist = dialect && DIALECTS[dialect]?.language === languageId ? DIALECTS[dialect].twist : null;
 
   // Every word, and whether it is a name, decided before anything is rewritten:
-  // "Chris Gotwood" opens a sentence, so the capital on Chris proves nothing,
-  // and only the Gotwood beside it says he is a person and not a preposition.
+  // "Chris Scotwood" opens a sentence, so the capital on Chris proves nothing,
+  // and only the Scotwood beside it says he is a person and not a preposition.
   const found = [];
   TOKENS.lastIndex = 0;
   for (let match = TOKENS.exec(text); match; match = TOKENS.exec(text)) {
@@ -289,7 +289,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
   const speech = (npc, regionName) => speechFor(npc, regionName);
 
   /**
-   * A line heard. `times` is what it counts for — two while Chris Gotwood is
+   * A line heard. `times` is what it counts for — two while Chris Scotwood is
    * interpreting, because somebody telling you what it meant is worth two
    * people saying it at you.
    */
@@ -312,7 +312,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
   }
 
   /**
-   * A tongue the traveler already had when he stepped ashore: Chris Gotwood's Ambroni, and
+   * A tongue the traveler already had when he stepped ashore: Chris Scotwood's Ambroni, and
    * whatever the character profiles give the other ten (`startingLanguages` in
    * src/player-characters.js, handed over by `grantStartingKit()` in src/main.js).
    *
@@ -370,7 +370,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
     return renderLine(label, spoken.language, { level: 0, full: true, dialect: spoken.dialect, names, titles: true });
   }
 
-  /** Whether Chris Gotwood is beside you, still walking, and knows what is being said. */
+  /** Whether Chris Scotwood is beside you, still walking, and knows what is being said. */
   function interpreterNearby(npc, { interpreter = null, languageId = null, at = null } = {}) {
     if (!interpreter || interpreter.hidden) return false;
     if (interpreter.placement && interpreter.placement.phase === INTERPRETER.reached) return false;
@@ -397,7 +397,7 @@ export function createLinguist({ skills = null, onEvent = () => {} } = {}) {
   /** What the traveler would write in his own notes about the tongues, if the panel wants a line. */
   function task() {
     const seen = view();
-    if (!seen.met) return { title: 'Not one word', detail: 'Nobody here speaks anything you know. Stay near Chris Gotwood: he has enough of it to get two men up a road, and he will tell you what was said.' };
+    if (!seen.met) return { title: 'Not one word', detail: 'Nobody here speaks anything you know. Stay near Chris Scotwood: he has enough of it to get two men up a road, and he will tell you what was said.' };
     const best = seen.tongues[0];
     if (seen.fluent >= LANGUAGE_IDS.length) return { title: 'Every tongue in Azhora', detail: 'There is nothing left on this continent that you cannot follow.' };
     return { title: `${best.name} · ${best.level}`, detail: `You follow about ${Math.round(100 * comprehension(best.level))} words in a hundred of it. ${seen.met} of ${LANGUAGE_IDS.length} tongues have said anything to you at all.` };

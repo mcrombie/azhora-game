@@ -504,17 +504,29 @@ export const TERRAIN_PADS = Object.freeze([
   AMBRON_TERRACE,
 ]);
 
-/** Where the tutorial ends and the journey's road begins: the Caloss Gate onward. */
-const CALOSS_GATE_VERTEX = road(-176, 29);
-export const ONWARD_ROAD = Object.freeze(MAIN_ROAD.slice(MAIN_ROAD.findIndex(p => p.x === CALOSS_GATE_VERTEX.x && p.z === CALOSS_GATE_VERTEX.z)));
+/**
+ * Where Tidehaven's wood gives out and the open road west begins. There was an army gate here
+ * with a gatehouse, a guard hut and two footmen on it; the user took the whole place out on
+ * 22 September 2026 - "it doesn't seem to fit there anymore" - and what is left is the vertex
+ * itself, which the road, the journey and two other modules all measure from.
+ */
+const WOOD_EDGE_VERTEX = road(-176, 29);
+export const ONWARD_ROAD = Object.freeze(MAIN_ROAD.slice(MAIN_ROAD.findIndex(p => p.x === WOOD_EDGE_VERTEX.x && p.z === WOOD_EDGE_VERTEX.z)));
 /** The whole walkable road network, for the traversal smoke and the charts. */
 export const ROAD_JUNCTION = road(-390, 162);
 
 // ---------------------------------------------------------------------------
 // Places along the road
 // ---------------------------------------------------------------------------
-/** Tidehaven's forest gate. Beyond it the road runs on to the Caloss. */
-export const CALOSS_GATE = Object.freeze({ ...at(-176, 29), name: 'The Caloss Gate', barrierX: at(-182, 29).x,
+/**
+ * The edge of Tidehaven's wood, where the trees give out and the road runs on west into the
+ * Avrel country. No gate, no gatehouse and nobody standing on it: a painted stone names the
+ * ground on either side of it and that is the whole of the place now.
+ *
+ * `westX` is where the wood actually ends, six metres on - the line the old barrier stood on,
+ * and still the line the walk out of Tidehaven is measured against.
+ */
+export const WOOD_EDGE = Object.freeze({ ...at(-176, 29), name: 'The Avrel road', westX: at(-182, 29).x,
   regionName: 'The Avrel clearing', open: true });
 export const FERNWAY_REST = Object.freeze({ ...at(-128, 34), name: 'Fernway Rest' });
 /** Drent's one farm clearing, cut out of the forest where the Avrel families work. */
@@ -707,7 +719,7 @@ const REGION_TEXT = {
   Peblos: { subtitle: 'The islands off the Drent coast', spawn: point(316, 428),
     description: 'Low barrier islands south-east of Drent, an hour under oars from Tidehaven: salt grass and thrift, grey rock at the waterline, gulls, and one fishing village on the quay at Cobble.',
     palette: { ground: '#76855f', accent: '#e7e0c0', fog: '#bdcdc9' },
-    npcIds: ['cobble-netmistress', 'cobble-boatwright', 'cobble-lobsterman', 'cobble-salter', 'cobble-oldhand', 'cobble-keeper', 'cobble-runner',
+    npcIds: ['cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster', 'bee-keeper',
       'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
   // West Izol is authored in world metres too (src/izol-world.js); its spawn is the quay a ship puts the traveler ashore on.

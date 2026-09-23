@@ -216,7 +216,9 @@ const VARIANTS = freeze({
  */
 export const DEFAULT_PLAYER = 'cromb';
 export const PLAYABLE_IDS = freeze([DEFAULT_PLAYER, ...MERCENARY_ROSTER.map(m => m.id.replace(/^merc-/, ''))]);
-export const COMPANIONS = freeze({ default: 'Chris Gotwood', whenGotwood: 'Cromb' });
+// `whenGotwood` is keyed off the player id `gotwood`, not off his name: ids are sticky in this
+// game, so he kept his when he became Chris Scotwood (the user, 22 September 2026).
+export const COMPANIONS = freeze({ default: 'Chris Scotwood', whenGotwood: 'Cromb' });
 const ALIASES = freeze({ crom: DEFAULT_PLAYER, chris: 'gotwood', ed: 'word', 'ed-the-word': 'word', 'al-the-tun': 'altun', al: 'altun' });
 
 export function normalisePlayer(playerId) {
@@ -224,7 +226,7 @@ export function normalisePlayer(playerId) {
   const id = ALIASES[bare] ?? bare;
   return PLAYABLE_IDS.includes(id) ? id : DEFAULT_PLAYER;
 }
-/** Who steps ashore beside the traveler: Chris Gotwood, unless the traveler is Chris, when it is Cromb. */
+/** Who steps ashore beside the traveler: Chris Scotwood, unless the traveler is Chris, when it is Cromb. */
 export function companionFor(playerId) {
   return normalisePlayer(playerId) === 'gotwood' ? COMPANIONS.whenGotwood : COMPANIONS.default;
 }

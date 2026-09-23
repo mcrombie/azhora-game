@@ -52,7 +52,7 @@ import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
 import { AMOD_NPCS, AMOD_NPC_IDS, amodConversation } from './amod-people.js';
 import { createOgreToll, OGRE_NPC, OGRE_ENCOUNTER, OGRE_TOLL, OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, OGRE_VICTORY, OGRE_RETURNED } from './amod-ogre.js';
 import { OGRE_STAND, OSTEL } from './amod-world.js';
-import { PEBLOS_NPCS, PEBLOS_NPC_IDS, peblosConversation } from './peblos-people.js';
+import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT, peblosConversation } from './peblos-people.js';
 import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
 import { createIzolHost } from './izol-host.js';
 import { izolDeckHeight } from './izol-world.js';
@@ -141,7 +141,10 @@ import { SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, ELOD_LIGHT, LANDING, LENS_I
   CROSSING_PLAN, RIVAL_WATCHES, RIVAL_UNSEEN, HEIST_ENDINGS, createHeist, rivalConversation } from './rival-light.js';
 import { createBosco as createBoscoModel } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
-import { TROY, TROY_STAND, HONEYCOMB, createBeekeeper, troyConversation } from './beekeeper.js';
+import { HONEYCOMB, createBeekeeper } from './beekeeper.js';
+import { LIZ, LIZ_STAND, CAT, createCatQuest, createMopWalk, lizConversation, PURSE as CAT_PURSE } from './cat-quest.js';
+import { TROY, createMurderQuest, troyConversation, cobbleConversation, TESTIMONY, MURDERER, CLEARED, UNPROVEN,
+  PURSE as MURDER_PURSE } from './murder-quest.js';
 import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation } from './refugees.js';
 import { createMapFog, subregionsAt } from './map-fog.js';
 import { isOpenCountry } from './regions.js';
@@ -172,6 +175,8 @@ import { createDeveloperMode } from './developer-mode.js';
 import { runDeveloperSmoke } from './developer-smoke.js';
 import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, QUEST_DONE, SUBQUESTS, getMovementInput } from './game-state.js';
 import { questLive } from './quest-slate.js';
+import { BEN, SPIDER, SPIDER_DEN, SPIDER_QUEST, createSpiderQuest } from './spider-quest.js';
+import { SPELLS, castWith, focusAt, spellXp } from './sorcery.js';
 import { createRoadAmbush, AMBUSH, PARTIES, bodyPlace } from './road-ambush.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, lendFacing } from './bodies.js';
@@ -267,6 +272,8 @@ function init() {
   let npcData=[{id:'fisher',name:'Tobin',role:'Fisher',color:0xb97b50},{id:HARBOURMASTER,name:'Jojo',role:'Harbourmaster of Tidehaven',modelRole:'harbormaster',color:0x2f5a63,skin:0xc39a72,look:{beard:false,slight:true,hairStyle:'long',hair:0x3b2a1d}},{id:'warden',name:'Eren',role:'Waykeeper of the Greenway Watch',modelRole:'legion-soldier',color:0x8f3b30},{id:'acorn-cook',name:'Lysa',role:'Village cook',color:0x9c774b},{id:'doomsayer',name:'Orris',role:'Doomsayer',color:0x49434b},{id:'pond-fisher',name:'Bran',role:'Pond fisherman',color:0x7c8f73}];
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
+  // Ben, of the sorcerer's guild, on Nothom's square with a spider to kill (src/spider-quest.js).
+  npcData.push({...BEN});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
   // Rimeholt's people, in Pueth.
   npcData.push(...PUETH_NPCS.map(npc=>({...npc})));
@@ -362,7 +369,13 @@ function init() {
   world.npcPositions[SUBTRACTIDAUGHTER.id]={x:SUBTRACTIDAUGHTER_STAND.x,z:SUBTRACTIDAUGHTER_STAND.z};
   npcData.push({...SUBTRACTIDAUGHTER,yaw:SUBTRACTIDAUGHTER_STAND.yaw});
   // Troy at the Bee Fold in Drent's wood, with the skeps behind him (src/beekeeper.js).
-  world.npcPositions[TROY.id]={x:TROY_STAND.x,z:TROY_STAND.z};npcData.push({...TROY,yaw:TROY_STAND.yaw});
+  // Troy is in Cobble now, and his stand is Cobble's (src/peblos-world.js). Liz has the skeps
+  // and the honeycomb, in the woods of Pueth (src/cat-quest.js).
+  npcData.push({...TROY});
+  world.npcPositions[LIZ.id]={x:LIZ_STAND.x,z:LIZ_STAND.z};npcData.push({...LIZ,yaw:LIZ_STAND.yaw});
+  // Mop, on the midden at the edge of the goblin camp, until somebody stands still near him.
+  world.npcPositions[CAT.id]={x:CAT.at.x,z:CAT.at.z};
+  npcData.push({id:CAT.id,name:CAT.name,role:'Liz’s cat, where he should not be',cat:true});
   // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
   for(const person of ATTIC_PEOPLE){const stand=ATTIC_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/wine-goblin.js).
@@ -503,7 +516,7 @@ function init() {
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
     npc.walkingWith=false;npc.mounted=false;npc.lift=0;
     // **A man on the road walks at his own pace.** His placement creeps forward at his roster
-    // pace - 1.28 m/s for Chris Gotwood - while the npc loop chased it at the default 2.4, so he
+    // pace - 1.28 m/s for Chris Scotwood - while the npc loop chased it at the default 2.4, so he
     // caught it up, stalled inside the loop's tenth-of-a-metre dead zone, waited for the road to
     // pull ahead of him and set off again, six times a second, legs starting and stopping the
     // whole way up the road. Matched to the road he simply walks. `stride` also tells the loop
@@ -867,7 +880,7 @@ function init() {
     // sheet. The table in src/player-characters.js keeps it, for the mode that does (game-mode.js).
     const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)&&!hiddenSkills.has(id)).map(([id,xp])=>[id,{xp}]));
     if(Object.keys(known).length)skills.restore({version:SKILLS_VERSION,skills:known});
-    // And the tongues he already had. Chris Gotwood interprets for the company, so when he is the
+    // And the tongues he already had. Chris Scotwood interprets for the company, so when he is the
     // player the Ambroni is his own from the first step and nobody has to lean in and repeat it.
     // Normal mode is all in English, so `startingLanguages` stays in the data and is never applied.
     if(gameMode.has('linguist'))for(const [id,proficiency] of Object.entries(startingLanguages(playerId)))linguist.speakAlready(id,proficiency);
@@ -1020,7 +1033,7 @@ function init() {
   // the skills'. The dead teach nothing and a man sent on ahead teaches nothing until he is back.
   teachers=createTeachers({companions,arms,onEvent:()=>refreshSkillsSheet()});
   // Linguist: in hard mode nobody in Azhora speaks the traveler's language, so what people say to
-  // him arrives in theirs (src/languages.js, src/linguist.js). Chris Gotwood came off
+  // him arrives in theirs (src/languages.js, src/linguist.js). Chris Scotwood came off
   // the same boat with enough of the local speech to get two men up a road; while he is
   // beside you his interpretation runs under the line and every exposure counts double.
   // In normal mode everybody is understood: nothing here is fed, nothing here is paid, and the
@@ -1164,8 +1177,8 @@ function init() {
     rebuildCompany();placeMercenaries();
     toast('Walk Drent, then. I have nothing better on and you have a country to learn.',`${companionName().toUpperCase()} \u00b7 WITH YOU AGAIN`);
     saveRoad(false);return true;}
-  /** Who came off your boat, by name: Chris Gotwood, or Cromb when you are Chris. */
-  const companionName=()=>npcById.get(landingMateId())?.name??mercenaryById(landingMateId())?.name??'Chris Gotwood';
+  /** Who came off your boat, by name: Chris Scotwood, or Cromb when you are Chris. */
+  const companionName=()=>npcById.get(landingMateId())?.name??mercenaryById(landingMateId())?.name??'Chris Scotwood';
   // How Corvan's field register reads when he opens it: who of the eleven has already passed his
   // desk, and how many boats are still out. The long road's rule, in the army's own arithmetic.
   const registerView=()=>{const desk=company.stops.find(stop=>stop.id==='induction')?.distance??0,placed=company.placements(playSeconds);
@@ -1226,7 +1239,7 @@ function init() {
   const pipe=createPipe();
   const jimson=createJimson();
   const katy=createKaty();let katyVisits=0;
-  const troy=createBeekeeper();let troyVisits=0;
+  const troy=createBeekeeper();let troyVisits=0,lizVisits=0;
   const vineyard=createVineyard({skills});let imaniVisits=0;let katVisits=0;
   // Batman on the limestone outcrop above the winery spring, thirty strides behind Katy, who has
   // spent a year watching the wrong half of the sky (src/batman.js). He is there once the traveler
@@ -1245,7 +1258,7 @@ function init() {
     batman.group.position.set(BATMAN_PERCH.x,y,BATMAN_PERCH.z);batman.group.rotation.y=BATMAN_PERCH.yaw;}
   placeBatman();
   // Everywhere a person stands, and the one place on the road that is read rather than talked
-  // to: a bramble inside the Caloss Gate notice's own two metres ate the F that should have
+  // to: a bramble inside the boundary stone's own two metres ate the F that should have
   // read it, so the end of the tutorial pointed nowhere (found by the story smoke, 2026-09-22).
   const flora=createDrentFlora(scene,world,{avoid:[...Object.values(world.npcPositions),{x:world.border.x,z:world.border.z}]});
   let currentPlant=null,jimsonClock=0;
@@ -1306,15 +1319,45 @@ function init() {
   /**
    * **The rebels on the Drent road** (src/road-ambush.js): an event, not a quest. It runs on the
    * company's own clock whether or not the traveler is anywhere near it, and by default it kills
-   * Chris Gotwood, who walks that road first and alone. The seed is the playthrough's: the same
+   * Chris Scotwood, who walks that road first and alone. The seed is the playthrough's: the same
    * game always loses the same man, and a reload never rolls again.
    */
   const ambushSeed=Math.floor(Math.random()*1e6);
   const ambush=createRoadAmbush({seed:ambushSeed});
+  /**
+   * **Ben and the spider in the thorns** (src/spider-quest.js): a side quest in Luscia, and the
+   * only place in Azhora anybody teaches fire. He walks out to the den with the traveler, stands
+   * in the fight, and can die in it - which is the whole weight of the thing.
+   */
+  const spiderQuest=createSpiderQuest({onEvent:event=>{
+    if(event.type==='spider-took-ben')toast('The thorns go quiet. Ben is not getting up, and the guild will want to know which of you was supposed to be watching the other.','THE SPIDER IN THE THORNS');
+    if(event.type==='spider-killed')toast('It folds up the way a chair folds up. Ben sits down in the thorns and laughs at nothing for a while.','THE SPIDER IN THE THORNS');
+  }});
+  /**
+   * **Troy's case in Cobble** (src/murder-quest.js): a side quest in Peblos, and the only place
+   * anybody teaches the reading. The deduction is the player's; Troy will not act on a guess.
+   */
+  const murder=createMurderQuest({onEvent:event=>{
+    if(event.type==='murder-heard')toast('Written down, for what it is worth. Troy will want to hear it in your own words.','THE TALLY-KEEPER OF COBBLE');
+    if(event.type==='murder-solved')toast('Three true things that belong to nobody in this village but the man holding the beam.','THE TALLY-KEEPER OF COBBLE');
+  }});
+  /**
+   * **Liz's cat** (src/cat-quest.js): a side quest in Pueth, and the only place anybody teaches
+   * the bees. The cat is the quest - the goblins are only what is standing round it.
+   */
+  const catQuest=createCatQuest({onEvent:event=>{
+    if(event.type==='cat-found')toast('He looks at you for a long moment and decides you are furniture worth walking behind.','MOP');
+    if(event.type==='cat-bolted')toast('Gone, under the nearest thing with a gap beneath it. He will come out when it is quiet.','MOP');
+    if(event.type==='cat-home')toast('Home, filthy, and entirely unbothered.','MOP');
+    if(event.type==='cat-lost')toast('He is not going to get up. That is the one outcome Liz cannot be paid for.','MOP');
+  }});
+  const mop=createMopWalk();
   /** Whoever's body the traveler has already walked up to, so he is told once and not every frame. */
   const bodiesFound=new Set();
   /** Whether he has already been told they held off, so a refusal is said once and not every frame. */
   let ambushHeldOff=false;
+  /** Said once when the den will not open, rather than every frame he stands in the thorns. */
+  let spiderHeldOff=false;
   const chameleon=createChameleon({seed:chameleonSeed,onEvent:event=>{if(event.type==='poof')chameleonPoof(event);}});
   const edView=createEdView(scene,{heightAt:(x,z)=>world.heightAt(x,z)});
   const edNpc={id:ED.id,name:ED.name,role:ED.role,actor:{group:edView.group}};
@@ -2189,15 +2232,56 @@ function init() {
     if(learned.first)toast('A clay pipe and a twist of Cabe\u2019s own. Use the pipe weed in your satchel to smoke a bowl.','THE WEATHERHEAD');
     saveRoad(false);return {ok:true,reason:''};
   }
-  /** Troy cuts a comb: the first is a gift, the rest are a couple of coppers toward the next skep. */
-  function troyAct(action){
+  /** Liz cuts a comb: the first is a gift, the rest are a couple of coppers toward the next skep. */
+  function combAct(action){
     if(action!=='take-honeycomb')return {ok:false,reason:''};
     const result=troy.takeComb({purse:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;},
       give:()=>inventory.add(HONEYCOMB,1)});
-    if(!result.ok){if(result.refund)inventory.add(COPPER_ITEM,result.refund);toast(result.reason,'THE BEE FOLD');return result;}
+    if(!result.ok){if(result.refund)inventory.add(COPPER_ITEM,result.refund);toast(result.reason,'THE PUETH SKEPS');return result;}
     inventory.refresh();audio?.effect('success');
-    toast(result.first?'A piece of comb, still warm from the hive. Press I to eat it.':result.paid?`A comb for ${result.paid} copper.`:'A piece of comb.','THE BEE FOLD');
+    toast(result.first?'A piece of comb, still warm from the skep. Press I to eat it.':result.paid?`A comb for ${result.paid} copper.`:'A piece of comb.','THE PUETH SKEPS');
     saveRoad(false);return result;
+  }
+  /**
+   * **Troy's case**, in three verbs: take it, hear somebody, and name somebody. The refusals are
+   * his own words, because a wrong name is a scene and not an error message.
+   */
+  function murderAct(action,id){
+    if(action==='murder-begin'){if(!murder.begin())return {ok:false,reason:''};
+      toast('Jessi, Ari, and the woman who came for the kelp. Ask all three, then go back to Troy.','THE TALLY-KEEPER OF COBBLE');
+      saveRoad(false);return {ok:true,reason:''};}
+    if(action==='murder-hear'){const heard=murder.hear(id);if(!heard)return {ok:false,reason:''};saveRoad(false);return {ok:true,reason:''};}
+    if(action==='murder-accuse'){
+      const said=murder.accuse(id,playSeconds);
+      if(said.ok){audio?.effect('success');saveRoad(false);toast('Troy is already walking up the quay.','THE TALLY-KEEPER OF COBBLE');return {ok:true,reason:''};}
+      if(said.why==='resting')toast('He holds a hand up. Not yet.','THE TALLY-KEEPER OF COBBLE');
+      else if(said.why==='unproven')toast(UNPROVEN,'THE TALLY-KEEPER OF COBBLE');
+      else if(said.why==='wrong')toast(CLEARED[id]??'It is not them, and he says why.','THE TALLY-KEEPER OF COBBLE');
+      saveRoad(false);return {ok:false,reason:''};}
+    if(action==='murder-reward'){
+      const reward=murder.take(id);if(!reward)return {ok:false,reason:''};
+      if(reward.id==='purse'){inventory.add(COPPER_ITEM,MURDER_PURSE);inventory.refresh();
+        toast(`${MURDER_PURSE} copper, out of a guild purse that was meant to be spent on worse.`,'TROY \u00b7 THE PURSE');}
+      else {const learned=skills.learn('mind');refreshSkillsSheet();
+        toast(learned?.first?'Mind. Stand close to somebody who has decided not to say a thing, and you will hear it anyway.'
+          :'The reading, again, and he is pleased to have been asked twice.','NEW SKILL \u00b7 MIND');}
+      audio?.effect('success');saveRoad(false);return {ok:true,reason:''};}
+    return {ok:false,reason:''};
+  }
+  /** Liz's errand: say yes, and be paid one of the two ways once the cat is in her clearing. */
+  function catAct(action,id){
+    if(action==='cat-accept'){if(!catQuest.accept())return {ok:false,reason:''};
+      toast('South-east through the birch, and quietly. He will not be carried and he will not be led.','LIZ \u00b7 THE CAT');
+      saveRoad(false);return {ok:true,reason:''};}
+    if(action==='cat-reward'){
+      const reward=catQuest.take(id);if(!reward)return {ok:false,reason:''};
+      if(reward.id==='purse'){inventory.add(COPPER_ITEM,CAT_PURSE);inventory.refresh();
+        toast(`${CAT_PURSE} copper, and she is glad to be rid of it.`,'LIZ \u00b7 THE COIN');}
+      else {const learned=skills.learn('beast');refreshSkillsSheet();
+        toast(learned?.first?'Beast. Call them and they come, and they do not ask you whether you are sure.'
+          :'The bees, again, and she is pleased to have been asked twice.','NEW SKILL \u00b7 BEAST');}
+      audio?.effect('success');saveRoad(false);return {ok:true,reason:''};}
+    return {ok:false,reason:''};
   }
   /** Katy's one act so far: the traveler says they will look for Batman, and takes her drawing. More to come. */
   function katyAct(action){
@@ -2920,7 +3004,7 @@ function init() {
     if(autopilot.active)skipOpening();
   }
   /**
-   * Whoever is in the bow: the first man of the company, which is Chris Gotwood unless you are
+   * Whoever is in the bow: the first man of the company, which is Chris Scotwood unless you are
    * Chris, when it is Cromb standing in the slot you left (companyFor, src/player-characters.js).
    */
   const companionNpcId=()=>landingMateId();
@@ -3410,7 +3494,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot(),ambush:ambush.snapshot()});
+    const result=checkpoint.save({version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),farming:farming.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot()});
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -3455,7 +3539,7 @@ function init() {
     companions.restore(saved.companions??createCompanions().snapshot());teachers.restore(saved.teachers??createTeachers().snapshot());gear.restore(saved.gear??createGear().snapshot());rebuildCompany();refreshFoundWeapons();world.setFeederHung(birding.feeder==='hung');refreshSkillsSheet();
     mapFog.restore(saved.chart??createMapFog().snapshot());cartography.restore(saved.cartography??createCartography().snapshot());fishing.restore(saved.fishing??createFishing().snapshot());mycology.restore(saved.mycology??createMycology().snapshot());mushrooms.restoreGathered(saved.mushrooms??[]);botany.restore(saved.botany??saved.herbology??createBotany().snapshot());pipe.restore(saved.pipe??createPipe().snapshot());jimson.restore(saved.jimson??createJimson().snapshot());katy.restore(saved.katy??createKaty().snapshot());troy.restore(saved.troy??createBeekeeper().snapshot());vineyard.restore(saved.vineyard??createVineyard().snapshot());hunt.restore(saved.hunt??createBatmanHunt().snapshot());light.restore(saved.light??createLightKeeper().snapshot());bosco.restore(saved.bosco??createBosco().snapshot());heist.restore(saved.heist??createHeist().snapshot());boscoModel.setDye(boscoDye=bosco.dye.colour);geology.restore(saved.geology??createGeology().snapshot());archaeology.restore(saved.archaeology??createArchaeology().snapshot());wine.restore(saved.wine??createWine().snapshot());cooking.restore(saved.cooking??createCooking().snapshot());wineAttic.restore(saved.wineAttic??createWineAttic().snapshot());// A road saved before the split keeps its `ed` key, which was always Puck's half of him.
     puck.restore(saved.puck??saved.ed??createPuck().snapshot());placePuck();
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());companionOffTheClock=Object.hasOwn(saved,'longRoad');rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(playSeconds)?.key??null;landingSaid=landingAt(playSeconds)?.key??null;
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
     ogreToll.restore(saved.ogreToll??createOgreToll().snapshot());
@@ -3939,12 +4023,24 @@ function init() {
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
+    // Mop is not the harbour cat and has nothing to say about fish: what he has is an opinion
+    // about whether you are worth walking behind (src/cat-quest.js).
+    if(npc.id===CAT.id){const stage=catQuest.state.stage;
+      openDialogue(npc,[stage==='following'?'He is sitting behind you with his feet tucked under him, waiting for you to get on with it.'
+        :stage==='home'||stage==='paid'||stage==='taught'?'He is in the doorway of the only house he has ever lived in, and has never been anywhere else.'
+        :catQuest.state.found?'He is under something, and he is not coming out while you are looming. Stand still.'
+        :'He is eating something that was a fish, near a camp that is not his, and he looks at you without hurrying.'],
+        null,'Leave him to it');return;}
     if(npc.cat){catConversation(npc);return;}
     if(garrisonIds.has(npc.id)){garrisonConversation(npc,hideoutContext);return;}
     if(npc.id===OGRE_NPC.id){ogreConversation(npc);return;}
     if(AMOD_NPC_IDS.includes(npc.id)&&amodConversation(npc,{openDialogue,closeDialogue,ogreBeaten:ogreToll.state.beaten}))return;
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(RENA_NPC_IDS.includes(npc.id)&&renaConversation(npc,{letters:renaLetters,inventory,openDialogue,closeDialogue,act:renaAct}))return;
+    // While Troy's case is open, Cobble's four have one more thing to say - and one more thing
+    // again to a traveler who has been taught the reading (src/murder-quest.js).
+    if(PEBLOS_NPC_IDS.includes(npc.id)&&cobbleConversation(npc,{murder,ambient:PEBLOS_AMBIENT[npc.id]??[],openDialogue,closeDialogue,
+      act:murderAct,reads:skills.taught('mind')}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
     if(EAST_SUVAL_NPC_IDS.includes(npc.id)&&elodConversation(npc,{openDialogue,closeDialogue}))return;
     if(izol.converse(npc,{control:heldControl??campaign.mapControl(),openDialogue,closeDialogue}))return;
@@ -3988,7 +4084,9 @@ function init() {
     if(npc.id===ADDISON.id){addisonConversation(npc,{light,hunt,heist,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++});return;}
     if(npc.id===SUBTRACTIDAUGHTER.id){rivalConversation(npc,{heist,openDialogue,closeDialogue,act:heistAct,visits:rivalVisits++});return;}
     if(npc.id===BOSCO.id){boscoConversation(npc,{bosco,carrying:BOSCO_TAKES.filter(id=>inventory.count(id)>0),openDialogue,closeDialogue,act:boscoAct,visits:boscoVisits++});return;}
-    if(npc.id===TROY.id){troyConversation(npc,{troy,openDialogue,closeDialogue,act:troyAct,coppers:inventory.count(COPPER_ITEM),visits:troyVisits++});return;}
+    if(npc.id===TROY.id){troyConversation(npc,{murder,openDialogue,closeDialogue,act:murderAct,now:playSeconds,visits:troyVisits++});return;}
+    if(npc.id===LIZ.id){lizConversation(npc,{cat:catQuest,comb:troy,openDialogue,closeDialogue,act:action=>{if(action==='take-honeycomb')return combAct(action);return catAct(action);},
+      coppers:inventory.count(COPPER_ITEM),visits:lizVisits++,carrying:catQuest.state.found});return;}
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
     if(npc.id===INSTRUCTOR.id){
       instructorConversation(npc,{stage:lessonStage({briefed:lessonSet,hits:practiceHits,dodges:practiceDodges,taught:cartography.met}),openDialogue,
@@ -4025,6 +4123,7 @@ function init() {
     if(journeyNpcIds.has(npc.id)){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,register:registerView(),extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
       provideBridgeWood:()=>{const needed=Math.max(0,3-inventory.count('forest-stick'));const ok=!needed||inventory.add('forest-stick',needed);if(ok&&needed){toast('Three sound branches are ready for the bridge.','HOLLIS’S REPAIR TIMBER');saveRoad(false);}return {ok,reason:ok?'':'There is no room for the repair timber.'};},
       teachFishing:()=>{const owned=inventory.has('fishing-rod');const result=campcraft.teachFishing();fishing.learn();refreshSkillsSheet();if(!owned)toast('A spare rod for your journey. Find the marked bank east of the bridge.','FISHING ROD · ADDED TO SATCHEL');return result;}});return;}
+    if(npc.id===BEN.id){benConversation(npc);return;}
     if(npc.id==='acorn-cook'){lysaConversation(npc);return;}
     if(npc.id==='doomsayer'){doomsayerConversation(npc);return;}
     if(npc.id==='pond-fisher'){fisherConversation(npc);return;}
@@ -4038,7 +4137,7 @@ function init() {
     else if(questStage===2)lines=['Officer Glun has the straw post at the crossroads. Two clean hits, take one on the shield and step out of the way of one, and he will let you up that road.',
       'He is not unkind about it. He has buried enough of them who could not.'];
     else lines=['West, then. The Greenway under the trees, out at the Avrel clearing, over the Caloss, and Nothom is a day’s walk beyond the river.',
-      'Those goblins came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Caloss Gate.'];
+      'Those goblins came over the Tessen, the little river north of the landing. They wade its mouth at low water. The army keeps a post at the Tessen bridge now, up the road north from the Avrel turning.'];
     openDialogue(npc,lines,event,action);
   }
   /**
@@ -4066,6 +4165,67 @@ function init() {
     // function: without this the card sat on `Beyond the first shore` until something else
     // happened to refresh it.
     refreshSkillsSheet();refreshChart();refreshQuest();if(questStage>=1)saveRoad(false);
+  }
+  /**
+   * **Ben.** He asks, and what he asks for is company rather than a hero: he has done the
+   * arithmetic on one sorcerer against one spider and does not care for the answer. Saying yes
+   * puts him at the traveler's shoulder until the den; the fork at the end is the whole ending,
+   * and there is no way to have both halves of it (src/spider-quest.js).
+   */
+  function benConversation(npc){
+    const stage=spiderQuest.state.stage;
+    if(stage==='unmet'||stage==='asked'){
+      spiderQuest.ask();
+      openDialogue(npc,[
+        'You look like somebody who has hit something. Ben — of the guild, which sounds grander in the letter than it does standing here.',
+        'There is a spider in the thorns north-west of the town. Not a spider the size of a spider. A carter saw it take a goat off its tether and go up a bank with the goat still tied to the peg.',
+        'The guild sent me to kill it. The guild sent one of me. I have been doing the arithmetic on that since Tuesday and I keep getting the same answer, so I have started asking people instead.',
+        'I am not frightened of it, you understand. I dislike spiders, which is a different thing, and professionally speaking it is irrelevant.'],
+        null,'Take the errand',{choices:[
+          {id:'ben-yes',label:'I will come with you.',action:()=>{closeDialogue();
+            if(spiderQuest.accept()){toast('Ben sets off north-west at a pace that says he would rather not be given time to think about it.','BEN · THE SPIDER IN THE THORNS');saveRoad(false);}}},
+          {id:'ben-spiders',label:'You dislike spiders.',action:()=>openDialogue(npc,[
+            'Professionally. Irrelevant. I have read the monograph twice and I can tell you the moult cycle of every one of them in this country.',
+            'I can also tell you that I have not slept properly since the carter told me about the goat. Both of those are true and only one of them is in the letter.'],
+            null,'Back to it',{onComplete:()=>{closeDialogue();benConversation(npc);}})},
+          {id:'ben-later',label:'Not today.',action:closeDialogue}]});
+      return;
+    }
+    if(stage==='walking'){
+      openDialogue(npc,['North-west, and then the thorns. Keep up, and when it comes out do not be where it is looking.',
+        'I will throw fire at it. That is the whole of my plan and I would be grateful if you had one of your own.'],null,'On, then');
+      return;
+    }
+    if(stage==='fighting'){openDialogue(npc,['Not now! Left — go left —'],null,'Right');return;}
+    if(stage==='killed'){
+      openDialogue(npc,[
+        'Well. That is what a monograph does not put across at all.',
+        'The guild sent me with a purse and an instruction to spend whatever of it I had to. You are what I spent it on, so a share of it is yours — five and thirty copper, and nobody will ask me how I arrived at the figure.',
+        'Or. You stood in front of a thing that takes goats off tethers, and I can show you where the fire comes from instead. One or the other, and I will not pretend they are the same size.'],
+        null,'Choose',{choices:[
+          {id:'ben-bounty',label:`Take the bounty · ${SPIDER_QUEST.bounty} copper`,action:()=>{closeDialogue();payBen('bounty');}},
+          {id:'ben-lesson',label:'Show me where the fire comes from.',action:()=>{closeDialogue();payBen('lesson');}}]});
+      return;
+    }
+    if(stage==='paid'){openDialogue(npc,['Spend it on something that is not a spider.','I am going to sit here a little longer, if it is all the same.'],null,'Back to the square');return;}
+    if(stage==='taught'){openDialogue(npc,['Keep the wand in your hand or nothing happens at all. That is not a rule of mine, it is a rule.',
+      'And it costs you something to throw. When it stops costing you anything you have stopped doing it properly.'],null,'Back to the square');return;}
+    openDialogue(npc,['—'],null,'Back');
+  }
+  /** The fork, paid. One of them, once, and the lesson is the only fire anybody gives out. */
+  function payBen(which){
+    const reward=spiderQuest.take(which);
+    if(!reward)return;
+    if(reward.id==='bounty'){
+      inventory.add(COPPER_ITEM,SPIDER_QUEST.bounty);inventory.refresh();
+      toast(`${SPIDER_QUEST.bounty} copper, and the guild's own purse the lighter for it.`,'BEN · THE BOUNTY');
+    } else {
+      const learned=skills.learn(SPIDER_QUEST.lesson.skill);
+      refreshSkillsSheet();
+      toast(learned?.first?'Fire. It wants a wand or a staff in your hand and it wants the focus to throw it, and Ben is the only man in Azhora who would have shown you.'
+        :'Fire, again, and he is pleased to have been asked twice.','NEW SKILL · FIRE');
+    }
+    audio?.effect('success');saveRoad(false);
   }
   function jojoOnTheLanding(npc){
     if(questStage>=2){
@@ -4125,7 +4285,7 @@ function init() {
   /**
    * The man who came ashore with you: the straw post, the dodge, what a blade costs, and where he
    * will be. He is a slot rather than a name - whoever stands first in the company, which is Chris
-   * Gotwood unless you are Chris, in which case it is Cromb - so he introduces himself by npc.name.
+   * Scotwood unless you are Chris, in which case it is Cromb - so he introduces himself by npc.name.
    * The rest of the scene is written in Chris's voice, and docs/playable-characters.md records what
    * Cromb should say here instead. The letter is not his: Jojo hands that over at the head of the pier.
    */
@@ -4300,12 +4460,12 @@ function init() {
   }
   /**
    * The line as the traveler hears it, counted once however often the panel is
-   * redrawn, with Chris Gotwood's interpretation under it while he is beside you.
+   * redrawn, with Chris Scotwood's interpretation under it while he is beside you.
    * The review log and everything else keep the English: those are the traveler's
    * own notes, and nothing he has to do is ever gated on reading a language.
    */
   /**
-   * Whoever interprets for you, if anybody does. When you are Chris Gotwood there is nobody, and
+   * Whoever interprets for you, if anybody does. When you are Chris Scotwood there is nobody, and
    * nobody is needed: the Ambroni is yours already (src/languages.js `interpreterFor`).
    */
   function interpreterNpc(){const id=interpreterFor(playerId);return id?npcById.get(id)??null:null;}
@@ -4680,8 +4840,8 @@ function init() {
       }return;
     }
     if(Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9){
-      openDialogue({id:'border-notice',name:'The Caloss Gate',role:'Road notice'},[
-        'The open gate leads to the Avrel clearing, then south-west to the Caloss crossing, and on into Luscia beyond the river. Follow the road, and greet the travelers who keep it open.',
+      openDialogue({id:'border-notice',name:'The boundary stone',role:'Painted stone'},[
+        'Tidehaven on one face, Avrel on the other. Past it the road runs to the Avrel clearing, then south-west to the Caloss crossing, and on into Luscia beyond the river.',
         questStage>=QUEST_DONE?'Keep the letter of introduction in your satchel and follow the road: the Caloss crossing, then Luscia, then Nothom, where Iven holds your assignment. All four regions of Drent stay open behind you.':'Officer Glun has not finished with you. The straw post is back at the village crossroads.'
       ]);
     }
@@ -4995,6 +5155,17 @@ function init() {
       // How each villager came through the Greenway, for Eren to speak of.
       // The road is clear, and everybody the clock sends up it after this walks it safely.
       if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id){ambush.cleared();saveRoad(false);}
+      // **The den, settled.** The spider dying is not a victory if the man who came for it did
+      // not get up: `benAlive` is the only thing that decides which ending this is, and it is
+      // read off the ally the fight actually had (src/spider-quest.js).
+      if(['victory','defeat','retreat'].includes(e.type)&&combat.state.encounterId===SPIDER_DEN.id&&spiderQuest.state.stage==='fighting'){
+        const ben=combat.state.allies.find(one=>one.id===BEN.id);
+        const benAlive=!ben||ben.hp>0;
+        if(spiderQuest.settle({spiderDead:e.type==='victory',benAlive})){
+          if(!benAlive){const npc=npcById.get(BEN.id);if(npc){npc.hidden=true;npc.escorting=false;npc.walkingWith=false;}}
+          saveRoad(false);
+        }
+      }
       if(e.type==='victory'&&combat.state.encounterId===greenwayEncounter.id)raid.outcome=combat.state.allies.map(a=>({name:a.name,fate:a.hp<=0?(a.wounded?'wounded':'dead'):a.escaped?'escaped':a.hp<a.maxHp?'hurt':'unhurt'}));
       if(['victory','retreat','defeat'].includes(e.type)&&raid.fell){raid.fell=false;saveRoad(false);}
       if(e.type==='practice-hit'&&questStage===2&&lessonSet)practiceHits++;
@@ -5331,6 +5502,25 @@ function init() {
         if(movement>.5&&combat.state.phase!=='active')for(const id of companions.walking)companions.travelled(id,dt);
         if(riding.mounted)riding.ride({x:player.group.position.x-Math.sin(mountHeading)*RIDE.seat.forward,z:player.group.position.z-Math.cos(mountHeading)*RIDE.seat.forward},mountHeading,movement);
         if(questStage===0&&player.group.position.z<21)updateQuest('ashore');
+        // **Ben, walking out to the thorns.** He keeps at the traveler's shoulder while the walk
+        // is on - the same shape as a companion, and set here rather than in `placeMercenaries`
+        // because he is nobody's hired sword - and the den rouses when the traveler is inside it.
+        {const ben=npcById.get(BEN.id),walking=spiderQuest.state.walking;
+          if(ben&&walking){
+            const spot=escortSpotFor({x:player.group.position.x,z:player.group.position.z,yaw:player.group.rotation.y},(x,z)=>canStand(x,z,world));
+            if(spot){world.npcPositions[ben.id]={x:spot.x,z:spot.z};ben.pace=4.6;ben.walkingWith=true;
+              if(!ben.escorting)ben.actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);
+              ben.escorting=true;}
+          } else if(ben&&ben.escorting){ben.escorting=false;ben.walkingWith=false;ben.pace=undefined;}
+          if(walking&&combat.state.phase!=='active'&&mode==='playing'
+            &&Math.hypot(player.group.position.x-SPIDER_DEN.center.x,player.group.position.z-SPIDER_DEN.center.z)<14){
+            if(combat.startEncounter(SPIDER_DEN)){spiderQuest.begin();
+              toast('It comes out of the thorns sideways, and it is not the size the carter said. Ben is already shouting something about going left.','THE SPIDER IN THE THORNS');
+              audio?.effect('bell');saveRoad(false);}
+            // A refused fight is a fight that silently never happens: he is told, and it waits.
+            else if(!spiderHeldOff){spiderHeldOff=true;toast('Something moves in the thorns and settles again. Come back to the den when your hands are free.','THE SPIDER IN THE THORNS');}
+          } else if(!walking||combat.state.phase==='active')spiderHeldOff=false;
+        }
         // **And the body, found.** This is the whole point of an event that happens whether you
         // are there or not: you come up the road a quarter of an hour later and he is lying on it.
         // Once each, and saved, so a reload does not tell you again (src/road-ambush.js).
@@ -5474,6 +5664,19 @@ function init() {
       if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
       if(mode==='playing'&&reviewCat){const catNpc=npcById.get(VILLAGE_CAT.id);world.npcPositions[VILLAGE_CAT.id]=reviewCat.at;catNpc.pace=0;catNpc.sitting=true;catNpc.posture=reviewCat.posture;catNpc.face=null;}
       else if(mode==='playing'){const catNpc=npcById.get(VILLAGE_CAT.id),dogAt=npcById.get(VILLAGE_DOG.id).actor.group.position;villageCat.place(catNpc.actor.group.position.x,catNpc.actor.group.position.z);const want=villageCat.update(dt,{player:{x:player.group.position.x,z:player.group.position.z},speed:movement,dog:{x:dogAt.x,z:dogAt.z},fight:combat.state.phase==='active'});world.npcPositions[VILLAGE_CAT.id]={x:want.x,z:want.z};catNpc.pace=want.pace;catNpc.sitting=want.sitting;catNpc.posture=want.posture;catNpc.face=want.face;}
+      // **Mop**, at the edge of the goblins' midden until somebody stands still near him, and
+      // then behind them all the way to Liz's clearing (src/cat-quest.js). A fight near enough to
+      // hear and he is gone under the nearest thing, and the errand goes back a step.
+      if(mode==='playing'&&!catQuest.state.over){
+        const mopNpc=npcById.get(CAT.id),at=mopNpc.actor.group.position;mop.place(at.x,at.z);
+        const fighting=combat.state.phase==='active',enemy=combat.state.enemies[0];
+        const want=mop.update(dt,{player:{x:player.group.position.x,z:player.group.position.z},speed:movement,
+          fight:fighting,threat:enemy?{x:enemy.x,z:enemy.z}:{x:player.group.position.x,z:player.group.position.z},
+          home:catQuest.state.found?LIZ_STAND:null});
+        world.npcPositions[CAT.id]={x:want.x,z:want.z};mopNpc.pace=want.pace;mopNpc.sitting=want.sitting;mopNpc.posture=want.posture;
+        if(want.following&&catQuest.state.stage==='looking')catQuest.found();
+        if(want.bolted&&catQuest.state.stage==='following'){catQuest.bolts();saveRoad(false);}
+        if(want.home&&catQuest.state.stage==='following'){catQuest.home();saveRoad(false);}}
       {const lakota=npcById.get(BIRD_WATCHER.id),a=lakota.actor.group,near=a.visible&&!lakota.hidden&&Math.hypot(a.position.x-player.group.position.x,a.position.z-player.group.position.z)<160;
         redTail.group.visible=near;
         if(near&&['playing','dialogue'].includes(mode)&&!reviewFrozen){a.getObjectByName('Left Wrist').getWorldPosition(gloveAt);
@@ -6260,7 +6463,7 @@ function init() {
         }
         assert(questStage===QUEST_DONE,'Arrival at the forest boundary did not finish Region 1');
         assert(discoveries.has('northTrail')&&discoveries.has('border'),'Northern landmarks missing');
-        yaw=Math.PI/2;press('KeyW');await until(()=>player.group.position.x<world.border.barrierX-1,'Could not cross the open gate');release('KeyW');
+        yaw=Math.PI/2;press('KeyW');await until(()=>player.group.position.x<world.border.westX-1,'Could not walk out past the edge of the wood');release('KeyW');
         assert(world.regionAt(player.group.position.x,player.group.position.z).id===1,'Beyond the gate the road stays in Drent');
         warp(world.border.x,world.border.z);await frames(2);tap('KeyF');assert(mode==='dialogue'&&$('speech').textContent.includes('Avrel'),`Border notice did not explain the onward road - something else took the key (mode ${mode}, npc ${currentNPC?.id??'none'}, tree ${currentTree?.species??'none'}, plant ${currentPlant?.id??'none'}, stone ${currentStone?.id??'none'}, mushroom ${currentMushroom?.id??'none'})`);finishDialogue();
         const pick=async acorn=>{warp(acorn.x,acorn.z);await frames(2);assert(currentAcorn?.id===acorn.id,'Acorn pickup not reachable');tap('KeyF');assert(woodlandLife.state().acorns.find(a=>a.id===acorn.id).collected,'F failed to gather acorn');};

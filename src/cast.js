@@ -31,6 +31,7 @@
  *
  * Pure: no DOM, no three, no world.
  */
+import { TROUPE_IDS } from './troupe.js';
 
 /**
  * **On.** The world empties to the list below, and one word here puts every one of them back:
@@ -72,6 +73,9 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
   'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
+  'liz-beekeeper',       // Liz, who keeps the Pueth skeps and the game's honeycomb
+  'cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster',   // Cobble, and the murder
+  'bee-keeper',          // Troy, who kept the user's bees and now keeps a murder in Cobble
   'brandy-frank',        // Brandy Frank, dyer of impossible colours
   'bird-watcher',        // Lakota
   'boatman',             // Jess of the Stills
@@ -99,8 +103,16 @@ export const OWN_IDS = Object.freeze([
  */
 export const DROP_IDS = Object.freeze(['warden', 'ridge-keeper']);
 
+/**
+ * **Talaelos, the players of Nylon** (the user, 22 September 2026: switch them back on). They
+ * came out with the rest of the country's life on the first cull and went back in with Amanda,
+ * the sixth player. The ids are read off the company in `src/troupe.js` rather than copied here,
+ * so the day a seventh player joins is the day the world keeps them.
+ */
+export const PLAYER_IDS = Object.freeze([...TROUPE_IDS]);
+
 /** Ids kept whatever else is true of them. */
-export const KEEP_IDS = Object.freeze([...QUEST_IDS, ...SMITH_IDS, ...OWN_IDS]);
+export const KEEP_IDS = Object.freeze([...QUEST_IDS, ...SMITH_IDS, ...OWN_IDS, ...PLAYER_IDS]);
 
 /**
  * Whether this person stands in the world while the cast is trimmed. The company is recognised by

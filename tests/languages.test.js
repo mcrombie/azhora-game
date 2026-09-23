@@ -93,7 +93,7 @@ test('the traveler lands knowing nothing, and the table says so in one place', (
   }
 });
 
-test('Chris Gotwood interprets three tongues and not the world', () => {
+test('Chris Scotwood interprets three tongues and not the world', () => {
   assert.ok(MERCENARY_ROSTER.some(mercenary => mercenary.id === INTERPRETER.npcId), 'the interpreter is on the roster');
   assert.ok(INTERPRETER.knows.length >= 1 && INTERPRETER.knows.length < LANGUAGE_IDS.length / 2, 'he knows some of it, not most of it');
   for (const id of INTERPRETER.knows) assert.ok(LANGUAGES[id], `he claims to know ${id}`);
@@ -174,7 +174,7 @@ test('who speaks what: an override, then an origin, then the Empire, then the gr
   assert.equal(speechFor({ modelRole: 'legion-officer' }, 'West Izol').language, 'ambroni', 'the Empire answers in its own tongue anywhere');
   assert.equal(speechFor({ id: 'villager' }, 'West Suval').language, 'suvalen', 'and everybody else speaks the country they are standing in');
   assert.equal(speechFor({ id: INTERPRETER.npcId, origin: 'Feradom' }, 'Drent').language, null,
-    'and Chris Gotwood, who came off the same boat, speaks whatever the traveler speaks');
+    'and Chris Scotwood, who came off the same boat, speaks whatever the traveler speaks');
   assert.ok(SIGN_READING_LEVEL > 0 && SIGN_READING_LEVEL < 99, 'lettering turns over somewhere in the middle');
 });
 
@@ -191,18 +191,18 @@ test('the road letters its signs in the country they stand in', () => {
   for (const name of ['Tidehaven', 'Elod', 'Solis', 'Ambron', 'Izolveth', 'I', 'II', 'III']) {
     assert.ok(!FOREIGN_SIGN_LABELS.has(name), `${name} is a name and should letter the same either way`);
   }
-  assert.ok(FOREIGN_SIGN_LABELS.get('The Caloss Gate')?.includes('Caloss'), 'and a sign for a place still names the place');
+  assert.ok(FOREIGN_SIGN_LABELS.get('Fernway Rest')?.includes('Fernway'), 'and a sign for a place still names the place');
 });
 
 test('a sign reads in the country’s tongue until the traveler can read it, and then in his', () => {
   setSignReader(null);
-  assert.equal(signText('The Caloss Gate'), 'The Caloss Gate', 'with nobody to ask, a sign is plain');
+  assert.equal(signText('Fernway Rest'), 'Fernway Rest', 'with nobody to ask, a sign is plain');
   setSignReader(() => false);
-  assert.equal(signText('The Caloss Gate'), FOREIGN_SIGN_LABELS.get('The Caloss Gate'));
+  assert.equal(signText('Fernway Rest'), FOREIGN_SIGN_LABELS.get('Fernway Rest'));
   assert.equal(signText('Tidehaven'), 'Tidehaven', 'a name is a name either way');
   assert.equal(signText('A board nobody has written yet'), 'A board nobody has written yet', 'an unmapped label letters plainly rather than breaking the road');
   setSignReader(() => true);
-  assert.equal(signText('The Caloss Gate'), 'The Caloss Gate');
+  assert.equal(signText('Fernway Rest'), 'Fernway Rest');
   setSignReader(null);
 });
 

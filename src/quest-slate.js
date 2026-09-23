@@ -24,7 +24,7 @@
  * mark over anybody's head, nothing in the journal, nobody asking you to go. There are two:
  *
  *   `road-ambush`   three rebels on the emptiest stretch of the Drent road, who by default kill
- *                   Chris Gotwood and leave him on it (src/road-ambush.js).
+ *                   Chris Scotwood and leave him on it (src/road-ambush.js).
  *   `word-arrival`  Ed the Word swimming ashore from the rebel ship (src/word-arrival.js).
  *
  * Both are live, and neither is in `LIVE` or `CLOSED` below, because neither is a quest.

@@ -2,7 +2,7 @@
  * The mercenary company: eleven hired swords, the traveler among them, called from abroad
  * by the Ambroni Empire and mustering at the army's camp on the Moros Plain.
  *
- * They do not come in a line. Chris Gotwood steps off the same boat as the traveler and
+ * They do not come in a line. Chris Scotwood steps off the same boat as the traveler and
  * carries the letter that starts the whole thing. Ed the Word swims ashore out of a pirate
  * ship that never docks. Jerry, Kristen and Ciaran ride in together and argue about whether
  * to stay together. Lakota comes alone, then Eliana alone after him, then Matt and Al the Tun
@@ -69,9 +69,9 @@ export const MERCENARY_STYLES = Object.freeze({
  * are still arguing when you reach them; `route` is how they get to the muster.
  */
 export const MERCENARY_ROSTER = Object.freeze([
-  merc('gotwood', 'Chris Gotwood', 'Feradom', ARRIVALS.gotwood, 420, 1.28,
+  merc('gotwood', 'Chris Scotwood', 'Feradom', ARRIVALS.gotwood, 420, 1.28,
     { tunic: 0x6b6f5a, hair: 0xd8c893, skin: 0xe2bd93, build: 'ordinary', headgear: 'bare', hairStyle: 'fine', facialHair: 'full', garment: 'jerkin', marks: ['spectacles'] },
-    ['Chris Gotwood. Same boat, same coin, and I have the letter they gave us both \u2014 you take it, you are the one they wrote it about. The army\u2019s post is up the road in the Avrel clearing.',
+    ['Chris Scotwood. Same boat, same coin, and I have the letter they gave us both \u2014 you take it, you are the one they wrote it about. The army\u2019s post is up the road in the Avrel clearing.',
       'I will give the village a look and come after you. No sense the two of us crowding one quartermaster.'],
     { group: null, carriesLetter: true }),
   // He stands on that strand for twenty-five minutes before the road gets him, because he has
@@ -492,7 +492,7 @@ export const LANDING_ESCORT = false;
  * the rest of the game, not a man who has to be asked for properly.
  */
 export function mateIsEscorting({ mate = null, questStage = null, mode = null, arriving = false } = {}) {
-  // **Switched off** (the user, 21 September 2026: Chris Gotwood should not follow you right off
+  // **Switched off** (the user, 21 September 2026: Chris Scotwood should not follow you right off
   // the boat). He came up the pier at the traveler's shoulder and walked with him until Jojo
   // handed over the letter. He still lands, still stands at the landing, and still joins the
   // company on the road; he simply does not walk the first minutes with you. One word back.
@@ -503,8 +503,8 @@ export function mateIsEscorting({ mate = null, questStage = null, mode = null, a
 
 /**
  * How the harbourmaster describes the man who came up the pier with you. He is a slot and not
- * a name — Chris Gotwood for ten of the eleven, Cromb when you are Chris — so she must never
- * be made to send Chris to go and talk to Gotwood. She has met these two and has a word for
+ * a name — Chris Scotwood for ten of the eleven, Cromb when you are Chris — so she must never
+ * be made to send Chris to go and talk to Scotwood. She has met these two and has a word for
  * each of them; anybody who ends up in the slot later gets the plain one.
  */
 const LANDING_MATE_NOTE = Object.freeze({

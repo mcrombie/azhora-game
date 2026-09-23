@@ -37,10 +37,25 @@ All of it is still written, still built and still tested. `src/quest-slate.js` i
   supply parcels — with the raiders among the field walls that went with them (`courier`).
 - Sava's three waymarkers on the rise (`waymarkers`). Sava herself is out of the cast with them
   (`DROP_IDS`, `src/cast.js`); Corvan stays because the soldier rule keeps him.
-- The satchel lesson, the Greenway Watch, Fernway Rest and the Caloss Gate as *steps*. The ground
+- The satchel lesson, the Greenway Watch, Fernway Rest and the old Caloss Gate as *steps*. The ground
   is all still there and still walked; none of it is a thing the game stops you to do.
 - The long way round through Drent's teachers (`teachers`), because every stop on it is somebody
   the cast cull took out.
+
+## What came out of the world
+
+Not switched off — **removed**. The **Caloss Gate** (the user, 22 September 2026: "it doesn't
+seem to fit there anymore"): the gatehouse and its upper room, the guard hut, the field gate and
+its wing fences, the signpost, the two direction signs that pointed at it, the road notice, the
+area on the chart, the name in Drentish, and Footman Bram and Footman Dusk who stood on it. An
+army gate in the middle of Drent made sense when the tutorial ended at it; the tutorial ends at
+Nothom now.
+
+What is left is the ground: the wood still gives out on that line, the worn earth is still worn,
+and Tidehaven's painted boundary stone still names Tidehaven on one face and Avrel on the other.
+The road vertex stays exactly where it was — `WOOD_EDGE` in `src/region-world.js`, which
+`ONWARD_ROAD`, `src/rena.js` and `src/wayside.js` all still measure from — so nothing on the road
+moved a metre.
 
 ## Events, which are not quests
 
@@ -54,7 +69,7 @@ on the roster's clock, and by default:
 
 | Who | What happens |
 |-----|--------------|
-| Chris Gotwood | first through, and alone. They kill him, and his body lies on the road. |
+| Chris Scotwood | first through, and alone. They kill him, and his body lies on the road. |
 | Ed the Word | gets clear without drawing anything. Always. |
 | Jerry, Kristen, Ciarán | walk to Luscia together and finish them; a third of the time it costs one of the three, and it can be any of them. |
 | Lakota, Eliana | run, and get away, like Ed. |

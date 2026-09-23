@@ -128,12 +128,12 @@ test('a normal-mode dialogue is the authored English, whatever tongue the speake
   assert.match(main, /if\(gameMode\.has\('linguist'\)\)setSignReader\(/, 'no sign reader in normal mode');
 });
 
-test('normal mode shows twenty-three skills, pays none of the Linguist, and offers nothing that teaches a tongue', () => {
+test('normal mode shows twenty-five skills, pays none of the Linguist, and offers nothing that teaches a tongue', () => {
   assert.deepEqual([...hiddenSkillsIn(GAME_MODE_NORMAL)], ['linguist']);
   assert.deepEqual([...hiddenSkillsIn(GAME_MODE_HARD)], [], 'hard mode hides nothing');
   assert.deepEqual([...hiddenSkillsIn(undefined)], ['linguist'], 'and the default is normal');
   const shown = SKILL_IDS.filter(id => !hiddenSkillsIn(GAME_MODE_NORMAL).includes(id));
-  assert.equal(shown.length, 23, 'the seven Arms and the three schools of sorcery are on the sheet too');
+  assert.equal(shown.length, 25, 'the seven Arms and the five schools of sorcery are on the sheet too');
   assert.equal(shown.includes('linguist'), false, 'the tile is not on the sheet');
   assert.equal(SKILL_IDS.includes('linguist'), true, 'and the registry keeps it all the same');
 

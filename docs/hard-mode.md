@@ -12,7 +12,7 @@ One thing so far:
 - **The linguist skill and everything that comes with it.** Nobody in Azhora speaks the
   traveler's language, so what people say arrives in their own tongue and English surfaces as
   the traveler learns it: the tongue rendering of speech and of signs, a proficiency for each
-  language, Chris Gotwood interpreting while he is with you, his language sittings on the long
+  language, Chris Scotwood interpreting while he is with you, his language sittings on the long
   road, the phrasebook, the drills, and the key that shows a line as it was said
   (`src/linguist.js`, `src/languages.js`, `docs/languages.md`).
 

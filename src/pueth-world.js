@@ -146,9 +146,9 @@ export function nearestPuethRiver(x, z, limit = Infinity) {
 export const puethRiverDistance = (x, z, limit = Infinity) => nearestPuethRiver(x, z, limit).distance;
 
 // ---------------------------------------------------------------------------
-// The road north: off the main road past the Caloss Gate, over the Tessen, to Rimeholt
+// The road north: off the main road past the edge of Tidehaven's wood, over the Tessen, to Rimeholt
 // ---------------------------------------------------------------------------
-/** The main road's point at a given x on its straight west of the Caloss Gate. */
+/** The main road's point at a given x on its straight west of the wood's edge. */
 function mainRoadAt(x) {
   for (let i = 1; i < MAIN_ROAD.length; i++) {
     const a = MAIN_ROAD[i - 1], b = MAIN_ROAD[i];
@@ -158,7 +158,7 @@ function mainRoadAt(x) {
 }
 
 /**
- * The junction: 38 m past the Caloss Gate and 24 m beyond the edge of the
+ * The junction: 38 m past the wood's edge and 24 m beyond the edge of the
  * rigid Tidehaven ground (190 m round the landing), so nothing of the village
  * moves and the Greenway's own scatter never meets the new road.
  */
@@ -253,6 +253,29 @@ export const HIDEOUT_CLEARINGS = Object.freeze([
 ]);
 
 // ---------------------------------------------------------------------------
+// Liz's skeps, in the birch north of the camp trail
+// ---------------------------------------------------------------------------
+/**
+ * Where Liz keeps the Pueth skeps, and therefore where the game's honeycomb comes from now that
+ * Troy has gone to sea. The quest's own numbers - the cat, what it will follow, what counts as
+ * home - are in `src/cat-quest.js`; this is where the world puts her.
+ *
+ * Measured on the built world: level ground with sixteen clear metres round it, ninety-one metres
+ * from the goblin camp, twenty-six off its trail, and seventy-nine from the nearest soldier, which
+ * is as alone as anybody in this region gets. Near enough that her cat can walk to the camp's
+ * scraps; far enough that she has not noticed the camp is there.
+ */
+export const LIZ_CLEARING = Object.freeze({ ...point(-36, -171), r: 12 });
+/**
+ * Three skeps on a plank bench, three metres behind her and turned away from the trail, in world
+ * metres. Their colliders are small: a traveler can walk between the skeps, and would rather not.
+ */
+export const LIZ_SKEPS = Object.freeze([-2.1, 0, 2.1].map(along =>
+  Object.freeze({ x: LIZ_CLEARING.x - 3.2, z: LIZ_CLEARING.z + along, r: .5 })));
+/** The bench they stand on, and which way it faces. */
+export const LIZ_BENCH = Object.freeze({ ...point(LIZ_CLEARING.x - 3.2, LIZ_CLEARING.z), yaw: Math.PI / 2, length: 6.4 });
+
+// ---------------------------------------------------------------------------
 // Rimeholt, the timber town on the Feradom road
 // ---------------------------------------------------------------------------
 /** Ten buildings in the town's frame: the army's garrison house, the inn, the reeve's hall, houses, a store and the yard shed. */
@@ -314,6 +337,7 @@ export const PUETH_CLEARINGS = Object.freeze([
   ...PUETH_LANDMARKS.filter(place => !['tessen-bridge', 'tessen-post', 'rimeholt', 'feradom-road'].includes(place.id))
     .map(place => Object.freeze({ x: place.x, z: place.z, r: 9 })),
   Object.freeze({ x: FERADOM_BARRIER.x, z: FERADOM_BARRIER.z, r: 8 }),
+  Object.freeze({ x: LIZ_CLEARING.x, z: LIZ_CLEARING.z, r: LIZ_CLEARING.r }),
 ]);
 
 /** Signposts in the existing style. */
@@ -327,6 +351,7 @@ export const PUETH_SIGNS = Object.freeze([
 export const PUETH_NPC_POSITIONS = Object.freeze({
   ...Object.fromEntries(Object.entries(GARRISON_STANDS).map(([id, stand]) => [id, point(stand.x, stand.z)])),
   ...RIMEHOLT_STANDS,
+  'liz-beekeeper': point(LIZ_CLEARING.x, LIZ_CLEARING.z),
 });
 
 export { hexAt, MAIN_ROAD };

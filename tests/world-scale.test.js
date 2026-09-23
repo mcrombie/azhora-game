@@ -9,7 +9,7 @@ import {
   toWorld, toWorldRoad, toWorldIn, toAuthored,
 } from '../src/world-scale.js';
 import {
-  ANCHORS, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD, CALOSS, CALOSS_GATE, CALOSS_BANK, FERNWAY_REST,
+  ANCHORS, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD, CALOSS, WOOD_EDGE, CALOSS_BANK, FERNWAY_REST,
   AVREL_CLEARING, LUMBER_TOWN, STORY_SITES, VILLAGE, villageToWorld, regionNpcPositions, journeySites,
 } from '../src/regions.js';
 
@@ -72,11 +72,11 @@ test('Tidehaven does not move: the village, its trail and everything in its fram
   assert.deepEqual(clusterShift(CLUSTERS.find(entry => entry.id === 'tidehaven')), { x: 0, z: 0 });
   assert.deepEqual(VILLAGE, { x: -20, z: 29, yaw: Math.PI / 2 });
   assert.deepEqual(villageToWorld(0, 43), { x: 23, z: 29 });
-  // The whole carried-over settlement, out to the Caloss Gate and its barrier.
+  // The whole carried-over settlement, out to the edge of its wood.
   for (const [x, z] of [[0, 29], [-15, 29], [-56, 29], [-86, 29], [-97, 2], [-128, 34], [-138, -31], [-176, 29], [-182, 29]])
     assert.deepEqual(toWorld(x, z), { x, z }, `${x},${z} is inside the village`);
-  assert.deepEqual(CALOSS_GATE.x, -176);
-  assert.deepEqual(CALOSS_GATE.barrierX, -182);
+  assert.deepEqual(WOOD_EDGE.x, -176);
+  assert.deepEqual(WOOD_EDGE.westX, -182);
   assert.deepEqual(FERNWAY_REST.x, -128);
   // The village's own trail is the one road that does not scale.
   for (let i = 0; i <= 12; i++) assert.deepEqual(toWorldRoad(MAIN_ROAD[i].x, MAIN_ROAD[i].z), MAIN_ROAD[i]);

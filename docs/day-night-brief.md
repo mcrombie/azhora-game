@@ -32,7 +32,7 @@ chosen against the company's timetable, and it makes the arrivals mean something
 
 | Who | Lands at | Which is |
 |---|---|---|
-| You and Chris Gotwood | 0:00 | first light, day one |
+| You and Chris Scotwood | 0:00 | first light, day one |
 | Ed the Word | 6 min | morning |
 | Jerry, Kristen, Ciarán | 18 min | just past midday |
 | **Lakota** | 33 min | **one minute after nightfall** — a lantern on the pier, and the birder arrives with the owls |

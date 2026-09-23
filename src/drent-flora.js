@@ -304,7 +304,7 @@ export const AUTHORED_STANDS = Object.freeze([
   // is authored the way the jimson weeds are (docs/drent-long-road-probe.md \u00a74).
   Object.freeze({ id: 'hedge-lane-hazel', species: 'hazel', x: -481.2, z: 41.6, count: 5, spread: 7 }),
   Object.freeze({ id: 'hedge-lane-bramble', species: 'bramble', x: -484.6, z: 34.4, count: 5, spread: 7 }),
-  // And bramble at the Caloss Gate, where the wood gives out and the thorn takes the field edge.
+  // And bramble where the wood gives out and the thorn takes the field edge.
   Object.freeze({ id: 'gate-bramble', species: 'bramble', x: -176, z: 29, count: 4, spread: 9 }),
 ]);
 
@@ -417,7 +417,7 @@ export function createDrentFlora(scene, world, { avoid = [], random = null } = {
       // else must be somewhere a person could kneel.
       if (!stand.water && !canStand(x, z, world, .5)) continue;
       // An authored stand is placed on purpose, but not on top of somebody's feet or on a thing
-      // the road is read at: a bramble of this patch landed inside the Caloss Gate notice's own
+      // the road is read at: a bramble of this patch landed inside the old road notice's own
       // two metres and ate the F that should have read it, so the end of the tutorial pointed
       // nowhere at all (found by the story smoke, 2026-09-22). Gathering reaches 2.2 m.
       if (crowded(x, z, avoid, 3)) continue;

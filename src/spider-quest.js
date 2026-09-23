@@ -37,6 +37,28 @@ export const BEN = Object.freeze({
 /** The spider, which is one creature and has one name. */
 export const SPIDER = Object.freeze({ id: 'thorn-spider', name: 'The spider in the thorns', hp: 220, kind: 'spider' });
 
+/**
+ * The fight at the den. The way out runs back the way you came in - east, toward the town - and
+ * the thing comes out of the thorns half a second after you are inside its reach.
+ *
+ * **Ben stands in it as an ally**, at his own numbers, because the fireballs are the reason it is
+ * winnable and because he has to be able to die in it. `legionary` is the nearest ally kind the
+ * combat module has to a man who fights at range and does not last long if something reaches him
+ * (src/combat.js); what makes him a sorcerer is the wand in the model and the fire in the fiction.
+ */
+export const SPIDER_DEN = Object.freeze({
+  id: 'thorn-den',
+  center: Object.freeze({ x: -796, z: 276 }),
+  checkpoint: Object.freeze({ x: -774, z: 276 }),
+  retreatAxis: 'x', retreatLine: -762,
+  enemies: Object.freeze([
+    Object.freeze({ id: SPIDER.id, name: SPIDER.name, kind: SPIDER.kind, x: -800, z: 272, hp: SPIDER.hp, entry: .6 }),
+  ]),
+  allies: Object.freeze([
+    Object.freeze({ id: 'ben-sorcerer', name: 'Ben', kind: 'legionary', x: -790, z: 280, hp: 78 }),
+  ]),
+});
+
 /** Where he stands, where the den is, and what the guild is paying. */
 export const SPIDER_QUEST = Object.freeze({
   id: 'ben-spider',

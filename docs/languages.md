@@ -27,7 +27,7 @@ came on, and nothing of Drentish, which is what Tidehaven speaks.
 `STARTING_PROFICIENCY` in `src/languages.js` is a table of fourteen zeros; it is
 a table so it can be tuned in one place without touching any rule.
 
-What makes the opening followable is **Chris Gotwood**. He came off the same
+What makes the opening followable is **Chris Scotwood**. He came off the same
 boat, he carries the Empire's letter, and he has enough of the local speech to
 get two men up a road. While he is beside you:
 
@@ -85,7 +85,7 @@ its dialects.
 
 | Tongue | Who | Sound from |
 | --- | --- | --- |
-| **Feradom speech** | Chris Gotwood, Ciarán | derived: Drentish diverged, with the cold clusters of profile `crefs` |
+| **Feradom speech** | Chris Scotwood, Ciarán | derived: Drentish diverged, with the cold clusters of profile `crefs` |
 | **Maroshi** | Lakota, of the Marosh fens | profile `moreshi` |
 | **Pyrosi** | Eliana, of the Pyrosi hills | profile `pyrosi` |
 | **Selemi** | Kristen, of the Selemi coast | derived: profile `tennoca`, whose coastal-trading sound fits the Iberos Sea's own maritime power |
@@ -254,7 +254,7 @@ a word the count has not heard of is simply one of the last you learn.
   person cannot teach you their language — forty lines from one villager is a
   beginning and not a language — which forces breadth. You learn Elagosi by
   talking to Elagosi, plural.
-- Chris Gotwood's presence doubles it.
+- Chris Scotwood's presence doubles it.
 - **900 exposure is fluency**, on `99·ln(1+e/60)/ln(16)`: 30 exposure is level
   14, 100 is 35, 300 is 63, 600 is 86, 900 is exactly 99. Every level round-trips
   through its inverse, which is how the starting table would seed a non-zero
@@ -291,7 +291,7 @@ nothing at all to a fluent speaker. It stays in the satchel as a keepsake.
 
 ### The drills
 
-The hook above is taken: Chris Gotwood teaches **Ambroni** on the long road through
+The hook above is taken: Chris Scotwood teaches **Ambroni** on the long road through
 Drent, in five sittings of **35 exposure** each, one to close each leg
 (`docs/drent-long-road.md` §6, `DRILLS` in `src/long-road.js`). A drill is six
 lines of the army's own speech with what each one means underneath, and there is

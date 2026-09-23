@@ -9,7 +9,7 @@ import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatu
 import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
   VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
-  CALOSS, CALOSS_BANK, CALOSS_GATE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
+  CALOSS, CALOSS_BANK, WOOD_EDGE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
   calossDistance, landDistance, SOLIS, solisPoint,
 } from './region-world.js';
 import { villageWeight, villageBase, bedrockHeight, groundWithRiver, groundTint, calossSurface, puethRiverSurface, smooth, lerp } from './world-terrain.js';
@@ -110,8 +110,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     || forestFeatureClear(x, z, tree);
   const encounter = { x: 0, z: -34, radius: 8 };
   const northTrail = { x: -5, z: -108, name: FERNWAY_REST.name };
-  const border = { x: 0, z: -156, name: CALOSS_GATE.name, barrierZ: -162,
-    regionName: CALOSS_GATE.regionName, open: true };
+  // Where Tidehaven's ground ends and the Avrel road begins. There was a gate on this line
+  // until 22 September 2026; `barrierZ` is still the line, and there is nothing standing on it.
+  const border = { x: 0, z: -156, name: WOOD_EDGE.name, barrierZ: -162,
+    regionName: WOOD_EDGE.regionName, open: true };
   const routeNorth = [
     { x: 0, z: -72 }, { x: -11, z: -86 }, { x: -5, z: -108 },
     { x: 8, z: -128 }, { x: 3, z: -143 }, { x: border.x, z: border.z },
@@ -917,8 +919,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   signs.direction({ x: 4.4, z: 15.1, label: 'The Greenway', toward: { x: 0, z: -36 }, back: { x: 0, z: 29 }, backLabel: 'Tidehaven Landing', parent: villageRoot });
   signs.direction({ x: -6, z: -86, label: 'Fernway Rest', toward: northTrail, back: { x: -2, z: -60 }, backLabel: 'Tidehaven', parent: villageRoot });
-  signs.direction({ x: -10.7, z: -105, label: 'The Caloss Gate', toward: border, back: { x: -8, z: -80 }, backLabel: 'Tidehaven', parent: villageRoot });
-  signs.direction({ x: 12.9, z: -129, label: 'The Caloss Gate', toward: border, back: northTrail, backLabel: 'Fernway Rest', parent: villageRoot });
+  signs.direction({ x: -10.7, z: -105, label: 'The Avrel Clearing', toward: border, back: { x: -8, z: -80 }, backLabel: 'Tidehaven', parent: villageRoot });
+  signs.direction({ x: 12.9, z: -129, label: 'The Avrel Clearing', toward: border, back: northTrail, backLabel: 'Fernway Rest', parent: villageRoot });
   // Pueth's scenery still calls the older trailSign(x, z, direction, label, yaw, returnLabel, parent): the same
   // fingerposts, pointing ahead along the Pueth road to the place named and back along it (or the main road home).
   /** The point `metres` along a road (negative: back toward its start) from the road point nearest (x, z). */
@@ -963,28 +965,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   vpush({ x: cairnX, z: cairnZ, r: .65 });
   lantern(restX + 1.6, restZ - .2, 2.8);
 
-  // The Caloss Gate: an open field gate between Tidehaven's wood and the clearing.
+  // Where the wood gives out: bare, walked ground and nothing built on it. An army gate stood
+  // across this line - two stone blocks, posts, crossbars and wing fences - until the user took
+  // the whole place out on 22 September 2026 (src/region-world.js, WOOD_EDGE).
   localPatch(border.x, border.z, 7.6, '#b5b387', .83);
-  const gateY = localGround(0, border.barrierZ);
-  for (const side of [-1, 1]) {
-    const x = side * 3.8, y = localGround(x, border.barrierZ);
-    box(rockMat, x, y + .31, border.barrierZ, .72, .62, .7);
-    post(wood, x, y + 1.25, border.barrierZ, .19, 2.5);
-    post(woodLight, x, y + 2.54, border.barrierZ, .23, .13);
-    for (const gy of [.53, 1.22]) box(woodLight, x, gateY + gy, border.barrierZ - 1.8, .15, .16, 3.6);
-    vpush({ x, z: border.barrierZ, r: .35 });
-    // Short wing fences, not a wall across the forest: the border is a place.
-    for (let distance = 8.8; distance <= 26; distance += 5) {
-      const nextX = side * distance, nextY = localGround(nextX, border.barrierZ);
-      post(wood, nextX, nextY + .76, border.barrierZ, .09, 1.52);
-    }
-    for (let distance = 8.8; distance < 26; distance += 5) {
-      const a = side * distance, b = side * (distance + 5);
-      rope([new THREE.Vector3(a, localGround(a, border.barrierZ) + 1.13, border.barrierZ),
-        new THREE.Vector3((a + b) / 2, localGround((a + b) / 2, border.barrierZ) + .94, border.barrierZ),
-        new THREE.Vector3(b, localGround(b, border.barrierZ) + 1.13, border.barrierZ)], .035);
-    }
-  }
+
   // Tidehaven's boundary: a painted stone, its faces naming the ground each looks into.
   signs.border({ x: -5.2, z: border.z + 1.0, facing: Math.PI, parent: villageRoot,
     faces: [{ label: 'Tidehaven', paint: SIGN_COLOURS.paint.drent }, { label: 'Avrel', paint: SIGN_COLOURS.paint.drent }] });
@@ -1772,7 +1757,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     setFishingOrigin,
     encounter: { ...worldEncounter, radius: encounter.radius },
     northTrail: { ...worldNorthTrail, name: northTrail.name },
-    border: { ...worldBorder, name: border.name, barrierX: CALOSS_GATE.barrierX,
+    // `westX` is where the wood ends: the line the old gate's barrier stood on, and still the
+    // line that says a traveler has walked out of Tidehaven (src/region-world.js, WOOD_EDGE).
+    border: { ...worldBorder, name: border.name, westX: WOOD_EDGE.westX,
       regionName: border.regionName, open: true },
     routeNorth: routeNorth.map(p => villageToWorld(p.x, p.z)),
     broadleafTrees: broadTrees.flatMap((tree, i) => {

@@ -111,8 +111,8 @@ test('only damage pays a school, and only Ben teaches one', () => {
   assert.equal(spellXp(0), 0);
   assert.equal(spellXp(-5), 0);
   assert.ok(schoolLevel(0) === 1 && schoolLevel(spellXp(26) * 400) > 1, 'the same table as every other skill');
-  // Three schools, one of them built, and the journal carries all three.
-  assert.deepEqual([...SCHOOL_IDS], ['fire', 'frost', 'wards']);
+  // Five schools, three of them taught, and the journal carries all five.
+  assert.deepEqual([...SCHOOL_IDS], ['fire', 'mind', 'beast', 'frost', 'wards']);
   for (const id of SCHOOL_IDS) {
     assert.ok(SKILL_IDS.includes(id), `${id} is not on the sheet`);
     assert.equal(SKILLS[id].group, 'Sorcery');
@@ -121,7 +121,7 @@ test('only damage pays a school, and only Ben teaches one', () => {
   assert.match(SKILLS.fire.teacher, /Ben/);
   assert.match(SKILLS.frost.teacher, /nobody/i, 'and nobody teaches the other two yet');
   assert.match(SKILLS.wards.teacher, /nobody/i);
-  assert.deepEqual(Object.keys(SPELLS), ['fireball'], 'one spell, and it is the plainest thing in the world');
+  assert.deepEqual(Object.keys(SPELLS), ['fireball', 'mindread', 'summon-bees'], 'one spell each, and Ben’s is the plainest thing in the world');
   assert.equal(SPELLS.fireball.school, 'fire');
 });
 

@@ -41,7 +41,7 @@ test('The authored playable regions carry the atlas into the world, with Drent o
   assert.equal(world.bounds.minX, WORLD_BOUNDS.minX);
   assert.equal(world.bounds.maxZ, WORLD_BOUNDS.maxZ);
   assert.equal(world.border.open, true);
-  assert.ok(canStand(world.border.barrierX, world.border.z, world), 'the Caloss Gate stands open');
+  assert.ok(canStand(world.border.westX, world.border.z, world), 'the road out of Tidehaven’s wood is walkable');
   assert.equal(canStand(WORLD_BOUNDS.minX - 1, ANCHORS.legionCamp.z, world), false, 'the world edge is enforced');
 });
 

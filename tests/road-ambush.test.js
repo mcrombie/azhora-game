@@ -236,7 +236,7 @@ test('src/main.js walks the road, springs it, lays the bodies and saves all of i
     'and the traveler is told once when he walks up to him');
   assert.match(main, /if\(\(npc\.hidden\|\|npc\.fallen\)&&!npc\.lying\)/, 'and not put out of the world with the rest of the dead');
   // Saved with the road, and restored with the seed it was rolled from.
-  assert.match(main, /ambush:ambush\.snapshot\(\)\}\);/);
+  assert.match(main, /ambush:ambush\.snapshot\(\)[,}]/, 'the event goes into the road save with the rest of them');
   assert.match(main, /ambush\.restore\(saved\.ambush\?\?createRoadAmbush\(\{seed:ambushSeed\}\)\.snapshot\(\)\);/);
 });
 

@@ -8,10 +8,10 @@ test('levels are read from the thresholds, with progress toward the next', () =>
   // src/sorcery.js).
   assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'farming', 'linguist',
     'blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness',
-    'fire', 'frost', 'wards']);
+    'fire', 'mind', 'beast', 'frost', 'wards']);
   assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Arms'),
     ['blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness'], 'the seven are the grouped ones');
-  assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Sorcery'), ['fire', 'frost', 'wards'],
+  assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Sorcery'), ['fire', 'mind', 'beast', 'frost', 'wards'],
     'and the three schools are the other group');
   assert.ok(SKILL_IDS.slice(0, 14).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
   for (const id of SKILL_IDS) assert.ok(SKILLS[id].teacher && SKILLS[id].blurb, `${id} says who teaches it`);

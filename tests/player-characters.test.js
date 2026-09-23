@@ -409,9 +409,9 @@ test('the company of eleven share the language of the contract, and the locals d
 });
 
 test('the harbourmaster names the man who actually walked up the pier with you', () => {
-  // He is a slot: Chris Gotwood for ten of the eleven, Cromb when you are Chris. Her fourth line
-  // used to say "pleased with himself, Gotwood" whoever it was, so as Chris she sent Chris
-  // Gotwood to go and talk to Gotwood.
+  // He is a slot: Chris Scotwood for ten of the eleven, Cromb when you are Chris. Her fourth line
+  // used to say "pleased with himself, Scotwood" whoever it was, so as Chris she sent Chris
+  // Scotwood to go and talk to Scotwood.
   for (const playerId of PLAYABLE_IDS) {
     const mate = companyFor(playerId)[0];
     const note = landingMateNote(mate);
@@ -420,10 +420,10 @@ test('the harbourmaster names the man who actually walked up the pier with you',
     if (playerId === 'gotwood') {
       assert.equal(mate.id, CROMB.id);
       assert.ok(note.includes('Cromb the Barbarian'), 'as Chris, the man beside you is Cromb');
-      assert.ok(!note.includes('Gotwood'), 'and she does not send Chris to go and talk to Chris');
+      assert.ok(!note.includes('Scotwood'), 'and she does not send Chris to go and talk to Chris');
       assert.ok(!note.includes('pleased with himself'), 'nor give Cromb a phrase that is Chris\u2019s');
     } else {
-      assert.ok(note.includes('Chris Gotwood'), `${playerId}: the man beside you is Chris`);
+      assert.ok(note.includes('Chris Scotwood'), `${playerId}: the man beside you is Chris`);
       assert.ok(note.includes('pleased with himself'), `${playerId}: which is the phrase she has for him`);
     }
   }

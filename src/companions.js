@@ -4,7 +4,7 @@
  *
  * **This is not a second system beside the long road's companion.** `createMercenaryCompany`
  * already takes `{ id, with: true }`, gives that man the phase `with-traveler` and returns
- * `companionId`; Chris Gotwood walking Drent at your shoulder is the first case of this and the
+ * `companionId`; Chris Scotwood walking Drent at your shoulder is the first case of this and the
  * only automatic one. What this adds is the other nine, the rungs, and the dead.
  *
  * Nothing here knows where anybody is standing. It answers "may he be asked, and will he come",

@@ -43,6 +43,8 @@ export const SORCERY_HEADING = 'Sorcery';
  */
 export const SCHOOLS = Object.freeze({
   fire: Object.freeze({ id: 'fire', spells: Object.freeze(['fireball']) }),
+  mind: Object.freeze({ id: 'mind', spells: Object.freeze(['mindread']) }),
+  beast: Object.freeze({ id: 'beast', spells: Object.freeze(['summon-bees']) }),
   frost: Object.freeze({ id: 'frost', spells: Object.freeze([]) }),
   wards: Object.freeze({ id: 'wards', spells: Object.freeze([]) }),
 });
@@ -61,10 +63,17 @@ export const SORCERY = Object.freeze({
   wand: Object.freeze({ damage: 1, cast: 1 }),
   staff: Object.freeze({ damage: 1.45, cast: 1.35 }),
   xp: Object.freeze({
-    /** Experience per point of damage a spell deals, which is the only thing that pays a school. */
+    /** Experience per point of damage a spell deals. Fire is paid this way, and so are the bees. */
     perDamage: .8,
     /** A killing blow pays a little extra, as a share of what the blow itself paid. */
     killing: .5,
+    /**
+     * **And a spell that hurts nobody still has to be paid.** Mindread deals no damage at all,
+     * so damage cannot be what teaches it; what teaches it is doing it and learning something,
+     * which is the same shape as every other skill in the game - the rod pays for a fish and not
+     * for a cast. A read that turns nothing up pays nothing.
+     */
+    perReading: 34,
   }),
 });
 
@@ -80,6 +89,33 @@ export const SPELLS = Object.freeze({
     cast: Object.freeze({ low: 1.15, high: .7 }),
     damage: Object.freeze({ low: 26, high: 78 }),
     range: 18, speed: 17, radius: .34,
+  }),
+  /**
+   * **Mindread** (Troy's, in Cobble): a second thing to say in any conversation, which often
+   * turns something up and sometimes does not. It deals nothing and it is not thrown, so it has
+   * no cast time and no reach beyond the person you are already talking to - what it costs is
+   * focus, and what a conversation gives up is decided by whoever wrote that conversation.
+   */
+  mindread: Object.freeze({
+    id: 'mindread', school: 'mind', name: 'Mindread',
+    cost: Object.freeze({ low: 25, high: 10 }),
+    cast: Object.freeze({ low: 0, high: 0 }),
+    damage: Object.freeze({ low: 0, high: 0 }),
+    range: 4, speed: 0, radius: 0, spoken: true,
+  }),
+  /**
+   * **Summon bees** (Liz's, in Pueth): a swarm comes, and it goes for whoever is going for you.
+   * With nothing to sting they wander off, which is the whole of their discipline. The damage is
+   * the swarm's, dealt over the time it stays, and it is what pays the school.
+   */
+  'summon-bees': Object.freeze({
+    id: 'summon-bees', school: 'beast', name: 'Summon bees',
+    cost: Object.freeze({ low: 30, high: 18 }),
+    cast: Object.freeze({ low: .9, high: .55 }),
+    damage: Object.freeze({ low: 4, high: 11 }),
+    range: 9, speed: 5.5, radius: 2.2, swarm: true,
+    /** How long they stay, and how often each sting lands. */
+    stay: Object.freeze({ low: 7, high: 16 }), sting: .8,
   }),
 });
 export const SPELL_IDS = Object.freeze(Object.keys(SPELLS));
@@ -118,6 +154,9 @@ export function castWith(spellId, { level = 1, weapon = null } = {}) {
 export function focusAt(level = 1) {
   return Object.freeze({ focus: Math.round(between(SORCERY.focus, level)), regain: +between(SORCERY.regain, level).toFixed(2) });
 }
+
+/** What a reading pays Mind, when it actually turned something up. */
+export const readingXp = ({ learned = false } = {}) => (learned ? SORCERY.xp.perReading : 0);
 
 /** What a spell's damage pays its school, the way a blow pays its weapon's family. */
 export const spellXp = (damage, { killing = false } = {}) => {

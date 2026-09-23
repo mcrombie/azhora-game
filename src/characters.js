@@ -1031,8 +1031,12 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // and Katy's; `look.slight` opens it to anybody, which is how Jojo the harbourmaster and Jess
   // of the Stills read as the women they are (the user, 22 September 2026).
   const isKaty = role === 'bat-seeker', slight = isWineClerk || isKaty || look?.slight === true;
-  // Troy, who keeps the bees at the Bee Fold (src/beekeeper.js): curly red hair, a red beard and a grin.
+  // Troy, who kept the bees at the Bee Fold (src/murder-quest.js): curly red hair, half of it gone
+  // dirty blonde, a red beard and a grin.
   const isKeeper = role === 'bee-keeper';
+  // Liz, who keeps the Pueth skeps now (src/cat-quest.js): the same trade and the same canvas
+  // smock, and nothing else of Troy - long straight black hair, tan skin, no beard, no smoker.
+  const isSkepKeeper = role === 'skep-keeper';
   // Imani, who keeps the vines at Vaervelm Caelazh (src/vineyard.js): a blunt black bob, steel
   // spectacles for close work, and a stained canvas apron with the shears standing out of it.
   const isVineKeeper = role === 'vine-keeper';
@@ -1533,7 +1537,14 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       // Thinner than it was, but it still comes forward over the top of his head.
       [0, .352, -.04, .105], [-.08, .348, .03, .09], [.08, .348, .03, .09],
       [0, .338, .085, .095], [-.075, .33, .072, .08], [.075, .33, .072, .08]];
-    for (const [x, y, z, r] of curls) round(head, hairMat, [x, y, z], [r, r * .82, r * .9]);
+    /**
+     * **Half of him went dirty blonde** (the user, 22 September 2026). Not a gradient and not a
+     * streak: the curls on his left are one colour and the curls on his right are the other, and
+     * the ones down the middle keep the red he came with. `look.hairSplit` is the second colour
+     * and nobody else has one.
+     */
+    const splitMat = Number.isInteger(look?.hairSplit) ? material(look.hairSplit) : null;
+    for (const [x, y, z, r] of curls) round(head, splitMat && x < -.001 ? splitMat : hairMat, [x, y, z], [r, r * .82, r * .9]);
     // The beard: jaw, chin and cheeks, with a moustache over the lip.
     const beard = [[0, .01, .175, .13, .1, .105], [-.115, .055, .15, .085, .09, .085], [.115, .055, .15, .085, .09, .085],
       [-.16, .115, .095, .07, .095, .085], [.16, .115, .095, .07, .095, .085], [0, -.04, .15, .105, .075, .09], [0, .055, .19, .105, .075, .07]];
@@ -2280,18 +2291,19 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       const pages = box(book, whites, [side * 0.06, 0.012, 0], [0.11, 0.012, 0.15]);
       pages.rotation.z = side * -0.12;
     }
-  } else if (isKeeper) {
-    // A pale canvas smock to the knee, long gloves, and no hat and no veil at all: the bees know him,
-    // and he would rather see what he is doing. The spectacles are his own, and he works in them.
-    const canvas = material(0xe7e0c8), tin = material(0x9aa0a4, { metalness: .5, roughness: .45 });
+  } else if (isKeeper || isSkepKeeper) {
+    // A pale canvas smock to the knee, long gloves, and no hat and no veil at all: the bees know
+    // them, and they would rather see what they are doing. The spectacles and the smoker are
+    // Troy's own; Liz has the smock, the gloves and her own head.
+    const canvas = material(isSkepKeeper ? tunic : 0xe7e0c8), tin = material(0x9aa0a4, { metalness: .5, roughness: .45 });
     part(body, new THREE.CylinderGeometry(.245, .33, .56, 10), canvas, [0, .62, 0], [1, 1, .82]);
     part(body, UNIT_CYLINDER, material(0x8a6a42), [0, .93, 0], [.268, .045, .2]);
     for (const side of [-1, 1]) part(arms[side > 0 ? 1 : 0], new THREE.CylinderGeometry(.078, .07, .16, 8), canvas, [side * .02, -.22, 0]);
     for (const wrist of wrists) round(wrist, canvas, [0, .01, 0], [.085, .075, .085]);
     // Spectacles: he works in them, and would rather see what he is doing than wear a veil.
-    spectacles(head, 'Troy’s spectacles', material(0x8c7a4e, { metalness: .55, roughness: .4 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
+    if (isKeeper) spectacles(head, 'Troy’s spectacles', material(0x8c7a4e, { metalness: .55, roughness: .4 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
     // The smoker in his right hand: a tin with a spout and a little bellows.
-    const smoker = new THREE.Group(); smoker.name = 'Troy’s bee smoker'; wrists[1].add(smoker);
+    const smoker = new THREE.Group(); smoker.name = isKeeper ? 'Troy’s bee smoker' : 'Liz’s bee smoker'; wrists[1].add(smoker);
     smoker.position.set(-.02, -.12, .03);
     part(smoker, new THREE.CylinderGeometry(.062, .07, .18, 8), tin, [0, -.02, 0]);
     part(smoker, new THREE.ConeGeometry(.055, .09, 8), tin, [0, .1, 0]);

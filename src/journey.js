@@ -104,7 +104,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {}, live = q
   function view() {
     const current = stage();
     const views = {
-      'not-started': [2, 0, 0, 'Beyond the first shore', 'Carry the letter of introduction west out of Tidehaven and on past the Caloss Gate.', ['border']],
+      'not-started': [2, 0, 0, 'Beyond the first shore', 'Carry the letter of introduction west out of Tidehaven and on up the Avrel road.', ['border']],
       'meet-courier': [2, 1, 1, 'Report for field service', 'Bring the letter of introduction to Corvan, the Ambroni army quartermaster beside the meadow road. Press F to report.', ['meadow-courier']],
       'recover-parcels': [2, 2, 2, 'Your first army assignment', `Recover the three army supply parcels scattered by the goblin attack. ${state.parcels.length} of 3 recovered. Press F beside each parcel.`, PARCEL_IDS.filter(id => !state.parcels.includes(id))],
       'return-courier': [2, 3, 3, 'Supplies for the campaign', 'Report to Corvan with the recovered supplies. Your army service continues toward the Caloss; two cooked fish will provision the march.', ['meadow-courier']],

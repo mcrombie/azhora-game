@@ -39,7 +39,7 @@ export const HARD_MODE_FEATURES = Object.freeze({
   linguist: Object.freeze({
     id: 'linguist',
     name: 'The tongues of Azhora',
-    note: 'Nobody in Azhora speaks the traveler’s language, so what people say arrives in their own tongue and English surfaces as he learns it. With it: the tongue rendering of speech and of signs, a proficiency for each language, Chris Gotwood interpreting while he is with you, his five sittings on the long road, the phrasebook, the drills, and the key that shows a line as it was said (src/linguist.js, src/languages.js, docs/languages.md).',
+    note: 'Nobody in Azhora speaks the traveler’s language, so what people say arrives in their own tongue and English surfaces as he learns it. With it: the tongue rendering of speech and of signs, a proficiency for each language, Chris Scotwood interpreting while he is with you, his five sittings on the long road, the phrasebook, the drills, and the key that shows a line as it was said (src/linguist.js, src/languages.js, docs/languages.md).',
     skills: Object.freeze(['linguist']),
   }),
 });

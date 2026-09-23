@@ -566,10 +566,10 @@ export function companionPace(gap, travelerRun = TRAVELER_RUN) {
  *
  * It is not a menu and it asks for no answer: you choose by walking. He speaks in your own
  * tongue because he is the one man on this coast who can (`INTERPRETER`, src/languages.js), and
- * he is a slot rather than a name — Chris Gotwood for ten of the eleven, Cromb when you are
+ * he is a slot rather than a name — Chris Scotwood for ten of the eleven, Cromb when you are
  * Chris — so the name is handed in.
  */
-export const forkLines = (name = 'Chris Gotwood') => freeze([
+export const forkLines = (name = 'Chris Scotwood') => freeze([
   `Before you set off. There are eleven of us on this contract and nine are still at sea — one swam ashore behind us this morning and the last pair are a boat and an hour away yet. Venmor is paying for eleven and he will not march short.`,
   `So there is no hurry, and I mean that as a fact and not as comfort. Go straight up the road and you are first into an empty camp, or you walk Drent with me and learn the country you have been hired to fight over. You have not seen a yard of it yet, and that will get somebody killed.`,
   `Either way I am walking with you. — ${name}`,
@@ -583,7 +583,7 @@ export const forkNotice = () =>
  * 2026-09-21**: the Toll House was the one stop the chart could not name, and the user gave it a
  * ground of its own.
  */
-export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 'fernway', 'caloss-gate', 'avrel', 'rena', 'applegarth', 'the-toll-house', 'caloss-bank']);
+export const DRENT_GROUNDS = freeze(['eastreena', 'the-greenway', 'willowmere', 'fernway', 'avrel', 'rena', 'applegarth', 'the-toll-house', 'caloss-bank']);
 /** Whether the chart holds all ten of them. */
 export const drentCharted = state => DRENT_GROUNDS.every(id => charted(state, id));
 /** The named ground a stop stands in, for the journal and the trail map. */
@@ -677,7 +677,7 @@ export const drillFor = index => DRILLS.find(entry => entry.index === index) ?? 
  * whole line in Ambroni whatever the traveler has of it, because a drill is a lesson and not an
  * overheard sentence. `asChris` swaps the mouths: the traveler gives it, and it pays the same.
  */
-export function drillScene(index, { render = line => line, name = 'Chris Gotwood', asChris = false } = {}) {
+export function drillScene(index, { render = line => line, name = 'Chris Scotwood', asChris = false } = {}) {
   const entry = drillFor(index);
   if (!entry) return null;
   const lines = entry.lines.map(line => ({ said: render(line), means: line }));

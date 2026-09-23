@@ -21,7 +21,7 @@ test('the company is eleven including the traveler, and the written arrivals nev
   assert.equal(new Set(MERCENARY_ROSTER.map(m => m.name)).size, MERCENARY_ROSTER.length);
   const written = MERCENARY_ROSTER.filter(m => !m.drawn);
   for (let i = 1; i < written.length; i++) assert.ok(written[i].arrival >= written[i - 1].arrival, 'later names land no earlier');
-  assert.equal(written[0].arrival, 0, 'Chris Gotwood lands beside the traveler');
+  assert.equal(written[0].arrival, 0, 'Chris Scotwood lands beside the traveler');
   assert.equal(written[0].id, 'merc-gotwood');
   assert.equal(written.at(-1).arrival, ARRIVALS.princes);
   assert.ok(ARRIVALS.princes >= 3600, 'the last pair arrive more than an hour of play later');
@@ -293,7 +293,7 @@ test('a released man starts behind nothing he had not passed, and never before t
 
 test('mercenaries speak in two lines and know where they stand', () => {
   const lines = mercenaryLines('merc-gotwood', { phase: 'landing' });
-  assert.equal(lines.length, 2); assert.match(lines[0], /Chris Gotwood/);
+  assert.equal(lines.length, 2); assert.match(lines[0], /Chris Scotwood/);
   assert.match(mercenaryLines('merc-jerry', { phase: 'walking' })[1], /Moros Plain/);
   assert.match(mercenaryLines('merc-christin', { phase: 'mustered' })[1], /counts heads/);
   assert.match(mercenaryLines('merc-ciaran', { phase: 'stopped' })[1], /catch you up/);

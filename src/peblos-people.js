@@ -14,19 +14,32 @@
  */
 import { COBBLE_STANDS } from './peblos-world.js';
 
-const person = (id, name, role, modelRole, color) =>
-  Object.freeze({ id, name, role, modelRole, color, yaw: COBBLE_STANDS[id].yaw });
+const person = (id, name, role, modelRole, color, look = null, skin = undefined) =>
+  Object.freeze({ id, name, role, modelRole, color, yaw: COBBLE_STANDS[id].yaw,
+    ...(look ? { look: Object.freeze(look) } : {}), ...(skin !== undefined ? { skin } : {}) });
 const soldier = (id, name, role, modelRole) =>
   Object.freeze({ id, name, role, modelRole, color: 0x8f3b30, yaw: COBBLE_STANDS[id].yaw, armed: false });
 
+/**
+ * **Cobble, after the murder.** Bregga Sell, who kept the nets and the tally, is the woman who
+ * was killed — she is not in this list because she is not in the world any more, and the line she
+ * used to say ("I am the one who tells a man his boat came in light") is the motive
+ * (src/murder-quest.js). The islanders who stood with her have gone with her, at the user's word
+ * of 22 September 2026, and these four stand in their places.
+ */
 export const PEBLOS_NPCS = Object.freeze([
-  person('cobble-netmistress', 'Bregga Sell', 'Net-mistress of Cobble', 'rise-custodian', 0x5d7079),
-  person('cobble-boatwright', 'Hallin Orme', 'Boatwright', 'forest-woodcutter', 0x6d6a4f),
-  person('cobble-lobsterman', 'Maun', 'Lobsterman', 'bridge-keeper', 0x6a7264),
-  person('cobble-salter', 'Wyn Tarrow', 'Salter', 'shelter-keeper', 0x7c6a58),
-  person('cobble-oldhand', 'Old Pell', 'Pilot, retired', 'commons-miller', 0x6f6657),
-  person('cobble-keeper', 'Sela Vane', 'Keeper of the sea shrine', 'rise-custodian', 0x5f6d6b),
-  person('cobble-runner', 'Dunnock', 'Quay runner', 'reed-worker', 0x83734e),
+  // **Jessi**: long red and green hair in a ponytail, and glasses. She fishes, and she teaches it.
+  person('cobble-jessi', 'Jessi', 'Fisher, of Cobble', 'pond-fisher', 0x4d6f63,
+    { hair: 0x8c2f2a, hairSplit: 0x3f6b46, hairStyle: 'long-tied', glasses: true }),
+  // **Ari**: brown skin, curly black hair. The village's own accountant, who keeps Cobble's books
+  // against the Empire's tally — and who was not where she says she was.
+  person('cobble-ari', 'Ari', 'Keeper of the village books', 'rise-custodian', 0x6a5f7d,
+    { hair: 0x1d1a18, hairStyle: 'curls', slight: true }, 0xa9713f),
+  // **Imani**: the vine keeper, in Cobble for kelp for Vaervelm Caelazh, and therefore the only
+  // person who was at the racks before light.
+  person('cobble-imani', 'Imani', 'Vine keeper, here for the kelp', 'vine-keeper', 0x5f6d6b),
+  // **Torven Oss**: he holds the weigh-beam, and he has held it a long time.
+  person('cobble-weighmaster', 'Torven Oss', 'Weighmaster of the quay', 'commons-miller', 0x6f6657),
   soldier('peblos-decurion', 'Lieutenant Berold Ossan', 'Ambroni officer', 'legion-officer'),
   soldier('peblos-legionary-1', 'Footman Fennor', 'Ambroni soldier', 'legion-soldier'),
   soldier('peblos-legionary-2', 'Footman Nabel', 'Ambroni soldier', 'legion-soldier'),
@@ -35,43 +48,33 @@ export const PEBLOS_NPCS = Object.freeze([
 export const PEBLOS_NPC_IDS = Object.freeze(PEBLOS_NPCS.map(npc => npc.id));
 
 export const PEBLOS_AMBIENT = Object.freeze({
-  'cobble-netmistress': Object.freeze([
-    'Bregga Sell. I keep the nets and I keep the tally, which means I am the one who tells a man his boat came in light.',
-    'Cobble is what you see: ten roofs, one quay, and the water. Everybody here fishes. The ones who did not fish went to Tidehaven a long time ago and we do not hear from them.',
-    'One barrel in five goes to the Empire. That was set when there were twice as many of us to catch it, and nobody has come out to set it again. I say it to the lieutenant once a season and he writes it down.',
+  // **What each of them will say when they are only passing the time.** What they say about the
+  // murder is Troy's quest and lives in src/murder-quest.js; this is the rest of them.
+  'cobble-jessi': Object.freeze([
+    'Jessi. I fish, and I will show anybody else how to, which in Cobble is like offering to teach somebody to breathe.',
+    'Everyone is very careful around me this week because I said out loud that I am not sorry. I am not going to start being sorry to make the week easier for them.',
+    'The green is not dye, before you ask. It is, but I have stopped explaining it.',
   ]),
-  'cobble-boatwright': Object.freeze([
-    'Hallin Orme. Every hull on this quay came off that slip, and I have mended most of them twice.',
-    'Pitch and oakum and a dry week. That is the whole of it. The dry week is the hard part out here.',
-    'The boats are small on purpose. A big boat cannot come in over the bar at Cobble, and a small one can go anywhere a man knows the way.',
+  'cobble-ari': Object.freeze([
+    'Ari. I keep the village’s books, which means I write down what we actually landed and then I read what the Empire says we landed, and then I have a think.',
+    'Two of those numbers have disagreed for years. Nobody wanted to hear it from a woman with a ledger, and now somebody is dead about it.',
+    'I like it up here. You can see a long way out, and you can see who is coming in.',
   ]),
-  'cobble-lobsterman': Object.freeze([
-    'Maun. Pots, mostly. Lobster and crab off the rocks under the light, and whatever climbs in after them.',
-    'Set them at slack water and leave them a night. Set them wrong and the tide walks off with the lot, and then you have made a gift to the sea.',
-    'The soldiers do not count pots. There is no fifth barrel in a lobster, so a lobster is mine.',
+  'cobble-imani': Object.freeze([
+    'Imani. I keep the vines at Vaervelm Caelazh, and the vines want kelp, and the kelp is here — so twice a year I am here, smelling of the sea and getting in everybody’s way.',
+    'They have been very kind to me and nobody has told me anything. I am the outsider, so I am the one it is safe to be kind to.',
+    'I am up before light for the racks. That is when the weed is heaviest and cheapest, and nobody else wants it.',
   ]),
-  'cobble-salter': Object.freeze([
-    'Wyn Tarrow. I salt and I dry. The racks are mine and the salt house is mine, and the fish belongs to whoever caught it until it is in a barrel.',
-    'Salt comes out from Tidehaven by the barrel and goes back inside the fish. If the salt boat is late the whole island smells of it, and I hear about that too.',
-  ]),
-  'cobble-oldhand': Object.freeze([
-    'Pell. I took boats in and out of these channels for forty years and now I sit and watch other people do it worse.',
-    'There is no chart of the Pebbles worth the vellum. The rocks move — the sand does, anyway — and the channel that was there in my father’s time is a bank now. You learn it or you do not come.',
-    'Keep the Pilot’s Stone on your left hand going out of Tidehaven. On your right hand is where the Sea-Mare put herself, and she had a pilot aboard who knew better.',
-  ]),
-  'cobble-keeper': Object.freeze([
-    'Sela Vane. I keep the niche above the quay swept, and what is in it is what the sea gave back this year.',
-    'We do not name it and we do not ask it for anything. The sea is owed, that is all, and a thing put in the niche is a thing not asked for again.',
-    'When a boat is out late we light the headland. It is a poor light and it is ours, and I have never once seen the Empire pay for the wood.',
-  ]),
-  'cobble-runner': Object.freeze([
-    'Dunnock. I take the lines and I run the tallies up to the shed and I watch the gulls off the racks. That is three jobs, and I am paid in fish for all three.',
-    'You came over with Jess? He is my mother’s cousin. Everybody on this quay is somebody’s cousin, and that is why nothing here stays quiet for long.',
+  'cobble-weighmaster': Object.freeze([
+    'Torven Oss. I hold the beam. Every barrel that goes off this quay goes across it first and I have written the number for eleven years.',
+    'It is not interesting work and I will not pretend it is. You stand, you look at a needle, you say a number.',
+    'Bad business about Bregga. She and I did the same job from two ends of it.',
   ]),
   'peblos-decurion': Object.freeze([
     'Lieutenant Berold Ossan, in command of the Empire’s presence in Peblos. The Empire’s presence in Peblos is myself and three men.',
     'We count the catch and we take the fifth barrel. That is the whole of the duty here. No garrison, no wall, no rebels — the nearest thing to an enemy is the weather.',
-    'The islanders think the share is too high. They may be right. I write down what Sell tells me and I send it to Ambron, and Ambron has had a war on its hands for a year. Keep your sword sheathed on this quay and you and I will have no business.',
+    'The islanders think the share is too high. They may be right. I wrote down what Sell told me and I sent it to Ambron, and Ambron has had a war on its hands for a year and did not write back.',
+    'Now Sell is dead, and I have four men and no authority to ask anybody here a question they do not want to answer. The guild has sent somebody. Let him. Keep your sword sheathed on this quay and you and I will have no business.',
   ]),
   'peblos-legionary-1': Object.freeze([
     'Sixty-one days. Ask me tomorrow and I will tell you sixty-two.',

@@ -2,7 +2,7 @@
 
 The user asked for this in these words: *"An opening sequence. It should be like gameplay, but you
 can't control it. It's more like you're watching a cutscene that you still see through your own
-perspective, and it's you sailing in with Chris Gotwood from the sea. It should be simple, and you
+perspective, and it's you sailing in with Chris Scotwood from the sea. It should be simple, and you
 just click 'Skip Cutscene.' In that time, the text will announce the basics of the context and
 story. It is like your mercenary arriving from sea."*
 
@@ -208,8 +208,8 @@ The traveler may be any of the eleven (`PLAYABLE_IDS`: `crom`, then the roster's
 name; `normalisePlayer` also takes `merc-gotwood`, `Chris`, `Ed the Word`).
 
 - **Standard** (Cromb, Jerry, Kristen, Ciarán, Lakota, Eliana, Matt, Al the Tun): the sequence as
-  above, the companion **Chris Gotwood**.
-- **Chris Gotwood as the traveler**: the same sequence, the companion **Cromb** — "Cromb is in the
+  above, the companion **Chris Scotwood**.
+- **Chris Scotwood as the traveler**: the same sequence, the companion **Cromb** — "Cromb is in the
   bow, watching the coast come up."
 - **Ed the Word** swims ashore out of a pirate ship that never docks, so there is no boat ride:
   `variantFor('word')` is one card over the landed frame, 6 s, skippable —

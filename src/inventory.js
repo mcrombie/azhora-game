@@ -292,7 +292,7 @@ export const INVENTORY_ITEMS = Object.freeze({
   'talaelos-playbill': Object.freeze({
     name: 'Talaelos playbill', type: 'Quest item', icon: 'letter',
     brief: 'The players of Nylon’s playbill, signed by the whole company, and the dog.',
-    description: 'A folded playbill for Talaelos, the players of Nylon: “Every night a new play! No two alike! No script! Yes, and.” Signed by Galeon Trell, Isaura Thale, Pim Belloss, Old Nilor and Zaela Caeren, with a muddy paw print for Understudy. If anyone asks, you are with Talaelos.',
+    description: 'A folded playbill for Talaelos, the players of Nylon: “Every night a new play! No two alike! No script! Yes, and.” Signed by Galeon Trell, Isaura Thale, Pim Belloss, Old Nilor, Zaela Caeren and Amanda, with a muddy paw print for Understudy. If anyone asks, you are with Talaelos.',
   }),
   'hot-chocolate': Object.freeze({
     name: 'Hot chocolate', type: 'Food', icon: 'mug', stackable: true, eatName: 'hot chocolate', useVerb: 'Drink',

@@ -11,7 +11,7 @@
  *
  * **What happens, by default, if the traveler never goes near it:**
  *
- *   Chris Gotwood  first through, and alone. They kill him, and his body lies on the road
+ *   Chris Scotwood  first through, and alone. They kill him, and his body lies on the road
  *                  where the next man will walk past it.
  *   Ed the Word    gets clear without drawing anything. He always does.
  *   Jerry, Kristen and Ciarán  agree to walk to Luscia together, and three swords beat three:

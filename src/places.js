@@ -8,7 +8,7 @@
  * crossing. Nothing here moves an existing stand. Pure: no three, no DOM.
  */
 import {
-  AVREL_CLEARING, CALOSS, CALOSS_GATE, FERNWAY_REST, LUMBER_TOWN, LUMBER_TOWN_STABLE, STORY_SITES, townPoint,
+  AVREL_CLEARING, CALOSS, FERNWAY_REST, LUMBER_TOWN, LUMBER_TOWN_STABLE, STORY_SITES, townPoint,
 } from './region-world.js';
 import { toWorld } from './world-scale.js';
 
@@ -43,16 +43,6 @@ export const AVREL_HAMLET = Object.freeze({
   ]),
   corvanPost: avrel(4, -8, { yaw: 0 }),
   well: avrel(21, 26),
-});
-
-/**
- * Tidehaven's forest gate: a roofed timber gatehouse over the old field gate,
- * its upper room carried on the gate's own posts and a second pair behind the
- * leaves, and a guard hut on the Avrel side.
- */
-export const CALOSS_GATEHOUSE = Object.freeze({
-  front: CALOSS_GATE.barrierX, back: CALOSS_GATE.barrierX - 5, half: 3.8, z: CALOSS_GATE.z,
-  hut: P(CALOSS_GATE.barrierX - 10, CALOSS_GATE.z + 12.5, { yaw: Math.PI }),
 });
 
 /** Fernway Rest: a timber shelter with a bench inside, on the north side of the road across from the old bench. */
@@ -151,7 +141,6 @@ export const PLACE_LANDMARKS = Object.freeze([
 /** Ground each place keeps clear of the regional scatter. */
 export const PLACE_CLEARINGS = Object.freeze([
   Object.freeze({ ...avrel(38, -22), r: 20 }), Object.freeze({ ...avrel(-40, 28), r: 10 }), Object.freeze({ ...avrel(-44, -18), r: 10 }),
-  Object.freeze({ x: CALOSS_GATE.barrierX - 6, z: CALOSS_GATE.z + 6, r: 14 }),
   Object.freeze({ ...crossing(-28, 16), r: 12 }), Object.freeze({ ...crossing(18, 32), r: 12 }),
   Object.freeze({ ...landing(-11, -9), r: 14 }),
   Object.freeze({ ...SHRINE_COURT.centre, r: 10 }),

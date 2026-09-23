@@ -220,7 +220,7 @@ keep its numbers in one table.
 **The eleven character profiles are good for now**; the user may tweak them later. Nobody needs to
 ask again.
 
-**Chris Gotwood may stand dead-centre in the sail-in shot.**
+**Chris Scotwood may stand dead-centre in the sail-in shot.**
 
 **The long road is being built**, by its own builder, from `docs/drent-long-road-build.md`.
 
@@ -329,7 +329,7 @@ fork her loyalties are the hardest in the company: the Republic's renegade princ
 childhood friend, and the army is her father's life's work. On the road she takes archaeology
 deeper than Lakota does.
 
-**Anyone can be the player.** Eleven playable characters, Cromb first, then Chris Gotwood, Ed the
+**Anyone can be the player.** Eleven playable characters, Cromb first, then Chris Scotwood, Ed the
 Word, and on through the company; the ten not chosen are the NPC roster. Starting skills differ
 by character (Lakota's birding, Chris's Ambroni). The full character profiles are still to be
 written by the user.
@@ -338,7 +338,7 @@ written by the user.
 abroad on the same contract and sailed or rode here together, so every mercenary is readable from
 the first minute, whoever the player is; it is the locals the traveler cannot follow. Their
 origins and home tongues stay as data — that is who they are, and the toggle may still show it —
-but they no longer hide what the company say to each other. Chris Gotwood is not special here any
+but they no longer hide what the company say to each other. Chris Scotwood is not special here any
 more: he still interprets the *locals* while he is beside you, and when you are Chris nobody
 needs to.
 
@@ -381,15 +381,15 @@ Suval; only Drent is named.
 
 **The first person you speak to is Jojo, the harbourmaster**, at the head of the pier. She gives
 the letter of introduction and a rough chart, and giving directions is the first cartography
-lesson. Chris Gotwood lands with you and gives the soldierly advice.
+lesson. Chris Scotwood lands with you and gives the soldierly advice.
 
 **Languages.** Nobody in Azhora speaks the traveler's language and the traveler starts knowing
-none of theirs. Chris Gotwood interprets while he is with you and you learn faster beside him;
+none of theirs. Chris Scotwood interprets while he is with you and you learn faster beside him;
 every new land is a new tongue to climb. Writing too: signs are in the local tongue until learned.
 A toggle shows any line in the local tongue. The player never has to learn a word.
 
 **The first conversation of the game is how the interpreter is taught.** The man off your boat —
-Chris Gotwood, or Cromb when you are Chris — walks up the pier at your shoulder from the moment
+Chris Scotwood, or Cromb when you are Chris — walks up the pier at your shoulder from the moment
 you take control until the letter is in your satchel, so Jojo is glossed while she gives it to
 you and you learn what an interpreter is for by being handed one. When the letter is taken he
 says his piece and goes back to the roster, his hour at the landing starting from that moment

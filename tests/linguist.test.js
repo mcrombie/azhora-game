@@ -8,7 +8,7 @@ import {
   SPEAKER_CEILING, SAVED_SPEAKERS,
 } from '../src/linguist.js';
 
-const LINE = 'Chris Gotwood. Same boat, same coin, and I have the letter they gave us both — you take it, you are the one they wrote it about.';
+const LINE = 'Chris Scotwood. Same boat, same coin, and I have the letter they gave us both — you take it, you are the one they wrote it about.';
 const SHORT = 'The army’s post is up the road in the Avrel clearing. Ask for the quartermaster, and show him 3 copper.';
 const names = new Set(['chris', 'gotwood', 'lakota']);
 
@@ -34,13 +34,13 @@ test('names, numbers, punctuation and spacing come through untouched', () => {
   assert.match(made, /^The? |^[A-Z]/, 'the line still opens with a capital');
   assert.equal((made.match(/,/g) ?? []).length, (SHORT.match(/,/g) ?? []).length, 'every comma survives');
   assert.equal(made.at(-1), '.', 'and the full stop');
-  assert.ok(renderLine(LINE, 'izoli', { level: 0, names }).startsWith('Chris Gotwood.'), 'a person keeps his name');
+  assert.ok(renderLine(LINE, 'izoli', { level: 0, names }).startsWith('Chris Scotwood.'), 'a person keeps his name');
   assert.ok(renderLine(LINE, 'izoli', { level: 0, names }).includes('—'), 'the dash survives');
 });
 
 test('at nothing you understand nothing, and at ninety-nine the line is exactly what was said', () => {
   const nothing = renderLine(LINE, 'drentish', { level: 0, names });
-  assert.deepEqual(survived(LINE, nothing), ['Chris', 'Gotwood'], 'only the names');
+  assert.deepEqual(survived(LINE, nothing), ['Chris', 'Scotwood'], 'only the names');
   assert.equal(renderLine(LINE, 'drentish', { level: MAX_PROFICIENCY, names }), LINE);
   assert.equal(renderLine(SHORT, 'koleth', { level: MAX_PROFICIENCY, names }), SHORT);
   assert.equal(comprehension(0), 0);
@@ -67,7 +67,7 @@ test('the toggle shows what was actually said, however much of it you understand
   const heard = renderLine(LINE, 'drentish', { level: 70, names });
   const spoken = renderLine(LINE, 'drentish', { level: 70, full: true, names });
   assert.notEqual(heard, spoken, 'at seventy the two differ');
-  assert.deepEqual(survived(LINE, spoken), ['Chris', 'Gotwood'], 'the full line is all Drentish but the names');
+  assert.deepEqual(survived(LINE, spoken), ['Chris', 'Scotwood'], 'the full line is all Drentish but the names');
   assert.equal(spoken, renderLine(LINE, 'drentish', { level: 0, names }), 'and it is the same line you heard on the first day');
 });
 
@@ -145,7 +145,7 @@ test('the company are the people the traveler can always follow, and Chris is on
   // The whole of the hired eleven share the language of the contract (docs/design-answers.md);
   // tests/player-characters.test.js walks all of them for every traveler the game can be.
   const linguist = createLinguist();
-  const chris = { id: INTERPRETER.npcId, name: 'Chris Gotwood', origin: 'Feradom' };
+  const chris = { id: INTERPRETER.npcId, name: 'Chris Scotwood', origin: 'Feradom' };
   const speech = linguist.speech(chris, 'Drent');
   assert.equal(speech.language, null, 'he has no tongue of his own in this: he has yours');
   assert.equal(linguist.render(LINE, speech), LINE, 'so his lines arrive whole');
@@ -167,14 +167,14 @@ test('a relative of a tongue you know gives you a floor in it, one hop and no fu
 test('signs are all or nothing, and turn over halfway', () => {
   const linguist = createLinguist();
   assert.equal(linguist.canRead('drentish'), false);
-  const foreign = linguist.readSign('The Caloss Gate', 'Drent');
-  assert.ok(foreign.includes('Caloss'), 'the name is the name');
+  const foreign = linguist.readSign('Fernway Rest', 'Drent');
+  assert.ok(foreign.includes('Fernway'), 'the name is the name');
   assert.ok(!foreign.includes('Gate'), 'and the rest of it is Drentish');
   linguist.study('drentish', exposureForProficiency(SIGN_READING_LEVEL - 1));
   assert.equal(linguist.canRead('drentish'), false, 'one short of it and the road still says nothing');
   linguist.study('drentish', exposureForProficiency(SIGN_READING_LEVEL) - linguist.exposure('drentish'));
   assert.equal(linguist.canRead('drentish'), true);
-  assert.equal(linguist.readSign('The Caloss Gate', 'Drent'), 'The Caloss Gate');
+  assert.equal(linguist.readSign('Fernway Rest', 'Drent'), 'Fernway Rest');
   assert.equal(linguist.readSign('Elod', 'East Suval'), 'Elod', 'a name letters the same in every tongue');
 });
 
@@ -273,7 +273,7 @@ test('the save stays small however many people the traveler has listened to', ()
 test('the panel can say where every tongue stands', () => {
   const linguist = createLinguist();
   assert.equal(linguist.view().met, 0);
-  assert.match(linguist.task().detail, /Chris Gotwood/);
+  assert.match(linguist.task().detail, /Chris Scotwood/);
   linguist.study('drentish', 300);
   const view = linguist.view();
   assert.equal(view.met, 1);

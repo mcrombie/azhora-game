@@ -6,8 +6,8 @@ const camp = (lx, lz) => Object.freeze(hideoutToWorld(lx, lz));
 /**
  * An optional, contained fight at a goblin camp in the birch woods of southern Pueth, north of
  * the Tessen: the bramble goblins who have been wading the river to raid Tidehaven. Drent, a level
- * 0 province, has none. It opens at quest stage 10, when the tutorial's road reaches the Caloss
- * Gate: the road north leaves the main road just past that gate, so the quest is offered as soon
+ * 0 province, has none. It opens at quest stage 10, when the tutorial's road reaches the edge of
+ * Tidehaven's wood: the road north leaves the main road just past it, so the quest is offered as soon
  * as the traveler can reach the Tessen post by road, and never before; the fight itself is north of
  * the river, so nothing attacks the traveler in Drent.
  */

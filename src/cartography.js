@@ -99,7 +99,7 @@ export const CARTOGRAPHY_DIRECTIONS = Object.freeze({
   'Moros Plain': 'South-west past Nothom, where the trees give out. Open grass the whole way to the border ditch.',
   'East Suval': 'South, beyond the Suval border. Elod keeps the gate shut and the lowland quiet.',
   'West Suval': 'South-west, over the Moros. Vineyards on the hills, and an army on them at the moment.',
-  Pueth: 'North from the Caloss Gate, up the Tessen road. Wooded in the south, bare hills at the top.',
+  Pueth: 'North from the Avrel road, up the Tessen road. Wooded in the south, bare hills at the top.',
   Peblos: 'Off Drent’s coast, east. Islands. You want a boat, or a very good opinion of your own swimming.',
   Feradom: 'North again past Pueth, along the coast. A duchy, and one that talks about not being one.',
   Elagos: 'Inland, south-east of the Caloss: the heartland, and Ambron in the middle of its lake.',

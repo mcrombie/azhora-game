@@ -1,10 +1,10 @@
 import { createSceneryBuilder } from './scenery-builder.js';
 import {
-  AVREL_HAMLET, CALOSS_GATEHOUSE, FERNWAY_SHELTER, CROSSING_CAMP, REED_LANDING, SHRINE_COURT, SHRINE_CENTRE, RELAY_YARD,
+  AVREL_HAMLET, FERNWAY_SHELTER, CROSSING_CAMP, REED_LANDING, SHRINE_COURT, SHRINE_CENTRE, RELAY_YARD,
   LAUVEL_AFTERMATH, HAMLET_RUINS, LUMBER_TOWN_WORKS, avrel, hamlet,
 } from './places.js';
 import { DRENT_WAYSIDE } from './wayside.js';
-import { LUMBER_TOWN, CALOSS_GATE } from './region-world.js';
+import { LUMBER_TOWN } from './region-world.js';
 import { SIGN_COLOURS } from './signs.js';
 
 /**
@@ -184,36 +184,14 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
   }
 
   // -------------------------------------------------------------------------
-  // Drent: the Caloss Gate gatehouse and guard hut, and Fernway Rest's shelter
+  // Drent: Fernway Rest's shelter
+  //
+  // The Caloss Gate's gatehouse and guard hut stood here until 22 September 2026, when the user
+  // took the whole place out: an army gate in the middle of Drent stopped fitting once the
+  // tutorial no longer ended at it. The road runs straight on through the field edge now.
   // -------------------------------------------------------------------------
   {
-    const b = createSceneryBuilder('The Caloss Gate gatehouse');
-    const G = CALOSS_GATEHOUSE, gy = y(G.front, G.z);
-    for (const side of [-1, 1]) {
-      const z = G.z + side * G.half;
-      b.block(WOOD, G.back, y(G.back, z), z, .32, 5.3, .32);
-      b.block(WOOD, G.front, y(G.front, z) + 2.4, z, .3, 2.9, .3);
-      b.beam(WOOD_DARK, [G.back, gy + 3.3, z], [G.front, gy + 3.3, z], .24, .26);
-      circle(G.back, z, .3, 'gatehouse-post');
-    }
-    // The upper room: a boarded box across the road on the four posts, and its own roof.
-    b.block('#8b6c4a', (G.front + G.back) / 2, gy + 3.4, G.z, G.front - G.back + .5, 1.9, G.half * 2 + .6);
-    for (const side of [-1, 1]) b.block('#2e2620', (G.front + G.back) / 2 + side * (G.front - G.back + .52) / 2, gy + 4.1, G.z, .05, .5, 1.2);
-    b.roof(THATCH, (G.front + G.back) / 2, gy + 5.3, G.z, G.front - G.back + 1.4, G.half * 2 + 1.6, 1.6, 0);
-    b.box(WOOD_DARK, (G.front + G.back) / 2, gy + 3.35, G.z, G.front - G.back + .7, .16, G.half * 2 + .8);
-    // The guard hut: a log hut facing the road.
-    const hut = G.hut, hy = y(hut.x, hut.z);
-    b.frame(hut.x, hy, hut.z, hut.yaw, () => {
-      for (let row = 0; row < 7; row++) {
-        b.beam('#6d5439', [-2.1, .2 + row * .3, -1.7], [2.1, .2 + row * .3, -1.7], .28);
-        b.beam('#6d5439', [-2.1, .2 + row * .3, 1.7], [2.1, .2 + row * .3, 1.7], .28);
-        b.beam('#7b5f42', [-2, .35 + row * .3, -1.8], [-2, .35 + row * .3, 1.8], .28);
-        b.beam('#7b5f42', [2, .35 + row * .3, -1.8], [2, .35 + row * .3, 1.8], .28);
-      }
-      b.roof(THATCH, 0, 2.3, 0, 5.0, 4.4, 1.3, Math.PI / 2);
-      b.block('#2e2620', 0, 0, -1.86, .9, 1.8, .05);
-    });
-    footprint(hut.x, hut.z, hut.yaw, 4.4, 3.8, 'guard-hut');
+    const b = createSceneryBuilder('Fernway Rest shelter');
     // Fernway Rest's shelter: three walls, a roof and a bench inside.
     const f = FERNWAY_SHELTER;
     shed(b, { x: f.x, z: f.z, yaw: f.yaw, width: 4.2, depth: 2.8 }, { roof: THATCH, kind: 'fernway-shelter', posts: 3 });
@@ -223,7 +201,6 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       for (const sx of [-1.4, 0, 1.4]) b.block(WOOD, sx, 0, .7, .12, .45, .45);
     });
     b.finish(parent);
-    signs.place({ x: CALOSS_GATE.barrierX - 8, z: CALOSS_GATE.z - 7.5, label: 'The Caloss Gate', facing: -Math.PI / 2 - .5, parent });
   }
 
   // -------------------------------------------------------------------------
