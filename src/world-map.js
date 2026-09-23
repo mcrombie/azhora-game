@@ -4,13 +4,15 @@
 // unless the developer's override lifts the fog and tints each region by how far it is built.
 import { hexAtlasCorners } from './region-world.js';
 import { PLAYABLE_SURVEY } from './region-survey.js';
+import { atlasLocalDetail, atlasMarkKnown, GLIMPSED_TERRAIN } from './world-map-detail.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const polygonPoints = (q, r) => hexAtlasCorners(q, r).map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
 
-const MAX_ZOOM = 64;
-/** How much of the chart a first look shows around the traveler, in atlas pixels: a region and its neighbours. */
-export const LOCAL_VIEW = 520;
+export const MAX_ZOOM = 128;
+export const DETAIL_ZOOM = 12;
+/** How much of the chart a first look shows around the traveler, in atlas pixels: the nearby road and a few surrounding hexes. */
+export const LOCAL_VIEW = 100;
 
 export function createWorldMap() {
   const $ = id => document.getElementById(id);
@@ -21,7 +23,13 @@ export function createWorldMap() {
   let metadata, zoom = 1, fitScale = 1, offsetX = 0, offsetY = 0, width = 0, height = 0, dragging = null, travelerPoint = null;
   // The chart opens on the traveler, close enough to read; once the traveler has chosen a zoom it keeps it.
   let opened = false;
-  let chart = { cells: [], reveal: false, status: [], silhouettes: [], labels: [] };
+  let chart = { cells: [], glimpsed: [], reveal: false, status: [], silhouettes: [], labels: [] };
+  let visited = new Set(), terrainCells = new Map(), terrainSource = null;
+  let localDetail = atlasLocalDetail(null);
+  const detail = document.createElementNS(SVG_NS, 'svg');
+  detail.id = 'atlas-local-detail'; detail.setAttribute('aria-hidden', 'true');
+  viewport.insertBefore(detail, traveler ?? null);
+  for (const region of PLAYABLE_SURVEY.regions) for (const cell of region.cells) terrainCells.set(`${cell.q},${cell.r}`, cell.terrain);
   const overlay = document.createElementNS(SVG_NS, 'svg');
   overlay.id = 'atlas-overlay'; overlay.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(overlay, traveler ?? null);
@@ -30,40 +38,59 @@ export function createWorldMap() {
   const placeLayer = document.createElement('div');
   placeLayer.id = 'atlas-places'; placeLayer.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(placeLayer, traveler ?? null);
-  let places = [];
+  let places = [], renderedPlaces = [];
   // Areas are named as soon as the chart is more than glanced at; the smaller places
   // inside them wait until the traveler has zoomed in far enough to read them.
-  const placeShown = place => place.kind === 'area' || zoom >= 3.5;
-  const placeNamed = place => place.kind === 'area' ? zoom >= 1.8 : zoom >= 5.5;
+  const placeShown = place => atlasMarkKnown(place, visited, chart.reveal)
+    && (['quest', 'tracked', 'area'].includes(place.kind) || zoom >= (place.kind === 'local' ? DETAIL_ZOOM : 3.5));
+  const placeNamed = place => ['quest', 'tracked'].includes(place.kind) ? zoom >= 3.5 : place.kind === 'area' ? zoom >= 1.8 : zoom >= 5.5;
   function drawPlaces() {
     placeLayer.replaceChildren();
-    for (const place of places) {
+    renderedPlaces = [...new Map([...places, ...localDetail.markers].map(place => [place.id, { ...place }])).values()];
+    for (const place of renderedPlaces) {
       const mark = document.createElement('div');
       mark.className = `atlas-place ${place.kind}`;
+      if (place.colour) mark.style.setProperty('--quest-colour', place.colour);
       const dot = document.createElement('i'), label = document.createElement('span');
       label.textContent = place.name; mark.append(dot, label);
-      place.mark = mark; placeLayer.append(mark);
+      place.mark = mark; place.label = label; placeLayer.append(mark);
     }
     positionPlaces();
   }
-  // Marks are placed top to bottom; a label that would sit on the one above it is
-  // nudged down, and dropped altogether if there is no room. The dots never move.
+  // Place important labels first, reserve space for the player, and keep all
+  // text in screen pixels. Repeated town names yield to their area label.
   function positionPlaces() {
-    const scale = fitScale * zoom, taken = [];
-    const shown = places.filter(place => place.mark && placeShown(place))
+    const scale = fitScale * zoom, taken = [], namedPlaces = [];
+    const tx = travelerPoint ? offsetX + travelerPoint.x * scale : null;
+    const ty = travelerPoint ? offsetY + travelerPoint.y * scale : null;
+    if (tx !== null) taken.push({ x: tx - 13, y: ty - 25, w: 27, h: 40 }, { x: tx + 12, y: ty - 46, w: 194, h: 25 });
+    const priority = kind => ({ quest: 0, tracked: 1, area: 2, place: 3, local: 4 })[kind] ?? 4;
+    const simple = name => String(name).toLowerCase().replace(/\b(the|village|town)\b/g, '').replace(/[^a-z0-9]/g, '');
+    const shown = renderedPlaces.filter(place => place.mark && placeShown(place))
       .map(place => ({ place, x: offsetX + place.x * scale, y: offsetY + place.y * scale }))
-      .sort((a, b) => a.y - b.y);
-    for (const place of places) if (place.mark) place.mark.hidden = !placeShown(place);
+      .filter(item => item.x >= -12 && item.x <= width + 12 && item.y >= -12 && item.y <= height + 12)
+      .sort((a, b) => priority(a.place.kind) - priority(b.place.kind) || a.y - b.y);
+    for (const place of renderedPlaces) if (place.mark) place.mark.hidden = true;
+    const clashes = box => taken.some(other => box.x < other.x + other.w + 5 && box.x + box.w + 5 > other.x
+      && box.y < other.y + other.h + 5 && box.y + box.h + 5 > other.y);
     for (const item of shown) {
-      let nudge = 0, named = placeNamed(item.place);
-      const clashes = offset => taken.some(box => Math.abs(box.y - (item.y + offset)) < 14 && Math.abs(box.x - item.x) < 150);
+      const { place, x, y } = item;
+      place.mark.hidden = false;
+      let named = placeNamed(place), placement = null;
+      const key = simple(place.name);
+      if (namedPlaces.some(other => other.key === key && Math.hypot(other.x - x, other.y - y) < 170)) named = false;
+      const w = Math.min(260, Math.max(65, place.name.length * 7 + 16)), h = 23;
       if (named) {
-        while (nudge <= 42 && clashes(nudge)) nudge += 14;
-        if (clashes(nudge)) named = false; else taken.push({ x: item.x, y: item.y + nudge });
+        for (const [dx, dy] of [[12,-10],[12,20],[12,-38],[-w-12,-10],[-w-12,20],[-w-12,-38],[-w/2,43],[-w/2,-63]]) {
+          const box = { x: x + dx, y: y + dy, w, h };
+          if (box.x < 5 || box.y < 5 || box.x + w > width - 5 || box.y + h > height - 5 || clashes(box)) continue;
+          placement = { dx, dy }; taken.push(box); namedPlaces.push({ key, x, y }); break;
+        }
+        named = !!placement;
       }
-      item.place.mark.classList.toggle('named', named);
-      item.place.mark.style.setProperty('--nudge', `${nudge}px`);
-      item.place.mark.style.transform = `translate(${item.x}px,${item.y}px)`;
+      place.mark.classList.toggle('named', named);
+      if (placement) { place.label.style.left = `${placement.dx}px`; place.label.style.top = `${placement.dy}px`; }
+      place.mark.style.transform = `translate(${x}px,${y}px)`;
     }
   }
 
@@ -72,6 +99,18 @@ export function createWorldMap() {
     for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
     return element;
   };
+  function drawLocalDetail() {
+    if (!metadata) return;
+    detail.replaceChildren();
+    detail.setAttribute('viewBox', `0 0 ${metadata.width} ${metadata.height}`);
+    detail.setAttribute('width', metadata.width); detail.setAttribute('height', metadata.height);
+    const pathText = points => points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
+    for (const points of localDetail.paths) {
+      detail.append(node('path', { d: pathText(points), class: 'atlas-road-edge' }));
+      detail.append(node('path', { d: pathText(points), class: 'atlas-road' }));
+    }
+    for (const points of localDetail.buildings) detail.append(node('path', { d: `${pathText(points)}Z`, class: 'atlas-building' }));
+  }
   /** Redraw the fog, or the developer's tints, over the whole chart. */
   function drawOverlay() {
     if (!metadata) return;
@@ -92,15 +131,13 @@ export function createWorldMap() {
     }
     const defs = node('defs'), mask = node('mask', { id: 'atlas-charted', maskUnits: 'userSpaceOnUse' });
     mask.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#fff' }));
-    const charted = node('g', { fill: '#000', stroke: '#000', 'stroke-width': '1.5', 'stroke-linejoin': 'round', filter: 'url(#atlas-soft)' });
+    const charted = node('g', { fill: '#000' });
     for (const key of chart.cells) {
       const [q, r] = key.split(',').map(Number);
       if (Number.isFinite(q) && Number.isFinite(r)) charted.append(node('polygon', { points: polygonPoints(q, r) }));
     }
     mask.append(charted);
-    const soften = node('filter', { id: 'atlas-soft', x: '-20%', y: '-20%', width: '140%', height: '140%' });
-    soften.append(node('feGaussianBlur', { stdDeviation: '2.4' }));
-    defs.append(soften, mask); overlay.append(defs);
+    defs.append(mask); overlay.append(defs);
     // Unknown country is dark - not parchment, not a hatch. The hexes the traveler has walked are
     // cut out of it and show the real atlas; everything else is the edge of a chart. The dark is
     // OPAQUE: at .93 the atlas's own shapes and lettering - black ink on bright parchment - read
@@ -119,6 +156,15 @@ export function createWorldMap() {
       for (const cell of region.cells ?? []) shapes.append(node('polygon', { points: polygonPoints(cell.q, cell.r) }));
     }
     if (shapes.childElementCount) overlay.append(shapes);
+    const glimpse = node('g', { 'data-role': 'glimpsed', 'stroke-width': '.5', stroke: '#182b31' });
+    for (const key of chart.glimpsed) {
+      if (visited.has(key)) continue;
+      const [q, r] = key.split(',').map(Number);
+      if (!Number.isFinite(q) || !Number.isFinite(r)) continue;
+      const terrain = terrainCells.get(key) ?? (terrainSource ? 'ocean' : 'unknown');
+      glimpse.append(node('polygon', { points: polygonPoints(q, r), fill: GLIMPSED_TERRAIN[terrain] ?? GLIMPSED_TERRAIN.unknown }));
+    }
+    overlay.append(glimpse);
     // A country somebody has named for you carries its name, drawn here because the atlas's own
     // label is under the dark. Nothing else of it is drawn unless its shape is known too.
     const labels = node('g', { fill: '#cfe0f2', 'fill-opacity': '.82', 'font-family': 'Adventure, Georgia, serif',
@@ -126,6 +172,7 @@ export function createWorldMap() {
     labels.dataset.role = 'labels';
     for (const label of chart.labels ?? []) {
       const text = node('text', { x: label.x, y: label.y, 'font-size': label.size ?? 34 });
+      text.dataset.atlasSize = label.size ?? 34;
       text.textContent = label.name;
       labels.append(text);
     }
@@ -135,10 +182,15 @@ export function createWorldMap() {
   function render() {
     if (!metadata || !width || !height) return;
     const scale = fitScale * zoom, w = metadata.width * scale, h = metadata.height * scale;
+    // Country names stay a readable size when the same chart is viewed at street scale.
+    for (const label of overlay.querySelectorAll('[data-role="labels"] text'))
+      label.setAttribute('font-size', Math.min(Number(label.dataset.atlasSize) || 34, 28 / scale));
     offsetX = w <= width ? (width - w) / 2 : Math.max(width - w, Math.min(0, offsetX));
     offsetY = h <= height ? (height - h) / 2 : Math.max(height - h, Math.min(0, offsetY));
     image.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
     overlay.style.transform = image.style.transform;
+    detail.style.transform = image.style.transform;
+    detail.style.opacity = String(Math.max(0, Math.min(1, (zoom - DETAIL_ZOOM) / 6)));
     positionPlaces();
     // The traveler's marker sits in atlas pixels and follows every pan and zoom without scaling itself.
     if (traveler) {
@@ -227,7 +279,7 @@ export function createWorldMap() {
   ]).then(([data]) => {
     metadata = data;
     image.style.width = `${data.width}px`; image.style.height = `${data.height}px`;
-    drawOverlay();
+    drawOverlay(); drawLocalDetail();
     $('atlas-loading').hidden = true;
     for (const button of document.querySelectorAll('.atlas-toolbar button')) button.disabled = false;
     fit(); return data;
@@ -236,11 +288,21 @@ export function createWorldMap() {
     console.error(error); return null;
   });
   /** What the traveler has charted, and whether the developer is looking past the fog. */
-  function setChart({ cells = chart.cells, reveal = chart.reveal, status = chart.status, marks = null,
-    silhouettes = chart.silhouettes, labels = chart.labels } = {}) {
-    chart = { cells: [...cells], reveal: !!reveal, status, silhouettes, labels };
-    if (marks) { places = marks.map(place => ({ ...place })); drawPlaces(); }
-    drawOverlay(); render();
+  function setChart({ cells = chart.cells, glimpsed = chart.glimpsed, reveal = chart.reveal, status = chart.status, marks = null,
+    silhouettes = chart.silhouettes, labels = chart.labels, terrainRegions = null } = {}) {
+    chart = { cells: [...cells], glimpsed: [...glimpsed], reveal: !!reveal, status, silhouettes, labels };
+    visited = new Set(chart.cells);
+    if (terrainRegions && terrainRegions !== terrainSource) {
+      terrainSource = terrainRegions;
+      for (const region of terrainRegions) for (const cell of region.cells ?? []) terrainCells.set(`${cell.q},${cell.r}`, cell.terrain);
+    }
+    if (marks) places = marks.filter(place => Number.isFinite(place?.x) && Number.isFinite(place?.y)).map(place => ({ ...place }));
+    drawPlaces(); drawOverlay(); render();
+  }
+  /** The existing atlas gains roads, buildings and known places as it zooms in. */
+  function setLocalMap(model) {
+    localDetail = atlasLocalDetail(model);
+    drawLocalDetail(); drawPlaces(); render();
   }
   /**
    * Where the traveler stands on the chart, which way they are facing, and the name of the
@@ -274,9 +336,10 @@ export function createWorldMap() {
       centreOnTraveler();
     }));
   }
-  return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, open,
+  return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, setLocalMap, open,
     state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source, traveler: travelerPoint ? { ...travelerPoint } : null,
-      chart: { charted: chart.cells.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
+      detail: { roads: localDetail.paths.length, buildings: localDetail.buildings.length, marks: localDetail.markers.length, visible: zoom > DETAIL_ZOOM },
+      chart: { charted: chart.cells.length, glimpsed: chart.glimpsed.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
         silhouettes: chart.silhouettes.length, silhouetteCells: overlay.querySelectorAll('[data-role="silhouettes"] polygon').length,
         labels: [...overlay.querySelectorAll('[data-role="labels"] text')].map(text => text.textContent),
         marks: places.length, marked: [...placeLayer.querySelectorAll('.atlas-place:not([hidden])')].length }})};

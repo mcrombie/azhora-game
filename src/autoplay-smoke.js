@@ -1,4 +1,5 @@
 import { QUEST_DONE } from './game-state.js';
+import { MAP_TUTORIAL_DONE } from './map-tutorial.js';
 import { RIDE } from './riding.js';
 
 /**
@@ -118,7 +119,7 @@ export async function runAutoplaySmoke(h) {
     assert(final.moros?.complete, 'the army camp on the Moros was not finished');
     assert(final.campaign?.horse === true, 'the chapter did not pay the army horse');
     assert(wolfFight, 'no wolf came off the burial line');
-    assert(final.mapTutorial === 3, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
+    assert(final.mapTutorial === MAP_TUTORIAL_DONE, `the map tutorial was not completed on entering Luscia (step ${final.mapTutorial})`);
     assert(tookOver && restarted, 'the hand-over was never exercised');
     assert(fights >= 3, `only ${fights} fights were seen`);
   }

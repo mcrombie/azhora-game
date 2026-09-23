@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { regionAt } from '../src/regions.js';
 import { hexAt, hexCentre, insideRegion } from '../src/region-world.js';
 import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { SUBREGIONS, createMapFog, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
+import { SUBREGIONS, createMapFog, chartKnowsPoint, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
 import { BUILD_STATES, buildStatusList, regionBuildStatus } from '../src/build-status.js';
 
 const TIDEHAVEN = { x: -6, z: 29 }, LUMBER_TOWN = { x: -729, z: 384 };
@@ -31,6 +31,41 @@ test('the chart starts blank and is charted hex by hex as the traveler walks', (
     assert.ok(Number.isFinite(centre.q) && Number.isFinite(centre.r));
   }
   assert.ok(events.some(event => event.type === 'chart-widened'));
+});
+
+test('entering a hex confirms it and only glimpses the terrain in its six neighbours', () => {
+  const fog = createMapFog(), home = hexAt(TIDEHAVEN.x, TIDEHAVEN.z);
+  const first = fog.reveal(TIDEHAVEN.x, TIDEHAVEN.z), view = fog.view();
+  assert.equal(first.cells.length, 1, 'cartography can count only this entered hex');
+  assert.equal(first.glimpsed.length, 6);
+  assert.equal(view.cellCount, 1);
+  assert.equal(view.glimpsed.length, 6);
+  assert.ok(!view.glimpsed.includes(first.cells[0]));
+  const next = hexCentre(home.q + 1, home.r);
+  assert.equal(chartKnowsPoint(view.cells, next.x, next.z), false, 'a vague neighbour cannot expose roads or location details');
+  assert.equal(chartKnowsPoint(new Set(view.cells), TIDEHAVEN.x, TIDEHAVEN.z), true);
+  const entered = fog.reveal(next.x, next.z);
+  assert.equal(entered.cells.length, 1, 'walking into a glimpse earns one actual visit');
+  assert.ok(!fog.glimpsed.includes(`${home.q + 1},${home.r}`), 'the confirmed hex leaves the vague ring');
+  assert.equal(fog.glimpsed.length, 8, 'two adjacent visits share one continuous outer ring');
+  assert.equal(fog.view().cellCount, 2);
+  assert.deepEqual(fog.reveal(next.x, next.z), { cells: [], glimpsed: [], subregions: [] }, 'standing still grants no extra progress');
+  assert.equal(chartKnowsPoint(fog.cells, NaN, 0), false);
+});
+
+test('old visited cells survive intact while adjacent terrain is rebuilt without expanding the save', () => {
+  const home = hexAt(TIDEHAVEN.x, TIDEHAVEN.z), key = `${home.q},${home.r}`;
+  const fog = createMapFog(), legacy = { version: 1, cells: [key], subregions: ['eastreena', 'lumber-town'] };
+  assert.equal(fog.restore(legacy), true);
+  assert.deepEqual(fog.snapshot(), legacy, 'legacy discoveries and deliberate revealed cells are preserved');
+  assert.equal(fog.glimpsed.length, 6);
+  assert.equal(fog.cells.length, 1, 'no adjacent hex is mistaken for walked ground');
+  assert.deepEqual(fog.view().found.map(area => area.id), ['eastreena'], 'unentered location details remain off the chart');
+  fog.reveal(LUMBER_TOWN.x, LUMBER_TOWN.z);
+  assert.deepEqual(fog.view().found.map(area => area.id), ['eastreena', 'lumber-town']);
+  const copy = createMapFog(); copy.restore(fog.snapshot());
+  assert.deepEqual(new Set(copy.glimpsed), new Set(fog.glimpsed));
+  assert.deepEqual(copy.snapshot(), fog.snapshot());
 });
 
 test('Tidehaven, which was Eastreena, is the first named ground, and each area is found by reaching it', () => {

@@ -426,3 +426,29 @@ test('Chapter 1 preserves whether the landing mate was invited, independently of
   }
   assert.equal(checkpoint.save({...data,companionOffTheClock:'yes'}).ok,false);
 });
+
+test('chart completion and the selected quest survive a checkpoint, including an unknown quest id', () => {
+  const { checkpoint, data } = fixture();
+  for (const trackedQuestId of ['main', 'bridge', 'civil-war-vastos', 'future-quest', 'q'.repeat(80)]) {
+    const saved = { ...data, chartLesson: 'complete', trackedQuestId };
+    assert.equal(checkpoint.save(saved).ok, true);
+    assert.deepEqual(checkpoint.read().data, saved, 'the HUD decides whether an unknown quest is still available');
+  }
+  assert.equal(checkpoint.save(data).ok, true, 'legacy saves need neither field');
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'chartLesson'), false);
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'trackedQuestId'), false);
+});
+
+test('invalid chart stages and quest ids cannot replace a checkpoint or skip the report to Glun', () => {
+  const { checkpoint, data } = fixture();
+  const saved = { ...data, chartLesson: 'complete', trackedQuestId: 'main' };
+  assert.equal(checkpoint.save(saved).ok, true);
+  for (const chartLesson of [null, 2, {}, 'opened', 'open-map', 'return-to-glun']) {
+    assert.equal(checkpoint.save({ ...saved, chartLesson }).ok, false);
+    assert.deepEqual(checkpoint.read().data, saved);
+  }
+  for (const trackedQuestId of [null, 2, {}, '', 'q'.repeat(81), 'two quests', '<script>', '../main']) {
+    assert.equal(checkpoint.save({ ...saved, trackedQuestId }).ok, false);
+    assert.deepEqual(checkpoint.read().data, saved);
+  }
+});

@@ -17,6 +17,7 @@ import { createForestHideoutQuest, validateForestHideoutSnapshot } from './fores
 import { createRegionalLife, validateRegionalLifeSnapshot } from './regional-life.js';
 import { createCampaign } from './campaign.js';
 import { validateMapTutorial } from './map-tutorial.js';
+import { validateChartLesson } from './chart-lesson.js';
 import { createMorosChapter, validateMorosSnapshot } from './moros-chapter.js';
 import { createBorderChapter, validateBorderSnapshot } from './border-chapter.js';
 import { createAftermathChapter, validateAftermathSnapshot, AFTERMATH_VARIANTS } from './aftermath-chapter.js';
@@ -108,6 +109,11 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (typeof data.meadowCleared !== 'boolean' || typeof data.heardDoom !== 'boolean'
       || (Object.hasOwn(data, 'lysaComplete') && typeof data.lysaComplete !== 'boolean')) return failed('The saved road history is invalid.');
     if (Object.hasOwn(data, 'mapTutorial') && !validateMapTutorial(data.mapTutorial)) return failed('The saved map tutorial is invalid.');
+    if (Object.hasOwn(data, 'chartLesson') && !validateChartLesson(data.chartLesson)) return failed('The saved chart lesson is invalid.');
+    if (data.questStage >= 3 && ['open-map', 'return-to-glun'].includes(data.chartLesson))
+      return failed('The saved journey has not finished Officer Glun’s chart lesson.');
+    if (Object.hasOwn(data, 'trackedQuestId') && (typeof data.trackedQuestId !== 'string'
+      || !/^[a-zA-Z][a-zA-Z0-9_-]{0,79}$/.test(data.trackedQuestId))) return failed('The tracked quest is invalid.');
     // Which of the eleven you are. A save written before anyone could choose has no field
     // at all; that game was played as Cromb, and it is restored as Cromb; a save from the one
     // morning he was spelled `crom` names him that way and is still him.
@@ -203,7 +209,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
     if (data.forestHideout?.accepted && data.questStage < QUEST_DONE) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
-    if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1))
+    if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1
+      || (Object.hasOwn(data.woodland, 'practiceGuards') && data.woodland.practiceGuards < 1)))
       return failed('The saved combat lessons are incomplete.');
     if (data.questStage < QUEST_DONE && (data.meadowCleared || data.journeyGathered.length))
       return failed('The saved onward journey has not begun.');
@@ -275,6 +282,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'regionalLife')) { const life = createRegionalLife(); life.restore(data.regionalLife); result.regionalLife = life.snapshot(); }
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
     if (Object.hasOwn(data, 'mapTutorial')) result.mapTutorial = data.mapTutorial;
+    if (Object.hasOwn(data, 'chartLesson')) result.chartLesson = data.chartLesson;
+    if (Object.hasOwn(data, 'trackedQuestId')) result.trackedQuestId = data.trackedQuestId;
     if (Object.hasOwn(data, 'moros')) { const chapter = createMorosChapter(); chapter.restore(data.moros); result.moros = chapter.snapshot(); }
     if (Object.hasOwn(data, 'border')) { const chapter = createBorderChapter(); chapter.restore(data.border); result.border = chapter.snapshot(); }
     if (Object.hasOwn(data, 'aftermath')) { const chapter = createAftermathChapter(); chapter.restore(data.aftermath); result.aftermath = chapter.snapshot(); }

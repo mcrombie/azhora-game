@@ -17,6 +17,7 @@ import { canStand, QUEST_DONE } from './game-state.js';
 export const AUTOPILOT_VERSION = 1;
 export const AUTOPILOT_DEFAULTS = Object.freeze({
   dialoguePace: 2.2,      // seconds a line stays up before the autopilot continues
+  mapReadingPace: 3,     // seconds the world map stays open so the explanation can be read
   choicePace: 1.4,        // seconds before a reply is chosen
   interactEvery: .8,      // seconds between F presses
   swingEvery: .3,         // seconds between swing attempts
@@ -379,8 +380,10 @@ export function planGoal(snapshot, world) {
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
   if (mode === 'dialogue') return { kind: 'dialogue', intent: 'Talking' };
   if (mode === 'inventory') return { kind: 'close-inventory', intent: 'Closing the satchel' };
-  // The map tutorial opens the journal; once a lesson is learned the journal is closed again.
-  if (mode === 'journal') return snapshot.mapTutorial >= 1 ? { kind: 'close-journal', intent: 'Closing the journal' } : { kind: 'wait', intent: 'Paused' };
+  // Both Glun and the first new region teach the same world map. The command
+  // waits for reading time before closing it; there is no second trails screen.
+  if (mode === 'journal') return snapshot.mapTutorial >= 1 || ['open-map', 'return-to-glun'].includes(snapshot.chartLesson)
+    ? { kind: 'close-journal', intent: 'Reading the world map' } : { kind: 'wait', intent: 'Paused' };
   if (mode !== 'playing') return { kind: 'wait', intent: 'Paused' };
   if (snapshot.combat.phase === 'active') {
     // A broken blade swings at nothing, and a fight with nothing to hurt never ends.
@@ -393,8 +396,9 @@ export function planGoal(snapshot, world) {
     }
     return { kind: 'fight', intent: 'Fighting' };
   }
+  if (snapshot.chartLesson === 'open-map') return { kind: 'open-chart', intent: "Reading Glun's world map" };
+  if (snapshot.chartLesson === 'return-to-glun') return { kind: 'talk', target: world.npcPositions.instructor, npcId: 'instructor', intent: 'Returning to Glun after reading the map' };
   if (snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
-  if (snapshot.mapTutorial === 2) return { kind: 'open-trails', intent: 'Reading the local trails' };
   // Mend a broken weapon before any chapter sends the traveler into its next fight.
   if (!snapshot.weapon.usable) {
     if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
@@ -421,6 +425,7 @@ export function planGoal(snapshot, world) {
     case 1: return { kind: 'talk', target: npc('harbormaster'), npcId: 'harbormaster', intent: 'Speaking with Jojo' };
     // Officer Glun sets the lesson, and nothing at the straw counts until he has (src/instructor.js).
     case 2: return snapshot.lessonSet === false
+      || (snapshot.practiceHits >= 2 && snapshot.practiceGuards >= 1 && snapshot.practiceDodges >= 1)
       ? { kind: 'talk', target: npc('instructor'), npcId: 'instructor', intent: 'Reporting to Officer Glun' }
       : { kind: 'practice', target: world.training, intent: snapshot.practiceHits < 2 ? 'Practising at the straw post'
         : (snapshot.practiceGuards ?? 0) < 1 && snapshot.combat.hasShield ? 'Practising with the shield' : 'Practising a dodge' };
@@ -542,14 +547,14 @@ function nearestOf(points, position) {
 export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
   let active = false, intent = '', reason = '', lastYaw = null, guard = false, walkPoint = null, move = { forward: 0, side: 0, run: false };
-  let timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
+  let timers = { dialogue: 0, reading: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
   let progressKey = '', goalKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
-    active = true; guard = false; walkPoint = null; stopReason = ''; timers = { dialogue: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
+    active = true; guard = false; walkPoint = null; stopReason = ''; timers = { dialogue: 0, reading: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
     progressKey = ''; goalKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
@@ -639,6 +644,7 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
     guard = false; walkPoint = null;
     const snapshot = read();
     if (!snapshot) return null;
+    timers.reading = snapshot.mode === 'journal' ? timers.reading + dt : 0;
     timers.dialogue += dt; timers.interact += dt; timers.swing += dt; timers.idle += dt; timers.whistle += dt; timers.afoot = Math.max(0, timers.afoot - dt);
     const goal = planGoal(snapshot, world);
     intent = goal.intent;
@@ -661,7 +667,8 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
       case 'inspect-letter': if (timers.interact >= config.interactEvery) { actions.push({ type: 'select-item', id: 'harbor-letter' }); timers.interact = 0; } break;
       case 'open-inventory': if (timers.interact >= config.interactEvery) { actions.push({ type: 'open-inventory' }); timers.interact = 0; } break;
       case 'close-inventory': if (timers.interact >= config.interactEvery) { actions.push({ type: 'close-inventory' }); timers.interact = 0; } break;
-      case 'open-chart': case 'open-trails': case 'close-journal': if (timers.interact >= config.interactEvery) { actions.push({ type: goal.kind }); timers.interact = 0; } break;
+      case 'open-chart': if (timers.interact >= config.interactEvery) { actions.push({ type: goal.kind }); timers.interact = 0; } break;
+      case 'close-journal': if (timers.reading >= config.mapReadingPace && timers.interact >= config.interactEvery) { actions.push({ type: goal.kind }); timers.interact = 0; } break;
       case 'equip': actions.push({ type: 'equip', id: goal.item }); break;
       case 'eat': if (timers.interact >= config.interactEvery) { actions.push({ type: 'eat', id: goal.item }); timers.interact = 0; } break;
       case 'fight': {

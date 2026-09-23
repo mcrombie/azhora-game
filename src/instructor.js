@@ -61,11 +61,16 @@ export const GUARD_SECONDS = .7;
  *
  *   `waiting`   he has not been spoken to; the post banks nothing
  *   `set`       the lesson is set and unfinished
- *   `done`      two hits and a dodge, and he has not yet been back to
- *   `finished`  he has given the map
+ *   `done`      the combat practice is complete; he can issue the chart
+ *   `open-map`  the chart is issued but has not been opened
+ *   `return-to-glun` the chart has been opened; the report is still owed
+ *   `finished`  he has heard the report and sent the traveler west
  */
-export function lessonStage({ briefed = false, hits = 0, guards = 0, dodges = 0, taught = false } = {}) {
-  if (taught) return 'finished';
+export function lessonStage({ briefed = false, hits = 0, guards = 0, dodges = 0, taught = false, chartLesson = 'unissued' } = {}) {
+  // The skill is learned when the chart is issued. It grants access, not permission to skip
+  // reading the chart or the final conversation. Explicit pending work wins over skill ownership.
+  if (chartLesson === 'open-map' || chartLesson === 'return-to-glun') return chartLesson;
+  if (chartLesson === 'complete' || taught) return 'finished';
   if (!briefed) return 'waiting';
   return hits >= LESSON.hits && guards >= LESSON.guards && dodges >= LESSON.dodges ? 'done' : 'set';
 }
@@ -86,10 +91,21 @@ const NOT_YET = Object.freeze([
 
 const DONE = Object.freeze([
   'That will do. You will not frighten anybody, but you know which end goes in, you can get behind your own shield, and you can get out of the way. That is more than half of them manage.',
-  'Now the other half of staying alive, which is knowing where you are. Take this.',
+  'Now the other half of staying alive: knowing where you are. This is your first lesson in cartography. Take this chart.',
   'A chart. It is blank, and that is not a fault - it is blank because you have not been anywhere. Ground you walk draws itself on it. This village is on it already, because you are standing in it.',
   'For the rest: ask. Anybody who lives somewhere can tell you which way the next country is, and a name and a bearing is worth having before you need it. Same with everything else out there - the man who fishes will show you fishing, the woman with the hedge will name a plant for you. None of them will come and find you.',
-  'West, then, and mind the road. Corvan at the Avrel clearing puts you into service.',
+  'Press M to open the world map. Find where you stand, and look west along the road. Zoom in for nearby ground or out for the regions beyond it. Close it with M or Esc, then come back and speak to me before you leave.',
+]);
+
+const OPEN_MAP = Object.freeze([
+  'You have the chart. Now open it: M. A thing carried in a bag is not a thing you have learned to use.',
+  'Find Tidehaven on Drent’s coast and the road west. Zoom changes how much of the same map you see. Close it with M or Esc, then speak to me again.',
+]);
+
+const REPORT = Object.freeze([
+  'There. Now you have looked at where you are going, rather than trusting the first man who points.',
+  'Keep the chart. Walked ground fills it in, and people can give you names and bearings for places you have yet to reach.',
+  'Your training is finished. Follow the west road across the Caloss into Luscia. Report to Iven at the army’s relay post in Nothom, with your letter. Keep your shield ready, and mind what is beside the road as well as what is on it.',
 ]);
 
 const AFTER = Object.freeze([
@@ -102,16 +118,21 @@ export function instructorLines(stage) {
   if (stage === 'waiting') return [...BRIEF];
   if (stage === 'set') return [...NOT_YET];
   if (stage === 'done') return [...DONE];
+  if (stage === 'open-map') return [...OPEN_MAP];
+  if (stage === 'return-to-glun') return [...REPORT];
   return [...AFTER];
 }
 
 /**
  * His conversation. The host hands in where the lesson stands and the two things it can do:
- * `begin` sets it (and is what makes the post count), `finish` gives the map.
+ * `begin` sets practice; `giveChart` issues the chart; `report` finishes the whole lesson only
+ * after the chart has been opened. `finish` remains an alias for older chart-giving callers.
  */
-export function instructorConversation(npc, { stage = 'waiting', openDialogue, begin = () => {}, finish = () => {} } = {}) {
+export function instructorConversation(npc, { stage = 'waiting', openDialogue, begin = () => {}, finish = () => {}, giveChart = finish, openMap = () => {}, report = () => {} } = {}) {
   const lines = instructorLines(stage);
   if (stage === 'waiting') return openDialogue(npc, lines, null, 'Take up the sword', { onComplete: begin });
-  if (stage === 'done') return openDialogue(npc, lines, null, 'Take the chart', { onComplete: finish });
+  if (stage === 'done') return openDialogue(npc, lines, null, 'Take the chart', { onComplete: giveChart });
+  if (stage === 'open-map') return openDialogue(npc, lines, null, 'Open the world map', { onComplete: openMap });
+  if (stage === 'return-to-glun') return openDialogue(npc, lines, null, 'Report for service', { onComplete: report });
   return openDialogue(npc, lines, null, 'Back to the post');
 }

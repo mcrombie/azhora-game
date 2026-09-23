@@ -9,6 +9,7 @@ const uniqueIds = (value, pattern, limit) => Array.isArray(value) && value.lengt
 export function validateWoodlandProgress(value, stock) {
   if (!value || value.version !== 1 || !['available', 'active', 'complete'].includes(value.acornStatus)
     || !Number.isSafeInteger(value.practiceHits) || value.practiceHits < 0 || value.practiceHits > 2
+    || (Object.hasOwn(value, 'practiceGuards') && (!Number.isSafeInteger(value.practiceGuards) || value.practiceGuards < 0 || value.practiceGuards > 1))
     || !Number.isSafeInteger(value.practiceDodges) || value.practiceDodges < 0 || value.practiceDodges > 1
     || !uniqueIds(value.acorns, /^acorn-[1-6]-[1-4]$/, 24)
     || !uniqueIds(value.sticks, /^stick-[1-7]-[1-2]$/, 14)
@@ -28,7 +29,8 @@ export function validateWoodlandProgress(value, stock) {
 
 export function copyWoodlandProgress(value) {
   return { version: 1, acornStatus: value.acornStatus, practiceHits: value.practiceHits,
-    practiceDodges: value.practiceDodges, acorns: [...value.acorns], sticks: [...value.sticks],
+    practiceDodges: value.practiceDodges, ...(Object.hasOwn(value, 'practiceGuards') ? { practiceGuards: value.practiceGuards } : {}),
+    acorns: [...value.acorns], sticks: [...value.sticks],
     fruits: [...value.fruits], discoveries: [...value.discoveries],
     camp: { version: 1, taught: value.camp.taught, catches: value.camp.catches, fires: { ...value.camp.fires } } };
 }

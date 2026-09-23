@@ -52,3 +52,43 @@ test('camp reload preserves remaining firewood and fishing history, cancels an u
     assert.equal(next.restore(invalid),false);assert.deepEqual(next.checkpoint(),saved);
   }
 });
+
+test('each unfinished chart lesson and completed guard drill resumes before leaving Tidehaven', () => {
+  const { data, checkpoint } = fixture();
+  data.questStage = 2;
+  data.inventory.push({ id: 'harbor-letter', quantity: 1 });
+  data.woodland.practiceHits = 2;
+  data.woodland.practiceDodges = 1;
+  for (const chartLesson of ['unissued', 'open-map', 'return-to-glun']) {
+    for (const practiceGuards of [0, 1]) {
+      const saved = { ...data, chartLesson, woodland: { ...data.woodland, practiceGuards } };
+      assert.equal(checkpoint.save(saved).ok, true);
+      assert.deepEqual(checkpoint.read().data, saved);
+    }
+  }
+  assert.equal(checkpoint.save(data).ok, true, 'legacy guard progress is still inferred by the host');
+  assert.equal(Object.hasOwn(checkpoint.read().data.woodland, 'practiceGuards'), false);
+});
+
+test('invalid guard progress cannot overwrite a save, and a new completed lesson requires its guard', () => {
+  const { data, checkpoint } = fixture();
+  const saved = { ...data, woodland: { ...data.woodland, practiceGuards: 1 } };
+  assert.equal(checkpoint.save(saved).ok, true);
+  for (const practiceGuards of [-1, 2, 0.5, '1', null, NaN, Infinity]) {
+    assert.equal(checkpoint.save({ ...saved, woodland: { ...saved.woodland, practiceGuards } }).ok, false);
+    assert.deepEqual(checkpoint.read().data, saved);
+  }
+  const inventory = createInventoryState();
+  inventory.grant('harbor-letter'); inventory.grant('road-token');
+  const journey = createJourney({ inventory });
+  assert.equal(journey.start().ok, true);
+  const onward = { ...saved, questStage: 3, journey: journey.snapshot(), chartLesson: 'complete',
+    inventory: [...saved.inventory, { id: 'harbor-letter', quantity: 1 }, { id: 'road-token', quantity: 1 }],
+    woodland: { ...saved.woodland, practiceHits: 2, practiceDodges: 1 } };
+  assert.equal(checkpoint.save(onward).ok, true);
+  assert.equal(checkpoint.save({ ...onward, woodland: { ...onward.woodland, practiceGuards: 0 } }).ok, false);
+  assert.deepEqual(checkpoint.read().data, onward);
+  const { practiceGuards, ...legacyWoodland } = onward.woodland;
+  const { chartLesson, ...legacyOnward } = onward;
+  assert.equal(checkpoint.save({ ...legacyOnward, woodland: legacyWoodland }).ok, true);
+});

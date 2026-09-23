@@ -12,7 +12,7 @@ function fakeWorld() {
     heightAt: () => 1,
     colliders: [{ x: 6, z: 0, r: 1.2 }, { x: 0, z: -12.5, hx: .5, hz: .5 }],
     paths: [trail, [{ x: -21, z: 13 }, { x: 0, z: 7 }]],
-    npcPositions: { harbormaster: { x: 4, z: 20 }, 'bird-watcher': { x: 22, z: 34 }, warden: { x: 0, z: -65 }, 'meadow-courier': { x: -7, z: -190 }, 'crossing-keeper': { x: -9, z: -352 } },
+    npcPositions: { harbormaster: { x: 4, z: 20 }, 'bird-watcher': { x: 22, z: 34 }, instructor: { x: 3, z: -10 }, warden: { x: 0, z: -65 }, 'meadow-courier': { x: -7, z: -190 }, 'crossing-keeper': { x: -9, z: -352 } },
     npcNames: { harbormaster: 'Jojo', 'bird-watcher': 'Lakota', warden: 'Eren', 'meadow-courier': 'Corvan', 'crossing-keeper': 'Chip' },
     journeySites: { 'cart-parcel-1': { id: 'cart-parcel-1', x: 15, z: -218, name: 'Cloth parcel' }, 'bridge-repair': { id: 'bridge-repair', x: 0, z: -400, name: 'Reedwater bridge' } },
     stickSites: [{ id: 'bridge-debris-1', x: -8, z: -383, collected: false }, { id: 'bridge-debris-2', x: 8, z: -389, collected: true }],
@@ -280,10 +280,10 @@ test('a stalled walk turns into a sidestep and a long stall gives control back',
   assert.equal(pilot.active, false); assert.match(pilot.stopReason, /control/);
 });
 
-test('the map tutorial steers the autopilot through the chart and the trails, then out of the journal', () => {
+test('the new-region tutorial uses one world map and never asks for a trails screen', () => {
   const world = fakeWorld();
   assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 1, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-chart');
-  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 2, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'open-trails');
+  assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 2, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'the world map completed the lesson');
   assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 2 }), world).kind, 'close-journal', 'a learned lesson closes the journal');
   assert.equal(planGoal(snapshot({ mode: 'journal', mapTutorial: 0 }), world).kind, 'wait', 'a journal the player opened is left alone');
   assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, mapTutorial: 3, journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } }), world).kind, 'talk', 'a finished tutorial no longer interrupts the road');
@@ -582,4 +582,47 @@ test('a road that first bends away from the goal does not trigger false stuck de
     assert.ok(Math.abs(state.position.x) < .01, 'hold the first leg instead of detouring sideways');
   }
   assert.ok(state.position.z > 40); assert.equal(pilot.active, true);
+});
+
+
+test('Glun sends autoplay to the world map and receives the report before the road continues', () => {
+  const world = fakeWorld(), trained = snapshot({ questStage: 2, lessonSet: true, practiceHits: 2, practiceGuards: 1, practiceDodges: 1, chartLesson: 'unissued' });
+  assert.equal(planGoal(trained, world).npcId, 'instructor', 'report the completed drill to receive the chart');
+  assert.equal(planGoal({ ...trained, chartLesson: 'open-map' }, world).kind, 'open-chart');
+  const returning = planGoal({ ...trained, chartLesson: 'return-to-glun' }, world);
+  assert.equal(returning.kind, 'talk'); assert.equal(returning.npcId, 'instructor');
+  assert.deepEqual(returning.target, world.npcPositions.instructor);
+  assert.equal(planGoal({ ...trained, questStage: QUEST_DONE, chartLesson: 'complete' }, world).kind, 'walk');
+  assert.equal(planGoal({ ...trained, chartLesson: 'open-map', combat: { ...trained.combat, phase: 'active' } }, world).kind, 'fight', 'a live fight still takes priority');
+});
+
+test('autoplay leaves the map explanation visible, then closes it and returns to Glun', () => {
+  const world = fakeWorld(), state = snapshot({ questStage: 2, chartLesson: 'open-map', lessonSet: true,
+    practiceHits: 2, practiceGuards: 1, practiceDodges: 1, position: { x: 3, z: -8.5 }, interaction: { npcId: 'instructor' } });
+  const calls = [], act = {
+    'open-chart': action => { calls.push(action.type); state.mode = 'journal'; state.chartLesson = 'return-to-glun'; },
+    'close-journal': action => { calls.push(action.type); state.mode = 'playing'; },
+    interact: action => calls.push(action.type),
+  };
+  const pilot = createAutopilot({ world, read: () => state, act, options: { mapReadingPace: 3 } });
+  pilot.start(); pilot.step(1);
+  assert.deepEqual(calls, ['open-chart']);
+  pilot.step(1); pilot.step(1); pilot.step(.9);
+  assert.deepEqual(calls, ['open-chart'], 'the whole reading interval must pass while the map is actually shown');
+  pilot.step(.2); assert.deepEqual(calls, ['open-chart', 'close-journal']);
+  pilot.step(1); assert.deepEqual(calls, ['open-chart', 'close-journal', 'interact']);
+});
+
+test('the Luscia map explanation also gets reading time and resumes the road without opening trails', () => {
+  const world = fakeWorld(), state = snapshot({ questStage: QUEST_DONE, mapTutorial: 1, chartLesson: 'complete',
+    journey: { started: true, stage: 'courier', complete: false, destinationIds: ['meadow-courier'], actions: [] } });
+  const calls = [], pilot = createAutopilot({ world, read: () => state, act: {
+    'open-chart': action => { calls.push(action.type); state.mode = 'journal'; state.mapTutorial = 2; },
+    'close-journal': action => { calls.push(action.type); state.mode = 'playing'; },
+    'open-trails': () => assert.fail('the removed local-trails screen was requested'),
+  } });
+  pilot.start(); pilot.step(1); pilot.step(2);
+  assert.deepEqual(calls, ['open-chart']);
+  pilot.step(1); assert.deepEqual(calls, ['open-chart', 'close-journal']);
+  assert.equal(pilot.step(.1).goal, 'talk');
 });

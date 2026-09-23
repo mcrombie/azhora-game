@@ -1,33 +1,30 @@
 /**
  * The lay-of-the-land tutorial: shown once, on first entering a region beyond
- * Drent, it prompts the traveler to open the continental chart and then the
- * local trail map. A pure step machine, so the HUD, the checkpoint and the
+ * Drent, it prompts the traveler to read the new region on the same world map.
+ * A pure step machine, so the HUD, the checkpoint and the
  * autopilot share one source of truth about where the tutorial stands.
  */
-export const MAP_TUTORIAL_DONE = 3;
+export const MAP_TUTORIAL_DONE = 2;
 
 export const MAP_TUTORIAL_STEPS = Object.freeze([
   null,
   Object.freeze({
-    id: 'chart', key: 'J', act: 'open-chart', completes: 'world', kicker: 'THE LAY OF THE LAND', title: 'A new region',
-    text: 'Azhora is divided into regions like Drent and Luscia, each with its own level and ruling faction. Open your journal’s chart to see where this one lies.',
-  }),
-  Object.freeze({
-    id: 'trails', key: 'M', act: 'open-trails', completes: 'trails', kicker: 'THE LAY OF THE LAND', title: 'The local trails',
-    text: 'The chart shows the whole continent. The trail map shows this region’s paths and places. Open it to find the road ahead.',
+    id: 'chart', key: 'M', act: 'open-chart', completes: 'world', kicker: 'THE LAY OF THE LAND', title: 'A new region on your map',
+    text: 'You have crossed into another region. Open the world map to find your position and this region’s name, level and ruling faction. Zoom in to follow nearby roads and places, or out to see its neighbours.',
   }),
   Object.freeze({
     id: 'done', key: null, act: null, completes: null, kicker: 'THE LAY OF THE LAND', title: 'Well read',
-    text: 'Compass, minimap and both charts agree on north. Mind the level of each region you enter: higher is deadlier, and the faction in control decides who calls you a friend.',
+    text: 'The same world map follows you from Drent into Luscia and beyond. Mind each region’s level and ruling faction. Press M or Esc to close the map and continue along the road.',
   }),
 ]);
 
 export function validateMapTutorial(value) {
-  return Number.isInteger(value) && value >= 0 && value <= MAP_TUTORIAL_DONE;
+  // Legacy step 2 asked for the removed trail map; both 2 and 3 have already seen the chart.
+  return Number.isInteger(value) && value >= 0 && value <= 3;
 }
 
 export function createMapTutorial(initial = 0) {
-  let step = validateMapTutorial(initial) ? initial : 0;
+  let step = validateMapTutorial(initial) ? Math.min(initial, MAP_TUTORIAL_DONE) : 0;
   /** True when arriving in a region other than Drent (id 1) should start the tutorial. */
   // Open country carries id 0 and is not a province; walking off the atlas is not arriving somewhere.
   function shouldStart({ regionId, mode = 'playing' } = {}) {
@@ -50,7 +47,7 @@ export function createMapTutorial(initial = 0) {
   function snapshot() { return step; }
   function restore(value) {
     if (!validateMapTutorial(value)) return false;
-    step = value; return true;
+    step = Math.min(value, MAP_TUTORIAL_DONE); return true;
   }
   return { shouldStart, start, noteJournalTab, view, snapshot, restore, get step() { return step; } };
 }

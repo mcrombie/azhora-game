@@ -10,6 +10,14 @@ import { hexAt } from './region-world.js';
 export const MAP_FOG_VERSION = 1;
 /** The chart records ground the traveler has actually stood on: one authored hex at a time. */
 export const CHART_GRAIN = 'hex';
+const HEX_NEIGHBOURS = Object.freeze([[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]]);
+
+/** Detail belongs to entered hexes. The world map also uses this for individual local marks. */
+export function chartKnowsPoint(cells, x, z) {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+  const at = hexAt(x, z), key = `${at.q},${at.r}`;
+  return cells instanceof Set ? cells.has(key) : Array.isArray(cells) && cells.includes(key);
+}
 
 const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name, region, x, z, radius, note });
 
@@ -159,45 +167,62 @@ export function validateMapFogSnapshot(data, { allowMissing = true } = {}) {
 }
 
 export function createMapFog({ onEvent = () => {} } = {}) {
-  const cells = new Set(), found = [];
+  const cells = new Set(), glimpsed = new Set(), found = [];
+
+  function glimpseAround(q, r) {
+    glimpsed.delete(`${q},${r}`);
+    const fresh = [];
+    for (const [dq, dr] of HEX_NEIGHBOURS) {
+      const key = `${q + dq},${r + dr}`;
+      if (!cells.has(key) && !glimpsed.has(key)) { glimpsed.add(key); fresh.push(key); }
+    }
+    return fresh;
+  }
 
   /** Chart the ground about a point. Returns what was new. */
   function reveal(x, z) {
-    if (!Number.isFinite(x) || !Number.isFinite(z)) return { cells: [], subregions: [] };
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return { cells: [], glimpsed: [], subregions: [] };
     const home = hexAt(x, z), key = `${home.q},${home.r}`, newCells = [];
     if (!cells.has(key)) { cells.add(key); newCells.push(key); }
+    const newGlimpses = newCells.length ? glimpseAround(home.q, home.r) : [];
     const newAreas = [];
     for (const item of subregionsAt(x, z)) {
-      if (found.includes(item.id)) continue;
+      if (found.includes(item.id) || !chartKnowsPoint(cells, item.x, item.z)) continue;
       found.push(item.id); newAreas.push(item.id);
       onEvent({ type: 'subregion-found', id: item.id, name: item.name, region: item.region, note: item.note });
     }
     if (newCells.length) onEvent({ type: 'chart-widened', cells: newCells.length });
-    return { cells: newCells, subregions: newAreas };
+    return { cells: newCells, glimpsed: newGlimpses, subregions: newAreas };
   }
 
   const knows = (q, r) => cells.has(`${q},${r}`);
-  const knowsPoint = (x, z) => { const home = hexAt(x, z); return knows(home.q, home.r); };
+  const knowsPoint = (x, z) => chartKnowsPoint(cells, x, z);
 
   /** The chart for the journal: every named area, and whether it has been found. */
   function view() {
+    // A legacy named area can straddle the edge of a visited hex. Keep its saved discovery,
+    // but do not print its detailed location until the hex containing it has been entered.
+    const detailed = found.map(id => byId.get(id)).filter(item => knowsPoint(item.x, item.z));
     return {
-      cells: [...cells], cellCount: cells.size,
-      subregions: SUBREGIONS.map(item => ({ ...item, known: found.includes(item.id) })),
-      found: found.map(id => byId.get(id)), foundCount: found.length, total: SUBREGIONS.length,
+      cells: [...cells], glimpsed: [...glimpsed], cellCount: cells.size,
+      subregions: SUBREGIONS.map(item => ({ ...item, known: found.includes(item.id) && knowsPoint(item.x, item.z) })),
+      found: detailed, foundCount: detailed.length, total: SUBREGIONS.length,
     };
   }
 
   function snapshot() { return { version: MAP_FOG_VERSION, cells: [...cells], subregions: [...found] }; }
 
   function restore(data) {
-    cells.clear(); found.length = 0;
+    cells.clear(); glimpsed.clear(); found.length = 0;
     if (!validateMapFogSnapshot(data, { allowMissing: false })) return false;
     for (const key of data.cells) cells.add(key);
+    // Glimpses are derived, never saved or counted as walking. Every old saved cell remains
+    // confirmed, including a deliberate developer reveal; nothing migrates into extra visits.
+    for (const key of cells) glimpseAround(...key.split(',').map(Number));
     for (const id of data.subregions) found.push(id);
     return true;
   }
 
   return { reveal, knows, knowsPoint, view, snapshot, restore,
-    get cells() { return [...cells]; }, get found() { return [...found]; } };
+    get cells() { return [...cells]; }, get glimpsed() { return [...glimpsed]; }, get found() { return [...found]; } };
 }

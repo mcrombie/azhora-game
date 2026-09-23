@@ -1,5 +1,9 @@
 // The local chart uses world metres and the same north (-Z) as the terrain.
 // Rendering only reads adventure state; opening or drawing it reveals nothing.
+import { TRANSFORM, hexAt, hexAtlasCorners } from './region-world.js';
+import { PLAYABLE_SURVEY } from './region-survey.js';
+import { GLIMPSED_TERRAIN, questMapColour } from './world-map-detail.js';
+
 const TAU = Math.PI * 2;
 const finitePoint = point => point && Number.isFinite(point.x) && Number.isFinite(point.z);
 const positive = (value, fallback) => Number.isFinite(value) && value > 0 ? value : fallback;
@@ -46,11 +50,40 @@ function dot(ctx, x, y, radius, fill, stroke = null) {
   if (stroke) { ctx.strokeStyle = stroke; ctx.stroke(); }
 }
 
+const terrainCache = new WeakMap();
+function terrainIndex(regions) {
+  const source = Array.isArray(regions) ? regions : PLAYABLE_SURVEY.regions;
+  if (!terrainCache.has(source)) {
+    const cells = new Map();
+    for (const region of source) for (const cell of region.cells ?? []) cells.set(`${cell.q},${cell.r}`, cell.terrain);
+    terrainCache.set(source, cells);
+  }
+  return terrainCache.get(source);
+}
+
+/** Only the few tiles touching this viewport are projected; a large save is not drawn each frame. */
+export function miniMapFogTiles(chart, view) {
+  if (!chart || chart.reveal) return null;
+  const visited = new Set(chart.cells ?? []), glimpsed = new Set(chart.glimpsed ?? []), terrain = terrainIndex(chart.terrainRegions);
+  const b = view.bounds, corners = [[b.minX,b.minZ],[b.minX,b.maxZ],[b.maxX,b.minZ],[b.maxX,b.maxZ]].map(([x,z]) => hexAt(x,z));
+  const tiles = [], qs = corners.map(h => h.q), rs = corners.map(h => h.r);
+  for (let q = Math.min(...qs) - 1; q <= Math.max(...qs) + 1; q++) for (let r = Math.min(...rs) - 1; r <= Math.max(...rs) + 1; r++) {
+    const key = `${q},${r}`, state = visited.has(key) ? 'visited' : glimpsed.has(key) ? 'glimpsed' : null;
+    if (!state) continue;
+    const points = hexAtlasCorners(q,r).map(p => view.project(TRANSFORM.atlasToWorld(p.x,p.y)));
+    if (points.every(p => p.x < 0) || points.every(p => p.x > view.size) || points.every(p => p.y < 0) || points.every(p => p.y > view.size)) continue;
+    const kind = terrain.get(key) ?? (chart.terrainRegions ? 'ocean' : 'unknown');
+    tiles.push({ key, state, points, colour: GLIMPSED_TERRAIN[kind] ?? GLIMPSED_TERRAIN.unknown });
+  }
+  return { tiles, knows: p => { if (!finitePoint(p)) return false; const h = hexAt(p.x,p.z); return visited.has(`${h.q},${h.r}`); } };
+}
+
 /** Draw one north-up, player-centered local view. Targets are ordinary {x,z,id?} objects. */
 export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal = null, combat = null, angle = 0,
-  time = 0, discoveries = new Set(), tracked = null, bird = null, radius = 62, size = 300, northOffset = 0 } = {}) {
+  time = 0, discoveries = new Set(), tracked = null, bird = null, radius = 62, size = 300, northOffset = 0, chart = null } = {}) {
   const view = miniMapProjection({ position, radius, size });
   const { project, bounds, scale, center, ring } = view;
+  const fog = miniMapFogTiles(chart, view), entered = p => !fog || fog.knows(p);
   size = view.size;
   const region = finitePoint(position) ? world.regionAt?.(position.x, position.z) : null;
   const counts = { paths: 0, buildings: 0, waterShapes: 0, landmarks: 0, discovered: 0, enemies: 0, heightSamples: 0 };
@@ -61,6 +94,23 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   ctx.save(); ctx.beginPath(); ctx.arc(center, center, center - 1, 0, TAU); ctx.clip();
   // World -Z is drawn up by default; a north offset turns the whole chart so true north stays at the top.
   if (Number.isFinite(northOffset) && northOffset !== 0) { ctx.translate(center, center); ctx.rotate(northOffset); ctx.translate(-center, -center); }
+  if (fog) {
+    ctx.fillStyle = '#0b1620'; ctx.fillRect(-size, -size, size * 3, size * 3);
+    const trace = points => {
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+    };
+    for (const tile of fog.tiles) if (tile.state === 'glimpsed') {
+      ctx.beginPath(); trace(tile.points); ctx.fillStyle = tile.colour; ctx.fill();
+    }
+    // Exact geography and all markers are clipped to entered hexes. Neighbor
+    // terrain is already beneath this clip, with no houses, paths, or names.
+    ctx.save(); ctx.beginPath();
+    for (const tile of fog.tiles) if (tile.state === 'visited') trace(tile.points);
+    ctx.clip();
+    result.fog = { visited: fog.tiles.filter(t => t.state === 'visited').length, glimpsed: fog.tiles.filter(t => t.state === 'glimpsed').length };
+  }
   ctx.fillStyle = MINIMAP_PALETTE.groundFallback; ctx.fillRect(0, 0, size, size);
   // Districts are filled from their authored hex outlines, so a view near a
   // border shows the real shape of both sides at the same chart scale.
@@ -206,7 +256,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
       || c.kind === 'bridge-rail' || c.kind === 'bridge-damage' || c.kind === 'ridge-rock' || c.kind === 'ruin-pillar';
     if (!solid) continue;
     const d = dimensions(c);
-    if (!visible(c, Math.max(d.width, d.depth))) continue;
+    if (!visible(c, Math.max(d.width, d.depth)) || !entered(c)) continue;
     const p = project(c);
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Number.isFinite(c.angle) ? -c.angle : 0);
     ctx.fillStyle = house || c.kind === 'windmill' ? MINIMAP_PALETTE.house : MINIMAP_PALETTE.stone;
@@ -236,7 +286,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   }
 
   for (const place of world.landmarks || []) {
-    const p = project(place); if (!p || !p.inside) continue;
+    const p = project(place); if (!p || !p.inside || !entered(place)) continue;
     const discovered = known(discoveries, place.id);
     ctx.lineWidth = 1;
     if (discovered) {
@@ -249,15 +299,15 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     const p = project(fire); dot(ctx, p.x, p.y, 2, '#e5b276');
   }
   if (combat?.phase === 'active') for (const enemy of combat.enemies || []) {
-    const p = project(enemy); if (!p?.inside || !(enemy.hp > 0)) continue;
+    const p = project(enemy); if (!p?.inside || !(enemy.hp > 0) || !entered(enemy)) continue;
     dot(ctx, p.x, p.y, 3.2, '#ef9a72', '#533c2e'); counts.enemies++;
   }
 
   // Both quest destinations use the same filled gold diamond. A player-pinned
   // place keeps its separate green ring because it is not a quest category.
   const drawTarget = (target, optional) => {
-    const p = project(target, { clampToRing: true, inset: 7 }); if (!p) return null;
-    const color = optional ? '#8acfc2' : '#ffe0a0';
+    const p = project(target, { clampToRing: true, inset: 7 }); if (!p || !entered(target)) return null;
+    const color = optional ? '#8acfc2' : questMapColour(target.markerKind);
     ctx.lineWidth = 2;
     dot(ctx, p.x, p.y, optional ? 9 : 6.5, MINIMAP_PALETTE.targetRing);
     if (optional) dot(ctx, p.x, p.y, 7.5, null, color);
@@ -284,7 +334,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   // and the chart reaches 62 m while a bird can be seen at 18 to 30, so it is almost
   // always on the sheet - but an arrow at the ring carries the ones that are not.
   result.bird = null;
-  if (finitePoint(bird)) {
+  if (finitePoint(bird) && entered(bird)) {
     const p = project(bird, { clampToRing: true, inset: 6 });
     const wing = 4.2, lift = 2.2;
     dot(ctx, p.x, p.y, 5.6, MINIMAP_PALETTE.targetRing);
@@ -305,6 +355,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     }
     result.bird = { ...p, id: bird.id || null };
   }
+  if (fog) ctx.restore(); // The player remains visible even before their first tile is charted.
   // Angle zero faces +Z, matching the actual character (south on this chart).
   const yaw = Number.isFinite(angle) ? angle : 0, dx = Math.sin(yaw), dy = Math.cos(yaw);
   const tip = { x: center + dx * 8, y: center + dy * 8 };

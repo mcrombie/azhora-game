@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { drawMinimap, miniMapProjection, MINIMAP_PALETTE } from '../src/minimap.js';
 import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
 import { toWorld } from '../src/world-scale.js';
+import { hexCentre } from '../src/region-world.js';
+import { questMapColour } from '../src/world-map-detail.js';
 
 /** The fixture speaks authored metres, like the world it stands in for. */
 const at = (x, z) => toWorld(x, z);
@@ -68,7 +70,7 @@ test('the long road’s next stop is a second, ringed target beside the arc’s 
   const world = fixture(), position = { x: -80, z: 29 };
   const ctx = context();
   const view = drawMinimap(ctx, { world, position, goal: { x: -75, z: 29 }, openGoal: { id: 'long-road-bird-garden', x: -30, z: 20 } });
-  assert.equal(ctx.calls.filter(call => call.method === 'fill' && call.fill === '#ffe0a0').length, 2, 'both quest destinations use the same filled gold symbol');
+  assert.equal(ctx.calls.filter(call => call.method === 'fill' && call.fill === questMapColour('main')).length, 2, 'both quest destinations use the same filled gold symbol');
   assert.ok(view.goal, 'the arc is still drawn');
   assert.ok(view.openGoal, 'and so is the long road');
   assert.equal(view.openGoal.id, 'long-road-bird-garden');
@@ -188,5 +190,31 @@ test('the built world uses rendered water outlines and bridge rails without terr
     for (const geometry of geometryCount) geometry.dispose();
     for (const material of materialCount) material.dispose();
     scene.clear();
+  }
+});
+
+
+test('minimap exploration clips exact features to entered tiles and preserves only vague adjacent terrain', () => {
+  const here = hexCentre(10, 106), adjacent = hexCentre(11, 106);
+  const world = { colliders: [{ kind: 'house', ...here, width: 5, depth: 5 }, { kind: 'house', ...adjacent, width: 5, depth: 5 }],
+    landmarks: [{ id: 'here', ...here }, { id: 'secret', ...adjacent }] };
+  const chart = { cells: ['10,106'], glimpsed: ['11,106'] }, ctx = context();
+  const drawn = drawMinimap(ctx, { world, position: here, radius: 150, chart, discoveries: new Set(['here', 'secret']),
+    goal: { id: 'secret', ...adjacent }, tracked: { id: 'here', ...here } });
+  assert.equal(drawn.counts.buildings, 1); assert.equal(drawn.counts.landmarks, 1);
+  assert.equal(drawn.goal, null); assert.ok(drawn.optional && drawn.player);
+  assert.equal(drawn.fog.visited, 1); assert.equal(drawn.fog.glimpsed, 1);
+  assert.equal(ctx.calls.filter(c => c.method === 'clip').length, 2, 'features sit under both circular and visited-hex clips');
+  assert.equal(ctx.calls.filter(c => c.method === 'save').length, ctx.calls.filter(c => c.method === 'restore').length);
+  const visited = drawMinimap(context(), { world, position: here, radius: 150,
+    chart: { cells: ['10,106', '11,106'], glimpsed: [] }, goal: { id: 'secret', ...adjacent } });
+  assert.equal(visited.counts.buildings, 2); assert.ok(visited.goal, 'entering the tile confirms its exact features');
+});
+
+test('selected side-quest pointers retain their category colors on the minimap', () => {
+  for (const markerKind of ['main', 'plot', 'deed', 'skill']) {
+    const ctx = context();
+    drawMinimap(ctx, { position: { x: 0, z: 0 }, goal: { x: 4, z: 4, markerKind } });
+    assert.ok(ctx.calls.some(c => c.method === 'fill' && c.fill === questMapColour(markerKind)), markerKind);
   }
 });

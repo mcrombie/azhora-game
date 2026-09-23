@@ -19,17 +19,22 @@
 @media(max-width:1100px){#bird-watch{right:24px;bottom:27%;width:min(260px,calc(100vw - 48px));padding:10px 13px 11px}#bird-watch h3{font-size:21px}#bird-watch p{font-size:12px}}
 .bird-card-bar,.skill-bar{height:6px;border-radius:3px;background:#0e2a24;border:1px solid #e5cb8544;overflow:hidden}
 .bird-card-bar i,.skill-bar i{display:block;height:100%;background:linear-gradient(90deg,#c7a45a,#f1d68b);transition:width .8s}
-#skills-sheet .skill-card{border-top:1px solid #d9d5ae2b;padding-top:6px}
+/* A readable journal page: skill names, progress and guidance stay legible at ordinary zoom. */
+#skills-sheet{color:#f3ead5;font-size:16px;line-height:1.6;padding:4px 2px 12px}
+#skills-sheet .skill-card{border-top:1px solid #b8cabb55;padding-top:18px}
 #skills-sheet .skill-card:first-child{border-top:0;padding-top:0}
-#skills-sheet .skill-card>.eyebrow{color:#d1c38f;font-size:10px;letter-spacing:.14em}
-#skills-sheet .skill-card>h3:first-of-type{margin-top:4px}
-#skills-sheet .skill-bar{max-width:420px;margin:4px 0 6px}
-#skills-sheet .skill-xp{font-size:12px;color:#d1c38f;margin:0 0 6px;line-height:1.5}
-#skills-sheet .skill-task{font-size:13px;color:#ffe7ac;margin-top:14px}
-#skills-sheet .bird-list{padding:0;list-style:none;display:grid;gap:12px}
-#skills-sheet .bird-list li{font-size:15px;color:#f2dfb9}
-#skills-sheet .bird-list li.unseen{color:#a9b5a4;font-style:italic}
-#skills-sheet .bird-list small{display:block;margin-top:4px;font-size:12px;line-height:1.65;color:#bfcbbb;font-style:normal}
+#skills-sheet .skill-card>.eyebrow{color:#e9d39c;font-size:12px;letter-spacing:.1em}
+#skills-sheet .skill-card>h3:first-of-type{margin-top:20px}
+#skills-sheet .skill-card>h3{color:#fff1cf;font-size:24px;margin:26px 0 12px}
+#skills-sheet .skill-card>p{font-size:16px;line-height:1.7;color:#eee9d9;margin:12px 0;max-width:68ch}
+#skills-sheet .skill-bar{height:8px;max-width:none;margin:12px 0 8px;border-color:#bdd0b766;background:#0d2823}
+#skills-sheet .skill-xp{font-size:14px;color:#e8d49f;margin:0 0 16px;line-height:1.6;font-variant-numeric:tabular-nums}
+#skills-sheet .skill-card>.skill-teacher{padding:13px 16px;background:#112f2a;border-left:3px solid #cfbc83;border-radius:3px;color:#e6e4d3}
+#skills-sheet .skill-card>.skill-task{padding:13px 16px;border-left:3px solid #e7c879;background:#28463b;color:#ffedbf;margin-top:18px}
+#skills-sheet .bird-list{padding:0;list-style:none;display:grid;gap:0;margin:12px 0}
+#skills-sheet .bird-list li{font-size:16px;color:#f4e5c5;padding:13px 0;border-bottom:1px solid #b8cabb30}
+#skills-sheet .bird-list li.unseen{color:#c4d0c5;font-style:italic}
+#skills-sheet .bird-list small{display:block;margin-top:5px;font-size:14px;line-height:1.65;color:#d4ddd1;font-style:normal}
 /* RuneScape's touches for every skill: experience drops by the map, a level-up banner, the total, and each skill's guide. */
 #xp-drops{position:absolute;right:40px;top:236px;width:220px;height:170px;pointer-events:none;overflow:visible}
 .xp-drop{position:absolute;right:0;bottom:0;font-family:Adventure,Georgia,serif;font-size:19px;color:#ffe7a4;text-shadow:0 2px 8px #0e2a24;white-space:nowrap;animation:xp-rise 1.9s ease-out forwards}
@@ -42,33 +47,52 @@
 #level-up h3{font-family:Adventure,Georgia,serif;font-weight:400;font-size:26px;margin:2px 0 4px;color:#fff1cf}
 #level-up p{font-size:13px;color:#e8e0c4}
 #level-up-unlock{color:#bfe3a8!important;margin-top:4px}
-#skills-sheet .skill-guide{list-style:none;padding:0;margin:10px 0 6px;display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
-#skills-sheet .skill-guide li{font-size:13px;display:flex;gap:10px;align-items:baseline;color:#dfdfc6}
-#skills-sheet .skill-guide li b{min-width:22px;text-align:right;color:#f3d27c;font-weight:600}
-#skills-sheet .skill-guide li.locked{opacity:.45}
-/* The skills grid: thirteen skills over three columns, with the total filling the last two cells of
-   the fifth row. Three columns rather than four because "Construction" and "Cartography" have to fit
-   on one line at the journal's width, and because three columns leave no hole: four would leave two. */
-#skills-sheet .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:2px 0}
-/* The heading over a block of skills that belong together — the seven fighting ones, under
-   'Arms'. Quiet: it is a divider, not a title. */
-#skills-sheet .skill-heading{margin:20px 0 8px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.62;font-weight:600}
-#skills-sheet .skill-tile{position:relative;display:grid;justify-items:center;align-content:start;gap:4px;padding:13px 9px 11px;border:1px solid #d8c68c33;border-radius:4px;background:#e8cc8c0b;color:#f2dfb9;font:inherit;text-align:center;cursor:pointer}
-#skills-sheet .skill-tile:hover,#skills-sheet .skill-tile:focus-visible{border-color:#f0d79366;background:#e8cc8c1c;outline:none}
-#skills-sheet .skill-tile b{font-family:Adventure,Georgia,serif;font-weight:400;font-size:15px;color:#fff1cf;line-height:1.2}
-#skills-sheet .skill-tile-icon{display:grid;place-items:center;width:39px;height:39px;color:#e6ce95}
-#skills-sheet .skill-tile-icon svg{width:33px;height:33px}
-#skills-sheet .skill-tile-level{font-size:13px;color:#f3d27c;letter-spacing:.04em}
-#skills-sheet .skill-tile .skill-bar{width:100%;height:3px;margin:3px 0 0}
-#skills-sheet .skill-tile.unlearned{opacity:.5}
-#skills-sheet .skill-tile.unlearned .skill-tile-icon,#skills-sheet .skill-tile.unlearned b{color:#a9b5a4}
-#skills-sheet .skill-tile-total{grid-column:span 1;cursor:default;background:#e8cc8c18;grid-auto-flow:column;justify-content:center;align-items:baseline;gap:12px}
-#skills-sheet .skill-tile-total .skill-tile-level{font-family:Adventure,Georgia,serif;font-size:25px;color:#ffe7ac}
-#skills-sheet .skill-tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);z-index:3;width:max-content;max-width:250px;padding:6px 10px;border:1px solid #e5cb8566;border-radius:4px;background:#0e2a24f2;color:#f2dfb9;font-size:11.5px;line-height:1.5;opacity:0;pointer-events:none;transition:opacity .14s}
+/* Two generous columns leave room for long names and a clear status beneath every skill. */
+#skills-sheet .skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:8px 0 4px}
+#skills-sheet .skill-heading{margin:28px 0 12px;padding-bottom:10px;border-bottom:1px solid #b8cabb66;font:600 14px 'Segoe UI',sans-serif;letter-spacing:.12em;text-transform:uppercase;opacity:1;color:#e8d39d}
+#skills-sheet .skill-tile{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr);grid-template-areas:'icon name' 'icon level' 'bar bar' 'status status';align-content:start;align-items:center;column-gap:14px;row-gap:5px;min-width:0;padding:18px 18px 14px;border:1px solid #a9c0a866;border-radius:6px;background:#24483e;color:#f3ead5;font:inherit;text-align:left;cursor:pointer;scroll-margin-block:24px;transition:background .15s,border-color .15s}
+#skills-sheet .skill-tile:hover{border-color:#e7cd8d;background:#305447;filter:none}
+#skills-sheet .skill-tile:focus-visible{outline:3px solid #ffe3a0;outline-offset:3px;border-color:#ffe3a0;background:#305447;filter:none;z-index:2}
+#skills-sheet .skill-tile b{grid-area:name;min-width:0;font-family:Adventure,Georgia,serif;font-weight:400;font-size:21px;color:#fff3d8;line-height:1.25;overflow-wrap:anywhere}
+#skills-sheet .skill-tile-icon{grid-area:icon;display:grid;place-items:center;width:48px;height:48px;color:#f0d69a;background:#16372e;border:1px solid #d9c48d44;border-radius:5px}
+#skills-sheet .skill-tile-icon svg{width:36px;height:36px}
+#skills-sheet .skill-tile-level{grid-area:level;font-size:15px;color:#f2d28c;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+#skills-sheet .skill-tile:not(.skill-tile-total) .skill-tile-level::before{content:'Level ';color:#d9dcc4}
+#skills-sheet .skill-tile .skill-bar{grid-area:bar;width:100%;height:7px;margin:10px 0 4px}
+#skills-sheet .skill-tile:not(.skill-tile-total)::after{content:'Learned';grid-area:status;font-size:12px;font-weight:600;letter-spacing:.06em;color:#d1e7bb}
+#skills-sheet .skill-tile.unlearned{opacity:1;background:#173930;border-color:#a7beb255}
+#skills-sheet .skill-tile.unlearned b{color:#e0e8df}
+#skills-sheet .skill-tile.unlearned .skill-tile-icon{color:#bfcfc3;background:#102c26;border-color:#adc2b444}
+#skills-sheet .skill-tile.unlearned .skill-tile-level{color:#c8d3c8}
+#skills-sheet .skill-tile.unlearned::after{content:'Not learned yet';color:#c8d3c8}
+#skills-sheet .skill-tile.unlearned:hover,#skills-sheet .skill-tile.unlearned:focus-visible{background:#284a3e;border-color:#e7cd8d}
+/* The generator's old three-column span is replaced here so the total works at every width. */
+#skills-sheet .skill-tile-total{grid-column:1/-1!important;grid-template-columns:1fr auto;grid-template-areas:'name level';align-items:center;gap:16px;padding:16px 18px;cursor:default;background:#132f29;border-color:#c2b98466}
+#skills-sheet .skill-tile-total:hover{background:#132f29;border-color:#c2b98466}
+#skills-sheet .skill-tile-total b{font:600 14px 'Segoe UI',sans-serif;color:#dddac3}
+#skills-sheet .skill-tile-total .skill-tile-level{font-family:Adventure,Georgia,serif;font-size:30px;color:#ffe5a9}
+#skills-sheet .skill-tip{position:absolute;left:8px;bottom:calc(100% + 8px);z-index:3;width:calc(100% - 16px);padding:11px 13px;border:1px solid #d9c48d99;border-radius:5px;background:#102b25;color:#f3ecd7;font-size:13px;line-height:1.6;box-shadow:0 8px 22px #061a1766;opacity:0;pointer-events:none;transition:opacity .14s}
 #skills-sheet .skill-tile:hover .skill-tip,#skills-sheet .skill-tile:focus-visible .skill-tip{opacity:1}
-#skills-sheet .skill-back{display:block;margin:0 0 10px;padding:0;border:0;background:none;color:#f3d27c;font:inherit;font-size:13px;cursor:pointer}
-#skills-sheet .skill-back:hover{text-decoration:underline}
-#skills-sheet .skill-detail-head{display:flex;align-items:center;gap:13px;margin-bottom:8px}
-#skills-sheet .skill-detail-head .skill-tile-icon{width:46px;height:46px;flex:0 0 46px}
-#skills-sheet .skill-detail-head .skill-tile-icon svg{width:40px;height:40px}
-#skills-sheet .skill-detail-head h3{margin:2px 0 0}
+#skills-sheet .skill-back{display:inline-flex;align-items:center;min-height:42px;margin:0 0 18px;padding:8px 13px;border:1px solid #c5bd8666;border-radius:4px;background:#112f29;color:#f4d999;font:600 15px 'Segoe UI',sans-serif;cursor:pointer}
+#skills-sheet .skill-back:hover{background:#2b4b3e;filter:none;text-decoration:none}
+#skills-sheet .skill-back:focus-visible{outline:3px solid #ffe3a0;outline-offset:3px}
+#skills-sheet .skill-detail-head{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+#skills-sheet .skill-detail-head .skill-tile-icon{width:60px;height:60px;flex:0 0 60px}
+#skills-sheet .skill-detail-head .skill-tile-icon svg{width:44px;height:44px}
+#skills-sheet .skill-detail-head .eyebrow{color:#edd39c;font-size:12px;letter-spacing:.1em}
+#skills-sheet .skill-detail-head h3{margin:3px 0 0;font-size:32px;color:#fff3d8}
+#skills-sheet .skill-guide{list-style:none;padding:0;margin:12px 0 8px;display:grid;grid-template-columns:1fr;gap:8px}
+#skills-sheet .skill-guide li{display:flex;gap:14px;align-items:baseline;padding:11px 13px;border:1px solid #a9c0a83d;border-radius:4px;font-size:15px;line-height:1.6;color:#f0e9d5;background:#24483b}
+#skills-sheet .skill-guide li b{min-width:28px;text-align:center;color:#ffe09a;font-weight:600;font-variant-numeric:tabular-nums}
+#skills-sheet .skill-guide li.locked{opacity:1;background:#14332b;border-color:#a9c0a82b;color:#c3cfc4}
+#skills-sheet .skill-guide li.locked b{color:#c3cfc4}
+@media(max-width:640px){
+  #skills-sheet .skill-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  #skills-sheet .skill-tile{padding:16px;column-gap:13px}
+  #skills-sheet .skill-tile b{font-size:20px}
+  #skills-sheet .skill-detail-head h3{font-size:28px}
+  #skills-sheet .skill-tip{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){
+  #skills-sheet .skill-tile,#skills-sheet .skill-tip,#skills-sheet .skill-bar i{transition:none}
+}

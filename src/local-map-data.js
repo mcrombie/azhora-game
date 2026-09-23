@@ -102,7 +102,7 @@ function regionModels(world) {
  * silently change destination when the next main quest starts.
  */
 export function buildLocalMapModel({ world, position, heading, discoveries = new Set(), knownIds = [], knownLocations = [],
-  goal = null, openGoal = null, regionId, trackedId } = {}) {
+  goal = null, openGoal = null, regionId, trackedId, globalDetail = false } = {}) {
   if (!world || !validBounds(world.bounds)) throw new TypeError('A local map needs finite world bounds.');
   if (!finitePoint(position)) throw new TypeError('A local map needs a finite player position.');
   const regions = regionModels(world);
@@ -123,7 +123,7 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
   const currentRegionId = outside ? nearest() : current.id;
   const requestedId = Number(regionId);
   const region = regions.find(item => item.id === requestedId) || regions.find(item => item.id === currentRegionId);
-  const bounds = { ...region.bounds }, discovered = identifiers(discoveries), known = identifiers(knownIds);
+  const bounds = { ...(globalDetail ? world.bounds : region.bounds) }, discovered = identifiers(discoveries), known = identifiers(knownIds);
   const markers = new Map();
   const goalPoint = finitePoint(goal) ? goal : null;
   for (const place of Array.isArray(world.landmarks) ? world.landmarks : []) {
@@ -150,7 +150,8 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
     const match = validId(point.id) ? markers.get(point.id) : [...markers.values()].find(marker => marker.known
       && Math.hypot(marker.x - point.x, marker.z - point.z) < .01);
     return { id: match?.id || (validId(point.id) ? point.id : fallback), name: text(point.name, match?.name || 'Current objective'),
-      description: text(point.description), ...copyPoint(point), known: true, trackable: !!match?.trackable, kind };
+      description: text(point.description), ...copyPoint(point), known: true, trackable: !!match?.trackable, kind,
+      markerKind: ['main', 'plot', 'deed', 'skill'].includes(point.markerKind) ? point.markerKind : 'main' };
   };
   const mainGoal = objective(goalPoint, 'objective', 'main-objective');
   const openGoalMarker = objective(finitePoint(openGoal) ? openGoal : null, 'objective-open', 'long-road-objective');
@@ -162,7 +163,7 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
     const halfZ = (Math.abs(Math.sin(angle)) * c.width + Math.abs(Math.cos(angle)) * c.depth) / 2;
     return overlaps({ minX: c.x - halfX, maxX: c.x + halfX, minZ: c.z - halfZ, maxZ: c.z + halfZ }, bounds);
   }).map(c => ({ ...copyPoint(c), width: c.width, depth: c.depth, angle: c.angle || 0 }));
-  return { regions, region: { ...region, bounds: { ...region.bounds } }, currentRegionId, bounds,
+  return { regions, region: { ...region, bounds: { ...region.bounds } }, currentRegionId, bounds, globalDetail: !!globalDetail,
     // True where no country on the atlas owns the ground under him; the sheet is the nearest one's.
     outside,
     // Heading is clockwise from north in radians, independently of Three's yaw.
