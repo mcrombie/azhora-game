@@ -410,4 +410,5 @@ bar), with a guide and log behind each tile. Thirteen so far, combat skills to c
 - Several agents sharing this machine must never run the full `npm test` at once (it peaks near
   3 GB and the machine has 16): agents run the test files they touched; the coordinator runs the
   full suite once on `main` at merge time.
-- Electron runs cost money; ask first.
+- Local Electron test and visual-review runs are authorized without a separate approval request
+  (user correction, 23 September 2026). Use isolated test profiles to protect normal saves.

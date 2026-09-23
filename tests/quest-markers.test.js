@@ -183,3 +183,15 @@ test('src/main.js asks the table rather than keeping its own pile of rules', () 
     "pondFisher:'pond-fisher'", 'forestStory:FOREST_STORY_NPC.id', 'birdWatcher:BIRD_WATCHER.id', 'vintner:VINTNER.id'])
     assert.ok(main.includes(named), `${named} is missing from the marker view`);
 });
+
+test('the Vastos silver story stays available with teachers trimmed, and follows only its active targets', () => {
+  const current = { questStage: TUTORIAL_DONE, silverDestinations: ['vastos-herder'] };
+  assert.equal(markerGrade(markerFor('vastos-herder', current)), 'plot');
+  assert.equal(markerFor('vastos-republican', current), null);
+  assert.equal(markerFor('vastos-covenant', current), null, 'the undiscovered covenant is never advertised');
+  assert.equal(markerFor('vastos-herder', { ...current, questStage: 0 }), null);
+  assert.equal(markerFor('vastos-herder', { ...current, busy: true }), null);
+  assert.equal(markerFor('vastos-herder', { ...current, live: () => false }), null);
+  assert.equal(markerGrade(markerFor('vastos-herder', { ...current, chapterDestinations: ['vastos-herder'] })), 'main');
+  assert.equal(markerFor('vastos-herder', { ...current, silverDestinations: [] }), null, 'the mark leaves after settlement');
+});

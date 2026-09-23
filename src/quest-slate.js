@@ -1,5 +1,5 @@
 /**
- * **What is on the slate right now**, which is Chapter 1 and one small good deed.
+ * **What is on the slate right now**: Chapter 1, the bridge, Orris and the Vastos silver story.
  *
  * The user, 22 September 2026: "The only quests right now are going to be the main quests, the
  * main quest arc, indicated by gold icons. There should be only one other quest in the game right
@@ -14,8 +14,8 @@
  *
  * **The three grades of mark**, which is the other half of this file's job:
  *   `main`   the arc. Gold.
- *   `plot`   a story of its own, with its own state and its own ending. Silver. None yet: the
- *            user has reserved silver and asked that none be built out for now.
+ *   `plot`   a story of its own, with its own state and its own ending. Silver. The user has
+ *            since requested the Ambroni Civil War series, beginning with The Common Water in Vastos.
  *   `deed`   a one-off that changes the world and does not move the plot - the bridge over the
  *            Caloss. Copper.
  *
@@ -48,7 +48,7 @@
 export const TRIMMED = true;
 
 /** What may be started while the slate is trimmed. */
-export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer']);
+export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer', 'civil-war-vastos']);
 
 /** Everything the trim closes, by the name this file knows it under. */
 export const CLOSED = Object.freeze(['courier', 'waymarkers', 'greenway', 'acorns', 'forest',
@@ -58,7 +58,7 @@ export const CLOSED = Object.freeze(['courier', 'waymarkers', 'greenway', 'acorn
 export const questLive = id => !TRIMMED || LIVE.includes(id);
 
 /**
- * The bridge over the Caloss, which is the one thing on the slate that is not the arc. It was
+ * The bridge over the Caloss, the copper good deed on the slate. It was
  * the fourth and fifth steps of the old Chapter 1 - Corvan's assignment, then Chip's repair -
  * and it is a side quest now: "helpful for the main quest because it repairs the bridge, so you
  * don't have to swim across. You can swim across, even though swimming across is dangerous."

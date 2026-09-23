@@ -49,6 +49,7 @@ export const SOLDIER_ROLES = Object.freeze(['legion-soldier', 'legion-officer', 
  * battle. Taken from the chapters' own `destinationIds` rather than remembered.
  */
 export const QUEST_IDS = Object.freeze([
+  'vastos-herder', 'vastos-republican', 'vastos-monarchist', // the first Ambroni Civil War silver quest
   'harbormaster',        // Jojo, the letter
   'instructor',          // Officer Glun, the lesson and the chart
   'crossing-keeper',     // Chip, and the one side quest on the slate (src/quest-slate.js)

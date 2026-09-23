@@ -1,0 +1,14 @@
+.civil-war-journal{border-top:1px solid #b8c4c466;margin-top:24px;padding-top:20px}
+.civil-war-journal .eyebrow,.civil-war-hud .eyebrow{color:#d7e0e3;font-size:10px;letter-spacing:.13em}
+.civil-war-journal h3{margin:8px 0}.civil-war-journal p,.civil-war-journal li{line-height:1.6}
+.civil-war-journal ul{padding-left:20px}.civil-war-journal li{margin:8px 0}
+.civil-war-journal button{margin:8px 8px 0 0;padding:8px 12px}
+.civil-war-hud{position:fixed;right:28px;top:266px;width:240px;padding:13px 15px;border-left:2px solid #d0d8dc;background:#17372de8;pointer-events:none;border-radius:2px;box-shadow:0 3px 15px #10292144}
+.civil-war-hud h3{font:22px Georgia,serif;margin:6px 0}.civil-war-hud p{font-size:12px;line-height:1.6;color:#f3ebd4}
+.civil-war-hud small{display:block;font-size:10px;margin-top:8px;color:#d0d7d0}
+.civil-war-hud[hidden],.civil-war-journal[hidden]{display:none}
+@media(max-width:900px){.civil-war-hud{right:16px;top:215px;width:210px;padding:10px}.civil-war-hud p{font-size:11px}.civil-war-hud h3{font-size:19px}}
+@media(max-height:580px){.civil-war-hud{top:180px;max-height:190px;overflow:hidden}.civil-war-hud p{font-size:10px}}
+
+/* The first map lesson takes this corner until the player dismisses it. */
+body:has(#map-tutorial:not(.hidden)) .civil-war-hud{display:none}

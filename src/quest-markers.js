@@ -112,12 +112,14 @@ export function markerFor(id, view = {}) {
   if (id === ids.instructor && stage === 2) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
-  // **The one thing on the slate that is not the arc**: Chip, while his bridge is unmended.
+  // Chip's copper good deed, while his bridge is unmended.
   // It is copper wherever the traveler is in the story, because it is nobody's step and waits
   // on nothing (`bridgeStage`, src/journey.js; src/quest-slate.js).
   if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore) return mark(strongestMarker(kinds));
+  // A regional silver story may live while the older teachers remain off the slate.
+  if (live('civil-war-vastos') && !busy && holds(view.silverDestinations, id)) kinds.push('plot');
   // Nor while the slate is trimmed, which is the gold and the copper above and nothing else.
   if (!live('teachers')) return mark(strongestMarker(kinds));
   // The long road's next stop, which is gold because it is main quest too, and open because it
