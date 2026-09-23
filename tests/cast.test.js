@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
+import { VASTOS_NPCS } from '../src/vastos-civil-war.js';
 import { TRIMMED, KEEP_IDS, QUEST_IDS, OWN_IDS, SMITH_IDS, DROP_IDS, SOLDIER_ROLES, keepsNpc, trimCast } from '../src/cast.js';
 
 /**
@@ -47,10 +48,15 @@ test('with the switch off nobody is taken out at all', () => {
 
 test('every id on the list is somebody the world actually places', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
+  const { VASTOS_POSITIONS } = await sourceModule('../src/vastos-camp.js');
   const world = createWorld(new THREE.Scene());
   // The world places most of them; the rest are pushed in by their own module in the host, so
   // this checks the ones it can and holds the shape of the list for the others.
   const placed = new Set(Object.keys(world.npcPositions));
+  for (const npc of VASTOS_NPCS) {
+    assert.ok(VASTOS_POSITIONS[npc.id], `${npc.id} has no camp stand`);
+    placed.add(npc.id);
+  }
   const known = new Set([...placed,
     // Pushed in by src/main.js from their own modules rather than by the world.
     'harbormaster', 'instructor', 'boatman', 'brandy-frank', 'bird-watcher', 'attic-juan', 'attic-nika',
