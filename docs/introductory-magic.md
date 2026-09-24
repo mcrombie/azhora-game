@@ -26,6 +26,25 @@ Any normal key or a click on the game takes control. **P** resumes the focused B
 
 `npm run test:ben:autoplay` runs the same button and full route in an isolated Electron profile. The check observes ordinary combat, handoff at the reward choice, an explicit player selection of the earned lesson, saved-adventure isolation, repeatability, and native WASD takeover. It does not teleport or advance quest state after the button starts. Results are in `tests/artifacts/ben-autoplay-checks.json`.
 
+## Watching Liz and Troy's quests
+
+Open **F8 > Quest playtests** and choose **Play Liz's quest · Summon Bees** or **Play Troy's quest · Mind Read**. Each button starts a fresh attempt beside that teacher. Liz's pilot approaches Mop quietly, waits for him to follow, and walks him home at his pace. Troy's pilot walks around Cobble, interviews all three witnesses, and returns with the evidence to name the murderer. Both use ordinary movement and dialogue; after the initial teleport, they do not move characters or award quest progress directly.
+
+Both pilots stop with **money and the magic lesson visible**, leaving the reward to the player. Press a movement key or click the game to take control; **P** resumes the focused quest. Pause and menus stop their progress. An unavailable character or an unexpected fight stops autoplay with an explanation. Use the same F8 button again to restart that quest. Testing is visibly marked and leaves the normal saved adventure unchanged; close and reopen the game to return to normal play.
+
+Mop now takes small frame-by-frame steps through the ordinary NPC movement system. His checkpoint records his actual position, following state, and any remaining hiding time. Older checkpoints remain compatible. If he is killed before returning, Liz's rescue ends rather than leaving an invisible cat to follow.
+
+Run `npm run test:liz:autoplay` and `npm run test:troy:autoplay` separately for the full Electron routes. These checks exercise the F8 buttons, ordinary walking and conversations, pause, a checkpoint reload midway through the quest, the explicit lesson choice, restart, trusted keyboard takeover, and P resume. Test checkpoints use the temporary session store. Results are written to `tests/artifacts/liz-autoplay-checks.json` and `tests/artifacts/troy-autoplay-checks.json`.
+
 ## Reward and equipment verification, 23 September 2026
 
 The current native magic run passed 99 assertions across the three teacher quests, spell learning, explicit Ben reward selection, equipment, projectile damage and save/reload. The full Ben autoplay passed 30 assertions, walking 183 metres in 88 seconds, returning to the visible reward choice, then checking player selection, restart and trusted keyboard takeover/resume. Its renderer reported zero frame errors and no collected game errors. Compact equipment and Sorcery captures were inspected at 1280 by 720. The capture/full-autoplay Electron processes logged a GPU teardown warning after writing successful results, so their shell exit status was not clean; no in-game failure was recorded.
+
+
+## Liz and Troy autoplay verification, 24 September 2026
+
+The full Electron runs passed 32 checks for Liz and 31 for Troy, plus 30 for the existing Ben autoplay. Liz walked 178 metres and returned Mop in 76 seconds; Troy walked 40 metres, heard all three testimonies, and reached the reward in 70 seconds. Both explicit lesson selections taught their spell and sorcery school, survived a session checkpoint reload, and preserved the normal adventure checkpoint. All three runs recorded zero renderer frame errors and zero collected game errors. Ben logged the existing GPU teardown warning after writing its successful result; the Liz and Troy launches exited cleanly.
+
+The magic model suite passed 68 checks before the final Troy route regression and legacy-cat recovery checks were added. The final Troy controller plus murder-model run passed 18 checks, including a full built-Cobble route with NPC bodies and eased camera turns. The checkpoint/legacy-cat run passed 30 checks. The web build and syntax checks also passed.
+
+Testing caught two gameplay faults: Mop's small normal-frame steps were discarded by the NPC movement threshold, and Troy's initial steering circled between witnesses. Mop now uses continuous small steps. Troy uses persistent local detours and resolves steering against the current camera angle; circling does not reset its progress timeout. Old checkpoints containing an already-cleaned dead Mop now end the unfinished rescue, while completed rewards and merely unconscious cats are preserved.

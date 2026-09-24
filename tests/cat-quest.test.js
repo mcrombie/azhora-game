@@ -5,7 +5,7 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { BODY } from '../src/bodies.js';
 import { LIZ, LIZ_STAND, LIZ_LINES, LIZ_ASKING, CAT, MOP, PURSE, STAGES, REWARDS,
-  createCatQuest, createMopWalk, lizConversation, validateCatQuestSnapshot } from '../src/cat-quest.js';
+  createCatQuest, createMopWalk, lizConversation, validateCatQuestSnapshot, validateMopSnapshot } from '../src/cat-quest.js';
 import { LIZ_CLEARING, PUETH_NPC_POSITIONS, PUETH_CLEARINGS } from '../src/pueth-world.js';
 import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
 import { BEE_LINES, HONEYCOMB } from '../src/beekeeper.js';
@@ -52,13 +52,77 @@ test('the errand walks: he decides about you, he bolts, and he gets home alive',
 test('the one outcome she cannot be paid for', () => {
   const quest = createCatQuest();
   quest.ask(); quest.accept();
-  assert.equal(quest.died(), false, 'a cat nobody has seen cannot be killed');
-  quest.found();
   assert.equal(quest.died(), true);
+  assert.equal(quest.state.found, false, 'being killed before he trusts the traveler still ends the rescue');
   assert.equal(quest.state.stage, 'lost');
   assert.equal(quest.state.over, true);
   assert.deepEqual(quest.choices(), [], 'and there is nothing to be paid');
   assert.equal(quest.home(), false);
+  assert.equal(quest.found(), false);
+  assert.equal(quest.died(), false, 'death is recorded once');
+  const beforeMeeting = createCatQuest();
+  assert.equal(beforeMeeting.died(), true, 'Liz cannot offer a living-cat errand after Mop has already died');
+  assert.equal(beforeMeeting.ask(), false);
+});
+
+test('the cat checkpoint keeps collision-adjusted feet and resumes the same following step', () => {
+  const quest = createCatQuest(), walk = createMopWalk({ random: () => .5 });
+  quest.ask(); quest.accept();
+  walk.place(17, -171);
+  for (let i = 0; i < 10; i++) walk.update(.1, { player: { x: 18, z: -171 }, speed: 0 });
+  assert.equal(walk.mode, 'following');quest.found();
+  const frame = { player: { x: 9, z: -171 }, speed: 2, home: LIZ_STAND };
+  const proposed = walk.update(1 / 60, frame);
+  assert.ok(proposed.x < 17);
+  assert.equal(walk.snapshot().x, 17, 'a proposed step does not overwrite actual collision-adjusted feet');
+  walk.place(16.99, -171.01);
+  const cat = walk.snapshot();
+  assert.equal(quest.rememberCat(cat), true);cat.x = 900;
+  const saved = quest.snapshot();
+  assert.equal(saved.cat.x, 16.99, 'the saved companion is copied, not borrowed');
+  assert.equal(validateCatQuestSnapshot(saved), true);
+  const restoredQuest = createCatQuest(), restoredWalk = createMopWalk({ random: () => 0 });
+  assert.equal(restoredQuest.restore(saved), true);
+  assert.equal(restoredWalk.restore(restoredQuest.state.cat), true);
+  saved.cat.x = 1000;
+  assert.equal(restoredQuest.snapshot().cat.x, 16.99);
+  assert.deepEqual(restoredWalk.update(1 / 60, frame), walk.update(1 / 60, frame));
+  const legacy = { version: 1, stage: 'following', found: true, bolted: 0 };
+  assert.equal(restoredQuest.restore(legacy), true, 'existing version-one saves still load');
+  assert.equal(restoredQuest.snapshot().cat, undefined, 'an older save cannot retain newer companion feet');
+});
+
+test('a hidden cat keeps his hiding timer and bolt destination across reload', () => {
+  const walk = createMopWalk({ random: () => .5 });
+  walk.update(.1, { fight: true, threat: { x: CAT.at.x - 1, z: CAT.at.z } });
+  assert.equal(walk.mode, 'bolting');
+  const bolting = walk.snapshot(), restored = createMopWalk({ random: () => 0 });
+  assert.equal(restored.restore(bolting), true);
+  assert.deepEqual(restored.goal, walk.goal);
+  const goal = walk.goal;
+  walk.place(goal.x, goal.z);walk.update(.1);
+  assert.equal(walk.mode, 'hiding');
+  const beside = { player: { x: goal.x + 1, z: goal.z }, speed: 0 };
+  for (let i = 0; i < 20; i++) walk.update(.1, beside);
+  assert.equal(restored.restore(walk.snapshot()), true);
+  assert.ok(restored.snapshot().hidden > 3.9);
+  for (let i = 0; i < 45; i++) assert.deepEqual(restored.update(.1, beside), walk.update(.1, beside));
+  assert.equal(restored.mode, 'following', 'he can be collected after the remaining hiding time');
+});
+
+test('malformed companion checkpoints are refused without changing the current errand or cat', () => {
+  const quest = createCatQuest(), walk = createMopWalk();
+  quest.ask();quest.accept();quest.rememberCat(walk.snapshot());
+  const before = quest.snapshot(), catBefore = walk.snapshot();
+  for (const cat of [null, {}, { ...catBefore, mode: 'teleporting' }, { ...catBefore, x: NaN },
+    { ...catBefore, gz: Infinity }, { ...catBefore, hidden: -1 }, { ...catBefore, still: '0' }]) {
+    assert.equal(validateMopSnapshot(cat), false);
+    assert.equal(quest.rememberCat(cat), false);
+    assert.equal(quest.restore({ ...before, cat }), false);
+    assert.equal(walk.restore(cat), false);
+    assert.deepEqual(quest.snapshot(), before);
+    assert.deepEqual(walk.snapshot(), catBefore);
+  }
 });
 
 test('Liz pays once and still offers the earned bees lesson after taking coin', () => {

@@ -183,6 +183,8 @@ import { runRepublicDesktopChecks } from './luscia-republic-desktop-checks.js';
 import { createCompanyTransport } from './company-transport.js';
 import { clearLine, createAutopilot, planGoal } from './autopilot.js';
 import { createBenAutopilot } from './ben-autopilot.js';
+import { createLizAutopilot } from './liz-autopilot.js';
+import { createTroyAutopilot } from './troy-autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
 import { insideRegion } from './regions.js';
 import { runAutoplaySmoke } from './autoplay-smoke.js';
@@ -416,7 +418,7 @@ function init() {
   world.npcPositions[LIZ.id]={x:LIZ_STAND.x,z:LIZ_STAND.z};npcData.push({...LIZ,yaw:LIZ_STAND.yaw});
   // Mop, on the midden at the edge of the goblin camp, until somebody stands still near him.
   world.npcPositions[CAT.id]={x:CAT.at.x,z:CAT.at.z};
-  npcData.push({id:CAT.id,name:CAT.name,role:'Liz’s cat, where he should not be',cat:true});
+  npcData.push({id:CAT.id,name:CAT.name,role:'Liz’s cat, where he should not be',cat:true,stride:true});
   // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
   for(const person of ATTIC_PEOPLE){const stand=ATTIC_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/wine-goblin.js).
@@ -1435,7 +1437,7 @@ function init() {
     if(event.type==='cat-home')toast('Home, filthy, and entirely unbothered.','MOP');
     if(event.type==='cat-lost')toast('He is not going to get up. That is the one outcome Liz cannot be paid for.','MOP');
   }});
-  const mop=createMopWalk();
+  let mop=createMopWalk();
   /** Whoever's body the traveler has already walked up to, so he is told once and not every frame. */
   const bodiesFound=new Set();
   /** Whether he has already been told they held off, so a refusal is said once and not every frame. */
@@ -2906,7 +2908,7 @@ function init() {
     canRevive:npc=>!fallen.has(npc.id)&&(npc.id!=='killian'||!drent.state().killianDefeated),
     safeToInterrupt:()=>mode==='playing'&&!reviewFrozen&&!developer.active,
     stopAutoplay:()=>{if(autopilot.active)stopAutopilot('The watch is stopping you.');},onChange:lawChanged,
-    onDeath:payload=>{if(payload.permanent){republic?.npcKilled(payload.id);if(living.actor(payload.id)){living.setAlive(payload.id,false,{position:payload.npc.actor.group.position});fallen.fall(payload.id);}}return corpseHost.captureNpc({...payload,npcId:payload.id,dead:payload.permanent,model:{role:payload.npc.modelRole??payload.npc.id,tunic:payload.npc.color,skin:payload.npc.skin,look:payload.npc.look,...payload.npc.model,...(payload.id===BOSCO.id?{dye:bosco.dye.colour}:{})},yaw:payload.npc.actor.group.rotation.y});},
+    onDeath:payload=>{if(payload.permanent){republic?.npcKilled(payload.id);if(payload.id===CAT.id)catQuest.died();if(living.actor(payload.id)){living.setAlive(payload.id,false,{position:payload.npc.actor.group.position});fallen.fall(payload.id);}}return corpseHost.captureNpc({...payload,npcId:payload.id,dead:payload.permanent,model:{role:payload.npc.modelRole??payload.npc.id,tunic:payload.npc.color,skin:payload.npc.skin,look:payload.npc.look,...payload.npc.model,...(payload.id===BOSCO.id?{dye:bosco.dye.colour}:{})},yaw:payload.npc.actor.group.rotation.y});},
     onRevive:({id})=>corpseHost.reviveNpc(id),
     onJail:({seconds})=>{living.advance(seconds);playSeconds=living.clock();corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
@@ -3197,7 +3199,7 @@ function init() {
     return point?{x:point.x,z:point.z,name:npc?.name||point.name||'The next objective',id}:null;
   }
   function selectQuest(id){
-    if(autopilot.active&&id!==(autopilot.id==='ben'?SPIDER_QUEST.id:'main'))stopAutopilot('Following your selected quest.');
+    if(autopilot.active&&id!==({ben:SPIDER_QUEST.id,liz:'liz-cat',troy:'cobble-murder'}[autopilot.id]??'main'))stopAutopilot('Following your selected quest.');
     questTracker.select(id);refreshQuest();
     if(mode==='journal')refreshChart();
     if(hasRoadProgress())saveRoad(false);
@@ -3817,6 +3819,8 @@ function init() {
   function roadSnapshot(){
     if(questStage===QUEST_DONE)journey.start();
     const gathered=woodlandLife.state();
+    const catAt=npcById.get(CAT.id)?.actor.group.position;
+    if(catAt){mop.place(catAt.x,catAt.z);catQuest.rememberCat(mop.snapshot());}
     if(spiderQuest.state.walking){const ben=npcById.get(BEN.id),guide=spiderQuest.state.guide;
       if(ben&&guide){const p=ben.combatPosition??ben.actor.group.position;spiderQuest.rememberGuide({...guide,x:p.x,z:p.z});}}
     const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceGuards:Math.min(1,practiceGuards),practiceDodges:Math.min(1,practiceDodges),
@@ -3883,7 +3887,7 @@ function init() {
     // Their owners keep map access; a pending lesson must also own the chart it asks them to read.
     if(chartLesson.stage!=='unissued'&&!cartography.met)cartography.learn();
     if(questStage===2&&!saved.chartLesson&&cartography.met){chartLesson.restore('open-map');practiceGuards=saved.woodland?.practiceGuards??1;}
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();resetLivingStory(saved);republic.restore(saved.lusciaCivilWar);restoreLivingFeet();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);if(crime.health(CAT.id)?.status==='dead')catQuest.died();refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();resetLivingStory(saved);republic.restore(saved.lusciaCivilWar);restoreLivingFeet();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
     {const ben=npcById.get(BEN.id);
       if(ben){
         ben.escorting=false;ben.walkingWith=false;ben.pace=undefined;ben.combatPosition=null;
@@ -3894,6 +3898,11 @@ function init() {
           ben.actor.group.position.set(guide.x,world.heightAt(guide.x,guide.z),guide.z);
           world.npcPositions[ben.id]={x:guide.x,z:guide.z};}
       }}
+    {const stored=catQuest.state.cat,npc=npcById.get(CAT.id);
+      const at=stored??(['home','paid','taught'].includes(catQuest.state.stage)?{x:LIZ_STAND.x+2,z:LIZ_STAND.z}
+        :catQuest.state.stage==='following'?saved.position:CAT.at);
+      mop=createMopWalk({at});if(stored)mop.restore(stored);else if(catQuest.state.stage==='following')mop.mode='following';
+      npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);world.npcPositions[CAT.id]={x:at.x,z:at.z};}
     magic.restore(saved.magic??{version:1,learned:[],selected:null,focus:60,read:[]});
     if(!saved.magic){for(const [model,id]of [[spiderQuest,'fireball'],[catQuest,'summon-bees'],[murder,'mindread']])
       if(model.snapshot().stage==='taught')magic.learn(id,{equip:false,announce:false});}
@@ -5427,6 +5436,42 @@ function init() {
     return false;
   }
   $('test-ben-autoplay').onclick=testPlayBenQuest;
+  // Only the selected quest is reset, inside the visibly marked testing session.
+  // Restore its people too so a second playtest works after a death or a finished reward.
+  const magicTestHomes=new Map([LIZ.id,CAT.id,TROY.id,...Object.keys(TESTIMONY),MURDERER]
+    .map(id=>[id,{...world.npcPositions[id]}]));
+  function testPlayMagicQuest(kind){
+    const liz=kind==='liz',teacher=liz?LIZ:TROY,spell=liz?'summon-bees':'mindread';
+    const ids=liz?[LIZ.id,CAT.id]:[TROY.id,...Object.keys(TESTIMONY),MURDERER];
+    if(ids.some(id=>!npcById.has(id))){toast('A quest character is unavailable in this world.','QUEST PLAYTEST');return false;}
+    stopAutopilot();testingEnabled=true;show('testing-badge',true);
+    closeDialogue();questChoice.close();if(riding.mounted)stepDown(true);
+    prepareTesting();combat.revive();magic.stop();combatEvents.length=0;sessionCheckpoint.clear();recoveryInfo=null;
+    if(liz){catQuest.restore(createCatQuest().snapshot());mop=createMopWalk();lizVisits=0;}
+    else{murder.restore(createMurderQuest().snapshot());troyVisits=0;}
+    const dead=fallen.snapshot();dead.ids=dead.ids.filter(id=>!ids.includes(id));fallen.restore(dead);
+    const bodies=corpseHost.snapshot();bodies.bodies=bodies.bodies.filter(body=>!ids.includes(body.sourceId)&&!ids.includes(body.npcId));corpseHost.restore(bodies);
+    const law=crime.snapshot();for(const id of ids)delete law.people[id];law.bounty=0;law.phase='clear';crime.restore(law);
+    for(const id of ids){
+      const npc=npcById.get(id),at=id===CAT.id?CAT.at:magicTestHomes.get(id);
+      Object.assign(npc,{hidden:false,fallen:false,crimeDown:false,lying:false,escorting:false,walkingWith:false,combatPosition:null,pace:undefined,posture:null,sitting:false});
+      npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.set(0,npc.yaw??0,0);npc.actor.group.visible=true;
+      world.npcPositions[id]={...at};
+    }
+    const learned=magic.snapshot();learned.learned=learned.learned.filter(id=>id!==spell);
+    if(!liz)learned.read=learned.read.filter(id=>!ids.includes(id));
+    if(learned.selected===spell)learned.selected=learned.learned[0]??null;learned.focus=60;magic.restore(learned);
+    inventory.grant('simple-sword');weapons.equip('simple-sword');weapons.repair();
+    if(!testVisitTeacher(teacher,liz?'Summon Bees':'Mind Read'))return false;
+    skillAnnouncements.clear();mapTutorial.restore(2);renderMapTutorial();combatEvents.length=0;
+    reviewFrozen=false;reviewTarget=null;stopInput();refreshQuest();inventory.refresh();
+    if(!autopilot.startQuest(kind))return false;
+    toast(liz?'The computer will bring Mop home, then leave the reward choice to you. Any key or click takes control.'
+      :'The computer will question the witnesses and solve the case, then leave the reward choice to you. Any key or click takes control.',`PLAYTEST \u00b7 ${teacher.name.toUpperCase()}`);
+    canvas.focus();return true;
+  }
+  $('test-liz-autoplay').onclick=()=>testPlayMagicQuest('liz');
+  $('test-troy-autoplay').onclick=()=>testPlayMagicQuest('troy');
   $('test-ben').onclick=()=>testVisitTeacher(BEN,'Fireball');
   $('test-liz').onclick=()=>testVisitTeacher(LIZ,'Summon Bees');
   $('test-troy').onclick=()=>testVisitTeacher(TROY,'Mind Read');
@@ -5500,7 +5545,7 @@ function init() {
     riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
     aftermath:{stage:aftermath.view().stage,variant:aftermath.view().variant,complete:aftermath.view().complete,built:aftermathBuilt(aftermath.spec),destinationIds:aftermath.view().destinationIds,actions:aftermath.availableActions()},
     interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
-  const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>{document.querySelector(`[data-choice="${id}"]`)?.click();if(id==='ben-yes'){refreshQuest();selectQuest(SPIDER_QUEST.id);}},interact:()=>interact(),
+  const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>{document.querySelector(`[data-choice="${id}"]`)?.click();const focus={'ben-yes':SPIDER_QUEST.id,'cat-yes':'liz-cat','murder-take':'cobble-murder'}[id];if(focus){refreshQuest();selectQuest(focus);}},interact:()=>interact(),
     attack:({yaw:aim})=>{if(mode==='playing'&&grounded&&weapons.profile().usable)combat.attack(aim);},dodge:({x,z})=>{if(mode==='playing'&&grounded)combat.dodge({x,z});},
     'open-inventory':()=>{if(mode==='playing')toggleInventory();},'close-inventory':()=>{if(mode==='inventory')inventory.close();},'select-item':({id})=>inventory.select(id),
     equip:({id})=>{if(combat.state.player.action==='idle'&&weapons.equip(id))inventory.refresh();},eat:({id})=>consumables.consume(id),
@@ -5516,7 +5561,15 @@ function init() {
   }});
   // One owner feeds the ordinary movement/combat controls. More quest pilots can
   // join this registry without another input loop or a special combat mode.
-  const pilots={main:roadAutopilot,ben:benAutopilot};let pilotId='main';
+  const questPilotPerson=id=>{
+    const npc=npcById.get(id),at=npc?.combatPosition??npc?.actor.group.position;
+    return at?{x:at.x,z:at.z,available:!npc.hidden&&!npc.fallen&&!crime.isDown(id)&&!corpseHost.ownsNpc(id)}:null;
+  };
+  const lizAutopilot=createLizAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>({...autopilotRead(),quest:catQuest.state,
+    liz:questPilotPerson(LIZ.id),cat:{...questPilotPerson(CAT.id),mode:mop.mode}})});
+  const troyAutopilot=createTroyAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>({...autopilotRead(),quest:murder.state,now:playSeconds,cameraYaw:yaw,
+    troy:questPilotPerson(TROY.id),witnesses:Object.fromEntries(Object.keys(TESTIMONY).map(id=>[id,questPilotPerson(id)]))})});
+  const pilots={main:roadAutopilot,ben:benAutopilot,liz:lizAutopilot,troy:troyAutopilot};let pilotId='main';
   const autopilot={
     start(){return this.startQuest('main');},
     startQuest(id){if(!pilots[id])return false;if(this.active)this.stop('Starting another playtest.');pilotId=id;return pilots[id].start();},
@@ -5532,11 +5585,14 @@ function init() {
     if(event.type==='stop'){stopInput();toast(event.reason||'Autoplay stopped.','YOU HAVE CONTROL');}});
   function startAutopilot(){
     if(living.recall().status==='passenger')return;
-    if(testingEnabled&&(questTracker.selectedId===SPIDER_QUEST.id||(autopilot.id==='ben'&&['unmet','asked'].includes(spiderQuest.state.stage)))){
+    const focusedPilot={[SPIDER_QUEST.id]:'ben','liz-cat':'liz','cobble-murder':'troy'}[questTracker.selectedId];
+    const earlyQuest={ben:['unmet','asked'].includes(spiderQuest.state.stage),liz:['unmet','asked'].includes(catQuest.state.stage),troy:murder.state.stage==='unmet'};
+    const sidePilot=focusedPilot??(earlyQuest[autopilot.id]?autopilot.id:null);
+    if(testingEnabled&&sidePilot){
       if(['pause','journal','testing'].includes(mode))closeModal();
-      if(autopilot.startQuest('ben')){toast('The computer continues Ben\u2019s quest. Any key or click takes control.','BEN \u00b7 AUTOPLAY');canvas.focus();return true;}return false;
+      if(autopilot.startQuest(sidePilot)){toast(`The computer continues ${ {ben:'Ben',liz:'Liz',troy:'Troy'}[sidePilot]}'s quest. Any key or click takes control.`,'QUEST AUTOPLAY');canvas.focus();return true;}return false;
     }
-    if(questTracker.selectedId!=='main'){toast('This quest has no autoplay yet. F8 offers Ben\u2019s quest playtest; focus the gold quest to autoplay the main road.','QUEST FOCUS');return false;}
+    if(questTracker.selectedId!=='main'){toast('F8 offers Ben, Liz, and Troy quest playtests. Focus the gold quest to autoplay the main road.','QUEST FOCUS');return false;}
     if(['pause','journal','testing'].includes(mode))closeModal();
     if(!['playing','opening','dialogue','inventory','defeated'].includes(mode))return false;
     if(autopilot.start()){toast('The computer takes the road. Press any key or click to take control back.','AUTOPLAY');if(mode!=='opening')canvas.focus();}
@@ -6295,7 +6351,7 @@ function init() {
       // **Mop**, at the edge of the goblins' midden until somebody stands still near him, and
       // then behind them all the way to Liz's clearing (src/cat-quest.js). A fight near enough to
       // hear and he is gone under the nearest thing, and the errand goes back a step.
-      if(mode==='playing'&&!catQuest.state.over){
+      if(mode==='playing'&&!catQuest.state.over&&!crime.isDown(CAT.id)&&!corpseHost.ownsNpc(CAT.id)){
         const mopNpc=npcById.get(CAT.id),at=mopNpc.actor.group.position;mop.place(at.x,at.z);
         const fighting=combat.state.phase==='active',enemy=combat.state.enemies[0];
         const want=mop.update(dt,{player:{x:player.group.position.x,z:player.group.position.z},speed:movement,
@@ -6804,6 +6860,21 @@ function init() {
           getBenPosition:()=>{const p=npcById.get(BEN.id)?.combatPosition??npcById.get(BEN.id)?.actor.group.position;return p?{x:p.x,z:p.z}:null;},
           mode:()=>mode,pilot:()=>({enabled:autopilot.active,id:autopilot.id,intent:autopilot.intent,guard:autopilot.guard,stopReason:autopilot.stopReason}),
           spiderQuest,combat,magic,skills,weapons,inventory,nextSpeech,checkpointCopy:()=>structuredClone(checkpoint.read().data),
+          isTesting:()=>testingEnabled,tracked:()=>questTracker.selectedId,frameErrors:()=>frameErrors.view()
+        });
+      },
+      async runMagicAutoplayChecks(kind){
+        const {runMagicAutoplayDesktopChecks}=await import('../tests/magic-autoplay-desktop-checks.js');
+        return runMagicAutoplayDesktopChecks(kind,{
+          prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
+            if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
+          press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code})),release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code})),
+          position:()=>({x:player.group.position.x,z:player.group.position.z}),person:questPilotPerson,
+          mode:()=>mode,pilot:()=>({enabled:autopilot.active,id:autopilot.id,intent:autopilot.intent,stopReason:autopilot.stopReason}),
+          quest:()=>kind==='liz'?catQuest.snapshot():murder.snapshot(),catMode:()=>mop.mode,clock:()=>playSeconds,
+          combat,magic,skills,inventory,checkpointCopy:()=>structuredClone(checkpoint.read().data),
+          save:()=>{recoveryInfo={testing:testingEnabled,encounterId:null};return writeRoadCheckpoint(sessionCheckpoint,false);},session:()=>structuredClone(sessionCheckpoint.read().data),
+          reload:()=>{stopAutopilot();const ok=continueRoad(true);reviewFrozen=false;reviewTarget=null;return ok;},resume:startAutopilot,
           isTesting:()=>testingEnabled,tracked:()=>questTracker.selectedId,frameErrors:()=>frameErrors.view()
         });
       },

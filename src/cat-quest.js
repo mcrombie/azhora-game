@@ -72,6 +72,9 @@ export function validateCatQuestSnapshot(value) {
   if (!STAGES.includes(value.stage)) return false;
   if (typeof value.found !== 'boolean') return false;
   if (!Number.isSafeInteger(value.bolted) || value.bolted < 0 || value.bolted > 999) return false;
+  // Older saves kept only the errand. New saves also keep the cat's actual feet and
+  // behaviour, so loading in the birches does not send him back to the midden.
+  if (value.cat !== undefined && !validateMopSnapshot(value.cat)) return false;
   // It cannot be home, or paid for, without having been found first.
   if (['following', 'home', 'paid', 'taught'].includes(value.stage) && !value.found) return false;
   return true;
@@ -79,7 +82,7 @@ export function validateCatQuestSnapshot(value) {
 
 export function createCatQuest({ onEvent = () => {} } = {}) {
   let state = emptyState();
-  const snapshot = () => ({ ...state });
+  const snapshot = () => ({ ...state, ...(state.cat ? { cat: { ...state.cat } } : {}) });
   const at = (...stages) => stages.includes(state.stage);
 
   function ask() {
@@ -118,7 +121,7 @@ export function createCatQuest({ onEvent = () => {} } = {}) {
 
   /** It was killed, which ends the errand and is the one outcome Liz cannot be paid for. */
   function died() {
-    if (at('paid', 'taught', 'lost') || !state.found) return false;
+    if (at('paid', 'taught', 'lost')) return false;
     state.stage = 'lost';
     onEvent({ type: 'cat-lost' });
     return true;
@@ -142,12 +145,19 @@ export function createCatQuest({ onEvent = () => {} } = {}) {
 
   function restore(data) {
     if (!validateCatQuestSnapshot(data)) return false;
-    state = { version: CAT_QUEST_VERSION, stage: data.stage, found: data.found, bolted: data.bolted };
+    state = { version: CAT_QUEST_VERSION, stage: data.stage, found: data.found, bolted: data.bolted,
+      ...(data.cat ? { cat: { ...data.cat } } : {}) };
+    return true;
+  }
+
+  function rememberCat(data) {
+    if (!validateMopSnapshot(data)) return false;
+    state.cat = { ...data };
     return true;
   }
 
   return {
-    ask, accept, found, bolts, died, home, take, snapshot, restore,
+    ask, accept, found, bolts, died, home, take, snapshot, restore, rememberCat,
     choices: () => (state.stage === 'home' ? Object.values(REWARDS) : state.stage === 'paid' ? [REWARDS.lesson] : []),
     get state() {
       return { ...snapshot(), walking: state.stage === 'following',
@@ -181,6 +191,17 @@ export const MOP = Object.freeze({
   still: .6,                // a traveler slower than this is standing still
 });
 
+const MOP_MODES = Object.freeze(['waiting', 'following', 'bolting', 'hiding']);
+
+/** The companion's position is independent of the player's checkpoint position. */
+export function validateMopSnapshot(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== 1
+    || !MOP_MODES.includes(value.mode)) return false;
+  if (!['x', 'z', 'gx', 'gz', 'angle'].every(key => Number.isFinite(value[key]))) return false;
+  if (!['timer', 'still', 'hidden'].every(key => Number.isFinite(value[key]) && value[key] >= 0)) return false;
+  return true;
+}
+
 export function createMopWalk({ random = Math.random, at = CAT.at } = {}) {
   const state = { mode: 'waiting', x: at.x, z: at.z, gx: at.x, gz: at.z, timer: 0, still: 0, hidden: 0, angle: random() * 6.28 };
   const point = { x: at.x, z: at.z };
@@ -188,6 +209,17 @@ export function createMopWalk({ random = Math.random, at = CAT.at } = {}) {
 
   /** The host places the model each frame, the way it does the harbour cat's. */
   function place(x, z) { point.x = x; point.z = z; }
+
+  // `place` receives the collision-adjusted feet; `update` only proposes a step.
+  const snapshot = () => ({ version: 1, x: point.x, z: point.z, mode: state.mode,
+    gx: state.gx, gz: state.gz, timer: state.timer, still: state.still,
+    hidden: state.hidden, angle: state.angle });
+  function restore(data) {
+    if (!validateMopSnapshot(data)) return false;
+    place(data.x, data.z);
+    for (const key of ['mode', 'gx', 'gz', 'timer', 'still', 'hidden', 'angle']) state[key] = data[key];
+    return true;
+  }
 
   function bolt(fromX, fromZ) {
     const away = Math.atan2(point.z - fromZ, point.x - fromX) + (random() - .5) * 1.2;
@@ -251,7 +283,7 @@ export function createMopWalk({ random = Math.random, at = CAT.at } = {}) {
       near: toPlayer };
   }
 
-  return { place, update, get mode() { return state.mode; },
+  return { place, update, snapshot, restore, get mode() { return state.mode; },
     set mode(value) { state.mode = value; },
     get goal() { return { x: state.gx, z: state.gz }; } };
 }
