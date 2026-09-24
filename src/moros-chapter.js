@@ -43,7 +43,7 @@ export function validateMorosSnapshot(data, { allowMissing = true } = {}) {
   return data.revision === booleanFields.reduce((count, key) => count + Number(data[key]), 0);
 }
 
-export function createMorosChapter({ inventory, hasHorse = () => false, onEvent = () => {} } = {}) {
+export function createMorosChapter({ inventory, hasHorse = () => false, onFoot = () => false, onEvent = () => {} } = {}) {
   let state = initial();
   const snapshot = () => ({ ...state });
 
@@ -67,6 +67,10 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
         : [3, 'What the army owes', 'Take Iven’s token to the horse line at the north-west end of the camp, by the water trough and the hay, and claim the horse the army owes you.', 'MOROS PLAIN · 3 / 3 · THE ARMY ON THE PLAIN', ['legion-horse-line']],
       complete: [4, 'One of eleven', 'You are on the Marshal’s muster with a horse on the line. When the company is full he will send an envoy to Solis in West Suval under a flag of truce.', 'MOROS PLAIN · CHAPTER COMPLETE', []],
     };
+    if (onFoot() && !hasHorse()) {
+      views['claim-horse'] = [3, 'March on foot', 'The four remounts are already allocated. Report to the quartermaster at the horse line for marching supplies; a horse is not required to join the army.', 'MOROS PLAIN · MUSTER', ['legion-horse-line']];
+      views.complete = [4, 'On the muster', 'Your name is on the muster. The quartermaster has issued your marching supplies. Report to the Marshal for the road to Solis.', 'MOROS PLAIN · CHAPTER COMPLETE', []];
+    }
     const [step, title, detail, kicker, destinations] = views[current];
     return { chapterId: MOROS_CHAPTER_ID, regionName: 'Moros Plain', questTitle: 'The army on the plain', stage: current, step, steps: 3,
       title, detail, kicker, active: state.started && !state.horseClaimed, complete: state.horseClaimed,
@@ -75,9 +79,9 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
 
   function availableActions() {
     switch (stage()) {
-      case 'report-at-gate': return [action('admit-to-camp', 'Show Iven’s receipt and the horse token', MOROS_GATE_ID)];
+      case 'report-at-gate': return [action('admit-to-camp', 'Report for the muster', MOROS_GATE_ID)];
       case 'report-to-legate': return [action('join-muster', `Sign the muster · take ${MOROS_PAY} copper`, MOROS_LEGATE_ID)];
-      case 'claim-horse': return [hasHorse() ? action('claim-legion-horse', 'Picket your horse and draw its fodder', 'legion-horse-line')
+      case 'claim-horse': return [onFoot() && !hasHorse() ? action('claim-legion-horse', 'Draw marching supplies and continue on foot', 'legion-horse-line') : hasHorse() ? action('claim-legion-horse', 'Picket your horse and draw its fodder', 'legion-horse-line')
         : action('claim-legion-horse', 'Hand over the token and take your horse', 'legion-horse-line',
           inventory?.has?.(MOROS_HORSE_TOKEN) ? '' : 'You need the army’s horse token from Iven in Nothom.')];
       default: return [];
@@ -109,7 +113,7 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
       if (!inventory?.add?.('copper-piece', MOROS_PAY)) return fail('The Marshal’s clerk could not pay you. Make room in your satchel and speak again.');
       state.mustered = true; reward = { id: 'copper-piece', quantity: MOROS_PAY };
     } else if (actionId === 'claim-legion-horse') {
-      if (hasHorse()) state.horseClaimed = true;
+      if (hasHorse() || onFoot()) state.horseClaimed = true;
       else {
         if (!inventory?.remove?.(MOROS_HORSE_TOKEN, 1)) return fail('You need the army’s horse token from Iven in Nothom.');
         state.horseClaimed = true; reward = { id: 'legion-horse', quantity: 1 };

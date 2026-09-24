@@ -16,6 +16,58 @@ function reachTheFork(campaign) {
   assert.equal(campaign.view().kind, 'fork');
 }
 
+test('an Imperial recall skips unfinished Drent or Luscia without awarding their work', () => {
+  for (const from of ['drent-road', 'luscia-aftermath']) {
+    const {campaign, events} = fixture();
+    if (from === 'luscia-aftermath') campaign.completeChapter('drent-road');
+    const before = campaign.snapshot(), result = campaign.acceptImperialRecall();
+    assert.equal(result.ok, true); assert.equal(result.first, true); assert.equal(result.recalledFrom, from);
+    assert.equal(result.reward, null); assert.equal(campaign.view().chapterId, 'moros-camp');
+    assert.equal(campaign.view().entryOrigin, 'imperial-recall'); assert.equal(campaign.snapshot().imperialRecall, true);
+    assert.deepEqual(campaign.state.completed, before.completed);
+    assert.deepEqual(campaign.state.trust, before.trust); assert.equal(campaign.state.horse, false);
+    assert.equal(events.at(-1).completedChapter, undefined, 'no false chapter completion event');
+    const restored = createCampaign(); assert.equal(restored.restore(campaign.snapshot()), true);
+    assert.deepEqual(restored.snapshot(), campaign.snapshot());
+    const arrived = campaign.snapshot();
+    assert.equal(campaign.acceptImperialRecall().first, false);
+    assert.deepEqual(campaign.snapshot(), arrived, 'recall arrival is idempotent');
+  }
+});
+
+test('recalled travelers can finish the muster and choose either side without inventing the road', () => {
+  for (const side of ['empire', 'coalition']) {
+    const campaign = createCampaign(); campaign.acceptImperialRecall();
+    assert.equal(campaign.completeChapter('moros-camp').ok, true);
+    assert.equal(campaign.chooseSide(side).ok, true);
+    assert.equal(campaign.completeChapter('border-battle', 'victory').ok, true);
+    assert.deepEqual(campaign.state.completed, ['moros-camp', 'suval-envoy', 'border-battle']);
+    assert.equal(campaign.state.horse, false);
+    assert.equal(campaign.state.entryOrigin, 'imperial-recall');
+    assert.equal(createCampaign().restore(campaign.snapshot()), true);
+    const later = campaign.snapshot(); campaign.acceptImperialRecall();
+    assert.deepEqual(campaign.snapshot(), later, 'a late or stale courier cannot roll back the campaign');
+  }
+});
+
+test('recall history survives Republican recruitment but cannot excuse impossible campaign states', () => {
+  const campaign = createCampaign(); campaign.acceptImperialRecall(); campaign.joinRepublic();
+  assert.equal(campaign.state.entryOrigin, 'luscia'); assert.equal(campaign.state.imperialRecall, true);
+  assert.equal(createCampaign().restore(campaign.snapshot()), true);
+  const before = campaign.snapshot(); assert.equal(campaign.acceptImperialRecall().ok, false);
+  assert.deepEqual(campaign.snapshot(), before);
+  const recalled = createCampaign(); recalled.acceptImperialRecall();
+  for (const bad of [
+    {...recalled.snapshot(), chapterId: 'drent-road'},
+    {...recalled.snapshot(), chapterId: 'suval-envoy'},
+    {...recalled.snapshot(), horse: true},
+    {...recalled.snapshot(), imperialRecall: false},
+    {...recalled.snapshot(), imperialRecall: 'yes'},
+  ]) assert.equal(validateCampaignSnapshot(bad), false);
+  const legacy = createCampaign().snapshot(); delete legacy.imperialRecall;
+  assert.equal(createCampaign().restore(legacy), true);
+});
+
 test('the chapter graph is closed and every chapter names a designed region', () => {
   assert.deepEqual(campaignGraphIssues(), []);
   assert.equal(CHAPTERS['drent-road'].next, 'luscia-aftermath');

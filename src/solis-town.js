@@ -149,7 +149,9 @@ function gateCaptain(npc, context) {
     return;
   }
   const lines = stage === 'meet-envoy' ? ['Up the main street, past the square, to the Court of Oaths. The envoy is inside. You have an escort; you will not notice it.']
-    : side === 'coalition' ? ['Orren says you are one of ours now. Then this is your gate as much as mine.']
+    : side === 'coalition' ? [context.border?.view?.().entryOrigin==='luscia'
+      ? 'Hara’s word came ahead of you from Nothom. No Imperial seal is needed here. Captain Arlen Voss has the Republican companies just inside the gate.'
+      : 'Orren says you are one of ours now. Then this is your gate as much as mine.']
       : side === 'empire' ? ['You gave the envoy your answer. The gate is open to you going out. Do not come back up this road with the army behind you.']
         : ['The Gate of Sun Horses is open by day to anyone with business and a sheathed blade. Keep yours sheathed.'];
   openDialogue(npc, lines, null, 'Back to the road', { choices: [leave] });

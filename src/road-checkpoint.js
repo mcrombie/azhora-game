@@ -71,6 +71,8 @@ import { createLinguist, validateLinguistSnapshot } from './linguist.js';
 import { createLongRoad, validateLongRoadSnapshot } from './long-road.js';
 import { createFarming, validateFarmingSnapshot } from './farming.js';
 import { createLusciaChapter } from './luscia-chapter.js';
+import {validateLivingStorySnapshot} from './living-story.js';
+import {createLusciaCivilWar,validateLusciaCivilWarSnapshot} from './luscia-civil-war.js';
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
 export const ROAD_CHECKPOINT_VERSION = 1;
@@ -86,9 +88,15 @@ const failed = reason => ({ ok: false, data: null, reason });
 export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}) {
   function validate(data) {
     if (!data || typeof data !== 'object' || data.version !== ROAD_CHECKPOINT_VERSION
-      || !Number.isInteger(data.questStage) || data.questStage < 1 || data.questStage > QUEST_DONE
+      || !Number.isInteger(data.questStage) || data.questStage < 0 || data.questStage > QUEST_DONE
       || (data.questStage < QUEST_DONE && !data.woodland))
       return failed('This is not a supported road checkpoint.');
+    const campaign = createCampaign();
+    if (Object.hasOwn(data, 'campaign') && !campaign.restore(data.campaign)) return failed('The saved campaign is invalid.');
+    // A late courier can collect someone still on the pier. The campaign keeps
+    // that history; their actual unfinished lessons and road are not fabricated.
+    const imperialRecall = campaign.snapshot().imperialRecall;
+    if (data.questStage === 0 && !imperialRecall) return failed('This is not a supported road checkpoint.');
     if (!Array.isArray(data.inventory) || data.inventory.length > Object.keys(INVENTORY_ITEMS).length)
       return failed('The saved satchel is invalid.');
     const stock = new Map();
@@ -216,6 +224,10 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.crime!==undefined&&!validCrimeState(data.crime)) return failed('The saved crime record is invalid.');
     if (!validateCorpsesSnapshot(data.corpses)) return failed('The saved bodies are invalid.');
     if (!validateDrentCivilWarSnapshot(data.drentCivilWar)) return failed('The saved Drent civil war is invalid.');
+    if(data.livingStory!==undefined&&!validateLivingStorySnapshot(data.livingStory))return failed('The saved living main story is invalid.');
+    if(!validateLusciaCivilWarSnapshot(data.lusciaCivilWar))return failed('The saved Luscia civil war is invalid.');
+    if(data.livingStory&&((data.livingStory.satchel.carrier==='player')!==stock.has('courier-satchel')))
+      return failed('The saved courier satchel does not match its one physical carrier.');
     if (data.drentCivilWar) {
       const drent = data.drentCivilWar;
       if (stock.has(DRENT_EVIDENCE_ID) !== (drent.evidenceFound && !drent.chosenPath)
@@ -224,18 +236,16 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     }
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
-    if (data.forestHideout?.accepted && data.questStage < QUEST_DONE) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
+    if (data.forestHideout?.accepted && data.questStage < QUEST_DONE && !imperialRecall) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
     if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1
       || (Object.hasOwn(data.woodland, 'practiceGuards') && data.woodland.practiceGuards < 1)))
       return failed('The saved combat lessons are incomplete.');
-    if (data.questStage < QUEST_DONE && (data.meadowCleared || data.journeyGathered.length))
+    if (data.questStage < QUEST_DONE && !imperialRecall && (data.meadowCleared || data.journeyGathered.length))
       return failed('The saved onward journey has not begun.');
     // The civil-war campaign is optional in a save (older saves predate it) but
     // may not have moved past Drent before the road's final report was filed.
-    const campaign = createCampaign();
     if (Object.hasOwn(data, 'campaign')) {
-      if (!campaign.restore(data.campaign)) return failed('The saved campaign is invalid.');
-      if (campaign.view().chapterId !== 'drent-road' && !journey.state.complete) return failed('The saved campaign outran the road out of Drent.');
+      if (campaign.view().chapterId !== 'drent-road' && !journey.state.complete&&campaign.snapshot().entryOrigin!=='luscia'&&!imperialRecall) return failed('The saved campaign outran the road out of Drent.');
     }
 
     // The Luscia chapter is optional too, and may not stand ahead of the road
@@ -243,8 +253,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     const luscia = createLusciaChapter();
     if (Object.hasOwn(data, 'luscia')) {
       if (!luscia.restore(data.luscia)) return failed('The saved Luscia chapter is invalid.');
-      if (luscia.state.started && !journey.state.complete) return failed('The saved Luscia chapter outran the road out of Drent.');
-      if (luscia.state.complete && !campaign.snapshot().completed.includes('luscia-aftermath'))
+      if (luscia.state.started && !journey.state.complete && !imperialRecall) return failed('The saved Luscia chapter outran the road out of Drent.');
+      if (luscia.state.complete && !campaign.snapshot().completed.includes('luscia-aftermath')&&campaign.snapshot().entryOrigin!=='luscia')
         return failed('The saved Luscia chapter is ahead of the campaign.');
     }
 
@@ -259,12 +269,12 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       const story = campaign.snapshot(), done = id => story.completed.includes(id);
       const moros = createMorosChapter();
       if (Object.hasOwn(data, 'moros') && moros.restore(data.moros)) {
-        if (moros.state.started && !done('luscia-aftermath')) return failed('The saved Moros camp outran the field at the Lauvel.');
+        if (moros.state.started && !done('luscia-aftermath') && !imperialRecall) return failed('The saved Moros camp outran the field at the Lauvel.');
         if (moros.state.complete && !done('moros-camp')) return failed('The saved Moros camp is ahead of the campaign.');
       }
       const border = createBorderChapter();
       if (Object.hasOwn(data, 'border') && border.restore(data.border)) {
-        if (border.state.started && !done('moros-camp')) return failed('The saved border chapter outran the Marshal’s muster.');
+        if (border.state.started && !done('moros-camp')&&!(border.state.entryOrigin==='luscia'&&story.entryOrigin==='luscia'&&story.side==='coalition')) return failed('The saved border chapter outran the Marshal’s muster.');
         if (border.state.side && story.side && border.state.side !== story.side)
           return failed('The saved border chapter fights for one side and the campaign for the other.');
         if (border.state.complete && !done('border-battle')) return failed('The saved border battle is ahead of the campaign.');
@@ -357,6 +367,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data,'crime')) { const law=createCrime(); law.restore(data.crime); result.crime=law.snapshot(); }
     if (Object.hasOwn(data,'corpses')) { const bodies=createCorpses(); bodies.restore(data.corpses); result.corpses=bodies.snapshot(); }
     if (Object.hasOwn(data, 'drentCivilWar')) { const drent = createDrentCivilWar(); drent.restore(data.drentCivilWar); result.drentCivilWar = drent.snapshot(); }
+    if(Object.hasOwn(data,'livingStory'))result.livingStory=JSON.parse(JSON.stringify(data.livingStory));
+    if(Object.hasOwn(data,'lusciaCivilWar')){const civil=createLusciaCivilWar();civil.restore(data.lusciaCivilWar);result.lusciaCivilWar=civil.snapshot();}
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'companionOffTheClock')) result.companionOffTheClock = data.companionOffTheClock;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));

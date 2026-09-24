@@ -83,3 +83,13 @@ test('chapter three is the side you chose: Ambron for the Empire, the Republic f
   assert.equal(chapterProgress(home).complete, false);
   assert.equal(chapterProgress(home).current.number, 3);
 });
+
+
+test('an early recruitment or recall shows the current war chapter without changing missed errands', () => {
+  const skipped={questStage:0,onwardEntry:true,journey:{complete:false},luscia:{started:false},moros:{complete:true}};
+  const saved=JSON.stringify(skipped);
+  assert.equal(chapterProgress(skipped).number,2);
+  assert.equal(JSON.stringify(skipped),saved);
+  assert.equal(chapterProgress({...skipped,aftermath:{complete:true},home:true}).number,3);
+  assert.equal(chapterProgress({...skipped,onwardEntry:false}).number,1);
+});

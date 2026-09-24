@@ -154,7 +154,7 @@ const initialControl = () => Object.fromEntries(REGION_DESIGN.map(entry => [entr
 
 const emptyState = () => ({
   version: CAMPAIGN_VERSION, revision: 0, side: null, chapterId: 'drent-road', completed: [], battles: {}, attempts: {},
-  survey: [], arcs: {}, truces: [], control: {}, trust: { empire: 60, coalition: 15 }, crossings: 0, exposed: false, horse: false, missions: {}, early: false,
+  survey: [], arcs: {}, truces: [], control: {}, trust: { empire: 60, coalition: 15 }, crossings: 0, exposed: false, horse: false, missions: {}, early: false, entryOrigin: null, sharedRecovery: false, imperialRecall: false,
 });
 
 function validateSnapshot(value) {
@@ -177,11 +177,19 @@ function validateSnapshot(value) {
   // Story invariants: a side exists exactly when the fork is behind us; the
   // current chapter belongs to the chosen side; the horse comes from Luscia.
   const chapter = CHAPTERS[value.chapterId];
-  const forked = value.completed.includes('suval-envoy');
+  if (![undefined, null, 'solis', 'luscia', 'imperial-recall'].includes(value.entryOrigin)) return false;
+  if (value.imperialRecall !== undefined && typeof value.imperialRecall !== 'boolean') return false;
+  if (value.entryOrigin === 'imperial-recall' && !value.imperialRecall) return false;
+  if (value.imperialRecall && !['imperial-recall', 'luscia'].includes(value.entryOrigin)) return false;
+  if (value.imperialRecall && value.entryOrigin !== 'luscia'
+    && value.chapterId !== 'moros-camp' && !value.completed.includes('moros-camp')) return false;
+  const forked = value.completed.includes('suval-envoy') || value.entryOrigin === 'luscia';
   if (forked !== (value.side !== null)) return false;
+  if (value.entryOrigin === 'luscia' && value.side !== 'coalition') return false;
   if (chapter.side !== 'both' && chapter.side !== 'chosen' && chapter.side !== value.side) return false;
-  if (value.horse !== value.completed.includes('luscia-aftermath')) return false;
-  if (value.chapterId !== 'drent-road' && !value.completed.includes('drent-road')) return false;
+  if(value.sharedRecovery!==undefined&&typeof value.sharedRecovery!=='boolean')return false;
+  if (value.sharedRecovery ? value.horse && !value.completed.includes('luscia-aftermath') : value.horse !== value.completed.includes('luscia-aftermath')) return false;
+  if (value.chapterId !== 'drent-road' && !value.completed.includes('drent-road')&&value.entryOrigin!=='luscia'&&!value.imperialRecall) return false;
   return true;
 }
 
@@ -261,6 +269,8 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     if (current().kind !== 'fork') return fail('There is no offer on the table yet. Reach the Coalition army at Solis first.');
     if (!SIDES.includes(side)) return fail('Choose the Empire or the Coalition.');
     state.side = side;
+    // Keep the recalled traveler's skipped lessons distinct from earned chapters.
+    state.entryOrigin = state.imperialRecall ? 'imperial-recall' : 'solis';
     state.trust[side] = clamp(state.trust[side] + 15, 0, 100);
     return advanceTo('border-battle', 'choose-side', { side });
   }
@@ -368,6 +378,38 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     return emit('early-muster', { trust: state.trust.empire, first: true });
   }
 
+  /** Enter the same Republican campaign from Hara's recruitment in Luscia.
+   * This deliberately grants no Imperial orders, chapter completions, horse or pay. */
+  function joinRepublic({ origin = 'luscia' } = {}) {
+    if (origin !== 'luscia') return fail('That Republican introduction is not known.');
+    if (state.side === 'coalition') return { ok: true, first: false, side: state.side };
+    if (state.battles['border-battle']) return fail('This introduction belongs before the border battle.');
+    state.side = 'coalition'; state.entryOrigin = origin;
+    state.chapterId = 'border-battle';
+    state.trust.coalition = clamp(state.trust.coalition + 15, 0, 100);
+    return emit('join-republic', { first: true, side: state.side, entryOrigin: origin });
+  }
+
+  /** Shared recovery can be somebody else's work. Onward orders carry no horse or payout. */
+  function releaseToMuster() {
+    if(state.chapterId!=='luscia-aftermath')return fail('Those onward orders are not your current chapter.');
+    state.completed.push('luscia-aftermath');state.chapterId='moros-camp';state.sharedRecovery=true;
+    return emit('onward-to-muster',{completedChapter:'luscia-aftermath',reward:null});
+  }
+
+  /** The courier brings a late traveler straight to the muster. Skipped road
+   * and satchel work stays unfinished; this awards no horse, pay or training. */
+  function acceptImperialRecall() {
+    if (state.side === 'coalition') return fail('You have joined the Republican campaign.');
+    if (!['drent-road', 'luscia-aftermath'].includes(state.chapterId))
+      return { ok: true, first: false, chapterId: state.chapterId, reward: null };
+    const recalledFrom = state.chapterId;
+    state.chapterId = 'moros-camp';
+    state.entryOrigin = 'imperial-recall';
+    state.imperialRecall = true;
+    return emit('accept-imperial-recall', { first: true, recalledFrom, reward: null, entryOrigin: state.entryOrigin });
+  }
+
   function milestones(side = state.side) {
     if (!side) return { side: null, provinces: 0, threeOfFive: false, fiveOfFive: false };
     const provinces = arcCount(side, LEVEL_ONE_PROVINCES);
@@ -381,7 +423,7 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     return {
       chapterId: chapter.id, title: chapter.title, detail: chapter.detail, kind: chapter.kind,
       region: chapter.region, level: design?.level ?? null, levelName: design ? levelInfo(design.level).name : null,
-      side: state.side, sideName: state.side ? FACTIONS[state.side].name : 'Undecided', horse: state.horse, exposed: state.exposed,
+      side: state.side, sideName: state.side ? FACTIONS[state.side].name : 'Undecided', horse: state.horse, exposed: state.exposed, entryOrigin: state.entryOrigin, imperialRecall: state.imperialRecall,
       trust: { ...state.trust }, arcs: { empire: arcCount('empire'), coalition: arcCount('coalition') }, milestones: standing,
       odds, missions: availableMissions().map(mission => ({ id: mission.id, title: mission.title, region: mission.region })),
       destinations: chapter.region ? [chapter.region] : [...LEVEL_ONE_PROVINCES],
@@ -395,12 +437,12 @@ export function createCampaign({ onEvent = () => {} } = {}) {
     state = { version: CAMPAIGN_VERSION, revision: data.revision, side: data.side, chapterId: data.chapterId,
       completed: [...data.completed], battles: { ...data.battles }, attempts: { ...data.attempts }, survey: [...data.survey],
       arcs: { ...data.arcs }, truces: [...data.truces], control: { ...data.control }, trust: { empire: data.trust.empire, coalition: data.trust.coalition },
-      crossings: data.crossings, exposed: data.exposed, horse: data.horse, missions: { ...data.missions }, early: data.early ?? false };
+      crossings: data.crossings, exposed: data.exposed, horse: data.horse, missions: { ...data.missions }, early: data.early ?? false, entryOrigin: data.entryOrigin ?? (data.side ? 'solis' : null),sharedRecovery:data.sharedRecovery??false,imperialRecall:data.imperialRecall??false };
     return true;
   }
 
   return {
-    chooseSide, completeChapter, surveyPoint, resolveArc, resolveMission, availableMissions, battleOdds, mapControl, milestones, earlyMuster, view, snapshot, restore,
+    chooseSide, joinRepublic, releaseToMuster, acceptImperialRecall, completeChapter, surveyPoint, resolveArc, resolveMission, availableMissions, battleOdds, mapControl, milestones, earlyMuster, view, snapshot, restore,
     get state() { return { ...snapshot(), chapter: current().id }; },
   };
 }

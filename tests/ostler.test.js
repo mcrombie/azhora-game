@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createInventoryState } from '../src/inventory.js';
 import { createRiding, RIDING_LESSON } from '../src/riding.js';
 import { createMorosChapter } from '../src/moros-chapter.js';
+import { createLivingStory } from '../src/living-story.js';
 import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/ostler.js';
 
 const hitch = { x: -420, z: 236, yaw: 1 };
@@ -50,6 +51,30 @@ test('the ostler turns away the tokenless, teaches the whole lesson at the hando
   assert.deepEqual(opened.at(-1).choices.map(choice => choice.id), ['ostler-lesson', 'fetch-horse', 'leave-ostler']);
   opened.at(-1).choices[1].action();
   assert.equal(acted.at(-1), 'fetch-horse');
+});
+
+test('the living stable redeems a specific reservation once and rejects a fifth or copied token', () => {
+  const story = createLivingStory();
+  story.reportNothom('player', { acceptJob: false });
+  const f = fixture();
+  assert.equal(redeemHorse({ ...f, hitch: { x: NaN, z: 0 }, story }).ok, false);
+  assert.equal(story.snapshot().horses[0].claimed, false, 'failed placement does not consume the reserved horse');
+  assert.equal(redeemHorse({ ...f, hitch, story }).ok, true);
+  assert.equal(story.snapshot().horses[0].claimed, true);
+  const copied = fixture();
+  assert.match(redeemHorse({ ...copied, hitch, story }).reason, /already left/);
+  assert.equal(copied.inventory.has(OSTLER_TOKEN), true);
+  assert.equal(copied.riding.owned, false);
+
+  const lateStory = createLivingStory();
+  for (const id of ['merc-word', 'merc-jerry', 'merc-christin', 'merc-ciaran']) lateStory.reportNothom(id);
+  lateStory.reportNothom('player', { acceptJob: false });
+  const late = fixture();
+  assert.match(redeemHorse({ ...late, hitch, story: lateStory }).reason, /four army remounts/);
+  assert.equal(late.riding.owned, false); assert.equal(lateStory.snapshot().horses.length, 4);
+  ostlerConversation(OSTLER_NPC, { ...late.context, story: lateStory });
+  assert.match(late.opened.at(-1).lines.join(' '), /cannot make a fifth/);
+  assert.deepEqual(late.opened.at(-1).choices, []);
 });
 
 test('at the Moros camp a rider pickets the horse they came on; a walker with a token still draws one from the line', () => {

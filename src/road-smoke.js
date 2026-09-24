@@ -1,7 +1,8 @@
 import { canStand, QUEST_DONE } from './game-state.js';
 import { questLive } from './quest-slate.js';
-import { LUSCIA_SITES, LUSCIA_WOLVES } from './luscia-chapter.js';
+import { LUSCIA_SITES } from './luscia-chapter.js';
 import { OSTLER_OBJECTIVE } from './ostler.js';
+import { HAIL } from './lauvel-burying.js';
 
 /** Browser smoke coverage for the actual F prompts, dialogue buttons and combat. */
 export async function runRoadSmoke(h) {
@@ -312,43 +313,74 @@ export async function runRoadSmoke(h) {
     assert(inventory.has('harbor-letter') && inventory.has('road-token'), 'the relay consumed the onward quest items');
     assert(inventory.count('copper-piece') >= 12, 'the army did not pay for the road report');
 
-    // The Luscia chapter, straight out of the road report: the clerk's errand,
-    // the courier's satchel, the wolves that come with it, and the walk back.
+    // The current Luscia chapter is a unique timed assignment and a peaceful
+    // Republican encounter. Listening and filing the rolls do not choose a side.
     assert(query('#quest-step')?.textContent.includes('LUSCIA'), 'the road did not roll into the Luscia chapter');
     assert(state().campaign?.chapterId === 'luscia-aftermath', 'the campaign did not reach Luscia');
     assert(state().luscia?.stage === 'meet-relay-clerk', 'the chapter did not open at Iven');
     await visit('relay-clerk'); await chooseRoad('accept-lauvel-search');
-    assert(state().luscia?.stage === 'find-satchel', 'Iven did not send the traveler to the field');
+    assert(state().luscia?.stage === 'find-satchel', 'Iven did not send the traveler to the relay hut');
+    const assigned=state().livingStory;
+    assert(assigned?.satchel.assignee==='player', 'Iven did not assign the unique courier job');
+    const timeLeft=assigned.satchel.deadlineAt-assigned.seconds;
+    assert(timeLeft>597&&timeLeft<=600, 'the courier assignment did not start its ten-minute active deadline');
+    assert(Array.isArray(assigned.horses)&&assigned.horses.length<=4, 'the army allocated more than four remounts');
+    const reservation=assigned.horses.find(horse=>horse.owner==='player');
+    assert(inventory.has('horse-token')===!!reservation, 'the reporting-order reservation and actual horse token disagree');
     const satchel = LUSCIA_SITES['courier-satchel'];
-    await arrive(satchel.x + .5, satchel.z - .8);
-    // The cart is 29.5 m from Sela and her call carries 34 (src/lauvel-burying.js HAIL_FROM), so
-    // arriving here is coming up her road: she hails, that opens a conversation, and a conversation
-    // takes the prompt off the screen. Hear her out first, which is what a player does.
-    if (getMode() === 'dialogue') { await finishDialogue(); await frames(2); }
-    assert(getMode() === 'playing', `the field never gave control back at the wrecked cart; ${query('#speaker')?.textContent} is still speaking`);
-    // The prompt is suppressed whenever anybody stands inside the traveler's three-metre reach,
-    // so when it is missing, say who is standing there. A name is the whole diagnosis.
-    if (!query('#interaction-label')?.textContent.includes('satchel')) {
-      const near = npcData.filter(npc => !npc.hidden && !npc.fallen)
-        .map(npc => ({ id: npc.id, d: Math.hypot(npc.actor.group.position.x - player.group.position.x, npc.actor.group.position.z - player.group.position.z) }))
-        .filter(entry => entry.d < 6).sort((a, b) => a.d - b.d).map(entry => `${entry.id} at ${entry.d.toFixed(1)}m`);
-      assert(false, `the satchel prompt is missing at the wrecked cart; in mode ${getMode()} the label reads "${query('#interaction-label')?.textContent}" and within six metres stands: ${near.join(', ') || 'nobody'}`);
+    await arrive(satchel.x + 1.5, satchel.z + 1.5);
+    if(getMode()==='playing')tap('KeyF');
+    assert(getMode()==='dialogue'&&query('#speaker')?.textContent==='Davin', 'the living Republican soldier did not speak at the relay hut');
+    await finishDialogue();
+    assert(query('[data-choice="luscia-support-empire"]'), 'Davin offered no explicit Imperial refusal/fight choice');
+    assert(!inventory.has('courier-satchel'), 'approaching Davin silently took his satchel');
+    const listen=query('[data-choice="luscia-listen-republican"]');
+    assert(listen&&!listen.disabled&&listen.textContent.includes('Hara'), 'Davin offered no clear peaceful introduction to Hara');
+    choose('luscia-listen-republican');await frames(2);
+    // Davin closes the exchange. Sela is within earshot of this hut and her
+    // one-time roadside hail can begin on the next active frame. Hear that
+    // specific interruption; an arbitrary dialogue is still a test failure.
+    if(getMode()==='dialogue'){
+      const sela=npcData.find(npc=>npc.id==='lauvel-seeker'),speech=query('#speech')?.textContent;
+      assert(sela&&query('#speaker')?.textContent===sela.name&&HAIL.includes(speech),
+        `unexpected dialogue after Davin: ${query('#speaker')?.textContent}: ${speech}`);
+      await finishDialogue();await frames(2);
+      assert(state().burying?.stage==='hailed', 'hearing Sela’s call silently accepted her side quest');
     }
-    tap('KeyF'); await frames(3);
-    assert(state().luscia?.stage === 'return-satchel', 'the courier’s satchel was not lifted');
-    assert(combat.state.encounterId === LUSCIA_WOLVES.id && combat.state.phase === 'active', 'no encounter followed the satchel');
-    assert(combat.state.enemies.length === 2 && combat.state.enemies.every(enemy => enemy.kind === 'wolf'), 'the pack was not two wolves');
-    // Backing east onto the open grass breaks off the fight, and keeps the satchel.
-    await arrive(LUSCIA_WOLVES.retreatLine + 4, LUSCIA_WOLVES.center.z + 1);
-    await until(() => combat.state.phase !== 'active', 'the wolves did not break off east of the field');
-    assert(state().luscia?.stage === 'return-satchel', 'breaking off the fight lost the satchel');
+    assert(getMode()==='playing', 'the relay introduction and nearby hail did not return control');
+    assert(state().luscia?.stage==='return-satchel', 'the peaceful conversation did not advance the return objective');
+    assert(inventory.count('courier-satchel')===1&&state().livingStory?.satchel.carrier==='player', 'Davin did not hand over one physical satchel');
+    assert(state().lusciaCivilWar?.introduced&&state().lusciaCivilWar.path===null, 'listening did not leave the faction choice open');
+    assert(combat.state.phase!=='active', 'listening to Davin unexpectedly started a fight');
+    const payBefore=inventory.count('copper-piece'),tokensBefore=inventory.count('horse-token');
     await visit('relay-clerk'); await chooseRoad('return-courier-satchel');
-    assert(inventory.has('horse-token') && inventory.count('copper-piece') >= 32, 'the chapter did not pay the horse token and the copper');
+    assert(inventory.count('copper-piece')===payBefore+20, 'the courier delivery did not pay exactly twenty copper');
+    assert(inventory.count('horse-token')===tokensBefore, 'satchel delivery issued a second horse entitlement');
+    assert(!inventory.has('courier-satchel')&&state().livingStory?.satchel.completedBy==='player', 'the completed delivery left a second physical satchel');
+    assert(state().lusciaCivilWar?.path===null&&!state().lusciaCivilWar.betrayed, 'ordinary delivery betrayed the Republican network');
     assert(state().campaign?.chapterId === 'moros-camp', 'the campaign did not move on to the Moros camp');
     assert(state().luscia?.complete, 'the chapter did not finish');
 
-    // Nothom's square: Smiths, who begs until he is paid, and a stall
-    // keeper who is only a stall keeper until she is asked three careful things.
+    // Redeem only a real reservation. The late-arrival case must stay playable
+    // on foot, and another conversation cannot create a fifth army horse.
+    const ostler=npcData.find(npc=>npc.id==='lumber-ostler');
+    assert(ostler&&await standBeside(ostler.actor.group.position), 'no clear approach to Bede Harrow');
+    tap('KeyF');assert(getMode()==='dialogue'&&query('#speaker')?.textContent===ostler.name, 'Bede did not answer at the stable yard');
+    await finishDialogue();
+    if(reservation){
+      await chooseRoad('redeem-horse');
+      assert(!inventory.has('horse-token')&&state().livingStory.horses.find(horse=>horse.owner==='player')?.claimed,
+        'Bede did not consume the reserved token and issue its horse');
+      tap('KeyF');await finishDialogue();
+      assert(!query('[data-choice="redeem-horse"]'), 'Bede offered the same reserved horse twice');
+      choose('leave-ostler');await frames(2);
+    }else{
+      assert(getMode()==='playing'&&!query('[data-choice="redeem-horse"]'), 'an unreserved traveler could claim a fifth horse');
+      assert(state().livingStory.horses.length===4, 'the traveler was denied a horse before all four were reserved');
+    }
+
+    // Nothom's square: Smiths, who begs until he is paid, and the operative
+    // introduced by Davin. Recruitment is explicit and changes the gold route.
     const square = world.landmarks.find(place => place.id === 'lumber-town');
     const smiths = npcData.find(item => item.id === 'town-beggar');
     // He has had the run of the square for the whole visit; start his round afresh.
@@ -377,15 +409,21 @@ export async function runRoadSmoke(h) {
     await frames(2); tap('KeyF');
     assert(getMode() === 'dialogue' && query('#speaker')?.textContent === 'Hara', 'the stall keeper did not answer');
     await finishDialogue();
-    for (const id of ['hara-legion', 'hara-other-side', 'hara-families']) { choose(id); await finishDialogue(); }
-    assert(query('#speech')?.textContent.includes('rangers'), 'the republic’s contact never revealed herself');
-    choose('hara-join'); await frames(3);
+    assert(query('[data-choice="luscia-join-republic"]'), 'Davin’s introduction did not unlock Hara’s recruitment choice');
+    choose('luscia-join-republic'); await frames(3);
     assert(getMode() === 'playing', 'the stall keeper’s offer did not return control');
-    assert(state().campaign?.arcs?.coalition === 1, 'Luscia’s Coalition arc did not start');
+    assert(state().campaign?.side==='coalition'&&state().campaign.chapterId==='border-battle'&&state().campaign.entryOrigin==='luscia',
+      'Hara did not begin the Republican main campaign');
+    assert(state().border?.objectiveId==='solis-captain', 'the Republican main campaign did not direct the traveler to Captain Voss');
+    assert(state().lusciaCivilWar?.path==='coalition'&&!state().lusciaCivilWar.imperialComplete,
+      'the Luscia silver branch was not kept separate from main-story recruitment');
+    assert(query('#quest-title')?.textContent===state().border?.title, 'the gold objective did not update after Republican recruitment');
+    noThrow('after the peaceful relay, remount and Republican recruitment');
     assert(!state().testingEnabled, 'the road required a testing override');
     return { roadChecks: checks, roadRegions: 3, roadNPCs: 4, roadParcels: 3, roadWaymarkers: 3,
       roadBridgeWalked: Math.round(bridgeWalked), roadBattleSwings: battleSwings, roadBattleDodges: battleDodges,
-      roadRepairLoanChecks: 6, roadRiverFishingChecks: 10, lusciaChapter: 'complete', lusciaWolves: 2,
+      roadRepairLoanChecks: 6, roadRiverFishingChecks: 10, lusciaChapter: 'complete', lusciaWolves: 0,
+      lusciaRelay: 'peaceful', horseReservationClaimed: !!reservation,
       townChecks: 12, beggarPaid: !!smiths, rebelContact: 'coalition',
       roadComplete: true, roadLetterRetained: true };
   } finally {

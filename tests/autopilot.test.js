@@ -466,18 +466,19 @@ test('from the Court of Oaths the way to the outpost on the Moros goes by the ro
   assert.ok(arrived, `stuck at ${position.x.toFixed(0)},${position.z.toFixed(0)}, ${best.toFixed(0)} m from the outpost`);
 });
 
-test('a wrecked cart between the traveler and the satchel is walked round, not routed round by the road', async () => {
+test('a wrecked cart between the traveler and a nearby field objective is walked round, not routed round by the road', async () => {
   // An autoplay run stood ten metres from the courier's satchel with the Lauvel wreck in the
   // straight line, took that for the river, and paced the road until it gave up.
   const THREE = await import('../vendor/three.module.js');
   const { sourceModule } = await import('./module-loader.js');
   const { createWorld } = await sourceModule('../src/world.js');
   const { moveCharacter } = await import('../src/game-state.js');
-  const { LUSCIA_SITES } = await import('../src/luscia-chapter.js');
+  const { toWorld } = await import('../src/world-scale.js');
   const world = createWorld(new THREE.Scene());
   const adapter = { bounds: world.bounds, colliders: world.colliders, nearColliders: (x, z, r, out) => world.nearColliders(x, z, r, out),
     heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };
-  const satchel = LUSCIA_SITES['courier-satchel'], position = { x: -688.2, z: 299.8 };
+  // Preserve this geometry regression after the story moved the unique satchel to the relay.
+  const satchel = toWorld(-375,177), position = { x: -688.2, z: 299.8 };
   assert.ok(!clearLine(position, satchel, adapter), 'the wreck stands in the straight line');
   let side = 1, arrived = false;
   for (let step = 0; step < 400 && !arrived; step++) {
@@ -526,6 +527,34 @@ test('clear open ground is no excuse to cut a road bend or a junction', () => {
     { point: { x: 0, z: -80 }, onTrail: true }, 'a sidestep round a tree rejoins the road');
   assert.deepEqual(nextWaypoint({ x: 100, z: -340 }, { x: 112, z: -350 }, world),
     { point: { x: 112, z: -350 }, onTrail: false }, 'the last few steps to someone off the road stay direct');
+});
+
+test('an early recall follows muster and Solis orders without replaying the unfinished tutorial', () => {
+  const world = fakeWorld();
+  world.npcPositions['post-camp-legate'] = {x: -20, z: -300};
+  world.npcPositions['post-camp-gate-north'] = {x: -20, z: -280};
+  for (const questStage of [0, 1, 2]) for (const chartLesson of ['unissued', 'open-map', 'return-to-glun']) {
+    const state = snapshot({questStage, chartLesson, mapTutorial: 1,
+      campaign: {chapterId: 'suval-envoy', entryOrigin: 'imperial-recall', imperialRecall: true},
+      border: {stage: 'take-orders', complete: false, destinationIds: ['post-camp-legate'], actions: []},
+      moros: {stage: 'complete', complete: true, destinationIds: []}});
+    const unchanged = structuredClone(state);
+    assert.equal(planGoal(state, world).npcId, 'post-camp-legate');
+    assert.deepEqual(state, unchanged, 'choosing the onward objective awards no skipped lesson');
+    assert.equal(planGoal({...state, campaign: {...state.campaign, chapterId: 'moros-camp'},
+      moros: {stage: 'report-at-gate', destinationIds: ['post-camp-gate-north']}}, world).npcId, 'post-camp-gate-north');
+    assert.equal(planGoal({...state, border: undefined}, world).kind, 'wait', 'chapter initialization cannot send the player back to Jojo');
+  }
+});
+
+test('Republican recruitment after a recall keeps the onward route despite unfinished Glun lessons', () => {
+  const world = fakeWorld(); world.npcPositions['republic-marshal'] = {x: 12, z: -420};
+  const state = snapshot({questStage: 0, chartLesson: 'return-to-glun',
+    campaign: {chapterId: 'border-battle', entryOrigin: 'luscia', imperialRecall: true, side: 'coalition'},
+    border: {stage: 'republic-muster', destinationIds: ['republic-marshal']}});
+  assert.equal(planGoal(state, world).npcId, 'republic-marshal');
+  assert.equal(planGoal({...state, combat: {...state.combat, phase: 'active'}}, world).kind, 'fight', 'live danger still takes priority');
+  assert.equal(planGoal({...state, mode: 'pause'}, world).kind, 'wait', 'recall never resumes a paused game');
 });
 
 test('autoplay collects the assigned horse before following the next chapter out of Nothom', () => {

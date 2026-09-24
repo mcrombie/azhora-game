@@ -3,6 +3,9 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
+  'courier-satchel': Object.freeze({name:'The courier’s satchel',type:'Quest item',icon:'letter',stackable:false,
+    brief:'The one missing army satchel, carrying the Lauvel muster rolls.',
+    description:'Deliver this physical satchel to Iven in Nothom. A reassignment does not remove it from your possession; a replacement must find you and ask for a handover.'}),
   'wolf-hide': Object.freeze({
     name: 'Wolf hide', type: 'Material', icon: 'slab', stackable: true,
     brief: 'A rough grey hide recovered from a fallen wolf.',

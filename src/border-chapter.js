@@ -163,6 +163,38 @@ export function borderEncounter(side, allies = [], company = 0) {
     allies: allies.slice(0, ALLY_SPOTS.length).map((ally, index) => ({ ...ally, x: ALLY_SPOTS[index][0], z: ALLY_SPOTS[index][1] })) };
 }
 
+// The original four keep their ground. Further arrivals form a wider forward
+// rank, clear of the traveler at +13 and the host's supporting file at +15.6/+18.
+// These are metres relative to the arena, not positions stretched with the map.
+const MUSTER_ALLY_OFFSETS=Object.freeze([
+  [-6,10],[6,10],[-9,14],[9,14],[0,7],[-3,7],[3,7],[-9,7],[9,7],[0,10],
+]);
+
+/** Both living factions take the field as themselves. Nothing beyond the fourth
+ * mercenary is discarded, and duplicate world/companion references remain one
+ * person. Ordinary soldiers fill the other side's existing three waves. The
+ * roster is the ten possible fellow recruits; the player's own slot is separate. */
+export function borderMusterEncounter(side,{allies=[],opponents=[],company=0}={}){
+  const seen=new Set();
+  const unique=people=>people.filter(person=>{
+    if(!person?.id||seen.has(person.id)||person.npcId&&seen.has(person.npcId))return false;
+    seen.add(person.id);if(person.npcId)seen.add(person.npcId);return true;
+  });
+  const friends=unique(allies),foes=unique(opponents);
+  if(friends.length>MUSTER_ALLY_OFFSETS.length||foes.length>MERCENARY_COMPANY_SIZE-1)
+    throw new RangeError('The border muster has more mercenaries than the living roster.');
+  const count=Math.max(borderLine(Math.max(Number(company)||0,friends.length)),foes.length);
+  // The legacy builder authors all twelve valid enemy positions and entry times;
+  // using its whole line avoids a second geometry or a new kind of reinforcement.
+  const config=borderEncounter(side,[],10);
+  config.enemies=config.enemies.slice(0,count).map((soldier,index)=>foes[index]
+    ? {...soldier,...foes[index],kind:foes[index].kind==='legionary'?'soldier':foes[index].kind??'soldier',x:soldier.x,z:soldier.z,entry:soldier.entry}
+    : soldier);
+  config.allies=friends.map((person,index)=>({...person,
+    x:config.center.x+MUSTER_ALLY_OFFSETS[index][0],z:config.center.z+MUSTER_ALLY_OFFSETS[index][1]}));
+  return config;
+}
+
 /**
  * Where the n-th of a marching column wants to be: a loose file behind the
  * traveler. A man left further behind than `catchUp` metres is moved up to his
@@ -177,8 +209,8 @@ export function marchSlot(index, traveler, heading) {
 
 const fail = reason => ({ ok: false, reason });
 const action = (id, label, objectiveId, reason = '') => ({ id, label, objectiveId, enabled: !reason, reason });
-const initial = () => ({ version: BORDER_VERSION, revision: 0, started: false, ordered: false, entered: false, side: null, ready: false, marched: false, outcome: null });
-const KEYS = Object.freeze(['version', 'revision', 'started', 'ordered', 'entered', 'side', 'ready', 'marched', 'outcome']);
+const initial = () => ({ version: BORDER_VERSION, revision: 0, started: false, ordered: false, entered: false, side: null, ready: false, marched: false, outcome: null, entryOrigin: null });
+const KEYS = Object.freeze(['version', 'revision', 'started', 'ordered', 'entered', 'side', 'ready', 'marched', 'outcome', 'entryOrigin']);
 /** Saves from before the parley moved to Solis carry none of these. */
 const ADDED = Object.freeze(['entered', 'ready', 'marched']);
 const progress = data => [data.started, data.ordered, data.entered, data.side !== null, data.ready, data.marched, data.outcome !== null].filter(Boolean).length;
@@ -191,10 +223,13 @@ export function validateBorderSnapshot(data, { allowMissing = true } = {}) {
     || (data.side !== null && !BORDER_SIDES.includes(data.side)) || (data.outcome !== null && !BORDER_OUTCOMES.includes(data.outcome))) return false;
   const present = ADDED.filter(key => Object.hasOwn(data, key));
   if (present.length && present.length !== ADDED.length) return false;
-  if ((data.ordered && !data.started) || (data.side && !data.ordered) || (data.outcome && !data.side)) return false;
+  if (![undefined, null, 'solis', 'luscia'].includes(data.entryOrigin)) return false;
+  const earlyRepublic = data.entryOrigin === 'luscia';
+  if (earlyRepublic && (data.side !== 'coalition' || !data.started || !data.entered)) return false;
+  if ((data.ordered && !data.started) || (data.side && !data.ordered && !earlyRepublic) || (data.outcome && !data.side)) return false;
   if (!present.length) return data.revision === Number(data.started) + Number(data.ordered) + Number(data.side !== null) + Number(data.outcome !== null);
   if (ADDED.some(key => typeof data[key] !== 'boolean')) return false;
-  if ((data.entered && !data.ordered) || (data.side && !data.entered) || (data.ready && !data.side) || (data.marched && !data.ready) || (data.outcome && !data.marched)) return false;
+  if ((data.entered && !data.ordered && !earlyRepublic) || (data.side && !data.entered) || (data.ready && !data.side) || (data.marched && !data.ready) || (data.outcome && !data.marched)) return false;
   return data.revision === progress(data);
 }
 
@@ -207,7 +242,7 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
 
   function stage() {
     if (!state.started) return 'not-started';
-    if (!state.ordered) return 'take-orders';
+    if (!state.ordered && state.entryOrigin !== 'luscia') return 'take-orders';
     if (!state.entered) return 'pass-gate';
     if (!state.side) return 'meet-envoy';
     if (!state.ready) return 'report';
@@ -241,7 +276,7 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
         : (won ? 'The army broke. The Coalition holds the stockade and the road onto the Moros.' : 'The Coalition was thrown back toward Solis, and you with it.')), 'THE BORDER BATTLE · FOUGHT', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
-    return { stage: current, step, steps: 5, title, detail, kicker, side: state.side, outcome: state.outcome,
+    return { stage: current, step, steps: 5, title, detail, kicker, side: state.side, outcome: state.outcome, entryOrigin: state.entryOrigin,
       active: state.started && !state.outcome, complete: !!state.outcome, fighting: active, marching: current === 'march',
       objectiveId: destinations[0] ?? null, destinationIds: [...destinations] };
   }
@@ -282,6 +317,16 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     return emit('start-chapter');
   }
 
+  /** Hara's recruits report directly to Voss; no forged Marshal's seal or signing reward. */
+  function joinRepublic() {
+    if (state.outcome) return fail('The border battle has already been decided.');
+    if (state.side === 'coalition') return { ok: true, first: false, side: state.side };
+    state.started = true; state.entered = true; state.side = 'coalition'; state.entryOrigin = 'luscia';
+    state.ready = false; state.marched = false; active = false;
+    state.revision = progress(state) - 1;
+    return emit('join-republic', { first: true, side: state.side, entryOrigin: state.entryOrigin });
+  }
+
   function act(actionId) {
     const choice = availableActions().find(candidate => candidate.id === actionId);
     if (!choice) return fail(state.outcome ? 'The border battle is fought.' : !state.started ? 'Join the Marshal’s muster first.' : `Your current task: ${view().detail}`);
@@ -294,10 +339,10 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
         state.entered = true;
         return emit(actionId, toast('Sergeant Kell reads the seal and waves you through the Gate of Sun Horses. The envoy waits in the Court of Oaths.', 'SOLIS'));
       case 'side-empire':
-        state.side = 'empire';
+        state.side = 'empire'; state.entryOrigin = 'solis';
         return emit(actionId, { side: state.side, ...toast('You keep the Empire’s contract. The envoy’s answer is no; carry it to the Marshal.', 'YOUR SIDE IS CHOSEN') });
       case 'side-coalition':
-        state.side = 'coalition';
+        state.side = 'coalition'; state.entryOrigin = 'solis';
         return emit(actionId, { side: state.side, reward: { id: COPPER_ID, quantity: COALITION_SIGNING },
           ...toast(`You sign for the Republic, and ${COALITION_SIGNING} copper goes into your purse. Captain Voss is at the Gate of Sun Horses.`, 'YOUR SIDE IS CHOSEN') });
       case 'march-out':
@@ -340,13 +385,14 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
     const outcome = data.outcome === null ? null : 'victory';
     state = { version: BORDER_VERSION, revision: 0, started: data.started, ordered: data.ordered,
       entered: legacy ? data.side !== null : data.entered, side: data.side,
-      ready: legacy ? data.outcome !== null : data.ready, marched: legacy ? data.outcome !== null : data.marched, outcome };
+      ready: legacy ? data.outcome !== null : data.ready, marched: legacy ? data.outcome !== null : data.marched, outcome,
+      entryOrigin: data.entryOrigin ?? (data.side ? 'solis' : null) };
     state.revision = legacy ? progress(state) : data.revision;
     active = false;
     return true;
   }
 
-  return { start, act, endEncounter, resolveBattle, view, cast, availableActions, snapshot, restore,
+  return { start, joinRepublic, act, endEncounter, resolveBattle, view, cast, availableActions, snapshot, restore,
     get state() { return { ...snapshot(), stage: stage(), fighting: active, complete: !!state.outcome }; } };
 }
 
@@ -389,7 +435,9 @@ export function borderConversation(npc, context) {
   }
   if (npc.id === 'solis-captain' && current === 'report') {
     openDialogue(npc, [
-      'Arlen Voss. I farmed the Lauvel valley until the army made a battlefield of it. Orren says you signed. Then the valley companies march with you.',
+      view.entryOrigin === 'luscia'
+        ? 'Arlen Voss. Hara sent word from Nothom. You chose the Republic without waiting for an Imperial messenger to ask the question. Welcome to the valley companies. Our hired swords gather here with the people they chose to defend.'
+        : 'Arlen Voss. I farmed the Lauvel valley until the army made a battlefield of it. Orren says you signed. Then the valley companies march with you.',
       'Venmor will not wait for us to choose the ground. The border stockade is the ground. I ride ahead to form the line; the companies walk the road with you, north-west over the downs.',
       'Are you ready?',
     ], null, 'Back to the gate', { choices: [...option('march-out'), moment] });

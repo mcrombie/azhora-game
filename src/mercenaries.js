@@ -11,9 +11,10 @@
  * boat on a shingle strand round the headland, and walks to the muster through the woods
  * because he does not care for roads.
  *
- * Everything but Mus's arrival is a pure function of play time, so nothing but the clock and
- * one seed needs saving. They walk the same road as the traveler and pause where the traveler
- * had business, so a brisk traveler stays first and a slow one is overtaken.
+ * This module retains the arrival timetable and legacy road placements for old saves and
+ * isolated scene previews. Normal play hands each landed recruit to company-route-host.js:
+ * errands, collisions, bridge work and enlistment then use their actual saved position in
+ * living-story.js. Elapsed time alone must never move a living recruit past unfinished work.
  */
 import { WILD, MUS_ROUTE, wildJourney } from './wild-route.js';
 

@@ -71,7 +71,7 @@ import { izolDeckHeight } from './izol-world.js';
 import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
 import { FERRY_NPC, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
 import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderLine, borderLineSaid, borderConversation } from './border-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderMusterEncounter, borderLine, borderLineSaid, borderConversation } from './border-chapter.js';
 import { createWestSuvalHost } from './west-suval-host.js';
 import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFTS, giftOwed, GIFT_LINES, CAP_LINES } from './aftermath-chapter.js';
 import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
@@ -88,7 +88,7 @@ import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide
 import { skillIconSVG } from './skill-icons.js';
 import { createSkillAnnouncement } from './skill-announcement.js';
 import { createQuestChoice } from './quest-choice.js';
-import { companyRoadStops } from './company-route.js';
+import { companyRoadStops, legacyCompanyProgress } from './company-route.js';
 // Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
 import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingGear, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
@@ -174,6 +174,13 @@ import { buildStatusList } from './build-status.js';
 import { newestStart, storyStart, startingSpot } from './story-starts.js';
 import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './story-chapters.js';
 import { createCampaign } from './campaign.js';
+import { createLivingStory } from './living-story.js';
+import { createCompanyRouteDriver } from './company-route-host.js';
+import { createLivingStoryHost } from './living-story-host.js';
+import { createLusciaCivilWarHost, LUSCIA_RECRUIT_NPCS, LUSCIA_DISPATCH_SITE } from './luscia-civil-war-host.js';
+import { runLivingDesktopChecks } from './living-story-desktop-checks.js';
+import { runRepublicDesktopChecks } from './luscia-republic-desktop-checks.js';
+import { createCompanyTransport } from './company-transport.js';
 import { clearLine, createAutopilot } from './autopilot.js';
 import { createBenAutopilot } from './ben-autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
@@ -201,7 +208,7 @@ import { SPELLS } from './sorcery.js';
 import { createMagic } from './magic.js';
 import { createMagicView } from './magic-view.js';
 import { createMagicUI } from './magic-ui.js';
-import { createRoadAmbush, AMBUSH, PARTIES, bodyPlace } from './road-ambush.js';
+import { createRoadAmbush, AMBUSH, PARTIES, ambushPartiesForRoster, bodyPlace } from './road-ambush.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, stepToward, lendFacing } from './bodies.js';
 import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './testing-travel.js';
@@ -239,6 +246,8 @@ function fail(error) {
   $('fatal-message').textContent = 'Please close and reopen the game. ' + error.message;
 }
 function init() {
+  const campaign=createCampaign();
+  const hasRoadProgress=()=>questStage>=1||campaign.view().imperialRecall;
   const canvas = $('world');
   renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.setSize(innerWidth,innerHeight);
@@ -454,6 +463,8 @@ function init() {
   for(const entry of TOWN_LIFE_NPCS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({...entry});}
   npcData.push(...RENA_NPCS.map(npc=>({...npc})));   // Lorn, Hesta, Applegarth's people and three more in Drent (src/rena-people.js)
   let playSeconds=0;
+  let living=null,livingRoutes=null,livingHost=null,republic=null,companyTransport=null;
+  const companyPlacements=()=> (reviewFrozen||reviewTarget)?company.placements(playSeconds):(livingRoutes?.placements()??company.placements(playSeconds));
   const mercenaryWeapons=new Map();
   const mercenaryHeld=npc=>mercenaryWeapons.get(npc.id)??{id:KIT_WEAPON_ITEM[mercenaryWeapon(npc.id)?.weapon]??null,durability:null};
   // Lakota is drawn as himself, hawk and all; the other nine wear the company's kit.
@@ -473,6 +484,7 @@ function init() {
   {const kept=new Set(trimCast(npcData,{mercenaryIds}).map(npc=>npc.id));
     for(const npc of npcData)if(!kept.has(npc.id))delete world.npcPositions[npc.id];
     npcData=npcData.filter(npc=>kept.has(npc.id));}
+  for(const person of LUSCIA_RECRUIT_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
@@ -549,10 +561,11 @@ function init() {
     // Town it put Ciarán 1.9 m from the traveler's horse, where two riders want 2.6.
     fileTaken.push({x:player.group.position.x,z:player.group.position.z,
       room:riding.mounted?RIDE_FILE.room:BODY.person*2});
-    for(const placement of company.placements(playSeconds)){const npc=npcById.get(placement.id);if(!npc)continue;
+    for(const placement of companyPlacements()){const npc=npcById.get(placement.id);if(!npc)continue;
     if(placement.phase==='with-traveler'){placeCompanion(npc,placement,fileOrder.indexOf(npc.id));continue;}
     if(npc.escorting&&!mateIsEscorting({mate:npc,questStage,mode,arriving:!!opening})){npc.escorting=false;npc.pace=undefined;}
-    npc.walkingWith=false;npc.mounted=false;npc.lift=0;
+    npc.walkingWith=false;npc.mounted=!!placement.mounted;npc.lift=npc.mounted?RIDE.seat.up:0;
+    npc.swimming=placement.swimming?{x:placement.x,z:placement.z,yaw:placement.yaw}:null;
     // **A man on the road walks at his own pace.** His placement creeps forward at his roster
     // pace - 1.28 m/s for Chris Scotwood - while the npc loop chased it at the default 2.4, so he
     // caught it up, stalled inside the loop's tenth-of-a-metre dead zone, waited for the road to
@@ -565,7 +578,7 @@ function init() {
       npc.stride=placement.pace;
       npc.pace=Math.hypot(placement.x-a.x,placement.z-a.z)>2?Math.max(2.4,placement.pace*2):placement.pace;}
     else{npc.stride=undefined;npc.pace=undefined;}
-    world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming'||fallen.has(placement.id);npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
+    world.npcPositions[placement.id]={x:placement.x,z:placement.z};npc.hidden=placement.phase==='coming'||companyTransport?.isInTransit(placement.id)||fallen.has(placement.id);npc.placement=placement;if(!npc.hidden)npc.actor.group.visible=Math.hypot(placement.x-player.group.position.x,placement.z-player.group.position.z)<170;}}
   /**
    * The companion, placed: two and a half metres behind the traveler's left shoulder, which is
    * inside the twelve the interpreter's aside needs and out of the reach of every site prompt.
@@ -597,7 +610,7 @@ function init() {
    */
   let companyMountedAt=-1e9,companyWasMounted=false;
   function companyUp(place){
-    if(!riding.owned)return false;
+    if(!riding.owned||!living?.snapshot().horses.some(h=>h.owner===fileOrder[place]&&h.claimed))return false;
     const since=elapsed-companyMountedAt,turn=staggerFor(Math.max(0,place));
     return riding.mounted?since>=turn:since<turn;}
   /**
@@ -743,7 +756,7 @@ function init() {
    * still each have their own ground, and none of them stands on the side's authored four.
    */
   function companionAllies(config){
-    if(!config?.center||TEACHING_FIGHTS.has(config.id))return [];
+    if(!config?.center||config.physicalCompany||TEACHING_FIGHTS.has(config.id))return [];
     const axis=config.retreatAxis==='x'?'x':'z',across=axis==='x'?'z':'x';
     const sign=config.retreatSign===-1?-1:1;
     // Only the room the encounter has left. This can never be the reason a fight does not start:
@@ -771,7 +784,8 @@ function init() {
       return {[axis]:config.center[axis]+sign*Math.max(near,Math.min(far,anchorAlong+back*(2.6+rank*2.6))),
         [across]:config.center[across]+overBase+((index%5)-2)*2.2+rank*1.1};
     };
-    const file=fileOrder.slice(0,room).map((id,index)=>{
+    const present=new Set([...(config.allies??[]),...(config.enemies??[])].map(a=>a.npcId??a.id));
+    const file=fileOrder.filter(id=>!present.has(id)&&(!isArmyBattle(config.id)||living.actor(id)?.allegiance===armySide())).slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id)||crime?.isDown(id)||crime?.owns(id))return null;
       // Jerry does not close: an ally whose craft is the bow stands off and looses (src/archery.js).
@@ -811,12 +825,13 @@ function init() {
    * (`borderLineSaid`, src/border-chapter.js), and nothing at all while the line is the eight it
    * has always been. The number he says is the number `borderEncounter` will lay.
    */
-  const lineSaid=()=>borderLineSaid(armySide(),borderLine(companyWalking()));
+  const lineSaid=()=>borderLineSaid(armySide(),Math.max(borderLine(Math.max(companyWalking(),borderMercenaries(armySide()).length)),borderMercenaries(armySide()==='empire'?'coalition':'empire').length));
   /**
    * What killed him, in the plainest words the fight has. The Marshal asks what happened and the
    * answer is built from this rather than invented - "At the Lauvel. Wolves, at night."
    */
   function enemyWordFor(encounterId){
+    if(encounterId==='caloss-rebels')return 'The rebel ambushers';
     if(encounterId===LUSCIA_WOLVES.id)return 'Wolves';
     if(encounterId===OGRE_ENCOUNTER.id)return 'The ogre at the pass stones';
     if(encounterId===BORDER_ENCOUNTER_ID)return 'The border battle';
@@ -1052,13 +1067,13 @@ function init() {
   inventory.refresh();combat.setWeaponReady(true);
   consumables=createConsumables({inventory,combat,onEvent(event){
     toast(`Recovered ${event.healed} health.`, `${INVENTORY_ITEMS[event.id]?.useVerb==='Drink'?'DRANK':'ATE'} ${(INVENTORY_ITEMS[event.id]?.eatName??'food').toUpperCase()}`);audio?.effect('success');updateHUD();
-    if(questStage>=1)saveRoad(false);
+    if(hasRoadProgress())saveRoad(false);
   }});
   const campEvents=[];
   const campcraft=createCampcraft({inventory,weapons,fireIds:world.firePits.map(f=>f.id),onEvent:event=>campEvents.push(event)});
   const worldMap=createWorldMap();
   // The chart is fogged: its hexes are charted as the traveler walks, and named ground is recorded (src/map-fog.js).
-  const mapFog=createMapFog({onEvent:event=>{if(event.type!=='subregion-found')return;toast(event.name,`CHARTED · ${event.region.toUpperCase()}`);refreshChart();if(questStage>=1)saveRoad(false);}});
+  const mapFog=createMapFog({onEvent:event=>{if(event.type!=='subregion-found')return;toast(event.name,`CHARTED · ${event.region.toUpperCase()}`);refreshChart();if(hasRoadProgress())saveRoad(false);}});
   let chartRevealed=false,fogClock=0;
   const woodlandLife=createWoodlandLife(scene,world);
   const woodlandSites=woodlandLife.state();
@@ -1111,7 +1126,7 @@ function init() {
     if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');
       toast(event.type==='row-reaped'?`${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
         event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
-    if(questStage>=1)saveRoad(false);}});
+    if(hasRoadProgress())saveRoad(false);}});
   let currentRow=null,currentAppleTree=null;
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
@@ -1140,28 +1155,43 @@ function init() {
       saveRoad(false);closeDialogue();conversation(npc);}});
     return true;
   }
-  /**
-   * **The company walks the Drent road whether the traveler does or not** (src/road-ambush.js).
-   * A party is settled the moment one of its men is level with the ambush; a man walking at the
-   * traveler's shoulder is not on that road at all and is left out of it, which is the whole of
-   * what saving Chris amounts to. Nothing is announced: a death out of sight is not news, and
-   * the point of the event is that you come up the road later and find him.
-   */
+  // Only people physically at the junction take part; watching from the road does not stop them.
+  let ambushPlayerHelped=false;
+  const roadParties=()=>ambushPartiesForRoster(roster);
+  function atRoadAmbush(id){
+    const a=living?.actor(id),n=npcById.get(id),p=n?.actor.group.position;
+    return !!a?.alive&&!fallen.has(id)&&!crime?.isDown(id)&&!crime?.controlsNpc(id)&&!!p
+      &&Math.hypot(p.x-AMBUSH.point.x,p.z-AMBUSH.point.z)<AMBUSH.reach;
+  }
+  function physicalAmbushCompany(){
+    return roster.filter(m=>atRoadAmbush(m.id)).map(m=>{
+      const p=npcById.get(m.id).actor.group.position,arms=armsOf(m.id);
+      return {id:m.id,name:m.name,kind:arms?.weapon==='bows'?'archer':'legionary',level:arms?.level??1,toughness:arms?.toughness??1,x:p.x,z:p.z,
+        model:{role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:false}}};
+    });
+  }
   function walkTheAmbush(){
-    const open=PARTIES.filter(party=>!ambush.state.settled.includes(party.id));
+    if(reviewFrozen||reviewTarget||mode!=='playing'||combat.state.phase==='active')return;
+    const open=roadParties().filter(party=>!ambush.state.settled.includes(party.id));
     if(!open.length)return;
-    const placements=company.placements(playSeconds);
     const withTraveler=new Set(companions.walking),dead=fallen.ids;
+    if(ambush.alive&&Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<35){
+      const arrived=open.some(p=>p.men.some(id=>!living.actor(id)?.withPlayer&&atRoadAmbush(id)));
+      if(arrived&&combat.startEncounter({...ambushEncounter,independent:true,physicalCompany:true,allies:physicalAmbushCompany()})){
+        ambushPlayerHelped=false;ambush.sprang();saveRoad(false);
+      }
+      return;
+    }
     let lost=false;
     for(const party of open){
-      const reached=party.men.some(id=>{const one=placements.find(place=>place.id===id);
-        return !!one&&one.phase!=='with-traveler'&&one.phase!=='coming'&&one.phase!=='landing'
-          &&(one.distance>=AMBUSH.distance||one.phase==='mustered');});
-      if(!reached)continue;
-      const told=ambush.reach(party.id,{withTraveler,dead});
+      const eligible=party.men.filter(id=>living.actor(id)?.alive&&!living.actor(id)?.withPlayer&&!withTraveler.has(id)&&!dead.includes(id));
+      if(!eligible.length||!eligible.every(atRoadAmbush))continue;
+      const told=ambush.reach(party.id,{withTraveler,dead,roster});
+      if(told?.met)for(const id of eligible){living.experience(id,'rebel-attack',{weight:-.35});
+        if(told.fallen.length&&!told.fallen.includes(id))living.experience(id,'comrade-betrayed',{weight:-.65});}
       for(const id of told?.fallen??[]){if(fallen.fall(id))lost=true;}
     }
-    if(lost){rebuildCompany();placeMercenaries();saveRoad(false);}
+    if(lost){for(const id of fallen.ids)if(living.actor(id))living.setAlive(id,false,{position:bodyPlace(id,ambushGround())});rebuildCompany();placeMercenaries();saveRoad(false);}
   }
   /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
   function longWayNext(){
@@ -1235,7 +1265,7 @@ function init() {
   const companionName=()=>npcById.get(landingMateId())?.name??mercenaryById(landingMateId())?.name??'Chris Scotwood';
   // How Corvan's field register reads when he opens it: who of the eleven has already passed his
   // desk, and how many boats are still out. The long road's rule, in the army's own arithmetic.
-  const registerView=()=>{const desk=company.stops.find(stop=>stop.id==='induction')?.distance??0,placed=company.placements(playSeconds);
+  const registerView=()=>{const desk=company.stops.find(stop=>stop.id==='induction')?.distance??0,placed=companyPlacements();
     return {signed:placed.filter(p=>p.phase==='mustered'||((p.phase==='walking'||p.phase==='stopped')&&p.distance>=desk)).length,
       atSea:placed.filter(p=>p.phase==='coming').length};};
   // Every name anybody in this world is called, so a name stays a name in every tongue.
@@ -1977,10 +2007,19 @@ function init() {
   }
   const roadVerges=createRoadVerges(scene,world);
   let acornQuest=createAcornQuest();
-  const journey=createJourney({inventory,weapons,skills});
-  const campaign=createCampaign();
+  const journey=createJourney({inventory,weapons,skills,sharedBridge:()=>living?{completed:living.bridge().status==='complete'}:null});
+  living=createLivingStory({roster,seed:ambushSeed});
   // Luscia: the chapter at the Lauvel, Nothom's people, and Smiths on its square.
-  const luscia=createLusciaChapter({inventory});
+  const luscia=createLusciaChapter({inventory,assignment:{
+    accept:()=>{livingHost.reportPlayer();const r=living.acceptSatchel('player');if(r.ok)toast(livingHost.satchelNote(),'COURIER DEADLINE \u00b7 TEN ACTIVE MINUTES');return r;},
+    take:()=>{const allowed=republic?.canTake();if(allowed?.ok===false)return allowed;
+      if(!inventory.add('courier-satchel',1))return {ok:false,reason:'Make room for the courier satchel.'};
+      const q=living.satchel(),r=living.takeSatchel('player',{from:q.carrier??q.location});
+      if(!r.ok)inventory.remove('courier-satchel',1);return r;},
+    deliver:()=>{if(!inventory.has('courier-satchel'))return {ok:false,reason:'You no longer carry the courier satchel.'};
+      const r=living.deliverSatchel('player',{side:living.player().allegiance});
+      if(r.ok){inventory.remove('courier-satchel',1);inventory.add('copper-piece',20);}return r;}
+  }});
   // The burying at the Lauvel (src/lauvel-burying.js): Sela calls to whoever comes up the road,
   // and the valley is short-handed at every part of putting its dead in the ground.
   const burying=createBurying();let selaVisits=0;
@@ -2045,7 +2084,7 @@ function init() {
     const off=bearing=>Math.abs(Math.atan2(Math.sin(bearing-prefer),Math.cos(bearing-prefer)));
     return open.reduce((a,b)=>(off(b.yaw)<off(a.yaw)?b:a));}
   const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
-  const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned});
+  const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned,onFoot:()=>!!living&&!living.horseFor('player')});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
   // The toll at the Amod pass stones (src/amod-ogre.js). The purse is the host's;
@@ -2064,7 +2103,7 @@ function init() {
     veil:(value,caption)=>{const sheet=$('crossing');sheet.classList.toggle('hidden',value<=0);sheet.style.opacity=String(value);$('crossing-caption').textContent=value>.6?caption:'';},
     boat:(x,z,heading)=>world.placeFerryBoat(x,z,heading),
     stand:(side,point)=>{world.npcPositions[FERRY_NPC.id]={x:point.x,z:point.z};const boatman=npcById.get(FERRY_NPC.id);if(boatman){boatman.actor.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);boatman.actor.group.rotation.y=point.yaw;}},
-    save:()=>{if(!testingEnabled&&questStage>=1)saveRoad(false);},
+    save:()=>{if(!testingEnabled&&hasRoadProgress())saveRoad(false);},
     toast,
   });
   const inAftermathFight=()=>!!aftermath.spec&&combat.state.encounterId===aftermath.spec.encounterId;
@@ -2166,7 +2205,7 @@ function init() {
    * A *ridden* horse is no obstacle: its man is already a body, at a rider's own footprint.
    */
   function companyHorseGround(){
-    const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,
+    const rule=companyHorses({owned:riding.owned,mounted:riding.mounted,allocations:living?.snapshot().horses??[],
       walking:fileOrder.filter(id=>npcById.get(id)?.walkingWith)});
     const picket=picketSpots(riding.horse,rule.ids,(x,z)=>canStand(x,z,world,RIDE.radius));
     // A man is not inside a horse when his body and its body do not overlap.
@@ -2194,6 +2233,9 @@ function init() {
       actor.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);actor.group.rotation.y=spot.yaw;
       actor.group.visible=Math.hypot(spot.x-player.group.position.x,spot.z-player.group.position.z)<220;
       if(actor.group.visible)actor.animate(elapsed,0,true,{});}
+    for(const p of companyPlacements())if(p.mounted&&!here.has(p.id)){
+      const npc=npcById.get(p.id);if(!npc||npc.hidden||npc.fallen)continue;const horse=companyHorseFor(p.id),at=npc.actor.group.position,turn=npc.actor.group.rotation.y;
+      horse.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);horse.group.rotation.y=turn;horse.group.visible=npc.actor.group.visible;horse.ridden=true;horse.animate(elapsed,p.walking?p.pace:0,true,{grazing:false});here.add(p.id);}
     for(const [id,actor] of companyHorseActors)if(!here.has(id)){actor.group.visible=false;actor.ridden=false;}}
   // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position,BODY.traveler,'traveler'),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
@@ -2205,7 +2247,7 @@ function init() {
     else{if(g.parent===scene)offStage.add(g);if(m&&m.parent===scene)offStage.add(m);}}
   const liveBody=(id,position,r)=>({id,r,get x(){return position.x;},get z(){return position.z;}});
   function gatherBodies(){
-    const list=[liveBody('traveler',player.group.position,riding.mounted?RIDE.radius:BODY.traveler)];
+    const list=living?.recall().status==='passenger'?[]:[liveBody('traveler',player.group.position,riding.mounted?RIDE.radius:BODY.traveler)];
     const fighting=combatPresence(combat.state);
     // Keep positions live: later movers must see where an earlier mover is now.
     for(const npc of npcData){
@@ -2235,7 +2277,7 @@ function init() {
     targetDistance=Math.max(4,targetDistance-RIDE.camera.back);return true;
   }
   function toggleMount(){
-    if(mode!=='playing'||!riding.owned)return;
+    if(mode!=='playing'||!riding.owned||living.recall().status==='passenger')return;
     if(riding.mounted){stepDown();return;}
     const result=riding.mount(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'});
     if(!result.ok){toast(result.reason,'YOUR HORSE');return;}
@@ -2243,7 +2285,7 @@ function init() {
     targetDistance=Math.min(19,targetDistance+RIDE.camera.back);stopInput();audio?.effect('success');
   }
   function whistleHorse(){
-    if(mode!=='playing'||!riding.owned||riding.mounted)return;
+    if(mode!=='playing'||!riding.owned||riding.mounted||living.recall().status==='passenger')return;
     const result=riding.whistle(player.group.position);toast(result.ok?(result.far?'A long whistle. He will find you.':'You whistle, and somewhere a bridle jingles.'):result.reason,'YOUR HORSE');
   }
   // Birding: Lakota's lesson, the feeder errand, and looking properly at a bird.
@@ -2259,7 +2301,7 @@ function init() {
       if(!cup.ok){openDialogue(lakota,['You have barely finished the last one. Sit a while first; the hawk is good company, if you do not look her in the eye.'],null,'Back to the road');return cup;}
       const healed=combat.heal(cup.healing);updateHUD();audio?.effect('success');
       openDialogue(lakota,[...LAKOTA_MAKES_A_CUP],null,'Back to the road',{onComplete:()=>toast(healed>0?`Recovered ${healed} health. You could ask him how he makes it.`:'You feel better for it. You could ask him how he makes it.','LAKOTA\u2019S HOT CHOCOLATE')});
-      if(questStage>=1)saveRoad(false);return cup;}
+      if(hasRoadProgress())saveRoad(false);return cup;}
     if(action==='learn-hot-chocolate'){const learned=cooking.learn('hot-chocolate');if(!learned.ok){toast(learned.reason,'COOKING');return learned;}
       inventory.add('chocolate',1);inventory.add('milk',1);inventory.refresh();refreshSkillsSheet();audio?.effect('success');
       openDialogue(lakota,[...LAKOTA_TEACHES_THE_CUP],null,'Back to the road');
@@ -2796,7 +2838,7 @@ function init() {
   function ridingAct(action){
     const hitch=LUMBER_TOWN_STABLE.hitch;
     if(action==='fetch-horse'){riding.place(hitch,hitch.yaw);placeOwnHorse();toast('A stable boy goes out with a halter. Your horse is back in the yard.','NOTHOM · THE STABLE YARD');saveRoad(false);return {ok:true};}
-    const result=redeemHorse({inventory,riding,hitch});if(!result.ok){toast(result.reason,'THE STABLE YARD');return result;}
+    const result=redeemHorse({inventory,riding,hitch,story:living});if(!result.ok){toast(result.reason,'THE STABLE YARD');return result;}
     placeOwnHorse();inventory.refresh();refreshQuest();audio?.effect('success');toast('A bay gelding, saddled, and yours. G mounts and dismounts · Shift canters · H whistles him up.','THE ARMY’S HORSE');saveRoad(false);return result;
   }
   const beggar=createBeggar({waypoints:TOWN_BEGGAR_ROUTE});
@@ -2849,24 +2891,24 @@ function init() {
   drent=createDrentHost({world,npcById,inventory,skills,combat,position:()=>player.group.position,mode:()=>mode,
     trained:()=>questStage>=QUEST_DONE,openDialogue,closeDialogue,openQuestChoice:questChoice.open,toast,onTrack:selectQuest,getTracked:()=>questTracker.selectedId,
     stopAutoplay:()=>{if(autopilot.active)stopAutopilot('Choose which quest to follow.');},
-    onChange:()=>{refreshSkillsSheet();refreshQuest();if(mode==='journal')refreshChart();if(questStage>=1)saveRoad(false);}});
+    onChange:()=>{refreshSkillsSheet();refreshQuest();if(mode==='journal')refreshChart();if(hasRoadProgress())saveRoad(false);}});
 
-  const lawChanged=()=>{updateHUD();if(questStage>=1)saveRoad(false);};
+  const lawChanged=()=>{updateHUD();if(hasRoadProgress())saveRoad(false);};
   corpseHost=createCorpseHost({scene,world,inventory,getPosition:()=>player.group.position,
     openDialogue:(npc,lines,choices)=>openDialogue(npc,lines,null,'Continue',{choices,noWayfinding:true}),closeDialogue,toast,
     getNpc:id=>{const npc=npcById.get(id)??crime?.person(id);return npc?{...npc,corpseDead:crime?.health(id)?.status==='downed'?false:undefined}:null;},
     ownsCompanionWeapon:id=>!!mercenaryById(id),
     isSettlement:p=>world.landmarks.some(place=>/Tidehaven|Nothom|Solis|Lumber Town/.test(place.name)&&Math.hypot(p.x-place.x,p.z-place.z)<55),
     onLoot:event=>{for(const item of event.items)if(WEAPON_TYPES[item.id]&&event.previousCounts?.[item.id]===0)weapons.setCondition(item.id,WEAPON_TYPES[item.id].maxDurability);inventory.refresh();},
-    onChange:()=>{if(questStage>=1&&corpseHost)saveRoad(false);}});
+    onChange:()=>{if(hasRoadProgress()&&corpseHost)saveRoad(false);}});
   crime=createCrimeHost({world,npcById,additionalPeople:()=>[puckNpc,edNpc,boscoNpc,batmanNpc,...horseLinePeople],inventory,combat,position:()=>player.group.position,
     openDialogue:(npc,lines,event,label,options)=>openDialogue(npc,lines,event,label,{...options,noWayfinding:true}),closeDialogue,toast,
     canRevive:npc=>!fallen.has(npc.id)&&(npc.id!=='killian'||!drent.state().killianDefeated),
     safeToInterrupt:()=>mode==='playing'&&!reviewFrozen&&!developer.active,
     stopAutoplay:()=>{if(autopilot.active)stopAutopilot('The watch is stopping you.');},onChange:lawChanged,
-    onDeath:payload=>corpseHost.captureNpc({...payload,npcId:payload.id,dead:payload.permanent,model:{role:payload.npc.modelRole??payload.npc.id,tunic:payload.npc.color,skin:payload.npc.skin,look:payload.npc.look,...payload.npc.model,...(payload.id===BOSCO.id?{dye:bosco.dye.colour}:{})},yaw:payload.npc.actor.group.rotation.y}),
+    onDeath:payload=>{if(payload.permanent){republic?.npcKilled(payload.id);if(living.actor(payload.id)){living.setAlive(payload.id,false,{position:payload.npc.actor.group.position});fallen.fall(payload.id);}}return corpseHost.captureNpc({...payload,npcId:payload.id,dead:payload.permanent,model:{role:payload.npc.modelRole??payload.npc.id,tunic:payload.npc.color,skin:payload.npc.skin,look:payload.npc.look,...payload.npc.model,...(payload.id===BOSCO.id?{dye:bosco.dye.colour}:{})},yaw:payload.npc.actor.group.rotation.y});},
     onRevive:({id})=>corpseHost.reviveNpc(id),
-    onJail:({seconds})=>{playSeconds+=seconds;corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
+    onJail:({seconds})=>{living.advance(seconds);playSeconds=living.clock();corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
   magic=createMagic({skills,inventory,weapons,combat,world,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
@@ -2874,18 +2916,18 @@ function init() {
       .map(npc=>({id:npc.id,name:npc.name,role:npc.role,...npc.actor.group.position,hp:crime.health(npc).hp,r:npc.horse?BODY.horse:npc.dog?BODY.dog:npc.cat?BODY.cat:npc.ogre?BODY.ogre:BODY.person,team:'civilian'})),
     damageWorld:(body,damage)=>crime.assault({npcId:body.npcId??body.id,damage,source:'player'}),
     onEvent:event=>{if(event.type==='spell-learned'){inventory.refresh();refreshSkillsSheet();toast(`${SPELLS[event.id].name} learned. I opens equipment; equip a wand or staff, then Z casts. N changes spells.`, 'SPELL LEARNED');}
-      if(event.type==='mind-read'){toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
+      if(event.type==='mind-read'){republic?.mindRead?.(event);toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
       if(event.type==='spell-impact'&&event.managed){crime.handleImpact({type:'melee-impact',id:event.id,source:'player',range:0,combatantIds:[...combat.state.enemies,...combat.state.allies].map(actor=>actor.id),
         hits:[{id:event.targetId,npcId:event.targetNpcId,team:event.team,hp:event.hp,maxHp:event.maxHp,spared:event.spared}]});}
     }});
   const magicView=createMagicView({scene,magic});
   const magicUI=createMagicUI({container:document.body,magic,onCast:castSpell,onSelect:()=>saveRoad(false)});
-  function castSpell(){if(mode!=='playing'||inWater||riding.mounted)return false;
+  function castSpell(){if(mode!=='playing'||inWater||riding.mounted||living.recall().status==='passenger')return false;
     const result=magic.cast(undefined,{target:currentNPC,yaw:player.group.rotation.y});
     if(!result.ok)toast(result.reason,'SORCERY');return result.ok;}
   const beginEncounter=combat.startEncounter;
   combat.startEncounter=(...args)=>{
-    const config=args[0],canRecover=combat.state.phase!=='active'&&combat.state.player.hp>0&&questStage>=1&&!config?.bout;
+    const config=args[0],canRecover=combat.state.phase!=='active'&&combat.state.player.hp>0&&hasRoadProgress()&&!config?.bout;
     const before=canRecover?roadSnapshot():null;
     const started=beginEncounter(...args);
     if(started&&before){
@@ -2895,8 +2937,136 @@ function init() {
       if(sessionCheckpoint.save(before).ok)recoveryInfo={testing:testingEnabled,encounterId:combat.state.encounterId};
     }
     if(started&&combat.state.encounterId!==LAW_ENCOUNTER_ID)for(const actor of [...combat.state.enemies,...combat.state.allies]){
-      const fraction=crime.healthFraction(actor.npcId??actor.id);if(fraction<1)actor.hp=Math.min(actor.hp,Math.ceil(actor.maxHp*fraction));}
+      const fraction=Math.min(crime.healthFraction(actor.npcId??actor.id),(living?.actor(actor.npcId??actor.id)?.health??100)/100);if(fraction<1)actor.hp=Math.min(actor.hp,Math.ceil(actor.maxHp*fraction));}
     return started;};
+
+
+  republic=createLusciaCivilWarHost({world,npcById,combat,position:()=>player.group.position,mode:()=>mode,
+    living:()=>living,luscia,openDialogue,closeDialogue,toast,takeSatchel:()=>lusciaAct('take-courier-satchel'),
+    reportPlayer:()=>livingHost.reportPlayer(),mercenaryName:id=>npcById.get(id)?.name??id,
+    onImperialOnward:({completedBy,finished})=>{luscia.syncSharedCompletion(completedBy,{finished});campaign.releaseToMuster();moros.start();refreshQuest();},
+    onRepublicJoined:origin=>{const r=campaign.joinRepublic({origin:'luscia'});if(!r.ok)return r;
+      border.joinRepublic();living.setPlayerSide('coalition',origin);
+      stopAutopilot();refreshQuest();saveRoad(false);return r;},
+    onImperialCommitted:()=>{if(campaign.view().side!=='coalition')living.setPlayerSide('empire','luscia-investigation');},
+    onImperialCompleted:()=>{const data=campaign.snapshot();data.trust.empire=Math.min(100,data.trust.empire+12);campaign.restore(data);},
+    isUnavailable:id=>crime?.health(id)?.status==='dead'?'dead':living?.actor(id)?.detained?'arrested':null,
+    stopAutoplay:()=>stopAutopilot(),onTrack:selectQuest,
+    onChange:()=>{refreshQuest();inventory.refresh();if(hasRoadProgress())saveRoad(false);}});
+  livingHost=createLivingStoryHost({story:()=>living,inventory,npcById,combat,position:()=>player.group.position,
+    route:()=>livingRoutes,riding,openDialogue,closeDialogue,toast,getMode:()=>mode,stopInput:()=>{stopAutopilot();stopInput();},
+    save:()=>{if(hasRoadProgress())saveRoad(false);},refresh:refreshQuest,
+    onBridge:()=>syncJourney(),onRefusal:()=>{stopAutopilot();refreshQuest();},
+    onTrust:amount=>{const data=campaign.snapshot();data.trust.empire=Math.max(0,Math.min(100,data.trust.empire+amount));campaign.restore(data);},
+    onMuster:()=>{campaign.acceptImperialRecall();if(luscia.state.started&&!luscia.state.complete)luscia.syncSharedCompletion('the army');
+      moros.start();for(const action of ['admit-to-camp','join-muster','claim-legion-horse'])if(moros.availableActions().some(a=>a.id===action&&a.enabled))morosAct(action);
+      refreshQuest();toast('You have reached the muster. Report to the Marshal for the advance.','THE MOROS MUSTER');}});
+  const routeFeet=new Map();let passengerHiddenByFerry=false;
+  function clearApproach(point,offset=2.2){
+    if(!point)return null;
+    for(const [x,z]of [[point.x+offset,point.z],[point.x-offset,point.z],[point.x,point.z+offset],[point.x,point.z-offset]])
+      if(canStand(x,z,world,BODY.person))return {x,z};
+    return landingSpot(point,(x,z)=>canStand(x,z,world,BODY.person))??{x:point.x,z:point.z};
+  }
+  function calossExit(){const bridge=world.journeySites['bridge-repair'],road=world.paths[0];
+    const i=road.reduce((best,p,n)=>Math.hypot(p.x-bridge.x,p.z-bridge.z)<Math.hypot(road[best].x-bridge.x,road[best].z-bridge.z)?n:best,0);
+    const a=road[Math.max(0,i-1)],b=road[Math.min(road.length-1,i+1)],length=Math.hypot(b.x-a.x,b.z-a.z)||1;
+    return {x:bridge.x+(b.x-a.x)/length*19,z:bridge.z+(b.z-a.z)/length*19};}
+  function resetLivingStory(saved=null){
+    living=createLivingStory({roster,seed:ambushSeed,saved:saved?.livingStory,legacy:saved&&!saved.livingStory?{
+      playSeconds:saved.playSeconds??0,actors:legacyCompanyProgress({placements:company.placements(saved.playSeconds??0),roster,road:world.paths[0],ambush:AMBUSH.point,bridgeExit:calossExit(),relay:world.npcPositions['relay-clerk'],playerPosition:saved.position}),
+      playerMusterComplete:!!saved.moros?.horseClaimed||saved.campaign?.completed?.includes('moros-camp'),
+      deadIds:saved.fallen?.ids??[],bridgeComplete:saved.journey?.bridgeRepaired,satchelComplete:saved.luscia?.returned,
+      satchelCarried:saved.luscia?.satchelTaken&&!saved.luscia?.returned,playerHorse:saved.riding?.owned,
+      horseToken:saved.inventory?.some(i=>i.id==='horse-token'),playerSide:saved.campaign?.side??'empire'
+    }:null});
+    if(saved&&!saved.livingStory&&saved.luscia?.satchelTaken&&!saved.luscia?.returned&&!inventory.has('courier-satchel'))inventory.add('courier-satchel',1);
+    if(saved&&!saved.livingStory&&saved.moros?.mustered){living.arrivePlayerMuster(living.player().allegiance);if(saved.border?.marched)living.departMuster(living.player().allegiance);}
+    playSeconds=living.clock();livingHost?.restore();if(!saved)republic?.restore();resetLivingRoutes();
+  }
+  function restoreLivingFeet(){
+    for(const a of living.actors()){const npc=npcById.get(a.id);if(!npc||!a.position)continue;
+      npc.actor.group.position.set(a.position.x,world.heightAt(a.position.x,a.position.z),a.position.z);
+      world.npcPositions[a.id]={x:a.position.x,z:a.position.z};}
+    livingRoutes?.clear();updateLivingRoutes(0);
+  }
+  function resetLivingRoutes(){
+    routeFeet.clear();
+    const musterSpots={};
+    for(const [side,id] of [['empire',MOROS_LEGATE_ID],['coalition','solis-captain']]){
+      const center=world.npcPositions[id],spots=[];
+      for(let radius=3;radius<=40&&spots.length<roster.length;radius+=3.2)for(let n=0;n<24&&spots.length<roster.length;n++){
+        const p={x:center.x+Math.cos(n*Math.PI/12)*radius,z:center.z+Math.sin(n*Math.PI/12)*radius};
+        if(canStand(p.x,p.z,world,RIDE.radius)&&spots.every(q=>Math.hypot(p.x-q.x,p.z-q.z)>2.6)
+          &&Object.entries(world.npcPositions).every(([id,q])=>living.actor(id)||Math.hypot(p.x-q.x,p.z-q.z)>RIDE.radius+BODY.person+.25))spots.push(p);
+      }musterSpots[side]=Object.fromEntries(roster.map((a,i)=>[a.id,spots[i]??clearApproach(center)]));
+    }
+    const assaultSpots=Object.fromEntries(['empire','coalition'].map(side=>[side,Object.fromEntries(roster.map((a,i)=>{
+      const point={x:BORDER_ARENA.center.x+(i%5-2)*3.6,z:BORDER_ARENA.center.z+(side==='empire'?1:-1)*(12+Math.floor(i/5)*4)};
+      return [a.id,landingSpot(point,(x,z)=>canStand(x,z,world,RIDE.radius))??point];}))]));
+    const bridge=world.journeySites['bridge-repair'],bridgeIndex=world.paths[0].reduce((best,p,i,all)=>Math.hypot(p.x-bridge.x,p.z-bridge.z)<Math.hypot(all[best].x-bridge.x,all[best].z-bridge.z)?i:best,0);
+    const road=world.paths[0],before=road[Math.max(0,bridgeIndex-1)],after=road[Math.min(road.length-1,bridgeIndex+1)];
+    const dx=after.x-before.x,dz=after.z-before.z,len=Math.hypot(dx,dz)||1,ux=dx/len,uz=dz/len;
+    companyTransport=createCompanyTransport({story:living,world,
+      readActor:id=>{const n=npcById.get(id);return n?{...n.actor.group.position,busy:!!n.combatPosition}:null;},
+      onEvent:e=>{const npc=npcById.get(e.id);if(!npc)return;
+        if(e.type==='company-ferry-departed'){npc.hidden=true;if(living.recall().status==='passenger'&&living.recall().courier===e.id){player.group.visible=false;toast('The courier boards Jess’s ferry with you and the horse.','CROSSING THE STILLS');}}
+        if(e.type==='company-ferry-arrived'){const p=e.position;npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);npc.hidden=false;world.npcPositions[e.id]={x:p.x,z:p.z};
+          if(living.recall().status==='passenger'&&living.recall().courier===e.id){player.group.position.copy(npc.actor.group.position);player.group.visible=true;settleCamera();}
+          livingRoutes?.clear();}}});
+    livingRoutes=createCompanyRouteDriver({story:living,roster,paths:world.paths,travelRoute:(id,from,to,options)=>companyTransport.chooseRoute(id,from,to,{...options,passenger:living.recall().courier===id&&living.recall().status==='passenger'}),
+      sites:{musterSpots,assaultSpots,landingMateId:landingMateId(),harbor:clearApproach(world.pierHead),instructor:clearApproach(INSTRUCTOR_STAND),training:clearApproach(world.training,3),
+        ambush:{...AMBUSH.point},chip:clearApproach(world.npcPositions['crossing-keeper']),bridge:clearApproach(world.npcPositions['crossing-keeper'],1.5),
+        bridgeExit:{x:bridge.x+ux*19,z:bridge.z+uz*19},
+        swim:[{x:bridge.x-ux*18+uz*15,z:bridge.z-uz*18-ux*15},{x:bridge.x+ux*18+uz*15,z:bridge.z+uz*18-ux*15}],
+        materials:Object.values(world.journeySites).filter(p=>p.type==='sticks'&&p.region<=3),
+        materialReserve:{id:'chip-repair-timber',...clearApproach(world.npcPositions['crossing-keeper']),quantity:3},
+        relay:clearApproach(world.npcPositions['relay-clerk']),returnRelay:clearApproach(world.npcPositions['relay-clerk']),
+        republicanRelay:clearApproach(world.npcPositions['timber-stall']),hut:clearApproach(LUSCIA_SITES['courier-satchel']),
+        imperialMuster:clearApproach(world.npcPositions[MOROS_LEGATE_ID]),republicanMuster:clearApproach(world.npcPositions['solis-captain']),ostler:clearApproach(LUMBER_TOWN_STABLE.stand)},
+      readActor:id=>{const npc=npcById.get(id);if(!npc)return null;const p=npc.combatPosition??npc.actor.group.position;
+        return {x:p.x,z:p.z,yaw:npc.actor.group.rotation.y,health:Math.max(.01,Math.min(living.actor(id)?.health??100,100*(crime?.healthFraction(id)??1),...([...combat.state.allies,...combat.state.enemies].filter(a=>(a.npcId??a.id)===id).map(a=>100*a.hp/a.maxHp)))),
+          busy:companyTransport?.isInTransit(id)||!!npc.combatPosition||crime?.controlsNpc(id)||activeDialogue?.npc?.id===id||border.view().stage==='march'&&living.actor(id)?.stage==='mustered'};},
+      move:(id,at,target,amount,{swimming,mounted})=>{let p=routeFeet.get(id);if(!p){p={x:at.x,z:at.z};routeFeet.set(id,p);}p.x=at.x;p.z=at.z;
+        if(swimming){const dx=target.x-p.x,dz=target.z-p.z,d=Math.hypot(dx,dz)||1;moveCharacter(p,dx/d*Math.min(amount,d),dz/d*Math.min(amount,d),world,BODY.person,{swimming:true});}
+        else stepToward(p,target,amount,world,mounted?RIDE.radius:BODY.person,id.length%2?1:-1);return {...p};},
+      isAlive:id=>!fallen.has(id)&&!crime?.isDown(id),
+      ambushResolved:id=>!ambush.alive||ambush.state.settled.includes(roadParties().find(p=>p.men.includes(id))?.id),
+      getMaterials:()=>[...Object.values(world.journeySites).filter(p=>p.type==='sticks'&&p.region<=3&&!journeyGathered.has(p.id)),
+        ...woodlandLife.state().sticks.filter(p=>!p.collected&&Math.hypot(p.x-bridge.x,p.z-bridge.z)<120&&(p.x-bridge.x)*ux+(p.z-bridge.z)*uz<-10).map(p=>({...p,quantity:1}))],
+      collectMaterial:(_id,item,count)=>{if(item==='chip-repair-timber')return count;
+        if(!world.journeySites[item])return woodlandLife.collectStick(item)?1:0;
+        if(journeyGathered.has(item))return 0;journeyGathered.add(item);world.setJourneySiteState(item,true);return count;},
+      onEvent:event=>{livingHost?.routeEvent(event);if(event.type==='npc-ambush-arrived')walkTheAmbush();
+        if(event.type==='npc-hut-arrived')republic?.npcHutArrived(event.id);
+        if(event.type==='npc-bridge-complete')syncJourney();
+        if(event.type==='npc-satchel-delivered')refreshQuest();}
+    });
+  }
+  let droppedSatchelNear=false;
+  const droppedSatchel=new THREE.Mesh(new THREE.BoxGeometry(.7,.35,.5),new THREE.MeshLambertMaterial({color:0x8b5d35}));droppedSatchel.visible=false;scene.add(droppedSatchel);
+  function refreshDroppedSatchel(){const q=living.satchel(),p=q.position;
+    droppedSatchel.visible=!!p&&!q.carrier&&q.status!=='delivered';droppedSatchelNear=false;
+    if(droppedSatchel.visible){droppedSatchel.position.set(p.x,world.heightAt(p.x,p.z)+.22,p.z);droppedSatchelNear=Math.hypot(p.x-player.group.position.x,p.z-player.group.position.z)<2.7;}}
+  function takeDroppedSatchel(){const q=living.satchel();if(!droppedSatchelNear||q.carrier)return false;
+    if(!inventory.add('courier-satchel',1))return false;const r=living.takeSatchel('player',{from:q.location});
+    if(!r.ok){inventory.remove('courier-satchel',1);toast(r.reason,'COURIER SATCHEL');return false;}
+    luscia.adoptCarriedSatchel({verified:true});inventory.refresh();refreshQuest();saveRoad(false);refreshDroppedSatchel();return true;}
+  function updateLivingRoutes(dt){
+    if(!livingRoutes||reviewFrozen||reviewTarget)return;
+    refreshDroppedSatchel();
+    const active=['playing','fishing'].includes(mode)&&!reviewFrozen;
+    companyTransport?.update(dt,{paused:!active});
+    const ferryPassenger=living.recall().status==='passenger'&&companyTransport?.isInTransit(living.recall().courier);
+    if(ferryPassenger){player.group.visible=false;passengerHiddenByFerry=true;}else if(passengerHiddenByFerry){player.group.visible=true;passengerHiddenByFerry=false;}
+    livingRoutes.update(active?dt:0,{paused:!active,player:player.group.position,withPlayer:companions.walking,
+      legacyPlacements:company.placements(playSeconds),trainedIds:landingQuest.view(playSeconds).trained?[landingMateId()]:[],
+      playerSafe:mode==='playing'&&combat.state.phase!=='active'});
+    for(const p of livingRoutes.placements())if(companyTransport?.isInTransit(p.id)){const n=npcById.get(p.id);if(n)n.hidden=true;}
+    const passenger=livingRoutes.passengerPose();if(passenger&&living.recall().status==='passenger'){
+      const p=player.group.position;p.set(passenger.x-Math.sin(passenger.yaw)*.7,world.heightAt(passenger.x,passenger.z)+RIDE.seat.up,passenger.z-Math.cos(passenger.yaw)*.7);
+      player.group.rotation.y=passenger.yaw;grounded=true;verticalSpeed=0;}
+  }
 
   const journeyBrowser=createJourneyBrowser({mount:$('journey-browser'),onTrack:selectQuest,
     onAction:action=>{if(action==='satchel')toggleInventory();}});
@@ -2935,7 +3105,7 @@ function init() {
       :levelWords(regionLevel(region.name))?`${levelWords(regionLevel(region.name)).toUpperCase()}${info?` · ${info.faction.name.toUpperCase()}`:''}`
       :info?info.faction.name.toUpperCase():'';
     $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
-    if(questStage>=1)saveRoad(false);
+    if(hasRoadProgress())saveRoad(false);
     if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
   }
   function renderMapTutorial(){
@@ -2955,7 +3125,7 @@ function init() {
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);
   }
   // The main quest as the player reads it: numbered chapters (src/story-chapters.js).
-  const storyState=()=>({questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side,home:atSideSeat(campaign.view().side,player.group.position,aftermath.view().complete?aftermath.view().variant:null)});
+  const storyState=()=>({onwardEntry:!!campaign.snapshot().entryOrigin,questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side,home:atSideSeat(campaign.view().side,player.group.position,aftermath.view().complete?aftermath.view().variant:null)});
   let chapterShown=0;
   function refreshChapter(){
     const state=storyState(),progress=chapterProgress(state),current=progress.current;
@@ -2985,14 +3155,17 @@ function init() {
     const reached=current?current.number:chapterCount+1;
     if(chapterShown&&reached>chapterShown){
       const closed=progress.done.at(-1);
-      if(closed)toast(chapterTitle(closed,state),`CHAPTER ${closed.number} COMPLETE · J FOR THE JOURNAL`);
+      if(closed&&!(state.onwardEntry&&closed.number===1&&!state.luscia.started))toast(chapterTitle(closed,state),`CHAPTER ${closed.number} COMPLETE · J FOR THE JOURNAL`);
     }
     chapterShown=reached;
   }
   function refreshMainQuest() {
-    if(questStage===QUEST_DONE){
-      journey.start();const quest=journey.view();
-      if(quest.complete&&campaign.view().chapterId==='luscia-aftermath')luscia.start();
+    if(living?.recall().status==='passenger'){$('quest-title').textContent='Ride to the Moros muster';$('quest-detail').textContent=`${npcById.get(living.recall().courier)?.name??'The courier'} is taking you to the army. You can look around and open your journal during the ride.`;$('quest-step').textContent='RIDING WITH THE COURIER';return;}
+    if(living?.player().allegiance==='coalition'&&border.state.started&&!border.state.complete){const v=border.view();$('quest-title').textContent=v.title;$('quest-detail').textContent=v.detail;$('quest-step').textContent=v.kicker;return;}
+    if(living?.player().imperialRefused&&living.player().allegiance!=='coalition'){$('quest-title').textContent='Your own road';$('quest-detail').textContent='You refused the Imperial campaign. Other quests remain open. Republican recruitment is possible through the living, free Nothom operative.';$('quest-step').textContent='IMPERIAL CAMPAIGN REFUSED';return;}
+    if(questStage===QUEST_DONE||campaign.snapshot().entryOrigin){
+      if(questStage===QUEST_DONE)journey.start();const quest=journey.view();
+      if(quest.complete&&campaign.view().chapterId==='luscia-aftermath'){luscia.start();if(living.satchel().carrier==='player'&&inventory.has('courier-satchel'))luscia.adoptCarriedSatchel({verified:true});}
       if(border.state.complete&&!aftermath.state.variant&&AFTERMATH_VARIANTS[campaign.view().chapterId])aftermath.start(campaign.view().chapterId);
       refreshChapter();
       if(aftermath.state.variant){const chapter=aftermath.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=aftermathBuilt(aftermath.spec)||chapter.complete?chapter.detail:`${chapter.detail} That ground is not built yet.`;$('quest-step').textContent=chapter.kicker;return;}
@@ -3001,7 +3174,7 @@ function init() {
       if(luscia.state.complete&&campaign.view().chapterId==='moros-camp'&&!moros.state.started)moros.start();
       if(horseWaiting({inventory,riding})&&moros.view().stage==='report-at-gate'){$('quest-title').textContent=OSTLER_OBJECTIVE.title;$('quest-detail').textContent=OSTLER_OBJECTIVE.detail;$('quest-step').textContent=OSTLER_OBJECTIVE.kicker;return;}
       if(moros.state.started){const chapter=moros.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
-      if(luscia.state.started){const chapter=luscia.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail;$('quest-step').textContent=chapter.kicker;return;}
+      if(luscia.state.started){const chapter=luscia.view();$('quest-title').textContent=chapter.title;$('quest-detail').textContent=chapter.detail+' '+(livingHost?.satchelNote()??'');$('quest-step').textContent=chapter.kicker;return;}
       $('quest-title').textContent=quest.title;$('quest-detail').textContent=quest.detail;
       $('quest-step').textContent=quest.complete?'THE ROAD OUT OF DRENT · RESTORED':`THE ROAD OUT OF DRENT · ${quest.regionName.toUpperCase()}`;
       return;
@@ -3015,19 +3188,19 @@ function init() {
     $('quest-step').textContent=`CHAPTER 1 · ${sub+1} / ${SUBQUESTS.length}`;
   }
   function questSource(){
-    return {main:{title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
+    return {main:{active:!(living?.player().imperialRefused&&living.player().allegiance!=='coalition'),title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
       bridge:{stage:journey.state.bridge,sticks:inventory.count('forest-stick')},vastos:vastos.quest.view(),
-      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),drent.trackableView()]};
+      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
   }
   function resolveQuestPoint(id){
-    const npc=npcById.get(id),point=npc?.actor?.group?.position||drent.point(id)||world.journeySites?.[id]||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||vastos.knownLocations().find(place=>place.id===id);
+    const npc=npcById.get(id),point=npc?.actor?.group?.position||drent.point(id)||world.journeySites?.[id]||(id===LUSCIA_DISPATCH_SITE.id?LUSCIA_DISPATCH_SITE:null)||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||vastos.knownLocations().find(place=>place.id===id);
     return point?{x:point.x,z:point.z,name:npc?.name||point.name||'The next objective',id}:null;
   }
   function selectQuest(id){
     if(autopilot.active&&id!==(autopilot.id==='ben'?SPIDER_QUEST.id:'main'))stopAutopilot('Following your selected quest.');
     questTracker.select(id);refreshQuest();
     if(mode==='journal')refreshChart();
-    if(questStage>=1)saveRoad(false);
+    if(hasRoadProgress())saveRoad(false);
   }
   function renderQuestChoices(mount,view,expanded=false){
     const stamp=JSON.stringify(view);if(mount.dataset.stamp===stamp)return;mount.dataset.stamp=stamp;
@@ -3049,11 +3222,11 @@ function init() {
   function trackerStamp(){
     const {stage,benDown,spiderDown}=spiderQuest.state;
     return JSON.stringify([questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
-      drent.state(),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,burying.snapshot()]);
+      drent.state(),republic?.state(),living?.satchel().status,living?.player(),living?.recall().status,Math.floor((living?.clock()??0)/10),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,burying.snapshot()]);
   }
   function refreshQuest(){
     refreshMainQuest();
-    if(questStage===2){
+    if(questStage===2&&!campaign.snapshot().entryOrigin&&living?.recall().status!=='passenger'){
       const pending=chartLesson.stage,finished=practiceHits>=2&&practiceGuards>=1&&practiceDodges>=1;
       if(pending==='open-map'){$('quest-title').textContent='Read your first chart';$('quest-detail').textContent='Press M to open your map. Read Glun’s explanation, then close it and speak to him again.';}
       else if(pending==='return-to-glun'){$('quest-title').textContent='Report back to Glun';$('quest-detail').textContent='You have studied the chart. Speak to Officer Glun to finish training and receive your orders.';}
@@ -3084,7 +3257,7 @@ function init() {
     // to tell him at: the tutorial now ends at the practice post (src/long-road.js).
     else if(questStage===QUEST_DONE){longRoad.act('told');toast(questSteps[questStage].title,'YOUR ORDERS · WEST TO NOTHOM');}
     else toast(questSteps[questStage].title,'JOURNAL UPDATED');
-    if(questStage>=1&&!testingEnabled)saveRoad(false);
+    if(hasRoadProgress()&&!testingEnabled)saveRoad(false);
   }
   // The opening screen's other way in: stand where the newest built chapter begins, with the road behind you.
   // Nothing is saved from this start, so a saved adventure is never overwritten (src/story-starts.js).
@@ -3107,6 +3280,9 @@ function init() {
     player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;
     yaw=Math.atan2(-(stand.x-spot.x),-(stand.z-spot.z));pitch=.35;distance=targetDistance=8;
     if(entry.horse&&!riding.owned){const hitch=startingSpot(spot,(x,z)=>canStand(x,z,world,RIDE.radius),{reaches:[3,4.5,6]});if(hitch&&riding.grant(hitch,yaw).ok){riding.teach();placeOwnHorse();}}
+    if(entry.completed.includes('luscia-aftermath'))inventory.remove('courier-satchel',inventory.count('courier-satchel'));
+    resetLivingStory({playSeconds:entry.completed.includes('moros-camp')?4000:living.clock(),journey:journey.snapshot(),luscia:luscia.snapshot(),moros:moros.snapshot(),riding:riding.snapshot(),fallen:fallen.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),campaign:campaign.snapshot()});
+    if(entry.completed.includes('moros-camp')){living.arrivePlayerMuster('empire');living.departMuster('empire');}restoreLivingFeet();
     mapFog.reveal(spot.x,spot.z);
     leaveOpening();
     mode='playing';document.body.classList.add('playing');show('opening',false);show('modal-backdrop',false);show('journal',false);show('pause',false);show('testing',false);show('testing-badge',true);
@@ -3118,7 +3294,7 @@ function init() {
     if(mode!=='opening')return;
     campaign.restore(createCampaign().snapshot());
     grantStartingKit();
-    playSeconds=0;refugeeHold=0;landingSaid=null;wordSaid=null;companionOffTheClock=false;
+    playSeconds=0;resetLivingStory();refugeeHold=0;landingSaid=null;wordSaid=null;companionOffTheClock=false;
     // Chris follows his own Jojo/Glun route until both travelers have trained and the player asks.
     longRoad.restore(createLongRoad().snapshot());
     rebuildCompany();settleMercenaries();mercenaryWeapons.clear();
@@ -3282,7 +3458,7 @@ function init() {
    */
   function refreshCompanyPage(){
     const list=$('company-list');if(!list)return;
-    const placements=new Map(company.placements(playSeconds).map(p=>[p.id,p]));
+    const placements=new Map(companyPlacements().map(p=>[p.id,p]));
     const seen=companions.view();
     list.replaceChildren();
     for(const man of seen){
@@ -3329,7 +3505,7 @@ function init() {
         if(!data||mode!=='journal'||!$('tab-map').classList.contains('active'))return;
         const changed=chartLesson.noteMapOpened(),regional=mapTutorial.noteJournalTab('world');
         renderAtlasLesson();if(regional)renderMapTutorial();if(changed)refreshQuest();
-        if((changed||regional)&&questStage>=1)saveRoad(false);
+        if((changed||regional)&&hasRoadProgress())saveRoad(false);
       }));
     }
     if(tab==='skills')$('tab-skills').focus();
@@ -3394,7 +3570,7 @@ function init() {
    * is gone now (`dead`, src/mercenaries.js), a dead man has no placement at all, and the host
    * asks rather than subtracts.
    */
-  function musteredInCamp(){return company.summary(playSeconds).mustered;}
+  function musteredInCamp(){return living?living.muster('empire').arrivals.filter(id=>living.actor(id)?.alive&&living.actor(id)?.allegiance==='empire').length:company.summary(playSeconds).mustered;}
   // Where the traveler stands in the hired company: who has landed, who has mustered, and the traveler's place on the road.
   function companyStanding(){
     const s=company.summary(playSeconds),rank=company.travelerRank(playSeconds,distanceAlongRoad(world.paths[0],{x:player.group.position.x,z:player.group.position.z}));
@@ -3482,12 +3658,15 @@ function init() {
   function syncJourney(){
     const state=journey.state;
     for(const id of state.parcels)world.setJourneySiteState(id.startsWith('cart-')?id:`cart-parcel-${id}`,true);
-    if(state.bridgeRepaired)world.setJourneySiteState('bridge-repair',true);
+    world.setJourneySiteState('bridge-repair',state.bridgeRepaired);
     for(const id of state.beacons)world.setJourneySiteState(id.startsWith('beacon-')?id:`beacon-${id}`,true);
     for(const id of journeyGathered)world.setJourneySiteState(id,true);
   }
   function journeyAct(action){
+    if(action==='repair-bridge'&&living.bridge().owner&&living.bridge().owner!=='player'){toast('Another traveler is repairing the crossing. You may wait or swim.','CALOSS CROSSING');return {ok:false};}
     const result=journey.act(action);if(!result.ok){toast(result.reason||'Speak with the road keeper first.','THE DRENT ROAD');return result;}
+    if(action==='repair-bridge')living.completeBridge('player',{playerRepair:true});
+    if(action==='deliver-report')livingHost.reportPlayer();
     syncJourney();refreshQuest();refreshSkillsSheet();inventory.refresh();audio?.effect('success');
     const complete=journey.view().complete;
     if(complete&&campaign.view().chapterId==='drent-road'){campaign.completeChapter('drent-road');inventory.add('copper-piece',12);inventory.refresh();refreshQuest();}
@@ -3512,18 +3691,25 @@ function init() {
     // The campaign has moved on: let the quest panel open the Moros chapter at once.
     refreshQuest();
     const view=luscia.view();
-    toast(view.complete?'The rolls are filed. An army horse token and twenty copper for the road west.':view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(view.complete?'The rolls are filed. Twenty copper for the work. '+livingHost.horseNote():view.title,view.complete?'LUSCIA · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
   // The fork and the border battle. Allies are whoever of the hired company has mustered, filled out with soldiers;
   // on the Republic's side they are the valley companies. Hold the traveler's corner and the day is won.
+  function borderMercenaries(side){return living.actors().filter(a=>a.alive&&!a.detained&&a.allegiance===side
+    &&(living.muster(side).arrivals.includes(a.id)||companions.walking.includes(a.id))).map(a=>{const m=mercenaryById(a.id);return {id:a.id,npcId:a.id,name:m?.name??a.name,kind:'legionary',hp:100,
+      model:{role:m?.modelRole??'mercenary',tunic:m?.look.tunic,skin:m?.look.skin,look:{...m?.look,weapon:m?.weapon,trades:false}}};});}
   function borderAllies(side){
-    if(side==='coalition')return [1,2,3,4].map(n=>({id:`valley-company-${n}`,name:n===1?'Valley sergeant':'Valley company',kind:n===1?'officer':'legionary',model:{role:'suvali-guard',tunic:n%2?0x3f5f86:0x55636f}}));
-    const mustered=company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>{const merc=mercenaryById(p.id);return {id:merc.id,name:merc.name,kind:'legionary',model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};});
-    for(let n=1;mustered.length<3;n++)mustered.push({id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
-    return mustered;
+    const troops=borderMercenaries(side);
+    for(let n=1;troops.length<4;n++)troops.push(side==='coalition'?{id:`valley-company-${n}`,name:'Valley company',kind:'legionary',model:{role:'suvali-guard',tunic:0x55636f}}:{id:`line-legionary-${n}`,name:'Soldier',kind:'legionary'});
+    return troops;
   }
+  function livingBorderEncounter(side){const other=side==='empire'?'coalition':'empire';
+    const config=borderMusterEncounter(side,{allies:borderAllies(side),opponents:borderMercenaries(other),company:companyWalking()});
+    return config;
+  }
+
   /**
    * **The fine steel your side owes you for the border** (`SIDE_GIFTS`, src/aftermath-chapter.js;
    * the gear table's tier 4 is "officers, and gifts from a side you have served").
@@ -3578,15 +3764,18 @@ function init() {
     return result;
   }
   function borderAct(action){
+    if(action==='march-out'&&living.player().allegiance==='coalition')living.arrivePlayerMuster('coalition');
     const result=border.act(action);if(!result.ok){toast(result.reason,'THE BORDER');return result;}
-    if(result.side&&!result.startEncounter){const chosen=campaign.chooseSide(result.side);if(!chosen.ok)toast(chosen.reason,'THE BORDER');}
+    if(action==='march-out'){const side=border.view().side;living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');}
+    if(result.side&&!result.startEncounter){living.setPlayerSide(result.side,'solis-choice');const chosen=campaign.chooseSide(result.side);if(!chosen.ok)toast(chosen.reason,'THE BORDER');}
     if(result.reward){inventory.add(result.reward.id,result.reward.quantity);inventory.refresh();}
     if(result.startEncounter){
       saveRoad(false);
       const side=border.view().side;
       // **The line is laid for the company that is actually there**, counted now and kept nowhere
       // (`borderLine`, src/border-chapter.js). Sounding the advance again counts again.
-      if(!combat.startEncounter(borderEncounter(side,borderAllies(side),companyWalking()))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      if(!combat.startEncounter(livingBorderEncounter(side))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');
       stopInput();toast(side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
@@ -3596,26 +3785,23 @@ function init() {
     return result;
   }
   function morosAct(action){
+    if(living.player().imperialRefused||living.player().allegiance==='coalition')return {ok:false,reason:'You are no longer in Imperial service.'};
     const result=moros.act(action);if(!result.ok){toast(result.reason||'Report at the camp gate first.','THE ARMY ON THE PLAIN');return result;}
     refreshQuest();inventory.refresh();audio?.effect('success');
-    if(result.reward?.id==='legion-horse'&&!riding.owned){const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
+    if(result.reward?.id==='legion-horse'&&!riding.owned){living.claimHorse('player');const line=MOROS_SITES['legion-horse-line'];riding.grant({x:line.x+2.4,z:line.z+1.2},Math.PI);riding.teach();placeOwnHorse();}
     if(action==='claim-legion-horse'&&campaign.view().chapterId==='moros-camp'){campaign.completeChapter('moros-camp');refreshQuest();}
     // First of eleven. Venmor remembers who came first, and it is the one thing the short road
     // has that the long road cannot get (docs/drent-long-road.md §9). Once, and a little trust.
+    if(action==='join-muster')living.arrivePlayerMuster('empire');
     if(action==='join-muster'&&musteredInCamp()+1<=MUSTER_EARLY&&campaign.earlyMuster().first)
       toast('You are the first of the eleven into this camp, and the Marshal has noticed. The pegs behind the standard are still empty.','THE ARMY REMEMBERS EARLY MEN');
     const view=moros.view();
-    toast(action==='join-muster'?'Your name is on the Marshal’s muster. Twenty-five copper, and a horse waiting on the line.':view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
+    toast(action==='join-muster'?`Your name is on the Marshal’s muster. Twenty-five copper. ${living.horseFor('player')?'Your reserved remount remains yours.':'The four remounts are taken; draw marching supplies for the road.'}`:view.complete?(result.reward?'A bay gelding in Imperial red, saddled and yours. G mounts and dismounts · Shift canters · H whistles him up.':'Your horse is picketed on the army’s line, with a net of hay the quartermaster counted twice.'):view.title,view.complete?'MOROS PLAIN · CHAPTER COMPLETE':'JOURNAL UPDATED');
     saveRoad(false);
     return result;
   }
   function townAct(action){
-    if(action==='join-luscia-rebels'){
-      const result=campaign.resolveArc(REBEL_CONTACT.region,REBEL_CONTACT.side);
-      toast(result.ok?'Hara sends your name south. Luscia\u2019s rangers are the republic\u2019s business now.':result.reason||'She says nothing more.','THE REPUBLIC\u2019S CONTACT');
-      if(result.ok)saveRoad(false);
-      return result;
-    }
+    if(action==='join-luscia-rebels'){republic.converse(npcById.get('timber-stall'));return {ok:false,reason:'Choose recruitment with Hara.'};}
     if(action==='give-smiths-coin'){
       if(!inventory.remove('copper-piece',1))return {ok:false,reason:'You have no copper to give.'};
       beggar.satisfy();inventory.refresh();toast('Smiths thanks you twice and shuffles back to his corner of the square.','ONE COPPER PIECE');saveRoad(false);
@@ -3632,12 +3818,16 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceGuards:Math.min(1,practiceGuards),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    return {version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(testingEnabled){if(notify)toast('Testing sessions leave your road checkpoint unchanged.','CHECKPOINT');return false;}
-    if(questStage<1||combat.state.phase==='active'||combat.state.player.hp<=0||inWater){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
-    const result=checkpoint.save(roadSnapshot());
+    return writeRoadCheckpoint(checkpoint,notify);
+  }
+  function writeRoadCheckpoint(store,notify=false){
+    if(!hasRoadProgress()||combat.state.phase==='active'||combat.state.player.hp<=0||inWater){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
+    const result=store.save(roadSnapshot());
+    if(store!==checkpoint)return result.ok;
     if(result.ok){checkpointFailureShown=false;checkpointAvailable=result;$('road-checkpoint-status').textContent='Adventure saved. Continue from the opening screen next time.';if(notify)toast('Your lessons, woodland discoveries, satchel, and weapon condition are saved.','ADVENTURE SAVED');}
     else{$('road-checkpoint-status').textContent=result.reason;if(notify||!checkpointFailureShown)toast(result.reason,'CHECKPOINT');checkpointFailureShown=true;}
     return result.ok;
@@ -3671,7 +3861,7 @@ function init() {
     forestStory.restore(saved.forestStory);forestHideout.restore(saved.forestHideout);regionalLife.restore(saved.regionalLife);
     campaign.restore(saved.campaign??createCampaign().snapshot());if(journey.view().complete&&campaign.view().chapterId==='drent-road')campaign.completeChapter('drent-road');
     mapTutorial.restore(saved.mapTutorial??0);renderMapTutorial();
-    playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;refugeeHold=0;settleMercenaries();
+    playSeconds=Number.isFinite(saved.playSeconds)&&saved.playSeconds>=0?saved.playSeconds:0;refugeeHold=0;
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
@@ -3689,7 +3879,7 @@ function init() {
     // Their owners keep map access; a pending lesson must also own the chart it asks them to read.
     if(chartLesson.stage!=='unissued'&&!cartography.met)cartography.learn();
     if(questStage===2&&!saved.chartLesson&&cartography.met){chartLesson.restore('open-map');practiceGuards=saved.woodland?.practiceGuards??1;}
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();resetLivingStory(saved);republic.restore(saved.lusciaCivilWar);restoreLivingFeet();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
     {const ben=npcById.get(BEN.id);
       if(ben){
         ben.escorting=false;ben.walkingWith=false;ben.pace=undefined;ben.combatPosition=null;
@@ -3819,7 +4009,7 @@ function init() {
       line=count>=acornQuest.target?'That looks like a promising satchel. Have you brought five acorns for my kitchen?':'There you are. Any luck beneath the broad-leaved trees? Look along the woodland edges, where the squirrels feed. You have '+count+' of the five acorns in your satchel. Take your time.';
       if(count>=acornQuest.target)choices.push({id:'give-acorns',label:'Give Lysa five acorns.',action:()=>{
         if(!acornQuest.turnIn(inventory)){lysaConversation(npc);return;}
-        if(questStage>=1)saveRoad(false);
+        if(hasRoadProgress())saveRoad(false);
         toast('Lysa is fond of you.','A LITTLE KINDNESS · COMPLETED');
         openDialogue(npc,['You remembered. Five lovely acorns, and all the wandering it took to find them. Thank you. Most people promise something on their way through; you actually came back. Here is the tinderbox I promised: flint, steel, and dry tinder. Light a fire with two fallen sticks, then use the fire to cook your catch.',
           'Come by even when your pockets are empty, will you? I like the squirrels, but they are dreadful conversationalists. And I find this little corner of the village rather nicer when you are standing in it.'],null,'I\'ll stop by again.');
@@ -4193,6 +4383,7 @@ function init() {
     openDialogue(npc,['Done. Mind it; it has seen more than you have.'],null,'Back to the road');
   }
   function conversation(npc) {
+    if(livingHost?.conversation(npc)||republic?.converse?.(npc))return;
     if(crime?.isDown(npc.id))return;
     if(crime?.converse(npc))return;
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
@@ -4270,11 +4461,11 @@ function init() {
     if(npc.id===GEOLOGIST.id){geologistConversation(npc,{geology,openDialogue,closeDialogue,act:geologyAct});return;}
     if(npc.id===INSTRUCTOR.id){
       instructorConversation(npc,{stage:lessonStage({briefed:lessonSet,hits:practiceHits,guards:practiceGuards,dodges:practiceDodges,taught:cartography.met,chartLesson:chartLesson.stage}),openDialogue,
-        begin:()=>{lessonSet=true;arms.learn('blades');if(questStage===2)combat.startPractice(world.training);refreshShield();refreshQuest();if(questStage>=1)saveRoad(false);},
+        begin:()=>{lessonSet=true;arms.learn('blades');if(questStage===2)combat.startPractice(world.training);refreshShield();refreshQuest();if(hasRoadProgress())saveRoad(false);},
         giveChart:giveTheChart,openMap:()=>{closeDialogue();openLocalMap();},report:finishChartLesson});
       return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
-    if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
+    if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,story:living,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
     if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return;
@@ -4299,7 +4490,7 @@ function init() {
     if(mercenaryIds.has(npc.id)){mercenaryConversation(npc);return;}
     if(npc.id===BEGGAR_NPC.id){beggarConversation(npc,{beggar,inventory,openDialogue,closeDialogue,act:townAct});return;}
     if(TOWN_NPC_IDS.includes(npc.id)){townConversation(npc,{campaign,inventory,openDialogue,closeDialogue,act:townAct});return;}
-    if(LUSCIA_NPC_IDS.has(npc.id)||(npc.id==='relay-clerk'&&luscia.state.started)){lusciaConversation(npc,{luscia,inventory,openDialogue,closeDialogue,act:lusciaAct,extraChoices:person=>regionalLifeRelayChoices(person,regionalContext)});return;}
+    if(LUSCIA_NPC_IDS.has(npc.id)||(npc.id==='relay-clerk'&&luscia.state.started)){lusciaConversation(npc,{luscia,inventory,openDialogue,closeDialogue,act:lusciaAct,extraChoices:person=>[...regionalLifeRelayChoices(person,regionalContext),...(republic?.extraChoices(person)??[])]});return;}
     if(journeyNpcIds.has(npc.id)){journeyConversation(npc,{journey,inventory,openDialogue,closeDialogue,act:journeyAct,register:registerView(),extraChoices:person=>regionalLifeRelayChoices(person,regionalContext),
       provideBridgeWood:()=>{const needed=Math.max(0,3-inventory.count('forest-stick'));const ok=!needed||inventory.add('forest-stick',needed);if(ok&&needed){toast('Three sound branches are ready for the bridge.','HOLLIS’S REPAIR TIMBER');saveRoad(false);}return {ok,reason:ok?'':'There is no room for the repair timber.'};},
       teachFishing:()=>{const owned=inventory.has('fishing-rod');const result=campcraft.teachFishing();fishing.learn();refreshSkillsSheet();if(!owned)toast('A spare rod for your journey. Find the marked bank east of the bridge.','FISHING ROD · ADDED TO SATCHEL');return result;}});return;}
@@ -4337,12 +4528,12 @@ function init() {
     cartography.learn();combat.finishPractice();
     const here=world.regionAt(player.group.position.x,player.group.position.z);
     if(here&&!isOpenCountry(here))cartography.noteHex(here.name);
-    refreshSkillsSheet();refreshChart();refreshQuest();if(questStage>=1)saveRoad(false);return true;
+    refreshSkillsSheet();refreshChart();refreshQuest();if(hasRoadProgress())saveRoad(false);return true;
   }
   function finishChartLesson(){
     if(!chartLesson.report())return false;
     if(!inventory.has('road-token'))inventory.grant('road-token');
-    updateQuest('trained');refreshQuest();if(questStage>=1)saveRoad(false);return true;
+    updateQuest('trained');refreshQuest();if(hasRoadProgress())saveRoad(false);return true;
   }
   /**
    * **Ben.** He asks, and what he asks for is company rather than a hero: he has done the
@@ -4505,7 +4696,7 @@ function init() {
       if(result.ok&&verb==='cook'){const made=cooking.noteMade('cooked-fish');if(made.xp){note=` Cooking +${made.xp}${made.levelled?` \u00b7 level ${made.level}`:''}.`;refreshSkillsSheet();}}
       fireMenu(fire,result.ok?(verb==='light'?'The tinder catches. Your fire is lit.':`One fish cooked. Open I to eat it and restore up to 40 health.${note}`):result.reason);};
     const brew=()=>{const made=cooking.make('hot-chocolate',inventory);inventory.refresh();
-      if(made.ok){refreshSkillsSheet();audio?.effect('success');if(questStage>=1)saveRoad(false);}
+      if(made.ok){refreshSkillsSheet();audio?.effect('success');if(hasRoadProgress())saveRoad(false);}
       fireMenu(fire,made.ok?`Milk warmed, never boiled; chocolate grated in and stirred till it coats the spoon. One hot chocolate, restoring up to 45 health.${made.xp?` Cooking +${made.xp}${made.levelled?` \u00b7 level ${made.level}`:''}.`:''}`:made.reason);};
     openDialogue({id:fire.id,name:fire.id==='village-fire'?'Village fire pit':fire.id==='pond-fire'?'Pondside fire pit':'Roadside fire pit',role:'Camp cooking'},[`${feedback?feedback+' ':''}${condition} ${supplies}`],null,'Leave the fire',{choices:[
       {id:'light-fire',label:status.lit?'Fire already lit':'Light fire · 2 sticks',disabled:!status.canLight,title:status.lightReason,action:()=>act('light')},
@@ -4541,7 +4732,7 @@ function init() {
       if(event.type==='miss')toast(event.reason,'TRY ANOTHER CAST');
       if(event.type==='bite')audio?.effect('bite');
       if(event.type==='fire-lit'||event.type==='cook')audio?.effect('success');
-      if(['fishing-taught','catch','fire-lit','cook'].includes(event.type)&&questStage>=1)saveRoad(false);
+      if(['fishing-taught','catch','fire-lit','cook'].includes(event.type)&&hasRoadProgress())saveRoad(false);
     }
     if(mode==='fishing'&&campcraft.state.phase==='idle'){mode='playing';stopInput();show('fishing-panel',false);}
   }
@@ -4561,6 +4752,32 @@ function init() {
     const country=isOpenCountry(here)?'open country':here?.name??'off the sheet';
     $('test-here').textContent=`You are at ${p.x.toFixed(1)}, ${p.z.toFixed(1)} — ${country}`
       +(near?`, ${near.away<1?'in':`${Math.round(near.away)} m from`} ${near.name}.`:'.');
+  }
+  function prepareLivingScenario(){leaveOpening();combat.finishPractice();stopAutopilot();reviewFrozen=false;reviewTarget=null;testingEnabled=true;questStage=QUEST_DONE;lessonSet=true;practiceHits=2;practiceGuards=1;practiceDodges=1;chartLesson.restore('complete');cartography.learn();
+          crime.restore();corpseHost.restore();ambush.restore(createRoadAmbush({seed:ambushSeed}).snapshot());republic.restore();combat.revive();campaign.restore(createCampaign().snapshot());inventory.grant('harbor-letter');inventory.grant('road-token');journey.restore(createJourney().snapshot());journey.start();luscia.restore(createLusciaChapter().snapshot());moros.restore(createMorosChapter().snapshot());border.restore(createBorderChapter().snapshot());
+          fallen.restore(createFallen().snapshot());companions.restore(createCompanions().snapshot());companionOffTheClock=false;longRoad.restore(createLongRoad().snapshot());riding.restore(createRiding().snapshot());
+          mapTutorial.restore(3);show('map-tutorial',false);clearTimeout(toastTimer);$('toast').classList.remove('visible');clearTimeout(regionCardTimer);$('region-card').classList.remove('visible');
+          for(const id of ['courier-satchel','horse-token'])inventory.remove(id,inventory.count(id));grantStartingKit();resetLivingStory();
+          for(const n of npcData){n.fallen=false;n.combatPosition=null;}rebuildCompany();restoreLivingFeet();mode='playing';document.body.classList.add('playing');
+          show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);player.group.visible=true;
+          player.group.position.set(-15,world.heightAt(-15,29),29);refreshQuest();settleCamera();}
+  function stageLivingScenario(kind){
+    closeDialogue();prepareLivingScenario();
+    if(kind==='recall'){
+      const camp=world.npcPositions[MOROS_LEGATE_ID];
+      for(const a of living.actors()){const p=clearApproach({x:camp.x+3*(living.actors().findIndex(n=>n.id===a.id)%4),z:camp.z+4});
+        living.observe(a.id,{position:p,stage:'mustered'});living.arriveMuster(a.id);}
+      living.tick(60);playSeconds=living.clock();restoreLivingFeet();
+      const id=living.recall().courier,npc=npcById.get(id),p=clearApproach(player.group.position,2.5);
+      living.observe(id,{position:p});npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z)+RIDE.seat.up,p.z);npc.hidden=false;livingRoutes.clear();
+      mode='playing';livingHost.conversation(npc);
+    }else{
+      journeyAct('deliver-report');
+      if(kind==='republic')lusciaAct('accept-lauvel-search');
+      const id=kind==='republic'?'relay-republican':'relay-clerk',at=clearApproach(npcById.get(id).actor.group.position);
+      player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);mode='playing';conversation(npcById.get(id));
+    }
+    show('testing',false);show('testing-badge',true);show('modal-backdrop',false);stopInput();settleCamera();refreshQuest();updateHUD();saveRoad(false);
   }
   function prepareTesting(){
     testingEnabled=true;
@@ -4798,7 +5015,7 @@ function init() {
   function armsPaid(paid){
     if(!paid?.levelled)return;
     refreshSkillsSheet();
-    if(questStage>=1)saveRoad(false);
+    if(hasRoadProgress())saveRoad(false);
   }
   /**
    * What a blow in this fight counts as. A bout is practice: it pays the same skills a fight
@@ -4968,7 +5185,8 @@ function init() {
   function interact(){
     if(mode==='fishing'){endFishing();return;}
     if(mode==='dialogue'){nextSpeech();return;}
-    if(mode!=='playing')return;
+    if(mode!=='playing'||living.recall().status==='passenger')return;
+    if(droppedSatchelNear&&combat.state.phase!=='active'){takeDroppedSatchel();return;}
     if(currentNPC){conversation(currentNPC);return;}
     if(riding.mounted){toast('Step down first. Press G.','IN THE SADDLE');return;}
     if(combat.state.phase!=='active'&&currentFoundWeapon&&!inventory.has(currentFoundWeapon.weapon)){
@@ -4985,6 +5203,7 @@ function init() {
       }return;
     }
     if(combat.state.phase!=='active'&&corpseHost.nearest()){corpseHost.interact();return;}
+    if(combat.state.phase!=='active'&&republic?.nearby){republic.interact();return;}
     if(combat.state.phase!=='active'&&drent.nearby){drent.interact();return;}
     if(combat.state.phase!=='active'&&vastos.nearby){vastos.interact();return;}
     if(combat.state.phase!=='active'&&currentFeederHook){birdingAct('hang-feeder');return;}
@@ -5019,7 +5238,7 @@ function init() {
     if(combat.state.phase!=='active'&&nearRepair){
       if(combat.state.player.action!=='idle'){toast('Finish your swing before using the bench.');return;}
       const repaired=weapons.repair();inventory.refresh();
-      if(questStage>=1)saveRoad(false);
+      if(hasRoadProgress())saveRoad(false);
       toast(repaired?'Your weapons are ready for the road.':'Your weapons are already in good condition.','REPAIR BENCH · NO CHARGE');audio?.effect('success');return;
     }
     if(combat.state.phase!=='active'&&currentFruit){
@@ -5050,7 +5269,7 @@ function init() {
       ]);
     }
   }
-  function attack(){if(mode==='playing'&&grounded){
+  function attack(){if(mode==='playing'&&grounded&&living.recall().status!=='passenger'){
     // **A bow is not swung at anything.** The same button draws it, and the draw is held rather
     // than pressed, so the press does nothing and the frame loop does the work (src/archery.js).
     if(ranged())return;
@@ -5061,7 +5280,7 @@ function init() {
     combat.attack(player.group.rotation.y);canvas.focus();
   }}
   function dodge(){
-    if(mode!=='playing'||!grounded||riding.mounted||inWater)return;
+    if(mode!=='playing'||!grounded||riding.mounted||inWater||living.recall().status==='passenger')return;
     const {forward,side}=getMovementInput(keys);
     const dx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,dz=-Math.cos(yaw)*forward-Math.sin(yaw)*side;
     combat.dodge(Math.hypot(dx,dz)>.01?{x:dx,z:dz}:{x:-Math.sin(player.group.rotation.y),z:-Math.cos(player.group.rotation.y)});
@@ -5080,6 +5299,7 @@ function init() {
   $('defeat-restore').onclick=retry;$('defeat-saved').onclick=()=>{stopAutopilot();continueRoad();};
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
   $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  for(const kind of ['satchel','republic','recall'])$('test-story-'+kind).onclick=()=>stageLivingScenario(kind);
   $('test-peblos').onclick=()=>{
     if(!testingEnabled)prepareTesting();
     if(riding.mounted)stepDown(true);
@@ -5307,6 +5527,7 @@ function init() {
   autopilot.onEvent(event=>{show('autoplay-badge',event.type==='start');$('autoplay-button').textContent=event.type==='start'?'Stop autoplay · P':'Autoplay the road · P';
     if(event.type==='stop'){stopInput();toast(event.reason||'Autoplay stopped.','YOU HAVE CONTROL');}});
   function startAutopilot(){
+    if(living.recall().status==='passenger')return;
     if(testingEnabled&&(questTracker.selectedId===SPIDER_QUEST.id||(autopilot.id==='ben'&&['unmet','asked'].includes(spiderQuest.state.stage)))){
       if(['pause','journal','testing'].includes(mode))closeModal();
       if(autopilot.startQuest('ben')){toast('The computer continues Ben\u2019s quest. Any key or click takes control.','BEN \u00b7 AUTOPLAY');canvas.focus();return true;}return false;
@@ -5357,6 +5578,7 @@ function init() {
     // T shows a line the way it was actually said, which is hard mode's: in normal mode it was
     // said in English and the key does nothing at all (src/game-mode.js).
     if(e.code===LINGUIST_KEY&&mode==='dialogue'&&gameMode.has('linguist')){e.preventDefault();linguist.toggle();updateSpeech();return;}
+    if(mode==='playing'&&living.recall().status==='passenger'){e.preventDefault();return;}
     if(e.code==='KeyF'){interact();return;}
     if(e.code==='KeyX'&&mode==='playing'){e.preventDefault();if(!riding.mounted&&!inWater&&combat.state.phase!=='active')drent.toggleSneak();return;}
     if(e.code==='KeyZ'&&mode==='playing'){e.preventDefault();castSpell();return;}
@@ -5418,6 +5640,11 @@ function init() {
 
   function destination(){const point=questTracker.target(mainDestination(),resolveQuestPoint,player.group.position);return point?{...point,markerKind:questTracker.view().selected.grade}:null;}
   function mainDestination() {
+    if(living?.recall().status==='passenger')return {...world.npcPositions[MOROS_LEGATE_ID],name:'The Moros muster'};
+    if(living?.player().imperialRefused&&living.player().allegiance!=='coalition')return null;
+
+    if(border.state.started&&!border.state.complete){const id=border.view().objectiveId;return id?resolveQuestPoint(id):null;}
+    if(campaign.snapshot().entryOrigin){const ids=aftermath.state.variant?aftermath.view().destinationIds:border.state.started?border.view().destinationIds:moros.view().destinationIds;return ids.map(resolveQuestPoint).find(Boolean)??null;}
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
     if(questStage===1)return{...npcById.get(HARBOURMASTER).actor.group.position,name:'Jojo \u00b7 the harbourmaster'};
     // The card says report to Officer Glun, so the gold stands over Glun until he has set the
@@ -5472,8 +5699,11 @@ function init() {
         if(e.type==='ally-escaped')toast(`${npc.name} got clear of the fight.`,'THE GREENWAY');}
       // How each villager came through the Greenway, for Eren to speak of.
       // The road is clear, and everybody the clock sends up it after this walks it safely.
-      if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id){ambush.cleared();drent.defeatedAmbush();saveRoad(false);}
-      drent.combatEvent(e);
+      if(e.type==='hit'&&combat.state.encounterId===ambushEncounter.id&&e.source!=='enemy'&&e.source!=='ally')ambushPlayerHelped=true;
+      if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id){ambush.cleared();if(ambushPlayerHelped)drent.defeatedAmbush();saveRoad(false);}
+      drent.combatEvent(e);republic?.combatEvent?.(e,combat.state);
+      if(['ally-down','enemy-defeated'].includes(e.type)&&living.actor(e.npcId??e.id)){const id=e.npcId??e.id;living.setAlive(id,false,{position:{x:e.x,z:e.z}});fallen.fall(id);}
+      if(e.type==='defeat'&&living.satchel().carrier==='player'){living.dropSatchel('player',{position:{x:player.group.position.x,z:player.group.position.z}});inventory.remove('courier-satchel',1);}
       // **The den, settled.** The spider dying is not a victory if the man who came for it did
       // not get up: `benAlive` is the only thing that decides which ending this is, and it is
       // read off the ally the fight actually had (src/spider-quest.js).
@@ -5648,7 +5878,7 @@ function init() {
     $('weapon-fill').style.width=`${weapon.durability/weapon.maxDurability*100}%`;
     $('weapon-meter').setAttribute('aria-valuemax',weapon.maxDurability);$('weapon-meter').setAttribute('aria-valuenow',weapon.durability);
     $('weapon-condition').classList.toggle('worn',weapon.worn);
-    show('lesson',mode==='playing'&&questStage<QUEST_DONE);show('practice-progress',questStage===2&&!(practiceHits>=2&&practiceGuards>=1&&practiceDodges>=1));
+    show('lesson',mode==='playing'&&questStage<QUEST_DONE&&!campaign.snapshot().entryOrigin);show('practice-progress',questStage===2&&!campaign.snapshot().entryOrigin&&!(practiceHits>=2&&practiceGuards>=1&&practiceDodges>=1));
     $('inventory-count').textContent=inventory.items().length;
     const hideoutTask=forestHideout.view().task;
     const hereId=world.regionAt(player.group.position.x,player.group.position.z)?.id,campTask=hideoutTask&&!hideoutTask.complete&&hereId===world.regionAt(hideoutEncounter.center.x,hideoutEncounter.center.z)?.id?hideoutTask:null;
@@ -5694,12 +5924,14 @@ function init() {
     if(trailMarker.visible){trailMarker.position.set(pin.x,world.heightAt(pin.x,pin.z)+2.8+Math.sin(elapsed*2.5)*.12,pin.z);trailMarker.rotation.y=elapsed*.7;}
     const region=world.regionAt?.(player.group.position.x,player.group.position.z);
     if(region){
+      $('world-calendar').textContent=`${living.calendar().label} \u00b7 ${living.calendar().time}`;
+      $('world-calendar').title=`${living.calendar().time} \u00b7 ${Math.floor(living.clock()/60)} active minutes elapsed. Menus pause the clock.`;
       $('region-name').textContent=region.name;$('map-caption').textContent=region.name.toUpperCase();
       $('region-kicker').textContent=regionKicker(region);
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
     $('encounter-enemies').textContent=lawEncounter?'':combat.state.encounterId===ambushEncounter.id?'rebel ambushers remaining':'enemies remaining';
-    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT ? KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
+    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT \u00b7 KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
@@ -5711,7 +5943,7 @@ function init() {
     // **Stage 0 is Jojo's as well** (the user, 23 September 2026, with a screenshot of the
     // landing wearing two of them). The goal there is the village landing, five metres up the
     // pier, and Jojo is standing on it with the gold already over her head: one errand, one mark.
-    const markerGoal=combat.state.phase==='active'||questStage<=1||(questStage===2&&!lessonSet)?null:goal;
+    const markerGoal=combat.state.phase==='active'||(!campaign.snapshot().entryOrigin&&(questStage<=1||(questStage===2&&!lessonSet)))?null:goal;
     objectiveMarker.visible=!!markerGoal&&!(questTracker.selectedId==='main'&&markerGoal.id===INSTRUCTOR.id);
     if(markerGoal){objectiveMarker.position.set(markerGoal.x,world.heightAt(markerGoal.x,markerGoal.z)+2.8+Math.sin(elapsed*2.5)*.12,markerGoal.z);objectiveMarker.rotation.y=elapsed*.7;}
     // Beside it, the open one. A stop with a person of his own wears it over his head instead,
@@ -5773,9 +6005,9 @@ function init() {
       if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.lowerBow();}
       if(mode==='playing'&&!reviewFrozen) {
         const before=player.group.position.clone();
-        const {forward,side}=autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
+        const {forward,side}=living.recall().status==='passenger'?{forward:0,side:0}:autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
         const p=combat.state.player;
-        const guardKey=autopilot.active?autopilot.guard:keys.has(GUARD_KEY);
+        const guardKey=living.recall().status!=='passenger'&&(autopilot.active?autopilot.guard:keys.has(GUARD_KEY));
         const shieldFacing=guardKey&&hasCarriedShield();
         if(riding.mounted&&combat.state.phase==='active')stepDown(true);
         if(riding.mounted){
@@ -5829,7 +6061,7 @@ function init() {
          * aimed by looking, and offered *before* the fight is stepped so the arrow leaves on the
          * frame the player let go rather than the one after it.
          */
-        const drawKey=ranged()&&!inWater&&!riding.mounted&&(swingHeld||(!autopilot.active&&keys.has('KeyR')));
+        const drawKey=living.recall().status!=='passenger'&&ranged()&&!inWater&&!riding.mounted&&(swingHeld||(!autopilot.active&&keys.has('KeyR')));
         if(drawKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-16*dt));}
         combat.draw(drawKey,player.group.rotation.y);
         const windBefore=combat.state.player.stamina;
@@ -5856,7 +6088,7 @@ function init() {
         if(!grounded){verticalSpeed-=17*dt;player.group.position.y+=verticalSpeed*dt;if(player.group.position.y<=floor){player.group.position.y=floor;grounded=true;verticalSpeed=0;}}
         // In the water he floats at the surface rather than walking the seabed: the feet hang a
         // little over a metre down, which puts the head and shoulders above the waterline.
-        else player.group.position.y=(!riding.mounted&&floor<WATERLINE)?WATERLINE-SWIM.sink:floor+(riding.mounted?RIDE.seat.up:0);
+        else player.group.position.y=(!riding.mounted&&floor<WATERLINE)?WATERLINE-SWIM.sink:floor+((riding.mounted||living.recall().status==='passenger')?RIDE.seat.up:0);
         {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,CLOSED_BORDER_TITLE);}}
         swimTick(dt,before);
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
@@ -5907,7 +6139,7 @@ function init() {
         {const near=Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach;
           if(!near)ambushHeldOff=false;
           else if(ambush.alive&&combat.state.phase!=='active'&&mode==='playing'){
-            if(combat.startEncounter(ambushEncounter)){ambush.sprang();ambushHeldOff=false;
+            if(combat.startEncounter(ambushEncounter)){ambushPlayerHelped=true;ambush.sprang();ambushHeldOff=false;
               toast(ambush.fell(landingMateId())?'Three of them come out of the hedges, over the body they left on the road.':'Three of them come out of the hedges on either side of the road. Nobody was waiting for you; somebody was waiting.','THE DRENT ROAD');
               audio?.effect('bell');saveRoad(false);}
             // **A refused fight is a fight that silently never happens** (tests/fights-with-company.test.js).
@@ -5932,6 +6164,7 @@ function init() {
       }
       if(mode==='defeated'){combat.update(dt);combatClock+=dt;walkTime+=dt;}
       else if(['playing','fishing','opening','arriving'].includes(mode)&&!reviewFrozen)walkTime+=dt;
+      republic?.frame(dt,{playing:mode==='playing'&&!reviewFrozen});
       const awareness=drent.frame(dt,{playing:mode==='playing'&&!reviewFrozen,canSneak:!inWater&&!riding.mounted&&combat.state.phase!=='active'});
       const stealthHud=$('stealth-status');stealthHud.hidden=!(drent.sneaking||awareness.suspicion>.01);
       $('stealth-meter').value=awareness.suspicion;
@@ -5941,7 +6174,7 @@ function init() {
       const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
-      player.animate(walkTime,riding.mounted?0:movement,grounded,{...weaponPose,sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:riding.mounted?{pace:movement}:null,
+      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
         // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
         // is what `combat.guard` decided this frame, not what the key is doing.
         guarding:!!combat.state.player.guarding,
@@ -5954,12 +6187,13 @@ function init() {
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
         refreshCompanyHorses();
         if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
-        show('ride-prompt',mode==='playing'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
+        show('ride-prompt',mode==='playing'&&living.recall().status!=='passenger'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});
+      if(!riding.owned)refreshCompanyHorses();
       birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
       if(mode!=='playing'){currentBird=null;birdWatch=null;}
-      show('observe-prompt',!!currentBird);if(currentBird)$('observe-label').textContent=birding.hasSeen(currentBird.species)?`Observe the ${BIRD_SPECIES[currentBird.species].name.toLowerCase()}`:'Observe the bird';
+      show('observe-prompt',!!currentBird&&living.recall().status!=='passenger');if(currentBird)$('observe-label').textContent=birding.hasSeen(currentBird.species)?`Observe the ${BIRD_SPECIES[currentBird.species].name.toLowerCase()}`:'Observe the bird';
       // The pointer bobs over the bird and the box sits beside the chart; the first-sighting
       // card takes the screen back the moment B earns it, so the two are never up together.
       {const watching=!!birdWatch&&mode==='playing'&&combat.state.phase!=='active';
@@ -5976,11 +6210,13 @@ function init() {
         scene.background.setHex(s.background);scene.fog.color.setHex(s.fog);scene.fog.density=s.density;}
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
-      if(!['opening','pause','arriving'].includes(mode)&&!reviewFrozen)playSeconds+=dt;
+      if(['playing','fishing'].includes(mode)&&!reviewFrozen){living.tick(dt);playSeconds=living.clock();}
+      updateLivingRoutes(dt);
+      livingHost?.frame();
       placeMercenaries();
       // Place the swimmer before culling and drawing, so he never flashes onto the beach.
       {const swim=swimmerAt(arrivalClock()),ed=npcById.get(WORD_ID);
-        if(ed){ed.swimming=swim.swimming?swim:null;
+        if(ed){if(swim.swimming)ed.swimming=swim;
           if(swim.swimming){world.npcPositions[WORD_ID]={x:swim.x,z:swim.z};ed.hidden=false;ed.placement={...(ed.placement??{}),phase:'landing'};}}}
       if(mode==='playing'&&!reviewFrozen){
         const mate=npcById.get(landingMateId()),speech=mate?.placement?.speech;
@@ -6037,7 +6273,7 @@ function init() {
       if(ferry.state.crossing)ferry.frame(dt);else if(mode==='playing'&&!reviewFrozen)ferry.settle();
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       for(const prop of world.stakedProps||[])prop.object.visible=isOut(prop,heldControl);wallWatch.update(player.group.position,heldControl,walkTime);
-      westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?company.placements(playSeconds).filter(p=>p.phase==='mustered').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
+      westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?borderMercenaries(border.state.side??'empire').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
       izol.frame({npcById,control:heldControl});
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
       {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
@@ -6070,7 +6306,7 @@ function init() {
         if(near&&['playing','dialogue'].includes(mode)&&!reviewFrozen){a.getObjectByName('Left Wrist').getWorldPosition(gloveAt);
           const step=redTailFlight.update(dt,{glove:{x:gloveAt.x,y:gloveAt.y-.04,z:gloveAt.z,yaw:a.rotation.y},anchor:{x:a.position.x,y:a.position.y,z:a.position.z},called:mode==='dialogue'&&activeDialogue?.npc?.id===BIRD_WATCHER.id});
           redTail.pose(step,elapsed);lakota.falconer=redTailFlight.perched;}}
-      const lusciaDestinations=questStage===QUEST_DONE&&luscia.state.started?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
+      const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const markerView={skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
@@ -6152,7 +6388,7 @@ function init() {
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(crime.controlsNpc(npc.id)){pace=npc.crimeMoving?3.2:0;}
-        else if(mode==='playing'&&dHome>(npc.stride?0:.1)&&!npc.swimming){const move=Math.min(dHome,dt*(shoreAlarm?.pace??(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4))),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR,npc.id);stepToward(pos,{x:destX,z:destZ},move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(pos.x-bx,pos.z-bz);}
+        else if(mode==='playing'&&dHome>(npc.stride?0:.1)&&!npc.swimming){const move=Math.min(dHome,dt*(shoreAlarm?.pace??(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4))),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:npc.mounted?RIDE.radius:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR,npc.id);stepToward(pos,{x:destX,z:destZ},move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(pos.x-bx,pos.z-bz);}
         // A man in the saddle who has ARRIVED is still in the saddle. The line above only
         // runs while he is moving, so a mounted companion who reached his place sank to the
         // ground and left his horse standing beside him - which is what the render showed, four
@@ -6303,7 +6539,7 @@ function init() {
         // Somebody of the company going past. He is recorded whether anybody is beside you to
         // remark on it or not, because the muster asks where you were and not who told you.
         if(mode==='playing'&&companionOffTheClock){
-          const seen=longRoad.notice(company.placements(playSeconds),player.group.position,point=>subregionsAt(point.x,point.z)[0]??null);
+          const seen=longRoad.notice(companyPlacements(),player.group.position,point=>subregionsAt(point.x,point.z)[0]??null);
           const mate=companionBeside();
           if(seen.length&&mate)toast(`${seen[0].name}, going past. ${seen.length>1?`And ${seen.length-1} more of us with him.`:'That is one more of us in this country than there was.'}`,`${mate.name.toUpperCase()} \u00b7 ONE OF OURS`);
           if(seen.length)saveRoad(false);}
@@ -6328,7 +6564,7 @@ function init() {
       currentFoundWeapon=mode==='playing'&&combat.state.phase!=='active'?foundWeapons.lying().filter(one=>!inventory.has(one.weapon))
         .map(one=>({...one,away:Math.hypot(one.x-player.group.position.x,one.z-player.group.position.z)}))
         .filter(one=>one.away<=2.2).sort((a,b)=>a.away-b.away||a.id.localeCompare(b.id))[0]??null:null;
-      show('found-weapon-prompt',!!currentFoundWeapon&&!currentNPC&&!riding.mounted);
+      show('found-weapon-prompt',!!currentFoundWeapon&&!currentNPC&&!riding.mounted&&living.recall().status!=='passenger');
       if(currentFoundWeapon)$('found-weapon-label').textContent=`Take up ${currentFoundWeapon.name}`;
       currentFruit=mode==='playing'?woodlandLife.nearestFruit(player.group.position,2):null;
       currentMushroom=mode==='playing'&&combat.state.phase!=='active'?mushrooms.nearest(player.group.position,2.2):null;
@@ -6371,7 +6607,7 @@ function init() {
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
       const currentCorpse=mode==='playing'?corpseHost.nearest():null;
-      const prompting=mode==='playing'&&(!!currentNPC||!!currentCorpse||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentAppleTree||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&combat.state.phase!=='active';show('interaction',prompting);
+      const prompting=mode==='playing'&&living.recall().status!=='passenger'&&(!!currentNPC||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentAppleTree||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Chip':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentNPC?.marker.visible&&currentNPC.markerKind==='skill')$('interaction-label').textContent+=' \u00b7 Skill teacher';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
@@ -6404,6 +6640,8 @@ function init() {
       // reads a hidden panel; a harness does, and a stale “Speak with Iven” sent two hunts wrong.
       if(vastos.nearby&&!currentNPC)$('interaction-label').textContent=vastos.nearby.prompt;
       if(drent.nearby)$('interaction-label').textContent=drent.nearby.prompt;
+      if(republic?.nearby)$('interaction-label').textContent=republic.nearby.prompt;
+      if(droppedSatchelNear)$('interaction-label').textContent='Recover the courier satchel';
       if(currentCorpse&&!currentNPC)$('interaction-label').textContent=currentCorpse.status==='unconscious'?`Check on ${currentCorpse.name}`:`Search ${currentCorpse.name}'s remains`;
       if(currentNPC){const health=crime.health(currentNPC);if(health&&health.hp<health.maxHp)$('interaction-label').textContent+=` (${Math.ceil(health.hp)}/${health.maxHp} health)`;}
       if(!prompting)$('interaction-label').textContent='';
@@ -6434,11 +6672,12 @@ function init() {
     // panel comes up, and the loop is NOT rescheduled, exactly as it was.
     }catch(error){frameErrors.note(error,frameCount);fail(error);}
   }
+  resetLivingRoutes();
   requestAnimationFrame(render);
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       // The opening sequence, for a harness that would rather not sit through forty-four seconds.
@@ -6471,7 +6710,20 @@ function init() {
         player.group.position.set(-15,world.heightAt(-15,29),29);yaw=Math.PI/2;pitch=.4;distance=targetDistance=9;refreshQuest();settleCamera();}});
     const regionalHooks=()=>({...forestHooks(),regionalLife,regionalAct,farming:farming.view(playSeconds),teachFarming:()=>{const first=farming.learn().first;if(first){toast('Farming, level 1. Four rows at the commons: sow, walk away, come back. Barley is four minutes.','ENNA TAUGHT YOU TO FARM');refreshSkillsSheet();saveRoad(false);}},localMapModel,openLocalMap,trackPlace,
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
+
+    const setCheckClock=seconds=>{const saved=living.snapshot();saved.seconds=seconds;if(!living.restore(saved))throw new Error('Invalid test clock');playSeconds=living.clock();};
     window.__AZHORA__={state,
+      runLivingChecks:()=>runLivingDesktopChecks({getStory:()=>living,getHost:()=>livingHost,
+        prepare:prepareLivingScenario,
+        frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},setMode:v=>{mode=v;},getMode:()=>mode,
+        saveRoad:()=>writeRoadCheckpoint(sessionCheckpoint),checkpoint:sessionCheckpoint,inventory,npcById,player,
+        refresh:refreshQuest,readState:state,nextSpeech,closeDialogue,earlyRecall:()=>{questStage=0;practiceHits=0;practiceGuards=0;practiceDodges=0;lessonSet=false;chartLesson.restore('unissued');journey.restore(createJourney().snapshot());luscia.restore(createLusciaChapter().snapshot());campaign.restore(createCampaign().snapshot());},finishRecall:()=>{const id=living.recall().courier,n=npcById.get(id),p=clearApproach(world.npcPositions[MOROS_LEGATE_ID]);n.actor.group.position.set(p.x,world.heightAt(p.x,p.z)+RIDE.seat.up,p.z);player.group.position.copy(n.actor.group.position);living.observe(id,{position:p});livingHost.routeEvent({type:'courier-returned',id});refreshQuest();},observeAmbush:()=>{const id='merc-gotwood',n=npcById.get(id),p={x:AMBUSH.point.x+2,z:AMBUSH.point.z};living.observe(id,{stage:'ambush',position:p});n.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);player.group.position.set(AMBUSH.point.x+30,world.heightAt(AMBUSH.point.x+30,AMBUSH.point.z),AMBUSH.point.z);mode='playing';walkTheAmbush();return {id,position:p,allies:combat.state.allies.map(a=>({id:a.id,x:a.x,z:a.z}))};},stageScenario:kind=>$('test-story-'+kind).click(),press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,cancelable:true})),restoreRoad:data=>{sessionCheckpoint.save(data);continueRoad(true);mode='pause';}}),
+      runRepublicChecks:()=>runRepublicDesktopChecks({getStory:()=>living,getRepublic:()=>republic,getLuscia:()=>luscia,
+        getCampaign:()=>campaign,getBorder:()=>border,
+        prepare:()=>{prepareLivingScenario();journeyAct('deliver-report');},
+        frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},
+        inventory,npcById,player,nextSpeech,closeDialogue,conversation,readState:state,setMode:v=>{mode=v;},
+        saveRead:()=>{const r=sessionCheckpoint.save(roadSnapshot());return r.ok?sessionCheckpoint.read():r;}}),
       async runCompanionCombatChecks(){
         const checks=[],assert=(ok,message)=>{if(!ok)throw new Error(message);checks.push(message);};
         const frames=async(n=3)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
@@ -6815,23 +7067,23 @@ function init() {
         stopInput();combat.finishPractice();questStage=QUEST_DONE;
         assert(frameErrors.view().count===0,'Renderer reported a frame error');
         // Check the host's invitation gate, then the same background clock from far away.
-        companionOffTheClock=false;longRoad.restore(createLongRoad().snapshot());playSeconds=0;questStage=1;rebuildCompany();
+        companionOffTheClock=false;longRoad.restore(createLongRoad().snapshot());setCheckClock(0);questStage=1;rebuildCompany();
         assert(!recallCompanion(),'Chris joined before his own training');
-        playSeconds=landingQuest.departureAt+1;questStage=2;
+        setCheckClock(landingQuest.departureAt+1);questStage=2;
         assert(!recallCompanion(),'Chris joined an untrained player');
         questStage=QUEST_DONE;assert(recallCompanion(),'Two trained travelers could not partner');
-        assert(company.placements(playSeconds).find(p=>p.id===landingMateId())?.phase==='with-traveler','Partner did not leave his solo route');
+        assert(companyPlacements().find(p=>p.id===landingMateId())?.phase==='with-traveler','Partner did not leave his solo route');
         companionOffTheClock=false;longRoad.restore(createLongRoad().snapshot());rebuildCompany();
         const far=world.regions.find(r=>r.name==='Vastos');assert(far,'Vastos review destination missing');testTravel(far.id);
-        reviewFrozen=true;wordSaid=null;landingSaid=null;playSeconds=landingQuest.departureAt+WORD_SHIP.sighted+1;
+        reviewFrozen=true;wordSaid=null;landingSaid=null;setCheckClock(landingQuest.departureAt+WORD_SHIP.sighted+1);
         const n=reviewLog.toasts.length;await frames(3);
         assert(wordSaid==='sighted','Distant arrival did not advance');
         assert(!reviewLog.toasts.slice(n).some(t=>t.kicker==='A SAIL, STANDING IN'),'Distant pirate sail announced in Vastos');
-        playSeconds=landingQuest.departureAt+ARRIVALS.riders+1;await frames(3);
+        setCheckClock(landingQuest.departureAt+ARRIVALS.riders+1);await frames(3);
         assert(landingSaid===landingAt(arrivalClock())?.key,'Distant later arrival did not advance');
         testTravel('village');const returned=reviewLog.toasts.length;await frames(3);
         assert(reviewLog.toasts.length===returned,'Old harbour notices replayed on return');
-        wordSaid=null;landingSaid=null;playSeconds=landingQuest.departureAt+1;const close=reviewLog.toasts.length;await frames(3);
+        wordSaid=null;landingSaid=null;setCheckClock(landingQuest.departureAt+1);const close=reviewLog.toasts.length;await frames(3);
         assert(reviewLog.toasts.slice(close).some(t=>t.kicker==='A SAIL, STANDING IN'),'Nearby sail notice missing');
         // The normal NPC movement loop must march the watch, not only narrate it.
         const watch=npcById.get(HARBOUR_WATCH[0].id),target=harbourAlarm.pose(watch.id,arrivalClock()).target;
@@ -6850,7 +7102,7 @@ function init() {
         const waitFor=async(fn,message,seconds=30)=>{const deadline=performance.now()+seconds*1000;while(!fn()){assert(performance.now()<deadline,`${message}: ${JSON.stringify({mode,phase:combat.state.phase,questStage,hits:practiceHits,guards:practiceGuards,dodges:practiceDodges,position:player.group.position.toArray(),intent:autopilotIntent})}`);await frames(1);}};
         const chapterOne={};
         stopAutopilot();reviewFrozen=false;reviewTarget=null;forestHooks().prepareVillage();
-        questStage=0;lessonSet=false;practiceHits=0;practiceGuards=0;practiceDodges=0;guardHeld=0;playSeconds=0;
+        questStage=0;lessonSet=false;practiceHits=0;practiceGuards=0;practiceDodges=0;guardHeld=0;resetLivingStory();setCheckClock(0);
         chartLesson.restore('unissued');cartography.restore(createCartography().snapshot());mapTutorial.restore(0);
         skills.restore({version:1,skills:{},taught:[]});gear.takeOff('hand');refreshShield();
         journey.restore(createJourney().snapshot());campaign.restore(createCampaign().snapshot());drent.restore();
@@ -7207,7 +7459,7 @@ function init() {
           for(const spot of [[18,29],[12,29],[6,28.6]]){warp(spot[0],spot[1]);await frames(24);
             assert(!mate.escorting,`He started escorting at ${spot[0]}, ${spot[1]}`);
             assert(canStand(mate.actor.group.position.x,mate.actor.group.position.z,world),'He is standing in the water');}
-          assert(longRoad.released,'He is not on his own road: something made him a companion unasked');}
+          assert(!companions.walksWith(landingMateId())&&!companionOffTheClock&&companyPlacements().find(p=>p.id===landingMateId())?.phase!=='with-traveler','He is not on his own road: something made him a companion unasked');}
         warp(0,19);await frames();assert(questStage===1,'Arrival quest failed');
         // Measure travel against simulation time so busy machines do not affect
         // the comparison. Tab must run at Shift speed and never move UI focus.
@@ -7309,7 +7561,7 @@ function init() {
         modal('journal');mapTab(true);await frames(2);
         assert(!$('world-map').classList.contains('hidden'),'Map failed');assert($('atlas-image').naturalWidth>0,'World map missing');
         assert(atlas?.hexCount===18700&&atlas.regionCount===131&&atlas.riverCount===572&&atlas.source.endsWith('azhora.wwmap'),'World Builder map source or geography changed');
-        assert($('atlas-image').src.endsWith('azhora-world-map.svg'),'Journal still uses the sketch');
+        assert($('atlas-image').src.startsWith('blob:')||$('atlas-image').src.endsWith('azhora-world-map.svg'),'Journal did not load the World Builder terrain image');
         {const m=worldMap.state(),scale=Math.min(m.width/atlas.width,m.height/atlas.height)*m.zoom,tx=m.offsetX+m.traveler.x*scale,ty=m.offsetY+m.traveler.y*scale;
           assert(m.zoom>3,'The chart did not open close enough to read');assert(Math.abs(tx-m.width/2)<m.width*.2&&Math.abs(ty-m.height/2)<m.height*.2,'The chart did not open on the traveler');
           assert($('atlas-traveler').textContent.includes('Drent'),'The traveler mark does not say where they are');}

@@ -98,7 +98,8 @@ test('Chris rides: the long road’s own man is in the file, and the file is wha
   assert.equal(company.placements(4000).find(one => one.id === mate).phase, 'with-traveler',
     'at four thousand seconds he is still at the traveler’s shoulder, not away down his own clock');
   // So when the traveler owns a horse and gets on it, Chris is up with a horse under him.
-  const rule = companyHorses({ owned: true, mounted: true, walking: company.companionIds });
+  const rule = companyHorses({ owned: true, mounted: true, walking: company.companionIds,
+    allocations: [{ id: 'army-remount-1', owner: mate, claimed: true }] });
   assert.equal(rule.mounted, true);
   assert.deepEqual(rule.ids, [mate], 'Chris has a horse, and he is on it');
   // He and the asked companions are one file, in roster order, with the mate at the front.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createCombat } from '../src/combat.js';
 import {
   BORDER_ENCOUNTER_ID, BORDER_LEGATE_ID, BORDER_GATE_ID, BORDER_NPCS, BORDER_MARCHERS, BORDER_LINE, COALITION_SIGNING, MARCH,
-  borderConversation, borderEncounter, borderLine, borderLineSaid, createBorderChapter, validateBorderSnapshot, marchSlot,
+  borderConversation, borderEncounter, borderMusterEncounter, borderLine, borderLineSaid, createBorderChapter, validateBorderSnapshot, marchSlot,
 } from '../src/border-chapter.js';
 import { FILE_FLOOR } from '../src/file-fill.js';
 import { MERCENARY_COMPANY_SIZE } from '../src/mercenaries.js';
@@ -133,6 +133,41 @@ test('each side’s encounter is a valid fight against the other side’s soldie
     assert.ok(combat.state.enemies.filter(enemy => enemy.kind === 'soldier').length === 8);
   }
   assert.equal(borderEncounter('empire', Array.from({ length: 9 }, (_, i) => ({ id: `a${i}`, kind: 'legionary' }))).allies.length, 5, 'five stand with the traveler at most');
+});
+
+test('every living faction split fields all ten mercenaries once, in valid separated formations and the existing waves',()=>{
+  const world={bounds:{minX:-900,maxX:200,minZ:-300,maxZ:700},colliders:[],heightAt:()=>2};
+  const roster=Array.from({length:10},(_,i)=>({id:`merc-${i}`,npcId:`merc-${i}`,name:`Mercenary ${i}`,kind:'legionary',hp:73+i,
+    model:{role:'mercenary',tunic:0x554433},x:999,z:999}));
+  const before=structuredClone(roster);
+  for(const side of ['empire','coalition'])for(let split=0;split<=roster.length;split++){
+    const allies=roster.slice(0,split),opponents=roster.slice(split),config=borderMusterEncounter(side,{allies,opponents});
+    assert.deepEqual(config.allies.map(a=>a.id),allies.map(a=>a.id));
+    assert.deepEqual(config.enemies.filter(e=>e.npcId).map(e=>e.id),opponents.map(a=>a.id));
+    const named=[...config.allies,...config.enemies.filter(e=>e.npcId)];
+    assert.equal(named.length,10);assert.equal(new Set(named.map(a=>a.npcId)).size,10);
+    for(const actor of named){const original=roster.find(r=>r.id===actor.id);assert.equal(actor.hp,original.hp);assert.deepEqual(actor.model,original.model);}
+    for(const a of [...config.allies,...config.enemies])for(const b of [...config.allies,...config.enemies,config.checkpoint])
+      if(a!==b)assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>=1.2,`${side}/${split}: ${a.id} overlaps ${b.id??'player'}`);
+    // Additional host-assigned soldiers form behind the checkpoint. They must
+    // not collide with the expanded mercenary rank, even with all ten present.
+    const supports=Array.from({length:Math.min(6,16-config.allies.length)},(_,i)=>({id:`support-${i}`,kind:'legionary',
+      x:config.center.x+((i%5)-2)*2.2+(i<5?0:1.1),z:config.center.z+(i<5?15.6:18)}));
+    for(const extra of supports)for(const a of config.allies)
+      assert.ok(Math.hypot(extra.x-a.x,extra.z-a.z)>=1.2,`${extra.id} overlaps ${a.id}`);
+    const combat=createCombat({world,position:{...config.checkpoint,y:2}});
+    assert.equal(combat.startEncounter({...config,allies:[...config.allies,...supports]}),true,`${side}/${split} roster validates`);
+    assert.equal(combat.state.allies.length,config.allies.length+supports.length);
+    const entries=config.enemies.map(e=>e.entry).sort((a,b)=>a-b);
+    assert.equal(1+entries.slice(1).filter((entry,i)=>entry-entries[i]>2).length,3,'named opponents keep the three waves');
+  }
+  assert.deepEqual(roster,before,'building a fight does not mutate the world actors');
+});
+
+test('a repeated companion reference remains one combatant and the default four keep their positions',()=>{
+  const allies=Array.from({length:4},(_,i)=>({id:`a-${i}`,npcId:`a-${i}`,kind:'legionary'}));
+  const legacy=borderEncounter('empire',allies),live=borderMusterEncounter('empire',{allies:[...allies,allies[0]],opponents:[allies[0]]});
+  assert.deepEqual(live,legacy);
 });
 
 /**

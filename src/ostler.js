@@ -1,6 +1,6 @@
 /**
- * The ostler of Nothom. Iven pays for the Lauvel with a token for an army
- * horse; this is the man who turns the token into the horse, in the stable yard
+ * The ostler of Nothom. Iven reserves four army horses in reporting order;
+ * this is the man who turns an allocated token into its horse, in the stable yard
  * at the edge of town, and who teaches the traveler to ride it. He will also
  * send a boy to bring the horse back to the yard if it has been left somewhere
  * foolish. Pure: no DOM, no three. The host places him (`LUMBER_TOWN_STABLE`).
@@ -15,7 +15,7 @@ export const horseWaiting = ({ inventory, riding }) => !riding.owned && !!invent
 
 export const OSTLER_OBJECTIVE = Object.freeze({
   title: 'What the army owes',
-  detail: 'Iven paid you with a token for an army horse. Take it to Bede Harrow, the ostler, at the stable yard on the edge of Nothom. The roads beyond Luscia are long, and they are meant to be ridden.',
+  detail: 'Iven reserved one of the four army remounts in your name. Take his token to Bede Harrow, the ostler, at the stable yard on the edge of Nothom.',
   kicker: 'LUSCIA · THE ARMY’S HORSE',
 });
 
@@ -23,29 +23,43 @@ export const OSTLER_OBJECTIVE = Object.freeze({
  * Hand the horse over. `hitch` is where it stands in the yard. Atomic: the token
  * is only taken if the horse can be given.
  */
-export function redeemHorse({ inventory, riding, hitch }) {
+export function redeemHorse({ inventory, riding, hitch, story = null, owner = 'player' }) {
   if (riding.owned) return { ok: false, reason: 'You already have your horse.' };
   if (!inventory?.has?.(OSTLER_TOKEN)) return { ok: false, reason: 'Bede hands out army horses against a clerk’s token, and you have none.' };
+  if (story) {
+    const reservation = story.snapshot().horses.find(h => h.owner === owner);
+    if (!reservation) return { ok: false, reason: 'The four army remounts have already been allocated. A spare token cannot create another horse.' };
+    if (reservation.claimed) return { ok: false, reason: 'Your reserved horse has already left this yard. Find that horse; Bede cannot issue it twice.' };
+  }
   const granted = riding.grant(hitch, hitch?.yaw ?? 0);
   if (!granted.ok) return granted;
+  if (story) story.claimHorse(owner);
   inventory.remove(OSTLER_TOKEN, 1);
   riding.teach();
   return { ok: true, reason: '' };
 }
 
 /**
- * What he says about the company's mounts. One line, and it is the rule in his own voice:
- * the army's remounts go out with the army's rider, and he did not think it worth asking
- * about (src/company-horses.js).
+ * The shared stock is finite, including mounts belonging to traveling companions.
  */
-export const OSTLER_COMPANY_LINE = 'Your friends are up on army horses out of my back row, and no, I did not ask you. '
-  + 'Ten men walking behind one man riding is not a company, it is a joke, and the army does not pay me to be funny.';
+export const OSTLER_COMPANY_LINE = 'Four army remounts, and four only. Iven reserves them for the first four people who report. '
+  + 'A friend with a reservation can collect a horse here. Everyone else walks, and joining your company does not change the count.';
 
 export function ostlerConversation(npc, context) {
-  const { inventory, riding, hitch, playerPosition, openDialogue, closeDialogue, act, company = 0 } = context;
+  const { inventory, riding, hitch, playerPosition, openDialogue, closeDialogue, act, company = 0, story = null } = context;
   if (npc.id !== OSTLER_NPC.id) return false;
   const leave = { id: 'leave-ostler', label: 'Another time.', action: closeDialogue };
   if (!riding.owned) {
+    if (story && !story.horseFor('player')) {
+      openDialogue(npc, [OSTLER_COMPANY_LINE, story.availableHorses() > 0
+        ? 'There are still reservations available. Report to Iven on the square first; he keeps the order of arrival.'
+        : 'All four are spoken for. I cannot make a fifth appear, but the road remains open on foot.'], null, 'Back to the road');
+      return true;
+    }
+    if (story?.snapshot().horses.some(h => h.owner === 'player' && h.claimed)) {
+      openDialogue(npc, ['Your reserved horse has already left this yard. Find him where he was left; a second token does not buy a second issue.'], null, 'Back to the road');
+      return true;
+    }
     if (!inventory?.has?.(OSTLER_TOKEN)) {
       openDialogue(npc, [
         'Army horses, every one, and every one spoken for. I feed them, I do not own them.',
@@ -53,7 +67,7 @@ export function ostlerConversation(npc, context) {
       ], null, 'Back to the road');
       return true;
     }
-    openDialogue(npc, ['Iven’s mark. Then the bay is yours, and the army is one horse poorer, which it will not notice.', ...RIDING_LESSON], null, 'Step back',
+    openDialogue(npc, ['Iven’s mark. One of the four is reserved in your name. Take the reins and mind him; this is your horse, not an endless line of replacements.', ...RIDING_LESSON], null, 'Step back',
       { choices: [{ id: 'redeem-horse', label: 'Hand over the token and take the reins', action: () => { closeDialogue(); act('redeem-horse'); } }, leave] });
     return true;
   }

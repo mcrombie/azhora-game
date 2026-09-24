@@ -16,6 +16,8 @@ import { createRiding } from '../src/riding.js';
 import * as campaignModule from '../src/campaign.js';
 import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-scale.js';
 import { WORLD_BOUNDS as PLAYABLE_BOUNDS } from '../src/regions.js';
+import {createLivingStory} from '../src/living-story.js';
+import {createLusciaCivilWar} from '../src/luscia-civil-war.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -56,6 +58,75 @@ test('road checkpoint round-trips partial quest progress, satchel, weapon wear, 
   assert.equal(checkpoint.clear().ok, true);
   assert.equal(storage.values.has(ROAD_CHECKPOINT_KEY), false);
   assert.equal(checkpoint.read().data, null);
+});
+
+test('a courier can bring an untrained pier traveler through the muster and save actual unfinished lessons', () => {
+  const {checkpoint, data} = fixture(), inventory = createInventoryState();
+  inventory.grant('simple-sword');
+  const campaign = campaignModule.createCampaign(), journey = createJourney(), luscia = createLusciaChapter();
+  const moros = createMorosChapter({inventory, onFoot: () => true}), border = createBorderChapter();
+  const woodland = {version: 1, acornStatus: 'available', practiceHits: 0, practiceDodges: 0, practiceGuards: 0,
+    acorns: [], sticks: [], fruits: [], discoveries: [], camp: {version: 1, taught: false, catches: 0, fires: {}}};
+  const save = () => ({...data, questStage: 0, woodland, journeyGathered: [], journey: journey.snapshot(),
+    weapons: createWeapons({inventory}).snapshot(), inventory: inventory.items().map(id => ({id, quantity: inventory.count(id)})),
+    campaign: campaign.snapshot(), luscia: luscia.snapshot(), moros: moros.snapshot(), border: border.snapshot()});
+  assert.equal(checkpoint.save(save()).ok, false, 'normal pier progress still has no onward checkpoint');
+  campaign.acceptImperialRecall(); moros.start();
+  let result = checkpoint.save(save()); assert.equal(result.ok, true, result.reason);
+  moros.act('admit-to-camp'); moros.act('join-muster'); moros.act('claim-legion-horse');
+  assert.equal(moros.state.complete, true); campaign.completeChapter('moros-camp');
+  border.start(); border.act('take-legate-terms');
+  result = checkpoint.save(save()); assert.equal(result.ok, true, result.reason);
+  let loaded = checkpoint.read().data;
+  assert.equal(loaded.questStage, 0); assert.deepEqual(loaded.woodland, woodland);
+  assert.equal(loaded.journey.started, false); assert.equal(loaded.luscia.started, false);
+  assert.deepEqual(loaded.campaign.completed, ['moros-camp']); assert.equal(loaded.campaign.horse, false);
+  assert.equal(inventory.count('copper-piece'), 25, 'only the actual muster wage is earned');
+  assert.equal(inventory.has('horse-token'), false); assert.equal(inventory.has('road-token'), false);
+  border.act('enter-solis'); border.act('side-empire'); campaign.chooseSide('empire');
+  result = checkpoint.save(save()); assert.equal(result.ok, true, result.reason);
+  loaded = checkpoint.read().data;
+  assert.equal(loaded.campaign.chapterId, 'border-battle'); assert.equal(loaded.campaign.imperialRecall, true);
+  const corrupt = {...save(), campaign: {...campaign.snapshot(), imperialRecall: false}};
+  assert.equal(checkpoint.save(corrupt).ok, false, 'recall history is checked, not a blanket bypass');
+});
+
+test('recall does not forgive a future battle or prevent later living-operative recruitment', () => {
+  const {checkpoint, data} = fixture(), campaign = campaignModule.createCampaign();
+  campaign.acceptImperialRecall();
+  const moros = createMorosChapter(); moros.start(); moros.act('admit-to-camp');
+  const border = createBorderChapter(); border.start();
+  const save = {...data, campaign: campaign.snapshot(), moros: moros.snapshot(), border: border.snapshot()};
+  assert.equal(checkpoint.save(save).ok, false, 'the border still requires a genuinely completed muster');
+  campaign.joinRepublic();
+  const republican = createBorderChapter(); republican.joinRepublic();
+  const result = checkpoint.save({...save, campaign: campaign.snapshot(), border: republican.snapshot()});
+  assert.equal(result.ok, true, result.reason);
+  assert.equal(checkpoint.read().data.campaign.entryOrigin, 'luscia');
+  assert.equal(checkpoint.read().data.campaign.imperialRecall, true);
+});
+
+test('living world time and Republican introduction persist; the unique satchel must match its carrier',()=>{
+  const {checkpoint,data,inventory}=fixture(),living=createLivingStory(),civil=createLusciaCivilWar();
+  living.tick(173);living.reportNothom('player');living.acceptSatchel('player');living.takeSatchel('player');
+  civil.meetSoldier();civil.agreeSoldier();inventory.add('courier-satchel');
+  const saved={...data,livingStory:living.snapshot(),lusciaCivilWar:civil.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)}))};
+  assert.equal(checkpoint.save(saved).ok,true);assert.deepEqual(checkpoint.read().data.livingStory,saved.livingStory);assert.deepEqual(checkpoint.read().data.lusciaCivilWar,saved.lusciaCivilWar);
+  const copied=checkpoint.read().data;copied.livingStory.satchel.carrier='merc-word';
+  assert.equal(checkpoint.save(copied).ok,false,'two carriers cannot own the unique satchel');
+  assert.equal(checkpoint.save({...saved,inventory:data.inventory}).ok,false,'a claimed player carrier requires the actual inventory item');
+  assert.equal(checkpoint.save({...saved,lusciaCivilWar:{...saved.lusciaCivilWar,operative:'gone'}}).ok,false);
+  assert.equal(checkpoint.read().data.livingStory.seconds,173,'invalid edits never replace a good saved clock');
+});
+
+test('early Republican checkpoint reaches Voss without inventing Imperial muster history',()=>{
+  const {checkpoint,data,inventory,weapons}=fixture(),road=createJourney({inventory,weapons});road.start();road.act('deliver-report');
+  assert.equal(road.view().complete,true);
+  const campaign=campaignModule.createCampaign(),border=createBorderChapter(),civil=createLusciaCivilWar();campaign.completeChapter('drent-road');
+  civil.readOperative();civil.joinRepublic();campaign.joinRepublic();border.joinRepublic();
+  const saved={...data,journey:road.snapshot(),campaign:campaign.snapshot(),border:border.snapshot(),lusciaCivilWar:civil.snapshot()};
+  const checked=checkpoint.save(saved);assert.equal(checked.ok,true,checked.reason);
+  const restored=checkpoint.read().data;assert.deepEqual(restored.campaign.completed,['drent-road']);assert.equal(restored.border.ordered,false);assert.equal(restored.border.side,'coalition');
 });
 
 test('the road checkpoint retains spare armor without re-equipping it on reload', () => {

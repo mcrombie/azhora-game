@@ -5,8 +5,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import { AMBUSH, PARTIES, AMBUSHED_IDS, RISK, roll, outcomeFor, createRoadAmbush,
-  validateRoadAmbushSnapshot } from '../src/road-ambush.js';
+  validateRoadAmbushSnapshot, ambushPartiesForRoster, bodyPlace } from '../src/road-ambush.js';
 import { MERCENARY_ROSTER, CROMB, roadLengths, distanceAlongRoad } from '../src/mercenaries.js';
+import { companyFor, PLAYABLE } from '../src/player-characters.js';
 import { canStand } from '../src/game-state.js';
 import { BODY } from '../src/bodies.js';
 
@@ -89,6 +90,64 @@ test('Mus never goes that way, so he can neither spring it nor die in it', () =>
     if (id === 'merc-mus' || id === CROMB.id) continue;
     assert.ok(listed.includes(id), `${id} walks that road and nothing is written for him`);
   }
+});
+
+test('every chosen hero is absent from ambush parties and Cromb occupies exactly one road slot', () => {
+  for (const hero of PLAYABLE) {
+    const roster = companyFor(hero.id), parties = ambushPartiesForRoster(roster), listed = parties.flatMap(p => p.men);
+    assert.equal(new Set(listed).size, listed.length, hero.id);
+    assert.ok(listed.every(id => roster.some(actor => actor.id === id)), `${hero.id}: absent identity on road`);
+    assert.equal(listed.includes('merc-mus'), false);
+    if (hero.roster) {
+      assert.equal(listed.includes(hero.roster), false, `${hero.id}: player still represented as an NPC`);
+      assert.equal(listed.filter(id => id === 'merc-cromb').length, 1);
+      const original = PARTIES.find(p => p.men.includes(hero.roster));
+      const replacement = parties.find(p => p.men.includes('merc-cromb'));
+      assert.equal(replacement.id, original?.id ?? 'cromb');
+      assert.equal(replacement.does, original?.does ?? 'runs');
+    } else assert.deepEqual(parties, PARTIES);
+  }
+  assert.deepEqual(ambushPartiesForRoster([]), []);
+});
+
+test('playing Chris makes the actual landing mate Cromb the victim, and companionship protects him', () => {
+  const roster = companyFor('gotwood'), ambush = createRoadAmbush({seed:7});
+  assert.deepEqual(ambush.reach('gotwood', {roster}).fallen, ['merc-cromb']);
+  assert.equal(ambush.fell('merc-gotwood'), false);
+  assert.equal(ambush.fell('merc-cromb'), true);
+  assert.ok(Number.isFinite(bodyPlace('merc-cromb').x));
+  assert.equal(validateRoadAmbushSnapshot(ambush.snapshot()), true);
+  const loaded = createRoadAmbush(); assert.equal(loaded.restore(ambush.snapshot()), true);
+  assert.equal(loaded.reach('gotwood', {roster}), null, 'reloading cannot kill the replacement twice');
+  const protectedMate = createRoadAmbush();
+  assert.equal(protectedMate.reach('gotwood', {roster,withTraveler:['merc-cromb']}).met, false);
+  assert.deepEqual(protectedMate.state.fallen, []);
+});
+
+test('a replacement rider fights with the real group and the absent player can never be rolled as a casualty', () => {
+  const roster = companyFor('jerry'), casualties = new Set();
+  for(let seed=0;seed<400;seed++) {
+    const result = createRoadAmbush({seed}).reach('riders', {roster});
+    assert.equal(result.cleared, true);
+    assert.equal(result.fallen.includes('merc-jerry'), false);
+    result.fallen.forEach(id => casualties.add(id));
+  }
+  assert.deepEqual([...casualties].sort(), ['merc-christin','merc-ciaran','merc-cromb']);
+  const alone = createRoadAmbush().reach('riders', {roster,withTraveler:['merc-christin','merc-ciaran']});
+  assert.deepEqual(alone.fallen, ['merc-cromb']);
+});
+
+test('playing Mus gives Cromb a saved standalone escape and preserves old default snapshots', () => {
+  const roster = companyFor('mus'), a = createRoadAmbush();
+  assert.equal(a.reach('mus', {roster}), null);
+  const met = a.reach('cromb', {roster});
+  assert.equal(met.met, true); assert.equal(met.cleared, false); assert.deepEqual(met.fallen, []);
+  const saved = a.snapshot(), restored = createRoadAmbush();
+  assert.equal(validateRoadAmbushSnapshot(saved), true); assert.equal(restored.restore(saved), true);
+  assert.equal(restored.reach('cromb', {roster}), null);
+  const old = createRoadAmbush(); old.reach('gotwood');
+  assert.equal(restored.restore(old.snapshot()), true); assert.equal(restored.fell('merc-gotwood'), true);
+  assert.deepEqual(ambushPartiesForRoster(['merc-word']), [{id:'word',men:['merc-word'],does:'runs'}]);
 });
 
 test('the roll is the playthrough’s, not the frame’s: the same seed always loses the same man', () => {
@@ -270,15 +329,19 @@ test('src/main.js walks the road, springs it, lays the bodies and saves all of i
   assert.match(main, /if\(mode==='playing'&&!reviewFrozen\)\{[\s\S]*?walkTheAmbush\(\);/, 'once a frame of ordinary play, and never in a frozen review');
   assert.match(main, /const withTraveler=new Set\(companions\.walking\),dead=fallen\.ids;/,
     'a man at your shoulder is not on that road');
-  assert.match(main, /one\.phase!=='with-traveler'&&one\.phase!=='coming'&&one\.phase!=='landing'/,
-    'and neither is a man still at sea or still on the landing');
+  assert.match(main, /const roadParties=\(\)=>ambushPartiesForRoster\(roster\);/,
+    'the actual selected hero determines who can meet the ambush');
+  assert.match(main, /!eligible\.length\|\|!eligible\.every\(atRoadAmbush\)/,
+    'no party settles until every participating person is physically at the junction');
+  assert.match(main, /ambush\.reach\(party\.id,\{withTraveler,dead,roster\}\)/,
+    'the same actual roster determines who can fall');
   assert.match(main, /for\(const id of told\?\.fallen\?\?\[\]\)\{if\(fallen\.fall\(id\)\)lost=true;\}/,
     'a man killed out there is dead in the game, not only in the event');
-  assert.match(main, /if\(lost\)\{rebuildCompany\(\);placeMercenaries\(\);saveRoad\(false\);\}/,
+  assert.match(main, /if\(lost\)\{[^\n]*rebuildCompany\(\);placeMercenaries\(\);saveRoad\(false\);\}/,
     'the file closes over him and the save remembers');
   // The traveler's own way into it, and the way out of it.
-  assert.match(main, /if\(combat\.startEncounter\(ambushEncounter\)\)\{ambush\.sprang\(\);/);
-  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id\)\{ambush\.cleared\(\);drent\.defeatedAmbush\(\);saveRoad\(false\);\}/,
+  assert.match(main, /if\(combat\.startEncounter\(ambushEncounter\)\)\{ambushPlayerHelped=true;ambush\.sprang\(\);/);
+  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id\)\{ambush\.cleared\(\);if\(ambushPlayerHelped\)drent\.defeatedAmbush\(\);saveRoad\(false\);\}/,
     'and winning it clears the road for everybody after you');
   assert.doesNotMatch(main, /markerFor\([^)]*ambush/, 'an event wears no mark');
   // The body.

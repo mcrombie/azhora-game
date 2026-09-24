@@ -646,7 +646,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const pondWater = new THREE.Mesh(pondGeometry, pondMaterial);
   pondWater.name = 'Willowmere forest pond';
   pondWater.position.set(pond.x, pond.surfaceY + .027, pond.z); villageRoot.add(pondWater);
-  vpush({ x: pond.x, z: pond.z, r: pond.radius - .04, kind: 'pond-water' });
+  vpush({ x: pond.x, z: pond.z, r: pond.radius - .04, surface: pond.surfaceY, kind: 'pond-water' });
 
   const boardCount = 35;
   const dockBoards = new THREE.InstancedMesh(cube, material('#b48d61'), boardCount);

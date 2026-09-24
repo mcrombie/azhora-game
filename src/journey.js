@@ -65,7 +65,7 @@ function validateSnapshot(value, live = questLive) {
   return value.revision === actions;
 }
 
-export function createJourney({ inventory, weapons, skills, onEvent = () => {}, live = questLive } = {}) {
+export function createJourney({ inventory, weapons, skills, onEvent = () => {}, live = questLive, sharedBridge = () => null } = {}) {
   let state = emptyState();
 
   function snapshot() {
@@ -97,6 +97,7 @@ export function createJourney({ inventory, weapons, skills, onEvent = () => {}, 
    * road has got anywhere.
    */
   function bridgeStage() {
+    if (sharedBridge()?.completed && !state.bridgeRepaired) return 'missed';
     if (live('courier')) return 'on-the-road';
     if (!live('bridge') || !state.started) return 'closed';
     if (!state.bridgeAccepted) return 'offered';
@@ -226,7 +227,7 @@ export function createJourney({ inventory, weapons, skills, onEvent = () => {}, 
   return {
     start, act, view, availableActions, snapshot, restore,
     bridgeStage,
-    get state() { return { ...snapshot(), stage: stage(), bridge: bridgeStage(), complete: state.reportDelivered,
+    get state() { return { ...snapshot(), bridgeRepaired:state.bridgeRepaired || !!sharedBridge()?.completed, stage: stage(), bridge: bridgeStage(), complete: state.reportDelivered,
       completedRegions: [state.courierComplete ? 2 : null, state.bridgeComplete ? 3 : null, state.reportDelivered ? 4 : null].filter(Boolean) }; },
   };
 }

@@ -98,3 +98,5 @@ body.cutscene #location,body.cutscene #compass,body.cutscene #map-wrap,body.cuts
 #character-detail small {display:block;margin-top:5px;font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:#f0d79a;}
 @media(max-height:820px){#opening h2 {font-size:clamp(38px,4vw,54px);}#opening p {margin:14px 0 18px;}
   #opening-characters {margin-bottom:14px;}#opening #character-detail {margin-top:9px;}}
+
+#location #world-calendar {font-size:12px;letter-spacing:.025em;color:#e4d8b2;margin-top:7px;pointer-events:auto;}

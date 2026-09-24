@@ -73,7 +73,7 @@ export const STORY_CHAPTERS = Object.freeze([
     // one step further on — accepting the errand out to the Lauvel — and reading
     // the chapter off that left the journal saying Chapter 1 to a traveler who had
     // already done every line of it.
-    done: state => !!state.luscia?.started,
+    done: state => !!state.luscia?.started || !!state.onwardEntry,
   }),
   chapter({
     // Everything the traveler does once they have reported: the errand that shows them

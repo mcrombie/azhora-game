@@ -89,7 +89,7 @@ function normalize(quest, id, type = typeFor(quest)) {
  * cannot be revived by an old save carrying its unfinished state.
  */
 export function normalizeTrackableQuests({ main = {}, bridge = null, vastos = null, optional = [], live = questLive } = {}) {
-  const result = [normalize({ title: 'The main quest', ...main }, 'main', 'main')];
+  const result = main?.active === false ? [] : [normalize({ title: 'The main quest', ...main }, 'main', 'main')];
   if (live('bridge') && bridge && !finished(bridge) && ['accepted', 'repaired'].includes(bridge.stage)) {
     const repaired = bridge.stage === 'repaired', sticks = Math.max(0, Math.min(3, Math.floor(Number(bridge.sticks) || 0)));
     result.push(normalize({ ...bridge, title: bridge.title ?? BRIDGE_QUEST.title,
@@ -117,13 +117,15 @@ export function createQuestTracker({ selectedId = 'main' } = {}) {
   let wanted = typeof selectedId === 'string' ? selectedId : 'main', choices = null;
   function reconcile() {
     if (!choices) choices = normalizeTrackableQuests();
-    if (!choices.some(quest => quest.id === wanted)) wanted = 'main';
+    if (!choices.some(quest => quest.id === wanted)) wanted = choices[0]?.id ?? 'free-roam';
   }
   function view() {
     reconcile();
     // Keep the player's chosen errand first without changing main-story state.
     const ordered = [...choices].sort((a, b) => Number(b.id === wanted) - Number(a.id === wanted));
-    return { selectedId: wanted, selected: copyQuest(choices.find(quest => quest.id === wanted)), choices: ordered.map(copyQuest) };
+    const selected = choices.find(quest => quest.id === wanted) ?? normalize({title:'Your own road', detail:'The Imperial campaign is behind you. Explore, follow another quest, or seek a Republican introduction in Nothom.', trackable:false}, 'free-roam', 'tertiary');
+    if(selected.id==='free-roam')selected.label='Exploration';
+    return { selectedId: wanted, selected: copyQuest(selected), choices: ordered.map(copyQuest) };
   }
   function update(source) { choices = normalizeTrackableQuests(source); reconcile(); return view(); }
   function select(id) {
@@ -137,6 +139,7 @@ export function createQuestTracker({ selectedId = 'main' } = {}) {
     reconcile();
     if (wanted === 'main') return copyTarget(mainTarget);
     const selected = choices.find(quest => quest.id === wanted);
+    if (!selected) return null;
     if (selected.target) return copyTarget(selected.target);
     const targets = selected.destinationIds.map(id => {
       const resolved = resolveId(id);

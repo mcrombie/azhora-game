@@ -18,29 +18,27 @@ import { BODY } from '../src/bodies.js';
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const { createHorse } = await sourceModule('../src/characters.js');
 
-test('when you ride, everyone walking with you rides — and nobody rides before you own a horse', () => {
+test('when you ride, only companions with claimed remounts ride with you', () => {
   const walking = ['merc-gotwood', 'merc-jerry', 'merc-christin'];
   // Before Bede Harrow's yard the whole company walks, whatever else is true.
   assert.deepEqual(companyHorses({ owned: false, mounted: false, walking }), { mounted: false, ids: [] });
   assert.deepEqual(companyHorses({ owned: false, mounted: true, walking }), { mounted: false, ids: [] },
     'and a mounted flag without a horse is nonsense, not a company on horseback');
-  // With a horse, they have horses; in the saddle exactly when he is, and never otherwise.
-  assert.deepEqual(companyHorses({ owned: true, mounted: false, walking }).ids, walking);
-  assert.equal(companyHorses({ owned: true, mounted: false, walking }).mounted, false);
-  assert.equal(companyHorses({ owned: true, mounted: true, walking }).mounted, true);
-  // As many as will come, and one horse each: no cap of its own above the company's.
-  const everybody = [...COMPANION_IDS];
-  assert.ok(everybody.length >= 10);
-  assert.equal(companyHorses({ owned: true, mounted: true, walking: everybody }).ids.length, everybody.length);
-  // Nonsense in the list is not a horse out of it.
-  assert.deepEqual(companyHorses({ owned: true, walking: ['a', 'a', '', null, 7] }).ids, ['a']);
+  assert.deepEqual(companyHorses({ owned: true, mounted: true, walking }).ids, [], 'the player horse cannot manufacture mounts');
+  const allocations = [{ id: 'army-remount-1', owner: 'merc-gotwood', claimed: true },
+    { id: 'army-remount-2', owner: 'merc-jerry', claimed: false }];
+  assert.deepEqual(companyHorses({ owned: true, mounted: false, walking, allocations }).ids, ['merc-gotwood']);
+  assert.equal(companyHorses({ owned: true, mounted: false, walking, allocations }).mounted, false);
+  assert.equal(companyHorses({ owned: true, mounted: true, walking, allocations }).mounted, true);
+  assert.deepEqual(companyHorses({ owned: true, walking: ['a', 'a', '', null, 7], allocations: [{ owner: 'a', claimed: true }] }).ids, ['a']);
   assert.deepEqual(companyHorses().ids, []);
 });
 
 test('the dead and the sent-on have no horse, because they are not walking with you', () => {
   // The rule reads `companions.walking` and nothing else, so this needs no line of its own.
   const companions = createCompanions({ fallen: createFallen() });
-  const of = () => companyHorses({ owned: true, mounted: true, walking: companions.companions.map(one => one.id) });
+  const allocations = ['merc-gotwood', 'merc-jerry', 'merc-christin'].map(owner => ({ owner, claimed: true }));
+  const of = () => companyHorses({ owned: true, mounted: true, allocations, walking: companions.companions.map(one => one.id) });
   companions.restore({ ...companions.snapshot(), walking: ['merc-gotwood', 'merc-jerry', 'merc-christin'] });
   assert.equal(of().ids.length, 3);
   companions.sendOn('merc-jerry');
@@ -175,7 +173,7 @@ test('a fight, a ferry and a reload all take the company down, because they take
   const loaded = createRiding();
   loaded.restore(saved);
   assert.equal(companyHorses({ owned: loaded.owned, mounted: loaded.mounted, walking: ['merc-gotwood'] }).mounted, false);
-  assert.deepEqual(companyHorses({ owned: loaded.owned, mounted: loaded.mounted, walking: ['merc-gotwood'] }).ids, ['merc-gotwood'],
+  assert.deepEqual(companyHorses({ owned: loaded.owned, mounted: loaded.mounted, walking: ['merc-gotwood'], allocations: [{ owner: 'merc-gotwood', claimed: true }] }).ids, ['merc-gotwood'],
     'they still have their horses; they are simply standing beside them');
   // And whatever his horse will not do, theirs will not: there is one footing test, RIDE.radius.
   assert.match(main, /picketSpots\(riding\.horse,rule\.ids,\(x,z\)=>canStand\(x,z,world,RIDE\.radius\)\)/);
@@ -189,7 +187,7 @@ test('a company mounts as a company, and the host draws and collides with it', (
   assert.ok(staggerFor(9) < 2, 'the tenth man is up inside two seconds');
   assert.equal(staggerFor(-3), 0);
   // A rider is a rider's footprint; a picketed horse is solid; a ridden one is not, twice over.
-  assert.match(main, /r:npc\.mounted\?RIDE\.radius:/, 'a mounted companion collides as a rider');
+  assert.match(main, /liveBody\(npc\.id,npc\.actor\.group\.position,npc\.mounted\?RIDE\.radius:/, 'a mounted companion collides as a rider');
   assert.match(main, /if\(horse\.group\.visible&&!horse\.ridden\)/, 'a picketed horse is solid');
   // Their horses are plain actors like the traveler's own, so the distant stand-in never reaches
   // them — the same exemption `walkingWith` gives the men in the file.
@@ -197,7 +195,7 @@ test('a company mounts as a company, and the host draws and collides with it', (
   assert.match(main, /escorting:!!npc\.escorting\|\|!!npc\.walkingWith/, 'and the men are still exempt');
   // Bede Harrow, once, in his own voice, and nothing else is said about any of it.
   assert.match(source('ostler.js'), /OSTLER_COMPANY_LINE/);
-  assert.equal((source('ostler.js').match(/OSTLER_COMPANY_LINE/g) ?? []).length, 2, 'declared once, used once');
+  assert.equal((source('ostler.js').match(/export const OSTLER_COMPANY_LINE/g) ?? []).length, 1, 'the shared remount explanation has one declaration');
 });
 
 test('what ten horses cost in meshes', () => {

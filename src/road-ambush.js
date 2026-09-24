@@ -81,8 +81,25 @@ export const PARTIES = Object.freeze([
   party('princes', ['merc-matt', 'merc-altun'], 'fights'),
 ]);
 
-/** Everybody this event can ever touch, which is every mercenary but Mus. */
-export const AMBUSHED_IDS = Object.freeze(PARTIES.flatMap(one => [...one.men]));
+/** Everybody this event can ever touch, including Cromb when another hero is played. */
+export const AMBUSHED_IDS = Object.freeze([...PARTIES.flatMap(one => [...one.men]), 'merc-cromb']);
+
+/** The player's chosen identity cannot also be an offscreen ambush victim.
+ * Cromb takes the missing named mercenary's party slot. When Mus is played,
+ * Cromb walks the main road independently and runs rather than inheriting Mus's
+ * wilderness route. Keep original party IDs so old settled outcomes stay settled.
+ */
+export function ambushPartiesForRoster(roster) {
+  if (!Array.isArray(roster)) return PARTIES;
+  const present = new Set(roster.map(entry => typeof entry === 'string' ? entry : entry?.id));
+  const absent = PARTIES.flatMap(one => one.men).filter(id => !present.has(id));
+  const replaced = present.has('merc-cromb') && absent.length === 1 ? absent[0] : null;
+  const parties = PARTIES.map(one => party(one.id, one.men.flatMap(id =>
+    id === replaced ? ['merc-cromb'] : present.has(id) ? [id] : []), one.does))
+    .filter(one => one.men.length);
+  if (present.has('merc-cromb') && !replaced) parties.push(party('cromb', ['merc-cromb'], 'runs'));
+  return Object.freeze(parties);
+}
 
 /**
  * The chance a winning party loses a man, by how many of them walked into it. Three swords
@@ -138,7 +155,7 @@ export function validateRoadAmbushSnapshot(value) {
   if (!Number.isSafeInteger(value.seed) || value.seed < 0) return false;
   if (!Number.isSafeInteger(value.rebels) || value.rebels < 0 || value.rebels > AMBUSH.rebels) return false;
   if (typeof value.sprung !== 'boolean') return false;
-  if (!listOf(value.settled, PARTIES.map(one => one.id))) return false;
+  if (!listOf(value.settled, [...PARTIES.map(one => one.id), 'cromb'])) return false;
   if (!listOf(value.fallen, [...AMBUSHED_IDS])) return false;
   // A man cannot have fallen to rebels who were already dead before his party came up, and the
   // rebels cannot be alive after a party that clears them has settled.
@@ -163,8 +180,8 @@ export function createRoadAmbush({ seed = 1 } = {}) {
    *
    * `withTraveler` and `dead` are sets or arrays of ids.
    */
-  function reach(partyId, { withTraveler = [], dead = [] } = {}) {
-    const party = PARTIES.find(one => one.id === partyId);
+  function reach(partyId, { withTraveler = [], dead = [], roster } = {}) {
+    const party = ambushPartiesForRoster(roster).find(one => one.id === partyId);
     if (!party || state.settled.includes(partyId)) return null;
     state.settled.push(partyId);
     if (!alive()) return { party: partyId, met: false, cleared: false, fallen: [] };

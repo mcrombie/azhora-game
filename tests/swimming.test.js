@@ -100,6 +100,32 @@ test('a traveler on his own two feet can walk off a beach into the sea', async (
     'the on-foot move opens the water every frame');
 });
 
+test('Willowmere uses its local surface and permits swimming from its fishing bank and back', async () => {
+  const w = await built(), pond = w.fishingSpots.find(p => p.id === 'willowmere');
+  assert.ok(pond, 'the authored fishing pond exists');
+  assert.ok(pond.surfaceY > WATERLINE, 'the inland pond is above sea level');
+  assert.equal(w.waterAt(pond.x, pond.z), pond.surfaceY);
+  assert.ok(w.heightAt(pond.x, pond.z) < pond.surfaceY);
+  assert.equal(canStand(pond.x, pond.z, w, BODY.traveler), false, 'its submerged bed is not walkable ground');
+  assert.equal(canSwim(pond.x, pond.z, w, BODY.traveler), true);
+  const bank = pond.fishingSpot, swimmer = { x: bank.x, z: bank.z };
+  assert.ok(canStand(bank.x, bank.z, w, BODY.traveler), 'the fishing bank remains dry and accessible');
+  function reach(target) {
+    for (let i = 0; i < 200; i++) {
+      const dx = target.x - swimmer.x, dz = target.z - swimmer.z, distance = Math.hypot(dx, dz);
+      if (distance < .02) return;
+      const step = Math.min(.1, distance);
+      moveCharacter(swimmer, dx / distance * step, dz / distance * step, w, BODY.traveler, { swimming: true });
+    }
+    assert.fail(`swimmer stopped at (${swimmer.x}, ${swimmer.z}) before (${target.x}, ${target.z})`);
+  }
+  reach(pond);
+  assert.ok(canSwim(swimmer.x, swimmer.z, w, BODY.traveler), 'walking from the bank enters real water');
+  reach(bank);
+  assert.ok(canStand(swimmer.x, swimmer.z, w, BODY.traveler), 'the swimmer can climb back onto the fishing bank');
+  assert.ok(w.colliders.slice(0, 50).every(c => !canStand(c.x, c.z, w)), 'the native smoke sample no longer admits a walking player');
+});
+
 test('the crossings are where the doc says they are, shore to shore', async () => {
   const w = await built();
   const { PEBLOS_ISLANDS, islandAt } = await sourceModule('../src/peblos-world.js');

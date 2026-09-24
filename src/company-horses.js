@@ -1,12 +1,6 @@
 /**
- * The company's horses. **When you ride, everyone walking with you rides.**
- *
- * That is the whole rule, and it is deliberately one rule rather than a system. A mount is not a
- * thing a companion owns and can lose: it is a function of two things the save already holds -
- * whether the traveler has a horse (`riding.owned`), and who is walking with him
- * (`companions.walking`). So **there is no new save section**, nothing to validate, and nothing
- * that can go stale. The dead do not walk, and neither do the sent-on, so neither has a horse,
- * without a line of code saying so.
+ * The company's horses. Only people who claimed one of the four saved army remounts
+ * have a horse. Riding with a friend never creates a mount or a spare entitlement.
  *
  * Mounted, they follow in file as they always have, at a horse's spacing instead of a man's, and
  * they keep up with whatever the traveler asks for - a canter, or the testing panel's horse that
@@ -64,19 +58,17 @@ export const STAGGER = 0.18;
 export const staggerFor = place => Math.max(0, Math.floor(Number(place) || 0)) * STAGGER;
 
 /**
- * **The rule.** Who in the company has a horse under them, and whether they are on it.
- *
- * - No horses at all before the traveler owns one: `owned` false, and everybody walks.
- * - Mounted exactly when the traveler is mounted, and never otherwise. Nothing else can put a
- *   companion up or take him down, which is why a fight, a cutscene and a river all work: each
- *   of them already puts the traveler down, and the company comes with him.
- * - Whoever is walking with you. The dead and the sent-on are not in `walking`.
+ * The mounted/picketed following file. Independent riders are placed by the living route
+ * driver. Companions mount with the traveler only if their specific saved horse has been
+ * physically claimed. An unredeemed token is not a horse following somebody in the woods.
  */
-export function companyHorses({ owned = false, mounted = false, walking = [] } = {}) {
+export function companyHorses({ owned = false, mounted = false, walking = [], allocations = [] } = {}) {
   if (!owned) return freeze({ mounted: false, ids: freeze([]) });
+  const entitled = new Set((Array.isArray(allocations) ? allocations : [])
+    .filter(horse => horse?.claimed === true && typeof horse.owner === 'string').map(horse => horse.owner));
   const seen = new Set(), ids = [];
   for (const id of Array.isArray(walking) ? walking : []) {
-    if (typeof id !== 'string' || !id || seen.has(id)) continue;
+    if (typeof id !== 'string' || !id || seen.has(id) || !entitled.has(id)) continue;
     seen.add(id); ids.push(id);
   }
   return freeze({ mounted: !!mounted, ids: freeze(ids) });

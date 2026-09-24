@@ -359,6 +359,9 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 export function chooseReply(choices, snapshot, { side = 'empire' } = {}) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
+  // Listening secures the courier's single satchel without selecting a faction.
+  // Autoplay never betrays the network merely because the default route is Imperial.
+  for(const id of ['luscia-listen-republican','luscia-onward-muster'])if(enabled.some(choice=>choice.id===id))return id;
   // Every chapter that can put a reply in front of the traveler, not just the
   // road and Luscia: without the Moros camp here the autopilot reaches the camp
   // gate, finds nothing it recognises, says goodbye and walks away again.
@@ -425,6 +428,12 @@ function alreadyPastCrossing(position, target, world) {
 /** The current goal of the main quest, from the tutorial through the road out of Drent. */
 export function planGoal(snapshot, world) {
   const { mode, questStage, journey } = snapshot;
+  const chapter = snapshot.campaign?.chapterId;
+  // A courier or Republican recruiter can advance the campaign without the
+  // traveler completing Glun's lessons. Their actual tutorial record remains
+  // unfinished, but it must not send the onward autopilot back to Tidehaven.
+  const bypassIntro = chapter && chapter !== 'drent-road' && (snapshot.campaign.imperialRecall
+    || ['imperial-recall', 'luscia'].includes(snapshot.campaign.entryOrigin));
   if (mode === 'opening') return { kind: 'begin', intent: 'Stepping ashore' };
   if (mode === 'arriving') return { kind: 'wait', intent: 'Coming ashore' };
   if (mode === 'defeated') return { kind: 'retry', intent: 'Getting back up' };
@@ -446,9 +455,9 @@ export function planGoal(snapshot, world) {
     }
     return { kind: 'fight', intent: 'Fighting' };
   }
-  if (snapshot.chartLesson === 'open-map') return { kind: 'open-chart', intent: "Reading Glun's world map" };
-  if (snapshot.chartLesson === 'return-to-glun') return { kind: 'talk', target: world.npcPositions.instructor, npcId: 'instructor', intent: 'Returning to Glun after reading the map' };
-  if (snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
+  if (!bypassIntro && snapshot.chartLesson === 'open-map') return { kind: 'open-chart', intent: "Reading Glun's world map" };
+  if (!bypassIntro && snapshot.chartLesson === 'return-to-glun') return { kind: 'talk', target: world.npcPositions.instructor, npcId: 'instructor', intent: 'Returning to Glun after reading the map' };
+  if (!bypassIntro && snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };
   // Mend a broken weapon before any chapter sends the traveler into its next fight.
   if (!snapshot.weapon.usable) {
     if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
@@ -459,7 +468,7 @@ export function planGoal(snapshot, world) {
   // a horse. Collect that reward before the next chapter sends us out of town.
   // A traveler already admitted and mustered at Moros can use its horse line
   // instead; that is the same token, not an extra horse or a return to Nothom.
-  if (questStage >= QUEST_DONE && snapshot.riding?.waiting && !snapshot.riding.owned) {
+  if ((questStage >= QUEST_DONE || bypassIntro) && snapshot.riding?.waiting && !snapshot.riding.owned) {
     const line = world.morosSites?.['legion-horse-line'];
     if (line && snapshot.moros?.actions?.some(action => action.id === 'claim-legion-horse' && action.enabled))
       return { kind: 'use', target: line, radius: 1.8, siteId: 'legion-horse-line', intent: 'Collecting the army horse' };
@@ -468,13 +477,13 @@ export function planGoal(snapshot, world) {
   }
   // The campaign says which chapter the traveler is on. Follow it: a game begun at a
   // later chapter (the opening screen offers one) has no earlier chapter to finish.
-  const chapter = snapshot.campaign?.chapterId;
-  if (chapter && questStage >= QUEST_DONE) {
+  if (chapter && (questStage >= QUEST_DONE || bypassIntro)) {
     if (snapshot.aftermath?.variant) return aftermathGoal(snapshot, world);
     // The envoy, the report, the march and the battle are one chapter of the border's.
     if ((chapter === 'suval-envoy' || chapter === 'border-battle') && snapshot.border) return borderGoal(snapshot, world);
     if (chapter === 'moros-camp' && snapshot.moros) return morosGoal(snapshot, world);
     if (chapter === 'luscia-aftermath' && snapshot.luscia) return lusciaGoal(snapshot, world);
+    if (bypassIntro) return { kind: 'wait', intent: 'Waiting for the onward campaign orders' };
   }
   if (snapshot.combat.hp < 40) {
     if (snapshot.inventory.cookedFish > 0) return { kind: 'eat', item: 'cooked-fish', intent: 'Eating' };
@@ -589,6 +598,8 @@ export function lusciaGoal(snapshot, world) {
     return { kind: 'done', intent: luscia?.complete ? 'The field at the Lauvel is settled' : 'The road out of Drent is done',
       reason: luscia?.complete ? 'The field at the Lauvel is settled and the army owes you a horse. The Moros camp is the next chapter, and it is not built yet.' : null };
   const id = luscia.destinationIds[0];
+  if(id==='courier-satchel'&&!luscia.soldierDead&&world.npcPositions?.['relay-republican'])
+    return {kind:'talk',target:world.npcPositions['relay-republican'],npcId:'relay-republican',intent:'Speaking with the Republican at the relay hut'};
   if (world.npcPositions?.[id])
     return { kind: 'talk', target: world.npcPositions[id], npcId: id, intent: `Speaking with ${world.npcNames?.[id] ?? id}` };
   const site = world.lusciaSites?.[id];

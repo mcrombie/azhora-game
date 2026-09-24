@@ -8,6 +8,7 @@ import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
 import { createCombat } from '../src/combat.js';
 import { createCampaign } from '../src/campaign.js';
 import { regionNpcPositions } from '../src/regions.js';
+import {toWorld} from '../src/world-scale.js';
 
 function fixture({ started = true } = {}) {
   const inventory = createInventoryState();
@@ -56,14 +57,40 @@ test('the chapter opens only once and refuses actions taken out of order', () =>
   assert.deepEqual(f.luscia.view().destinationIds, ['relay-clerk']);
 });
 
-test('the chapter runs from Iven to the wrecked cart and back, granting the horse token exactly once', () => {
+test('a satchel physically recovered from a replacement becomes returnable without a second pickup hook',()=>{
+  let pickups=0;const luscia=createLusciaChapter({assignment:{take(){pickups++;return {ok:false};},deliver:()=>({ok:true})}});
+  assert.equal(luscia.adoptCarriedSatchel({verified:true}).pending,true,'Chapter 1 must still be reported normally');
+  luscia.start();luscia.syncSharedCompletion('Ed',{finished:false});
+  assert.equal(luscia.adoptCarriedSatchel().ok,false,'an unverified script call cannot invent possession');
+  assert.equal(luscia.adoptCarriedSatchel({verified:true}).ok,true);
+  assert.equal(luscia.view().stage,'return-satchel');assert.equal(pickups,0);assert.equal(validateLusciaSnapshot(luscia.snapshot()),true);
+  assert.equal(luscia.act('return-courier-satchel').ok,true);assert.equal(luscia.adoptCarriedSatchel({verified:true}).ok,false,'a delivered satchel never reopens');
+});
+
+test('shared completion rejects malformed reporters without corrupting the chapter save',()=>{
+  const luscia=createLusciaChapter();luscia.start();const before=luscia.snapshot();
+  for(const bad of [undefined,null,[],{},NaN,Infinity,-1,'','   ','player',' player ']){
+    assert.equal(luscia.syncSharedCompletion(bad).ok,false);
+    assert.deepEqual(luscia.snapshot(),before);
+    assert.equal(validateLusciaSnapshot(luscia.snapshot()),true);
+  }
+  assert.equal(luscia.syncSharedCompletion('Ed',{finished:'yes'}).ok,false);
+  assert.deepEqual(luscia.snapshot(),before);
+  assert.equal(luscia.syncSharedCompletion(' Ed the Word ',{finished:false}).ok,true);
+  assert.equal(luscia.snapshot().resolvedBy,'Ed the Word');
+  assert.equal(luscia.snapshot().resolvedStatus,'assigned');
+  const saved=JSON.parse(JSON.stringify(luscia.snapshot()));
+  assert.equal(validateLusciaSnapshot(saved),true);assert.equal(createLusciaChapter().restore(saved),true);
+});
+
+test('the chapter runs from Iven to the looted hut and back; pickup no longer starts a wolf fight', () => {
   const f = fixture();
   f.talk('relay-clerk').choose('accept-lauvel-search');
   assert.equal(f.luscia.view().stage, 'find-satchel');
   assert.deepEqual(f.luscia.view().destinationIds, ['courier-satchel']);
   const lift = f.luscia.act(LUSCIA_SITE_ACTIONS['courier-satchel']);
   assert.equal(lift.ok, true);
-  assert.equal(lift.startEncounter, LUSCIA_WOLVES.id, 'lifting the satchel calls the wolves');
+  assert.equal(lift.startEncounter, null, 'the Republican conversation controls combat, not a pickup trigger');
   assert.equal(f.luscia.view().stage, 'return-satchel');
   assert.equal(f.inventory.has(LUSCIA_REWARD_ITEM), false, 'the horse is paid on delivery, not on pickup');
   f.talk('relay-clerk').choose('return-courier-satchel');
@@ -184,7 +211,7 @@ test('after the sergeant is satisfied the field is open, and Iven closes the cha
   f.choose('return-courier-satchel');
   f.talk('relay-clerk');
   const closing = f.shown.lines.join(' ');
-  assert.match(closing, /horse token/);
+  assert.match(closing, /four remount tokens/);
   assert.match(closing, /Moros/);
 });
 
@@ -198,6 +225,7 @@ test('every person and site of the chapter has a stand on Luscian ground', () =>
   assert.equal(LUSCIA_NPCS.find(npc => npc.id === 'lauvel-picket').modelRole, 'legion-soldier');
   const satchel = LUSCIA_SITES['courier-satchel'];
   assert.equal(LUSCIA_SITE_ACTIONS[satchel.id], 'take-courier-satchel');
-  // The satchel sits within reach of the burial line and the wolves' arena.
-  assert.ok(Math.hypot(satchel.x - LUSCIA_WOLVES.center.x, satchel.z - LUSCIA_WOLVES.center.z) < 3);
+  const relay=toWorld(-401,196);
+  assert.ok(Math.hypot(satchel.x-relay.x,satchel.z-relay.z)<20,'the satchel holder is at the old relay hut');
+  assert.ok(Math.hypot(satchel.x-LUSCIA_WOLVES.center.x,satchel.z-LUSCIA_WOLVES.center.z)>20,'the old wilderness wolves do not own this quest');
 });

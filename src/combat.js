@@ -220,6 +220,11 @@ function encounterConfig(config) {
   // tell, your wind, the ground - but both sides stop at one and the loser yields.
   if (config.bout !== undefined && typeof config.bout !== 'boolean') return null;
   const bout = config.bout === true;
+  // A fight between people already in the world does not disappear because the
+  // traveler watches from outside its retreat line. Ordinary encounters and
+  // training bouts retain their existing player-driven retreat rules.
+  if (config.independent !== undefined && typeof config.independent !== 'boolean') return null;
+  const independent = config.independent === true;
   const seen = new Set(), enemies = [];
   for (const enemy of config.enemies) {
     if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || (enemy.npcId && seen.has(enemy.npcId)) || !point(enemy)) return null;
@@ -267,7 +272,7 @@ function encounterConfig(config) {
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
-    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, bout, enemies, allies };
+    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, bout, independent, enemies, allies };
 }
 
 /**
@@ -373,6 +378,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * about how far a goblin will follow somebody.
    */
   const outsideTheFight = p => beyondTheLine(p) || distance(p, lastEncounter.center) > LEASH;
+  const independentFightHeld = () => lastEncounter.independent && !lastEncounter.bout
+    && state.allies.some(ally => ally.active && ally.hp > 0 && !ally.escaped && !ally.wounded && !outsideTheFight(ally));
   let hurtProtection = 0;
   let dodgeDirection = { x: 0, z: 1 };
   let nextAttackerAt = 0;
@@ -482,8 +489,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   /**
    * `atCheckpoint` starts the traveler where the fight forms up, as a retry does.
-   * A fight begun wherever the traveler happens to stand counts as a retreat on its
-   * first step when that is past its retreat line, or 45 m from its centre.
+   * A normal fight begun wherever the traveler happens to stand counts as a retreat
+   * on its first step when that is past its retreat line, or 45 m from its centre.
+   * Independent fights continue while a living ally still holds that ground.
    */
   function startEncounter(config, { atCheckpoint = false } = {}) {
     if (state.phase === 'active' || (state.phase === 'won' && config === undefined)) return false;
@@ -1688,7 +1696,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const step = Math.min(remaining, 1 / 120);
       remaining -= step;
       time += step;
-      if (state.phase === 'active' && (beyondTheLine(position)
+      if (state.phase === 'active' && !independentFightHeld() && (beyondTheLine(position)
         || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > LEASH))) {
         // Walking out of a bout is not a retreat and must never be reported as one: there is
         // nothing to catch your breath from and nobody held the ground without you.

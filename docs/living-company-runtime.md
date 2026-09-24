@@ -1,0 +1,33 @@
+# Physical company routes
+
+`living-story.js` owns saved opportunities, identities, allegiances, work and the active clock. `company-route-host.js` supplies destinations and bounded movement; it does not advance that clock or independently roll casualties. `mercenaries.js` remains the arrival/legacy placement source. The landing companion keeps their existing initial lesson; after its training handoff, they never return to the old timetable.
+
+## Host contract
+
+Create the driver with the shared `story`, `roster`, `paths`, `sites`, `readActor(id)`, and `move(id, from, target, maximum, options)` callbacks. `move` must check real terrain and solid bodies. Keep its navigation scratch objects stable by actor ID so local detours survive successive frames. `readActor` supplies actual feet, optional health and `busy` for combat, detention or scripted movement.
+
+Call `update(dt, {paused, player, withPlayer, legacyPlacements, playerSafe, trainedIds})` before placing mercenaries. The returned `placements()` use the old placement shape, but their coordinates are at most one legal stride from the observed feet. Distant actors can use those coordinates without teleporting ahead. Task completion always checks observed feet, not the proposed next stride. Both explicit companions and legacy `with-traveler` placements suspend independent errands.
+
+`sites` supplies clear standing points for `harbor`, `instructor`, `training`, `ambush`, `chip`, `bridge`, `bridgeExit`, `relay`, `hut`, `returnRelay`, `republicanRelay`, `ostler`, `imperialMuster`, and `republicanMuster`. `materials` is a list of `{id,x,z,quantity}`; `swim` is the actual bank/crossing waypoint sequence. Optional `musterSpots.empire/coalition` arrays (roster order) or ID-keyed objects override the default spaced formation. Check these stands for a horse footprint. `wildRoute` retains Mus's separate wilderness line.
+
+Once a side's muster is `departed`, independent mustered actors walk to `assaultSpots.empire/coalition` (the same array or ID-keyed format), or the fallback `imperialAssault` / `republicanAssault` formation. No supplied destination means they hold their current ground. The actor keeps the valid `mustered` stage and records `empire-assault-ground` or `coalition-assault-ground` on real arrival; `npc-assault-arrived` fires once. No fight or casualty is inferred. Busy actors, player companions and paused games remain still, and courier duties take precedence. The host takes ownership when a player-led battle or march starts.
+
+At the ambush, consume `npc-ambush-arrived` using the actor's saved/current physical position. Do not require reaching a later timetable distance: the actor correctly stops within two metres of the authored contact. `ambushResolved(id)` releases them after the host's real/shared encounter outcome.
+
+At the hut, `npc-hut-arrived` asks the host to resolve the single Republican soldier. Complete `relay-soldier` only after that outcome, and give the one actual satchel through the story API. The route waits for this result. A carrier then chooses allegiance from their saved experiences, visits the corresponding actual contact, delivers once and proceeds to that side's muster. It never pays the player's reward for an NPC's work.
+
+`collectMaterial(id,item,count)` removes real world timber and returns the quantity obtained. Optional `getMaterials(id)` returns currently uncollected journey and woodland pickups on the near bank; it replaces the static material list. A builder visits the nearest remaining piece, gathers three sticks, and performs twenty active seconds at the bridge. `sites.materialReserve={id,x,z,quantity:3}` is the approach to Chip's existing marked camp timber. If loose branches are exhausted, the builder physically returns there and spends three active seconds requesting the shortfall. The callback handles this explicit reserve ID; it must not silently invent timber for unknown pickups. With no remaining source or reserve, the driver releases repair ownership so the player can still repair the crossing. Shared ownership prevents duplicate builders. Swimmers use the authored crossing without completing the bridge quest. The host applies `npc-bridge-complete` to the shared bridge's visual/collision state.
+
+For pre-living-story saves, call `legacyCompanyProgress` from `company-route.js` after restoring the old company's companions, deaths and releases. Supply its restored placements, roster, main road, ambush, far bridge exit, relay, and saved player position. Its migration records preserve completed crossing/report progress and Mus's next wilderness waypoint. The initial landing lesson remains on its authored schedule; current companions retain the saved player's location. This adapter never runs for a current `livingStory` checkpoint.
+
+## Couriers and ferries
+
+`setCourier({id,mode:'seek'|'return'|'passenger'})` temporarily overrides the same actor's route. `setCourier(null)` cancels it. A seek emits `courier-arrived` only near the player during a safe dialogue moment. A return emits `courier-returned` at the actual muster; the passenger uses `passengerPose()` from that same rider. No extra person or horse entitlement is created.
+
+Pass `companyTransport.chooseRoute` as the route callback. It returns a normal road path or a terminal approach to a real `FERRY_LANDINGS` quay. The driver does not append the remote destination to a terminal quay path. Unsupported sea crossings return `null` and emit `transport-needed`, never a horse route across water.
+
+`createCompanyTransport({story,world,readActor,onEvent})` saves `actor.route.transit`. `update(dt,{paused})` waits for actual boarding, then advances twelve active seconds; menus and loading add no time. `isInTransit(id)` hides/suspends the same actor. On `company-ferry-arrived`, place that actor and any current passenger at `event.position`, restore visibility, and call the route driver's `clear()` to replan from the far quay. `clear()` discards only geometric caches, never saved tasks or ownership.
+
+## Focused validation
+
+Run `npm run test:living` for shared-state and route tests. `tests/company-route-host.test.js` covers blocked work, training, companions, save/reload, unique materials, swimming, both satchel destinations, distinct muster stands and courier gating. `tests/company-transport.test.js` covers quay approach, saved crossing progress, passenger return and sea-route refusal. `tests/company-route-world.test.js` uses the built world's real colliders for the Caloss repair/swim alternatives and a mounted Nothom–Cobble–Moros courier round trip. `tests/ostler.test.js` checks reservation redemption, failed placement and duplicate/fifth-token rejection.
