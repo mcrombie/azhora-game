@@ -257,7 +257,8 @@ test('the two review views compose the same whether they are run once or twice',
   assert.match(body, /if\(riding\.mounted\)stepDown\(true\);/, 'and the picket view puts him down only if he is up');
   assert.match(body, /if\(!riding\.owned\)riding\.grant\(hitch,hitch\.yaw\);else riding\.place\(hitch,hitch\.yaw\);/, 'a horse is granted once');
   // It runs before the unconditional practice branch, which arms him for every other view.
-  assert.ok(main.indexOf("view==='company-mounted'") < main.indexOf("if(view==='battle'){questStage=QUEST_DONE;"),
+  const battleStart = main.search(/if\(view==='battle'\)\{\s*questStage=QUEST_DONE;/);
+  assert.ok(battleStart > 0 && main.indexOf("view==='company-mounted'") < battleStart,
     'the shot is composed before anything arms the traveler or starts a practice fight');
   // And the shot is measured, not guessed: the camera pulls in against whatever is in the way.
   // The mounted file's bearings are authored and only chosen between (`bestOf`); the picket

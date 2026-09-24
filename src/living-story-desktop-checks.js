@@ -133,7 +133,13 @@ export async function runLivingDesktopChecks(h) {
     assert(saveRoad(false),'early-recall campaign checkpoint failed');
     const recallSave=checkpoint.read();assert(recallSave.ok&&recallSave.data.campaign.entryOrigin==='imperial-recall','early recall origin was not saved');
     await restoreRoad(recallSave.data);refresh();
-    assert(readState().campaign?.chapterId==='suval-envoy','early recall progress was lost after loading');healthy();
+    assert(readState().campaign?.chapterId==='suval-envoy','early recall progress was lost after loading');
+    setMode('playing');const onward=h.autopilotGoal?.();
+    assert(onward?.npcId==='post-camp-legate','live autoplay sent an early-recalled traveler back to the tutorial');
+    const fallenMercenary=getStory().actors().find(a=>a.id!==getStory().recall().courier);getStory().setAlive(fallenMercenary.id,false);
+    h.openCompany?.();await frames(3);assert(!document.getElementById('journal-company').classList.contains('hidden'),'company journal is not reachable');
+    assert(document.querySelectorAll('#company-list li').length===getStory().actors().length,'company journal roster disagrees with living story');
+    assert(document.querySelector('#company-list .company-dead'),'company journal did not remember fallen mercenaries');healthy();
   }
   closeDialogue(); setMode('pause');
   return { ok: true, checks, frameErrors: readState().frameErrors, clock: s.clock(),

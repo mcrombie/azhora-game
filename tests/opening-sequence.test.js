@@ -7,6 +7,8 @@ import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
 import { createMercenaryCompany, MERCENARY_ROSTER, ESCORT_OFFSETS, escortSpotFor } from '../src/mercenaries.js';
 import { BODY } from '../src/bodies.js';
+import { createLivingStory } from '../src/living-story.js';
+import { advanceHostClock } from './host-function.js';
 import { INTERPRETER } from '../src/languages.js';
 import {
   SEQUENCE_SECONDS, SHORE_SECONDS, BEATS, SHORE_BEATS, BOAT_PATH, BOAT, BOAT_REST, SPAWN, PIER_HEAD, BELL, LANDED, LOOKS, PHASES,
@@ -307,7 +309,10 @@ test('the host is wired to the sequence: the caption layer, the Skip button, and
   assert.match(main, /if\(autopilot\.active\)skipOpening\(\)/, 'and the computer does not sit through it');
 
   // The clock the mercenary roster counts by does not run while the boat is still coming in.
-  assert.match(main, /if\(!\['opening','pause','arriving'\]\.includes\(mode\)&&!reviewFrozen\)playSeconds\+=dt;/);
+  const clock = createLivingStory();
+  for (const mode of ['opening', 'arriving', 'pause'])
+    assert.equal(advanceHostClock({ living: clock, mode, dt: 44 }), 0, `${mode} cannot advance the company`);
+  assert.equal(advanceHostClock({ living: clock, mode: 'playing', dt: 1 }), 1, 'the world resumes after landing');
   // The camera is the eye exactly, with no lerp behind it.
   assert.match(main, /else if\(mode==='arriving'&&opening\)\{cameraTarget\.copy\(openingCamera\.position\);cameraFocus\.copy\(openingCamera\.target\);camera\.position\.copy\(cameraTarget\);\}/);
   // 'arriving' keeps its name: src/autopilot.js answers wait for it and the vitals stay hidden.

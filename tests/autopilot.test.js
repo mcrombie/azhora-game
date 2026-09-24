@@ -740,3 +740,34 @@ test('the Luscia map explanation also gets reading time and resumes the road wit
   pilot.step(1); assert.deepEqual(calls, ['open-chart', 'close-journal']);
   assert.equal(pilot.step(.1).goal, 'talk');
 });
+
+
+test('a nearby gate behind a building is approached along its streets without recursive replanning', () => {
+  const world = {
+    bounds: { minX: -30, maxX: 30, minZ: -30, maxZ: 30 }, heightAt: () => 1,
+    colliders: [{ x: 0, z: 0, hx: 3, hz: 3 }],
+    paths: [[{ x: 0, z: -12 }, { x: -8, z: -12 }, { x: -8, z: 8 }, { x: 0, z: 8 }]],
+    enclosures: [{ contains: (x, z) => z > 10, gates: [{ outer: { x: 0, z: 8 }, inner: { x: 0, z: 12 } }] }],
+  };
+  const from = { x: 0, z: -12 }, inside = { x: 0, z: 15 };
+  const step = nextWaypoint(from, inside, world);
+  assert.equal(step.onTrail, true, 'the nearby gate does not override the street route through a building');
+  assert.ok(step.point.x < -3, 'the first leg goes around the building');
+  assert.ok(clearLine(from, step.point, world), 'the suggested street leg is traversable');
+  const empty = nextWaypoint(from, inside, { ...world, paths: [] });
+  assert.deepEqual(empty.point, world.enclosures[0].gates[0].outer, 'a missing street cannot cause recursion on the same blocked gate');
+});
+
+
+test('autoplay does not turn back after advancing two metres across a short road join', () => {
+  const world = {
+    bounds: { minX: -30, maxX: 30, minZ: -30, maxZ: 30 }, heightAt: () => 1, colliders: [],
+    paths: [[{ x: 0, z: -10 }, { x: 0, z: 0 }], [{ x: 0, z: 6 }, { x: 0, z: 20 }]],
+  };
+  const target = { x: 0, z: 20 };
+  for (const z of [1.9, 2.1, 2.7, 3.1, 4.9]) {
+    const step = nextWaypoint({ x: .1, z }, target, world);
+    assert.ok(step.point.z > z, `the connected road continues forward from z=${z}, instead of returning to ${step.point.z}`);
+    assert.ok(clearLine({ x: .1, z }, step.point, world));
+  }
+});

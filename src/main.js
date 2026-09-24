@@ -181,7 +181,7 @@ import { createLusciaCivilWarHost, LUSCIA_RECRUIT_NPCS, LUSCIA_DISPATCH_SITE } f
 import { runLivingDesktopChecks } from './living-story-desktop-checks.js';
 import { runRepublicDesktopChecks } from './luscia-republic-desktop-checks.js';
 import { createCompanyTransport } from './company-transport.js';
-import { clearLine, createAutopilot } from './autopilot.js';
+import { clearLine, createAutopilot, planGoal } from './autopilot.js';
 import { createBenAutopilot } from './ben-autopilot.js';
 import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
 import { insideRegion } from './regions.js';
@@ -3444,6 +3444,8 @@ function init() {
     if(fallen.has(id))return null;
     if(companions.walksWith(id))return 'Walking with you';
     const phase=placement?.phase;
+    const actor=living?.actor(id);
+    if(actor?.activity)return actor.activity;
     if(phase==='coming')return 'Not yet ashore';
     if(phase==='landing')return mercenaryById(id)?.route==='shore'?'On the strand, getting his breath':'At the landing';
     if(phase==='stopped')return 'Stopped on the road';
@@ -3459,7 +3461,8 @@ function init() {
   function refreshCompanyPage(){
     const list=$('company-list');if(!list)return;
     const placements=new Map(companyPlacements().map(p=>[p.id,p]));
-    const seen=companions.view();
+    const records=new Map(companions.view().map(m=>[m.id,m]));
+    const seen=roster.map(m=>({...m,label:'Not yet acquainted',...records.get(m.id),dead:fallen.has(m.id)||living?.actor(m.id)?.alive===false}));
     list.replaceChildren();
     for(const man of seen){
       const li=document.createElement('li');
@@ -3475,7 +3478,7 @@ function init() {
       li.append(said);list.append(li);}
     const walking=seen.filter(man=>man.walking).length,gone=seen.filter(man=>man.dead).length;
     $('company-note').textContent=`${walking===0?'Nobody walks with you':walking===1?'One walks with you':`${walking} walk with you`}`
-      +`${gone?` · ${gone} ${gone===1?'is':'are'} dead`:''} · ${seen.length+1-gone} of eleven still coming to the muster.`;}
+      +`${gone?` · ${gone} ${gone===1?'is':'are'} dead`:''} · ${seen.length-gone} living mercenaries. Their journeys continue while you play.`;}
   function renderAtlasLesson(){
     const card=chartLesson.view().card,region=world.regionAt(player.group.position.x,player.group.position.z),panel=$('atlas-lesson');
     const regionLesson=mapLessonContext==='region';panel.hidden=!card&&!regionLesson;
@@ -3494,11 +3497,12 @@ function init() {
       const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),
         {region:world.regionAt(p.x,p.z)?.name??null,heading:HEX_WORLD_TRANSFORM.worldHeadingToAtlas(player.group.rotation.y)});refreshChart();
     }
-    show('world-map',tab==='world');show('journal-content',false);show('journey-browser',tab==='journey');show('trail-map',false);show('skills-sheet',tab==='skills');
+    show('world-map',tab==='world');show('journal-content',false);show('journey-browser',tab==='journey');show('trail-map',false);show('skills-sheet',tab==='skills');show('journal-company',tab==='company');
     if(tab==='skills')refreshSkillsSheet();
-    for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-skills','skills']])$(id).classList.toggle('active',tab===name);
+    if(tab==='company')refreshCompanyPage();
+    for(const [id,name] of [['tab-map','world'],['tab-journey','journey'],['tab-skills','skills'],['tab-company','company']])$(id).classList.toggle('active',tab===name);
     $('journal').classList.toggle('map-open',tab==='world');$('journal').classList.remove('trail-open');
-    $('journal-title').textContent=tab==='world'?'Your chart of Azhora':tab==='skills'?'Skills & knowledge':'Your journeys';
+    $('journal-title').textContent=tab==='world'?'Your chart of Azhora':tab==='skills'?'Skills & knowledge':tab==='company'?'Your fellow mercenaries':'Your journeys';
     if(tab==='world'){
       worldMap.open();renderAtlasLesson();$('tab-map').focus();
       worldMap.ready.then(data=>requestAnimationFrame(()=>{
@@ -3654,7 +3658,7 @@ function init() {
       spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view()});
     journeyBrowser.update({entries,trackedId:tracker.selectedId});
   }
-  function refreshJournal(){refreshQuest();}
+  function refreshJournal(){refreshQuest();refreshCompanyPage();}
   function syncJourney(){
     const state=journey.state;
     for(const id of state.parcels)world.setJourneySiteState(id.startsWith('cart-')?id:`cart-parcel-${id}`,true);
@@ -5469,7 +5473,7 @@ function init() {
   $('quest-options').onclick=()=>{modal('journal');journalTab('journey');journeyBrowser.open({id:questTracker.selectedId});};
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
   $('level-up').onclick=()=>openSkillGuide(levelUpSkill);
-  $('tab-journey').onclick=()=>mapTab(false);$('tab-map').onclick=()=>mapTab(true);$('tab-skills').onclick=()=>journalTab('skills');
+  $('tab-journey').onclick=()=>mapTab(false);$('tab-map').onclick=()=>mapTab(true);$('tab-skills').onclick=()=>journalTab('skills');$('tab-company').onclick=()=>journalTab('company');
   $('quest-journal').onclick=()=>{modal('journal');journalTab('journey');};
   $('open-trail-map').onclick=openLocalMap;$('trail-pin-open').onclick=openLocalMap;$('trail-pin-clear').onclick=clearTrailPin;
   $('quality').onclick=()=>{fullQuality=!fullQuality;renderer.setPixelRatio(fullQuality?Math.min(devicePixelRatio,1.7):1);renderer.shadowMap.enabled=fullQuality;$('quality').textContent='Graphics: '+(fullQuality?'full':'light');};
@@ -5489,8 +5493,8 @@ function init() {
     // `bridge` is the side errand's own state, and the planner needs it because the Caloss span
     // is down and it cannot swim (src/autopilot.js).
     journey:{started:journey.state.started,stage:journey.view().stage,bridge:journey.state.bridge,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
-    mapTutorial:mapTutorial.step,campaign:{chapterId:campaign.view().chapterId,side:campaign.view().side},
-    luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions()},
+    mapTutorial:mapTutorial.step,campaign:campaign.view(),
+    luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions(),soldierDead:republic.state().soldier==='dead'},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
     border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
     riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
@@ -6717,7 +6721,7 @@ function init() {
         prepare:prepareLivingScenario,
         frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},setMode:v=>{mode=v;},getMode:()=>mode,
         saveRoad:()=>writeRoadCheckpoint(sessionCheckpoint),checkpoint:sessionCheckpoint,inventory,npcById,player,
-        refresh:refreshQuest,readState:state,nextSpeech,closeDialogue,earlyRecall:()=>{questStage=0;practiceHits=0;practiceGuards=0;practiceDodges=0;lessonSet=false;chartLesson.restore('unissued');journey.restore(createJourney().snapshot());luscia.restore(createLusciaChapter().snapshot());campaign.restore(createCampaign().snapshot());},finishRecall:()=>{const id=living.recall().courier,n=npcById.get(id),p=clearApproach(world.npcPositions[MOROS_LEGATE_ID]);n.actor.group.position.set(p.x,world.heightAt(p.x,p.z)+RIDE.seat.up,p.z);player.group.position.copy(n.actor.group.position);living.observe(id,{position:p});livingHost.routeEvent({type:'courier-returned',id});refreshQuest();},observeAmbush:()=>{const id='merc-gotwood',n=npcById.get(id),p={x:AMBUSH.point.x+2,z:AMBUSH.point.z};living.observe(id,{stage:'ambush',position:p});n.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);player.group.position.set(AMBUSH.point.x+30,world.heightAt(AMBUSH.point.x+30,AMBUSH.point.z),AMBUSH.point.z);mode='playing';walkTheAmbush();return {id,position:p,allies:combat.state.allies.map(a=>({id:a.id,x:a.x,z:a.z}))};},stageScenario:kind=>$('test-story-'+kind).click(),press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,cancelable:true})),restoreRoad:data=>{sessionCheckpoint.save(data);continueRoad(true);mode='pause';}}),
+        refresh:refreshQuest,readState:state,nextSpeech,closeDialogue,autopilotGoal:()=>planGoal(autopilotRead(),autopilotWorld),openCompany:()=>{modal('journal');journalTab('company');},earlyRecall:()=>{questStage=0;practiceHits=0;practiceGuards=0;practiceDodges=0;lessonSet=false;chartLesson.restore('unissued');journey.restore(createJourney().snapshot());luscia.restore(createLusciaChapter().snapshot());campaign.restore(createCampaign().snapshot());},finishRecall:()=>{const id=living.recall().courier,n=npcById.get(id),p=clearApproach(world.npcPositions[MOROS_LEGATE_ID]);n.actor.group.position.set(p.x,world.heightAt(p.x,p.z)+RIDE.seat.up,p.z);player.group.position.copy(n.actor.group.position);living.observe(id,{position:p});livingHost.routeEvent({type:'courier-returned',id});refreshQuest();},observeAmbush:()=>{const id='merc-gotwood',n=npcById.get(id),p={x:AMBUSH.point.x+2,z:AMBUSH.point.z};living.observe(id,{stage:'ambush',position:p});n.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);player.group.position.set(AMBUSH.point.x+30,world.heightAt(AMBUSH.point.x+30,AMBUSH.point.z),AMBUSH.point.z);mode='playing';walkTheAmbush();return {id,position:p,allies:combat.state.allies.map(a=>({id:a.id,x:a.x,z:a.z}))};},stageScenario:kind=>$('test-story-'+kind).click(),press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,cancelable:true})),restoreRoad:data=>{sessionCheckpoint.save(data);continueRoad(true);mode='pause';}}),
       runRepublicChecks:()=>runRepublicDesktopChecks({getStory:()=>living,getRepublic:()=>republic,getLuscia:()=>luscia,
         getCampaign:()=>campaign,getBorder:()=>border,
         prepare:()=>{prepareLivingScenario();journeyAct('deliver-report');},
@@ -6992,10 +6996,10 @@ function init() {
         return {ok:true,checks,activeOnly:true,explicitTracking:true,completedArchive:true,searchKeyboard:true,carpentryVisible:true,selaOptional:true,originalMapLabels:true};
       },
       async checkJournalLayout(){
-        const views=[];for(const tab of ['journey','skills']){
+        const views=[];for(const tab of ['journey','skills','company']){
           journalTab(tab);await new Promise(requestAnimationFrame);await new Promise(requestAnimationFrame);
           const panel=$('journal'),rect=panel.getBoundingClientRect();
-          const reading=document.querySelector(tab==='journey'?'.journey-reading':'.skill-browser-detail');
+          const reading=document.querySelector(tab==='journey'?'.journey-reading':tab==='skills'?'.skill-browser-detail':'#journal-company');
           if(rect.left<0||rect.right>innerWidth+1||rect.bottom>innerHeight+1||panel.scrollHeight>panel.clientHeight+2||reading.clientHeight<100)
             throw new Error(`Journal layout does not fit ${innerWidth} × ${innerHeight}: ${tab}`);
           views.push(tab);
@@ -7071,7 +7075,7 @@ function init() {
         assert(!recallCompanion(),'Chris joined before his own training');
         setCheckClock(landingQuest.departureAt+1);questStage=2;
         assert(!recallCompanion(),'Chris joined an untrained player');
-        questStage=QUEST_DONE;assert(recallCompanion(),'Two trained travelers could not partner');
+        questStage=QUEST_DONE;assert(recallCompanion(),'Two trained travelers could not partner');await frames(3);
         assert(companyPlacements().find(p=>p.id===landingMateId())?.phase==='with-traveler','Partner did not leave his solo route');
         companionOffTheClock=false;longRoad.restore(createLongRoad().snapshot());rebuildCompany();
         const far=world.regions.find(r=>r.name==='Vastos');assert(far,'Vastos review destination missing');testTravel(far.id);
@@ -8537,7 +8541,19 @@ function init() {
           yaw=shot.yaw;pitch=.26;distance=targetDistance=shot.distance;reviewFrozen=true;
           return;
         }
-        if(view==='battle'){questStage=QUEST_DONE;combat.startPractice(world.training);combat.finishPractice();combat.startEncounter(greenwayEncounter);player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);}
+        if(view==='battle'){
+          questStage=QUEST_DONE;stopAutopilot();stopInput();combat.revive();
+          if(riding.mounted)riding.dismount();
+          // Review actors have their own identities: the real Greenway corpses stay dead.
+          // A new frame also makes a later revisit independent of an earlier review fight.
+          const fixtureId=`review-battle-${frameCount}`,at=greenwayEncounter.center;
+          player.group.position.set(at.x+4,world.heightAt(at.x+4,at.z),at.z);
+          const encounter={...greenwayEncounter,id:fixtureId,physicalCompany:true,
+            enemies:greenwayEncounter.enemies.map(enemy=>({...enemy,id:`${fixtureId}-${enemy.id}`})),allies:[]};
+          if(!combat.startEncounter(encounter))throw new Error('Battle review fixture failed to start');
+          if(!combat.state.enemies.some(enemy=>enemy.active))throw new Error('Battle review has no living goblins');
+          grounded=true;verticalSpeed=0;yaw=Math.PI/2+.28;pitch=.32;distance=targetDistance=7;player.setArmed(true);
+        }
         else{questStage=2;practiceHits=0;practiceDodges=0;combat.startPractice(world.training);player.group.position.set(world.training.x,world.heightAt(world.training.x,world.training.z+3),world.training.z+3);player.group.rotation.y=Math.PI*.85;yaw=.42;pitch=.3;distance=targetDistance=5;player.setArmed(true);}
         // The traveler stood at a place and looking a given way, with nothing staged: for a measurement that
         // wants the place as it is rather than a composed shot. stand-at:x,z,facing[,pitch,distance] (main.cjs --draw-review).
@@ -8876,7 +8892,7 @@ function init() {
             redTailFlight.update(60,{glove,anchor});redTailFlight.update(2.5,{glove,anchor});const step=redTailFlight.update(.1,{glove,anchor});redTail.pose(step,elapsed);
             // Hold her mid-circle and look at her, wings out, from a little below and to the side.
             reviewFrozen=true;reviewTarget=new THREE.Vector3(step.x,step.y,step.z);yaw=step.yaw+1.3;pitch=-.25;distance=targetDistance=3;}}
-        if(view==='goblin'){questStage=QUEST_DONE;combat.finishPractice();combat.startEncounter(greenwayEncounter);const enemy=combat.state.enemies[0];reviewTarget=new THREE.Vector3(enemy.x,world.heightAt(enemy.x,enemy.z)+1.15,enemy.z);reviewFrozen=true;player.group.visible=false;yaw=0;pitch=.13;distance=targetDistance=3.8;}
+        if(view==='goblin'){questStage=QUEST_DONE;combat.revive();const id=`review-goblin-${frameCount}`;combat.startEncounter({...greenwayEncounter,id,enemies:greenwayEncounter.enemies.map(e=>({...e,id:`${id}-${e.id}`})),physicalCompany:true,allies:[]});const enemy=combat.state.enemies[0];if(!enemy)throw new Error('Goblin review fixture failed to start');reviewTarget=new THREE.Vector3(enemy.x,world.heightAt(enemy.x,enemy.z)+1.15,enemy.z);reviewFrozen=true;player.group.visible=false;yaw=0;pitch=.13;distance=targetDistance=3.8;}
         if(view==='stick'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('forest-stick');weapons.equip('forest-stick');player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='acorns'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('acorn'))inventory.add('acorn');toggleInventory();inventory.select('acorn');}
         if(view==='pawpaw'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('pawpaw'))inventory.add('pawpaw',2);combat.state.player.hp=62;toggleInventory();inventory.select('pawpaw');}

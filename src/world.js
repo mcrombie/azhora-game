@@ -23,7 +23,7 @@ import { buildPlaceWorks } from './place-works.js';
 import { PLACE_LANDMARKS } from './places.js';
 import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
 import { SOLIS_ROAD } from './region-world.js';
-import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, WEST_SUVAL_SEA } from './west-suval.js';
+import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, SOLIS_STREETS, WEST_SUVAL_SEA } from './west-suval.js';
 import { atticDeckHeight } from './wine-attic.js';
 import { createBrandyYard } from './brandy-yard.js';
 import { createLighthouse } from './lighthouse-world.js';
@@ -309,7 +309,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     pathSurfaces.push({ mesh: path, kind });
     // Steering follows the same curve the road mesh shows, not chords between
     // its sparse authoring controls (which cut across the Avrel bends).
-    paths.push(Object.assign(curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 6))).map(p => ({ x: p.x, z: p.z })), { kind, width }));
+    // Sample metres, not spline parameter: adding controls at a distant gate
+    // must not spread this road's navigation points across its tight bends.
+    curve.arcLengthDivisions = Math.max(200, points.length * 96);
+    curve.updateArcLengths();
+    paths.push(Object.assign(curve.getSpacedPoints(Math.max(2, Math.ceil(curve.getLength() / 3))).map(p => ({ x: p.x, z: p.z })), { kind, width }));
   }
   function roadDistance(x, z) {
     let min = Infinity;
@@ -1228,6 +1232,18 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
   addPath(SOLIS_ROAD, 4.2);
+  // Solis draws its paving itself. Register those same straight street segments
+  // for navigation, so a route into the Court of Oaths goes around its houses.
+  for (const street of SOLIS_STREETS) {
+    const line = [];
+    for (let i = 1; i < street.points.length; i++) {
+      const a = street.points[i - 1], b = street.points[i];
+      const steps = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 3);
+      if (i === 1) line.push({ x: a.x, z: a.z });
+      for (let k = 1; k <= steps; k++) line.push({ x: a.x + (b.x - a.x) * k / steps, z: a.z + (b.z - a.z) * k / steps });
+    }
+    paths.push(Object.assign(line, { kind: 'road', width: street.width }));
+  }
   for (const spur of roadSpurs) addPath(spur, 2.2);
   // Tidehaven's own lanes and woodland spurs stay in the village's frame.
   function addLocalPath(points, width, kind = 'trail') {
@@ -1399,7 +1415,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   journeyVisuals.set('bridge-repair', { complete: regionScenery.repairedDeck, incomplete: regionScenery.brokenCord, blockers: regionScenery.damagedColliders });
   movingGroups.add(regionScenery.repairedDeck); movingGroups.add(regionScenery.brokenCord); movingGroups.add(regionScenery.millSails);
   for (const bench of [...regionRepairBenches, OUTPOST_BENCH]) {
-    const x = bench.x - 1.65, z = bench.z, y = groundHeight(x, z);
+    // The interaction stand stays fixed. Put the physical bench on its road-free
+    // side; a fixed westward offset clipped the curved road near Sava's shrine.
+    const candidates = [1.65, 2.25, 3, 3.75].flatMap(reach => [[-reach, 0], [reach, 0], [0, -reach], [0, reach]]);
+    const offset = candidates.find(([dx, dz]) => roadDistance(bench.x + dx, bench.z + dz) > .95) ?? candidates[0];
+    const x = bench.x + offset[0], z = bench.z + offset[1], y = groundHeight(x, z);
     wornPatch(bench.x, bench.z, 2.5, '#aaa182');
     box(woodLight, x, y + .78, z, 1.5, .15, .75, world);
     for (const dx of [-.57, .57]) for (const dz of [-.25, .25]) box(wood, x + dx, y + .38, z + dz, .13, .76, .13, world);

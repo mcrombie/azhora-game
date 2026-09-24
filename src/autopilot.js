@@ -262,21 +262,28 @@ export function nextWaypoint(position, target, world, memory = {}) {
   const gateway = enclosureWaypoint(position, target, world);
   // Near a gate, walk at it and through it. A gate half a kilometre off (the outpost's,
   // seen from Solis) is a destination: take the road there, as for any other place.
-  if (gateway && distance(position, gateway.point) > GATE_REACH) return nextWaypoint(position, gateway.point, world, memory);
-  if (gateway) return gateway;
+  if (gateway) {
+    if (distance(position, gateway.point) <= GATE_REACH && clearLine(position, gateway.point, world)) return gateway;
+    // A nearby inner gate can still be behind a building. Route to its mouth
+    // using the streets, without recursively asking for the same blocked gate.
+    target = gateway.point;
+  }
   const gap = distance(position, target);
   const trail = bestTrail(world.paths, position, target);
   const goal = nearestOnPath(trail, target);
   // Leave the road for a nearby person, parcel or workbench. A cart can be
   // walked around; water still requires the crossing, even on a short leg.
   const approach = gap <= NEAR_DETOUR && goal.distance > 2
-    && clearLine(position, target, bareGround(world));
+    && clearLine(position, target, gateway ? world : bareGround(world));
   if (gap > 6 && !approach) {
     const route = roadRoute(world.paths ?? [], position, target);
     if (route?.length > 1) {
       // Return to the centre before advancing along it. This is also how a
       // traveler beside a bridge gets back to its mouth instead of its water.
-      if (distance(position, route[0]) > 2 && clearLine(position, route[0], world))
+      // At a short join, the nearest source road can end behind the traveler.
+      // Once on the connecting leg, keep advancing instead of bouncing back
+      // every time that endpoint falls more than two metres behind.
+      if (nearestOnPath([route[0], route[1]], position).distance > 2 && clearLine(position, route[0], world))
         return { point: route[0], onTrail: true };
       return { point: stepAlong(route, position), onTrail: true };
     }

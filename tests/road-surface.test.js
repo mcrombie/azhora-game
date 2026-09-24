@@ -94,3 +94,13 @@ test('water markers leave dry banks open but solid objects and submerged ground 
   assert.equal(canStand(1, 0, world), false); assert.ok(canSwim(1, 0, world));
   assert.equal(canStand(-2, 3, world), false); assert.equal(canSwim(-2, 3, world), false);
 });
+
+
+test('the main road navigation samples stay within a walking stride of one another through bends and gate approaches', async () => {
+  const { world } = await built();
+  const road = world.paths[0];
+  for (let i = 1; i < road.length; i++) {
+    const gap = Math.hypot(road[i].x - road[i - 1].x, road[i].z - road[i - 1].z);
+    assert.ok(gap <= 3.08, `navigation skips ${gap.toFixed(2)}m of the actual road near ${road[i].x.toFixed(1)},${road[i].z.toFixed(1)}`);
+  }
+});

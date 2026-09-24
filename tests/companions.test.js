@@ -4,6 +4,7 @@ import { MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createFallen } from '../src/bystanders.js';
+import { hostFunction } from './host-function.js';
 import {
   COMPANION_LIMIT, COMPANION_IDS, ASKS, GROUPS, RUNGS, RUNG_LABELS, RUNG_AT, REGARD,
   rungFor, rungLabel, createCompanions, validateCompanionsSnapshot, MERCENARY_ARMS, armsOf,
@@ -214,7 +215,7 @@ test('a country scales its dangers and never your side', async () => {
   // A companion's health and damage now come from his *own* levels, through the same `ARMS`
   // curves as the traveler's, because he is as good as he is wherever he is standing.
   const { createCombat } = await import('../src/combat.js');
-  const { maxHealth, damageMultiplier, countryHealth } = await import('../src/combat-skills.js');
+  const { maxHealth, damageMultiplier, countryHealth, countryDamage } = await import('../src/combat-skills.js');
   const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
   const fight = (level, allies) => {
     const position = { x: 0, z: 0, y: 0 };
@@ -260,10 +261,26 @@ test('a country scales its dangers and never your side', async () => {
       assert.ok(arms.toughness > arms.level - 10, `${id}'s Toughness is a little under it, not far under`);
     }
   }
-  // The blows that land on them still take the country's level: that half was right already.
-  const combatSource = readFileSync(fileURLToPath(new URL('../src/combat.js', import.meta.url)), 'utf8');
-  assert.match(combatSource, /function hurtAlly[\s\S]{0,260}countryDamage/, 'a blow on an ally is the country’s');
-  assert.doesNotMatch(combatSource, /function makeAlly[\s\S]{0,400}countryHealth/, 'but the ally himself is not');
+  // Measure the first real enemy strike. Damage is scaled at the strike boundary now, before
+  // contact dispatches it to a player, friend, or bystander; hurtAlly must not scale it twice.
+  const firstBlow = level => {
+    const events = [], position = { x: 0, z: -20, y: 0 };
+    const combat = createCombat({ world, position, onEvent: event => events.push(event) });
+    assert.equal(combat.startEncounter({ id: 'country-hit', level, center: { x: 0, z: -36 },
+      checkpoint: { x: 0, z: -25 }, retreatZ: -16,
+      enemies: [{ id: 'foe', x: 0, z: -40, hp: 400 }],
+      allies: [{ id: 'friend', kind: 'legionary', x: 0, z: -34, hp: 1000 }] }), true);
+    position.x = 10; position.z = -18; // Leave the two fighters room without entering the retreat boundary.
+    for (let frame = 0; frame < 1800 && !events.some(event => event.type === 'ally-hit' && event.by === 'foe'); frame++) combat.update(1 / 60);
+    const hit = events.find(event => event.type === 'ally-hit' && event.by === 'foe');
+    assert.ok(hit, `enemy strikes its nearer ally in level-${level} country`);
+    assert.equal(events.some(event => event.type === 'player-hit'), false);
+    return hit.damage;
+  };
+  const unscaled = firstBlow(0);
+  for (const level of [2, 8]) assert.equal(firstBlow(level), Math.round(unscaled * countryDamage(level)),
+    `country-${level} damage reaches the ally exactly once`);
+
 });
 
 test('each is asked where he is, and the three gates are real ones', () => {
@@ -588,8 +605,18 @@ test('a man who falls is remembered where he fell, and it survives the road', ()
   // What killed him is the fight's own plainest word - unless it was an arrow, and then it is
   // whose arrow, because the Marshal is answered from this record and the truth may be the
   // traveler himself (the user, 2026-09-21).
-  assert.match(main, /const what=e\.arrow\?\(mine\?'Your own arrow':'An arrow from your own line'\):enemyWordFor\(combat\.state\.encounterId\);/,
-    'who, where and against what');
+  const attribution = main.split('\n').filter(line => /^\s*const (mine|what)=/.test(line)
+    && (line.includes("e.by===") || line.includes('enemyWordFor(combat.state.encounterId)'))).join('\n');
+  const cause = new Function('e', 'combat', 'enemyWordFor', `${attribution}; return what;`);
+  for (const [event, expected] of [
+    [{ by: 'traveler', arrow: true }, 'Your own arrow'],
+    [{ source: 'player', spell: true }, 'Your own spell'],
+    [{ by: 'traveler' }, 'Your own blade'],
+    [{ by: 'merc-jerry', arrow: true }, 'An arrow from your own line'],
+    [{ by: 'rebel' }, 'The rebel ambushers'],
+  ]) assert.equal(cause(event, { state: { encounterId: 'caloss-rebels' } }, id => {
+    assert.equal(id, 'caloss-rebels'); return 'The rebel ambushers';
+  }), expected, 'the record identifies the actual killing strike');
   assert.match(main, /companions\.died\(e\.id,\{where,what,x:e\.x,z:e\.z,/, 'and it is handed to the record');
   assert.match(main, /weapon:held\?\.id\?\?null,weaponName:/, 'and what he was carrying, which is left lying there');
   assert.match(main, /if\(encounterId===LUSCIA_WOLVES\.id\)return 'Wolves';/, 'and the words are the fight’s own');
@@ -642,7 +669,21 @@ test('the fights the player is taught alone in are a list, not a place', () => {
   assert.match(main, /const fight=combat\.state\.phase==='active'&&TEACHING_FIGHTS\.has\(combat\.state\.encounterId\)\?combat\.state\.center:null;/,
     'and only they hold a companion out');
   assert.match(main, /getAllies:config=>companionAllies\(config\)/, 'everywhere else they are in it');
-  assert.match(main, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'from one place');
+  const teaching = new Set(['greenway', 'avrel', 'sparring-bout']);
+  const fallen = createFallen();
+  const allies = hostFunction('companionAllies', { TEACHING_FIGHTS: teaching, MAX_ALLIES: 30,
+    fileOrder: ['merc-gotwood', 'merc-word'], isArmyBattle: () => false, mercenaryById, armsOf,
+    fallen, crime: null });
+  for (const id of teaching) assert.deepEqual(allies({ id, center: { x: 0, z: 0 } }), [], `${id} holds the file out`);
+  assert.deepEqual(allies(null), [], 'a missing encounter does not spawn a file');
+  assert.deepEqual(allies({ id: 'ambush', center: { x: 0, z: 0 }, physicalCompany: true }), [],
+    'actors already participating physically cannot be duplicated');
+  const ordinary = { id: 'ambush', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: 5 }, retreatZ: 15,
+    enemies: [{ id: 'rebel', x: 0, z: -5 }] };
+  assert.deepEqual(allies(ordinary).map(actor => actor.id), ['merc-gotwood', 'merc-word'], 'ordinary fights include the living file');
+  fallen.fall('merc-gotwood');
+  assert.deepEqual(allies({ ...ordinary, allies: [{ id: 'ed-body', npcId: 'merc-word' }] }), [],
+    'neither a dead companion nor an already-authored NPC alias is added');
   assert.match(main, /if\(!merc\|\|!arms\|\|fallen\.has\(id\)\|\|crime\?\.isDown\(id\)\|\|crime\?\.owns\(id\)\)return null;/, 'and a dead man is in no fight');
   // Losing one is unmistakable: who, where, and that it is final.
   assert.match(main, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)\{/, 'a recruited or automatic landing companion who goes down');
@@ -710,13 +751,44 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   assert.match(main, /escorting:!!npc\.escorting\|\|!!npc\.walkingWith,/, 'and it counts for the stand-in');
   assert.match(main, /npc\.walkingWith=false;/, 'and is cleared the moment he is not');
   // A dead man is never placed.
-  assert.match(main, /npc\.hidden=placement\.phase==='coming'\|\|fallen\.has\(placement\.id\);/, 'nor is a dead one');
+  // Hidden/transit/death placement is exercised against the actual host in the next test.
   // The host hands the company the whole set - and, since a death is permanent and the clock has
   // no other way to learn of one, who is not coming. Empty is spelled as nothing.
-  assert.match(main, /company=createMercenaryCompany\(\{\.\.\.companyPlan,roster,companions:companionPlan\(\),dead:companyDead\(\)\}\);/,
-    'the company takes the set, and the dead');
+  const plan = { road: [{ x: 0, z: 0 }, { x: 40, z: 0 }] }, roster = [{ id: 'merc-gotwood' }];
+  const escort = [{ id: 'merc-word', with: true }], dead = ['merc-jerry'];
+  const landing = { id: roster[0].id, departureAt: 42 };
+  let rebuilt;
+  hostFunction('rebuildCompany', { companyBuiltWith: '', companySignature: () => 'changed', company: null,
+    companyPlan: plan, roster, landingQuest: landing, companionPlan: () => escort, companyDead: () => dead,
+    createMercenaryCompany: options => { rebuilt = options; return {}; },
+  })();
+  assert.deepEqual(rebuilt, { ...plan, roster, landingQuest: landing, arrivalStartedAt: 42,
+    companions: escort, dead }, 'the host forwards the party, dead register, and arrival clock together');
   assert.match(main, /const companyDead=\(\)=>roster\.filter\(man=>fallen\.has\(man\.id\)\)/, 'from the one list of the gone');
   assert.match(main, /return all\.length\?all:undefined;/, 'and empty is today’s clock, spelled as nothing');
+});
+
+test('the host hides coming, transported and fallen mercenaries while placing living walkers', () => {
+  const ids = ['merc-gotwood', 'merc-word', 'merc-jerry', 'merc-christin'];
+  const npcs = new Map(ids.map(id => [id, { id, actor: { group: { position: { x: 0, z: 0 }, visible: false } } }]));
+  const fallen = createFallen(); fallen.fall('merc-jerry');
+  const world = { npcPositions: {} };
+  const place = hostFunction('placeMercenaries', {
+    companySignature: () => '', companyBuiltWith: '', fallen, mercenaryIds: new Set(ids), npcById: npcs,
+    ambush: { state: { fallen: [] } }, company: { companionIds: [] }, fileOrder: [], fileTaken: [],
+    riding: { mounted: false }, companyWasMounted: false, companyHorseGround: () => ({ bodies: [] }),
+    player: { group: { position: { x: 0, z: 0 } } }, BODY: { person: .45 }, world,
+    companyPlacements: () => ids.filter(id => id !== 'merc-jerry').map((id, i) => ({ id,
+      phase: id === 'merc-gotwood' ? 'coming' : 'walking', x: i + 10, z: 2, walking: true, pace: 1.5 })),
+    companyTransport: { isInTransit: id => id === 'merc-word' },
+  });
+  place();
+  for (const id of ids.slice(0, 3)) assert.equal(npcs.get(id).hidden, true, `${id} has no standing duplicate`);
+  assert.equal(npcs.get('merc-jerry').fallen, true);
+  assert.equal(npcs.get('merc-jerry').walkingWith, false);
+  const walker = npcs.get('merc-christin');
+  assert.equal(walker.hidden, false); assert.equal(walker.actor.group.visible, true);
+  assert.equal(walker.stride, 1.5); assert.deepEqual(world.npcPositions[walker.id], { x: 12, z: 2 });
 });
 
 test('the companion it hands the company is the one the long road already takes', () => {

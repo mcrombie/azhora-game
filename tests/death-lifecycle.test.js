@@ -21,6 +21,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createCompanions, RUNG_AT, REGARD } from '../src/companions.js';
 import { createFallen } from '../src/bystanders.js';
+import { createLivingStory } from '../src/living-story.js';
+import { hostFunction } from './host-function.js';
 import { createMercenaryCompany, MERCENARY_ROSTER, mercenaryById } from '../src/mercenaries.js';
 import { createMorosChapter, morosConversation, musterVoices, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } from '../src/moros-chapter.js';
 
@@ -127,15 +129,25 @@ test('nobody dead is today\u2019s clock, to the digit', () => {
   assert.equal(walking.companionId, 'merc-gotwood');
 });
 
-test('the host counts the camp by name and not by phase', () => {
+test('the host counts actual living loyal muster arrivals, including after reload', () => {
+  const story = createLivingStory();
+  const count = living => hostFunction('musteredInCamp', {
+    living, company: { summary: () => ({ mustered: 99 }) }, playSeconds: 100000,
+  })();
+  story.tick(100000);
+  assert.equal(count(story), 0, 'elapsed time cannot put anybody in camp');
+  story.arriveMuster('merc-gotwood'); story.arriveMuster('merc-word'); story.arriveMuster('merc-jerry');
+  assert.equal(count(story), 3);
+  story.setAlive('merc-gotwood', false);
+  story.chooseAllegiance('merc-word', 'coalition');
+  assert.equal(count(story), 1, 'a fallen or defecting arrival is no longer an Imperial soldier');
+  story.arriveMuster('merc-word', 'coalition');
+  assert.equal(count(story), 1, 'Republican muster has its own register');
+  assert.equal(count(createLivingStory({ saved: story.snapshot() })), 1);
+  // Old review fixtures can still ask the legacy company, but live gameplay never uses it.
+  assert.equal(count(null), 99);
   const source = main();
-  // The host asks rather than subtracts: the company is told who is dead, a dead man has no
-  // placement, and so `mustered` is already the men standing in the camp.
-  assert.match(source, /function musteredInCamp\(\)\{return company\.summary\(playSeconds\)\.mustered;\}/,
-    'the count is the company\u2019s own');
-  assert.ok(!/placements\(playSeconds\)[^\n]*fallen\.has/.test(source),
-    'and nothing subtracts the dead by hand any more');
-  for (const each of [/musterCount:musteredInCamp\(\)\+1/g]) assert.equal((source.match(each) ?? []).length, 2, 'both conversations ask it');
+  for (const each of [/musterCount:musteredInCamp\(\)\+1/g]) assert.equal((source.match(each) ?? []).length, 2, 'both conversations use this count');
   assert.match(source, /musteredInCamp\(\)\+1<=MUSTER_EARLY/, 'and so does the first-man-in toast');
 });
 
@@ -236,7 +248,10 @@ test('nobody can die in a fight the player is being taught alone in', () => {
   // (`bout`, src/combat.js, docs/combat-brief.md phase 7).
   assert.match(source, /const TEACHING_FIGHTS=new Set\(\[GREENWAY_RAID\.id,AVREL_RAID\.id,SPARRING_ID\]\);/);
   assert.match(source, /const SPARRING_ID='sparring-bout';/, 'and the bout is one of them');
-  assert.match(source, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'no companion is an ally in one');
+  const teaching = new Set(['greenway-test', 'avrel-test', 'sparring-bout']);
+  const allies = hostFunction('companionAllies', { TEACHING_FIGHTS: teaching });
+  for (const id of teaching) assert.deepEqual(allies({ id, center: { x: 0, z: 0 } }), [], `${id} admits no companions`);
+  assert.deepEqual(allies({ id: 'ambush', center: { x: 0, z: 0 }, physicalCompany: true }), [], 'physical company is already in the encounter and must not be cloned');
   assert.match(source, /combat\.state\.phase==='active'&&TEACHING_FIGHTS\.has\(combat\.state\.encounterId\)/, 'and the file is held out of the box');
   // A man who is never an ally is never `ally-down`, which is the only thing that kills him.
   assert.match(source, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)/);

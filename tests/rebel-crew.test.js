@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import { REBEL_CREW, CREW_IDS, DECK_Y, POOP_Y, overTheHouse, DROP_RAIL, crewPose, CREW_ALWAYS_IN_FULL } from '../src/rebel-crew.js';
 import { shipAt, WORD_SHIP, WORD_TRACK, WORD_BEACH } from '../src/word-arrival.js';
+import { createLivingStory } from '../src/living-story.js';
+import { arrivalTime } from '../src/mercenaries.js';
 import { HULL, REBEL_STERN_HOUSE } from '../src/salt-sultan.js';
 import { alwaysInFull, figureDetail } from '../src/figure-lod.js';
 
@@ -168,11 +170,18 @@ test('the whole deck rides her own clock, so a reload mid-arrival is the same pi
   // off `elapsed`, which starts at nought every time the game is opened - so the module's own
   // promise, that a game reloaded mid-arrival shows the right pose without anything being saved,
   // was true of her hull and false of everybody standing on it.
-  assert.match(main, /rebelShip\.update\(playSeconds,pose\)/, 'the play clock, which the save carries');
+  assert.match(main, /rebelShip\.update\(arrivalSeconds,pose\)/, 'hull and deck use the same departure-relative clock');
+  assert.match(main, /arrivalSeconds=arrivalClock\(\)/);
+  assert.match(main, /arrivalClock=\(\)=>arrivalTime\(playSeconds,landingQuest\.departureAt\)/);
   assert.doesNotMatch(main, /rebelShip\.update\(elapsed/, 'never the session clock');
   // The same play-second is the same deck, man for man.
-  const at = WORD_SHIP.drops, pose = shipAt(at);
-  for (const man of REBEL_CREW) assert.deepEqual(crewPose(man, pose, at), crewPose(man, pose, at), man.id);
+  const departure = 180, world = createLivingStory();
+  world.tick(departure + WORD_SHIP.drops);
+  const reloaded = createLivingStory({ saved: world.snapshot() });
+  const at = arrivalTime(world.clock(), departure), after = arrivalTime(reloaded.clock(), departure), pose = shipAt(at);
+  assert.equal(at, WORD_SHIP.drops);
+  assert.deepEqual(shipAt(after), pose);
+  for (const man of REBEL_CREW) assert.deepEqual(crewPose(man, pose, at), crewPose(man, shipAt(after), after), man.id);
   // And what the wrong clock was worth, measured: two sessions, the same second of the arrival.
   const moving = REBEL_CREW.filter(man => man.station !== 'rail');
   for (const man of moving) {

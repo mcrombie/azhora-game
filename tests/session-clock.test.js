@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRefugees } from '../src/refugees.js';
+import { createLivingStory } from '../src/living-story.js';
+import { advanceHostClock } from './host-function.js';
 
 /**
  * `playSeconds` is the clock of one game: it is zeroed when a game begins and set from the save
@@ -13,7 +15,6 @@ import { createRefugees } from '../src/refugees.js';
  * until the new game's clock passes the old game's total, which can be a minute of play.
  */
 const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-const lines = main.split('\n');
 
 test('the refugees stand still rather than break when their clock goes backwards', () => {
   const walkers = createRefugees();
@@ -28,28 +29,32 @@ test('the refugees stand still rather than break when their clock goes backwards
   assert.ok(walkers.snapshot().walked >= walked);
 });
 
-test('everything subtracted from playSeconds is reset wherever playSeconds is', () => {
-  // Every assignment of the clock that is not its declaration.
-  const assignments = lines.map((line, i) => ({ line: line.trim(), at: i + 1 }))
-    .filter(entry => /(?:^|[^a-zA-Z_$.])playSeconds\s*=[^=]/.test(entry.line))
-    .filter(entry => !/^let playSeconds=0;$/.test(entry.line));
-  // Two of them begin a game: one fresh, one from a save. The rest pin the clock for a review shot.
-  const starts = assignments.filter(entry => /playSeconds=0;/.test(entry.line) || /saved\.playSeconds/.test(entry.line));
-  assert.equal(starts.length, 2, `expected a fresh start and a load, found ${starts.length} at ${starts.map(s => s.at)}`);
-  const pins = assignments.filter(entry => !starts.includes(entry));
-  for (const pin of pins) assert.match(pin.line, /view===/, `src/main.js:${pin.at} sets the clock outside a review view and outside the two starts`);
-
-  // Whatever is subtracted from playSeconds anywhere in the file must be reset at both starts.
-  // An offset of the clock is a bare counter, so the name has to end where it begins: a name
-  // followed by `.`, `[` or `(` is a member or a call of something else and is not one. The
-  // landing mate's overrun reads `playSeconds-entry.arrival-entry.departs`, where `entry` is a
-  // roster row and not a clock at all; without the lookahead this test asked for `entry += `.
-  const offsets = new Set([...main.matchAll(/playSeconds\s*-\s*([a-zA-Z_$][\w$]*)(?![\w$]*[.[(])/g)].map(m => m[1]));
-  assert.ok(offsets.size >= 1, 'nothing is subtracted from playSeconds any more; drop this test');
-  for (const name of offsets) {
-    assert.match(main, new RegExp(`${name}\\s*\\+=`), `${name} is not a running total, so it is not an offset of the clock`);
-    for (const start of starts)
-      assert.match(start.line, new RegExp(`\\b${name}\\s*=\\s*0`),
-        `${name} is subtracted from playSeconds but src/main.js:${start.at} sets the clock without resetting it`);
+test('the host advances one saved world clock only during active play and fishing', () => {
+  const world = createLivingStory();
+  for (const mode of ['opening', 'arriving', 'pause', 'dialogue', 'inventory', 'journal', 'testing', 'defeated']) {
+    assert.equal(advanceHostClock({ living: world, mode, dt: 60 }), 0, `${mode} consumes no active time`);
   }
+  for (const mode of ['playing', 'fishing']) {
+    const before = world.clock();
+    assert.equal(advanceHostClock({ living: world, mode, dt: 1.25 }), before + 1.25);
+    assert.equal(advanceHostClock({ living: world, mode, reviewFrozen: true, dt: 60 }), before + 1.25);
+  }
+  const saved = world.snapshot(), later = createLivingStory({ saved });
+  assert.equal(later.clock(), 2.5, 'reload consumes no offline time');
+  assert.equal(advanceHostClock({ living: later, mode: 'playing', dt: .5 }), 3);
+  assert.equal(createLivingStory().clock(), 0, 'another new game starts its own clock');
+});
+
+test('fresh and loaded games reset refugee waiting against the new saved clock', () => {
+  // Developer fixtures and frozen screenshots also set clocks; they are not new-game entry
+  // points. Check the actual production entry points rather than counting assignments globally.
+  const production = main.slice(0, main.indexOf("if(new URLSearchParams(location.search).has('test'))"));
+  const starts = production.split('\n').filter(line => !/^\s*let /.test(line) && /playSeconds=0;|playSeconds=.*saved\.playSeconds/.test(line));
+  assert.equal(starts.length, 2, 'fresh game and Continue both reset the legacy offset');
+  for (const line of starts) assert.match(line, /refugeeHold=0/);
+  const fresh = starts.find(line => line.includes('playSeconds=0;'));
+  assert.match(fresh, /resetLivingStory\(\)/, 'fresh entry resets the saved story as well');
+  assert.ok(production.includes('resetLivingStory(saved)'), 'Continue restores the saved story');
+  assert.match(production, /refugees\.setClock\(playSeconds-refugeeHold\)/,
+    'the legacy walkers still subtract their encounter hold from the shared clock');
 });

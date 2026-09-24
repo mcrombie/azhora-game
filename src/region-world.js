@@ -408,6 +408,15 @@ export function calossDistance(x, z) {
 // ---------------------------------------------------------------------------
 // Roads
 // ---------------------------------------------------------------------------
+// Keep both outpost gate approaches straight through their causeways. Sparse
+// Catmull-Rom controls otherwise bow the road into the gate towers, especially
+// where the road turns west across the parade ground.
+const outpostRoadCentre = road(-549.2, 348.1);
+const outpostRoadApproach = (toward, metres) => {
+  const dx = toward.x - outpostRoadCentre.x, dz = toward.z - outpostRoadCentre.z;
+  const length = Math.hypot(dx, dz);
+  return point(outpostRoadCentre.x + dx / length * metres, outpostRoadCentre.z + dz / length * metres);
+};
 /** From Tidehaven's landing, through the forest, across the Caloss and west to the Moros. */
 export const MAIN_ROAD = Object.freeze([
   // Tidehaven's own trail, point for point, turned onto Drent's coast.
@@ -417,7 +426,11 @@ export const MAIN_ROAD = Object.freeze([
   road(-278, 52), road(-300, 64), road(-322, 78), road(-345, 92.9), road(-362, 107),
   road(-374, 124), road(-382, 142), road(-390, 162), road(-386, 182.9), road(-396, 202),
   road(-404, 222), road(-408, 228), road(-414, 242), road(-427, 259.4), road(-446, 276), road(-468, 292),
-  road(-492, 308), road(-518, 326), road(-549.2, 348.1), road(-596, 352), road(-648, 348),
+  road(-492, 308), road(-518, 326),
+  ...[45, 31, 21, 11].map(metres => outpostRoadApproach(road(-518, 326), metres)),
+  outpostRoadCentre,
+  ...[11, 35, 50, 60, 70].map(metres => outpostRoadApproach(road(-596, 352), metres)),
+  road(-596, 352), road(-648, 348),
   road(-700, 352), road(-752, 348), road(-772, 350),
 ]);
 

@@ -5,12 +5,14 @@ import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { createColliderGrid, COLLIDER_CELL } from '../src/collider-grid.js';
 
-/** The check exactly as it was before the grid: every collider, every time. */
+/** The current collision rules without the spatial index: every collider, every time. */
 const standsBrute = (x, z, world, radius = .34) => {
   const b = world.bounds;
   if (x < b.minX + radius || x > b.maxX - radius || z < b.minZ + radius || z > b.maxZ - radius) return false;
-  if (world.heightAt(x, z) < 0.45) return false;
-  return !world.colliders.some(c => c.r !== undefined
+  const surface = world.colliders.reduce((height, c) => c.surface !== undefined && c.r !== undefined
+    && Math.hypot(x - c.x, z - c.z) < c.r ? Math.max(height, c.surface) : height, .45);
+  if (world.heightAt(x, z) < surface) return false;
+  return !world.colliders.filter(c => !['river-water', 'pond-water'].includes(c.kind)).some(c => c.r !== undefined
     ? Math.hypot(x - c.x, z - c.z) < c.r + radius
     : Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius);
 };
