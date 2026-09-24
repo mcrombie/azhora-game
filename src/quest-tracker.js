@@ -3,6 +3,7 @@ import { BRIDGE_QUEST, CLOSED, LIVE, questLive } from './quest-slate.js';
 import { BEN, SPIDER_QUEST } from './spider-quest.js';
 import { TESTIMONY, TROY } from './murder-quest.js';
 import { CAT, LIZ } from './cat-quest.js';
+import { JOBS } from './lauvel-burying.js';
 
 export const QUEST_TRACKER_TYPES = Object.freeze({
   main: Object.freeze({ label: 'Main quest', grade: 'main', order: 0 }),
@@ -13,12 +14,14 @@ const namedGates = new Set([...LIVE, ...CLOSED]);
 const finished = quest => !!quest?.complete || !!quest?.over || ['complete', 'done', 'closed', 'abandoned', 'failed'].includes(quest?.stage);
 const validPoint = point => Number.isFinite(point?.x) && Number.isFinite(point?.z);
 const copyTarget = target => validPoint(target) ? { ...target } : null;
-const copyQuest = quest => quest ? { ...quest, destinationIds: [...quest.destinationIds], target: copyTarget(quest.target) } : null;
+const copyValue = value => Array.isArray(value) ? value.map(copyValue)
+  : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copyValue(item)])) : value;
+const copyQuest = quest => quest ? copyValue(quest) : null;
 const typeFor = quest => Object.hasOwn(QUEST_TRACKER_TYPES, quest.type) ? quest.type
   : ['main', 'gold'].includes(quest.grade) ? 'main' : ['plot', 'silver'].includes(quest.grade) ? 'secondary' : 'tertiary';
 
-/** The three already-built magic stories, read from their existing state getters. */
-export function activeOptionalQuests({ spider = null, murder = null, cat = null } = {}) {
+/** Accepted side stories, read from their existing state getters or snapshots. */
+export function activeOptionalQuests({ spider = null, murder = null, cat = null, burying = null } = {}) {
   const tasks = [];
   if (spider && ['walking', 'fighting', 'killed'].includes(spider.stage) && !spider.over) {
     const reward = spider.stage === 'killed';
@@ -48,13 +51,25 @@ export function activeOptionalQuests({ spider = null, murder = null, cat = null 
       destinationIds: cat.stage === 'looking' ? [CAT.id] : [LIZ.id],
     });
   }
+  if (burying && ['helping', 'found', 'told'].includes(burying.stage)) {
+    const worked = Array.isArray(burying.done) ? burying.done : [];
+    const workers = Object.values(JOBS).filter(job => job.id === 'hurdle' || !worked.includes(job.id)).map(job => job.who);
+    const carried = Math.max(0, Math.floor(Number(burying.carried) || 0));
+    tasks.push({ id: 'lauvel-burying', active: true, type: 'tertiary', title: 'The burying at the Lauvel', stage: burying.stage,
+      detail: burying.stage === 'helping'
+        ? `Help Old Hewe dig, Dorran carry the fallen, or Maudry record their names. Keep helping Dorran bring people in from the field.${carried ? ` ${carried} carried so far.` : ''}`
+        : burying.stage === 'found' ? 'Return to Sela. Tell her about the man in the green coat you brought in from the field.'
+          : 'Speak to Sela and help carry her son to his grave.',
+      destinationIds: burying.stage === 'helping' ? workers : ['lauvel-seeker'],
+    });
+  }
   return tasks;
 }
 
 function normalize(quest, id, type = typeFor(quest)) {
   const grade = QUEST_TRACKER_TYPES[type];
   const ids = quest.destinationIds ?? (quest.objectiveId ? [quest.objectiveId] : []);
-  return { id, type, grade: grade.grade, label: grade.label,
+  const view = { id, type, grade: grade.grade, label: grade.label,
     title: typeof quest.title === 'string' ? quest.title : 'An errand',
     detail: typeof quest.detail === 'string' ? quest.detail : '',
     kicker: typeof quest.kicker === 'string' ? quest.kicker : grade.label,
@@ -62,6 +77,10 @@ function normalize(quest, id, type = typeFor(quest)) {
     destinationIds: [...new Set((Array.isArray(ids) ? ids : []).filter(value => typeof value === 'string' && value.length > 0))],
     target: copyTarget(quest.target),
   };
+  for (const key of ['objective', 'region']) if (typeof quest[key] === 'string') view[key] = quest[key];
+  for (const key of ['notes', 'actions', 'steps']) if (quest[key] !== undefined) view[key] = copyValue(quest[key]);
+  if (quest.trackable === false) view.trackable = false;
+  return view;
 }
 
 /**
@@ -102,7 +121,9 @@ export function createQuestTracker({ selectedId = 'main' } = {}) {
   }
   function view() {
     reconcile();
-    return { selectedId: wanted, selected: copyQuest(choices.find(quest => quest.id === wanted)), choices: choices.map(copyQuest) };
+    // Keep the player's chosen errand first without changing main-story state.
+    const ordered = [...choices].sort((a, b) => Number(b.id === wanted) - Number(a.id === wanted));
+    return { selectedId: wanted, selected: copyQuest(choices.find(quest => quest.id === wanted)), choices: ordered.map(copyQuest) };
   }
   function update(source) { choices = normalizeTrackableQuests(source); reconcile(); return view(); }
   function select(id) {

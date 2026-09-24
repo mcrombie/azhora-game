@@ -128,21 +128,21 @@ test('a normal-mode dialogue is the authored English, whatever tongue the speake
   assert.match(main, /if\(gameMode\.has\('linguist'\)\)setSignReader\(/, 'no sign reader in normal mode');
 });
 
-test('normal mode shows twenty-five skills, pays none of the Linguist, and offers nothing that teaches a tongue', () => {
+test('normal mode shows twenty-six skills, pays none of the Linguist, and offers nothing that teaches a tongue', () => {
   assert.deepEqual([...hiddenSkillsIn(GAME_MODE_NORMAL)], ['linguist']);
   assert.deepEqual([...hiddenSkillsIn(GAME_MODE_HARD)], [], 'hard mode hides nothing');
   assert.deepEqual([...hiddenSkillsIn(undefined)], ['linguist'], 'and the default is normal');
   const shown = SKILL_IDS.filter(id => !hiddenSkillsIn(GAME_MODE_NORMAL).includes(id));
-  assert.equal(shown.length, 25, 'the seven Arms and the five schools of sorcery are on the sheet too');
+  assert.equal(shown.length, 26, 'the seven Arms and the five schools of sorcery are on the sheet too');
   assert.equal(shown.includes('linguist'), false, 'the tile is not on the sheet');
   assert.equal(SKILL_IDS.includes('linguist'), true, 'and the registry keeps it all the same');
 
   const main = source('main.js');
   assert.match(main, /const hiddenSkills=new Set\(gameMode\.hiddenSkills\);/, 'one set, taken from the gate');
   assert.match(main, /function shownSkills\(\)\{return skills\.view\(\)\.filter\(entry=>!hiddenSkills\.has\(entry\.id\)\);\}/, 'the sheet draws what this mode shows');
-  assert.match(main, /const view=shownSkills\(\),open=openSkillId/, 'and so does the guide behind a tile');
+  assert.match(main, /skillBrowser\.update\(\{skills:shownSkills\(\)\}\)/, 'the list and detail browser receives only shown skills');
   assert.match(main, /\|\|hiddenSkills\.has\(id\)\|\|/, 'a hidden skill has no page to open');
-  assert.match(main, /String\(shownTotalLevel\(\)\)/, 'the total level counts what is shown');
+  assert.match(main, /function shownTotalLevel\(\)\{return shownSkills\(\)\.reduce/, 'the total level counts what is shown');
   assert.match(main, /SKILL_IDS\.includes\(id\)&&!hiddenSkills\.has\(id\)/, 'and a hidden skill is not handed out at the start either');
   assert.match(main, /if\(gameMode\.has\('linguist'\)\)for\(const \[id,proficiency\] of Object\.entries\(startingLanguages\(playerId\)\)\)/,
     'startingLanguages stays in the data and is not applied');

@@ -14,6 +14,10 @@
 import { questLive } from './quest-slate.js';
 
 export const JOURNEY_VERSION = 1;
+// Carpentry shares Bowden's existing construction progression and save key.
+// Three bracing timbers are worth a little more than three pine planks (87 XP):
+// enough for a new carpenter to reach level two from this first practical job.
+export const BRIDGE_CARPENTRY = Object.freeze({ skill: 'construction', xp: 90 });
 export const PARCEL_IDS = Object.freeze(['cart-parcel-1', 'cart-parcel-2', 'cart-parcel-3']);
 export const BEACON_IDS = Object.freeze(['beacon-west', 'beacon-east', 'beacon-north']);
 export const JOURNEY_REGIONS = Object.freeze({
@@ -61,7 +65,7 @@ function validateSnapshot(value, live = questLive) {
   return value.revision === actions;
 }
 
-export function createJourney({ inventory, weapons, onEvent = () => {}, live = questLive } = {}) {
+export function createJourney({ inventory, weapons, skills, onEvent = () => {}, live = questLive } = {}) {
   let state = emptyState();
 
   function snapshot() {
@@ -170,7 +174,7 @@ export function createJourney({ inventory, weapons, onEvent = () => {}, live = q
   function start() {
     if (state.started) return fail('The road out of Drent has already begun.');
     if (!inventory?.has?.('harbor-letter') || !inventory?.has?.('road-token'))
-      return fail('Carry the letter of introduction and Eren’s travel token before leaving Tidehaven.');
+      return fail('Carry the letter of introduction and Officer Glun’s travel token before leaving Tidehaven.');
     state.started = true;
     return emit('start-journey');
   }
@@ -181,25 +185,33 @@ export function createJourney({ inventory, weapons, onEvent = () => {}, live = q
       : !state.started ? 'Finish the first shore and begin the road out of Drent.'
         : `Your current task: ${view().detail}`);
     if (!choice.enabled) return fail(choice.reason);
-    let reward = null, completedRegion = null;
+    let reward = null, completedRegion = null, skillLearned = null, skillReward = null;
     if (actionId === 'meet-courier') state.courierAccepted = true;
     else if (actionId.startsWith('collect-')) state.parcels.push(choice.objectiveId);
     else if (actionId === 'return-courier') {
       if (!inventory?.add?.('cooked-fish', 2)) return fail('The courier could not add the food to your satchel. Your parcels are kept; speak again.');
       state.courierComplete = true; reward = { id: 'cooked-fish', quantity: 2 }; completedRegion = 2;
-    } else if (actionId === 'meet-crossing-keeper') state.bridgeAccepted = true;
+    } else if (actionId === 'meet-crossing-keeper') {
+      state.bridgeAccepted = true;
+      if (skills?.learn?.(BRIDGE_CARPENTRY.skill)?.first) skillLearned = BRIDGE_CARPENTRY.skill;
+    }
     else if (actionId === 'repair-bridge') {
       // The weapon controller preserves condition on a partly used branch when
       // spare branches are spent. Never remove weapon stacks behind its back.
       if (!weapons?.spendSticks?.(3)) return fail('Three sticks could not be used for the repair. Check your satchel and try again.');
       state.bridgeRepaired = true;
+      // Also teaches older saves accepted before Chip offered this lesson. The
+      // repaired flag makes the payment one-shot; restoring never pays anything.
+      if (skills?.learn?.(BRIDGE_CARPENTRY.skill)?.first) skillLearned = BRIDGE_CARPENTRY.skill;
+      const gained = skills?.gain?.(BRIDGE_CARPENTRY.skill, BRIDGE_CARPENTRY.xp);
+      if (gained?.ok) skillReward = { id: BRIDGE_CARPENTRY.skill, xp: gained.gained, level: gained.level, levelled: gained.levelled };
     } else if (actionId === 'return-crossing-keeper') {
       if (!inventory?.add?.('forest-stick', 4)) return fail('The keeper could not add the wood to your satchel. Your repair is remembered; speak again.');
       state.bridgeComplete = true; reward = { id: 'forest-stick', quantity: 4 }; completedRegion = 3;
     } else if (actionId === 'meet-ridge-keeper') state.ridgeAccepted = true;
     else if (actionId.startsWith('restore-')) state.beacons.push(choice.objectiveId);
     else if (actionId === 'deliver-report') { state.reportDelivered = true; completedRegion = 4; }
-    return emit(actionId, { objectiveId: choice.objectiveId, reward, completedRegion });
+    return emit(actionId, { objectiveId: choice.objectiveId, reward, completedRegion, skillLearned, skillReward });
   }
 
   function restore(data) {

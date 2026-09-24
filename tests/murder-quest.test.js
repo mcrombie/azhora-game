@@ -63,7 +63,7 @@ test('the case walks: three true things, a fourth name, and Troy will not act on
     ...WITNESS_IDS.map(() => 'murder-heard'), 'murder-solved']);
 });
 
-test('the fork is the ending: the purse or the reading, once, and never both', () => {
+test('Troy pays once and the earned reading remains available after taking money', () => {
   for (const [id, stageName] of [['purse', 'paid'], ['lesson', 'taught']]) {
     const quest = createMurderQuest();
     quest.begin();
@@ -72,7 +72,12 @@ test('the fork is the ending: the purse or the reading, once, and never both', (
     assert.deepEqual(quest.choices().map(choice => choice.id), ['purse', 'lesson']);
     assert.equal(quest.take(id).stage, stageName);
     assert.equal(quest.state.over, true);
-    assert.equal(quest.take(id === 'purse' ? 'lesson' : 'purse'), null, 'he paid twice');
+    if(id==='purse'){
+      assert.deepEqual(quest.choices().map(one=>one.id),['lesson']);
+      assert.equal(quest.take('lesson').stage,'taught');
+    }
+    assert.equal(quest.take('purse'),null,'he paid twice');
+    assert.equal(quest.take('lesson'),null,'he taught twice');
     assert.deepEqual(quest.choices(), []);
   }
   assert.equal(createMurderQuest().take('purse'), null, 'nobody is paid for a case nobody has closed');
@@ -96,7 +101,7 @@ test('a save of it round-trips, and a state that cannot have happened is refused
     { ...before, accused: ['somebody-who-is-not-here'] }, { ...before, restUntil: -1 },
     // Paid for a case that was never closed, and closed without the name ever being said.
     { ...before, accused: [] }, { ...before, stage: 'solved', accused: [] },
-    { ...before, stage: 'asking', accused: [MURDERER] }]) {
+    { ...before, stage: 'asking', accused: [MURDERER] },{...before,heard:[]}]) {
     assert.equal(validateMurderQuestSnapshot(bad), false, JSON.stringify(bad));
     assert.equal(loaded.restore(bad), false);
     assert.deepEqual(loaded.snapshot(), before, 'a refused save changed the live one');

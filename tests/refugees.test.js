@@ -4,7 +4,8 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_PACE, REFUGEE_REST, REFUGEE_RESTS, REFUGEE_START, REFUGEE_STANDS,
-  refugee, speechFor, createRefugees, validateRefugeesSnapshot, refugeeConversation } from '../src/refugees.js';
+  refugee, speechFor, createRefugees, validateRefugeesSnapshot, refugeeConversation, refugeeReturnRoute } from '../src/refugees.js';
+import { MAIN_ROAD } from '../src/regions.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -26,12 +27,25 @@ async function road() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
     const world = createWorld(new THREE.Scene());
-    const route = world.paths[0].slice(0, REFUGEE_START + 1).reverse().map(point => ({ x: point.x, z: point.z }));
+    const route = refugeeReturnRoute(world.paths[0], MAIN_ROAD[REFUGEE_START]);
     return { world, route };
   })();
   return built;
 }
 const walkers = route => createRefugees({ route, stands: REFUGEE_STANDS });
+
+test('refugees start at the same physical place when the road has more samples', () => {
+  const sparse = [{ x: 0, z: 0 }, { x: 100, z: 0 }, { x: 100, z: 100 }];
+  const dense = [{ x: 0, z: 0 }, { x: 50, z: 0 }, { x: 100, z: 0 }, { x: 100, z: 20 }, { x: 100, z: 40 }, { x: 100, z: 100 }];
+  const start = { x: 100, z: 35 };
+  for (const road of [sparse, dense]) {
+    const route = refugeeReturnRoute(road, start);
+    assert.deepEqual(route[0], start);
+    assert.deepEqual(route.at(-1), sparse[0]);
+    assert.equal(createRefugees({ route, stands: REFUGEE_STANDS }).total, 135);
+    assert.ok(route.every(point => point.z <= start.z), 'the return route never goes beyond its start');
+  }
+});
 
 test('three of them, and they do not agree', () => {
   assert.equal(REFUGEES.length, 3);

@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { drawMinimap, miniMapProjection, MINIMAP_PALETTE } from '../src/minimap.js';
+import { drawMinimap, miniMapProjection, miniMapFogTiles, MINIMAP_PALETTE } from '../src/minimap.js';
 import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
 import { toWorld } from '../src/world-scale.js';
 import { hexCentre } from '../src/region-world.js';
+import { pointInPolygon } from '../src/region-layout.js';
+import { createMapFog } from '../src/map-fog.js';
 import { questMapColour } from '../src/world-map-detail.js';
 
 /** The fixture speaks authored metres, like the world it stands in for. */
@@ -129,6 +131,36 @@ test('new-region house half-extents render finite footprints; invalid data canno
   assert.equal(drawMinimap(context(), { world, position: { x: NaN, z: Infinity }, radius: NaN, size: Infinity }).player.x, 150);
 });
 
+test('separate distant bridges cannot paint a timber rectangle over inland terrain', () => {
+  const ctx = context(), world = { colliders: [
+    { kind: 'bridge-rail', x: -600, z: 140, r: .35 },
+    { kind: 'bridge-rail', x: -100, z: -190, r: .35 },
+    { kind: 'bridge-rail', x: -770, z: -490, r: .4 },
+  ], mapBridges: [
+    { crossing: { x: -600, z: 140 }, axis: { x: 0, z: 1 }, side: { x: 1, z: 0 }, halfSpan: 14 },
+    { crossing: { x: -100, z: -190 }, axis: { x: 0, z: 1 }, side: { x: 1, z: 0 }, halfSpan: 9 },
+    { crossing: { x: -770, z: -490 }, axis: { x: 1, z: 0 }, side: { x: 0, z: 1 }, halfSpan: 10 },
+  ] };
+  const drawn = drawMinimap(ctx, { world, position: { x: -117, z: -14 } });
+  assert.equal(drawn.counts.bridges, 0);
+  assert.ok(!ctx.calls.some(call => ['fillRect', 'fill'].includes(call.method) && call.fill === MINIMAP_PALETTE.timber),
+    'no bridge occupies the land between three different crossings');
+});
+
+test('each local bridge follows its own rotated deck, without filling the banks beside it', () => {
+  const axis = { x: Math.SQRT1_2, z: Math.SQRT1_2 }, side = { x: Math.SQRT1_2, z: -Math.SQRT1_2 };
+  const crossing = { x: 20, z: 30 }, ctx = context();
+  const drawn = drawMinimap(ctx, { world: { mapBridges: [{ crossing, axis, side, halfSpan: 12 }] }, position: crossing });
+  assert.equal(drawn.counts.bridges, 1);
+  const fill = ctx.calls.findIndex(call => call.method === 'fill' && call.fill === MINIMAP_PALETTE.timber);
+  const deck = ctx.calls.slice(fill - 5, fill).filter(call => ['moveTo', 'lineTo'].includes(call.method)).map(call => call.args);
+  assert.equal(deck.length, 4);
+  const edge = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) / drawn.scale;
+  assert.ok(Math.abs(edge(deck[0], deck[1]) - 5.6) < 1e-8);
+  assert.ok(Math.abs(edge(deck[1], deck[2]) - 24) < 1e-8);
+  assert.ok(deck[0][0] !== deck[1][0] && deck[0][1] !== deck[1][1], 'the deck rotates with its bridge');
+});
+
 test('discovery rendering and combat are read-only and cannot expose distant live enemies', () => {
   const world = fixture(), discoveries = new Set(['pond']);
   const combat = { phase: 'active', enemies: [{ ...at(-100, 14), hp: 2 }, { ...at(-500, 300), hp: 3 }, { ...at(-98, 2), hp: 0 }] };
@@ -186,6 +218,17 @@ test('the built world uses rendered water outlines and bridge rails without terr
     assert.ok(village.counts.waterShapes >= 1, 'the coast is drawn from its rendered shoreline');
     const hills = drawMinimap(context(), { world, position: at(-91, 411) });
     assert.equal(hills.counts.waterShapes, 0, 'the inland hills have no water to draw');
+    const oak = world.landmarks.find(place => place.id === 'fallen-oak'), chart = createMapFog();
+    chart.reveal(oak.x, oak.z);
+    const oakContext = context(), woodland = drawMinimap(oakContext, { world, position: oak, chart: chart.view() });
+    const tiles = miniMapFogTiles(chart.view(), miniMapProjection({ position: oak }));
+    assert.ok(tiles.knows(oak), 'the real Stormfall Oak hex is visited');
+    assert.ok(tiles.tiles.some(tile => tile.state === 'visited' && pointInPolygon(tile.points.map(p => ({ x: p.x, z: p.y })), 150, 150)),
+      'the visited hex clip includes the player at the centre');
+    assert.equal(woodland.counts.bridges, 0, 'Stormfall Oak is not a bridge');
+    assert.ok(woodland.counts.trees > 0, 'actual entered woodland has canopy detail');
+    assert.ok(!oakContext.calls.some(call => call.method === 'fillRect' && call.fill === MINIMAP_PALETTE.timber && (call.args[2] > 300 || call.args[3] > 300)),
+      'distant bridge rails do not cover the entered woodland with an oversized timber rectangle');
   } finally {
     for (const geometry of geometryCount) geometry.dispose();
     for (const material of materialCount) material.dispose();
@@ -209,6 +252,19 @@ test('minimap exploration clips exact features to entered tiles and preserves on
   const visited = drawMinimap(context(), { world, position: here, radius: 150,
     chart: { cells: ['10,106', '11,106'], glimpsed: [] }, goal: { id: 'secret', ...adjacent } });
   assert.equal(visited.counts.buildings, 2); assert.ok(visited.goal, 'entering the tile confirms its exact features');
+});
+
+test('woodland silhouettes are drawn only for actual trees in entered hexes, below the paths', () => {
+  const here = hexCentre(10, 106), adjacent = hexCentre(11, 106), ctx = context();
+  const world = { broadleafTrees: [{ ...here, height: 9 }, { ...adjacent, height: 10 }, { ...here, hidden: true }],
+    paths: [[here, adjacent]] };
+  const chart = { cells: ['10,106'], glimpsed: ['11,106'] };
+  const drawn = drawMinimap(ctx, { world, position: here, radius: 150, chart });
+  assert.equal(drawn.counts.trees, 1, 'nearby unvisited and hidden trees are not revealed');
+  const canopy = ctx.calls.findIndex(call => call.method === 'fill' && call.fill === MINIMAP_PALETTE.canopy);
+  const road = ctx.calls.findIndex(call => call.method === 'stroke' && call.stroke === MINIMAP_PALETTE.road);
+  assert.ok(canopy >= 0 && road > canopy, 'paths remain readable above the canopy');
+  assert.deepEqual(chart, { cells: ['10,106'], glimpsed: ['11,106'] }, 'drawing does not explore extra hexes');
 });
 
 test('selected side-quest pointers retain their category colors on the minimap', () => {

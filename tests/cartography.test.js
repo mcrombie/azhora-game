@@ -75,11 +75,11 @@ test('a chart only goes forward, and each step forward is paid for once', () => 
   assert.equal(chart.chart(undefined).ok, false);
 });
 
-test('charted means a shape; explored means six hexes of your own', () => {
+test('charted records the first survey; explored records six hexes of your own', () => {
   const { skills, chart } = fixture();
   const first = chart.noteHex('Moros Plain');
   assert.deepEqual([first.first, first.state, first.named, first.xp], [true, 'charted', true, CHART_XP.firstHex],
-    'the first ground you put on the chart in a country names it and shapes it');
+    'the first visited hex names its country and begins the survey');
   for (let i = 2; i < EXPLORED_HEXES; i++) {
     const step = chart.noteHex('Moros Plain');
     assert.deepEqual([step.first, step.xp, step.state], [false, 0, 'charted'], `hex ${i}`);
@@ -91,7 +91,7 @@ test('charted means a shape; explored means six hexes of your own', () => {
   assert.equal(chart.noteHex(null).ok, false);
 });
 
-test('nothing is paid until Jojo has handed the chart over', () => {
+test('nothing is paid until Glun has handed the chart over', () => {
   const { skills, chart } = fixture({ taught: false });
   assert.equal(chart.met, false);
   chart.hear('Peblos'); chart.noteHex('Drent');
@@ -120,7 +120,7 @@ test('asking the way only reaches the countries next door, and every one of them
   }
 });
 
-test('the journal says how hard a country is only once its shape is on the chart', () => {
+test('the journal says how hard a country is only after its first survey', () => {
   const { chart } = fixture({ charted: OLD_OPENING });
   chart.hear('Cape Thalmagar');
   const view = chart.view();
@@ -163,54 +163,51 @@ test('the chart survives the road, and nonsense is refused', () => {
 
 const ATLAS = JSON.parse(readFileSync(fileURLToPath(new URL('../assets/azhora-dev-regions.json', import.meta.url)), 'utf8')).regions;
 
-test('the dark chart draws a shape for every coast you know and a name for every country you have been given', () => {
+test('country knowledge reveals original names but never the full shape, including old charted saves', () => {
   const { chart } = fixture({ charted: OLD_OPENING });
   chart.hear('Drent');
-  // A chart with six coasts drawn on it, and one of them named.
+  // Old saves may carry six charted coasts, but none should uncover a province.
   const opening = chartShapes(chart.view().entries, ATLAS);
-  assert.deepEqual(opening.silhouettes.map(s => s.name).sort(),
-    ['Drent', 'East Suval', 'Feradom', 'Luscia', 'Pueth', 'West Suval'], 'six coasts against the sea');
+  assert.deepEqual(opening.silhouettes, [], 'legacy knowledge does not reveal borders or coastline');
   assert.deepEqual(opening.labels.map(l => l.name), ['Drent'], 'and one name on it');
-  // Feradom is not one of the built regions and has no REGION_OUTLINES entry; the atlas carries it anyway.
-  const feradom = opening.silhouettes.find(s => s.name === 'Feradom');
-  assert.ok(feradom.cells.length > 4, `Feradom's coast is ${feradom.cells.length} hexes`);
-  for (const shape of opening.silhouettes) for (const cell of shape.cells)
-    assert.ok(Number.isFinite(cell.q) && Number.isFinite(cell.r), `${shape.name} draws in hexes`);
   // A label sits at the atlas's own centre for that country, sized by how big it is.
   const drent = opening.labels[0], atlas = ATLAS.find(region => region.name === 'Drent');
   assert.deepEqual([drent.x, drent.y], [atlas.centerX, atlas.centerY]);
   assert.ok(drent.size >= 22 && drent.size <= 46);
 
-  // Hearing of somewhere puts its name up without its shape; charting it adds the shape.
+  // Hearing of somewhere supplies its name; survey ranks never add the whole shape.
   chart.hear('Cape Thalmagar');
   const heard = chartShapes(chart.view().entries, ATLAS);
   assert.ok(heard.labels.some(l => l.name === 'Cape Thalmagar'), 'a name and a rough bearing is a label');
   assert.ok(!heard.silhouettes.some(s => s.name === 'Cape Thalmagar'), 'and no shape at all');
   chart.chart('Cape Thalmagar');
-  assert.ok(chartShapes(chart.view().entries, ATLAS).silhouettes.some(s => s.name === 'Cape Thalmagar'));
+  assert.deepEqual(chartShapes(chart.view().entries, ATLAS).silhouettes, []);
   // Walked ground keeps its shape: the fog cuts the atlas out of the dark over the top of it.
   for (let i = 0; i < EXPLORED_HEXES; i++) chart.noteHex('Moros Plain');
   const walked = chartShapes(chart.view().entries, ATLAS);
-  assert.ok(walked.silhouettes.some(s => s.name === 'Moros Plain') && walked.labels.some(l => l.name === 'Moros Plain'));
+  assert.equal(walked.silhouettes.length, 0);
+  assert.ok(walked.labels.some(l => l.name === 'Moros Plain'));
   // Nothing is drawn for a country the atlas does not have, or for no atlas at all.
   assert.deepEqual(chartShapes([{ name: 'Nowhere', state: 'charted', named: true }], ATLAS), { silhouettes: [], labels: [] });
   assert.deepEqual(chartShapes(chart.view().entries, null), { silhouettes: [], labels: [] });
   assert.deepEqual(chartShapes(null, ATLAS), { silhouettes: [], labels: [] });
 });
 
-test('the overlay goes dark, and the shapes and names are drawn into it', () => {
+test('the opaque overlay reveals only explored hexes, adjacent terrain, and original names', () => {
   const map = source('world-map.js'), main = source('main.js');
   assert.match(map, /fill: '#0b1620'/, 'unknown country is dark');
   // Opaque, both of them. At .93 the whole continent - shapes and lettering - could be read through
   // the dark by a traveler who had charted a single hex, and a known coast showed its interior.
   assert.match(map, /fill: '#0b1620', 'fill-opacity': '1', mask:/, 'and nothing of the atlas shows through it');
-  assert.match(map, /fill: '#243a4e', 'fill-opacity': '1', stroke: '#243a4e', 'stroke-opacity': '1'/, 'nor through a coast you have only been shown');
+  assert.doesNotMatch(map, /fill: '#243a4e'/, 'no province silhouette can disclose its full shape');
   assert.doesNotMatch(map, /mask: 'url\(#atlas-charted\)'[^\n]*'fill-opacity': '\.\d/, 'no masked layer of the fog is translucent');
   assert.doesNotMatch(map, /'fill-opacity': '\.\d+'[^\n]*mask: 'url\(#atlas-charted\)'/, 'whichever way round it is written');
   assert.doesNotMatch(map, /#e8dcba/, 'the old parchment blank is gone');
   assert.doesNotMatch(map, /atlas-unknown/, 'and so is its hatch');
-  assert.match(map, /for \(const region of chart\.silhouettes \?\? \[\]\)/, 'a shape per known coast');
-  assert.match(map, /for \(const label of chart\.labels \?\? \[\]\)/, 'a name per named country');
+  assert.doesNotMatch(map, /for \(const region of chart\.silhouettes/, 'knowledge cannot bypass exploration fog');
+  assert.match(map, /atlasExplorationScope\(\{ cells, glimpsed, reveal \}\)/, 'the renderer takes coverage only from exploration hexes');
+  assert.match(map, /atlasRegionLabelKnown\(original\.getAttribute\('data-region'\), chart\.labels, chart\.reveal\)/, 'only known country names are copied from the authored lettering');
+  assert.match(map, /splitAtlasRegionLabels\(source\)/, 'the terrain image has no duplicate lettering beneath the fog');
   assert.match(map, /mask: 'url\(#atlas-charted\)'/, 'and the ground you have walked is cut out of both');
   assert.match(map, /silhouettes: chart\.silhouettes\.length/, 'the state says how many were asked for');
   assert.match(map, /labels: \[\.\.\.overlay\.querySelectorAll\('\[data-role="labels"\] text'\)\]/, 'and which names were drawn');
@@ -242,9 +239,10 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
   assert.match(hers, /Officer Glun/, 'she sends the traveler to the man who does');
   assert.match(hers, /straw post/, 'and says where he is standing');
   const his = main.slice(main.indexOf('function giveTheChart'), main.indexOf('function jojoOnTheLanding'));
-  assert.match(his, /cartography\.learn\(\)\.first/, 'and that is the lesson');
+  assert.match(his, /if\(!chartLesson\.issue\(\)\)return false/, 'Glun issues the map lesson only once');
+  assert.match(his, /cartography\.learn\(\)/, 'and that is the skill he teaches');
   assert.match(his, /cartography\.noteHex\(here\.name\)/, 'the ground under his feet is the first thing on it');
-  assert.match(his, /NEW SKILL . CARTOGRAPHY/);
+  assert.match(main, /event\.type==='skill-learned'.*skillAnnouncements\.enqueue/);
   assert.match(main, /function wayfindingChoice\(npc,back\)/, 'anybody can be asked which way the next country is');
   assert.match(main, /if\(options\.choices\?\.length&&!options\.noWayfinding\)/, 'from the one place every conversation goes through');
   assert.match(main, /cartography\.directionsFrom\(homeRegion\(npc\)\)/, 'and only about the countries next door');

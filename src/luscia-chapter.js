@@ -93,7 +93,7 @@ export function createLusciaChapter({ inventory, onEvent = () => {} } = {}) {
       'meet-relay-clerk': [1, 'The missing courier', 'Iven has orders from the Moros. Speak with him at the relay post on Nothom’s square; an army courier who rode from the battlefield ten days ago never reached him.', 'LUSCIA · 1 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
       'find-satchel': [2, 'The field at the Lauvel', 'Follow the road north-east out of Nothom, past the old relay hut, to the field at the Lauvel. Sergeant Talven holds the picket, Ilva is searching the burial line, and the courier’s satchel lies at a wrecked cart on the far side. Press F at the cart. Wolves have been on the burial line.', 'LUSCIA · 2 / 3 · THE FIELD AT THE LAUVEL', ['courier-satchel']],
       'return-satchel': [3, 'Carry the rolls back', 'Take the courier’s satchel back down the road to Iven in Nothom before anything else finds it.', 'LUSCIA · 3 / 3 · THE FIELD AT THE LAUVEL', ['relay-clerk']],
-      complete: [4, 'The army’s horse', 'Iven has the muster rolls and you have the army’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Nothom, turns it into a horse. Then the road turns south-west for the Moros gate and the army’s outpost out on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
+      complete: [4, 'The army’s horse', 'Iven has the muster rolls and you have the army’s horse token. Bede Harrow, the ostler at the stable yard on the edge of Nothom, turns it into a horse. Then leave through Nothom’s south-west gate and follow the road to the army’s outpost on the plain.', 'LUSCIA · CHAPTER COMPLETE', []],
     };
     const [step, title, detail, kicker, destinations] = views[current];
     return {
@@ -223,7 +223,7 @@ export function lusciaConversation(npc, context) {
 
   if (npc.id === 'relay-clerk') {
     if (state.returned) return tell([
-      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token to Bede Harrow at the stable yard on the edge of town; he keeps the army’s remounts and will hand you one against my mark. Then ride south-west for the Moros gate. It is too far to walk with orders in your pocket.',
+      'The rolls are in my hand, and you have your pay: the horse token and twenty copper. Take the token to Bede Harrow at the stable yard on the edge of town; he keeps the army’s remounts and will hand you one against my mark. Then ride out through Nothom’s south-west gate and follow the road across the plain to the army camp. It is too far to walk with orders in your pocket.',
       'Sixty-one of ours named, and a list of the men we took. The Moros will read it as a victory return. I will file it as what it is: the valley’s dead, in two columns, in my handwriting.',
     ], []);
     if (state.satchelTaken) return tell([

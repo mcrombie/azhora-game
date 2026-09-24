@@ -155,31 +155,29 @@ test('a save of it round-trips, and nonsense is refused without changing anythin
 });
 
 /**
- * And the ground itself: the emptiest stretch of the road out of Drent, measured on the world the
- * game builds rather than chosen off a map.
+ * The requested Greenway junction, measured on the world the game builds.
  */
-test('they lie up on the emptiest stretch of the Drent road, with ground to come off it', async () => {
+test('they lie up at the unsigned Greenway junction on the road out of Drent', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   const road = world.paths[0], lengths = roadLengths(road);
-  assert.ok(AMBUSH.distance > 440 && AMBUSH.distance < 640,
-    'between the Avrel clearing and the Caloss crossing, which is the empty part');
+  assert.ok(AMBUSH.distance > 105 && AMBUSH.distance < 130,
+    'at the junction beyond Greenway Watch, before Fernway Rest');
   const along = distanceAlongRoad(road, AMBUSH.point, lengths);
   assert.ok(Math.abs(along - AMBUSH.distance) < 6, `the point sits ${along.toFixed(0)} m along, not ${AMBUSH.distance}`);
-  assert.equal(world.regionAt(AMBUSH.point.x, AMBUSH.point.z)?.name, 'Drent', 'the last of Drent before the river');
+  assert.equal(world.regionAt(AMBUSH.point.x, AMBUSH.point.z)?.name, 'Drent');
   // The bearing the bodies and the three of them are laid out along is the road's own.
   const ahead = distanceAlongRoad(road, { x: AMBUSH.point.x + AMBUSH.forward.dx * 10, z: AMBUSH.point.z + AMBUSH.forward.dz * 10 }, lengths);
   assert.ok(Math.abs(ahead - along - 10) < 1.2, `ten metres along the bearing is ${(ahead - along).toFixed(1)} m along the road`);
   assert.ok(canStand(AMBUSH.point.x, AMBUSH.point.z, world, BODY.person), 'the road itself is walkable there');
-  // Nobody is standing near enough to watch it happen.
+  // No civilian or guard starts inside the attack trigger.
   for (const [id, stand] of Object.entries(world.npcPositions)) {
     const gap = Math.hypot(stand.x - AMBUSH.point.x, stand.z - AMBUSH.point.z);
-    assert.ok(gap > 60, `${id} stands ${gap.toFixed(0)} m from the ambush`);
+    assert.ok(gap > AMBUSH.reach, `${id} stands ${gap.toFixed(0)} m from the ambush`);
   }
-  // Well outside Tidehaven, which is the whole point of where it is.
+  // Outside the village, but close enough for an optional return to Glun.
   const village = world.landmarks.find(place => place.id === 'village' || /Tidehaven Village/.test(place.name));
-  if (village) assert.ok(Math.hypot(village.x - AMBUSH.point.x, village.z - AMBUSH.point.z) > 400,
-    'it is close enough to the village to be its business');
+  if (village) assert.ok(Math.hypot(village.x - AMBUSH.point.x, village.z - AMBUSH.point.z) > 70);
 });
 
 test('the traveler’s own fight: three of them, and they are not goblins', async () => {
@@ -269,7 +267,7 @@ test('a live rebel ambush draws three armed people, readable tells, and draws th
 test('src/main.js walks the road, springs it, lays the bodies and saves all of it', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   assert.match(main, /function walkTheAmbush\(\)\{/, 'the company walks it whether the traveler does or not');
-  assert.match(main, /if\(mode==='playing'&&!reviewFrozen\)walkTheAmbush\(\);/, 'once a frame of ordinary play, and never in a frozen review');
+  assert.match(main, /if\(mode==='playing'&&!reviewFrozen\)\{[\s\S]*?walkTheAmbush\(\);/, 'once a frame of ordinary play, and never in a frozen review');
   assert.match(main, /const withTraveler=new Set\(companions\.walking\),dead=fallen\.ids;/,
     'a man at your shoulder is not on that road');
   assert.match(main, /one\.phase!=='with-traveler'&&one\.phase!=='coming'&&one\.phase!=='landing'/,
@@ -280,7 +278,7 @@ test('src/main.js walks the road, springs it, lays the bodies and saves all of i
     'the file closes over him and the save remembers');
   // The traveler's own way into it, and the way out of it.
   assert.match(main, /if\(combat\.startEncounter\(ambushEncounter\)\)\{ambush\.sprang\(\);/);
-  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id\)\{ambush\.cleared\(\);saveRoad\(false\);\}/,
+  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id\)\{ambush\.cleared\(\);drent\.defeatedAmbush\(\);saveRoad\(false\);\}/,
     'and winning it clears the road for everybody after you');
   assert.doesNotMatch(main, /markerFor\([^)]*ambush/, 'an event wears no mark');
   // The body.

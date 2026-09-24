@@ -20,13 +20,41 @@ test('the traveler bumps into a passer-by instead of walking through them', () =
 test('a mover is never trapped by its own body or one it already overlaps', () => {
   const traveler = { x: 0, z: 0 };
   const world = bodyWorld(open()).setBodies([{ id: 'traveler', x: 0, z: 0, r: BODY.traveler }, { id: 'boy', x: .2, z: .1, r: BODY.person }]);
-  world.moving(traveler);
+  world.moving(traveler, BODY.traveler, 'traveler');
   moveCharacter(traveler, -1, 0, world);
   assert.ok(Math.abs(traveler.x + 1) < 1e-9, `it walks out of a spawn on top of someone (${traveler.x})`);
   // A bystander who did not overlap still blocks.
   const later = bodyWorld(open()).setBodies([{ id: 'boy', x: 2, z: 0, r: BODY.person }]).moving(traveler);
   moveCharacter(traveler, 4, 0, later);
   assert.ok(traveler.x < 2 - BODY.person, 'the boy is solid');
+});
+
+test('an existing overlap allows escape but never walking deeper through another person', () => {
+  const traveler = { id: 'traveler', x: 0, z: 0 };
+  const guard = { id: 'guard', x: .5, z: 0, r: BODY.person };
+  const world = bodyWorld(open()).setBodies([guard]).moving(traveler);
+  moveCharacter(traveler, 3, 0, world);
+  assert.equal(traveler.x, 0, 'A small overlap is not permission to cross the guard');
+  guard.x = .04; moveCharacter(traveler, 1, 0, world);
+  assert.equal(traveler.x, 0, 'A step must not jump across the center of a deep overlap'); guard.x = .5;
+  moveCharacter(traveler, 0, 1, world);
+  assert.ok(traveler.z > .99, 'A sidestep opens the existing overlap without pinning the player');
+  moveCharacter(traveler, -1, 0, world);
+  assert.ok(Math.abs(traveler.x + 1) < 1e-9, 'Retreat remains available');
+  traveler.x = guard.x; traveler.z = guard.z;
+  moveCharacter(traveler, -1, 0, world);
+  assert.ok(traveler.x < -.49, 'An exact spawn overlap can separate');
+});
+
+test('explicit mover identity ignores only its own live body, while fallen bodies never block', () => {
+  const traveler = { x: 0, z: 0 };
+  const bodies = [{ id: 'traveler', get x() { return traveler.x; }, get z() { return traveler.z; }, r: BODY.traveler },
+    { id: 'corpse', x: 1, z: 0, r: BODY.person, hp: 0 },
+    { id: 'downed', x: 2, z: 0, r: BODY.person, action: 'dead' },
+    { id: 'guard', x: 3, z: 0, r: BODY.person }];
+  const world = bodyWorld(open()).setBodies(bodies).moving(traveler, BODY.traveler, 'traveler');
+  moveCharacter(traveler, 6, 0, world);
+  assert.ok(traveler.x > 2 && traveler.x <= 3 - BODY.traveler - BODY.person);
 });
 
 test('two villagers meeting on a path lean aside and pass instead of standing nose to nose', () => {

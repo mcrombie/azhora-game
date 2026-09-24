@@ -6,7 +6,7 @@ function fixture(options = {}) {
   const world = { bounds: { minX: -100, maxX: 100, minZ: -110, maxZ: 60 }, colliders: [], heightAt: () => 1.5, ...options.world };
   const position = { x: 0, y: 1.5, z: -30, ...options.position };
   const events = [];
-  const combat = createCombat({ world, position, onEvent: event => events.push(event) });
+  const combat = createCombat({ world, position, onEvent: event => events.push(event), getAllies: options.getAllies });
   return { combat, world, position, events };
 }
 
@@ -83,4 +83,32 @@ test('retreating clears the allies and a reset brings them back; encounters with
   assert.ok(plain.events.every(event => !['ally-hit', 'ally-strike', 'ally-windup'].includes(event.type)));
   plain.combat.startPractice({ x: 3, z: -20 });
   assert.deepEqual(plain.combat.state.allies, []);
+});
+
+test('a companion joins only once and an encounter retry does not append his body a second time', () => {
+  const ed = { id: 'merc-word', name: 'Ed the Word', kind: 'legionary', x: 0, z: -29 };
+  const { combat, position } = fixture({ getAllies: () => [ed, { ...ed }] });
+  assert.equal(combat.startEncounter(assault), true);
+  assert.equal(combat.state.allies.filter(ally => ally.id === ed.id).length, 1);
+  position.z = -10; combat.update(1 / 60);
+  assert.equal(combat.state.phase, 'peaceful');
+  assert.equal(combat.resetEncounter(), true, 'the retry accepts the existing company instead of failing duplicate-ID validation');
+  assert.equal(combat.state.allies.length, 3);
+  assert.equal(combat.state.allies.filter(ally => ally.id === ed.id).length, 1);
+});
+
+test('world NPC aliases cannot become a second ally or stand on both sides of a fight', () => {
+  const ed = { id: 'merc-word', kind: 'legionary', x: 0, z: -29 };
+  const alias = { ...ed, id: 'encounter-ed', npcId: 'merc-word', name: 'Ed the Word' };
+  const authored = fixture({ getAllies: () => [ed, { ...alias, id: 'another-ed' }] });
+  assert.equal(authored.combat.startEncounter({ ...assault, allies: [alias] }), true);
+  assert.deepEqual(authored.combat.state.allies.map(ally => ally.id), ['encounter-ed']);
+  const hostile = fixture({ getAllies: () => [ed] });
+  assert.equal(hostile.combat.startEncounter({ ...assault, allies: [],
+    enemies: [{ id: 'ed-bout', npcId: 'merc-word', kind: 'soldier', x: 0, z: -40 }], bout: true }), true);
+  assert.equal(hostile.combat.state.allies.length, 0, 'a sparring opponent is not also his own ally');
+  const invalid = fixture();
+  assert.equal(invalid.combat.startEncounter({ ...assault, allies: [alias, ed] }), false, 'authored duplicate identities remain invalid');
+  assert.equal(invalid.combat.startEncounter({ ...assault, allies: [alias],
+    enemies: [{ id: 'enemy-ed', npcId: 'merc-word', x: 0, z: -40 }] }), false);
 });

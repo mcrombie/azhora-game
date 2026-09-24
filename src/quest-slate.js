@@ -1,5 +1,5 @@
 /**
- * **What is on the slate right now**: Chapter 1, the bridge, Orris and the Vastos silver story.
+ * **What is on the slate right now**: Chapter 1, the bridge, Mark and the Drent silver story.
  *
  * The user, 22 September 2026: "The only quests right now are going to be the main quests, the
  * main quest arc, indicated by gold icons. There should be only one other quest in the game right
@@ -15,7 +15,8 @@
  * **The three grades of mark**, which is the other half of this file's job:
  *   `main`   the arc. Gold.
  *   `plot`   a story of its own, with its own state and its own ending. Silver. The user has
- *            since requested the Ambroni Civil War series, beginning with The Common Water in Vastos.
+ *            since requested the Ambroni Civil War series. Drent is the current prototype;
+ *            The Common Water in Vastos is preserved, but its offer is paused.
  *   `deed`   a one-off that changes the world and does not move the plot - the bridge over the
  *            Caloss. Copper.
  *
@@ -36,7 +37,7 @@
  *   `greenway`    the three goblins at the woodland bell (`startAmbush` in main.js).
  *   `acorns`      Lysa's five acorns (src/acorn-quest.js).
  *   `forest`      the forest story and the Bramble hideout (src/forest-story.js, forest-hideout.js).
- *   ~~`doomsayer`~~  the cape on the shore - back on, with Orris, 22 September 2026.
+ *   ~~`doomsayer`~~  the cape on the shore - back on, with Mark, 22 September 2026.
  *   `teachers`    every errand that pays a skill - the rod, the feeder, the hedge, the pegs.
  * The people who gave most of them are already out of the world (src/cast.js); this is what
  * closes the rest, and what keeps a save from a fuller game from re-opening one.
@@ -48,11 +49,11 @@
 export const TRIMMED = true;
 
 /** What may be started while the slate is trimmed. */
-export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer', 'civil-war-vastos']);
+export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer', 'civil-war-drent']);
 
 /** Everything the trim closes, by the name this file knows it under. */
 export const CLOSED = Object.freeze(['courier', 'waymarkers', 'greenway', 'acorns', 'forest',
-  'teachers']);
+  'teachers', 'civil-war-vastos']);
 
 /** Whether a quest can be started, offered, marked or listed today. */
 export const questLive = id => !TRIMMED || LIVE.includes(id);

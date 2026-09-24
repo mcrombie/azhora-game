@@ -318,6 +318,24 @@ function makeStaffProp(parent) {
   for (const y of [-0.7, 0.9]) part(staff, UNIT_CYLINDER, band, [0, y, 0], [0.024, 0.04, 0.024]);
   return staff;
 }
+function makePlainWand(parent) {
+  const wand = new THREE.Group(); wand.name = 'Plain wand'; parent.add(wand);
+  // A hand-cut length of wood with a wrapped grip; no jewel or permanent glow.
+  part(wand, new THREE.CylinderGeometry(.012, .021, .48, 7), material(0x8b6840), [0, .16, 0]);
+  part(wand, UNIT_CYLINDER, material(0x4f3b2b), [0, -.025, 0], [.023, .105, .023]);
+  batchRigidParts(wand, [wand]);
+  return wand;
+}
+function makeOakStaff(parent) {
+  const staff = new THREE.Group(); staff.name = 'Oak staff'; parent.add(staff);
+  const oak = material(0x89613d), grip = material(0x54402d);
+  part(staff, new THREE.CylinderGeometry(.032, .027, 1.52, 7), oak, [0, -.04, 0]);
+  const crown = part(staff, new THREE.CylinderGeometry(.023, .032, .24, 7), oak, [.014, .83, 0]);
+  crown.rotation.z = -.12;
+  part(staff, UNIT_CYLINDER, grip, [0, 0, 0], [.037, .18, .037]);
+  batchRigidParts(staff, [staff]);
+  return staff;
+}
 function makeBow(body) {
   // Slung across the back with a quiver; the hands stay free.
   const bow = new THREE.Group(); bow.name = 'Hunting bow'; bow.position.set(0.06, 1.05, -0.2); bow.rotation.set(0.1, 0, -0.55); body.add(bow);
@@ -508,12 +526,13 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
     const run = THREE.MathUtils.clamp((pace - 3.5) / 3.7, 0, 1);
     const action = pose.action || 'idle';
+    const sneaking = !goblin && grounded && action === 'idle' && !!pose.sneaking && !pose.riding && !pose.swimming;
     const progress = THREE.MathUtils.clamp(Number.isFinite(pose.progress) ? pose.progress : 0, 0, 1);
     const actionRate = action === 'attack' || action === 'hurt' ? 26 : 15;
     const damping = 1 - Math.exp(-actionRate * dt);
     const targetMovement = grounded && action !== 'dead' ? THREE.MathUtils.clamp(pace / 1.7, 0, 1) : 0;
     movementBlend = THREE.MathUtils.lerp(movementBlend, targetMovement, 1 - Math.exp(-10 * dt));
-    stridePhase += dt * (goblin ? 4.6 + Math.min(pace, 7) * 1.65 : 3.7 + Math.min(pace, 8) * 1.6);
+    stridePhase += dt * (goblin ? 4.6 + Math.min(pace, 7) * 1.65 : 3.7 + Math.min(pace, 8) * 1.6) * (sneaking ? .7 : 1);
     const breath = Math.sin(seconds * (goblin ? 2.9 : 2.05) + offset);
     const step = Math.sin(stridePhase);
     const idle = 1 - movementBlend;
@@ -554,7 +573,15 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       chestX += 0.1;
     }
 
-    if (action === 'windup') {
+    if (pose.casting && (action === 'windup' || action === 'attack')) {
+      // Ben points the hand that actually holds his wand. A spell is a steady
+      // gathering and release, not the right-handed overhead sword animation.
+      const release=action==='attack'?Math.sin(progress*Math.PI):0;
+      arm[0]=action==='windup'?.7+progress*.6:1.3+release*.12;elbow[0]=-.2;armOut[0]=-.12;
+      arm[1]=-.3;elbow[1]=-.8;armOut[1]=.18;
+      chestX=-.04+release*.08;chestY=.08;headY=-.08;
+      hip[0]=-.12;hip[1]=.1;knee[0]=.18;knee[1]=.14;stance=.03;
+    } else if (action === 'windup') {
       const pull = THREE.MathUtils.smoothstep(progress, 0, 0.85);
       arm[1] = THREE.MathUtils.lerp(-0.6, -2.15, pull);
       elbow[1] = -0.65;
@@ -654,7 +681,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     }
     if (action === 'idle' && movementBlend < .25 && pull === 0) {
       if (role === 'doomsayer') {
-        // Orris leans on his staff, then insists on a point with his free hand.
+        // Mark leans on his staff, then insists on a point with his free hand.
         const insist = Math.pow(Math.max(0, Math.sin(seconds * .92 + offset)), 3);
         arm[0] = -.30 - insist * .77; elbow[0] = -.62 - insist * .43; armOut[0] = -.19 - insist * .19;
         arm[1] = -.10; elbow[1] = -.16; armOut[1] = .12;
@@ -859,6 +886,21 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         arm[0] = -.39 + patience; elbow[0] = -.72; armOut[0] = -.08;
         chestX = .045; chestY = -.025; headX = .09 + patience; headY = .045;
       }
+    }
+    if (sneaking) {
+      // Short, bent-knee steps, shoulders forward and eyes up. The ordinary sole
+      // solver lowers the hips, so the crouch keeps real feet on the ground.
+      for (let i = 0; i < 2; i++) {
+        const quietStep = Math.sin(stridePhase + i * Math.PI) * movementBlend;
+        hip[i] = -.65 + quietStep * .23;
+        knee[i] = 1.3 + Math.max(0, quietStep) * .23;
+        ankle[i] = -hip[i] - knee[i];
+        arm[i] = -.2 - quietStep * .09; elbow[i] = -.65;
+        armOut[i] = (i ? 1 : -1) * .09;
+      }
+      stance = .045; chestX = .23 + breath * .006; chestY *= .3;
+      chestZ *= .25; bodyZ *= .3; headX = -.18; headY *= .25;
+      bounce = Math.abs(step) * .008 * movementBlend;
     }
     if (pose.riding) {
       // Astride: thighs forward and apart, shins hanging, hands low on the reins. The seat follows the horse's stride,
@@ -1941,11 +1983,13 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   } else if (isCustodian) {
     const cloak = material(0x626b81, { side: THREE.DoubleSide });
     const faded = material(0x8a8d96, { side: THREE.DoubleSide });
-    part(body, new THREE.CylinderGeometry(.16, .337, .27, 10, 1, true, Math.PI * .37, Math.PI * 1.26), cloak, [0, 1.208, -.03], [1, 1, .84]);
-    clothPivot = new THREE.Group(); clothPivot.name = 'Custodian weathered cloak'; clothPivot.position.set(0, 1.095, -.032); body.add(clothPivot);
-    part(clothPivot, new THREE.CylinderGeometry(.328, .371, .65, 10, 2, true, Math.PI * .39, Math.PI * 1.22), cloak, [0, -.325, 0], [1, 1, .83]);
-    const patch = box(clothPivot, faded, [-.13, -.49, -.29], [.11, .12, .016]); patch.rotation.y = -.24;
-    for (const x of [-.165, -.112]) box(clothPivot, linen, [x, -.446, -.299], [.008, .022, .009]);
+    if (look?.cloak !== false) {
+      part(body, new THREE.CylinderGeometry(.16, .337, .27, 10, 1, true, Math.PI * .37, Math.PI * 1.26), cloak, [0, 1.208, -.03], [1, 1, .84]);
+      clothPivot = new THREE.Group(); clothPivot.name = 'Custodian weathered cloak'; clothPivot.position.set(0, 1.095, -.032); body.add(clothPivot);
+      part(clothPivot, new THREE.CylinderGeometry(.328, .371, .65, 10, 2, true, Math.PI * .39, Math.PI * 1.22), cloak, [0, -.325, 0], [1, 1, .83]);
+      const patch = box(clothPivot, faded, [-.13, -.49, -.29], [.11, .12, .016]); patch.rotation.y = -.24;
+      for (const x of [-.165, -.112]) box(clothPivot, linen, [x, -.446, -.299], [.008, .022, .009]);
+    }
     ribbon(body, linen, [-.126, 1.254, .138], [.135, 1.247, .131], .024, .018);
     if (look?.beard !== false) round(head, hairMat, [0, .06, .112], [.141, .071, .117]);   // the custodian's beard
     const book = new THREE.Group(); book.name = 'Custodian fieldbook'; book.position.set(0, -.02, .065); book.rotation.set(-.15, .05, .10); wrists[0].add(book);
@@ -1953,12 +1997,17 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     box(book, linen, [0, -.011, .008], [.184, .037, .246]);
     box(book, leather, [0, .023, 0], [.216, .016, .278]);
     ribbon(book, faded, [-.084, .034, .04], [.081, .034, .04], .018, .012);
+    // **The staff is the walker's, not the book-keeper's.** Sava carried one the length of the
+    // rise; Ari keeps the village books and walks as far as the quay (the user, 23 September
+    // 2026: she is a woman, and pretty - a staff and a cloak were doing neither any favours).
+    if (look?.staff !== false) {
     staff = new THREE.Group(); staff.name = 'Custodian short walking staff'; wrists[1].add(staff);
     const staffWood = material(0x65513b), staffTip = material(0x978163);
     ribbon(staff, staffWood, [.012, -.83, 0], [-.018, .51, 0], .064, .059);
     ribbon(staff, staffWood, [-.018, .51, 0], [.022, .64, .018], .068, .06);
     round(staff, staffTip, [.022, .65, .018], [.049, .042, .044]);
     ribbon(staff, linen, [-.031, .068, .027], [.034, .062, .029], .033, .018);
+    }
   } else if (isClerk) {
     const ink = material(0x3e4b50), paper = material(0xded1ac), charcoal = material(0x504636);
     // A worn desk coat with broad pockets, stained where the pen is tucked.
@@ -2143,7 +2192,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     }
     ribbon(body, linen, [-.19, .953, .125], [.19, .938, .125], .022, .018);
     ribbon(body, linen, [.05, .94, .181], [.08, .73, .205], .019, .016);
-    staff = new THREE.Group(); staff.name = 'Orris gnarled walking staff'; wrists[1].add(staff);
+    staff = new THREE.Group(); staff.name = 'Mark gnarled walking staff'; wrists[1].add(staff);
     const staffWood = material(0x66523a), staffPale = material(0x9b865f);
     ribbon(staff, staffWood, [.015, -.82, .0], [-.025, .31, .0], .067, .063);
     ribbon(staff, staffWood, [-.025, .31, .0], [.032, .87, -.02], .074, .067);
@@ -2695,6 +2744,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
    */
   let bowHand = null;
   const LATE_WEAPONS = {
+    wand: mount => makePlainWand(mount),
+    'oak-staff': mount => makeOakStaff(mount),
     'ash-spear': mount => makeSpearProp(mount, 'Ash spear', 1.9),
     'war-pike': mount => makeSpearProp(mount, 'War pike', 2.7, .26),
     quarterstaff: mount => makeStaffProp(mount),
@@ -3754,7 +3805,7 @@ export function groundShadow(opacity = 0.34) {
   return mesh;
 }
 
-/** One shared filled diamond and lower ring, tinted for the quest category.
+/** Quests use a diamond; a first skill lesson uses an open book.
  * `open` is retained as optional-road metadata, never a different silhouette. */
 export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   const look = MARKER_STYLE[kind] ?? MARKER_STYLE.main;
@@ -3764,8 +3815,21 @@ export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   group.userData.markerKind = look.kind;
   group.userData.markerOpen = optionalRoad;
   const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
-  diamond.rotation.y = Math.PI / 4;
+  if (look.shape === 'book') {
+    mat.side = THREE.DoubleSide;
+    for (const side of [-1, 1]) {
+      const page = new THREE.Shape();
+      page.moveTo(0, .1);page.lineTo(side*.13,.17);page.lineTo(side*.29,.17);page.lineTo(side*.29,-.14);page.lineTo(side*.13,-.14);page.lineTo(0,-.21);page.closePath();
+      part(group,new THREE.ShapeGeometry(page),mat,[0,0,0]);
+    }
+    const ink=material(0x204835,{side:THREE.DoubleSide});
+    part(group,new THREE.BoxGeometry(.025,.3,.016),ink,[0,-.05,.02]);
+    for(const side of [-1,1])for(const y of [.075,-.01,-.095])part(group,new THREE.BoxGeometry(.16,.014,.015),ink,[side*.165,y,.02]);
+    group.userData.billboard=true;
+  } else {
+    const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
+    diamond.rotation.y = Math.PI / 4;
+  }
   const ring = part(group, new THREE.TorusGeometry(0.108, 0.014, 5, 18), material(look.ring, { emissive: look.ringEmissive, emissiveIntensity: 0.45 }), [0, -0.23, 0]);
   ring.rotation.x = Math.PI / 2;
   group.scale.setScalar(look.scale);

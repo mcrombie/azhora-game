@@ -1,0 +1,55 @@
+export async function runPresentationDesktopChecks(h) {
+  const passed = [], check = (ok, name) => { if (!ok) throw new Error(name); passed.push(name); };
+  const banner = document.getElementById('skill-intro');
+  h.prepare();
+  h.skills.restore({version:1,skills:{},taught:[]}); h.announcements.clear();
+  h.beginLesson();
+  for(let i=0;i<10&&h.mode()==='dialogue';i++)h.nextSpeech();
+  h.update();
+  check(h.skills.taught('blades'),'Glun actually introduces the fighting skill');
+  check(!banner.hidden&&banner.textContent.includes('Combat'),'Combat lesson gets a centered announcement');
+  check(banner.textContent.includes('V to guard'),'Combat announcement includes controls');
+  const rect=banner.getBoundingClientRect();
+  check(Math.abs((rect.left+rect.right)/2-innerWidth/2)<2,'Skill announcement is centered');
+  check(rect.top>=90&&rect.bottom<innerHeight-50,'Skill announcement fits in the game viewport');
+  h.toast();
+  check(getComputedStyle(document.getElementById('toast')).visibility==='hidden','Ambient chatter does not obscure a skill lesson');
+  h.press('Enter');
+  check(h.mode()==='journal'&&banner.hidden,'Enter opens the skill guide and dismisses the announcement');
+  check(document.getElementById('skills-sheet').textContent.includes('Blades'),'The matching skill guide is available');
+  h.closeModal();h.announcements.clear();
+  h.openConversation();h.giveChart();h.update();
+  check(banner.hidden,'Cartography announcement waits while the teacher is speaking');
+  h.closeDialogue();h.update();
+  check(!banner.hidden&&banner.querySelector('h2').textContent==='Cartography','Cartography appears clearly after dialogue');
+  check(banner.textContent.includes('M to open your map'),'Cartography introduction teaches the map key');
+  banner.querySelector('.skill-intro-dismiss').click();
+  h.skills.learn('cartography');h.update();
+  check(banner.hidden,'Repeating a learned skill does not repeat the announcement');
+  const saved=h.skills.snapshot();h.skills.restore(saved);h.update();
+  check(banner.hidden,'Loading taught skills remains silent');
+  h.prepareMark();h.openMark();
+  check(document.getElementById('speaker').textContent==='Mark','The naturalist is named Mark');
+  check(document.querySelector('[data-choice="learn-botany"]')&&document.querySelector('[data-choice="learn-geology"]'),'Mark offers two separate skill lessons');
+  check(!document.querySelector('[data-choice="cooking-lesson"]'),'Mark no longer offers the old cooking dialogue');
+  check(h.teacherMark()?.kind==='skill','An untaught Mark has a skill teacher marker');
+  document.querySelector('[data-choice="learn-botany"]').click();
+  for(let i=0;i<15&&h.mode()==='dialogue';i++)h.nextSpeech();h.update();
+  check(h.skills.taught('botany')&&!h.skills.taught('geology'),'Botany lesson teaches only Botany');
+  check(!banner.hidden&&banner.querySelector('h2').textContent==='Botany','Mark’s lesson gets the new skill announcement');
+  check(h.teacherMark()?.kind==='skill','Mark remains marked while Geology is available');
+  h.openMark();document.querySelector('[data-choice="learn-geology"]').click();
+  for(let i=0;i<15&&h.mode()==='dialogue';i++)h.nextSpeech();
+  check(h.skills.taught('geology'),'The second lesson teaches Geology');
+  check(h.teacherMark()===null,'Teacher marker clears when both lessons are taught');
+  h.announcements.clear();
+  if(h.questChoice){
+    h.offerFork();
+    check(h.questChoice.isOpen()&&h.mode()==='quest-choice','Ambush aftermath opens a quest decision');
+    check(document.getElementById('dialogue').classList.contains('hidden'),'Quest decision does not create an imaginary speaker');
+    const panel=document.getElementById('quest-choice-panel');
+    check(panel.querySelector('[data-choice="drent-main"]')&&panel.querySelector('[data-choice="drent-focus"]'),'Gold and silver choices are visible together');
+    h.press('Escape');check(!h.questChoice.isOpen()&&h.mode()==='playing','Escape dismisses the choice and returns to walking');
+  }
+  return { checks:passed.length, passed, frameErrors:h.errors() };
+}

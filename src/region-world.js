@@ -534,7 +534,7 @@ export const AVREL_CLEARING = Object.freeze({ ...at(-236, 30), radius: 38 });
 
 /**
  * Nothom, the market town at the centre of Luscia, between the field at
- * the Lauvel and the Moros gate. The main road runs through its square, and
+ * the Lauvel and the Moros Plain. The main road runs through its square, and
  * everything in the town is placed in the square's own frame: `a` metres along
  * the road toward the Moros, `b` metres across it to the east.
  */
@@ -639,7 +639,7 @@ export const regionLandmarks = Object.freeze([
   // Story hooks placed as scenery for the chapter that follows.
   Object.freeze({ id: 'lauvel-field', name: 'The Field at the Lauvel', ...at(-386, 182.9), description: 'Broken carts, a fallen banner and a burial line: ten days ago the army met a rebel army here.' }),
   Object.freeze({ id: 'burned-hamlet', name: 'The Burned Hamlet', ...at(-348, 212), description: 'Four roofless walls and a standing chimney. Nobody has come back to clear the ash.' }),
-  Object.freeze({ id: 'moros-gate', name: 'The Moros Gate', ...at(-427, 259.4), description: 'Two great posts under a beam, palisade wings and a watch platform where the last copse ends. West of here the grass runs to the horizon.' }),
+  Object.freeze({ id: 'moros-gate', name: 'The Moros Road', ...at(-427, 259.4), description: 'An open road beyond the southwest gate of Nothom, where the last copse gives way to the plain. West of here the grass runs to the horizon.' }),
   Object.freeze({ id: 'legion-camp', name: 'The Army Camp', ...at(-549.2, 348.1), description: 'The Ambroni outpost at the heart of the Moros: a ditch, a timber palisade on its rampart, towers, ordered tent lines and the Marshal’s standard.' }),
   Object.freeze({ id: 'moros-stockade', name: 'The Border Stockade', ...at(-368, 308), description: 'The small timber work the army and the republic both want: a ditch, a rampart with a fighting platform, corner towers and a truce flag.' }),
   Object.freeze({ id: 'suval-border-post', name: 'Elod’s Border Post', ...at(-224, 292), description: 'Elod’s old barrier across the road, behind the stone frontier that now shuts East Suval.' }),

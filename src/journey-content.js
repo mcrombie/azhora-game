@@ -140,11 +140,12 @@ export function journeyConversation(npc,context) {
     if(!state.bridgeAccepted)return tell([
       'I am Chip, and this is the Caloss: Drent ends on this bank and Luscia begins on the other. Or it did. Six paces of the middle went into the water in the spring and they have not come out of it, and what is left is two halves of a bridge looking at each other.',
       'You do not have to. There is the river — people swim it, in this current, with a load, and some of them only nearly. Three sound branches and nobody has to find out which kind they are, and a cart gets over, which the river has never once managed.',
-      'There is driftwood along this bank. Gather it with F. Bring three sticks to the bridge’s repair point and press F to lash them into place. I have the cord and tools.'
-    ],[choice('meet-crossing-keeper','I’ll mend the crossing.')]);
-    if(!state.bridgeRepaired)return tell([`Three branches will brace the planks. You carry ${inventory.count('forest-stick')} sticks. Driftwood lies along the bank; gather enough, then use the repair point at the bridge. Keep a few spares if you want to cook afterward.`],[]);
+      'Let me show you a little carpentry: choose sound wood, set a brace across the loose planks, and pull the lashings tight so the load cannot twist it. A bridge is a larger job, but the principle is the same as a stool that does not wobble.',
+      'There is driftwood along this bank. Gather it with F. Bring three sticks to the bridge’s repair point and press F to lash them into place. I have the cord and tools. You will learn by doing; look under Carpentry in your Skills afterward.'
+    ],[choice('meet-crossing-keeper','Teach me. I’ll mend the crossing.')]);
+    if(!state.bridgeRepaired)return tell([`Three branches will brace the planks. You carry ${inventory.count('forest-stick')} sticks. Driftwood lies along the bank; gather enough, then use the repair point at the bridge. Remember the carpentry lesson: sound timber, a straight brace, and tight lashings. Keep a few spares if you want to cook afterward.`],[]);
     return tell([
-      'A straight brace and tight cord. Take four spare branches. Your army has its crossing, but you have helped the people on both banks as well.',
+      'A straight brace and tight cord. That is your first piece of carpentry, and it holds. Take four spare branches. Bowden in the Koopwood can teach you more, with a proper hammer and saw. Your army has its crossing, but you have helped the people on both banks as well.',
       'A quiet word: most households here shelter or feed the people the Empire calls rebels. They are our neighbors. Goblins take from us out of the north; the army takes grain and calls it protection. Speak with Sava on the rise before you decide whose side these families are on.'
     ],[choice('return-crossing-keeper','Tell Chip the bridge is repaired')]);
   }

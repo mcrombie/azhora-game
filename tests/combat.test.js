@@ -505,7 +505,7 @@ test('soldiers fight like soldiers: a shield on guard, mail, no flinching once t
     assert.ok(events.some(e => e.type === 'blocked'), 'the shield takes it');
     assert.ok(soldier.hp >= 93 && soldier.hp < 100, `a little gets through (${soldier.hp} left)`);
     assert.notEqual(soldier.action, 'hurt');
-    // He swings, and hits hard; struck while he recovers, he is hurt, less the mail.
+    // He swings and hits hard, then covers his recovery with the same shield.
     advanceUntil(combat, () => soldier.action === 'attack', 5);
     advanceUntil(combat, () => soldier.action === 'idle', 5);
     assert.ok(combat.state.player.hp <= 100 - 20, 'a soldier’s blow is no goblin’s');
@@ -514,8 +514,8 @@ test('soldiers fight like soldiers: a shield on guard, mail, no flinching once t
     const before = soldier.hp;
     position.x = soldier.x; position.z = soldier.z + 1.6;
     assert.equal(combat.attack(Math.PI), true); combat.update(.25);
-    assert.ok(before - soldier.hp >= 15 && before - soldier.hp <= 28, `the blow lands (${before - soldier.hp})`);
-    assert.equal(soldier.action, 'hurt');
+    assert.ok(before - soldier.hp > 0 && before - soldier.hp <= 7, `the shield covers recovery (${before - soldier.hp})`);
+    assert.notEqual(soldier.action, 'hurt');
   }
   // Struck while he winds up, he keeps coming: the swing is not stopped.
   {

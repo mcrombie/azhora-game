@@ -19,7 +19,13 @@ export function atlasLocalDetail(model) {
   for (const path of model?.paths ?? []) {
     if (!Array.isArray(path)) continue;
     let run = [];
-    const finish = () => { if (run.length > 1) paths.push(run); run = []; };
+    const finish = () => {
+      if (run.length > 1) {
+        if (path.kind === 'trail' || path.kind === 'road') run.kind = path.kind;
+        paths.push(run);
+      }
+      run = [];
+    };
     for (const p of path) { if (finite(p)) run.push(point(p)); else finish(); }
     finish();
   }
@@ -47,6 +53,31 @@ export function atlasLocalDetail(model) {
 /** Entered tiles own exact details. Adjacent terrain alone never earns a label. */
 export function atlasMarkKnown(mark, visited, reveal = false) {
   return !!mark && (reveal || visited.has(atlasCellKey(mark)));
+}
+
+/**
+ * The authored export keeps region lettering in one flat group. Separate that group before
+ * painting terrain so revealing a region's name never needs a second label or uncovered hex.
+ * Leave every authored text attribute and tspan untouched (including rotated mountain names).
+ */
+export function splitAtlasRegionLabels(svg) {
+  const match = typeof svg === 'string' && svg.match(/<g\b(?=[^>]*\bid=["']region-labels["'])[^>]*>[\s\S]*?<\/g>/);
+  if (!match) throw new Error('The authored atlas has no region lettering layer.');
+  return { terrain: svg.slice(0, match.index) + svg.slice(match.index + match[0].length), labels: match[0] };
+}
+
+/** Knowledge of a country name is distinct from entering any of its terrain hexes. */
+export function atlasRegionLabelKnown(name, labels, reveal = false) {
+  return typeof name === 'string' && (reveal || (labels ?? []).some(label => label?.name === name));
+}
+
+/** Only visited and neighboring hex records can uncover ground. Knowledge of a country,
+ * including legacy charted/explored silhouettes, never widens this scope. */
+export function atlasExplorationScope({ cells = [], glimpsed = [], reveal = false } = {}) {
+  const valid = key => typeof key === 'string' && /^-?\d+,-?\d+$/.test(key);
+  const visited = new Set(Array.from(cells ?? []).filter(valid));
+  const nearby = new Set(Array.from(glimpsed ?? []).filter(key => valid(key) && !visited.has(key)));
+  return { visited, nearby, reveal: !!reveal };
 }
 
 // Muted, deliberately indistinct terrain on adjacent hexes. No atlas lettering

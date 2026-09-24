@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { createCheckpointStore } = require('../scripts/checkpoint-store.cjs');
+const { createCheckpointStore, MAX_BYTES } = require('../scripts/checkpoint-store.cjs');
 
 const KEY = 'azhora-road-checkpoint-v1';
 function fixture(t) {
@@ -41,8 +41,8 @@ test('invalid keys, operations, JSON, text and oversized UTF-8 are rejected befo
   const invalid = [
     ['set', '../escape.json', '{}'], ['set', path.join(root, 'escape.json'), '{}'],
     ['get', '__proto__'], ['write', KEY, '{}'], ['set', KEY, {}], ['set', KEY, ''],
-    ['set', KEY, '{broken'], ['set', KEY, '"\ud800"'], ['set', KEY, JSON.stringify('a'.repeat(65535))],
-    ['set', KEY, JSON.stringify('é'.repeat(32768))],
+    ['set', KEY, '{broken'], ['set', KEY, '"\ud800"'], ['set', KEY, JSON.stringify('a'.repeat(MAX_BYTES-1))],
+    ['set', KEY, JSON.stringify('é'.repeat(MAX_BYTES/2))],
   ];
   for (const args of invalid) {
     const result = store.handle(...args);
@@ -52,12 +52,12 @@ test('invalid keys, operations, JSON, text and oversized UTF-8 are rejected befo
   assert.deepEqual(fs.readdirSync(root), []);
 });
 
-test('exactly 65536 UTF-8 bytes are accepted and an invalid replacement keeps the previous checkpoint', t => {
+test('exactly the supported UTF-8 byte limit are accepted and an invalid replacement keeps the previous checkpoint', t => {
   const { store, filename } = fixture(t);
-  const maximum = JSON.stringify('a'.repeat(65534));
-  assert.equal(Buffer.byteLength(maximum), 65536);
+  const maximum = JSON.stringify('a'.repeat(MAX_BYTES-2));
+  assert.equal(Buffer.byteLength(maximum), MAX_BYTES);
   assert.equal(store.handle('set', KEY, maximum).ok, true);
-  assert.equal(store.handle('set', KEY, JSON.stringify('a'.repeat(65535))).ok, false);
+  assert.equal(store.handle('set', KEY, JSON.stringify('a'.repeat(MAX_BYTES-1))).ok, false);
   assert.equal(fs.readFileSync(filename, 'utf8'), maximum);
 });
 

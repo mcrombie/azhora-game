@@ -1,14 +1,13 @@
 /**
- * The traveler's own chart of Azhora. Unknown country is dark; a coast you have
- * been shown is a lighter silhouette against the sea; a country somebody has
- * named for you carries its name and nothing else; ground you have walked shows
- * the real atlas. docs/cartography.md is the whole design.
+ * The traveler's own chart of Azhora. A named country reveals only its original
+ * lettering. Nearby hexes reveal vague terrain and walked hexes show the real
+ * atlas. Country ranks track knowledge and XP; none reveals an entire outline.
  *
  * Four states, and a chart only ever goes forward:
  *
  *   unknown   dark
  *   heard     the name and a rough bearing, from asking somebody who knows
- *   charted   the shape of it, coast against sea, no interior
+ *   charted   initial survey knowledge; no whole-country reveal
  *   explored  six of its hexes under your own boots
  *
  * They are a ladder with one exception that matters: `charted` does not imply
@@ -39,12 +38,6 @@ export const EXPLORED_HEXES = 6;
 /** What each thing a chart can learn is worth. */
 export const CHART_XP = Object.freeze({ firstHex: 15, heard: 10, charted: 25, explored: 40 });
 
-/**
- * The rough chart Tidehaven keeps, which Jojo hands over on the landing. The coast from Feradom
- * down through Pueth to Drent, and the coasts of Luscia and the two Suvals - shapes against the
- * sea, no interiors. Only Drent is named: you can see what the country you are standing in is
- * called, and nothing that is in it.
- */
 /**
  * **Nothing.** (The user, 22 September 2026: you start with no map, and the chart is dark until
  * you discover it - the coastlines too.)
@@ -116,13 +109,9 @@ export const CARTOGRAPHY_DIRECTIONS = Object.freeze({
 });
 
 /**
- * What a dark chart has to draw over the atlas for a given chart, from the atlas’s own cells
- * (assets/azhora-dev-regions.json): the shape of every country whose coast is known, and the name
- * of every country somebody has named. Feradom is not one of the built regions and has no entry in
- * REGION_OUTLINES, so taking both from the atlas is what lets its coast be drawn at all.
- *
- * Ground the traveler has walked is already cut out of the dark by the hex fog, so a silhouette
- * under an explored country costs nothing and keeps the shape whole where the walking stops.
+ * Country knowledge supplies labels only. Actual explored/nearby hexes come from map-fog.js.
+ * Keep the empty silhouettes field for older hosts and saves; cartography rank must never
+ * uncover a province's full shape merely because its first hex has been entered.
  */
 export function chartShapes(entries, atlasRegions) {
   const byName = new Map((atlasRegions ?? []).map(region => [region.name ?? region.id, region]));
@@ -130,7 +119,6 @@ export function chartShapes(entries, atlasRegions) {
   for (const country of entries ?? []) {
     const atlas = byName.get(country?.name);
     if (!atlas) continue;
-    if (country.state === 'charted' || country.state === 'explored') silhouettes.push({ name: country.name, cells: atlas.cells ?? [] });
     // A big country wants a bigger hand; the atlas gives the hex count to size it by.
     if (country.named) labels.push({ name: country.name, x: atlas.centerX, y: atlas.centerY,
       size: Math.max(22, Math.min(46, Math.round(Math.sqrt(atlas.hexCount ?? 9) * 11))) });
@@ -193,14 +181,14 @@ export function createCartography({ skills = null, onEvent = () => {} } = {}) {
 
   /** Somebody told you where it is and what it is called. */
   const hear = name => raise(name, 'heard', { named: true, xp: CHART_XP.heard });
-  /** The shape of it is on the chart now: a coast against the sea, and no more than that. */
+  /** Survey knowledge improves the skill record, without uncovering unvisited terrain. */
   const chart = name => raise(name, 'charted', { xp: CHART_XP.charted });
   /** Enough of it is under your own boots to call it yours. */
   const explore = name => raise(name, 'explored', { named: true, xp: CHART_XP.explored });
 
   /**
-   * One hex of `name` charted. The first hex in a country pays, puts its shape on the chart and
-   * its name with it - you are standing in it, after all - and the sixth makes it explored.
+   * One hex of `name` charted. The first hex pays and names the country; the sixth earns the
+   * explored milestone. The individual visited/nearby hexes determine the actual map coverage.
    */
   function noteHex(name) {
     if (typeof name !== 'string' || !name) return { ok: false, reason: 'That ground belongs to no country.' };

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { borderGoal, aftermathGoal } from '../src/autopilot.js';
 import { QUEST_DONE } from '../src/game-state.js';
 import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, clearLine, CHOICE_PRIORITY } from '../src/autopilot.js';
+import { createInventoryState } from '../src/inventory.js';
+import { createRiding } from '../src/riding.js';
+import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/ostler.js';
 
 /** A small flat world with the same collision rules as the game. */
 function fakeWorld() {
@@ -523,6 +526,88 @@ test('clear open ground is no excuse to cut a road bend or a junction', () => {
     { point: { x: 0, z: -80 }, onTrail: true }, 'a sidestep round a tree rejoins the road');
   assert.deepEqual(nextWaypoint({ x: 100, z: -340 }, { x: 112, z: -350 }, world),
     { point: { x: 112, z: -350 }, onTrail: false }, 'the last few steps to someone off the road stay direct');
+});
+
+test('autoplay collects the assigned horse before following the next chapter out of Nothom', () => {
+  const world = fakeWorld();
+  world.npcPositions[OSTLER_NPC.id] = { x: 12, z: -160 };
+  world.npcPositions['moros-gate'] = { x: 0, z: -600 };
+  const state = snapshot({ questStage: QUEST_DONE, campaign: { chapterId: 'moros-camp' },
+    luscia: { complete: true, destinationIds: [] }, moros: { stage: 'report-at-gate', destinationIds: ['moros-gate'], actions: [] },
+    riding: { waiting: true, owned: false, mounted: false, horse: null } });
+  const collect = planGoal(state, world);
+  assert.equal(collect.npcId, OSTLER_NPC.id); assert.equal(collect.kind, 'talk');
+  assert.deepEqual(collect.target, world.npcPositions[OSTLER_NPC.id]);
+  const choices = [{ id: 'redeem-horse', enabled: true }, { id: 'leave-ostler', enabled: true }];
+  assert.equal(chooseReply(choices, state), 'redeem-horse');
+  assert.equal(chooseReply(choices.map(choice => ({ ...choice, enabled: choice.id !== 'redeem-horse' })), state), 'leave-ostler');
+  for (const riding of [{ waiting: false, owned: false }, { waiting: false, owned: true }, { waiting: true, owned: true }]) {
+    assert.equal(planGoal({ ...state, riding }, world).npcId, 'moros-gate', 'no unowed or second horse');
+    assert.equal(chooseReply(choices, { ...state, riding }), 'leave-ostler');
+  }
+  const fighting = { ...state, combat: { ...state.combat, phase: 'active' } };
+  assert.equal(planGoal(fighting, world).kind, 'fight', 'finish the fight before collecting the horse');
+});
+
+test('a mustered walker claims the same owed horse at the Moros line without returning to Nothom', () => {
+  const world = fakeWorld();
+  world.npcPositions[OSTLER_NPC.id] = { x: 12, z: -160 };
+  world.morosSites = { 'legion-horse-line': { x: 10, z: -550, name: 'The army horse line' } };
+  const state = snapshot({ questStage: QUEST_DONE, campaign: { chapterId: 'moros-camp' }, riding: { waiting: true, owned: false },
+    moros: { stage: 'claim-horse', destinationIds: ['legion-horse-line'], actions: [{ id: 'claim-legion-horse', enabled: true }] } });
+  assert.equal(planGoal(state, world).siteId, 'legion-horse-line');
+  assert.equal(chooseReply([{ id: 'claim-legion-horse' }, { id: 'leave-line' }], state), 'claim-legion-horse');
+  assert.equal(planGoal({ ...state, moros: { ...state.moros, actions: [] } }, world).npcId, OSTLER_NPC.id,
+    'the camp line must actually offer the handover');
+});
+
+test('autoplay redeems the real horse token, approaches the horse and mounts before leaving the stable', () => {
+  const world = fakeWorld(), inventory = createInventoryState(), riding = createRiding(), chosen = [];
+  inventory.grant(OSTLER_TOKEN);
+  const stable = world.npcPositions[OSTLER_NPC.id] = { x: 0, z: -150 }, hitch = { x: 8, z: -150, yaw: 0 };
+  world.npcPositions['moros-gate'] = { x: 0, z: -600 };
+  let mode = 'playing', dialogue = null, position = { x: 0, z: -149 };
+  const read = () => snapshot({ mode, position, questStage: QUEST_DONE, campaign: { chapterId: 'moros-camp' },
+    moros: { stage: 'report-at-gate', destinationIds: ['moros-gate'], actions: [] },
+    riding: { owned: riding.owned, mounted: riding.mounted, horse: riding.horse, waiting: horseWaiting({ inventory, riding }) },
+    dialogue: dialogue ? { choices: dialogue.index === dialogue.lines.length - 1 ? dialogue.choices : [] } : null,
+    interaction: { npcId: Math.hypot(position.x - stable.x, position.z - stable.z) < 2.4 ? OSTLER_NPC.id : null } });
+  const pilot = createAutopilot({ world, read, options: { dialoguePace: .2, choicePace: .2, interactEvery: .1 }, act: {
+    interact: () => ostlerConversation(OSTLER_NPC, { inventory, riding, hitch, playerPosition: position,
+      openDialogue: (npc, lines, event, action, options) => { mode = 'dialogue'; dialogue = { lines, index: 0, ...options }; },
+      closeDialogue: () => { mode = 'playing'; dialogue = null; },
+      act: id => { chosen.push(id); assert.equal(redeemHorse({ inventory, riding, hitch }).ok, true); } }),
+    continue: () => { dialogue.index++; },
+    choose: ({ id }) => { const choice = dialogue.choices.find(item => item.id === id); assert.ok(choice); choice.action(); },
+    mount: () => { const result = riding.mount(position); assert.equal(result.ok, true); position = result.position; },
+  } });
+  pilot.start();
+  let approached = false;
+  for (let frame = 0; frame < 200 && !riding.mounted; frame++) {
+    const command = pilot.step(.1); assert.ok(command);
+    if (riding.owned && !riding.mounted) {
+      assert.ok(Math.hypot(position.x - stable.x, position.z - stable.z) < 12, 'the traveler stays in the yard until mounted');
+      if (command.intent === 'Going to the horse') approached = true;
+    }
+    if (!riding.mounted && command.yaw !== null) {
+      const { forward, side, run } = command.move, step = (run ? 7.2 : 3) * .1;
+      position.x += (-Math.sin(command.yaw) * forward + Math.cos(command.yaw) * side) * step;
+      position.z += (-Math.cos(command.yaw) * forward - Math.sin(command.yaw) * side) * step;
+    }
+  }
+  assert.deepEqual(chosen, ['redeem-horse']); assert.equal(inventory.has(OSTLER_TOKEN), false);
+  assert.equal(riding.owned, true); assert.equal(riding.mounted, true); assert.equal(approached, true);
+  assert.equal(planGoal(read(), world).npcId, 'moros-gate', 'the main quest resumes with the horse');
+  pilot.stop();
+});
+
+test('clustered road junctions advance beyond every reached node instead of pacing between them', () => {
+  const world = fakeWorld();
+  world.paths = [[{ x: 0, z: 0 }, { x: 20, z: 0 }],
+    [{ x: 19.5, z: .1 }, { x: 19.5, z: 20 }, { x: 50, z: 20 }]];
+  const next = nextWaypoint({ x: 19.4, z: 0 }, { x: 50, z: 20 }, world);
+  assert.ok(next.onTrail);
+  assert.ok(next.point.z > 10, `move through the junction, not back to ${JSON.stringify(next.point)}`);
 });
 
 test('autoplay raises a carried shield toward the threat and releases it to attack', () => {

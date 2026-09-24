@@ -36,3 +36,13 @@
 #journal-steps{display:flex;flex-direction:column;gap:9px;list-style:none;padding:0;margin:18px 0}#journal-steps li{font-size:14px;margin:0;padding:7px 12px;border-left:2px solid #75876a}#journal-steps li.current{border-color:#eac47d;background:#d8e5b612}
 @media(max-height:800px){#quest{top:160px;width:285px;padding:12px 14px;max-height:calc(100vh - 290px)}#quest .chapter-line{display:none}#quest h2{font-size:21px}#quest p{font-size:13px}#journal.map-open{padding:18px 24px}#journal.map-open>.eyebrow{display:none}#atlas-lesson{padding:10px 14px}#atlas-lesson h3{font-size:20px}#world-map #atlas-lesson p{font-size:13px}}
 @media(max-width:800px){#quest{left:18px;width:255px}#journal{padding:22px}#journal-objectives{grid-template-columns:1fr}#journal-content>section{padding:17px}#journal.map-open{width:calc(100vw - 24px);padding:18px}#journal>.tabs button{padding:10px 18px}}
+
+/* Header and tabs stay in view; the index and selected entry scroll independently. */
+#journal:not(.map-open){display:flex;flex-direction:column;width:min(1160px,calc(100vw - 48px));height:min(820px,calc(100dvh - 48px));max-height:calc(100dvh - 48px);overflow:hidden;padding:26px 30px;box-sizing:border-box}
+#journal:not(.map-open)>h2{font-size:32px;margin:6px 0 18px;flex:none}
+#journal:not(.map-open)>.tabs{position:static;margin:0 0 20px;padding:0;flex:none}
+#journal>.eyebrow{flex:none}#journal-content{display:none!important}
+#journey-browser,#skills-sheet{flex:1;min-height:0;overflow:hidden}
+#journal:not(.map-open).hidden{display:none}
+@media(max-width:760px){#journal:not(.map-open){width:calc(100vw - 24px);height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);padding:20px}#journal:not(.map-open)>h2{font-size:28px}}
+@media(max-height:700px){#journal:not(.map-open){padding:16px 22px}#journal:not(.map-open)>.eyebrow{display:none}#journal:not(.map-open)>h2{font-size:28px;margin:0 0 10px}#journal:not(.map-open)>.tabs{margin-bottom:12px}}

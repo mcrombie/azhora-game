@@ -58,8 +58,8 @@ export function createMorosChapter({ inventory, hasHorse = () => false, onEvent 
   function view() {
     const current = stage();
     const views = {
-      'not-started': [0, 'Out to the Moros', 'The army’s camp lies south-west of Nothom, past the Moros gate, out on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
-      'report-at-gate': [1, 'Name and contract', 'Follow the road south-west out of Nothom through the Moros gate and on across the plain. Report to the sentry at the camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
+      'not-started': [0, 'Out to the Moros', 'The army’s camp lies south-west of Nothom, beyond the town walls and out on the open plain.', 'MOROS PLAIN · THE ARMY ON THE PLAIN', []],
+      'report-at-gate': [1, 'Name and contract', 'Leave Nothom through its south-west town gate and follow the road across the plain. Report to the sentry at the army camp’s gate; the army is expecting its hired swords.', 'MOROS PLAIN · 1 / 3 · THE ARMY ON THE PLAIN', [MOROS_GATE_ID]],
       'report-to-legate': [2, 'The Marshal’s muster', 'Marshal Hadric Venmor keeps the muster at the command tent beyond the tent lines. Sign it, and draw your first wage.', 'MOROS PLAIN · 2 / 3 · THE ARMY ON THE PLAIN', [MOROS_LEGATE_ID]],
       // A traveler who rode in pickets the horse they came on; one who walked the whole way with Iven's token still draws a horse here.
       'claim-horse': hasHorse()

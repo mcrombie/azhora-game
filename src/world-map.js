@@ -4,7 +4,7 @@
 // unless the developer's override lifts the fog and tints each region by how far it is built.
 import { hexAtlasCorners } from './region-world.js';
 import { PLAYABLE_SURVEY } from './region-survey.js';
-import { atlasLocalDetail, atlasMarkKnown, GLIMPSED_TERRAIN } from './world-map-detail.js';
+import { atlasLocalDetail, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from './world-map-detail.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const polygonPoints = (q, r) => hexAtlasCorners(q, r).map(point => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
@@ -26,6 +26,7 @@ export function createWorldMap() {
   let chart = { cells: [], glimpsed: [], reveal: false, status: [], silhouettes: [], labels: [] };
   let visited = new Set(), terrainCells = new Map(), terrainSource = null;
   let localDetail = atlasLocalDetail(null);
+  let authoredLabels = null;
   const detail = document.createElementNS(SVG_NS, 'svg');
   detail.id = 'atlas-local-detail'; detail.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(detail, traveler ?? null);
@@ -106,10 +107,21 @@ export function createWorldMap() {
     detail.setAttribute('width', metadata.width); detail.setAttribute('height', metadata.height);
     const pathText = points => points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
     for (const points of localDetail.paths) {
-      detail.append(node('path', { d: pathText(points), class: 'atlas-road-edge' }));
-      detail.append(node('path', { d: pathText(points), class: 'atlas-road' }));
+      const kind = points.kind === 'trail' ? 'trail' : 'road';
+      detail.append(node('path', { d: pathText(points), class: `atlas-${kind}-edge` }));
+      detail.append(node('path', { d: pathText(points), class: `atlas-${kind}` }));
     }
     for (const points of localDetail.buildings) detail.append(node('path', { d: `${pathText(points)}Z`, class: 'atlas-building' }));
+  }
+  function drawRegionNames() {
+    if (!authoredLabels) return;
+    const labels = authoredLabels.cloneNode(false);
+    labels.removeAttribute('id'); labels.dataset.role = 'labels';
+    labels.setAttribute('pointer-events', 'none');
+    for (const original of authoredLabels.children) {
+      if (atlasRegionLabelKnown(original.getAttribute('data-region'), chart.labels, chart.reveal)) labels.append(original.cloneNode(true));
+    }
+    if (labels.childElementCount) overlay.append(labels);
   }
   /** Redraw the fog, or the developer's tints, over the whole chart. */
   function drawOverlay() {
@@ -127,7 +139,7 @@ export function createWorldMap() {
         for (const cell of region.cells) group.append(node('polygon', { points: polygonPoints(cell.q, cell.r) }));
         overlay.append(group);
       }
-      return;
+      drawRegionNames(); return;
     }
     const defs = node('defs'), mask = node('mask', { id: 'atlas-charted', maskUnits: 'userSpaceOnUse' });
     mask.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height, fill: '#fff' }));
@@ -144,18 +156,8 @@ export function createWorldMap() {
     // straight through it, and a traveler who had charted one hex could read the continent.
     overlay.append(node('rect', { x: 0, y: 0, width: metadata.width, height: metadata.height,
       fill: '#0b1620', 'fill-opacity': '1', mask: 'url(#atlas-charted)' }));
-    // A coast you have been shown is a lighter shape in the dark: the country's own hexes, filled
-    // flat, so the land reads against the sea and nothing inside it does. The same mask keeps ground
-    // you have actually walked showing through.
-    // Opaque as well, for the same reason: the colour is what '#33506a' at .62 over the dark used
-    // to come out as, so a known coast looks as it did and no longer shows its interior through.
-    const shapes = node('g', { fill: '#243a4e', 'fill-opacity': '1', stroke: '#243a4e', 'stroke-opacity': '1',
-      'stroke-width': '1.2', 'stroke-linejoin': 'round', mask: 'url(#atlas-charted)' });
-    shapes.dataset.role = 'silhouettes';
-    for (const region of chart.silhouettes ?? []) {
-      for (const cell of region.cells ?? []) shapes.append(node('polygon', { points: polygonPoints(cell.q, cell.r) }));
-    }
-    if (shapes.childElementCount) overlay.append(shapes);
+    // A known country contributes only its original name. Its coast, outline and
+    // interior emerge from nearby/visited hexes, never a province-wide silhouette.
     const glimpse = node('g', { 'data-role': 'glimpsed', 'stroke-width': '.5', stroke: '#182b31' });
     for (const key of chart.glimpsed) {
       if (visited.has(key)) continue;
@@ -165,26 +167,14 @@ export function createWorldMap() {
       glimpse.append(node('polygon', { points: polygonPoints(q, r), fill: GLIMPSED_TERRAIN[terrain] ?? GLIMPSED_TERRAIN.unknown }));
     }
     overlay.append(glimpse);
-    // A country somebody has named for you carries its name, drawn here because the atlas's own
-    // label is under the dark. Nothing else of it is drawn unless its shape is known too.
-    const labels = node('g', { fill: '#cfe0f2', 'fill-opacity': '.82', 'font-family': 'Adventure, Georgia, serif',
-      'text-anchor': 'middle', 'pointer-events': 'none' });
-    labels.dataset.role = 'labels';
-    for (const label of chart.labels ?? []) {
-      const text = node('text', { x: label.x, y: label.y, 'font-size': label.size ?? 34 });
-      text.dataset.atlasSize = label.size ?? 34;
-      text.textContent = label.name;
-      labels.append(text);
-    }
-    if (labels.childElementCount) overlay.append(labels);
+    // A heard-of country gets its original inked name, without revealing its terrain. The
+    // terrain image has no region labels of its own, so explored ground cannot duplicate it.
+    drawRegionNames();
   }
 
   function render() {
     if (!metadata || !width || !height) return;
     const scale = fitScale * zoom, w = metadata.width * scale, h = metadata.height * scale;
-    // Country names stay a readable size when the same chart is viewed at street scale.
-    for (const label of overlay.querySelectorAll('[data-role="labels"] text'))
-      label.setAttribute('font-size', Math.min(Number(label.dataset.atlasSize) || 34, 28 / scale));
     offsetX = w <= width ? (width - w) / 2 : Math.max(width - w, Math.min(0, offsetX));
     offsetY = h <= height ? (height - h) / 2 : Math.max(height - h, Math.min(0, offsetY));
     image.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
@@ -275,8 +265,14 @@ export function createWorldMap() {
   new ResizeObserver(resize).observe(viewport);
   const ready = Promise.all([
     fetch('./assets/azhora-world-map.json').then(response => { if (!response.ok) throw new Error('Map data missing'); return response.json(); }),
-    image.decode(),
-  ]).then(([data]) => {
+    fetch('./assets/azhora-world-map.svg').then(response => { if (!response.ok) throw new Error('Map drawing missing'); return response.text(); }),
+  ]).then(async ([data, source]) => {
+    const layers = splitAtlasRegionLabels(source);
+    const names = new DOMParser().parseFromString(`<svg xmlns="${SVG_NS}">${layers.labels}</svg>`, 'image/svg+xml');
+    authoredLabels = names.querySelector('#region-labels');
+    if (!authoredLabels || names.querySelector('parsererror')) throw new Error('Map lettering could not load');
+    const terrainURL = URL.createObjectURL(new Blob([layers.terrain], { type: 'image/svg+xml' }));
+    try { image.src = terrainURL; await image.decode(); } finally { URL.revokeObjectURL(terrainURL); }
     metadata = data;
     image.style.width = `${data.width}px`; image.style.height = `${data.height}px`;
     drawOverlay(); drawLocalDetail();
@@ -289,9 +285,11 @@ export function createWorldMap() {
   });
   /** What the traveler has charted, and whether the developer is looking past the fog. */
   function setChart({ cells = chart.cells, glimpsed = chart.glimpsed, reveal = chart.reveal, status = chart.status, marks = null,
-    silhouettes = chart.silhouettes, labels = chart.labels, terrainRegions = null } = {}) {
-    chart = { cells: [...cells], glimpsed: [...glimpsed], reveal: !!reveal, status, silhouettes, labels };
-    visited = new Set(chart.cells);
+    labels = chart.labels, terrainRegions = null } = {}) {
+    const scope = atlasExplorationScope({ cells, glimpsed, reveal });
+    // Ignore legacy silhouette inputs even when loading an older cartography state.
+    chart = { cells: [...scope.visited], glimpsed: [...scope.nearby], reveal: scope.reveal, status, silhouettes: [], labels };
+    visited = scope.visited;
     if (terrainRegions && terrainRegions !== terrainSource) {
       terrainSource = terrainRegions;
       for (const region of terrainRegions) for (const cell of region.cells ?? []) terrainCells.set(`${cell.q},${cell.r}`, cell.terrain);
@@ -341,6 +339,6 @@ export function createWorldMap() {
       detail: { roads: localDetail.paths.length, buildings: localDetail.buildings.length, marks: localDetail.markers.length, visible: zoom > DETAIL_ZOOM },
       chart: { charted: chart.cells.length, glimpsed: chart.glimpsed.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
         silhouettes: chart.silhouettes.length, silhouetteCells: overlay.querySelectorAll('[data-role="silhouettes"] polygon').length,
-        labels: [...overlay.querySelectorAll('[data-role="labels"] text')].map(text => text.textContent),
+        labels: [...overlay.querySelectorAll('[data-role="labels"] text')].map(text => text.getAttribute('data-region')),
         marks: places.length, marked: [...placeLayer.querySelectorAll('.atlas-place:not([hidden])')].length }})};
 }

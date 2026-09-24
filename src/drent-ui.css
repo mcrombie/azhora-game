@@ -1,0 +1,17 @@
+#stealth-status{position:fixed;bottom:7.5rem;left:50%;transform:translateX(-50%);z-index:12;min-width:250px;padding:12px 18px;background:#102e28f2;color:#f8edcf;border:1px solid #8aab95;border-radius:5px;font:14px/1.4 system-ui,sans-serif;text-align:center;pointer-events:none}
+#stealth-status[hidden]{display:none}
+#stealth-status[data-alert="true"]{border-color:#e9bd6b}
+#stealth-meter{display:block;margin:7px auto 0;width:100%;height:10px;accent-color:#d4ad64}
+#quest .quest-focus-badge{display:inline-block;margin-left:7px;color:#fbefce;font:10px/1.3 system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em}
+#quest .quest-choice[aria-pressed="false"]{background:transparent;border-color:transparent;opacity:.86}
+#quest .quest-choice[aria-pressed="false"]:hover,#quest .quest-choice:focus-visible{opacity:1;background:#456653;border-color:#d6c28d}
+#quest .quest-choice[data-grade="plot"]{--quest-accent:#dce2e9}
+#quest .quest-choice[data-grade="deed"]{--quest-accent:#dc9f76}
+#quest .quest-choice[aria-pressed="true"]{border-left:3px solid var(--quest-accent,#efc873)}
+#quest .quest-switch-hint{font:11px/1.45 system-ui,sans-serif;color:#c7d2c7;margin:6px 0 0}
+#quest-options{margin-bottom:12px}
+#quest{max-height:calc(100dvh - 500px)}
+#quest #quest-detail{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#quest .small{display:none}
+.inventory-description{white-space:pre-line}
+@media(max-height:750px){#quest{max-height:calc(100dvh - 450px)}}

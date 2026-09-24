@@ -56,10 +56,24 @@ export const REFUGEES = Object.freeze([
 ]);
 
 /**
- * The index on the game's main road (`world.paths[0]`) where they started: the
+ * The index on the authored main road (`MAIN_ROAD`) where they started: the
  * height above the field at the Lauvel, about 890 metres of road from Tidehaven.
  */
 export const REFUGEE_START = 26;
+
+/** Keep their physical starting place when the displayed road gains more samples. */
+export function refugeeReturnRoute(road, start) {
+  if (!Array.isArray(road) || !road.length || !start) return [];
+  let closest = { index: 0, x: road[0].x, z: road[0].z, distance: Infinity };
+  for (let i = 1; i < road.length; i++) {
+    const a = road[i - 1], b = road[i], dx = b.x - a.x, dz = b.z - a.z, square = dx * dx + dz * dz;
+    const t = square ? Math.max(0, Math.min(1, ((start.x - a.x) * dx + (start.z - a.z) * dz) / square)) : 0;
+    const x = a.x + dx * t, z = a.z + dz * t, distance = Math.hypot(start.x - x, start.z - z);
+    if (distance < closest.distance) closest = { index: i - 1, x, z, distance };
+  }
+  return [{ x: closest.x, z: closest.z }, ...road.slice(0, closest.index + 1).reverse().map(point => ({ x: point.x, z: point.z }))]
+    .filter((point, index, route) => !index || Math.hypot(point.x - route[index - 1].x, point.z - route[index - 1].z) > .001);
+}
 
 /** Where the three of them settle once they have reached the landing. */
 export const REFUGEE_STANDS = Object.freeze([

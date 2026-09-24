@@ -227,9 +227,10 @@ test('whoever you are, the model is the traveler’s: the rig, the swap and the 
     // And the figure may not balloon unwatched, held weapons and all. Measured with the bow in:
     // Cromb is 28 bare, 39 with the nine he can swing, 45 with the bow — **the bow is six of
     // them** (two limbs, the grip, the string, and the shaft and head of the arrow on it), and it
-    // is the tenth and last weapon phase 6 adds. Matt is the dearest of the eleven at 49, and the
-    // most anybody *draws* is 22, which is the number that costs anything.
-    assert.ok(built <= 49, `${id} is built from ${built} meshes`);
+    // is the tenth and last weapon phase 6 adds. The plain wand and oak staff add one batched
+    // mesh each, only when first equipped. Matt is the dearest of the eleven at 51; the
+    // visible-draw limit above stays unchanged because only one weapon is ever held.
+    assert.ok(built <= 51, `${id} is built from ${built} meshes`);
   }
 });
 

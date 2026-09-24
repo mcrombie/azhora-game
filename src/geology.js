@@ -160,7 +160,7 @@ export function createGeology({ skills, onEvent = () => {} } = {}) {
         name: state.found[id] ? ROCK_SPECIES[id].name : 'A stone you have not named',
         detail: state.found[id] ? ROCK_SPECIES[id].note
           : state.met ? `Found in ${SETTING_WORDS[ROCK_SPECIES[id].setting]}.`
-          : 'Silas Garrow keeps his cart at the Toll House stream, west along the Caloss road.' })),
+          : 'Mark teaches Geology by the village fire in Tidehaven. Silas Garrow also teaches at the Toll House stream on the Caloss road.' })),
     };
   }
 

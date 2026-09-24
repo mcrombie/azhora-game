@@ -1,3 +1,6 @@
+import { validateMagicSnapshot } from './magic.js';
+import { createCrime, validCrimeState } from './crime.js';
+import { createCorpses, validateCorpsesSnapshot } from './corpses.js';
 import { INVENTORY_ITEMS } from './inventory.js';
 import { QUEST_DONE } from './game-state.js';
 import { createRoadAmbush, validateRoadAmbushSnapshot } from './road-ambush.js';
@@ -5,6 +8,7 @@ import { createSpiderQuest, validateSpiderQuestSnapshot } from './spider-quest.j
 import { createMurderQuest, validateMurderQuestSnapshot } from './murder-quest.js';
 import { createCatQuest, validateCatQuestSnapshot } from './cat-quest.js';
 import { createVastosCivilWar, validateVastosCivilWarSnapshot } from './vastos-civil-war.js';
+import { createDrentCivilWar, validateDrentCivilWarSnapshot, DRENT_EVIDENCE_ID, DRENT_SUPPLIES_ID } from './drent-civil-war.js';
 import { createJourney } from './journey.js';
 import { validateWeaponSnapshot, WEAPON_TYPES, TRADEABLE_WEAPONS } from './weapons.js';
 import { mercenaryById } from './mercenaries.js';
@@ -22,7 +26,8 @@ import { createMorosChapter, validateMorosSnapshot } from './moros-chapter.js';
 import { createBorderChapter, validateBorderSnapshot } from './border-chapter.js';
 import { createAftermathChapter, validateAftermathSnapshot, AFTERMATH_VARIANTS } from './aftermath-chapter.js';
 import { createRiding, validateRidingSnapshot } from './riding.js';
-import { createSkills, validateSkillsSnapshot } from './skills.js';
+import { createSkills, skillLevel, validateSkillsSnapshot } from './skills.js';
+import { maxHealth } from './combat-skills.js';
 import { createBirding, validateBirdingSnapshot } from './birding.js';
 import { createMapFog, validateMapFogSnapshot } from './map-fog.js';
 import { createCartography, validateCartographySnapshot } from './cartography.js';
@@ -195,7 +200,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)
       || p.x <= WORLD_BOUNDS.minX || p.x >= WORLD_BOUNDS.maxX
       || p.z <= WORLD_BOUNDS.minZ || p.z >= WORLD_BOUNDS.maxZ) return failed('The saved position lies outside the playable road.');
-    if (Object.hasOwn(data, 'health') && (!Number.isFinite(data.health) || data.health < 0 || data.health > 100))
+    const savedMaxHealth = maxHealth(skillLevel('toughness', data.skills?.skills?.toughness?.xp ?? 0).level);
+    if (Object.hasOwn(data, 'health') && (!Number.isFinite(data.health) || data.health < 0 || data.health > savedMaxHealth))
       return failed('The saved health is invalid.');
     if (Object.hasOwn(data, 'woodland') && !validateWoodlandProgress(data.woodland, stock))
       return failed('The saved woodland progress is invalid.');
@@ -206,6 +212,16 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.murder !== undefined && !validateMurderQuestSnapshot(data.murder)) return failed('The saved case in Cobble is invalid.');
     if (data.cat !== undefined && !validateCatQuestSnapshot(data.cat)) return failed('The saved errand for Liz is invalid.');
     if (!validateVastosCivilWarSnapshot(data.vastos)) return failed('The saved Common Water settlement is invalid.');
+    if (data.magic!==undefined&&!validateMagicSnapshot(data.magic)) return failed('The saved spells are invalid.');
+    if (data.crime!==undefined&&!validCrimeState(data.crime)) return failed('The saved crime record is invalid.');
+    if (!validateCorpsesSnapshot(data.corpses)) return failed('The saved bodies are invalid.');
+    if (!validateDrentCivilWarSnapshot(data.drentCivilWar)) return failed('The saved Drent civil war is invalid.');
+    if (data.drentCivilWar) {
+      const drent = data.drentCivilWar;
+      if (stock.has(DRENT_EVIDENCE_ID) !== (drent.evidenceFound && !drent.chosenPath)
+        || stock.has(DRENT_SUPPLIES_ID) !== (drent.suppliesStolen && !drent.outcome))
+        return failed('The saved Drent evidence or supplies do not match your satchel.');
+    }
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
     if (data.forestHideout?.accepted && data.questStage < QUEST_DONE) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
@@ -294,6 +310,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'cartography')) { const chart = createCartography(); chart.restore(data.cartography); result.cartography = chart.snapshot(); }
     if (Object.hasOwn(data, 'swimming')) { const swim = createSwimming(); swim.restore(data.swimming); result.swimming = swim.snapshot(); }
     if (Object.hasOwn(data, 'teachers')) { const taught = createTeachers(); taught.restore(data.teachers); result.teachers = taught.snapshot(); }
+    if (Object.hasOwn(data, 'gear')) result.gear = { version: data.gear.version,
+      worn: Object.fromEntries(Object.entries(data.gear.worn).map(([slot,piece])=>[slot,{weight:piece.weight,tier:piece.tier}])),
+      ...(data.gear.owned ? {owned:data.gear.owned.map(piece=>({slot:piece.slot,weight:piece.weight,tier:piece.tier}))} : {}) };
     if (Object.hasOwn(data, 'fishing')) { const fishing = createFishing(); fishing.restore(data.fishing); result.fishing = fishing.snapshot(); }
     if (Object.hasOwn(data, 'mycology')) { const mycology = createMycology(); mycology.restore(data.mycology); result.mycology = mycology.snapshot(); }
     if (Object.hasOwn(data, 'botany') || Object.hasOwn(data, 'herbology')) { const botany = createBotany(); botany.restore(data.botany ?? data.herbology); result.botany = botany.snapshot(); }
@@ -334,6 +353,10 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'murder')) { const cobble = createMurderQuest(); cobble.restore(data.murder); result.murder = cobble.snapshot(); }
     if (Object.hasOwn(data, 'cat')) { const mop = createCatQuest(); mop.restore(data.cat); result.cat = mop.snapshot(); }
     if (Object.hasOwn(data, 'vastos')) { const water = createVastosCivilWar(); water.restore(data.vastos); result.vastos = water.snapshot(); }
+    if (Object.hasOwn(data,'magic')) result.magic=JSON.parse(JSON.stringify(data.magic));
+    if (Object.hasOwn(data,'crime')) { const law=createCrime(); law.restore(data.crime); result.crime=law.snapshot(); }
+    if (Object.hasOwn(data,'corpses')) { const bodies=createCorpses(); bodies.restore(data.corpses); result.corpses=bodies.snapshot(); }
+    if (Object.hasOwn(data, 'drentCivilWar')) { const drent = createDrentCivilWar(); drent.restore(data.drentCivilWar); result.drentCivilWar = drent.snapshot(); }
     if (Object.hasOwn(data, 'playSeconds')) result.playSeconds = data.playSeconds;
     if (Object.hasOwn(data, 'companionOffTheClock')) result.companionOffTheClock = data.companionOffTheClock;
     if (Object.hasOwn(data, 'mercenaryWeapons')) result.mercenaryWeapons = Object.fromEntries(Object.entries(data.mercenaryWeapons).map(([id, weapon]) => [id, { id: weapon.id, durability: weapon.durability }]));
@@ -346,7 +369,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
       if (typeof storage?.getItem !== 'function') return failed('Checkpoint storage is unavailable.');
       const raw = storage.getItem(key);
       if (raw === null || raw === undefined) return { ok: true, data: null, reason: '' };
-      if (typeof raw !== 'string' || raw.length > 65536) return failed('The saved checkpoint could not be read.');
+      if (typeof raw !== 'string' || raw.length > 8 * 1024 * 1024) return failed('The saved checkpoint could not be read.');
       return validate(JSON.parse(raw));
     } catch {
       return failed('The saved checkpoint could not be read. Your current game is unchanged.');

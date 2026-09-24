@@ -1,0 +1,68 @@
+/* A stable list on the left and one readable guide on the right. */
+#skills-sheet:has(.skills-browser){height:100%;min-height:0;padding:0;overflow:hidden}
+.skills-browser{display:grid;grid-template-columns:minmax(230px,31%) minmax(0,1fr);height:100%;min-height:0;overflow:hidden;color:#eeeede;font:16px/1.55 'Segoe UI',sans-serif}
+.skill-browser-sidebar{display:flex;flex-direction:column;min-width:0;min-height:0;padding:22px 20px 12px 0;border-right:1px solid #78948755}
+.skill-browser-filters{display:grid;gap:14px;flex:none}
+.skill-browser-search-label,.skill-browser-category-label{display:grid;gap:6px;font-size:13px;font-weight:600;color:#cdd9d2}
+.skill-browser-search,.skill-browser-category{box-sizing:border-box;width:100%;min-height:42px;padding:8px 11px;border:1px solid #93aa9f88;border-radius:4px;background:#112f29;color:#f4f0df;font:15px 'Segoe UI',sans-serif}
+.skill-browser-search::placeholder{color:#a9beb2}
+.skill-browser-category option{background:#17372e;color:#f4f0df}
+.skill-browser-scopes{display:flex;gap:4px;border-bottom:1px solid #829b8e55}
+.skill-browser-scope{flex:1;padding:8px 5px 10px;min-height:42px;border:0;border-bottom:2px solid transparent;background:transparent;color:#d1dcd2;font:600 14px 'Segoe UI',sans-serif;cursor:pointer}
+.skill-browser-scope[aria-pressed=true]{color:#ffe1a0;border-bottom-color:#e4c374}
+.skill-browser-scope:hover{background:#e5cb850d;filter:none}
+.skill-browser-count{flex:none;margin:14px 0 6px!important;font:13px/1.4 'Segoe UI',sans-serif!important;color:#afc3b6!important}
+.skill-browser-list{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:5px;padding-bottom:14px}
+.skill-browser-group+.skill-browser-group{margin-top:16px}
+.skill-browser-group-title{margin:6px 0 7px!important;padding-left:10px;font:600 12px/1.4 'Segoe UI',sans-serif!important;letter-spacing:.09em;text-transform:uppercase;color:#b7c6b7!important}
+.skill-browser-row{display:flex;align-items:center;gap:11px;min-height:46px;width:100%;padding:8px 10px;border:0;border-left:3px solid transparent;border-radius:0 4px 4px 0;background:transparent;color:#e5eddf;font:16px/1.35 'Segoe UI',sans-serif;text-align:left;cursor:pointer}
+.skill-browser-row:hover{background:#305145;filter:none}
+.skill-browser-row[aria-pressed=true]{border-left-color:#f0d18b;background:#315448;color:#fff1d4}
+.skill-browser-name{overflow-wrap:anywhere}
+.skill-browser-icon{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;color:#e7cb8d}
+.skill-browser-icon>*{width:100%!important;height:100%!important;min-width:0!important;background:none!important;border:0!important;border-radius:0!important;display:block!important}
+.skill-browser-icon svg{display:block;width:100%!important;height:100%!important}
+.skill-browser-detail{min-width:0;min-height:0;padding:27px 26px 32px 30px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.skill-browser-heading{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+.skill-browser-heading>.skill-browser-icon{flex-basis:48px;width:48px;height:48px}
+.skill-browser-heading h3{margin:3px 0 0!important;font:400 34px/1.15 Adventure,Georgia,serif!important;color:#fff1d2!important}
+.skill-browser-eyebrow{margin:0!important;font:600 12px/1.3 'Segoe UI',sans-serif!important;letter-spacing:.12em;text-transform:uppercase;color:#b6c9bb!important}
+.skill-browser-blurb{margin:0 0 24px!important;max-width:62ch;font:16px/1.7 'Segoe UI',sans-serif!important;color:#edf0e4!important}
+.skill-browser-progress{padding:18px 0;margin-bottom:22px;border-top:1px solid #8fa69944;border-bottom:1px solid #8fa69944}
+.skill-browser-progress-line{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:14px;color:#d3ddcd;font-variant-numeric:tabular-nums}
+.skill-browser-progress-line strong{font-size:18px;color:#ffe2a3;font-weight:600;white-space:nowrap}
+.skill-browser-progress-line>span{text-align:right}
+.skill-browser-progress-bar{display:block;appearance:none;width:100%;height:6px;margin:13px 0 8px;border:0;border-radius:3px;overflow:hidden;background:#0e2823;color:#e0c077}
+.skill-browser-progress-bar::-webkit-progress-bar{background:#0e2823;border-radius:3px}
+.skill-browser-progress-bar::-webkit-progress-value{background:#e0c077;border-radius:3px}
+.skill-browser-xp{margin:0!important;font:13px/1.5 'Segoe UI',sans-serif!important;color:#b9cabc!important}
+.skill-browser-status{margin:0 0 22px!important;padding:13px 0;border-block:1px solid #8fa69944;font:14px/1.5 'Segoe UI',sans-serif!important;color:#d2ddcf!important}
+.skill-browser-learning,.skill-browser-next{margin:0 0 24px}
+.skill-browser-learning h4,.skill-browser-next h4{margin:0 0 8px;font:600 15px/1.4 'Segoe UI',sans-serif;color:#eedca9}
+.skill-browser-learning p,.skill-browser-next p{margin:0!important;max-width:62ch;font:15px/1.65 'Segoe UI',sans-serif!important;color:#dbe4d8!important}
+.skill-browser-spells{margin:0 0 24px;padding:17px 18px;border:1px solid #8fa69955;border-radius:4px;background:#102d272e}
+.skill-browser-spells h4{margin:0 0 12px;font:600 15px/1.4 'Segoe UI',sans-serif;color:#eedca9}
+.skill-browser-spell{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:12px;font-size:16px}
+.skill-browser-spell-status{flex:none;font:600 12px/1.4 'Segoe UI',sans-serif;color:#bccbc0}
+.skill-browser-spell[data-learned=true] .skill-browser-spell-status{color:#d9e7a2}
+.skill-browser-spells p{margin:8px 0 0!important;max-width:62ch;font:15px/1.6 'Segoe UI',sans-serif!important;color:#dbe4d8!important}
+.skill-browser-spells .skill-browser-spell-note{font-size:13px!important;color:#b8c9be!important}
+.skill-browser-detail details{margin-top:13px;border-top:1px solid #8fa69955}
+.skill-browser-detail summary{padding:15px 2px;font:600 15px/1.5 'Segoe UI',sans-serif;color:#efdeb3;cursor:pointer;min-height:24px}
+.skill-browser-detail summary:hover{color:#fff0c5}
+.skill-browser-milestone-list{list-style:none;padding:0;margin:0 0 14px}
+.skill-browser-milestone-list li{display:flex;gap:17px;padding:11px 0;border-bottom:1px solid #8fa69922;font:15px/1.6 'Segoe UI',sans-serif;color:#ced9cc}
+.skill-browser-milestone-list li.available{color:#f1eedb}
+.skill-browser-milestone-level{flex:0 0 42px;color:#e6ce96;font-variant-numeric:tabular-nums}
+.skill-browser-log h3{font:400 23px/1.3 Adventure,Georgia,serif!important;margin:17px 0 8px!important;color:#fff1d1!important}
+.skill-browser-log p{font:15px/1.65 'Segoe UI',sans-serif!important}
+.skill-browser-empty{max-width:44ch;padding:30px 10px}
+.skill-browser-empty h3{font:400 28px/1.3 Adventure,Georgia,serif!important;color:#fff1d1!important;margin:0 0 13px!important}
+.skill-browser-empty p,.skill-browser-list-empty{font:16px/1.7 'Segoe UI',sans-serif!important;color:#c9d8cb!important}
+.skill-browser-show-all{margin-top:10px;min-height:42px;padding:9px 15px;border:1px solid #dac48488;border-radius:4px;background:#284b3e;color:#ffe5a5;font:600 15px 'Segoe UI',sans-serif;cursor:pointer}
+.skills-browser :is(button,input,select,summary):focus-visible{outline:2px solid #ffe3a0;outline-offset:-2px}
+.skill-browser-detail:focus-visible{outline:1px solid #d6be78;outline-offset:-2px}
+@media(max-width:850px){.skills-browser{grid-template-columns:minmax(195px,34%) minmax(0,1fr)}.skill-browser-sidebar{padding-right:13px}.skill-browser-detail{padding:24px 16px}.skill-browser-heading h3{font-size:29px!important}}
+@media(max-width:580px){.skills-browser{grid-template-columns:155px minmax(0,1fr);font-size:15px}.skill-browser-sidebar{padding-right:8px}.skill-browser-category-label{font-size:12px}.skill-browser-category{font-size:13px;padding-inline:6px}.skill-browser-row{gap:7px;padding-inline:6px;font-size:14px}.skill-browser-row>.skill-browser-icon{flex-basis:20px;width:20px;height:20px}.skill-browser-detail{padding:20px 12px}.skill-browser-heading{gap:10px;align-items:flex-start}.skill-browser-heading>.skill-browser-icon{display:none}.skill-browser-heading h3{font-size:26px!important}.skill-browser-progress-line{flex-direction:column;gap:5px}.skill-browser-scope{font-size:12px}}
+
+.skill-browser-list,.skill-browser-detail{scrollbar-width:thin;scrollbar-color:#718b75 transparent}

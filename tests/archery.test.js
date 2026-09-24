@@ -529,7 +529,7 @@ test('the first body in an arrow’s path stops it, whoever it belongs to', () =
   assert.ok(beside.combat.state.arrows[0]?.flown > BOW.clearOfShooter, 'and the shaft is past him and still flying');
 });
 
-test('an ally’s arrow can find the traveler, and a bystander only stops one', () => {
+test('an ally’s arrow can find the traveler, and unarmed bystanders take physical hits too', () => {
   // The hunter's own fixture, turned round: Jerry at the back, the traveler in front of him.
   const world = { bounds: { minX: -99, maxX: 99, minZ: -99, maxZ: 99 }, colliders: [], heightAt: () => 1.5, nearColliders: () => [] };
   const position = { x: 0, y: 1.5, z: 8 };
@@ -555,21 +555,22 @@ test('an ally’s arrow can find the traveler, and a bystander only stops one', 
   assert.equal(landed.stopped, 'friend');
   assert.equal(landed.targetId, 'traveler');
 
-  // **A body that is only in the way is only in the way.** A villager running for a door carries
-  // nothing and is in no sense fighting: she stops a shaft and is unhurt (the user, 2026-09-21).
+  // Fleeing and carrying no weapon do not make somebody immune to a physical arrow.
   const running = archer({ allies: [{ id: 'villager-1', name: 'A villager', kind: 'bystander',
     x: 0, z: 6, refuge: { x: 8, z: 6 } }], enemies: [{ id: 'goblin', x: 0, z: 18, hp: 400, entry: 40 }] });
   const her = running.combat.state.allies[0], whole = her.hp;
   shoot(running, 1.3);
   settle(running);
-  assert.equal(running.of('arrow-landed')[0].stopped, 'body', 'she stopped it');
+  assert.equal(running.of('arrow-landed')[0].stopped, 'friend', 'she stopped it');
   assert.equal(running.of('arrow-landed')[0].targetId, 'villager-1');
-  assert.equal(running.of('ally-hit').length, 0, 'and took no harm from it');
-  assert.equal(her.hp, whole);
+  assert.equal(running.of('ally-hit').length, 1, 'the one contact hurts her once');
+  assert.ok(her.hp < whole);
+  assert.equal(running.of('arrow-impact').length,1);
+  assert.equal(running.of('arrow-impact')[0].hits[0].id,'villager-1');
   assert.equal(running.of('hit').length, 0, 'nor did the goblin behind her');
 });
 
-test('the world’s own bodies stop an arrow and are unhurt', () => {
+test('the world’s own bodies stop an arrow and receive one host-owned damage contact', () => {
   // A horse on a picket, a villager on a street: not in the fight, and the fight is never told
   // about them except to answer this one question (`getBodies`, src/main.js).
   const yard = archer({ bodies: [{ id: 'line-horse-2', x: 0, z: 7, r: .8 }],
@@ -579,7 +580,11 @@ test('the world’s own bodies stop an arrow and are unhurt', () => {
   const landed = yard.of('arrow-landed')[0];
   assert.equal(landed.stopped, 'body');
   assert.equal(landed.targetId, 'line-horse-2');
-  assert.equal(yard.of('hit').length + yard.of('ally-hit').length, 0, 'and nothing at all is hurt');
+  assert.equal(yard.of('hit').length + yard.of('ally-hit').length, 0, 'encounter health never duplicates the world body');
+  const impacts=yard.of('arrow-impact');assert.equal(impacts.length,1);
+  assert.equal(impacts[0].targetId,'line-horse-2');assert.equal(impacts[0].source,'player');
+  assert.ok(impacts[0].damage>0);assert.deepEqual(impacts[0].affectedIds,[]);
+  assert.ok(!impacts[0].combatantIds.includes('line-horse-2'),'the host owns this body');
   assert.equal(landed.recovered, true, 'the shaft is still a shaft');
   // The fight is told about them nowhere else: a body is not a collider, so nothing about a
   // swing, a step or where an enemy may stand has moved (tests/every-fight.test.js holds the rest).

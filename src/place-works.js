@@ -438,11 +438,6 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
         const tip = { x: post.x - along.x * Math.sign(gate.a) * 3.9 - across.x * s * .5, z: post.z - along.z * Math.sign(gate.a) * 3.9 - across.z * s * .5 };
         for (const h of [.6, 1.7]) b.beam('#6f5238', [post.x - across.x * s * .4, py + h, post.z - across.z * s * .4], [tip.x, y(tip.x, tip.z) + h, tip.z], .12, .16);
         b.beam('#6f5238', [tip.x, y(tip.x, tip.z), tip.z], [tip.x, y(tip.x, tip.z) + 1.9, tip.z], .14);
-        for (let k = 0; k < 28; k++) {
-          const w = side(s * (6 + k * .42)), wy = y(w.x, w.z), h = 2.7 + (k % 3) * .12;
-          b.stake(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, yaw, .35);
-        }
-        lineColliders(side(s * 6), side(s * 17.8), .32, 'town-palisade');
       }
       const beamA = side(-5.6), beamB = side(5.6);
       b.beam(WOOD_DARK, [beamA.x, gy + 4.3, beamA.z], [beamB.x, gy + 4.3, beamB.z], .3, .38);
@@ -452,6 +447,23 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
       const hx = hut.x + out.x * 2.2, hz = hut.z + out.z * 2.2;
       for (const s2 of [-1, 1]) for (const s3 of [-1, 1]) { const px = hx + across.x * s2 * 1.1 + out.x * s3 * 1.0, pz = hz + across.z * s2 * 1.1 + out.z * s3 * 1.0; b.block(WOOD, px, y(px, pz), pz, .15, 2.4, .15); circle(px, pz, .17, 'town-watch-hut'); }
       b.roof(THATCH, hx, hy + 2.4, hz, 2.8, 2.6, .9, yaw);
+    }
+    // Follow the terrain all the way around Nothom. Only the two existing road gates interrupt
+    // this line; the old short wings looked like an unfinished fence from outside the town.
+    for (const chain of T.palisade) for (let i=1;i<chain.length;i++) {
+      const start=chain[i-1],end=chain[i],dx=end.x-start.x,dz=end.z-start.z,length=Math.hypot(dx,dz);
+      const steps=Math.ceil(length/.39),yaw=Math.atan2(dx,dz);
+      for (let k=0;k<=steps;k++) {
+        const x=start.x+dx*k/steps,z=start.z+dz*k/steps,h=2.8+(k%4)*.07;
+        b.stake(k%2?'#6f5238':'#634833',x,y(x,z)-.12,z,.43,h+.12,yaw,.35);
+      }
+      // Rails in short lengths follow the slope, so none floats above the lower stakes.
+      const rails=Math.ceil(length/4);
+      for(let k=0;k<rails;k++) for(const h of [.65,1.8]) {
+        const ax=start.x+dx*k/rails,az=start.z+dz*k/rails,bx=start.x+dx*(k+1)/rails,bz=start.z+dz*(k+1)/rails;
+        b.beam(WOOD_DARK,[ax,y(ax,az)+h,az],[bx,y(bx,bz)+h,bz],.14,.18);
+      }
+      lineColliders(start,end,.32,'town-palisade');
     }
     // The smithy: a stone forge building open to the road, its anvil under the eaves.
     {

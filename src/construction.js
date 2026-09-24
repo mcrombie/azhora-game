@@ -118,7 +118,7 @@ export function createConstruction({ skills, random = Math.random } = {}) {
     // Building needs a plot and tools, both of which Bowden hands over; it no longer needs his
     // permission (the user, 21 September 2026).
     if (TOOLS.some(t => count(t) < 1)) return { ok: false, reason: 'You need a hammer and a saw.' };
-    if (level() < thing.level) return { ok: false, reason: `You need a Construction level of ${thing.level} to build that.` };
+    if (level() < thing.level) return { ok: false, reason: `You need a Carpentry level of ${thing.level} to build that.` };
     const short = Object.entries(thing.planks).filter(([id, n]) => count(id) < n);
     if (short.length) return { ok: false, reason: `You need ${Object.entries(thing.planks).map(([id, n]) => `${n} ${PLANKS[id].name.toLowerCase()}${n > 1 ? 's' : ''}`).join(' and ')}.` };
     return { ok: true, reason: '' };

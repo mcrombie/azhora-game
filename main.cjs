@@ -4,6 +4,14 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const smoke = process.argv.includes('--smoke-test');
+const drentChecksOnly = smoke && process.argv.includes('--drent-checks');
+const magicChecksOnly = smoke && process.argv.includes('--magic-checks');
+const benFightChecksOnly = smoke && process.argv.includes('--ben-fight-checks');
+const benAutoplayChecksOnly = smoke && process.argv.includes('--ben-autoplay-checks');
+const lawChecksOnly = smoke && process.argv.includes('--law-checks');
+const companionCombatChecksOnly = smoke && process.argv.includes('--companion-combat-checks');
+const presentationChecksOnly = smoke && process.argv.includes('--presentation-checks');
+const journalChecksOnly = smoke && process.argv.includes('--journal-checks');
 const cartographyChecksOnly = smoke && process.argv.includes('--cartography-checks');
 const chartReloadOnly = smoke && process.argv.includes('--cartography-reload-check');
 const mainArcChecksOnly = smoke && process.argv.includes('--main-arc-checks');
@@ -46,6 +54,16 @@ const reviewViews = reviewArg.split(reviewArg.includes(';') ? ';' : ',').map(vie
 const shotName = view => String(view).replace(/[^A-Za-z0-9-]+/g, '-').replace(/^-+|-+$/g, '') || 'view';
 /** `--review-clean` hides the HUD for the review pictures; `--review-jpeg` saves them as .jpg, a fraction of the size. */
 const reviewClean = process.argv.includes('--review-clean'), reviewJpeg = process.argv.includes('--review-jpeg');
+// Screenshot-only viewport override; normal launches and other smoke checks retain their defaults.
+const reviewSizeArg = smoke && reviewViews.length ? process.argv.find(arg => arg.startsWith('--review-size=')) : null;
+let reviewSize = null;
+if (reviewSizeArg) {
+  const match = /^--review-size=(\d+)x(\d+)$/.exec(reviewSizeArg);
+  const width = Number(match?.[1]), height = Number(match?.[2]);
+  if (!match || width < 900 || width > 3840 || height < 640 || height > 2160)
+    throw new Error('Review size must be WIDTHxHEIGHT between 900x640 and 3840x2160.');
+  reviewSize = { width, height };
+}
 // `--opening-review` lets the computer play the opening and keeps a picture of every moment worth a look.
 const openingReviewOnly = smoke && process.argv.includes('--opening-review');
 // `--map-review` pictures the chart as a new player first opens it, and again later in the story.
@@ -126,7 +144,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     });
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const win = mainWindow = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 640, show: false, title: 'Azhora · An Adventure Game', icon:path.join(__dirname,'assets','azhora.ico'), backgroundColor: '#9bc3cb', autoHideMenuBar: true,
+  const win = mainWindow = new BrowserWindow({ width: reviewSize?.width ?? 1440, height: reviewSize?.height ?? 960, minWidth: 900, minHeight: 640, show: false, title: 'Azhora · An Adventure Game', icon:path.join(__dirname,'assets','azhora.ico'), backgroundColor: '#9bc3cb', autoHideMenuBar: true,
     fullscreen: !smoke, fullscreenable: true,
     webPreferences: { preload:path.join(__dirname,'preload.cjs'),nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false, offscreen: smoke } });
   win.once('ready-to-show', revealGame);
@@ -161,11 +179,63 @@ if (ownsInstance) app.whenReady().then(async () => {
     try {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
-          if(window.__AZHORA__) { ${chartReloadOnly ? 'window.__AZHORA__.runChartReloadCheck().then(resolve,reject);' : cartographyChecksOnly ? 'window.__AZHORA__.runCartographyChecks().then(resolve,reject);' : mainArcChecksOnly ? 'window.__AZHORA__.runMainArcChecks().then(resolve,reject);' : autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || drawReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${benAutoplayChecksOnly ? 'window.__AZHORA__.runBenAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : benFightChecksOnly ? 'window.__AZHORA__.runBenFightChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : companionCombatChecksOnly ? 'window.__AZHORA__.runCompanionCombatChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : magicChecksOnly ? 'window.__AZHORA__.runMagicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : lawChecksOnly ? 'window.__AZHORA__.runLawChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : presentationChecksOnly ? 'window.__AZHORA__.runPresentationChecks().then(resolve,reject);' : drentChecksOnly ? 'window.__AZHORA__.runDrentChecks().then(resolve,reject);' : journalChecksOnly ? 'window.__AZHORA__.runJournalChecks().then(resolve,reject);' : chartReloadOnly ? 'window.__AZHORA__.runChartReloadCheck().then(resolve,reject);' : cartographyChecksOnly ? 'window.__AZHORA__.runCartographyChecks().then(resolve,reject);' : mainArcChecksOnly ? 'window.__AZHORA__.runMainArcChecks().then(resolve,reject);' : autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || drawReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>25000) reject(new Error('Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
       })`);
+      if(benAutoplayChecksOnly){
+        const before=await win.webContents.executeJavaScript('window.__AZHORA__.state().position');
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'W'});
+        await win.webContents.executeJavaScript('(async()=>{for(let i=0;i<18;i++)await new Promise(requestAnimationFrame);})()');
+        win.webContents.sendInputEvent({type:'keyUp',keyCode:'W'});
+        const after=await win.webContents.executeJavaScript('window.__AZHORA__.state()');
+        if(after.autoplay||Math.hypot(after.position[0]-before[0],after.position[2]-before[2])<.1)throw new Error('Native WASD did not take control from Ben autoplay');
+        await win.webContents.executeJavaScript('(async()=>{for(let i=0;i<14;i++)await new Promise(requestAnimationFrame);})()');
+        const stopped=await win.webContents.executeJavaScript('window.__AZHORA__.state()');
+        if(stopped.autoplay||Math.hypot(stopped.position[0]-after.position[0],stopped.position[2]-after.position[2])>.1)throw new Error('Ben autoplay kept moving after manual takeover');
+        result.checks.push('Native WASD takes control and the pilot stays stopped after key release');
+        result.nativeTakeover={mode:stopped.mode,autoplay:stopped.autoplay,position:stopped.position};
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});
+        win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        const resumed=await win.webContents.executeJavaScript('(async()=>{const begin=performance.now(),origin=window.__AZHORA__.state().position;while(performance.now()-begin<8000){await new Promise(requestAnimationFrame);const s=window.__AZHORA__.state();if(!s.autoplay||Math.hypot(s.position[0]-origin[0],s.position[2]-origin[2])>.2)return {state:s,pilot:window.__AZHORA__.autoplay()};}return {state:window.__AZHORA__.state(),pilot:window.__AZHORA__.autoplay()};})()');
+        if(!resumed.pilot.active||resumed.pilot.id!=='ben'||resumed.state.trackedQuestId!=='ben-spider')throw new Error('Native P did not resume the focused Ben quest');
+        if(Math.hypot(resumed.state.position[0]-stopped.position[0],resumed.state.position[2]-stopped.position[2])<.1)throw new Error('The resumed Ben pilot did not continue ordinary walking');
+        result.checks.push('Native P resumes the focused Ben quest instead of the main road');
+        result.nativeResume={pilot:resumed.pilot,trackedQuestId:resumed.state.trackedQuestId,position:resumed.state.position};
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'W'});
+        await win.webContents.executeJavaScript('(async()=>{for(let i=0;i<10;i++)await new Promise(requestAnimationFrame);})()');
+        win.webContents.sendInputEvent({type:'keyUp',keyCode:'W'});
+        const retaken=await win.webContents.executeJavaScript('window.__AZHORA__.state()');
+        await win.webContents.executeJavaScript('(async()=>{for(let i=0;i<14;i++)await new Promise(requestAnimationFrame);})()');
+        const settled=await win.webContents.executeJavaScript('window.__AZHORA__.state()');
+        if(settled.autoplay||Math.hypot(settled.position[0]-retaken.position[0],settled.position[2]-retaken.position[2])>.1)throw new Error('Native WASD did not stop the resumed Ben pilot');
+        result.checks.push('Native WASD also stops Ben after resuming with P');
+        result.awaitingNativeTakeover=false;
+        fs.writeFileSync(path.join(artifactDir,'ben-autoplay-checks.json'),JSON.stringify({...result,errors},null,2));
+        fs.writeFileSync(path.join(artifactDir,'ben-autoplay.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(benFightChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'ben-fight-checks.json'),JSON.stringify({...result,errors},null,2));
+        fs.writeFileSync(path.join(artifactDir,'ben-fight.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(companionCombatChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'companion-combat-checks.json'),JSON.stringify({...result,errors},null,2));
+        const image=await win.webContents.capturePage();fs.writeFileSync(path.join(artifactDir,'companion-combat.png'),image.toPNG());
+        console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(magicChecksOnly){fs.writeFileSync(path.join(artifactDir,'magic-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
+      if(lawChecksOnly){fs.writeFileSync(path.join(artifactDir,'law-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
+      if(presentationChecksOnly){fs.writeFileSync(path.join(artifactDir,'presentation-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
+      if(drentChecksOnly){fs.writeFileSync(path.join(artifactDir,'drent-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
+      if(journalChecksOnly){
+        win.setSize(900,700);
+        result.compact=await win.webContents.executeJavaScript(`(async()=>{await new Promise(resolve=>setTimeout(resolve,150));return window.__AZHORA__.checkJournalLayout();})()`);
+        fs.writeFileSync(path.join(artifactDir,'journal-compact.png'),(await win.webContents.capturePage()).toPNG());
+        win.setSize(1440,960);
+        fs.writeFileSync(path.join(artifactDir,'journal-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
       if(chartReloadOnly||cartographyChecksOnly){fs.writeFileSync(path.join(artifactDir,chartReloadOnly?'cartography-reload.json':'cartography-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
       if(mainArcChecksOnly){fs.writeFileSync(path.join(artifactDir,'main-arc-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length){app.exit(errors.length?1:0);return;}}
       if(playthroughOnly){

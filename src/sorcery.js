@@ -26,10 +26,10 @@
  * weapon's family. Nothing else pays it: there is no straw post for fire, which is why somebody
  * has to show you (Ben) and why the first thing you do with it is a spider.
  *
- * Pure: no DOM, no three, no world. `src/combat.js` spends the pool and `src/skills.js` carries
- * the names.
+ * Pure spell numbers. `src/magic.js` spends the pool and drives casts, `src/combat.js`
+ * resolves encounter health, and `src/skills.js` carries school experience.
  */
-import { RUNESCAPE_TABLE } from './skills.js';
+import { RUNESCAPE_TABLE, SKILLS } from './skills.js';
 
 export const SORCERY_VERSION = 1;
 
@@ -37,16 +37,15 @@ export const SORCERY_VERSION = 1;
 export const SORCERY_HEADING = 'Sorcery';
 
 /**
- * The schools. **Fire is built**; the rest are named so that a spell arriving later has a home
- * rather than a decision, which is the same courtesy `ARMS_SKILLS` does for unbuilt weapons.
- * Nothing is taught by anybody yet but fire, and Ben is the only one who teaches that.
+ * The schools. Ben teaches Fireball, Liz Summon Bees, and Troy Mind Read.
+ * Frost and Wards remain named places for later spells.
  */
 export const SCHOOLS = Object.freeze({
-  fire: Object.freeze({ id: 'fire', spells: Object.freeze(['fireball']) }),
-  mind: Object.freeze({ id: 'mind', spells: Object.freeze(['mindread']) }),
-  beast: Object.freeze({ id: 'beast', spells: Object.freeze(['summon-bees']) }),
-  frost: Object.freeze({ id: 'frost', spells: Object.freeze([]) }),
-  wards: Object.freeze({ id: 'wards', spells: Object.freeze([]) }),
+  fire: Object.freeze({ id: 'fire', name: SKILLS.fire.name, spells: Object.freeze(['fireball']) }),
+  mind: Object.freeze({ id: 'mind', name: SKILLS.mind.name, spells: Object.freeze(['mindread']) }),
+  beast: Object.freeze({ id: 'beast', name: SKILLS.beast.name, spells: Object.freeze(['summon-bees']) }),
+  frost: Object.freeze({ id: 'frost', name: SKILLS.frost.name, reserved: true, spells: Object.freeze([]) }),
+  wards: Object.freeze({ id: 'wards', name: SKILLS.wards.name, reserved: true, spells: Object.freeze([]) }),
 });
 export const SCHOOL_IDS = Object.freeze(Object.keys(SCHOOLS));
 
@@ -78,8 +77,7 @@ export const SORCERY = Object.freeze({
 });
 
 /**
- * The spells. One, for now, and it is deliberately the plainest thing in the world: a ball of
- * fire thrown at what you are looking at. `cost` is focus, `cast` is how long the throw takes,
+ * The introductory spells. `cost` is focus, `cast` is how long the throw takes,
  * `damage` is what it does before the school's own multiplier and the weapon's.
  */
 export const SPELLS = Object.freeze({
@@ -97,7 +95,7 @@ export const SPELLS = Object.freeze({
    * focus, and what a conversation gives up is decided by whoever wrote that conversation.
    */
   mindread: Object.freeze({
-    id: 'mindread', school: 'mind', name: 'Mindread',
+    id: 'mindread', school: 'mind', name: 'Mind Read',
     cost: Object.freeze({ low: 25, high: 10 }),
     cast: Object.freeze({ low: 0, high: 0 }),
     damage: Object.freeze({ low: 0, high: 0 }),
@@ -109,7 +107,7 @@ export const SPELLS = Object.freeze({
    * the swarm's, dealt over the time it stays, and it is what pays the school.
    */
   'summon-bees': Object.freeze({
-    id: 'summon-bees', school: 'beast', name: 'Summon bees',
+    id: 'summon-bees', school: 'beast', name: 'Summon Bees',
     cost: Object.freeze({ low: 30, high: 18 }),
     cast: Object.freeze({ low: .9, high: .55 }),
     damage: Object.freeze({ low: 4, high: 11 }),
@@ -147,6 +145,8 @@ export function castWith(spellId, { level = 1, weapon = null } = {}) {
     cast: +(between(spell.cast, level) * tool.cast).toFixed(3),
     damage: Math.round(between(spell.damage, level) * tool.damage),
     range: spell.range, speed: spell.speed, radius: spell.radius,
+    spoken: !!spell.spoken, swarm: !!spell.swarm,
+    ...(spell.swarm ? { stay: between(spell.stay, level), sting: spell.sting } : {}),
   });
 }
 

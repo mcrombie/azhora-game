@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
   TIERS, TOP_TIER, NAMED_TIERS, tierScale, tiernamed, tierSoldAt, WEIGHTS, SLOTS, MOST_TURNED,
   armourOf, throughArmour, validPiece, smithStock, priceOf, createGear, validateGearSnapshot,
+  gearId, TRAVEL_CLOTHES,
 } from '../src/gear.js';
 import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
 
@@ -110,4 +111,35 @@ test('the host wears it, and the water knows', () => {
   assert.match(main, /gear:gear\.snapshot\(\)/, 'it is saved with the road');
   assert.match(source('road-checkpoint.js'), /validateGearSnapshot\(data\.gear\)/, 'and the checkpoint checks it');
   assert.match(source('weapons.js'), /tierScale\(type\.tier \?\? 0\)/, 'a weapon is worth what it is made of');
+});
+
+test('replacing and removing armor retains it and the exact loadout survives a save', () => {
+  const gear=createGear(),light={weight:'light',tier:0},heavy={weight:'heavy',tier:3};
+  gear.wear('body',light);gear.wear('body',heavy);gear.wear('hand',light);
+  assert.equal(gear.view().owned.length,3,'buying armor does not destroy the previous piece');
+  assert.equal(gear.windScale,2,'heavy armor still affects swimming');
+  gear.takeOff('body');
+  assert.equal(gear.view().owned.length,3,'removing armor puts it back in the satchel');
+  assert.equal(gear.windScale,1);
+  const saved=gear.snapshot(),loaded=createGear();assert.equal(loaded.restore(saved),true);
+  assert.deepEqual(loaded.snapshot(),saved,'unequipped armor persists without reappearing on the body');
+  assert.equal(loaded.wearing('body'),null);
+  assert.equal(loaded.equip(gearId('body',light)).ok,true,'the saved spare can be equipped again');
+  assert.deepEqual(loaded.wearing('body'),light);
+  assert.equal(loaded.equip('body:heavy:4').ok,false,'an inventory action cannot conjure unowned equipment');
+  loaded.wear('body',light);assert.equal(loaded.view().owned.length,3,'repeated rewards do not duplicate the same armor design');
+  assert.equal(loaded.view().clothing,TRAVEL_CLOTHES);
+  const naked=createGear();assert.equal(naked.view().clothing.length,3);assert.equal(naked.turns,0,'the shirt, trousers and cloak are not armor');
+});
+
+test('worn-only old saves migrate ownership and malformed gear cannot wipe the live loadout', () => {
+  const gear=createGear();assert.equal(gear.restore({version:1,worn:{hand:{weight:'light',tier:0}}}),true);
+  const shield=gear.view().owned[0];assert.equal(shield.name,'Wooden shield');assert.equal(shield.equipped,true);
+  gear.takeOff('hand');assert.equal(gear.equip(shield.id).ok,true,'an old save shield can be taken off and equipped again');
+  const saved=gear.snapshot();
+  for(const bad of [{...saved,owned:[]},{...saved,owned:[...saved.owned,...saved.owned]},
+    {...saved,owned:[{slot:'body',tier:0,weight:'heavy'}]}, {...saved,owned:[{slot:'body',tier:0,weight:'constructor'}]}, {...saved,owned:{}},null]){
+    assert.equal(validateGearSnapshot(bad,{allowMissing:false}),false);
+    assert.equal(gear.restore(bad),false);assert.deepEqual(gear.snapshot(),saved);
+  }
 });

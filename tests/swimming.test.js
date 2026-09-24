@@ -403,7 +403,7 @@ test('no fight the game can start has water inside its leash, which is what keep
  * Caloss carries 0.96 m of water, the Tarvel 0.79, the Vastos 0.48 - and what was missing was
  * that water has a local surface.
  */
-test('a river is water at its own height, and walking is left exactly where it was', async () => {
+test('a river is water at its own height, and submerged ground cannot be walked on', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   const water = world.colliders.filter(collider => collider.kind === 'river-water');
@@ -419,10 +419,11 @@ test('a river is water at its own height, and walking is left exactly where it w
   // Which makes the channel swimmable. Measured when this was written: 1,440 of 1,494.
   const wet = water.filter(one => canSwim(one.x, one.z, world, .34)).length;
   assert.ok(wet > water.length * .9, `only ${wet} of ${water.length} river points can be swum`);
-  // **And nothing that could be walked on has become water.** The whole-world sweep this was
-  // checked against counted 12,306 standable samples before the change and 12,306 after.
-  for (const one of water) assert.equal(canStand(one.x, one.z, world, BODY.person), false,
-    `a river point at ${one.x.toFixed(0)}, ${one.z.toFixed(0)} can be stood on`);
+  // Marker circles can overlap a dry bank. Height decides what is wet; their
+  // broad collision radius must not fence off the last dry step into a river.
+  for (const one of water) if (world.heightAt(one.x, one.z) < world.waterAt(one.x, one.z))
+    assert.equal(canStand(one.x, one.z, world, BODY.person), false,
+      `submerged river bed at ${one.x.toFixed(0)}, ${one.z.toFixed(0)} can be stood on`);
 });
 
 test('the Caloss can be swum beside its bridge, and the bridge is still walked', async () => {

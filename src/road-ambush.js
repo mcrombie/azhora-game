@@ -4,9 +4,9 @@
  * anybody's head, and nothing in the journal asks you to go and do it. Ed the Word swimming
  * ashore from the rebel ship is the other one (src/word-arrival.js).
  *
- * Three rebels lie up on the emptiest stretch of the road out of Drent — 520 m along it, between
- * the Sunken Lane and the Toll House, seventy-six metres from the nearest living soul and the
- * last open country before the Caloss. The company walks that road one man at a time on the
+ * Three rebels lie up at the unsigned Greenway junction, 116 m along the road from the pier.
+ * Narrow woodland paths let an observant traveler bypass them. The hired company still takes
+ * the main road and meets them independently. The company walks that road one man at a time on the
  * roster's clock (src/mercenaries.js), and each of them meets the rebels in his own way.
  *
  * **What happens, by default, if the traveler never goes near it:**
@@ -42,15 +42,14 @@
 export const ROAD_AMBUSH_VERSION = 1;
 
 /**
- * Where they lie up, measured on the built road (`world.paths[0]`): the largest gap between
- * anything the road passes, on the Drent side of the Caloss and a long way outside Tidehaven.
- * Both verges are standable nine metres out, so there is ground for three men to come off.
+ * The Greenway/Fernway junction measured on `world.paths[0]`, not a screen coordinate.
+ * Its side trail lies outside the trigger; accepting the investigation is optional afterwards.
  */
 export const AMBUSH = Object.freeze({
   id: 'caloss-road-ambush',
   name: 'The rebels on the Drent road',
-  distance: 520,
-  point: Object.freeze({ x: -493.7, z: 68.3 }),
+  distance: 116,
+  point: Object.freeze({ x: -106, z: 40 }),
   rebels: 3,
   /**
    * What each of them can take. Measured against a dodging player over 200 runs a setting
@@ -60,13 +59,11 @@ export const AMBUSH = Object.freeze({
    */
   hp: 120,
   /**
-   * The road's own bearing where they lie, measured on the built road: the points at 515 m
-   * and 525 m are (-489.5, 65.6) and (-498.0, 70.9), which is this, and a test holds it to
-   * what the world actually draws.
+   * Tangent measured between the built road's 111 m and 121 m points.
    */
-  forward: Object.freeze({ dx: -0.849, dz: 0.529 }),
+  forward: Object.freeze({ dx: -0.968, dz: 0.253 }),
   /** How near the traveler has to come before they show themselves. */
-  reach: 24,
+  reach: 8,
 });
 
 const party = (id, men, does) => Object.freeze({ id, men: Object.freeze(men), does });

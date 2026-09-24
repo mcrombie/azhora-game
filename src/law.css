@@ -1,0 +1,6 @@
+#wanted-status { position:fixed;right:2rem;top:15rem;max-width:15rem;padding:1rem 1.1rem;background:#291d18ed;border-left:3px solid #df8f69;color:#fff1db;z-index:12;box-shadow:0 4px 20px #0003;pointer-events:none; }
+#wanted-status[hidden] { display:none; }
+#wanted-status strong { display:block;font:700 .72rem/1.5 sans-serif;letter-spacing:.14em;color:#ffc39b; }
+#wanted-status span { display:block;font-size:1.05rem;margin:.35rem 0; }
+#wanted-status small { display:block;font-size:.8rem;line-height:1.5; }
+@media(max-height:700px) { #wanted-status { top:12rem;right:1rem;padding:.65rem; } }

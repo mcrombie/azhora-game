@@ -75,8 +75,11 @@ test('the host draws it, marks it, and lets you take it up', () => {
   assert.match(html, /id="found-weapon-prompt"/, 'with a prompt of its own');
   assert.match(main, /\$\('found-weapon-label'\)\.textContent=`Take up \$\{currentFoundWeapon\.name\}`/, 'that names it');
   // Taken up with F, where everything else in this game is gathered, and never mid-fight.
-  assert.match(main, /if\(combat\.state\.phase!=='active'&&currentFoundWeapon\)\{/, 'not in the middle of a fight');
-  assert.match(main, /inventory\.add\(taken\.weapon\)/, 'it goes into the satchel');
+  assert.match(main, /if\(combat\.state\.phase!=='active'&&currentFoundWeapon&&!inventory\.has\(currentFoundWeapon\.weapon\)\)\{/, 'not in a fight and never an owned duplicate');
+  assert.match(main, /inventory\.add\(offered\.weapon\)/, 'it goes into the satchel');
+  assert.ok(main.indexOf('inventory.add(offered.weapon)') < main.indexOf('foundWeapons.take(offered.id)'), 'inventory accepts the item before the source is consumed');
+  assert.ok(main.indexOf('foundWeapons.take(offered.id)') < main.indexOf('corpseHost.interact();return;'), 'a companion’s ground weapon remains reachable beside the body');
+  assert.match(main, /else inventory\.remove\(offered\.weapon\)/, 'a changed source rolls inventory back');
   // It appears when somebody drops it and after a reload, and goes when it is taken.
   const refreshes = (main.match(/refreshFoundWeapons\(\)/g) ?? []).length;
   assert.ok(refreshes >= 4, `only ${refreshes} places keep the ground up to date`);

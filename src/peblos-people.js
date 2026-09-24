@@ -13,6 +13,7 @@
  * No render or DOM dependencies; the host supplies the dialogue box.
  */
 import { COBBLE_STANDS } from './peblos-world.js';
+import { IMANI } from './vineyard.js';
 
 const person = (id, name, role, modelRole, color, look = null, skin = undefined) =>
   Object.freeze({ id, name, role, modelRole, color, yaw: COBBLE_STANDS[id].yaw,
@@ -34,10 +35,12 @@ export const PEBLOS_NPCS = Object.freeze([
   // **Ari**: brown skin, curly black hair. The village's own accountant, who keeps Cobble's books
   // against the Empire's tally — and who was not where she says she was.
   person('cobble-ari', 'Ari', 'Keeper of the village books', 'rise-custodian', 0x6a5f7d,
-    { hair: 0x1d1a18, hairStyle: 'curls', slight: true }, 0xa9713f),
+    { hair: 0x1d1a18, hairStyle: 'curls', slight: true, beard: false, cloak: false, staff: false }, 0xa9713f),
   // **Imani**: the vine keeper, in Cobble for kelp for Vaervelm Caelazh, and therefore the only
-  // person who was at the racks before light.
-  person('cobble-imani', 'Imani', 'Vine keeper, here for the kelp', 'vine-keeper', 0x5f6d6b),
+  // person who was at the racks before light. She is the same woman who keeps the vines at the
+  // winery and she is built from the same entry (src/vineyard.js), so her skin and her green
+  // cannot drift from hers by somebody typing a second Imani out by hand.
+  person('cobble-imani', IMANI.name, 'Vine keeper, here for the kelp', IMANI.modelRole, IMANI.color, null, IMANI.skin),
   // **Torven Oss**: he holds the weigh-beam, and he has held it a long time.
   person('cobble-weighmaster', 'Torven Oss', 'Weighmaster of the quay', 'commons-miller', 0x6f6657),
   soldier('peblos-decurion', 'Lieutenant Berold Ossan', 'Ambroni officer', 'legion-officer'),

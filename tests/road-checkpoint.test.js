@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRoadCheckpoint, ROAD_CHECKPOINT_KEY } from '../src/road-checkpoint.js';
 import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
+import { createGear } from '../src/gear.js';
 import { createJourney } from '../src/journey.js';
 import { QUEST_DONE } from '../src/game-state.js';
 import { createForestHideoutQuest } from '../src/forest-hideout.js';
@@ -55,6 +56,17 @@ test('road checkpoint round-trips partial quest progress, satchel, weapon wear, 
   assert.equal(checkpoint.clear().ok, true);
   assert.equal(storage.values.has(ROAD_CHECKPOINT_KEY), false);
   assert.equal(checkpoint.read().data, null);
+});
+
+test('the road checkpoint retains spare armor without re-equipping it on reload', () => {
+  const {checkpoint,data}=fixture(),gear=createGear();
+  gear.wear('hand',{weight:'light',tier:0});gear.wear('body',{weight:'heavy',tier:3});gear.takeOff('body');
+  assert.equal(checkpoint.save({...data,gear:gear.snapshot()}).ok,true);
+  const copy=createGear();assert.equal(copy.restore(checkpoint.read().data.gear),true);
+  assert.equal(copy.wearing('body'),null);assert.equal(copy.windScale,1);
+  assert.equal(copy.view().owned.length,2);
+  assert.equal(copy.equip('body:heavy:3').ok,true);assert.equal(copy.windScale,2);
+  assert.equal(checkpoint.save({...data,gear:{version:1,worn:{hand:{weight:'light',tier:0}}}}).ok,true,'old checkpoints remain loadable');
 });
 
 test('the burying at the Lauvel is kept, and a stage nobody can reach is refused', () => {

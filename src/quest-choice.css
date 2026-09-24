@@ -1,0 +1,19 @@
+.quest-focus-overlay{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:24px;background:#081a1bbb;backdrop-filter:blur(3px)}
+.quest-focus-overlay[hidden]{display:none}
+.quest-focus-panel{position:relative;width:min(640px,100%);max-height:calc(100dvh - 48px);overflow:auto;padding:34px;background:#173930;color:#fff3d7;border:1px solid #91a289;border-radius:7px;box-shadow:0 22px 80px #05120dcc;text-align:left}
+.quest-focus-close{position:absolute;top:12px;right:14px;width:34px;height:34px;background:transparent;font-size:26px;color:#d4d9c7}
+.quest-focus-eyebrow{color:#c8d4c5;font:600 11px/1.5 'Segoe UI',sans-serif;letter-spacing:.17em;margin:0 38px 9px 0}
+.quest-focus-title{font:normal 34px/1.15 Georgia,serif;margin:0 0 12px}
+.quest-focus-description{font:15px/1.6 'Segoe UI',sans-serif;color:#dce6d8;margin:0 0 22px;max-width:52ch}
+.quest-focus-options{display:grid;gap:12px}
+.quest-focus-option{--focus-color:#efd18b;display:grid;grid-template-columns:20px 1fr 22px;align-items:center;gap:14px;width:100%;padding:18px 20px;text-align:left;border:1px solid #6d8070;border-left:3px solid var(--focus-color);border-radius:4px;background:#24493e;color:#fff5dd}
+.quest-focus-option[data-grade="plot"]{--focus-color:#dbe3ed}
+.quest-focus-option:hover{background:#31584a;filter:none;border-color:var(--focus-color)}
+.quest-focus-option:focus-visible,.quest-focus-close:focus-visible{outline:2px solid #f7e2ad;outline-offset:3px}
+.quest-focus-icon,.quest-focus-arrow{color:var(--focus-color);font-size:20px}
+.quest-focus-option-copy{display:grid;gap:5px}
+.quest-focus-tier{font:600 10px/1.4 'Segoe UI',sans-serif;letter-spacing:.1em;color:var(--focus-color)}
+.quest-focus-option-title{font:600 19px/1.35 'Segoe UI',sans-serif}
+.quest-focus-option-detail{font:14px/1.5 'Segoe UI',sans-serif;color:#d5dfd3}
+.quest-focus-hint{margin:21px 0 0;font:12px/1.6 'Segoe UI',sans-serif;color:#c2d0c1}
+@media(max-width:560px),(max-height:620px){.quest-focus-overlay{padding:12px}.quest-focus-panel{padding:24px;max-height:calc(100dvh - 24px)}.quest-focus-title{font-size:29px}.quest-focus-option{padding:14px;gap:9px}.quest-focus-option-title{font-size:17px}}

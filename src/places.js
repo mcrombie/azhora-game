@@ -98,6 +98,12 @@ export const HAMLET_RUINS = Object.freeze({
  */
 export const LUMBER_TOWN_WORKS = Object.freeze({
   gates: Object.freeze([town(-46, -1.2, { id: 'north' }), town(40, -.7, { id: 'south' })]),
+  // Two continuous chains join the two open gateways. The eastern return steps around the
+  // entire stable paddock instead of cutting across the horse yard.
+  palisade: Object.freeze([
+    Object.freeze([town(-46,-6.4),town(-46,-26),town(40,-26),town(40,-5.9)]),
+    Object.freeze([town(40,4.5),town(40,17.1),town(47,17.1),town(47,40),town(-46,40),town(-46,4)]),
+  ]),
   smithy: town(-30, -11.5, { width: 7, depth: 5 }),
   hall: town(-36, 11.5, { width: 10, depth: 6 }),
   notice: town(-12, -4.2),
@@ -147,4 +153,10 @@ export const PLACE_CLEARINGS = Object.freeze([
   Object.freeze({ ...lauvel(-31, -4), r: 9 }), Object.freeze({ ...lauvel(19, 19), r: 6 }),
   Object.freeze({ ...hamlet(22, -5), r: 16 }),
   Object.freeze({ ...townPoint(-40, 0), r: 22 }), Object.freeze({ ...townPoint(34, 12), r: 20 }), Object.freeze({ ...townPoint(40, -8), r: 14 }),
+  // Keep a narrow maintenance strip clear, including corners beyond the old circular town
+  // clearing. This does not erase the woodland immediately outside the walls.
+  ...LUMBER_TOWN_WORKS.palisade.flatMap(chain => chain.slice(1).flatMap((end,i) => {
+    const start=chain[i],steps=Math.ceil(Math.hypot(end.x-start.x,end.z-start.z)/6);
+    return Array.from({length:steps+1},(_,k)=>Object.freeze({x:start.x+(end.x-start.x)*k/steps,z:start.z+(end.z-start.z)*k/steps,r:3.5}));
+  })),
 ]);

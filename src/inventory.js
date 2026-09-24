@@ -1,7 +1,38 @@
 /** The small, physical things carried through the first journey out of Drent. */
 import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
+import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
+  'wolf-hide': Object.freeze({
+    name: 'Wolf hide', type: 'Material', icon: 'slab', stackable: true,
+    brief: 'A rough grey hide recovered from a fallen wolf.',
+    description: 'A coarse wolf hide, useful leather and fur once a tanner has worked it. It is a material, not food.',
+  }),
+  'animal-hide': Object.freeze({
+    name: 'Animal hide', type: 'Material', icon: 'slab', stackable: true,
+    brief: 'A small hide recovered from a fallen animal.',
+    description: 'A small animal hide. It can be kept as a material; it is not a prepared food.',
+  }),
+  'spider-silk': Object.freeze({
+    name: 'Spider silk', type: 'Material', icon: 'ribbon', stackable: true,
+    brief: 'Strong silk recovered from a giant spider.',
+    description: 'A bundle of tough pale silk from a giant spider. Keep it dry until someone can work it into thread.',
+  }),
+  'salvaged-metal': Object.freeze({
+    name: 'Salvaged metal', type: 'Material', icon: 'hammer', stackable: true,
+    brief: 'Bent fittings and scraps recovered from worn equipment.',
+    description: 'Iron buckles, links and broken fittings. These scraps can be kept without pretending that a stranger’s battered armour fits you.',
+  }),
+  'drent-rebel-evidence': Object.freeze({
+    name: 'Sealed rebel papers', type: 'Quest item', icon: 'letter',
+    brief: 'A packet recovered from the deserted camp near Greenway Watch. Its wax seal is intact.',
+    description: 'Officer Glun told you to bring these papers back unread. Selecting or inspecting the packet leaves it sealed. Choose Read evidence if you decide to break the seal.',
+  }),
+  'drent-armory-supplies': Object.freeze({
+    name: 'Barracks supplies', type: 'Quest item', icon: 'token',
+    brief: 'Bandages, dried provisions and spare tools taken from Tidehaven\'s army stores.',
+    description: 'Killian asked you to bring this bundle to him for the Republican supply network in Drent. Keep it together until you hand it over.',
+  }),
   'harbor-letter': Object.freeze({
     name: 'Letter of introduction', type: 'Quest item', icon: 'letter',
     brief: 'The report and letter of introduction Jojo the harbourmaster handed over at the head of the pier, for the army’s relay post at Nothom, over the Caloss in Luscia.',
@@ -11,6 +42,16 @@ export const INVENTORY_ITEMS = Object.freeze({
     name: 'Simple sword', type: 'Weapon', icon: 'sword',
     brief: 'Your plain iron sword. Reliable work for a mercenary, provided you care for the edge.',
     description: 'An unadorned iron blade with a cloth-wrapped grip. Attack with left-click or R. Each landed strike wears it by 1 condition; missed swings cost none. Inspect and equip weapons here with I. At 0 condition the sword cannot attack, but you keep it and can repair it.',
+  }),
+  wand: Object.freeze({
+    name: 'Plain wand', type: 'Weapon', icon: 'stick',
+    brief: 'A simple focus for the spells a teacher has shown you.',
+    description: 'Equip this in your weapon hand to cast learned spells. Z casts the selected spell; N changes spells. Each cast spends focus, which recovers outside combat. A wand is a poor melee weapon. Your sword remains in your satchel.',
+  }),
+  'oak-staff': Object.freeze({
+    name: 'Oak staff', type: 'Weapon', icon: 'stick',
+    brief: 'A slower, stronger focus for learned spells.',
+    description: 'Equip this instead of a sword or wand. Spells take longer to cast and deal more damage. Z casts the selected spell; N changes spells. Focus recovers outside combat.',
   }),
   'forest-stick': Object.freeze({
     name: 'Forest sticks', type: 'Weapon', icon: 'stick', stackable: true,
@@ -110,9 +151,9 @@ export const INVENTORY_ITEMS = Object.freeze({
     description: 'Shed in the spring by the thing in the box slung under Petunia, and handed over by Imani at Vaervelm Caelazh after eleven years of telling nobody. The warm side is the side pointing at the rest of it. She does not know what that is for either.',
   }),
   'road-token': Object.freeze({
-    name: 'Eren’s travel token', type: 'Quest item', icon: 'token',
-    brief: 'A wooden token bearing the mark of the Greenway Watch.',
-    description: 'Eren has vouched for your passage through the northern forest. Carry this token and the letter of introduction to the forest’s edge. The road continues across the Avrel clearing, across the Caloss, and on into Luscia.',
+    name: 'Glun’s travel token', type: 'Quest item', icon: 'token',
+    brief: 'Officer Glun’s mark, given after your combat and cartography lessons.',
+    description: 'Glun has approved you for service. Carry this token and Jojo’s letter west through Drent, across the Caloss, and on to Iven at the army’s relay post in Nothom, Luscia. Repairing the bridge is optional; you may swim across instead.',
   }),
   'horse-token': Object.freeze({
     name: 'Army horse token', type: 'Quest item', icon: 'token',
@@ -488,6 +529,20 @@ export function createInventoryState() {
     return true;
   }
   return {
+    // A loot transfer commits all quantities together. Validation happens before
+    // any item changes, so a failed transfer cannot strand half a body's loot.
+    addMany(entries) {
+      if (!Array.isArray(entries) || !entries.length) return false;
+      const next = new Map(owned);
+      for (const entry of entries) {
+        if (!entry || !Object.hasOwn(INVENTORY_ITEMS, entry.id) || !validQuantity(entry.quantity)) return false;
+        const count = (next.get(entry.id) ?? 0) + entry.quantity;
+        if (!Number.isSafeInteger(count) || (!INVENTORY_ITEMS[entry.id].stackable && count !== 1)) return false;
+        next.set(entry.id, count);
+      }
+      owned.clear(); for (const [id, count] of next) owned.set(id, count);
+      return true;
+    },
     grant(id) {
       if (!Object.hasOwn(INVENTORY_ITEMS, id) || owned.has(id)) return false;
       return add(id);
@@ -518,6 +573,11 @@ export function createInventoryState() {
 }
 
 const iconPaths = {
+  shirt: '<path d="m12 5-8 5 4 8 4-2v15h12V16l4 2 4-8-8-5c-1 5-11 5-12 0Z"/>',
+  pants: '<path d="M10 5h16l2 26h-9l-1-16-1 16H8ZM10 10h16M16 5v5"/>',
+  cloak: '<path d="M12 8c0-8 12-8 12 0l7 23c-8 3-18 3-26 0ZM12 8l6 6 6-6M18 14v19"/>',
+  shield: '<path d="m18 4 12 4v10c0 7-7 12-12 15-5-3-12-8-12-15V8ZM18 9v18M11 16h14"/>',
+  helmet: '<path d="M7 21v-6a11 11 0 0 1 22 0v6l-4 3v7h-5V20h-4v11h-5v-7ZM7 18h22M18 4v10"/>',
   letter: '<rect x="4" y="7" width="28" height="22" rx="2"/><path d="m5 9 13 10L31 9M5 27l9-9m17 9-9-9"/><circle cx="18" cy="19" r="3" fill="currentColor" stroke="none"/>',
   sword: '<path d="m13 23 14-19 5-1-1 6-16 16M15 21 28 7M9 20l9 8M12 25l-6 7-3-3 6-7M4 28l4 4"/>',
   stick: '<path d="m10 32 5-14 8-14 4 1-8 15-5 13ZM18 15l-6-5-2 2 6 7M21 12l8-3 1 2-10 5M12 28l3 1M15 21l3 1"/>',
@@ -587,16 +647,46 @@ function element(tag, className, text) {
   return node;
 }
 
+/** Present existing gear storage alongside carried items without inventing duplicate inventory ownership. */
+export function inventoryEquipmentItems(gear) {
+  if(!gear)return [];
+  return [
+    ...(gear.clothing??[]).map(item=>({...item,id:`clothes:${item.id}`,type:'Clothing',brief:item.description,equipped:true,baseLayer:true})),
+    ...(gear.owned??[]).map(item=>({...item,id:`gear:${item.id}`,gearId:item.id,type:'Armor',icon:item.slot==='hand'?'shield':item.slot==='head'?'helmet':'shirt',
+      brief:`${item.slotName}. Reduces incoming damage by ${Math.round(item.turns*100)}%.`,
+      description:`Worn in your ${item.slotName.toLowerCase()} slot. Equip it here, or take it off and keep it in your satchel. Clothing stays underneath your armor.`})),
+  ];
+}
+
+export const INVENTORY_FILTERS=Object.freeze([
+  {id:'all',name:'All items'}, {id:'equipment',name:'Equipment'}, {id:'food',name:'Food'},
+  {id:'quest',name:'Quest items'}, {id:'other',name:'Materials & tools'},
+]);
+export function inventoryMatchesFilter(item,filter) {
+  if(filter==='all')return true;
+  if(filter==='equipment')return ['Weapon','Armor','Clothing'].includes(item.type);
+  if(filter==='food')return item.type==='Food';
+  if(filter==='quest')return item.type==='Quest item';
+  return !['Weapon','Armor','Clothing','Food','Quest item'].includes(item.type);
+}
+
 export function createInventory({
   onInspect = () => {}, onClose = () => {},
   getWeaponStatus = () => null, onEquip = () => false,
+  getGear = () => null, onGearEquip = () => ({ok:false}), onGearUnequip = () => ({ok:false}), getEquipmentBlocked = () => false,
   getConsumableStatus = () => null, onConsume = () => ({ok: false}),
+  getItemActions = () => [], onItemAction = () => false, getItemText = () => null,
 } = {}) {
   const state = createInventoryState();
   let opened = false;
   let returnFocus = null;
   let hoveredItem = null;
+  let selectedEquipmentId=null,selectionCleared=false,activeFilter='all',slotFilter=null;
   const itemButtons = new Map();
+  const equipmentItems=()=>inventoryEquipmentItems(getGear());
+  const allItems=()=>[...state.items().map(id=>({id,...INVENTORY_ITEMS[id]})),...equipmentItems()];
+  const itemFor=id=>INVENTORY_ITEMS[id]??equipmentItems().find(item=>item.id===id);
+  const selectedId=()=>selectionCleared?null:selectedEquipmentId??state.selectedId();
 
   const backdrop = element('div', 'inventory-overlay');
   backdrop.id = 'inventory-backdrop';
@@ -612,10 +702,10 @@ export function createInventory({
 
   const header = element('header', 'inventory-header');
   header.append(element('p', 'inventory-eyebrow', 'What you carry'));
-  const title = element('h2', '', 'Satchel');
+  const title = element('h2', '', 'Equipment & satchel');
   title.id = 'inventory-title';
   header.append(title);
-  const subtitle = element('p', 'inventory-subtitle', 'I opens and closes your satchel.');
+  const subtitle = element('p', 'inventory-subtitle', 'Choose an item to inspect it, equip it, or use it.');
   header.append(subtitle);
   const closeButton = element('button', 'inventory-close', '×');
   closeButton.type = 'button';
@@ -626,6 +716,14 @@ export function createInventory({
   panel.append(header);
 
   const scroller = element('div', 'inventory-scroll');
+  const equipment = element('section','inventory-equipment');
+  equipment.id='inventory-equipment';equipment.setAttribute('aria-label','Currently equipped');
+  const filters=element('div','inventory-filters');filters.setAttribute('role','group');filters.setAttribute('aria-label','Filter carried items');
+  for(const filter of INVENTORY_FILTERS){
+    const button=element('button','inventory-filter',filter.name);button.type='button';button.dataset.inventoryFilter=filter.id;
+    button.addEventListener('click',()=>{activeFilter=filter.id;slotFilter=null;hideTooltip();renderItems();});filters.append(button);
+  }
+  const filterContext=element('p','inventory-filter-context');filterContext.hidden=true;
   const hint = element('p', 'inventory-hint');
   hint.id = 'inventory-hint';
   const list = element('div', 'inventory-items');
@@ -636,7 +734,8 @@ export function createInventory({
   detail.id = 'inventory-detail';
   detail.setAttribute('aria-label', 'Selected item');
   detail.setAttribute('aria-live', 'polite');
-  scroller.append(hint, list, detail);
+  const columns=element('div','inventory-columns');columns.append(list,detail);
+  scroller.append(equipment,hint,filters,filterContext,columns);
   panel.append(scroller);
 
   const footer = element('footer', 'inventory-footer');
@@ -659,7 +758,8 @@ export function createInventory({
 
   function showTooltip(id, button) {
     if (!opened) return;
-    const item = INVENTORY_ITEMS[id];
+    const item = itemFor(id);
+    if(!item)return;
     tooltip.replaceChildren(
       element('strong', '', item.name),
       element('span', 'inventory-tooltip-type', item.type),
@@ -684,7 +784,7 @@ export function createInventory({
   }
 
   function renderDetail() {
-    const id = state.selectedId();
+    const id = selectedId();
     for (const [itemId, button] of itemButtons) {
       button.classList.toggle('selected', itemId === id);
       button.setAttribute('aria-pressed', String(itemId === id));
@@ -693,15 +793,17 @@ export function createInventory({
     if (!id) {
       detail.append(
         element('p', 'inventory-detail-kicker', 'Take a closer look'),
-        element('h3', '', state.items().length ? 'Select an item above' : 'Room for a journey'),
+        element('h3', '', allItems().length ? 'Select an item' : 'Room for a journey'),
         element('p', '', state.items().length
           ? 'Hover over an item for a quick description. Click it, or use Tab then Enter, to see what you are carrying.'
           : 'Items given to you on the road will appear here. Speak with Jojo, the harbourmaster at the head of the pier, to receive your first errand.'),
       );
       return;
     }
-    const item = INVENTORY_ITEMS[id];
+    const item = itemFor(id);
+    if(!item)return;
     detail.append(element('p', 'inventory-detail-kicker', item.type), element('h3', '', item.name));
+    if(item.gearId||item.baseLayer){renderGearDetail(item);return;}
     if (item.stackable) detail.append(element('p', 'inventory-detail-count', `${state.count(id)} carried`));
     if (id === 'harbor-letter') {
       detail.append(element('p', 'inventory-description', item.description));
@@ -721,7 +823,17 @@ export function createInventory({
       );
       detail.append(letter);
     } else {
-      detail.append(element('p', 'inventory-description', item.description));
+      detail.append(element('p', 'inventory-description', getItemText(id) ?? item.description));
+    }
+    // Inspecting a sealed document is different from choosing to read it.
+    for (const action of getItemActions(id)) {
+      const button = element('button', 'inventory-dismiss inventory-item-action', action.label);
+      button.type = 'button'; button.dataset.itemAction = action.id; button.disabled = !!action.disabled;
+      button.addEventListener('click', () => {
+        onItemAction(id, action.id); hideTooltip(); renderItems();
+        detail.tabIndex = -1; detail.focus({preventScroll: true});
+      });
+      detail.append(button);
     }
     const weapon = getWeaponStatus(id);
     if (item.type === 'Weapon' && weapon) {
@@ -757,7 +869,18 @@ export function createInventory({
         detail.focus({preventScroll: true});
       });
       detail.append(equipButton);
+      if(id==='wand'||id==='oak-staff') {
+        const casting=element('p','inventory-casting-note',weapon.equipped
+          ? 'Ready to cast. Close the satchel, then press Z. N changes your selected spell.'
+          : 'Equip this in your main hand to cast learned spells. Your current weapon stays in the satchel.');
+        detail.append(casting);
+      } else {
+        const current=state.items().find(other=>other!==id&&getWeaponStatus(other)?.equipped);
+        if(current)detail.append(element('p','inventory-equipment-note',`Replaces ${INVENTORY_ITEMS[current].name.toLowerCase()} in your main hand. The replaced weapon stays in the satchel.`));
+      }
       if (weapon.equipBlocked) detail.append(element('p', 'inventory-equipment-note', 'Close the satchel and finish your current swing or dodge before switching weapons.'));
+      // Action and condition come before the long item description.
+      const description=detail.querySelector('.inventory-description');if(description)detail.append(description);
     }
     const consumable = getConsumableStatus(id);
     if (consumable) {
@@ -809,37 +932,101 @@ export function createInventory({
     }
   }
 
+  function renderGearDetail(item) {
+    const status=element('p','inventory-worn-status',item.baseLayer?'Worn base layer':item.equipped?`Equipped · ${item.slotName}`:`Carried · ${item.slotName}`);
+    detail.append(status);
+    if(item.baseLayer){detail.append(element('p','inventory-description',item.description));return;}
+    const stats=element('dl','inventory-stats');
+    const stat=(label,value)=>{stats.append(element('dt','',label),element('dd','',value));};
+    stat('Damage reduction',`${Math.round(item.turns*100)}%`);
+    stat('Dodge distance',`${Math.round(item.dodge*100)}%`);
+    stat('Swimming effort',`${item.wind}×`);
+    detail.append(stats);
+    const worn=(getGear()?.owned??[]).find(entry=>entry.slot===item.slot&&entry.equipped);
+    if(worn&&worn.id!==item.gearId) {
+      const delta=Math.round((item.turns-worn.turns)*100);
+      detail.append(element('p','inventory-comparison',`Compared with ${worn.name.toLowerCase()}: ${delta>=0?'+':''}${delta} percentage points of damage reduction.`));
+    }
+    const button=element('button','inventory-dismiss inventory-equip',item.equipped?'Unequip to satchel':`Equip ${item.slot==='hand'?'shield':item.slot==='head'?'headgear':'armor'}`);
+    button.type='button';button.dataset.gearAction=item.equipped?'unequip':'equip';button.dataset.gearId=item.gearId;
+    button.disabled=getEquipmentBlocked();
+    button.addEventListener('click',()=>{
+      if(getEquipmentBlocked())return;
+      const current=equipmentItems().find(entry=>entry.id===item.id);if(!current)return;
+      if(current.equipped)onGearUnequip(current.slot);else onGearEquip(current.gearId);
+      hideTooltip();renderItems();detail.tabIndex=-1;detail.focus({preventScroll:true});
+    });
+    detail.append(button,element('p','inventory-description',item.description));
+    if(getEquipmentBlocked())detail.append(element('p','inventory-equipment-note','Finish your current action before changing equipment.'));
+  }
+
+  function renderEquipment() {
+    equipment.replaceChildren();
+    const gear=getGear();
+    if(!gear){equipment.hidden=true;return;}equipment.hidden=false;
+    const top=element('div','inventory-equipment-heading');
+    top.append(element('h3','','Equipped'),element('span','',`${Math.round(gear.turns*100)}% damage reduction`));equipment.append(top);
+    const slots=element('div','inventory-slots');
+    const currentWeapon=state.items().find(id=>getWeaponStatus(id)?.equipped);
+    const entries=[{key:'weapon',slot:'Main hand',id:currentWeapon,item:currentWeapon?INVENTORY_ITEMS[currentWeapon]:null},
+      ...SLOTS.map(slot=>{const worn=gear.worn[slot];const id=worn?`gear:${gearId(slot,worn)}`:null;return {key:slot,slot:SLOT_NAMES[slot],id,item:id?itemFor(id):null};})];
+    for(const entry of entries){
+      const button=element('button','inventory-slot');button.type='button';button.dataset.equipmentSlot=entry.key;button.setAttribute('aria-pressed',String(slotFilter===entry.key));
+      button.setAttribute('aria-label',`${entry.slot}: ${entry.item?.name??'empty'}. Show compatible equipment.`);
+      button.append(icon(entry.item?.icon??(entry.slot==='Shield hand'?'shield':entry.slot==='Head'?'helmet':'shirt')));
+      const label=element('span','');label.append(element('small','',entry.slot),element('strong','',entry.item?.name??'Empty'));button.append(label);
+      button.addEventListener('click',()=>{activeFilter='equipment';slotFilter=entry.key;if(entry.id)select(entry.id);else {selectedEquipmentId=null;selectionCleared=true;renderItems();}});slots.append(button);
+    }
+    equipment.append(slots);
+    const layers=element('div','inventory-base-layers');layers.append(element('span','','Clothing'));
+    for(const item of gear.clothing??[]){const button=element('button','inventory-clothing',item.name);button.type='button';button.dataset.clothing=item.id;button.addEventListener('click',()=>select(`clothes:${item.id}`));layers.append(button);}
+    equipment.append(layers);
+  }
+
   function select(id) {
-    if (!state.select(id)) return false;
+    const external=equipmentItems().some(item=>item.id===id);
+    if(!external&&!state.select(id))return false;
+    selectionCleared=false;
+    selectedEquipmentId=external?id:null;
+    const item=itemFor(id);if(!inventoryMatchesFilter(item,activeFilter)){activeFilter='all';slotFilter=null;}
+    if(slotFilter&&!matchesSlot(item,slotFilter))slotFilter=null;
     hideTooltip();
-    renderDetail();
+    renderItems();
+    hideTooltip();
     // Selecting a message should reveal its contents even in a short window;
     // the drawer header and dismiss control remain fixed while this area scrolls.
-    if(opened)detail.scrollIntoView({block:'start',behavior:'smooth'});
-    onInspect(id);
+    if(opened){detail.scrollTop=0;if(window.innerWidth<720)detail.scrollIntoView({block:'nearest',behavior:'smooth'});}
+    if(!external)onInspect(id);
     return true;
   }
 
   function renderItems() {
     const focusedId = document.activeElement?.dataset?.itemId;
     const focusedConsumable = document.activeElement?.dataset?.consume;
+    const focusedSlot=document.activeElement?.dataset?.equipmentSlot,focusedClothing=document.activeElement?.dataset?.clothing;
     list.replaceChildren();
     itemButtons.clear();
-    for (const id of state.items()) {
-      const item = INVENTORY_ITEMS[id];
+    if(selectedEquipmentId&&!itemFor(selectedEquipmentId))selectedEquipmentId=null;
+    renderEquipment();
+    for(const button of filters.children){const active=button.dataset.inventoryFilter===activeFilter;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}
+    filterContext.hidden=!slotFilter;
+    filterContext.textContent=slotFilter?`Showing ${slotFilter==='weapon'?'main hand':SLOT_NAMES[slotFilter].toLowerCase()} equipment. Choose All items to see the whole satchel.`:'';
+    const shown=allItems().filter(item=>inventoryMatchesFilter(item,activeFilter)&&(!slotFilter||matchesSlot(item,slotFilter)));
+    for (const item of shown) {
+      const id=item.id;
       const weapon = getWeaponStatus(id);
       const button = element('button', 'inventory-item');
       button.type = 'button';
       button.dataset.itemId = id;
       button.setAttribute('aria-label', `${item.name}${item.stackable ? `, ${state.count(id)} carried` : ''}, ${item.type}${weapon ? `, ${weapon.durability} of ${weapon.maxDurability} condition${weapon.equipped ? ', equipped' : ''}${!weapon.usable ? ', broken' : ''}` : ''}. Select to inspect.`);
-      button.setAttribute('aria-pressed', String(id === state.selectedId()));
+      button.setAttribute('aria-pressed', String(id === selectedId()));
       const label = element('span', 'inventory-item-label');
       label.append(element('strong', '', item.name), element('small', '', weapon
         ? `${item.type} \u00b7 ${weapon.durability}/${weapon.maxDurability}${weapon.usable ? '' : ' \u00b7 Broken'}`
-        : item.type));
+        : item.slotName?`${item.slotName} · ${Math.round(item.turns*100)}% protection`:item.baseLayer?'Clothing · No armor protection':item.type));
       button.append(icon(item.icon), label);
       if (item.stackable) button.append(element('span', 'inventory-stack-count', `\u00d7${state.count(id)}`));
-      button.append(element('span', 'inventory-select-label', weapon?.equipped ? 'Equipped' : 'Select'));
+      button.append(element('span', 'inventory-select-label', weapon?.equipped||item.equipped ? 'Equipped' : 'Select'));
       button.addEventListener('click', () => select(id));
       button.addEventListener('pointerenter', () => { hoveredItem = id; showTooltip(id, button); });
       button.addEventListener('pointerleave', () => {
@@ -851,15 +1038,19 @@ export function createInventory({
       itemButtons.set(id, button);
       list.append(button);
     }
-    if (!state.items().length) list.append(element('p', 'inventory-empty', 'Your satchel is empty for now.'));
+    if(!shown.length)list.append(element('p','inventory-empty',activeFilter==='all'?'Your satchel is empty for now.':'No items in this category yet.'));
     renderDetail();
     if (focusedId && opened) itemButtons.get(focusedId)?.focus({preventScroll: true});
+    if(focusedSlot&&opened)equipment.querySelector(`[data-equipment-slot="${focusedSlot}"]`)?.focus({preventScroll:true});
+    if(focusedClothing&&opened)equipment.querySelector(`[data-clothing="${focusedClothing}"]`)?.focus({preventScroll:true});
     if (focusedConsumable && opened) {
       const nextButton = detail.querySelector('[data-consume]');
       if (nextButton?.dataset.consume === focusedConsumable && !nextButton.disabled) nextButton.focus({preventScroll: true});
       else { detail.tabIndex = -1; detail.focus({preventScroll: true}); }
     }
   }
+
+  function matchesSlot(item,slot){return slot==='weapon'?!!getWeaponStatus(item.id):item.slot===slot;}
 
   function close() {
     if (!opened) return false;
@@ -877,6 +1068,8 @@ export function createInventory({
   closeFooter.addEventListener('click', close);
   backdrop.addEventListener('click', event => { if (event.target === backdrop) close(); });
   scroller.addEventListener('scroll', hideTooltip, {passive: true});
+  list.addEventListener('scroll',hideTooltip,{passive:true});
+  detail.addEventListener('scroll',hideTooltip,{passive:true});
   window.addEventListener('resize', hideTooltip);
   panel.addEventListener('keydown', event => {
     if (!opened || event.code !== 'Tab') return;
@@ -892,6 +1085,11 @@ export function createInventory({
 
   renderItems();
   return {
+    addMany(entries) {
+      const added = state.addMany(entries);
+      if (added) { hideTooltip(); renderItems(); }
+      return added;
+    },
     grant(id) {
       const added = state.grant(id);
       if (added) { hideTooltip(); renderItems(); }
@@ -910,7 +1108,7 @@ export function createInventory({
     },
     has: state.has,
     items: state.items,
-    selectedId: state.selectedId,
+    selectedId,
     select,
     refresh() { hideTooltip(); renderItems(); },
     isOpen: () => opened,

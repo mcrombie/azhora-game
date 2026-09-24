@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { nearestOnPath } from '../src/autopilot.js';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
@@ -60,7 +61,7 @@ test('the road runs from the border stockade over the border to the Gate of Sun 
   assert.ok(SOLIS_ROAD.some(p => Math.hypot(p.x - gate.x, p.z - gate.z) < 1e-6), 'the road passes through the gate');
   assert.ok(end.z > gate.z, 'and ends inside the walls');
   assert.deepEqual(world.solisRoute, SOLIS_ROAD.map(p => ({ x: p.x, z: p.z })));
-  assert.ok(world.paths.some(path => path.length === SOLIS_ROAD.length && path.every((p, i) => p.x === SOLIS_ROAD[i].x && p.z === SOLIS_ROAD[i].z)), 'drawn as a world path');
+  assert.ok(world.paths.some(path => SOLIS_ROAD.every(point => nearestOnPath(path, point).distance < 1)), 'drawn as a sampled world path through its authored controls');
   assert.ok(WEST_SUVAL_BORDER, 'the road crosses into West Suval');
   assert.equal(hexOwnerAt(WEST_SUVAL_BORDER.crossing.x, WEST_SUVAL_BORDER.crossing.z), 'West Suval');
   const post = world.roadSigns.find(sign => sign.label === 'Solis');

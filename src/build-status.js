@@ -26,7 +26,7 @@ export const BUILD_STATUS = Object.freeze({
     'Nothing urgent. The southern farms and the coast north of the pier are still empty, and the old road gives out west of Applegarth.'),
   Luscia: status('playable', 'The Caloss crossing, the reedcutters, the rise, the field at the Lauvel and its chapter, Nothom with the smiths, the relay clerk and the stable yard.',
     'The town is thin: few interiors, no market, no work to do. The valleys east and west are scatter and landmarks only.'),
-  'Moros Plain': status('playable', 'The army camp at the plain’s centre with its gate, tents and horse lines, the Moros gate, the border stockade and the battle ground.',
+  'Moros Plain': status('playable', 'The army camp at the plain’s centre with its gate, tents and horse lines, the open road from Nothom, the border stockade and the battle ground.',
     'Open plain between them. No settlements, no work, nothing off the road.'),
   'West Suval': status('early', 'Solis: walls, gates, the Court of Oaths, the quay and the Coalition’s camp, with the parley, the march and the day after the battle. The road from the border, the fold, the watchtower and the well.',
     'The downs are scatter. The city has no interiors and no trade; the coast south of the quay is unbuilt.'),

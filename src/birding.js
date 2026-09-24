@@ -425,12 +425,13 @@ export function gardenKeeperConversation(npc, context) {
 /**
  * Lakota on the road. He introduces himself as what the contract says he is, and is plainly not
  * that, and the traveler has to say so before anything of his opens up. `lakota` is
- * src/lakota.js; `mercenaryChoices` are the style and trade lines every hired sword carries,
+ * src/lakota.js; `travelChoice` keeps companionship visible in both introductions;
+ * `mercenaryChoices` are the style and trade lines every hired sword carries,
  * handed in by the host so this module does not have to know about weapons.
  */
 export function birdWatcherConversation(npc, context) {
   const { birding, lakota = null, openDialogue, closeDialogue, act,
-    archaeology = null, wine = null, cooking = null, mercenaryChoices = [] } = context;
+    archaeology = null, wine = null, cooking = null, travelChoice = null, mercenaryChoices = [] } = context;
   if (npc.id !== BIRD_WATCHER.id) return false;
   const again = () => birdWatcherConversation(npc, context);
   const known = !lakota || lakota.met;
@@ -442,6 +443,7 @@ export function birdWatcherConversation(npc, context) {
       'Lakota. I am on the same contract you are, before you ask, and yes, I am aware I do not look like it. The Empire is paying eleven of us to walk to a plain. I intend to walk there slowly.',
       'The one on the glove is a red-tail. She came to me as a fledgling with a broken wing and when it mended she declined to leave. We have an arrangement.',
     ], null, 'Back to the road', { choices: [
+      ...(travelChoice?[travelChoice]:[]),
       { id: 'lakota-know', label: 'You are not really a mercenary, are you?', action: () => { closeDialogue(); act('know-lakota'); } },
       ...mercenaryChoices,
       leave,
@@ -454,6 +456,7 @@ export function birdWatcherConversation(npc, context) {
     : birding.met ? 'Perrin taught you, then. Good man. He will tell you he is not a birder, and he is the best pair of eyes in that village.'
     : 'You have not learned to look yet. Perrin keeps the garden on the east side of Tidehaven, and he will show you in ten minutes.';
   const choices = [
+    ...(travelChoice?[travelChoice]:[]),
     ...(seen.length ? [{ id: 'birding-lore', label: 'Tell me about the birds I have seen.', action: () => openDialogue(npc, seen.map(id => BIRD_SPECIES[id].lore), null, 'Back to our conversation', { onComplete: again }) }] : []),
     { id: 'ask-hawk', label: 'About the hawk on your glove.', action: () => openDialogue(npc, [...RED_TAIL_LINES], null, 'Back to our conversation', { onComplete: again }) },
     ...(archaeology && archaeology.task()?.stage === 'report' ? [{ id: 'report-rena', label: 'I have my notes from Rena.', action: () => { closeDialogue(); act('report-rena'); } }] : []),

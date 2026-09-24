@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { atlasCellKey, atlasLocalDetail, atlasMarkKnown, GLIMPSED_TERRAIN } from '../src/world-map-detail.js';
+import { atlasCellKey, atlasLocalDetail, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from '../src/world-map-detail.js';
+import { readFileSync } from 'node:fs';
 import { TRANSFORM, hexAt, hexCentre } from '../src/region-world.js';
 import { buildLocalMapModel } from '../src/local-map-data.js';
 import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
+import { createMapFog } from '../src/map-fog.js';
+import { createCartography, chartShapes, EXPLORED_HEXES } from '../src/cartography.js';
 
 test('the atlas close view uses the same world transform for roads, houses and quest destinations', () => {
   const house = { x: -600, z: 130, width: 6, depth: 8, angle: Math.PI / 2 };
@@ -53,4 +56,47 @@ test('the unified atlas carries discovered detail in other regions without losin
   const marker = atlasLocalDetail(global).markers.find(p => p.id === 'remote');
   assert.equal(marker.colour, '#c87a3c');
   assert.equal(atlasMarkKnown(marker, new Set(['10,106'])), false, 'global detail remains hidden until its hex is confirmed');
+});
+
+test('the original region lettering is separated intact from the terrain, with no duplicate underneath', () => {
+  const source = readFileSync(new URL('../assets/azhora-world-map.svg', import.meta.url), 'utf8');
+  const { terrain, labels } = splitAtlasRegionLabels(source);
+  assert.ok(source.includes(labels), 'all original fonts, rotations, positions and tspans are preserved byte for byte');
+  assert.match(labels, /<text data-region="Drent"[^>]+transform="translate\([^)]+\) rotate\([^)]+\)"/);
+  assert.match(labels, /paint-order="stroke fill"/);
+  assert.doesNotMatch(terrain, /<text data-region=/, 'no country name can appear twice when fog is lifted');
+  assert.match(terrain, /data-region="Drent" fill=/, 'the authored terrain itself stays intact');
+  assert.throws(() => splitAtlasRegionLabels('<svg/>'), /no region lettering layer/);
+});
+
+test('hearing a country name reveals its original lettering without revealing a terrain hex', () => {
+  const known = [{ name: 'Drent' }, { name: 'Feradom' }], visited = new Set();
+  assert.equal(atlasRegionLabelKnown('Feradom', known), true, 'a name requires no explored cell');
+  assert.equal(atlasRegionLabelKnown('Vastos', known), false, 'unheard names remain hidden');
+  assert.equal(atlasRegionLabelKnown('Vastos', known, true), true, 'developer reveal names the complete atlas');
+  assert.equal(atlasMarkKnown({ x: 1500, y: 2400 }, visited), false, 'knowing the name never uncovers local details');
+  assert.equal(visited.size, 0);
+});
+
+test('hearing and entering a province leave every hex beyond local exploration unknown', () => {
+  const atlas = JSON.parse(readFileSync(new URL('../assets/azhora-dev-regions.json', import.meta.url), 'utf8')).regions;
+  const chart = createCartography(), fog = createMapFog(); chart.learn();
+  chart.hear('Drent'); chart.hear('Peblos'); chart.hear('Elagos');
+  let names = chartShapes(chart.view().entries, atlas), scope = atlasExplorationScope({ ...fog.view(), ...names });
+  assert.equal(scope.visited.size + scope.nearby.size, 0, 'hearing three names reveals no geography');
+  assert.ok(names.labels.some(label => label.name === 'Drent'));
+  const here = hexCentre(10, 106); fog.reveal(here.x, here.z); chart.noteHex('Drent');
+  names = chartShapes(chart.view().entries, atlas);
+  // Feed even the old full-province payload: the drawing scope must still ignore it.
+  const drent = atlas.find(region => region.name === 'Drent');
+  scope = atlasExplorationScope({ ...fog.view(), ...names, silhouettes: [drent] });
+  assert.equal(scope.visited.size, 1);
+  assert.equal(scope.nearby.size, 6);
+  const distant = drent.cells.find(cell => !scope.visited.has(`${cell.q},${cell.r}`) && !scope.nearby.has(`${cell.q},${cell.r}`));
+  assert.ok(distant, 'the province extends beyond the local seven-cell view');
+  for (let i = 1; i < EXPLORED_HEXES; i++) chart.noteHex('Drent');
+  const later = atlasExplorationScope({ ...fog.view(), ...chartShapes(chart.view().entries, atlas) });
+  assert.deepEqual([...later.visited], [...scope.visited]);
+  assert.deepEqual([...later.nearby], [...scope.nearby], 'even the explored rank grants no remote hexes');
+  assert.equal(later.visited.has(`${distant.q},${distant.r}`) || later.nearby.has(`${distant.q},${distant.r}`), false);
 });

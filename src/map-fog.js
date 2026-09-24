@@ -49,7 +49,7 @@ export const SUBREGIONS = Object.freeze([
   area('lumber-town', 'Nothom', 'Luscia', -729, 384, 55, 'Luscia’s timber town: the square, the smiths, the relay clerk and the stable yard on its edge.'),
   area('burned-hamlet', 'The Burned Hamlet', 'Luscia', -621, 356, 55, 'Roof beams standing in the grass, and a well somebody still keeps clean.'),
   // The Moros Plain
-  area('moros-gate', 'The Moros Gate', 'Moros Plain', -763, 440, 45, 'Where the road leaves Luscia for open plain, under the army’s eyes.'),
+  area('moros-gate', 'The Moros Road', 'Moros Plain', -763, 440, 45, 'The open road from Nothom onto the Moros Plain. The town’s guards keep watch back at its walls.'),
   area('border-stockade', 'The Border Stockade', 'Moros Plain', -667, 527, 70, 'The army’s ditch and stakes on the border, and the ground the battle is fought over.'),
   area('legion-camp', 'The Army Camp', 'Moros Plain', -981, 599, 95, 'The Ambroni outpost at the centre of the plain: gate, tents, horse lines and the Marshal’s command.'),
   // West Suval

@@ -38,7 +38,11 @@ function visiblePaths(paths, bounds) {
     if (!Array.isArray(source)) continue;
     let run = [];
     const finish = () => {
-      if (run.length > 1 && run.some((point, index) => index && segmentIntersects(run[index - 1], point, bounds))) result.push(run);
+      if (run.length > 1 && run.some((point, index) => index && segmentIntersects(run[index - 1], point, bounds))) {
+        if (source.kind === 'trail' || source.kind === 'road') run.kind = source.kind;
+        if (Number.isFinite(source.width) && source.width > 0) run.width = source.width;
+        result.push(run);
+      }
       run = [];
     };
     for (const point of source) {

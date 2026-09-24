@@ -104,6 +104,7 @@ export function validateMurderQuestSnapshot(value) {
   // right name has been said.
   if (['paid', 'taught'].includes(value.stage) && !value.accused.includes(MURDERER)) return false;
   if (value.stage === 'solved' && !value.accused.includes(MURDERER)) return false;
+  if (['solved', 'paid', 'taught'].includes(value.stage) && !CLUES.every(clue => value.heard.includes(clue))) return false;
   if (value.accused.includes(MURDERER) && value.stage === 'asking') return false;
   return true;
 }
@@ -167,7 +168,7 @@ export function createMurderQuest({ onEvent = () => {} } = {}) {
   /** The fork, once the case is closed. */
   function take(rewardId) {
     const reward = REWARDS[rewardId];
-    if (!reward || state.stage !== 'solved') return null;
+    if (!reward || !(state.stage === 'solved' || (state.stage === 'paid' && rewardId === 'lesson'))) return null;
     state.stage = reward.stage;
     onEvent({ type: 'murder-paid', reward: reward.id });
     return reward;
@@ -185,7 +186,7 @@ export function createMurderQuest({ onEvent = () => {} } = {}) {
     get ready() { return ready(); },
     /** What Troy will hear right now, and when he will hear it if the answer is not yet. */
     rests: (now = 0) => Math.max(0, state.restUntil - now),
-    choices: () => (state.stage === 'solved' ? Object.values(REWARDS) : []),
+    choices: () => (state.stage === 'solved' ? Object.values(REWARDS) : state.stage === 'paid' ? [REWARDS.lesson] : []),
     get state() { return { ...snapshot(), ready: ready(), over: ['paid', 'taught'].includes(state.stage) }; },
   };
 }
@@ -289,7 +290,9 @@ export function troyConversation(npc, context) {
   if (state.stage === 'paid') {
     openDialogue(npc, ['Spend it on this island, if you can find anybody selling anything.',
       'I am going to stay a week and look at the water. Then Ambron, and a chair, and a report nobody reads.'],
-      null, 'Back to the quay', { choices: [talk, leave] });
+      null, 'Back to the quay', { choices: [
+        { id: 'murder-lesson', label: 'Could you still teach me Mind Read?', action: () => { closeDialogue(); act('murder-reward', 'lesson'); } },
+        talk, leave] });
     return true;
   }
   openDialogue(npc, [
@@ -311,7 +314,7 @@ const readingOf = id => (id === MURDERER ? MURDERER_READING : TESTIMONY[id].read
  * they decided not to say at all.
  */
 export function cobbleConversation(npc, context) {
-  const { murder, ambient = [], openDialogue, closeDialogue, act, reads = false } = context;
+  const { murder, ambient = [], openDialogue, closeDialogue, act, reads = false, readMind = null } = context;
   const witness = TESTIMONY[npc?.id];
   const isMurderer = npc?.id === MURDERER;
   const asking = murder.state.stage === 'asking';
@@ -336,7 +339,11 @@ export function cobbleConversation(npc, context) {
   });
   if (reads) choices.push({
     id: 'read-them', label: '⟨Read them.⟩',
-    action: () => openDialogue(npc, [readingOf(npc.id)], null, 'Let go', { onComplete: back }),
+    action: () => {
+      const result = readMind?.(npc);
+      if (readMind && !result?.ok) return;
+      openDialogue(npc, [result?.text ?? readingOf(npc.id)], null, 'Let go', { onComplete: back });
+    },
   });
   openDialogue(npc, [...ambient], null, 'Back to the village', { choices: [...choices, leave] });
   return true;

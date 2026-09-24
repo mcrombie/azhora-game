@@ -18,7 +18,7 @@
  * the goblins were.
  *
  * **The reward** is the guild's money or the first lesson in beast sorcery — summon bees — one or
- * the other, once, which is the shape all three of these have (src/sorcery.js).
+ * the other at this visit. Taking the money still leaves the earned lesson available later.
  *
  * Pure: no DOM, no three. The host walks the cat and lays the fight.
  */
@@ -134,7 +134,7 @@ export function createCatQuest({ onEvent = () => {} } = {}) {
 
   function take(rewardId) {
     const reward = REWARDS[rewardId];
-    if (!reward || !at('home')) return null;
+    if (!reward || !(at('home') || (at('paid') && rewardId === 'lesson'))) return null;
     state.stage = reward.stage;
     onEvent({ type: 'cat-paid', reward: reward.id });
     return reward;
@@ -148,7 +148,7 @@ export function createCatQuest({ onEvent = () => {} } = {}) {
 
   return {
     ask, accept, found, bolts, died, home, take, snapshot, restore,
-    choices: () => (state.stage === 'home' ? Object.values(REWARDS) : []),
+    choices: () => (state.stage === 'home' ? Object.values(REWARDS) : state.stage === 'paid' ? [REWARDS.lesson] : []),
     get state() {
       return { ...snapshot(), walking: state.stage === 'following',
         over: ['paid', 'taught', 'lost'].includes(state.stage) };
@@ -342,6 +342,8 @@ export function lizConversation(npc, context) {
   openDialogue(npc, [taught
     ? 'Do not call them unless you mean it. They come because you are in trouble, and they do not ask you whether you are sure.'
     : 'He has not left the door since. I am told this is normal and I do not believe it.'],
-    null, 'Back to the clearing', { choices: [...trade, bees, her, leave] });
+    null, 'Back to the clearing', { choices: [
+      ...(!taught ? [{ id: 'cat-lesson', label: 'Could you still teach me Summon Bees?', action: () => { closeDialogue(); act('cat-reward', 'lesson'); } }] : []),
+      ...trade, bees, her, leave] });
   return true;
 }

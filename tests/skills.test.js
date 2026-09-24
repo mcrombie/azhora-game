@@ -3,17 +3,17 @@ import assert from 'node:assert/strict';
 import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, validateSkillsSnapshot } from '../src/skills.js';
 
 test('levels are read from the thresholds, with progress toward the next', () => {
-  // Fourteen that are about the world, then the seven that are about fighting, then the three
+  // Fifteen that are about the world, then the seven that are about fighting, then the five
   // schools of sorcery - each group under its own heading in the grid (docs/combat-brief.md,
   // src/sorcery.js).
-  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'farming', 'linguist',
+  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'stealth', 'farming', 'linguist',
     'blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness',
     'fire', 'mind', 'beast', 'frost', 'wards']);
   assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Arms'),
     ['blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness'], 'the seven are the grouped ones');
   assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Sorcery'), ['fire', 'mind', 'beast', 'frost', 'wards'],
-    'and the three schools are the other group');
-  assert.ok(SKILL_IDS.slice(0, 14).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
+    'the three released schools and two reserved save entries share the group');
+  assert.ok(SKILL_IDS.slice(0, 15).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
   for (const id of SKILL_IDS) assert.ok(SKILLS[id].teacher && SKILLS[id].blurb, `${id} says who teaches it`);
   const table = SKILLS.birding.thresholds;
   assert.ok(table.every((xp, i) => i === 0 ? xp === 0 : xp > table[i - 1]), 'thresholds rise');
@@ -25,6 +25,15 @@ test('levels are read from the thresholds, with progress toward the next', () =>
   const top = skillLevel('birding', MAX_XP);
   assert.deepEqual([top.level, top.max, top.next, top.progress], [table.length, true, null, 1]);
   assert.equal(skillLevel('juggling', 5), null);
+});
+
+test('sorcery display names preserve existing school IDs, experience, and teaching records', () => {
+  const saved = { version: 1, skills: { fire: { xp: 174 }, mind: { xp: 83 }, beast: { xp: 276 }, wards: { xp: 12 } }, taught: ['beast', 'fire', 'mind'] };
+  const skills = createSkills();
+  assert.equal(skills.restore(saved), true);
+  assert.deepEqual(skills.snapshot(), saved);
+  assert.deepEqual(['fire', 'mind', 'beast'].map(id => SKILLS[id].name), ['Fire Sorcery', 'Mind Sorcery', 'Animal Sorcery']);
+  assert.deepEqual(['fire', 'mind', 'beast'].map(id => skills.level(id)), [3, 2, 4]);
 });
 
 /**

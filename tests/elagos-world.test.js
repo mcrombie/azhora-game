@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { nearestOnPath } from '../src/autopilot.js';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
@@ -183,7 +184,7 @@ test('the haul road comes up from the Moros to Ambron’s Plain Gate, and a ride
   assert.ok(length > 180 && length < 400, `the haul road is ${length.toFixed(0)} m`);
   assert.deepEqual(world.elagosRoute, AMBRON_ROAD.map(p => ({ x: p.x, z: p.z })));
   for (const road of ELAGOS_ROADS)
-    assert.ok(world.paths.some(path => path.length === road.length && path.every((p, i) => p.x === road[i].x && p.z === road[i].z)), 'drawn as a world path');
+    assert.ok(world.paths.some(path => road.every(point => nearestOnPath(path, point).distance < 1)), 'drawn as a sampled world path through its authored controls');
   // A rider can take the haul road and the lake road end to end.
   for (const road of [AMBRON_ROAD, LAKE_ROAD]) for (let i = 1; i < road.length; i++) {
     const a = road[i - 1], b = road[i], steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));

@@ -222,9 +222,9 @@ test('timing never scales, with any level of anything', () => {
     const pattern = new RegExp(`${timing}\s*[*]\s*(country|damageMultiplier|margins)`, 'i');
     assert.doesNotMatch(combat, pattern, `${timing} is multiplied by something`);
   }
-  // The two country multipliers are used in exactly the two places they are meant to be.
+  // One contact-time damage value is shared by every body in a physical swing, whichever team.
   assert.equal((combat.match(/countryHealth\(/g) ?? []).length, 1, 'health is scaled in exactly one place');
-  assert.equal((combat.match(/countryDamage\(/g) ?? []).length, 2, 'damage in exactly two: the traveler, and his allies');
+  assert.equal((combat.match(/countryDamage\(/g) ?? []).length, 1, 'enemy strike damage is scaled once, before applying its contacts');
   assert.match(combat, /const stout = Math\.round\(hp \* countryHealth\(level\)\);/, 'health is scaled once, where the enemy is made');
 });
 
@@ -237,7 +237,7 @@ test('the host gives a fight the level of the country it happens in', () => {
   // The straw post pays as a post - and only when it is the post. Jerry's mark runs in the same
   // practice phase and teaches Bows where the arrow lands, so a sword at his straw banks nothing.
   assert.match(main, /if\(e\.type==='practice-hit'&&!mark\)\{arms\.learn\('blades'\);armsPaid\(arms\.dealt\(\{[^}]*source:'post'\}\)\)/, 'the straw post pays as a post');
-  assert.match(main, /if\(e\.type==='hit'&&e\.damage>0&&combat\.state\.phase==='active'\)/, 'a real blow pays as a fight');
+  assert.match(main, /if\(e\.type==='hit'&&!e\.spell&&e\.source!=='enemy'&&e\.source!=='ally'&&e\.damage>0&&combat\.state\.phase==='active'\)/, 'only the player’s physical blow pays Arms; magic pays its own school');
   assert.match(main, /arms\.hurt\(\{damage:e\.damage,countryLevel:e\.level\?\?0,\.\.\.sparringPay\(\)\}\)/, 'being hit pays Toughness');
   assert.match(main, /if\(e\.type==='dodged'\)\{arms\.learn\('toughness'\);/, 'and so does a step aside that worked');
   // Phase 7: the same four payments, told whether this fight is a bout. `sparringPay()` is the
@@ -257,6 +257,6 @@ test('the host reads the margins rather than writing numbers of its own', () => 
   assert.match(source('weapons.js'), /damage: type\.damage\.map\(hit => hit \* scale\)/, 'the multiplier is on the weapon’s own damage');
   // Twenty-one in the registry (farming came with the long road), and the seven are the grouped
   // ones. Normal mode draws twenty of them: the Linguist is hard mode's (tests/game-mode.test.js).
-  assert.equal(SKILL_IDS.length, 26, 'fourteen of the world, seven of fighting, five of sorcery');
+  assert.equal(SKILL_IDS.length, 27, 'fifteen of the world, seven of fighting, five of sorcery');
   assert.equal(SKILL_IDS.filter(id => SKILLS[id].group === ARMS_HEADING).length, 7);
 });

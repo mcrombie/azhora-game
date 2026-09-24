@@ -1,5 +1,6 @@
 /**
- * Every quest uses the same filled diamond and lower ring. Its colour tells
+ * Quests share a filled diamond and lower ring. Skill teachers use an open book.
+ * Colour tells
  * the category: gold for the main road, silver for an independent story,
  * copper for a good deed, and green for a lesson. The live quest slate still
  * controls which offers appear; this table only controls their appearance.
@@ -22,7 +23,7 @@ export const MARKER_STYLE = Object.freeze({
     'A story of its own, with its own beginning and its own end.'),
   deed: style('deed', 'diamond', 1, 0xc87a3c, 0x8a4a18, 0xe6a163, 0xa65e22,
     'A small good deed: it changes the world and does not move the plot.'),
-  skill: style('skill', 'diamond', 1, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
+  skill: style('skill', 'book', 1, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
     'Somebody who will teach you something, or an errand that pays a skill.'),
 });
 
@@ -95,8 +96,15 @@ export function markerFor(id, view = {}) {
   if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore) return mark(strongestMarker(kinds));
+  // A first lesson is a live opportunity even when optional quest chains are parked.
+  if (!busy && holds(view.skillTeachers, id)) kinds.push('skill');
+  if (live('civil-war-drent') && !busy && holds(view.drentDestinations, id)) kinds.push('plot');
   // A regional silver story may live while the older teachers remain off the slate.
   if (live('civil-war-vastos') && !busy && holds(view.silverDestinations, id)) kinds.push('plot');
+  // Sela's already-live good deed is offered at the field; merely hearing her
+  // does not accept it. Once helping, the workers hold its markers.
+  if (!busy && ((id === 'lauvel-seeker' && ['unknown','hailed','asked','found','told'].includes(view.burying))
+    || (view.burying === 'helping' && holds(view.buryingDestinations, id)))) kinds.push('deed');
   // Nor while the slate is trimmed, which is the gold and the copper above and nothing else.
   if (!live('teachers')) return mark(strongestMarker(kinds));
   // The long road's next stop, which is gold because it is main quest too, and open because it

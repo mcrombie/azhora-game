@@ -145,7 +145,7 @@ test('every weapon has a family, a home and a way into the traveler’s hand', (
   }
   // The two lists the brief left empty for this phase now have their weapons.
   assert.deepEqual([...ARMS_SKILLS.polearms.weapons], ['ash-spear', 'war-pike']);
-  assert.deepEqual([...ARMS_SKILLS.staves.weapons], ['forest-stick', 'quarterstaff']);
+  assert.deepEqual([...ARMS_SKILLS.staves.weapons], ['forest-stick', 'quarterstaff', 'wand', 'oak-staff']);
   // Nobody who carries a polearm or a staff will trade it, so none of them is tradeable...
   for (const id of ['ash-spear', 'war-pike', 'quarterstaff'])
     assert.equal(TRADEABLE_WEAPONS.includes(id), false, `${id} is not traded`);

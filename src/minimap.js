@@ -12,6 +12,7 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 export const MINIMAP_PALETTE = Object.freeze({ ground: { 1: '#d9caa0', 2: '#e6d8ad', 3: '#d3d0a6', 4: '#e0d3ab' }, groundFallback: '#dccfa4',
   water: '#b4c4be', waterEdge: '#4f5e63', coastWater: '#a9bcb8', coastEdge: '#5e4630', sand: '#cdb98a', trail: '#5e463099', roadEdge: '#3d2b1ab8', road: '#f0e3c0',
   timber: '#8b7355', house: '#8b7355', stone: '#a4906d', rock: '#9c8f78', ink: '#3d2b1a', boundary: '#5e46306b', frontier: '#7a4a12',
+  canopy: '#79886080', canopyEdge: '#50674665',
   known: '#f2e6c4', unknown: '#5e46304d', targetRing: '#3d2b1aea',
   // Birding's own colour, which is nobody else's: not the errand gold, not the marked place's teal.
   bird: '#9fd8e8' });
@@ -86,7 +87,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   const fog = miniMapFogTiles(chart, view), entered = p => !fog || fog.knows(p);
   size = view.size;
   const region = finitePoint(position) ? world.regionAt?.(position.x, position.z) : null;
-  const counts = { paths: 0, buildings: 0, waterShapes: 0, landmarks: 0, discovered: 0, enemies: 0, heightSamples: 0 };
+  const counts = { paths: 0, buildings: 0, bridges: 0, trees: 0, waterShapes: 0, landmarks: 0, discovered: 0, enemies: 0, heightSamples: 0 };
   // Open country has no palette of its own; it draws on Drent's, and says its own name above.
   const result = { bounds, scale, regionId: region?.id || 1, open: region?.open === true, goal: null, openGoal: null, optional: null, counts, player: null };
   if (!ctx) return result;
@@ -216,6 +217,17 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     const p = project(world.pond); dot(ctx, p.x, p.y, positive(world.pond.radius, 5) * scale, MINIMAP_PALETTE.water); counts.waterShapes++;
   }
 
+  // Entered woodland keeps the canopies of its actual trees. They sit beneath
+  // the paths, so a forest reads as a forest without hiding the way through it.
+  // An adjacent, unvisited hex retains only its broad terrain colour above.
+  for (const tree of world.broadleafTrees || []) {
+    const canopyRadius = clamp(positive(tree.height, 8) * .3, 1.5, 4.5);
+    if (!visible(tree, canopyRadius) || !entered(tree) || tree.hidden) continue;
+    const p = project(tree); ctx.lineWidth = .7;
+    dot(ctx, p.x, p.y, canopyRadius * scale, MINIMAP_PALETTE.canopy, MINIMAP_PALETTE.canopyEdge);
+    counts.trees++;
+  }
+
   const line = (points, width, color) => {
     ctx.beginPath(); let started = false, segments = 0;
     for (const point of points || []) {
@@ -230,8 +242,11 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   // Minor woodland spurs stay distinct from the continuous northbound road.
   for (let i = 1; i < (world.paths || []).length; i++) {
-    line(world.paths[i], 3.1, MINIMAP_PALETTE.trail); counts.paths++;
+    const path = world.paths[i], lesser = path.kind === 'trail';
+    ctx.setLineDash?.(lesser ? [2.1, 1.7] : []);
+    line(path, lesser ? 1.25 : 3.1, MINIMAP_PALETTE.trail); counts.paths++;
   }
+  ctx.setLineDash?.([]);
   const mainPaths = [world.paths?.[0]];
   if (world.routeJourney && !world.paths?.[0]?.some(p => p.z <= world.routeJourney.at(-1)?.z)) mainPaths.push(world.routeJourney);
   for (const path of mainPaths) if (path?.length > 1) {
@@ -240,14 +255,19 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
   if (finitePoint(world.boatStart) && finitePoint(world.spawn) && finitePoint(world.paths?.[0]?.[0])) {
     line([world.spawn, world.paths[0][0]], 3.9 * scale, MINIMAP_PALETTE.timber);
   }
-  const bridgeRails = (world.colliders || []).filter(c => c.kind === 'bridge-rail' && finitePoint(c));
-  if (bridgeRails.length >= 2) {
-    const minX = Math.min(...bridgeRails.map(c => c.x)), maxX = Math.max(...bridgeRails.map(c => c.x));
-    const minZ = Math.min(...bridgeRails.map(c => c.z - positive(c.hz, 1))), maxZ = Math.max(...bridgeRails.map(c => c.z + positive(c.hz, 1)));
-    if (maxZ >= bounds.minZ && minZ <= bounds.maxZ) {
-      const p = project({ x: minX, z: minZ }); ctx.fillStyle = MINIMAP_PALETTE.timber;
-      ctx.fillRect(p.x, p.y, (maxX - minX) * scale, (maxZ - minZ) * scale);
-    }
+  // Each rendered bridge supplies its own span. Combining all rail colliders
+  // into one bounding box painted hundreds of metres of inland ground brown.
+  for (const bridge of world.mapBridges || []) {
+    if (!finitePoint(bridge.crossing) || !finitePoint(bridge.axis) || !finitePoint(bridge.side)) continue;
+    const span = positive(bridge.halfSpan, 0), halfWidth = positive(bridge.halfWidth, 2.8);
+    if (!span || !visible(bridge.crossing, Math.hypot(span, halfWidth))) continue;
+    const corners = [[-span,-halfWidth],[-span,halfWidth],[span,halfWidth],[span,-halfWidth]].map(([along,across]) => project({
+      x: bridge.crossing.x + bridge.axis.x * along + bridge.side.x * across,
+      z: bridge.crossing.z + bridge.axis.z * along + bridge.side.z * across,
+    }));
+    ctx.beginPath(); ctx.moveTo(corners[0].x, corners[0].y);
+    for (const point of corners.slice(1)) ctx.lineTo(point.x, point.y);
+    ctx.closePath(); ctx.fillStyle = MINIMAP_PALETTE.timber; ctx.fill(); counts.bridges++;
   }
 
   for (const c of world.colliders || []) {

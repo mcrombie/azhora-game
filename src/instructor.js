@@ -10,7 +10,8 @@
  *   2. He sets the lesson - two strikes, one guard and one step - and watches it. Nothing counts
  *      until he has. The guard is the user's, 22 September 2026: Cromb comes ashore with a shield
  *      now (src/player-characters.js) and blocking is the third of the three things a sword,
- *      a shield and a pair of feet can do.
+ *      a shield and a pair of feet can do. A traveler without an equipped shield uses a
+ *      practice shield at the post; it is returned after the drill and never becomes gear.
  *   3. When it is done he says so, gives the map, and explains what the other skills are: the
  *      ground you walk draws itself, and anybody who lives somewhere can tell you which way the
  *      next country is. That map opens on Tidehaven and nothing else.
@@ -80,7 +81,7 @@ const BRIEF = Object.freeze([
   'And before you ask it the way they all ask it: yes, I am from here. Born four miles up that road. I went off with the army at seventeen and they have sent me back grey to look after the place, which some of them think is a joke and is the only thing I ever asked them for.',
   'Hired swords come off every boat saying they can fight. Show me. That is a straw post; it does not hit back and it does not lie about you either.',
   `Three things, and a sword is only the first of them. Two clean strikes on the straw: the left button, or R.`,
-  `Then the shield. Hold V and keep it there - not a tap, hold it, the way you would hold it while somebody who means it comes at you. Most of them never learn that a shield is something you decide to be behind.`,
+  `Then the shield. If you have none, borrow a practice shield here at the post. Hold V and keep it there - not a tap, hold it, the way you would hold it while somebody who means it comes at you. Most of them never learn that a shield is something you decide to be behind.`,
   `And the step: C and a direction. Strike, guard, step. Two of those three are how you are still standing at the end of a day, and it is not the sword.`,
 ]);
 

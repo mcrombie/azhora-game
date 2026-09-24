@@ -3,7 +3,8 @@ const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 
 const CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
-const MAX_BYTES = 65536;
+// Persistent NPC injuries and remains grow with explored country. Keep a bounded save slot.
+const MAX_BYTES = 8 * 1024 * 1024;
 
 function validateValue(value) {
   if (typeof value !== 'string') return 'The checkpoint must be a JSON string.';
@@ -84,4 +85,4 @@ function createCheckpointStore({ directory, memoryOnly = false } = {}) {
   return { handle };
 }
 
-module.exports = { createCheckpointStore };
+module.exports = { createCheckpointStore, MAX_BYTES };

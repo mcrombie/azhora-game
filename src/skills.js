@@ -51,14 +51,14 @@ export const SKILLS = Object.freeze({
   botany: Object.freeze({
     id: 'botany', name: 'Botany',
     blurb: 'Everything that grows, from the plantain on the path to the oldest oak in the wood: what it is, where it stands, and what it is for. Every plant and tree you name for the first time teaches you something.',
-    teacher: 'Nell Harrow, at the Sunken Lane where the old drove crosses the Caloss road',
+    teacher: 'Mark by the village fire in Tidehaven, and Nell Harrow at the Sunken Lane on the Caloss road',
     // Drent's thirty-four plants and trees together are worth 625: level 6.
     thresholds: RUNESCAPE_TABLE,
   }),
   geology: Object.freeze({
     id: 'geology', name: 'Geology',
     blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
-    teacher: 'Silas Garrow, with his marl cart at the Toll House stream on the Caloss road',
+    teacher: 'Mark by the village fire in Tidehaven, and Silas Garrow at the Toll House stream on the Caloss road',
     // The eleven finds of Drent's coast together are worth 210: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
@@ -103,9 +103,9 @@ export const SKILLS = Object.freeze({
       unlock(45, 'Red maple · 100 experience a log'), unlock(60, 'Black walnut · 175 experience a log'), unlock(99, 'Bowden stops calling you “worm”')]),
   }),
   construction: Object.freeze({
-    id: 'construction', name: 'Construction', kind: 'working',
-    blurb: 'Planks, a hammer, a saw, and knowing what goes on first. Every plank you build with is experience, and the better the wood, the more of it.',
-    teacher: 'Bowden Koop, King of the Koopwood, who built his own keep',
+    id: 'construction', name: 'Carpentry', kind: 'working',
+    blurb: 'Joining timber, bracing what carries weight, and knowing what goes on first. Repairing the Caloss crossing teaches the basics; every plank you build with gives more experience.',
+    teacher: 'Chip at the broken Caloss crossing, then Bowden Koop in the Koopwood for tools and a house plot',
     thresholds: RUNESCAPE_TABLE,
     // What each level opens (src/construction.js holds the builds; the test keeps the two in step).
     unlocks: Object.freeze([unlock(1, 'Birdhouse, at Bowden’s workbench'), unlock(1, 'Your house: footings and a floor'), unlock(4, 'The frame'), unlock(8, 'Walls'),
@@ -115,7 +115,7 @@ export const SKILLS = Object.freeze({
   cartography: Object.freeze({
     id: 'cartography', name: 'Cartography',
     blurb: 'Keeping your own chart of Azhora: the ground you have walked drawn properly, the coasts you have only been shown as a shape against the sea, and the rest of it dark. Asking somebody the way is worth as much to a chart as walking it.',
-    teacher: 'Jojo, the harbourmaster at the head of the pier in Tidehaven, with the rough chart the village keeps',
+    teacher: 'Officer Glun at the practice post north of Tidehaven, after your combat training',
     thresholds: RUNESCAPE_TABLE,
     // A placeholder guide until src/cartography.js lands: the states a region passes through, in order.
     unlocks: Object.freeze([unlock(1, 'Your own chart, and the ground you walk drawn on it'),
@@ -135,6 +135,15 @@ export const SKILLS = Object.freeze({
       unlock(25, 'Pilot’s Stone to Gull Scarp · 98 m, if you are willing to drown for the end of it'),
       unlock(43, 'The same 98 m on wind alone'),
       unlock(99, '280 m on one breath — and the open crossing to Cobble is 355, so you still island-hop')]),
+  }),
+  stealth: Object.freeze({
+    id: 'stealth', name: 'Stealth', kind: 'working',
+    blurb: 'Moving quietly, keeping out of a watchful eye, and knowing when to wait. Sneaking near danger earns experience; standing still or creeping through an empty wood does not.',
+    teacher: 'A discreet contact in Tidehaven',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'X to sneak: move slowly and watch the guards'),
+      unlock(1, 'Practice by moving near danger without being caught'),
+      unlock(2, 'A first successful theft from the Tidehaven barracks')]),
   }),
   farming: Object.freeze({
     id: 'farming', name: 'Farming', kind: 'working',
@@ -162,7 +171,7 @@ export const SKILLS = Object.freeze({
   blades: Object.freeze({
     id: 'blades', name: 'Blades', group: ARMS_HEADING,
     blurb: 'The sword and the dagger: an edge, a point, and the sense to keep both out of bone. Every blow you land with one teaches you a little about the next.',
-    teacher: 'Jojo\u2019s straw post on the pier, then Chris Scotwood for the sword and Ed the Word for the dagger',
+    teacher: 'Officer Glun at Tidehaven\u2019s practice post, then Chris Scotwood for the sword and Ed the Word for the dagger',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'The sword as it has always been'), unlock(25, 'A third again the damage, and a swing that costs less'),
       unlock(50, 'Half as hard again as the man who landed off the boat'), unlock(75, 'Twice the damage of that first morning'),
@@ -207,7 +216,7 @@ export const SKILLS = Object.freeze({
   shield: Object.freeze({
     id: 'shield', name: 'Shield', group: ARMS_HEADING,
     blurb: 'Taking the first blow on the boards and answering over the rim. Slower than fighting without one, and a great deal harder to kill.',
-    teacher: 'Kristen, who stands in front of people who need it',
+    teacher: 'Officer Glun for the first guard, then Kristen, who stands in front of people who need it',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'Three fifths of a blow from the front'), unlock(25, 'Catching one costs less wind'),
       unlock(50, 'Three quarters of it, and you are still standing'), unlock(75, 'Very little of a frontal blow reaches you'),
@@ -223,48 +232,47 @@ export const SKILLS = Object.freeze({
       unlock(99, '400 health, 180 wind, and 0.48 s of a dodge that cannot be touched')]),
   }),
   /**
-   * **Sorcery**, which is its own table beside Arms (the user, 22 September 2026). Fire is the
-   * only one anybody can teach: Ben, of the sorcerer's guild, and only if you help him with the
-   * spider and take the lesson instead of the money (src/sorcery.js, src/spider-quest.js). Frost
-   * and Wards are named so a spell arriving later has a home rather than a decision, and are not
-   * handed out by anybody - a skill nobody teaches is a skill nobody has.
+   * Sorcery has three released schools. Their stable IDs remain fire, mind and
+   * beast so existing experience and teacher records survive the display rename.
+   * Skill level improves a spell; the teacher's separate spell lesson unlocks it.
+   * Frost and Wards are reserved save entries, not choices in the current journal.
    */
   fire: Object.freeze({
-    id: 'fire', name: 'Fire', group: SORCERY_HEADING,
+    id: 'fire', name: 'Fire Sorcery', group: SORCERY_HEADING,
     blurb: 'A ball of fire thrown at what you are looking at, which is the whole of it and is a great deal. It wants a wand or a staff in your hand, and your hand has room for one thing.',
-    teacher: 'Ben, if you stand with him against the spider and ask for the lesson rather than the purse',
+    teacher: 'Ben, if you stand with him against the spider and ask for the lesson afterward',
     thresholds: RUNESCAPE_TABLE,
-    unlocks: Object.freeze([unlock(1, 'One fireball, three of them before the focus is out'),
+    unlocks: Object.freeze([unlock(1, 'After Ben’s lesson: cast Fireball with a wand or staff'),
       unlock(25, 'Half as much again, and it comes back quicker'), unlock(50, 'Twice the fire and twice the throwing of it'),
       unlock(75, 'A pool deep enough to fight out of'), unlock(99, 'Three times the fire, and sixteen of them')]),
   }),
   mind: Object.freeze({
-    id: 'mind', name: 'Mind', group: SORCERY_HEADING,
+    id: 'mind', name: 'Mind Sorcery', group: SORCERY_HEADING,
     blurb: 'Hearing the thing somebody decided not to say. It gives you a second way to answer in any conversation, and what it turns up is theirs and not yours.',
-    teacher: 'Troy, in Cobble, if you find his murderer for him and ask for the lesson rather than the purse',
+    teacher: 'Troy, in Cobble, if you find his murderer for him and ask for the lesson afterward',
     thresholds: RUNESCAPE_TABLE,
-    unlocks: Object.freeze([unlock(1, 'One reading, and it costs a good deal of focus'),
+    unlocks: Object.freeze([unlock(1, 'After Troy’s lesson: use Mind Read on someone nearby'),
       unlock(25, 'Cheaper, so you can afford to be curious'), unlock(50, 'Half the focus of that first one'),
       unlock(75, 'You can read a room rather than a man'), unlock(99, 'Ten focus, and almost nobody is closed to you')]),
   }),
   beast: Object.freeze({
-    id: 'beast', name: 'Beast', group: SORCERY_HEADING,
+    id: 'beast', name: 'Animal Sorcery', group: SORCERY_HEADING,
     blurb: 'Asking something with more legs than you for a favour. At the first level that is bees, who come when called and leave when there is nothing to sting.',
-    teacher: 'Liz, in the woods of Pueth, if you bring her cat back alive and ask for the lesson rather than the purse',
+    teacher: 'Liz, in the woods of Pueth, if you bring her cat back alive and ask for the lesson afterward',
     thresholds: RUNESCAPE_TABLE,
-    unlocks: Object.freeze([unlock(1, 'A swarm, for seven seconds, that goes for whoever goes for you'),
+    unlocks: Object.freeze([unlock(1, 'After Liz’s lesson: summon bees to harry an enemy'),
       unlock(25, 'They stay longer and sting harder'), unlock(50, 'Twice the swarm of that first one'),
       unlock(75, 'They come quicker and cost less'), unlock(99, 'Sixteen seconds of them, and they do not lose interest')]),
   }),
   frost: Object.freeze({
-    id: 'frost', name: 'Frost', group: SORCERY_HEADING,
+    id: 'frost', name: 'Frost', group: SORCERY_HEADING, reserved: true,
     blurb: 'Cold, and what cold does to a thing that was about to move. Nobody in Azhora has offered to show it to anybody yet.',
     teacher: 'nobody yet',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'Unlearned, and unteachable for now')]),
   }),
   wards: Object.freeze({
-    id: 'wards', name: 'Wards', group: SORCERY_HEADING,
+    id: 'wards', name: 'Wards', group: SORCERY_HEADING, reserved: true,
     blurb: 'Putting something between yourself and what is coming that is not a shield. Nobody in Azhora has offered to show it to anybody yet.',
     teacher: 'nobody yet',
     thresholds: RUNESCAPE_TABLE,

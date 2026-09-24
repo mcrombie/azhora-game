@@ -49,3 +49,35 @@ export function createLakota({ onEvent = () => {} } = {}) {
 
   return { know, snapshot, restore, get met() { return met; } };
 }
+
+/** Lakota has his own conversation, but recruiting him follows the company's rules.
+ * Always show the invitation; let him explain unmet requirements instead of removing it.
+ * Read context at the click as well, so a menu cannot bypass a changed story restriction. */
+export function lakotaTravelChoice({npc,companions,context=()=>({}),openDialogue,closeDialogue,
+  onChange=()=>{},back=closeDialogue}={}) {
+  if(npc?.id!=='merc-lakota'||!companions)return null;
+  const refusal=(line)=>openDialogue(npc,[line],null,'Back to our conversation',{onComplete:back});
+  if(companions.walksWith(npc.id))return {id:'merc-send-on',label:'Go on ahead of me.',action:()=>{
+    const result=companions.sendOn(npc.id);if(result.ok)onChange();
+    openDialogue(npc,['I will keep an eye on the road. And above it. Catch me up when you are ready.'],null,'Back to the road',{onComplete:closeDialogue});
+  }};
+  return {id:'merc-ask',label:'Join me on the road.',action:()=>{
+    const now=context();
+    if(!now.trained){refusal('Finish Officer Glun\'s training first. Then we can talk about taking the road together.');return;}
+    if(now.restriction){refusal(now.restriction);return;}
+    if(now.where!=='road'){
+      refusal(now.phase==='mustered'?'I have already reported to the muster. The officers have the company in hand now; I cannot leave my assigned place.'
+        :'Let me get onto the road first. Ask me while I am walking or stopped along the way.');return;
+    }
+    const may=companions.askable(npc.id,{where:now.where,has:now.has??{}});
+    if(!may.ok){
+      const line=may.reason==='needs'&&may.needs==='birded'
+        ?`${may.line} Perrin keeps the village bird garden. Learn to observe there, then look at a bird and press B. Come back and ask me again.`
+        :may.line??(may.reason==='already'?'I am already walking with you.':may.reason==='full'?'There is no room in the company just now. Send someone ahead, then ask me again.':'I cannot leave my place in the company just now.');
+      refusal(line);return;
+    }
+    const came=companions.ask(npc.id,{where:now.where,has:now.has??{}});
+    if(!came.ok){refusal(came.line??'Something has changed. Ask me again when we are both ready.');return;}
+    onChange();openDialogue(npc,[came.line],null,'Back to the road',{onComplete:closeDialogue});
+  }};
+}

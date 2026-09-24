@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createInventoryState, INVENTORY_ITEMS} from '../src/inventory.js';
+import {createInventoryState, INVENTORY_ITEMS,inventoryEquipmentItems,inventoryMatchesFilter,ICON_KINDS} from '../src/inventory.js';
 import {createWeapons} from '../src/weapons.js';
+import {createGear} from '../src/gear.js';
 
 test('A new traveler carries nothing and cannot inspect an item they have not received', () => {
   const satchel = createInventoryState();
@@ -150,4 +151,20 @@ test('camping tools are unique while raw and cooked fish remain separate stacks'
   assert.equal(INVENTORY_ITEMS['raw-fish'].type, 'Ingredient');
   assert.equal(INVENTORY_ITEMS['cooked-fish'].type, 'Food');
   assert.equal(INVENTORY_ITEMS['cooked-fish'].eatName, 'cooked fish');
+});
+
+test('equipment inventory reflects actual wearing, spare ownership and plain clothing without duplicating bag items', () => {
+  const gear=createGear();gear.wear('hand',{weight:'light',tier:0});gear.wear('body',{weight:'medium',tier:1});
+  const rows=inventoryEquipmentItems(gear.view());
+  assert.equal(rows.filter(item=>item.baseLayer).length,3);
+  assert.equal(rows.find(item=>item.id==='gear:hand:light:0').equipped,true);
+  assert.equal(rows.find(item=>item.id==='clothes:cloth-shirt').type,'Clothing');
+  for(const row of rows){assert.ok(ICON_KINDS.includes(row.icon));assert.equal(inventoryMatchesFilter(row,'equipment'),true);assert.equal(inventoryMatchesFilter(row,'quest'),false);}
+  gear.takeOff('hand');
+  assert.equal(inventoryEquipmentItems(gear.view()).find(item=>item.id==='gear:hand:light:0').equipped,false,'the shield remains visible but is no longer marked equipped');
+  const satchel=createInventoryState();satchel.grant('wand');
+  assert.deepEqual(satchel.items(),['wand'],'gear has one source of ownership and is not added as a fake quest item');
+  assert.equal(inventoryMatchesFilter(INVENTORY_ITEMS['harbor-letter'],'quest'),true);
+  assert.equal(inventoryMatchesFilter(INVENTORY_ITEMS.pawpaw,'food'),true);
+  assert.equal(inventoryMatchesFilter(INVENTORY_ITEMS['spider-silk'],'other'),true);
 });

@@ -30,6 +30,8 @@
 #weapon-condition {margin-top:13px;padding-top:11px;border-top:1px solid #e0cc942b;}
 .weapon-label {font-size:10px;color:#e3d3ac;}.meter.weapon {height:3px;}.meter.weapon i {background:#e1c17d;}
 #weapon-condition small {display:block;font-size:9px;color:#b9c6ae;margin-top:7px;}
+.money-label {margin:11px 0 0;padding-top:10px;border-top:1px solid #e0cc942b;gap:8px;align-items:baseline;}
+#money-value {color:#f4d899;font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere;}
 #weapon-condition.worn .weapon-label {color:#f3ae87;}#weapon-condition.worn .meter i {background:#ec9d70;}
 #encounter-status {position:absolute;top:92px;left:50%;transform:translateX(-50%);text-align:center;background:#193b32d9;border:1px solid #ebcc8a47;border-radius:4px;padding:12px 24px;pointer-events:none;}
 #encounter-status .eyebrow {font-size:10px;letter-spacing:.18em;color:#efd49a;}#encounter-status p {font-size:13px;margin-top:5px;color:#f4eedb;}#encounter-status b {font-size:17px;font-weight:500;}

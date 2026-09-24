@@ -66,6 +66,20 @@ export const WEIGHTS = freeze({
 export const WEIGHT_IDS = freeze(Object.keys(WEIGHTS));
 /** The three places a piece can go. Nothing else is armour. */
 export const SLOTS = freeze(['body', 'head', 'hand']);
+export const SLOT_NAMES = freeze({body:'Body armor', head:'Head', hand:'Shield hand'});
+/** The traveler's ordinary clothes are base layers, not three free armor bonuses. */
+export const TRAVEL_CLOTHES = freeze([
+  freeze({id:'cloth-shirt',slot:'Shirt',name:'Plain cloth shirt',icon:'shirt',description:'A simple brown cloth shirt, worn beneath any armor. Clothing gives no armor protection.'}),
+  freeze({id:'cloth-pants',slot:'Legs',name:'Cloth pants',icon:'pants',description:'Practical cloth trousers, patched for the road. Clothing gives no armor protection.'}),
+  freeze({id:'travel-cloak',slot:'Cloak',name:'Traveler’s cloak',icon:'cloak',description:'A humble, weathered cloak over your clothes. It keeps its place beneath your equipment and gives no armor protection.'}),
+]);
+/** Stable identity for one owned armor design; ownership is separate from wearing it. */
+export const gearId = (slot,piece) => `${slot}:${piece.weight}:${piece.tier}`;
+export function gearName(slot,piece) {
+  if(slot==='hand'&&piece.weight==='light'&&piece.tier===0)return 'Wooden shield';
+  const form=slot==='hand'?'shield':slot==='head'?'headgear':'armor';
+  return `${WEIGHTS[piece.weight]?.name??'Unknown'} ${tiernamed(piece.tier)??'unnamed material'} ${form}`;
+}
 /** Armour never turns a whole blow. At its best - heavy, tier 6, all three - it turns half. */
 export const MOST_TURNED = .5;
 
@@ -94,7 +108,7 @@ export const throughArmour = (damage, worn = {}) => Math.max(0, damage) * (1 - a
 /** Whether a piece is one the game has: a real slot, a real weight, a real tier. */
 export function validPiece(piece, { allowUnnamed = false } = {}) {
   if (!piece || typeof piece !== 'object' || Array.isArray(piece)) return false;
-  if (!WEIGHTS[piece.weight]) return false;
+  if (!Object.hasOwn(WEIGHTS,piece.weight)) return false;
   if (!Number.isInteger(piece.tier) || piece.tier < 0 || piece.tier > TOP_TIER) return false;
   if (piece.tier < WEIGHTS[piece.weight].fromTier) return false;
   return allowUnnamed || TIERS[piece.tier].name !== null;
@@ -108,6 +122,15 @@ export function validateGearSnapshot(data, { allowMissing = true } = {}) {
     if (!SLOTS.includes(slot)) return false;
     // A save may carry an unnamed tier: it is the naming that is missing, not the thing.
     if (!validPiece(piece, { allowUnnamed: true })) return false;
+  }
+  if(data.owned!==undefined){
+    if(!Array.isArray(data.owned)||data.owned.length>63)return false;
+    const ids=new Set();
+    for(const entry of data.owned){
+      if(!entry||!SLOTS.includes(entry.slot)||!validPiece(entry,{allowUnnamed:true}))return false;
+      const id=gearId(entry.slot,entry);if(ids.has(id))return false;ids.add(id);
+    }
+    for(const [slot,piece] of Object.entries(data.worn))if(!ids.has(gearId(slot,piece)))return false;
   }
   return true;
 }
@@ -154,12 +177,25 @@ export function smithStock(countryLevel) {
 /** What the traveler has on, and what it is worth. */
 export function createGear({ onEvent = () => {} } = {}) {
   const worn = {};
+  const owned = new Map();
+
+  function remember(slot,piece){
+    const entry=freeze({slot,weight:piece.weight,tier:piece.tier});
+    owned.set(gearId(slot,piece),entry);
+    return entry;
+  }
 
   function wear(slot, piece) {
     if (!SLOTS.includes(slot) || !validPiece(piece)) return { ok: false };
+    remember(slot,piece);
     worn[slot] = freeze({ weight: piece.weight, tier: piece.tier });
     onEvent({ type: 'worn', slot, ...worn[slot] });
     return { ok: true, slot, ...armourOf(worn) };
+  }
+  function equip(id){
+    const entry=owned.get(id);
+    if(!entry)return {ok:false};
+    return wear(entry.slot,entry);
   }
   function takeOff(slot) {
     if (!worn[slot]) return { ok: false };
@@ -168,16 +204,22 @@ export function createGear({ onEvent = () => {} } = {}) {
     return { ok: true, slot, ...armourOf(worn) };
   }
 
-  const view = () => freeze({ worn: freeze({ ...worn }), ...armourOf(worn) });
-  const snapshot = () => ({ version: GEAR_VERSION, worn: { ...worn } });
+  const view = () => freeze({ worn: freeze({ ...worn }), clothing:TRAVEL_CLOTHES,
+    owned:freeze([...owned.values()].map(entry=>freeze({...entry,id:gearId(entry.slot,entry),name:gearName(entry.slot,entry),
+      slotName:SLOT_NAMES[entry.slot],equipped:!!worn[entry.slot]&&gearId(entry.slot,worn[entry.slot])===gearId(entry.slot,entry),
+      ...armourOf({[entry.slot]:entry})}))), ...armourOf(worn) });
+  const snapshot = () => ({ version: GEAR_VERSION, worn: { ...worn }, owned:[...owned.values()].map(entry=>({...entry})) });
   function restore(data) {
-    for (const slot of SLOTS) delete worn[slot];
     if (!validateGearSnapshot(data, { allowMissing: false })) return false;
+    for (const slot of SLOTS) delete worn[slot];
+    owned.clear();
+    for(const entry of data.owned??[])remember(entry.slot,entry);
     for (const [slot, piece] of Object.entries(data.worn)) worn[slot] = freeze({ ...piece });
+    for(const [slot,piece] of Object.entries(worn))remember(slot,piece);
     return true;
   }
 
-  return { wear, takeOff, view, snapshot, restore,
+  return { wear, equip, takeOff, view, snapshot, restore,
     get turns() { return armourOf(worn).turns; },
     get dodgeScale() { return armourOf(worn).dodge; },
     get windScale() { return armourOf(worn).wind; },

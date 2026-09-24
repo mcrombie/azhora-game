@@ -56,6 +56,9 @@ import { amodTerrainSink } from './amod-terraces.js';
 import { createAmodScenery } from './amod-scenery.js';
 import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance } from './west-regions.js';
 import { createWestScenery } from './west-regions-scenery.js';
+import { DRENT_SITES, DRENT_NPC_POSITIONS, DRENT_LOCAL_PATHS, drentFeatureClear } from './drent-sites.js';
+import { createDrentCivilWarScenery } from './drent-scenery.js';
+import { createRoadSurfaceMask } from './path-junctions.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -107,13 +110,13 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     || pondPathDistance(x, z) < (tree ? 2.35 : 1.45)
     || [doomsayer, pondFisher, ...firePits].some(p => Math.hypot(x - p.x, z - p.z) < (tree ? 2.1 : 1.0))
     || firePits.some(p => Math.hypot(x - p.fireX, z - p.fireZ) < (tree ? 2.1 : 1.25))
-    || forestFeatureClear(x, z, tree);
+    || forestFeatureClear(x, z, tree) || drentFeatureClear(x, z, tree);
   const encounter = { x: 0, z: -34, radius: 8 };
   const northTrail = { x: -5, z: -108, name: FERNWAY_REST.name };
   // Where Tidehaven's ground ends and the Avrel road begins. There was a gate on this line
   // until 22 September 2026; `barrierZ` is still the line, and there is nothing standing on it.
   const border = { x: 0, z: -156, name: WOOD_EDGE.name, barrierZ: -162,
-    regionName: WOOD_EDGE.regionName, open: true };
+    regionName: WOOD_EDGE.regionName, open: true, notice: false };
   const routeNorth = [
     { x: 0, z: -72 }, { x: -11, z: -86 }, { x: -5, z: -108 },
     { x: 8, z: -128 }, { x: 3, z: -143 }, { x: border.x, z: border.z },
@@ -267,7 +270,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // ---------------------------------------------------------------------------
   // Roads: drawn in world metres, sampled locally for Tidehaven's own scatter
   // ---------------------------------------------------------------------------
-  const roadSegments = [], paths = [], movingGroups = new Set();
+  const roadSegments = [], paths = [], movingGroups = new Set(), pathSurfaces = [];
   /** Road centre lines, coarse, for keeping scatter and scenery off the road. */
   function measurePath(points, width) {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
@@ -275,7 +278,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     for (let i = 1; i < samples.length; i++) roadSegments.push({ ax: samples[i - 1].x, az: samples[i - 1].z,
       bx: samples[i].x, bz: samples[i].z, width });
   }
-  function addPath(points, width, parent = world) {
+  function addPath(points, width, parent = world, kind = width < 2.3 ? 'trail' : 'road') {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
     const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 1.1)));
     const positions = [], indices = [], overCaloss = [];
@@ -299,10 +302,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
-    const path = new THREE.Mesh(geometry, material('#c6b384', { side: THREE.DoubleSide }));
+    const path = new THREE.Mesh(geometry, material(kind === 'trail' ? '#a2916c' : '#c6b384', { side: THREE.DoubleSide }));
+    path.name = kind === 'trail' ? 'Dirt footpath' : 'Main road';
     path.receiveShadow = true;
     parent.add(path);
-    paths.push(points.map(p => ({ x: p.x, z: p.z })));
+    pathSurfaces.push({ mesh: path, kind });
+    // Steering follows the same curve the road mesh shows, not chords between
+    // its sparse authoring controls (which cut across the Avrel bends).
+    paths.push(Object.assign(curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 6))).map(p => ({ x: p.x, z: p.z })), { kind, width }));
   }
   function roadDistance(x, z) {
     let min = Infinity;
@@ -585,17 +592,25 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   }
   function wornPatch(x, z, radius, tint, edgeScale = 1, parent = world) {
     const ground = groundFor(parent);
-    const geometry = new THREE.CircleGeometry(radius, 32);
-    geometry.rotateX(-Math.PI / 2);
-    const p = geometry.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const localX = p.getX(i), localZ = p.getZ(i);
-      const irregular = i ? 1 + Math.sin(i * 2.1) * .045 : 1;
-      const px = x + localX * irregular, pz = z + localZ * irregular * edgeScale;
-      p.setXYZ(i, px, ground(px, pz) + .028, pz);
+    // A single triangle fan cuts through rolling ground across a large clearing.
+    // Concentric rings keep the dirt on the terrain and below the road surface.
+    const rings = Math.max(1, Math.ceil(radius / 1.5));
+    const segments = Math.max(32, Math.ceil(Math.PI * 2 * radius / 1.5));
+    const vertices = [x, ground(x, z) + .028, z], indices = [];
+    for (let ring = 1; ring <= rings; ring++) for (let i = 0; i < segments; i++) {
+      const angle = i / segments * Math.PI * 2, reach = radius * ring / rings;
+      const irregular = 1 + Math.sin(i / segments * 32 * 2.1) * .045;
+      const px = x + Math.cos(angle) * reach * irregular, pz = z + Math.sin(angle) * reach * irregular * edgeScale;
+      vertices.push(px, ground(px, pz) + .028, pz);
+      const outer = 1 + (ring - 1) * segments + i, next = 1 + (ring - 1) * segments + (i + 1) % segments;
+      if (ring === 1) indices.push(0, next, outer);
+      else { const inner = outer - segments, innerNext = next - segments; indices.push(inner, next, outer, inner, innerNext, next); }
     }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setIndex(indices);
     geometry.computeVertexNormals();
     const patch = new THREE.Mesh(geometry, material(tint));
+    patch.name = 'Worn ground'; patch.userData.groundPatch = { x, z, radius };
     patch.receiveShadow = true;
     parent.add(patch);
   }
@@ -923,9 +938,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     signs.hanging({ x: board.x, y: localGround(board.x, board.z) + 2.5, z: board.z, label: 'The Smithy', facing: turn, parent: villageRoot });
   }
   signs.direction({ x: 4.4, z: 15.1, label: 'The Greenway', toward: { x: 0, z: -36 }, back: { x: 0, z: 29 }, backLabel: 'Tidehaven Landing', parent: villageRoot });
-  signs.direction({ x: -6, z: -86, label: 'Fernway Rest', toward: northTrail, back: { x: -2, z: -60 }, backLabel: 'Tidehaven', parent: villageRoot });
-  signs.direction({ x: -10.7, z: -105, label: 'The Avrel Clearing', toward: border, back: { x: -8, z: -80 }, backLabel: 'Tidehaven', parent: villageRoot });
-  signs.direction({ x: 12.9, z: -129, label: 'The Avrel Clearing', toward: border, back: northTrail, backLabel: 'Fernway Rest', parent: villageRoot });
+  // The Greenway/Fernway junction is deliberately unsigned. Its narrow woodland
+  // paths invite exploration without announcing every clearing at the roadside.
   // Pueth's scenery still calls the older trailSign(x, z, direction, label, yaw, returnLabel, parent): the same
   // fingerposts, pointing ahead along the Pueth road to the place named and back along it (or the main road home).
   /** The point `metres` along a road (negative: back toward its start) from the road point nearest (x, z). */
@@ -970,14 +984,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   vpush({ x: cairnX, z: cairnZ, r: .65 });
   lantern(restX + 1.6, restZ - .2, 2.8);
 
-  // Where the wood gives out: bare, walked ground and nothing built on it. An army gate stood
-  // across this line - two stone blocks, posts, crossbars and wing fences - until the user took
-  // the whole place out on 22 September 2026 (src/region-world.js, WOOD_EDGE).
-  localPatch(border.x, border.z, 7.6, '#b5b387', .83);
-
-  // Tidehaven's boundary: a painted stone, its faces naming the ground each looks into.
-  signs.border({ x: -5.2, z: border.z + 1.0, facing: Math.PI, parent: villageRoot,
-    faces: [{ label: 'Tidehaven', paint: SIGN_COLOURS.paint.drent }, { label: 'Avrel', paint: SIGN_COLOURS.paint.drent }] });
+  // The former Avrel boundary stone and its bare apron have been removed. The road remains
+  // open; a small authored stand below fills the old clearing without re-rolling this forest.
 
   // ---------------------------------------------------------------------------
   // Tidehaven's woodland: the original deterministic scatter
@@ -1035,6 +1043,25 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     }
   });
   [trunkMesh, canopyMesh, pineMesh].forEach(m => { m.castShadow = true; m.receiveShadow = true; villageRoot.add(m); });
+
+  // Separate from the seeded scatter so saved oak/acorn/squirrel IDs and the later scenery
+  // random stream stay stable. These trees use world ground at the village terrain's seam.
+  const avrelEdgeTrees = [[-5.8,-153,7.4],[-10,-158,8.2],[-7,-164,7.8],[6,-152,8.6],
+    [10,-159,7.1],[5,-164,8.1],[-14,-149,8.8],[14,-153,7.7]].map(([x,z,height],i) => {
+    const spot = villageToWorld(x,z), y = groundHeight(spot.x,spot.z), radius = .34;
+    const trunk = mesh(trunkMesh.geometry, material('#795e41'), spot.x,y+height*.41,spot.z,.92,height*.82,.92,world);
+    trunk.userData.passable = true;
+    for (let c=0;c<3;c++) {
+      const angle=i*1.9+c*2.1, spread=c===2?0:height*.12;
+      const leaf=mesh(canopyMesh.geometry,material(['#749151','#849f60','#69874e'][i%3]),
+        spot.x+Math.sin(angle)*spread,y+height*(c===2?.94:.74),spot.z+Math.cos(angle)*spread,
+        height*.28,height*.29,height*.28,world);
+      leaf.userData.passable=true;
+    }
+    colliders.push({...spot,r:radius,kind:'avrel-edge-tree'});
+    return {id:`avrel-edge-${i}`,...spot,y,height,radius,trunkHeight:height*.82,trunkTopRadius:.19,
+      axis:[0,1,0],base:{...spot,y}};
+  });
 
   const grassPositions = [], grassNormals = [];
   for (let b = 0; b < 5; b++) {
@@ -1203,7 +1230,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(SOLIS_ROAD, 4.2);
   for (const spur of roadSpurs) addPath(spur, 2.2);
   // Tidehaven's own lanes and woodland spurs stay in the village's frame.
-  function addLocalPath(points, width) {
+  function addLocalPath(points, width, kind = 'trail') {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
     const samples = curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / .9)));
     const positions = [], indices = [];
@@ -1220,13 +1247,16 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setIndex(indices); geometry.computeVertexNormals();
-    const path = new THREE.Mesh(geometry, material('#c6b384', { side: THREE.DoubleSide }));
+    const path = new THREE.Mesh(geometry, material(kind === 'trail' ? '#a2916c' : '#c6b384', { side: THREE.DoubleSide }));
+    path.name = kind === 'trail' ? 'Dirt footpath' : 'Village lane';
     path.receiveShadow = true; villageRoot.add(path);
-    paths.push(points.map(p => villageToWorld(p.x, p.z)));
+    pathSurfaces.push({ mesh: path, kind });
+    paths.push(Object.assign(curve.getPoints(Math.max(2, Math.ceil(curve.getLength() / 6))).map(p => villageToWorld(p.x, p.z)), { kind, width }));
   }
-  for (const lane of localSidePaths) addLocalPath(lane, 2.6);
-  for (const path of pondPaths) addLocalPath(path, 2.1);
-  for (const path of forestPlacePaths) addLocalPath(path, 1.85);
+  for (const [i, lane] of localSidePaths.entries()) addLocalPath(lane, i < 2 ? 2.6 : 1.25, i < 2 ? 'road' : 'trail');
+  for (const path of pondPaths) addLocalPath(path, 1.15);
+  for (const path of forestPlacePaths) addLocalPath(path, 1.15);
+  for (const path of DRENT_LOCAL_PATHS) addLocalPath(path, 1.1);
   for (const path of REGIONAL_PATHS) addPath(path, 1.85);
   addPath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
   addPath(PUETH_ROAD, 4.2);
@@ -1235,6 +1265,43 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(RENA_ROAD, 2.6);
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
   addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, 2.6);
+
+  // Footpaths join a road at its edge. Their full centre lines still meet for
+  // navigation, but brown faces must not stripe or z-fight across the pale road.
+  // Clip after all paths are made so even a road authored later wins the join.
+  {
+    world.updateMatrixWorld(true);
+    const faces = [], point = new THREE.Vector3();
+    const vertex = (object, index) => {
+      point.fromBufferAttribute(object.geometry.attributes.position, index).applyMatrix4(object.matrixWorld);
+      return { x: point.x, y: point.y, z: point.z };
+    };
+    for (const { mesh: object, kind } of pathSurfaces) if (kind === 'road') {
+      const index = object.geometry.index;
+      for (let i = 0; i < index.count; i += 3) faces.push([vertex(object, index.getX(i)), vertex(object, index.getX(i + 1)), vertex(object, index.getX(i + 2))]);
+    }
+    const mask = createRoadSurfaceMask(faces);
+    for (const { mesh: object, kind } of pathSurfaces) if (kind === 'trail') {
+      const geometry = object.geometry, original = geometry.index, positions = Array.from(geometry.attributes.position.array), indices = [];
+      const inverse = object.matrixWorld.clone().invert();
+      let changed = false;
+      for (let i = 0; i < original.count; i += 3) {
+        const sourceIndices = [original.getX(i), original.getX(i + 1), original.getX(i + 2)];
+        const triangle = sourceIndices.map(index => vertex(object, index)), pieces = mask.clip(triangle);
+        if (pieces.length === 1 && pieces[0] === triangle) { indices.push(...sourceIndices); continue; }
+        changed = true;
+        for (const piece of pieces) {
+          const start = positions.length / 3;
+          for (const p of piece) { point.set(p.x, p.y, p.z).applyMatrix4(inverse); positions.push(point.x, point.y, point.z); }
+          for (let j = 1; j + 1 < piece.length; j++) indices.push(start, start + j, start + j + 1);
+        }
+      }
+      if (changed) {
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setIndex(indices); geometry.computeVertexNormals();
+      }
+    }
+  }
 
   // Fingerposts along the new road: each points at its place, and back the way the traveler came.
   /** A point 40 m back along the nearest road, toward where that road starts. */
@@ -1399,16 +1466,12 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const local = worldToVillage(colliders[i].x, colliders[i].z);
     if (!colliders[i].kind && featureClear(local.x, local.z, true)) colliders.splice(i, 1);
   }
-  const forestSignPositions = [[-5, -43.5, Math.PI / 2], [19, -43, -Math.PI / 2], [14.3, -81, .6],
-    [-14, -89, Math.PI / 2], [-10, -109.7, Math.PI / 2], [-27, 13, Math.PI / 2]];
-  forestPlaceDefinitions.forEach((site, index) => {
-    const [x, z] = forestSignPositions[index], head = site.trail[1] ?? site;
-    signs.direction({ x, z, label: site.name, toward: head, back: { x: 2 * x - head.x, z: 2 * z - head.z }, backLabel: 'Village road', parent: villageRoot });
-  });
+  // Woodland branches are dirt trails, not signed village streets.
   const localWorld = { heightAt: localGround, colliders: localColliders };
   const forestPlaces = createForestPlaces(villageRoot, localWorld);
   const forestHideout = createForestHideout(hideoutRoot, { heightAt: (x, z) => { const p = hideoutToWorld(x, z); return groundHeight(p.x, p.z); }, colliders: hideoutColliders });
   const regionalPlaces = createRegionalPlaces(world, { heightAt: groundHeight, colliders });
+  const drentCivilWar = createDrentCivilWarScenery({ root: world, material, box, mesh, post, pebble, groundHeight, colliders, wornPatch, roofGeometry, movingGroups });
 
   const reedMat = material('#758249'), reedHead = material('#705637');
   for (let i = 0; i < 25; i++) {
@@ -1623,6 +1686,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const api = {
     heightAt,
     mapWaters,
+    mapBridges: bridgeDecks,
     colliders,
     /** Bowden's woodlot, whose trees fall and grow back (src/woodlot-world.js). */
     woodlot,
@@ -1672,7 +1736,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     stakedProps,
     regions,
     regionAt, isOpenCountry,
-    journeySites,
+    journeySites: { ...journeySites, 'drent-rebel-evidence': DRENT_SITES.evidence, 'drent-armory-supplies': DRENT_SITES.supplies },
+    drentCivilWar,
     routeJourney: ONWARD_ROAD.map(p => ({ x: p.x, z: p.z })),
     // The branch is walkable only to Elod's shut gate: East Suval is closed (closed-border.js).
     suvalRoute: FRONTIER_ROUTE.map(p => ({ x: p.x, z: p.z })),
@@ -1765,14 +1830,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // `westX` is where the wood ends: the line the old gate's barrier stood on, and still the
     // line that says a traveler has walked out of Tidehaven (src/region-world.js, WOOD_EDGE).
     border: { ...worldBorder, name: border.name, westX: WOOD_EDGE.westX,
-      regionName: border.regionName, open: true },
+      regionName: border.regionName, open: true, notice: border.notice },
     routeNorth: routeNorth.map(p => villageToWorld(p.x, p.z)),
     broadleafTrees: broadTrees.flatMap((tree, i) => {
       if (tree.hidden) return [];
       const spot = villageToWorld(tree.x, tree.z);
       return [{ id: `oak-${i}`, x: spot.x, z: spot.z, y: localGround(tree.x, tree.z), height: tree.h * tree.s,
         radius: .38 * tree.s, trunkHeight: tree.h * tree.s * .82, trunkTopRadius: .21 * tree.s, ...tree.trunk }];
-    }),
+    }).concat(avrelEdgeTrees),
     ringBell(time = worldTime) { bellStarted = time; },
     /**
      * The arrival boat, for the opening sequence (src/opening-sequence.js): world metres and a world
@@ -1795,6 +1860,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
+      ...DRENT_NPC_POSITIONS,
       ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS, ...ELAGOS_NPC_POSITIONS, ...AMOD_NPC_POSITIONS,
       ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
@@ -1806,8 +1872,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       { id: 'watch', name: 'Greenway Watch', ...villageToWorld(0, -66), description: 'The woodland warden watches the route to the greater regions of Azhora.' },
       { id: 'pond', name: 'Willowmere Pond', ...fishingSpots[0].fishingSpot, description: 'A quiet forest pool, a fishing ledge, and an old stone firepit beside the water.' },
       { id: 'northTrail', name: northTrail.name, ...worldNorthTrail, description: 'A shaded bench and an old cairn mark the last rest beneath Drent’s canopy.' },
-      { id: 'border', name: border.name, ...worldBorder, description: 'An old field gate stands open where the Tidehaven wood gives way to the Avrel clearing and the road to the Caloss.' },
+      { id: 'border', name: border.name, ...worldBorder, description: 'The road continues beneath the trees toward the Avrel farms and the Caloss.' },
       ...forestPlaceDefinitions.map(site => ({ ...site, ...villageToWorld(site.x, site.z) })),
+      { ...DRENT_SITES.camp, description: 'Unattended bedrolls, cold ashes, and a dispatch chest beneath the trees.' },
+      { ...DRENT_SITES.barracks, description: 'The Empire’s men lodge here. Guarded supply crates stand behind the soldiers’ quarters.' },
       { ...FOREST_HIDEOUT, ...hideoutToWorld(FOREST_HIDEOUT.x, FOREST_HIDEOUT.z),
         description: 'Scraps of blue cloth mark a side trail east from the Tessen road post. A goblin camp squats in the birch beyond, with sacks taken from the post’s stores.' },
       ...regionLandmarks,

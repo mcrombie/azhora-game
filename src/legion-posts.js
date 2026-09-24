@@ -6,13 +6,16 @@
  * company they are waiting for is eleven, the traveler among them (`MERCENARY_COMPANY_SIZE`).
  */
 import { toWorld } from './world-scale.js';
+import { LUMBER_TOWN, townPoint } from './region-world.js';
 
 // Stands are written in the authored 56 m frame and converted here; each post
 // belongs to the gate, clearing or camp it watches, and moves with it.
-const post = (id, name, rank, x, z, yaw, lines) => Object.freeze({
+const postAt = (id, name, rank, position, yaw, lines) => Object.freeze({
   id: `post-${id}`, name, rank, role: rank === 'officer' ? 'Marshal of the Moros muster' : 'Ambroni soldier',
-  modelRole: rank === 'officer' ? 'legion-officer' : 'legion-soldier', ...toWorld(x, z), yaw, lines: Object.freeze(lines),
+  modelRole: rank === 'officer' ? 'legion-officer' : 'legion-soldier', ...position, yaw, lines: Object.freeze(lines),
 });
+const post = (id, name, rank, x, z, yaw, lines) => postAt(id, name, rank, toWorld(x, z), yaw, lines);
+const townGateYaw = Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z);
 
 export const LEGION_POSTS = Object.freeze([
   post('landing', 'Footman Ottar', 'legionary', -3, 34, Math.PI / 2, [
@@ -27,12 +30,13 @@ export const LEGION_POSTS = Object.freeze([
     'Drent ends at this bank. Luscia is the far side, and Luscia did not ask for us.',
     'The bridge takes wagons; it will take you. Do not leave the road on the other side after dark. Wolves, and worse.',
   ]),
-  post('moros-gate-north', 'Footman Vell', 'legionary', -429.9, 257.2, Math.PI / 2, [
-    'The Moros Plain. The camp is south-west along the road; you will see the standard before you see the palisade.',
+  // Keep the saved NPC identities, but station both sentries at Nothom's south-west gate.
+  postAt('moros-gate-north', 'Footman Vell', 'legionary', townPoint(42, -4.3), townGateYaw, [
+    'This is Nothom’s gate onto the Moros road. The camp is south-west across the plain; you will see the standard before you see the palisade.',
     'Say your name at the camp gate and who signed you. Eleven hired swords are expected. Nobody has counted eleven yet.',
   ]),
-  post('moros-gate-south', 'Footman Tarn', 'legionary', -424.1, 261.6, Math.PI / 2, [
-    'Open country from here. Nothing to hide behind, for you or for them.',
+  postAt('moros-gate-south', 'Footman Tarn', 'legionary', townPoint(42, 2.9), townGateYaw, [
+    'Nothom ends at these walls. Beyond them is the road onto the plain. Keep your eyes open out there.',
     'The stockade to the south-east is ours today. Ask me tomorrow.',
   ]),
   post('camp-gate-north', 'Footman Coss', 'legionary', -525.9, 327.3, Math.PI / 2, [

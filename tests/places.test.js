@@ -7,8 +7,10 @@ import { PLACE_LANDMARKS, PLACE_CLEARINGS, LUMBER_TOWN_WORKS, STABLE_CLEARANCE, 
 import { WAYSIDE_PLACES, DRENT_WAYSIDE, MOROS_WAYSIDE, MOROS_MILESTONES } from '../src/wayside.js';
 import { FRONTIER_LANDMARKS } from '../src/frontier.js';
 import { OUTPOST_BENCH, OUTPOST_FIRE } from '../src/outpost.js';
-import { LUMBER_TOWN_STABLE, hexOwnerAt, insideRegion } from '../src/region-world.js';
+import { LUMBER_TOWN, LUMBER_TOWN_STABLE, STORY_SITES, townPoint, hexOwnerAt, insideRegion } from '../src/region-world.js';
 import { validateWoodlandProgress } from '../src/woodland-progress.js';
+import { LEGION_POSTS } from '../src/legion-posts.js';
+import { BODY } from '../src/bodies.js';
 
 const scene = new THREE.Scene();
 const { createWorld } = await sourceModule('../src/world.js');
@@ -44,6 +46,76 @@ test('the stable yard is dressed without a collider within 6 m of the ostler’s
   }
   for (const name of ['stable', 'horse-trough', 'hitching-rail', 'paddock-fence']) assert.ok(world.colliders.some(c => c.kind === name), `the yard has its ${name}`);
   assert.equal(LUMBER_TOWN_WORKS.gates.length, 2, 'a palisade gate at each end of the road');
+});
+
+test('Nothom has a continuous enclosing palisade, interrupted only by its two usable road gates', () => {
+  const [west,east]=LUMBER_TOWN_WORKS.palisade;
+  const outline=[...west,...east];
+  const inside=p=>{
+    let result=false;
+    for(let i=0,j=outline.length-1;i<outline.length;j=i++) {
+      const a=outline[i],b=outline[j];
+      if((a.z>p.z)!==(b.z>p.z)&&p.x<(b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x) result=!result;
+    }
+    return result;
+  };
+  for(const point of [LUMBER_TOWN.square,LUMBER_TOWN_WORKS.hall,LUMBER_TOWN_WORKS.smithy,
+    LUMBER_TOWN_WORKS.stable,LUMBER_TOWN_STABLE.stand,LUMBER_TOWN_STABLE.hitch,...LUMBER_TOWN_WORKS.paddock])
+    assert.ok(inside(point),'town buildings and the entire horse yard lie inside the perimeter');
+  const gates=[[west.at(-1),east[0]],[east.at(-1),west[0]]];
+  for(const [index,[a,b]] of gates.entries()) {
+    const center={x:(a.x+b.x)/2,z:(a.z+b.z)/2};
+    const gate=LUMBER_TOWN_WORKS.gates.find(g=>Math.hypot(g.x-center.x,g.z-center.z)<.01);
+    assert.ok(gate,`the only opening ${index} is an existing gateway`);
+    assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>10,'the gateway is wide enough for a mounted traveler');
+    for(let k=-8;k<=8;k++) assert.ok(canStand(gate.x+LUMBER_TOWN.along.x*k,gate.z+LUMBER_TOWN.along.z*k,world,.7),'gate approach is traversable on horseback');
+  }
+  const wallWorld={...world,colliders:world.colliders.filter(c=>c.kind==='town-palisade'),nearColliders:null};
+  for(const collider of wallWorld.colliders) assert.ok(lineDistance(world.paths[0],collider.x,collider.z)-collider.r>=1.95,'the actual curved main road stays clear of every new wall');
+  for(const chain of LUMBER_TOWN_WORKS.palisade) for(let i=1;i<chain.length;i++) {
+    const a=chain[i-1],b=chain[i],steps=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.2);
+    for(let k=0;k<=steps;k++) assert.equal(canStand(a.x+(b.x-a.x)*k/steps,a.z+(b.z-a.z)*k/steps,wallWorld,.34),false,'no person-sized gap between palisade colliders');
+  }
+  const routes=[[townPoint(23,0),LUMBER_TOWN_STABLE.stand,LUMBER_TOWN_STABLE.hitch]];
+  for(const route of routes) for(let i=1;i<route.length;i++) {
+    const a=route[i-1],b=route[i],steps=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.2);
+    for(let k=0;k<=steps;k++) assert.ok(canStand(a.x+(b.x-a.x)*k/steps,a.z+(b.z-a.z)*k/steps,world,.7),'road to ostler and horse remains open');
+  }
+});
+
+test('the road beyond Nothom has no freestanding Moros gate, barrier, watch platform or gate signs', () => {
+  const former = STORY_SITES.morosGate;
+  assert.equal(scene.getObjectByName('The Moros gate'), undefined, 'the entire old gate mesh is removed');
+  assert.equal(world.colliders.some(c => /^moros-gate-/.test(c.kind ?? '')), false, 'the old posts and palisade wings leave no invisible barriers');
+  assert.equal(world.colliders.some(c => c.kind === 'watch-platform' && Math.hypot(c.x-former.x,c.z-former.z)<20), false, 'the old watch platform leaves no supports');
+  assert.equal(world.roadSigns.some(sign => sign.label === 'The Moros Gate'), false, 'the obsolete name board is gone');
+  assert.equal(world.roadSigns.some(sign => sign.kind === 'border' && Math.hypot(sign.x-former.x,sign.z-former.z)<20), false, 'the freestanding border stone is gone');
+  assert.equal(world.landmarks.find(place => place.id === 'moros-gate')?.name, 'The Moros Road', 'old discovery saves retain an open-road landmark');
+  // The original anchor still positions the plain's wayside props. The real
+  // town gate and the camp fortifications remain separate structures.
+  assert.ok(scene.getObjectByName('The Moros wayside'), 'the wayside scenery remains');
+  assert.ok(world.colliders.some(c => c.kind === 'town-palisade'), 'Nothom keeps its enclosing walls');
+  assert.ok(world.colliders.some(c => c.kind === 'legion-tent'), 'the army camp remains');
+  const guards=LEGION_POSTS.filter(npc => ['post-moros-gate-north','post-moros-gate-south'].includes(npc.id));
+  const gate=LUMBER_TOWN_WORKS.gates.find(site => site.id === 'south');
+  assert.equal(guards.length,2,'both relocated guards keep their existing identities');
+  for(const guard of guards) {
+    assert.ok(canStand(guard.x,guard.z,world,BODY.person),'the relocated guard has legal footing');
+    assert.ok(Math.hypot(guard.x-gate.x,guard.z-gate.z)<5,'the guard stands beside Nothom southwest gate');
+  }
+  for(let step=-8;step<=8;step++) {
+    const x=gate.x+LUMBER_TOWN.along.x*step,z=gate.z+LUMBER_TOWN.along.z*step;
+    assert.ok(canStand(x,z,world,BODY.horse),'the mounted road through the town gate remains open');
+    for(const guard of guards) assert.ok(Math.hypot(guard.x-x,guard.z-z)>BODY.horse+BODY.person,'neither guard stands in the mounted passage');
+  }
+  const road = world.paths[0];
+  for(let i=1;i<road.length;i++) {
+    const a=road[i-1],b=road[i],steps=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z));
+    for(let k=0;k<=steps;k++) {
+      const x=a.x+(b.x-a.x)*k/steps,z=a.z+(b.z-a.z)*k/steps;
+      if(Math.hypot(x-former.x,z-former.z)<25) assert.ok(canStand(x,z,world,.7),'the former gate road remains passable on horseback');
+    }
+  }
 });
 
 test('the outpost’s smithy bench and mess fire are registered like every other bench and fire, and can be reached', () => {

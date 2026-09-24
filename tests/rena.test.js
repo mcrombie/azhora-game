@@ -70,7 +70,7 @@ test('nothing this pass builds stands on the main road, the Suval branch or the 
 test('the old road leaves the main road, runs through the ruins and reaches Applegarth, and can be walked the whole way', () => {
   const road = world.renaRoute;
   assert.ok(road && road.length === RENA_ROAD.length, 'the world carries the old road as a path');
-  assert.ok(world.paths.some(path => path.length === road.length && Math.hypot(path[0].x - road[0].x, path[0].z - road[0].z) < .01), 'it is a drawn path, not only a list');
+  assert.ok(world.paths.some(path => road.every(point => lineDistance(path, point.x, point.z) < 1)), 'it is a drawn sampled path through its authored controls, not only a list');
   assert.ok(lineDistance(MAIN_ROAD, RENA_JUNCTION.x, RENA_JUNCTION.z) < .2, 'it forks off the main road');
   for (const gate of [RENA_EAST_GATE, RENA_WEST_GATE, APPLEGARTH_EAST, APPLEGARTH_WEST])
     assert.ok(road.some(point => Math.hypot(point.x - gate.x, point.z - gate.z) < .01), 'the road runs in at one gate and out at the other');

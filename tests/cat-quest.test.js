@@ -61,13 +61,18 @@ test('the one outcome she cannot be paid for', () => {
   assert.equal(quest.home(), false);
 });
 
-test('the fork is the ending: the coin or the bees, once, and never both', () => {
+test('Liz pays once and still offers the earned bees lesson after taking coin', () => {
   for (const [id, stageName] of [['purse', 'paid'], ['lesson', 'taught']]) {
     const quest = createCatQuest();
     quest.ask(); quest.accept(); quest.found(); quest.home();
     assert.equal(quest.take(id).stage, stageName);
     assert.equal(quest.state.over, true);
-    assert.equal(quest.take(id === 'purse' ? 'lesson' : 'purse'), null, 'she paid twice');
+    if(id==='purse'){
+      assert.deepEqual(quest.choices().map(one=>one.id),['lesson']);
+      assert.equal(quest.take('lesson').stage,'taught');
+    }
+    assert.equal(quest.take('purse'),null,'she paid twice');
+    assert.equal(quest.take('lesson'),null,'she taught twice');
     assert.deepEqual(quest.choices(), []);
   }
   assert.equal(createCatQuest().take('purse'), null, 'nobody is paid for a cat that is still out');

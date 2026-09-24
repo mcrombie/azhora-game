@@ -5,19 +5,17 @@ import {
   STOCKADE_CIRCUIT, STOCKADE_LAYOUT,
 } from './outpost.js';
 import { MOROS_WAYSIDE, MOROS_MILESTONES } from './wayside.js';
-import { STORY_SITES } from './region-world.js';
-import { SIGN_COLOURS } from './signs.js';
 
 /**
  * The Moros Plain's built places: the Ambroni outpost (the army's timber fort),
- * the forward stockade on the border, the Moros gate and the wayside between the
- * gate and the outpost. Layout lives in `outpost.js` and `wayside.js`; this
+ * the forward stockade on the border, and the wayside between Nothom and the
+ * outpost. Layout lives in `outpost.js` and `wayside.js`; this
  * module draws it and adds the colliders the circuits do not already carry.
  */
 const CANVAS = '#cdbf96', CANVAS_DARK = '#b3a47c', CANVAS_SHADE = '#9d8f6b', ROPE = '#b8a77c', IRON = '#4d4b47', EMBER = '#9c4a26';
 const LEGION_RED = '#8c3f38', REPUBLIC_BLUE = '#3f5f86', GOLD = '#c9a24e', WHITE = '#ece6d4';
 
-export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGroups, stakedProps, roadDistance }) {
+export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGroups, stakedProps }) {
   const push = collider => { colliders.push(collider); return collider; };
   const box = (x, z, hx, hz, kind) => push({ x, z, hx, hz, kind });
   const circle = (x, z, r, kind) => push({ x, z, r, kind });
@@ -216,82 +214,9 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
   }
 
   // -------------------------------------------------------------------------
-  // The Moros gate: two great posts under a beam, leaves swung back, wings and a watch platform
-  // -------------------------------------------------------------------------
-  {
-    const gate = STORY_SITES.morosGate, g = createSceneryBuilder('The Moros gate');
-    const u = roadAxis(gate, roadDistance), n = { x: -u.z, z: u.x }, gy = y(gate.x, gate.z);
-    const at = (along, across) => ({ x: gate.x + u.x * along + n.x * across, z: gate.z + u.z * along + n.z * across });
-    const yaw = Math.atan2(u.x, u.z);
-    for (const side of [-1, 1]) {
-      const p = at(0, side * 5.4), py = y(p.x, p.z);
-      g.block('#8f9087', p.x, py - .1, p.z, 1.1, .7, 1.1, yaw);
-      g.block('#6f5238', p.x, py, p.z, .5, 5.1, .5, yaw);
-      g.cone('#58422f', p.x, py + 5.1, p.z, .42, .45, yaw + Math.PI / 4, 4);
-      circle(p.x, p.z, .55, 'moros-gate-post');
-      // The leaf, swung back along the wing toward the plain.
-      const hinge = at(.3, side * 5.0), tip = at(4.6, side * 5.0);
-      g.beam('#6f5238', [hinge.x, py + .55, hinge.z], [tip.x, py + .55, tip.z], .14, .16);
-      g.beam('#6f5238', [hinge.x, py + 1.55, hinge.z], [tip.x, py + 1.55, tip.z], .14, .16);
-      g.beam('#6f5238', [hinge.x, py + .55, hinge.z], [tip.x, py + 1.55, tip.z], .1, .12);
-      g.beam('#6f5238', [tip.x, py, tip.z], [tip.x, py + 1.7, tip.z], .14);
-      // Wings of palisade either side, running out from the posts across the old copse line.
-      for (let k = 0; k < 20; k++) {
-        const w = at(0, side * (6.3 + k * .42)), wy = y(w.x, w.z), h = 2.6 + (k % 3) * .12;
-        g.stake(k % 2 ? '#6f5238' : '#634833', w.x, wy, w.z, .38, h, yaw, .35);
-      }
-      const w0 = at(0, side * 6.1), w1 = at(0, side * 14.5);
-      g.beam('#58422f', [w0.x, y(w0.x, w0.z) + 1.6, w0.z], [w1.x, y(w1.x, w1.z) + 1.6, w1.z], .12, .18);
-      const mid = at(0, side * 10.3);
-      push({ x: mid.x, z: mid.z, r: .35, kind: 'moros-gate-wing' });
-      for (let k = 0; k <= 12; k++) { const w = at(0, side * (6.2 + k * .7)); push({ x: w.x, z: w.z, r: .3, kind: 'moros-gate-wing' }); }
-    }
-    const beamA = at(0, -5.9), beamB = at(0, 5.9);
-    g.beam('#58422f', [beamA.x, gy + 4.7, beamA.z], [beamB.x, gy + 4.7, beamB.z], .34, .42);
-    // The watch platform, on the north side of the gate.
-    const w = at(-3.5, 10.5), wy = y(w.x, w.z), deck = 3.4;
-    for (const sa of [-1, 1]) for (const sc of [-1, 1]) {
-      const p = at(-3.5 + sa * 1.4, 10.5 + sc * 1.4);
-      g.beam('#634833', [p.x, y(p.x, p.z), p.z], [p.x, wy + deck + 2.6, p.z], .2);
-      circle(p.x, p.z, .22, 'watch-platform');
-    }
-    g.box('#9a7650', w.x, wy + deck, w.z, 3.3, .16, 3.3, yaw);
-    for (const [sa, sc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      const p = at(-3.5 + sa * 1.62, 10.5 + sc * 1.62);
-      g.box('#6f5238', p.x, wy + deck + .55, p.z, sa ? .12 : 3.3, .9, sa ? 3.3 : .12, yaw);
-    }
-    g.roof('#6d5a43', w.x, wy + deck + 2.6, w.z, 3.8, 3.8, 1.0, yaw);
-    const ladderA = at(-5.2, 9.8), ladderB = at(-5.2, 11.2);
-    for (const p of [ladderA, ladderB]) g.beam('#58422f', [p.x - u.x * .9, y(p.x, p.z), p.z - u.z * .9], [p.x, wy + deck + .9, p.z], .08);
-    for (let r = 0; r < 8; r++) {
-      const f = (r + .5) / 8, a = { x: ladderA.x - u.x * .9 * (1 - f), z: ladderA.z - u.z * .9 * (1 - f) }, c = { x: ladderB.x - u.x * .9 * (1 - f), z: ladderB.z - u.z * .9 * (1 - f) };
-      g.beam('#6f5238', [a.x, wy + deck * f, a.z], [c.x, wy + deck * f, c.z], .05);
-    }
-    g.finish(parent);
-    // The border stone at the gate, and the gate's name for travelers coming up from Luscia.
-    const stone = at(-1.5, -8.2);
-    signs.border({ x: stone.x, z: stone.z, facing: yaw, parent,
-      faces: [{ label: 'Luscia', paint: SIGN_COLOURS.paint.luscia }, { label: 'Moros Plain', paint: SIGN_COLOURS.paint.moros }] });
-    const board = at(-9, -7.6);
-    signs.place({ x: board.x, z: board.z, label: 'The Moros Gate', facing: yaw + Math.PI + .5, parent });
-  }
-
-  // -------------------------------------------------------------------------
-  // The wayside between the gate and the outpost
+  // The wayside between Nothom and the outpost
   // -------------------------------------------------------------------------
   buildMorosWayside({ parent, heightAt, push, circle, box, signs });
-}
-
-/** The road's heading at a point, from its nearest segment. */
-function roadAxis(point, roadDistance) {
-  const probe = [];
-  for (let a = 0; a < Math.PI; a += Math.PI / 36) {
-    const d = { x: Math.sin(a), z: Math.cos(a) };
-    probe.push({ d, score: roadDistance(point.x + d.x * 6, point.z + d.z * 6) + roadDistance(point.x - d.x * 6, point.z - d.z * 6) });
-  }
-  const best = probe.sort((p, q) => p.score - q.score)[0].d;
-  // Point along the road toward the Moros (west).
-  return best.x > 0 ? { x: -best.x, z: -best.z } : best;
 }
 
 function buildMorosWayside({ parent, heightAt, push, circle, box, signs }) {

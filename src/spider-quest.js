@@ -10,10 +10,11 @@
  * **How it goes.** Say yes and he walks you out to the den, talking. The fight is hard: one
  * creature the size of a cart, and his fireballs are the reason it is winnable at all. Kill it
  * with Ben alive and he pays what the guild sent him with — **a share of the bounty, or the first
- * lesson in fire.** One or the other. That choice is the quest's ending and there is no way to
- * have both.
+ * lesson in fire.** Choose one reward: the bounty or the Fireball lesson and a spare wand.
+ * The choice is final, and neither reward can be claimed twice.
  *
- * **And if you never come**, or you come and stand back, the spider kills him. He is not a
+ * **He waits for you on the walk.** If you join the fight and then stand back, the spider can
+ * kill him. He is not a
  * companion the game protects: `abandoned` is a real ending, and what you find at the den
  * afterwards is a wand on the ground and a hat. The quest closes there, unfinished, and fire
  * stays unlearned - Ben is the only person in Azhora who teaches it (src/sorcery.js).
@@ -42,9 +43,8 @@ export const SPIDER = Object.freeze({ id: 'thorn-spider', name: 'The spider in t
  * the thing comes out of the thorns half a second after you are inside its reach.
  *
  * **Ben stands in it as an ally**, at his own numbers, because the fireballs are the reason it is
- * winnable and because he has to be able to die in it. `legionary` is the nearest ally kind the
- * combat module has to a man who fights at range and does not last long if something reaches him
- * (src/combat.js); what makes him a sorcerer is the wand in the model and the fire in the fiction.
+ * winnable and because he has to be able to die in it. His sorcerer kind keeps its distance,
+ * raises a wand and sends actual fireballs; his world appearance travels into the encounter.
  */
 export const SPIDER_DEN = Object.freeze({
   id: 'thorn-den',
@@ -55,7 +55,8 @@ export const SPIDER_DEN = Object.freeze({
     Object.freeze({ id: SPIDER.id, name: SPIDER.name, kind: SPIDER.kind, x: -800, z: 272, hp: SPIDER.hp, entry: .6 }),
   ]),
   allies: Object.freeze([
-    Object.freeze({ id: 'ben-sorcerer', name: 'Ben', kind: 'legionary', x: -790, z: 280, hp: 78 }),
+    Object.freeze({ id: BEN.id, name: BEN.name, kind: 'sorcerer', x: -790, z: 280, hp: 78,
+      model: Object.freeze({ role: BEN.modelRole, tunic: BEN.color, skin: BEN.skin, look: BEN.look }) }),
   ]),
 });
 
@@ -92,7 +93,7 @@ export const STAGES = Object.freeze(['unmet', 'asked', 'walking', 'fighting', 'k
 /** The two ways it can end well, and what each hands over. */
 export const REWARDS = Object.freeze({
   bounty: Object.freeze({ id: 'bounty', stage: 'paid', label: 'Take a share of the bounty' }),
-  lesson: Object.freeze({ id: 'lesson', stage: 'taught', label: 'Ask him to show you the fire' }),
+  lesson: Object.freeze({ id: 'lesson', stage: 'taught', label: 'Learn Fireball and receive a spare wand' }),
 });
 export const REWARD_IDS = Object.freeze(Object.keys(REWARDS));
 
@@ -102,6 +103,11 @@ export function validateSpiderQuestSnapshot(value) {
   if (!value || typeof value !== 'object' || value.version !== SPIDER_QUEST_VERSION) return false;
   if (!STAGES.includes(value.stage)) return false;
   if (typeof value.benDown !== 'boolean' || typeof value.spiderDown !== 'boolean') return false;
+  if(value.fight!=null&&(!Number.isFinite(value.fight.spiderHp)||value.fight.spiderHp<0||value.fight.spiderHp>100000
+    ||!Number.isFinite(value.fight.benHp)||value.fight.benHp<0||value.fight.benHp>100000))return false;
+  if(value.guide!=null&&(!Number.isFinite(value.guide.x)||!Number.isFinite(value.guide.z)
+    ||!Number.isInteger(value.guide.waypoint)||value.guide.waypoint<0||value.guide.waypoint>32
+    ||typeof value.guide.waiting!=='boolean'))return false;
   // A man cannot be dead and paying you, and the quest cannot be over with the thing still alive.
   if (value.benDown && !['abandoned', 'fighting'].includes(value.stage)) return false;
   if (['killed', 'paid', 'taught'].includes(value.stage) && !value.spiderDown) return false;
@@ -111,7 +117,7 @@ export function validateSpiderQuestSnapshot(value) {
 
 export function createSpiderQuest({ onEvent = () => {} } = {}) {
   let state = emptyState();
-  const snapshot = () => ({ ...state });
+  const snapshot = () => ({ ...state, ...(state.guide?{guide:{...state.guide}}:{}), ...(state.fight?{fight:{...state.fight}}:{}) });
   const at = (...stages) => stages.includes(state.stage);
 
   /** He asks, once, when the traveler first speaks to him. */
@@ -144,7 +150,11 @@ export function createSpiderQuest({ onEvent = () => {} } = {}) {
   function settle({ spiderDead = false, benAlive = true } = {}) {
     if (!at('fighting')) return false;
     if (!benAlive) { state.benDown = true; state.spiderDown = !!spiderDead; state.stage = 'abandoned'; onEvent({ type: 'spider-took-ben' }); return true; }
-    if (!spiderDead) return false;
+    if (!spiderDead) {
+      state.stage = 'walking';
+      onEvent({ type: 'spider-regrouped' });
+      return true;
+    }
     state.spiderDown = true; state.stage = 'killed';
     onEvent({ type: 'spider-killed' });
     return true;
@@ -158,7 +168,7 @@ export function createSpiderQuest({ onEvent = () => {} } = {}) {
     return true;
   }
 
-  /** The fork, and the whole of the ending: one of them, once. */
+  /** One reward, once. Coin and the Fireball lesson are mutually exclusive. */
   function take(rewardId) {
     const reward = REWARDS[rewardId];
     if (!reward || !at('killed')) return null;
@@ -170,11 +180,26 @@ export function createSpiderQuest({ onEvent = () => {} } = {}) {
   function restore(data) {
     if (!validateSpiderQuestSnapshot(data)) return false;
     state = { version: SPIDER_QUEST_VERSION, stage: data.stage, benDown: data.benDown, spiderDown: data.spiderDown };
+    if(data.guide)state.guide={...data.guide};
+    if(data.fight)state.fight={...data.fight};
+    // Checkpoints do not carry a running encounter. Older saves could retain
+    // 'fighting' after a retreat, leaving neither an escort nor a restart trigger.
+    if (state.stage === 'fighting') state.stage = state.benDown ? 'abandoned' : 'walking';
     return true;
   }
 
+  function rememberGuide(guide) {
+    if(!at('walking','fighting')||!validateSpiderQuestSnapshot({...state,guide}))return false;
+    state.guide={...guide};return true;
+  }
+
+  function rememberFight(fight) {
+    if(!at('walking','fighting')||!fight||!validateSpiderQuestSnapshot({...state,fight}))return false;
+    state.fight={spiderHp:fight.spiderHp,benHp:fight.benHp};return true;
+  }
+
   return {
-    ask, accept, begin, settle, benFell, take, snapshot, restore,
+    ask, accept, begin, settle, benFell, take, snapshot, restore, rememberGuide, rememberFight,
     /** What the traveler may choose right now, which is nothing at all until the thing is dead. */
     choices: () => (state.stage === 'killed' ? REWARD_IDS.map(id => REWARDS[id]) : []),
     get state() { return { ...snapshot(), walking: state.stage === 'walking', over: ['paid', 'taught', 'abandoned'].includes(state.stage) }; },

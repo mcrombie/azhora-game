@@ -50,3 +50,57 @@
 .inventory-drawer button:focus-visible,.inventory-letter:focus-visible{outline:2px solid #ffe2a1;outline-offset:3px}
 @media(max-height:720px){.inventory-overlay{padding:14px}.inventory-header{padding:18px 23px 14px}.inventory-header h2{font-size:32px}.inventory-scroll{padding:14px 21px 21px}.inventory-hint{margin-bottom:12px}.inventory-footer{padding:12px 21px}.inventory-footer p{margin-top:6px}.inventory-item{min-height:60px;padding:8px 10px}.inventory-detail{margin-top:18px;padding-top:15px}}
 @media(max-width:540px){.inventory-overlay{padding:8px}.inventory-drawer{width:100%;max-width:420px}.inventory-header{padding-left:20px}.inventory-scroll{padding-left:18px;padding-right:18px}.inventory-footer{padding-left:18px;padding-right:18px}.inventory-item-label strong{font-size:16px}.inventory-letter{padding:20px 17px}}
+
+/* Equipment stays in view; selecting an item never pushes its actions below the entire bag. */
+.inventory-overlay{background:#071c2259;padding:26px;align-items:stretch}
+.inventory-drawer{width:min(880px,100%);max-height:100%;border-radius:8px}
+.inventory-header{padding:19px 25px 15px}
+.inventory-header h2{font-size:31px;margin:3px 0 6px}
+.inventory-header .inventory-eyebrow{margin:0}
+.inventory-subtitle{margin:0}
+.inventory-scroll{display:flex;flex-direction:column;overflow:hidden;padding:18px 24px;gap:12px}
+.inventory-hint{font-size:12px;margin:0;flex-shrink:0}
+.inventory-equipment{flex-shrink:0;padding-bottom:13px;border-bottom:1px solid #cfcaad32}
+.inventory-equipment-heading{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:10px}
+.inventory-equipment-heading h3{font:600 13px 'Segoe UI',sans-serif;margin:0;color:#fff2ce}
+.inventory-equipment-heading>span{font-size:11px;color:#d4d8c1}
+.inventory-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.inventory-slot{display:flex;gap:8px;align-items:center;text-align:left;padding:9px 8px;min-width:0;min-height:68px;border:1px solid #bcc9a951;border-radius:4px;background:#ffffff05;color:#f3e5c4}
+.inventory-slot>span:last-child{min-width:0}
+.inventory-slot small{display:block;color:#c8d0b8;font-size:10px;margin-bottom:4px}
+.inventory-slot strong{font:500 12px/1.3 'Segoe UI',sans-serif;display:block;overflow-wrap:anywhere}
+.inventory-slot .inventory-item-icon{width:29px;height:33px;flex-basis:29px;background:none;border:0}
+.inventory-slot .inventory-item-icon svg{width:29px;height:29px}
+.inventory-slot:hover,.inventory-slot[aria-pressed=true]{background:#eed29b15;border-color:#dec687}
+.inventory-base-layers{display:flex;gap:6px 10px;flex-wrap:wrap;align-items:center;margin-top:10px;font-size:11px}
+.inventory-base-layers>span{color:#becbb7}
+.inventory-clothing{border:0;border-bottom:1px solid #d9c89940;background:none;color:#e8d8b5;padding:2px 1px;font-size:11px;line-height:1.5}
+.inventory-filters{display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0}
+.inventory-filter{border:1px solid #b8c6a648;border-radius:4px;background:transparent;color:#dce1cb;padding:7px 10px;font:500 11px 'Segoe UI',sans-serif;min-height:31px}
+.inventory-filter.active{background:#ebd098;color:#243d34;border-color:#ebd098}
+.inventory-filter-context{margin:0;font-size:11px;line-height:1.5;color:#cfdbc2;flex-shrink:0}
+.inventory-filter-context[hidden]{display:none}
+.inventory-columns{display:grid;grid-template-columns:minmax(235px,.95fr) minmax(270px,1.05fr);gap:20px;min-height:0;flex:1}
+.inventory-items{overflow-y:auto;min-height:0;gap:6px;overscroll-behavior:contain;padding:3px 5px 5px 3px;scrollbar-width:thin;scrollbar-color:#b5ac83 #1a352e}
+.inventory-item{min-height:62px;flex:0 0 auto;padding:8px 9px}
+.inventory-item-label strong{font:500 14px/1.3 'Segoe UI',sans-serif}
+.inventory-item-label small{font-size:10px;line-height:1.4;letter-spacing:0;color:#c2cdb6}
+.inventory-select-label{font-size:10px;margin-left:0}
+.inventory-detail{margin:0;padding:4px 4px 20px 19px;border-top:0;border-left:1px solid #e0d2a82e;overflow-y:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b5ac83 #1a352e}
+.inventory-detail h3{font-size:25px;margin-top:3px}
+.inventory-detail>p:not(.inventory-detail-kicker){font-size:12px;line-height:1.7}
+.inventory-detail-kicker{margin-top:0}
+.inventory-detail .inventory-equip{margin-top:13px;font-size:13px;min-height:40px}
+.inventory-condition{margin-bottom:10px}
+.inventory-worn-status{padding:7px 10px;background:#c8dbad12;border-left:2px solid #c8dbad;color:#e1e9ce!important}
+.inventory-stats{display:grid;grid-template-columns:1fr auto;gap:8px 14px;font-size:12px;padding:13px 0;margin:10px 0;border-top:1px solid #e0d2a826;border-bottom:1px solid #e0d2a826}
+.inventory-stats dt{color:#d0d8c2}.inventory-stats dd{margin:0;color:#f0ddb4;font-variant-numeric:tabular-nums}
+.inventory-comparison{color:#cfddba!important}
+.inventory-casting-note{padding:10px 12px;background:#e6d09212;border-left:2px solid #e4c987;color:#f2e2bc!important}
+.inventory-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 24px}
+.inventory-footer .inventory-dismiss{width:auto;min-width:195px;order:2}
+.inventory-footer p{margin:0;text-align:left;font-size:11px}
+.inventory-letter{padding:18px 15px;margin-top:13px}.inventory-letter p{font-size:14px}
+.inventory-tooltip{z-index:5}
+@media(max-height:760px){.inventory-overlay{padding:14px}.inventory-header{padding:13px 22px 11px}.inventory-header h2{font-size:27px}.inventory-scroll{padding:12px 20px;gap:9px}.inventory-slot{min-height:58px;padding:7px}.inventory-equipment{padding-bottom:9px}.inventory-base-layers{margin-top:7px}.inventory-footer{padding:10px 20px}.inventory-hint{font-size:11px}}
+@media(max-width:719px){.inventory-overlay{padding:8px}.inventory-drawer{max-width:100%}.inventory-scroll{overflow-y:auto;padding:12px 16px}.inventory-columns{display:flex;flex-direction:column;flex:0 0 auto;gap:14px}.inventory-items{max-height:33vh;min-height:90px;flex:none}.inventory-detail{overflow:visible;flex:none;border-left:0;border-top:1px solid #e0d2a82e;padding:14px 0 18px}.inventory-slots{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-slot{min-height:59px}.inventory-header h2{font-size:28px}.inventory-footer{padding:10px 16px}.inventory-footer p{display:none}.inventory-footer .inventory-dismiss{width:100%}}

@@ -1,10 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { activeOptionalQuests, createQuestTracker, normalizeTrackableQuests } from '../src/quest-tracker.js';
+import { createBurying } from '../src/lauvel-burying.js';
+import { createDrentCivilWar } from '../src/drent-civil-war.js';
+
+test('Sela joins the selectable quest tracker only after accepting, with objectives that follow the work', () => {
+  const burying = createBurying(), tracker = createQuestTracker();
+  const read = () => tracker.update({ optional: activeOptionalQuests({ burying: burying.snapshot() }) });
+  for (const visit of [() => {}, () => burying.hail(), () => burying.ask()]) {
+    visit(); assert.deepEqual(read().choices.map(quest => quest.id), ['main'], 'a hail or conversation is not an accepted quest');
+  }
+  burying.start();
+  const task = read().choices.find(quest => quest.id === 'lauvel-burying');
+  assert.equal(task.grade, 'deed');
+  assert.deepEqual(task.destinationIds, ['lauvel-digger', 'lauvel-bearer-front', 'lauvel-keeper']);
+  assert.doesNotMatch(task.detail, /Bevan|fourth|green coat/, 'the tracker does not reveal the future discovery');
+  assert.equal(tracker.select('lauvel-burying').ok, true);
+  burying.work('spade'); burying.work('names');
+  assert.deepEqual(read().selected.destinationIds, ['lauvel-bearer-front'], 'completed jobs do not keep attracting the pointer');
+  for (let trip = 0; trip < 4; trip++) burying.work('hurdle');
+  assert.deepEqual(read().selected.destinationIds, ['lauvel-seeker']);
+  burying.tell(); assert.match(read().selected.detail, /grave/);
+  burying.finish(); assert.equal(read().selectedId, 'main', 'the completed side quest releases the tracked objective');
+});
 
 const main = { title: 'Report to Nothom', detail: 'Carry your letter to Iven.', destinationIds: ['relay-clerk'] };
 const vastos = { title: 'The Common Water', detail: 'Bring the strays home.', stage: 'recover', destinationIds: ['west-stray', 'east-stray'] };
-const sources = { main, bridge: { stage: 'accepted', sticks: 2 }, vastos };
+// The previous prototype remains trackable if deliberately re-enabled by the slate.
+const sources = { main, bridge: { stage: 'accepted', sticks: 2 }, vastos,
+  live: id => ['main', 'bridge', 'civil-war-vastos'].includes(id) };
 
 test('main is selected by default and quests carry the three existing grades', () => {
   const tracker = createQuestTracker(), view = tracker.update(sources);
@@ -66,8 +90,48 @@ test('existing active optional quests can join the list without starting other c
   ] });
   assert.deepEqual(tracker.view().choices.map(quest => quest.id), ['main', 'accepted-story', 'small-favor']);
   tracker.select('accepted-story'); assert.deepEqual(tracker.target(null), { x: 4, z: 8 });
-  const view = tracker.view(); view.selected.title = 'Mutated'; view.choices[1].target.x = 999;
+  const view = tracker.view(); view.selected.title = 'Mutated'; view.choices.find(quest => quest.id === 'accepted-story').target.x = 999;
   assert.equal(tracker.view().selected.title, 'An accepted story'); assert.equal(tracker.target(null).x, 4);
+});
+
+test('Drent can take focus ahead of gold without accepting the lead or advancing the main quest', () => {
+  const drent = createDrentCivilWar(), tracker = createQuestTracker();
+  drent.act('defeat-ambush');
+  const lead = { ...drent.view(), active: true, stage: 'lead', type: 'secondary', notes: drent.view().entries };
+  const before = drent.snapshot(), mainBefore = structuredClone(main);
+  tracker.update({ main, vastos, optional: [lead] });
+  assert.equal(tracker.view().selectedId, 'main');
+  assert.ok(!tracker.view().choices.some(quest => quest.id === 'civil-war-vastos'), 'the old prototype is parked by default');
+  const focused = tracker.select('civil-war-drent');
+  assert.equal(focused.selected.title, 'Civil War in Drent');
+  assert.equal(focused.selected.objective, 'Report the rebels to Glun');
+  assert.equal(focused.selected.region, 'Drent');
+  assert.deepEqual(focused.choices.map(quest => quest.id), ['civil-war-drent', 'main']);
+  assert.equal(tracker.target({ x: 40, z: 50 }, id => id === 'instructor' ? { x: 1, z: 2 } : null).id, 'instructor');
+  assert.deepEqual(drent.snapshot(), before, 'choosing a lead is navigation, not acceptance');
+  assert.deepEqual(main, mainBefore);
+  assert.equal(tracker.select('main').selectedId, 'main', 'gold remains an explicit choice');
+  assert.equal(tracker.view().choices[0].id, 'main');
+});
+
+test('focused Drent objectives and reading actions survive normalization and are isolated copies', () => {
+  const tracker = createQuestTracker(), drent = createDrentCivilWar();
+  for (const action of ['defeat-ambush', 'accept-investigation', 'search-camp']) drent.act(action);
+  const task = { ...drent.view(), notes: drent.view().entries, actions: [{ id: 'satchel', label: 'Inspect the evidence' }] };
+  tracker.update({ main, optional: [task] }); tracker.select('civil-war-drent');
+  const view = tracker.view();
+  assert.equal(view.selected.objective, 'Return the sealed evidence');
+  assert.deepEqual(view.selected.actions, task.actions);
+  assert.deepEqual(view.selected.notes, task.notes);
+  assert.doesNotMatch(JSON.stringify(view.selected), /Killian/, 'unread evidence does not reveal the Republican contact');
+  view.selected.notes.push('An invented ending'); view.selected.actions[0].label = 'Changed';
+  assert.deepEqual(tracker.view().selected.notes, task.notes);
+  assert.deepEqual(tracker.view().selected.actions, task.actions);
+  drent.act('read-evidence');
+  const updated = tracker.update({ main, optional: [{ ...drent.view(), notes: drent.view().entries }] });
+  assert.equal(updated.selectedId, 'civil-war-drent');
+  assert.equal(updated.selected.objective, 'Choose whom to trust');
+  assert.match(updated.selected.detail, /Killian/);
 });
 
 test('magic quest adapters list accepted errands, update destinations and omit unaccepted or resolved stories', () => {

@@ -14,10 +14,12 @@ test('The Ambroni Civil War is a silver plot series with a distinct regional reg
   assert.equal(new Set(CIVIL_WAR_REGIONS.map(item => item.title)).size, CIVIL_WAR_REGIONS.length);
 });
 
-test('Only The Common Water in Vastos is playable in this pass', () => {
-  assert.deepEqual(CIVIL_WAR_REGIONS.filter(item => item.status === 'playable').map(item => item.id), ['civil-war-vastos']);
+test('Drent is the live prototype and The Common Water is preserved for a later pass', () => {
+  assert.deepEqual(CIVIL_WAR_REGIONS.filter(item => item.status === 'playable').map(item => item.id), ['civil-war-drent']);
   assert.equal(civilWarRegion('Vastos').title, 'The Common Water');
-  for (const quest of CIVIL_WAR_REGIONS) assert.ok(['planned', 'playable'].includes(quest.status));
+  assert.equal(civilWarRegion('Vastos').status, 'paused');
+  assert.equal(civilWarRegion('Drent').prototype, true);
+  for (const quest of CIVIL_WAR_REGIONS) assert.ok(['planned', 'playable', 'paused'].includes(quest.status));
 });
 
 test('Each regional design has its own problem and all three local political routes', () => {

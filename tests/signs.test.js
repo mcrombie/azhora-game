@@ -118,7 +118,7 @@ test('every sign in the world carries a known label, stands on solid posts, and 
     else assert.equal(canStand(sign.x, sign.z, world), false, `${sign.label} has collision`);
   }
   const borders = world.roadSigns.filter(sign => sign.kind === 'border');
-  for (const pair of [['Tidehaven', 'Avrel'], ['Luscia', 'Moros Plain'], ['East Suval', 'Luscia']])
+  for (const pair of [['Luscia', 'Moros Plain'], ['East Suval', 'Luscia']])
     assert.ok(borders.some(sign => sign.label === pair[0] && sign.returnLabel === pair[1]), `a border stone reads ${pair.join(' | ')}`);
   for (const label of ['The Avrel Clearing', 'The Caloss Bridge', 'The Army Camp', 'The Elodi Frontier', 'Elod'])
     assert.ok(world.roadSigns.some(sign => sign.kind === 'direction' && sign.label === label && sign.returnLabel), `${label} is signed both ways`);

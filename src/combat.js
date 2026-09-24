@@ -1,6 +1,9 @@
 import { canStand, moveCharacter } from './game-state.js';
+import { BODY, bodyWorld } from './bodies.js';
 import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
 import { BOW, drawnBy, groundAt, inTheLine, shotAt, solidAt, survives } from './archery.js';
+import { meleeContacts, meleeLineClear } from './melee-contact.js';
+import { castWith } from './sorcery.js';
 
 const TAU = Math.PI * 2;
 const SWINGS = [
@@ -22,13 +25,15 @@ export const ENEMY_KINDS = Object.freeze({
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
   // A trained man with a blade and a shield, and nothing like a goblin. Four optional fields make the
   // difference, and every other kind goes on ignoring them:
-  //   `guard`  on his guard (not swinging, not recovering from a swing, and facing the blow) he turns
-  //            that much of it on his shield, and is not rocked by it: strike when he has swung;
+  //   `guard`  idle and facing the blow, he turns that much of it on his shield;
+  //            trained soldiers can cover their recovery, but a swing or recoil opens them;
   //   `armor`  mail takes that much off every blow that does land;
   //   `poise`  once his swing has begun, a hit does not stop it: trade blows and he trades back;
   //   `pack`   how many of them may be swinging at once: soldiers press together, goblins take turns.
   soldier: Object.freeze({ tell: .7, attack: .5, contact: .22, recovery: 1.0, damage: 24, speed: 2.35, engage: 2.15, reach: 2.25, lunge: 1.7,
     guard: .8, armor: .2, poise: true, pack: 2 }),
+  officer: Object.freeze({ tell: .7, attack: .5, contact: .22, recovery: 1.0, damage: 32, speed: 2.5, engage: 2.15, reach: 2.25, lunge: 1.7,
+    guard: .85, armor: .3, poise: true, pack: 2 }),
   // A friend standing up with you: sparring (docs/combat-brief.md, phase 7). He is a trained man
   // and fights like one, and the only things he does differently are that he pulls the blow and
   // that the encounter he stands in is a `bout` - nobody dies in one, on either side. His tell is
@@ -104,6 +109,7 @@ export const ENEMY_KINDS = Object.freeze({
   }),
 });
 const SOLDIER_LOOKS = Object.freeze(['coalition', 'legion']);
+const ALLY_FIREBALL = castWith('fireball', { weapon: 'wand' });
 // Allied soldiers who fight beside the traveler. Officers hit harder and last longer.
 /**
  * `level` is the kind's own, and today's numbers are that kind at level 1 - so nothing in Drent
@@ -123,6 +129,9 @@ const ALLY_KINDS = Object.freeze({
    */
   archer: Object.freeze({ tell: 1.05, attack: .3, contact: .12, recovery: 1.5, damage: 24, speed: 2.2,
     engage: 22, reach: 34, hp: 90, level: 1, bow: true, standoff: 9 }),
+  sorcerer: Object.freeze({ tell: ALLY_FIREBALL.cast, attack: .35, contact: .08, recovery: 1.6,
+    damage: ALLY_FIREBALL.damage, speed: 2.2, engage: ALLY_FIREBALL.range, reach: ALLY_FIREBALL.range,
+    hp: 78, level: 1, spell: 'fireball', standoff: 7 }),
   // Villagers caught in a fight (src/bystanders.js). One who has a tool to hand fights, slower and
   // lighter than a soldier. One who has not freezes, then runs for its refuge, burdened, a little
   // slower than a goblin: without help it is caught.
@@ -213,32 +222,36 @@ function encounterConfig(config) {
   const bout = config.bout === true;
   const seen = new Set(), enemies = [];
   for (const enemy of config.enemies) {
-    if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || !point(enemy)) return null;
+    if (!enemy || !identifier(enemy.id) || seen.has(enemy.id) || (enemy.npcId && seen.has(enemy.npcId)) || !point(enemy)) return null;
     const kind = enemy.kind ?? 'goblin';
     if (!Object.hasOwn(ENEMY_KINDS, kind)) return null;
     if (enemy.look !== undefined && !SOLDIER_LOOKS.includes(enemy.look)) return null;
     // A named body on the other side of the fight, drawn as himself: the same two fields an ally
     // already carries, because a sparring partner is somebody the traveler knows by name.
     if (enemy.name !== undefined && typeof enemy.name !== 'string') return null;
+    if (enemy.npcId !== undefined && !identifier(enemy.npcId)) return null;
     if (enemy.model !== undefined && (!enemy.model || typeof enemy.model !== 'object' || Array.isArray(enemy.model))) return null;
+    if (enemy.currentHp !== undefined && (!Number.isFinite(enemy.currentHp) || enemy.currentHp < 0 || enemy.currentHp > 100000)) return null;
     const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
       || Math.abs(enemy[across] - config.center[across]) > 12 || along(enemy) < -21
       || along(enemy) > 18 || beyond(enemy)) return null;
-    // Health is scaled once, here, so an enemy is born with the country's own toughness and
-    // everything downstream - the bar, the blow that kills it - is the number it was born with.
-    const stout = Math.round(hp * countryHealth(level));
-    seen.add(enemy.id); enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp: stout, entry, kind, ...(enemy.look ? { look: enemy.look } : {}),
-      ...(enemy.name ? { name: enemy.name } : {}), ...(enemy.model ? { model: { ...enemy.model } } : {}) });
+    // Keep authored health in the reusable encounter. Scale when making the actor,
+    // so retrying a country-level encounter cannot multiply its health again.
+    seen.add(enemy.id); if (enemy.npcId) seen.add(enemy.npcId);
+    enemies.push({ id: enemy.id, x: enemy.x, z: enemy.z, hp, entry, kind, ...(enemy.currentHp !== undefined ? { currentHp: enemy.currentHp } : {}), ...(enemy.look ? { look: enemy.look } : {}),
+      ...(enemy.name ? { name: enemy.name } : {}), ...(enemy.npcId ? { npcId: enemy.npcId } : {}), ...(enemy.model ? { model: { ...enemy.model } } : {}) });
   }
   const allies = [];
   if (config.allies !== undefined) {
     if (!Array.isArray(config.allies) || config.allies.length > MAX_ALLIES) return null;
     for (const ally of config.allies) {
-      if (!ally || !identifier(ally.id) || seen.has(ally.id) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
+      if (!ally || !identifier(ally.id) || seen.has(ally.id) || (ally.npcId && seen.has(ally.npcId)) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
         || (ally.name !== undefined && typeof ally.name !== 'string')
+        || (ally.npcId !== undefined && !identifier(ally.npcId))
         || (ally.model !== undefined && (!ally.model || typeof ally.model !== 'object' || Array.isArray(ally.model)))
         || (ally.hp !== undefined && (!Number.isFinite(ally.hp) || ally.hp <= 0 || ally.hp > 10000))
+        || (ally.currentHp !== undefined && (!Number.isFinite(ally.currentHp) || ally.currentHp < 0 || ally.currentHp > 100000))
         || (ally.level !== undefined && (!Number.isInteger(ally.level) || ally.level < 1 || ally.level > TOP_LEVEL))
         || (ally.toughness !== undefined && (!Number.isInteger(ally.toughness) || ally.toughness < 1 || ally.toughness > TOP_LEVEL))
         || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
@@ -246,8 +259,10 @@ function encounterConfig(config) {
         || (ally.refuge !== undefined && (!point(ally.refuge) || !insideBox(fightBox({ ...config, retreatSign: sign }), ally.refuge)))
         || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
         || along(ally) > 18 || beyond(ally)) return null;
-      seen.add(ally.id); allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.level !== undefined ? { level: ally.level } : {}), ...(ally.toughness !== undefined ? { toughness: ally.toughness } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
-        ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
+      seen.add(ally.id); if (ally.npcId) seen.add(ally.npcId);
+      allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.level !== undefined ? { level: ally.level } : {}), ...(ally.toughness !== undefined ? { toughness: ally.toughness } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
+        ...(ally.currentHp !== undefined ? { currentHp: ally.currentHp } : {}),
+        ...(ally.npcId ? { npcId: ally.npcId } : {}), ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
@@ -292,7 +307,7 @@ const TODAY = Object.freeze({ maxHp: 100, maxStamina: 100, dodgeWindow: .37, swi
  */
 export const GUARD_ARC = Math.PI / 3;
 
-export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null, getArrows = null, getBodies = null }) {
+export function createCombat({ world, position, onEvent = () => {}, getWeapon, onWeaponContact = () => {}, getMargins = null, getLevel = null, getAllies = null, getArrows = null, getBodies = null, isFallen = null }) {
   const margins = () => ({ ...TODAY, ...(getMargins?.() ?? {}) });
   const first = margins();
   const state = {
@@ -306,11 +321,14 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     allies: [],
     /** Arrows in the air. Nothing else in this game is anywhere but where its owner is standing. */
     arrows: [],
+    fireballs: [],
   };
   const player = state.player;
   const enemyTimers = new Map();
   const allyTimers = new Map();
   let time = 0;
+  let meleeSequence = 0;
+  let allySpells = 0;
   let actionTime = 0;
   let hitApplied = false;
   let bufferedAttack = false;
@@ -377,20 +395,21 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
 
   function emit(type, detail = {}) { onEvent({ type, ...detail }); }
 
-  function safePoint(x, z) {
-    if (canStand(x, z, world, .45)) return { x, z };
+  function safePoint(x, z, bodyRadius = .45) {
+    if (canStand(x, z, world, bodyRadius)) return { x, z };
     // A changed tree layout must not strand a combatant inside a trunk.
     for (let radius = .5; radius <= 7; radius += .5) {
       for (let i = 0; i < 16; i++) {
         const angle = i / 16 * TAU;
         const point = { x: x + Math.sin(angle) * radius, z: z + Math.cos(angle) * radius };
-        if (canStand(point.x, point.z, world, .45)) return point;
+        if (canStand(point.x, point.z, world, bodyRadius)) return point;
       }
     }
     return canStand(0, z, world) ? { x: 0, z } : { x: position.x, z: position.z };
   }
 
-  function restorePlayer() {
+  function restorePlayer({ preserveVitals = false } = {}) {
+    const previousHp = player.hp, previousStamina = player.stamina;
     // Toughness may have grown since the last fight, so the ceilings are read afresh; the bars are
     // then filled to them, which is what restoring is.
     const { maxHp, maxStamina } = margins();
@@ -415,13 +434,28 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     player.drawing = false;
     player.draw = 0;
     state.arrows = [];
+    state.fireballs = [];
+    if (preserveVitals) {
+      player.hp = Math.min(player.maxHp, previousHp);
+      player.stamina = Math.min(player.maxStamina, previousStamina);
+    }
+  }
+
+  function enemyOnGuard(enemy) {
+    const profile=ENEMY_KINDS[enemy.kind],timers=enemyTimers.get(enemy.id);
+    return !!(profile?.guard&&enemy.active!==false&&enemy.hp>0&&enemy.action==='idle'
+      &&timers?.entry<=0&&(profile.poise||timers.cooldown<=0));
   }
 
   function makeEnemy(id, kind, point, entry = 0, hp = kind === 'dummy' ? 100 : 75) {
     const enemy = {
-      id, kind, ...(kind === 'dummy' ? {x:point.x,z:point.z} : safePoint(point.x, point.z)), yaw: 0,
+      id, kind, ...(kind === 'dummy' ? {x:point.x,z:point.z} : safePoint(point.x, point.z, kind === 'spider' ? BODY.spider : .45)), yaw: 0,
+      ...(kind === 'spider' ? { r: BODY.spider } : {}),
       hp, maxHp: hp,
       action: 'idle', progress: 0, speed: 0, active: true,
+      // Read from the same state as mitigation; the view and autopilot must never
+      // see an old shield pose after an attack, recoil or recovery transition.
+      get guarded() { return enemyOnGuard(this); },
     };
     enemyTimers.set(id, { actionTime: 0, cooldown: entry, hitApplied: false, entry, index: entry / 1.3 });
     return enemy;
@@ -464,8 +498,21 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // soldiers, and the company stands *with* them - and a fight that wants to be fought alone
     // (Drent's three teaching fights) simply gets none.
     const friends = getAllies ? getAllies(country) : [];
-    const joined = friends.length
-      ? { ...country, allies: [...(country.allies ?? []), ...friends] }
+    // The same named person can already be authored into a fight (or carried by
+    // its retry). Their encounter ID and world NPC ID are aliases of one body.
+    // Authored roles win, including an enemy/sparring role; never add a second
+    // friendly copy from the following company. Malformed authored rosters are
+    // still rejected by encounterConfig rather than silently rewritten.
+    const identities = actor => [actor?.id, actor?.npcId].filter(Boolean);
+    const occupied = new Set([...(Array.isArray(country?.enemies) ? country.enemies : []),
+      ...(Array.isArray(country?.allies) ? country.allies : [])].flatMap(identities));
+    const arriving = friends.filter(friend => {
+      const ids = identities(friend);
+      if (ids.some(id => occupied.has(id))) return false;
+      ids.forEach(id => occupied.add(id)); return true;
+    });
+    const joined = arriving.length
+      ? { ...country, allies: [...(country.allies ?? []), ...arriving] }
       : country;
     const next = encounterConfig(joined);
     if (!next) return false;
@@ -474,17 +521,26 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       position.x = checkpoint.x; position.z = checkpoint.z; position.y = world.heightAt(position.x, position.z);
     }
     weaponReady = true;
-    restorePlayer();
+    restorePlayer({ preserveVitals: !atCheckpoint && player.hp > 0 });
     enemyTimers.clear();
     lastEncounter = next;
-    state.enemies = next.enemies.map(enemy => ({ ...makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, enemy.hp), ...(enemy.look ? { look: enemy.look } : {}),
-      ...(enemy.name ? { name: enemy.name } : {}), ...(enemy.model ? { model: enemy.model } : {}) }));
+    // Bodies persist independently of the current fight. A retry must not put
+    // the same fighter back on his feet beside his own remains. Keep the full
+    // authored encounter for validation/retries, but instantiate only survivors.
+    // Lessons deliberately bypass this death-only host policy.
+    const survives = actor => next.bout || !isFallen?.(next.id, actor.id, actor);
+    state.enemies = next.enemies.filter(survives).map(enemy => withCurrentHealth(Object.assign(makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, Math.round(enemy.hp * countryHealth(next.level))), { ...(enemy.look ? { look: enemy.look } : {}),
+      ...(enemy.name ? { name: enemy.name } : {}), ...(enemy.npcId ? { npcId: enemy.npcId } : {}), ...(enemy.model ? { model: enemy.model } : {}) }), enemy));
     allyTimers.clear();
-    state.allies = next.allies.map((ally, index) => makeAlly(ally, index));
+    state.allies = next.allies.filter(survives).map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
     state.encounterId = next.id;
     state.center = { x: next.center.x, z: next.center.z };
     nextAttackerAt = time + .6;
+    if (state.enemies.every(enemy => !enemy.active)) {
+      state.phase = 'won';
+      emit('victory', { encounterId: state.encounterId });
+    }
     return true;
   }
 
@@ -495,7 +551,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     position.x = checkpoint.x;
     position.z = checkpoint.z;
     position.y = world.heightAt(position.x, position.z);
-    return startEncounter({ ...lastEncounter, ...changes });
+    return startEncounter({ ...lastEncounter,
+      enemies: lastEncounter.enemies.map(({ currentHp, ...enemy }) => enemy),
+      allies: lastEncounter.allies.map(({ currentHp, ...ally }) => ally), ...changes }, { atCheckpoint: true });
   }
 
   /**
@@ -630,21 +688,53 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * them is a combatant and none of them is hurt, but a shaft that meets one stops there (the
    * user, 2026-09-21).
    *
-   * The host hands them in, because the fight is built on the bare world and the bodies are the
-   * host's own list (`gatherBodies`, src/main.js). **Nothing else in this module reads it**: the
-   * ground a swing needs, where an enemy may stand and every distance in a melee are exactly what
-   * they were, which is what keeps every sword fight already measured unmoved.
+   * The host's list (`gatherBodies`, src/main.js) also supplies the standing bodies
+   * that movement must stop against. Terrain remains separate from body contact.
    *
    * Gathered once per `update`, however many arrows are in the air.
    */
-  let bodiesThisUpdate = null;
+  let bodiesThisUpdate = null, worldBodiesThisUpdate = null;
+  function standingBodies() {
+    if (!worldBodiesThisUpdate) worldBodiesThisUpdate = (getBodies?.() ?? []).filter(body =>
+      body && !body.dead && !body.fallen && !body.lying && body.action !== 'dead' && body.active !== false
+      && !(Number.isFinite(body.hp) && body.hp <= 0) && Number.isFinite(body.x) && Number.isFinite(body.z));
+    return worldBodiesThisUpdate;
+  }
   function otherBodies() {
     if (bodiesThisUpdate) return bodiesThisUpdate;
-    const mine = new Set([...state.enemies.map(one => one.id), ...state.allies.map(one => one.id), 'traveler']);
-    bodiesThisUpdate = (getBodies?.() ?? []).filter(body =>
-      body && Number.isFinite(body.x) && Number.isFinite(body.z) && !mine.has(body.id));
+    const mine = new Set(combatantIds());
+    bodiesThisUpdate = standingBodies().filter(body => !mine.has(body.id) && !mine.has(body.npcId));
     return bodiesThisUpdate;
   }
+  const motionWorld = bodyWorld(world), bodyViews = new WeakMap();
+  let motionBodies = null, motionEnemies = null, motionAllies = null, motionPhase = null;
+  const bodyRadius = actor => actor === position ? BODY.traveler : BODY[actor.kind] ?? BODY.person;
+  function liveBody(actor) {
+    if (!bodyViews.has(actor)) bodyViews.set(actor, {
+      id: actor === position ? 'traveler' : actor.id, r: bodyRadius(actor), kind: 'body',
+      get x() { return actor.x; }, get z() { return actor.z; },
+      get active() { const status = actor === position ? player : actor;
+        return status.active !== false && status.action !== 'dead' && status.hp > 0; },
+    });
+    return bodyViews.get(actor);
+  }
+  function moveCombatant(actor, dx, dz) {
+    // Live coordinates matter: one actor may advance or be knocked back earlier
+    // in the same substep. A snapshot lets the next actor cross its new position.
+    if (!motionBodies || motionEnemies !== state.enemies || motionAllies !== state.allies || motionPhase !== state.phase) {
+      motionEnemies = state.enemies; motionAllies = state.allies; motionPhase = state.phase;
+      const fighting = state.phase === 'active' || state.phase === 'practice';
+      const mine = new Set(fighting ? combatantIds() : ['traveler']);
+      motionBodies = [...standingBodies().filter(body => !mine.has(body.id) && !mine.has(body.npcId)), liveBody(position),
+        ...(fighting ? [...state.enemies, ...state.allies].map(liveBody) : [])];
+      motionWorld.setBodies(motionBodies);
+    }
+    const radius = bodyRadius(actor), id = actor === position ? 'traveler' : actor.id;
+    moveCharacter(actor, dx, dz, motionWorld.moving(actor, radius, id), radius);
+  }
+  // Personal space steers a crowd before contact, but an existing close overlap
+  // must still be allowed to open rather than freezing both walkers in place.
+  const closesGap = (actor, next, other, space) => distance(next, other) < Math.min(space, distance(actor, other) - 1e-8);
   /** Where the ground is here, asked of the same floor the whole fight is fought on. */
   const floorAt = (x, z) => groundAt(world, x, z);
   /**
@@ -656,13 +746,34 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   const killFloor = () => (lastEncounter.bout || state.phase === 'practice' ? 1 : 0);
   /** Whether this body is near enough to the arrow to be the thing it stops on. */
   const inTheWay = (body, arrow, radius = BOW.body) => Math.hypot(body.x - arrow.x, body.z - arrow.z) <= radius;
-  /**
-   * **A body that fights can be hit by mistake; a body that is only in the way is only in the
-   * way.** The fleeing villager of a raid carries no tool and is not in the fight in any sense
-   * that matters - she is running for a door - so she stops a shaft and is unhurt, along with
-   * everybody in the world outside the fight. Everyone who is actually fighting bleeds.
+  const combatantIds = () => [...new Set(['traveler', ...state.enemies.flatMap(actor => [actor.id, actor.npcId]),
+    ...state.allies.flatMap(actor => [actor.id, actor.npcId])].filter(Boolean))];
+
+  /** A shaft hurts the first body it reaches, including unarmed people outside an encounter.
+   * Encounter health stays here. The host receives the same contact for its world NPC health.
    */
-  const fights = ally => !ALLY_KINDS[ally.kind]?.flees;
+  function applyArrowHit(arrow, target, team) {
+    const source = arrow.owner ? 'ally' : 'player', sourceId = arrow.owner ?? 'traveler';
+    const sourceNpcId = state.allies.find(actor => actor.id === sourceId)?.npcId;
+    const impact = { id: `impact-${arrow.id}`, source, sourceId, team: source, targetId: target.id ?? 'traveler',
+      ...(sourceNpcId ? { sourceNpcId } : {}),
+      ...(target.npcId ? { targetNpcId: target.npcId } : {}),
+      origin: { x: arrow.x - Math.sin(arrow.yaw) * arrow.flown, z: arrow.z - Math.cos(arrow.yaw) * arrow.flown },
+      x: arrow.x, z: arrow.z, y: arrow.y, yaw: arrow.yaw, damage: arrow.damage, weaponId: arrow.weaponId ?? BOW.id,
+      practice: state.phase === 'practice', bout: state.phase === 'active' && !!lastEncounter.bout,
+      encounterId: state.encounterId, combatantIds: combatantIds(), affectedIds: [], hits: [] };
+    const before = target.hp;
+    if (team === 'enemy') hurtEnemy(target, arrow.damage, arrow.yaw, { by: sourceId, source, arrow: true, impactId: impact.id });
+    else if (team === 'ally') hurtAllyByArrow(target, arrow);
+    else if (team === 'player') hurtPlayerByArrow(arrow);
+    if (team !== 'world' && (target.hp < before || target.kind === 'dummy')) {
+      impact.affectedIds.push(impact.targetId);
+      impact.hits.push({ id: impact.targetId, ...(target.npcId ? { npcId: target.npcId } : {}), team,
+        damage: Math.max(0, before - target.hp), hp: target.hp, maxHp: target.maxHp, killed: target.hp <= 0,
+        ...(target.spared ? { spared: true } : {}), x: target.x ?? position.x, z: target.z ?? position.z });
+    }
+    emit('arrow-impact', impact);
+  }
   /**
    * Every arrow in the air moves, and the first thing it meets is the last thing it meets:
    * **an enemy, a friend, a bystanding body, a tree, or ground that has risen above it.**
@@ -702,14 +813,14 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         // side of a ravine. The arrow flies level at the height it left the bow at.
         if (!hit && !friend && !struck && !body && !blocked) grounded = floorAt(arrow.x, arrow.z) > arrow.y;
       }
-      if (hit) { hurtEnemy(hit, arrow.damage, arrow.yaw); landArrow(arrow, 'target', hit.id); continue; }
+      if (hit) { applyArrowHit(arrow, hit, 'enemy'); landArrow(arrow, 'target', hit.id); continue; }
       if (friend) {
-        if (fights(friend)) hurtAllyByArrow(friend, arrow);
-        landArrow(arrow, fights(friend) ? 'friend' : 'body', friend.id);
+        applyArrowHit(arrow, friend, 'ally');
+        landArrow(arrow, 'friend', friend.id);
         continue;
       }
-      if (struck) { hurtPlayerByArrow(arrow); landArrow(arrow, 'friend', 'traveler'); continue; }
-      if (body) { landArrow(arrow, 'body', body.id); continue; }
+      if (struck) { applyArrowHit(arrow, player, 'player'); landArrow(arrow, 'friend', 'traveler'); continue; }
+      if (body) { applyArrowHit(arrow, body, 'world'); landArrow(arrow, 'body', body.id); continue; }
       if (blocked) { landArrow(arrow, 'solid'); continue; }
       if (grounded) { landArrow(arrow, 'ground'); continue; }
       if (arrow.flown >= arrow.range - 1e-6) landArrow(arrow, 'spent');
@@ -806,19 +917,20 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     return true;
   }
 
-  function hurtEnemy(enemy, damage, yaw) {
+  function hurtEnemy(enemy, damage, yaw, attribution = {}) {
+    if (!enemy.active || enemy.action === 'dead') return;
     const timers = enemyTimers.get(enemy.id);
     if (enemy.kind === 'dummy') {
       enemy.action = 'hurt';
       enemy.progress = 0;
       timers.actionTime = 0;
       emit('practice-hit', { targetId: enemy.id, x: enemy.x, z: enemy.z });
-      emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage: 0 });
+      emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage: 0, ...attribution });
       return;
     }
     const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
     // A soldier on guard, facing the blow, turns most of it on his shield and is not rocked.
-    const guarded = profile.guard && enemy.action === 'idle' && timers.cooldown <= 0 && timers.entry <= 0
+    const guarded = enemy.guarded
       && Math.abs(angleDifference(enemy.yaw ?? 0, yaw + Math.PI)) < Math.PI / 3;   // on guard, and the blow comes at his shield
     if (guarded) damage *= 1 - profile.guard;
     damage = Math.max(1, Math.round(damage * (1 - (profile.armor ?? 0))));
@@ -836,8 +948,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // ever, and with a bow - a man who cannot be reached is idle, and an idle man is always on
     // guard - that was every bout, every time (docs/known-issues.md).
     if (guarded && enemy.active) {
-      emit('blocked', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
-      emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage });
+      emit('blocked', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage, ...attribution });
+      emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage, ...attribution });
       return;
     }
     // A kind marked `stagger: false` takes the hit and keeps swinging: its tell is
@@ -846,17 +958,26 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // with `poise` does the same once its swing has begun.
     const committed = profile.poise && ['windup', 'attack'].includes(enemy.action);
     if ((profile.stagger !== false && !committed) || !enemy.active) {
+      const alreadyRecoiling = enemy.action === 'hurt';
       enemy.action = enemy.hp ? 'hurt' : 'dead';
-      enemy.progress = 0;
       enemy.speed = 0;
-      timers.actionTime = 0;
-      timers.cooldown = ENEMY_RECOVERY;
-      nextAttackerAt = Math.max(nextAttackerAt, time + .35);
-      moveCharacter(enemy, Math.sin(yaw) * (profile.knockback ?? .43), Math.cos(yaw) * (profile.knockback ?? .43), world);
+      // A trained fighter finishes the recovery already owed after his swing.
+      // Replacing it with a fresh goblin recovery on every hit prevented both
+      // his shield and his next attack forever under an ordinary sword combo.
+      // Repeated contacts cannot restart that fighter's recoil animation either.
+      if (!profile.poise || !alreadyRecoiling || !enemy.active) {
+        enemy.progress = 0;
+        timers.actionTime = 0;
+      }
+      if (!profile.poise) {
+        timers.cooldown = ENEMY_RECOVERY;
+        nextAttackerAt = Math.max(nextAttackerAt, time + .35);
+      }
+      moveCombatant(enemy, Math.sin(yaw) * (profile.knockback ?? .43), Math.cos(yaw) * (profile.knockback ?? .43));
     }
     emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage, weaponId: attackWeapon?.id ?? currentWeapon()?.id ?? null,
-      killed: !enemy.hp, level: lastEncounter.level ?? 0 });
-    if (!enemy.hp) emit('enemy-defeated', { id: enemy.id, x: enemy.x, z: enemy.z });
+      killed: !enemy.hp, level: lastEncounter.level ?? 0, ...attribution });
+    if (!enemy.hp) emit('enemy-defeated', { id: enemy.id, x: enemy.x, z: enemy.z, ...attribution });
     // **A bout never ends in a victory**, because nothing has been won and nobody is dead. It
     // ends in a yield, with its own event, so that not one of the host's victory branches - the
     // Greenway, the border, the toll stone - can ever fire on a lesson.
@@ -881,22 +1002,125 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     emit('spar-over', { encounterId, winner });
   }
 
+  /** One immutable contact-time footprint, shared with the host's ordinary NPC bodies.
+   * Snapshot first: knockback, a death, or a victory callback must not move later contacts.
+   * `combatantIds` includes aliases and dead actors so the host cannot hit a second rendering.
+   */
+  function applyMeleeStrike(source, team, { range, arc, damage, weaponId = null }) {
+    const impact = { id: `melee-${++meleeSequence}`, source: team, sourceId: source.id,
+      ...(source.npcId ? { sourceNpcId: source.npcId } : {}), team,
+      origin: { x: source.x, z: source.z }, x: source.x, z: source.z, yaw: source.yaw,
+      range, arc, damage, weaponId, practice: state.phase === 'practice', bout: state.phase === 'active' && !!lastEncounter.bout,
+      encounterId: state.encounterId, affectedIds: [], hits: [] };
+    const roster = [
+      { ...player, x: position.x, z: position.z, id: 'traveler', team: 'player', actor: player },
+      ...state.enemies.map(actor => ({ ...actor, team: 'enemy', actor })),
+      ...state.allies.map(actor => ({ ...actor, team: 'ally', actor })),
+    ];
+    impact.combatantIds = combatantIds();
+    const contacts = meleeContacts(impact, roster, world);
+    const attribution = { by: source.id, source: team, melee: true, impactId: impact.id };
+    for (const contact of contacts) {
+      const target = contact.actor, before = target.hp;
+      if (contact.team === 'enemy') hurtEnemy(target, damage, source.yaw, attribution);
+      else if (contact.team === 'ally') hurtAlly(target, source, damage, attribution);
+      else hurtPlayer(source, damage, attribution, true);
+      const dealt = Math.max(0, before - target.hp);
+      if (dealt || target.kind === 'dummy') {
+        impact.affectedIds.push(target.id ?? 'traveler');
+        impact.hits.push({ id: target.id ?? 'traveler', ...(target.npcId ? { npcId: target.npcId } : {}),
+          team: contact.team, damage: dealt, hp: target.hp, maxHp: target.maxHp, killed: target.hp <= 0,
+          ...(target.spared ? { spared: true } : {}), x: contact.x, z: contact.z });
+      }
+      if (impact.bout && state.phase !== 'active') break;
+    }
+    emit('melee-impact', impact);
+    return impact;
+  }
+
   function applyPlayerStrike() {
     const weapon = attackWeapon;
     if (!weapon) return;
     const swing = swingOf(player.combo, weapon);
-    const candidates = state.enemies.filter(enemy => enemy.active && enemy.action !== 'dead'
-      && distance(position, enemy) <= swing.reach * weapon.reachMultiplier
-      && facing(position, enemy, player.yaw, arcOf(weapon)));
-    candidates.sort((a, b) => distance(position, a) - distance(position, b));
-    // A clean single target per swing keeps timing legible in the small first encounter.
-    if (candidates[0]) {
-      hurtEnemy(candidates[0], weapon.damage[player.combo], player.yaw);
-      onWeaponContact(weapon.id);
+    const impact = applyMeleeStrike({ id: 'traveler', x: position.x, z: position.z, yaw: player.yaw }, 'player', {
+      range: swing.reach * (weapon.reachMultiplier ?? 1), arc: arcOf(weapon), damage: weapon.damage[player.combo], weaponId: weapon.id });
+    if (impact.affectedIds.length) onWeaponContact(weapon.id);
+  }
+
+  /** Spell contact uses the same health, armour, victory and body lifecycle as a blade.
+   * World NPCs are returned as unmanaged for the host's ordinary assault pipeline.
+   */
+  function spellHit(targetId, damage, { yaw = player.yaw, spellId = 'fireball', sourceId = 'traveler', source = 'player' } = {}) {
+    if (!Number.isFinite(damage) || damage <= 0) return { handled: false, damage: 0 };
+    const enemy = state.enemies.find(actor => actor.id === targetId || actor.npcId === targetId);
+    const ally = state.allies.find(actor => actor.id === targetId || actor.npcId === targetId);
+    const actor = enemy ?? ally;
+    if (!actor) return { handled: false, damage: 0 };
+    if (actor.hp <= 0 || actor.action === 'dead' || actor.active === false) return { handled: true, damage: 0 };
+    const before = actor.hp;
+    const attribution = { by: sourceId, source, spell: true, spellId };
+    if (enemy) hurtEnemy(actor, damage, yaw, attribution);
+    else hurtAlly(actor, { id: sourceId, x: position.x, z: position.z, yaw }, damage, attribution);
+    return { handled: true, id: actor.id, npcId: actor.npcId, team: enemy ? 'enemy' : 'ally',
+      damage: Math.max(0, before - actor.hp), hp: actor.hp, maxHp: actor.maxHp,
+      killed: actor.hp <= 0, spared: !!actor.spared, x: actor.x, z: actor.z };
+  }
+
+  // Ally spells share the traveler's fireball numbers, but remain in the combat
+  // roster so their view, damage attribution and interruption follow the caster.
+  function launchFireball(ally, target) {
+    const profile = { ...ALLY_FIREBALL, damage: Math.round(ALLY_FIREBALL.damage * allyDamageScale(ally.level ?? 1)) };
+    const yaw = Math.atan2(target.x - ally.x, target.z - ally.z);
+    ally.yaw = yaw;
+    const ball = { id: `ally-fireball-${ally.id}-${++allySpells}`, owner: ally.id, targetId: target.id,
+      x: ally.x, z: ally.z, y: floorAt(ally.x, ally.z) + 1.2, yaw, flown: 0,
+      origin: { x: ally.x, z: ally.z }, profile };
+    state.fireballs.push(ball);
+    emit('ally-fireball', { ...ball, sourceId: ally.id });
+  }
+
+  function updateFireballs(dt) {
+    if (state.phase !== 'active') { state.fireballs = []; return; }
+    for (const ball of [...state.fireballs]) {
+      const before = { x: ball.x, z: ball.z }, travel = Math.min(ball.profile.speed * dt, ball.profile.range - ball.flown);
+      ball.x += Math.sin(ball.yaw) * travel; ball.z += Math.cos(ball.yaw) * travel; ball.flown += travel;
+      let reason = !meleeLineClear(before, ball, world) ? 'solid' : floorAt(ball.x, ball.z) > ball.y ? 'ground' : null;
+      let target = null;
+      if (!reason) {
+        const roster = [...state.enemies.map(actor => ({ ...actor, team: 'enemy', actor })),
+          ...state.allies.map(actor => ({ ...actor, team: 'ally', actor })),
+          { ...player, id: 'traveler', x: position.x, z: position.z, team: 'player', actor: player },
+          ...otherBodies().map(actor => ({ ...actor, team: 'world' }))];
+        target = roster.find(actor => actor.id !== ball.owner && actor.active !== false && actor.hp !== 0
+          && actor.action !== 'dead' && distance(actor, ball) <= ball.profile.radius + (actor.r ?? BODY.person));
+        if (target) {
+          reason = 'target';
+          const impact = { id: `impact-${ball.id}`, source: 'ally', sourceId: ball.owner, spell: true, spellId: 'fireball',
+            weaponId: 'wand', targetId: target.id, ...(target.npcId ? { targetNpcId: target.npcId } : {}),
+            origin: { ...ball.origin }, x: ball.x, y: ball.y, z: ball.z, yaw: ball.yaw, damage: ball.profile.damage,
+            encounterId: state.encounterId, bout: !!lastEncounter.bout, combatantIds: combatantIds(), affectedIds: [], hits: [] };
+          const beforeHp = target.actor?.hp;
+          const attribution = { by: ball.owner, source: 'ally', spell: true, spellId: 'fireball', weaponId: 'wand', impactId: impact.id };
+          if (target.team === 'enemy') hurtEnemy(target.actor, ball.profile.damage, ball.yaw, attribution);
+          else if (target.team === 'ally') hurtAlly(target.actor, { ...ball.origin, yaw: ball.yaw }, ball.profile.damage, attribution);
+          else if (target.team === 'player') hurtPlayer({ ...ball.origin, id: ball.owner, yaw: ball.yaw }, ball.profile.damage, attribution);
+          if (target.actor && target.actor.hp < beforeHp) {
+            impact.affectedIds.push(target.id);
+            impact.hits.push({ id: target.id, ...(target.npcId ? { npcId: target.npcId } : {}), team: target.team,
+              damage: beforeHp - target.actor.hp, hp: target.actor.hp, maxHp: target.actor.maxHp, killed: target.actor.hp <= 0,
+              ...(target.spared ? { spared: true } : {}), x: target.actor.x ?? position.x, z: target.actor.z ?? position.z });
+          }
+          emit('spell-impact', impact);
+        } else if (ball.flown >= ball.profile.range - 1e-6) reason = 'spent';
+      }
+      if (reason) {
+        state.fireballs = state.fireballs.filter(other => other !== ball);
+        emit('ally-fireball-ended', { id: ball.id, sourceId: ball.owner, x: ball.x, y: ball.y, z: ball.z, reason, targetId: target?.id ?? null });
+      }
     }
   }
 
-  function hurtPlayer(enemy) {
+  function hurtPlayer(enemy, baseDamage, attribution = {}, atContact = false) {
     // A dodge that actually avoided a strike is the thing Toughness is paid for, and the engine
     // is the only one who knows it happened: the enemy's contact moment arrived and the traveler
     // was invulnerable for it. `hurtProtection` is the second and a bit after being hit, which is
@@ -904,10 +1128,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (player.invulnerable && player.action === 'dodge' && state.phase === 'active' && player.hp > 0) {
       emit('dodged', { enemyId: enemy.id, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
     }
-    if (player.invulnerable || state.phase !== 'active' || player.hp <= 0) return;
+    if (player.invulnerable || (!atContact && state.phase !== 'active') || player.hp <= 0) return;
     // What he is wearing turns a share of it, and never all of one: at the very best - heavy,
     // tier 6, all three pieces - armour turns half (src/gear.js).
-    const struck = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
+    const struck = baseDamage;
     const damage = Math.max(1, Math.round(struck * (1 - (margins().armourTurns ?? 0))));
     // A bout can kill nobody, the traveler included: his health stops at one and he yields.
     const floor = killFloor();
@@ -929,7 +1153,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       player.stamina = Math.max(0, player.stamina - guardCost);
       staminaDelay = Math.max(staminaDelay, .45);
       emit('caught', { enemyId: enemy.id, absorbed, damage: through, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
-      emit('player-hit', { damage: through, caught: true, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+      emit('player-hit', { damage: through, caught: true, x: position.x, z: position.z, level: lastEncounter.level ?? 0, ...attribution });
       spent();
       return;
     }
@@ -940,8 +1164,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     bufferedAttack = false;
     hurtProtection = 1.15;
     player.invulnerable = true;
-    moveCharacter(position, Math.sin(enemy.yaw) * .55, Math.cos(enemy.yaw) * .55, world);
-    emit('player-hit', { damage, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+    moveCombatant(position, Math.sin(enemy.yaw) * .55, Math.cos(enemy.yaw) * .55);
+    emit('player-hit', { damage, x: position.x, z: position.z, level: lastEncounter.level ?? 0, ...attribution });
     spent();
   }
 
@@ -966,7 +1190,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     bufferedAttack = false;
     hurtProtection = 1.15;
     player.invulnerable = true;
-    emit('player-hit', { damage, arrow: true, by: arrow.owner ?? null, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
+    emit('player-hit', { damage, arrow: true, by: arrow.owner ?? 'traveler', source: arrow.owner ? 'ally' : 'player',
+      impactId: `impact-${arrow.id}`, x: position.x, z: position.z, level: lastEncounter.level ?? 0 });
     if (!player.hp) fall();
     else if (floor && player.hp <= floor) endBout('teacher');
   }
@@ -976,8 +1201,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * killed by the traveler's own arrow is recorded as that and costs every living witness a rung
    * (src/companions.js), and one merely hit says a short word about it.
    *
-   * A bystander is never brought here at all - she is not fighting, so she stops the shaft and is
-   * unhurt - and neither is anybody outside the fight.
+   * Unarmed bystanders take the same physical hit. Ordinary world NPC health is owned by the
+   * host and receives `arrow-impact` instead of being duplicated in this encounter.
    */
   function hurtAllyByArrow(ally, arrow) {
     if (!ally.active) return;
@@ -996,8 +1221,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     timers.actionTime = 0;
     timers.hitApplied = false;
     const by = arrow.owner ?? 'traveler';
-    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, arrow: true, by });
-    if (!ally.active) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, arrow: true, by });
+    const attribution = { arrow: true, by, source: arrow.owner ? 'ally' : 'player', impactId: `impact-${arrow.id}` };
+    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, ...attribution });
+    if (!ally.active) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, ...attribution });
   }
 
   /** The fight is over and he lost it. One place, so the shield's path cannot drift from the other. */
@@ -1033,7 +1259,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       player.progress = clamp(actionTime / swing.duration, 0, 1);
       const advanceTime = Math.max(0, Math.min(actionTime, swing.contact) - Math.min(previousTime, swing.contact));
       const lungeSpeed = player.combo === 2 ? 1.8 : 1.4;
-      moveCharacter(position, Math.sin(player.yaw) * advanceTime * lungeSpeed, Math.cos(player.yaw) * advanceTime * lungeSpeed, world);
+      moveCombatant(position, Math.sin(player.yaw) * advanceTime * lungeSpeed, Math.cos(player.yaw) * advanceTime * lungeSpeed);
       if (!hitApplied && actionTime >= swing.contact) {
         hitApplied = true;
         applyPlayerStrike();
@@ -1051,7 +1277,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const travel = t => 1 - (1 - clamp(t / DODGE_TRAVEL_TIME, 0, 1)) ** 2;
       // Mail and plate shorten the step aside: the timing is the same, the ground covered is not.
       const amount = (travel(actionTime) - travel(previousTime)) * DODGE_DISTANCE * (margins().dodgeScale ?? 1);
-      moveCharacter(position, dodgeDirection.x * amount, dodgeDirection.z * amount, world);
+      moveCombatant(position, dodgeDirection.x * amount, dodgeDirection.z * amount);
       if (actionTime >= DODGE_DURATION) { player.action = 'idle'; player.progress = 0; }
     } else if (player.action === 'hurt') {
       player.progress = clamp(actionTime / .46, 0, 1);
@@ -1090,11 +1316,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         const minimum = Math.min(.93, distance(enemy, other) - .001);
         return Math.hypot(other.x - x, other.z - z) < minimum;
       })) continue;
-      if (distance({ x, z }, position) < 1.1) continue;
-      if (state.allies.some(ally => ally.active && Math.hypot(ally.x - x, ally.z - z) < .9)) continue;
+      if (closesGap(enemy, { x, z }, position, 1.1)) continue;
+      if (state.allies.some(ally => ally.active && closesGap(enemy, { x, z }, ally, .9))) continue;
       const before = { x: enemy.x, z: enemy.z };
-      moveCharacter(enemy, x - enemy.x, z - enemy.z, world);
-      return distance(before, enemy);
+      moveCombatant(enemy, x - enemy.x, z - enemy.z);
+      const moved = distance(before, enemy); if (moved > 1e-8) return moved;
     }
     return 0;
   }
@@ -1103,8 +1329,6 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const timers = enemyTimers.get(enemy.id);
     timers.actionTime += dt;
     timers.cooldown = Math.max(0, timers.cooldown - dt);
-    // A soldier is on guard while he is neither swinging nor getting over a swing; the view and the autopilot read it.
-    enemy.guarded = !!(ENEMY_KINDS[enemy.kind]?.guard && enemy.action === 'idle' && timers.cooldown <= 0 && timers.entry <= 0 && enemy.hp > 0);
     enemy.speed = 0;
     if (enemy.action === 'dead') { enemy.progress = clamp(timers.actionTime / .85, 0, 1); return; }
     if (enemy.action === 'hurt') {
@@ -1146,14 +1370,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       // inside whoever it is aimed at: a creature with reach does not need to. A rush is the
       // same movement with the charge's own speed under it, and it stops the same way.
       if (timers.actionTime <= contact && distance(enemy, position) > (profile.standoff ?? 0) * .85)
-        moveCharacter(enemy, Math.sin(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), Math.cos(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), world);
+        moveCombatant(enemy, Math.sin(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge), Math.cos(enemy.yaw) * dt * (rush ? rush.speed : profile.lunge));
       if (!timers.hitApplied && timers.actionTime >= contact) {
         timers.hitApplied = true;
-        // The strike lands on whoever the tell was aimed at: the traveler, or an ally still standing.
-        const aimedAlly = timers.targetId ? state.allies.find(ally => ally.id === timers.targetId && ally.active) : null;
-        const struckPoint = aimedAlly ?? position;
         const reach = rush ? rush.reach : profile.reach, arc = rush ? rush.arc : (profile.arc ?? Math.PI * .25);
-        if (distance(enemy, struckPoint) <= reach && facing(enemy, struckPoint, enemy.yaw, arc)) { if (aimedAlly) hurtAlly(aimedAlly, enemy); else hurtPlayer(enemy); }
+        applyMeleeStrike(enemy, 'enemy', { range: reach, arc, damage: Math.round(profile.damage * countryDamage(lastEncounter.level ?? 0)) });
       }
       if (timers.actionTime >= duration && state.phase === 'active') {
         enemy.action = 'idle';
@@ -1254,12 +1475,21 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const hp = Number.isFinite(spec.toughness)
       ? Math.round(maxHealth(spec.toughness))
       : Math.round((spec.hp ?? profile.hp) * allyHealthScale(level));
-    const ally = { id: spec.id, name: spec.name, kind: spec.kind, level, ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
+    const ally = { id: spec.id, name: spec.name, kind: spec.kind, level, ...(spec.npcId ? { npcId: spec.npcId } : {}), ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
       hp, maxHp: hp, action: 'idle', progress: 0, speed: 0, active: true,
       ...(spec.refuge ? { refuge: { ...spec.refuge }, frozen: profile.freeze ?? 0, escaped: false } : {}),
       ...(spec.spared ? { spared: true } : {}), ...(spec.armed !== undefined ? { armed: spec.armed } : {}) };
     allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
-    return ally;
+    return withCurrentHealth(ally, spec);
+  }
+
+  function withCurrentHealth(actor, spec) {
+    if (spec.currentHp !== undefined) {
+      actor.hp = Math.min(actor.maxHp, spec.currentHp);
+      actor.active = actor.hp > 0;
+      if (!actor.active) { actor.action = 'dead'; actor.progress = 1; }
+    }
+    return actor;
   }
 
   function clearAllies() { state.allies = []; allyTimers.clear(); }
@@ -1275,11 +1505,11 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     return best;
   }
 
-  function hurtAlly(ally, enemy) {
+  function hurtAlly(ally, enemy, baseDamage, attribution = {}) {
     if (!ally.active) return;
-    const damage = Math.round((ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin).damage * countryDamage(lastEncounter.level ?? 0));
+    const damage = Math.max(1, Math.round(baseDamage));
     const timers = allyTimers.get(ally.id);
-    ally.hp = Math.max(0, ally.hp - damage);
+    ally.hp = Math.max(killFloor(), ally.hp - damage);
     ally.action = ally.hp ? 'hurt' : 'dead';
     ally.active = ally.hp > 0;
     // Struck, a frozen villager stops freezing and runs.
@@ -1289,9 +1519,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     ally.speed = 0;
     timers.actionTime = 0;
     timers.hitApplied = false;
-    moveCharacter(ally, Math.sin(enemy.yaw) * .4, Math.cos(enemy.yaw) * .4, world);
-    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z });
-    if (!ally.hp) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z });
+    moveCombatant(ally, Math.sin(enemy.yaw) * .4, Math.cos(enemy.yaw) * .4);
+    emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, ...attribution });
+    if (!ally.hp) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, ...attribution });
   }
 
   /**
@@ -1325,12 +1555,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const x = ally.x + Math.sin(yaw + offset) * step;
       const z = ally.z + Math.cos(yaw + offset) * step;
       if (!insideBox(fightBox(lastEncounter), { x, z }) || !canStand(x, z, world, .43)) continue;
-      if (distance({ x, z }, position) < .9) continue;
-      if (state.allies.some(other => other !== ally && other.active && Math.hypot(other.x - x, other.z - z) < .9)) continue;
-      if (state.enemies.some(other => other.active && Math.hypot(other.x - x, other.z - z) < 1.0)) continue;
+      if (closesGap(ally, { x, z }, position, .9)) continue;
+      if (state.allies.some(other => other !== ally && other.active && closesGap(ally, { x, z }, other, .9))) continue;
+      if (state.enemies.some(other => other.active && closesGap(ally, { x, z }, other, 1.0))) continue;
       const before = { x: ally.x, z: ally.z };
-      moveCharacter(ally, x - ally.x, z - ally.z, world);
-      return distance(before, ally);
+      moveCombatant(ally, x - ally.x, z - ally.z);
+      const moved = distance(before, ally); if (moved > 1e-8) return moved;
     }
     return 0;
   }
@@ -1357,13 +1587,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     }
     if (ally.action === 'attack') {
       ally.progress = clamp(timers.actionTime / profile.attack, 0, 1);
-      if (!profile.bow && timers.actionTime <= profile.contact) moveCharacter(ally, Math.sin(ally.yaw) * dt * 1.2, Math.cos(ally.yaw) * dt * 1.2, world);
+      if (!profile.bow && !profile.spell && timers.actionTime <= profile.contact) moveCombatant(ally, Math.sin(ally.yaw) * dt * 1.2, Math.cos(ally.yaw) * dt * 1.2);
       if (!timers.hitApplied && timers.actionTime >= profile.contact) {
         timers.hitApplied = true;
         // **An archer does not reach anybody: he sends something.** The arrow is the same arrow
         // the traveler's is, in the same list, travelling the same way and stopped by the same
         // trees - his own complaint about woodland is one rule, not two.
-        if (profile.bow) {
+        if (profile.spell) {
+          const aim = foes.filter(enemy => distance(ally, enemy) <= profile.reach && !friendInLine(ally, enemy)
+            && meleeLineClear(ally, enemy, world)).sort((a, b) => distance(ally, a) - distance(ally, b))[0];
+          if (aim) launchFireball(ally, aim);
+        } else if (profile.bow) {
           // **He never shoots a friend on purpose** (the user, 2026-09-21). Asked again at the
           // moment the string goes, because the man he was aiming past may have stepped into it
           // while he was drawing: then he holds the shot and the cooldown is spent on nothing,
@@ -1379,11 +1613,9 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
           }
           emit('ally-strike', { id: ally.id, targetId: aim?.id ?? null, x: ally.x, z: ally.z, loosed: !!aim });
         } else {
-          const struck = foes.filter(enemy => distance(ally, enemy) <= profile.reach && facing(ally, enemy, ally.yaw, Math.PI * .3))
-            .sort((a, b) => distance(ally, a) - distance(ally, b))[0];
-          // He hits for what he is worth, which is his own level and not the ground's.
-          if (struck) hurtEnemy(struck, profile.damage * allyDamageScale(ally.level ?? 1), ally.yaw);
-          emit('ally-strike', { id: ally.id, targetId: struck?.id ?? null, x: ally.x, z: ally.z });
+          const impact = applyMeleeStrike(ally, 'ally', { range: profile.reach, arc: Math.PI * .3,
+            damage: profile.damage * allyDamageScale(ally.level ?? 1) });
+          emit('ally-strike', { id: ally.id, targetId: impact.hits.find(hit => hit.team === 'enemy')?.id ?? null, x: ally.x, z: ally.z });
         }
       }
       if (timers.actionTime >= profile.attack) { ally.action = 'idle'; ally.progress = 0; timers.cooldown = profile.recovery; }
@@ -1393,18 +1625,25 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const target = foes[0], dist = distance(ally, target);
     const targetYaw = Math.atan2(target.x - ally.x, target.z - ally.z);
     ally.yaw += angleDifference(targetYaw, ally.yaw) * Math.min(1, dt * 8);
+    // A sorcerer needs room to finish his cast. He can still cast when backed
+    // against a wall, but does not walk into sword range to land a spell.
+    if (profile.spell && dist < profile.standoff) {
+      const away = { x: ally.x - Math.sin(targetYaw) * (profile.standoff - dist), z: ally.z - Math.cos(targetYaw) * (profile.standoff - dist) };
+      ally.speed = steerAlly(ally, away, Math.min(profile.speed * dt, profile.standoff - dist)) / dt;
+      if (ally.speed > 0) return;
+    }
     if (dist <= profile.engage && timers.cooldown <= 0) {
       // **An archer does not begin a draw down a lane with a friend in it.** He shifts along the
       // line until he has a clear one, which is what a man does, and it keeps the corridor rule
       // out of the part of the frame where the arrow is already gone.
-      if (profile.bow && friendInLine(ally, target)) { shiftAlly(ally, target, profile, dt); return; }
+      if ((profile.bow || profile.spell) && (friendInLine(ally, target) || (profile.spell && !meleeLineClear(ally, target, world)))) { shiftAlly(ally, target, profile, dt); return; }
       ally.action = 'windup'; ally.yaw = targetYaw; ally.progress = 0; timers.actionTime = 0;
-      emit('ally-windup', { id: ally.id, targetId: target.id });
+      emit('ally-windup', { id: ally.id, targetId: target.id, ...(profile.spell ? { spellId: profile.spell } : {}) });
       return;
     }
     // An archer keeps his distance rather than closing to arm's length: he walks up to where he
     // can see, and backs off anything that gets inside his standoff.
-    const keep = profile.bow ? (profile.standoff ?? 9) : 1.7;
+    const keep = profile.bow || profile.spell ? (profile.standoff ?? 9) : 1.7;
     if (profile.bow && dist < keep) {
       const away = { x: ally.x - Math.sin(targetYaw) * (keep - dist), z: ally.z - Math.cos(targetYaw) * (keep - dist) };
       ally.speed = steerAlly(ally, away, Math.min(profile.speed * dt, keep - dist)) / dt;
@@ -1441,6 +1680,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // The world's other bodies are the host's list and move with the frame, so they are asked for
     // once a frame rather than once a substep, however many arrows are in the air.
     bodiesThisUpdate = null;
+    worldBodiesThisUpdate = null;
+    motionBodies = null;
     // Substeps preserve contact windows and swept movement through occasional slow frames.
     let remaining = Math.min(dt, 10);
     while (remaining > 1e-9) {
@@ -1453,16 +1694,19 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         // nothing to catch your breath from and nobody held the ground without you.
         if (lastEncounter.bout) endBout('walked-away');
         else {
+          const enemies = state.enemies.map(actor => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, x: actor.x, z: actor.z }));
+          const allies = state.allies.map(actor => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, x: actor.x, z: actor.z }));
           state.phase = 'peaceful';
           state.enemies = [];
           enemyTimers.clear();
           clearAllies();
-          restorePlayer();
-          emit('retreat', { encounterId: state.encounterId });
+          restorePlayer({ preserveVitals: true });
+          emit('retreat', { encounterId: state.encounterId, enemies, allies });
         }
       }
       updatePlayer(step);
       updateArrows(step);
+      updateFireballs(step);
       state.enemies.forEach(enemy => updateEnemy(enemy, step));
       state.allies.forEach(ally => updateAlly(ally, step));
     }
@@ -1542,7 +1786,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, pose, movementScale, heal, exhaust, revive,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, pose, movementScale, heal, exhaust, revive, spellHit,
     setWeaponReady(value) { weaponReady = Boolean(value); },
     /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
     get drawn() { return player.draw ?? 0; },

@@ -239,5 +239,5 @@ test('nobody can die in a fight the player is being taught alone in', () => {
   assert.match(source, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'no companion is an ally in one');
   assert.match(source, /combat\.state\.phase==='active'&&TEACHING_FIGHTS\.has\(combat\.state\.encounterId\)/, 'and the file is held out of the box');
   // A man who is never an ally is never `ally-down`, which is the only thing that kills him.
-  assert.match(source, /if\(e\.type==='ally-down'&&companions\.walksWith\(e\.id\)\)/);
+  assert.match(source, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)/);
 });

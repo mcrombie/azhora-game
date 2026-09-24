@@ -15,9 +15,9 @@ export const WATERLINE = 0.45;
 
 /** Inside the world, and clear of everything solid in it. Both halves of the waterline need this. */
 /**
- * **The shapes that are there to keep walkers out of water.** They line every river in the world
- * and they are what made a river a wall rather than a thing you could be in. A swimmer is already
- * in the water and is not stopped by them; everything else still is.
+ * River and pond markers describe water coverage, not solid walls. Their collision radius
+ * overlaps the dry bank; blocking a walker there left a strip that was neither standable
+ * nor swimmable. The ground and local water heights below decide whether to walk or swim.
  */
 const WATER_COLLIDERS = new Set(['river-water', 'pond-water']);
 
@@ -29,7 +29,7 @@ function clearHere(x, z, world, radius, afloat = false) {
   const near = world.nearColliders ? world.nearColliders(x, z, radius) : world.colliders;
   for (let i = 0; i < near.length; i++) {
     const c = near[i];
-    if (afloat && WATER_COLLIDERS.has(c.kind)) continue;
+    if (WATER_COLLIDERS.has(c.kind)) continue;
     if (c.r !== undefined) { const dx = x - c.x, dz = z - c.z, reach = c.r + radius; if (dx * dx + dz * dz < reach * reach) return false; }
     else if (Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius) return false;
   }

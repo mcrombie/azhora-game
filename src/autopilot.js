@@ -13,6 +13,7 @@
  * person stops it (the host enforces that).
  */
 import { canStand, QUEST_DONE } from './game-state.js';
+import { OSTLER_NPC } from './ostler.js';
 
 export const AUTOPILOT_VERSION = 1;
 export const AUTOPILOT_DEFAULTS = Object.freeze({
@@ -37,7 +38,7 @@ export const AUTOPILOT_DEFAULTS = Object.freeze({
 /** Quest replies the autopilot will pick, most important first. */
 export const CHOICE_PRIORITY = Object.freeze([
   'meet-courier', 'return-courier', 'meet-crossing-keeper', 'return-crossing-keeper', 'meet-ridge-keeper', 'deliver-report',
-  'accept-lauvel-search', 'return-courier-satchel', 'admit-to-camp', 'join-muster', 'take-legate-terms', 'enter-solis', 'side-empire', 'side-coalition', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
+  'accept-lauvel-search', 'return-courier-satchel', 'redeem-horse', 'admit-to-camp', 'join-muster', 'claim-legion-horse', 'take-legate-terms', 'enter-solis', 'side-empire', 'side-coalition', 'march-out', 'reach-line', 'sound-advance', 'begin-assault', 'close-aftermath',
   'hollis-repair-wood',
 ]);
 const LEAVE_PATTERN = /^(leave|back|until|done|goodbye)/i;
@@ -152,18 +153,27 @@ const roadNetworks = new WeakMap();
 function roadNetwork(paths) {
   let network = roadNetworks.get(paths);
   if (network) return network;
-  const nodes = [], edges = [], segments = [];
+  const nodes = [], edges = [], segments = [], buckets = new Map();
   const link = (a, b) => { const w = distance(nodes[a], nodes[b]); edges[a].push([b, w]); edges[b].push([a, w]); };
-  for (const path of paths) {
+  for (const [pathId, path] of paths.entries()) {
     let previous = -1;
     for (const point of path) {
-      const index = nodes.push({ x: point.x, z: point.z }) - 1; edges.push([]);
+      const index = nodes.push({ x: point.x, z: point.z, pathId }) - 1; edges.push([]);
       if (previous >= 0) { link(previous, index); segments.push([previous, index]); }
       previous = index;
     }
   }
-  for (let a = 0; a < nodes.length; a++) for (let b = a + 1; b < nodes.length; b++)
-    if (distance(nodes[a], nodes[b]) < JOIN) link(a, b);
+  // Curved navigation lines have more points than authoring controls. Connect
+  // nearby roads through spatial buckets, without shortcutting a road's bends.
+  for (let a = 0; a < nodes.length; a++) {
+    const point = nodes[a], gx = Math.floor(point.x / JOIN), gz = Math.floor(point.z / JOIN);
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++)
+      for (const b of buckets.get(`${gx + dx},${gz + dz}`) ?? [])
+        if (point.pathId !== nodes[b].pathId && distance(point, nodes[b]) < JOIN) link(a, b);
+    const key = `${gx},${gz}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(a);
+  }
   network = { nodes, edges, segments };
   roadNetworks.set(paths, network);
   return network;
@@ -185,15 +195,34 @@ export function roadRoute(paths, from, to) {
     if (!entry || point.distance < entry.point.distance) entry = { a, b, point };
   }
   if (!entry || entry.point.distance >= NETWORK_REACH) return null;
-  const cost = new Float64Array(nodes.length).fill(Infinity), previous = new Int32Array(nodes.length).fill(-1), done = new Uint8Array(nodes.length);
+  const cost = new Float64Array(nodes.length).fill(Infinity), previous = new Int32Array(nodes.length).fill(-1);
+  const queue = [];
+  const push = (index, weight) => {
+    const item = [index, weight]; let slot = queue.length; queue.push(item);
+    while (slot) { const parent = (slot - 1) >> 1; if (queue[parent][1] <= weight) break; queue[slot] = queue[parent]; slot = parent; }
+    queue[slot] = item;
+  };
+  const pop = () => {
+    const item = queue[0], tail = queue.pop();
+    if (queue.length) {
+      let slot = 0;
+      while (slot * 2 + 1 < queue.length) {
+        let child = slot * 2 + 1;
+        if (child + 1 < queue.length && queue[child + 1][1] < queue[child][1]) child++;
+        if (queue[child][1] >= tail[1]) break;
+        queue[slot] = queue[child]; slot = child;
+      }
+      queue[slot] = tail;
+    }
+    return item;
+  };
   cost[entry.a] = distance(entry.point, nodes[entry.a]);
   cost[entry.b] = distance(entry.point, nodes[entry.b]);
-  for (;;) {
-    let current = -1;
-    for (let i = 0; i < nodes.length; i++) if (!done[i] && cost[i] < Infinity && (current < 0 || cost[i] < cost[current])) current = i;
-    if (current < 0) break;
-    done[current] = 1;
-    for (const [next, weight] of edges[current]) if (cost[current] + weight < cost[next]) { cost[next] = cost[current] + weight; previous[next] = current; }
+  push(entry.a, cost[entry.a]); push(entry.b, cost[entry.b]);
+  while (queue.length) {
+    const [current, travelled] = pop();
+    if (travelled !== cost[current]) continue;
+    for (const [next, weight] of edges[current]) if (travelled + weight < cost[next]) { cost[next] = travelled + weight; previous[next] = current; push(next, cost[next]); }
   }
   let exit = null;
   for (const [a, b] of segments) {
@@ -210,7 +239,7 @@ export function roadRoute(paths, from, to) {
   }
   if (!exit || exit.point.distance >= distance(from, to) - 3) return null;
   const route = [];
-  if (!exit.direct) for (let i = exit.end; i >= 0; i = previous[i]) route.unshift(nodes[i]);
+  if (!exit.direct) for (let i = exit.end; i >= 0; i = previous[i]) route.unshift({ x: nodes[i].x, z: nodes[i].z });
   route.unshift({ x: entry.point.x, z: entry.point.z });
   route.push({ x: exit.point.x, z: exit.point.z });
   return route.filter((point, index) => !index || distance(point, route[index - 1]) > .1);
@@ -220,7 +249,9 @@ export function roadRoute(paths, from, to) {
 function stepAlong(route, position) {
   let index = 0, gap = Infinity;
   route.forEach((point, i) => { const d = distance(point, position); if (d < gap) { gap = d; index = i; } });
-  if (index < route.length - 1 && (gap < 1.4 || isBehind(position, route[index], route[index + 1]))) index++;
+  // Several roads can meet within a stride. Skip every reached junction node,
+  // not just the first: otherwise the next recomputed route sends us back to it.
+  while (index < route.length - 1 && (distance(position, route[index]) < 1.4 || isBehind(position, route[index], route[index + 1]))) index++;
   return route[index];
 }
 
@@ -291,7 +322,7 @@ const NEAR_DETOUR = 30;
 
 /** The ground alone, without what stands on it: water shows, carts and posts do not. */
 function bareGround(world) {
-  return { bounds: world.bounds, colliders: [], heightAt: (x, z) => world.heightAt(x, z) };
+  return { bounds: world.bounds, colliders: [], heightAt: (x, z) => world.heightAt(x, z), waterAt: (x, z) => world.waterAt?.(x, z) };
 }
 
 export function clearLine(from, to, world, radius = .42) {
@@ -333,6 +364,8 @@ export function chooseReply(choices, snapshot, { side = 'empire' } = {}) {
   // gate, finds nothing it recognises, says goodbye and walks away again.
   const wanted = new Set([snapshot.journey, snapshot.luscia, snapshot.moros, snapshot.border, snapshot.aftermath]
     .flatMap(chapter => chapter?.actions ?? []).filter(action => action.enabled).map(action => action.id));
+  // The paid-for horse is a reward handover, outside the chapter's action list.
+  if (snapshot.riding?.waiting && !snapshot.riding.owned) wanted.add('redeem-horse');
   // One side or the other, never both: the fork at Solis is the one reply that is a choice.
   const refused = side === 'coalition' ? 'side-empire' : 'side-coalition';
   for (const id of CHOICE_PRIORITY) {
@@ -372,6 +405,23 @@ export function fightCommand(snapshot) {
   return { intent: 'Waiting for an opening', move: null, yaw, actions: [] };
 }
 
+function alreadyPastCrossing(position, target, world) {
+  const bridge = world.journeySites?.['bridge-repair'];
+  if (!bridge || !target || !canStand(position.x, position.z, bareGround(world))) return false;
+  // The existing road through the Caloss knows which bank leads to Iven.
+  // A player can swim across before enabling autoplay; once safely on that
+  // bank, the optional repair must not send them back over the river.
+  for (const path of world.paths ?? []) {
+    if (path.length < 2) continue;
+    const crossing = nearestOnPath(path, bridge);
+    if (crossing.distance > 3) continue;
+    const goal = nearestOnPath(path, target), from = nearestOnPath(path, position);
+    if (goal.distance > NETWORK_REACH || from.distance > NETWORK_REACH || Math.abs(from.along - crossing.along) < 2) continue;
+    return (from.along - crossing.along) * (goal.along - crossing.along) > 0;
+  }
+  return false;
+}
+
 /** The current goal of the main quest, from the tutorial through the road out of Drent. */
 export function planGoal(snapshot, world) {
   const { mode, questStage, journey } = snapshot;
@@ -404,6 +454,17 @@ export function planGoal(snapshot, world) {
     if ((snapshot.inventory.sticks ?? 0) > 0) return { kind: 'equip', item: 'forest-stick', intent: 'Readying a spare stick' };
     const bench = nearestOf(world.repairBenches ?? [], snapshot.position);
     if (bench) return { kind: 'use', target: bench, radius: 1.6, check: 'nearRepair', intent: 'Finding a repair bench' };
+  }
+  // Iven's report advances the campaign immediately, but his token is not yet
+  // a horse. Collect that reward before the next chapter sends us out of town.
+  // A traveler already admitted and mustered at Moros can use its horse line
+  // instead; that is the same token, not an extra horse or a return to Nothom.
+  if (questStage >= QUEST_DONE && snapshot.riding?.waiting && !snapshot.riding.owned) {
+    const line = world.morosSites?.['legion-horse-line'];
+    if (line && snapshot.moros?.actions?.some(action => action.id === 'claim-legion-horse' && action.enabled))
+      return { kind: 'use', target: line, radius: 1.8, siteId: 'legion-horse-line', intent: 'Collecting the army horse' };
+    const stable = world.npcPositions?.[OSTLER_NPC.id];
+    if (stable) return { kind: 'talk', target: stable, npcId: OSTLER_NPC.id, intent: 'Collecting the horse from Bede Harrow' };
   }
   // The campaign says which chapter the traveler is on. Follow it: a game begun at a
   // later chapter (the opening screen offers one) has no earlier chapter to finish.
@@ -446,7 +507,8 @@ export function planGoal(snapshot, world) {
    * actually down: mended by anybody, by a player or by an earlier run, this falls straight
    * through to the road (`bridge`, src/journey.js).
    */
-  const mending = journey.bridge && !['done', 'closed', 'on-the-road'].includes(journey.bridge);
+  const unfinishedBridge = journey.bridge && !['done', 'closed', 'on-the-road'].includes(journey.bridge);
+  const mending = unfinishedBridge && !(journey.stage === 'deliver-report' && alreadyPastCrossing(snapshot.position, npc('relay-clerk'), world));
   if (mending || journey.stage === 'repair-bridge') {
     if (journey.bridge === 'offered') return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Asking Chip about the crossing' };
     if (journey.bridge === 'repaired') return { kind: 'talk', target: npc('crossing-keeper'), npcId: 'crossing-keeper', intent: 'Telling Chip the span is down again' };
@@ -548,14 +610,14 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
   const config = { ...AUTOPILOT_DEFAULTS, ...options };
   let active = false, intent = '', reason = '', lastYaw = null, guard = false, walkPoint = null, move = { forward: 0, side: 0, run: false };
   let timers = { dialogue: 0, reading: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
-  let progressKey = '', goalKey = '', bestDistance = Infinity, detour = 0, detourSide = 1, stopReason = '';
+  let progressKey = '', goalKey = '', progressPosition = null, detour = 0, detourSide = 1, stopReason = '';
   const listeners = new Set();
   const notify = event => { for (const listener of listeners) listener(event); };
 
   function start() {
     if (active) return false;
     active = true; guard = false; walkPoint = null; stopReason = ''; timers = { dialogue: 0, reading: 0, interact: 0, swing: 0, idle: 0, stuck: 0, whistle: 99, afoot: 0, saddleStuck: 0, mounting: 0, dismounting: 0, riding: 0, fetching: 0, fetchBest: Infinity };
-    progressKey = ''; goalKey = ''; bestDistance = Infinity; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
+    progressKey = ''; goalKey = ''; progressPosition = null; detour = 0; move = { forward: 0, side: 0, run: false }; lastYaw = null;
     notify({ type: 'start' });
     return true;
   }
@@ -628,12 +690,11 @@ export function createAutopilot({ world, read, act, options = {} } = {}) {
   }
 
   function trackProgress(snapshot, key, gap, dt) {
-    // Progress toward the next road corner counts even when the road bends away
-    // from the final destination. Otherwise every such bend triggers a sidestep.
-    if (walkPoint) { key += `:${walkPoint.x.toFixed(1)},${walkPoint.z.toFixed(1)}`; gap = distance(snapshot.position, walkPoint); }
-    if (key !== progressKey) { progressKey = key; bestDistance = gap; timers.stuck = 0; timers.idle = 0; detour = 0; return; }
-    // Ground gained toward the goal is progress, however long the road: only standing still runs the idle clock.
-    if (gap < bestDistance - .05) { bestDistance = gap; timers.stuck = 0; timers.idle = 0; }
+    // The projected road entry moves while a traveler presses against a prop.
+    // Treating each new projection as a new goal disabled stall recovery there.
+    // Measure actual displacement instead, including bends away from the target.
+    if (key !== progressKey || !progressPosition) { progressKey = key; progressPosition = { ...snapshot.position }; timers.stuck = 0; timers.idle = 0; detour = 0; return; }
+    if (distance(snapshot.position, progressPosition) > .75) { progressPosition = { ...snapshot.position }; timers.stuck = 0; timers.idle = 0; }
     else timers.stuck += dt;
     if (detour > 0) detour -= dt;
     else if (timers.stuck > config.stuckAfter) { detour = .9; detourSide = -detourSide; timers.stuck = 0; }

@@ -49,7 +49,8 @@ export const SOLDIER_ROLES = Object.freeze(['legion-soldier', 'legion-officer', 
  * battle. Taken from the chapters' own `destinationIds` rather than remembered.
  */
 export const QUEST_IDS = Object.freeze([
-  'vastos-herder', 'vastos-republican', 'vastos-monarchist', // the first Ambroni Civil War silver quest
+  'killian', // Drent's Ambroni Civil War silver quest; an ordinary resident until the papers are read
+  'vastos-herder', 'vastos-republican', 'vastos-monarchist', // preserved for the parked Vastos story
   'harbormaster',        // Jojo, the letter
   'instructor',          // Officer Glun, the lesson and the chart
   'crossing-keeper',     // Chip, and the one side quest on the slate (src/quest-slate.js)
@@ -73,7 +74,7 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
-  'doomsayer',           // Orris, who reads the signs on Tidehaven's shore and feeds you first
+  'doomsayer',           // Mark, who reads the signs and teaches Botany and Geology on Tidehaven's shore
   'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
   'liz-beekeeper',       // Liz, who keeps the Pueth skeps and the game's honeycomb
   'cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster',   // Cobble, and the murder

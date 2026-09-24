@@ -196,8 +196,8 @@ test('the road north leaves the main road past the edge of Tidehaven’s wood, c
     assert.ok(turn < Math.PI / 5, `the road turns ${(turn * 180 / Math.PI).toFixed(0)}° at ${p.x.toFixed(0)},${p.z.toFixed(0)}`);
   }
   for (const place of [TESSEN_POST.yard, RIMEHOLT.square]) assert.ok(segmentDistance(place, PUETH_ROAD) < 20);
-  assert.ok(world.paths.some(path => path.length === PUETH_ROAD.length && path.every((p, i) => p.x === PUETH_ROAD[i].x && p.z === PUETH_ROAD[i].z)), 'the road is drawn and charted');
-  assert.deepEqual(world.paths[0], MAIN_ROAD.map(p => ({ x: p.x, z: p.z })), 'the main road is still the first path');
+  assert.ok(world.paths.some(path => PUETH_ROAD.every(point => segmentDistance(point, path) < 1)), 'the sampled road is drawn and charted through its authored controls');
+  assert.ok(MAIN_ROAD.every(point => segmentDistance(point, world.paths[0]) < 1), 'the sampled main road is still the first path');
 });
 
 test('everyone Pueth places stands on reachable ground, at least 4 m from anyone else a quest puts on the map', () => {

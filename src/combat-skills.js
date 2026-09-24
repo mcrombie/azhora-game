@@ -130,7 +130,8 @@ export const ARMS_SKILLS = freeze({
   blades: freeze({ id: 'blades', weapons: freeze(['simple-sword', 'long-dagger']) }),
   'heavy-arms': freeze({ id: 'heavy-arms', weapons: freeze(['greatsword', 'iron-mace', 'bearded-axe']) }),
   polearms: freeze({ id: 'polearms', weapons: freeze(['ash-spear', 'war-pike']) }),
-  staves: freeze({ id: 'staves', weapons: freeze(['forest-stick', 'quarterstaff']) }),
+  // A focus can still strike as wood; spell damage pays its school instead of Staves.
+  staves: freeze({ id: 'staves', weapons: freeze(['forest-stick', 'quarterstaff', 'wand', 'oak-staff']) }),
   bows: freeze({ id: 'bows', weapons: freeze(['hunting-bow']) }),
   shield: freeze({ id: 'shield', weapons: freeze([]) }),
   toughness: freeze({ id: 'toughness', weapons: freeze([]) }),

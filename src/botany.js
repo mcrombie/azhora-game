@@ -296,7 +296,7 @@ export function createBotany({ skills, onEvent = () => {} } = {}) {
         name: state.found[id] ? PLANT_SPECIES[id].name : 'A plant you have not named',
         detail: state.found[id] ? PLANT_SPECIES[id].note
           : state.met ? (PLANT_SPECIES[id].where ? `Stands in ${PLANT_SPECIES[id].where}.` : `Grows on ${HABITAT_WORDS[PLANT_SPECIES[id].habitat] ?? PLANT_SPECIES[id].habitat}.`)
-          : 'Nell Harrow works the hedge banks of the Sunken Lane, on the Caloss road.' })),
+          : 'Mark teaches Botany by the village fire in Tidehaven. Nell Harrow also teaches at the Sunken Lane on the Caloss road.' })),
     };
   }
 

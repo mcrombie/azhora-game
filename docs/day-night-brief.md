@@ -2,6 +2,8 @@
 
 A design brief. Nothing here is built.
 
+**Timing update, 23 September 2026:** the user has replaced the 48-minute day below with **one in-game minute per active real second**, or **24 real minutes per full day**, beginning on **1 April 980**. See [the living main arc plan](living-main-arc-plan.md). The older durations and arrival examples below are historical and must be recalculated before implementation.
+
 **Decided by the user (`docs/design-answers.md`):**
 
 - A real cycle that changes the world: night is more dangerous off the road (Luscia's wolves hunt

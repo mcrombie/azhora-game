@@ -50,7 +50,7 @@ test('the first shore wears one mark, and it is the road the game is about', () 
   assert.equal(markerGrade(markerFor('corvan', view({ questStage: 3, chapterDestinations: ['corvan'] }))), 'main');
 });
 
-test('four quest categories share one symbol and size, each with its own colour', () => {
+test('quest grades share a diamond; skill teachers have a distinct book and colour', () => {
   assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill']);
   assert.deepEqual(Object.keys(MARKER_STYLE), [...MARKER_KINDS]);
   const colours = new Set();
@@ -59,7 +59,7 @@ test('four quest categories share one symbol and size, each with its own colour'
     assert.equal(style.kind, kind);
     assert.ok(style.what.length > 20, `${kind} says what it means`);
     assert.ok(!colours.has(style.colour), `${kind} has a colour of its own`);
-    assert.equal(style.shape, 'diamond');
+    assert.equal(style.shape, kind==='skill'?'book':'diamond');
     colours.add(style.colour);
   }
   assert.equal(MARKER_STYLE.main.scale, 1);
@@ -67,7 +67,7 @@ test('four quest categories share one symbol and size, each with its own colour'
     assert.equal(MARKER_STYLE[kind].scale, MARKER_STYLE.main.scale, `${kind} uses the same size`);
 });
 
-test('each category uses the same diamond and ring geometry, carrying its own colour and kind', async () => {
+test('quest geometry is consistent and the teacher book faces the camera', async () => {
   const { makeQuestMarker } = await sourceModule('../src/characters.js');
   const built = new Map();
   for (const kind of MARKER_KINDS) {
@@ -81,7 +81,9 @@ test('each category uses the same diamond and ring geometry, carrying its own co
     assert.ok(shapes.length >= 2, `${kind} is drawn`);
     built.set(kind, shapes.sort().join(','));
   }
-  assert.equal(new Set(built.values()).size, 1, 'every quest category shares one silhouette');
+  assert.equal(new Set(['main','plot','deed'].map(kind=>built.get(kind))).size, 1, 'quest categories share one silhouette');
+  assert.notEqual(built.get('skill'),built.get('main'),'teacher book is visibly distinct');
+  assert.equal(makeQuestMarker('skill').userData.billboard,true);
   assert.equal(built.get('main'), 'OctahedronGeometry,TorusGeometry');
   assert.equal(makeQuestMarker().userData.markerKind, 'main', 'the arc is what you get if nobody says');
   assert.equal(makeQuestMarker('rumour').userData.markerKind, 'main', 'and what you get for a kind that does not exist');
@@ -181,13 +183,13 @@ test('src/main.js asks the table rather than keeping its own pile of rules', () 
   assert.doesNotMatch(main, /o\.material\.color\.set\(0xa9dcb1\)/, 'the cook’s hand-painted green marker is back');
   assert.match(main, /makeQuestMarker\('skill'\);feederMarker/, 'the feeder errand is a skill errand');
   // Everybody the old rules named is named in the view the table reads.
-  for (const named of ['harbourmaster:HARBOURMASTER', 'instructor:INSTRUCTOR.id', "doomsayer:'doomsayer'", "acornCook:'acorn-cook'",
+  for (const named of ['harbourmaster:HARBOURMASTER', 'instructor:INSTRUCTOR.id', "doomsayer:null", "acornCook:'acorn-cook'",
     "pondFisher:'pond-fisher'", 'forestStory:FOREST_STORY_NPC.id', 'birdWatcher:BIRD_WATCHER.id', 'vintner:VINTNER.id'])
     assert.ok(main.includes(named), `${named} is missing from the marker view`);
 });
 
-test('the Vastos silver story stays available with teachers trimmed, and follows only its active targets', () => {
-  const current = { questStage: TUTORIAL_DONE, silverDestinations: ['vastos-herder'] };
+test('the parked Vastos silver story can be reenabled without restoring teachers', () => {
+  const current = { questStage: TUTORIAL_DONE, silverDestinations: ['vastos-herder'], live:id=>id==='civil-war-vastos' };
   assert.equal(markerGrade(markerFor('vastos-herder', current)), 'plot');
   assert.equal(markerFor('vastos-republican', current), null);
   assert.equal(markerFor('vastos-covenant', current), null, 'the undiscovered covenant is never advertised');
@@ -196,4 +198,31 @@ test('the Vastos silver story stays available with teachers trimmed, and follows
   assert.equal(markerFor('vastos-herder', { ...current, live: () => false }), null);
   assert.equal(markerGrade(markerFor('vastos-herder', { ...current, chapterDestinations: ['vastos-herder'] })), 'main');
   assert.equal(markerFor('vastos-herder', { ...current, silverDestinations: [] }), null, 'the mark leaves after settlement');
+});
+
+test('an available first lesson has a book marker independently of parked quest chains',()=>{
+  const view={questStage:TUTORIAL_DONE,skillTeachers:['doomsayer'],live:()=>false};
+  assert.equal(markerFor('doomsayer',view)?.kind,'skill');
+  assert.equal(markerFor('doomsayer',{...view,skillTeachers:[]}),null);
+  assert.equal(markerFor('doomsayer',{...view,busy:true}),null);
+  assert.equal(markerFor('doomsayer',{...view,questStage:0}),null);
+});
+
+test('Drent silver markers follow known leads without advertising Killian before reading evidence', () => {
+  const current={questStage:TUTORIAL_DONE,drentDestinations:['instructor']};
+  assert.equal(markerGrade(markerFor('instructor',current)),'plot');
+  assert.equal(markerFor('killian',current),null);
+  assert.equal(markerGrade(markerFor('killian',{...current,drentDestinations:['killian','instructor']})),'plot');
+  assert.equal(markerFor('killian',{...current,drentDestinations:[]}),null);
+  assert.equal(markerFor('vastos-herder',{questStage:TUTORIAL_DONE,silverDestinations:['vastos-herder']}),null);
+});
+
+test('Sela offers a copper deed, then marks its workers, independently of teacher quests', () => {
+  const base={questStage:TUTORIAL_DONE,live:()=>false};
+  assert.equal(markerFor('lauvel-seeker',{...base,burying:'hailed'})?.kind,'deed');
+  assert.equal(markerFor('lauvel-seeker',{...base,burying:'helping'}),null);
+  assert.equal(markerFor('lauvel-bearer-front',{...base,burying:'helping',buryingDestinations:['lauvel-bearer-front']})?.kind,'deed');
+  assert.equal(markerFor('lauvel-seeker',{...base,burying:'found'})?.kind,'deed');
+  assert.equal(markerFor('lauvel-seeker',{...base,burying:'done'}),null);
+  assert.equal(markerFor('lauvel-seeker',{...base,burying:'hailed',busy:true}),null);
 });

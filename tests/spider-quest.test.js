@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
+import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
+import { BEN_ROUTE, BEN_GUIDE_PACE, BEN_GUIDE_START, benGuideTarget, restoreBenGuide } from '../src/ben-guide.js';
 import { SPIDER_QUEST, BEN, SPIDER, STAGES, REWARDS, createSpiderQuest,
   validateSpiderQuestSnapshot } from '../src/spider-quest.js';
 import { SORCERY, SPELLS, SCHOOL_IDS, castWith, castsWith, focusAt, spellXp, schoolLevel } from '../src/sorcery.js';
@@ -26,16 +27,18 @@ test('the whole of it, the way it goes if you help him', () => {
   assert.deepEqual(said, ['spider-accepted', 'spider-roused', 'spider-killed']);
 });
 
-test('the fork is the ending: one of them, once, and never both', () => {
+test('Ben offers one mutually exclusive reward, preserved across reload', () => {
   for (const [id, stage] of [['bounty', 'paid'], ['lesson', 'taught']]) {
     const quest = createSpiderQuest();
     quest.ask(); quest.accept(); quest.begin(); quest.settle({ spiderDead: true });
     assert.equal(quest.take(id).stage, stage);
     assert.equal(quest.state.stage, stage);
     assert.equal(quest.state.over, true);
-    // The other one is gone, and so is this one.
-    assert.equal(quest.take(id === 'bounty' ? 'lesson' : 'bounty'), null, 'he paid twice');
     assert.equal(quest.take(id), null);
+    const restored=createSpiderQuest();assert.equal(restored.restore(quest.snapshot()),true);
+    assert.deepEqual(restored.choices(),[]);assert.equal(restored.take(id==='bounty'?'lesson':'bounty'),null);
+    assert.equal(quest.take('bounty'),null,'he paid twice');
+    assert.equal(quest.take('lesson'),null,'he taught twice');
     assert.deepEqual(quest.choices(), []);
   }
   assert.equal(createSpiderQuest().take('bounty'), null, 'nobody is paid for a spider that is alive');
@@ -57,6 +60,53 @@ test('stand back and the spider kills him, which is a real ending and not a fail
   assert.equal(away.benFell(), true);
   assert.equal(away.state.stage, 'abandoned');
   assert.equal(away.benFell(), false, 'he dies once');
+});
+
+test('retreat or defeat with Ben alive lets the escort and den fight resume', () => {
+  const quest=createSpiderQuest();quest.ask();quest.accept();quest.begin();
+  assert.equal(quest.settle({spiderDead:false,benAlive:true}),true);
+  assert.equal(quest.state.stage,'walking');assert.equal(quest.state.walking,true);
+  const loaded=createSpiderQuest();assert.equal(loaded.restore(quest.snapshot()),true);
+  assert.equal(loaded.begin(),true);
+  assert.equal(loaded.settle({spiderDead:true,benAlive:true}),true);
+  assert.equal(loaded.take('lesson').stage,'taught');
+});
+
+test('legacy unfinished fight saves restart safely and a fallen Ben never returns', () => {
+  const quest=createSpiderQuest();quest.ask();quest.accept();quest.begin();
+  const saved=quest.snapshot(),loaded=createSpiderQuest();
+  assert.equal(loaded.restore(saved),true);assert.equal(loaded.state.stage,'walking');
+  assert.equal(loaded.restore({...saved,benDown:true}),true);assert.equal(loaded.state.stage,'abandoned');
+  assert.equal(loaded.begin(),false);assert.equal(loaded.take('lesson'),null);
+  quest.benFell();assert.equal(quest.settle({spiderDead:false,benAlive:true}),false);
+  assert.equal(quest.state.stage,'abandoned','a cleared encounter roster cannot turn a death into a retreat');
+});
+
+test('Ben waits without following a retreating player and resumes his saved route',()=>{
+  const at={...BEN_ROUTE[3]},far={x:at.x+20,z:at.z+20};
+  const paused=benGuideTarget(at,far,{waypoint:4,waiting:false});
+  assert.equal(paused.waiting,true);assert.deepEqual(paused.target,at);
+  const again=benGuideTarget(at,{x:far.x+10,z:far.z+10},paused.progress);
+  assert.deepEqual(again.target,at,'he must not chase the player back toward town');
+  const quest=createSpiderQuest();quest.ask();quest.accept();quest.rememberGuide(again.progress);
+  const loaded=createSpiderQuest();assert.equal(loaded.restore(quest.snapshot()),true);
+  const resume=benGuideTarget(at,{x:at.x+2,z:at.z},loaded.state.guide);
+  assert.equal(resume.waiting,false);assert.deepEqual(resume.target,BEN_ROUTE[4]);
+  quest.begin();quest.settle({benAlive:true,spiderDead:false});
+  assert.equal(quest.state.guide.waypoint,4,'retreat does not send the guide through the town again');
+});
+
+test('old walking saves migrate to a safe nearby guide stop rather than unrelated live-session coordinates',()=>{
+  const near=restoreBenGuide(null,SPIDER_QUEST.den);
+  assert.equal(near.waypoint,BEN_ROUTE.length-1);
+  assert.ok(Math.hypot(near.x-SPIDER_QUEST.den.x,near.z-SPIDER_QUEST.den.z)<14);
+  const loaded=createSpiderQuest();loaded.restore({version:1,stage:'walking',benDown:false,spiderDown:false});
+  assert.equal(loaded.rememberGuide(near),true);assert.deepEqual(loaded.snapshot().guide,near);
+  assert.deepEqual(restoreBenGuide(null,{x:0,z:0}),{...BEN_GUIDE_START,waypoint:0,waiting:false});
+  const safe=restoreBenGuide(null,SPIDER_QUEST.den,(x,z)=>x!==near.x||z!==near.z);
+  assert.notDeepEqual(safe,near,'migration may not place Ben inside a blocked waypoint');
+  const saved={x:-742,z:315,waypoint:4,waiting:true};
+  assert.deepEqual(restoreBenGuide(saved,{x:0,z:0}),saved,'valid current guide saves retain exact position');
 });
 
 test('a save of it round-trips, and a state that cannot have happened is refused', () => {
@@ -183,4 +233,27 @@ test('the den is far enough out to be a walk, and has room for the fight', async
     assert.ok(canStand(x, z, world, BODY.person), `there is nowhere to stand beside him at ${(angle * 180 / Math.PI).toFixed(0)}°`);
     assert.ok(Math.hypot(1.9, world.heightAt(x, z) - here) < 3.3, 'a traveler beside him is out of talk range');
   }
+  // Walk the actual solid town and woods, including the north gate. Neither
+  // actor is warped to the next waypoint; this is the runtime's NPC navigator.
+  const guide={...ben},traveler={x:ben.x+1.8,z:ben.z},nav=bodyWorld(world),playerNav=bodyWorld(world);
+  let progress=null,arrived=false,passedGate=false,total=0;
+  for(let frame=0;frame<12000&&!arrived;frame++){
+    const order=benGuideTarget(guide,traveler,progress);progress=order.progress;
+    const before={...guide};
+    nav.setBodies([{id:'traveler',...traveler,r:BODY.traveler}]).moving(guide,BODY.person,BEN.id);
+    stepToward(guide,order.target,BEN_GUIDE_PACE/60,nav,BODY.person,-1);
+    const moved=Math.hypot(guide.x-before.x,guide.z-before.z);total+=moved;
+    assert.ok(moved<=BEN_GUIDE_PACE/60+1e-8,'Ben teleported');
+    assert.ok(canStand(guide.x,guide.z,world,BODY.person),`Ben entered a solid at ${guide.x},${guide.z}`);
+    if(Math.hypot(guide.x-BEN_ROUTE[2].x,guide.z-BEN_ROUTE[2].z)<1)passedGate=true;
+    if(Math.hypot(guide.x-traveler.x,guide.z-traveler.z)>3){
+      playerNav.setBodies([{id:BEN.id,...guide,r:BODY.person}]).moving(traveler,BODY.traveler,'traveler');
+      stepToward(traveler,guide,4.2/60,playerNav,BODY.traveler,1);
+    }
+    arrived=order.arrived;
+  }
+  assert.ok(arrived,`Ben stalled at ${JSON.stringify(guide)}, waypoint ${progress?.waypoint}`);
+  assert.ok(passedGate,'Ben bypassed the actual opening in Nothom’s wall');
+  assert.ok(total>130&&total<240,`Unexpected guide journey: ${total}m`);
+  assert.ok(Math.hypot(guide.x-den.x,guide.z-den.z)<14);
 });

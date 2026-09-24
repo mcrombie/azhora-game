@@ -23,6 +23,10 @@ export const AIM_WIDER = .43 / .34;
 
 /** Equipment condition is separate from combat checkpoints and quest progress. */
 export const WEAPON_TYPES = Object.freeze({
+  wand: Object.freeze({ name: 'Plain wand', damage: Object.freeze([4, 4, 6]),
+    reachMultiplier: .55, maxDurability: 24, wornAt: 6, tempo: .75, arc: SWORD_ARC * .65 }),
+  'oak-staff': Object.freeze({ name: 'Oak staff', damage: Object.freeze([10, 12, 14]),
+    reachMultiplier: 1.12, maxDurability: 32, wornAt: 8, tempo: 1, arc: SWORD_ARC }),
   'simple-sword': Object.freeze({
     name: 'Simple sword', damage: Object.freeze([24, 26, 34]),
     reachMultiplier: 1, maxDurability: 24, wornAt: 6,

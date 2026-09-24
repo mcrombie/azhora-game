@@ -178,6 +178,36 @@ test('who walks with you survives the road, and the dead do not walk out of an o
     assert.equal(validateCompanionsSnapshot(bad), false, JSON.stringify(bad));
 });
 
+test('the automatic landing mate dies permanently even though the recruited walking list is empty', async () => {
+  const { createCombat } = await import('../src/combat.js');
+  const fallen=createFallen(), road=[{x:0,z:0},{x:0,z:50},{x:0,z:100}];
+  const plan={road,muster:road[2],landing:road[0],wild:false,companions:[{id:'merc-gotwood',with:true}]};
+  let company=createMercenaryCompany({...plan,dead:fallen.ids});
+  const companions=createCompanions({fallen,onEvent:event=>{
+    if(event.type==='died')company=createMercenaryCompany({...plan,dead:fallen.ids});
+  }});
+  assert.equal(companions.walksWith('merc-gotwood'),false,'the landing companion has no recruitment entry');
+  assert.ok(company.companionIds.includes('merc-gotwood'),'but he is in the actual walking file');
+  const world={heightAt:()=>1.5,colliders:[],bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100}},events=[];
+  const combat=createCombat({world,position:{x:0,z:0},onEvent:event=>events.push(event),
+    getAllies:()=>company.companionIds.map(id=>({id,kind:'legionary',x:1,z:2,hp:20}))});
+  assert.equal(combat.startEncounter({id:'landing-mate-road-fight',center:{x:0,z:0},checkpoint:{x:0,z:5},retreatZ:18,
+    enemies:[{id:'rebel',kind:'rebel',x:0,z:8,hp:70,entry:10}]}),true);
+  combat.spellHit('merc-gotwood',1000,{spellId:'fireball'});
+  const event=events.find(event=>event.type==='ally-down');assert.ok(event,'an actual killing hit emits his death');
+  assert.equal(companions.died(event.id,{where:'Drent',what:'Your own spell',x:event.x,z:event.z}).ok,true);
+  assert.equal(fallen.has('merc-gotwood'),true);
+  assert.equal(companions.fellAt('merc-gotwood').what,'Your own spell');
+  assert.ok(!company.companionIds.includes('merc-gotwood'),'the death callback removes him from the file');
+  assert.ok(!company.placements(500).some(place=>place.id==='merc-gotwood'),'his road clock cannot place a living duplicate');
+  const saved=JSON.parse(JSON.stringify({fallen:fallen.snapshot(),companions:companions.snapshot()}));
+  const loadedFallen=createFallen();loadedFallen.restore(saved.fallen);
+  const loadedCompanions=createCompanions({fallen:loadedFallen});loadedCompanions.restore(saved.companions);
+  const loadedCompany=createMercenaryCompany({...plan,dead:loadedFallen.ids});
+  assert.ok(!loadedCompany.companionIds.includes('merc-gotwood'),'the unchanged automatic companion plan cannot resurrect him on reload');
+  assert.deepEqual(loadedCompanions.fellAt('merc-gotwood'),companions.fellAt('merc-gotwood'));
+});
+
 test('a country scales its dangers and never your side', async () => {
   // The user's ruling, 2026-09-21. Phase 2 scaled the blows that land on an ally but not the ally
   // - `countryHealth` was applied only in the enemies loop - so an ally was a flat 90 anywhere.
@@ -613,9 +643,9 @@ test('the fights the player is taught alone in are a list, not a place', () => {
     'and only they hold a companion out');
   assert.match(main, /getAllies:config=>companionAllies\(config\)/, 'everywhere else they are in it');
   assert.match(main, /if\(!config\?\.center\|\|TEACHING_FIGHTS\.has\(config\.id\)\)return \[\];/, 'from one place');
-  assert.match(main, /if\(!merc\|\|!arms\|\|fallen\.has\(id\)\)return null;/, 'and a dead man is in no fight');
+  assert.match(main, /if\(!merc\|\|!arms\|\|fallen\.has\(id\)\|\|crime\?\.isDown\(id\)\|\|crime\?\.owns\(id\)\)return null;/, 'and a dead man is in no fight');
   // Losing one is unmistakable: who, where, and that it is final.
-  assert.match(main, /if\(e\.type==='ally-down'&&companions\.walksWith\(e\.id\)\)\{/, 'a companion who goes down');
+  assert.match(main, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)\{/, 'a recruited or automatic landing companion who goes down');
   assert.match(main, /companions\.died\(e\.id,\{where,/, 'is gone for good, and it is remembered where');
   assert.match(main, /IS DEAD`,name:`\$\{name\} fell in \$\{where\}`/, 'and the game says who and where');
   assert.match(main, /Nobody in this company comes back/, 'and that it is final');

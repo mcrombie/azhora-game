@@ -774,7 +774,7 @@ export const SIGN_LANGUAGE = freeze(Object.fromEntries([
   [spoken('drentish', 'pebble'), ['Peblos', 'Cobble', 'The Quay']],
   [spoken('mittoli', 'luscian'), ['Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay',
     'Quiet fishing bank', 'Return to bridge', 'The Lauvel', 'The Burned Hamlet', 'Nothom', 'The Stable Yard', 'Notices']],
-  [spoken('mittoli', 'plain'), ['Moros Plain', 'The Moros Gate', 'The Shepherd’s Fold']],
+  [spoken('mittoli', 'plain'), ['Moros Plain', 'The Moros Road', 'The Shepherd’s Fold']],
   [spoken('mittoli', 'amodian'), ['Amod', 'Ostel', 'The Pass Stones', 'Kelmod & Mavren', 'Sareth-am-Vel']],
   [spoken('ambroni'), ['The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders', 'The Army Picket', 'Truce',
     'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine']],
