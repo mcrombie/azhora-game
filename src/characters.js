@@ -1414,6 +1414,33 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       band.rotation.x = Math.PI / 2;
       round(crop, hairMat, [0, 0.42, -0.06], [0.085, 0.09, 0.085]);
       round(crop, hairMat, [0.012, 0.478, -0.075], [0.046, 0.055, 0.046]);
+    } else if (hairStyle === 'long' && isSkepKeeper) {
+      // Liz's straight hair falls in uninterrupted lengths. Stacking rounded locks made
+      // her silhouette scalloped like the other villagers' waves, especially from behind.
+      const straight = new THREE.Group();
+      straight.name = 'Liz straight hair'; crop.add(straight);
+      const fall = (name, outline, z, depth = .044) => {
+        const shape = new THREE.Shape();
+        outline.forEach(([x, y], index) => index ? shape.lineTo(x, y) : shape.moveTo(x, y));
+        shape.closePath();
+        const length = part(straight, new THREE.ExtrudeGeometry(shape, {
+          depth, steps: 1, bevelEnabled: true, bevelThickness: .005, bevelSize: .005, bevelSegments: 1,
+        }), hairMat, [0, 0, z]);
+        length.name = name;
+        return length;
+      };
+      // A close crown with a shallow side part; the face stays clear below the temples.
+      round(straight, hairMat, [0, .298, -.045], [.202, .12, .183]);
+      const parted = box(straight, hairMat, [-.075, .333, .11], [.236, .04, .08]);
+      parted.rotation.z = -.08;
+      fall('Liz straight back length', [[-.202, .257], [.202, .257], [.178, -.37],
+        [.096, -.394], [-.092, -.382], [-.177, -.36]], -.258, .071);
+      for (const side of [-1, 1]) {
+        const length = fall(`Liz straight ${side < 0 ? 'left' : 'right'} length`,
+          [[side * .168, .265], [side * .221, .243], [side * .218, -.328],
+            [side * .173, -.376], [side * .153, -.35]], -.041, .047);
+        length.rotation.x = -.16;
+      }
     } else if (hairStyle === 'long') {
       // **Hair down the back, and nothing on the jaw.** The company's `mane` was the only long
       // style there was, and it hangs its side locks at jaw height in front of the ear - on Jojo

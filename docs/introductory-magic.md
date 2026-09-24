@@ -48,3 +48,14 @@ The full Electron runs passed 32 checks for Liz and 31 for Troy, plus 30 for the
 The magic model suite passed 68 checks before the final Troy route regression and legacy-cat recovery checks were added. The final Troy controller plus murder-model run passed 18 checks, including a full built-Cobble route with NPC bodies and eased camera turns. The checkpoint/legacy-cat run passed 30 checks. The web build and syntax checks also passed.
 
 Testing caught two gameplay faults: Mop's small normal-frame steps were discarded by the NPC movement threshold, and Troy's initial steering circled between witnesses. Mop now uses continuous small steps. Troy uses persistent local detours and resolves steering against the current camera angle; circling does not reset its progress timeout. Old checkpoints containing an already-cleaned dead Mop now end the unfinished rescue, while completed rewards and merely unconscious cats are preserved.
+
+
+## Liz's lesson and bee appearance, 24 September 2026
+
+Liz's reward screen now offers **Learn Animal Sorcery · Summon Bees** alongside the 30-copper reward, with equal contrast and no intervening directions option. The earned lesson grants the school and spell, selects Summon Bees even if Fireball was selected, and explains Z to cast, N to change spells, and I to equip a wand or staff. An equipment button opens the satchel; Liz can repeat the instructions later. The existing earned-lesson recovery after taking coins remains available.
+
+Liz has straight, tapered hair lengths. Summon Bees now renders twelve striped, oval-bodied bees with dark heads and paired fluttering wings. Shared geometry and instanced bodies, heads, and wings keep the effect to three draw calls per swarm. Expired swarm buffers are released without disposing the shared assets.
+
+The full native Liz autoplay passed 36 checks, returning Mop after 178 metres and verifying the explicit reward, casting guide, pause, checkpoint reload, and manual takeover. The native magic suite passed 100 checks, including actual swarm damage and Animal Sorcery experience. Neither run recorded game errors. Both Electron launches logged the existing GPU teardown warning after writing successful results. Native captures of Liz from front and back, the reward and guide, and bees at normal and closer camera distances were visually inspected.
+
+The final `npm run test:magic` suite passed all 76 tests, including swarm rendering/lifecycle and the actual Liz and Troy world routes. The web build and whitespace checks passed.

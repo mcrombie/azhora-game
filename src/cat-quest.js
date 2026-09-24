@@ -60,7 +60,7 @@ export const CAT = Object.freeze({
 export const PURSE = 30;
 export const REWARDS = Object.freeze({
   purse: Object.freeze({ id: 'purse', stage: 'paid', label: 'Take the coin' }),
-  lesson: Object.freeze({ id: 'lesson', stage: 'taught', label: 'Ask her to teach you the bees' }),
+  lesson: Object.freeze({ id: 'lesson', stage: 'taught', label: 'Learn Animal Sorcery · Summon Bees' }),
 });
 
 export const STAGES = Object.freeze(['unmet', 'asked', 'looking', 'following', 'home', 'paid', 'taught', 'lost']);
@@ -358,10 +358,10 @@ export function lizConversation(npc, context) {
     openDialogue(npc, [
       'There he is. There he is, the enormous idiot — no, do not come to me, go and sit in the door where I can see you.',
       'Right. The guild pays me for the honey and I have been paid for it twice this season, so there is coin and you should take it.',
-      'Or. You went into a goblin camp for a cat, which is the sort of thing the guild will not teach anybody, and I can teach you the other. One of the two, and I will not make a speech about it.'],
-      null, 'Choose', { choices: [
+      'Or I can teach you Animal Sorcery and the Summon Bees spell. You call a swarm to fight for you. Choose the lesson or the coin.'],
+      null, 'Choose your reward', { noWayfinding: true, choices: [
         { id: 'cat-purse', label: `Take the coin · ${PURSE} copper`, action: () => { closeDialogue(); act('cat-reward', 'purse'); } },
-        { id: 'cat-lesson', label: 'Teach me the bees.', action: () => { closeDialogue(); act('cat-reward', 'lesson'); } }] });
+        { id: 'cat-lesson', label: REWARDS.lesson.label, action: () => { closeDialogue(); act('cat-reward', 'lesson'); } }] });
     return true;
   }
   if (stage === 'lost') {
@@ -375,7 +375,8 @@ export function lizConversation(npc, context) {
     ? 'Do not call them unless you mean it. They come because you are in trouble, and they do not ask you whether you are sure.'
     : 'He has not left the door since. I am told this is normal and I do not believe it.'],
     null, 'Back to the clearing', { choices: [
-      ...(!taught ? [{ id: 'cat-lesson', label: 'Could you still teach me Summon Bees?', action: () => { closeDialogue(); act('cat-reward', 'lesson'); } }] : []),
+      ...(!taught ? [{ id: 'cat-lesson', label: REWARDS.lesson.label, action: () => { closeDialogue(); act('cat-reward', 'lesson'); } }] : []),
+      ...(taught ? [{ id: 'cat-spell-guide', label: 'How do I cast Summon Bees?', action: () => { closeDialogue(); act('cat-spell-guide'); } }] : []),
       ...trade, bees, her, leave] });
   return true;
 }

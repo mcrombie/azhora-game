@@ -123,7 +123,7 @@ export async function runMagicDesktopChecks(h) {
   await until(()=>h.catQuest.state.stage==='home','Mop arriving in Liz’s clearing completes the escort');h.freeze();
   talk(LIZ.id);choice('cat-purse');h.closeDialogue();check(h.catQuest.state.stage==='paid','Liz pays the chosen coin reward');
   check(h.save()&&h.reload(),'Liz’s paid quest reloads with its earned lesson still available');
-  talk(LIZ.id);choice('cat-lesson');h.closeDialogue();
+  talk(LIZ.id);choice('cat-lesson');check(h.magic.view().selected==='summon-bees','Liz selects the new spell even when Fireball was selected');h.closeDialogue();
   check(h.magic.known('summon-bees')&&h.skills.taught('beast'),'Returning to Liz after payment still teaches Summon Bees');
   h.warp(shot);h.combat.startEncounter({id:'magic-desktop-bees',level:0,center:shot,checkpoint:shot,retreatAxis:'x',retreatLine:shot.x+30,
     enemies:[{id:'magic-bees-goblin',kind:'goblin',x:shot.x,z:shot.z-5,hp:200,entry:60}]});

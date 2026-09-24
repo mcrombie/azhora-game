@@ -40,7 +40,7 @@
     "test:companions:combat": "node --test --test-isolation=none tests/combat-presence.test.js tests/allies.test.js tests/corpse-view.test.js tests/field-card.test.js",
     "test:companions:combat:desktop": "node scripts/launch.cjs --smoke-test --companion-combat-checks",
     "test:law": "node --test --test-isolation=none tests/crime.test.js tests/crime-host.test.js tests/melee-contact.test.js tests/combat-bodies.test.js tests/guard-recovery.test.js tests/corpses.test.js tests/corpse-view.test.js tests/corpse-combat.test.js tests/law-checkpoint.test.js",
-    "test:magic": "node --test --test-isolation=none tests/magic.test.js tests/spider-quest.test.js tests/ben-combat.test.js tests/ben-autopilot.test.js tests/liz-autopilot.test.js tests/troy-autopilot.test.js tests/spider-render.test.js tests/cat-quest.test.js tests/cat-host.test.js tests/murder-quest.test.js",
+    "test:magic": "node --test --test-isolation=none tests/magic.test.js tests/magic-view.test.js tests/spider-quest.test.js tests/ben-combat.test.js tests/ben-autopilot.test.js tests/liz-autopilot.test.js tests/troy-autopilot.test.js tests/spider-render.test.js tests/cat-quest.test.js tests/cat-host.test.js tests/murder-quest.test.js",
     "test:law:desktop": "node scripts/launch.cjs --smoke-test --law-checks",
     "test:ben:autoplay": "node scripts/launch.cjs --smoke-test --ben-autoplay-checks",
     "test:liz:autoplay": "node scripts/launch.cjs --smoke-test --liz-autoplay-checks",

@@ -4,6 +4,8 @@
 #dialogue-choices button:first-child{background:#edd39b19;border-color:#dbc180}
 #dialogue-choices button:hover,#dialogue-choices button:focus-visible{background:#e8d29c26;border-color:#e4ca8b}
 #dialogue-choices button:last-child{color:#b7c9b7}
+#dialogue-choices button[data-choice="cat-purse"],#dialogue-choices button[data-choice="cat-lesson"]{color:#f6e8c6;background:#edd39b19;border-color:#dbc180}
+#dialogue-choices button[data-choice="cat-purse"]:hover,#dialogue-choices button[data-choice="cat-lesson"]:hover{background:#e8d29c26;border-color:#e4ca8b}
 #side-quest{position:absolute;right:34px;top:238px;width:225px;padding:13px 15px;border-left:2px solid #aed3a7;background:linear-gradient(90deg,#193d35ca,#193d3540);pointer-events:none}
 #side-quest .eyebrow{font-size:9px;letter-spacing:.17em;color:#b6d9b1}
 #side-quest h3{font:20px Adventure,Georgia,serif;margin:5px 0 8px;color:#f6e8c7}

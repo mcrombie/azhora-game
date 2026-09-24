@@ -66,10 +66,24 @@ export async function runMagicAutoplayDesktopChecks(kind,h){
   check(travelled>(liz?150:20)&&largestStep<4,'The quest uses continuous walking after its initial teleport');
   if(liz){check(stages.has('looking')&&stages.has('following')&&gap(initialCat,h.person(CAT.id))>60,'Mop walks home through the actual NPC frame loop');}
   else check(CLUES.every(clue=>h.quest().heard.includes(clue)),'All three actual witness conversations supply the evidence');
+  if(liz){
+    const lesson=document.querySelector('[data-choice="cat-lesson"]'),coin=document.querySelector('[data-choice="cat-purse"]');
+    check(lesson.textContent.includes('Animal Sorcery')&&lesson.textContent.includes('Summon Bees')
+      &&!lesson.disabled&&getComputedStyle(lesson).color===getComputedStyle(coin).color,'The Animal Sorcery reward is explicit and as readable as the coin');
+    check(!document.querySelector('[data-choice="ask-the-way"]'),'Unrelated directions do not interrupt the reward choice');
+  }
   const purse=h.inventory.count('copper-piece');
   document.querySelector(`[data-choice="${prefix}-lesson"]`).click();await frames(3);
   check(h.quest().stage==='taught'&&h.magic.known(spell)&&h.skills.taught(school),`The chosen lesson teaches ${spell} and its sorcery school`);
   check(h.inventory.count('copper-piece')===purse,'Taking the lesson does not also pay the purse');
+  if(liz){
+    check(h.mode()==='dialogue'&&document.getElementById('speech').textContent.includes('Animal Sorcery')
+      &&h.magic.view().selected==='summon-bees','Liz confirms the learned school and selects Summon Bees');
+    tap('KeyF');await frames(2);
+    check(document.getElementById('speech').textContent.includes('press Z')&&document.getElementById('speech').textContent.includes('N changes spells')
+      &&document.querySelector('[data-choice="liz-open-equipment"]'),'The lesson explains casting and offers equipment');
+    document.querySelector('[data-choice="liz-practice"]').click();await frames(2);
+  }
   check(h.mode()==='playing','The reward returns normal control');
   check(h.save()&&h.reload()&&h.magic.known(spell),'The earned spell survives a checkpoint reload');
   check(JSON.stringify(h.checkpointCopy())===savedBefore,'The normal saved adventure is unchanged');

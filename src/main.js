@@ -2389,15 +2389,24 @@ function init() {
     if(action==='cat-accept'){if(!catQuest.accept())return {ok:false,reason:''};
       toast('South-east through the birch, and quietly. He will not be carried and he will not be led.','LIZ \u00b7 THE CAT');
       saveRoad(false);return {ok:true,reason:''};}
+    if(action==='cat-spell-guide'&&magic.known('summon-bees')){magic.select('summon-bees');lizSpellGuide();return {ok:true,reason:''};}
     if(action==='cat-reward'){
       const reward=catQuest.take(id);if(!reward)return {ok:false,reason:''};
       if(reward.id==='purse'){inventory.add(COPPER_ITEM,CAT_PURSE);inventory.refresh();
         toast(`${CAT_PURSE} copper, and she is glad to be rid of it.`,'LIZ \u00b7 THE COIN');}
-      else {const learned=magic.learn('summon-bees');refreshSkillsSheet();
-        toast(learned?.first?'Animal Sorcery. Call them and they come, and they do not ask you whether you are sure.'
-          :'The bees, again, and she is pleased to have been asked twice.','NEW SKILL \u00b7 ANIMAL SORCERY');}
+      else {magic.learn('summon-bees');magic.select('summon-bees');refreshSkillsSheet();lizSpellGuide();}
       audio?.effect('success');saveRoad(false);return {ok:true,reason:''};}
     return {ok:false,reason:''};
+  }
+  function lizSpellGuide(){
+    const npc=npcById.get(LIZ.id);if(!npc)return;
+    openDialogue(npc,[
+      'You have learned Animal Sorcery and Summon Bees. The spell calls a swarm to sting nearby enemies. Summon Bees is selected for you.',
+      'With a wand or staff equipped, press Z near an enemy to cast. N changes spells. Open your satchel with I to equip a wand or staff; I or Esc closes it. Casting spends focus, which returns outside combat.'
+    ],null,'Try your spell',{noWayfinding:true,choices:[
+      {id:'liz-open-equipment',label:'Open my equipment',action:()=>{closeDialogue();toggleInventory();inventory.select(inventory.has('wand')?'wand':'oak-staff');}},
+      {id:'liz-practice',label:'Try Summon Bees',action:closeDialogue}
+    ]});
   }
   /** Katy's one act so far: the traveler says they will look for Batman, and takes her drawing. More to come. */
   function katyAct(action){
@@ -7811,7 +7820,7 @@ function init() {
         reviewFrozen=false;reviewTarget=null;reviewCat=null;player.group.visible=true;
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
         leaveOpening();document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
-        if(['law-corpse','law-covered','magic-spells','magic-fireball','magic-bees'].includes(view)){
+        if(['law-corpse','law-covered','magic-spells','magic-fireball','magic-bees','magic-bees-close'].includes(view)){
           testTravel('village');stopAutopilot();combat.revive();crime.restore();corpseHost.restore();closeDialogue();reviewFrozen=true;mode='playing';
           const at=world.training;player.group.position.set(at.x+3,world.heightAt(at.x+3,at.z+5),at.z+5);player.group.rotation.y=Math.PI;
           yaw=.35;pitch=.5;distance=targetDistance=10;magic.stop();
@@ -7821,10 +7830,19 @@ function init() {
             corpseHost.update(view==='law-covered'?730:3,3,{playing:true});
           }else{
             for(const id of ['fireball','summon-bees','mindread'])magic.learn(id,{announce:false});
-            weapons.equip('wand');magic.select(view==='magic-bees'?'summon-bees':'fireball');
-            if(view!=='magic-spells'){magic.cast(undefined,{yaw:Math.PI});magic.update(view==='magic-bees'?1.1:1.4);}magicView.update(0);
+            weapons.equip('wand');magic.select(view.startsWith('magic-bees')?'summon-bees':'fireball');
+            if(view!=='magic-spells'){magic.cast(undefined,{yaw:Math.PI});magic.update(view.startsWith('magic-bees')?1.1:1.4);}magicView.update(0);if(view==='magic-bees-close')distance=targetDistance=5;
           }
           skillAnnouncements.clear();magicUI.update();updateHUD();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
+        }
+        if(['liz-hair','liz-hair-back','liz-reward','liz-lesson'].includes(view)){
+          testVisitTeacher(LIZ,'Summon Bees');stopAutopilot();closeDialogue();combat.revive();reviewFrozen=true;player.group.visible=false;
+          const npc=npcById.get(LIZ.id),at=npc.actor.group.position,face=npc.actor.group.rotation.y;
+          reviewTarget=new THREE.Vector3(at.x,at.y+1.5,at.z);yaw=face+(view==='liz-hair-back'?Math.PI-.35:.35);pitch=.08;distance=targetDistance=3.4;
+          if(view==='liz-reward'){catQuest.restore(createCatQuest().snapshot());catQuest.ask();catQuest.accept();catQuest.found();catQuest.home();conversation(npc);
+            while(activeDialogue&&activeDialogue.index<activeDialogue.lines.length-1)nextSpeech();}
+          if(view==='liz-lesson'){magic.learn('summon-bees',{announce:false});magic.select('summon-bees');lizSpellGuide();nextSpeech();}
+          skillAnnouncements.clear();refreshQuest();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
         if(view==='quest-fork'){
           beginDrentTest();questChoice.close();skillAnnouncements.clear();reviewFrozen=true;drent.restore();
