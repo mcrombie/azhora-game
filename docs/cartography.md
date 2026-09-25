@@ -10,7 +10,7 @@
 - Visiting a hex reveals its detailed atlas terrain, roads, and discovered locations.
 - Adjacent hexes show vague terrain colors. Their specific locations remain unknown until visited.
 - Everything farther away remains dark, including the rest of a country already entered.
-- Developer map reveal is an explicit testing exception.
+- Developer map reveal is an explicit testing exception: it also allows opening the map before the tutorial grants a chart. It does not teach Cartography, award experience, or skip training. Turning reveal off restores the normal chart-access requirement.
 
 The renderer ignores old `silhouettes` payloads. This keeps older saved country ranks from revealing unexplored provinces after an update.
 
@@ -33,3 +33,5 @@ Country knowledge remains in checkpoint `cartography`, while actual revealed geo
 Run `node --test --test-isolation=none tests/cartography.test.js tests/world-map-detail.test.js tests/map-fog.test.js`.
 
 The tests cover heard countries with no visible geography, one visited cell with six nearby cells, explored ranks that do not reveal the rest of a province, and legacy full-province silhouette inputs that must be ignored.
+
+Run `node scripts/launch.cjs --smoke-test --cartography-checks` for the in-game map entry points. This checks developer reveal on and off before training, unchanged skill and tutorial progress, and the normal Glun map lesson.

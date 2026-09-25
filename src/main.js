@@ -3640,9 +3640,10 @@ function init() {
     $('atlas-lesson-text').textContent=card?.text||`Regions have their own difficulty and ruling faction. You are in ${region?.name}: ${level===null?'unrated':`level ${level}`}${info?`, ${info.faction.name}`:''}. The border you crossed leads back to Drent; the same map carries you onwards.`;
     $('atlas-lesson-controls').textContent=card?.controls||'Scroll to zoom into nearby terrain and roads. Drag to explore. Enter a hex to confirm its details; neighboring hexes show terrain only. M or Esc closes the map.';
   }
+  function canOpenChart(){return cartography.met||chartRevealed;}
   function journalTab(tab){
     if(tab==='trails')tab='world';
-    if(tab==='world'&&!cartography.met)tab='journey';
+    if(tab==='world'&&!canOpenChart())tab='journey';
     if(tab==='world'){
       mapLessonContext=mapTutorial.view().active?'region':null;
       const p=player.group.position;worldMap.setTraveler(HEX_WORLD_TRANSFORM.worldToAtlas(p.x,p.z),
@@ -3665,10 +3666,10 @@ function init() {
     }
     if(tab==='skills')$('tab-skills').focus();
   }
-  function mapTab(map){journalTab(map&&cartography.met?'world':'journey');}
+  function mapTab(map){journalTab(map&&canOpenChart()?'world':'journey');}
   function openLocalMap(){
     if(!['playing','journal','pause'].includes(mode))return false;
-    if(!cartography.met){toast('Officer Glun will give you a chart after your combat drill.','CARTOGRAPHY');return false;}
+    if(!canOpenChart()){toast('Officer Glun will give you a chart after your combat drill.','CARTOGRAPHY');return false;}
     modal('journal');journalTab('world');return true;
   }
   function localMapKnown(){
@@ -7315,7 +7316,23 @@ function init() {
         questStage=2;lessonSet=true;practiceHits=2;practiceGuards=1;practiceDodges=1;chartLesson.restore('unissued');cartography.restore(createCartography().snapshot());
         combat.startPractice(world.training);combat.finishPractice();inventory.remove('road-token',inventory.count('road-token'));
         const glun=npcById.get(INSTRUCTOR.id),stand=glun.actor.group.position;player.group.position.set(stand.x+1,world.heightAt(stand.x+1,stand.z),stand.z);refreshQuest();
-        conversation(glun);finishDialogue();
+        // Developer reveal grants temporary map access, even before talking to Jojo.
+        questStage=0;chartRevealed=false;mapTutorial.restore(0);
+        const beforeReveal=JSON.stringify({chart:cartography.snapshot(),skills:skills.snapshot(),lesson:chartLesson.stage,tutorial:mapTutorial.view()});
+        const entryPoints=[['M',()=>tap('KeyM')],['L',()=>tap('KeyL')],
+          ['Map tab',()=>{tap('KeyJ');$('tab-map').click();}],['minimap',()=>$('open-trail-map').click()],
+          ['trail pin',()=>$('trail-pin-open').click()],['direct chart',()=>{modal('journal');journalTab('world');}]];
+        for(const reveal of [false,true,false]){
+          if(chartRevealed!==reveal){modal('testing');$('test-reveal-chart').click();closeModal();}
+          for(const [name,open] of entryPoints){
+            open();await worldMap.ready;await frames(3);
+            assert((mode==='journal'&&$('tab-map').classList.contains('active'))===reveal,`${name} ignored developer reveal=${reveal}`);
+            if(mode==='journal')closeModal();
+          }
+          assert(questStage===0&&JSON.stringify({chart:cartography.snapshot(),skills:skills.snapshot(),lesson:chartLesson.stage,tutorial:mapTutorial.view()})===beforeReveal,
+            'developer map access changed skills or tutorial progress');
+        }
+        questStage=2;refreshQuest();conversation(glun);finishDialogue();
         assert(chartLesson.stage==='open-map'&&questStage===2,'receiving the chart bypassed the map lesson');
         assert(!finishChartLesson()&&questStage===2,'reporting without opening the map finished training');
         tap('KeyM');await worldMap.ready;await frames(6);
@@ -7346,7 +7363,7 @@ function init() {
         assert(questTracker.selectedId==='main','completed optional quest did not fall back to main');
         const atlas=await runLocalMapSmoke(localMapHooks());
         assert(frameErrors.view().count===0,'a frame threw while using the atlas');
-        return {checks,manualChartLesson:true,autoplayChartLesson:true,lusciaMap:true,chipCrashFixed:true,selectableQuest:true,completionFallback:true,atlas};
+        return {checks,developerRevealAccess:true,manualChartLesson:true,autoplayChartLesson:true,lusciaMap:true,chipCrashFixed:true,selectableQuest:true,completionFallback:true,atlas};
       },
       async runMainArcChecks(){
         const assert=(value,message)=>{if(!value)throw new Error(message);};

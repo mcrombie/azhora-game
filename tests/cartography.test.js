@@ -247,7 +247,7 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
   assert.match(main, /if\(options\.choices\?\.length&&!options\.noWayfinding\)/, 'from the one place every conversation goes through');
   assert.match(main, /cartography\.directionsFrom\(homeRegion\(npc\)\)/, 'and only about the countries next door');
   assert.match(main, /const countries=cartography\.view\(\);/, 'the journal lists what is known of each country');
-  assert.match(main, /A shape against the sea/);
+  assert.match(main, /Heard of; terrain still to explore/, 'learning a country name does not claim its terrain is known');
 });
 
 test('the difficulty is a number in the journal and words everywhere else', () => {

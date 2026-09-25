@@ -25,7 +25,10 @@ export async function runLocalMapSmoke(h) {
     await prepareLocalMap(); await frames(8); await worldMap.ready;
     await tap('KeyM'); opened();
     assert(!$('tab-trails'), 'a second local map tab is still exposed');
-    assert($('atlas-image').getAttribute('src').endsWith('azhora-world-map.svg'), 'the World Builder atlas was replaced');
+    // The authored SVG's lettering is split out, so the decoded terrain image uses a blob URL.
+    const atlasImage = $('atlas-image');
+    assert(worldMap.state().source?.endsWith('world-builder/map/resources/examples/azhora.wwmap')
+      && atlasImage.complete && atlasImage.naturalWidth > 0, 'the authored World Builder atlas did not load');
     assert(worldMap.state().traveler, 'the traveler has no position on the atlas');
     // Reading the map can intentionally finish its tutorial. Take the read-only
     // baseline after that first opening, before any zoom or browsing.
@@ -51,7 +54,7 @@ export async function runLocalMapSmoke(h) {
     unchanged(before, 'fitting, centering, or wheel zoom changed gameplay');
     press('KeyW'); press('ShiftLeft'); await tap('Space'); await tap('KeyR'); await frames(8);
     release('KeyW'); release('ShiftLeft'); opened(); unchanged(before, 'movement escaped the paused map');
-    await click('tab-journey'); assert($('journal-content').getClientRects().length > 0, 'Journey tab disappeared');
+    await click('tab-journey'); assert($('tab-journey').classList.contains('active') && $('journey-browser').getClientRects().length > 0, 'Journey tab disappeared');
     await click('tab-map'); opened(); unchanged(before, 'switching journal tabs changed the adventure');
     await tap('Escape'); assert(getMode() === 'playing', 'Escape did not return to play');
     await tap('KeyL'); opened();
