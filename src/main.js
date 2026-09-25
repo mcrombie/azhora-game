@@ -68,6 +68,8 @@ import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
 import { LUSCIA_PROPHET, lusciaProphetConversation } from './luscia-prophet.js';
+import { PORT_CALOS, portCalosDeckHeight } from './port-calos-world.js';
+import { PORT_CALOS_NPCS, portCalosConversation } from './port-calos-people.js';
 import { CALOSS_ROAD_FORK } from './region-world.js';
 import { CALOSS_PROPHET_STAND, CALOSS_ELAGOS_ROAD } from './elagos-world.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
@@ -267,7 +269,8 @@ function fail(error) {
 }
 function init() {
   const campaign=createCampaign();
-  const hasRoadProgress=()=>questStage>=1||campaign.view().imperialRecall;
+  let ferry=null;
+  const hasRoadProgress=()=>questStage>=1||campaign.view().imperialRecall||(ferry?.state.crossings??0)>0;
   const canvas = $('world');
   renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(devicePixelRatio,1.7)); renderer.setSize(innerWidth,innerHeight);
@@ -331,6 +334,7 @@ function init() {
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
   world.npcPositions[LUSCIA_PROPHET.id]={x:CALOSS_PROPHET_STAND.x,z:CALOSS_PROPHET_STAND.z};
   npcData.push({...LUSCIA_PROPHET,yaw:CALOSS_PROPHET_STAND.yaw});
+  npcData.push(...PORT_CALOS_NPCS.map(npc=>({...npc})));
   // Ben, of the sorcerer's guild, on Nothom's square with a spider to kill (src/spider-quest.js).
   npcData.push({...BEN});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -2238,8 +2242,8 @@ function init() {
   // The toll at the Amod pass stones (src/amod-ogre.js). The purse is the host's;
   // the module never has to know what a copper piece is.
   const ogreToll=createOgreToll({spendToll:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;}});
-  // The crossing to Peblos: the fare, the developer override, and the short scene either way (src/ferry.js).
-  const ferry=createFerry({
+  // Jess sails between Tidehaven, Peblos and Port Calos (src/ferry.js).
+  ferry=createFerry({
     purse:()=>inventory.count(COPPER_ITEM),
     pay:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;},
     free:()=>testingEnabled,
@@ -3262,7 +3266,7 @@ function init() {
       :info?info.faction.name.toUpperCase():'';
     $('region-card').classList.add('visible');clearTimeout(regionCardTimer);regionCardTimer=setTimeout(()=>$('region-card').classList.remove('visible'),5200);
     if(hasRoadProgress())saveRoad(false);
-    if(mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
+    if(canOpenChart()&&mapTutorial.shouldStart({regionId:region.id,mode})&&mapTutorial.start())renderMapTutorial();
   }
   function renderMapTutorial(){
     const view=mapTutorial.view(),panel=$('map-tutorial');clearTimeout(mapTutorialTimer);
@@ -4078,7 +4082,7 @@ function init() {
     // authored regions; older saves from the straight 700 m road resume at a spawn.
     const onPlayableGround=canStand(saved.position.x,saved.position.z,world)
       &&(world.regions.some(region=>insideRegion(region.name,saved.position.x,saved.position.z))
-        ||quayHeight(saved.position.x,saved.position.z)!==null||izolDeckHeight(saved.position.x,saved.position.z)!==null);
+        ||quayHeight(saved.position.x,saved.position.z)!==null||izolDeckHeight(saved.position.x,saved.position.z)!==null||portCalosDeckHeight(saved.position.x,saved.position.z)!==null);
     const point=onPlayableGround?saved.position:questStage<QUEST_DONE?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
     player.group.position.set(point.x,world.heightAt(point.x,point.z),point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
     leaveOpening();
@@ -4510,7 +4514,7 @@ function init() {
   }
   function ferryAct(result){
     if(!result?.ok){if(result?.reason)toast(result.reason,'THE CROSSING');return;}
-    toast(result.fare?`${result.fare} copper to Jess. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'Corran takes no fare for the crossing.',result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
+    toast(result.fare?`${result.fare} copper to Jess. ${describeSum(inventory.count(COPPER_ITEM))} left in your purse.`:'Jess takes no fare for the crossing.',result.to==='port-calos'?'SAILING TO PORT CALOS':result.to==='peblos'?'OUT TO THE PEBBLES':'BACK TO TIDEHAVEN');
   }
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
@@ -4593,6 +4597,7 @@ function init() {
     if(fireMakingConversation(npc,{lesson:fireMaking,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
     if(sylviaConversation(npc,{arts:visualArts,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
     if(lusciaProphetConversation(npc,{openDialogue,closeDialogue}))return;
+    if(portCalosConversation(npc,{openDialogue,closeDialogue}))return;
     if(farmingConversation(npc,farmingContext()))return;
     if(npc.id===HARBOURMASTER){jojoOnTheLanding(npc);return;}
     if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
@@ -5496,6 +5501,15 @@ function init() {
     yaw=landing.yaw;pitch=.33;distance=targetDistance=8;grounded=true;verticalSpeed=0;
     ferry.settle();settleCamera();closeModal();
     toast('Cobble, on the main island. Jess waits at the quay head; while testing he asks no fare either way.','TESTING · PEBLOS');
+  };
+  $('test-port-calos').onclick=()=>{
+    if(!testingEnabled)prepareTesting();
+    if(riding.mounted)stepDown(true);
+    const landing=FERRY_LANDINGS['port-calos'].ashore;
+    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
+    yaw=landing.yaw;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;inWater=false;
+    ferry.settle();settleCamera();closeModal();
+    toast('Port Calos, at the mouth of the Caloss. Jess can take you back to Tidehaven; the inland road leads toward Nothom.','TESTING · PORT CALOS');
   };
   $('test-elod').onclick=()=>{
     if(!testingEnabled)prepareTesting();
@@ -6994,6 +7008,32 @@ function init() {
       };
     }
     window.__AZHORA__={state,
+      runPortCalosChecks:async()=>{
+        const {runPortCalosChecks}=await import('./port-calos-checks.js');
+        const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+        let watchCrossing=true;
+        return runPortCalosChecks({world,ferry,npcById,state,frames,snapshot:roadSnapshot,conversation,nextSpeech,closeDialogue,
+          choices:()=>activeDialogue&&activeDialogue.index===activeDialogue.lines.length-1
+            ? [...document.querySelectorAll('#dialogue-choices [data-choice]')].map(b=>b.dataset.choice):[],
+          choose:async id=>{const b=document.querySelector('#dialogue-choices [data-choice="'+id+'"]');if(!b||b.disabled)throw new Error('Missing ferry choice '+id);b.click();},
+          advanceFerry:async seconds=>{
+            if(!watchCrossing){ferry.frame(seconds);return;}
+            watchCrossing=false;const deadline=performance.now()+30000;
+            while(ferry.state.crossing&&performance.now()<deadline)await frames(1);
+            if(ferry.state.crossing)throw new Error('The ordinary ferry scene did not finish');
+          },
+          saveAndReload:()=>{const written=writeRoadCheckpoint(sessionCheckpoint,false);return !!written&&continueRoad(true);},
+          testingPort:()=>{testingMenu();$('test-port-calos').click();},
+          reset:stage=>{
+            stopAutopilot();if(mode==='opening')begin();if(mode==='arriving')skipOpening();
+            closeDialogue();closeModal();reviewFrozen=false;reviewTarget=null;testingEnabled=true;
+            if(stage===QUEST_DONE)prepareTesting();
+            questStage=stage;combat.revive();combat.finishPractice();ferry.restore();
+            const p=FERRY_LANDINGS.drent.ashore;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);
+            grounded=true;verticalSpeed=0;inWater=false;mode='playing';ferry.settle();refreshQuest();stopInput();settleCamera();
+          },
+        });
+      },
       runVisualArtsChecks:async()=>{const {runVisualArtsChecks}=await import('./visual-arts-checks.js');return runVisualArtsChecks(roadSkillsHooks());},
       runRoadAmbushChecks:async()=>{const {runRoadAmbushChecks}=await import('./road-ambush-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
@@ -8164,6 +8204,16 @@ function init() {
           const x=-613.4822,z=141.397;player.group.position.set(x,world.heightAt(x,z),z);
           yaw=2.19810;pitch=.36;distance=targetDistance=9;player.group.rotation.y=Math.PI+yaw;
           clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;currentRegionId=world.regionAt(x,z).id;return;
+        }
+        if(['port-calos','port-calos-quay','port-calos-town','port-calos-waterfront'].includes(view)){
+          testTravel(2);combat.revive();stopAutopilot();reviewFrozen=true;reviewTarget=null;
+          const p=view==='port-calos-quay'?FERRY_LANDINGS['port-calos'].ashore:view==='port-calos-town'?{x:-489,z:301}:view==='port-calos-waterfront'?{x:-402,z:287}:PORT_CALOS;
+          player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);grounded=true;verticalSpeed=0;inWater=false;
+          player.group.visible=view==='port-calos-quay';ferry.settle();
+          reviewTarget=new THREE.Vector3(p.x,world.heightAt(p.x,p.z)+(view==='port-calos'?16:view==='port-calos-waterfront'?9:1.4),p.z);
+          yaw=view==='port-calos-town'?1.1:Math.PI/2;pitch=view==='port-calos-quay'?.24:view==='port-calos-waterfront'?.37:.58;
+          distance=targetDistance=view==='port-calos-quay'?11:view==='port-calos-town'?38:view==='port-calos-waterfront'?65:110;
+          currentRegionId=world.regionAt(p.x,p.z).id;clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
         if(['luscia-fork','luscia-prophet','caloss-elagos-road','caloss-elagos-join'].includes(view)){
           testTravel(2);combat.revive();stopAutopilot();reviewFrozen=true;

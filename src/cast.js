@@ -32,6 +32,7 @@
  * Pure: no DOM, no three, no world.
  */
 import { TROUPE_IDS } from './troupe.js';
+import { PORT_CALOS_NPC_IDS } from './port-calos-people.js';
 
 /**
  * **On.** The world empties to the list below, and one word here puts every one of them back:
@@ -77,6 +78,7 @@ export const OWN_IDS = Object.freeze([
   'lee-anne',           // Fire Making teacher beside Tidehaven's empty village fire ring.
   'sylvia',             // The user's kindly painter, teaching Visual Arts beside the Sunken Lane.
   'luscia-prophet',     // Caelom warns of winter at the Caloss fork.
+  ...PORT_CALOS_NPC_IDS, // The working harbor requested at the river mouth.
   'avrel-farmer',
   'garden-keeper',      // Jean, the user's blonde birding teacher in Tidehaven
   'doomsayer',           // Mark, who reads the signs and teaches Botany and Geology on Tidehaven's shore

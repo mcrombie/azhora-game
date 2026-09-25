@@ -6,6 +6,7 @@ import {
   STORY_SITES, MAIN_ROAD, SUVAL_ROAD, FRONTIER, LUMBER_TOWN, townPoint, hexOwnerAt, journeySites, regionNpcPositions } from './region-world.js';
 import { HIDEOUT_CLEARINGS, PUETH_CLEARINGS } from './pueth-world.js';
 import { PEBLOS_CLEARINGS } from './peblos-world.js';
+import { portCalosClear } from './port-calos-world.js';
 import { AMOD_CLEARINGS } from './amod-world.js';
 import { calossSurface, CALOSS_BRIDGE } from './world-terrain.js';
 import { toWorld, WORLD_SCALE } from './world-scale.js';
@@ -90,6 +91,7 @@ const near = (x, z, point, radius) => Math.hypot(x - point.x, z - point.z) < rad
 
 /** True where regional scatter must not stand. */
 export function regionClear(x, z, margin = 0) {
+  if (portCalosClear(x,z,margin)) return true;
   if (REGION_CLEARINGS.some(spot => near(x, z, spot, spot.r + margin))) return true;
   for (const site of Object.values(journeySites)) if (near(x, z, site, 4 + margin)) return true;
   for (const npc of Object.values(regionNpcPositions)) if (near(x, z, npc, 4.5 + margin)) return true;

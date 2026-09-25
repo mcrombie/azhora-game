@@ -44,6 +44,8 @@ import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSE
 import { createPuethScenery } from './pueth-scenery.js';
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
 import { createPeblosScenery } from './peblos-scenery.js';
+import { PORT_CALOS, PORT_CALOS_QUAY, PORT_CALOS_PATHS, PORT_CALOS_LANDMARKS, PORT_CALOS_NPC_POSITIONS, inPortCalos, portCalosGround, portCalosDeckHeight } from './port-calos-world.js';
+import { createPortCalosScenery } from './port-calos-scenery.js';
 import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './rena.js';
 import { buildRenaWorks } from './rena-works.js';
 import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LANDING, quayHeight as elodQuayHeight } from './east-suval.js';
@@ -213,7 +215,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const avrelSurface = groundWithRiver(AVREL_POND.x, AVREL_POND.z) - 1.15;
   function groundHeight(x, z) {
     const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
-    if (weight <= 0) return avrelPondGround(x, z, groundWithRiver(x, z), avrelSurface);
+    if (weight <= 0) return portCalosGround(x, z, avrelPondGround(x, z, groundWithRiver(x, z), avrelSurface));
     const village = localGround(local.x, local.z);
     if (weight >= 1) return village;
     return lerp(groundWithRiver(x, z), village, weight);
@@ -235,10 +237,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     return null;
   }
   let roadHeightAt = () => null;
+  let portGroundAt = (x,z) => groundHeight(x,z);
   function heightAt(x, z) {
     const local = worldToVillage(x, z);
     // The pier deck, exactly as Tidehaven always had it.
     if (Math.abs(local.x) < 2.2 && local.z >= 22 && local.z <= 48) return 1.8;
+    // Port Calos reaches into the inlet on a solid stone quay.
+    const portDeck = portCalosDeckHeight(x, z);
+    if (portDeck !== null) return portDeck;
     // Cobble's quay, out over the water of the bay in Peblos.
     const quay = quayHeight(x, z);
     if (quay !== null) return quay;
@@ -256,6 +262,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Ambron's causeway, over the narrows and down to the made ground of each bank.
     const causeway = ambronDeckHeight(x, z);
     if (causeway !== null) return causeway;
+    if(inPortCalos(x,z))return portGroundAt(x,z);
     return roadHeightAt(x, z) ?? groundHeight(x, z);
   }
 
@@ -294,9 +301,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     const positions = [], indices = [], overCaloss = [];
     for (let i = 0; i < samples.length; i++) {
       const p = samples[i];
-      // The timber is the road surface here. A dirt ribbon raised above the
-      // deck hid the missing span and made the broken bridge look walkable.
-      overCaloss.push(deckAt(p.x, p.z) === bridgeDeck);
+      // Bridges and the harbor quay supply their own road surface.
+      // Keep dirt ribbons off these decks, including the broken bridge span.
+      overCaloss.push(deckAt(p.x, p.z) === bridgeDeck || portCalosDeckHeight(p.x, p.z) !== null);
       const direction = samples[Math.min(i + 1, samples.length - 1)].clone().sub(samples[Math.max(0, i - 1)]).normalize();
       const left = new THREE.Vector3(-direction.z, 0, direction.x).multiplyScalar(width / 2 * (1 + Math.sin(i * .61) * .025));
       for (const sign of [-1, 1]) {
@@ -311,7 +318,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // The fork and its parent road share the actual terrain faces. An analytic
     // height at the ribbon edges is not enough on this coarse rolling ground.
     const drapeStarted = performance.now();
-    const draped = points === MAIN_ROAD || points === CALOSS_ELAGOS_ROAD
+    const draped = points === MAIN_ROAD || points === CALOSS_ELAGOS_ROAD || PORT_CALOS_PATHS.some(path => path.points === points)
       ? drapeRoadOnTerrain(positions, indices, terrainXs, terrainZs, terrainPositions, .045, points === MAIN_ROAD ? forkSurfaceStrength : null) : null;
     if (draped) {
       roadSurfaceMetrics.roads++;
@@ -434,6 +441,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     } else color.multiplyScalar(trange(.955, 1.045));
     terrainColors.set([color.r, color.g, color.b], index * 3);
   }
+  // Residents and props share the displayed ground, including between the harbor streets.
+  portGroundAt = (x,z) => terrainRoadHeight(x,z,terrainXs,terrainZs,terrainPositions,0);
   // Only the new west road and nearby fork use the mesh plane for footing. Decks
   // remain higher priority in heightAt; the rest of the world keeps its ground.
   roadHeightAt = (x, z) => {
@@ -1200,6 +1209,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
   for (const path of IZOL_PATHS) measurePath(path.points, path.width);
   measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
+  for (const path of PORT_CALOS_PATHS) measurePath(path.points, path.width);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   createVisualArtsScenery({root:world,cottage,groundHeight,colliders});
@@ -1240,6 +1250,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     root: world, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
     groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups,
   });
+  const portCalos = createPortCalosScenery({parent:world,heightAt:portGroundAt,colliders,signs});
   // East Suval (src/east-suval-world.js): Elod on its rock, the places along its
   // coast and its dry valleys, and the region's own limestone scatter.
   const eastSuval = createEastSuvalScenery({
@@ -1335,6 +1346,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(RENA_ROAD, 2.6);
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
   addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
+  for (const path of PORT_CALOS_PATHS) addPath(path.points,path.width,world,path.kind==='trail'?'trail':'road');
 
   // Footpaths join a road at its edge. Their full centre lines still meet for
   // navigation, but brown faces must not stripe or z-fight across the pale road.
@@ -1735,7 +1747,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   ]);
 
   // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
-  const mapLands = Object.freeze([...PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
+  const mapLands = Object.freeze([Object.freeze({id:'port-calos-quay-land',kind:'polygon',region:'Luscia',
+    points:Object.freeze([[PORT_CALOS_QUAY.minX,PORT_CALOS_QUAY.minZ],[PORT_CALOS_QUAY.maxX,PORT_CALOS_QUAY.minZ],[PORT_CALOS_QUAY.maxX,PORT_CALOS_QUAY.maxZ],[PORT_CALOS_QUAY.minX,PORT_CALOS_QUAY.maxZ]].map(([x,z])=>mapPoint(x,z)))}),...PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
     ?.filter(loop => loop.some(p => island.cells.some(cell => Math.hypot(cell.x - p.x, cell.z - p.z) < 90)))
     .map((loop, index) => Object.freeze({ id: `${island.id}-land-${index}`, kind: 'polygon', region: 'Peblos',
       points: Object.freeze(loop.map(p => mapPoint(p.x, p.z))) })) ?? []),
@@ -1832,6 +1845,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     renaRoute: RENA_ROAD.map(p => ({ x: p.x, z: p.z })),
     puethMetrics: puethScenery.metrics,
     peblosMetrics: peblosScenery.metrics,
+    portCalosMetrics: portCalos.metrics,
+    portCalos: PORT_CALOS,
+    portCalosQuay: PORT_CALOS_QUAY,
     izolMetrics: izol.metrics,
     izolQuay: IZOL_QUAY,
     amodMetrics: amodScenery.metrics,
@@ -1937,7 +1953,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       'acorn-cook': villageToWorld(acornCook.x, acornCook.z), doomsayer: villageToWorld(doomsayer.x, doomsayer.z),
       'pond-fisher': villageToWorld(pondFisher.x, pondFisher.z),
       'forest-woodcutter': villageToWorld(forestWoodcutter.x, forestWoodcutter.z),
-      ...DRENT_NPC_POSITIONS,
+      ...DRENT_NPC_POSITIONS, ...PORT_CALOS_NPC_POSITIONS,
       ...regionNpcPositions, ...REGIONAL_NPC_POSITIONS, ...PUETH_NPC_POSITIONS, ...PEBLOS_NPC_POSITIONS, ...RENA_NPC_POSITIONS, ...IZOL_NPC_POSITIONS, ...ELAGOS_NPC_POSITIONS, ...AMOD_NPC_POSITIONS,
       ...Object.fromEntries(Object.entries({ ...ELOD_STANDS, ...EAST_SUVAL_STANDS }).map(([id, stand]) => [id, { x: stand.x, z: stand.z }])),
     },
@@ -1961,7 +1977,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       ...PLACE_LANDMARKS,
       ...PUETH_LANDMARKS,
       ...AMOD_LANDMARKS,
-      ...PEBLOS_LANDMARKS,
+      ...PEBLOS_LANDMARKS, ...PORT_CALOS_LANDMARKS,
       ...RENA_LANDMARKS,
       ...EAST_SUVAL_PLACES,
       ...IZOL_LANDMARKS,

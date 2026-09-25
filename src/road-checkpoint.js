@@ -101,7 +101,11 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     // A late courier can collect someone still on the pier. The campaign keeps
     // that history; their actual unfinished lessons and road are not fabricated.
     const imperialRecall = campaign.snapshot().imperialRecall;
-    if (data.questStage === 0 && !imperialRecall) return failed('This is not a supported road checkpoint.');
+    // Jess can carry a traveler away before Jojo's introduction. A completed,
+    // validated crossing is real saved travel; it grants no tutorial or campaign progress.
+    const earlyFerry = validateFerrySnapshot(data.ferry, { allowMissing: false })
+      && data.ferry.met && data.ferry.crossings > 0;
+    if (data.questStage === 0 && !imperialRecall && !earlyFerry) return failed('This is not a supported road checkpoint.');
     if (!Array.isArray(data.inventory) || data.inventory.length > Object.keys(INVENTORY_ITEMS).length)
       return failed('The saved satchel is invalid.');
     const stock = new Map();

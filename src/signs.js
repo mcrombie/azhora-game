@@ -44,13 +44,13 @@ export const ENGLISH_SIGN_LABELS = Object.freeze([
   'Vaervelm Caelazh', 'Viognier', 'Chardonnay', 'Vidal Blanc', 'Cabernet Franc', 'Merlot', 'Petit Verdot', 'Tannat', 'Norton',
   ...forestPlaceDefinitions.map(site => site.name),
   // Drent
-  'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge', 'Avrel',
+  'The Avrel Clearing', 'Clearing mill & farms', 'Caloss Crossing', 'The Caloss Bridge',
   'Charcoal Burners', 'The Forester’s Hut', 'The Wayside Shrine', 'The Timber Landing', 'Drent',
   // The three Renas: the razed town, the village that was East Rena, the village that was West Rena (src/rena.js)
   'The Ruins of Rena', 'Applegarth', 'Rena', 'East Rena', 'Westerina',
   // Luscia
   'Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Return to bridge',
-  'The Lauvel', 'The Burned Hamlet', 'Nothom', 'The Stable Yard', 'Notices',
+  'The Lauvel', 'The Burned Hamlet', 'Nothom', 'Port Calos', 'The Stable Yard', 'Notices',
   // The Moros Plain
   'Moros Plain', 'The Moros Road', 'The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
   'The Shepherd’s Fold', 'The Army Picket', 'Truce',
