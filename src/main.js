@@ -8237,13 +8237,15 @@ function init() {
           currentRegionId=world.regionAt(player.group.position.x,player.group.position.z).id;
           clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
-        if(view==='sylvia'){
+        if(['sylvia','sylvia-path','sylvia-mailbox'].includes(view)){
           testTravel('village');combat.revive();questStage=QUEST_DONE;player.group.visible=false;
           player.group.position.set(SYLVIA.x+7,world.heightAt(SYLVIA.x+7,SYLVIA.z+5),SYLVIA.z+5);
           const npc=npcById.get(SYLVIA.id);npc.actor.group.position.set(SYLVIA.x,world.heightAt(SYLVIA.x,SYLVIA.z),SYLVIA.z);npc.actor.group.rotation.y=SYLVIA.yaw;
           for(let i=1;i<=90;i++)npc.actor.animate(walkTime+i/60,0,true,{});walkTime+=1.5;
           reviewTarget=new THREE.Vector3(SYLVIA.x+1.1,world.heightAt(SYLVIA.x,SYLVIA.z)+1.45,31.5);
           {const shot=bestOf(reviewTarget,10,[0,-.15,-.3]);yaw=shot.yaw;distance=targetDistance=shot.distance;}pitch=.18;
+          if(view==='sylvia-path'){reviewTarget.set(-498,world.heightAt(-498,43)+1,43);pitch=.48;const shot=bestOf(reviewTarget,35,[.05,.18,.32,.58]);yaw=shot.yaw;distance=targetDistance=shot.distance;}
+          if(view==='sylvia-mailbox'){const p=SYLVIA_STUDIO.mailbox;reviewTarget.set(p.x,world.heightAt(p.x,p.z)+.85,p.z);yaw=.65;pitch=.18;distance=targetDistance=4;}
           clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;return;
         }
         if(view==='ambush-covered'){

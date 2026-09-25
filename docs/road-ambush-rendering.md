@@ -7,6 +7,13 @@ shoulders, hands and boots: a careful traveler can notice someone hiding before
 entering the ambush. Waiting figures crouch and breathe. Returning survivors walk
 at the positions supplied by the simulation.
 
+`src/road-ambush-scenery.js` adds permanent waist-high shrubs and young trees
+around those same hiding places. The foliage breaks up their silhouettes while
+leaving glimpses of heads and shoulders. Only the narrow trunks are solid; they
+stand on the woodland side so the road and the ambushers' exits remain open.
+This authored cover does not consume the seeded woodland scatter or disappear
+when an ambusher leaves or dies.
+
 The watch view and combat view share a character rig. Construct the watch with
 `{ scene, world, definitions: AMBUSH_REBELS }`, give combat its `actor(id)` accessor,
 and update the watch after combat with `update(time, records, { combat })`.

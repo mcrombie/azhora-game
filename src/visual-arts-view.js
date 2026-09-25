@@ -51,6 +51,20 @@ export function createVisualArtsScenery({root,cottage,groundHeight,colliders}){
   groundedFooting(studio,'Sylvia cottage grounded foundation',house.x,house.z,house.width+.35,house.depth+.3,floor+.10,groundHeight);
   groundedFooting(studio,'Sylvia cottage grounded doorstep',house.x,house.z+house.depth/2+.52,1.55,.8,floor+.14,groundHeight);
   const wood=mat(0x876644),paper=mat(0xf0e4c8),green=mat(0x678358),sky=mat(0xa9bdba),bark=mat(0x6f5740);
+  // A small timber letterbox marks the footpath without advertising the cottage.
+  const mailbox=new THREE.Group(),mailAt=SYLVIA_STUDIO.mailbox;
+  mailbox.name='Sylvia cottage mailbox';mailbox.position.set(mailAt.x,groundHeight(mailAt.x,mailAt.z),mailAt.z);
+  mailbox.rotation.y=mailAt.yaw;studio.add(mailbox);
+  const mailboxPaint=mat(0x607c71),mailboxIron=mat(0x515b53),mailboxSlot=mat(0x293930),brass=mat(0xae935b);
+  block(mailbox,wood,0,.51,0,.14,1.02,.14);
+  block(mailbox,wood,0,.99,0,.83,.09,.43);
+  block(mailbox,wood,0,1.21,0,.70,.40,.42);
+  block(mailbox,mailboxPaint,0,1.21,.218,.64,.34,.035);
+  block(mailbox,mailboxSlot,0,1.29,.239,.38,.038,.012);
+  for(const side of [-1,1])block(mailbox,mailboxIron,side*.20,1.445,0,.43,.065,.53).rotation.z=side*-.20;
+  for(const y of [1.13,1.28])block(mailbox,mailboxIron,-.285,y,.244,.065,.029,.020);
+  block(mailbox,brass,.245,1.18,.249,.034,.07,.032);
+  colliders.push({x:mailAt.x,z:mailAt.z,r:.48,kind:'mailbox'});
   const easels=[];
   for(const [index,at] of [SYLVIA_STUDIO.easel,SYLVIA_STUDIO.practice].entries()){
     const easel=new THREE.Group();easel.name=index?'Sylvia spare easel':'Sylvia painting easel';easel.position.set(at.x,groundHeight(at.x,at.z),at.z);studio.add(easel);
@@ -69,5 +83,5 @@ export function createVisualArtsScenery({root,cottage,groundHeight,colliders}){
   block(table,paper,-.18,.68,0,.32,.018,.24);
   for(const [x,color] of [[.12,0x7a9275],[.30,0xb39968]]){const pot=new THREE.Mesh(new THREE.CylinderGeometry(.064,.054,.12,8),mat(color));pot.position.set(x,.72,0);table.add(pot);}
   colliders.push({x:-502.5,z:33,r:.56,kind:'table'});
-  return{root:studio,easels};
+  return{root:studio,easels,mailbox};
 }

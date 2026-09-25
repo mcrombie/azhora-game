@@ -5,6 +5,7 @@ import { WATERLINE } from './game-state.js';
 import { FARM_FIRE } from './farming.js';
 import { AVREL_POND, avrelPondGround } from './avrel-pond.js';
 import { createVisualArtsScenery } from './visual-arts-view.js';
+import { SYLVIA_PATH } from './visual-arts.js';
 import * as THREE from 'three';
 import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
 import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
@@ -64,6 +65,7 @@ import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance } from './west
 import { createWestScenery } from './west-regions-scenery.js';
 import { DRENT_SITES, DRENT_NPC_POSITIONS, DRENT_LOCAL_PATHS, drentFeatureClear } from './drent-sites.js';
 import { createDrentCivilWarScenery } from './drent-scenery.js';
+import { createRoadAmbushScenery } from './road-ambush-scenery.js';
 import { createRoadSurfaceMask } from './path-junctions.js';
 
 /**
@@ -318,7 +320,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // The fork and its parent road share the actual terrain faces. An analytic
     // height at the ribbon edges is not enough on this coarse rolling ground.
     const drapeStarted = performance.now();
-    const draped = points === MAIN_ROAD || points === CALOSS_ELAGOS_ROAD || PORT_CALOS_PATHS.some(path => path.points === points)
+    const draped = points === MAIN_ROAD || points === CALOSS_ELAGOS_ROAD || PORT_CALOS_PATHS.some(path => path.points === points) || points === SYLVIA_PATH.points
       ? drapeRoadOnTerrain(positions, indices, terrainXs, terrainZs, terrainPositions, .045, points === MAIN_ROAD ? forkSurfaceStrength : null) : null;
     if (draped) {
       roadSurfaceMetrics.roads++;
@@ -1212,6 +1214,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const path of PORT_CALOS_PATHS) measurePath(path.points, path.width);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
+  measurePath(SYLVIA_PATH.points, SYLVIA_PATH.width);
   createVisualArtsScenery({root:world,cottage,groundHeight,colliders});
   const regionScenery = createRegionScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
@@ -1347,6 +1350,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
   addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
   for (const path of PORT_CALOS_PATHS) addPath(path.points,path.width,world,path.kind==='trail'?'trail':'road');
+  addPath(SYLVIA_PATH.points, SYLVIA_PATH.width, world, 'trail');
 
   // Footpaths join a road at its edge. Their full centre lines still meet for
   // navigation, but brown faces must not stripe or z-fight across the pale road.
@@ -1558,6 +1562,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const forestHideout = createForestHideout(hideoutRoot, { heightAt: (x, z) => { const p = hideoutToWorld(x, z); return groundHeight(p.x, p.z); }, colliders: hideoutColliders });
   const regionalPlaces = createRegionalPlaces(world, { heightAt: groundHeight, colliders });
   const drentCivilWar = createDrentCivilWarScenery({ root: world, material, box, mesh, post, pebble, groundHeight, colliders, wornPatch, roofGeometry, movingGroups });
+  createRoadAmbushScenery({ root: world, groundHeight, roadDistance, colliders });
 
   const reedMat = material('#758249'), reedHead = material('#705637');
   for (let i = 0; i < 25; i++) {

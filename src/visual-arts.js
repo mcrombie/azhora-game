@@ -8,6 +8,17 @@ export const SYLVIA_STUDIO = Object.freeze({
   easel:Object.freeze({x:-504.8,z:31.35}),
   practice:Object.freeze({x:-500,z:32}),
   stand:Object.freeze({x:-500,z:30.95,yaw:0}),
+  mailbox:Object.freeze({x:-487.2,z:59.3,yaw:.32}),
+});
+// A narrow walk from the road, around the easels, to the cottage step. Its
+// centre line meets the road for navigation; world.js clips the dirt at the verge.
+export const SYLVIA_PATH = Object.freeze({
+  kind:'trail',width:1.25,
+  points:Object.freeze([
+    {x:-486.313008572504,z:63.514559636357944},
+    {x:-490,z:58},{x:-495,z:51},{x:-500,z:44},
+    {x:-507,z:37},{x:-508,z:31},{x:-505,z:28.15},
+  ].map(Object.freeze)),
 });
 export const ART_STUDIES = Object.freeze([
   Object.freeze({id:'drawing',name:'Draw the old oak',level:1,duration:6,xp:18,verb:'Drawing'}),
