@@ -1,0 +1,97 @@
+/* Keep the everyday quest demonstrations first; older travel tools stay folded. */
+#testing {
+  width: min(760px, calc(100vw - 40px));
+  max-height: calc(100vh - 32px);
+  padding: 22px 28px;
+  scrollbar-color: #a6b9a0 #173831;
+  scrollbar-gutter: stable;
+}
+#testing h2 { font-size: 32px; margin: 3px 0 6px; }
+#testing h3 {
+  margin: 16px 0 8px;
+  font: 600 13px 'Segoe UI', sans-serif;
+  color: #f5e3b9;
+  letter-spacing: .035em;
+}
+#testing p { font-size: 12px; line-height: 1.5; color: #d3ddcc; }
+#testing .test-intro { margin: 0 38px 0 0; }
+#testing .test-quest-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+#testing .test-quest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 15px;
+  min-height: 72px;
+  text-align: left;
+  border: 1px solid #c7b985;
+  border-radius: 4px;
+  background: #304b40;
+  box-shadow: inset 3px 0 #c7b985;
+  color: #fff5dc;
+}
+#testing .test-magic-card { background: #3b3e51; border-color: #aca0d3; box-shadow: inset 3px 0 #b9a7ec; }
+#testing .test-card-title { display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 17px; font-weight: 600; }
+#testing .test-card-title > span { font-size: 17px; font-weight: 400; opacity: .75; }
+#testing .test-card-description { font-size: 12px; line-height: 1.4; color: #ece8f3; }
+#testing .test-autoplay-note { margin: 9px 0; font-size: 12px; }
+#testing .test-autoplay-note kbd { min-width: 16px; padding: 0 4px; font-size: 10px; }
+#testing .test-main-autoplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  background: #2b493e;
+  border-color: #c6ad71;
+  text-align: left;
+}
+#testing .test-main-autoplay strong { font-size: 13px; font-weight: 600; }
+#testing .test-main-autoplay > span { color: #d5ddca; font-size: 12px; }
+#testing .test-main-autoplay > span > span { margin-left: 12px; }
+#testing .test-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 14px; }
+#testing .test-section-heading h3 { margin: 0 0 8px; }
+#testing .test-section-heading p { margin: 0; font-size: 11px; }
+#testing .test-character-jumps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+#testing .test-character-jumps button { padding: 8px; margin: 0; font-size: 13px; border-color: #8ca391; background: #25473c; }
+#testing .test-disclosure { border: 1px solid #708776; border-radius: 4px; margin-top: 7px; background: #15372f; }
+#testing .test-disclosure > summary { cursor: pointer; padding: 10px 13px; color: #e8e9d2; font-size: 13px; font-weight: 600; }
+#testing .test-disclosure > summary:hover { background: #294c3f; }
+#testing .test-disclosure > summary:focus-visible { outline: 2px solid #ffe3a0; outline-offset: 2px; }
+#testing .test-disclosure[open] { padding: 0 13px 12px; }
+#testing .test-disclosure[open] > summary { margin: 0 -13px 8px; border-bottom: 1px solid #70877680; }
+#testing .test-detail-note { margin: 0 0 10px; }
+#testing .test-travel, #testing .test-advanced-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+#testing .test-travel button, #testing .test-advanced-actions button { min-width: 0; width: 100%; margin: 0; padding: 10px; font-size: 12px; text-align: left; border-color: #8a9f88; }
+#testing #test-prepare { background: #314d3f; color: #fff1d2; font-weight: 400; }
+#testing #test-status, #testing #test-here { margin: 9px 0; font-size: 11px; }
+#testing #test-here:empty { display: none; }
+#testing .test-goto { display: grid; grid-template-columns: 96px 1fr 1fr 50px; gap: 8px; margin: 12px 0 0; }
+#testing .test-goto label { font-size: 11px; color: #d3ddcc; letter-spacing: 0; text-transform: none; }
+#testing .test-goto input { grid-column: span 2; }
+#testing .test-goto select, #testing .test-goto input { width: 100%; padding: 8px; color: #f2f2df; background: #1c2e25; border-color: #829881; font-size: 12px; }
+#testing .test-goto button { padding: 8px !important; }
+#testing .test-return { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 10px 13px; font-size: 12px; border-color: #90a28c; }
+#testing .test-return > span { color: #bdcbb8; }
+@media (max-height: 720px) {
+  #testing { padding: 18px 24px; }
+  #testing h2 { margin: 2px 0 5px; font-size: 29px; }
+  #testing h3 { margin-top: 12px; }
+  #testing .test-quest-card { min-height: 64px; padding: 9px 13px; gap: 4px; }
+  #testing .test-autoplay-note { margin: 7px 0; }
+  #testing .test-section-heading { margin-top: 12px; }
+  #testing .test-section-heading h3 { margin-top: 0; }
+  #testing .test-character-jumps { margin-bottom: 10px; }
+  #testing .test-disclosure > summary { padding-top: 9px; padding-bottom: 9px; }
+  #testing .test-return { margin-top: 10px; }
+}
+@media (max-width: 600px) {
+  #testing { width: calc(100vw - 24px); padding: 18px; }
+  #testing .test-card-title { font-size: 16px; }
+  #testing .test-card-description { font-size: 11px; }
+  #testing .test-quest-card { padding: 10px; }
+  #testing .test-main-autoplay { align-items: flex-start; flex-direction: column; gap: 3px; }
+  #testing .test-section-heading { display: block; margin-bottom: 8px; }
+  #testing .test-section-heading h3 { margin-bottom: 3px; }
+  #testing .test-goto { grid-template-columns: 1fr 1fr 46px; }
+  #testing .test-goto label { grid-column: 1 / -1; }
+}

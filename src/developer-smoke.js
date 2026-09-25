@@ -1,4 +1,7 @@
 import { DEV_WORLD_DESTINATIONS } from './developer-atlas.js';
+import { regions } from './region-world.js';
+import { FOREST_HIDEOUT_QUEST } from './forest-hideout.js';
+import { FOREST_STORY_SITES } from './forest-story.js';
 
 const canonical = value => Array.isArray(value) ? value.map(canonical)
   : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
@@ -38,8 +41,11 @@ export async function runDeveloperSmoke(h) {
 
     await tap('F8');
     assert(readState().mode === 'testing', 'F8 did not open testing tools');
+    const advanced = $('testing-advanced');
+    assert(advanced, 'testing tools do not expose Advanced tools');
+    if (!advanced.open) await click(advanced.querySelector('summary'));
     const opener = $('ghost-dev-open');
-    assert(opener?.getClientRects().length, 'testing tools do not expose the ghost developer button');
+    assert(opener?.getClientRects().length, 'Advanced tools do not expose the ghost developer button');
     await click(opener); await developer.ready; await frames(5);
     assert(developer.active && developer.state().atlasOpen, 'ghost developer button did not open the atlas');
     assert(!$('developer-mode').hidden && $('ghost-atlas').getClientRects().length, 'developer atlas panel is hidden');
@@ -99,9 +105,9 @@ export async function runDeveloperSmoke(h) {
     const riseStart = developer.state().flight.position.y; press('Space');
     await waitFor(() => developer.state().flight.position.y - riseStart >= 12, 'Space did not raise the ghost');
     release('Space'); await frames(2); riseMeters = developer.state().flight.position.y - riseStart;
-    const descendStart = developer.state().flight.position.y; press('KeyC');
+    const descendStart = developer.state().flight.position.y; press('ControlLeft');
     await waitFor(() => descendStart - developer.state().flight.position.y >= 8, 'Ctrl did not lower the ghost');
-    release('KeyC'); await frames(2); descentMeters = descendStart - developer.state().flight.position.y;
+    release('ControlLeft'); await frames(2); descentMeters = descendStart - developer.state().flight.position.y;
     assert(riseMeters >= 12 && descentMeters >= 8, 'vertical flight controls did not travel the expected distance');
     unchanged('fortress flight');
 
@@ -139,17 +145,24 @@ export async function runDeveloperSmoke(h) {
     assert(routeStops.length === DEV_WORLD_DESTINATIONS.filter(destination => destination.region).length, 'Drent is missing a local playable destination');
     await click(routeStops.find(node => node.dataset.devDestination === 'region-4'));
     assert(developer.state().scene === 'playable-world' && developer.state().destination === 'region-4', 'local region4 marker did not return to the playable world scene');
-    // East Suval lies south of Luscia on the atlas: large positive z, east of the Moros.
-    assert(developer.state().flight.position.z > 200 && developer.state().flight.position.z < 460 && developer.state().flight.position.x > -320 && developer.state().flight.position.x < 150,
-      'East Suval local destination uses the wrong world coordinates');
+    const destination = DEV_WORLD_DESTINATIONS.find(entry => entry.id === 'region-4');
+    const arrival = regions.find(region => region.id === destination.region).spawn;
+    const flightPosition = developer.state().flight.position;
+    assert(Math.hypot(flightPosition.x - arrival.x, flightPosition.z - arrival.z) < .001,
+      'East Suval local destination missed its authored arrival');
     unchanged('local region inspection');
     if(h.ghostVisibilityState){
       const before=h.ghostVisibilityState();
-      assert(before.road.groups.some(group=>group.visible), 'ghost visit to East Suval left all road wildlife culled');
-      // The goblin camp stands in north Luscia; the woodland ecology stays in Drent, so each is observed from nearby.
-      developer.setPosition({x:-448,y:12,z:150});await frames(3);
-      assert(h.ghostVisibilityState().camp.visible===2, 'ghost inspection did not reveal both camp lookouts from its own position');
-      developer.setPosition({x:-130,y:12,z:-31});await frames(3);
+      const animal=before.road.creatures.find(creature=>creature.region===4)??before.road.creatures[0];
+      assert(animal, 'road wildlife fixture has no animals to inspect');
+      developer.setPosition({x:animal.x,y:animal.y+8,z:animal.z});await frames(3);
+      assert(h.ghostVisibilityState().road.groups.some(group=>group.visible), 'ghost inspection left nearby road wildlife culled');
+      // The camp is in Pueth and the woodland ecology is in Drent; inspect their current authored locations.
+      developer.setPosition({...FOREST_HIDEOUT_QUEST.encounter.center,y:12});await frames(3);
+      assert(h.ghostVisibilityState().camp.visible===FOREST_HIDEOUT_QUEST.encounter.enemies.length,
+        'ghost inspection did not reveal the camp lookouts from its own position');
+      const woodland = FOREST_STORY_SITES.find(site => site.id === 'fallen-oak');
+      developer.setPosition({x:woodland.x,y:12,z:woodland.z});await frames(3);
       const observed=h.ghostVisibilityState();
       assert(observed.forest.groups.some(group=>group.visible), 'ghost inspection left the forest detail groups hidden');
       const poses=state=>({animals:state.animals.map(({x,y,z,clock})=>({x,y,z,clock})),birds:state.birds.map(({x,y,z,clock})=>({x,y,z,clock}))});
@@ -168,7 +181,7 @@ export async function runDeveloperSmoke(h) {
       surveyRegion: survey.id, surveyCells: survey.cells.length, renderedSurveyCells: cellInstances,
       localRegion4Visited: true, adventureUnchanged: true, checkpointUnchanged: true };
   } finally {
-    for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Tab', 'ShiftLeft', 'Space', 'KeyC', 'KeyM', 'F8']) release(key);
+    for (const key of ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'Tab', 'ShiftLeft', 'Space', 'ControlLeft', 'KeyM', 'F8']) release(key);
     if (developer.active) developer.close();
   }
 }

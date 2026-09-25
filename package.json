@@ -55,7 +55,8 @@
     "test:visual-arts:desktop": "node scripts/launch.cjs --smoke-test --visual-arts-checks",
     "test:cagney:autoplay": "node scripts/launch.cjs --smoke-test --cagney-autoplay-checks",
     "test:port-calos": "node scripts/launch.cjs --smoke-test --port-calos-checks",
-    "test:winery": "node scripts/launch.cjs --smoke-test --winery-checks"
+    "test:winery": "node scripts/launch.cjs --smoke-test --winery-checks",
+    "test:testing-tools": "node scripts/launch.cjs --smoke-test --testing-tools-checks"
   },
   "devDependencies": {
     "electron": "32.3.3"

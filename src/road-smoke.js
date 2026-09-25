@@ -431,7 +431,7 @@ export async function runRoadSmoke(h) {
   }
 }
 
-/** Separate from normal play: verify the F8 region buttons without saving. */
+/** Separate from normal play: verify the F8 travel selectors without saving. */
 export async function runRoadTestingSmoke(h) {
   const { world, player, journey, inventory, tap, frames, until, getMode, readState } = h;
   let checks = 0;
@@ -439,10 +439,18 @@ export async function runRoadTestingSmoke(h) {
   for (const id of [2, 3, 4]) {
     tap('F8');
     assert(getMode() === 'testing', `F8 did not open tools before Region ${id}`);
-    const button = document.querySelector(`#test-region-${id}`);
-    assert(button && !button.disabled, `Region ${id} travel button is unavailable`);
+    const advanced = document.getElementById('testing-advanced');
+    assert(advanced, 'Advanced travel tools are unavailable');
+    if (!advanced.open) advanced.querySelector('summary').click();
+    const region = world.regions.find(item => item.id === id);
+    const country = document.getElementById('test-country'), place = document.getElementById('test-place');
+    const button = document.getElementById('test-goto');
+    assert(country && place && button && !button.disabled, `Region ${id} travel selectors are unavailable`);
+    country.value = region.name; country.dispatchEvent(new Event('change', { bubbles: true }));
+    place.value = '0';
+    assert(country.value === region.name && place.selectedIndex === 0, `Region ${id} arrival is unavailable`);
     button.click(); await frames(3);
-    const region = world.regions.find(item => item.id === id), point = player.group.position;
+    const point = player.group.position;
     assert(getMode() === 'playing' && readState().testingEnabled, `Region ${id} travel did not enter testing play`);
     assert(Math.hypot(point.x - region.spawn.x, point.z - region.spawn.z) < .01, `Region ${id} travel missed its spawn`);
     assert(canStand(point.x, point.z, world), `Region ${id} testing spawn is blocked`);
