@@ -1,7 +1,7 @@
 /**
  * The birds of Azhora that the traveler can learn to see: a pair of cardinals on Tidehaven's
  * western fences, a wren on the barrels east of the square, woodpeckers down the Greenway,
- * gulls at the landing, and a hummingbird that comes only to the feeder in Perrin's garden -
+ * gulls at the landing, and a hummingbird that comes only to the feeder in Jean's garden -
  * and, since the user's ruling of 21 September 2026, nine kinds that are not in Drent at all.
  * Goldfinches, doves, bluebirds and a mockingbird are across the Caloss in Luscia's farm
  * country; crows and vultures are out on the Moros Plain; titmice and a kingfisher want the
@@ -759,6 +759,16 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
     return true;
   }
 
+  /** A learned call makes nearby matching birds turn and hold an observable pose. */
+  function call(position,{species,range=24,duration=6}={}){
+    let answering=0;
+    for(const bird of birds){
+      if(bird.species!==species||!bird.visible||flat(bird,position)>range||bird.motion||bird===hummingbird)continue;
+      bird.action='look';bird.timer=Math.max(bird.timer,duration);bird.noticed=duration;
+      bird.yaw=Math.atan2(position.x-bird.x,position.z-bird.z);answering++;
+    }
+    return answering;
+  }
   function state() {
     let draws = 0;
     root.traverse(object => { if (object.isInstancedMesh && object.parent.visible) draws++; });
@@ -774,5 +784,5 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
   }
 
   for (const flock of flocks.values()) pose(flock);
-  return { update, observable, observe, state, dispose, get root() { return root; } };
+  return { update, observable, observe, call, state, dispose, get root() { return root; } };
 }

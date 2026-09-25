@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CROPS, CROP_IDS, FARM_ROWS, FARM_ROW_IDS, ORCHARD_TREES, ORCHARD_ITEM, ORCHARD_XP, ORCHARD_REGROW,
-  FARMING_SKILL, FARMING_LESSON, farmRow, crop, createFarming, validateFarmingSnapshot } from '../src/farming.js';
+  FARMING_SKILL, FARMING_LESSON, FARMER, FARM_FIRE, farmRow, crop, createFarming, validateFarmingSnapshot } from '../src/farming.js';
 import { SKILLS, createSkills, skillLevel } from '../src/skills.js';
 import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { createInventoryState } from '../src/inventory.js';
+import { createCooking, RECIPES } from '../src/cooking.js';
+import { createConsumables } from '../src/consumables.js';
+import { farmingConversation, farmRowConversation } from '../src/farming-conversation.js';
 import { APPLEGARTH_WORKS } from '../src/rena.js';
 import { regionAt } from '../src/region-world.js';
 import { canStand } from '../src/game-state.js';
@@ -27,11 +31,11 @@ const fixture = ({ taught = true } = {}) => {
   return { skills, inventory, events, farming };
 };
 
-test('farming is the fourteenth skill, on the same table as the rest, and Enna teaches it', () => {
+test('farming is the fourteenth skill, on the same table as the rest, and Stanley teaches it', () => {
   assert.ok(SKILLS[FARMING_SKILL], 'the skill sheet knows it');
   assert.equal(SKILLS[FARMING_SKILL].kind, 'working', 'you do it over and over, like woodcutting');
   assert.equal(SKILLS[FARMING_SKILL].thresholds, SKILLS.woodcutting.thresholds, 'RuneScape’s own table');
-  assert.match(SKILLS[FARMING_SKILL].teacher, /Enna/);
+  assert.match(SKILLS[FARMING_SKILL].teacher, /Stanley/);
   assert.match(SKILLS[FARMING_SKILL].teacher, /Mill Commons/);
   assert.equal(FARMING_LESSON.length, 3, 'she says it in three');
   assert.match(FARMING_LESSON.join(' '), /while you are somewhere else/, 'which is the whole lesson');
@@ -66,7 +70,7 @@ test('a row is sown at a moment of play and is ripe a fixed number of seconds la
   assert.equal(farming.sow('commons-row-1', 'barley', 400).ok, true, 'and ready to go straight back in');
 });
 
-test('nothing grows for a traveler nobody has taught, and no row holds two crops', () => {
+test('the introduction is offered once, and no row holds two crops', () => {
   const { farming } = fixture({ taught: false });
   assert.equal(farming.met, false);
   farming.learn();
@@ -79,7 +83,7 @@ test('nothing grows for a traveler nobody has taught, and no row holds two crops
   const leaf = farming.sow('commons-row-2', 'drent-leaf', 0);
   assert.equal(leaf.ok, false);
   assert.match(leaf.reason, /level 5/);
-  assert.deepEqual(farming.sowable('commons-row-2').map(entry => entry.id), ['barley'], 'until then, barley');
+  assert.deepEqual(farming.sowable('commons-row-2').map(entry => entry.id), ['carrot', 'barley'], 'quick food and a cooking grain from level 1');
 });
 
 test('reaping pays experience, and the level is read off the same table as everything else', () => {
@@ -158,7 +162,7 @@ test('the save carries what was sown and when, and refuses a time that has not h
 
 test('the farm tells the traveler what it is doing, and it is never a thing to stand and watch', () => {
   const { farming } = fixture({ taught: false });
-  assert.match(farming.task(0).detail, /Enna/);
+  assert.match(farming.task(0).detail, /Stanley/);
   farming.learn();
   assert.match(farming.task(0).title, /bare rows/);
   farming.sow('commons-row-1', 'barley', 0);
@@ -181,5 +185,93 @@ test('every row and every kept tree has ground a person can work it from', async
     assert.ok(beside(row.x, row.z), `${row.id} has nowhere to stand to work it`);
     assert.equal(regionAt(row.x, row.z)?.name, 'Drent', row.id);
   }
+  for (const point of [FARMER, FARM_FIRE]) assert.ok(canStand(point.x, point.z, here, .45), `${point.id} is reachable`);
   for (const tree of ORCHARD_TREES) assert.ok(beside(tree.x, tree.z), `${tree.id} cannot be reached`);
+});
+
+test('seed, water, harvest and replant form a repeatable food loop with saved active-time growth', () => {
+  const inventory = createInventoryState(), skills = createSkills(), farming = createFarming({ inventory, skills });
+  assert.equal(farming.sow('commons-row-1', 'carrot', 0).ok, false, 'cannot create a crop without its seed');
+  farming.stockSeeds(); farming.stockSeeds();
+  assert.equal(inventory.count('carrot-seed'), 4, 'the free supply tops up, never duplicates full packets');
+  assert.equal(farming.met, false, 'taking seed does not force a lesson');
+  assert.equal(farming.sow('commons-row-1', 'carrot', 10).ok, true);
+  assert.equal(inventory.count('carrot-seed'), 3);
+  assert.equal(farming.water('commons-row-1', 20).ok, true);
+  assert.equal(farming.water('commons-row-1', 20).ok, false, 'cannot spam watering for XP');
+  assert.equal(farming.rowState('commons-row-1', 20).ripeAt, 77.5);
+  const saved = farming.snapshot();
+  assert.equal(validateFarmingSnapshot(saved, { playSeconds: 20 }), true);
+  const resumed = createFarming({ inventory, skills }); resumed.restore(saved);
+  assert.deepEqual(resumed.rowState('commons-row-1', 20), farming.rowState('commons-row-1', 20), 'pause and reload do not advance growth');
+  assert.equal(resumed.reap('commons-row-1', 77).ok, false);
+  const harvest = resumed.reap('commons-row-1', 78);
+  assert.equal(harvest.quantity, 3, 'watering adds one to the crop');
+  assert.equal(inventory.count('carrot'), 3);
+  assert.equal(inventory.count('carrot-seed'), 4, 'saved seed makes the next planting possible');
+  assert.equal(resumed.reap('commons-row-1', 78).ok, false, 'no duplicate harvest');
+  assert.equal(resumed.sow('commons-row-1', 'carrot', 78).ok, true);
+  assert.equal(resumed.rowState('commons-row-1', 78).watered, false, 'new crop needs its own tending');
+  let hp = 50;
+  const combat = { state: { player: { hp, maxHp: 100, action: 'idle' }, phase: 'idle' }, heal: amount => { hp += amount; return amount; } };
+  assert.equal(createConsumables({ inventory, combat }).consume('carrot').healed, 15);
+});
+
+test('first garden harvests unlock beets, with later crops and seed supply respecting level', () => {
+  const inventory = createInventoryState(), skills = createSkills(), farming = createFarming({ inventory, skills });
+  farming.learn();
+  assert.equal(inventory.count('beet-seed'), 0);
+  assert.equal(farming.sow('commons-row-1', 'beet', 0).ok, false);
+  for (const row of FARM_ROWS) { farming.sow(row.id, 'carrot', 0); farming.water(row.id, 1); farming.reap(row.id, 70); }
+  assert.ok(skills.level('farming') >= 2);
+  farming.stockSeeds(); assert.equal(inventory.count('beet-seed'), 4);
+  assert.equal(farming.sow('commons-row-1', 'beet', 70).ok, true);
+  assert.equal(farming.sow('commons-row-2', 'drent-leaf', 70).ok, false);
+});
+
+test('Stanley offers farming and cooking independently, and repeated lessons do not duplicate supplies', () => {
+  const inventory = createInventoryState(), skills = createSkills(), farming = createFarming({ inventory, skills }), cooking = createCooking({ skills });
+  let opened;
+  const context = { inventory, farming, cooking, playSeconds: () => 0, closeDialogue() {}, openDialogue: (npc, lines, event, action, options) => { opened = { npc, lines, options }; } };
+  const talk = () => farmingConversation(FARMER, context);
+  const choose = id => opened.options.choices.find(c => c.id === id).action();
+  talk(); choose('stanley-cooking'); opened.options.onComplete();
+  assert.equal(farming.met, false, 'cooking is a separate introduction');
+  assert.equal(cooking.knows('farm-pot'), true); assert.equal(cooking.knows('roasted-beet'), true);
+  assert.equal(inventory.has('tinderbox'), true); assert.equal(inventory.count('forest-stick'), 2);
+  talk(); choose('stanley-cooking'); opened.options.onComplete();
+  assert.equal(inventory.count('forest-stick'), 2, 'repeat teaching is not free fuel');
+  talk(); choose('stanley-farming'); opened.options.onComplete();
+  assert.equal(farming.met, true);
+  talk(); assert.ok(opened.options.choices.some(c => c.id === 'stanley-cooking'), 'practice stays available after learning');
+  farmRowConversation('commons-row-1', context);
+  assert.ok(opened.options.choices.find(c => c.id === 'farm-sow-carrot' && !c.disabled));
+  assert.ok(opened.options.choices.find(c => c.id === 'farm-sow-beet' && c.disabled));
+  choose('farm-sow-carrot'); farmRowConversation('commons-row-1', context); choose('farm-water');
+  assert.equal(farming.rowState('commons-row-1', 0).watered, true);
+});
+
+test('cooking harvested carrot and barley produces healing food and every successful meal pays XP', () => {
+  const inventory = createInventoryState(), skills = createSkills(), farming = createFarming({ inventory, skills }), cooking = createCooking({ skills });
+  farming.learn(); cooking.learn('farm-pot');
+  farming.sow('commons-row-1', 'carrot', 0); farming.sow('commons-row-2', 'barley', 0);
+  farming.reap('commons-row-1', 240); farming.reap('commons-row-2', 240);
+  const first = cooking.make('farm-pot', inventory), second = cooking.make('farm-pot', inventory);
+  assert.equal(first.xp, RECIPES['farm-pot'].xp); assert.equal(second.xp, first.xp);
+  assert.equal(inventory.count('farm-pot'), 2); assert.equal(inventory.count('carrot'), 0); assert.equal(inventory.count('barley'), 0);
+  assert.equal(cooking.make('farm-pot', inventory).ok, false, 'practice still costs real ingredients');
+});
+
+test('a full produce stack keeps the harvest in the ground and a full meal stack keeps ingredients', () => {
+  const inventory = createInventoryState(), skills = createSkills(), farming = createFarming({ inventory, skills }), cooking = createCooking({ skills });
+  farming.learn(); farming.sow('commons-row-1', 'carrot', 0);
+  inventory.add('carrot', Number.MAX_SAFE_INTEGER);
+  assert.equal(farming.reap('commons-row-1', 100).ok, false);
+  assert.equal(farming.rowState('commons-row-1', 100).stage, 'ripe');
+  assert.equal(farming.reaped, 0);
+  cooking.learn('farm-pot'); inventory.add('barley', 1); inventory.add('farm-pot', Number.MAX_SAFE_INTEGER);
+  assert.equal(cooking.make('farm-pot', inventory).ok, false);
+  assert.equal(inventory.count('carrot'), Number.MAX_SAFE_INTEGER);
+  assert.equal(inventory.count('barley'), 1);
+  assert.equal(cooking.snapshot().made['farm-pot'], undefined);
 });

@@ -408,6 +408,18 @@ test('the roads are one network: a journey is routed across as many of them as i
   assert.equal(roadRoute(paths, { x: -500, z: -500 }, { x: 255, z: 225 }), null, 'nowhere near a road: no route');
 });
 
+test('through journeys prefer the road to a shorter dirt bypass, while trail destinations stay reachable', async () => {
+  const { roadRoute } = await import('../src/autopilot.js');
+  const road = Object.assign([{ x: 0, z: 0 }, { x: 0, z: 15 }, { x: 50, z: 15 }, { x: 100, z: 15 }, { x: 100, z: 0 }], { kind: 'road' });
+  const trail = Object.assign([{ x: 0, z: 0 }, { x: 30, z: 0 }, { x: 70, z: 0 }, { x: 100, z: 0 }], { kind: 'trail' });
+  const paths = [road, trail];
+  const through = roadRoute(paths, road[0], road.at(-1));
+  assert.ok(through.some(point => point.z === 15), 'stay on the road even though the footpath is thirty metres shorter');
+  const visiting = roadRoute(paths, road[0], { x: 50, z: 0 });
+  assert.deepEqual(visiting.at(-1), { x: 50, z: 0 }, 'the same footpath can still serve a place in the woods');
+  assert.ok(visiting.some(point => point.x === 30 && point.z === 0), 'the trail is not removed from navigation');
+});
+
 test('a harbour gate is the way to the water, not the way inland', async () => {
   const { enclosureWaypoint } = await import('../src/autopilot.js');
   const city = { id: 'city', contains: (x, z) => Math.abs(x) < 50 && Math.abs(z) < 50, gates: [

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { VASTOS_NPCS } from '../src/vastos-civil-war.js';
+import { FARMER } from '../src/farming.js';
 import { TRIMMED, KEEP_IDS, QUEST_IDS, OWN_IDS, SMITH_IDS, DROP_IDS, SOLDIER_ROLES, keepsNpc, trimCast } from '../src/cast.js';
 
 /**
@@ -20,9 +21,11 @@ test('the trim keeps the quest, the soldiers, the company and the user’s own, 
   for (const id of ['elod-fishwife', 'ambron-scrivener', 'ostel-muleteer-1', 'town-innkeeper', 'timber-stall-hand'])
     assert.equal(keep({ id, modelRole: 'commons-miller' }), false, `${id} is still standing about`);
   // And the teachers, by name, because each of them is somebody's favourite.
-  for (const id of ['garden-keeper', 'pond-fisher', 'mycologist', 'botanist', 'geologist', 'commons-miller', 'woodcutter-bowden', 'acorn-cook'])
+  for (const id of ['pond-fisher', 'mycologist', 'botanist', 'geologist', 'commons-miller', 'woodcutter-bowden', 'acorn-cook'])
     assert.equal(keep({ id, modelRole: 'forest-woodcutter' }), false, `${id} teaches a skill and stayed`);
   assert.equal(keep({ id: 'anybody', dog: true }), true, 'a dog is not a crowd');
+  assert.equal(keep({ id: 'garden-keeper' }), true, 'Jean is restored as the village birding teacher');
+  assert.equal(keep({ id: 'lee-anne' }), true, 'Lee Anne remains in the live cast as the Fire Making teacher');
   assert.equal(keep(null), false);
 });
 
@@ -59,7 +62,7 @@ test('every id on the list is somebody the world actually places', async () => {
   }
   const known = new Set([...placed,
     // Pushed in by src/main.js from their own modules rather than by the world.
-    'harbormaster', 'instructor', 'boatman', 'brandy-frank', 'bird-watcher', 'attic-juan', 'attic-nika',
+    'harbormaster', 'instructor', 'garden-keeper', 'lee-anne', 'sylvia', FARMER.id, 'boatman', 'brandy-frank', 'bird-watcher', 'attic-juan', 'attic-nika',
     'solis-secretary', 'john-salt', 'katy', 'vintner', 'winemaker', 'vine-keeper', 'light-keeper',
     'rival-keeper', 'tidehaven-smith', 'moros-armourer', 'ambron-armourer', 'lumber-ostler',
     'aftermath-tribune', 'aftermath-captain', 'aftermath-envoy', 'post-camp-legate',

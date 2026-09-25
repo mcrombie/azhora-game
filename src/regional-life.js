@@ -1,5 +1,4 @@
 import { toWorld } from './world-scale.js';
-import { FARMING_LESSON } from './farming.js';
 
 /** Optional local lives along the road. This module never advances the main journey. Stands are authored metres. */
 export const REGIONAL_LIFE_NPCS = Object.freeze([
@@ -247,18 +246,8 @@ export function regionalLifeConversation(npc, context) {
       "Enna. I mind the commons mill. Everyone puts in a little work, and everyone gets a share. Lately the army's share keeps arriving before everyone else.",
       'Could you help lower the village basket from the hoist beside us? I have no payment to offer. It would just mean the people waiting here get their grain before dark. Ask me when you are ready, and leave the rest of the stores alone.',
     ];
-    // The fourteenth skill, beside the errand she already has and never in place of it. She
-    // stands between the crop rows and the millstones, so she is the one who teaches farming
-    // (src/farming.js, docs/drent-long-road.md §5). The mill errand is untouched by it.
-    if (context.farming && !context.farming.met) choices.push({ id: 'enna-farming', label: 'How does a row like that go in?', action: () => {
-      openDialogue(npc, [...FARMING_LESSON], null, 'Teach me', { onComplete: () => { context.teachFarming?.(); back(); } });
-    } });
-    else if (context.farming?.met) choices.push({ id: 'enna-rows', label: 'How are my rows doing?', action: () => {
-      const farm = context.farming;
-      openDialogue(npc, [farm.ripe ? `${farm.ripe} of them ready to come off, and the sickle is where it always is.`
-        : farm.sown ? 'Sown and growing. Go and do something else; it will not go faster for being watched.'
-        : 'Four bare rows and a drill. Barley is four minutes, the leaf is eight.',
-        'And west of here Applegarth keeps its orchard. Kept trees are picked, not sown, and they come back in about ten minutes.'],
+    choices.push({ id: 'enna-farming', label: 'Who can teach me to grow something?', action: () => {
+      openDialogue(npc, ['Stanley, beside the four garden beds just here. He shares seeds, shows you how to tend a row, and makes a good supper from very little. I keep the mill; he keeps the crops.'],
         null, 'Back to Enna', { onComplete: back });
     } });
     choices.push({ id: 'enna-tally', label: 'Whose grain is on that tally?', action: () => {

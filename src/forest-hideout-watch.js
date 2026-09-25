@@ -1,6 +1,6 @@
 import { createGoblin } from './characters.js';
 
-/** The camp can be scouted before its optional fight is accepted. */
+/** Distant lookouts; the host hands them to combat when they spot an intruder. */
 export function createForestHideoutWatch(scene, world, encounter) {
   const guards = encounter.enemies.map((home, index) => {
     const actor = createGoblin({ variant: index });

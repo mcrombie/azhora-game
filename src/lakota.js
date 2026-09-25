@@ -3,13 +3,13 @@
  *
  * He used to be two people at once: the man at the head of the pier who handed
  * over the letter, and the birder in the garden who taught you to look. He is
- * neither now. Jojo meets the boat, Perrin keeps the garden, and Lakota is the
+ * neither now. Jojo meets the boat, Jean keeps the garden, and Lakota is the
  * seventh hired sword to come up the road (`src/mercenaries.js`, arrival 1980) -
  * a man with a quarterstaff, a red-tailed hawk on his glove and no intention of
  * hurrying to a war.
  *
  * That split needs a second piece of state. `birding.met` is "somebody has taught
- * you to look at birds", and that is Perrin's from the first minute. This is the
+ * you to look at birds", and that is Jean's from the first minute. This is the
  * other thing: whether the traveler has got far enough with Lakota that he stops
  * being a hired sword who is plainly not one and starts offering what is his -
  * the hawk, the list of a hundred and six, the digging, the wine, the chocolate,
@@ -72,7 +72,7 @@ export function lakotaTravelChoice({npc,companions,context=()=>({}),openDialogue
     const may=companions.askable(npc.id,{where:now.where,has:now.has??{}});
     if(!may.ok){
       const line=may.reason==='needs'&&may.needs==='birded'
-        ?`${may.line} Perrin keeps the village bird garden. Learn to observe there, then look at a bird and press B. Come back and ask me again.`
+        ?`${may.line} Jean teaches beside the road just beyond Glun. Learn to observe with her, then look at a bird and press B. Come back and ask me again.`
         :may.line??(may.reason==='already'?'I am already walking with you.':may.reason==='full'?'There is no room in the company just now. Send someone ahead, then ask me again.':'I cannot leave my place in the company just now.');
       refusal(line);return;
     }

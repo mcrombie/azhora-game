@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { canStand } from './game-state.js';
 import { SEA_LEVEL } from './region-world.js';
 import { westWaterSurface } from './west-ground.js';
+import { REGIONAL_WILDLIFE_ZONES } from './regional-wildlife.js';
 
 /**
  * The animals of the four western regions.
@@ -834,6 +835,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
     sites: Object.freeze([[-2500, 380]]),
     note: 'Extension: the fauna overview names no raptor for Nethereum at all. What the ground argues for is the bird that hunts it — a basin of long wet grass is a harrier’s whole living, and a harrier quarters rather than soars, which is why it has the plateau hawk’s rig and none of its flight.',
   }),
+  ...REGIONAL_WILDLIFE_ZONES,
 ]);
 
 /**
@@ -945,7 +947,8 @@ export function createWestLife(scene, world) {
 
   const inRange = (x, z, zone) => Number.isFinite(x) && Number.isFinite(z)
     && x >= zone.minX && x <= zone.maxX && z >= zone.minZ && z <= zone.maxZ;
-  const valid = (x, z, zone) => inRange(x, z, zone) && canStand(x, z, world, zone.radius);
+  const valid = (x, z, zone) => inRange(x, z, zone) && canStand(x, z, world, zone.radius)
+    && (!zone.keepRegion || !world.regionAt || world.regionAt(x, z)?.name === zone.region);
   /**
    * What an animal's feet are on. For everything on legs that is the ground, and
    * for a bird that **floats** it is the water's own surface — a duck sits on a
@@ -1173,6 +1176,8 @@ export function createWestLife(scene, world) {
 
   function tickGround(animal, dt, player, flock, motion) {
     animal.clock += dt; animal.timer -= dt; animal.speed = 0;
+    animal.calmFor = Math.max(0, (animal.calmFor || 0) - dt);
+    if (animal.calmFor > 0) { animal.action = 'graze'; return; }
     const species = animal.species, near = Math.hypot(animal.x - player.x, animal.z - player.z);
     let wheeling = false;
     animal.cornered = Math.max(0, animal.cornered - dt);
@@ -1500,10 +1505,31 @@ export function createWestLife(scene, world) {
       creatures: creatures.map(animal => ({ id: animal.id, species: animal.species, region: animal.region,
         x: animal.x, y: animal.y + animal.lift, groundY: animal.y, z: animal.z, yaw: animal.yaw,
         action: animal.action, speed: animal.speed, clock: animal.clock, watching: animal.watching,
-        lift: animal.lift, hidden: !!animal.hidden })),
+        lift: animal.lift, hidden: !!animal.hidden, calmFor: animal.calmFor || 0 })),
       groups: flocks.map(flock => ({ id: flock.zone.id, visible: flock.group.visible, ticks: flock.ticks, count: flock.animals.length })),
     };
   }
+
+  // Interaction checks run every frame. Keep a read-only live view of the
+  // animals instead of copying every flock, position and animation clock.
+  // Snapshots above remain detached records for tests and saved inspection.
+  const liveCreatures = Object.freeze(creatures.map(animal => {
+    const view = {};
+    for (const key of ['id', 'species', 'region', 'x', 'z', 'yaw', 'action', 'speed', 'clock', 'watching', 'lift'])
+      Object.defineProperty(view, key, { enumerable: true, get: () => animal[key] });
+    Object.defineProperties(view, {
+      y: { enumerable: true, get: () => animal.y + animal.lift },
+      groundY: { enumerable: true, get: () => animal.y },
+      hidden: { enumerable: true, get: () => !!animal.hidden },
+      calmFor: { enumerable: true, get: () => animal.calmFor || 0 },
+    });
+    return Object.freeze(view);
+  }));
+  const liveState = Object.freeze({
+    get updates() { return updates; },
+    creatures: liveCreatures,
+    get groups() { return flocks.map(flock => ({ id: flock.zone.id, visible: flock.group.visible, ticks: flock.ticks, count: flock.animals.length })); },
+  });
 
   function dispose() {
     if (disposed) return;
@@ -1514,5 +1540,13 @@ export function createWestLife(scene, world) {
     }
   }
 
-  return { update, setObserver, snapshot, state: snapshot, dispose };
+  function calm(id, seconds = 8) {
+    const animal = creatures.find(animal => animal.id === id);
+    if (!animal || (!CATTLE.has(animal.species) && animal.species !== 'hill-sheep')
+      || !Number.isFinite(seconds) || seconds <= 0) return false;
+    animal.calmFor = Math.max(animal.calmFor || 0, Math.min(60, seconds));
+    animal.action = 'graze'; animal.timer = 3; animal.speed = 0;
+    return true;
+  }
+  return { update, setObserver, snapshot, state: () => liveState, calm, dispose };
 }

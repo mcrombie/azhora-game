@@ -21,7 +21,7 @@ test('every fish is a fish of this country, and knows which water it lives in', 
 });
 
 test('each water holds what it should: trout only in cold water, rockfish and shad only in rivers', () => {
-  assert.deepEqual(Object.keys(SPOT_WATERS).sort(), ['reedwater', 'tessen-bank', 'willowmere']);
+  assert.deepEqual(Object.keys(SPOT_WATERS).sort(), ['avrel-pool', 'reedwater', 'tessen-bank', 'willowmere']);
   assert.equal(waterOf('willowmere'), 'pond');
   assert.equal(waterOf('reedwater'), 'river');
   assert.equal(waterOf('tessen-bank'), 'cold-river');

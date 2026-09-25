@@ -90,10 +90,10 @@ test('buying is atomic: the money and the piece move together or not at all', ()
   }
 });
 
-test('every smith is named for a smith of myth, and out of no other register', () => {
+test('Martin keeps his shop identity while the other smiths retain their mythic names', () => {
   // The user's own naming register (2026-09-21), and the reason it is used: it takes nothing
   // from Azhora's place-name generators, which are places and not people.
-  assert.equal(SMITH_NPC.name, 'Vulcan');
+  assert.equal(SMITH_NPC.name, 'Martin');
   assert.equal(MOROS_ARMOURER_NPC.name, 'Wayland');
   assert.equal(AMBRON_ARMOURER_NPC.name, 'Hephaestus');
   assert.equal(AMOD_NPCS.find(one => one.id === AMOD_SMITH_ID).name, 'Goibniu');
@@ -101,7 +101,7 @@ test('every smith is named for a smith of myth, and out of no other register', (
   for (const id of Object.keys(SMITH_VOICES)) {
     const shown = [SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, ...AMOD_NPCS].find(one => one.id === id)?.name;
     assert.ok(shown, `${id} sells and nobody knows what name is shown over him`);
-    assert.ok(MYTH_SMITHS.includes(shown), `${shown} is not in the smiths-of-myth register`);
+    assert.ok(id === SMITH_NPC.id || MYTH_SMITHS.includes(shown), `${shown} is not in the smiths-of-myth register`);
     assert.ok(!/^The /.test(shown), `${id} is still shown as a trade rather than a name`);
   }
   // Goibniu says his own name and keeps every other word he had.

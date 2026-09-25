@@ -5,10 +5,11 @@
  * The camp stands in the birch woods of southern Pueth, east of the army's
  * road post at the Tessen bridge. Footman Cassel tells a hired sword about it,
  * Captain Drevan marches on it with his two men when asked, the traveler walks the
- * blue-rag trail with the garrison at their shoulder and challenges the two
- * scouts beside them, falls back down the trail, stands the men down, loses on
+ * blue-rag trail with the garrison at their shoulder until the two scouts spot
+ * them, falls back down the trail, stands the men down, loses on
  * purpose and retries alone, wins, lifts Tidehaven's stolen stores and brings
- * them back to the Captain for thirty copper. The fight needs quest stage 10.
+ * them back to the Captain for thirty copper. Walking close triggers hostility
+ * even before the tutorial is complete; a distant voluntary challenge waits for it.
  */
 import { canStand, QUEST_DONE } from './game-state.js';
 import { FOREST_HIDEOUT_QUEST as QUEST, HIDEOUT_GARRISON } from './forest-hideout.js';
@@ -102,15 +103,16 @@ export async function runHideoutSmoke(h) {
     assert(hideoutWatch.state().visible === 0, 'passive scouts duplicated the actual combatants');
     assert(readState().questStage === QUEST_DONE, 'starting the optional camp changed the quest stage');
   };
-  const walkTo = async (end, { fighting = false } = {}) => {
+  const walkTo = async (end, { fighting = false, approaching = false } = {}) => {
     const deadline = performance.now() + 40000;
     let previous = { x: player.group.position.x, z: player.group.position.z };
     press('KeyW');
-    while (distance(player.group.position, end) > .65 && (!fighting || combat.state.phase === 'active')) {
+    while (distance(player.group.position, end) > .65 && (!fighting || combat.state.phase === 'active')
+      && (!approaching || combat.state.phase !== 'active')) {
       const p = player.group.position; setYaw(Math.atan2(p.x - end.x, p.z - end.z));
       assert(performance.now() < deadline, `walking the trail stalled before ${end.x.toFixed(1)}, ${end.z.toFixed(1)}`);
       if (!fighting) assert(getMode() === 'playing' && readState().questStage === QUEST_DONE && combat.state.phase !== 'active',
-        'the trail started combat or changed the main quest without consent');
+        'the safe outer trail started combat or changed the main quest');
       else assert(getMode() === 'playing', 'falling back down the trail unexpectedly defeated the player');
       await frames(3);
       const current = { x: p.x, z: p.z }; walkedMeters += distance(current, previous); previous = current;
@@ -120,7 +122,7 @@ export async function runHideoutSmoke(h) {
   };
 
   try {
-    // Before the tutorial's road is done the camp can be looked at, never fought.
+    // The safe approach permits scouting; the deliberate challenge still waits for training.
     await prepareHideout(1); await frames(5);
     assert(getMode() === 'playing' && readState().questStage === 1 && !readState().testingEnabled,
       'early fixture is not normal stage-one play');
@@ -154,11 +156,12 @@ export async function runHideoutSmoke(h) {
 
     // Walk the blue-rag trail from the road to the camp, the garrison at the traveler's shoulder.
     await moveTo(HIDEOUT_APPROACH_TRAIL[0]);
-    for (const point of [...HIDEOUT_APPROACH_TRAIL.slice(1), ...TRAIL.slice(1)]) await walkTo(point);
-    assert(walkedMeters > 180 && distance(player.group.position, CAMP_CENTER) < 1, 'normal walking did not reach the camp');
-    await until(() => HIDEOUT_GARRISON.every(soldier => distance(world.npcPositions[soldier.id], player.group.position) < 6), 'the garrison did not keep up on the march', 5000);
-    assert(hideoutWatch.state().visible === 2, 'the unchallenged camp has no visible scouts');
-    await inspect(); await choose('challenge-hideout');
+    for (const point of [...HIDEOUT_APPROACH_TRAIL.slice(1), ...TRAIL.slice(1)]) {
+      await walkTo(point, { approaching: true });
+      if (combat.state.phase === 'active') break;
+    }
+    assert(walkedMeters > 170 && distance(player.group.position, CAMP_CENTER) < 18, 'normal walking did not reach the scouts');
+    assert(forestHideout.state.active, 'the scouts waited for inspection instead of spotting the approaching traveler');
     assertActive(HIDEOUT_GARRISON.length); escortedAllies = combat.state.allies.length;
 
     // Fall back south down the trail: the fight ends, the errand stays.

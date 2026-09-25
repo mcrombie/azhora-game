@@ -44,10 +44,10 @@ test('before training the invitation remains visible and explains the combat les
   f.dialogs.at(-1).onComplete();assert.equal(f.returned(),1);
 });
 
-test('a birding prerequisite explains Perrin and the observation key instead of hiding recruitment',()=>{
+test('a birding prerequisite explains Jean and the observation key instead of hiding recruitment',()=>{
   const f=fixture();f.current.has.birded=false;
   const invite=f.choice();assert.equal(invite.id,'merc-ask');invite.action();
-  assert.match(f.dialogs.at(-1).lines.join(' '),/Perrin/);assert.match(f.dialogs.at(-1).lines.join(' '),/press B/);
+  assert.match(f.dialogs.at(-1).lines.join(' '),/Jean/);assert.match(f.dialogs.at(-1).lines.join(' '),/press B/);
   assert.equal(f.companions.walksWith(f.npc.id),false);
   f.current.has.birded=true;invite.action();assert.equal(f.companions.walksWith(f.npc.id),true,'eligibility is reread at click time');
 });

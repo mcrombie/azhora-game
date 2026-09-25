@@ -77,6 +77,8 @@ export const FISH_IDS = Object.freeze(Object.keys(FISH_SPECIES));
 /** The kind of water each fishing spot is, which decides what lives in it. */
 export const SPOT_WATERS = Object.freeze({
   willowmere: 'pond',
+  'avrel-pool': 'pond',
+  'avrel-pool': 'pond',
   reedwater: 'river',
   'tessen-bank': 'cold-river',
 });
@@ -109,7 +111,7 @@ export function validateFishingSnapshot(data, { allowMissing = true } = {}) {
 export function createFishing({ skills, onEvent = () => {} } = {}) {
   const state = { taught: false, caught: {} };
 
-  /** Bran or Chip hands over a rod: that is the lesson. */
+  /** Teachers share the same introduction; a later outing preserves prior catches. */
   function learn() {
     const first = !state.taught;
     state.taught = true;
@@ -141,7 +143,7 @@ export function createFishing({ skills, onEvent = () => {} } = {}) {
         name: state.caught[id] ? FISH_SPECIES[id].name : 'A fish you have not landed',
         detail: state.caught[id] ? FISH_SPECIES[id].note
           : state.taught ? `Found in ${Object.keys(FISH_SPECIES[id].waters).map(water => water.replace('-', ' ')).join(', ')} water.`
-          : 'Ask Bran at Willowmere Pond, or Chip at the Caloss crossing, for a rod.' })),
+          : 'Ask Glun, Mark or Jean for a Willowmere outing, Stanley for a farm-pond lesson, or Bran or Chip for a rod.' })),
     };
   }
 

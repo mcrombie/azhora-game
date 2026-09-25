@@ -12,7 +12,7 @@ function model() {
       { id: 'hidden', name: 'SECRET SHRINE NAME', description: 'SECRET LORE', x: -37, z: -87, known: false, discovered: false, trackable: true },
       { id: 'bee-fold', name: 'The Bee Fold', description: 'A place for bees.', x: 42, z: -35, known: true, discovered: true, trackable: true }],
     goal: { id: 'main-objective', name: 'Report to Lakota', x: 4, z: 20, known: true, trackable: false },
-    openGoal: { id: 'long-road-bird-garden', name: 'Perrin at the bird garden', x: -24, z: 4, known: true, trackable: false },
+    openGoal: { id: 'long-road-bird-garden', name: 'Jean at the bird garden', x: -24, z: 4, known: true, trackable: false },
     tracked: { id: 'bee-fold', name: 'The Bee Fold', x: 42, z: -35, known: true, trackable: true } };
 }
 

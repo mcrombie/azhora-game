@@ -3,6 +3,7 @@ import { canStand } from './game-state.js';
 import { toWorld } from './world-scale.js';
 import { MOROS_WAYSIDE } from './wayside.js';
 import { avrel, crossing } from './places.js';
+import { JEAN_SHEEP } from './animal-husbandry.js';
 
 const TAU = Math.PI * 2;
 const sphere = new THREE.IcosahedronGeometry(1, 1);
@@ -28,6 +29,8 @@ const around = (centre, halfX, halfZ, offsets) => ({ minX: centre.x - halfX, max
   sites: offsets.map(([dx, dz]) => [centre.x + dx, centre.z + dz]) });
 const fold = MOROS_WAYSIDE.find(place => place.id === 'moros-shepherds-fold');
 const WORLD_ZONES = [
+  { id: 'jean-sheep', prefix: 'jean-sheep', species: 'sheep', region: 1, radius: .43, tame: true,
+    ...around(JEAN_SHEEP, 3.5, 2.4, [[-1.3, -.5], [1.2, .7]]) },
   { id: 'moros-fold-sheep', prefix: 'fold-sheep', species: 'sheep', region: 2, radius: .43,
     ...around(fold, 22, 18, [[-11, -4], [-9, 5], [10, -6], [12, 4], [2, -12]]) },
   { id: 'avrel-sheep', prefix: 'avrel-sheep', species: 'sheep', region: 1, radius: .43,
@@ -172,7 +175,7 @@ export function createRoadLife(scene, world) {
     }
   }
   function tickAnimal(animal,dt,player) {
-    animal.clock+=dt;animal.timer-=dt;animal.speed=0;animal.lift=0;
+    animal.clock+=dt;animal.timer-=dt;animal.speed=0;animal.lift=0;animal.calmFor=Math.max(0,(animal.calmFor||0)-dt);
     const near=Math.hypot(animal.x-player.x,animal.z-player.z);
     if(animal.flight) {
       const f=animal.flight;f.time+=dt;const t=clamp(f.time/f.duration,0,1),ease=t*t*(3-2*t);
@@ -183,7 +186,7 @@ export function createRoadLife(scene, world) {
     }
     const bird=animal.species==='bank-bird',hare=animal.species==='rock-hare';
     if(bird&&near<5.5&&animal.timer<1.8){takeFlight(animal,player);if(animal.flight)return;}
-    if(!bird&&near<(hare?7:6.5)) {
+    if(!bird&&!animal.zone.tame&&animal.calmFor<=0&&near<(hare?7:6.5)) {
       animal.action='flee';animal.timer=1.8;
       const away=Math.atan2(animal.x-player.x,animal.z-player.z);
       animal.yaw+=angleDelta(away,animal.yaw)*Math.min(1,dt*5);
@@ -241,12 +244,17 @@ export function createRoadLife(scene, world) {
   }
   function snapshot() {
     return {updates,creatures:creatures.map(a=>({id:a.id,species:a.species,region:a.region,x:a.x,y:a.y+a.lift,z:a.z,
-      groundY:a.y,yaw:a.yaw,action:a.action,speed:a.speed,clock:a.clock})),
+      groundY:a.y,yaw:a.yaw,action:a.action,speed:a.speed,clock:a.clock,calmFor:a.calmFor||0,tame:!!a.zone.tame})),
       groups:flocks.map(f=>({id:f.zone.id,visible:f.group.visible,ticks:f.ticks,count:f.animals.length}))};
   }
   function setObserver(position) {
     if(!Number.isFinite(position?.x)||!Number.isFinite(position?.z))return;
     for(const flock of flocks)flock.group.visible=Math.hypot(position.x-flock.center.x,position.z-flock.center.z)<=100;
   }
-  return {update,setObserver,snapshot,state:snapshot};
+  function calm(id,seconds=8) {
+    const animal=creatures.find(a=>a.id===id&&a.species==='sheep');
+    if(!animal||!Number.isFinite(seconds)||seconds<=0)return false;
+    animal.calmFor=Math.max(animal.calmFor||0,Math.min(60,seconds));animal.action='graze';animal.timer=3;animal.speed=0;return true;
+  }
+  return {update,setObserver,snapshot,state:snapshot,calm};
 }

@@ -19,7 +19,7 @@
  * five Ambroni drills have been given. A fourth is the **recognising**: any of the eleven may be
  * the player and each lands knowing something, so a stop whose skill the traveler already had
  * when he stepped off the boat is derived-done from the first second. That would tick it before
- * its teacher was ever met, take the open gold off them and leave Perrin an ordinary villager
+ * its teacher was ever met, take the open gold off them and leave Jean an ordinary villager
  * with nothing to say about birds. So such a stop is **open until its teacher has recognised
  * them**, and the recognising is the one thing about a stop that cannot be re-derived. A fourth is the release of Chris himself — the pair of
  * numbers that puts him back on the company's clock (`docs/drent-long-road.md` §3) — and a fifth
@@ -29,6 +29,7 @@
  * Pure: no DOM, no three.
  */
 import { subregion } from './map-fog.js';
+import { JEAN_STAND } from './birding.js';
 import { ARRIVALS, mercenaryById } from './mercenaries.js';
 
 const freeze = Object.freeze;
@@ -41,18 +42,9 @@ export const DRILL_EXPOSURE = 35;
 export const DRILL_LANGUAGE = 'ambroni';
 /** A mercenary is noticed inside the traveler's own named ground, or this near wherever they are. */
 export const NOTICE_RANGE = 40;
-/**
- * The players' camps the leg-3 stop is served by: `fernway`, which it stands on and which every
- * new game now starts the wagon at (`FIRST_CAMP`, src/troupe.js), and `avrel`, the other camp in
- * Drent — the "players' second camp" the route table names on leg 4, which was never built as a
- * branch stop of its own and serves here instead.
- *
- * The play is one of the two things here with no view of its own, so the host is the one that says
- * a scene was watched to the end at one of these and calls `act('played')` for it — the module is
- * told, and the host decides what it means. The pair is kept here, beside the stop, so the two
- * tables cannot drift apart, and `tests/long-road.test.js` holds the stop's point against the
- * camp's. `fernway` is first because it is the one the stop stands on.
- */
+/** Both Drent camps serve the optional play. The legacy `fernway` id now
+ * describes the first roadside stage beyond the Avrel farms; `avrel` is the
+ * company's other Drent stop. Keeping ids preserves existing play progress. */
 export const PLAY_TROUPE_STOPS = freeze(['fernway', 'avrel']);
 /** The camp the stop itself stands on, and where a new game finds the wagon. */
 export const PLAY_TROUPE_STOP = PLAY_TROUPE_STOPS[0];
@@ -108,9 +100,9 @@ export const LONG_ROAD_LEGS = freeze([
   freeze({ leg: 0, title: 'The harbour', note: 'Both roads begin here: Jojo, the practice post, the raid, and the letter read.' }),
   freeze({ leg: 1, title: 'Tidehaven, which you ran through', note: 'The village you came ashore in, at walking pace: a bird, a kitchen, and your own chart.' }),
   freeze({ leg: 2, title: 'The near wood', note: 'Willowmere and the Koopwood: a rod, a fire, and the first skill you grind.' }),
-  freeze({ leg: 3, title: 'Fernway', note: 'Where the woodland paths meet: the damp ground behind the Rest, and players camped on the verge.' }),
+  freeze({ leg: 3, title: 'Fernway', note: 'Where the woodland paths meet: the damp ground behind the Rest and the old stone.' }),
   freeze({ leg: 4, title: 'The Avrel clearing', note: 'The army’s post, the ruins north of it, and the mill commons.' }),
-  freeze({ leg: 5, title: 'The Caloss road', note: 'The hedge, the stream and the bridge, where the country opens toward Luscia.' }),
+  freeze({ leg: 5, title: 'The Caloss road', note: 'The hedge, the stream, the players and the bridge, where the country opens toward Luscia.' }),
 ]);
 
 /**
@@ -171,9 +163,9 @@ export const LONG_ROAD_STOPS = freeze([
     title: 'The letter read, at the Watch', detail: 'Nine of the eleven are still at sea and the Marshal will not march short. Go up the road now, or learn the country you are about to fight for.' }),
 
   // Leg 1 — Tidehaven at walking pace. Two knowing skills where the village is.
-  stop({ id: 'bird-garden', leg: 1, kind: 'spine', npc: 'garden-keeper', skill: 'birding', subregion: 'eastreena', point: { x: -24.4, z: 4.4 },
+  stop({ id: 'bird-garden', leg: 1, kind: 'spine', npc: 'garden-keeper', skill: 'birding', subregion: 'the-greenway', point: JEAN_STAND,
     reads: 'skills', done: state => learned(state, 'birding'),
-    title: 'Perrin at the bird garden', detail: 'The feeder, the pointer, and the first garden bird you look at properly. Thirty metres from the pier you ran past.' }),
+    title: 'Jean beside the village road', detail: 'Find Jean just beyond Glun to learn Birding and Animal Husbandry. Her feeder and bird garden are back in Tidehaven.' }),
   stop({ id: 'lysa-acorns', leg: 1, kind: 'spine', npc: 'acorn-cook', skill: 'cooking', subregion: 'eastreena', point: { x: -10.9, z: 34.6 },
     // Rule 1 of the eleven: a lesson is shortened, never skipped. Somebody who already cooks
     // does not need the first-find step, so the errand is a swap rather than a lesson and the
@@ -203,9 +195,6 @@ export const LONG_ROAD_STOPS = freeze([
   stop({ id: 'odger-fernway', leg: 3, kind: 'spine', npc: 'mycologist', skill: 'mycology', subregion: 'fernway', point: { x: -128.4, z: 39.6 },
     reads: 'skills', done: state => learned(state, 'mycology'),
     title: 'Odger Pell at Fernway Rest', detail: 'A rack where the paths meet, and Fern Hollow behind it: the dampest old wood in Drent, and the only place a mushroom wants to be.' }),
-  stop({ id: 'fernway-play', leg: 3, kind: 'spine', place: 'The players’ camp on the verge', system: 'drentish', subregion: 'fernway', point: { x: -110.6, z: 29.3 },
-    reads: 'longRoad', done: (state, own) => !!own.played,
-    title: 'A play, on the verge', detail: 'Talaelos improvise something short beside the road. Many mouths at once, nobody explaining, and the whole of it made up as it goes.' }),
   stop({ id: 'east-rena-stone', leg: 3, kind: 'branch', place: 'The East Rena Stone', system: 'drentish', subregion: 'fernway', point: { x: -128, z: 34 },
     reads: 'linguist', done: state => tongue(state, 'drentish') >= SIGN_READING,
     title: 'The East Rena Stone', detail: 'The first writing in Drent you can read, ten seconds up the road from the bench, at about the minute the tongue crosses fifty.' }),
@@ -220,9 +209,9 @@ export const LONG_ROAD_STOPS = freeze([
   stop({ id: 'rena-dig', leg: 4, kind: 'spine', place: 'The ruins of Rena', skill: 'archaeology', subregion: 'rena', point: { x: -395, z: -70 },
     reads: 'skills', done: state => learned(state, 'archaeology'),
     title: 'The ruins of Rena', detail: 'A hundred and ten metres north of the road, and the principal town of Drent until they pulled it down. One peg lifted.' }),
-  stop({ id: 'enna-rows', leg: 4, kind: 'spine', npc: 'commons-miller', skill: 'farming', subregion: 'avrel', point: { x: -418.4, z: 59.8 },
+  stop({ id: 'enna-rows', leg: 4, kind: 'spine', npc: 'avrel-farmer', skill: 'farming', subregion: 'avrel', point: { x: -422, z: 58.5 },
     reads: 'skills', done: state => learned(state, 'farming'),
-    title: 'Enna at the Mill Commons', detail: 'A row sown, and reaped on the way back from Rena. The one skill that grows while you are somewhere else, which is what the company is doing too.' }),
+    title: 'Stanley at the commons garden', detail: 'A row sown, and reaped on the way back from Rena. The one skill that grows while you are somewhere else, which is what the company is doing too.' }),
   stop({ id: 'applegarth', leg: 4, kind: 'branch', place: 'Applegarth', system: 'the-letter', subregion: 'applegarth', point: { x: -568, z: -32 },
     reads: 'mapFog', done: state => charted(state, 'applegarth'),
     title: 'Applegarth, and Hesta Ardry', detail: 'The orchard village at the west end of the old Rena road, and Lorn’s letter for his sister.' }),
@@ -238,6 +227,9 @@ export const LONG_ROAD_STOPS = freeze([
   stop({ id: 'silas-stream', leg: 5, kind: 'spine', npc: 'geologist', skill: 'geology', subregion: 'the-toll-house', point: { x: -513.43, z: 94.15 },
     reads: 'skills', done: state => learned(state, 'geology'),
     title: 'Silas Garrow at the Toll House stream', detail: 'A cart of marl on the road side of the house, and a stream cut that is a geologist’s section. Ironstone out of a furrow.' }),
+  stop({ id: 'fernway-play', leg: 5, kind: 'spine', place: 'The players’ camp on the verge', system: 'drentish', subregion: null, point: { x: -546, z: 78.5 },
+    reads: 'longRoad', done: (state, own) => !!own.played,
+    title: 'Talaelos on the Caloss road', detail: 'Talaelos improvise something short beside the road. Many mouths at once, nobody explaining, and the whole of it made up as it goes.' }),
   stop({ id: 'hollis-bridge', leg: 5, kind: 'spine', npc: 'crossing-keeper', system: 'the-bridge', subregion: 'caloss-crossing', point: { x: -614.1, z: 122.2 },
     reads: 'journey', done: state => !!state?.journey?.bridgeComplete,
     title: 'Chip, and the bridge', detail: 'He speaks Luscian Mittoli, which is none of Chris’s three. The aside under the line is empty for the first time, and Chris says so, and then goes on ahead.' }),

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { talkTarget, placeKeepsPrompt } from '../src/prompt-priority.js';
+import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from '../src/prompt-priority.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -45,7 +45,7 @@ test('a hired sword still answers when he is the only one there, and when he is 
  */
 test('the prompt panel and its words are one decision, and the words go when the panel does', () => {
   const main = source('main.js');
-  assert.match(main, /const prompting=mode==='playing'&&\(!!currentNPC\|\|/, 'one value decides whether there is a prompt at all');
+  assert.match(main, /const prompting=mode==='playing'&&living\.recall\(\)\.status!=='passenger'&&\(!!currentNPC\|\|/, 'one value decides whether there is a prompt at all');
   assert.match(main, /&&combat\.state\.phase!=='active';show\('interaction',prompting\);/, 'and the panel is shown by it');
   assert.match(main, /if\(!prompting\)\$\('interaction-label'\)\.textContent='';/, 'and the words are cleared by it');
   // The clear has to come after everything that writes the label, or it clears the wrong frame.
@@ -61,4 +61,13 @@ test('a place the traveler has business at keeps the prompt from a passer-by, an
   assert.equal(placeKeepsPrompt(keeper, repair), false, 'somebody who belongs there still answers first, as they always have');
   assert.equal(placeKeepsPrompt({ ...chris, marked: true }, repair), false, 'and so does a hired sword who is the business');
   assert.equal(placeKeepsPrompt(chris, null), false, 'with no place there is nothing to keep it for');
+});
+
+test('the fire remains usable while Jojo passes, without preventing nearby conversation', () => {
+  assert.equal(fireKeepsPrompt(1.4, 0), true, 'standing on the ring uses the fire while Jojo walks home');
+  assert.equal(fireKeepsPrompt(2.8, 1.2), true, 'a nearer fire beats even a marked teacher');
+  assert.equal(fireKeepsPrompt(.8, 1.6), false, 'approaching the teacher offers conversation');
+  assert.equal(fireKeepsPrompt(1.3, 1.1), false, 'nearly tied distances preserve conversation');
+  assert.equal(fireKeepsPrompt(Infinity, 1), true);
+  assert.equal(fireKeepsPrompt(1, NaN), false);
 });

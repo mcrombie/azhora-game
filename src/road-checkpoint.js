@@ -1,3 +1,8 @@
+import { createFireMaking, validateFireMakingSnapshot } from './fire-making.js';
+import { createFishingLessons, validateFishingLessonsSnapshot } from './fishing-lessons.js';
+import { createGlunWoodcutting, validateGlunWoodcuttingSnapshot } from './glun-woodcutting.js';
+import { createRoadsideLessons, validateRoadsideLessons } from './roadside-lessons.js';
+import { createAnimalHusbandry, validateHusbandrySnapshot } from './animal-husbandry.js';
 import { validateMagicSnapshot } from './magic.js';
 import { createCrime, validCrimeState } from './crime.js';
 import { createCorpses, validateCorpsesSnapshot } from './corpses.js';
@@ -185,6 +190,11 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateLinguistSnapshot(data.linguist)) return failed('The saved tongues of Azhora are invalid.');
     if (!validateLongRoadSnapshot(data.longRoad)) return failed('The saved long road through Drent is invalid.');
     if (Object.hasOwn(data, 'companionOffTheClock') && typeof data.companionOffTheClock !== 'boolean') return failed('The saved road partnership is invalid.');
+    if (!validateFireMakingSnapshot(data.fireMaking)) return failed('The saved fire-making lesson is invalid.');
+    if (!validateFishingLessonsSnapshot(data.fishingLessons)) return failed('The saved fishing outing is invalid.');
+    if (!validateGlunWoodcuttingSnapshot(data.glunWood)) return failed('The saved woodcutting lesson is invalid.');
+    if (!validateRoadsideLessons(data.roadLessons)) return failed('The saved road lessons are invalid.');
+    if (!validateHusbandrySnapshot(data.husbandry)) return failed('The saved animal care is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
@@ -236,7 +246,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     }
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
-    if (data.forestHideout?.accepted && data.questStage < QUEST_DONE && !imperialRecall) return failed('The goblin camp lies across the Tessen, beyond your business in Tidehaven.');
+    // Hostile camp scouts can attack before the traveler finishes the main tutorial.
     if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1
       || (Object.hasOwn(data.woodland, 'practiceGuards') && data.woodland.practiceGuards < 1)))
       return failed('The saved combat lessons are incomplete.');
@@ -353,6 +363,11 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'geology')) { const geology = createGeology(); geology.restore(data.geology); result.geology = geology.snapshot(); }
     if (Object.hasOwn(data, 'linguist')) { const linguist = createLinguist(); linguist.restore(data.linguist); result.linguist = linguist.snapshot(); }
     if (Object.hasOwn(data, 'longRoad')) { const road = createLongRoad(); road.restore(data.longRoad); result.longRoad = road.snapshot(); }
+    if (data.fireMaking) { const lesson=createFireMaking();lesson.restore(data.fireMaking);result.fireMaking=lesson.snapshot(); }
+    if (data.fishingLessons) { const lesson=createFishingLessons();lesson.restore(data.fishingLessons);result.fishingLessons=lesson.snapshot(); }
+    if (data.glunWood) { const lesson=createGlunWoodcutting();lesson.restore(data.glunWood);result.glunWood=lesson.snapshot(); }
+    if (data.roadLessons) { const lessons=createRoadsideLessons();lessons.restore(data.roadLessons);result.roadLessons=lessons.snapshot(); }
+    if (data.husbandry) { const care=createAnimalHusbandry();care.restore(data.husbandry);result.husbandry=care.snapshot(); }
     if (Object.hasOwn(data, 'farming')) { const farm = createFarming(); farm.restore(data.farming); result.farming = farm.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }

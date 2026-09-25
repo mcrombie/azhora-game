@@ -29,3 +29,9 @@ export function talkTarget(talkers = []) {
 
 /** Whether a place the traveler has business at keeps the prompt from whoever would otherwise answer. */
 export const placeKeepsPrompt = (talker, place) => !!place && (!talker || (!!talker.passing && !talker.marked));
+
+/** A fire is a precise worksite: standing at it must not reopen a nearby teacher.
+ * Keep a small distance margin so equally close people remain easy to speak to. */
+export const fireKeepsPrompt = (talkerDistance, fireDistance) =>
+  Number.isFinite(fireDistance) && fireDistance >= 0
+  && (!Number.isFinite(talkerDistance) || fireDistance + .25 < talkerDistance);

@@ -19,6 +19,7 @@ const EFFECTS=Object.freeze({
   // Pulling spent shafts out of the ground asked for this and the table did not have it, so
   // the quiver filled in silence. A short soft pluck, quieter than anything a fight makes.
   gather:[360,470,.11,.05],
+  'bird-call':[1480,2140,.28,.055],
 });
 
 /** Geography and surface selection remain usable without opening an audio device. */
@@ -113,7 +114,7 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
     source.start(now,rand()*4,duration+.025);source.stop(now+duration+.04);steps++;
   }
   function effect(type) {
-    const spec=EFFECTS[type];return spec?tone(spec,{type:['bell','success','discovery'].includes(type)?'sine':'triangle'}):false;
+    const spec=EFFECTS[type];return spec?tone(spec,{type:['bell','success','discovery','bird-call'].includes(type)?'sine':'triangle'}):false;
   }
   function toggle() {
     if(disposed)return false;

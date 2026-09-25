@@ -14,12 +14,12 @@ const fixture=(colliders=[])=>{
 
 test('the regions carry several small flocks, each in its own three shared instanced meshes',()=>{
   const {scene,life}=fixture(),state=life.snapshot();
-  assert.deepEqual(state.groups.map(g=>g.count),[6,3,2,5,4,3]);
+  assert.deepEqual(state.groups.map(g=>g.count),[6,3,2,2,5,4,3]);
   assert.equal(new Set(state.creatures.map(c=>c.id)).size,state.creatures.length,'every animal has its own id');
   assert.deepEqual(state.creatures.map(c=>c.species).filter((v,i,a)=>a.indexOf(v)===i),['sheep','bank-bird','rock-hare']);
   let meshes=0;
   scene.traverse(object=>{if(object.isMesh){meshes++;assert.ok(object.isInstancedMesh);}});
-  assert.equal(meshes,18);
+  assert.equal(meshes,21);
   const copy=life.snapshot();copy.creatures[0].x=12345;
   assert.notEqual(life.snapshot().creatures[0].x,12345,'review state cannot mutate simulation positions');
 });
@@ -52,6 +52,24 @@ test('approached sheep flee but swept movement cannot cross a fence or region bo
     assert.ok(after.x>=SHEEP.minX&&after.x<=SHEEP.maxX);
   }
   assert.equal(life.snapshot().creatures.find(c=>c.id===first.id).action,'flee');
+});
+
+test('Jean has two approachable sheep and caring for nervous sheep settles them temporarily',()=>{
+  const {life}=fixture();
+  const tame=life.snapshot().creatures.filter(c=>c.id.startsWith('jean-sheep'));
+  assert.equal(tame.length,2);
+  for(const sheep of tame){
+    life.update(.1,sheep);
+    assert.notEqual(life.snapshot().creatures.find(c=>c.id===sheep.id).action,'flee');
+  }
+  const sheep=life.snapshot().creatures.find(c=>c.id==='sheep-1');
+  life.update(.1,sheep);
+  assert.equal(life.snapshot().creatures.find(c=>c.id===sheep.id).action,'flee');
+  assert.equal(life.calm(sheep.id,8),true);
+  life.update(.1,sheep);
+  const settled=life.snapshot().creatures.find(c=>c.id===sheep.id);
+  assert.notEqual(settled.action,'flee');assert.ok(settled.calmFor>7);
+  assert.equal(life.calm('bank-bird-1',8),false);
 });
 
 test('bank birds take a visible flight and land on a valid bank, while hares make quick short hops',()=>{
@@ -89,7 +107,7 @@ test('all animated instance transforms stay finite and preserve positive scale a
 test('every creature spawns on clear land in the actual extended world',async()=>{
   const {createWorld}=await sourceModule('../src/world.js');
   const scene=new THREE.Scene(),world=createWorld(scene),life=createRoadLife(scene,world);
-  assert.equal(life.snapshot().creatures.length,23);
+  assert.equal(life.snapshot().creatures.length,25);
   for(const creature of life.snapshot().creatures)
     assert.ok(canStand(creature.x,creature.z,world,creature.species==='sheep'?.43:creature.species==='bank-bird'?.2:.23),creature.id);
   for(const player of [middle(SHEEP),middle(BIRDS),middle(HARES)])

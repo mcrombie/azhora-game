@@ -14,6 +14,8 @@
  *
  * Pure: no DOM, no three. The figures are in src/troupe-models.js.
  */
+import { actingPracticeConversation } from './acting.js';
+
 const freeze = Object.freeze;
 
 export const TALAELOS = freeze({ id: 'talaelos', name: 'Talaelos', gloss: 'fiery speech', from: 'Nylon' });
@@ -28,7 +30,8 @@ const stop = (id, region, where, x, z, yaw) => freeze({ id, region, where, x, z,
 /** Where the wagon camps: level open ground beside a road in each region (found by searching the world with tests/find-troupe-stops.mjs, and checked in tests/troupe.test.js). */
 export const TROUPE_STOPS = freeze([
   stop('avrel', 'Drent', 'the edge of the Avrel clearing', -430.4, 46.4, .785),
-  stop('fernway', 'Drent', 'the verge by Fernway Rest', -110.6, 29.3, Math.PI),
+  // The legacy stop id is kept for saves; the stage is now past the Avrel farms.
+  stop('fernway', 'Drent', 'the roadside stage west of the Avrel farms', -546, 78.5, 0),
   stop('lumber-town', 'Luscia', 'the meadow outside Nothom', -679.1, 334.9, Math.PI / 2),
   stop('moros', 'Moros Plain', 'a wayside on the Moros Plain', -867.1, 543.2, Math.PI),
   stop('solis-road', 'West Suval', 'the verge of the Solis road', -536.5, 865.7, .785),
@@ -37,19 +40,9 @@ export const TROUPE_STOPS = freeze([
   stop('ostel', 'Amod', 'the road below Ostel', -764, -504, .785),
 ]);
 export const TROUPE_STOP_IDS = freeze(TROUPE_STOPS.map(s => s.id));
-/**
- * Where the wagon is camped when a game begins: the verge by Fernway Rest.
- *
- * It used to be a coin toss between there and the Avrel clearing, and the toss cost the long road
- * its leg-3 stop. That stop is the play on this verge (`docs/drent-long-road.md` §4), and a
- * traveler walking the long road is never more than about 110 m from this camp through the first
- * three legs — inside `TROUPE_UNSEEN`, which pins the wagon where it stands. So a wagon that
- * begins here is still here when he arrives, and a wagon that began at Avrel could never come:
- * a camp within `TROUPE_UNSEEN` of the traveler is not one the company will move to either.
- *
- * Only the first camp is settled. Everything after the first move is the wandering it always was,
- * and a traveler who takes the short road and walks out of sight leaves them free to go.
- */
+/** The first camp is on the Caloss road, past Stanley's Avrel garden. It stays
+ * until the traveler comes within earshot; later moves retain the normal clock
+ * and out-of-sight rule. The legacy stop id is preserved for existing saves. */
 export const FIRST_CAMP = 'fernway';
 /** A point in the wagon's frame: `lx` along its length (the mare is at +x), `lz` toward its audience. */
 export function wagonPoint(s, lx, lz) {
@@ -91,6 +84,7 @@ export function validateTroupeSnapshot(data, { allowMissing = true } = {}) {
   if (data === undefined) return allowMissing;
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== 1) return false;
   if (!TROUPE_STOP_IDS.includes(data.stop) || typeof data.met !== 'boolean' || typeof data.gifted !== 'boolean') return false;
+  if (data.visited !== undefined && typeof data.visited !== 'boolean') return false;
   for (const key of ['scenes', 'tips', 'deaths']) if (!Number.isInteger(data[key]) || data[key] < 0 || data[key] > 1e6) return false;
   // The clock is bounded like every other number here: `snapshot()` rounds it with
   // `clock * 10`, so a merely finite 1e308 comes back out of a restore as Infinity,
@@ -101,7 +95,7 @@ export function validateTroupeSnapshot(data, { allowMissing = true } = {}) {
 
 export function createTroupe({ random = Math.random, start = null } = {}) {
   const firstStop = start ?? FIRST_CAMP;
-  const state = { stop: Math.max(0, TROUPE_STOP_IDS.indexOf(firstStop)), clock: 0, met: false, heard: false, scenes: 0, tips: 0, deaths: 412, gifted: false, performing: false };
+  const state = { stop: Math.max(0, TROUPE_STOP_IDS.indexOf(firstStop)), clock: 0, met: false, heard: false, visited: false, scenes: 0, tips: 0, deaths: 412, gifted: false, performing: false };
   const here = () => TROUPE_STOPS[state.stop];
   const away = (s, t) => !t || Math.hypot(s.x - t.x, s.z - t.z) > TROUPE_UNSEEN;
 
@@ -118,8 +112,10 @@ export function createTroupe({ random = Math.random, start = null } = {}) {
     if (!Number.isFinite(dt) || dt <= 0) return events;
     state.clock += dt;
     const s = here();
-    if (traveler && !state.heard && Math.hypot(s.x - traveler.x, s.z - traveler.z) < TROUPE_HEAR) { state.heard = true; events.push({ type: 'heard', stop: s, line: HEARD[Math.floor(random() * HEARD.length)] }); }
-    if (!state.performing && state.clock > TROUPE_STAY && away(s, traveler)) {
+    if (traveler && !state.heard && Math.hypot(s.x - traveler.x, s.z - traveler.z) < TROUPE_HEAR) { state.heard = true; state.visited = true; events.push({ type: 'heard', stop: s, line: HEARD[Math.floor(random() * HEARD.length)] }); }
+    // Amanda's first introduction remains discoverable even if the traveler
+    // spends a long time in the village. After the first visit they roam as before.
+    if (!state.performing && (state.visited || s.id !== FIRST_CAMP) && state.clock > TROUPE_STAY && away(s, traveler)) {
       const options = TROUPE_STOPS.map((t, i) => i).filter(i => i !== state.stop && away(TROUPE_STOPS[i], traveler));
       if (options.length) {
         const from = s;
@@ -143,10 +139,10 @@ export function createTroupe({ random = Math.random, start = null } = {}) {
   }
   const tip = n => { if (Number.isFinite(n)) state.tips += Math.max(0, Math.floor(n)); };
   const die = () => ++state.deaths;
-  function snapshot() { return { version: 1, stop: here().id, clock: Math.round(state.clock * 10) / 10, met: state.met, scenes: state.scenes, tips: state.tips, deaths: state.deaths, gifted: state.gifted }; }
+  function snapshot() { return { version: 1, stop: here().id, clock: Math.round(state.clock * 10) / 10, met: state.met, visited: state.visited, scenes: state.scenes, tips: state.tips, deaths: state.deaths, gifted: state.gifted }; }
   function restore(data) {
     if (!validateTroupeSnapshot(data, { allowMissing: false })) return false;
-    Object.assign(state, { stop: TROUPE_STOP_IDS.indexOf(data.stop), clock: data.clock, met: data.met, scenes: data.scenes, tips: data.tips, deaths: data.deaths, gifted: data.gifted, heard: false, performing: false });
+    Object.assign(state, { stop: TROUPE_STOP_IDS.indexOf(data.stop), clock: data.clock, met: data.met, visited: data.visited ?? (data.met || data.scenes > 0), scenes: data.scenes, tips: data.tips, deaths: data.deaths, gifted: data.gifted, heard: false, performing: false });
     return true;
   }
   return { update, moveTo, meet, beginScene, cancelScene, endScene, tip, die, snapshot, restore, homes: () => troupeHomes(here(), state.performing), bodies: () => wagonBodies(here()),
@@ -360,6 +356,10 @@ export function troupeConversation(npc, context) {
   }
   if (who.model === 'amanda') {
     openDialogue(npc, [context.again ? 'Who now?' : 'Amanda. I am the innkeeper, the widow, the second king, the customs man and the crowd. Galeon is only ever Galeon, which is a living but it is not a range.'], null, 'Let her get on', { choices: [
+      ...(context.acting ? [
+        { id: 'amanda-learn-acting', label: context.acting.taught() ? 'Go over Acting again.' : 'Learn Acting', action: () => { closeDialogue(); act('amanda-learn-acting'); } },
+        { id: 'amanda-practice-acting', label: 'Practise an expression.', action: () => actingPracticeConversation(npc, context) },
+      ] : []),
       { id: 'amanda-play', label: 'Play somebody.', action: () => talk([pick(random, AMANDA_PARTS)]) },
       { id: 'amanda-keep', label: 'How do you keep them straight?', action: () => talk([
         'One thing each. The widow holds her elbow. The customs man never finishes a sentence. The second king is frightened of the first one.',

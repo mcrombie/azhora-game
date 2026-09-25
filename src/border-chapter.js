@@ -281,10 +281,10 @@ export function createBorderChapter({ onEvent = () => {} } = {}) {
       objectiveId: destinations[0] ?? null, destinationIds: [...destinations] };
   }
 
-  /** Which of the chapter's people are out right now. */
-  function cast() {
+  /** Quest markers follow the objective; residents stay until the chapter hands them onward. */
+  function cast({ solisHolder = 'coalition' } = {}) {
     const current = stage(), side = state.side;
-    const out = shows => (shows === 'envoy' && ['take-orders', 'pass-gate', 'meet-envoy'].includes(current))
+    const out = shows => (shows === 'envoy' && state.started && current !== 'complete' && solisHolder === 'coalition')
       || (shows === `report-${side}` && current === 'report')
       || (shows === `line-${side}` && ['march', 'join-line', 'fighting'].includes(current))
       || (shows === `march-${side}` && current === 'march');
@@ -461,7 +461,14 @@ export function borderConversation(npc, context) {
     return true;
   }
   // Out of their turn, the chapter's people still answer.
-  if (npc.id === 'coalition-envoy') { openDialogue(npc, [current === 'take-orders' || current === 'pass-gate' ? 'I wait for the Marshal’s messenger. He is late; they always are.' : 'The Republic’s offer stands until the battle. After that it is a different conversation.'], null, 'Back to the street'); return true; }
+  if (npc.id === 'coalition-envoy') {
+    const line = view.side === 'coalition'
+      ? 'Your place is with the valley companies now. Captain Voss is at the Gate of Sun Horses; report to him when you are ready to march.'
+      : view.side === 'empire'
+        ? 'You have my answer for the Marshal. Leave it with him, and let us both hope he listens before more people die.'
+        : 'I wait for the Marshal’s messenger. He is late; they always are.';
+    openDialogue(npc, [line], null, 'Back to the street'); return true;
+  }
   if (BORDER_MARCHERS.includes(npc.id)) { openDialogue(npc, [npc.modelRole === 'legion-soldier' ? 'Keep the pace. The Captain does not wait for stragglers.' : 'Keep to the road. We are right behind you.'], null, 'Back to the road'); return true; }
   if (npc.id.startsWith('envoy-guard')) { openDialogue(npc, ['We keep this door for the envoy. Speak to her, not to us.'], null, 'Back to the street'); return true; }
   if (npc.id === 'solis-captain' || npc.id === 'coalition-captain') { openDialogue(npc, ['Not now. Stand with the companies.'], null, 'Step back'); return true; }

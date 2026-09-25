@@ -8,6 +8,7 @@ import { LANDING_QUEUE } from '../src/mercenaries.js';
 import { subregionsAt } from '../src/map-fog.js';
 import { distanceAlongRoad, pointAlongRoad } from '../src/mercenaries.js';
 import { LONG_ROAD_SPINE, longRoadStop } from '../src/long-road.js';
+import { FARMER } from '../src/farming.js';
 import { MYCOLOGIST_STAND } from '../src/mycology.js';
 import { BOTANIST_STAND } from '../src/botany.js';
 import { GEOLOGIST_STAND } from '../src/geology.js';
@@ -47,13 +48,13 @@ const fromRoad = point => { const on = pointAlongRoad(MAIN_ROAD, distanceAlongRo
  */
 const TEACHERS = Object.freeze({
   'pier-chart': villageToWorld(4, 20),                             // Jojo, at the head of the pier
-  'bird-garden': villageToWorld(24.6, -4.4),                       // Perrin, in the bird garden
+  'bird-garden': { x: -52, z: 28 },                               // Jean, beside the departing road
   'lysa-acorns': villageToWorld(-5.6, 9.1),                        // Lysa, at her kitchen
   'bran-rod': villageToWorld(20.4, -82),                           // Bran, at Willowmere
   'bowden-axe': BOWDEN_STAND,
   'odger-fernway': MYCOLOGIST_STAND,
   'corvan-register': regionNpcPositions['meadow-courier'],
-  'enna-rows': { x: -418.4, z: 59.8 },                             // Enna, at the Mill Commons
+  'enna-rows': FARMER,                             // Enna, at the Mill Commons
   'nell-hedge': BOTANIST_STAND,
   'silas-stream': GEOLOGIST_STAND,
   'hollis-bridge': regionNpcPositions['crossing-keeper'],

@@ -31,6 +31,7 @@ export function markConversation(npc, context) {
   const { skills, botany, geology, openDialogue, closeDialogue, onLearn = () => {} } = context;
   const models = { botany, geology }, again = () => markConversation(npc, context);
   const lessons = MARK_SKILLS.map(id => {
+    if (id === 'geology' && context.geologyChoice) return context.geologyChoice;
     const lesson = LESSONS[id], taught = skills.taught(id);
     return { id: `learn-${id}`, label: taught ? `Remind me about ${lesson.name}.` : `Teach me ${lesson.name}.`, action: () => {
       openDialogue(npc, [...lesson.lines], null, taught ? 'Back to Mark' : `Learn ${lesson.name}`, { onComplete: () => {

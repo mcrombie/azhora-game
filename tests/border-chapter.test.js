@@ -10,6 +10,32 @@ import { MERCENARY_COMPANY_SIZE } from '../src/mercenaries.js';
 import { MOROS_PAY } from '../src/moros-chapter.js';
 import { hexOwnerAt } from '../src/region-world.js';
 
+const HALL_DELEGATION = ['coalition-envoy', 'envoy-guard-north', 'envoy-guard-south'];
+
+test('signing either contract keeps the envoy and her guards present, with a useful response and no repeated signing reward', () => {
+  for (const side of ['coalition', 'empire']) {
+    const border = createBorderChapter();
+    border.start(); border.act('take-legate-terms'); border.act('enter-solis');
+    const before = border.cast();
+    border.act(`side-${side}`);
+    for (const id of before) assert.ok(border.cast().includes(id), `${id} stays after signing ${side}`);
+    assert.equal(border.act(`side-${side}`).ok, false, 'signing cannot pay twice');
+    const screens = [];
+    borderConversation(BORDER_NPCS.find(npc => npc.id === 'coalition-envoy'), {
+      border, openDialogue: (npc, lines, unused, label, options) => screens.push({ lines, options }),
+      closeDialogue: () => {}, act: id => border.act(id),
+    });
+    assert.match(screens[0].lines.join(' '), side === 'coalition' ? /Captain Voss.*Gate of Sun Horses/ : /answer for the Marshal/);
+    assert.equal(screens[0].options, undefined, 'the settled contract does not reopen');
+    const resumed = createBorderChapter();
+    assert.equal(resumed.restore(border.snapshot()), true);
+    for (const id of HALL_DELEGATION) assert.ok(resumed.cast().includes(id), `${id} remains after loading`);
+    for (const holder of ['empire', 'routed', 'contested']) {
+      assert.ok(HALL_DELEGATION.every(id => !resumed.cast({ solisHolder: holder }).includes(id)), `the delegation leaves a ${holder} city`);
+    }
+  }
+});
+
 test('the chapter runs terms, gate, envoy, report, march and battle; the side is chosen once, and winning the fight wins the day', () => {
   const events = [], border = createBorderChapter({ onEvent: event => events.push(event) });
   assert.equal(border.act('take-legate-terms').ok, false, 'nothing before the muster');
@@ -31,17 +57,17 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   // The report: back to the Marshal, who asks whether you are ready.
   assert.equal(border.view().stage, 'report');
   assert.deepEqual(border.view().destinationIds, [BORDER_LEGATE_ID]);
-  assert.deepEqual(border.cast(), [], 'the envoy has gone and the line is not yet formed');
+  assert.deepEqual(border.cast(), HALL_DELEGATION, 'the envoy remains at her post while the traveler returns to the Marshal');
   assert.equal(border.act('sound-advance').ok, false, 'no fight before the march');
   assert.equal(border.act('march-out').ok, true);
   assert.equal(border.view().stage, 'march');
   assert.deepEqual(border.view().destinationIds, ['battle-tribune']);
-  assert.deepEqual(border.cast(), ['battle-tribune', 'march-legionary-1', 'march-legionary-2'], 'the Captain holds the line and a file of the left marches');
+  assert.deepEqual(border.cast(), [...HALL_DELEGATION, 'battle-tribune', 'march-legionary-1', 'march-legionary-2'], 'the Captain holds the line and a file of the left marches');
   // The column comes up and the fight begins.
   const arrival = border.act('reach-line');
   assert.equal(arrival.startEncounter, BORDER_ENCOUNTER_ID);
   assert.equal(border.view().stage, 'fighting');
-  assert.deepEqual(border.cast(), ['battle-tribune'], 'the column fights as allies and is not drawn twice');
+  assert.deepEqual(border.cast(), [...HALL_DELEGATION, 'battle-tribune'], 'the column fights as allies and is not drawn twice');
   assert.equal(border.endEncounter(BORDER_ENCOUNTER_ID).ok, true);
   assert.equal(border.view().stage, 'join-line', 'a retreat leaves the line waiting');
   assert.equal(border.resolveBattle(BORDER_ENCOUNTER_ID).ok, false, 'no fight, no verdict');
@@ -57,9 +83,9 @@ test('the chapter runs terms, gate, envoy, report, march and battle; the side is
   assert.deepEqual(joined.reward, { id: 'copper-piece', quantity: COALITION_SIGNING }, 'the Republic pays on signing');
   assert.equal(lost.view().stage, 'report');
   assert.deepEqual(lost.view().destinationIds, ['solis-captain'], 'Voss asks the question at the Gate of Sun Horses');
-  assert.deepEqual(lost.cast(), ['solis-captain']);
+  assert.deepEqual(lost.cast(), [...HALL_DELEGATION, 'solis-captain']);
   lost.act('march-out');
-  assert.deepEqual(lost.cast(), ['coalition-captain', 'march-valley-1', 'march-valley-2', 'march-valley-3', 'march-valley-4'], 'Voss rides ahead and the valley companies march');
+  assert.deepEqual(lost.cast(), [...HALL_DELEGATION, 'coalition-captain', 'march-valley-1', 'march-valley-2', 'march-valley-3', 'march-valley-4'], 'Voss rides ahead and the valley companies march');
   lost.act('reach-line');
   assert.equal(lost.resolveBattle(BORDER_ENCOUNTER_ID).outcome, 'victory', 'the Republic’s sellsword wins the day by winning the fight, whatever the odds');
   assert.deepEqual(lost.cast(), []);
@@ -92,7 +118,7 @@ test('saves round-trip without a running fight; saves from the stockade version 
   // The march itself survives a save.
   const marching = createBorderChapter(); marching.start(); marching.act('take-legate-terms'); marching.act('enter-solis'); marching.act('side-empire'); marching.act('march-out');
   const resumed = createBorderChapter(); assert.equal(resumed.restore(marching.snapshot()), true);
-  assert.equal(resumed.view().stage, 'march'); assert.deepEqual(resumed.cast(), ['battle-tribune', 'march-legionary-1', 'march-legionary-2']);
+  assert.equal(resumed.view().stage, 'march'); assert.deepEqual(resumed.cast(), [...HALL_DELEGATION, 'battle-tribune', 'march-legionary-1', 'march-legionary-2']);
   for (const bad of [null, [], {}, { ...saved, version: 2 }, { ...saved, revision: 1 }, { ...saved, side: 'pirates' }, { ...saved, outcome: 'draw' },
     { ...saved, ordered: false }, { ...saved, marched: false }, { ...saved, entered: 'yes' }, { ...saved, side: null, outcome: 'defeat', revision: 6 }, { ...saved, extra: 1 }]) {
     assert.equal(validateBorderSnapshot(bad), false);

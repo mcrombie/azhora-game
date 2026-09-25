@@ -482,7 +482,7 @@ function samplePose(progress, keys) {
   return keys[keys.length - 1][1];
 }
 
-function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot = null, goblin = false, offset = 0, role = '' }) {
+function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, shield = null, clothPivot = null, goblin = false, offset = 0, role = '' }) {
   let stridePhase = offset;
   let lastTime;
   let movementBlend = 0;
@@ -497,6 +497,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
   let buckler = null;
   const setShield = value => {
     const on = Boolean(value);
+    if (shield) { shield.visible = on; return; }
     if (on && !buckler && elbows[0]) {
       // Sized and hung like the legionaries' own (`makeHeaterShield`, which rides the off
       // forearm device-outward): 0.45 m across, pale hide on an iron rim. The first draft was
@@ -946,6 +947,22 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       headX = .38 + sway; headY *= .25; bounce = 0;
       seatY = kneel ? upperLength * Math.cos(hip[0]) - legs[0].position.y + .05 : .13 - legs[0].position.y;
     }
+    if(pose.painting && action === 'idle' && movementBlend < .2){
+      const stroke=Math.sin(seconds*2.5+offset);
+      chestX=.06;chestY=0;headX=.06;headY=.05;
+      arm[1]=-1.02+stroke*.07;elbow[1]=-.43+Math.sin(seconds*1.7)*.045;armOut[1]=-.08;
+      arm[0]=-.30;elbow[0]=-1.23;armOut[0]=-.12;
+    }
+    if(pose.emote && action === 'idle' && movementBlend < .2){
+      const {id,progress}=pose.emote, ease=Math.sin(Math.PI*Math.min(1,progress)*.98);
+      chestY=0;headY=0;
+      if(id==='happy'){chestX=-.12*ease;headX=-.1*ease;arm[1]=-1.25*ease;elbow[1]=-.65*ease;armOut[1]=(.7+Math.sin(seconds*7)*.25)*ease;armOut[0]=-.45*ease;}
+      if(id==='sad'){chestX=.25*ease;headX=.48*ease;arm[0]=arm[1]=-1.2*ease;elbow[0]=elbow[1]=-1.65*ease;armOut[0]=.2*ease;armOut[1]=-.2*ease;}
+      if(id==='surprised'){chestX=-.2*ease;headX=-.2*ease;arm[0]=arm[1]=-1.3*ease;elbow[0]=elbow[1]=-1.2*ease;armOut[0]=-.65*ease;armOut[1]=.65*ease;}
+      if(id==='angry'){chestX=.18*ease;headX=.12*ease;arm[1]=-1.5*ease;elbow[1]=(-1.1+Math.sin(seconds*8)*.3)*ease;armOut[1]=.3*ease;}
+      if(id==='afraid'){chestX=-.15*ease;headY=Math.sin(seconds*6)*.3*ease;arm[0]=arm[1]=-1.2*ease;elbow[0]=elbow[1]=-1.4*ease;knee[0]=knee[1]=.2*ease;}
+      if(id==='proud'){chestX=(progress<.65?-.2:.5)*ease;headX=-.1*ease;armOut[0]=-.5*ease;armOut[1]=.5*ease;}
+    }
     const rotate = (object, x, y, z) => {
       object.rotation.x = THREE.MathUtils.lerp(object.rotation.x, x, damping);
       object.rotation.y = THREE.MathUtils.lerp(object.rotation.y, y, damping);
@@ -1066,6 +1083,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // Perrin, who keeps the bird garden in Tidehaven. Not a birder: a man with a garden that birds
   // come to, which he considers a different and more sensible thing to be (src/birding.js).
   const isGardenKeeper = role === 'garden-keeper';
+  const isAvrelFarmer = role === 'avrel-farmer';
   // Tharganhom, the Wine Attic in Solis: Juan, who keeps it, and Nika, who works the floor.
   const isWineSeller = role === 'wine-seller', isWineClerk = role === 'wine-clerk';
   // Katy, at Vaervelm Caelazh: watching the birds, and looking for Batman (src/katy.js). Nika's slight build.
@@ -1289,8 +1307,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     round(head, skinMat, [side * 0.194, 0.186, 0], [0.047, 0.062, 0.044]);
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
     if (!isTraveler && !isCook && !isSoldier) box(head, templeMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
-    round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, 0.031, 0.016]);
-    round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, 0.025, 0.011]);
+    round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, isAvrelFarmer ? 0.021 : 0.031, 0.016]);
+    round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, isAvrelFarmer ? 0.018 : 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
     const brow = box(head, hairMat, [side * 0.069, 0.273, 0.167], [0.078, isCook || slight || isDyer ? 0.013 : 0.018, 0.02]);
     brow.rotation.z = side * -0.075;
@@ -1414,33 +1432,49 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       band.rotation.x = Math.PI / 2;
       round(crop, hairMat, [0, 0.42, -0.06], [0.085, 0.09, 0.085]);
       round(crop, hairMat, [0.012, 0.478, -0.075], [0.046, 0.055, 0.046]);
-    } else if (hairStyle === 'long' && isSkepKeeper) {
-      // Liz's straight hair falls in uninterrupted lengths. Stacking rounded locks made
-      // her silhouette scalloped like the other villagers' waves, especially from behind.
+    } else if (hairStyle === 'long' && (isSkepKeeper || look?.straightHair)) {
+      // One continuous crown covers the face mesh as well as the rear skull. A small
+      // cap centred behind the face left bare scalp visible from the follow camera.
       const straight = new THREE.Group();
       straight.name = 'Liz straight hair'; crop.add(straight);
-      const fall = (name, outline, z, depth = .044) => {
-        const shape = new THREE.Shape();
-        outline.forEach(([x, y], index) => index ? shape.lineTo(x, y) : shape.moveTo(x, y));
-        shape.closePath();
-        const length = part(straight, new THREE.ExtrudeGeometry(shape, {
-          depth, steps: 1, bevelEnabled: true, bevelThickness: .005, bevelSize: .005, bevelSegments: 1,
-        }), hairMat, [0, 0, z]);
-        length.name = name;
-        return length;
-      };
-      // A close crown with a shallow side part; the face stays clear below the temples.
-      round(straight, hairMat, [0, .298, -.045], [.202, .12, .183]);
-      const parted = box(straight, hairMat, [-.075, .333, .11], [.236, .04, .08]);
-      parted.rotation.z = -.08;
-      fall('Liz straight back length', [[-.202, .257], [.202, .257], [.178, -.37],
-        [.096, -.394], [-.092, -.382], [-.177, -.36]], -.258, .071);
-      for (const side of [-1, 1]) {
-        const length = fall(`Liz straight ${side < 0 ? 'left' : 'right'} length`,
-          [[side * .168, .265], [side * .221, .243], [side * .218, -.328],
-            [side * .173, -.376], [side * .153, -.35]], -.041, .047);
-        length.rotation.x = -.16;
+      const crown = part(straight, new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, 1.16),
+        hairMat, [0, .181, -.018], [.244, .265, .244]);
+      crown.name = 'Liz full crown';
+      // A continuous horseshoe of straight hair wraps the temples and back, with an
+      // open face. Gently tapered ends reach the waist; no separate slab or scalp part.
+      const rings = [
+        [.30, .218, .218, -.018], [.20, .245, .245, -.018],
+        [-.12, .247, .26, -.03], [-.49, .225, .258, -.04],
+      ];
+      const segments = 20, positions = [], indices = [];
+      for (const inner of [false, true]) for (const [y, rx, rz, cz] of rings) {
+        for (let i = 0; i <= segments; i++) {
+          const angle = .86 + (Math.PI * 2 - 1.72) * i / segments;
+          positions.push(Math.sin(angle) * (rx - (inner ? .032 : 0)), y,
+            cz + Math.cos(angle) * (rz - (inner ? .032 : 0)));
+        }
       }
+      const row = segments + 1, layer = row * rings.length;
+      const quad = (a, b, c, d) => indices.push(a, d, b, b, d, c);
+      for (let ring = 0; ring < rings.length - 1; ring++) for (let i = 0; i < segments; i++) {
+        const a = ring * row + i;
+        quad(a, a + 1, a + row + 1, a + row);
+        quad(layer + a, layer + a + row, layer + a + row + 1, layer + a + 1);
+      }
+      for (let i = 0; i < segments; i++) {
+        quad(i, layer + i, layer + i + 1, i + 1);
+        const a = (rings.length - 1) * row + i;
+        quad(a, a + 1, layer + a + 1, layer + a);
+      }
+      for (let ring = 0; ring < rings.length - 1; ring++) {
+        const a = ring * row, b = a + segments;
+        quad(a, a + row, layer + a + row, layer + a);
+        quad(b, layer + b, layer + b + row, b + row);
+      }
+      const lengths = new THREE.BufferGeometry();
+      lengths.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      lengths.setIndex(indices); lengths.computeVertexNormals();
+      part(straight, lengths, hairMat, [0, 0, 0]).name = 'Liz long straight lengths';
     } else if (hairStyle === 'long') {
       // **Hair down the back, and nothing on the jaw.** The company's `mane` was the only long
       // style there was, and it hangs its side locks at jaw height in front of the ear - on Jojo
@@ -1796,6 +1830,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     }
   }
 
+  if (!isMercenary && look?.glasses) spectacles(head, 'Spectacles',
+    material(0x53575c, { metalness: .62, roughness: .34 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
   if (isMercenary) for (const mark of marks) {
     // Small marks, one draw each, put where a face carries them at a distance.
     const marked = lookGroup(head, 'mark', mark);
@@ -1870,7 +1906,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     round(body, cloakFold, [0, 1.277, -0.171], [0.145, 0.096, 0.078]);
   }
 
-  let staff = null;
+  let staff = null, authoredShield = null;
   /** A bow actually in the hand, the traveler's or a hired archer's, with the shaft on its string. */
   let heldBow = null;
   if (isMiller) {
@@ -2261,12 +2297,14 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     // A coil of garden cord on the other hip.
     const coil = part(body, new THREE.TorusGeometry(0.052, 0.016, 5, 12), twine, [-0.16, 0.9, 0.16]);
     coil.rotation.set(Math.PI / 2, 0, 0.2);
-    // Hair going grey at the sides, and a broad soft hat over it.
+    if(hat || look?.hat === true){
+    // Optional gardening hat.
     round(head, hairMat, [0, 0.18, -0.06], [0.152, 0.118, 0.155]);
     const brim = part(head, UNIT_CYLINDER, worn, [0, 0.29, 0], [0.33, 0.016, 0.33]);
     brim.rotation.set(0.07, 0, 0.05);
     part(head, UNIT_CYLINDER, worn, [0, 0.35, 0], [0.175, 0.1, 0.175]);
     part(head, UNIT_CYLINDER, twine, [0, 0.31, 0], [0.181, 0.02, 0.181]);
+    }
   } else if (isBirdWatcher) {
     // Tidehaven's bird-watcher, drawn from Michael's sketch (page 231, the Future Panic doodles): a big
     // rounded head under thick upright spiky hair, a long hooked nose, a cream collared shirt buttoned
@@ -2649,7 +2687,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
         round(cloak, material(0xb9bcc0, { metalness: 0.5, roughness: 0.4 }), [0.15, 1.3, 0.14], [0.035, 0.035, 0.012]);
       } else if (look?.kit === 'bow') makeBow(body);
       else staff = makeSpearProp(wrists[1], 'Elodi short spear', 1.72, 0.26);
-      const buckler = makeShield(elbows[0], { face: 0x242427, rim: 0x5f6164, round: true, width: 0.23 });
+      const buckler = authoredShield = makeShield(elbows[0], { face: 0x242427, rim: 0x5f6164, round: true, width: 0.23 });
       buckler.name = 'Elodi round shield';
     } else if (!armed) {
       // The spear stays planted beside the right foot while the body breathes.
@@ -2664,7 +2702,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     }
     if (isLegionary) {
       // The heater shield rides on the left forearm, device outward, held in front of the body at attention.
-      makeHeaterShield(elbows[0], { face: tunic });
+      authoredShield = makeHeaterShield(elbows[0], { face: tunic });
     }
   } else if (isMercenary) {
     // A hired sword's kit follows the roster: spears and the staff stand planted, the bow rides on the back.
@@ -2676,7 +2714,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     // The bow rides on the back on a road and comes into the hand for a fight. Jerry standing
     // off at thirty paces has to be seen drawing one, not carrying one (src/archery.js).
     else if (kit === 'bow') { const slung = makeBow(body); if (armed) { slung.visible = false; heldBow = makeHeldBow(makeWeaponMount(wrists[0], 'Bow grip')); } }
-    else if (kit === 'sword-shield') makeShield(elbows[0], { face: 0x6b4a2a, rim: 0x3f3128, round: true, width: 0.3 });
+    else if (kit === 'sword-shield') authoredShield = makeShield(elbows[0], { face: 0x6b4a2a, rim: 0x3f3128, round: true, width: 0.3 });
   }
 
   const idleOffset = isMiller ? 1.35 : isReedWorker ? 3.55 : isShelterKeeper ? 5.15 : isWoodcutter ? 2.1 : isCourier ? .8 : isBridgeKeeper ? 2.8 : isCustodian ? 4.4 : isClerk ? 5.6 : isCook ? 2.35 : isDoomsayer ? 1.1 : isPondFisher ? 3.8 : role === 'harbormaster' ? 1.8 : role === 'fisher' ? 3.1 : role === 'warden' ? 4.7 : 0;
@@ -2685,18 +2723,21 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const fights = isSoldier && armed;
   // A villager caught in a fight takes up what is to hand: Tamsin's felling axe comes off her belt.
   const villagerHolds = !isTraveler && !isMercenary && !fights && VILLAGER_WEAPONS[wields] ? wields : null;
-  const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : fights ? makeWeaponMount(wrists[1], 'Soldier weapon grip')
+  // A soldier at rest can draw a blade or demonstrate a tool later. Keep an
+  // empty hand mount even when his original spawn did not request a weapon.
+  const weapon = isTraveler || isMercenary ? makeWeaponMount(wrists[1], 'Traveler weapon grip') : isSoldier ? makeWeaponMount(wrists[1], 'Soldier weapon grip')
     : villagerHolds ? makeWeaponMount(wrists[1], 'Villager weapon grip') : null;
   // Everything the traveler carries from the start, built once and shown one at a time.
   const weapons = isPlayer ? { 'simple-sword': makeSword(weapon), 'forest-stick': makeStick(weapon), 'iron-mace': makeMace(weapon), 'long-dagger': makeDagger(weapon), 'bearded-axe': makeAxe(weapon), greatsword: makeGreatsword(weapon) }
     : isMercenary ? mercenaryHeldWeapons(weapon, look?.weapon, Boolean(look?.trades)) : fights ? { 'simple-sword': makeSword(weapon) }
     : villagerHolds ? { [villagerHolds]: VILLAGER_WEAPONS[villagerHolds](weapon) } : {};
-  const fishingGrip = isPlayer || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
-  const fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
+  let fishingGrip = isPlayer || isPondFisher ? makeWeaponMount(wrists[1], 'Fishing rod grip') : null;
+  let fishingRod = fishingGrip ? makeFishingRod(fishingGrip) : null;
   const pivots = [body, chest, head, ...arms, ...elbows, ...wrists, ...legs, ...knees, ...ankles];
   if (weapon) pivots.push(weapon, ...Object.values(weapons));
   if (fishingGrip) pivots.push(fishingGrip, fishingRod);
   if (staff) pivots.push(staff);
+  if (authoredShield) pivots.push(authoredShield);
   if (clothPivot) pivots.push(clothPivot);
   for (const [kind, joints] of Object.entries({ Shoulder: arms, Elbow: elbows, Wrist: wrists, Hip: legs, Knee: knees, Ankle: ankles })) {
     joints.forEach((joint, i) => { joint.name = `${i ? 'Right' : 'Left'} ${kind}`; });
@@ -2751,7 +2792,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     body.scale.set(mercBuild.girth, mercBuild.height, mercBuild.girth);
     head.scale.set(1 / Math.sqrt(mercBuild.girth), 1 / mercBuild.height, 1 / Math.sqrt(mercBuild.girth));
   }
-  const { animate: animatePose, setArmed, setShield } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, clothPivot, offset: idleOffset, role });
+  const { animate: animatePose, setArmed, setShield } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, shield: authoredShield, clothPivot, offset: idleOffset, role });
   let fishing = isPondFisher, selectedWeapon = null;
   const rodTipWorld = new THREE.Vector3();
   /**
@@ -2780,17 +2821,29 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   };
   function setWeapon(id) {
     if (isPlayer && weapon && LATE_WEAPONS[id] && !weapons[id]) weapons[id] = LATE_WEAPONS[id](weapon);
+    if (weapon && !weapons[id] && VILLAGER_WEAPONS[id]) {
+      const held = weapons[id] = VILLAGER_WEAPONS[id](weapon);
+      batchRigidParts(held, [held]);
+    }
     if (id !== null && !Object.hasOwn(weapons, id)) return false;
     selectedWeapon = id;
     for (const [weaponId, model] of Object.entries(weapons)) model.visible = weaponId === id;
+    if (staff && isSoldier) staff.visible = id === null;
     setArmed(id !== null);
     if (weapon && fishing) weapon.visible = false;
     return true;
   }
   function setFishing(value) {
+    // Optional teachers borrow a rod only when demonstrating: ordinary NPCs
+    // keep their original geometry budget until a fishing pose is requested.
+    if (value && !fishingGrip) {
+      fishingGrip = makeWeaponMount(wrists[1], 'Fishing rod grip');
+      fishingRod = makeFishingRod(fishingGrip); batchRigidParts(fishingRod, [fishingRod]);
+    }
     if (!fishingGrip) return false;
     fishing = Boolean(value); fishingGrip.visible = fishing; fishingGrip.scale.setScalar(fishing ? 1 : 0);
     if (weapon) weapon.visible = !fishing && selectedWeapon !== null;
+    if (staff && isSoldier) staff.visible = !fishing && selectedWeapon === null;
     return true;
   }
   function animate(time, speed = 0, grounded = true, pose = {}) {

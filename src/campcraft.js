@@ -5,7 +5,7 @@ const FIRE_SECONDS = 120;
 const FIRE_LOGS = ['pine-logs', 'oak-logs', 'willow-logs', 'maple-logs', 'walnut-logs'];
 
 /** Fishing and cooking share inventory, but never advance combat or quests. */
-export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireIds = ['village-fire', 'pond-fire'] }) {
+export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireIds = ['village-fire', 'pond-fire'], canLightFire = () => true, canCook = () => true }) {
   let taught = false;
   let phase = 'idle';
   let waitRemaining = 0;
@@ -30,14 +30,14 @@ export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireId
   function teachFishing() {
     if (taught) return { ok: true, reason: '', alreadyTaught: true };
     if (!inventory.has('fishing-rod') && !inventory.grant('fishing-rod'))
-      return { ok: false, reason: 'The fishing rod could not be added. Speak to Bran again.' };
+      return { ok: false, reason: 'The fishing rod could not be added. Speak to your fishing teacher again.' };
     taught = true;
     onEvent({ type: 'fishing-taught' });
     return { ok: true, reason: '', alreadyTaught: false };
   }
 
   function cast() {
-    if (!inventory.has('fishing-rod')) return { ok: false, reason: 'Speak to Bran beside the forest pond to get a fishing rod.' };
+    if (!inventory.has('fishing-rod')) return { ok: false, reason: 'Ask Glun, Mark, Jean or Stanley for a fishing outing, or ask Bran or Chip for a rod.' };
     if (phase !== 'idle') return { ok: false, reason: 'Your line is already in the water. Wait for a bite, then reel it in.' };
     phase = 'waiting'; waitRemaining = WAIT_SECONDS; biteRemaining = 0;
     onEvent({ type: 'cast' });
@@ -73,9 +73,11 @@ export function createCampcraft({ inventory, weapons, onEvent = () => {}, fireId
     if (!fire) lightReason = cookReason = 'Choose a prepared fire ring.';
     else {
       if (lit) lightReason = 'This fire is already burning. Save your sticks for later.';
+      else if (!canLightFire(id)) lightReason = 'Ask Lee Anne in Tidehaven to teach you Fire Making first.';
       else if (!inventory.has('tinderbox')) lightReason = 'Bring a tinderbox to light the fire.';
       else if (inventory.count('forest-stick') < 2 && !FIRE_LOGS.some(log => inventory.count(log) > 0)) lightReason = 'Gather two forest sticks to fuel the fire.';
-      if (!lit) cookReason = 'Light the fire before cooking.';
+      if (!canCook()) cookReason = 'Finish Lee Anne’s Fire Making lesson, then ask Jojo or Stanley for a cooking lesson.';
+      else if (!lit) cookReason = 'Light the fire before cooking.';
       else if (!inventory.has('raw-fish')) cookReason = 'Catch a fish first. There is no raw fish in your satchel.';
     }
     return { lit, fuel: fire?.fuel ?? 0, canLight: !lightReason, canCook: !cookReason, lightReason, cookReason };

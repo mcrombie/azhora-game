@@ -39,7 +39,7 @@
  * traveler walks into it, and lays the bodies where this module says they fell.
  */
 
-export const ROAD_AMBUSH_VERSION = 1;
+export const ROAD_AMBUSH_VERSION = 2;
 
 /**
  * The Greenway/Fernway junction measured on `world.paths[0]`, not a screen coordinate.
@@ -65,6 +65,23 @@ export const AMBUSH = Object.freeze({
   /** How near the traveler has to come before they show themselves. */
   reach: 8,
 });
+
+const ambushPoint = (along, across) => ({
+  x: AMBUSH.point.x + AMBUSH.forward.dx * along + AMBUSH.forward.dz * across,
+  z: AMBUSH.point.z + AMBUSH.forward.dz * along - AMBUSH.forward.dx * across,
+});
+/** These are three people, not three fresh enemies each time the road is used. */
+export const AMBUSH_REBELS = Object.freeze([
+  { id: 'rebel-lane', role: 'forest-woodcutter', tunic: 0x6d5b43, along: 3, across: -3.4 },
+  { id: 'rebel-hedge', role: 'town-carter', tunic: 0x5a6350, along: -2, across: 3.6 },
+  { id: 'rebel-stone', role: 'forest-woodcutter', tunic: 0x7a4f3c, along: 6, across: 2.8 },
+].map(({ id, role, tunic, along, across }) => {
+  const point = ambushPoint(along, across);
+  return Object.freeze({ id, kind: 'rebel', name: 'Rebel ambusher', hp: AMBUSH.hp,
+    model: Object.freeze({ role, tunic }), home: Object.freeze({ ...point,
+      yaw: Math.atan2(AMBUSH.point.x - point.x, AMBUSH.point.z - point.z) }) });
+}));
+const freshAmbushers = () => AMBUSH_REBELS.map(one => ({ id: one.id, hp: one.hp, ...one.home, mode: 'watching' }));
 
 const party = (id, men, does) => Object.freeze({ id, men: Object.freeze(men), does });
 
@@ -143,7 +160,7 @@ export function outcomeFor(party, present, seed) {
 
 const emptyState = () => ({
   version: ROAD_AMBUSH_VERSION, seed: 1, rebels: AMBUSH.rebels,
-  settled: [], fallen: [], sprung: false,
+  settled: [], fallen: [], sprung: false, ambushers: freshAmbushers(),
 });
 
 const isId = value => typeof value === 'string' && /^[a-z0-9-]{1,64}$/.test(value);
@@ -151,7 +168,7 @@ const listOf = (value, allowed) => Array.isArray(value) && value.every(id => all
   && new Set(value).size === value.length;
 
 export function validateRoadAmbushSnapshot(value) {
-  if (!value || typeof value !== 'object' || value.version !== ROAD_AMBUSH_VERSION) return false;
+  if (!value || typeof value !== 'object' || ![1, ROAD_AMBUSH_VERSION].includes(value.version)) return false;
   if (!Number.isSafeInteger(value.seed) || value.seed < 0) return false;
   if (!Number.isSafeInteger(value.rebels) || value.rebels < 0 || value.rebels > AMBUSH.rebels) return false;
   if (typeof value.sprung !== 'boolean') return false;
@@ -160,6 +177,17 @@ export function validateRoadAmbushSnapshot(value) {
   // A man cannot have fallen to rebels who were already dead before his party came up, and the
   // rebels cannot be alive after a party that clears them has settled.
   if (!value.rebels && !value.sprung) return false;
+  if (value.version === ROAD_AMBUSH_VERSION) {
+    if (!Array.isArray(value.ambushers) || value.ambushers.length !== AMBUSH_REBELS.length) return false;
+    for (const [i, one] of value.ambushers.entries()) {
+      if (one?.id !== AMBUSH_REBELS[i].id || !Number.isFinite(one.hp) || one.hp < 0 || one.hp > AMBUSH.hp
+        || !Number.isFinite(one.x) || !Number.isFinite(one.z) || !Number.isFinite(one.yaw)
+        || Math.hypot(one.x - AMBUSH.point.x, one.z - AMBUSH.point.z) > 100
+        || !['watching', 'active', 'returning', 'dead'].includes(one.mode)
+        || (one.hp === 0) !== (one.mode === 'dead')) return false;
+    }
+    if (value.rebels !== value.ambushers.filter(one => one.hp > 0).length) return false;
+  }
   return true;
 }
 
@@ -171,8 +199,59 @@ export function createRoadAmbush({ seed = 1 } = {}) {
   let state = emptyState();
   state.seed = Number.isSafeInteger(seed) && seed >= 0 ? seed : 1;
 
-  const snapshot = () => ({ ...state, settled: [...state.settled], fallen: [...state.fallen] });
+  const snapshot = () => ({ ...state, settled: [...state.settled], fallen: [...state.fallen],
+    ambushers: state.ambushers.map(one => ({ ...one })) });
   const alive = () => state.rebels > 0;
+  const recount = () => { state.rebels = state.ambushers.filter(one => one.hp > 0).length; };
+  const actors = () => state.ambushers.map((one, i) => ({ ...AMBUSH_REBELS[i], ...one,
+    maxHp: AMBUSH.hp, home: { ...AMBUSH_REBELS[i].home } }));
+
+  /** Capture real combat damage and positions before combat releases its actors. A dead
+   * identity can never be revived by stale fight data or a second arrival. */
+  function remember(enemies = []) {
+    let changed = false;
+    for (const enemy of enemies) {
+      const one = state.ambushers.find(actor => actor.id === enemy.id);
+      if (!one || one.hp <= 0 || !Number.isFinite(enemy.hp)) continue;
+      const hp = Math.max(0, Math.min(one.hp, enemy.hp));
+      changed ||= hp !== one.hp; one.hp = hp;
+      if (Number.isFinite(enemy.x) && Number.isFinite(enemy.z)
+        && Math.hypot(enemy.x - AMBUSH.point.x, enemy.z - AMBUSH.point.z) <= 100) {
+        one.x = enemy.x; one.z = enemy.z;
+      }
+      if (Number.isFinite(enemy.yaw)) one.yaw = enemy.yaw;
+      if (!one.hp) one.mode = 'dead';
+    }
+    recount(); return changed;
+  }
+  function withdraw(enemies = []) {
+    remember(enemies);
+    for (const one of state.ambushers) if (one.hp > 0) one.mode = 'returning';
+    return alive();
+  }
+  function update(dt, { move = null } = {}) {
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    for (const one of state.ambushers) {
+      if (one.mode !== 'returning' || one.hp <= 0) continue;
+      const home = AMBUSH_REBELS.find(def => def.id === one.id).home;
+      const dx = home.x - one.x, dz = home.z - one.z, gap = Math.hypot(dx, dz);
+      if (gap < .15) { one.mode = 'watching'; one.yaw = home.yaw; continue; }
+      const step = Math.min(gap, 2.2 * dt), displacement = { x: dx / gap * step, z: dz / gap * step };
+      const next = move ? move(one, displacement, home) : { x: one.x + displacement.x, z: one.z + displacement.z };
+      if (next && Number.isFinite(next.x) && Number.isFinite(next.z)) { one.x = next.x; one.z = next.z; }
+      one.yaw = Math.atan2(dx, dz);
+    }
+  }
+  function settleParties(ids = [], fallen = []) {
+    for (const id of ids) if ([...PARTIES.map(one => one.id), 'cromb'].includes(id) && !state.settled.includes(id)) state.settled.push(id);
+    for (const id of fallen) if (AMBUSHED_IDS.includes(id) && !state.fallen.includes(id)) state.fallen.push(id);
+  }
+  function encounter(base) {
+    return { ...base, enemies: actors().filter(one => one.hp > 0).map(one => ({
+      id: one.id, kind: one.kind, name: one.name, model: one.model,
+      hp: one.maxHp, currentHp: one.hp, x: one.x, z: one.z, entry: 0,
+    })) };
+  }
 
   /**
    * A party reaches the ambush. The host calls this once per party, in clock order; calling it
@@ -190,7 +269,12 @@ export function createRoadAmbush({ seed = 1 } = {}) {
     if (!present.length) return { party: partyId, met: false, cleared: false, fallen: [] };
     const result = outcomeFor(party, present, state.seed);
     state.sprung = true;
-    if (result.cleared) state.rebels = 0;
+    if (result.cleared) cleared();
+    else if (result.fallen.length) {
+      // Offscreen fights cost the survivors something too. Never restore injuries
+      // from an earlier player encounter merely because another traveler arrives.
+      for (const one of state.ambushers) if (one.hp > 0) one.hp = Math.max(1, one.hp - 18);
+    }
     for (const id of result.fallen) if (!state.fallen.includes(id)) state.fallen.push(id);
     return { party: partyId, met: true, ...result };
   }
@@ -198,6 +282,7 @@ export function createRoadAmbush({ seed = 1 } = {}) {
   /** The traveler sprang it himself and won: nobody after him meets anybody. */
   function cleared() {
     if (!alive()) return false;
+    for (const one of state.ambushers) { one.hp = 0; one.mode = 'dead'; }
     state.rebels = 0; state.sprung = true;
     return true;
   }
@@ -206,18 +291,22 @@ export function createRoadAmbush({ seed = 1 } = {}) {
   function sprang() {
     if (!alive()) return false;
     state.sprung = true;
+    for (const one of state.ambushers) if (one.hp > 0) one.mode = 'active';
     return true;
   }
 
-  function restore(data) {
+  function restore(data = emptyState()) {
     if (!validateRoadAmbushSnapshot(data)) return false;
     state = { version: ROAD_AMBUSH_VERSION, seed: data.seed, rebels: data.rebels,
-      sprung: data.sprung, settled: [...data.settled], fallen: [...data.fallen] };
+      sprung: data.sprung, settled: [...data.settled], fallen: [...data.fallen],
+      ambushers: data.version === 1 ? freshAmbushers().map((one, i) => i < data.rebels ? one : { ...one, hp: 0, mode: 'dead' })
+        : data.ambushers.map(one => ({ ...one, mode: one.mode === 'active' ? 'returning' : one.mode })) };
     return true;
   }
 
   return {
-    reach, cleared, sprang, snapshot, restore,
+    reach, cleared, sprang, snapshot, restore, actors, remember, withdraw, update, encounter, settleParties,
+    get ready() { return alive() && state.ambushers.every(one => ['watching', 'dead'].includes(one.mode)); },
     get alive() { return alive(); },
     /** Whether this man was killed on that road, and so has a body lying on it. */
     fell: id => state.fallen.includes(id),

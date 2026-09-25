@@ -7,7 +7,7 @@ const ACTOR_KINDS = ['goblin', 'wolf', 'soldier', 'officer', 'ogre', 'spider', '
 
 // A handful of pooled effects and three articulated actors; nothing allocates
 // new geometry during a swing. Combat rules remain independent of the renderer.
-export function createCombatView(scene, world, camera, { onCorpse = () => false } = {}) {
+export function createCombatView(scene, world, camera, { onCorpse = () => false, getActor = () => null } = {}) {
   const actors = new Map(), allies = new Map();
   const fireballs=new Map(),fireGeometry=new THREE.IcosahedronGeometry(1,1);
   const fireCore=new THREE.MeshBasicMaterial({color:0xffe6a3,toneMapped:false});
@@ -49,13 +49,14 @@ export function createCombatView(scene, world, camera, { onCorpse = () => false 
   function createEnemy(enemy,index) {
     // A named body on the other side of a fight is drawn as himself, exactly as an ally is: that
     // is how a man you are sparring with looks like the man you are sparring with (src/teachers.js).
-    const actor=enemy.kind==='spider'?createSpider():enemy.model?createCharacter({...enemy.model,armed:true}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='officer'?createCharacter({role:'legion-officer',armed:true}):enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):enemy.kind==='rebel'?createCharacter({role:'forest-woodcutter',armed:true}):createGoblin({variant:index});scene.add(actor.group);
+    const borrowed=getActor(enemy.id);
+    const actor=borrowed??(enemy.kind==='spider'?createSpider():enemy.model?createCharacter({...enemy.model,armed:true}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='officer'?createCharacter({role:'legion-officer',armed:true}):enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):enemy.kind==='rebel'?createCharacter({role:'forest-woodcutter',armed:true}):createGoblin({variant:index}));scene.add(actor.group);
     // A fight is a crowd of articulated figures: each shadow costs as much as the figure.
     setShadowCasting(actor,false);const enemyShade=groundShadow(enemy.kind==='wolf'?.3:.34);
     // The disc is a person's footprint; a creature this size needs its own.
     if(enemy.kind==='ogre')enemyShade.scale.setScalar(4.4);
     if(enemy.kind==='spider')enemyShade.scale.setScalar(4);
-    actor.group.add(enemyShade);
+    if(!borrowed)actor.group.add(enemyShade);
     const tell=new THREE.Group();scene.add(tell);
     // The warning arc is the creature's own: an ogre reaches four and a half metres
     // and sweeps most of the ground in front of him, so his arc has to say so.
@@ -69,7 +70,7 @@ export function createCombatView(scene, world, camera, { onCorpse = () => false 
     const name=document.createElement('span');name.textContent=enemy.name||(enemy.kind==='wolf'?(index===0?'Grey wolf':'Wolf'):enemy.kind==='ogre'?'Mallec':enemy.kind==='officer'?'Officer':enemy.kind==='soldier'?(enemy.look==='legion'?'Soldier':'Coalition soldier'):enemy.kind==='rebel'?'Rebel ambusher':index===0?'Bramble scout':'Bramble raider');
     const health=document.createElement('div');health.className='enemy-health';const fill=document.createElement('i');health.append(fill);
     const intent=document.createElement('small');badge.append(name,health,intent);labels.append(badge);
-    const item={actor,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
+    const item={actor,borrowed:!!borrowed,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
   }
   function createAlly(ally) {
     const actor=createCharacter(ally.model?{...ally.model,armed:ally.armed!==false}:{role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
@@ -127,7 +128,12 @@ export function createCombatView(scene, world, camera, { onCorpse = () => false 
     }
     for(const [id,object]of fireballs)if(!flying.has(id)){object.removeFromParent();fireballs.delete(id);}
     const ids=new Set(state.enemies.filter(e=>ACTOR_KINDS.includes(e.kind)).map(e=>e.id));
-    for(const [id,item] of actors)if(!ids.has(id)){item.actor.group.visible=false;item.tell.visible=false;item.badge.hidden=true;}
+    for(const [id,item] of actors)if(!ids.has(id)){
+      // Ordinary world residents go back to their own renderer after a fight.
+      // Hiding this shared body here would make returning survivors disappear.
+      if(!item.borrowed)item.actor.group.visible=false;
+      item.tell.visible=false;item.badge.hidden=true;
+    }
     let index=0;
     for(const enemy of state.enemies) {
       if(!ACTOR_KINDS.includes(enemy.kind))continue;

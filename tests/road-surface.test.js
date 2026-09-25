@@ -4,6 +4,8 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { createAutopilot, nearestOnPath, nextWaypoint, roadRoute } from '../src/autopilot.js';
 import { canStand, canSwim, moveCharacter, QUEST_DONE } from '../src/game-state.js';
+import { AMBUSH } from '../src/road-ambush.js';
+import { INSTRUCTOR_STAND } from '../src/instructor.js';
 
 let fixture;
 async function built() {
@@ -69,6 +71,37 @@ test('autoplay physically follows Avrel bends and leaves Reedcutters Camp for Iv
     assert.ok(arrived, `${start.label}: stalled at (${position.x.toFixed(1)}, ${position.z.toFixed(1)})`);
     if (start.label === 'Avrel') assert.ok(largestRoadGap < 2.3, `autoplay left the curved road by ${largestRoadGap.toFixed(2)}m`);
   }
+});
+
+test('autoplay leaving Glun reaches the Greenway ambush along the main road without inspecting it', async () => {
+  const { world } = await built();
+  const position = { x: INSTRUCTOR_STAND.x + 1, z: INSTRUCTOR_STAND.z };
+  const target = world.npcPositions['crossing-keeper'];
+  const route = roadRoute(world.paths, position, target);
+  assert.ok(nearestOnPath(route, AMBUSH.point).distance < AMBUSH.reach, 'the onward route passes through the ambush junction');
+  const pilot = createAutopilot({ world, read: () => ({ mode: 'playing', questStage: QUEST_DONE, chartLesson: 'complete', mapTutorial: 2,
+    position, combat: { phase: 'peaceful', action: 'idle', stamina: 100, hp: 100, enemies: [] }, weapon: { usable: true }, inventory: {},
+    journey: { started: true, bridge: 'offered', complete: false, destinationIds: ['relay-clerk'] }, interaction: {} }), act: {} });
+  pilot.start();
+  let reached = false;
+  for (let frame = 0; frame < 600 && !reached; frame++) {
+    const command = pilot.step(1 / 15);
+    assert.ok(command, `autoplay stopped before the junction: ${pilot.stopReason}`);
+    assert.equal(command.actions.length, 0, 'reaching the ambush does not require an inspection action');
+    if (command.move && command.yaw !== null) {
+      const { forward, side } = command.move, speed = command.move.run ? 7.2 : 4.2, yaw = command.yaw;
+      moveCharacter(position, (-Math.sin(yaw) * forward + Math.cos(yaw) * side) * speed / 15,
+        (-Math.cos(yaw) * forward - Math.sin(yaw) * side) * speed / 15, world);
+    }
+    reached = Math.hypot(position.x - AMBUSH.point.x, position.z - AMBUSH.point.z) < AMBUSH.reach;
+  }
+  assert.ok(reached, `autoplay bypassed or stalled before the ambush at (${position.x.toFixed(1)}, ${position.z.toFixed(1)})`);
+  // Navigation has no ambush goal or state: taking the optional bypass manually
+  // and starting autoplay beyond it must continue onward, never turn back.
+  const beyond = { x: -140, z: 27 };
+  const onward = roadRoute(world.paths, beyond, target);
+  assert.ok(nearestOnPath(onward, AMBUSH.point).distance > AMBUSH.reach, 'a traveler already past the ambush keeps going');
+  assert.ok(world.paths.some(path => path.kind === 'trail' && path[0].x === -93 && path.at(-1).x === -140), 'the optional manual bypass remains in the world');
 });
 
 test('the actual Caloss banks join swimmable water without invisible collision strips', async () => {

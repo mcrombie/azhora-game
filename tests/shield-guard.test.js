@@ -141,13 +141,24 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
     'paid by what the shield actually took off the blow');
   // Held, not pressed: the key is read every frame and combat remembers no press of its own.
   assert.match(main, /const GUARD_KEY='KeyV';/);
-  assert.match(main, /const guardKey=autopilot\.active\?autopilot\.guard:keys\.has\(GUARD_KEY\);/);
+  const guardExpression = main.match(/const guardKey=([^;\r\n]+);/)?.[1];
+  assert.ok(guardExpression, 'the host decides whether guard is held each frame');
+  const readGuard = new Function('living', 'autopilot', 'keys', 'GUARD_KEY', `return (${guardExpression});`);
+  const input = ({ passenger = false, auto = false, autoGuard = false, held = false } = {}) =>
+    readGuard({ recall: () => ({ status: passenger ? 'passenger' : 'idle' }) },
+      { active: auto, guard: autoGuard }, new Set(held ? ['KeyV'] : []), 'KeyV');
+  assert.equal(input({ held: true }), true, 'manual guard follows the held key');
+  assert.equal(input(), false, 'releasing the key releases guard');
+  assert.equal(input({ auto: true, autoGuard: true }), true, 'autopilot can hold guard');
+  assert.equal(input({ auto: true, held: true }), false, 'manual input does not latch autopilot guard');
+  assert.equal(input({ passenger: true, held: true }), false, 'a carried passenger cannot guard');
+  assert.equal(input({ passenger: true, auto: true, autoGuard: true }), false, 'nor can autopilot guard as a passenger');
   assert.match(main, /combat\.guard\(guardKey,player\.group\.rotation\.y\);/);
   assert.match(source('combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
   // The hand slot IS the shield, and what he is seen holding follows what he is wearing — or,
-  // for the length of a bout and nowhere else, what the shield's teacher has strapped on his arm
-  // (src/teachers.js). Nothing else may ever put a shield there.
-  assert.match(main, /hasShield:!!lent\?\.shield\|\|!!gear\.wearing\('hand'\)/);
+  // for the length of a lesson, what Glun or the shield's teacher has lent him.
+  // Those temporary loans use the same availability rule for combat and the visible model.
+  assert.match(main, /hasShield:hasCarriedShield\(\)/, 'combat and the visible shield use the same availability rule');
   assert.match(main, /player\.setShield\(carried\);/);
   // Not an optional call. The player is a facade over a replaceable body, and a verb missing from
   // that facade did nothing at all, quietly: the buckler was never built and four renders showed
@@ -222,8 +233,26 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   assert.match(combat, /player\.guarding = guarding\(\);\s*\r?\n\s*return player\.guarding;/);
   // The footer names the key only while there is a shield on the arm to use it with.
   assert.match(main, /document\.body\.classList\.toggle\('shielded',carried\);/);
-  assert.match(main, /const carried=!!lent\?\.shield\|\|!!gear\.wearing\('hand'\);/,
-    'and "carried" is the hand slot, or the boards lent for a bout');
+  assert.match(main, /const carried=hasCarriedShield\(\);/,
+    'the footer and model use the same shield availability as combat');
+  const carriedBody = main.match(/function hasCarriedShield\(\)\{([^}]*)\}/)?.[1];
+  assert.ok(carriedBody, 'the shared rule is present');
+  const carried = new Function('lent', 'gear', 'practiceShield', carriedBody);
+  for (const loan of [false, true]) for (const equipped of [false, true]) for (const drill of [false, true]) {
+    assert.equal(carried(loan ? { shield: true } : null,
+      { wearing: slot => { assert.equal(slot, 'hand'); return equipped; } }, () => drill),
+    loan || equipped || drill, `shield availability: loan ${loan}, equipped ${equipped}, drill ${drill}`);
+  }
+  const practiceBody = main.match(/function practiceShield\(\)\{([^}]*)\}/)?.[1];
+  assert.ok(practiceBody, 'Glun lends practice equipment only during his nearby drill');
+  const practice = new Function('questStage', 'lessonSet', 'chartLesson', 'combat', 'player', 'world', practiceBody);
+  const drillShield = ({ stage = 2, lesson = true, chart = 'unissued', phase = 'practice', distance = 0 } = {}) =>
+    !!practice(stage, lesson, { stage: chart }, { state: { phase } },
+      { group: { position: { x: distance, z: 0 } } }, { training: { x: 0, z: 0 } });
+  assert.equal(drillShield(), true, 'a live nearby Glun drill provides a temporary shield');
+  for (const outside of [{ stage: 3 }, { lesson: false }, { chart: 'issued' }, { phase: 'peaceful' }, { distance: 12 }]) {
+    assert.equal(drillShield(outside), false, `the practice loan ends outside the drill: ${JSON.stringify(outside)}`);
+  }
   const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
   assert.match(html, /<span class="shield-control"><kbd>V<\/kbd> Guard<\/span>/);
   const css = readFileSync(fileURLToPath(new URL('../src/adventure.css', import.meta.url)), 'utf8');

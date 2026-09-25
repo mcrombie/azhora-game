@@ -3,6 +3,7 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
+  'jojo-sandwich': Object.freeze({name:'Jojo’s sandwich',type:'Food',icon:'bread',stackable:true,eatName:'sandwich',brief:'A filling sandwich for the road · restores 35 health.',description:'Jojo wrapped bread and a savoury filling for your journey. Open the satchel and eat it when you need health.'}),
   'courier-satchel': Object.freeze({name:'The courier’s satchel',type:'Quest item',icon:'letter',stackable:false,
     brief:'The one missing army satchel, carrying the Lauvel muster rolls.',
     description:'Deliver this physical satchel to Iven in Nothom. A reassignment does not remove it from your possession; a replacement must find you and ask for a handover.'}),
@@ -204,14 +205,14 @@ export const INVENTORY_ITEMS = Object.freeze({
     description: 'One of the letters the Ardrys are writing to each other after eleven years. They are not sealed, and both of them have said you may read them: open your journal with J to do it. Deliver it to the one it is addressed to.',
   }),
   'hummingbird-feeder': Object.freeze({
-    name: 'Perrin’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
+    name: 'Jean’s hummingbird feeder', type: 'Quest item', icon: 'feeder',
     brief: 'A pale glass bottle over a red dish with little yellow flowers for ports. Empty.',
-    description: 'Perrin’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Lysa keeps sugar in her kitchen.',
+    description: 'Jean’s old feeder, lent so that you can see a hummingbird. It wants sugar water: four parts water to one of sugar, boiled and cooled, never honey. Jean can fill it for you beside the village road.',
   }),
   'sugar-water-feeder': Object.freeze({
     name: 'Filled hummingbird feeder', type: 'Quest item', icon: 'feeder',
-    brief: 'Perrin’s feeder, full of Lysa’s sugar water. Carry it upright.',
-    description: 'Hang it on the hook among the red flowers in Perrin’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
+    brief: 'Jean’s feeder, full of sugar water. Carry it upright.',
+    description: 'Hang it on the hook among the red flowers in Jean’s garden, on the eastern side of Tidehaven, then step back and wait for a hummingbird.',
   }),
   acorn: Object.freeze({
     name: 'Acorns', type: 'Gathered material', icon: 'acorn', stackable: true,
@@ -398,6 +399,30 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Thin, dry oat rounds baked on a griddle stone. Restores up to 20 health.',
     description: 'Restores up to 20 health. Rough oat rounds from the farm kitchens around the Avrel clearing, baked hard so they keep. Better with cheese or honey, but fine on their own.',
   }),
+  'carrot-seed': Object.freeze({ name: 'Carrot seeds', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'One packet plants one row. Stanley shares more at the Avrel clearing.',
+    description: 'Plant in a bare commons row. Carrots ripen after 90 seconds of active play; watering makes the harvest earlier and larger. Every harvest returns a packet for replanting.' }),
+  'beet-seed': Object.freeze({ name: 'Beet seeds', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'A packet for one row of beets. Farming level 2.',
+    description: 'Stanley shares these at Farming level 2. Plant in a bare commons row and return after 150 seconds of active play. Harvesting saves seed for the next row.' }),
+  'barley-seed': Object.freeze({ name: 'Barley seed', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'One packet plants one row of barley. Stanley keeps a communal supply.',
+    description: 'Plant in the four commons rows at the Avrel clearing. Barley ripens after four minutes of active play. It is a cooking ingredient, and every harvest returns a packet for replanting.' }),
+  'drent-leaf-seed': Object.freeze({ name: 'Drent leaf seeds', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'One packet plants one row of tobacco. Farming level 5.',
+    description: 'Stanley shares these at Farming level 5. Drent leaf ripens after eight minutes of active play and yields pipe weed. Water it once for a larger, earlier harvest.' }),
+  carrot: Object.freeze({ name: 'Carrots', type: 'Food', icon: 'carrot', stackable: true, eatName: 'carrot',
+    brief: 'Fresh from a commons row. Restores up to 15 health.',
+    description: 'Restores up to 15 health. A crisp orange carrot grown at the Avrel clearing. Eat it from your satchel, or combine one with barley at a lit fire for Stanley\u2019s farm pot.' }),
+  beet: Object.freeze({ name: 'Beets', type: 'Food', icon: 'beet', stackable: true, eatName: 'beet',
+    brief: 'A sweet red root from the commons garden. Restores up to 20 health.',
+    description: 'Restores up to 20 health. Brush the dirt off before eating. Stanley can show you how to roast a beet at a lit fire for a more filling meal.' }),
+  'roasted-beet': Object.freeze({ name: 'Roasted beets', type: 'Food', icon: 'beet', stackable: true, eatName: 'roasted beet',
+    brief: 'A beet roasted sweet in the embers. Restores up to 35 health.',
+    description: 'Restores up to 35 health. One beet roasted at a lit fire using Stanley\u2019s recipe. The skin comes away easily and the flesh is soft and sweet.' }),
+  'farm-pot': Object.freeze({ name: 'Farm pot', type: 'Food', icon: 'bowl', stackable: true, eatName: 'bowl of farm pot',
+    brief: 'Carrot and barley simmered together. Restores up to 45 health.',
+    description: 'Restores up to 45 health. Stanley\u2019s simple, filling field supper: one carrot and one barley simmered at a lit fire. Carried in a lidded crock for the road.' }),
   barley: Object.freeze({
     name: 'Barley', type: 'Material', icon: 'grain', stackable: true,
     brief: 'A sheaf off one of the commons rows at the Avrel mill. Enna’s mill turns it into flour and the flour into the village share.',
@@ -576,6 +601,9 @@ export function createInventoryState() {
 }
 
 const iconPaths = {
+  seeds: '<path d="M9 10h18l3 21H6ZM9 10l3-5h12l3 5M10 14h16"/><ellipse cx="15" cy="22" rx="2" ry="3" transform="rotate(-30 15 22)"/><ellipse cx="23" cy="24" rx="2" ry="3" transform="rotate(25 23 24)"/>',
+  carrot: '<path d="M11 13c4-4 11-3 13 1 2 5-5 13-17 18 0-8 1-15 4-19ZM12 17l5 2m-8 4 4 2M20 11l1-8m1 9 7-6m-11 4-4-6"/>',
+  beet: '<path d="M11 13c4-3 12-3 15 2 5 8-2 13-8 14-6-1-11-8-7-16ZM18 29l-2 5M17 12l-3-8m5 7 4-8m-3 9 9-5M13 17c-2 4 0 7 3 9"/>',
   shirt: '<path d="m12 5-8 5 4 8 4-2v15h12V16l4 2 4-8-8-5c-1 5-11 5-12 0Z"/>',
   pants: '<path d="M10 5h16l2 26h-9l-1-16-1 16H8ZM10 10h16M16 5v5"/>',
   cloak: '<path d="M12 8c0-8 12-8 12 0l7 23c-8 3-18 3-26 0ZM12 8l6 6 6-6M18 14v19"/>',

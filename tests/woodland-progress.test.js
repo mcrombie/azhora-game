@@ -7,6 +7,9 @@ import { createWeapons } from '../src/weapons.js';
 import { createCampcraft } from '../src/campcraft.js';
 import { createJourney } from '../src/journey.js';
 import { createForestStory } from '../src/forest-story.js';
+import { FARM_FIRE } from '../src/farming.js';
+import { copyWoodlandProgress, validateWoodlandProgress } from '../src/woodland-progress.js';
+import { sourceModule } from './module-loader.js';
 
 function fixture() {
   const inventory=createInventoryState();inventory.grant('simple-sword');
@@ -51,6 +54,36 @@ test('camp reload preserves remaining firewood and fishing history, cancels an u
   for(const invalid of [{...saved,fires:{'invented-fire':100}},{...saved,fires:{'pond-fire':Infinity}},{...saved,catches:-1}]){
     assert.equal(next.restore(invalid),false);assert.deepEqual(next.checkpoint(),saved);
   }
+});
+
+test('every built-world fire including Stanley\'s garden survives an actual road checkpoint and detached copy', async () => {
+  const THREE = await import('../vendor/three.module.js');
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene());
+  const { inventory, weapons, checkpoint, data } = fixture();
+  const fireIds = world.firePits.map(fire => fire.id);
+  assert.ok(fireIds.includes(FARM_FIRE.id));
+  const camp = createCampcraft({ inventory, weapons, fireIds });
+  data.woodland.camp = camp.checkpoint();
+  let saved = checkpoint.save(data);
+  assert.equal(saved.ok, true, `even unlit world fires must be accepted: ${saved.reason}`);
+  inventory.grant('tinderbox'); inventory.add('forest-stick', 2);
+  assert.equal(camp.light(FARM_FIRE.id).ok, true);
+  camp.update(23);
+  data.inventory = inventory.items().map(id => ({ id, quantity: inventory.count(id) }));
+  data.woodland.camp = camp.checkpoint();
+  assert.equal(validateWoodlandProgress(data.woodland, inventory), true);
+  saved = checkpoint.save(data); assert.equal(saved.ok, true, saved.reason);
+  const loaded = checkpoint.read().data, copied = copyWoodlandProgress(loaded.woodland);
+  assert.equal(copied.camp.fires[FARM_FIRE.id], 97);
+  copied.camp.fires[FARM_FIRE.id] = 0;
+  assert.equal(checkpoint.read().data.woodland.camp.fires[FARM_FIRE.id], 97);
+  const restored = createCampcraft({ inventory, weapons, fireIds });
+  assert.equal(restored.restore(loaded.woodland.camp), true);
+  assert.equal(restored.fireStatus(FARM_FIRE.id).fuel, 97);
+  assert.deepEqual(restored.checkpoint(), camp.checkpoint());
+  const invalid = { ...loaded.woodland, camp: { ...loaded.woodland.camp, fires: { ...loaded.woodland.camp.fires, 'invented-fire': 10 } } };
+  assert.equal(validateWoodlandProgress(invalid, inventory), false);
 });
 
 test('each unfinished chart lesson and completed guard drill resumes before leaving Tidehaven', () => {

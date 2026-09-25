@@ -37,14 +37,23 @@ export const SKILLS = Object.freeze({
   birding: Object.freeze({
     id: 'birding', name: 'Birding',
     blurb: 'Finding birds, keeping your distance, and looking at them properly. Every kind of bird you see for the first time teaches you something.',
-    teacher: 'Perrin, who keeps the bird garden on the eastern side of Tidehaven',
-    // Drent's five birds together are worth 90: level 2. A country is a few levels; the table is the world's.
+    teacher: 'Jean beside the main road just beyond Officer Glun, and other birders along the road',
     thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Observe birds with B; first sightings and patient repeat observations earn experience'),
+      unlock(2, 'Imitate a familiar bird call from Actions (U)'), unlock(4, 'Observe from farther away'), unlock(7, 'Your observation range reaches thirty metres')]),
+  }),
+  husbandry: Object.freeze({
+    id: 'husbandry', name: 'Animal Husbandry', kind: 'working',
+    blurb: 'Caring for livestock and working animals. Calm, patient handling earns experience each time an animal needs attention again.',
+    teacher: 'Jean beside the main road just beyond Officer Glun; other animal keepers can teach it too',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Check and calm nearby livestock with F'), unlock(2, 'Care keeps animals calm for longer'),
+      unlock(5, 'Practised handling calms animals for sixteen seconds')]),
   }),
   fishing: Object.freeze({
     id: 'fishing', name: 'Fishing',
     blurb: 'Reading water, waiting out a float, and knowing what you have landed. Every kind of fish you land for the first time teaches you something.',
-    teacher: 'Bran at Willowmere Pond, and Chip at the Caloss crossing',
+    teacher: 'Glun, Mark or Jean near Tidewater Haven; Stanley at the Avrel farm; Bran at Willowmere and Chip at the Caloss crossing',
     // The ten fish of Drent, Luscia and Pueth together are worth 200: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
@@ -58,7 +67,7 @@ export const SKILLS = Object.freeze({
   geology: Object.freeze({
     id: 'geology', name: 'Geology',
     blurb: 'Picking a stone up, weighing it, scratching it and asking where it is lying. Every kind of stone you name for the first time teaches you something about the country it came from.',
-    teacher: 'Mark by the village fire in Tidehaven, and Silas Garrow at the Toll House stream on the Caloss road',
+    teacher: 'Officer Glun at the training post, Mark by the village fire in Tidehaven, and Silas Garrow at the Toll House stream',
     // The eleven finds of Drent's coast together are worth 210: level 3.
     thresholds: RUNESCAPE_TABLE,
   }),
@@ -87,15 +96,29 @@ export const SKILLS = Object.freeze({
   }),
   cooking: Object.freeze({
     id: 'cooking', name: 'Cooking',
-    blurb: 'What you can make at a lit fire, and why it works. Every dish made for the first time teaches you something.',
-    teacher: 'Lakota, somewhere behind you on the road, whose hot chocolate is the first recipe',
+    blurb: 'Learn Fire Making first, then turn ingredients into nourishing meals at a lit fire. Every dish you actually cook earns experience.',
+    teacher: 'Jojo at the landing, Stanley at the Avrel farm, and Lakota for hot chocolate',
     // Hot chocolate is worth 20 and the fish 10: level 1 with both — the first log is the smallest.
     thresholds: RUNESCAPE_TABLE,
+  }),
+  firemaking: Object.freeze({
+    id: 'firemaking', name: 'Fire Making', kind: 'working',
+    blurb: 'Build a useful fire with dry tinder, space for air and a little fuel. Each fire you light earns experience. Learn this before Cooking.',
+    teacher: 'Lee Anne beside the empty village fire ring in Tidehaven',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Light a prepared fire ring with a tinderbox and two sticks or one log'), unlock(1, 'Ready for cooking lessons from Jojo and Stanley')]),
+  }),
+  smithing: Object.freeze({
+    id: 'smithing', name: 'Smithing', kind: 'working',
+    blurb: 'Care for an edge and learn to repair worn weapons. Working on actual wear earns experience; polishing a sound blade again does not.',
+    teacher: 'Martin, the smith of Tidehaven',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Repair worn weapons at a repair bench or with Martin for 18 Smithing experience')]),
   }),
   woodcutting: Object.freeze({
     id: 'woodcutting', name: 'Woodcutting', kind: 'working',
     blurb: 'Choosing the tree, reading the grain, and swinging until it gives. Every log you cut is experience, and every tree and every axe has the level it wants from you.',
-    teacher: 'Bowden Koop, King of the Koopwood, on the edge of the wood north-west of Tidehaven',
+    teacher: 'Officer Glun at the training post, and Bowden Koop in the Koopwood north-west of Tidehaven',
     thresholds: RUNESCAPE_TABLE,
     // What each level opens (src/woodcutting.js holds the trees and axes themselves; the test keeps the two in step).
     unlocks: Object.freeze([unlock(1, 'Loblolly pine · 25 experience a log'), unlock(1, 'Bronze hatchet and iron axe'), unlock(6, 'Steel axe'),
@@ -124,7 +147,7 @@ export const SKILLS = Object.freeze({
   swimming: Object.freeze({
     id: 'swimming', name: 'Swimming', kind: 'working',
     blurb: 'Crossing water on your own, which is slower than walking, harder than it looks, and the only way to some of this country. Your wind runs out before your arms do, and what happens after that is drowning.',
-    teacher: 'Ed the Word, who came ashore at Tidehaven out of a ship that never docked',
+    teacher: 'Jess at the Caloss crossing, and Ed the Word in the traveling company',
     thresholds: RUNESCAPE_TABLE,
     // What each level opens is a crossing; the distances are measured shore to shore in
     // docs/swimming.md and re-measured by tests/swimming.test.js.
@@ -147,13 +170,32 @@ export const SKILLS = Object.freeze({
   }),
   farming: Object.freeze({
     id: 'farming', name: 'Farming', kind: 'working',
-    blurb: 'Putting a row in and coming back for it. The only skill with a clock of its own: a sown row ripens on the hours of your own game whether you are standing over it or three miles away, which is the first true thing Drent tells you about itself.',
-    teacher: 'Enna, at the Mill Commons in the Avrel clearing',
+    blurb: 'Choose a crop, tend the soil, and bring in food for the road. Plants keep growing while you explore; menus, pause and closing the game stop the clock. Every harvest earns experience.',
+    teacher: 'Stanley, beside the Mill Commons rows at the Avrel clearing',
     thresholds: RUNESCAPE_TABLE,
-    // What each level opens (src/farming.js holds the crops and the rows; the test keeps the two in step).
-    unlocks: Object.freeze([unlock(1, 'Barley · four minutes a row, 24 experience'), unlock(1, 'The four commons rows at the Avrel mill'),
-      unlock(1, 'Applegarth’s kept orchard · picked, not sown, and bearing again in ten minutes'),
-      unlock(5, 'Drent leaf · eight minutes a row, 45 experience')]),
+    unlocks: Object.freeze([unlock(1, 'Carrots: 90 seconds, 22 experience per harvest'),
+      unlock(1, 'Barley: four minutes, 24 experience per harvest'),
+      unlock(1, 'Water each planting once: 4 experience, earlier growth and one extra crop'),
+      unlock(1, 'Four reusable commons rows; Stanley shares seeds and farm recipes'),
+      unlock(1, 'Pick Applegarth orchard apples; trees bear again in ten minutes'),
+      unlock(2, 'Beets: 150 seconds, 32 experience per harvest'),
+      unlock(5, 'Drent leaf: eight minutes, 45 experience per harvest')]),
+  }),
+  visualarts: Object.freeze({
+    id: 'visualarts', name: 'Visual Arts', kind: 'working',
+    blurb: 'Look closely, then give what you see a shape. Drawing, painting and calligraphy share one skill; finish studies at an easel to gain experience.',
+    teacher: 'Sylvia, painting outside her cottage beside the Sunken Lane',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Oak sketches: six seconds, 18 experience'),
+      unlock(2, 'Woodland paintings: eight seconds, 24 experience'), unlock(3, 'Calligraphic greetings: eight seconds, 24 experience')]),
+  }),
+  acting: Object.freeze({
+    id: 'acting', name: 'Acting', kind: 'working',
+    blurb: 'Making a feeling readable through posture and movement. Finish an expression to earn experience; new expressions open as your range grows.',
+    teacher: 'Amanda of Talaelos, beside the road west of the Avrel farms',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'Happy and Sad expressions'), unlock(2, 'Surprised expression'),
+      unlock(3, 'Angry expression'), unlock(4, 'Afraid expression'), unlock(5, 'Proud expression and a bow')]),
   }),
   linguist: Object.freeze({
     id: 'linguist', name: 'Linguist',

@@ -1,6 +1,6 @@
 /**
- * Perrin's garden on the eastern side of Tidehaven: a hook for the hummingbird
- * feeder among red bee balm, a stone bird bath, and the bench he built for himself
+ * Jean's garden on the eastern side of Tidehaven: a hook for the hummingbird
+ * feeder among red bee balm, a stone bird bath, and the bench she built for herself
  * that the birds have taken over. Authored in Tidehaven's local metres, like the rest of the village;
  * built from world.js's own helpers so it batches with the village. The feeder on
  * the hook is its own group, shown once the traveler has hung it.

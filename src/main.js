@@ -19,6 +19,7 @@ import { createInventory, INVENTORY_ITEMS } from './inventory.js';
 import { createWeapons, WEAPON_TYPES, feelOf } from './weapons.js';
 import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
+import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, fireMakingStands, fireMakingConversation } from './fire-making.js';
 import { createWorldMap } from './world-map.js';
 import { createMapTutorial } from './map-tutorial.js';
 import { createChartLesson } from './chart-lesson.js';
@@ -27,7 +28,15 @@ import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, esco
 import { createLandingMateQuest } from './landing-mate-quest.js';
 import { ANCHORS as ROUTE_ANCHORS, MAIN_ROAD } from './regions.js';
 import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOPS } from './long-road.js';
-import { FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
+import { createGlunWoodcutting, GLUN_WOOD_LESSON, glunWoodcuttingChoice } from './glun-woodcutting.js';
+import { createAnimalHusbandry, HUSBANDRY_LESSON } from './animal-husbandry.js';
+import { createActing, ACTING_LESSON, AMANDA_TEACHES } from './acting.js';
+import { SYLVIA, SYLVIA_STUDIO, createVisualArts, sylviaConversation, artEaselConversation } from './visual-arts.js';
+import { createSylvia, attachArtTools } from './visual-arts-view.js';
+import { createRoadsideLessons, jojoCookingChoice, geologyFieldChoice } from './roadside-lessons.js';
+import { farmingConversation, farmRowConversation, farmWait } from './farming-conversation.js';
+import { createFarmingView } from './farming-view.js';
+import { FARMER, FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
 import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
 import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
 import { bystandersFor, createFallen } from './bystanders.js';
@@ -108,12 +117,15 @@ import { BOW, JERRYS_BOW, flightOf, inTheLine, solidAt } from './archery.js';
 import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
 import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
 import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gear.js';
-import { BIRD_WATCHER, GARDEN_KEEPER, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
+import { BIRD_WATCHER, GARDEN_KEEPER, JEAN_STAND, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
 import { createLakota, lakotaTravelChoice } from './lakota.js';
 import { MARK, MARK_SKILLS, markConversation } from './mark.js';
 import { createDrentBirds } from './drent-birds.js';
+import { createBirdPointer } from './bird-pointer.js';
 import { findBird } from './bird-finder.js';
 import { createFishing, FISHING_SKILL } from './fishing-skill.js';
+import { createFishingLessons, FISHING_TEACHERS, fishingLessonRoute, fishingLessonChoices, FISHING_DEMO_SECONDS } from './fishing-lessons.js';
+import { createFishingLessonVisual } from './fishing-lesson-view.js';
 import { MYCOLOGIST, MYCOLOGIST_STAND, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
 import { createMushrooms } from './mushrooms.js';
 import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, createBotany, botanistConversation } from './botany.js';
@@ -210,11 +222,14 @@ import { SPELLS } from './sorcery.js';
 import { createMagic } from './magic.js';
 import { createMagicView } from './magic-view.js';
 import { createMagicUI } from './magic-ui.js';
-import { createRoadAmbush, AMBUSH, PARTIES, ambushPartiesForRoster, bodyPlace } from './road-ambush.js';
+import { createRoadAmbush, AMBUSH, AMBUSH_REBELS, PARTIES, ambushPartiesForRoster, bodyPlace } from './road-ambush.js';
+import { createRoadAmbushHost } from './road-ambush-host.js';
+import { createRoadAmbushWatch } from './road-ambush-watch.js';
+import { meleeContacts as ambushMeleeContacts } from './melee-contact.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, stepToward, lendFacing } from './bodies.js';
 import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './testing-travel.js';
-import { talkTarget, placeKeepsPrompt } from './prompt-priority.js';
+import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from './prompt-priority.js';
 import { createFrameErrors } from './frame-errors.js';
 import { figureDetail } from './figure-lod.js';
 import { createStandIn } from './figure-stand-in.js';
@@ -344,6 +359,9 @@ function init() {
   world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
   // The smith of Tidehaven, at his own forge on the south street (src/smith.js).
   world.npcPositions[SMITH_NPC.id]={x:TIDEHAVEN_SMITHY.stand.x,z:TIDEHAVEN_SMITHY.stand.z};npcData.push({...SMITH_NPC,yaw:TIDEHAVEN_SMITHY.stand.yaw});
+  const leeFire=world.firePits.find(fire=>fire.id===FIRE_LESSON_FIRE);
+  const leeStands=fireMakingStands(leeFire),leeStand=leeStands.teacher;
+  world.npcPositions[LEE_ANNE.id]={x:leeStand.x,z:leeStand.z};npcData.push({...LEE_ANNE,yaw:leeStand.yaw});
   // The army's armourer, beside the Moros camp's smithy tent. Amod's forge needed nobody: it
   // already had Goibniu, and a man who is evidently the smith is the smith (src/smith.js).
   world.npcPositions[MOROS_ARMOURER_NPC.id]={x:OUTPOST_LAYOUT.armourer.x,z:OUTPOST_LAYOUT.armourer.z};
@@ -399,7 +417,9 @@ function init() {
   const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
   world.npcPositions[HARBOURMASTER]={x:pierHead.x,z:pierHead.z};
   npcData.find(person=>person.id===HARBOURMASTER).yaw=pierHead.yaw;
-  world.npcPositions[GARDEN_KEEPER.id]={x:lakotaGarden.x,z:lakotaGarden.z};npcData.push({...GARDEN_KEEPER,yaw:lakotaGarden.yaw});
+  world.npcPositions[GARDEN_KEEPER.id]={x:JEAN_STAND.x,z:JEAN_STAND.z};npcData.push({...GARDEN_KEEPER,yaw:JEAN_STAND.yaw});
+  world.npcPositions[FARMER.id]={x:FARMER.x,z:FARMER.z};npcData.push({...FARMER});
+  world.npcPositions[SYLVIA.id]={x:SYLVIA.x,z:SYLVIA.z};npcData.push({...SYLVIA,make:createSylvia});
   // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
   for(const person of [VINTNER,CELLAR_HAND,WINEMAKER]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
   // Katy by the spring pool, watching the birds and waiting for Batman (src/katy.js).
@@ -488,7 +508,7 @@ function init() {
     npcData=npcData.filter(npc=>kept.has(npc.id));}
   for(const person of LUSCIA_RECRUIT_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
-    npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
+    npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,hat:npc.hat??false,armed:!!npc.armed});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     npc.actor.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);scene.add(npc.actor.group);
     npc.actor.group.rotation.y=Number.isFinite(npc.yaw)?npc.yaw:Math.PI/3;npc.markerKind='main';npc.marker=makeQuestMarker('main');scene.add(npc.marker);
   }
@@ -990,7 +1010,7 @@ function init() {
   const heldWeapon=()=>lentProfile()??weapons?.profile()??null;
   /** Whether that thing is drawn rather than swung. One question, asked in four places. */
   const ranged=()=>!!heldWeapon()?.ranged;
-  let corpseHost=null,crime=null,magic=null;
+  let corpseHost=null,crime=null,magic=null,ambushWatch=null,ambushHost=null;
   const combat=createCombat({world,isFallen:(encounterId,id,actor)=>[`npc:${actor.npcId??id}`,`enemy:${encounterId}:${id}`,`ally:${encounterId}:${id}`].some(key=>corpseHost?.model.get(key)?.status==='dead'),position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>heldWeapon(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
@@ -1011,7 +1031,8 @@ function init() {
       // is the hand slot, because the hand slot IS the shield (src/gear.js) - or a shield lent
       // for a bout, which is on his arm without ever being his.
       guardShare:m.guardShare,guardCost:m.guardCost,hasShield:hasCarriedShield()};}});
-  const combatView=createCombatView(scene,world,camera,{onCorpse:(...args)=>corpseHost?.captureCombat(...args)});
+  const combatView=createCombatView(scene,world,camera,{getActor:id=>ambushWatch?.actor(id),onCorpse:(...args)=>{
+    const captured=corpseHost?.captureCombat(...args);if(captured)ambushWatch?.release(args[0]?.id);return captured;}});
   // Drill counters survive the chart lesson and a checkpoint in the middle of training.
   let practiceHits=0,practiceGuards=0,practiceDodges=0,guardHeld=0,reviewFrozen=false,reviewTarget=null,reviewCat=null,reviewLineup=null;
   // Whether Officer Glun has set the lesson. Nothing at the straw post counts before he has.
@@ -1072,7 +1093,7 @@ function init() {
     if(hasRoadProgress())saveRoad(false);
   }});
   const campEvents=[];
-  const campcraft=createCampcraft({inventory,weapons,fireIds:world.firePits.map(f=>f.id),onEvent:event=>campEvents.push(event)});
+  const campcraft=createCampcraft({inventory,weapons,fireIds:world.firePits.map(f=>f.id),onEvent:event=>campEvents.push(event),canLightFire:id=>fireMaking.mayLight(id),canCook:()=>fireMaking.ready&&cooking.met});
   const worldMap=createWorldMap();
   // The chart is fogged: its hexes are charted as the traveler walks, and named ground is recorded (src/map-fog.js).
   const mapFog=createMapFog({onEvent:event=>{if(event.type!=='subregion-found')return;toast(event.name,`CHARTED · ${event.region.toUpperCase()}`);refreshChart();if(hasRoadProgress())saveRoad(false);}});
@@ -1086,12 +1107,15 @@ function init() {
   const skillAnnouncements=createSkillAnnouncement({mount:$('skill-intro'),onOpen:openSkillGuide,onShow:()=>audio?.effect('success')});
   const skills=createSkills({onEvent:skillEvent,begins:SKILL_IDS.filter(id=>!hiddenSkills.has(id))});
   const skillIntroducers=new Map([
-    [MARK.id,MARK_SKILLS],[INSTRUCTOR.id,['blades','shield','cartography']],
-    [GARDEN_KEEPER.id,['birding']],['pond-fisher',['fishing']],
+    [SYLVIA.id,['visualarts']],
+    [LEE_ANNE.id,['firemaking']],[SMITH_NPC.id,['smithing']],
+    [HARBOURMASTER,['cooking']],[MARK.id,[...MARK_SKILLS,'fishing']],[INSTRUCTOR.id,['blades','shield','cartography','geology','woodcutting','fishing']],
+    [FARMER.id,['farming','cooking','fishing']],[FERRY_NPC.id,['swimming']],
+    ['troupe-amanda',AMANDA_TEACHES],[GARDEN_KEEPER.id,['birding','husbandry','fishing']],['pond-fisher',['fishing']],
     [BOTANIST.id,['botany']],[GEOLOGIST.id,['geology']],[BOWDEN.id,['woodcutting','construction']],
     [BIRD_WATCHER.id,['archaeology','cooking','wine']],[VINTNER.id,['wine']],
   ]);
-  const availableSkillTeachers=()=>[...skillIntroducers].filter(([,ids])=>ids.some(id=>!skills.taught(id))).map(([id])=>id);
+  const availableSkillTeachers=()=>[...skillIntroducers].filter(([teacher,ids])=>ids.some(id=>!skills.taught(id))||([INSTRUCTOR.id,MARK.id].includes(teacher)&&['search','report'].includes(roadLessons.geologyState(teacher)))||(teacher===INSTRUCTOR.id&&glunWood.view().away)||(fishingLessons.view().teacher===teacher&&fishingLessons.view().stage!=='returning')).map(([id])=>id);
   // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
   // everything those margins are today's game to the digit, which is the law phase 1 rests on.
   arms=createCombatSkills({skills,onEvent:()=>refreshSkillsSheet()});
@@ -1125,11 +1149,13 @@ function init() {
   // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
   const farming=createFarming({skills,inventory,onEvent:event=>{
     if(event.type==='row-sown')toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · THE COMMONS ROWS`);
+    if(event.type==='row-watered')toast('Watered. This crop will grow faster and yield more. +4 Farming XP.','FARMING');
     if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');
       toast(event.type==='row-reaped'?`${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
         event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
     if(hasRoadProgress())saveRoad(false);}});
-  let currentRow=null,currentAppleTree=null;
+  const farmView=createFarmingView({scene,world,farming});
+  let currentRow=null,currentAppleTree=null,nearArtEasel=false;
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
@@ -1177,10 +1203,10 @@ function init() {
     const open=roadParties().filter(party=>!ambush.state.settled.includes(party.id));
     if(!open.length)return;
     const withTraveler=new Set(companions.walking),dead=fallen.ids;
-    if(ambush.alive&&Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<35){
+    if(ambush.alive&&Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<60){
       const arrived=open.some(p=>p.men.some(id=>!living.actor(id)?.withPlayer&&atRoadAmbush(id)));
-      if(arrived&&combat.startEncounter({...ambushEncounter,independent:true,physicalCompany:true,allies:physicalAmbushCompany()})){
-        ambushPlayerHelped=false;ambush.sprang();saveRoad(false);
+      if(arrived&&ambushHost.start({allies:physicalAmbushCompany(),partyIds:open.filter(p=>p.men.some(atRoadAmbush)).map(p=>p.id)})){
+        ambushPlayerHelped=false;saveRoad(false);
       }
       return;
     }
@@ -1194,6 +1220,18 @@ function init() {
       for(const id of told?.fallen??[]){if(fallen.fall(id))lost=true;}
     }
     if(lost){for(const id of fallen.ids)if(living.actor(id))living.setAlive(id,false,{position:bodyPlace(id,ambushGround())});rebuildCompany();placeMercenaries();saveRoad(false);}
+    // Offscreen resolution still leaves the same dead rebels and their loot.
+    for(const rebel of ambush.actors())if(rebel.hp<=0)corpseHost.captureCombat(rebel,{encounterId:ambushEncounter.id});
+  }
+  function strikeWaitingAmbusher(id,damage,source='player'){
+    const one=ambush.actors().find(actor=>actor.id===id&&actor.hp>0&&actor.mode!=='active');
+    if(!one||!(damage>0))return {ok:false,damage:0};
+    const hp=Math.max(0,one.hp-damage);ambush.remember([{...one,hp}]);
+    if(source==='player')ambushPlayerHelped=true;
+    if(!hp){const actor=ambushWatch.actor(id);if(corpseHost.captureCombat({...one,hp},{encounterId:ambushEncounter.id},actor))ambushWatch.release(id);}
+    if(!ambush.alive){if(ambushPlayerHelped)drent.defeatedAmbush();saveRoad(false);}
+    else if(combat.state.phase!=='active')ambushHost.start({player:source==='player',allies:physicalAmbushCompany()});
+    return {ok:true,hp,damage:one.hp-hp};
   }
   /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
   function longWayNext(){
@@ -1353,7 +1391,20 @@ function init() {
   const stones=createDrentStones(scene,world,{avoid:Object.values(world.npcPositions)});
   let currentStone=null;
   // Archaeology and wine, both taught by Lakota (src/archaeology.js, src/wine.js): his pegs at Rena, and Paradise Springs.
-  const archaeology=createArchaeology({skills}),wine=createWine({skills}),cooking=createCooking({skills}),wineAttic=createWineAttic(),puck=createPuck(),digs=createRenaDigs(scene,world);let currentDig=null,currentVine=null;
+  const archaeology=createArchaeology({skills}),wine=createWine({skills}),cooking=createCooking({skills,canUseFire:()=>fireMaking.ready}),wineAttic=createWineAttic(),puck=createPuck(),digs=createRenaDigs(scene,world);let currentDig=null,currentVine=null;
+  const roadLessons=createRoadsideLessons({inventory,cooking,geology,skills});
+  const husbandry=createAnimalHusbandry({skills});let currentLivestock=null;
+  const acting=createActing({skills,onEvent:event=>{if(event.type==='acting-completed')refreshRoadSkills();}});
+  const artTools=attachArtTools(player);
+  const visualArts=createVisualArts({skills,onEvent:event=>{if(event.type==='art-completed'){refreshRoadSkills();toast(`${event.name} finished. +${event.gained} Visual Arts experience.`,'A STUDY FINISHED');}}});
+  function useArtEasel(){
+    if(visualArts.pose()){visualArts.cancel();return;}
+    artEaselConversation({arts:visualArts,openDialogue,closeDialogue,start:id=>{
+      acting.cancel();const result=visualArts.begin(id,{position:player.group.position,blocked:combat.state.phase==='active'||riding.mounted||inWater});
+      if(result.ok){player.group.rotation.y=SYLVIA_STUDIO.stand.yaw;toast('Take your time. Moving or fighting interrupts the study.','VISUAL ARTS');}
+      else toast(result.reason,'VISUAL ARTS');
+    }});
+  }
   // The painted plate at the head of each block of vines at the winery: F reads the vines themselves.
   const vinePlateNear=p=>WINERY_LAYOUT.plates.find(plate=>Math.hypot(plate.x-p.x,plate.z-p.z)<2)??null;
   function readVines(){if(!currentVine)return;const variety=VARIETIES[currentVine.variety];toast(`${variety.vine}${wine.met?` Livia pours its wine at the cabin.`:''}`,`${variety.name.toUpperCase()} \u00b7 ${variety.colour.toUpperCase()} GRAPES`);}
@@ -1540,10 +1591,90 @@ function init() {
     const emptied=building.empty(spot.id);if(!emptied.ok)return;world.homestead.setPost(spot.id,{phase:'empty'});
     toast(`${emptied.bird[0].toUpperCase()}${emptied.bird.slice(1)} moved in, raised a brood and flew. You take the birdhouse down to clean it.${emptied.xp?'':' Lakota could teach you their names.'}`,'BIRDHOUSE');refreshSkillsSheet();saveRoad(false);
   }
+  const fireMaking=createFireMaking({inventory,skills,onEvent:event=>{
+    if(event.type==='fire-making-learned')toast('Your first fire is burning. Speak to Jojo for Cooking, or Stanley for farm recipes.','FIRE MAKING LEARNED');
+    refreshSkillsSheet();
+  }});
+  function leadJojoToLeeAnne(){fireMaking.refer();closeDialogue();toast('Follow Jojo to Lee Anne at the empty village fire ring.','OPTIONAL FIRE MAKING LESSON');refreshRoadSkills();}
+  function updateJojoFireGuide(){
+    const npc=npcById.get(HARBOURMASTER);if(!npc||crime?.isDown(npc.id))return;
+    if(fireMaking.referral!=='none'&&!fireMaking.ready){
+      const p=npc.actor.group.position,near=Math.hypot(p.x-player.group.position.x,p.z-player.group.position.z)<10;
+      const goal=leeStands.guide;
+      world.npcPositions[npc.id]=near?goal:{x:p.x,z:p.z};npc.pace=2.4;npc.fireGuideActive=true;
+      if(fireMaking.referral==='leading'&&mode==='playing'&&near&&Math.hypot(p.x-goal.x,p.z-goal.z)<.55){
+        fireMaking.arrived();refreshRoadSkills();
+        openDialogue(npc,['Here we are. Lee Anne teaches Fire Making; speak to her and light the empty ring yourself. I will wait here, then we can talk about cooking.'],null,'Speak with Lee Anne',{noWayfinding:true});
+      }
+    }else if(npc.fireGuideActive){npc.fireGuideActive=false;world.npcPositions[npc.id]={x:pierHead.x,z:pierHead.z};npc.pace=2.4;}
+  }
   // Woodcutting in the Koopwood: F at a standing tree starts the swinging, and walking off stops it.
   const woodlotTree=new Map(WOODLOT_TREES.map(t=>[t.id,t]));
   let currentChop=null,chop=null;
-  const satchelHas=id=>inventory.has(id);
+  const glunWood=createGlunWoodcutting({skills,inventory,onEvent:event=>{
+    if(event.type==='glun-wood-swing'){world.woodlot.chip(event.treeId);audio?.effect('hit');}
+    if(event.type==='glun-wood-practice'){wood.meet();toast('Borrow the hatchet. Press F beside this pine, cut a log, then talk to Glun.','WOODCUTTING · YOUR TURN');}
+    if(event.type==='glun-wood-report')toast('A sound log. Speak to Glun to keep the spare hatchet.','WOODCUTTING');
+    if(event.type==='glun-wood-complete')toast('A bronze hatchet, yours to keep.','ADDED TO SATCHEL');
+    if(event.type!=='glun-wood-swing')refreshRoadSkills();
+  }});
+  function updateGlunWood(dt){
+    const npc=npcById.get(INSTRUCTOR.id),lesson=glunWood.view(),point=npc.actor.group.position;
+    if(lesson.away&&!npc.walkingWith&&!crime.controlsNpc(npc.id)){
+      const near=Math.hypot(player.group.position.x-point.x,player.group.position.z-point.z)<GLUN_WOOD_LESSON.watchingReach;
+      const goal=lesson.stage==='leading'&&!near?point:GLUN_WOOD_LESSON.stand;
+      world.npcPositions[npc.id]={x:goal.x,z:goal.z};npc.pace=2.4;npc.woodLessonActive=true;
+      if(mode==='playing'&&near&&Math.hypot(point.x-GLUN_WOOD_LESSON.stand.x,point.z-GLUN_WOOD_LESSON.stand.z)<.5)glunWood.arrive();
+      glunWood.update(dt,{paused:mode!=='playing'||reviewFrozen||combat.state.phase==='active',nearby:near,treeStanding:wood.standing(GLUN_WOOD_LESSON.treeId)});
+      npc.face=GLUN_WOOD_LESSON.tree;
+      npc.woodLessonPose=glunWood.stage==='demonstrating'?{action:'attack',progress:glunWood.view().swingPhase,combo:0,armed:true,weaponId:'bearded-axe'}:{armed:true};
+      npc.actor.setWeapon('bearded-axe');npc.actor.setShield(false);
+    }else if(npc.woodLessonActive){
+      npc.woodLessonActive=false;npc.woodLessonPose=null;npc.face=null;
+      world.npcPositions[npc.id]={x:INSTRUCTOR_STAND.x,z:INSTRUCTOR_STAND.z};npc.actor.setWeapon('simple-sword');npc.actor.setShield(true);
+    }
+  }
+  const fishingHomes=Object.fromEntries(Object.keys(FISHING_TEACHERS).map(id=>[id,{...world.npcPositions[id]}]));
+  const fishingRoutes=new Map();
+  const fishingLessonVisual=createFishingLessonVisual(scene);
+  const fishingLessons=createFishingLessons({fishing,inventory,onEvent:event=>{
+    if(event.type==='fishing-lesson-leading')toast('Walk with your teacher. They will wait if you fall behind.','FISHING OUTING');
+    if(event.type==='fishing-lesson-demonstrating')toast('Watch the rod and float. Wait for it to dip before reeling.','FISHING ?? WATCH THE CAST');
+    if(event.type==='fishing-lesson-practice')toast('Your turn. At the clear bank, press F to cast; F again when the float dips. A rod is in your satchel.','FISHING ?? YOUR TURN');
+    if(event.type==='fishing-lesson-complete')toast('A good catch. Keep the rod and fish; your teacher is heading home.','FISHING OUTING COMPLETE');
+    refreshRoadSkills();
+  }});
+  function updateFishingLessons(dt){
+    let lesson=fishingLessons.view();
+    const npc=npcById.get(lesson.teacher),point=npc?.actor.group.position;
+    if(npc){
+      const spot=world.fishingSpots.find(entry=>entry.id===lesson.spot);
+      if(!fishingRoutes.has(npc.id)&&spot)fishingRoutes.set(npc.id,fishingLessonRoute(npc.id,spot,fishingHomes[npc.id]));
+      const route=lesson.stage==='returning'?[fishingHomes[npc.id],...(fishingRoutes.get(npc.id)??[])]:fishingRoutes.get(npc.id);
+      const blocked=mode!=='playing'||reviewFrozen||combat.state.phase==='active'||crime.controlsNpc(npc.id)||npc.walkingWith||!!harbourAlarm.pose(npc.id,arrivalClock());
+      const guidance=fishingLessons.guide(point,player.group.position,route,{paused:blocked,alive:!crime.isDown(npc.id)&&!npc.fallen});
+      if(guidance){
+        world.npcPositions[npc.id]={...guidance.target};npc.pace=2.4;npc.fishingLessonActive=true;
+        fishingLessons.update(dt,{paused:blocked,nearby:Math.hypot(point.x-player.group.position.x,point.z-player.group.position.z)<10});
+        lesson=fishingLessons.view();
+        const demonstrating=lesson.stage==='demonstrating'&&(npc.fishingLessonReview||(!blocked&&!guidance.waiting));
+        npc.fishingLessonPose={fishing:demonstrating,armed:false};
+        npc.actor.setFishing(demonstrating);npc.actor.setShield(false);
+        npc.face=['demonstrating','practice'].includes(lesson.stage)?spot?.castPoint:null;
+        fishingLessonVisual.update({actor:npc.actor,spot,progress:lesson.demonstration/FISHING_DEMO_SECONDS,visible:demonstrating});
+        if(lesson.stage==='returning'&&Math.hypot(point.x-fishingHomes[npc.id].x,point.z-fishingHomes[npc.id].z)<.5)fishingLessons.home();
+      }else fishingLessonVisual.update();
+    }else fishingLessonVisual.update();
+    lesson=fishingLessons.view();
+    for(const id of Object.keys(FISHING_TEACHERS)){
+      const teacher=npcById.get(id);if(!teacher?.fishingLessonActive||lesson.teacher===id)continue;
+      teacher.fishingLessonActive=false;teacher.fishingLessonPose=null;teacher.face=null;teacher.actor.setFishing(false);
+      if(id===INSTRUCTOR.id)teacher.actor.setShield(true);
+      if(!crime.controlsNpc(id))world.npcPositions[id]={...fishingHomes[id]};
+      fishingRoutes.delete(id);
+    }
+  }
+  const satchelHas=id=>inventory.has(id)||(glunWood.borrowing&&id===GLUN_WOOD_LESSON.axe);
   function startChop(t){
     const can=wood.canChop(t.id,satchelHas);if(!can.ok){toast(can.reason,'WOODCUTTING');return;}
     chop={id:t.id,next:SWING*.55};player.group.rotation.y=Math.atan2(t.x-player.group.position.x,t.z-player.group.position.z);
@@ -1560,7 +1691,7 @@ function init() {
     const swing=wood.swing(chop.id,satchelHas);
     if(!swing.ok){toast(swing.reason,'WOODCUTTING');chop=null;return;}
     if(!swing.log)return;
-    inventory.add(swing.log,1);inventory.refresh();refreshSkillsSheet();
+    inventory.add(swing.log,1);glunWood.noteSwing(swing);inventory.refresh();refreshSkillsSheet();saveRoad(false);
     if(swing.felled){world.woodlot.fell(chop.id,pp);toast(`The ${swing.kind.short} comes down. You get some logs.`,'WOODCUTTING');chop=null;saveRoad(false);}
     else toast('You get some logs.','WOODCUTTING');
   }
@@ -1592,8 +1723,23 @@ function init() {
     if(action==='john-meet'){salt.meet();toast('John, the Sultan of the Salt Trade, and his ship the Sultana: round the coast with a hold full of salt, from Tidehaven to Cobble, Izolveth and Solis, and back.','THE SALT TRADE');saveRoad(false);return;}
     if(action==='john-ed'&&salt.tellOfEd().first)saveRoad(false);
   }
-  const troupeContext=()=>({troupe,purse:inventory.count(COPPER_ITEM),here:troupe.stop.where,openDialogue,closeDialogue,act:troupeAct});
+  function openFieldActions(){
+    if(mode!=='playing'&&mode!=='dialogue')return;
+    const choices=acting.list().map(entry=>({id:`acting-emote-${entry.id}`,label:`${entry.name} · Acting ${entry.level}`,disabled:!entry.unlocked,title:entry.description,action:()=>{closeDialogue();troupeAct(`acting-emote-${entry.id}`);}}));
+    const calls=Object.values(BIRD_SPECIES).filter(bird=>birding.hasSeen(bird.id));
+    for(const bird of calls)choices.push({id:`bird-call-${bird.id}`,label:`Call · ${bird.name}`,disabled:skills.level('birding')<2,title:'Birding level 2; observe the species first',action:()=>{
+      closeDialogue();const called=birding.call(bird.id,{now:playSeconds});
+      if(called.ok){audio?.effect('bird-call');const count=drentBirds.call(player.group.position,called);toast(count?`${count} nearby ${bird.name.toLowerCase()} answer your call.`:'Your call carries into the trees. No matching bird answers nearby.','BIRDING');refreshRoadSkills();}
+      else toast(called.reason,'BIRDING');
+    }});
+    choices.push({id:'leave-field-actions',label:'Back to the road',action:closeDialogue});
+    openDialogue({id:'field-actions',name:'Expressions & bird calls',role:'Your field skills'},['Finish an expression to practice Acting. Bird calls unlock at Birding level 2 for species you have observed. Moving or fighting interrupts an expression.'],null,'Back to the road',{noWayfinding:true,choices});
+  }
+  const fieldActionsButton=document.createElement('button');fieldActionsButton.id='field-actions-button';fieldActionsButton.className='icon-button game-only';fieldActionsButton.textContent='Actions · U';fieldActionsButton.onclick=openFieldActions;$('bottom-right').append(fieldActionsButton);
+  const troupeContext=()=>({troupe,acting,purse:inventory.count(COPPER_ITEM),here:troupe.stop.where,openDialogue,closeDialogue,act:troupeAct});
   function troupeAct(action){
+    if(action==='amanda-learn-acting'){acting.teach();refreshRoadSkills();openDialogue(npcById.get('troupe-amanda'),[...ACTING_LESSON],null,'Try an expression',{onComplete:openFieldActions});return;}
+    if(action.startsWith('acting-emote-')){closeDialogue();const result=acting.perform(action.slice(13),{blocked:combat.state.phase==='active'||riding.mounted||inWater});if(!result.ok)toast(result.reason,'ACTING');return;}
     const galeon=npcById.get('troupe-galeon');
     if(action==='troupe-meet'){troupe.meet();toast('Talaelos, the players of Nylon: Galeon, Isaura, Pim, Old Nilor and Zaela, with Understudy the dog and The Critic. They go wherever the road goes.','THE PLAYERS OF NYLON');saveRoad(false);return;}
     if(action==='troupe-scene-begin'){troupe.beginScene();placeTroupe(true);return;}
@@ -1656,13 +1802,8 @@ function init() {
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0,birdWatch=null,watchedBirdId=null,watchedBirdUntil=0;
   const feederMarker=makeQuestMarker('skill');feederMarker.scale.setScalar(.6);feederMarker.visible=false;scene.add(feederMarker);
-  // The pointer over the bird the traveler is watching, so one wren can be found against a
-  // whole hedge. Deliberately not an errand's marker: a quarter of the size, a caret rather
-  // than a diamond and a ring, and birding's blue rather than the quest gold.
-  const birdPointer=new THREE.Group();
-  {const caret=new THREE.Mesh(new THREE.ConeGeometry(.08,.2,4),new THREE.MeshStandardMaterial({color:0x9fd8e8,emissive:0x59a3bd,emissiveIntensity:.62,roughness:.34,metalness:.08}));
-    caret.rotation.x=Math.PI;caret.castShadow=false;caret.receiveShadow=false;birdPointer.add(caret);}
-  birdPointer.name='bird-pointer';birdPointer.visible=false;scene.add(birdPointer);
+  // A high-contrast cue for the bird already selected by the finder.
+  const birdPointer=createBirdPointer();scene.add(birdPointer);
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
   vastos.bind({inventory,openDialogue,closeDialogue,toast,track:trackPlace,
@@ -2258,6 +2399,7 @@ function init() {
     for(const npc of crime?.extraPeople()??[]){
       if(npc.horse||npc.hidden||npc.fallen||!npc.actor.group.visible||crime.isDown(npc.id))continue;
       list.push(liveBody(npc.id,npc.actor.group.position,npc.dog?BODY.dog:BODY.person));}
+    for(const one of ambush.actors())if(one.hp>0&&one.mode!=='active')list.push(liveBody(one.id,one,BODY.person));
     if(troupeWagon.visible)list.push(...troupe.bodies());
     for(const [i,h] of horseLine.entries())if(h.actor.group.visible)list.push(liveBody(`line-horse-${i}`,h.actor.group.position,BODY.horse));
     if(ownHorse.group.visible&&!riding.mounted)list.push(liveBody('own-horse',ownHorse.group.position,BODY.horse));
@@ -2320,19 +2462,20 @@ function init() {
       if(first){audio?.effect('discovery');saveRoad(false);}
       return {ok:true,reason:''};
     }
+    if(action==='learn-husbandry'){husbandry.learn();refreshRoadSkills();openDialogue(npcById.get(GARDEN_KEEPER.id),[...HUSBANDRY_LESSON],null,'Meet the sheep');return {ok:true};}
     if(action==='learn-birding'){
       birding.meet();refreshSkillsSheet();audio?.effect('success');
       openDialogue(npcById.get(GARDEN_KEEPER.id),[...BIRDING_LESSON],null,'Back to the road');
       toast('Birding · level 1. Find a bird, keep your distance, press B.','NEW SKILL · K FOR YOUR SKILLS');saveRoad(false);return {ok:true,reason:''};
     }
     if(action==='take-feeder'){
-      const result=birding.lendFeeder(inventory);if(!result.ok){toast(result.reason,'LAKOTA’S HUMMINGBIRDS');return result;}
-      inventory.refresh();toast('Lakota’s hummingbird feeder. Take it to Lysa for sugar water.','ADDED TO SATCHEL · LAKOTA’S HUMMINGBIRDS');saveRoad(false);return result;
+      const result=birding.lendFeeder(inventory);if(!result.ok){toast(result.reason,'JEAN’S HUMMINGBIRDS');return result;}
+      inventory.refresh();toast('Jean’s hummingbird feeder. Ask Jean to fill it with sugar water.','ADDED TO SATCHEL · JEAN’S HUMMINGBIRDS');saveRoad(false);return result;
     }
-    if(action==='fill-feeder'){const result=birding.fillFeeder(inventory);if(result.ok){inventory.refresh();toast('Full of sugar water. Hang it in Perrin’s garden.','PERRIN’S HUMMINGBIRDS');saveRoad(false);}return result;}
+    if(action==='fill-feeder'){const result=birding.fillFeeder(inventory);if(result.ok){inventory.refresh();toast('Full of sugar water. Hang it in Jean’s bird garden.','JEAN’S HUMMINGBIRDS');saveRoad(false);}return result;}
     if(action==='hang-feeder'){
-      const result=birding.hangFeeder(inventory);if(!result.ok){toast(result.reason,'LAKOTA’S HUMMINGBIRDS');return result;}
-      inventory.refresh();world.setFeederHung(true);audio?.effect('success');toast('The feeder is hung. Step back, keep still and wait.','LAKOTA’S HUMMINGBIRDS');saveRoad(false);return result;
+      const result=birding.hangFeeder(inventory);if(!result.ok){toast(result.reason,'JEAN’S HUMMINGBIRDS');return result;}
+      inventory.refresh();world.setFeederHung(true);audio?.effect('success');toast('The feeder is hung. Step back, keep still and wait.','JEAN’S HUMMINGBIRDS');saveRoad(false);return result;
     }
     return {ok:false,reason:''};
   }
@@ -2567,15 +2710,11 @@ function init() {
    * reaped; sown and growing, it says how long and nothing else, because the whole lesson is
    * that you go away and come back.
    */
+  const farmingContext=()=>({farming,cooking,fireMaking,inventory,openDialogue,closeDialogue,playSeconds:()=>playSeconds,onChange:refreshRoadSkills,notify:toast});
+  function refreshRoadSkills(){inventory.refresh();refreshSkillsSheet();refreshQuest();saveRoad(false);}
   function workRow(){
-    if(!currentRow)return;
-    if(!farming.met){toast('Four drilled rows and nothing in them. Enna keeps the commons mill a few steps west; she will show you how a row goes in.','THE COMMONS ROWS');return;}
-    if(currentRow.stage==='ripe'){const got=farming.reap(currentRow.id,playSeconds);if(!got.ok)toast(got.reason,'THE COMMONS ROWS');return;}
-    if(currentRow.stage==='sown'){toast(`${currentRow.cropName} again in about ${Math.ceil(currentRow.left)} seconds. Go and do something else; it grows either way.`,'THE COMMONS ROWS');return;}
-    const seeds=farming.sowable(currentRow.id);
-    if(!seeds.length){toast('Nothing you know how to put in yet.','THE COMMONS ROWS');return;}
-    const sown=farming.sow(currentRow.id,seeds.at(-1).id,playSeconds);
-    if(!sown.ok)toast(sown.reason,'THE COMMONS ROWS');
+    if(currentRow)farmRowConversation(currentRow.id,farmingContext());return;
+
   }
   function gatherStone(){
     if(!currentStone)return;
@@ -2688,7 +2827,7 @@ function init() {
   function observeBird(){
     if(mode!=='playing'||!birding.met||combat.state.phase==='active')return;
     const target=currentBird;if(!target){toast('No bird in view. Find one, keep your distance, and face it.','BIRDING · B');return;}
-    const result=birding.observe(target.species);if(!result.ok){toast(result.reason,'BIRDING');return;}
+    const result=birding.observe(target.species,{now:playSeconds});if(!result.ok){toast(result.reason,'BIRDING');return;}
     drentBirds.observe(target.id);
     // Having looked at one properly, keep the pointer on it while he reads about it, rather
     // than letting it hop to whatever lands nearer. The hold is the card's own seven seconds.
@@ -2879,12 +3018,12 @@ function init() {
     const at=(along,across)=>({x:x+dx*along+dz*across,z:z+dz*along-dx*across});
     return {id:'caloss-rebels',center:{x,z},checkpoint:at(-14,0),
       retreatAxis:Math.abs(dx)>Math.abs(dz)?'x':'z',retreatLine:at(-26,0)[Math.abs(dx)>Math.abs(dz)?'x':'z'],
-      enemies:[
-        {id:'rebel-lane',kind:'rebel',name:'Rebel ambusher',hp:REBEL_HP,entry:.2,...at(3,-3.4),model:{role:'forest-woodcutter',tunic:0x6d5b43}},
-        {id:'rebel-hedge',kind:'rebel',name:'Rebel ambusher',hp:REBEL_HP,entry:1.4,...at(-2,3.6),model:{role:'town-carter',tunic:0x5a6350}},
-        {id:'rebel-stone',kind:'rebel',name:'Rebel ambusher',hp:REBEL_HP,entry:2.6,...at(6,2.8),model:{role:'forest-woodcutter',tunic:0x7a4f3c}},
-      ]};
+      enemies:AMBUSH_REBELS.map(one=>({id:one.id,kind:one.kind,name:one.name,hp:REBEL_HP,entry:0,
+        x:one.home.x,z:one.home.z,model:one.model}))};
   })();
+  ambushWatch=createRoadAmbushWatch({scene,world,definitions:AMBUSH_REBELS});
+  ambushHost=createRoadAmbushHost({ambush,combat,encounter:ambushEncounter,position:()=>player.group.position,
+    move:(one,delta,home)=>{const point={x:one.x,z:one.z};stepToward(point,home,Math.hypot(delta.x,delta.z),world,BODY.person,one.id.length%2?1:-1);return point;}});
   const meadowEncounter=AVREL_RAID;
   let roadStorage;try{roadStorage=window.azhoraRoadStorage||localStorage;}catch{/* Play remains available when storage is disabled. */}
   const checkpoint=createRoadCheckpoint({storage:roadStorage});
@@ -2923,9 +3062,10 @@ function init() {
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
   magic=createMagic({skills,inventory,weapons,combat,world,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
-    getBodies:()=>crime.people().filter(npc=>!npc.hidden&&!npc.fallen&&!crime.isDown(npc.id)&&npc.actor.group.visible)
+    getBodies:()=>[...crime.people().filter(npc=>!npc.hidden&&!npc.fallen&&!crime.isDown(npc.id)&&npc.actor.group.visible)
       .map(npc=>({id:npc.id,name:npc.name,role:npc.role,...npc.actor.group.position,hp:crime.health(npc).hp,r:npc.horse?BODY.horse:npc.dog?BODY.dog:npc.cat?BODY.cat:npc.ogre?BODY.ogre:BODY.person,team:'civilian'})),
-    damageWorld:(body,damage)=>crime.assault({npcId:body.npcId??body.id,damage,source:'player'}),
+      ...ambush.actors().filter(one=>one.hp>0&&one.mode!=='active').map(one=>({...one,r:BODY.person,team:'enemy'}))],
+    damageWorld:(body,damage)=>AMBUSH_REBELS.some(one=>one.id===body.id)?strikeWaitingAmbusher(body.id,damage):crime.assault({npcId:body.npcId??body.id,damage,source:'player'}),
     onEvent:event=>{if(event.type==='spell-learned'){inventory.refresh();refreshSkillsSheet();toast(`${SPELLS[event.id].name} learned. I opens equipment; equip a wand or staff, then Z casts. N changes spells.`, 'SPELL LEARNED');}
       if(event.type==='mind-read'){republic?.mindRead?.(event);toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
       if(event.type==='spell-impact'&&event.managed){crime.handleImpact({type:'melee-impact',id:event.id,source:'player',range:0,combatantIds:[...combat.state.enemies,...combat.state.allies].map(actor=>actor.id),
@@ -3826,6 +3966,7 @@ function init() {
     return {ok:false,reason:''};
   }
   function roadSnapshot(){
+    ambushHost?.remember();
     if(questStage===QUEST_DONE)journey.start();
     const gathered=woodlandLife.state();
     const catAt=npcById.get(CAT.id)?.actor.group.position;
@@ -3835,7 +3976,7 @@ function init() {
     const woodland={version:1,acornStatus:acornQuest.status,lessonSet,practiceHits:Math.min(2,practiceHits),practiceGuards:Math.min(1,practiceGuards),practiceDodges:Math.min(1,practiceDodges),
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
-    return {version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(testingEnabled){if(notify)toast('Testing sessions leave your road checkpoint unchanged.','CHECKPOINT');return false;}
@@ -3896,7 +4037,7 @@ function init() {
     // Their owners keep map access; a pending lesson must also own the chart it asks them to read.
     if(chartLesson.stage!=='unissued'&&!cartography.met)cartography.learn();
     if(questStage===2&&!saved.chartLesson&&cartography.met){chartLesson.restore('open-map');practiceGuards=saved.woodland?.practiceGuards??1;}
-    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);if(crime.health(CAT.id)?.status==='dead')catQuest.died();refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();resetLivingStory(saved);republic.restore(saved.lusciaCivilWar);restoreLivingFeet();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
+    chameleon.restore(saved.chameleon??createChameleon({seed:chameleonSeed}).snapshot());placeChameleon();brandy.restore(saved.brandy??createBrandy().snapshot());salt.restore(saved.salt??createSaltSultan().snapshot());placeSalt();wood.restore(saved.woodcutting??createWoodcutting().snapshot());building.restore(saved.construction??createConstruction().snapshot());world.homestead.setStages(building.stages);for(const spot of BIRDHOUSE_POSTS)world.homestead.setPost(spot.id,building.post(spot.id));troupe.restore(saved.troupe??createTroupe().snapshot());placeTroupe(true);digs.mark(id=>archaeology.hasFound(id));oldTree.restore(saved.oldTree??createTalkingTree().snapshot());stones.restoreGathered(saved.stones??[]);refugees.restore(saved.refugees??refugees.snapshot());burying.restore(saved.burying??createBurying().snapshot());world.lauvelField?.setBuried(burying.buried);for(const npc of npcData)npc.fallen=fallen.has(npc.id);flora.restoreGathered(saved.plants??[]);linguist.restore(saved.linguist??createLinguist().snapshot());longRoad.restore(saved.longRoad??createLongRoad().snapshot());farming.restore(saved.farming??createFarming().snapshot());roadLessons.restore(saved.roadLessons);fireMaking.restore(saved.fireMaking,{legacyCooking:!!saved.cooking?.met});husbandry.restore(saved.husbandry);glunWood.restore(saved.glunWood);fishingLessons.restore(saved.fishingLessons);fishingRoutes.clear();for(const id of Object.keys(FISHING_TEACHERS)){const teacher=npcById.get(id);teacher.fishingLessonActive=false;teacher.fishingLessonPose=null;teacher.actor.setFishing(false);world.npcPositions[id]={...fishingHomes[id]};}if(fishingLessons.view().active){const lesson=fishingLessons.view(),teacher=npcById.get(lesson.teacher),at=lesson.position;teacher.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);world.npcPositions[lesson.teacher]={...at};}acting.cancel();visualArts.cancel();artTools.set(false);farmView.update(playSeconds);ambush.restore(saved.ambush??createRoadAmbush({seed:ambushSeed}).snapshot());spiderQuest.restore(saved.spider??createSpiderQuest().snapshot());murder.restore(saved.murder??createMurderQuest().snapshot());catQuest.restore(saved.cat??createCatQuest().snapshot());vastos.restore(saved.vastos);drent.restore(saved.drentCivilWar);corpseHost.restore(saved.corpses);crime.restore(saved.crime);if(crime.health(CAT.id)?.status==='dead')catQuest.died();refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();companionOffTheClock=saved.companionOffTheClock??(Object.hasOwn(saved,'longRoad')&&(!longRoad.released||longRoad.released.releasedAt>0||longRoad.released.releasedDistance>0));rebuildCompany();resetLivingStory(saved);republic.restore(saved.lusciaCivilWar);restoreLivingFeet();settleMercenaries();jimsonClock=elapsed;wordSaid=wordToastAt(arrivalClock())?.key??null;landingSaid=landingAt(arrivalClock())?.key??null;
     {const ben=npcById.get(BEN.id);
       if(ben){
         ben.escorting=false;ben.walkingWith=false;ben.pace=undefined;ben.combatPosition=null;
@@ -3957,12 +4098,12 @@ function init() {
     const state=forestHideout.state;
     world.setForestHideoutState?.({cleared:state.cleared,recovered:state.recovered});
   }
-  function hideoutAct(action){
+  function hideoutAct(action,options={}){
     if(action==='challenge-hideout'&&(!weapons.profile().usable||combat.state.phase==='active'||combat.state.player.action!=='idle')){
       const result={ok:false,changed:false,reason:!weapons.profile().usable?'Repair your sword or equip a sound stick before challenging the camp.':'Finish your current action before challenging the camp.'};
       toast(result.reason,'BRAMBLE SCOUT CAMP');return result;
     }
-    const result=forestHideout.act(action,{questStage});
+    const result=forestHideout.act(action,{questStage,...options});
     if(!result.ok){toast(result.reason,'BRAMBLE SCOUT CAMP');return result;}
     if(result.startEncounter){
       // Save the accepted errand before the battle; active combat is never saved.
@@ -3972,7 +4113,8 @@ function init() {
       if(!combat.startEncounter(allies.length?{...hideoutEncounter,allies}:hideoutEncounter)){
         forestHideout.endEncounter(hideoutEncounter.id);return {ok:false,changed:false,reason:'The encounter could not start.'};
       }
-      stopInput();toast(allies.length?'Two scouts, and three swords beside you. Watch their swings.':'Two scouts. Watch their swings; the trail behind you is a way out.','OPTIONAL ENCOUNTER · BRAMBLE SCOUT CAMP');audio?.effect('bell');
+      if(!result.spotted)stopInput();
+      toast(result.spotted?'The scouts spotted you. Fight or retreat down the trail.':allies.length?'Two scouts, and three swords beside you. Watch their swings.':'Two scouts. Watch their swings; the trail behind you is a way out.','BRAMBLE SCOUT CAMP');audio?.effect('bell');
     }else if(result.escort!==undefined){
       toast(result.message,result.escort?'THE GARRISON MARCHES WITH YOU':'BRAMBLE SCOUT CAMP');
     }else if(result.changed){
@@ -4442,9 +4584,12 @@ function init() {
         if(learned.first){toast('Swimming, level 1. Walk into the water and it will hold you up for as long as your wind lasts.','JESS TAUGHT YOU TO SWIM');refreshSkillsSheet();saveRoad(false);}
         ferryConversation(npc,{ferry,openDialogue,closeDialogue,act:ferryAct});}});return;}
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
+    if(fireMakingConversation(npc,{lesson:fireMaking,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
+    if(sylviaConversation(npc,{arts:visualArts,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
+    if(farmingConversation(npc,farmingContext()))return;
     if(npc.id===HARBOURMASTER){jojoOnTheLanding(npc);return;}
     if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
-    if(npc.id===GARDEN_KEEPER.id){gardenKeeperConversation(npc,{birding,openDialogue,closeDialogue,act:birdingAct});return;}
+    if(npc.id===GARDEN_KEEPER.id){gardenKeeperConversation(npc,{birding,husbandry,openDialogue,closeDialogue,act:birdingAct});return;}
     // Lakota is a hired sword too, so his own conversation carries the company's two choices rather than
     // being replaced by them; it has to come before the roster's dispatch to win.
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,lakota,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct,
@@ -4484,12 +4629,12 @@ function init() {
     if(npc.id===INSTRUCTOR.id){
       instructorConversation(npc,{stage:lessonStage({briefed:lessonSet,hits:practiceHits,guards:practiceGuards,dodges:practiceDodges,taught:cartography.met,chartLesson:chartLesson.stage}),openDialogue,
         begin:()=>{lessonSet=true;arms.learn('blades');if(questStage===2)combat.startPractice(world.training);refreshShield();refreshQuest();if(hasRoadProgress())saveRoad(false);},
-        giveChart:giveTheChart,openMap:()=>{closeDialogue();openLocalMap();},report:finishChartLesson});
+        giveChart:giveTheChart,openMap:()=>{closeDialogue();openLocalMap();},report:finishChartLesson,extraChoices:[glunWoodcuttingChoice(npc,{lesson:glunWood,openDialogue,closeDialogue,onChange:refreshRoadSkills,notify:toast}),geologyFieldChoice(npc,{lessons:roadLessons,geology,openDialogue,onChange:refreshRoadSkills,back:()=>conversation(npc)})]});
       return;}
     if(REFUGEE_IDS.includes(npc.id)){refugeeConversation(npc,{refugees,openDialogue,closeDialogue,act:refugeeAct});return;}
     if(npc.id===OSTLER_NPC.id){ostlerConversation(npc,{inventory,riding,story:living,hitch:LUMBER_TOWN_STABLE.hitch,playerPosition:player.group.position,openDialogue,closeDialogue,act:ridingAct,company:companions.companions.length});return;}
     // What he sells is a function of the country he stands in, so he needs no stock of his own.
-    if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,openDialogue,closeDialogue,act:smithAct});return;}
+    if(sellsHere(npc.id)){smithConversation(npc,{level:regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0,inventory,gear,skills,weapons,onChange:refreshRoadSkills,openDialogue,closeDialogue,act:smithAct});return;}
     if((aftermathNpcIds.has(npc.id)||npc.id===MOROS_LEGATE_ID)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return;
     if(aftermathNpcIds.has(npc.id)){openDialogue(npc,[npc.modelRole==='legion-officer'?'Not now. Form up with your company.':'Not now. Stand with the companies.'],null,'Step back');return;}
     if(westSuval.converse(npc,{border,control:heldControl??campaign.mapControl(),aftermath:aftermath.state,openDialogue,closeDialogue,act:borderAct}))return;
@@ -4631,16 +4776,17 @@ function init() {
       openDialogue(npc,[questStage>=QUEST_DONE
         ?'Glun has passed you, they tell me, and I am glad of it. I have two boats waiting on a tide and a clerk in Nothom waiting on you, so neither of us is finished standing here.'
         :'Officer Glun, at the straw post by the crossroads. I have told you where he is; go along now, and do it properly the first time.'],
-        null,'Back to the landing',{choices:[...jojoCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
+        null,'Back to the landing',{choices:[jojoCookingChoice(npc,{lessons:roadLessons,cooking,fireMaking,leadToLeeAnne:leadJojoToLeeAnne,openDialogue,onChange:refreshRoadSkills,back:()=>jojoOnTheLanding(npc)}),...jojoCornerChoices(npc),{id:'leave-mara',label:'Back to the landing.',action:closeDialogue}]});
       return;
     }
     updateQuest('ashore');
+    const welcome=roadLessons.welcome();if(welcome.first){inventory.refresh();toast('Jojo gave you a sandwich. Open I to eat it when you need health.','ADDED TO SATCHEL');saveRoad(false);}
     openDialogue(npc,['That bell was going before you were tied up. Bramble goblins, in the drying yards before light — they took what they could carry and went back over the Tessen, and there is nothing left of it now but a broken gate and a great deal of talk. The landing is safe. I would not have let your boat tie up if it were not.',
       'Jojo. Harbourmaster, which this morning means I am the one holding the paperwork nobody else will touch. This is yours, and keep it dry: the letter of introduction, for Iven, the army’s relay clerk at Nothom. He holds your assignment, and he will not hold it long.',
       'Nothom is a long way west of here and you are not walking it yet. Officer Glun first — the straw post at the crossroads, up through the village. He looks at every hired sword that comes off a boat and decides whether they go up that road or back down the gangway. He will not take my word for you, and he is right not to.',
       'Do as he asks and he will give you a chart and the rest of it. Then west: the Greenway under the trees, the Avrel clearing, and the Caloss. The bridge there is down — the middle of the span went into the water, and the man who keeps it is mending it on his own. You will get across one way or the other. Wet, if you are in a hurry.',
       `One of your own boat came up the pier with you — ${landingMateNote(npcById.get(landingMateId()))}. Speak to him before you go inland; he knows what to do with a sword, and you have the look of somebody who is shortly going to need to. He will not be the last of you off the Stills either — I have boats booked on every tide today, and the paper says eleven.`,
-      'And eat something before you go up that hill. It is a poor start to anything on an empty stomach.'],
+      'Here is a sandwich for the road. Eat it from your satchel with I whenever you need health. And before you go, I could show you a few moves to keep you nourished. Come back for a cooking lesson if you like; Glun will still be at the post.'],
       'accept-letter','Take the letter');
   }
   /**
@@ -4697,7 +4843,7 @@ function init() {
   }
   function doomsayerConversation(npc){
     heardDoom=true;saveRoad(false);
-    return markConversation(npc,{skills,botany,geology,openDialogue,closeDialogue,onLearn:()=>{refreshSkillsSheet();saveRoad(false);}});
+    return markConversation(npc,{skills,botany,geology,openDialogue,closeDialogue,onLearn:()=>{refreshSkillsSheet();saveRoad(false);},geologyChoice:geologyFieldChoice(npc,{lessons:roadLessons,geology,openDialogue,onChange:refreshRoadSkills,back:()=>doomsayerConversation(npc)})});
   }
   function fisherConversation(npc){
     const alreadyHasRod=inventory.has('fishing-rod');
@@ -4723,8 +4869,9 @@ function init() {
     openDialogue({id:fire.id,name:fire.id==='village-fire'?'Village fire pit':fire.id==='pond-fire'?'Pondside fire pit':'Roadside fire pit',role:'Camp cooking'},[`${feedback?feedback+' ':''}${condition} ${supplies}`],null,'Leave the fire',{choices:[
       {id:'light-fire',label:status.lit?'Fire already lit':'Light fire · 2 sticks',disabled:!status.canLight,title:status.lightReason,action:()=>act('light')},
       {id:'cook-fish',label:'Cook one raw fish',disabled:!status.canCook,title:status.cookReason,action:()=>act('cook')},
-      ...(cooking.knows('hot-chocolate')?[{id:'make-hot-chocolate',label:`Make hot chocolate \u00b7 ${inventory.count('chocolate')} chocolate, ${inventory.count('milk')} milk`,disabled:!status.lit||cooking.missing('hot-chocolate',inventory).length>0,
-        title:!status.lit?'Light the fire first.':cooking.missing('hot-chocolate',inventory).length?`You need ${cooking.missing('hot-chocolate',inventory).join(' and ')}.`:'',action:brew}]:[]),
+      ...cooking.view().entries.filter(entry=>entry.known&&entry.id!=='cooked-fish').map(entry=>({id:`make-${entry.id}`,label:`Make ${entry.name}`,disabled:!status.lit||cooking.missing(entry.id,inventory).length>0,title:!status.lit?'Light the fire first.':cooking.missing(entry.id,inventory).join(', '),action:()=>{
+        const made=cooking.make(entry.id,inventory);inventory.refresh();if(made.ok)refreshRoadSkills();fireMenu(fire,made.ok?`${entry.name} is ready. Cooking +${made.xp}. Eat it from your satchel.`:made.reason);
+      }})),
       {id:'leave-fire',label:'Back to the road',action:closeDialogue}
     ]});
   }
@@ -4747,12 +4894,15 @@ function init() {
       if(event.type==='catch'){
         const spot=world.activeFishingSpot?.()?.id??currentFishingSpot?.id??'willowmere';
         const landed=fishing.land(spot);
+        const teacher=npcById.get(fishingLessons.view().teacher);
+        fishingLessons.noteCatch(spot,landed,{nearby:!!teacher&&teacher.actor.group.position.distanceTo(player.group.position)<10&&!crime.isDown(teacher.id)});
         if(landed.ok&&landed.first){showSkillCard({kicker:`FIRST CATCH · FISHING +${landed.xp}${landed.levelled?` · LEVEL ${landed.level}`:''}`,name:landed.species.name,note:landed.species.note,skill:FISHING_SKILL});}
         else toast(landed.ok?`${landed.species.name} · ${landed.count} landed. Cook it over a fire.`:'A raw fish for your satchel. Cook it over a fire.','FRESH CATCH');
         refreshSkillsSheet();audio?.effect('success');
       }
       if(event.type==='miss')toast(event.reason,'TRY ANOTHER CAST');
       if(event.type==='bite')audio?.effect('bite');
+      if(event.type==='fire-lit'){fireMaking.lit(event.id);refreshSkillsSheet();}
       if(event.type==='fire-lit'||event.type==='cook')audio?.effect('success');
       if(['fishing-taught','catch','fire-lit','cook'].includes(event.type)&&hasRoadProgress())saveRoad(false);
     }
@@ -4850,6 +5000,13 @@ function init() {
     ]})};
   }
   function openDialogue(npc,lines,event=null,action='Back to the road',options={}){
+    if(options.choices?.length&&!options.noWayfinding&&FISHING_TEACHERS[npc.id]){
+      let choices=options.choices.filter(choice=>!choice.id?.startsWith('fishing-lesson-'));
+      if(npc.id===INSTRUCTOR.id&&fishingLessons.view().teacher===npc.id)choices=choices.map(choice=>choice.id==='glun-wood-begin'?{...choice,disabled:true,reason:'Finish our fishing outing first.'}:choice);
+      const extra=fishingLessonChoices(npc,{lessons:fishingLessons,fishing,openDialogue,closeDialogue,onChange:refreshRoadSkills,
+        position:()=>npc.actor.group.position,busy:npc.walkingWith||crime.controlsNpc(npc.id)||(npc.id===INSTRUCTOR.id&&glunWood.view().away),notify:toast});
+      options={...options,choices:[...choices.slice(0,-1),...extra,choices.at(-1)]};
+    }
     if(options.choices?.length&&!options.noWayfinding){
       const ask=wayfindingChoice(npc,()=>openDialogue(npc,lines,event,action,options));
       if(ask)options={...options,choices:[...options.choices.slice(0,-1),ask,options.choices.at(-1)]};
@@ -5231,7 +5388,9 @@ function init() {
     if(combat.state.phase!=='active'&&currentFeederHook){birdingAct('hang-feeder');return;}
     if(combat.state.phase!=='active'&&currentMushroom){gatherMushroom();return;}
     if(combat.state.phase!=='active'&&currentPlant){gatherPlant();return;}
+    if(combat.state.phase!=='active'&&nearArtEasel&&!currentNPC){useArtEasel();return;}
     if(combat.state.phase!=='active'&&currentRow){workRow();return;}
+    if(combat.state.phase!=='active'&&currentLivestock){const result=husbandry.care(currentLivestock,player.group.position,playSeconds);if(result.ok){roadLife.calm(result.id,result.calmSeconds)||westLife.calm?.(result.id,result.calmSeconds);refreshRoadSkills();}toast(result.message||result.reason,'ANIMAL HUSBANDRY');return;}
     if(combat.state.phase!=='active'&&currentAppleTree){const picked=farming.pick(currentAppleTree.id,playSeconds);if(!picked.ok)toast(picked.reason,'APPLEGARTH’S ORCHARD');return;}
     if(combat.state.phase!=='active'&&currentStone){gatherStone();return;}
     if(combat.state.phase!=='active'&&currentDig){readDig();return;}
@@ -5259,7 +5418,7 @@ function init() {
     if(combat.state.phase!=='active'&&nearFishing){startFishing();return;}
     if(combat.state.phase!=='active'&&nearRepair){
       if(combat.state.player.action!=='idle'){toast('Finish your swing before using the bench.');return;}
-      const repaired=weapons.repair();inventory.refresh();
+      const repaired=weapons.repair();if(repaired&&skills.taught('smithing')){skills.gain('smithing',18);refreshSkillsSheet();}inventory.refresh();
       if(hasRoadProgress())saveRoad(false);
       toast(repaired?'Your weapons are ready for the road.':'Your weapons are already in good condition.','REPAIR BENCH · NO CHARGE');audio?.effect('success');return;
     }
@@ -5320,7 +5479,7 @@ function init() {
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=returnToSafety;
   $('defeat-restore').onclick=retry;$('defeat-saved').onclick=()=>{stopAutopilot();continueRoad();};
   $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
-  $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('F inspects the camp. Choose whether to challenge its two scouts.','OPTIONAL WOODLAND ENCOUNTER');};
+  $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('The scouts attack if you come too close. Keep to the outskirts to pass safely; F surveys the camp from here.','BRAMBLE SCOUT CAMP');};
   for(const kind of ['satchel','republic','recall'])$('test-story-'+kind).onclick=()=>stageLivingScenario(kind);
   $('test-peblos').onclick=()=>{
     if(!testingEnabled)prepareTesting();
@@ -5351,7 +5510,7 @@ function init() {
     chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
     refreshChart();toast(chartRevealed?'The whole chart is showing, tinted by how far each region is built.':'The chart is fogged again. It fills in as you walk.','DEVELOPER · THE CHART');
   };
-  $('test-birds').onclick=()=>{testTravel('village');const s=world.birdGarden.stand,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Perrin to learn birding. B observes a bird; K shows your skills.','TESTING · BIRDING');};
+  $('test-birds').onclick=()=>{testTravel('village');const s=JEAN_STAND,x=s.x+Math.sin(s.yaw)*2.2,z=s.z+Math.cos(s.yaw)*2.2;player.group.position.set(x,world.heightAt(x,z),z);settleCamera();closeModal();toast('Speak with Jean to learn Birding and Animal Husbandry. B observes a bird; K shows your skills.','TESTING · BIRDING');};
   const vastosTest=document.createElement('button');vastosTest.id='test-vastos-civil-war';vastosTest.className='secondary';vastosTest.textContent='Vastos: the Common Water (parked)';vastosTest.hidden=!questLive('civil-war-vastos');
   const drentTest=document.createElement('button');drentTest.id='test-drent-civil-war';drentTest.className='secondary';drentTest.textContent='Drent silver quest · After the ambush';
   document.querySelector('#testing .test-travel').append(drentTest);
@@ -5655,6 +5814,7 @@ function init() {
     if(e.code==='KeyR'){attack();return;}
     if(e.code===RIDING_KEYS.mount){toggleMount();return;}
     if(e.code===RIDING_KEYS.whistle){whistleHorse();return;}
+    if(e.code==='KeyU'&&mode==='playing'){e.preventDefault();openFieldActions();return;}
     if(e.code===BIRDING_KEY){observeBird();return;}
     // **C alone.** Ctrl used to dodge as well, and every screenshot shortcut on the machine
     // goes through Ctrl, so taking a picture of the game made the traveler jump sideways
@@ -5750,11 +5910,17 @@ function init() {
     const events=combatEvents.splice(0);
     // Record every physical impact before death rendering and terminal encounter callbacks.
     for(const event of events){const impact=crime.handleImpact(event.type==='spell-impact'?{...event,type:'arrow-impact'}:event);
+      if(['melee-impact','arrow-impact'].includes(event.type)&&!event.practice&&!event.bout){
+        const internal=new Set([...(event.combatantIds??[]),...(event.affectedIds??[])]);
+        const waiting=ambush.actors().filter(one=>one.hp>0&&one.mode!=='active'&&!internal.has(one.id));
+        const contacts=event.type==='arrow-impact'?waiting.filter(one=>one.id===event.targetId):ambushMeleeContacts(event,waiting,world);
+        for(const contact of contacts)strikeWaitingAmbusher(contact.id,event.damage,event.source);}
       if(event.type==='melee-impact'&&event.source==='player'&&impact.externalHits>0&&!event.affectedIds?.length){weapons.contact(event.weaponId);inventory.refresh();}}
     for(const e of events) {
       combatView.event(e);audio?.effect(e.type);
       const lawEvent=crime.combatEvent(e);
       corpseHost.combatEvent(e,combat.state);
+      ambushHost.combatEvent(e);
       if(lawEvent&&['victory','retreat','defeat'].includes(e.type)){saveRoad(false);continue;}
 
       if(raid.ids.includes(e.id)){const npc=npcById.get(e.id);
@@ -5769,7 +5935,8 @@ function init() {
       // How each villager came through the Greenway, for Eren to speak of.
       // The road is clear, and everybody the clock sends up it after this walks it safely.
       if(e.type==='hit'&&combat.state.encounterId===ambushEncounter.id&&e.source!=='enemy'&&e.source!=='ally')ambushPlayerHelped=true;
-      if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id){ambush.cleared();if(ambushPlayerHelped)drent.defeatedAmbush();saveRoad(false);}
+      if(e.type==='victory'&&combat.state.encounterId===ambushEncounter.id&&!ambush.alive){if(ambushPlayerHelped)drent.defeatedAmbush();saveRoad(false);}
+      if(e.type==='retreat'&&combat.state.encounterId===ambushEncounter.id)saveRoad(false);
       drent.combatEvent(e);republic?.combatEvent?.(e,combat.state);
       if(['ally-down','enemy-defeated'].includes(e.type)&&living.actor(e.npcId??e.id)){const id=e.npcId??e.id;living.setAlive(id,false,{position:{x:e.x,z:e.z}});fallen.fall(id);}
       if(e.type==='defeat'&&living.satchel().carrier==='player'){living.dropSatchel('player',{position:{x:player.group.position.x,z:player.group.position.z}});inventory.remove('courier-satchel',1);}
@@ -6050,6 +6217,9 @@ function init() {
       world.updateRegionalPlaces?.(dt,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
       vastos.frame(reviewFrozen?0:dt,player.group.position,reviewFrozen?'review':mode,combat.state.phase==='active');
       forestEcology.update(dt,elapsed,player.group.position,['playing','fishing'].includes(mode)&&!reviewFrozen);
+      // Camp lookouts become hostile on proximity, without an inspect prompt or quest prerequisite.
+      if(mode==='playing'&&!reviewFrozen&&combat.state.phase!=='active'&&combat.state.phase!=='defeated'
+        &&forestHideout.canAlert(player.group.position))hideoutAct('alert-hideout',{position:player.group.position});
       hideoutWatch.update(dt,player.group.position,{cleared:forestHideout.state.cleared,active:combat.state.encounterId===hideoutEncounter.id&&['active','defeated'].includes(combat.state.phase),playing:mode==='playing'&&!reviewFrozen});
       let movement=0;
       {const bodies=gatherBodies();playerWorld.setBodies(bodies).moving(player.group.position,riding.mounted?RIDE.radius:BODY.traveler,'traveler');npcWorld.setBodies(bodies);catWorld.setBodies(bodies);}
@@ -6137,6 +6307,7 @@ function init() {
         combatClock+=dt;combat.update(dt);
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
         magic.update(dt);handleCombatEvents();
+        ambushHost.update(dt);if(combatEvents.length)handleCombatEvents();
         // **A loan cannot outlive the bout it was made for**, by any road out of one: the yield
         // either way and the walk-away all go through `spar-over` and are handled above, but a
         // drowning goes through `combat.revive()` and a fight can be ended from outside. This is
@@ -6207,9 +6378,10 @@ function init() {
         // journal: he walks into it or he never knows it was there (src/road-ambush.js).
         {const near=Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach;
           if(!near)ambushHeldOff=false;
-          else if(ambush.alive&&combat.state.phase!=='active'&&mode==='playing'){
-            if(combat.startEncounter(ambushEncounter)){ambushPlayerHelped=true;ambush.sprang();ambushHeldOff=false;
-              toast(ambush.fell(landingMateId())?'Three of them come out of the hedges, over the body they left on the road.':'Three of them come out of the hedges on either side of the road. Nobody was waiting for you; somebody was waiting.','THE DRENT ROAD');
+          else if(ambush.ready&&combat.state.phase!=='active'&&mode==='playing'){
+            if(ambushHost.start({player:true,allies:physicalAmbushCompany(),partyIds:roadParties().filter(p=>p.men.some(atRoadAmbush)).map(p=>p.id)})){ambushPlayerHelped=true;ambushHeldOff=false;
+              const count=ambush.state.rebels;
+              toast(count===3?'Three figures rise from cover on either side of the road.':`${count===1?'The surviving ambusher rises':`${count} surviving ambushers rise`} from the cover again.`,'THE DRENT ROAD');
               audio?.effect('bell');saveRoad(false);}
             // **A refused fight is a fight that silently never happens** (tests/fights-with-company.test.js).
             // There is no ground for one only while he is in the middle of something else, so he is
@@ -6243,7 +6415,11 @@ function init() {
       const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
       player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
-      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater,fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
+      acting.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater});
+      visualArts.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater||!!acting.pose()||!!combat.state.player.guarding||weaponPose.action==='attack',position:player.group.position});
+      artTools.set(!!visualArts.pose());
+      if(visualArts.pose()){player.setArmed(false);player.setShield(false);}
+      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,emote:acting.pose(),painting:!!visualArts.pose(),sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater&&!acting.pose()&&!visualArts.pose(),fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
         // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
         // is what `combat.guard` decided this frame, not what the key is doing.
         guarding:!!combat.state.player.guarding,
@@ -6260,14 +6436,15 @@ function init() {
       } else show('ride-prompt',false);
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});
       if(!riding.owned)refreshCompanyHorses();
+      farmView.update(playSeconds);
+      currentLivestock=mode==='playing'&&combat.state.phase!=='active'?husbandry.nearby(player.group.position,[...roadLife.state().creatures,...westLife.state().creatures].filter(animal=>!crime.isDown(animal.id))):null;
       birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
       if(mode!=='playing'){currentBird=null;birdWatch=null;}
       show('observe-prompt',!!currentBird&&living.recall().status!=='passenger');if(currentBird)$('observe-label').textContent=birding.hasSeen(currentBird.species)?`Observe the ${BIRD_SPECIES[currentBird.species].name.toLowerCase()}`:'Observe the bird';
-      // The pointer bobs over the bird and the box sits beside the chart; the first-sighting
-      // card takes the screen back the moment B earns it, so the two are never up together.
+      // The first-sighting card takes the screen back the moment B earns it.
       {const watching=!!birdWatch&&mode==='playing'&&combat.state.phase!=='active';
-        birdPointer.visible=watching;show('bird-watch',watching&&!$('bird-card').classList.contains('visible'));
-        if(watching){birdPointer.position.set(birdWatch.x,birdWatch.y+.44+Math.sin(elapsed*3.1)*.05,birdWatch.z);birdPointer.rotation.y=elapsed*1.1;}}
+        birdPointer.update(watching?birdWatch:null,{camera,time:elapsed,viewportHeight:canvas.clientHeight});
+        show('bird-watch',watching&&!$('bird-card').classList.contains('visible'));}
       {const task=birding.task(),hook=world.birdGarden.hook;feederMarker.visible=task?.stage==='filled'&&combat.state.phase!=='active';if(feederMarker.visible){feederMarker.position.set(hook.x,hook.y+2.75+Math.sin(elapsed*2.5)*.1,hook.z);feederMarker.rotation.y=elapsed*.7;}}
       audio?.update(dt,{position:player.group.position,speed:movement,region:world.regionAt(player.group.position.x,player.group.position.z),playing:['playing','fishing'].includes(mode)&&!reviewFrozen});
       // The horizon belongs to the country the traveler is *told* they are in, so it reads
@@ -6329,7 +6506,7 @@ function init() {
         }
       }
       escortLandingMate();
-      {const cast=new Set(border.cast());for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
+      {const cast=new Set(border.cast({solisHolder:heldControl?.['West Suval']??'coalition'}));for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing'){
         const p=player.group.position,widened=mapFog.reveal(p.x,p.z);
         // A hex the fog has just given up is a hex of some country, and the chart of countries counts it.
@@ -6375,6 +6552,9 @@ function init() {
         if(near&&['playing','dialogue'].includes(mode)&&!reviewFrozen){a.getObjectByName('Left Wrist').getWorldPosition(gloveAt);
           const step=redTailFlight.update(dt,{glove:{x:gloveAt.x,y:gloveAt.y-.04,z:gloveAt.z,yaw:a.rotation.y},anchor:{x:a.position.x,y:a.position.y,z:a.position.z},called:mode==='dialogue'&&activeDialogue?.npc?.id===BIRD_WATCHER.id});
           redTail.pose(step,elapsed);lakota.falconer=redTailFlight.perched;}}
+      updateJojoFireGuide();
+      updateGlunWood(dt);
+      updateFishingLessons(dt);
       const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const markerView={skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
@@ -6468,9 +6648,9 @@ function init() {
         // A man in the saddle sits in it: his legs do not walk, and the pace goes to the horse
         // under him instead (refreshCompanyHorses).
         npc.shownPace=pace;
-        const drill=npc.placement?.animation;
+        const drill=npc.fishingLessonPose??npc.woodLessonPose??npc.placement?.animation;
         if(npc.id===landingMateId())npc.actor.setShield(!!drill?.guarding);
-        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):npc.mounted?0:pace,true,{alert:alarm,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming,riding:npc.mounted?{pace}:null,...(pace<.2?drill:null)});
+        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):npc.mounted?0:pace,true,{alert:alarm,conversing:activeDialogue?.npc?.id===npc.id,sitting:!!npc.sitting&&pace<.1,posture:npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming,riding:npc.mounted?{pace}:null,...(pace<.2?drill:null)});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.ogre?BODY.ogre-BODY.person:0;
@@ -6629,6 +6809,7 @@ function init() {
       currentCask=mode==='playing'&&combat.state.phase!=='active'&&Math.hypot(SEA_WALL_NICHE.x-player.group.position.x,SEA_WALL_NICHE.z-player.group.position.z)<SEA_WALL_NICHE.reach?SEA_WALL_NICHE:null;
       const nearBorder=world.border.notice!==false&&Math.hypot(player.group.position.x-world.border.x,player.group.position.z-world.border.z)<9;
       currentAcorn=mode==='playing'?woodlandLife.nearestAcorn(player.group.position,2):null;
+      nearArtEasel=mode==='playing'&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-SYLVIA_STUDIO.stand.x,player.group.position.z-SYLVIA_STUDIO.stand.z)<1.5;
       currentStick=mode==='playing'?woodlandLife.nearestStick(player.group.position,2):null;
       currentFoundWeapon=mode==='playing'&&combat.state.phase!=='active'?foundWeapons.lying().filter(one=>!inventory.has(one.weapon))
         .map(one=>({...one,away:Math.hypot(one.x-player.group.position.x,one.z-player.group.position.z)}))
@@ -6663,6 +6844,8 @@ function init() {
       currentMorosSite=mode==='playing'&&moros.view().stage==='claim-horse'?Object.values(MOROS_SITES).find(site=>Math.hypot(p.x-site.x,p.z-site.z)<3)||null:null;
       // A place the traveler has business at keeps its prompt, and the key, from a hired sword who is walking by.
       if(currentNPC&&placeKeepsPrompt({marked:!!currentNPC.marker?.visible,passing:mercenaryIds.has(currentNPC.id)},currentJourneySite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite))currentNPC=null;
+      // Work at the nearer fire even when a teacher is standing nearby or walking past.
+      if(currentNPC&&currentFire&&fireKeepsPrompt(Math.hypot(p.x-currentNPC.actor.group.position.x,p.z-currentNPC.actor.group.position.z),Math.hypot(p.x-currentFire.x,p.z-currentFire.z)))currentNPC=null;
       // The horses on the line breathe, graze and swish only while the traveler is near enough to see them.
       {const near=Math.hypot(p.x-horseLine[0].x,p.z-horseLine[0].z)<160;for(const [i,horse] of horseLine.entries()){horse.actor.group.visible=near&&!crime.isDown(`line-horse-${i}`);if(horse.actor.group.visible)horse.actor.animate(elapsed+i*1.7,0,true,horse.grazing?{grazing:Math.sin(elapsed*.11+i)>0}:{});}}
       currentHideoutSite=null;
@@ -6676,8 +6859,8 @@ function init() {
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
       const currentCorpse=mode==='playing'?corpseHost.nearest():null;
-      const prompting=mode==='playing'&&living.recall().status!=='passenger'&&(!!currentNPC||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentAppleTree||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&combat.state.phase!=='active';show('interaction',prompting);
-      if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ask ${currentFishingSpot?.id==='reedwater'?'Chip':'Bran'} for a rod`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
+      const prompting=mode==='playing'&&living.recall().status!=='passenger'&&(!!currentNPC||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||nearArtEasel||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&combat.state.phase!=='active';show('interaction',prompting);
+      if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ${currentFishingSpot?.id==='avrel-pool'?'ask Stanley for a lesson':currentFishingSpot?.id==='reedwater'?'ask Chip for a rod':'ask Glun, Mark, Jean or Bran to teach you'}`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentNPC?.marker.visible&&currentNPC.markerKind==='skill')$('interaction-label').textContent+=' \u00b7 Skill teacher';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
       if(currentForestSite&&!currentNPC)$('interaction-label').textContent=currentForestSite.prompt;
@@ -6685,9 +6868,9 @@ function init() {
       if(currentLusciaSite&&!currentNPC)$('interaction-label').textContent=currentLusciaSite.prompt;
       if(currentMorosSite&&!currentNPC)$('interaction-label').textContent=currentMorosSite.prompt;
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
-      if(currentRow&&!currentNPC)$('interaction-label').textContent=!farming.met?'A drilled row, and nobody has shown you what to do with it'
-        :currentRow.stage==='ripe'?`Reap the ${currentRow.cropName.toLowerCase()} · ${currentRow.name.toLowerCase()}`
-        :currentRow.stage==='sown'?`${currentRow.cropName} · ${Math.ceil(currentRow.left)} seconds`:`Sow ${currentRow.name.toLowerCase()}`;
+      if(currentLivestock&&!currentNPC)$('interaction-label').textContent=`Care for ${currentLivestock.name} · Animal Husbandry`;
+      if(currentRow&&!currentNPC)$('interaction-label').textContent=`Work row ${FARM_ROWS.findIndex(r=>r.id===currentRow.id)+1} · ${currentRow.stage==='bare'?'choose a crop':currentRow.stage==='ripe'?currentRow.cropName+' ready':currentRow.cropName+' · '+farmWait(currentRow.left)+(currentRow.watered?'':' · water me')}`;
+      if(nearArtEasel&&!currentNPC)$('interaction-label').textContent=visualArts.pose()?`Working on your study · ${Math.round(visualArts.pose().progress*100)}% · F to stop`:'Use the spare easel · Visual Arts';
       if(currentAppleTree&&!currentNPC)$('interaction-label').textContent=!farming.met?'An apple tree somebody keeps'
         :currentAppleTree.stage==='fruiting'?'Pick an Avrel apple':`Picked out · bearing again in ${Math.ceil(currentAppleTree.left)} seconds`;
       if(currentStone&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant)$('interaction-label').textContent=geology.met?(geology.hasFound(currentStone.species)?`Pick up the ${currentStone.name.toLowerCase()}`:'Look at this stone'):'A stone catches your eye';
@@ -6702,7 +6885,7 @@ function init() {
       if(nearOldTree&&!currentNPC)$('interaction-label').textContent=oldTree.awake?'It is looking at you':'The Old Tree';
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
       if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
-      if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Inspect Bramble Scout Camp · optional';
+      if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Survey Bramble Scout Camp · keep your distance';
       // A prompt that is off the screen must not leave its words behind. Opening a conversation
       // hides this panel on the spot (openDialogue), and everything that writes the label is
       // gated on play, so the HUD otherwise keeps offering whatever it offered last. No player
@@ -6731,6 +6914,7 @@ function init() {
       camera.position.lerp(cameraTarget,1-Math.exp(-5*dt));
       cameraFocus.x+=Math.sin(combatClock*73)*shake;cameraFocus.y+=Math.sin(combatClock*59)*shake*.45;camera.lookAt(cameraFocus);
       shake=combatView.update(mode==='playing'&&!reviewFrozen?dt:0,combatClock,combat.state,player.group.position,mode==='playing');
+      ambushWatch.update(elapsed,ambush.actors(),{combat:combat.state});
       if(frameCount%15===0){sun.target.position.copy(player.group.position);sun.position.copy(player.group.position).add(new THREE.Vector3(-45,90,38));}
       // Compass bearings are true to the chart: today's road runs south-west across Drent, not north.
       const {index:headingIndex,labels:headings}=compassHeading(yaw,HEX_WORLD_TRANSFORM);
@@ -6781,7 +6965,44 @@ function init() {
       prepareRegional:()=>{focusedRoadHooks().prepare();regionalLife.restore();syncRegionalLife();reviewFrozen=false;reviewTarget=null;player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);yaw=0;pitch=.35;distance=targetDistance=8;stopInput();settleCamera();saveRoad(false);}});
 
     const setCheckClock=seconds=>{const saved=living.snapshot();saved.seconds=seconds;if(!living.restore(saved))throw new Error('Invalid test clock');playSeconds=living.clock();};
+    function roadSkillsHooks(){
+      const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+      const tap=code=>{document.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true}));};
+      const warp=(x,z)=>{player.group.position.set(x,world.heightAt(x,z),z);grounded=true;verticalSpeed=0;inWater=false;};
+      const close=()=>{if(mode==='dialogue')closeDialogue();else if(mode!=='playing')closeModal();stopInput();};
+      return {world,player,npcById,combat,inventory,skills,farming,cooking,fireMaking,campcraft,fishing,fishingLessons,birding,husbandry,acting,visualArts,glunWood,wood,border,frames,tap,warp,close,
+        fishingView:()=>{const visual=scene.getObjectByName('Fishing demonstration');return {visible:!!visual?.visible,teacher:fishingLessons.view().teacher};},
+        getState:()=>({...state(),playSeconds,glun:{...glunWood.view(),position:npcById.get(INSTRUCTOR.id).actor.group.position.toArray(),home:world.npcPositions[INSTRUCTOR.id]}}),snapshot:roadSnapshot,notify:result=>console.log('Road skill check',JSON.stringify(result)),
+        restore:saved=>{const result=sessionCheckpoint.save(saved);if(!result.ok)throw new Error(result.reason);if(!continueRoad(true))throw new Error('Road lesson save did not restore');mode='playing';reviewFrozen=false;},
+        advancePlay:seconds=>{setCheckClock(playSeconds+seconds);farmView.update(playSeconds);},
+        marker:id=>{const npc=npcById.get(id);return {visible:!!npc?.marker?.visible,kind:npc?.markerKind?.split(':')[0]};},
+        livestock:()=>[...roadLife.state().creatures,...westLife.state().creatures],refreshPopulation:()=>frames(3),
+        prepareGlun:()=>{close();questStage=QUEST_DONE;practiceHits=2;practiceGuards=1;practiceDodges=1;lessonSet=true;chartLesson.restore('complete');inventory.grant('harbor-letter');inventory.grant('road-token');combat.finishPractice();refreshRoadSkills();},
+        prepare:()=>{stopAutopilot();close();forestHooks().prepareVillage();questStage=1;reviewFrozen=false;reviewTarget=null;testingEnabled=true;skills.restore(createSkills({begins:SKILL_IDS.filter(id=>!hiddenSkills.has(id))}).snapshot());roadLessons.restore({version:1,foodGiven:false,geology:{}});fireMaking.restore();cooking.restore(createCooking().snapshot());combat.revive();refreshRoadSkills();},
+        visit:async id=>{close();const npc=npcById.get(id),point=npc?.actor.group.position??FARM_ROWS.find(row=>row.id===id)??world.firePits.find(fire=>fire.id===id);if(!point)throw new Error('Unknown lesson destination '+id);
+          if(npc){const home=world.npcPositions[id];warp(home.x+1.3,home.z+.6);await frames(3);const p=npc.actor.group.position;warp(p.x+1.3,p.z+.6);}else warp(point.x,point.z);
+          await frames(3);tap('KeyF');await frames(1);if(mode!=='dialogue')throw new Error('F did not open '+id+'; nearby '+(currentNPC?.id??currentRow?.id??currentFire?.id??'nothing'));},
+        choose:async id=>{const button=document.querySelector('#dialogue-choices [data-choice="'+id+'"]');if(!button||button.disabled)throw new Error('Unavailable choice '+id+'; found '+[...document.querySelectorAll('#dialogue-choices [data-choice]')].map(b=>b.dataset.choice).join(','));button.click();await frames(1);},
+        finish:async()=>{for(let n=0;n<35&&mode==='dialogue';n++){if(activeDialogue?.index>=activeDialogue.lines.length-1&&activeDialogue.choices?.length)break;nextSpeech();await frames(1);}},
+      };
+    }
     window.__AZHORA__={state,
+      runVisualArtsChecks:async()=>{const {runVisualArtsChecks}=await import('./visual-arts-checks.js');return runVisualArtsChecks(roadSkillsHooks());},
+      runRoadAmbushChecks:async()=>{const {runRoadAmbushChecks}=await import('./road-ambush-checks.js');
+        const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+        return runRoadAmbushChecks({ambush,host:ambushHost,watch:ambushWatch,combat,corpses:corpseHost,state,frames,
+          combatActor:id=>combatView.actor(id),events:handleCombatEvents,snapshot:roadSnapshot,
+          warp:(x,z)=>{player.group.position.set(x,world.heightAt(x,z),z);grounded=true;verticalSpeed=0;inWater=false;},
+          close:()=>{questChoice.close();closeDialogue();mode='playing';},
+          restore:saved=>{const result=sessionCheckpoint.save(saved);if(!result.ok)throw new Error(result.reason);if(!continueRoad(true))throw new Error('Ambush checkpoint did not reload');mode='playing';reviewFrozen=false;ambushHost.reset();},
+          prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();questChoice.close();closeDialogue();
+            crime.restore();corpseHost.restore();fallen.restore(createFallen().snapshot());companions.restore(createCompanions().snapshot());
+            combat.revive();combatEvents.length=0;ambush.restore(createRoadAmbush().snapshot());ambushHost.reset();ambushPlayerHelped=false;drent.restore();
+            playSeconds=0;resetLivingStory();questStage=QUEST_DONE;inventory.grant('harbor-letter');inventory.grant('road-token');
+            testingEnabled=true;reviewFrozen=false;reviewTarget=null;mode='playing';player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);refreshQuest();}});},
+      runFireMakingChecks:async()=>{const {runFireMakingChecks}=await import('./road-skills-checks.js');return runFireMakingChecks(roadSkillsHooks());},
+      runFishingLessonsChecks:async()=>{const {runFishingLessonsChecks}=await import('./fishing-lessons-checks.js');return runFishingLessonsChecks(roadSkillsHooks());},
+      runRoadSkillsChecks:async(onlyGlun=false)=>{const {runRoadSkillsChecks}=await import('./road-skills-checks.js');return runRoadSkillsChecks({...roadSkillsHooks(),onlyGlun});},
       runLivingChecks:()=>runLivingDesktopChecks({getStory:()=>living,getHost:()=>livingHost,
         prepare:prepareLivingScenario,
         frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},setMode:v=>{mode=v;},getMode:()=>mode,
@@ -7405,6 +7626,7 @@ function init() {
         settleCamera();return trailMap.state();
       },
       forestHideout:()=>({quest:forestHideout.state,world:world.forestHideoutState(),watch:hideoutWatch.state()}),
+      runHideoutHostilityChecks:async()=>{const {runHideoutHostilityChecks}=await import('./hideout-hostility-checks.js');return runHideoutHostilityChecks(hideoutHooks());},
       runHideoutChecks:()=>runHideoutSmoke(hideoutHooks()),verifyHideoutReload:expected=>verifyHideoutReload(hideoutHooks(),expected),
       async reviewHideout(view){
         hideoutHooks().prepareHideout();reviewFrozen=true;show('dialogue',false);show('modal-backdrop',false);player.group.visible=true;
@@ -7835,10 +8057,10 @@ function init() {
           }
           skillAnnouncements.clear();magicUI.update();updateHUD();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
-        if(['liz-hair','liz-hair-back','liz-reward','liz-lesson'].includes(view)){
+        if(['liz-hair','liz-hair-back','liz-hair-above','liz-hair-left','liz-hair-right','liz-reward','liz-lesson'].includes(view)){
           testVisitTeacher(LIZ,'Summon Bees');stopAutopilot();closeDialogue();combat.revive();reviewFrozen=true;player.group.visible=false;
           const npc=npcById.get(LIZ.id),at=npc.actor.group.position,face=npc.actor.group.rotation.y;
-          reviewTarget=new THREE.Vector3(at.x,at.y+1.5,at.z);yaw=face+(view==='liz-hair-back'?Math.PI-.35:.35);pitch=.08;distance=targetDistance=3.4;
+          reviewTarget=new THREE.Vector3(at.x,at.y+1.5,at.z);yaw=face+(view==='liz-hair-back'?Math.PI-.35:view==='liz-hair-left'?-Math.PI/2:view==='liz-hair-right'?Math.PI/2:.35);pitch=view==='liz-hair-above'?1.05:.08;distance=targetDistance=3.4;
           if(view==='liz-reward'){catQuest.restore(createCatQuest().snapshot());catQuest.ask();catQuest.accept();catQuest.found();catQuest.home();conversation(npc);
             while(activeDialogue&&activeDialogue.index<activeDialogue.lines.length-1)nextSpeech();}
           if(view==='liz-lesson'){magic.learn('summon-bees',{announce:false});magic.select('summon-bees');lizSpellGuide();nextSpeech();}
@@ -7919,6 +8141,24 @@ function init() {
           const x=-613.4822,z=141.397;player.group.position.set(x,world.heightAt(x,z),z);
           yaw=2.19810;pitch=.36;distance=targetDistance=9;player.group.rotation.y=Math.PI+yaw;
           clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;currentRegionId=world.regionAt(x,z).id;return;
+        }
+        if(view==='sylvia'){
+          testTravel('village');combat.revive();questStage=QUEST_DONE;player.group.visible=false;
+          player.group.position.set(SYLVIA.x+7,world.heightAt(SYLVIA.x+7,SYLVIA.z+5),SYLVIA.z+5);
+          const npc=npcById.get(SYLVIA.id);npc.actor.group.position.set(SYLVIA.x,world.heightAt(SYLVIA.x,SYLVIA.z),SYLVIA.z);npc.actor.group.rotation.y=SYLVIA.yaw;
+          for(let i=1;i<=90;i++)npc.actor.animate(walkTime+i/60,0,true,{});walkTime+=1.5;
+          reviewTarget=new THREE.Vector3(SYLVIA.x+1.1,world.heightAt(SYLVIA.x,SYLVIA.z)+1.45,31.5);
+          {const shot=bestOf(reviewTarget,10,[0,-.15,-.3]);yaw=shot.yaw;distance=targetDistance=shot.distance;}pitch=.18;
+          clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;return;
+        }
+        if(view==='ambush-covered'){
+          testTravel('village');combat.revive();combatEvents.length=0;corpseHost.restore();ambush.restore();ambushHost.reset();
+          const c=AMBUSH.point,f=AMBUSH.forward,x=c.x-f.dx*9,z=c.z-f.dz*9;
+          player.group.position.set(x,world.heightAt(x,z),z);player.setArmed(false);
+          for(let i=1;i<=60;i++)ambushWatch.update(elapsed+i/60,ambush.actors(),{combat:combat.state});
+          elapsed+=1;walkTime+=1;
+          yaw=Math.atan2(f.dx,f.dz)-Math.PI;pitch=.28;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;
+          clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;return;
         }
         if(view==='rebel-ambush'){
           testTravel('village');ambush.restore();const c=ambushEncounter.center,f=AMBUSH.forward;
@@ -8021,7 +8261,7 @@ function init() {
            * is of the panel the player is actually given, arrows and all.
            */
           smithConversation(him,{level:regionLevel(world.regionAt(spot.x,spot.z)?.name)??0,
-            inventory,gear,openDialogue,closeDialogue,act:smithAct});
+            inventory,gear,skills,weapons,onChange:refreshRoadSkills,openDialogue,closeDialogue,act:smithAct});
           // Aimed between the two of them, at chest height rather than head height, because the
           // board is a panel across the bottom of the frame and the men have to stand above it.
           const mid={x:(spot.x+stand.x)/2,z:(spot.z+stand.z)/2};
@@ -8649,6 +8889,25 @@ function init() {
         if(view.startsWith('stand-at:')){const [sx,sz,facing=0,tilt=.3,back=7]=view.slice(9).split(',').map(Number);
           if(Number.isFinite(sx)&&Number.isFinite(sz)){questStage=QUEST_DONE;combat.finishPractice();player.setArmed(false);player.group.position.set(sx,world.heightAt(sx,sz),sz);yaw=facing;pitch=tilt;distance=targetDistance=back;player.group.rotation.y=Math.PI+yaw;}}
         if(view==='walk'){questStage=QUEST_DONE;combat.finishPractice();player.group.position.set(-52,world.heightAt(-52,29),29);yaw=Math.PI/2+1.15;pitch=.3;distance=targetDistance=6;player.group.rotation.y=Math.PI+yaw;}
+        if(view==='lee-anne'||view==='martin'){
+          questStage=QUEST_DONE;combat.finishPractice();mode='playing';reviewFrozen=true;show('modal-backdrop',false);show('dialogue',false);
+          const npc=npcById.get(view==='lee-anne'?LEE_ANNE.id:SMITH_NPC.id),at=npc.actor.group.position;
+          if(view==='lee-anne'){const empty=campcraft.checkpoint();empty.fires[FIRE_LESSON_FIRE]=0;campcraft.restore(empty);world.setCampfireLit(FIRE_LESSON_FIRE,false);}
+          npc.actor.group.visible=true;for(let i=1;i<=45;i++)npc.actor.animate(walkTime+i/60,0,true,{armed:false});
+          player.group.position.set(at.x+2,world.heightAt(at.x+2,at.z+2),at.z+2);player.group.visible=false;
+          reviewTarget=at.clone().add(new THREE.Vector3(0,1.12,0));yaw=npc.actor.group.rotation.y+.35;pitch=.18;distance=targetDistance=view==='lee-anne'?5.2:3.8;
+        }
+        if(['jean-road','stanley-farm','glun-wood-demo','acting-happy','acting-sad'].includes(view)){
+          stopAutopilot();closeDialogue();combat.revive();questStage=QUEST_DONE;reviewFrozen=true;
+          const who=view==='jean-road'?GARDEN_KEEPER.id:view==='stanley-farm'?FARMER.id:INSTRUCTOR.id,npc=npcById.get(who);
+          if(view.startsWith('acting-')){player.group.visible=true;player.group.position.set(-57,world.heightAt(-57,28),28);player.group.rotation.y=0;reviewTarget=player.group.position.clone().add(new THREE.Vector3(0,1,0));yaw=.25;pitch=.15;distance=targetDistance=3.7;acting.cancel();acting.perform(view.slice(7));acting.update(1.5);for(let i=1;i<=60;i++)player.animate(walkTime+i/60,0,true,{emote:acting.pose(),armed:false});walkTime+=1;}
+          else{const at=npc.actor.group.position;if(view==='glun-wood-demo'){at.set(GLUN_WOOD_LESSON.stand.x,world.heightAt(GLUN_WOOD_LESSON.stand.x,GLUN_WOOD_LESSON.stand.z),GLUN_WOOD_LESSON.stand.z);world.npcPositions[who]={x:at.x,z:at.z};glunWood.restore({version:1,stage:'demonstrating',demonstration:1});updateGlunWood(0);for(let i=1;i<=60;i++)npc.actor.animate(walkTime+2+i/60,0,true,npc.woodLessonPose);walkTime+=1;}
+            player.group.position.set(at.x+2,world.heightAt(at.x+2,at.z+2),at.z+2);player.group.visible=false;reviewTarget=at.clone().add(new THREE.Vector3(0,1.2,0));yaw=npc.actor.group.rotation.y+.3;pitch=.13;distance=targetDistance=view==='stanley-farm'?9:3.7;
+            if(view==='stanley-farm'){farming.learn();for(const row of FARM_ROWS){farming.sow(row.id,'carrot',playSeconds);farming.water(row.id,playSeconds);}playSeconds+=65;farmView.update(playSeconds);}}
+          skillAnnouncements.clear();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
+        }
+        if(view==='avrel-pond'){const spot=world.fishingSpots.find(s=>s.id==='avrel-pool');questStage=QUEST_DONE;combat.finishPractice();reviewFrozen=true;player.group.visible=false;player.group.position.set(spot.fishingSpot.x,world.heightAt(spot.fishingSpot.x,spot.fishingSpot.z),spot.fishingSpot.z);reviewTarget=new THREE.Vector3(spot.x,spot.surfaceY,spot.z);yaw=2.2;pitch=.65;distance=targetDistance=11;settleCamera();return;}
+        if(view==='intro-logo'){show('loading',true);$('loading').style.opacity='1';}
         if(view==='inventory'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('harbor-letter');inventory.grant('simple-sword');inventory.grant('road-token');if(!inventory.has(COPPER_ITEM))inventory.add(COPPER_ITEM,STARTING_PURSE);player.group.position.set(-86,world.heightAt(-86,28),28);yaw=Math.PI/2+.2;pitch=.3;distance=targetDistance=7;toggleInventory();inventory.select('harbor-letter');}
         if(view==='border'){questStage=QUEST_DONE;combat.finishPractice();player.group.position.set(world.border.x,world.heightAt(world.border.x,world.border.z),world.border.z);player.group.rotation.y=Math.PI;yaw=0;pitch=.16;distance=targetDistance=7;}
         if(view==='map'){combat.finishPractice();modal('journal');mapTab(true);}
@@ -8971,7 +9230,7 @@ function init() {
             yaw=spot.turn;pitch=.1;distance=targetDistance=5.6;player.group.rotation.y=Math.PI+yaw;
             grounded=true;verticalSpeed=0;
             reviewTarget=new THREE.Vector3((spot.x+target.x)/2,world.heightAt((spot.x+target.x)/2,(spot.z+target.z)/2)+1.25,(spot.z+target.z)/2);
-            reviewFrozen=true;settleCamera();
+            reviewFrozen=true;player.group.visible=false;settleCamera();
           }
         }
         if(view==='lakota'||view==='lakota-aloft'){questStage=QUEST_DONE;combat.finishPractice();const npc=npcById.get(BIRD_WATCHER.id),a=npc.actor.group,at=a.position,face=a.rotation.y;
@@ -8987,6 +9246,18 @@ function init() {
         if(view==='pawpaw'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('pawpaw'))inventory.add('pawpaw',2);combat.state.player.hp=62;toggleInventory();inventory.select('pawpaw');}
         if(view==='pawpaw-patch'){questStage=QUEST_DONE;combat.finishPractice();woodlandLife.restoreCollectedFruit([]);const f=woodlandLife.state().fruits[0],patch=woodlandLife.state().fruitPatches[0];player.group.position.set(f.x+.5,world.heightAt(f.x+.5,f.z+1),f.z+1);reviewTarget=new THREE.Vector3(patch.x,world.heightAt(patch.x,patch.z)+1.2,patch.z);distance=targetDistance=6;pitch=.35;yaw=.4;}
         if((view==='doomsayer'||view==='doomsayer-dialogue')&&npcById.get('doomsayer')){questStage=QUEST_DONE;combat.finishPractice();const npc=npcData.find(n=>n.id==='doomsayer'),home=world.npcPositions.doomsayer;player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+2),home.z+2);npc.actor.group.rotation.y=.25;yaw=.35;pitch=.2;distance=targetDistance=5;reviewTarget=npc.actor.group.position.clone().add(new THREE.Vector3(0,1.4,0));if(view==='doomsayer-dialogue')conversation(npc);}
+        if(view.startsWith('fishing-lesson-')){
+          const id=({'glun':INSTRUCTOR.id,'mark':MARK.id,'jean':GARDEN_KEEPER.id,'stanley':FARMER.id})[view.slice(15)];
+          if(id){stopAutopilot();closeDialogue();combat.revive();questStage=QUEST_DONE;reviewFrozen=true;
+            const npc=npcById.get(id),spot=world.fishingSpots.find(s=>s.id===FISHING_TEACHERS[id].spot),route=fishingLessonRoute(id,spot,fishingHomes[id]),at=route.at(-1);
+            npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);world.npcPositions[id]={...at};npc.actor.group.rotation.y=Math.atan2(spot.castPoint.x-at.x,spot.castPoint.z-at.z);
+            fishingLessons.restore({version:1,teacher:id,stage:'demonstrating',demonstration:2.5,position:{...at},waypoint:route.length-1,waiting:false,completed:[]});fishingRoutes.set(id,route);npc.fishingLessonReview=true;
+            const bank=spot.fishingSpot;player.group.position.set(bank.x,world.heightAt(bank.x,bank.z),bank.z);player.group.visible=false;updateFishingLessons(0);
+            for(let i=1;i<=60;i++)npc.actor.animate(walkTime+i/60,0,true,{fishing:true});walkTime+=1;
+            fishingLessonVisual.update({actor:npc.actor,spot,progress:.625,visible:true});reviewTarget=new THREE.Vector3((at.x+spot.castPoint.x)/2,npc.actor.group.position.y+.75,(at.z+spot.castPoint.z)/2);
+            yaw=.35;pitch=.27;distance=targetDistance=7;skillAnnouncements.clear();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
+          }
+        }
         if(view==='pond'||view==='fishing'){questStage=QUEST_DONE;combat.finishPractice();currentFishingSpot=world.fishingSpots[0];const bank=world.pond.fishingSpot;player.group.position.set(bank.x,world.heightAt(bank.x,bank.z),bank.z);player.group.rotation.y=Math.PI/2;yaw=-Math.PI/2+.4;pitch=.38;distance=targetDistance=view==='pond'?11:6.2;if(view==='fishing'){campcraft.teachFishing();startFishing();campcraft.update(3.03);reviewFrozen=true;}}
         if(view==='river-fishing'){questStage=QUEST_DONE;combat.finishPractice();currentFishingSpot=world.fishingSpots.find(spot=>spot.id==='reedwater');const bank=currentFishingSpot.fishingSpot;player.group.position.set(bank.x,world.heightAt(bank.x,bank.z),bank.z);yaw=.2;pitch=.34;distance=targetDistance=8;campcraft.teachFishing();startFishing();campcraft.update(3.03);reviewFrozen=true;}
         if(view==='cooking'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('tinderbox');inventory.add('raw-fish',2);inventory.add('forest-stick',2);const fire=world.firePits[0];campcraft.light(fire.id);player.group.position.set(fire.x,world.heightAt(fire.x,fire.z),fire.z);yaw=.7;pitch=.5;distance=targetDistance=6.5;fireMenu(fire);}

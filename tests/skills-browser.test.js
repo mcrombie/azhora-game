@@ -43,7 +43,7 @@ test('Sorcery lists the three released schools while keeping reserved save data 
   ]);
   assert.deepEqual(skills.snapshot(), saved, 'browsing never deletes an old school’s experience');
   assert.equal(saved.skills.frost.xp, 83);
-  assert.deepEqual(filterSkills(skills.view(), { scope: 'all', query: 'animal' }).map(skill => skill.id), ['beast']);
+  assert.deepEqual(filterSkills(skills.view(), { scope: 'all', query: 'animal' }).map(skill => skill.id), ['husbandry', 'beast']);
 });
 
 test('the spell guide uses actual spell knowledge rather than a seeded or taught skill', () => {

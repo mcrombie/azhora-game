@@ -50,16 +50,49 @@ test('the observation range grows with practice and has a limit', () => {
   assert.ok(observeRange(1) > Math.max(...DRENT_BIRDS.map(id => BIRD_SPECIES[id].spook)) + 3, 'a bird can be seen well outside its distance');
 });
 
-test('the feeder errand: Lakota lends it, Lysa fills it, the traveler hangs it, and the hummingbird ends it', () => {
+test('repeat bird observations earn practice XP over time without rewarding repeated clicks', () => {
+  const { birding, skills } = fixture();
+  assert.equal(birding.observe('crow', { now: 0 }).xp, 10);
+  assert.equal(birding.observe('crow', { now: 29 }).xp, 0);
+  assert.equal(birding.observe('crow', { now: 30 }).xp, 3);
+  assert.equal(birding.observe('crow', { now: 30 }).xp, 0);
+  assert.equal(skills.xp('birding'), 13);
+  const saved = birding.snapshot();
+  assert.equal(birding.restore(saved), true);
+  assert.equal(birding.observe('crow', { now: 31 }).xp, 0);
+  assert.equal(birding.observe('crow', { now: 60 }).xp, 3);
+});
+
+test('bird calls require level 2 and a familiar species, then improve without click-spam XP', () => {
+  const { birding, skills } = fixture();
+  birding.observe('crow', { now: 0 });
+  assert.equal(birding.call('crow', { now: 0 }).ok, false);
+  skills.gain('birding', 73);
+  assert.equal(birding.call('wren', { now: 0 }).ok, false, 'observe a bird before copying it');
+  const first = birding.call('crow', { now: 0 });
+  assert.equal(first.ok, true); assert.equal(first.xp, 2); assert.equal(first.species, 'crow');
+  assert.equal(birding.call('crow', { now: 7 }).ok, false);
+  assert.equal(birding.call('crow', { now: 8 }).xp, 0);
+  assert.equal(birding.call('crow', { now: 30 }).xp, 2);
+  const saved = birding.snapshot(); birding.restore(saved);
+  assert.equal(birding.call('crow', { now: 31 }).ok, false);
+  skills.gain('birding', 700);
+  const skilled = birding.call('crow', { now: 60 });
+  assert.ok(skilled.range > first.range && skilled.duration > first.duration);
+  assert.equal(validateBirdingSnapshot({ ...saved, practice: { ...saved.practice, lastCall: -1 } }), false);
+  assert.equal(validateBirdingSnapshot({ ...saved, practice: { ...saved.practice, observed: { dragon: 10 } } }), false);
+});
+
+test('the feeder errand: Jean lends and fills it, the traveler hangs it, and the hummingbird ends it', () => {
   const { birding, inventory } = fixture();
   for (const id of [FEEDER_ITEM, FILLED_FEEDER_ITEM]) assert.ok(INVENTORY_ITEMS[id], `${id} is a satchel item`);
-  assert.equal(birding.lendFeeder(inventory).ok, false, 'not before meeting Lakota');
+  assert.equal(birding.lendFeeder(inventory).ok, false, 'not before meeting Jean');
   birding.meet();
   assert.equal(birding.task(), null);
   assert.equal(birding.fillFeeder(inventory).ok, false);
   assert.equal(birding.lendFeeder(inventory).ok, true);
   assert.equal(birding.lendFeeder(inventory).ok, false, 'lent once');
-  assert.deepEqual([inventory.has(FEEDER_ITEM), birding.task().target], [true, 'acorn-cook']);
+  assert.deepEqual([inventory.has(FEEDER_ITEM), birding.task().target], [true, GARDEN_KEEPER.id]);
   assert.equal(birding.hangFeeder(inventory).ok, false, 'an empty feeder is not hung');
   assert.equal(birding.fillFeeder(inventory).ok, true);
   assert.deepEqual([inventory.has(FEEDER_ITEM), inventory.has(FILLED_FEEDER_ITEM), birding.task().stage], [false, true, 'filled']);
@@ -91,14 +124,14 @@ test('birding survives a save, and nonsense is refused', () => {
     assert.equal(validateBirdingSnapshot(bad), false, JSON.stringify(bad));
 });
 
-test('Perrin teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
+test('Jean teaches birding first, then offers the feeder; Lysa fills it only while it is carried empty', () => {
   const { birding, inventory } = fixture(), opened = [], acted = [];
   const context = { birding, openDialogue: (npc, lines, _, __, options) => opened.push({ lines, choices: options?.choices ?? [] }), closeDialogue: () => {}, act: id => acted.push(id) };
   assert.equal(gardenKeeperConversation({ id: 'someone-else' }, context), false);
   assert.equal(gardenKeeperConversation(BIRD_WATCHER, context), false, 'Lakota is not the man in the garden any more');
   gardenKeeperConversation(GARDEN_KEEPER, context);
-  assert.deepEqual(opened.at(-1).choices.map(c => c.id), ['learn-birding', 'leave-garden-keeper']);
-  // The lesson is available from the first minute of the game, which is the whole point of Perrin.
+  assert.deepEqual(opened.at(-1).choices.map(c => c.id), ['learn-birding', 'learn-husbandry', 'jean-animal-sorcery', 'leave-garden-keeper']);
+  // The lesson is available from the first minute of the game, which is the whole point of Jean.
   opened.at(-1).choices[0].action();
   assert.deepEqual(acted, ['learn-birding']);
   birding.meet();
@@ -143,4 +176,28 @@ test('the garden\u2019s own birds are the ones that actually come to it', () => 
   for (const id of GARDEN_BIRDS) birding.observe(id);
   gardenKeeperConversation(GARDEN_KEEPER, context);
   assert.match(opened.at(-1).lines[0], /All three of the garden ones/);
+});
+
+
+test('Jean supplies the feeder herself and accepts the same unfinished errand from an older save', () => {
+  const { birding, inventory, skills } = fixture(), screens = [];
+  const context = { birding, openDialogue: (npc, lines, unused, label, options) => screens.push({ npc, lines, choices: options?.choices ?? [] }),
+    closeDialogue: () => {}, act: id => id === 'learn-birding' ? birding.meet()
+      : id === 'take-feeder' ? birding.lendFeeder(inventory) : birding.fillFeeder(inventory) };
+  const choose = id => screens.at(-1).choices.find(choice => choice.id === id).action();
+  gardenKeeperConversation(GARDEN_KEEPER, context);
+  assert.match(screens.at(-1).lines.join(' '), /I am Jean/);
+  assert.match(screens.at(-1).choices.find(choice => choice.id === 'learn-birding').label, /Birding/);
+  choose('learn-birding'); assert.equal(skills.taught('birding'), true);
+  gardenKeeperConversation(GARDEN_KEEPER, context); choose('ask-hummingbirds'); choose('take-feeder');
+  assert.equal(birding.task().target, GARDEN_KEEPER.id);
+  const saved = birding.snapshot();
+  assert.equal(birding.restore(saved), true);
+  gardenKeeperConversation(GARDEN_KEEPER, context); choose('fill-feeder');
+  assert.equal(inventory.has(FEEDER_ITEM), false);
+  assert.equal(inventory.has(FILLED_FEEDER_ITEM), true);
+  assert.equal(birding.feeder, 'filled');
+  assert.equal(birding.hangFeeder(inventory).ok, true);
+  birding.observe('hummingbird'); assert.equal(birding.task(), null);
+  assert.equal(GARDEN_KEEPER.id, 'garden-keeper');
 });

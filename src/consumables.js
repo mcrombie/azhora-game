@@ -9,6 +9,11 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 const define = (healing, missing) => Object.freeze({ healing, missing });
 
 export const FOODS = Object.freeze({
+  'jojo-sandwich': define(35, 'Jojo shares a sandwich when she welcomes you at the landing.'),
+  carrot: define(15, 'You have no carrots. Stanley shares seeds for the commons rows at the Avrel clearing.'),
+  beet: define(20, 'You have no beets. Grow them at the Avrel clearing once Farming reaches level 2.'),
+  'roasted-beet': define(35, 'You have no roasted beets. Stanley teaches the recipe at the Avrel clearing.'),
+  'farm-pot': define(45, 'You have no farm pot. Cook carrot and barley at a lit fire using Stanley\u2019s recipe.'),
   // Gathered and cooked on the road today.
   pawpaw: define(25, 'You have no pawpaw fruit. Gather some in the forest.'),
   'cooked-fish': define(40, 'You have no cooked fish. Cook a fresh catch at a lit firepit.'),

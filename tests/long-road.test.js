@@ -57,8 +57,8 @@ test('every stop names a leg, a kind, a named ground and the view that says it i
   }
   // **Every stop stands in named ground now.** The Toll House stream was the last that did not,
   // and the user gave it a ground of its own (2026-09-21), Drent's tenth.
-  assert.deepEqual(LONG_ROAD_STOPS.filter(row => row.subregion === null).map(row => row.id), [],
-    'a stop the chart has no name for');
+  assert.deepEqual(LONG_ROAD_STOPS.filter(row => row.subregion === null).map(row => row.id), ['fernway-play'],
+    'only the relocated roadside stage lies outside an existing named ground');
   assert.equal(longRoadStop('silas-stream').subregion, 'the-toll-house');
   assert.equal(LONG_ROAD_LEGS.length, 6, 'the harbour and five legs, one for each boat that lands');
   for (const leg of LONG_ROAD_LEGS) assert.ok(LONG_ROAD_STOPS.some(row => row.leg === leg.leg && row.kind === 'spine'), leg.title + ' has a spine');
@@ -479,7 +479,7 @@ test('every stop that teaches a skill has a recognising line, spine or branch', 
     assert.ok(RECOGNISED[stop.id], `${stop.id} teaches ${stop.skill} and has nothing to say to somebody who has it`);
   }
   assert.ok(RECOGNISED['house-plot'], 'the branch the sweep used to miss');
-  // Lakota at Perrin's garden is the design's own worked example: a fen man at forty has still
+  // Lakota at Jean's garden is the design's own worked example: a fen man at forty has still
   // never seen a Drent bird, and finds are finds.
   assert.match(RECOGNISED['bird-garden'], /Drent’s list/);
   assert.match(RECOGNISED['bird-garden'], /never seen these ones/);
@@ -591,37 +591,24 @@ test('a new game finds the players on the verge the stop stands on, whatever the
   assert.equal(createTroupe({ start: 'avrel' }).stop.id, 'avrel', 'and a caller may still say otherwise');
 });
 
-test('every fresh game walked to Fernway on the long road’s timings finds the players still there', () => {
-  // The long road's own clock (docs/drent-long-road.md §8): the harbour and the village, the near
-  // wood, then out to Fernway Rest at about minute fifty. Walked a second at a time, because the
-  // company's staying or going is judged every frame against where the traveler is standing.
-  const legs = [
-    [{ x: 0, z: 25 }, 12, 'the pier and the Greenway'],
-    [{ x: -10.9, z: 34.6 }, 11, 'Lysa’s kitchen'],
-    [{ x: -24.4, z: 4.4 }, 5, 'Perrin’s garden'],
-    [{ x: -33.8, z: -7.8 }, 17, 'the Koopwood'],
-    [{ x: -102, z: 8.6 }, 1, 'Willowmere'],
-    [{ x: -128.4, z: 39.6 }, 4, 'Fernway Rest'],
-  ];
-  assert.equal(legs.reduce((sum, [, minutes]) => sum + minutes, 0), 50, 'fifty minutes, as the road is cut');
+test('the first roadside stage waits for a slow traveler, then resumes its normal wandering', () => {
   const camp = TROUPE_STOPS.find(stop => stop.id === FIRST_CAMP);
-  for (const [at, , where] of legs)
-    assert.ok(Math.hypot(camp.x - at.x, camp.z - at.z) < TROUPE_UNSEEN,
-      `at ${where} he is inside the ${TROUPE_UNSEEN} m that pins them`);
-
-  for (let seed = 0; seed < 120; seed++) {
-    let n = (seed * 0.137) % 1;
-    const troupe = createTroupe({ random: () => (n = (n + 0.618033988749895) % 1) });
-    for (const [at, minutes] of legs) for (let second = 0; second < minutes * 60; second++) troupe.update(1, at);
-    assert.equal(troupe.stop.id, FIRST_CAMP, `seed ${seed}: the wagon is still on the verge at minute fifty`);
+  assert.ok(camp.x < -440 && camp.x > -614, 'after Stanley and before the Caloss crossing');
+  assert.ok(Math.hypot(camp.x + 106, camp.z - 40) > TROUPE_UNSEEN, 'away from the rebel ambush');
+  for (let seed = 0; seed < 20; seed++) {
+    let n = (seed * .137) % 1;
+    const random = () => (n = (n + .618033988749895) % 1);
+    const troupe = createTroupe({ random });
+    troupe.update(50 * 60, { x: -10.9, z: 34.6 });
+    assert.equal(troupe.stop.id, FIRST_CAMP, 'early village exploration cannot remove Amanda before the first visit');
+    troupe.update(1, { x: camp.x + 20, z: camp.z });
+    assert.equal(troupe.snapshot().visited, true);
+    const resumed = createTroupe({ random });
+    assert.ok(resumed.restore(troupe.snapshot()));
+    const far = { x: camp.x + TROUPE_UNSEEN * 4, z: camp.z };
+    resumed.update(20 * 60, far);
+    assert.notEqual(resumed.stop.id, FIRST_CAMP, 'after visiting, leaving them out of sight lets the wagon move on');
   }
-  // And the rule that does it is the distance, not the fixed start: a traveler who walks away and
-  // stays away leaves them free to go, which is the wandering the troupe is for.
-  let n = .21;
-  const wandering = createTroupe({ random: () => (n = (n + 0.618033988749895) % 1) });
-  const far = { x: camp.x + TROUPE_UNSEEN * 4, z: camp.z };
-  for (let second = 0; second < 20 * 60; second++) wandering.update(1, far);
-  assert.notEqual(wandering.stop.id, FIRST_CAMP, 'out of sight for twenty minutes and they have moved on');
 });
 
 test('src/main.js actually closes the play: a scene watched to the end at either Drent camp', () => {
@@ -645,16 +632,16 @@ test('src/main.js actually closes the play: a scene watched to the end at either
 
 test('the whole spine walks only because the play can be watched', () => {
   // Before the host was wired this was the shape of the game: everything else in Drent done, and
-  // the gold stuck on the play for ever, with legs 3 and every drill after the second out of reach.
+  // the gold stuck on the play for ever, with leg 5 and the final drill out of reach.
   const stuck = createLongRoad();
   stuck.act('told'); stuck.act('corners-ask'); stuck.act('corners-sign', everything());
   const never = stuck.view(everything());
   assert.equal(never.next.id, 'fernway-play', 'the gold has nowhere else to go');
   assert.deepEqual(never.stops.filter(row => row.kind === 'spine' && !row.done).map(row => row.id), ['fernway-play'],
     'and it is the only thing in the whole of Drent that is not done');
-  assert.equal(never.legs[3].done, false, 'so leg three never closes');
+  assert.equal(never.legs[5].done, false, 'so the Caloss-road leg never closes');
   for (let i = 0; i < DRILL_COUNT; i++) stuck.act('drill', everything());
-  assert.equal(stuck.drills, 2, 'and only two of the five drills are ever on offer');
+  assert.equal(stuck.drills, 4, 'and only four of the five drills are ever on offer');
 
   // With the play watched, the same walk finishes: every leg, every drill, and `finished`.
   const road = createLongRoad();
@@ -682,7 +669,7 @@ test('the play’s gold is on the camp the wagon is at, and a company abroad nev
   // At Fernway, where every new game starts them: the gold is the stop's own point.
   const here = road.view(everything({ troupe: at('fernway') }));
   assert.equal(here.next.id, 'fernway-play');
-  assert.deepEqual([here.next.point.x, here.next.point.z], [-110.6, 29.3], 'the verge it stands on');
+  assert.deepEqual([here.next.point.x, here.next.point.z], [-546, 78.5], 'the roadside stage it stands on');
   assert.equal(playStop(here).camp, 'fernway');
 
   // At Avrel, where an older save may have left them: the same stop, and the gold moves to them,
@@ -699,7 +686,7 @@ test('the play’s gold is on the camp the wagon is at, and a company abroad nev
   assert.equal(gone.next, null, 'with all of Drent done there is nothing else to point at');
   assert.equal(playStop(gone).done, false, 'the stop is not closed by their leaving');
   assert.equal(playStop(gone).camp, null);
-  assert.equal(gone.legs[3].done, false, 'and leg three is honestly still open');
+  assert.equal(gone.legs[5].done, false, 'and the Caloss-road leg is honestly still open');
   assert.equal(gone.finished, false, 'the whole road still wants the play');
   assert.equal(road.view(everything({ troupe: at('fernway') })).next.id, 'fernway-play', 'and it is offered again when they come back');
 

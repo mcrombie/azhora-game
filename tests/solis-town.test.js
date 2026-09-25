@@ -84,7 +84,7 @@ test('Sergeant Kell admits the Marshal’s messenger at the Gate of Sun Horses, 
   assert.match(talk(gate, context).screen.lines[0], /Court of Oaths/);
 });
 
-test('Envoy Telis Orren is never out twice: the border chapter’s before the fork, the aftermath’s only after the battle on the Republic’s side', () => {
+test('Envoy Telis Orren is never out twice: the border chapter’s through the march, the aftermath’s only after the battle on the Republic’s side', () => {
   for (const [side, outcome] of [['coalition', 'victory'], ['coalition', 'defeat'], ['empire', 'victory'], ['empire', 'defeat']]) {
     const border = createBorderChapter(), aftermath = createAftermathChapter();
     const envoyOut = () => border.cast().includes('coalition-envoy');
@@ -93,7 +93,7 @@ test('Envoy Telis Orren is never out twice: the border chapter’s before the fo
     border.start(); check(); border.act('take-legate-terms'); check(); border.act('enter-solis'); check();
     assert.equal(envoyOut(), true, 'she waits in the Court of Oaths');
     border.act(`side-${side}`); check();
-    assert.equal(envoyOut(), false, 'after the fork she is not in the hall');
+    assert.equal(envoyOut(), true, 'signing a contract does not clear the Court of Oaths');
     border.act('march-out'); border.act('reach-line'); border.resolveBattle(BORDER_ENCOUNTER_ID); check();
     const variant = Object.values(AFTERMATH_VARIANTS).find(spec => spec.side === side && spec.outcome === outcome);
     aftermath.start(variant.id); check();

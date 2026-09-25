@@ -6,16 +6,16 @@ const camp = (lx, lz) => Object.freeze(hideoutToWorld(lx, lz));
 /**
  * An optional, contained fight at a goblin camp in the birch woods of southern Pueth, north of
  * the Tessen: the bramble goblins who have been wading the river to raid Tidehaven. Drent, a level
- * 0 province, has none. It opens at quest stage 10, when the tutorial's road reaches the edge of
- * Tidehaven's wood: the road north leaves the main road just past it, so the quest is offered as soon
- * as the traveler can reach the Tessen post by road, and never before; the fight itself is north of
- * the river, so nothing attacks the traveler in Drent.
+ * 0 province, has none. The voluntary challenge opens at quest stage 10. The scouts themselves
+ * defend their camp against any traveler who approaches too closely, even before that lesson.
+ * Staying on the outskirts avoids them; the fight itself remains north of the river.
  */
 import { QUEST_DONE } from './game-state.js';
 
 export const FOREST_HIDEOUT_QUEST = Object.freeze({
   id: 'forest-hideout', siteId: 'bramble-scout-camp', name: 'Bramble Scout Camp', region: 'Pueth',
   approach: camp(45, -109),
+  alertRadius: 10,
   supplies: Object.freeze({ id: 'forest-hideout-supplies', ...hideoutToWorld(70, -123) }),
   recipientId: 'garrison-captain', informantId: 'garrison-casso', minimumQuestStage: QUEST_DONE,
   reward: Object.freeze({ id: 'copper-piece', quantity: 30 }),
@@ -103,7 +103,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
   function inspect() {
     if (state.inspected) return { ok: true, changed: false, reason: '' };
     state.inspected = true;
-    return emit('inspect-hideout', 'You found the Bramble Scout Camp. The fight is optional.');
+    return emit('inspect-hideout', 'You found the Bramble Scout Camp. Keep your distance: the scouts attack intruders.');
   }
 
   /** Cassel's account marks the camp on the traveler's chart without a walk to it. */
@@ -126,15 +126,31 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     return { ok: true, changed: false, reason: '', escort: false, message: 'The garrison returns to the post.' };
   }
 
-  function begin({ questStage = 0 } = {}) {
-    if (!readyForFight(questStage)) return fail('Finish your business in Tidehaven before challenging this camp.');
+  function canAlert(position) {
+    return !active && !state.cleared && Number.isFinite(position?.x) && Number.isFinite(position?.z)
+      && FOREST_HIDEOUT_QUEST.encounter.enemies.some(scout =>
+        Math.hypot(position.x - scout.x, position.z - scout.z) <= FOREST_HIDEOUT_QUEST.alertRadius);
+  }
+
+  // Goblins defend their camp whether or not the traveler accepted its errand.
+  // The approach and Mop's midden are outside this reach; the quest remains avoidable.
+  function alert(position) {
+    if (!canAlert(position)) return fail('The scouts have not spotted you.');
+    inspect();
+    return { ...begin({ spotted: true }), spotted: true };
+  }
+
+  function begin({ questStage = 0, spotted = false } = {}) {
+    if (!spotted && !readyForFight(questStage)) return fail('Finish your business in Tidehaven before challenging this camp.');
     if (!state.inspected) return fail('Inspect the camp from its approach before choosing to fight.');
     if (state.cleared) return fail('The scouts have already been driven away.');
     if (active) return fail('The camp encounter is already underway.');
     active = true;
     if (!state.accepted) {
       state.accepted = true;
-      return { ...emit('challenge-hideout', 'You chose to recover the stores taken from Tidehaven.'), startEncounter: true };
+      return { ...emit(spotted ? 'spotted-by-scouts' : 'challenge-hideout', spotted
+        ? 'The goblin scouts spotted you. Fight them or retreat down the trail.'
+        : 'You chose to recover the stores taken from Tidehaven.'), startEncounter: true };
     }
     // Retrying grants nothing and does not manufacture extra save revisions.
     return { ok: true, changed: false, reason: '', startEncounter: true,
@@ -188,6 +204,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     if (actionId === 'march-on-hideout') return march();
     if (actionId === 'stand-down-hideout') return standDown();
     if (actionId === 'challenge-hideout') return begin(options);
+    if (actionId === 'alert-hideout') return alert(options.position);
     if (actionId === 'recover-hideout-supplies') return recover();
     if (actionId === 'return-hideout-supplies') return turnIn();
     // Combat success is deliberately absent from the public dialogue actions.
@@ -202,7 +219,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
     return true;
   }
 
-  return { inspect, hear, march, standDown, begin, markCleared, endEncounter, recover, turnIn, act, availableActions,
+  return { inspect, hear, march, standDown, canAlert, alert, begin, markCleared, endEncounter, recover, turnIn, act, availableActions,
     view, snapshot, restore,
     get state() { return { ...snapshot(), active, escort, stage: stage(), complete: state.returned }; } };
 }
@@ -228,8 +245,8 @@ export function hideoutConversation(context) {
   else lines = [
     state.escort ? 'Two goblins have made a rough camp in the birch. Captain Drevan and his two men wait at your shoulder, swords out, for your word.' : 'Two goblins have made a rough camp in the birch. Among their scraps are grain sacks and a coil of rope wrapped in Tidehaven cloth. Scraps of the same cloth mark their route from the road.',
     readyForFight(questStage)
-      ? 'You can leave them unchallenged. If you choose to recover the stores, prepare your weapon and food first, then challenge the two scouts. Watch their amber attack tells and leave yourself room to dodge. Fall back south down the trail if you need a rest.'
-      : 'For now, keep your distance. Finish your business in Tidehaven before choosing another battle. This camp is optional; its stores can wait.',
+      ? 'You can leave them unchallenged by keeping your distance. Walk too close and they will attack. If you choose to recover the stores, prepare your weapon and food first. Watch their amber attack tells and leave yourself room to dodge. Fall back south down the trail if you need a rest.'
+      : 'For now, keep your distance: these goblins attack anyone who comes too close. Finish your business in Tidehaven before choosing another battle. This camp is optional; its stores can wait.',
   ];
   const choices = hideoutQuest.availableActions('bramble-scout-camp', { questStage })
     .filter(option => option.id !== 'inspect-hideout').map(option => ({ ...option,

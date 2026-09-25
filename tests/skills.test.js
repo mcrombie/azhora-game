@@ -3,17 +3,17 @@ import assert from 'node:assert/strict';
 import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, validateSkillsSnapshot } from '../src/skills.js';
 
 test('levels are read from the thresholds, with progress toward the next', () => {
-  // Fifteen that are about the world, then the seven that are about fighting, then the five
+  // Twenty that are about the world, then the seven that are about fighting, then the five
   // schools of sorcery - each group under its own heading in the grid (docs/combat-brief.md,
   // src/sorcery.js).
-  assert.deepEqual(SKILL_IDS, ['birding', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'woodcutting', 'construction', 'cartography', 'swimming', 'stealth', 'farming', 'linguist',
+  assert.deepEqual(SKILL_IDS, ['birding', 'husbandry', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'firemaking', 'smithing', 'woodcutting', 'construction', 'cartography', 'swimming', 'stealth', 'farming', 'visualarts', 'acting', 'linguist',
     'blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness',
     'fire', 'mind', 'beast', 'frost', 'wards']);
   assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Arms'),
     ['blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness'], 'the seven are the grouped ones');
   assert.deepEqual(SKILL_IDS.filter(id => SKILLS[id].group === 'Sorcery'), ['fire', 'mind', 'beast', 'frost', 'wards'],
     'the three released schools and two reserved save entries share the group');
-  assert.ok(SKILL_IDS.slice(0, 15).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
+  assert.ok(SKILL_IDS.slice(0, 20).every(id => SKILLS[id].group === undefined), 'and nothing else is grouped');
   for (const id of SKILL_IDS) assert.ok(SKILLS[id].teacher && SKILLS[id].blurb, `${id} says who teaches it`);
   const table = SKILLS.birding.thresholds;
   assert.ok(table.every((xp, i) => i === 0 ? xp === 0 : xp > table[i - 1]), 'thresholds rise');

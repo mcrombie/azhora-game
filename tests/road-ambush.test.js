@@ -203,7 +203,7 @@ test('a save of it round-trips, and nonsense is refused without changing anythin
   saved.fallen.push('merc-lakota'); saved.settled.push('word');
   assert.deepEqual(loaded.snapshot().fallen, ambush.snapshot().fallen);
   const before = loaded.snapshot();
-  for (const bad of [null, {}, { ...before, version: 2 }, { ...before, seed: -1 }, { ...before, seed: 1.5 },
+  for (const bad of [null, {}, { ...before, version: 3 }, { ...before, seed: -1 }, { ...before, seed: 1.5 },
     { ...before, rebels: 4 }, { ...before, rebels: -1 }, { ...before, sprung: 'yes' },
     { ...before, settled: ['nobody'] }, { ...before, settled: ['word', 'word'] },
     { ...before, fallen: ['merc-mus'] }, { ...before, rebels: 0, sprung: false }]) {
@@ -340,8 +340,8 @@ test('src/main.js walks the road, springs it, lays the bodies and saves all of i
   assert.match(main, /if\(lost\)\{[^\n]*rebuildCompany\(\);placeMercenaries\(\);saveRoad\(false\);\}/,
     'the file closes over him and the save remembers');
   // The traveler's own way into it, and the way out of it.
-  assert.match(main, /if\(combat\.startEncounter\(ambushEncounter\)\)\{ambushPlayerHelped=true;ambush\.sprang\(\);/);
-  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id\)\{ambush\.cleared\(\);if\(ambushPlayerHelped\)drent\.defeatedAmbush\(\);saveRoad\(false\);\}/,
+  assert.match(main, /if\(ambushHost\.start\(\{player:true,allies:physicalAmbushCompany\(\)/);
+  assert.match(main, /combat\.state\.encounterId===ambushEncounter\.id&&!ambush\.alive\)\{if\(ambushPlayerHelped\)drent\.defeatedAmbush\(\);saveRoad\(false\);\}/,
     'and winning it clears the road for everybody after you');
   assert.doesNotMatch(main, /markerFor\([^)]*ambush/, 'an event wears no mark');
   // The body.

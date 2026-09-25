@@ -22,13 +22,13 @@ function budget(actor, role) {
   return { draws, triangles, metal };
 }
 
-test('Ambroni soldiers and Suvali guards are armored men with helmets, no satchel and no hand weapon', () => {
+test('Ambroni soldiers and Suvali guards begin with helmets and no drawn hand weapon', () => {
   for (const role of SOLDIERS) {
     const actor = createCharacter({ role });
     assert.equal(actor.group.name, `character-${role}`);
     assert.ok(joints.every(name => actor.group.getObjectByName(name)?.isGroup), `${role} keeps the articulated rig`);
-    assert.equal(actor.setWeapon('simple-sword'), false, `${role} keeps the sword sheathed`);
-    assert.equal(actor.setFishing(true), false);
+    assert.equal(actor.group.getObjectByName('Soldier weapon grip')?.visible, false, `${role} begins with the sword sheathed`);
+    assert.equal(actor.group.getObjectByName('Fishing rod grip'), undefined, 'no rod is built until requested');
     assert.equal(actor.fishingTip(), null);
     const { draws, triangles, metal } = budget(actor, role);
     assert.ok(metal > 0, `${role} wears iron`);
@@ -42,6 +42,37 @@ test('Ambroni soldiers and Suvali guards are armored men with helmets, no satche
     assert.equal(Boolean(spear), role !== 'legion-officer', `${role} ${spear ? 'carries' : 'has no'} spear`);
     assert.equal(Boolean(actor.group.getObjectByName('Ambroni mail and tabard')), role !== 'suvali-guard');
     assert.equal(Boolean(actor.group.getObjectByName('Suvali studded jerkin')), role === 'suvali-guard');
+  }
+});
+
+test('a soldier can take up a teaching axe after spawning unarmed and stow the spear', () => {
+  for (const role of SOLDIERS) {
+    const actor = createCharacter({ role });
+    assert.equal(actor.setWeapon('bearded-axe'), true, `${role} can draw an axe without rebuilding the person`);
+    actor.animate(1, 0, true, { action: 'attack', progress: .5, armed: true, weaponId: 'bearded-axe' });
+    const axe = actor.group.getObjectByName('Bearded axe');
+    assert.ok(axe?.children.some(child => child.isMesh), `${role} has real axe geometry`);
+    for (let part = axe; part; part = part.parent) assert.equal(part.visible, true, `${role} axe is visible through its ancestors`);
+    const spear = actor.group.getObjectByName('Ambroni spear') || actor.group.getObjectByName('Suvali guard spear');
+    if (spear) assert.equal(spear.visible, false, `${role} does not carry a spear through the axe`);
+    assert.equal(actor.setWeapon(null), true);
+    if (spear) assert.equal(spear.visible, true, `${role} resumes the original planted spear`);
+    assert.equal(actor.setWeapon('not-a-weapon'), false);
+  }
+});
+
+test('authored shields retain their own geometry and obey the same visibility setter as the traveler shield', () => {
+  for (const [options, name] of [
+    [{ role: 'legion-soldier' }, 'Ambroni heater shield'],
+    [{ role: 'elodi-guard' }, 'Elodi round shield'],
+    [{ role: 'mercenary', look: { weapon: 'sword-shield' } }, 'Round shield'],
+  ]) {
+    const actor = createCharacter(options), shield = actor.group.getObjectByName(name);
+    let parts = 0; shield.traverse(part => { if (part.isMesh) parts++; });
+    assert.ok(parts > 0, `${name} was not baked into the arm outside its visibility switch`);
+    actor.setShield(false); actor.animate(1, 0, true, { action: 'idle' });
+    assert.equal(shield.visible, false, `${name} stays removed during animation`);
+    actor.setShield(true); assert.equal(shield.visible, true, `${name} can be worn again`);
   }
 });
 

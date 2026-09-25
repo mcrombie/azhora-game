@@ -78,6 +78,24 @@ function chase(zone, pace, seconds, { bearing = Math.PI / 2, arm = 3 } = {}) {
 }
 const fromHome = report => report.band().map(animal => { const home = report.homes.get(animal.id); return Math.hypot(animal.x - home.x, animal.z - home.z); });
 
+test('live wildlife positions and care effects update while saved observations remain detached', () => {
+  const life = createWestLife(new THREE.Scene(), world);
+  const state = life.state(), cow = state.creatures.find(animal => CATTLE.has(animal.species));
+  const saved = life.snapshot().creatures.find(animal => animal.id === cow.id);
+  assert.ok(cow);
+  assert.equal(life.calm(cow.id, 8), true);
+  assert.equal(cow.calmFor, 8, 'an already acquired interaction view sees the care effect');
+  assert.equal(saved.calmFor, 0, 'an earlier snapshot does not change');
+  life.update(.1, { x: cow.x + 6, z: cow.z }, true);
+  assert.ok(cow.calmFor < 8 && cow.calmFor > 0);
+  assert.ok(state.updates > 0);
+  assert.equal(life.state().creatures, state.creatures, 'interaction polling does not copy the western animals');
+  const x = cow.x;
+  assert.throws(() => { cow.x = x + 1000; }, TypeError, 'reading wildlife does not hand out mutable simulation objects');
+  assert.equal(life.snapshot().creatures.find(animal => animal.id === cow.id).x, x);
+  life.dispose();
+});
+
 /**
  * **No range may be wider than the reach it is run from.** A flock is ticked when the
  * traveler is within `LIFE_REACH` of its *centre*, not of its animals, so an animal that

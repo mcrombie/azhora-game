@@ -225,7 +225,7 @@ test('timing never scales, with any level of anything', () => {
   // One contact-time damage value is shared by every body in a physical swing, whichever team.
   assert.equal((combat.match(/countryHealth\(/g) ?? []).length, 1, 'health is scaled in exactly one place');
   assert.equal((combat.match(/countryDamage\(/g) ?? []).length, 1, 'enemy strike damage is scaled once, before applying its contacts');
-  assert.match(combat, /const stout = Math\.round\(hp \* countryHealth\(level\)\);/, 'health is scaled once, where the enemy is made');
+  assert.match(combat, /makeEnemy\(enemy\.id,[\s\S]*?Math\.round\(enemy\.hp \* countryHealth\(next\.level\)\)\)/, 'health is scaled once, where the enemy is made');
 });
 
 test('the host gives a fight the level of the country it happens in', () => {
@@ -255,8 +255,7 @@ test('the host reads the margins rather than writing numbers of its own', () => 
   assert.match(main, /getMargins:\(\)=>\{if\(!arms\)return \{\};/, 'and combat asks them what a level is worth');
   assert.match(main, /damageScale:id=>arms\?\.margins\(\)\.damageFor\(id\)\?\?1/, 'as do the weapons');
   assert.match(source('weapons.js'), /damage: type\.damage\.map\(hit => hit \* scale\)/, 'the multiplier is on the weapon’s own damage');
-  // Twenty-one in the registry (farming came with the long road), and the seven are the grouped
-  // ones. Normal mode draws twenty of them: the Linguist is hard mode's (tests/game-mode.test.js).
-  assert.equal(SKILL_IDS.length, 27, 'fifteen of the world, seven of fighting, five of sorcery');
+  // New craft and art lessons do not add or remove any of the seven fighting skills.
+  assert.equal(SKILL_IDS.length, 32, 'twenty of the world, seven of fighting, five of sorcery');
   assert.equal(SKILL_IDS.filter(id => SKILLS[id].group === ARMS_HEADING).length, 7);
 });

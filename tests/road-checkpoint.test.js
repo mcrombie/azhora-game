@@ -6,7 +6,7 @@ import { createWeapons } from '../src/weapons.js';
 import { createGear } from '../src/gear.js';
 import { createJourney } from '../src/journey.js';
 import { QUEST_DONE } from '../src/game-state.js';
-import { createForestHideoutQuest } from '../src/forest-hideout.js';
+import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
 import { createLusciaChapter } from '../src/luscia-chapter.js';
 import { createAftermathChapter } from '../src/aftermath-chapter.js';
 import { createMorosChapter } from '../src/moros-chapter.js';
@@ -534,4 +534,37 @@ test('invalid chart stages and quest ids cannot replace a checkpoint or skip the
     assert.equal(checkpoint.save({ ...saved, trackedQuestId }).ok, false);
     assert.deepEqual(checkpoint.read().data, saved);
   }
+});
+
+
+test('a goblin attack before tutorial completion remains a valid checkpoint', () => {
+  const { checkpoint, data, inventory } = fixture(), hideout = createForestHideoutQuest({ inventory });
+  hideout.alert(FOREST_HIDEOUT_QUEST.encounter.enemies[0]);
+  const woodland = { version: 1, acornStatus: 'available', practiceHits: 0, practiceDodges: 0, practiceGuards: 0,
+    acorns: [], sticks: [], fruits: [], discoveries: [], camp: { version: 1, taught: false, catches: 0, fires: {} } };
+  const result = checkpoint.save({ ...data, questStage: 1, woodland, journey: createJourney().snapshot(),
+    journeyGathered: [], forestHideout: hideout.snapshot() });
+  assert.equal(result.ok, true, result.reason);
+  const saved = checkpoint.read().data;
+  assert.equal(saved.questStage, 1);
+  assert.equal(saved.forestHideout.accepted, true);
+  const restored = createForestHideoutQuest(); restored.restore(saved.forestHideout);
+  assert.equal(restored.state.active, false, 'loading resumes the road instead of a hidden battle');
+});
+
+
+test('guided fishing and fire-making progress survives a checkpoint and malformed outings cannot replace it', () => {
+  const { data, checkpoint } = fixture();
+  data.fishingLessons = { version: 1, teacher: 'garden-keeper', stage: 'leading', demonstration: 0,
+    position: { x: -62, z: 27 }, waypoint: 2, waiting: true, completed: ['instructor'] };
+  data.fireMaking = { version: 1, stage: 'practice', suppliesGiven: true, jojoReferral: 'arrived', firesLit: 0 };
+  assert.equal(checkpoint.save(data).ok, true);
+  const saved = checkpoint.read();
+  assert.deepEqual(saved.data.fishingLessons, data.fishingLessons);
+  assert.deepEqual(saved.data.fireMaking, data.fireMaking);
+  const bad = structuredClone(data); bad.fishingLessons.teacher = 'missing-guide';
+  assert.equal(checkpoint.save(bad).ok, false);
+  assert.deepEqual(checkpoint.read().data.fishingLessons, data.fishingLessons);
+  const badFire = structuredClone(data); badFire.fireMaking.firesLit = -1;
+  assert.equal(checkpoint.save(badFire).ok, false);
 });

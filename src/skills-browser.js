@@ -1,11 +1,13 @@
 import { SKILLS } from './skills.js';
 import { SCHOOLS, SPELLS } from './sorcery.js';
 
-export const SKILL_CATEGORIES = Object.freeze(['Combat', 'Exploration', 'Crafting', 'Sorcery']);
-const crafting = new Set(['cooking', 'woodcutting', 'construction', 'farming']);
+export const SKILL_CATEGORIES = Object.freeze(['Combat', 'Exploration', 'Crafting', 'Livestock', 'Arts', 'Sorcery']);
+const crafting = new Set(['cooking', 'firemaking', 'smithing', 'woodcutting', 'construction', 'farming']);
 
 export function skillCategory(skill) {
   const group = SKILLS[skill.id]?.group;
+  if(skill.id==='husbandry')return 'Livestock';
+  if(['acting','visualarts'].includes(skill.id))return 'Arts';
   if (group === 'Arms') return 'Combat';
   if (group === 'Sorcery') return 'Sorcery';
   return crafting.has(skill.id) ? 'Crafting' : 'Exploration';

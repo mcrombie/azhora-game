@@ -564,6 +564,19 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       allies: lastEncounter.allies.map(({ currentHp, ...ally }) => ally), ...changes }, { atCheckpoint: true });
   }
 
+  /** Release a real-world fight when its targets have escaped or fallen. The
+   * host receives the final bodies/health before this simulation lets them go. */
+  function disengage(reason = 'retreat') {
+    if (state.phase !== 'active' || lastEncounter.bout) return false;
+    const copy = actor => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp,
+      x: actor.x, z: actor.z, yaw: actor.yaw, escaped: !!actor.escaped });
+    const enemies = state.enemies.map(copy), allies = state.allies.map(copy);
+    state.phase = 'peaceful'; state.enemies = []; enemyTimers.clear(); clearAllies();
+    restorePlayer({ preserveVitals: true });
+    emit('retreat', { encounterId: state.encounterId, reason, enemies, allies });
+    return true;
+  }
+
   /**
    * **Hold to guard**, the one new verb melee gets. It is there at level 1 with any shield in
    * hand and levels only make it better: the share caught rises from .6 to .9 and the wind it
@@ -1702,14 +1715,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         // nothing to catch your breath from and nobody held the ground without you.
         if (lastEncounter.bout) endBout('walked-away');
         else {
-          const enemies = state.enemies.map(actor => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, x: actor.x, z: actor.z }));
-          const allies = state.allies.map(actor => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, x: actor.x, z: actor.z }));
-          state.phase = 'peaceful';
-          state.enemies = [];
-          enemyTimers.clear();
-          clearAllies();
-          restorePlayer({ preserveVitals: true });
-          emit('retreat', { encounterId: state.encounterId, enemies, allies });
+          disengage();
         }
       }
       updatePlayer(step);
@@ -1794,7 +1800,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, pose, movementScale, heal, exhaust, revive, spellHit,
+    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, disengage, pose, movementScale, heal, exhaust, revive, spellHit,
     setWeaponReady(value) { weaponReady = Boolean(value); },
     /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
     get drawn() { return player.draw ?? 0; },

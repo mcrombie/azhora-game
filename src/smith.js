@@ -7,10 +7,10 @@
  * iron without a line of his own - **Drent is level 0, so what he has is what you landed with**,
  * and the bog iron is a country up the road.
  *
- * **The smiths are named for the smiths of myth** (the user, 2026-09-21: "name them things like
+ * **Most smiths are named for the smiths of myth** (the user, 2026-09-21: "name them things like
  * Vulcan and other mythical terms for smiths"). It is a naming register of the user's own, so it
- * takes nothing from Azhora's place-name generators and covers every forge in the game: Vulcan in
- * Tidehaven, Wayland at the Moros camp, Goibniu in Ostel, Hephaestus in Ambron City. Later ones
+ * takes nothing from Azhora's place-name generators: Wayland at the Moros camp, Goibniu in Ostel,
+ * Hephaestus in Ambron City. Tidehaven's smith is now Martin, by the user's later request. Later ones
  * draw from the same well - Ilmarinen, Brokkr and Sindri, Tubal-cain, Svarog, Kothar. In prose
  * they are still the smith and the armourer; the name is what is shown where a name is shown.
  *
@@ -21,8 +21,9 @@ import { COPPER_ITEM, describeSum } from './economy.js';
 import { BOW } from './archery.js';
 
 export const SMITH_NPC = Object.freeze({
-  id: 'tidehaven-smith', name: 'Vulcan', role: 'Smith of Tidehaven',
+  id: 'tidehaven-smith', name: 'Martin', role: 'Smith of Tidehaven',
   modelRole: 'forest-woodcutter', color: 0x6b5a3c,
+  look: Object.freeze({ hair: 0x171615, hairStyle: 'cropped', beard: false, glasses: true }),
 });
 
 /** The army's armourer at the Moros outpost, beside the smithy tent that was already standing. */
@@ -217,7 +218,7 @@ export function smithGreeting(countryLevel, { worn = {}, id = SMITH_NPC.id } = {
  * and the two callbacks the dialogue system uses.
  */
 export function smithConversation(npc, context) {
-  const { level = 0, inventory, gear, openDialogue, closeDialogue, act } = context ?? {};
+  const { level = 0, inventory, gear, openDialogue, closeDialogue, act, skills, weapons, onChange = () => {} } = context ?? {};
   if (!npc || !sellsHere(npc.id)) return false;
   const purse = inventory?.count?.(COPPER_ITEM) ?? 0;
   const offers = smithOffers(level, { id: npc.id });
@@ -231,7 +232,16 @@ export function smithConversation(npc, context) {
   }));
   openDialogue(npc, [...smithGreeting(level, { worn: gear?.view?.().worn ?? {}, id: npc.id }),
     `You are carrying ${describeSum(purse)}.`], null, 'Back to the village', {
-    choices: [...choices, { id: 'leave-smith', label: 'Another day.', action: closeDialogue }],
+    choices: [...(npc.id === SMITH_NPC.id && skills ? [{ id: 'martin-smithing', label: skills.taught('smithing') ? 'Practise repairing my weapons.' : 'Teach me Smithing · optional lesson', action: () => {
+      openDialogue(npc, ['Martin. First rule: look at the damage before you reach for a hammer. Clean the blade, check its edge, and work only where it needs it.',
+        'I can show you on a worn weapon. Once you know the method, use F at a repair bench to maintain your own gear. Actual repairs earn Smithing experience; an already sound weapon needs no work.'], null, skills.taught('smithing') ? 'Repair my worn weapons' : 'Learn Smithing', { noWayfinding: true, onComplete: () => {
+        const first = skills.learn('smithing').first;
+        const repaired = weapons?.repair?.() ?? false;
+        if (repaired) skills.gain('smithing', 18);
+        onChange();
+        openDialogue(npc, [repaired ? 'There. Your weapons are ready again. Eighteen Smithing experience for useful work.' : first ? 'You know the method now. Your weapons are sound; come back after they have seen use.' : 'These are already sound. Use them, then come back when they need work.'], null, 'Back to the forge', { onComplete: () => smithConversation(npc, context) });
+      } });
+    } }] : []), ...choices, { id: 'leave-smith', label: 'Another day.', action: closeDialogue }],
   });
   return true;
 }

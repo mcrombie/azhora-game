@@ -8,10 +8,12 @@
 
 /** The inner markup of each skill's mark, keyed by skill id. */
 export const SKILL_ICONS = Object.freeze({
+
   // A songbird on a rail, head up and tail down, the way you first see one.
   birding: '<circle cx="24" cy="11" r="3.6"/><path d="m27.4 9.8 4.6 1.8-4.6 1.8M25.6 10h.01"/>'
     + '<path d="M21.2 13.2C15 14.4 10 18.6 8 25c6.4 1.4 11.6-.6 14.8-4.4 2-2.4 3-4.8 3.2-7"/>'
     + '<path d="m8 25-4.4 3.4M16.6 17.6c1.8 1 3 2.6 3.4 4.6M6 30h24"/>',
+  husbandry: '<path d="M8 17C3 5 8 3 13 12m10 0c5-9 10-7 5 5M10 12h16l-2 16-6 4-6-4Z"/><circle cx="14" cy="19" r="1"/><circle cx="22" cy="19" r="1"/><path d="M14 26h8"/>',
   // A hook on its line, eye at the top and barb at the turn.
   fishing: '<circle cx="23" cy="5.4" r="2.2"/><path d="m25.2 4.6 7-1.6"/>'
     + '<path d="M23 7.6v10.6c0 5-4.2 9-9.2 9S4.6 23.2 4.6 18.2"/><path d="M4.6 18.2V13M2.6 15.4l2 2.4 2-2.4"/>',
@@ -35,6 +37,8 @@ export const SKILL_ICONS = Object.freeze({
   cooking: '<path d="M5 14.6h26v8.6c0 4.2-3.2 7.4-7.4 7.4h-11.2C8.2 30.6 5 27.4 5 23.2Z"/>'
     + '<path d="M3 14.6h30M5 18.6H2.4M31 18.6h2.6"/>'
     + '<path d="M13 11c-1.8-2.2.6-3.6-1.2-5.8M20 10c-1.8-2.2.6-3.6-1.2-5.8M27 11c-1.8-2.2.6-3.6-1.2-5.8"/>',
+  firemaking: '<path d="M6 32 29 27M7 27l22 5M18 4c1 6 6 8 6 15a6 6 0 0 1-12 0c0-4 4-7 6-15Z"/>',
+  smithing: '<path d="M5 20h26l-5 6H13l-3-3H5ZM15 26l-2 6h14l-2-6M8 6l5-3 7 8-5 4ZM16 12l9 9"/>',
   // An axe left standing in a stump, which is where Bowden keeps his.
   woodcutting: '<ellipse cx="18" cy="25" rx="10" ry="4"/><path d="M8 25v4c0 2.2 4.4 4 10 4s10-1.8 10-4v-4"/>'
     + '<ellipse cx="18" cy="25" rx="4" ry="1.6"/><path d="M14.6 21.4 26 6"/>'
@@ -59,6 +63,8 @@ export const SKILL_ICONS = Object.freeze({
   farming: '<path d="M18 33V13"/><path d="M18 13c-4.6 0-7-2.6-7-7 4.6 0 7 2.6 7 7Z"/>'
     + '<path d="M18 13c4.6 0 7-2.6 7-7-4.6 0-7 2.6-7 7Z"/><path d="M18 21c-4.6 0-7-2.6-7-7 4.6 0 7 2.6 7 7Z"/>'
     + '<path d="M18 21c4.6 0 7-2.6 7-7-4.6 0-7 2.6-7 7Z"/><path d="M5 33h26"/>',
+  visualarts: '<path d="m12 24 16-19 4 4-19 17ZM12 24c-8-3-4 7-9 8 10 1 12-3 10-6"/><path d="m25 9 4 4"/>',
+  acting: '<path d="M7 7h22v12c0 8-6 12-11 14C13 31 7 27 7 19Z"/><path d="M11 15h4m6 0h4M12 22q6 7 12 0"/>',
   linguist: '<path d="M18 9.6C14.4 6.8 9.6 5.8 4 6.2v20c5.6-.4 10.4.6 14 3.4 3.6-2.8 8.4-3.8 14-3.4v-20c-5.6-.4-10.4.6-14 3.4Z"/>'
     + '<path d="M18 9.6v20"/>'
     + '<path d="M7.8 12.8c2.4-.2 4.6.2 6.6 1.2M7.8 17.8c2.4-.2 4.6.2 6.6 1.2M21.6 14c2-1 4.2-1.4 6.6-1.2M21.6 19c2-1 4.2-1.4 6.6-1.2"/>',

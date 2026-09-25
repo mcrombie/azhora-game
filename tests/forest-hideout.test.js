@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { QUEST_DONE } from '../src/game-state.js';
+import { CAT, LIZ_STAND } from '../src/cat-quest.js';
 import { createInventoryState } from '../src/inventory.js';
 import { FOREST_HIDEOUT_QUEST, createForestHideoutQuest, validateForestHideoutSnapshot,
   hideoutConversation, hideoutTamsinChoices, garrisonConversation, HIDEOUT_GARRISON } from '../src/forest-hideout.js';
@@ -16,7 +17,7 @@ function win(quest) {
   assert.equal(quest.markCleared(FOREST_HIDEOUT_QUEST.id).ok, true);
 }
 
-test('the hideout can be observed early but requires inspection, original victory, and explicit opt-in to fight', () => {
+test('voluntarily challenging from the safe approach requires inspection and completed training', () => {
   const { quest, inventory, events } = fixture();
   assert.equal(quest.view().task, null);
   assert.equal(quest.begin({ questStage: QUEST_DONE }).ok, false);
@@ -242,4 +243,55 @@ test('Cassel tells of the camp, the Captain marches on request, and the stores a
   garrisonConversation(captain, ui.context);
   assert.match(ui.screens.at(-1).lines.join(' '), /my report to the Marshal/);
   assert.equal(inventory.count('copper-piece'), 30);
+});
+
+
+test('either scout attacks an unbriefed traveler within reach without a quest prerequisite', () => {
+  for (const scout of FOREST_HIDEOUT_QUEST.encounter.enemies) {
+    const { quest, inventory, events } = fixture();
+    const position = { x: scout.x + FOREST_HIDEOUT_QUEST.alertRadius - .1, z: scout.z };
+    assert.equal(quest.state.inspected, false);
+    assert.equal(quest.canAlert(position), true);
+    const result = quest.alert(position);
+    assert.equal(result.startEncounter, true);
+    assert.equal(result.spotted, true);
+    assert.equal(quest.state.active, true);
+    assert.equal(quest.state.inspected && quest.state.accepted, true);
+    assert.equal(validateForestHideoutSnapshot(quest.snapshot()), true);
+    assert.deepEqual(events.map(event => event.actionId), ['inspect-hideout', 'spotted-by-scouts']);
+    assert.deepEqual(inventory.items(), [], 'being attacked grants no supplies or reward');
+    assert.equal(quest.canAlert(position), false, 'one intrusion must not create duplicate combatants');
+    assert.equal(quest.alert(position).startEncounter, undefined);
+  }
+});
+
+test('the camp approach and the route to Mop remain safe without inspection', () => {
+  const { quest } = fixture(), before = quest.snapshot();
+  const safe = [FOREST_HIDEOUT_QUEST.approach, CAT.at, LIZ_STAND, null, {}, { x: NaN, z: 0 }];
+  for (let step = 0; step <= 100; step++) {
+    const t = step / 100;
+    safe.push({ x: LIZ_STAND.x + (CAT.at.x - LIZ_STAND.x) * t,
+      z: LIZ_STAND.z + (CAT.at.z - LIZ_STAND.z) * t });
+  }
+  for (const position of safe) {
+    assert.equal(quest.canAlert(position), false);
+    assert.equal(quest.alert(position).ok, false);
+  }
+  assert.deepEqual(quest.snapshot(), before, 'skirting the camp must not accept its optional errand');
+});
+
+test('retreat permits later hostility but a cleared camp and its save never respawn scouts', () => {
+  const { quest } = fixture(), position = FOREST_HIDEOUT_QUEST.encounter.enemies[0];
+  quest.alert(position);
+  const accepted = quest.snapshot();
+  quest.endEncounter(FOREST_HIDEOUT_QUEST.id);
+  assert.equal(quest.alert(position).startEncounter, true);
+  assert.deepEqual(quest.snapshot(), accepted, 're-entering does not duplicate progress');
+  assert.equal(quest.markCleared(FOREST_HIDEOUT_QUEST.id).ok, true);
+  assert.equal(quest.canAlert(position), false);
+  assert.equal(quest.alert(position).ok, false);
+  const loaded = fixture().quest;
+  assert.equal(loaded.restore(quest.snapshot()), true);
+  assert.equal(loaded.canAlert(position), false);
+  assert.equal(loaded.alert(position).startEncounter, undefined);
 });

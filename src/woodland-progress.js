@@ -1,7 +1,8 @@
 import { regionFirePits } from './regions.js';
 import { OUTPOST_FIRE } from './outpost.js';
-// Every fire the world lights: the village's, the road's, and the mess fire in the army's outpost.
-const KNOWN_FIRES = new Set(['village-fire', 'pond-fire', ...regionFirePits.map(fire => fire.id), OUTPOST_FIRE.id]);
+import { FARM_FIRE } from './farming.js';
+// Every fire the world lights, including Stanley's shared garden cooking fire.
+const KNOWN_FIRES = new Set(['village-fire', 'pond-fire', ...regionFirePits.map(fire => fire.id), OUTPOST_FIRE.id, FARM_FIRE.id]);
 const uniqueIds = (value, pattern, limit) => Array.isArray(value) && value.length <= limit
   && new Set(value).size === value.length && value.every(id => typeof id === 'string' && pattern.test(id));
 
@@ -19,7 +20,7 @@ export function validateWoodlandProgress(value, stock) {
   if (!camp || camp.version !== 1 || typeof camp.taught !== 'boolean'
     || !Number.isSafeInteger(camp.catches) || camp.catches < 0
     || !camp.fires || typeof camp.fires !== 'object' || Array.isArray(camp.fires)
-    || Object.keys(camp.fires).length > 16
+    || Object.keys(camp.fires).length > KNOWN_FIRES.size
     || Object.entries(camp.fires).some(([id, fuel]) => !KNOWN_FIRES.has(id)
       || !Number.isFinite(fuel) || fuel < 0 || fuel > 120)) return false;
   if (camp.taught && !stock.has('fishing-rod')) return false;

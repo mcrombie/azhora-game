@@ -129,11 +129,11 @@ export function instructorLines(stage) {
  * `begin` sets practice; `giveChart` issues the chart; `report` finishes the whole lesson only
  * after the chart has been opened. `finish` remains an alias for older chart-giving callers.
  */
-export function instructorConversation(npc, { stage = 'waiting', openDialogue, begin = () => {}, finish = () => {}, giveChart = finish, openMap = () => {}, report = () => {} } = {}) {
+export function instructorConversation(npc, { stage = 'waiting', openDialogue, begin = () => {}, finish = () => {}, giveChart = finish, openMap = () => {}, report = () => {}, extraChoices = [] } = {}) {
   const lines = instructorLines(stage);
   if (stage === 'waiting') return openDialogue(npc, lines, null, 'Take up the sword', { onComplete: begin });
   if (stage === 'done') return openDialogue(npc, lines, null, 'Take the chart', { onComplete: giveChart });
   if (stage === 'open-map') return openDialogue(npc, lines, null, 'Open the world map', { onComplete: openMap });
   if (stage === 'return-to-glun') return openDialogue(npc, lines, null, 'Report for service', { onComplete: report });
-  return openDialogue(npc, lines, null, 'Back to the post');
+  return openDialogue(npc, lines, null, 'Back to the post', stage === 'finished' ? { choices: [...extraChoices, {id:'leave-instructor',label:'Back to the road',action:()=>openDialogue(npc,['Keep your eyes open on the road.'],null,'Until next time')}] } : {});
 }

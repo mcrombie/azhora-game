@@ -59,3 +59,5 @@ Liz has straight, tapered hair lengths. Summon Bees now renders twelve striped, 
 The full native Liz autoplay passed 36 checks, returning Mop after 178 metres and verifying the explicit reward, casting guide, pause, checkpoint reload, and manual takeover. The native magic suite passed 100 checks, including actual swarm damage and Animal Sorcery experience. Neither run recorded game errors. Both Electron launches logged the existing GPU teardown warning after writing successful results. Native captures of Liz from front and back, the reward and guide, and bees at normal and closer camera distances were visually inspected.
 
 The final `npm run test:magic` suite passed all 76 tests, including swarm rendering/lifecycle and the actual Liz and Troy world routes. The web build and whitespace checks passed.
+
+Liz's follow-up hair correction replaces the undersized cap with a full scalp envelope and connected, waist-length straight hair. Front, back, both sides, and overhead native captures confirm the scalp no longer protrudes. The existing Liz appearance check passes.

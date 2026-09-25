@@ -29,7 +29,7 @@ export const MIND_PRICES = freeze({ input: 1, output: 5, cacheRead: .1, cacheWri
 // ---------------------------------------------------------------------------
 // Offers: the only way he can touch the game
 // ---------------------------------------------------------------------------
-// Birding and the feeder used to be here. They belong to Perrin at the garden now (src/birding.js),
+// Birding and the feeder used to be here. They belong to Jean at the garden now (src/birding.js),
 // and a model that offered them would be offering something the world will not do.
 export const OFFERS = freeze({
   'learn-archaeology': freeze({ label: 'Learn archaeology and go to Rena', means: 'teach them archaeology and send them to read the ruins of Rena' }),

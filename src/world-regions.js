@@ -1,3 +1,5 @@
+import { AVREL_POND } from './avrel-pond.js';
+import { SYLVIA_STUDIO } from './visual-arts.js';
 import * as THREE from 'three';
 import {
   REGION_ORDER, REGION_CELLS, REGION_BIOMES, METRES_PER_HEX, AVREL_CLEARING, CALOSS, CALOSS_BANK,
@@ -34,6 +36,8 @@ const xz = (x, z) => { const p = toWorld(x, z); return [p.x, p.z]; };
 
 /** Clearings the biome scatter must leave alone: yards, camps and quest ground. */
 export const REGION_CLEARINGS = Object.freeze([
+  SYLVIA_STUDIO.centre,
+  Object.freeze({ x: AVREL_POND.x, z: AVREL_POND.z, r: AVREL_POND.radius + 2.2 }),
   Object.freeze({ x: AVREL_CLEARING.x, z: AVREL_CLEARING.z, r: AVREL_CLEARING.radius }),
   Object.freeze({ ...at(-222, 62), r: 13 }),                                 // the clearing mill
   Object.freeze({ x: CALOSS.crossing.x, z: CALOSS.crossing.z, r: 26 }),      // the bridge approach

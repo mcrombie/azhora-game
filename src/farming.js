@@ -1,18 +1,8 @@
 /**
- * Farming, the fourteenth skill, and the only one that grows while you are somewhere else.
- *
- * Sow, wait, reap. A row is sown at a moment of play and is ripe a fixed number of play-seconds
- * later — barley in four minutes, Drent leaf in eight — so the first thing it teaches is the
- * thing the whole long road is about: Drent goes on without you, exactly as the company does
- * (`src/mercenaries.js`). Walk to Rena and back and the barley is in.
- *
- * Enna keeps the common mill at the Avrel clearing and already stands between the crop rows and
- * the millstones, so she teaches it. Applegarth's orchard is farming with no sowing: the trees
- * are kept, they are picked rather than planted, and they bear again ten minutes later.
- *
- * It is a working skill, done RuneScape's way like woodcutting: every reaping is experience, and
- * the level climbs the same 99 table as everything else. Nothing here is a gate — a bare row is
- * a bare row, and the road does not wait on it. Pure: no DOM, no three.
+ * The optional Avrel commons garden: seed, tend, harvest and cook.
+ * Growth reads active play seconds, so leaving the clearing keeps crops growing while menus,
+ * pause and a closed game do not. Four established row IDs and version-1 saves stay compatible.
+ * Stanley supplies seed; Enna keeps her independent mill errand. Pure model, no DOM or Three.
  */
 import { APPLEGARTH_WORKS } from './rena.js';
 
@@ -20,6 +10,13 @@ const freeze = Object.freeze;
 
 export const FARMING_VERSION = 1;
 export const FARMING_SKILL = 'farming';
+export const FARMER = freeze({ id: 'avrel-farmer', name: 'Stanley', role: 'Farmer of the Avrel clearing',
+  modelRole: 'avrel-farmer', color: 0x6c7654, skin: 0xc7a477, x: -422, z: 58.5, yaw: -0.6,
+  look: freeze({ hair: 0x191915, hairStyle: 'short', beard: false, eyes: 0x3b2e20 }) });
+export const FARM_FIRE = freeze({ id: 'commons-fire', x: -421, z: 53, fireX: -419.5, fireZ: 53 });
+export const SEED_PACKET_SIZE = 4;
+export const WATERING_XP = 4;
+export const WATERED_GROWTH = 0.75;
 
 /**
  * What a row can be sown with. `seconds` is play-seconds from sowing to ripe, and the two
@@ -27,9 +24,13 @@ export const FARMING_SKILL = 'farming';
  * §5). `xp` is what reaping one row pays.
  */
 export const CROPS = freeze({
-  barley: freeze({ id: 'barley', name: 'Barley', seconds: 240, xp: 24, level: 1, item: 'barley', yield: 2,
+  carrot: freeze({ id: 'carrot', name: 'Carrots', seconds: 90, xp: 22, level: 1, item: 'carrot', yield: 2, seed: 'carrot-seed',
+    note: 'A quick first crop. Eat a carrot for 15 health, or simmer one with barley for a much heartier meal.' }),
+  beet: freeze({ id: 'beet', name: 'Beets', seconds: 150, xp: 32, level: 2, item: 'beet', yield: 2, seed: 'beet-seed',
+    note: 'Broad red-veined leaves and sweet roots. Eat one for 20 health, or roast it for 35.' }),
+  barley: freeze({ id: 'barley', name: 'Barley', seconds: 240, xp: 24, level: 1, item: 'barley', yield: 2, seed: 'barley-seed',
     note: 'Four minutes of play from the drill to the sickle. The commons grows it for the mill, and the mill is the reason the commons exists.' }),
-  'drent-leaf': freeze({ id: 'drent-leaf', name: 'Drent leaf', seconds: 480, xp: 45, level: 5, item: 'pipe-weed', yield: 1,
+  'drent-leaf': freeze({ id: 'drent-leaf', name: 'Drent leaf', seconds: 480, xp: 45, level: 5, item: 'pipe-weed', yield: 1, seed: 'drent-leaf-seed',
     note: 'Twice as long and worth it. Half the good ground in Drent is under tobacco, and this is a row of it (src/pipeweed.js).' }),
 });
 export const CROP_IDS = freeze(Object.keys(CROPS));
@@ -79,7 +80,8 @@ export function validateFarmingSnapshot(data, { allowMissing = true, playSeconds
   const rows = Object.entries(data.rows);
   if (rows.length > FARM_ROWS.length) return false;
   if (!rows.every(([id, sown]) => FARM_ROW_IDS.includes(id) && isPlainObject(sown)
-    && Object.hasOwn(CROPS, sown.crop) && seconds(sown.sownAt) && sown.sownAt <= playSeconds)) return false;
+    && Object.hasOwn(CROPS, sown.crop) && seconds(sown.sownAt) && sown.sownAt <= playSeconds
+    && (sown.watered === undefined || typeof sown.watered === 'boolean'))) return false;
   const trees = Object.entries(data.trees);
   if (trees.length > ORCHARD_TREES.length) return false;
   return trees.every(([id, pickedAt]) => ORCHARD_TREE_IDS.includes(id) && seconds(pickedAt) && pickedAt <= playSeconds);
@@ -95,31 +97,48 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     return skills?.gain?.(FARMING_SKILL, amount) ?? null;
   };
 
-  /** Enna's lesson. Learned once, and the whole skill is shut until it is. */
+  /** Stanley's introduction supplies seed; practical farming is also possible before meeting him. */
   function learn() {
     if (state.met) return { ok: true, first: false };
     state.met = true;
     skills?.learn?.(FARMING_SKILL);
+    stockSeeds();
     onEvent({ type: 'farming-learned' });
     return { ok: true, first: true };
   }
 
   const level = () => skills?.level?.(FARMING_SKILL) ?? 1;
 
+  /** The commons supplies seed for practice; topping up never duplicates a full packet. */
+  function stockSeeds() {
+    const added = [];
+    for (const kind of Object.values(CROPS)) {
+      if (level() < kind.level) continue;
+      const quantity = Math.max(0, SEED_PACKET_SIZE - (inventory?.count?.(kind.seed) ?? 0));
+      if (quantity && inventory?.add?.(kind.seed, quantity)) added.push({ id: kind.seed, quantity });
+    }
+    onEvent({ type: 'farm-seeds', added });
+    return { ok: true, added };
+  }
+
   /** Where a row stands at a moment of play: bare, sown and growing, or ripe. */
   function rowState(id, playSeconds) {
     const here = farmRow(id);
     if (!here) return null;
     const sown = state.rows.get(id);
-    if (!sown) return { ...here, stage: 'bare', crop: null, sownAt: null, ripeAt: null, left: 0 };
-    const kind = CROPS[sown.crop], ripeAt = sown.sownAt + kind.seconds, left = Math.max(0, ripeAt - now(playSeconds));
-    return { ...here, stage: left > 0 ? 'sown' : 'ripe', crop: kind.id, cropName: kind.name, sownAt: sown.sownAt, ripeAt, left };
+    if (!sown) return { ...here, stage: 'bare', crop: null, sownAt: null, ripeAt: null, left: 0, progress: 0, watered: false };
+    const kind = CROPS[sown.crop], duration = kind.seconds * (sown.watered ? WATERED_GROWTH : 1);
+    const ripeAt = sown.sownAt + duration, left = Math.max(0, ripeAt - now(playSeconds));
+    return { ...here, stage: left > 0 ? 'sown' : 'ripe', crop: kind.id, cropName: kind.name, sownAt: sown.sownAt, ripeAt, left,
+      progress: Math.max(0, Math.min(1, (now(playSeconds) - sown.sownAt) / duration)), watered: !!sown.watered,
+      quantity: kind.yield + (sown.watered ? 1 : 0) };
   }
 
   /** What a row may be sown with now: the crops the level opens, and nothing on a row in use. */
   function sowable(id) {
     if (state.rows.has(id) || !farmRow(id)) return [];
-    return CROP_IDS.filter(cropId => level() >= CROPS[cropId].level).map(cropId => ({ ...CROPS[cropId] }));
+    return CROP_IDS.filter(cropId => level() >= CROPS[cropId].level)
+      .map(cropId => ({ ...CROPS[cropId], seeds: inventory?.count?.(CROPS[cropId].seed) ?? 0 }));
   }
 
   function sow(id, cropId, playSeconds) {
@@ -130,10 +149,24 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     const kind = CROPS[cropId];
     if (!kind) return { ok: false, reason: 'There is no such seed.' };
     if (level() < kind.level) return { ok: false, reason: `${kind.name} wants farming level ${kind.level}.` };
+    if (inventory?.remove && !inventory.remove(kind.seed, 1)) return { ok: false, reason: `You need ${kind.name.toLowerCase()} seed. Stanley shares seed packets beside the commons rows.` };
     const at = now(playSeconds);
     state.rows.set(id, { crop: kind.id, sownAt: at });
     onEvent({ type: 'row-sown', row: id, crop: kind.id, ripeAt: at + kind.seconds });
     return { ok: true, row: id, crop: kind.id, ripeAt: at + kind.seconds, seconds: kind.seconds };
+  }
+
+  /** One useful tending action per planting, with the commons watering can kept at each row. */
+  function water(id, playSeconds) {
+    const here = rowState(id, playSeconds);
+    if (!here || here.stage !== 'sown') return { ok: false, reason: 'Water a planted row while it is growing.' };
+    if (here.watered) return { ok: false, reason: 'This row has enough water. It needs time now.' };
+    state.rows.get(id).watered = true;
+    const gained = pay(WATERING_XP);
+    const after = rowState(id, playSeconds);
+    onEvent({ type: 'row-watered', row: id, crop: here.crop, xp: WATERING_XP, left: after.left,
+      level: gained?.level ?? level(), levelled: !!gained?.levelled });
+    return { ok: true, xp: WATERING_XP, left: after.left, quantity: after.quantity };
   }
 
   /**
@@ -149,12 +182,14 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     if (here.stage === 'bare') return { ok: false, reason: 'There is nothing in that row.' };
     if (here.stage === 'sown') return { ok: false, reason: `Not for another ${Math.ceil(here.left)} seconds. It grows whether you are watching it or not.` };
     const kind = CROPS[here.crop];
+    const quantity = kind.yield + (here.watered ? 1 : 0);
+    if (inventory?.add && !inventory.add(kind.item, quantity)) return { ok: false, reason: 'There is no room for the harvest in your satchel. The crop is still in the row.' };
+    if (inventory?.add) inventory.add(kind.seed, 1);
     state.rows.delete(id);
     state.reaped++;
-    if (inventory?.add) inventory.add(kind.item, kind.yield);
     const gained = pay(kind.xp);
-    onEvent({ type: 'row-reaped', row: id, crop: kind.id, item: kind.item, quantity: kind.yield, xp: kind.xp, level: gained?.level ?? level(), levelled: !!gained?.levelled });
-    return { ok: true, row: id, crop: kind.id, item: kind.item, quantity: kind.yield, xp: kind.xp, levelled: !!gained?.levelled, level: gained?.level ?? level() };
+    onEvent({ type: 'row-reaped', row: id, crop: kind.id, item: kind.item, quantity, seed: kind.seed, xp: kind.xp, level: gained?.level ?? level(), levelled: !!gained?.levelled });
+    return { ok: true, row: id, crop: kind.id, item: kind.item, quantity, seed: kind.seed, xp: kind.xp, levelled: !!gained?.levelled, level: gained?.level ?? level() };
   }
 
   /** A kept tree at a moment of play: in fruit, or bearing again in so many seconds. */
@@ -173,8 +208,8 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     // teacher is still worth meeting; he is no longer the door.
     if (!tree) return { ok: false, reason: 'There is no such tree.' };
     if (tree.stage === 'picked') return { ok: false, reason: `This one is picked out. It will bear again in about ${Math.ceil(tree.left)} seconds.` };
+    if (inventory?.add && !inventory.add(ORCHARD_ITEM, 1)) return { ok: false, reason: 'There is no room for the apple in your satchel. It is still on the tree.' };
     state.trees.set(id, now(playSeconds));
-    if (inventory?.add) inventory.add(ORCHARD_ITEM, 1);
     const gained = pay(ORCHARD_XP);
     onEvent({ type: 'tree-picked', tree: id, item: ORCHARD_ITEM, xp: ORCHARD_XP, level: gained?.level ?? level(), levelled: !!gained?.levelled });
     return { ok: true, tree: id, item: ORCHARD_ITEM, quantity: 1, xp: ORCHARD_XP, levelled: !!gained?.levelled, level: gained?.level ?? level() };
@@ -192,19 +227,19 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
 
   /** What the traveler would write in his own notes: the one skill with a clock of its own. */
   function task(playSeconds) {
-    if (!state.met) return { title: 'Not yet a farmer', detail: 'Enna keeps the common mill at the Avrel clearing, and stands between the crop rows and the millstones. She will show you how a row goes in.' };
+    if (!state.met) return { title: 'The commons garden', detail: 'Stanley teaches Farming beside the four rows at the Avrel clearing. He shares seeds and recipes. The garden is optional; you can plant before taking his lesson.' };
     const here = view(playSeconds);
     if (here.ripe) return { title: `${here.ripe} row${here.ripe === 1 ? '' : 's'} ripe`, detail: 'Take it off at the commons. The row is bare again afterwards and can go straight back in.' };
     if (here.sown) {
       const soonest = Math.ceil(Math.min(...here.rows.filter(entry => entry.stage === 'sown').map(entry => entry.left)));
       return { title: 'Sown and growing', detail: `About ${soonest} seconds on the soonest row. It grows whether you are watching it or not; go and do something else.` };
     }
-    return { title: 'Four bare rows', detail: 'Barley is four minutes and Drent leaf is eight. Applegarth keeps its orchard, and a kept tree is picked rather than sown.' };
+    return { title: 'Four bare rows', detail: 'Choose carrots or barley; beets unlock at level 2 and Drent leaf at level 5. Water a growing row once for an earlier, larger harvest. Stanley shares replacement seeds.' };
   }
 
   function snapshot() {
     return { version: FARMING_VERSION, met: state.met, reaped: state.reaped,
-      rows: Object.fromEntries([...state.rows].map(([id, sown]) => [id, { crop: sown.crop, sownAt: Math.round(sown.sownAt * 100) / 100 }])),
+      rows: Object.fromEntries([...state.rows].map(([id, sown]) => [id, { crop: sown.crop, sownAt: Math.round(sown.sownAt * 100) / 100, ...(sown.watered ? { watered: true } : {}) }])),
       trees: Object.fromEntries([...state.trees].map(([id, at]) => [id, Math.round(at * 100) / 100])) };
   }
 
@@ -212,18 +247,18 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     state.met = false; state.rows.clear(); state.trees.clear(); state.reaped = 0;
     if (!validateFarmingSnapshot(data, { allowMissing: false })) return false;
     state.met = data.met; state.reaped = data.reaped;
-    for (const [id, sown] of Object.entries(data.rows)) state.rows.set(id, { crop: sown.crop, sownAt: sown.sownAt });
+    for (const [id, sown] of Object.entries(data.rows)) state.rows.set(id, { crop: sown.crop, sownAt: sown.sownAt, ...(sown.watered ? { watered: true } : {}) });
     for (const [id, at] of Object.entries(data.trees)) state.trees.set(id, at);
     return true;
   }
 
-  return { learn, sow, reap, pick, sowable, view, task, rowState, treeState, snapshot, restore,
+  return { learn, sow, water, stockSeeds, reap, pick, sowable, view, task, rowState, treeState, snapshot, restore,
     get met() { return state.met; }, get reaped() { return state.reaped; } };
 }
 
-/** Enna's lesson, in her own words. The host runs `learn` when the traveler takes it. */
+/** Stanley's first lesson. Tools at the shared beds are not inventory prerequisites. */
 export const FARMING_LESSON = freeze([
-  'You have been staring at those rows for a while. They are not complicated, which is the good news and also the whole of it.',
-  'Drill, cover, leave it. Barley is up in four minutes of anybody’s day and the leaf takes twice that. You do not stand over it. That is the part people find hard — the row does its work while you are somewhere else entirely, and it does not care where.',
-  'Come back with a sickle in your hand and a row you put in yourself, and I will show you the rest of it. And if you are going west, Applegarth keeps its orchard. Kept trees are picked, not sown, and they bear again in about ten minutes.',
+  'Choose a bare bed and press F. Carrots are a quick first crop, barley is useful for supper, and better practice opens beets at level 2 and Drent leaf at level 5. I share the seed packets; each harvest saves another packet for the next sowing.',
+  'Water the growing bed once with our shared can. It earns a little Farming experience, grows a quarter faster and gives one extra crop. Then go and do something else. The plants grow while you are somewhere else, but wait when you pause or close the game.',
+  'Return when the crop is ready and press F to harvest. Every harvest earns Farming experience, and that bed can go straight back in. Eat a carrot or beet from your satchel with I, or ask me about Cooking and turn the harvest into a proper meal at the fire beside us.',
 ]);

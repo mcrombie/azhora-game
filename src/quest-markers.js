@@ -95,7 +95,7 @@ export function markerFor(id, view = {}) {
   // on nothing (`bridgeStage`, src/journey.js; src/quest-slate.js).
   if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');
   // And nothing else until the tutorial is behind the traveler.
-  if (!ashore) return mark(strongestMarker(kinds));
+  if (!ashore && stage < 2) return mark(strongestMarker(kinds));
   // A first lesson is a live opportunity even when optional quest chains are parked.
   if (!busy && holds(view.skillTeachers, id)) kinds.push('skill');
   if (live('civil-war-drent') && !busy && holds(view.drentDestinations, id)) kinds.push('plot');
@@ -116,7 +116,7 @@ export function markerFor(id, view = {}) {
   // Teachers, and the errands that pay a skill.
   if (id === ids.acornCook && !busy && (view.acornQuestOpen || view.feederWantsCook)) kinds.push('skill');
   if (id === ids.pondFisher && !view.hasRod) kinds.push('skill');
-  // Perrin's garden is where birding is taught, so his mark is up until somebody has taught it.
+  // Jean's garden is where birding is taught, so his mark is up until somebody has taught it.
   if (id === ids.gardenKeeper && !busy && !view.birdingLearned) kinds.push('skill');
   // Lakota's is up when he has notes to take back, which only happens once you know him.
   if (id === ids.birdWatcher && !busy && view.archaeologyReport) kinds.push('skill');

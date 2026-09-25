@@ -2,6 +2,9 @@
 // and each river's own surface for a river (src/game-state.js). game-state imports nothing, so
 // there is no cycle here.
 import { WATERLINE } from './game-state.js';
+import { FARM_FIRE } from './farming.js';
+import { AVREL_POND, avrelPondGround } from './avrel-pond.js';
+import { createVisualArtsScenery } from './visual-arts-view.js';
 import * as THREE from 'three';
 import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
 import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
@@ -206,9 +209,10 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     return original;
   }
   /** World ground: the hex biomes, Tidehaven where it stands, the Caloss channel. */
+  const avrelSurface = groundWithRiver(AVREL_POND.x, AVREL_POND.z) - 1.15;
   function groundHeight(x, z) {
     const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
-    if (weight <= 0) return groundWithRiver(x, z);
+    if (weight <= 0) return avrelPondGround(x, z, groundWithRiver(x, z), avrelSurface);
     const village = localGround(local.x, local.z);
     if (weight >= 1) return village;
     return lerp(groundWithRiver(x, z), village, weight);
@@ -265,6 +269,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     { id: 'tessen-bank', name: 'Tessen bank', x: -80, z: -201.5, surfaceY: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5),
       fishingSpot: { x: -80, z: -201.5 }, castPoint: { x: -80, y: puethRiverSurface(PUETH_RIVERS[0], -80, -193.5) + .035, z: -193.5 } },
   ];
+  fishingSpots.push({ ...AVREL_POND, lessonStand: AVREL_POND.teacherStand, lessonApproach: [{x:-411,z:58},{x:-409,z:71}], surfaceY: avrelSurface, castPoint: { ...AVREL_POND.castPoint, y: avrelSurface + .035 } });
   let activeFishingSpot = fishingSpots[0];
 
   // ---------------------------------------------------------------------------
@@ -651,6 +656,14 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   pondWater.name = 'Willowmere forest pond';
   pondWater.position.set(pond.x, pond.surfaceY + .027, pond.z); villageRoot.add(pondWater);
   vpush({ x: pond.x, z: pond.z, r: pond.radius - .04, surface: pond.surfaceY, kind: 'pond-water' });
+  const avrelWater = new THREE.Mesh(new THREE.CircleGeometry(AVREL_POND.radius, 48).rotateX(-Math.PI / 2), pondMaterial);
+  avrelWater.name = 'Avrel farm pond';
+  avrelWater.position.set(AVREL_POND.x, avrelSurface + .027, AVREL_POND.z);world.add(avrelWater);
+  colliders.push({ x: AVREL_POND.x, z: AVREL_POND.z, r: AVREL_POND.radius - .04, surface: avrelSurface, kind: 'pond-water' });
+  // Low reeds leave both lesson stands open.
+  for(let i=0;i<15;i++){const a=.4+i*.24,x=AVREL_POND.x+Math.sin(a)*4.1,z=AVREL_POND.z+Math.cos(a)*4.1;
+    post(material('#7b8550'),x,groundHeight(x,z)+.28,z,.025,.55,world);}
+
 
   const boardCount = 35;
   const dockBoards = new THREE.InstancedMesh(cube, material('#b48d61'), boardCount);
@@ -762,7 +775,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
       pebble(material('#5f9150'), px, localGround(px, pz) + .25, pz, .3, .27, .32);
     }
   }
-  // Perrin's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
+  // Jean's garden on the eastern side of the village: the hummingbird feeder's hook, a bird bath, his bench.
   const birdGarden = buildBirdGarden({ root: villageRoot, material, mesh, box, post, pebble, localGround, vpush, movingGroups });
   const wellX = -5.7, wellZ = 1.5, wellY = localGround(wellX, wellZ);
   const wellRing = new THREE.TorusGeometry(1, .26, 5, 12); wellRing.rotateX(Math.PI / 2);
@@ -1151,6 +1164,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, 2.6);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
+  createVisualArtsScenery({root:world,cottage,groundHeight,colliders});
   const regionScenery = createRegionScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
@@ -1429,7 +1443,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const worldFirePits = [
     ...firePits.map(fire => ({ ...fire, ...villageToWorld(fire.x, fire.z),
       ...(({ x, z }) => ({ fireX: x, fireZ: z }))(villageToWorld(fire.fireX, fire.fireZ)) })),
-    ...regionFirePits.map(fire => ({ ...fire })), { ...OUTPOST_FIRE },
+    ...regionFirePits.map(fire => ({ ...fire })), { ...OUTPOST_FIRE }, { ...FARM_FIRE },
   ];
 
   // ---------------------------------------------------------------------------
@@ -1668,6 +1682,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     Object.freeze({ id: 'coast-water', kind: 'polygon', points: Object.freeze([...seaEdge,
       mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge.at(-1).z), mapPoint(WORLD_BOUNDS.maxX + 120, seaEdge[0].z)]) }),
     Object.freeze({ id: 'willowmere-water', kind: 'circle', x: pondWorld.x, z: pondWorld.z, radius: pond.radius }),
+    Object.freeze({ id: 'avrel-pool-water', kind: 'circle', x: AVREL_POND.x, z: AVREL_POND.z, radius: AVREL_POND.radius }),
     Object.freeze({ id: 'west-suval-water', kind: 'polygon', points: WEST_SUVAL_SEA }),
     Object.freeze({ id: 'west-izol-water', kind: 'polygon', points: IZOL_SEA }),
     Object.freeze({ id: 'caloss-water', kind: 'polygon', points: Object.freeze([

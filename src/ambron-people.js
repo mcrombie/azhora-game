@@ -273,7 +273,7 @@ export const TALKING_TREE_QUEST = 'talking-tree-told';
  * Ambron's specialists, one for every skill the country teaches.
  *
  * The rule the user set is that a skill belongs to anybody who practises it, not
- * to one villager: what Perrin teaches from his garden in Tidehaven, the keeper of
+ * to one villager: what Jean teaches from his garden in Tidehaven, the keeper of
  * the tower birds teaches from a city roof, and the traveler may meet either
  * first. So each of these can teach its skill outright, and each says something
  * else to somebody who has already learned it.

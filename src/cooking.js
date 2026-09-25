@@ -2,8 +2,8 @@
  * Cooking: what the traveler can make at a lit fire. The first recipe is
  * Lakota's hot chocolate. He is a soft touch: tell him the day has been a bad
  * one and he will make you a cup himself, on the brazier by his bench, and once
- * he has, you can ask him for the recipe. Cooking a fish at a fire, which the
- * traveler can always do, counts toward the skill once it is learned.
+ * he has, you can ask him for the recipe. Cooking follows a Fire Making lesson;
+ * repeated meals count toward the same skill whoever first taught the traveler.
  * Pure: no DOM, no three.
  */
 export const COOKING_VERSION = 1;
@@ -15,6 +15,10 @@ export const LAKOTA_CUP_HEALING = 60;
 
 const recipe = (id, entry) => Object.freeze({ id, ...entry });
 export const RECIPES = Object.freeze({
+  'farm-pot': recipe('farm-pot', { name: 'Farm pot', xp: 25, needs: Object.freeze({ carrot: 1, barley: 1 }), makes: 'farm-pot',
+    note: 'Stanley\u2019s field supper: one carrot and one barley simmered at a lit fire. A filling meal that restores up to 45 health.' }),
+  'roasted-beet': recipe('roasted-beet', { name: 'Roasted beet', xp: 15, needs: Object.freeze({ beet: 1 }), makes: 'roasted-beet',
+    note: 'One beet tucked into the embers at a lit fire until its skin loosens. Restores up to 35 health.' }),
   'hot-chocolate': recipe('hot-chocolate', { name: 'Hot chocolate', xp: 20, needs: Object.freeze({ chocolate: 1, milk: 1 }), makes: 'hot-chocolate',
     note: 'A cake of chocolate grated into a pan of milk over a lit fire, stirred till it coats the spoon, with a pinch of chilli and a spoonful of honey if you have one.' }),
   'cooked-fish': recipe('cooked-fish', { name: 'Cooked fish', xp: 10, needs: Object.freeze({ 'raw-fish': 1 }), makes: 'cooked-fish',
@@ -49,12 +53,13 @@ export function validateCookingSnapshot(data, { allowMissing = true } = {}) {
   return Object.entries(data.made).every(([id, count]) => Object.hasOwn(RECIPES, id) && Number.isInteger(count) && count >= 1 && count <= 1e6);
 }
 
-export function createCooking({ skills, onEvent = () => {} } = {}) {
+export function createCooking({ skills, onEvent = () => {}, canUseFire = () => true } = {}) {
   const state = { met: false, known: new Set(), made: {}, cups: 0, lastCup: -Infinity };
 
   /** A recipe learned; the first one teaches the skill. */
   function learn(id) {
     if (!RECIPES[id]) return { ok: false, reason: 'Nobody makes that.' };
+    if (!canUseFire()) return { ok: false, reason: 'Learn Fire Making from Lee Anne at the Tidehaven fire ring before taking a cooking lesson.' };
     const first = !state.met, known = state.known.has(id);
     state.met = true; state.known.add(id);
     const learned = skills?.learn?.(COOKING_SKILL) ?? { ok: false };
@@ -77,13 +82,24 @@ export function createCooking({ skills, onEvent = () => {} } = {}) {
 
   /** Make it at a lit fire (the host checks the fire). */
   function make(id, inventory) {
+    if (!canUseFire()) return { ok: false, reason: 'Learn Fire Making from Lee Anne before cooking.' };
     const entry = RECIPES[id];
     if (!entry) return { ok: false, reason: 'Nobody makes that.' };
     if (!state.known.has(id)) return { ok: false, reason: `You do not know how to make ${entry.name.toLowerCase()} yet.` };
     const lacking = missing(id, inventory);
     if (lacking.length) return { ok: false, reason: `You need ${lacking.join(' and ')}.`, lacking };
-    for (const [item, count] of Object.entries(entry.needs)) inventory.remove(item, count);
-    inventory.add(entry.makes, 1);
+    const used = [];
+    for (const [item, count] of Object.entries(entry.needs)) {
+      if (!inventory.remove(item, count)) {
+        for (const [back, quantity] of used) inventory.add(back, quantity);
+        return { ok: false, reason: 'The ingredients could not be used. Nothing was cooked.' };
+      }
+      used.push([item, count]);
+    }
+    if (!inventory.add(entry.makes, 1)) {
+      for (const [back, quantity] of used) inventory.add(back, quantity);
+      return { ok: false, reason: 'There is no room for the meal. Your ingredients have been kept.' };
+    }
     return noteMade(id);
   }
 
@@ -93,7 +109,7 @@ export function createCooking({ skills, onEvent = () => {} } = {}) {
     if (!entry) return { ok: false };
     const first = !state.made[id];
     state.made[id] = (state.made[id] ?? 0) + 1;
-    const gained = state.met && first ? skills?.gain?.(COOKING_SKILL, entry.xp) ?? { ok: false } : null;
+    const gained = state.met ? skills?.gain?.(COOKING_SKILL, entry.xp) ?? { ok: false } : null;
     onEvent({ type: 'cooked', id, first });
     return { ok: true, first, entry, xp: gained?.ok ? entry.xp : 0, levelled: !!gained?.levelled, level: skills?.level?.(COOKING_SKILL) ?? 1 };
   }

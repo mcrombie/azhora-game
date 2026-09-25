@@ -74,6 +74,10 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 
 /** The characters the user made, which are theirs and not the game's furniture. */
 export const OWN_IDS = Object.freeze([
+  'lee-anne',           // Fire Making teacher beside Tidehaven's empty village fire ring.
+  'sylvia',             // The user's kindly painter, teaching Visual Arts beside the Sunken Lane.
+  'avrel-farmer',
+  'garden-keeper',      // Jean, the user's blonde birding teacher in Tidehaven
   'doomsayer',           // Mark, who reads the signs and teaches Botany and Geology on Tidehaven's shore
   'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
   'liz-beekeeper',       // Liz, who keeps the Pueth skeps and the game's honeycomb

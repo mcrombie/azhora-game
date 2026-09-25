@@ -149,16 +149,21 @@ export function bestTrail(paths = [], position, target) {
  */
 const JOIN = 7;
 const NETWORK_REACH = 60;
+// Main-quest travel favours roads. Unsigned woodland trails remain usable for
+// destinations off the road, but a tiny shortcut must not divert the journey
+// around the Greenway junction. This is route preference, not walking speed.
+const TRAIL_ROUTE_COST = 2;
 const roadNetworks = new WeakMap();
 function roadNetwork(paths) {
   let network = roadNetworks.get(paths);
   if (network) return network;
   const nodes = [], edges = [], segments = [], buckets = new Map();
-  const link = (a, b) => { const w = distance(nodes[a], nodes[b]); edges[a].push([b, w]); edges[b].push([a, w]); };
+  const link = (a, b) => { const w = distance(nodes[a], nodes[b]) * (nodes[a].routeCost + nodes[b].routeCost) / 2; edges[a].push([b, w]); edges[b].push([a, w]); };
   for (const [pathId, path] of paths.entries()) {
+    const routeCost = path.kind === 'trail' ? TRAIL_ROUTE_COST : 1;
     let previous = -1;
     for (const point of path) {
-      const index = nodes.push({ x: point.x, z: point.z, pathId }) - 1; edges.push([]);
+      const index = nodes.push({ x: point.x, z: point.z, pathId, routeCost }) - 1; edges.push([]);
       if (previous >= 0) { link(previous, index); segments.push([previous, index]); }
       previous = index;
     }
@@ -216,8 +221,8 @@ export function roadRoute(paths, from, to) {
     }
     return item;
   };
-  cost[entry.a] = distance(entry.point, nodes[entry.a]);
-  cost[entry.b] = distance(entry.point, nodes[entry.b]);
+  cost[entry.a] = distance(entry.point, nodes[entry.a]) * nodes[entry.a].routeCost;
+  cost[entry.b] = distance(entry.point, nodes[entry.b]) * nodes[entry.b].routeCost;
   push(entry.a, cost[entry.a]); push(entry.b, cost[entry.b]);
   while (queue.length) {
     const [current, travelled] = pop();
@@ -228,11 +233,11 @@ export function roadRoute(paths, from, to) {
   for (const [a, b] of segments) {
     if (!Number.isFinite(cost[a])) continue;
     const point = nearestOnPath([nodes[a], nodes[b]], to);
-    const viaA = cost[a] + distance(nodes[a], point), viaB = cost[b] + distance(nodes[b], point);
+    const viaA = cost[a] + distance(nodes[a], point) * nodes[a].routeCost, viaB = cost[b] + distance(nodes[b], point) * nodes[b].routeCost;
     const end = viaA <= viaB ? a : b;
     let travel = Math.min(viaA, viaB), direct = false;
     if (a === entry.a && b === entry.b) {
-      travel = distance(entry.point, point); direct = true;
+      travel = distance(entry.point, point) * nodes[a].routeCost; direct = true;
     }
     if (!exit || point.distance < exit.point.distance - .5 || (Math.abs(point.distance - exit.point.distance) <= .5 && travel < exit.travel))
       exit = { point, end, travel, direct };

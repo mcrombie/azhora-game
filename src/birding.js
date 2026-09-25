@@ -2,13 +2,11 @@
  * Birding, the first of the traveler's skills. Every kind of bird observed for the
  * first time is worth experience.
  *
- * Two people, where there used to be one. **Perrin** keeps the bird garden on the
- * eastern side of Tidehaven and is there from the first minute: he teaches the
- * skill, he knows the birds that actually come to his garden (GARDEN_BIRDS), and
- * the hummingbird feeder is his - lent to the traveler, filled by Lysa, hung on
- * the hook by the red flowers. He is not a birder the way Lakota is a birder. He
- * is a man with a garden that birds come to, which he considers a different and
- * more sensible thing to be.
+ * **Jean** keeps the bird garden on the eastern side of Tidehaven. She teaches
+ * the skill from the first morning, knows the birds that actually visit her garden
+ * (GARDEN_BIRDS), and lends a hummingbird feeder. Her odd little observations come
+ * from patient watching. She supplies its sugar water herself; Lysa can still fill
+ * a feeder carried from an older save when she is present in the village.
  *
  * **Lakota** was both and is now the seventh hired sword to come up the road
  * (src/mercenaries.js), so he is not in the village at all until he walks into
@@ -24,6 +22,8 @@ export const BIRDING_VERSION = 1;
 export const BIRDING_SKILL = 'birding';
 export const BIRDING_KEY = 'KeyB';
 export const SKILLS_KEY = 'KeyK';
+export const BIRD_CALL_KEY = 'KeyH';
+export const JEAN_STAND = Object.freeze({ x: -52, z: 28, yaw: Math.PI / 2 });
 
 // Drawn from Michael's sketch: cream collared shirt, spiky hair, and a red-tailed hawk on his
 // glove (src/lakota-hawk.js). His id is his place in the company now, so that everything already
@@ -31,10 +31,12 @@ export const SKILLS_KEY = 'KeyK';
 export const BIRD_WATCHER = Object.freeze({ id: 'merc-lakota', name: 'Lakota', role: 'Birder', modelRole: 'bird-watcher', color: 0xe4d8bd });
 
 /**
- * Perrin, who keeps the bird garden. Soil on his knees, a hat that has been rained on, and a
- * bench he built for himself that the birds have taken over.
+ * Jean: long blonde hair, a weathered gardening dress, and a notebook full of bird gossip.
+ * Keep the original garden-keeper ID so saves, the feeder and skill markers remain compatible.
  */
-export const GARDEN_KEEPER = Object.freeze({ id: 'garden-keeper', name: 'Perrin', role: 'Keeper of the bird garden', modelRole: 'garden-keeper', color: 0x7d8a63 });
+export const GARDEN_KEEPER = Object.freeze({ id: 'garden-keeper', name: 'Jean', role: 'Birding teacher',
+  modelRole: 'garden-keeper', color: 0x7d8a63, hat: false,
+  look: Object.freeze({ hair: 0xc6a15d, hairStyle: 'long', straightHair: true, slight: true }) });
 
 export const FEEDER_ITEM = 'hummingbird-feeder';
 export const FILLED_FEEDER_ITEM = 'sugar-water-feeder';
@@ -69,7 +71,7 @@ export const BIRD_SPECIES = Object.freeze({
   hummingbird: species('hummingbird', {
     name: 'Hummingbird', xp: 30, spook: 3, group: 'garden',
     note: 'Hardly longer than a thumb: a green back, a pale belly and a bill like a needle. The cock has a throat that flashes ruby when the light catches it. It hovers at a flower as if hung on a thread.',
-    hint: 'Perrin says they come only to flowers and to sugar water.',
+    hint: 'Jean says they come only to flowers and to sugar water.',
     lore: 'They come a long way to get here and they will fight anything for a feeder, even each other. Mostly each other.',
   }),
   robin: species('robin', {
@@ -203,7 +205,7 @@ export const DRENT_BIRDS = Object.freeze(Object.keys(BIRD_SPECIES));
 /** Where each kind is looked for, which is how the journal groups them. */
 export const BIRD_GROUPS = Object.freeze(['village', 'wood', 'field', 'water', 'garden']);
 /**
- * The birds that actually come to Perrin's garden, measured against BIRD_HABITATS in
+ * The birds that actually come to Jean's garden, measured against BIRD_HABITATS in
  * src/drent-birds.js: the chickadees on the fence beyond it and the catbird in its brambles
  * overlap the garden itself, and the wren on the barrels behind is 0.9 m off it. Nothing else in
  * the village comes within fourteen metres. The hummingbird is the fourth and comes only to the
@@ -217,7 +219,8 @@ export const observeRange = level => Math.min(30, 18 + 2 * Math.max(0, (Number(l
 export const BIRDING_LESSON = Object.freeze([
   'Find a bird, then stop before it minds you. Every kind has its own distance: a crow will not let you near, and a hummingbird hardly cares.',
   'When you have it in view and it is sitting still, press B and look at it properly: the shape, the bill, what it is doing. The first time you really see a kind of bird, you do not forget it.',
-  'Start in this garden, because they are used to me here: chickadees on the fence, the catbird in the brambles, and the wren on the barrels behind. Past that the village has its own — cardinals on the western fences, titmice where the woods begin, crows in the field. Your journal keeps your birds. K opens it.',
+  'Start in my garden back in Tidehaven: chickadees on the fence, the catbird in the brambles, and the wren on the barrels behind. Past that the village has its own — cardinals on the western fences, titmice where the woods begin, crows in the field. Your journal keeps your birds. K opens it.',
+  'Keep observing as you travel. Patient repeat observations earn a little experience too. At Birding level 2, Actions (U) lets you imitate the call of a familiar bird nearby. Nearby birds may turn toward you in response. That is learned behaviour, not Animal Sorcery.',
 ]);
 
 export function validateBirdingSnapshot(data, { allowMissing = true } = {}) {
@@ -225,11 +228,18 @@ export function validateBirdingSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== BIRDING_VERSION) return false;
   if (typeof data.met !== 'boolean' || !FEEDER_STAGES.includes(data.feeder)) return false;
   if (!data.seen || typeof data.seen !== 'object' || Array.isArray(data.seen)) return false;
+  if (data.practice !== undefined) {
+    const p = data.practice, times = values => values && typeof values === 'object' && !Array.isArray(values)
+      && Object.entries(values).every(([id, at]) => Object.hasOwn(BIRD_SPECIES, id) && Number.isFinite(at) && at >= 0);
+    if (!p || !times(p.observed) || !times(p.called) || (p.lastCall !== null && (!Number.isFinite(p.lastCall) || p.lastCall < 0))) return false;
+  }
   return Object.entries(data.seen).every(([id, count]) => Object.hasOwn(BIRD_SPECIES, id) && Number.isInteger(count) && count >= 1 && count <= 1e6);
 }
 
 export function createBirding({ skills, onEvent = () => {} } = {}) {
   const state = { met: false, seen: {}, feeder: 'none' };
+  let practice = { observed: {}, called: {}, lastCall: null };
+  const stamped = now => Number.isFinite(now) && now >= 0;
 
   function meet() {
     const first = !state.met;
@@ -241,28 +251,45 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
   }
 
   /** The traveler has looked properly at a bird of kind `id`. */
-  function observe(id) {
+  function observe(id, { now } = {}) {
     // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
-    // teacher is still worth meeting; he is no longer the door.
+    // teacher is still worth meeting; she is no longer the door.
     const bird = BIRD_SPECIES[id];
     if (!bird) return { ok: false, reason: 'That is not a bird anyone here can name.' };
     const first = !state.seen[id];
     state.seen[id] = (state.seen[id] ?? 0) + 1;
-    const gained = first ? skills?.gain?.(BIRDING_SKILL, bird.xp) ?? { ok: false } : null;
+    const repeat = stamped(now) && (practice.observed[id] === undefined || now - practice.observed[id] >= 30);
+    const xp = first ? bird.xp : repeat ? 3 : 0;
+    if (stamped(now) && (first || repeat)) practice.observed[id] = now;
+    const gained = xp ? skills?.gain?.(BIRDING_SKILL, xp) ?? { ok: false } : null;
     const level = skills?.level?.(BIRDING_SKILL) ?? 1;
     onEvent({ type: 'bird-observed', id, first });
-    return { ok: true, first, species: bird, count: state.seen[id], xp: first ? bird.xp : 0, level, levelled: !!gained?.levelled };
+    return { ok: true, first, species: bird, count: state.seen[id], xp, level, levelled: !!gained?.levelled };
+  }
+
+  function call(id, { now } = {}) {
+    if ((skills?.level?.(BIRDING_SKILL) ?? 1) < 2) return { ok: false, reason: 'Bird calls open at Birding level 2.' };
+    if (!Object.hasOwn(BIRD_SPECIES, id) || !state.seen[id]) return { ok: false, reason: 'Observe this kind of bird before imitating its call.' };
+    if (!stamped(now)) return { ok: false, reason: 'You cannot call a bird while the world is paused.' };
+    if (practice.lastCall !== null && now - practice.lastCall < 8) return { ok: false, reason: 'Wait a moment and listen for an answer.' };
+    practice.lastCall = now;
+    const earns = practice.called[id] === undefined || now - practice.called[id] >= 30;
+    const xp = earns ? 2 : 0;
+    if (earns) { practice.called[id] = now; skills?.gain?.(BIRDING_SKILL, xp); }
+    const level = skills?.level?.(BIRDING_SKILL) ?? 2;
+    onEvent({ type: 'bird-called', id });
+    return { ok: true, id, species: id, range: Math.min(30, 14 + level * 2), duration: Math.min(12, 4 + level), xp };
   }
 
   function lendFeeder(inventory) {
-    if (!state.met) return { ok: false, reason: 'Perrin has not met you yet.' };
-    if (state.feeder !== 'none') return { ok: false, reason: 'Perrin has already lent you his feeder.' };
+    if (!state.met) return { ok: false, reason: 'Jean has not met you yet.' };
+    if (state.feeder !== 'none') return { ok: false, reason: 'Jean has already lent you her feeder.' };
     if (!inventory?.add?.(FEEDER_ITEM, 1)) return { ok: false, reason: 'There is no room in your satchel for the feeder.' };
     state.feeder = 'lent';
     return { ok: true, reason: '' };
   }
 
-  /** Lysa fills the feeder with sugar water. Atomic: the empty one is only taken if the full one fits. */
+  /** Jean (or Lysa when present) fills the feeder with sugar water. Atomic: the empty one is only taken if the full one fits. */
   function fillFeeder(inventory) {
     if (state.feeder !== 'lent' || !inventory?.has?.(FEEDER_ITEM)) return { ok: false, reason: 'You have no empty feeder to fill.' };
     if (!inventory.remove(FEEDER_ITEM, 1)) return { ok: false, reason: 'You have no empty feeder to fill.' };
@@ -272,7 +299,7 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
   }
 
   function hangFeeder(inventory) {
-    if (state.feeder !== 'filled' || !inventory?.has?.(FILLED_FEEDER_ITEM)) return { ok: false, reason: 'You need the feeder filled with sugar water first. Lysa keeps the sugar.' };
+    if (state.feeder !== 'filled' || !inventory?.has?.(FILLED_FEEDER_ITEM)) return { ok: false, reason: 'You need the feeder filled with sugar water first. Jean can fill it with sugar water.' };
     if (!inventory.remove(FILLED_FEEDER_ITEM, 1)) return { ok: false, reason: 'You need the filled feeder.' };
     state.feeder = 'hung';
     return { ok: true, reason: '' };
@@ -283,9 +310,9 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
   /** The feeder errand while it is under way: what the side-quest banner says, and where it points. */
   function task() {
     if (!state.met || state.feeder === 'none' || state.seen.hummingbird) return null;
-    const title = 'Perrin’s hummingbirds';
-    if (state.feeder === 'lent') return { title, stage: 'lent', target: 'acorn-cook', detail: 'Take Perrin’s feeder to Lysa at her kitchen. She keeps the sugar.' };
-    if (state.feeder === 'filled') return { title, stage: 'filled', target: 'feeder-hook', detail: 'Hang the filled feeder on the hook by the red flowers in Perrin’s garden.' };
+    const title = 'Jean’s hummingbirds';
+    if (state.feeder === 'lent') return { title, stage: 'lent', target: GARDEN_KEEPER.id, detail: 'Ask Jean to fill the feeder with sugar water, then carry it to the hook in her garden.' };
+    if (state.feeder === 'filled') return { title, stage: 'filled', target: 'feeder-hook', detail: 'Hang the filled feeder on the hook by the red flowers in Jean’s garden.' };
     return { title, stage: 'hung', target: 'feeder-hook', detail: 'Stand back from the feeder and wait. Press B when the hummingbird is hovering.' };
   }
 
@@ -298,17 +325,20 @@ export function createBirding({ skills, onEvent = () => {} } = {}) {
     };
   }
 
-  function snapshot() { return { version: BIRDING_VERSION, met: state.met, seen: { ...state.seen }, feeder: state.feeder }; }
+  function snapshot() { return { version: BIRDING_VERSION, met: state.met, seen: { ...state.seen }, feeder: state.feeder,
+    ...(Object.keys(practice.observed).length || practice.lastCall !== null ? { practice: { observed: { ...practice.observed }, called: { ...practice.called }, lastCall: practice.lastCall } } : {}) }; }
 
   function restore(data) {
     state.met = false; state.seen = {}; state.feeder = 'none';
+    practice = { observed: {}, called: {}, lastCall: null };
     if (!validateBirdingSnapshot(data, { allowMissing: false })) return false;
     state.met = data.met; state.seen = { ...data.seen }; state.feeder = data.feeder;
+    practice = data.practice ? { observed: { ...data.practice.observed }, called: { ...data.practice.called }, lastCall: data.practice.lastCall } : { observed: {}, called: {}, lastCall: null };
     return true;
   }
 
   return {
-    meet, observe, lendFeeder, fillFeeder, hangFeeder, task, view, snapshot, restore,
+    meet, observe, call, lendFeeder, fillFeeder, hangFeeder, task, view, snapshot, restore,
     get met() { return state.met; }, get feeder() { return state.feeder; }, get seen() { return { ...state.seen }; },
     hasSeen: id => !!state.seen[id], seenCount,
   };
@@ -371,36 +401,48 @@ export const LAKOTA_WINE_PITCH = Object.freeze([
 ]);
 
 /**
- * Perrin at the garden: the skill, the birds that come to him, and the feeder. Everything here is
- * available from the first minute of the game, which is the whole point of him.
+ * Jean at the garden: the first Birding lesson, her observations and the hummingbird feeder.
+ * The lesson and her eccentric conversation are available from the first morning.
  */
 export function gardenKeeperConversation(npc, context) {
-  const { birding, openDialogue, closeDialogue, act } = context;
+  const { birding, husbandry = null, openDialogue, closeDialogue, act } = context;
   if (npc.id !== GARDEN_KEEPER.id) return false;
   const again = () => gardenKeeperConversation(npc, context);
+  const husbandryChoice = { id: 'learn-husbandry', label: husbandry?.taught ? 'Remind me how to care for livestock.' : 'Teach me Animal Husbandry.',
+    action: () => { closeDialogue(); act('learn-husbandry'); } };
+  const sorceryChoice = { id: 'jean-animal-sorcery', label: 'Is this the same as animal magic?', action: () => openDialogue(npc, [
+    'Birding is watching wild birds. Husbandry is caring for livestock. The habits overlap, but a bird does not owe you obedience and a sheep is not a spell.',
+    'Liz keeps bees across the Tessen in Pueth. She knows Animal Sorcery. Patient observation is a good foundation for that, but her magic is a separate lesson. Ask her about it when you go north.',
+  ], null, 'Back to our conversation', { onComplete: again }) };
   const leave = { id: 'leave-garden-keeper', label: birding.met ? 'Good watching.' : 'Another time.', action: closeDialogue };
   if (!birding.met) {
     openDialogue(npc, [
-      'Mind the step. And mind that hedge — no, too late. That was a wren. It was there the whole time you were walking up and it is not there now, and that is the entire lesson, really.',
-      'Perrin. This is my garden. I did not plant it for the birds, I planted it for me, and then the birds turned up and made it theirs, and now I mostly work round them.',
-      'Three kinds come to this garden and a fourth if you are cleverer than I am. You look like somebody about to walk a very long way. You will go past more birds in a month than I will see all year, and it seems a waste for you not to know what you are looking at.',
-      'It is not difficult. It is mostly standing still, which people find harder than they expect.',
+      'Hold that thought. The wren is scolding the watering can again. It knows the can cannot answer, which I consider rather unfair. There, in the hedge. Did you see it?',
+      'I am Jean. I keep the bird garden back in Tidehaven and an entirely unofficial account of its residents. The catbird has three neighbours, two enemies and a very high opinion of itself.',
+      'Three kinds visit my garden regularly, and a fourth comes for the flowers. You are going to see a great deal of country. I can teach you Birding, so those little movements in the trees become birds you actually know.',
+      'We begin by standing still. Very advanced work. The bench has mastered it, and you can too.',
     ], null, 'Back to the road', { choices: [
-      { id: 'learn-birding', label: 'Show me.', action: () => { closeDialogue(); act('learn-birding'); } },
-      leave,
+      { id: 'learn-birding', label: 'Teach me Birding.', action: () => { closeDialogue(); act('learn-birding'); } },
+      husbandryChoice, sorceryChoice, leave,
     ] });
     return true;
   }
   const gardenSeen = GARDEN_BIRDS.filter(id => birding.hasSeen(id)).length, hummingbird = birding.hasSeen('hummingbird');
-  const line = hummingbird ? 'You got the hummingbird. I have had that feeder out three summers and I have seen it twice, so do not expect me to be gracious about it.'
+  const line = hummingbird ? 'The hummingbird! Splendid. I shall put a star beside today. Not for you, for the bird. You may have a small star as well.'
     : birding.feeder === 'hung' ? 'Feeder is up. Now go and stand well back from it and be boring for a while. Watch for something like a large bee that stops dead in the air.'
-    : birding.feeder === 'filled' ? 'Lysa filled it, then. Hang it on the hook by the red flowers and step away — properly away, not two paces away looking hopeful.'
-    : birding.feeder === 'lent' ? 'Lysa has the sugar. Four of water to one of sugar, boiled and cooled, and not honey. Honey goes over in the sun and it makes them ill.'
+    : birding.feeder === 'filled' ? 'All filled, then. Hang it on the hook by the red flowers and step away — properly away, not two paces away looking hopeful.'
+    : birding.feeder === 'lent' ? 'Bring me the empty feeder and I will fill it. Four parts water to one of sugar, boiled and cooled. Never honey. We are inviting hummingbirds, not making trouble for their stomachs.'
     : gardenSeen === GARDEN_BIRDS.length ? 'All three of the garden ones. That is better than most people who have lived here their whole lives, including me for the first nine years.'
     : gardenSeen ? `${gardenSeen} of the three that come to this garden. Keep your distance and keep looking.`
     : 'Anything yet? Stop before they mind you, and press B while one is sitting still.';
   const seen = GARDEN_BIRDS.concat('hummingbird').filter(id => birding.hasSeen(id));
   openDialogue(npc, [line], null, 'Back to the road', { choices: [
+    husbandryChoice, sorceryChoice,
+    ...(birding.feeder === 'lent' ? [{ id: 'fill-feeder', label: 'Could you fill the feeder?', action: () => { closeDialogue(); act('fill-feeder'); } }] : []),
+    { id: 'jean-garden', label: 'Do all the birds have stories?', action: () => openDialogue(npc, [
+      'Of course. I write down who arrives, who quarrels, and who borrows nesting material without asking. The observations are accurate. The scandal is mostly mine.',
+      'Keep an eye on the shape, the way a bird moves, and where it chooses to sit. A name comes afterwards. You can learn a great deal before you know what to call something.',
+    ], null, 'Back to our conversation', { onComplete: again }) },
     { id: 'birding-hints', label: 'What should I look for?', action: () => {
       const unseen = DRENT_BIRDS.filter(id => !birding.hasSeen(id) && (id !== 'hummingbird' || birding.feeder === 'none'));
       openDialogue(npc, unseen.length ? unseen.slice(0, 6).map(id => BIRD_SPECIES[id].hint)
@@ -410,10 +452,10 @@ export function gardenKeeperConversation(npc, context) {
     ...(seen.length ? [{ id: 'birding-lore', label: 'Tell me about the birds in your garden.', action: () => openDialogue(npc, seen.map(id => BIRD_SPECIES[id].lore), null, 'Back to our conversation', { onComplete: again }) }] : []),
     ...(birding.feeder === 'none' ? [{ id: 'ask-hummingbirds', label: 'Is there anything harder to see?', action: () => openDialogue(npc, [
       'Hummingbirds. Green, smaller than your thumb, and they will not touch seed like a sensible bird. Flowers, and sugar water.',
-      'I have an old feeder somewhere — glass bottle, red cap. Take it to Lysa; she keeps sugar for her cakes. Four parts water to one of sugar, boiled and cooled. Not honey. Honey spoils in the sun and sickens them.',
+      'Borrow my feeder: glass bottle, red cap. Ask me to fill it before you hang it up. Four parts water to one of sugar, boiled and cooled. Not honey. Honey spoils in the sun and sickens them.',
       'Then hang it on the hook by the red flowers and wait. They are bold little things, but they are not that bold.',
     ], null, 'Back to our conversation', { choices: [
-      { id: 'take-feeder', label: 'I will take the feeder to Lysa.', action: () => { closeDialogue(); act('take-feeder'); } },
+      { id: 'take-feeder', label: 'May I borrow your feeder?', action: () => { closeDialogue(); act('take-feeder'); } },
       { id: 'decline-feeder', label: 'Maybe later.', action: again },
     ] }) }] : []),
     { id: 'birding-lesson', label: 'Tell me again how it is done.', action: () => openDialogue(npc, [...BIRDING_LESSON], null, 'Back to our conversation', { onComplete: again }) },
@@ -453,8 +495,8 @@ export function birdWatcherConversation(npc, context) {
   const seen = DRENT_BIRDS.filter(id => birding.hasSeen(id));
   const line = seen.length >= 12 ? `${seen.length} kinds. You have been looking properly, which is more than I can say for anybody else on this road.`
     : seen.length ? `${seen.length} so far. Keep at it. The list is the point; the birds do not care either way.`
-    : birding.met ? 'Perrin taught you, then. Good man. He will tell you he is not a birder, and he is the best pair of eyes in that village.'
-    : 'You have not learned to look yet. Perrin keeps the garden on the east side of Tidehaven, and he will show you in ten minutes.';
+    : birding.met ? 'Jean taught you, then. She knows every feather in that village. Some of her stories are inventions, but her observations never are.'
+    : 'You have not learned to look yet. Jean stands beside the main road just beyond Officer Glun. She will show you how.';
   const choices = [
     ...(travelChoice?[travelChoice]:[]),
     ...(seen.length ? [{ id: 'birding-lore', label: 'Tell me about the birds I have seen.', action: () => openDialogue(npc, seen.map(id => BIRD_SPECIES[id].lore), null, 'Back to our conversation', { onComplete: again }) }] : []),
@@ -489,11 +531,11 @@ export function birdWatcherConversation(npc, context) {
 /** Lysa's part in the errand: a choice to add to her conversation while the traveler carries the empty feeder. */
 export function lysaFeederChoice(npc, { birding, inventory, openDialogue, act, back }) {
   if (birding.feeder !== 'lent' || !inventory?.has?.(FEEDER_ITEM)) return null;
-  return { id: 'fill-feeder', label: 'Perrin says you keep sugar. Could you fill his feeder?', action: () => {
+  return { id: 'fill-feeder', label: 'Jean says you keep sugar. Could you fill her feeder?', action: () => {
     const result = act('fill-feeder');
     openDialogue(npc, result?.ok ? [
-      'Perrin’s old bottle! He has asked me twice this summer and forgotten it both times.',
-      'Four of water to one of sugar, boiled and cooled. He will have told you that, and he will have told you not honey. There. Carry it upright, or the wasps will follow you all the way back to him.',
+      'Jean’s old bottle! She leaves one here in case she runs short of sugar. The birds have her very well organised.',
+      'Four of water to one of sugar, boiled and cooled. She will have told you that, and she will have told you not honey. There. Carry it upright, or the wasps will follow you all the way back to her.',
     ] : [result?.reason || 'Not just now.'], null, 'Back to our conversation', { onComplete: back });
   } };
 }
