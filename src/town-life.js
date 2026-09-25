@@ -15,6 +15,7 @@ import { campPoint, gateRoadPoint, OUTPOST_CIRCUIT, OUTPOST_ROAD } from './outpo
 import { MOROS_WAYSIDE } from './wayside.js';
 import { FRONTIER_CIRCUIT, frontierPoint, FRONTIER_GATE } from './frontier.js';
 import { isOut } from './occupation.js';
+import { SUVAL_HILL_GUARDS } from './frontier-ridges.js';
 
 const EMPIRE = Object.freeze({ holds: 'empire', region: 'Moros Plain' });
 const COALITION = Object.freeze({ holds: 'coalition', region: 'Moros Plain' });
@@ -32,6 +33,10 @@ const picketSpot = (along, across) => ({ x: picket.x + picket.dir.x * along + pi
 const toFrontier = Math.atan2(FRONTIER_GATE.u.x, FRONTIER_GATE.u.z);
 
 export const TOWN_LIFE_NPCS = Object.freeze([
+  ...SUVAL_HILL_GUARDS.map(guard => person(guard.id, 'Elodi guard', 'Guard of the locked hill pass', 'elodi-guard', guard, guard.yaw, [
+    'This pass is locked by order of Elod. There is no crossing while the border is closed.',
+    'The hills are watched as closely as the road. Turn back.',
+  ], { color: ELODI, hillPass: guard.gate, look: Object.freeze({ hat: false }) })),
   // --- Drent and Luscia: townsfolk and workers. Locals speak plainly.
   person('life-avrel-farmer', 'Hild', 'Avrel farmer', 'commons-miller', PLACE_STANDS['life-avrel-farmer'], PLACE_STANDS['life-avrel-farmer'].yaw, [
     'The army buys our grain at its own price and calls it a kindness. Corvan is fair enough, for a quartermaster. The price is not his.',

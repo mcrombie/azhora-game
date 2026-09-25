@@ -12,7 +12,7 @@ import { BEN } from './spider-quest.js';
 import { LIZ } from './cat-quest.js';
 import { TROY } from './murder-quest.js';
 
-export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill', 'magic']);
+export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill', 'magic', 'skill-locked']);
 /** The optional long-road grade remains distinct for priority and saves, but
  * wears the same filled gold symbol as the main road. */
 export const MARKER_OPEN = 'main-open';
@@ -31,11 +31,13 @@ export const MARKER_STYLE = Object.freeze({
     'Somebody who will teach you something, or an errand that pays a skill.'),
   magic: style('magic', 'book-sparkle', 1, 0xbd8cf0, 0x7440a9, 0xf2ddff, 0xb87be2,
     'A magic teacher whose quest can earn a new spell, or an earned lesson still available.'),
+  'skill-locked': style('skill-locked', 'book-lock', 1, 0x879986, 0x334236, 0xb1bcaa, 0x526450,
+    'A teacher whose lesson requires more experience in another skill.'),
 });
 
 // Both gold roads take precedence; a magic teacher's book then identifies the spell reward
 // even when the same person also offers an ordinary story or lesson.
-const RANK = Object.freeze({ main: 6, [MARKER_OPEN]: 5, magic: 4, plot: 3, deed: 2, skill: 1 });
+const RANK = Object.freeze({ main: 6, [MARKER_OPEN]: 5, magic: 4, plot: 3, deed: 2, skill: 1, 'skill-locked': .5 });
 
 /** Gold keeps priority; a spell's book distinguishes its teacher from ordinary side offers. */
 export function strongestMarker(kinds) {
@@ -79,7 +81,7 @@ export function magicTeacherIds({ spider, cat, murder, knownSpells = [] } = {}) 
  * the open one, and the two are decided together.
  *
  * `view`: { questStage, busy, heardDoom, ids: {…MARKER_ROLES}, arcDestinations,
- * chapterDestinations, longWay, skillTeachers, magicTeachers, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
+ * chapterDestinations, longWay, skillTeachers, lockedSkillTeachers, magicTeachers, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
  * archaeologyReport, forestOpen, wineRecommended }.
  */
 /**
@@ -120,6 +122,7 @@ export function markerFor(id, view = {}) {
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore && stage < 2) return mark(strongestMarker(kinds));
   // A first lesson is a live opportunity even when optional quest chains are parked.
+  if (!busy && holds(view.lockedSkillTeachers, id)) kinds.push('skill-locked');
   if (!busy && holds(view.skillTeachers, id)) kinds.push('skill');
   if (!busy && holds(view.magicTeachers, id)) kinds.push('magic');
   if (live('civil-war-drent') && !busy && holds(view.drentDestinations, id)) kinds.push('plot');
@@ -144,6 +147,6 @@ export function markerFor(id, view = {}) {
   if (id === ids.gardenKeeper && !busy && !view.birdingLearned) kinds.push('skill');
   // Lakota's is up when he has notes to take back, which only happens once you know him.
   if (id === ids.birdWatcher && !busy && view.archaeologyReport) kinds.push('skill');
-  if (id === ids.vintner && view.wineRecommended && !busy) kinds.push('skill');
+  if (id === ids.vintner && view.wineRecommended && !busy && !holds(view.lockedSkillTeachers, id)) kinds.push('skill');
   return mark(strongestMarker(kinds));
 }

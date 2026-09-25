@@ -1,30 +1,20 @@
 /**
- * Katy, at Vaervelm Caelazh. The traveler finds her by the spring pool below the
- * cabin with a brass spyglass up to her eye, watching the birds. She is good at
- * it. It is not what she is there for. What she is there for is Batman.
- *
- * Batman, in Azhora, is half a bat and half a man: a bat's head and a bat's wings
- * on a man's body. He looks like a monster, and people scream and run from him.
- * He is not one. He is a vigilante who comes down at night on thieves, bullies and
- * cutthroats, and leaves the good alone. The few who have seen him and lived say
- * so, and nobody believes them. Katy believes them.
- *
- * Here the quest to find him begins: she asks the traveler to watch for him and
- * gives them her drawing of him. Where it goes from there is the user's to write.
+ * Katy now watches Port Calos's harbor. Her next quest will be authored later;
+ * the Batman-search state and dialogue below are retained for legacy saves and
+ * the existing quest modules, not offered by her current in-world conversation.
  * Pure: no DOM, no three.
  */
-import { wineryPoint } from './winery.js';
 
 const freeze = Object.freeze;
 
 // Never the traveler's own model. Katy is slight, with long straight blonde hair, a dusk-violet
 // dress, a short black cape cut like a bat's wing, a bat on a cord at her throat and a spyglass.
 export const KATY = freeze({
-  id: 'katy', name: 'Katy', role: 'Watching the birds at Vaervelm Caelazh',
+  id: 'katy', name: 'Katy', role: 'Watching the harbor at Port Calos',
   modelRole: 'bat-seeker', color: 0x4a3f63, skin: 0xe8c6a6,
 });
-/** By the spring pool below the cabin, looking out over it toward the reeds and the vines. */
-export const KATY_STAND = freeze({ ...wineryPoint(-11, 23.5), yaw: -2.11 });
+/** Beside the lower harbor street, leaving room to approach from the town. */
+export const KATY_STAND = freeze({ x:-445,z:301,yaw:-.65 });
 /** Her drawing of Batman, which she gives the traveler so they know him when they see him. */
 export const KATY_SKETCH = 'katy-batman-sketch';
 
@@ -102,7 +92,7 @@ export function katyConversation(npc, context) {
     openDialogue(npc, [
       'Shh. Do not move. There is a kingfisher on the reed by the far bank, and it has not seen you yet.',
       '…There. Gone. It was worth it. It always is.',
-      'Katy. I watch the birds here. Livia lets me, because I tell her which ones are eating her Merlot.',
+      'Katy. I watch the harbor birds here. Boats bring people in, and the birds see them all before I do.',
       'That is not really why I am here, though. Can I ask you something? You have been out on the roads. Have you seen Batman?',
     ], null, 'Back to the terrace', { choices: [who, { id: 'not-seen-batman', label: 'I have not.', action: who.action }, leave] });
     return true;

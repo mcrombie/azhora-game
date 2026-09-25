@@ -234,7 +234,7 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/languages.js`, `src/linguist.js`, `src/word-frequency.js` | The fourteen tongues of Azhora and their dialects; what the traveler understands of what is said to him, and the commonest words of this game's own speech, which is the order he learns them in (`docs/languages.md`) |
 | `src/fortification.js`, `src/fortworks.js` | The shared fortification standard (wall, wall walk, towers, two gates, ditch) as a ground plan, and its drawing in timber or stone |
 | `src/outpost.js`, `src/moros-works.js` | The Ambroni outpost and the border stockade to that standard, the Moros gate and the Moros wayside |
-| `src/frontier.js`, `src/frontier-works.js`, `src/closed-border.js` | Elod's closed frontier with Luscia, the pickets along East Suval's border, and the rule that refuses entry to a closed region |
+| `src/frontier.js`, `src/frontier-works.js`, `src/frontier-ridges.js`, `src/frontier-ridge-works.js`, `src/closed-border.js` | Elod's closed frontier with Luscia, solid limestone ridges and guarded barred hill passes around East Suval, and the closed-region entry rule |
 | `src/places.js`, `src/place-works.js`, `src/wayside.js`, `src/scenery-builder.js` | The built-up places of Drent and Luscia, the wayside on the empty roads, and the merged vertex-coloured builder they share |
 | `src/rena.js`, `src/rena-works.js`, `src/rena-people.js`, `src/rena-letters.js` | The three Renas: the razed town at Drent's centre, Applegarth to its west, the old road between them, their people, and the Ardrys' letters |
 | `src/town-life.js` | Townsfolk, the outpost's Legion and Coalition garrisons (staked through `occupation.js`), Elod's frontier guard and the figures on the walls |
@@ -291,10 +291,14 @@ The harness writes results and desktop/compact screenshots to `tests/artifacts/`
 
 Each test launch uses its own temporary Electron profile under `tests/.electron-profiles/`, removed when that test exits. Offscreen checks keep their saves in memory and do not share the normal game's Chromium cache.
 
-The three coastal ferry hosts are Jess in Tidehaven, Maddie in Port Calos, and Howie in Cobble. Each offers both other ports and a Swimming lesson; they remain residents of their home port. Port Calos is a five-building settlement on its single land hex, with the harbor extending to the water. `npm run test:port-calos` exercises all six crossings, lessons, and reloading at each destination.
+The three coastal ferry hosts are Jess in Tidehaven, Maddie in Port Calos, and Hallie in Cobble. Each offers both other ports and a Swimming lesson; they remain residents of their home port. Port Calos is a five-building settlement on its single land hex, with the harbor extending to the water. `npm run test:port-calos` exercises all six crossings, lessons, and reloading at each destination.
+
+Paradise Springs (Vaervelm Caelazh) occupies the land hex southeast of Port Calos, reached by a lane from town. Its three residents are ROB, KAT and MAT. KAT and MAT introduce the standalone Wine skill, as can Ben, Liz and Troy; Wine requires no Farming experience. ROB's viticulture lessons are a future Farming branch with a provisional level-5 requirement. His muted book-and-padlock marker shows when that prerequisite is unmet; his dialogue displays the player's level and clearly identifies the lessons as not yet available.
 
 Liz now lives beside a small cottage, a working apiary with straw skeps and wooden hives, and a fenced flower-and-herb garden. Her original interaction point and Mop's return approach remain open.
 
 [Cagney and the Cagnappers](docs/cagney-escort.md) is an optional escort west from Caelom's fork to Ambron. F8 includes a dedicated quest playtest; `npm run test:cagney:autoplay` checks the complete walk, ambush, and reward through ordinary game inputs.
 
 The desktop icon is an abstract gold sun and winding coastal path over teal water. `scripts/create-icon.ps1` generates its seven ICO sizes; `scripts/create-desktop-shortcut.ps1` updates the shortcut without restarting a live game.
+
+`npm run test:winery` checks the five Wine teachers through their actual dialogue buttons, ROB's Farming-gated viticulture placeholder and marker, the three-winemaker cast, and Katy's quest-free Port Calos greeting. `src/winery-lessons.js` keeps viticulture separate from the Wine skill.

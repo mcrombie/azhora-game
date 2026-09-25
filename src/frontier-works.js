@@ -1,4 +1,5 @@
 import { createSceneryBuilder } from './scenery-builder.js';
+import { buildFrontierRidges } from './frontier-ridge-works.js';
 import { drawCircuit } from './fortworks.js';
 import { FRONTIER_CIRCUIT, FRONTIER_LAYOUT, FRONTIER_GATE, PICKET_POSTS, RANGER_HIDE, frontierPoint } from './frontier.js';
 import { SIGN_COLOURS } from './signs.js';
@@ -11,6 +12,7 @@ import { SIGN_COLOURS } from './signs.js';
 const STONE = '#8d8e86', STONE_DARK = '#76776f', SLATE = '#4a4d50', TIMBER = '#5b4a3a', BLACK = '#1f1f22', IRON = '#3f3e3b';
 
 export function buildFrontierWorks({ parent, heightAt, colliders, signs }) {
+  buildFrontierRidges({ parent, heightAt, colliders, signs });
   const push = collider => { colliders.push(collider); return collider; };
   const circle = (x, z, r, kind) => push({ x, z, r, kind });
   const y = (x, z) => heightAt(x, z);

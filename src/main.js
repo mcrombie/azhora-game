@@ -162,6 +162,8 @@ import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, sh
 import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
 import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
 import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
+import { wineryLessonsStatus, robWineryConversation } from './winery-lessons.js';
+import { WINE_INTRO_TEACHERS, wineIntroChoice } from './wine.js';
 import { createRenaDigs } from './rena-digs.js';
 import { TALKING_TREE, createTalkingTree, treeLines } from './talking-tree.js';
 import { buildTalkingTree } from './talking-tree-view.js';
@@ -312,7 +314,7 @@ function init() {
     // The shield hand. This facade is the whole of what the game may ask the body to do, so a
     // verb left out of it is a verb that silently does nothing.
     setShield:(...a)=>playerBody.setShield(...a),
-    setWeapon:(...a)=>playerBody.setWeapon(...a),setFishing:(...a)=>playerBody.setFishing(...a),fishingTip:(...a)=>playerBody.fishingTip(...a)};
+    setWeapon:(...a)=>playerBody.setWeapon(...a),setFishing:(...a)=>playerBody.setFishing(...a),fishingTip:(...a)=>playerBody.fishingTip(...a),focusTip:()=>playerBody.focusTip()};
   function wearPlayerLook(id){
     const look=playerLook(id);
     if(playerBody)playerRig.remove(playerBody.group);
@@ -435,12 +437,11 @@ function init() {
   world.npcPositions[GARDEN_KEEPER.id]={x:JEAN_STAND.x,z:JEAN_STAND.z};npcData.push({...GARDEN_KEEPER,yaw:JEAN_STAND.yaw});
   world.npcPositions[FARMER.id]={x:FARMER.x,z:FARMER.z};npcData.push({...FARMER});
   world.npcPositions[SYLVIA.id]={x:SYLVIA.x,z:SYLVIA.z};npcData.push({...SYLVIA,make:createSylvia});
-  // Paradise Springs, Lakota's old winery in the north-east of West Suval (src/winery.js): Livia pours, Nico keeps the barrels.
+  // Paradise Springs, southeast of Port Calos: KAT, ROB and MAT.
   for(const person of [VINTNER,CELLAR_HAND,WINEMAKER]){const stand=WINERY_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
-  // Katy by the spring pool, watching the birds and waiting for Batman (src/katy.js).
+  // Katy watches the harbor at Port Calos; her new quest will be authored later.
   world.npcPositions[KATY.id]={x:KATY_STAND.x,z:KATY_STAND.z};npcData.push({...KATY,yaw:KATY_STAND.yaw});
-  // Imani out in the rows, in the aisle between the Cabernet Franc and the Merlot (src/vineyard.js).
-  world.npcPositions[IMANI.id]={x:IMANI_STAND.x,z:IMANI_STAND.z};npcData.push({...IMANI,yaw:IMANI_STAND.yaw});
+  // The winery's former vine keeper is retired; saved knowledge remains readable.
   // Addison at the Suval Light on the West Suval head south of the winery lane (src/lighthouse.js).
   world.npcPositions[ADDISON.id]={x:ADDISON_STAND.x,z:ADDISON_STAND.z};npcData.push({...ADDISON,yaw:ADDISON_STAND.yaw});
   // Her twin at the door of the Elod Light, across the water in a country that is shut (src/rival-light.js).
@@ -1128,7 +1129,7 @@ function init() {
     [FARMER.id,['farming','cooking','fishing']],...FERRY_HOST_IDS.map(id=>[id,['swimming']]),
     ['troupe-amanda',AMANDA_TEACHES],[GARDEN_KEEPER.id,['birding','husbandry','fishing']],['pond-fisher',['fishing']],
     [BOTANIST.id,['botany']],[GEOLOGIST.id,['geology']],[BOWDEN.id,['woodcutting','construction']],
-    [BIRD_WATCHER.id,['archaeology','cooking','wine']],[VINTNER.id,['wine']],
+    [BIRD_WATCHER.id,['archaeology','cooking','wine']],...WINE_INTRO_TEACHERS.map(id=>[id,['wine']]),
   ]);
   const availableSkillTeachers=()=>[...skillIntroducers].filter(([teacher,ids])=>ids.some(id=>!skills.taught(id))||([INSTRUCTOR.id,MARK.id].includes(teacher)&&['search','report'].includes(roadLessons.geologyState(teacher)))||(teacher===INSTRUCTOR.id&&glunWood.view().away)||(fishingLessons.view().teacher===teacher&&fishingLessons.view().stage!=='returning')).map(([id])=>id);
   // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
@@ -1422,7 +1423,7 @@ function init() {
   }
   // The painted plate at the head of each block of vines at the winery: F reads the vines themselves.
   const vinePlateNear=p=>WINERY_LAYOUT.plates.find(plate=>Math.hypot(plate.x-p.x,plate.z-p.z)<2)??null;
-  function readVines(){if(!currentVine)return;const variety=VARIETIES[currentVine.variety];toast(`${variety.vine}${wine.met?` Livia pours its wine at the cabin.`:''}`,`${variety.name.toUpperCase()} \u00b7 ${variety.colour.toUpperCase()} GRAPES`);}
+  function readVines(){if(!currentVine)return;const variety=VARIETIES[currentVine.variety];toast(`${variety.vine}${wine.met?` KAT and MAT pour its wine at the cabin.`:''}`,`${variety.name.toUpperCase()} \u00b7 ${variety.colour.toUpperCase()} GRAPES`);}
   function readDig(){
     if(!currentDig)return;
     const found=archaeology.find(currentDig.id);
@@ -1433,7 +1434,7 @@ function init() {
     if(found.first&&found.ready&&archaeology.foundCount()===RENA_NEEDED)toast(`${RENA_NEEDED} finds written up. Take your notes back to Lakota in Tidehaven.`,'THE RUINS OF RENA');
     saveRoad(false);
   }
-  const wineContext=()=>({wine,openDialogue,closeDialogue,act:wineAct});
+  const wineContext=npc=>({wine,openDialogue,closeDialogue,act:action=>wineAct(action,npc)});
   // Ed, the wine chameleon of Solis: a figure of his own, out of the villagers' walking loop, because he never walks anywhere.
   const puckView=createPuckView(scene,{heightAt:(x,z)=>world.heightAt(x,z)});
   const puckNpc={id:PUCK.id,name:PUCK.name,role:PUCK.role,kind:'puck',actor:{group:puckView.group}},puckLast={x:0,z:0};
@@ -1803,13 +1804,13 @@ function init() {
       openDialogue(nika,[...heard.entry.lines],null,'Back to Nika',{onComplete:()=>nikaConversation(nika,atticContext({back:true}))});
       if(heard.first){toast(told[1]==='scary'?`\u201c${heard.entry.title}\u201d, one of Nika\u2019s stories.`:'Nika, talking. Juan will not believe it.',told[1]==='scary'?'A STORY FROM NIKA':'NIKA');saveRoad(false);}}
   }
-  function wineAct(action){
-    const livia=npcById.get(VINTNER.id),back=()=>vintnerConversation(livia,wineContext());
-    if(action==='visit-winery'){const result=wine.visit();if(result.first){refreshSkillsSheet();toast(result.xp?`Wine +${result.xp}. Lakota\u2019s old winery, and Livia Seravo on the porch.`:`${WINERY.name}: Paradise Springs, in plain words.`,WINERY.name.toUpperCase());saveRoad(false);}return result;}
-    if(action==='learn-wine-here'){wine.learn();refreshSkillsSheet();audio?.effect('success');openDialogue(livia,[...WINE_LESSON],null,'Back to the terrace',{onComplete:back});toast('Wine \u00b7 level 1. Ask Livia for a taste of anything she pours.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
+  function wineAct(action,teacher=npcById.get(WINEMAKER.id)){
+    const livia=teacher,back=()=>vintnerConversation(livia,wineContext(livia));
+    if(action==='visit-winery'){const result=wine.visit();if(result.first){refreshSkillsSheet();toast(result.xp?`Wine +${result.xp}. Lakota\u2019s old winery, and KAT and MAT on the terrace.`:`${WINERY.name}: Paradise Springs, in plain words.`,WINERY.name.toUpperCase());saveRoad(false);}return result;}
+    if(action==='learn-wine-here'){wine.learn();refreshSkillsSheet();audio?.effect('success');openDialogue(livia,[...WINE_LESSON],null,'Back to the terrace',{onComplete:back});toast('Wine \u00b7 level 1. Ask KAT or MAT for a taste of the wines.','NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
     if(action.startsWith('taste-')){const result=wine.taste(action.slice(6));if(!result.ok){toast(result.reason,WINERY.name.toUpperCase());return result;}
       refreshSkillsSheet();audio?.effect('success');
-      openDialogue(livia,[`She pours the ${result.entry.name}. ${result.entry.note}`,result.entry.lore],null,'Back to the terrace',{onComplete:back});
+      openDialogue(livia,[`${livia.name} pours the ${result.entry.name}. ${result.entry.note}`,result.entry.lore],null,'Back to the terrace',{onComplete:back});
       toast(result.first?`Wine +${result.xp}${result.levelled?` \u00b7 level ${result.level}`:''}. ${result.entry.name}, tasted properly.`:`${result.entry.name}, again. It is still good.`,result.first?'FIRST TASTING':'ANOTHER GLASS');saveRoad(false);return result;}
     return{ok:false,reason:''};
   }
@@ -2467,7 +2468,7 @@ function init() {
       openDialogue(lakota,[...LAKOTA_TEACHES_THE_CUP],null,'Back to the road');
       toast(`${learned.first?'Cooking \u00b7 level 1. ':''}Hot chocolate: a cake of chocolate and a jug of milk at a lit fire. Wendel sells both.`,learned.first?'NEW SKILL \u00b7 K FOR YOUR SKILLS':'COOKING');saveRoad(false);return learned;}
     if(action==='learn-wine'){wine.learn({recommend:true});refreshSkillsSheet();audio?.effect('success');
-      toast(`Wine \u00b7 level 1. Find ${WINERY.name}, Paradise Springs, Lakota\u2019s old winery in the north-east of West Suval. Mind the war.`,'NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
+      toast(`Wine \u00b7 level 1. Find ${WINERY.name}, Paradise Springs, Lakota\u2019s old winery southeast of Port Calos in Luscia.`,'NEW SKILL \u00b7 K FOR YOUR SKILLS');saveRoad(false);return{ok:true,reason:''};}
     if(action==='know-lakota'){
       const first=lakota.know().first;
       openDialogue(npcById.get(BIRD_WATCHER.id),first?[
@@ -2918,11 +2919,11 @@ function init() {
         for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
         card.append(el('h3','',`Words for it \u00b7 ${view.terms.length} / ${TASTING_TERMS.length}`),words);
       }
-      // And the blocks walked with Imani, who grew what is in the glass (src/vineyard.js).
+      // Preserve vineyard notes from older saves; advanced viticulture will live under Farming.
       if(id==='wine'&&vineyard.met){
         const rows=vineyard.view(),walked=el('ul','bird-list');
         for(const block of rows.blocks){const li=el('li',block.walked?'seen':'unseen',block.name);
-          li.append(el('small','',block.walked?'Walked with Imani.':`A ${block.colour} block. Imani will walk you down it.`));walked.append(li);}
+          li.append(el('small','',block.walked?'Recorded on a previous vineyard visit.':`A ${block.colour} block.`));walked.append(li);}
         card.append(el('h3','',`Rows walked \u00b7 ${rows.walkedCount} / ${rows.total}`),walked);
       }
       if(view.task)card.append(el('p','skill-task',`${view.task.title}: ${view.task.detail}`));
@@ -3078,6 +3079,13 @@ function init() {
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
   magic=createMagic({skills,inventory,weapons,combat,world,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
+    getCastOrigin:spellCast=>{
+      // Sample the rendered hand at the release beat, even on a frame that
+      // advances past it. The actual equipped model supplies its world-space tip.
+      player.setWeapon(spellCast.weaponId);player.group.rotation.y=spellCast.yaw;
+      player.animate(walkTime,0,grounded,{...combat.pose(),armed:true,spellCast});
+      return player.focusTip();
+    },
     getBodies:()=>[...crime.people().filter(npc=>!npc.hidden&&!npc.fallen&&!crime.isDown(npc.id)&&npc.actor.group.visible)
       .map(npc=>({id:npc.id,name:npc.name,role:npc.role,...npc.actor.group.position,hp:crime.health(npc).hp,r:npc.horse?BODY.horse:npc.dog?BODY.dog:npc.cat?BODY.cat:npc.ogre?BODY.ogre:BODY.person,team:'civilian'})),
       ...ambush.actors().filter(one=>one.hp>0&&one.mode!=='active').map(one=>({...one,r:BODY.person,team:'enemy'}))],
@@ -4621,7 +4629,7 @@ function init() {
     if(npc.id===BIRD_WATCHER.id){birdWatcherConversation(npc,{birding,lakota,archaeology,wine,cooking,openDialogue,closeDialogue,act:birdingAct,
       travelChoice:lakotaTravelChoice({npc,companions,context:()=>({trained:questStage>=QUEST_DONE,where:whereHeIs(npc),phase:npc.placement?.phase,has:whatHeHas(),restriction:border.view().stage==='march'?'We are marching under orders. Ask me after the line is released.':null}),openDialogue,closeDialogue,onChange:()=>saveRoad(false),back:()=>conversation(npc)}),
       mercenaryChoices:mercenaryChoices(npc,()=>conversation(npc))});return;}
-    if(npc.id===VINTNER.id){vintnerConversation(npc,wineContext());return;}
+    if(npc.id===VINTNER.id){robWineryConversation(npc,{farmingLevel:skills.level('farming'),openDialogue,closeDialogue});return;}
     if(npc.id===JUAN.id){if(wineAttic.met)wineAttic.visit();juanConversation(npc,atticContext());return;}
     if(npc.id===NIKA.id){wineAttic.visit();nikaConversation(npc,atticContext());return;}
     if(npc.id===PUCK.id){puckConversation(npc,puckContext());return;}
@@ -4636,13 +4644,12 @@ function init() {
     if(npc.id===JOHN.id){salt.visit();johnConversation(npc,{salt,hunt,coppers:inventory.count(COPPER_ITEM),openDialogue,closeDialogue,act:saltAct});return;}
     if(npc.id===BRANDY.id){brandy.visit();brandyConversation(npc,{brandy,openDialogue,closeDialogue,act:brandyAct});return;}
     if(npc.id===SECRETARY.id){secretaryConversation(npc,puckContext());return;}
-    if(npc.id===CELLAR_HAND.id){cellarHandConversation(npc,{openDialogue,closeDialogue});return;}
-    if(npc.id===WINEMAKER.id){winemakerConversation(npc,{openDialogue,closeDialogue,act:batmanAct,hunt,katy,visits:katVisits++});return;}
+    if([CELLAR_HAND.id,WINEMAKER.id].includes(npc.id)){vintnerConversation(npc,wineContext(npc));return;}
     if(npc.id===MYCOLOGIST.id){mycologistConversation(npc,{mycology,openDialogue,closeDialogue,act:mycologyAct});return;}
     if(npc.id===BOTANIST.id){botanistConversation(npc,{botany,jimson,openDialogue,closeDialogue,act:botanyAct});return;}
     if(npc.id===PIPE_SMOKER.id){pipeSmokerConversation(npc,{pipe,botany,openDialogue,closeDialogue,act:pipeAct});return;}
     if(npc.id===TOFT.id){toftConversation(npc,{jimson,inventory,openDialogue,closeDialogue,act:jimsonAct});return;}
-    if(npc.id===KATY.id){katyConversation(npc,{katy,hunt,openDialogue,closeDialogue,act:katyAct,visits:katyVisits++});return;}
+    if(npc.id===KATY.id){openDialogue(npc,['I am Katy. I like this spot: boats coming in, birds over the inlet, and the whole road waiting inland.'],null,'Goodbye.',{noWayfinding:true});return;}
     if(npc.id===IMANI.id){imaniConversation(npc,{vineyard,wine,openDialogue,closeDialogue,act:imaniAct,visits:imaniVisits++});return;}
     if(npc.id===BATMAN.id){batmanConversation(npc,{hunt,openDialogue,closeDialogue,act:batmanAct,visits:batmanVisits++});return;}
     if(npc.id===ADDISON.id){addisonConversation(npc,{light,hunt,heist,openDialogue,closeDialogue,act:addisonAct,visits:addisonVisits++});return;}
@@ -4767,7 +4774,7 @@ function init() {
           {id:'ben-decide-later',label:'Let me decide later.',action:closeDialogue}]});
       return;
     }
-    if(stage==='paid'){openDialogue(npc,[`The ${SPIDER_QUEST.bounty} copper was your share of the bounty. A fair day's work - and I am very glad the spider is behind us.`],null,'Back to the road');return;}
+    if(stage==='paid'){openDialogue(npc,[`The ${SPIDER_QUEST.bounty} copper was your share of the bounty. A fair day's work - and I am very glad the spider is behind us.`],null,'Back to the road',{wineLesson:true});return;}
     if(stage==='taught'){benSpellGuide(npc);return;}
     openDialogue(npc,['There is nothing more to ask of the thorns.'],null,'Back');
   }
@@ -4792,7 +4799,7 @@ function init() {
       'Oh, by the way, I have a spare wand. It is in your satchel. Open equipment with I, select Plain wand, and choose Equip. Close with I or Esc, face your target, and press Z. Each Fireball costs focus; it returns outside combat. N changes your selected spell.'
     ]:[
       'Fireball needs a wand or staff equipped. Open your satchel with I, choose Plain wand, then Equip. Close with I or Esc. Face your target and press Z to cast; N changes spells. Your focus returns outside combat.'
-    ],null,'Try your spell',{noWayfinding:true,choices:[
+    ],null,'Try your spell',{noWayfinding:true,wineLesson:!first,choices:[
       {id:'ben-equip-wand',label:'Open my satchel - equip the wand',action:()=>{closeDialogue();toggleInventory();inventory.select('wand');}},
       {id:'ben-practice-later',label:'I will practise in a moment.',action:closeDialogue}
     ]});
@@ -5026,6 +5033,15 @@ function init() {
     ]})};
   }
   function openDialogue(npc,lines,event=null,action='Back to the road',options={}){
+    if((options.wineLesson||options.choices?.length&&!options.noWayfinding)&&!options.choices?.some(choice=>choice.id==='learn-wine-here')){
+      const lesson=wineIntroChoice(npc,{wine,teach:teacher=>{
+        wine.learn();refreshSkillsSheet();saveRoad(false);audio?.effect('success');
+        openDialogue(teacher,[...WINE_LESSON],null,'Thank you.',{noWayfinding:true,onComplete:closeDialogue});
+        toast('Wine learned. This is its own skill; you do not need Farming experience.','WINE');
+      }});
+      if(lesson){const choices=options.choices?.length?options.choices:[{id:'wine-back-to-road',label:action,action:closeDialogue}];
+        options={...options,choices:[...choices.slice(0,-1),lesson,choices.at(-1)]};}
+    }
     if(options.choices?.length&&!options.noWayfinding&&FISHING_TEACHERS[npc.id]){
       let choices=options.choices.filter(choice=>!choice.id?.startsWith('fishing-lesson-'));
       if(npc.id===INSTRUCTOR.id&&fishingLessons.view().teacher===npc.id)choices=choices.map(choice=>choice.id==='glun-wood-begin'?{...choice,disabled:true,reason:'Finish our fishing outing first.'}:choice);
@@ -6178,7 +6194,7 @@ function init() {
     const puckTask=world.regionAt(player.group.position.x,player.group.position.z)?.name==='West Suval'?puck.task():null;
     // Katy's search has no place of its own: it is the last thing the panel offers, wherever the traveler is.
     const huntTask=heist.task()??hunt.task();
-    const katyTask=huntTask??(katy.looking?{title:'Looking for Batman',detail:'Watch the roads, and the sky at dusk. Tell Katy at Vaervelm Caelazh the moment you see him.'}:null);
+    const katyTask=huntTask; // Katy's new Port Calos quest is intentionally not active yet.
     show('side-quest',mode==='playing'&&((acornQuest.status==='active'&&localRegion===1)||showForestTask||!!regionalTask||!!birdTask||!!letterTask||!!puckTask||!!katyTask)&&!active);
     const fishing=campcraft.state;
     $('fishing-location').textContent=(world.activeFishingSpot?.()?.name||'Willowmere Pond').toUpperCase();
@@ -6249,7 +6265,7 @@ function init() {
       // A newly learned survival skill must not cover an enemy that can still hit you.
       // Keep the lesson queued with its full reading time until the danger has passed.
       skillAnnouncements.frame(reviewFrozen?0:dt,mode==='playing'&&!developer.active&&combat.state.phase!=='active');
-      magicUI.update({visible:mode==='playing'&&!developer.active,blockedReason:inWater?'Leave the water before casting.':riding.mounted?'Dismount before casting.':''});magicView.update(reviewFrozen?0:dt);
+      magicUI.update({visible:mode==='playing'&&!developer.active,blockedReason:inWater?'Leave the water before casting.':riding.mounted?'Dismount before casting.':''});
       if(developer.active){
         developer.update(dt);
         if(developer.scene===scene){
@@ -6360,6 +6376,7 @@ function init() {
         const windBefore=combat.state.player.stamina;
         combatClock+=dt;combat.update(dt);
         if(inWater&&combat.state.player.stamina>windBefore)combat.state.player.stamina=windBefore;
+        {const casting=magic.pose();if(casting&&casting.progress<=.5)player.group.rotation.y=casting.yaw;}
         magic.update(dt);handleCombatEvents();
         ambushHost.update(dt);if(combatEvents.length)handleCombatEvents();
         // **A loan cannot outlive the bout it was made for**, by any road out of one: the yield
@@ -6474,7 +6491,7 @@ function init() {
       visualArts.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater||!!acting.pose()||!!combat.state.player.guarding||weaponPose.action==='attack',position:player.group.position});
       artTools.set(!!visualArts.pose());
       if(visualArts.pose()){player.setArmed(false);player.setShield(false);}
-      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,emote:acting.pose(),painting:!!visualArts.pose(),sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater&&!acting.pose()&&!visualArts.pose(),fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
+      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,spellCast:magic.pose(),emote:acting.pose(),painting:!!visualArts.pose(),sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater&&!acting.pose()&&!visualArts.pose(),fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
         // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
         // is what `combat.guard` decided this frame, not what the key is doing.
         guarding:!!combat.state.player.guarding,
@@ -6482,6 +6499,7 @@ function init() {
         // arrow, the wind and an idle body - never the button. The shaft goes on the string with
         // it (src/characters.js), so a man standing about with a bow is not nocked.
         draw:combat.drawn});
+      magicView.update(reviewFrozen?0:dt);
       if(riding.owned){
         if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
@@ -6611,7 +6629,8 @@ function init() {
       updateGlunWood(dt);
       updateFishingLessons(dt);
       const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
-      const markerView={magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
+      const wineryLesson=wineryLessonsStatus({farmingLevel:skills.level('farming')});
+      const markerView={lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:[...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
         // Chip's copper, which is on whenever his bridge is down and is nobody's step.
@@ -6620,7 +6639,7 @@ function init() {
         longWay:longWayStop?.npc?[longWayStop.npc]:[],
         acornQuestOpen:acornQuest.status!=='complete',feederWantsCook:birding.task()?.target==='acorn-cook',hasRod:inventory.has('fishing-rod'),
         birdingLearned:birding.met,archaeologyReport:archaeology.task()?.stage==='report',
-        forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:wine.quest==='recommended'};
+        forestOpen:!forestStory.state.bundleReturned||(forestHideout.state.recovered&&!forestHideout.state.returned),wineRecommended:false};
       const beggarStep=smiths&&mode==='playing'&&combat.state.phase!=='active'?beggar.update(dt,{position:player.group.position,here:smiths.actor.group.position}):null;
       if(beggarStep?.line)toast(beggarStep.line,'SMITHS');
       currentNPC=null;let nearest=3.3;const talkers=[];
@@ -7042,6 +7061,26 @@ function init() {
       };
     }
     window.__AZHORA__={state,
+      runWineryChecks:async()=>{
+        const {runWineryChecks}=await import('./winery-checks.js');
+        const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+        const close=()=>{closeDialogue();mode='playing';};
+        return runWineryChecks({wine,skills,npcById,frames,state,
+          snapshot:()=>({skills:skills.snapshot(),spider:spiderQuest.snapshot(),cat:catQuest.snapshot(),murder:murder.snapshot()}),
+          prepare:()=>{stopAutopilot();prepareTesting();close();reviewTarget=null;reviewFrozen=false;combat.revive();combat.finishPractice();
+            spiderQuest.restore(createSpiderQuest().snapshot());catQuest.restore(createCatQuest().snapshot());murder.restore(createMurderQuest().snapshot());
+            skills.restore(createSkills({begins:SKILL_IDS.filter(id=>!hiddenSkills.has(id))}).snapshot());refreshSkillsSheet();},
+          resetWine:()=>{close();wine.restore(createWine().snapshot());const saved=skills.snapshot();delete saved.skills.wine;saved.taught=saved.taught.filter(id=>id!=='wine');skills.restore(saved);refreshSkillsSheet();},
+          converse:async id=>{close();const npc=npcById.get(id);if(!npc)throw new Error('Missing winery teacher '+id);
+            const at=npc.actor.group.position;player.group.position.set(at.x+1.7,world.heightAt(at.x+1.7,at.z+1),at.z+1);await frames(2);conversation(npc);},
+          finish:async()=>{for(let n=0;n<40&&activeDialogue;n++){if(activeDialogue.index===activeDialogue.lines.length-1&&activeDialogue.choices?.length)break;nextSpeech();await frames(1);}},
+          choices:()=>activeDialogue?.index===activeDialogue?.lines.length-1?(activeDialogue?.choices??[]).map(c=>({id:c.id,label:c.label})):[],
+          choose:async id=>{const button=document.querySelector('#dialogue-choices [data-choice="'+id+'"]');if(!button||button.disabled)throw new Error('Missing Wine choice '+id);button.click();await frames(1);},close,
+          marker:id=>{const npc=npcById.get(id);return {visible:!!npc?.marker?.visible,kind:npc?.markerKind?.split(':')[0]};},
+          farmingLevel:level=>{const saved=skills.snapshot();saved.skills.farming={xp:SKILLS.farming.thresholds[level-1]};skills.restore(saved);refreshSkillsSheet();},
+          setBenStage:stage=>spiderQuest.restore({version:1,stage,benDown:false,spiderDown:['paid','taught'].includes(stage)}),
+        });
+      },
       runPortCalosChecks:async()=>{
         const {runPortCalosChecks}=await import('./port-calos-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
@@ -7227,7 +7266,7 @@ function init() {
       },
       async runMagicChecks(){
         const {runMagicDesktopChecks}=await import('../tests/magic-desktop-checks.js');
-        return runMagicDesktopChecks({world,npcById,inventory,weapons,skills,combat,magic,spiderQuest,catQuest,murder,
+        return runMagicDesktopChecks({world,npcById,player,inventory,weapons,skills,combat,magic,spiderQuest,catQuest,murder,
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();testingEnabled=false;stopAutopilot();reviewFrozen=true;crime.restore();corpseHost.restore();combat.revive();combatEvents.length=0;skillAnnouncements.clear();closeDialogue();mode='playing';
             spiderQuest.restore(createSpiderQuest().snapshot());catQuest.restore(createCatQuest().snapshot());murder.restore(createMurderQuest().snapshot());
             magic.restore({version:1,learned:[],selected:null,focus:60,read:[]});mapTutorial.restore(2);weapons.equip('simple-sword');weapons.repair();},
@@ -8156,7 +8195,7 @@ function init() {
         reviewFrozen=false;reviewTarget=null;reviewCat=null;player.group.visible=true;
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
         leaveOpening();document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
-        if(['law-corpse','law-covered','magic-spells','magic-fireball','magic-bees','magic-bees-close'].includes(view)){
+        if(['law-corpse','law-covered','magic-spells','magic-fireball','magic-bees','magic-bees-close','magic-cast-rest','magic-cast-windup','magic-cast-release','magic-cast-follow'].includes(view)){
           testTravel('village');stopAutopilot();combat.revive();crime.restore();corpseHost.restore();closeDialogue();reviewFrozen=true;mode='playing';
           const at=world.training;player.group.position.set(at.x+3,world.heightAt(at.x+3,at.z+5),at.z+5);player.group.rotation.y=Math.PI;
           yaw=.35;pitch=.5;distance=targetDistance=10;magic.stop();
@@ -8167,7 +8206,17 @@ function init() {
           }else{
             for(const id of ['fireball','summon-bees','mindread'])magic.learn(id,{announce:false});
             weapons.equip('wand');magic.select(view.startsWith('magic-bees')?'summon-bees':'fireball');
-            if(view!=='magic-spells'){magic.cast(undefined,{yaw:Math.PI});magic.update(view.startsWith('magic-bees')?1.1:1.4);}magicView.update(0);if(view==='magic-bees-close')distance=targetDistance=5;
+            if(view.startsWith('magic-cast-')){
+              player.setWeapon('wand');settlePose({...combat.pose(),armed:true});
+              if(view!=='magic-cast-rest'){
+                magic.cast('fireball',{yaw:Math.PI});
+                const castTime=magic.view().remaining,span=view==='magic-cast-windup'?castTime*.8:view==='magic-cast-release'?castTime+.001:castTime+.19;
+                for(let t=0;t<span;){const step=Math.min(1/120,span-t);magic.update(step);walkTime+=step;t+=step;
+                  player.animate(walkTime,0,true,{...combat.pose(),armed:true,spellCast:magic.pose()});}
+              }
+              yaw=1.2;pitch=.22;distance=targetDistance=5;
+            }else if(view!=='magic-spells'){magic.cast(undefined,{yaw:Math.PI});magic.update(view.startsWith('magic-bees')?1.1:1.4);}
+            magicView.update(0);if(view==='magic-bees-close')distance=targetDistance=5;
           }
           skillAnnouncements.clear();magicUI.update();updateHUD();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
@@ -9202,15 +9251,25 @@ function init() {
           const px=at.x+Math.sin(turn)*4.4,pz=at.z+Math.cos(turn)*4.4;
           player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(at.x,at.y+1.2,at.z);yaw=turn;pitch=.06;distance=targetDistance=4.4;}
+        // Requested resident looks, named mailbox, and the physically closed eastern frontier.
+        if(['hallie','rob','mat'].includes(view)){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
+          const id=view==='hallie'?FERRY_HOSTS.peblos.id:view==='rob'?VINTNER.id:CELLAR_HAND.id;
+          const npc=npcById.get(id),at=npc.actor.group.position,turn=npc.actor.group.rotation.y+.3;
+          player.group.position.set(at.x+Math.sin(turn)*4,world.heightAt(at.x,at.z),at.z+Math.cos(turn)*4);
+          reviewTarget=new THREE.Vector3(at.x,at.y+1.25,at.z);yaw=turn;pitch=.06;distance=targetDistance=3.6;}
+        if(view==='liz-mailbox'){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
+          const at={x:-28.8,z:-174.8};player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z+4);
+          reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1,at.z);yaw=.3;pitch=.12;distance=targetDistance=3.8;}
+        if(view.startsWith('east-suval-')){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
+          const spot=view==='east-suval-west-gate'?{x:-350.002,z:721.82,yaw:-Math.PI/2,d:28,up:3}
+            :view==='east-suval-south-gate'?{x:-125.002,z:1024.929,yaw:Math.PI/6,d:30,up:3}
+            :{x:-400,z:635,yaw:-1.3,d:40,up:5};
+          player.group.position.set(spot.x+Math.sin(spot.yaw)*spot.d,world.heightAt(spot.x,spot.z),spot.z+Math.cos(spot.yaw)*spot.d);
+          const out=view==='east-suval-ridge'?15:8,tx=spot.x+Math.sin(spot.yaw)*out,tz=spot.z+Math.cos(spot.yaw)*out;
+          reviewTarget=new THREE.Vector3(tx,world.heightAt(tx,tz)+spot.up,tz);yaw=spot.yaw;pitch=.26;distance=targetDistance=spot.d;}
         // Kat on the crush pad at the hall doors, face on ('kat').
         if(view==='kat'){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
           const g=npcById.get(WINEMAKER.id).actor.group,at=g.position,turn=WINERY_STANDS.winemaker.yaw+.3;
-          player.group.position.set(at.x+Math.sin(turn)*3,world.heightAt(at.x+Math.sin(turn)*3,at.z+Math.cos(turn)*3),at.z+Math.cos(turn)*3);
-          reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.08;distance=targetDistance=2.8;}
-        // Imani in the rows: face on ('imani'), and from behind, for the bob ('imani-back'). Both
-        // look along the aisle, because three metres either side of her is a wall of vine.
-        if(view==='imani'||view==='imani-back'){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
-          const g=npcById.get(IMANI.id).actor.group,at=g.position,face=IMANI_STAND.yaw,turn=view==='imani'?face+.12:face+Math.PI+.06;
           player.group.position.set(at.x+Math.sin(turn)*3,world.heightAt(at.x+Math.sin(turn)*3,at.z+Math.cos(turn)*3),at.z+Math.cos(turn)*3);
           reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+1.2,at.z);yaw=turn;pitch=.08;distance=targetDistance=2.8;}
         // Solis three years after the sack: the north wall from the road ('solis-sack-gate'), the east breach,
@@ -9297,7 +9356,7 @@ function init() {
         if(view==='weapons'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('forest-stick');weapons.setWear(true);weapons.contact('simple-sword');toggleInventory();inventory.select('simple-sword');}
         if(view==='repair'){questStage=QUEST_DONE;combat.finishPractice();player.group.position.set(world.repairBench.x,world.heightAt(world.repairBench.x,world.repairBench.z),world.repairBench.z);yaw=.9;pitch=.45;distance=targetDistance=5;}
         if(view.startsWith('cat-')){questStage=QUEST_DONE;combat.finishPractice();const spot=VILLAGE_CAT.spots[1],at={x:spot.x+1.5,z:spot.z+1},npc=npcById.get(VILLAGE_CAT.id);reviewCat={posture:view.slice(4),at};npc.actor.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);npc.actor.group.rotation.y=-.6;player.group.position.set(at.x+6,world.heightAt(at.x+6,at.z+6),at.z+6);player.group.visible=false;reviewTarget=new THREE.Vector3(at.x,world.heightAt(at.x,at.z)+.22,at.z);yaw=.25;pitch=.3;distance=targetDistance=1.7;}
-        // Paradise Springs from the lane's end, Livia at the cabin, and the threshold slab at Rena.
+        // Paradise Springs from the lane's end, ROB at the cabin, and the threshold slab at Rena.
         if(['winery','winery-cabin','winery-spring','winery-vines','rena-track'].includes(view)){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
           const spot=view==='winery'?{x:WINERY_STANDS.vintner.x-22,z:WINERY_STANDS.vintner.z+14,look:{x:WINERY_STANDS.vintner.x+14,z:WINERY_STANDS.vintner.z-6},d:34,p:.34}
             :view==='winery-cabin'?{x:WINERY_STANDS.vintner.x,z:WINERY_STANDS.vintner.z+5,look:{x:WINERY_STANDS.vintner.x,z:WINERY_STANDS.vintner.z-2},d:7,p:.18}

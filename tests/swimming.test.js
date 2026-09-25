@@ -412,7 +412,7 @@ test('swimming beyond a beach fight leash gives no health or second bar of wind'
   const world={bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},colliders:[],
     heightAt:x=>x<5?1.5:-1,waterAt:()=>WATERLINE};
   const main=source('main.js'),start=main.indexOf('const windBefore=combat.state.player.stamina;');
-  const end=main.indexOf('magic.update(dt);',start);
+  const end=main.indexOf('{const casting=magic.pose();',start);
   assert.ok(start>=0&&end>start,'the host combat update and swimming wind guard exist');
   const hostUpdate=new Function('combat','dt','inWater',`let combatClock=0;${main.slice(start,end)}`);
   const events=[],position={x:0,z:0},controlPosition={x:0,z:0};

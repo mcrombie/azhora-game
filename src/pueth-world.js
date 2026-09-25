@@ -268,6 +268,7 @@ export const HIDEOUT_CLEARINGS = Object.freeze([
 export const LIZ_CLEARING = Object.freeze({ ...point(-36, -171), r: 30 });
 export const LIZ_COTTAGE = Object.freeze({ id: 'liz-cottage', ...point(-26,-181), width: 8.8, depth: 7.2, height: 3.7,
   roof: '#788369', wall: '#e0d5b9', yaw: 0, porch: point(-26,-174.8) });
+export const LIZ_MAILBOX = Object.freeze({ ...point(-28.8,-174.8), yaw: 0, name: 'Liz' });
 export const LIZ_WOOD_HIVES = Object.freeze([-181,-185,-189].map((z,index) =>
   Object.freeze({ id: `liz-wood-hive-${index+1}`, ...point(-39.2,z), r: .65 })));
 export const LIZ_GARDEN = Object.freeze({ ...point(-49,-187), width: 6, depth: 7,

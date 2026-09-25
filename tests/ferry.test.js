@@ -383,7 +383,7 @@ test('A delayed ferry frame still transfers under cover exactly once', () => {
 });
 
 test('The three requested resident hosts offer every directed coastal route, including Cobble to Port Calos', () => {
-  assert.deepEqual(Object.values(FERRY_HOSTS).map(npc => npc.name), ['Jess', 'Howie', 'Maddie']);
+  assert.deepEqual(Object.values(FERRY_HOSTS).map(npc => npc.name), ['Jess', 'Hallie', 'Maddie']);
   assert.equal(new Set(FERRY_HOST_IDS).size, 3);
   for (const host of Object.values(FERRY_HOSTS)) assert.ok(keepsNpc(host), `${host.name} is in the active cast`);
   for (const [from, host] of Object.entries(FERRY_HOSTS)) {
@@ -417,7 +417,7 @@ test('The three requested resident hosts offer every directed coastal route, inc
   }
 });
 
-test('Jess, Maddie and Howie each teach swimming once, with one shared skill across all ports', () => {
+test('Jess, Maddie and Hallie each teach swimming once, with one shared skill across all ports', () => {
   for (const first of Object.keys(FERRY_HOSTS)) {
     const skills = createSkills(), events = [], swimming = createSwimming({ skills, onEvent: event => events.push(event) });
     for (const side of [first, ...Object.keys(FERRY_HOSTS).filter(id => id !== first)]) {

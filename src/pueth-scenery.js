@@ -4,7 +4,7 @@ import { WORLD_SCALE } from './world-scale.js';
 import {
   PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, TESSEN_POST, RIMEHOLT, RIMEHOLT_BUILDINGS, RIMEHOLT_YARD, rimeholtPoint,
   PUETH_NPC_POSITIONS, PUETH_SIGNS, HIDEOUT_TRAIL_PENNANTS, FERADOM_BARRIER, PUETH_LANDMARKS, puethRiverDistance,
-  LIZ_CLEARING, LIZ_SKEPS, LIZ_BENCH, LIZ_COTTAGE, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
+  LIZ_CLEARING, LIZ_SKEPS, LIZ_BENCH, LIZ_COTTAGE, LIZ_MAILBOX, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
 } from './pueth-world.js';
 import { PUETH_RIVER_PROFILES, puethRiverSample, puethRiverHalfWidth, TESSEN_DECK_Y } from './world-terrain.js';
 import { SURVEY } from './region-world.js';
@@ -275,6 +275,29 @@ export function createPuethScenery(kit) {
     cottage(home.x,home.z,home.width,home.depth,home.height,home.roof,home.wall,home.yaw,homestead).name = 'Liz cottage';
     const homeCollider = colliders.findLast(c => c.kind === 'house' && c.x === home.x && c.z === home.z);
     if (homeCollider) homeCollider.id = home.id;
+    // Her name belongs on a modest letterbox beside the cottage approach.
+    // Keep the path, porch and Mop's return corridor open.
+    const mail=LIZ_MAILBOX, mailbox=new THREE.Group();mailbox.name='Liz mailbox';
+    mailbox.position.set(mail.x,groundHeight(mail.x,mail.z),mail.z);mailbox.rotation.y=mail.yaw;homestead.add(mailbox);
+    const mailPaint=material('#c7ac6d'),mailRoof=material(home.roof),mailDark=material('#364638');
+    box(wood,0,.57,0,.15,1.14,.15,mailbox);
+    box(plank,0,1.13,0,.91,.10,.57,mailbox);
+    box(mailPaint,0,1.39,0,.80,.48,.50,mailbox);
+    box(mailDark,0,1.53,.256,.47,.038,.018,mailbox);
+    for(const side of [-1,1])box(mailRoof,side*.24,1.69,0,.52,.07,.65,mailbox).rotation.z=-side*.22;
+    pebble(material('#a38a4e'),.30,1.31,.266,.035,.055,.025,mailbox);
+    let plate=material('#ead9bd');
+    if(typeof document!=='undefined') {
+      const canvas=document.createElement('canvas');canvas.width=256;canvas.height=64;
+      const context=canvas.getContext('2d');
+      context.fillStyle='#ead9bd';context.fillRect(0,0,256,64);
+      context.fillStyle='#473c3a';context.font='bold 38px Georgia';context.textAlign='center';context.textBaseline='middle';context.fillText(mail.name,128,33);
+      const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+      plate=new THREE.MeshStandardMaterial({map:texture,roughness:.95});
+    }
+    const label=new THREE.Mesh(new THREE.PlaneGeometry(.57,.15),plate);label.name='Liz mailbox nameplate';
+    label.position.set(0,1.35,.264);mailbox.add(label);
+    colliders.push({x:mail.x,z:mail.z,r:.49,kind:'liz-mailbox'});
     wornPatch(LIZ_CLEARING.x, LIZ_CLEARING.z, 4.2, '#8f9068');
     // A narrow worn approach joins the existing trail. The east side of Liz's
     // stand stays open so Mop can follow the player home from the goblin camp.

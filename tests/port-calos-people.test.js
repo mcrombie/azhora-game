@@ -33,7 +33,7 @@ test('every resident can give directions and leave without quest or reward servi
     opened.options.choices.find(choice => choice.id === 'port-directions').action();
     assert.match(opened.lines.join(' '), /Nothom/);
     assert.match(opened.lines.join(' '), /Jess.*Tidewater Haven/);
-    assert.match(opened.lines.join(' '), /Howie.*Peblos/);
+    assert.match(opened.lines.join(' '), /Hallie.*Peblos/);
     assert.equal(opened.event, null);
     portCalosConversation(npc, context);
     assert.equal(opened.lines[0], original, 'a previous rendered page cannot mutate future conversations');

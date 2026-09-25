@@ -2,7 +2,7 @@
  * Three resident ferry hosts link Tidehaven, Cobble and Port Calos.
  *
  * The woman who rowed the traveler ashore waits at Tidehaven's landing. She
- * sails to Cobble in the Pebbles or Port Calos in Luscia. Howie and Maddie
+ * sails to Cobble in the Pebbles or Port Calos in Luscia. Hallie and Maddie
  * handle onward crossings. Every route is open under the same fare policy.
  *
  * The crossing is not a sailing sim. The boat pulls out, the view fades, and
@@ -41,13 +41,13 @@ export const FERRY_NPC = Object.freeze({
   look: Object.freeze({ beard: false, slight: true, hairStyle: 'long', hair: 0x1a1613, hat: false }),
 });
 
-export const HOWIE_NPC = Object.freeze({
-  id: 'cobble-harbourmaster', name: 'Howie', role: 'Harbourmaster of Cobble', modelRole: 'harbormaster', color: 0x536f74,
-  look: Object.freeze({ beard: false, slight: true, hairStyle: 'short', hat: false }),
+export const HALLIE_NPC = Object.freeze({
+  id: 'cobble-harbourmaster', name: 'Hallie', role: 'Harbourmaster of Cobble', modelRole: 'harbormaster', color: 0x536f74,
+  look: Object.freeze({ beard: false, slight: true, hairStyle: 'long', straightHair: true, hair: 0xdcc16e, hat: false }),
 });
 /** Each requested character has one home and one identity, including after a crossing or reload. */
 export const FERRY_HOSTS = Object.freeze({
-  drent: FERRY_NPC, peblos: HOWIE_NPC,
+  drent: FERRY_NPC, peblos: HALLIE_NPC,
   'port-calos': PORT_CALOS_NPCS.find(npc => npc.id === 'port-calos-harbourmaster'),
 });
 export const FERRY_HOST_IDS = Object.freeze(Object.values(FERRY_HOSTS).map(npc => npc.id));
@@ -272,7 +272,7 @@ export function ferryConversation(npc, context) {
 }
 
 function drentLines(state) {
-  const port = 'I also sail to Port Calos, at the mouth of the Caloss in Luscia. You can take the coast with me instead of walking across Drent. There is a road inland toward Nothom. Ask Maddie on the Port Calos quay, or Howie in Cobble, for your next crossing.';
+  const port = 'I also sail to Port Calos, at the mouth of the Caloss in Luscia. You can take the coast with me instead of walking across Drent. There is a road inland toward Nothom. Ask Maddie on the Port Calos quay, or Hallie in Cobble, for your next crossing.';
   if (!state.met) return [
     'You will not remember much of the crossing. You were the colour of the water the whole way in, and you did not once look up.',
     'Jess. That is my boat, and she is sound, whatever she looked like to you yesterday.',
@@ -297,14 +297,14 @@ function drentLines(state) {
 function portCalosLines() {
   return [
     'Maddie. I keep Port Calos harbour. This is Luscia; the road inland will take you toward Nothom.',
-    FERRY_FREE ? 'I can take you to Tidehaven or to Cobble in Peblos, with no charge. Jess keeps the Tidehaven crossing, and Howie keeps the quay at Cobble.'
-      : `${FERRY_FARE} copper to Tidehaven or to Cobble in Peblos. Jess and Howie can arrange your onward crossing when you land.`,
+    FERRY_FREE ? 'I can take you to Tidehaven or to Cobble in Peblos, with no charge. Jess keeps the Tidehaven crossing, and Hallie keeps the quay at Cobble.'
+      : `${FERRY_FARE} copper to Tidehaven or to Cobble in Peblos. Jess and Hallie can arrange your onward crossing when you land.`,
   ];
 }
 
 function peblosLines() {
   return [
-    'Howie. I am the harbourmaster here at Cobble. Welcome to Peblos.',
+    'Hallie. I am the harbourmaster here at Cobble. Welcome to Peblos.',
     FERRY_FREE ? 'I sail to Tidehaven and Port Calos, and there is no charge. Jess will meet you at Tidehaven; Maddie keeps Port Calos harbour.'
       : `${FERRY_FARE} copper to Tidehaven or Port Calos. Jess will meet you at Tidehaven; Maddie keeps Port Calos harbour.`,
   ];

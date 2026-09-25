@@ -4,7 +4,9 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { KATY, KATY_STAND, KATY_SKETCH, KATY_WAITING, BATMAN_TOLD, createKaty, katyConversation, validateKatySnapshot } from '../src/katy.js';
-import { WINERY, WINERY_LAYOUT, WINERY_STANDS } from '../src/winery.js';
+import { WINERY, WINERY_STANDS } from '../src/winery.js';
+import { PORT_CALOS_TOWN_CELL, inPortCalos } from '../src/port-calos-world.js';
+import { hexAt } from '../src/region-world.js';
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 
 const { createCharacter } = await sourceModule('../src/characters.js');
@@ -86,15 +88,16 @@ test('Katy has straight blonde hair, a bat-winged cape, a bat on a cord and a sp
   for (let t = 0; t < 3; t += 1 / 30) actor.animate(t, 0, true, {});
 });
 
-test('Katy stands at the winery by the spring pool, looking out over it, with room around her', async () => {
+test('Katy stands at Port Calos with a clear approach, away from the winery cast', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   assert.ok(canStand(KATY_STAND.x, KATY_STAND.z, world, .45), 'she has footing');
-  assert.equal(world.regionAt(KATY_STAND.x, KATY_STAND.z)?.name, 'West Suval');
-  assert.ok(Math.hypot(KATY_STAND.x - WINERY.centre.x, KATY_STAND.z - WINERY.centre.z) < WINERY.radius, 'at Vaervelm Caelazh');
-  for (const stand of Object.values(WINERY_STANDS)) assert.ok(Math.hypot(stand.x - KATY_STAND.x, stand.z - KATY_STAND.z) > 4, 'clear of Livia and Nico');
-  const pool = WINERY_LAYOUT.spring.pool, toPool = Math.atan2(pool.x - KATY_STAND.x, pool.z - KATY_STAND.z);
-  assert.ok(Math.abs(Math.atan2(Math.sin(toPool - KATY_STAND.yaw), Math.cos(toPool - KATY_STAND.yaw))) < Math.PI / 4, 'she faces the pool');
+  assert.equal(world.regionAt(KATY_STAND.x, KATY_STAND.z)?.name, 'Luscia');
+  assert.equal(inPortCalos(KATY_STAND.x,KATY_STAND.z),true);
+  assert.deepEqual(hexAt(KATY_STAND.x,KATY_STAND.z),{q:PORT_CALOS_TOWN_CELL.q,r:PORT_CALOS_TOWN_CELL.r});
+  assert.ok(Math.hypot(KATY_STAND.x-WINERY.centre.x,KATY_STAND.z-WINERY.centre.z)>WINERY.radius,'she is no longer a winery resident');
+  for(const stand of Object.values(WINERY_STANDS))assert.ok(Math.hypot(stand.x-KATY_STAND.x,stand.z-KATY_STAND.z)>30);
+  for(let step=0;step<=8;step++)assert.ok(canStand(KATY_STAND.x-step*.25,KATY_STAND.z,world,.45),'a player can approach her from town');
   assert.equal(world.npcPositions[KATY.id], undefined, 'the host, not the world, puts her there');
-  assert.ok(BATMAN_TOLD.length >= 3);
+  assert.ok(BATMAN_TOLD.length >= 3,'legacy quest text remains available for saved state');
 });

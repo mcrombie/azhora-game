@@ -4,7 +4,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand, moveCharacter } from '../src/game-state.js';
 import { LIZ, LIZ_STAND, CAT, createCatQuest } from '../src/cat-quest.js';
-import { LIZ_CLEARING, LIZ_COTTAGE, LIZ_SKEPS, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
+import { LIZ_CLEARING, LIZ_COTTAGE, LIZ_MAILBOX, LIZ_SKEPS, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
   PUETH_NPC_POSITIONS, puethRiverDistance } from '../src/pueth-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
@@ -26,6 +26,10 @@ test('Liz keeps her identity and stand beside a real cottage and expanded apiary
   const cottage=world.colliders.find(c=>c.id===LIZ_COTTAGE.id);
   assert.ok(cottage?.kind==='house','cottage is an actual building with collision');
   assert.equal(canStand(LIZ_COTTAGE.x,LIZ_COTTAGE.z,world),false,'cannot walk through the cottage');
+  assert.equal(LIZ_MAILBOX.name,LIZ.name);
+  assert.ok(scene.getObjectByName('Liz mailbox'));
+  assert.ok(scene.getObjectByName('Liz mailbox nameplate'));
+  assert.ok(world.colliders.some(c=>c.kind==='liz-mailbox'&&c.x===LIZ_MAILBOX.x&&c.z===LIZ_MAILBOX.z));
   for(const hive of [...LIZ_SKEPS,...LIZ_WOOD_HIVES]){
     assert.ok(puethRiverDistance(hive.x,hive.z)>7,'hives remain above the riverbank');
     assert.ok(world.heightAt(hive.x,hive.z)>world.waterAt(hive.x,hive.z));

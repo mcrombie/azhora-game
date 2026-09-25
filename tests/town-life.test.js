@@ -12,6 +12,7 @@ import { BORDER_NPCS } from '../src/border-chapter.js';
 import { AFTERMATH_SITES } from '../src/aftermath-sites.js';
 import { LUMBER_TOWN_STABLE, MAIN_ROAD, SUVAL_ROAD, hexOwnerAt } from '../src/region-world.js';
 import { createMercenaryCompany } from '../src/mercenaries.js';
+import { SUVAL_HILL_PASSES, hillPassPoint } from '../src/frontier-ridges.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -34,7 +35,7 @@ test('each new person has a name, a known look and at least two lines, and nobod
 });
 
 test('Elod keeps eight to twelve guards at its frontier, one captain who explains the closed border, all in the new black armour', () => {
-  const ground = TOWN_LIFE_NPCS.filter(npc => npc.modelRole === 'elodi-guard'), figures = WALL_FIGURES.filter(figure => figure.role === 'elodi-guard');
+  const ground = TOWN_LIFE_NPCS.filter(npc => npc.modelRole === 'elodi-guard' && !npc.hillPass), figures = WALL_FIGURES.filter(figure => figure.role === 'elodi-guard');
   assert.ok(ground.length + figures.length >= 8 && ground.length + figures.length <= 12, `${ground.length + figures.length} Elodi guards`);
   const captains = ground.filter(npc => npc.look?.officer);
   assert.equal(captains.length, 1);
@@ -72,7 +73,7 @@ test('every new stand is on walkable ground in its own region, clear of the ques
   }
 });
 
-test('every new stand can be walked to from the road', () => {
+test('every new stand can be walked to from its road or hill-pass approach', () => {
   const step = 1.5, key = (x, z) => `${Math.round(x / step)},${Math.round(z / step)}`;
   const roads = [world.paths[0], world.suvalRoute];
   const nearestRoadPoint = (x, z) => {
@@ -85,7 +86,8 @@ test('every new stand can be walked to from the road', () => {
     return best;
   };
   for (const npc of TOWN_LIFE_NPCS) {
-    const start = nearestRoadPoint(npc.x, npc.z), limit = Math.hypot(start.x - npc.x, start.z - npc.z) + 45;
+    const gate = SUVAL_HILL_PASSES.find(gate => gate.id === npc.hillPass);
+    const start = gate ? hillPassPoint(gate, 0, -12) : nearestRoadPoint(npc.x, npc.z), limit = Math.hypot(start.x - npc.x, start.z - npc.z) + 45;
     const seen = new Set([key(start.x, start.z)]), queue = [start];
     let reached = false;
     for (let i = 0; i < queue.length && !reached && i < 60000; i++) {

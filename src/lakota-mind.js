@@ -142,8 +142,8 @@ export function lakotaState({ birding, archaeology = null, wine = null, cooking 
   } else if (archaeology) lines.push('- You have not taught them to dig.');
   if (wine?.met) {
     const tasted = WINE_IDS.filter(id => wine.hasTasted(id)).map(id => WINES[id].name);
-    lines.push(`- You taught them wine.${wine.quest === 'visited' ? ' They have been to Vaervelm Caelazh and met Livia.' : wine.quest === 'recommended' ? ' You sent them to Vaervelm Caelazh; they have not been yet.' : ''}${tasted.length ? ` They have tasted Livia's ${tasted.join(', ')}.` : ''}`);
-  } else if (wine) lines.push('- You have not taught them wine.');
+    lines.push(`- They have learned Wine.${wine.quest === 'visited' ? ' They have been to Vaervelm Caelazh and met KAT.' : wine.quest === 'recommended' ? ' You sent them to Vaervelm Caelazh; they have not been yet.' : ''}${tasted.length ? ` They have tasted KAT's ${tasted.join(', ')}.` : ''}`);
+  } else if (wine) lines.push('- They have not learned Wine yet.');
   if (cooking) lines.push(cooking.cups ? `- You have made them hot chocolate ${cooking.cups === 1 ? 'once' : `${cooking.cups} times`}.${cooking.knows('hot-chocolate') ? ' They have your recipe.' : ''}` : '- You have not made them hot chocolate yet.');
   const offers = validOffers({ birding, archaeology, wine, cooking });
   lines.push(`- Offers available now: ${offers.length ? offers.join(', ') : 'none'}.`);

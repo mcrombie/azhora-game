@@ -12,6 +12,7 @@ import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-
 import { elagosGround } from './elagos-world.js';
 import { amodGround } from './amod-terraces.js';
 import { westGround } from './west-ground.js';
+import { wineryGround } from './winery.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
@@ -242,7 +243,7 @@ export function groundWithRiver(x, z) {
   // relief it is handed and leaves everything outside its own ground untouched.
   // The four western regions do the same with their own water and landforms
   // (src/west-ground.js). None of the three boxes overlaps another.
-  return westGround(x, z, amodGround(x, z, elagosGround(x, z, ground)));
+  return wineryGround(x, z, westGround(x, z, amodGround(x, z, elagosGround(x, z, ground))));
 }
 
 /** Terrain tint before scenery tints, matching the biome and the shore. */

@@ -24,7 +24,7 @@ const writtenOffers = modules => {
 
 test('his sheet is built from what is already written, and knows nothing of Solis’s secrets', () => {
   const all = `${LAKOTA_SHEET}\n${LAKOTA_KNOWS}`;
-  for (const fact of [/one hundred and six/, /bittern/, /Norton/, /red-tailed hawk/, /birds are what is left of them/, /Vaervelm Caelazh/, /Livia Seravo/, /Thareth/, /peninsula, not an island/])
+  for (const fact of [/one hundred and six/, /bittern/, /Norton/, /red-tailed hawk/, /birds are what is left of them/, /Vaervelm Caelazh/, /KAT/, /Thareth/, /peninsula, not an island/])
     assert.match(all, fact);
   assert.match(LAKOTA_SHEET, /you believe them/, 'he can be told he is made, and believe it');
   assert.match(LAKOTA_SHEET, /never speak as an assistant/);

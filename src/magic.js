@@ -3,6 +3,7 @@ import { meleeLineClear } from './melee-contact.js';
 import { TESTIMONY, MURDERER, MURDERER_READING } from './murder-quest.js';
 
 export const MAGIC_VERSION = 1;
+const CAST_RECOVERY = .32;
 const finite = point => point && Number.isFinite(point.x) && Number.isFinite(point.z);
 const alive = actor => finite(actor) && !actor.dead && actor.active !== false && actor.action !== 'dead'
   && !(Number.isFinite(actor.hp) && actor.hp <= 0);
@@ -35,15 +36,15 @@ export function validateMagicSnapshot(data) {
  * `damageWorld` applies one external NPC contact and returns actual {damage,hp,maxHp,dead}.
  */
 export function createMagic({ skills, inventory, weapons, combat, position, world,
-  getBodies = () => [], damageWorld = () => null, onEvent = () => {} } = {}) {
+  getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {} } = {}) {
   const learned = new Set(), read = new Set();
-  let selected = null, focus = 60, pending = null, sequence = 0;
+  let selected = null, focus = 60, pending = null, recovery = null, sequence = 0;
   const projectiles = [], swarms = [];
   const emit = (type, value = {}) => onEvent({ type, ...value });
   const caster = () => typeof position === 'function' ? position() : position;
   const maxLevel = () => Math.max(1, ...[...learned].map(id => skills.level(SPELLS[id].school)));
   const capacity = () => focusAt(maxLevel());
-  const stop = () => { pending = null; projectiles.length = 0; swarms.length = 0; };
+  const stop = () => { pending = recovery = null; projectiles.length = 0; swarms.length = 0; };
 
   function learn(id, { equip = true, announce = true, grantWand = false } = {}) {
     if (!SPELLS[id]) return { ok: false, reason: 'There is no such spell.' };
@@ -130,26 +131,47 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
       emit('mind-read',result); return result;
     }
     focus -= profile.cost; selected = id;
-    pending = {profile,remaining:profile.cast,yaw:Number.isFinite(yaw)?yaw:0};
+    recovery = null;
+    pending = {profile,weaponId:ready.weaponId,remaining:profile.cast,yaw:Number.isFinite(yaw)?yaw:0};
     emit('spell-cast',{id,school:profile.school,cast:profile.cast});
     return {ok:true,id};
   }
 
+  // The same normalized gesture drives the visible hand and the release sample.
+  // Its halfway point is the wrist flick; the rest is a short follow-through.
+  function pose() {
+    const cast = pending ?? recovery;
+    if (!cast) return null;
+    return {id:cast.profile.id,weaponId:cast.weaponId,yaw:cast.yaw,
+      progress:pending ? .5 * Math.min(1,Math.max(0,1-pending.remaining/pending.profile.cast))
+        : .5 + .5 * Math.min(1,Math.max(0,1-recovery.remaining/CAST_RECOVERY))};
+  }
+
   function release(cast) {
     const at = caster(), id = `magic-${++sequence}`;
-    if (cast.profile.swarm) swarms.push({id,x:at.x,z:at.z,y:(at.y??world?.heightAt?.(at.x,at.z)??0)+1.1,
-      profile:cast.profile,left:cast.profile.stay,tick:0});
-    else projectiles.push({id,x:at.x,z:at.z,
-      y:(at.y??world?.heightAt?.(at.x,at.z)??0)+1.2,yaw:cast.yaw,flown:0,profile:cast.profile,origin:{x:at.x,z:at.z}});
-    emit('spell-released',{id,spellId:cast.profile.id});
+    const tip = getCastOrigin({id:cast.profile.id,weaponId:cast.weaponId,yaw:cast.yaw,progress:.5});
+    const origin = finite(tip) && Number.isFinite(tip.y) ? {x:tip.x,y:tip.y,z:tip.z}
+      : {x:at.x,y:(at.y??world?.heightAt?.(at.x,at.z)??0)+1.2,z:at.z};
+    // A hand reaching through a wall must not launch a spell on its other side.
+    if (!meleeLineClear(at,origin,world)) { emit('spell-stopped',{id,...origin}); return; }
+    if (cast.profile.swarm) swarms.push({id,...origin,profile:cast.profile,left:cast.profile.stay,tick:0});
+    else projectiles.push({id,...origin,yaw:cast.yaw,flown:0,profile:cast.profile,origin:{...origin}});
+    emit('spell-released',{id,spellId:cast.profile.id,origin:{...origin}});
   }
 
   function step(dt) {
     if (combat.state.player.hp <= 0) { stop(); return; }
     if (!pending && combat.state.phase !== 'active') focus = Math.min(capacity().focus,focus+capacity().regain*dt);
+    const interrupted = ['attack','hurt','dodge','dead'].includes(combat.state.player.action);
+    const focusWeapon = weapons.profile();
+    if (recovery) {
+      recovery.remaining -= dt;
+      if (recovery.remaining<=0 || interrupted || focusWeapon.id!==recovery.weaponId || !focusWeapon.usable) recovery=null;
+    }
     if (pending) {
-      if (['hurt','dead'].includes(combat.state.player.action)) { pending=null; emit('spell-interrupted'); }
-      else { pending.remaining-=dt; if(pending.remaining<=0){const ready=pending;pending=null;release(ready);} }
+      if (interrupted || focusWeapon.id!==pending.weaponId || !focusWeapon.usable) { pending=null; emit('spell-interrupted'); }
+      else { pending.remaining-=dt; if(pending.remaining<=0){const ready=pending;pending=null;
+        recovery={...ready,remaining:CAST_RECOVERY};release(ready);} }
     }
     const roster = projectiles.length || swarms.length ? bodies() : [];
     for (let index=projectiles.length-1;index>=0;index--) {
@@ -188,7 +210,7 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
   }
   function select(id) {if(!learned.has(id))return false;selected=id;return true;}
   function cycle() {const ids=[...learned];if(ids.length)selected=ids[(ids.indexOf(selected)+1)%ids.length];return selected;}
-  return {learn,cast,readiness,update,select,cycle,restore,stop,known:id=>learned.has(id),
+  return {learn,cast,readiness,update,select,cycle,restore,stop,pose,known:id=>learned.has(id),
     snapshot:()=>({version:MAGIC_VERSION,learned:[...learned],selected,focus,read:[...read]}),
     view:()=>({learned:[...learned],selected,focus,maxFocus:capacity().focus,casting:pending?.profile.id??null,readiness:readiness(),
       remaining:pending?.remaining??0,projectiles:projectiles.map(ball=>({...ball})),swarms:swarms.map(swarm=>({...swarm}))})};

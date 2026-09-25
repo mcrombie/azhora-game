@@ -34,7 +34,6 @@
  *
  * Pure: no DOM, no three. The beast himself is src/batman-model.js.
  */
-import { wineryPoint } from './winery.js';
 import { solisPoint } from './region-world.js';
 
 const freeze = Object.freeze;
@@ -67,7 +66,7 @@ export const CARTEL = freeze({
  * pool where Katy sits with her spyglass, twenty-five strides away, watching the wrong half of
  * the sky. He has been sitting behind her for most of a year.
  */
-export const BATMAN_PERCH = freeze({ ...wineryPoint(-31.5, 10), yaw: 0.98, lift: 1.86 });
+export const BATMAN_PERCH = freeze({ x:-501.5,z:710, yaw: 0.98, lift: 1.86 });
 /** The breach in Solis's east wall, three years unrepaired: where the carts go through. */
 export const HANDOVER = freeze({ ...solisPoint(54, 8), yaw: -1.9 });
 

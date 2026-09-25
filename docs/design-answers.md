@@ -438,3 +438,33 @@ plus the harbor, deleting overflow buildings and moving its sign closer to town.
 Jess serves Tidewater Haven; Maddie, a woman with long brown hair, serves Port Calos;
 Howie, a woman, serves the Peblos port. Each stays based at her own harbor, offers passage
 to either of the other two ports, and can introduce swimming. None has an unsolicited hat.
+
+## Character homes and mailboxes (25 September 2026)
+
+When the user assigns a character a specific house, give that home a mailbox labeled
+with the character's name by default. Keep it beside the approach rather than across
+the door, path or quest walking route. Liz's cottage now has a named mailbox, as Cagney's does.
+
+## Winery, Wine lessons and closed East Suval (25 September 2026)
+
+Paradise Springs (Vaervelm Caelazh) moves from West Suval into the single Luscian
+land hex immediately southeast of Port Calos, with a lane from the town. Retain
+the log cabin, hall, spring and eight grape varieties; do not duplicate the old site.
+Its three winemakers are ROB, MAT and KAT. KAT keeps her original appearance. ROB
+has cropped gray hair; MAT has cropped black hair and brown skin. Neither has a hat.
+Do not add extra winery residents.
+
+Wine is a separate skill, not a Farming subskill. KAT, MAT, Ben, Liz and Troy can
+introduce Wine, alongside the existing Lakota and Juan routes. ROB's subject is
+advanced viticulture, a Farming specialty. Its Farming level 5 prerequisite is
+provisional and visibly explained; these advanced lessons are not playable yet.
+Show an unavailable lesson as locked instead of granting a placeholder quest or XP.
+
+Katy now stands in Port Calos. Her new quest is for later; do not offer the old
+Batman search in her live dialogue. Keep legacy save data readable. Retire the
+winery's former vine-keeper host rather than leaving a duplicate among the vines.
+
+The Peblos harbor master is Hallie (renamed from Howie), with long straight blonde
+hair. Keep her ferry routes, swimming lessons and saved identity. East Suval's
+closed land borders need visible physical ridges and locked passes, including the
+western and southern edges, so a player cannot simply walk around the road gate.

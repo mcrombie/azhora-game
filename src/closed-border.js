@@ -6,7 +6,7 @@
  * that would carry the traveler from outside a closed region to inside it is
  * refused wherever along the border it happens, not only at the gate. Somebody
  * already inside (a tester sent there by the F8 tools, an old save) moves about
- * freely and may leave. Pure: no three, no DOM.
+ * freely; ordinary walls and locked gates still apply. Pure: no three, no DOM.
  */
 import { insideRegion } from './region-world.js';
 

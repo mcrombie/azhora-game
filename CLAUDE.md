@@ -91,6 +91,8 @@ One slot, key `azhora-road-checkpoint-v1`, version 1. Older version-1 saves must
 
 ## Conventions and gotchas
 
+- When the user assigns a character a specific house, add a mailbox labeled with that character's name by default. Place it beside the approach without blocking the entrance or walking route. See `docs/design-answers.md` (2026-09-25).
+
 - Do not invent or add civilian NPCs unless the user requests them. Add specifically requested characters one at a time; soldiers are the user's stated exception. See `docs/design-answers.md` (2026-09-25).
 
 - Characters are hatless unless the user explicitly requests a hat. Occupations, roles, and model presets must not add headwear automatically; preserve explicit user-requested exceptions. See `docs/design-answers.md` (2026-09-25).

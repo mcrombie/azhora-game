@@ -361,15 +361,15 @@ export const LAKOTA_TOPICS = Object.freeze([
   Object.freeze({ id: 'dinosaurs', label: 'The great old lizards?', lines: Object.freeze([
     'Dinosaurs. I call them that; nobody else calls them anything, because nobody else has noticed them. Terrible lizards, bigger than a house, and gone before there was a sea where the sea is.',
     'Look at a heron’s foot. Three toes forward, scales up the shin, a claw on each. Now look at the track in the threshold slab at Rena. The birds are what is left of them. I would stake my list on it.',
-    'There is a jaw on Livia’s mantel at Vaervelm Caelazh that I dug out of the bottom of her vineyard. She thinks it is a cow. It is not a cow.',
+    'There is a jaw on KAT’s mantel at Vaervelm Caelazh that I dug out of the bottom of her vineyard. She thinks it is a cow. It is not a cow.',
   ]) }),
   Object.freeze({ id: 'digging', label: 'What is the best thing you ever dug up?', lines: Object.freeze([
-    'A jaw, at the bottom of Livia’s vineyard, as long as my arm and full of teeth like steak knives. I carried it up the hill in my shirt and she made me wash it before it came in the cabin.',
+    'A jaw, at the bottom of KAT’s vineyard, as long as my arm and full of teeth like steak knives. I carried it up the hill in my shirt and she made me wash it before it came in the cabin.',
     'Second best: a whistle made from a swan’s wing bone, at the edge of an old camp by the Caloss. I blew it. It still worked. I am not sure it should have.',
   ]) }),
   Object.freeze({ id: 'wine', label: 'Which wine is best?', lines: Object.freeze([
     'Norton. Everybody pretends to prefer the Viognier because it is pretty. Norton is the vine that was here first, growing wild up the trees before anybody planted a row, and it tastes like it: dark, wild, a little rude.',
-    'Livia will pour you the Viognier first. Let her. Then ask for the Norton, and watch her decide whether she likes you.',
+    'KAT will pour you the Viognier first. Let her. Then ask for the Norton, and watch her decide whether she likes you.',
   ]) }),
   Object.freeze({ id: 'chocolate', label: 'What is that in your coat pocket?', lines: Object.freeze([
     'Chocolate. The southern ships bring it in cakes as bitter as bark. Grate it into hot milk with a pinch of chilli and a spoon of honey and you will understand why their kings drank it before battles.',
@@ -395,9 +395,9 @@ export const LAKOTA_ARCHAEOLOGY_PITCH = Object.freeze([
   'Go and read five of them for me, write them up, and bring me your notes. Do not take anything. A thing out of the ground is a thing with its story cut off.',
 ]);
 export const LAKOTA_WINE_PITCH = Object.freeze([
-  'Wine. Before I came here I worked a cellar at Vaervelm Caelazh, in the north-east of West Suval. Paradise Springs, in plain words: the good green place, where the water endures. A log cabin that was the first house on the land, a great hall, a spring that has never once failed, eight grapes on the slope, and the best Norton on this coast.',
+  'Wine. Before I came here I worked a cellar at Vaervelm Caelazh, southeast of Port Calos in Luscia. Paradise Springs, in plain words: the good green place, where the water endures. A log cabin that was the first house on the land, a great hall, a spring that has never once failed, eight grapes on the slope, and the best Norton on this coast.',
   'Tasting is only looking properly again, with your nose and your mouth. Look at the colour. Swirl it. Smell it like you mean it. Then a small mouthful, held. There, you know how.',
-  'Go and see Livia Seravo there. Take the lane east off the Solis road past the Suval Downs. And be careful: there is a war on around Solis, the army and the Coalition both, and neither side much minds whose field it is fought in. Keep your head down and your purse closed.',
+  'Go and see KAT or MAT there. The winery is one hex southeast of Port Calos. Take the lane from the southern street; it leads to the cabin and the vines.',
 ]);
 
 /**

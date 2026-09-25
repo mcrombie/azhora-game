@@ -21,7 +21,7 @@ export function portCalosConversation(npc, { openDialogue, closeDialogue }) {
     'I can sail you to Tidewater Haven or Peblos. For Nothom, follow the road inland from the market.',
   ], null, 'Back to the harbor', { choices: [
     { id: 'port-directions', label: 'How do I get to Nothom or the other harbors?', action: () => openDialogue(npc, [
-      'For Nothom, follow the street inland to the road junction, then turn west toward town. I sail to Tidewater Haven and Peblos from this quay. Jess keeps Tidewater Haven; Howie keeps the harbor on Peblos.',
+      'For Nothom, follow the street inland to the road junction, then turn west toward town. I sail to Tidewater Haven and Peblos from this quay. Jess keeps Tidewater Haven; Hallie keeps the harbor on Peblos.',
     ], null, 'Thank you.') },
     { id: 'leave-port-neighbor', label: 'Good day to you.', action: closeDialogue },
   ] });

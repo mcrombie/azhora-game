@@ -12,14 +12,14 @@ import { createCatQuest, createMopWalk, CAT, LIZ_STAND } from '../src/cat-quest.
 import { createMurderQuest, WITNESS_IDS, MURDERER, MURDERER_READING } from '../src/murder-quest.js';
 const { createMagicView } = await sourceModule('../src/magic-view.js');
 
-function fixture({enemies=[],allies=[],bodies=[],colliders=[]}={}) {
+function fixture({enemies=[],allies=[],bodies=[],colliders=[],getCastOrigin}={}) {
   const world={bounds:{minX:-2000,maxX:2000,minZ:-2000,maxZ:2000},colliders,heightAt:()=>1.5};
   const position={x:0,y:1.5,z:0,yaw:0},events=[],combatEvents=[];
   const inventory=createInventoryState();inventory.add('simple-sword');
   const weapons=createWeapons({inventory}),skills=createSkills();
   const combat=createCombat({world,position,getWeapon:()=>weapons.profile(),onEvent:event=>combatEvents.push(event)});
   if(enemies.length)combat.startEncounter({id:'magic-test',center:{x:0,z:4},checkpoint:{x:0,z:0},retreatLine:100,level:0,enemies,allies});
-  const magic=createMagic({world,position,inventory,weapons,skills,combat,getBodies:()=>bodies,onEvent:event=>events.push(event),
+  const magic=createMagic({world,position,inventory,weapons,skills,combat,getCastOrigin,getBodies:()=>bodies,onEvent:event=>events.push(event),
     damageWorld:(target,damage)=>{const actual=bodies.find(body=>body.id===target.id);const dealt=Math.min(actual.hp,damage);actual.hp-=dealt;return{damage:dealt,hp:actual.hp,maxHp:actual.maxHp,dead:actual.hp<=0};}});
   const run=(seconds,withCombat=false)=>{for(let t=0;t<seconds;t+=1/120){if(withCombat)combat.update(1/120);magic.update(1/120);}};
   return{world,position,inventory,weapons,skills,combat,magic,events,combatEvents,bodies,run};
@@ -172,4 +172,59 @@ test('an earned fireball renders at its traveling world position and disappears 
     assert.equal(target.hp,74);assert.equal(visible.parent,null,'the spent effect leaves the scene after real damage');
     assert.equal(game.events.filter(event=>event.type==='spell-impact').length,1);
   } finally {view.dispose();}
+});
+
+
+test('Fireball lifts the equipped hand, releases from its current world tip, then recovers',async()=>{
+  const {createCharacter}=await sourceModule('../src/characters.js');
+  const actor=createCharacter(),parent=new THREE.Group();parent.add(actor.group);
+  parent.position.set(12,3,-8);parent.rotation.y=.7;parent.scale.setScalar(1.1);
+  let samples=0,releaseTip;
+  const game=fixture({getCastOrigin:spellCast=>{
+    samples++;assert.equal(spellCast.progress,.5);assert.equal(spellCast.weaponId,'wand');
+    actor.animate(2,0,true,{armed:true,spellCast});
+    releaseTip=actor.focusTip().clone();return releaseTip;
+  }});
+  game.magic.learn('fireball');actor.setWeapon('wand');
+  const point=actor.group.getWorldPosition(new THREE.Vector3());Object.assign(game.position,point);
+  assert.equal(game.magic.cast('fireball',{yaw:.7}).ok,true);
+  const duration=game.magic.view().remaining;
+  game.magic.update(duration*.8);
+  assert.equal(samples,0,'the tip is sampled when released, not when the button is pressed');
+  assert.ok(Math.abs(game.magic.pose().progress-.4)<1e-8);
+  assert.equal(game.magic.view().projectiles.length,0,'raising the wand does not launch early');
+  // The traveler can keep moving during the windup; origin must follow the hand.
+  parent.position.x+=1;game.position.x+=1;
+  game.magic.update(duration*.2+.001);
+  const ball=game.magic.view().projectiles[0];assert.ok(ball);assert.equal(samples,1);
+  assert.deepEqual(ball.origin,{x:releaseTip.x,y:releaseTip.y,z:releaseTip.z});
+  assert.ok(Math.hypot(ball.origin.x-game.position.x,ball.origin.z-game.position.z)>.5,'release is ahead at the wand, not in the torso');
+  assert.equal(ball.y,releaseTip.y);
+  assert.ok(game.magic.pose().progress>=.5&&game.magic.pose().progress<.55);
+  assert.deepEqual(game.events.find(e=>e.type==='spell-released').origin,ball.origin);
+  game.magic.update(.16);assert.ok(game.magic.pose().progress>.7);
+  game.magic.update(.2);assert.equal(game.magic.pose(),null,'follow-through ends without leaving the arm raised');
+});
+
+test('interruption, equipment changes and checkpoint restoration clear the casting gesture',()=>{
+  for(const interrupt of ['hurt','dodge','attack','equipment','broken','stop','restore','death']){
+    const game=fixture();game.magic.learn('fireball');game.magic.cast();game.magic.update(.5);
+    assert.ok(game.magic.pose());
+    if(interrupt==='equipment')game.weapons.equip('simple-sword');
+    else if(interrupt==='broken')game.weapons.setCondition('wand',0);
+    else if(interrupt==='stop')game.magic.stop();
+    else if(interrupt==='restore')game.magic.restore(game.magic.snapshot());
+    else if(interrupt==='death')game.combat.state.player.hp=0;
+    else game.combat.state.player.action=interrupt;
+    game.magic.update(1);
+    assert.equal(game.magic.pose(),null,interrupt);assert.equal(game.magic.view().projectiles.length,0,interrupt);
+    assert.equal(game.events.some(e=>e.type==='spell-released'),false,interrupt);
+  }
+});
+
+test('a focus tip reaching through a wall cannot launch a fireball beyond it',()=>{
+  const game=fixture({colliders:[{x:0,z:.5,r:.2}],getCastOrigin:()=>({x:0,y:2.7,z:1})});
+  game.magic.learn('fireball');game.magic.cast();game.magic.update(1.2);
+  assert.equal(game.magic.view().projectiles.length,0);
+  assert.equal(game.events.filter(e=>e.type==='spell-stopped').length,1);
 });

@@ -90,12 +90,12 @@ export const OWN_IDS = Object.freeze([
   'brandy-frank',        // Brandy Frank, dyer of impossible colours
   'bird-watcher',        // Lakota
   'boatman',             // Jess of the Stills
-  'cobble-harbourmaster', // Howie, the user's ferry host and swimming teacher in Peblos
+  'cobble-harbourmaster', // Hallie, the user's ferry host and swimming teacher in Peblos
   'attic-juan', 'attic-nika',    // Juan and Nika at Tharganhom, the Wine Attic
   'solis-secretary',     // Tancredi Vel, who the chameleon's arrangement runs through
   'john-salt',           // John, Sultan of the Salt Trade, and the Sultana he sails
-  'katy',                // Katy, who goes looking for Batman at dusk
-  'vintner', 'winemaker', 'vine-keeper',   // Livia, Kat and the keeper at Vaervelm Caelazh
+  'katy',                // Katy at Port Calos; her future quest is not active yet
+  'vintner', 'winemaker', 'cellar-hand',   // ROB, KAT and MAT at Paradise Springs
   'light-keeper', 'rival-keeper',// the two lighthouse keepers and their feud
 ]);
 

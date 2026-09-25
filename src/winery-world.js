@@ -1,7 +1,7 @@
 /**
  * Paradise Springs as scenery (the tables are src/winery.js): the log cabin,
  * the hall, the terrace, the barrels, the spring, the rows and the lane. Built
- * with world.js's toolkit like the rest of West Suval; small things standing in
+ * with world.js's toolkit beside Port Calos in Luscia; small things standing in
  * the way (tables, barrels, the vine panels) are made solid by the world's prop
  * pass, and the buildings and the spring carry their own colliders here.
  */
@@ -174,7 +174,7 @@ export function createWineryScenery(kit) {
   }
   for (const plate of L.plates) signs?.plate?.({ x: plate.x, z: plate.z, label: VARIETIES[plate.variety].name, facing: plate.facing, parent: group });
 
-  // The lane across the downs, worn by carts, and the name board where it arrives.
+  // The lane from Port Calos, worn by carts, and the name board where it arrives.
   for (let i = 1; i < L.lane.length; i++) {
     const a = L.lane[i - 1], b = L.lane[i], steps = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 4);
     for (let k = 0; k <= steps; k++) wornPatch(a.x + (b.x - a.x) * k / steps, a.z + (b.z - a.z) * k / steps, 2.2, '#a8966c', 1, group);

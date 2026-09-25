@@ -6,6 +6,8 @@ import { canStand, moveCharacter } from '../src/game-state.js';
 import { CLOSED_REGIONS, CLOSED_BORDER_LINES, CLOSED_BORDER_COOLDOWN, closedRegionEntered, createBorderWatch } from '../src/closed-border.js';
 import { REGION_OUTLINES, SUVAL_ROAD, insideRegion, isLandHex } from '../src/region-world.js';
 import { FRONTIER_ROUTE, FRONTIER_GATE, BORDER_CROSSING } from '../src/frontier.js';
+import { SUVAL_RIDGE_EDGES, SUVAL_RIDGE_ROCKS, SUVAL_RIDGE_COLLIDERS, SUVAL_HILL_PASSES, SUVAL_HILL_GUARDS, hillPassPoint } from '../src/frontier-ridges.js';
+import { TOWN_LIFE_NPCS } from '../src/town-life.js';
 
 const flat = (inside) => (name, x) => name === 'Closed' && inside(x);
 
@@ -65,59 +67,57 @@ test('the branch road now ends before Elod’s shut gate, and walking on into Ea
   assert.ok((walker.x - FRONTIER_GATE.x) * FRONTIER_GATE.u.x + (walker.z - FRONTIER_GATE.z) * FRONTIER_GATE.u.z < 0, 'stopped in front of the gate');
 });
 
-test('a traveler set down inside East Suval can walk out of it again, and no picket stops them', async () => {
-  const { createWorld } = await sourceModule('../src/world.js');
-  const world = createWorld(new THREE.Scene());
-  const RADIUS = .45;
-  // The module promises it: "Somebody already inside (a tester sent there by the F8 tools, an
-  // old save) moves about freely and may leave." The rule allows it; this checks the ground does,
-  // because a wall or a ditch that closed the region for real would trap whoever F8 put there.
-  const open = point => canStand(point.x, point.z, world, RADIUS) && insideRegion('East Suval', point.x, point.z)
-    && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => canStand(point.x + dx, point.z + dz, world, RADIUS));
-  const openGroundNear = start => {
-    if (open(start)) return start;
-    for (let reach = 1; reach <= 40; reach += .5) for (let turn = 0; turn < 48; turn++) {
-      const angle = turn / 48 * Math.PI * 2, point = { x: start.x + Math.cos(angle) * reach, z: start.z + Math.sin(angle) * reach };
-      if (open(point)) return point;
+test('the exposed land boundary has continuous solid limestone and every hill pass is visibly locked', async () => {
+  const { buildFrontierRidges } = await sourceModule('../src/frontier-ridge-works.js');
+  const scene = new THREE.Scene(), colliders = [];
+  buildFrontierRidges({ parent: scene, heightAt: () => 10, colliders });
+  const world = { bounds: { minX: -1000, maxX: 1000, minZ: 0, maxZ: 1400 }, heightAt: () => 10, colliders };
+  assert.equal(colliders.length, SUVAL_RIDGE_COLLIDERS.length);
+  assert.ok(SUVAL_RIDGE_EDGES.length > 10 && SUVAL_RIDGE_ROCKS.length > 100);
+  for (const edge of SUVAL_RIDGE_EDGES) {
+    const mid = { x: (edge.a.x + edge.b.x) / 2, z: (edge.a.z + edge.b.z) / 2 };
+    assert.ok(isLandHex(mid.x - edge.inward.x * 3, mid.z - edge.inward.z * 3), 'no wall across the sea');
+    assert.ok(scene.getObjectByName(`Elodi limestone ridge ${edge.id}`));
+    for (let along = 0; along <= edge.length; along += .5) {
+      const x = edge.a.x + edge.along.x * along, z = edge.a.z + edge.along.z * along;
+      assert.equal(canStand(x, z, world), false, `unprotected border at ${x}, ${z}`);
     }
-    return null;
-  };
-  /** Breadth-first, a metre a step, obeying the ground and the picket, until the outline is behind us. */
-  const walkOut = start => {
-    const watch = createBorderWatch();
-    const seen = new Set(['0,0']);
-    let queue = [{ i: 0, j: 0 }], visited = 0;
-    const at = (i, j) => ({ x: start.x + i, z: start.z + j });
-    while (queue.length && visited < 120000) {
-      const next = [];
-      for (const node of queue) {
-        visited++;
-        const here = at(node.i, node.j);
-        if (!insideRegion('East Suval', here.x, here.z)) return { out: here, refused: watch.turnedBack, visited };
-        const groundHere = world.heightAt(here.x, here.z);
-        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const i = node.i + di, j = node.j + dj, id = `${i},${j}`;
-          if (seen.has(id)) continue;
-          seen.add(id);
-          const point = at(i, j);
-          if (Math.abs(i) > 700 || Math.abs(j) > 700) continue;
-          if (!canStand(point.x, point.z, world, RADIUS)) continue;
-          if (Math.abs(world.heightAt(point.x, point.z) - groundHere) > 1.4) continue;
-          if (watch.step(here, point).refused) continue;
-          next.push({ i, j });
-        }
-      }
-      queue = next;
-    }
-    return null;
-  };
-  for (const [where, spot] of [['the roofless waystation', { x: -273, z: 557 }], ['Elod, inside its walls', { x: -50, z: 641 }],
-    ['Sevenwalls', { x: -205, z: 690 }], ['the dry hills', { x: -146, z: 858 }], ['Sorrow Beach', { x: 82, z: 800 }]]) {
-    const start = openGroundNear(spot);
-    assert.ok(start, `${where}: no open ground inside East Suval to start from`);
-    const escape = walkOut(start);
-    assert.ok(escape, `${where}: a traveler at ${start.x.toFixed(0)}, ${start.z.toFixed(0)} cannot walk out of East Suval`);
-    assert.equal(escape.refused, 0, `${where}: the picket turned back ${escape.refused} steps of somebody who was only leaving`);
-    assert.equal(insideRegion('East Suval', escape.out.x, escape.out.z), false);
   }
+  for (const gate of SUVAL_HILL_PASSES) {
+    assert.equal(gate.locked, true);
+    assert.ok(scene.getObjectByName(`${gate.name} - locked`));
+    const guards = SUVAL_HILL_GUARDS.filter(guard => guard.gate === gate.id);
+    assert.equal(guards.length, 2);
+    for (const guard of guards) {
+      assert.ok(canStand(guard.x, guard.z, world));
+      const npc = TOWN_LIFE_NPCS.find(npc => npc.id === guard.id);
+      assert.equal(npc?.modelRole, 'elodi-guard');
+      assert.ok(npc.lines.some(line => /locked/.test(line)));
+    }
+    for (const radius of [.34, .8]) {
+      const outside = hillPassPoint(gate, 0, -12), walker = { ...outside };
+      assert.ok(canStand(outside.x, outside.z, world, radius));
+      moveCharacter(walker, gate.inward.x * 24, gate.inward.z * 24, world, radius);
+      assert.ok((walker.x - gate.x) * gate.inward.x + (walker.z - gate.z) * gate.inward.z < -1,
+        'walkers and riders stop at the locked leaves without needing the region-entry rule');
+    }
+  }
+});
+
+test('developer travel inside East Suval still allows movement without unlocking its physical border', async () => {
+  const { createWorld } = await sourceModule('../src/world.js');
+  const world = createWorld(new THREE.Scene()), watch = createBorderWatch();
+  for (const gate of SUVAL_HILL_PASSES) {
+    assert.equal(canStand(gate.x, gate.z, world), false);
+    for (const guard of SUVAL_HILL_GUARDS.filter(guard => guard.gate === gate.id)) {
+      assert.ok(canStand(guard.x, guard.z, world, .45), `${guard.id} has real-world footing`);
+    }
+  }
+  const from = { x: -50, z: 641 }, to = { x: -50, z: 642 };
+  assert.ok(insideRegion('East Suval', from.x, from.z));
+  assert.equal(watch.step(from, to).refused, false, 'developer exploration inside the closed region remains permitted');
+  // Leaving is still allowed by the region rule; the visible ridges and barred gates
+  // now deliberately block ordinary land exits in both directions. F8 travel remains available.
+  const gate = SUVAL_HILL_PASSES[0];
+  assert.equal(watch.step(hillPassPoint(gate, 0, 2), hillPassPoint(gate, 0, -2)).refused, false);
 });

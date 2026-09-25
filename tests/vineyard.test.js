@@ -139,3 +139,32 @@ test('the walk, the carriages and the dragon all survive a save', () => {
   assert.equal(validateVineyardSnapshot({ version: 1, met: true, walked: [], carriages: false, dragon: 'kept' }), false);
   assert.equal(validateVineyardSnapshot({ version: 2, met: true, walked: [], carriages: false, dragon: 'told' }), false);
 });
+
+
+test('ROB\'s advanced Farming prerequisite is visible but cannot grant a placeholder lesson', async () => {
+  const { WINERY_LESSON_REQUIREMENT, wineryLessonsStatus, wineryLessonLines, robWineryConversation } = await import('../src/winery-lessons.js');
+  assert.equal(WINERY_LESSON_REQUIREMENT.level, 5);
+  assert.equal(WINERY_LESSON_REQUIREMENT.provisional, true);
+  assert.deepEqual(WINERY_LESSON_REQUIREMENT.subjects, ['viticulture']);
+  for (const farmingLevel of [0, 1, 4, 5, 10]) {
+    const status = wineryLessonsStatus({ farmingLevel });
+    assert.equal(status.requirementMet, farmingLevel >= 5);
+    assert.equal(status.available, false, 'Meeting the prerequisite does not invent an unfinished lesson');
+    assert.equal(status.markerKind, farmingLevel >= 5 ? 'skill' : 'skill-locked');
+    const lines = wineryLessonLines({ farmingLevel }).join(' ');
+    assert.match(lines, /Farming level 5 required/);
+    assert.ok(lines.includes(`Your Farming level: ${farmingLevel}`));
+    assert.match(lines, /not available yet/);
+    assert.match(lines, /Wine is a separate skill/);
+    const screens = [], grants = [];
+    robWineryConversation({ id: 'vintner' }, { farmingLevel,
+      openDialogue: (...args) => screens.push(args),
+      skills: { learn: (...args) => grants.push(args), add: (...args) => grants.push(args) },
+      act: (...args) => grants.push(args),
+    });
+    assert.equal(screens.length, 1);
+    screens[0][4].onComplete();
+    assert.deepEqual(grants, [], 'Neither dialogue nor completion grants XP, a skill or an assignment');
+  }
+  for (const farmingLevel of [NaN, Infinity, -3, '5']) assert.equal(wineryLessonsStatus({ farmingLevel }).requirementMet, false);
+});

@@ -1,5 +1,5 @@
 /**
- * Vaervelm Caelazh, the winery in the north-east of West Suval where Lakota
+ * Vaervelm Caelazh, the winery southeast of Port Calos in Luscia where Lakota
  * worked before he came to Tidehaven. The name is the Suval tongue, a coastal
  * Mittoli, for Paradise Springs, the Virginia winery it is drawn from: *vaer*
  * (good) + *velm* (green, fertile place), the good green place, which is what
@@ -16,6 +16,8 @@
  * Laid out in world metres around WINERY.centre: `a` metres east, `b` metres
  * south (north is -z). Pure: no three, no DOM. `src/winery-world.js` builds it.
  */
+import { REGION_CELLS } from './region-world.js';
+
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
 
@@ -27,7 +29,7 @@ export const VARIETIES = freeze({
   viognier: freeze({ name: 'Viognier', colour: 'white', leaf: 0x6b9a3f, fruit: 0xcfc36a,
     vine: 'Small golden grapes in loose, uneven clusters, and fewer of them than the rows around it: a stingy vine that makes a generous wine.' }),
   chardonnay: freeze({ name: 'Chardonnay', colour: 'white', leaf: 0x67943c, fruit: 0xc7d07a,
-    vine: 'Tight clusters of round green-gold berries. It buds first of anything in the vineyard, and Livia watches the spring frosts for it.' }),
+    vine: 'Tight clusters of round green-gold berries. It buds first of anything in the vineyard, and ROB watches the spring frosts for it.' }),
   'vidal-blanc': freeze({ name: 'Vidal Blanc', colour: 'white', leaf: 0x729f45, fruit: 0xd9d488,
     vine: 'Big, heavy clusters of pale berries on a sturdy vine that shrugs off a hard winter. Some are left hanging late, to shrivel and sweeten.' }),
   'cabernet-franc': freeze({ name: 'Cabernet Franc', colour: 'red', leaf: 0x557f33, fruit: 0x4a2b56,
@@ -43,21 +45,22 @@ export const VARIETIES = freeze({
 });
 export const VARIETY_IDS = Object.freeze(Object.keys(VARIETIES));
 
-export const WINERY = freeze({ id: 'paradise-springs', name: 'Vaervelm Caelazh', meaning: 'Paradise Springs', region: 'West Suval', centre: point(-470, 700), radius: 58 });
+export const WINERY_CELL = REGION_CELLS.Luscia.find(cell => cell.q === 8 && cell.r === 110);
+export const WINERY = freeze({ id: 'paradise-springs', name: 'Vaervelm Caelazh', meaning: 'Paradise Springs', region: 'Luscia', centre: point(WINERY_CELL.x, WINERY_CELL.z), radius: 46 });
 export const wineryPoint = (a, b) => point(WINERY.centre.x + a, WINERY.centre.z + b);
 
 export const WINERY_LAYOUT = freeze({
   /** The name board at the lane's end, facing the traveler coming up from the downs. */
-  sign: freeze({ ...wineryPoint(-38, 3), facing: -Math.PI / 2 }),
+  sign: freeze({ ...wineryPoint(-37.5, -16), facing: -Math.PI / 2 }),
   /** The log cabin: the first house on the land, now the tasting room. Porch on the south side, chimney at the west end. */
-  cabin: freeze({ ...wineryPoint(-17, -7), width: 7.5, depth: 5.6, eaves: 3.1, ridge: 5.2, porch: 2.2 }),
+  cabin: freeze({ ...wineryPoint(-19, -12), width: 7.5, depth: 5.6, eaves: 3.1, ridge: 5.2, porch: 2.2 }),
   /** The hall: stone foot, timber above, a tall barn roof and a cupola; its great doors open south onto the terrace. */
-  hall: freeze({ ...wineryPoint(5, -10), width: 19, depth: 11, stone: 1.3, eaves: 5.4, ridge: 9.4 }),
+  hall: freeze({ ...wineryPoint(4, -14), width: 19, depth: 11, stone: 1.3, eaves: 5.4, ridge: 9.4 }),
   /** The terrace in front of the hall, and its tables. */
-  terrace: freeze({ ...wineryPoint(5, 2.5), width: 17, depth: 7 }),
-  tables: freeze([wineryPoint(-1.5, 2), wineryPoint(3.5, 3.2), wineryPoint(8.5, 2), wineryPoint(12.5, 3.4)]),
+  terrace: freeze({ ...wineryPoint(4, -1.5), width: 17, depth: 7 }),
+  tables: freeze([wineryPoint(-2.5, -2), wineryPoint(2.5, -.8), wineryPoint(7.5, -2), wineryPoint(11.5, -.6)]),
   /** Barrels resting on their chocks at the hall's east end. */
-  barrels: freeze([wineryPoint(16.5, -6), wineryPoint(16.5, -4.9), wineryPoint(16.5, -3.8), wineryPoint(17.6, -5.45), wineryPoint(17.6, -4.35)]),
+  barrels: freeze([wineryPoint(15.5, -10), wineryPoint(15.5, -8.9), wineryPoint(15.5, -7.8), wineryPoint(16.6, -9.45), wineryPoint(16.6, -8.35)]),
   /**
    * The spring. Water wells up at the foot of a limestone outcrop on the rise west
    * of the cabin, into a stone basin, and runs off down the slope as a short rill
@@ -70,36 +73,42 @@ export const WINERY_LAYOUT = freeze({
     pool: freeze({ ...wineryPoint(-15.8, 20.6), radius: 2.4 }),
   }),
   /** The vines: eight varietal blocks of two rows each down the slope east of the hall, in five-metre panels between posts. */
-  rows: freeze(VARIETY_IDS.flatMap((variety, block) => [0, 1].map(k => freeze({ a: 22 + block * 5.6 + k * 2.6, from: -18, to: 27, variety })))),
+  rows: freeze(VARIETY_IDS.flatMap((variety, block) => [0, 1].map(k => freeze({ a: 20 + block * 2.8 + k * 1.15, from: -17, to: 19, variety })))),
   /** At the head of each block, a painted plate with the grape's name. */
-  plates: freeze(VARIETY_IDS.map((variety, block) => freeze({ ...wineryPoint(22 + block * 5.6 + 1.3, -19.6), variety, facing: Math.PI }))),
-  /** The lane west to the Solis road across the downs. */
-  lane: freeze([wineryPoint(-38, 3), point(-540, 706), point(-590, 712), point(-627, 716)]),
+  plates: freeze(VARIETY_IDS.map((variety, block) => freeze({ ...wineryPoint(20 + block * 2.8 + .575, -20), variety, facing: Math.PI }))),
+  /** The short lane northwest to Port Calos's lower street. */
+  lane: freeze([wineryPoint(-22, -2), wineryPoint(-34, -2), wineryPoint(-34, -16), point(-447, 345), point(-453, 328)]),
 });
 
-export const VINTNER = freeze({ id: 'vintner', name: 'Livia Seravo', role: 'Vintner of Vaervelm Caelazh', modelRole: 'shelter-keeper', color: 0x7d3a45, skin: 0xc79a74 });
-export const CELLAR_HAND = freeze({ id: 'cellar-hand', name: 'Nico Arrend', role: 'Cellar hand', modelRole: 'reed-worker', color: 0x6a5a44, skin: 0xb88e66 });
-/**
- * Kat, who makes the wine. Livia owns the place and pours it, Nico keeps it once it is in the
- * barrel, Imani grows the fruit; Kat is the one standing over it while it is still deciding what
- * it is going to be. Medium-long brown hair, a leather apron, sleeves rolled, and purple to the
- * elbow from the cap she has just punched down. Yes, there are two of them here called some form
- * of Kat. They have stopped trying to fix it.
- */
-export const WINEMAKER = freeze({ id: 'winemaker', name: 'Kat', role: 'Winemaker at Vaervelm Caelazh', modelRole: 'wine-maker', color: 0x53657f, skin: 0xd8b48d });
+/** The vineyard's gentle bank stays inside its own hex, without filling the inlet. */
+export function wineryGround(x, z, ground) {
+  const dx=x-WINERY.centre.x,dz=z-WINERY.centre.z;
+  const edge=Math.min(50-Math.abs(dx),(100-Math.abs(dx)-Math.sqrt(3)*Math.abs(dz))/2);
+  if(edge<=0)return ground;
+  const t=Math.min(1,edge/8),weight=t*t*(3-2*t);
+  const terrace=6.5-dx*.012-dz*.035;
+  return ground+(terrace-ground)*weight;
+}
+
+export const VINTNER = freeze({ id: 'vintner', name: 'ROB', role: 'Head winemaker and viticulture teacher', modelRole: 'wine-maker', color: 0x7d3a45, skin: 0xc79a74,
+  look: freeze({hairStyle:'cropped',hair:0x999a94,beard:false,hat:false}) });
+export const CELLAR_HAND = freeze({ id: 'cellar-hand', name: 'MAT', role: 'Winemaker and Wine teacher', modelRole: 'wine-maker', color: 0x6a5a44, skin: 0x895b3c,
+  look: freeze({hairStyle:'cropped',hair:0x1d1815,beard:false,hat:false}) });
+/** KAT keeps her original appearance; ROB and MAT join her as the three winemakers. */
+export const WINEMAKER = freeze({ id: 'winemaker', name: 'KAT', role: 'Winemaker and Wine teacher', modelRole: 'wine-maker', color: 0x53657f, skin: 0xd8b48d });
 
 export const WINERY_STANDS = freeze({
-  vintner: freeze({ ...wineryPoint(-15.5, .4), yaw: 0 }),
-  'cellar-hand': freeze({ ...wineryPoint(14.2, -3.4), yaw: -Math.PI / 2 }),
+  vintner: freeze({ ...wineryPoint(-17.5, -4.6), yaw: 0 }),
+  'cellar-hand': freeze({ ...wineryPoint(13.2, -7.4), yaw: -Math.PI / 2 }),
   // On the crush pad at the hall's great doors, where the fruit comes in and the ferments stand.
-  winemaker: freeze({ ...wineryPoint(1.5, -3.4), yaw: 0.22 }),
+  winemaker: freeze({ ...wineryPoint(.5, -7.4), yaw: 0.22 }),
 });
 
 /** What Kat says over the ferments, one at a time. There is more of her to come. */
 export const KAT_LINES = freeze([
   'Mind your feet, the pad is wet. It is always wet. I have not had a dry boot since the picking started.',
   'This one is three days in and talking to itself. You can hear it from the doors — a sound like rain on a roof, a long way off. When it stops, it is done, and not before.',
-  'Punching down. The skins float up and dry out in a cap on top, and if you leave them there you get vinegar and a lecture from Livia, so: down they go, four times a day, arms in to the elbow.',
-  'Yes. There are two of us. She is Katy, up at the pool with the spyglass, watching for a monster. I am Kat, down here, with the wine. We have stopped trying to fix it and now we just answer to both.',
-  'Imani decides what comes through those doors and I decide what happens to it afterward, and the truth is she has the harder half. I can rescue a middling grape. Nobody can rescue a bad one.',
+  'Punching down. The skins float up and dry out in a cap on top, and if you leave them there you get vinegar and a lecture from ROB, so: down they go, four times a day, arms in to the elbow.',
+  'KAT, ROB and MAT. Three short names, and more work than three pairs of hands ought to manage.',
+  'ROB decides what comes through those doors and I decide what happens to it afterward, and the truth is he has the harder half. I can rescue a middling grape. Nobody can rescue a bad one.',
 ]);

@@ -54,7 +54,7 @@ test('the first shore wears one mark, and it is the road the game is about', () 
 });
 
 test('quest grades share a diamond; ordinary and magic teachers have distinct books and colours', () => {
-  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill', 'magic']);
+  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill', 'magic', 'skill-locked']);
   assert.deepEqual(Object.keys(MARKER_STYLE), [...MARKER_KINDS]);
   const colours = new Set();
   for (const kind of MARKER_KINDS) {
@@ -62,7 +62,7 @@ test('quest grades share a diamond; ordinary and magic teachers have distinct bo
     assert.equal(style.kind, kind);
     assert.ok(style.what.length > 20, `${kind} says what it means`);
     assert.ok(!colours.has(style.colour), `${kind} has a colour of its own`);
-    assert.equal(style.shape, kind === 'magic' ? 'book-sparkle' : kind === 'skill' ? 'book' : 'diamond');
+    assert.equal(style.shape, kind === 'magic' ? 'book-sparkle' : kind === 'skill-locked' ? 'book-lock' : kind === 'skill' ? 'book' : 'diamond');
     colours.add(style.colour);
   }
   assert.equal(MARKER_STYLE.main.scale, 1);
@@ -302,4 +302,22 @@ test('Sela offers a copper deed, then marks its workers, independently of teache
   assert.equal(markerFor('lauvel-seeker',{...base,burying:'found'})?.kind,'deed');
   assert.equal(markerFor('lauvel-seeker',{...base,burying:'done'}),null);
   assert.equal(markerFor('lauvel-seeker',{...base,burying:'hailed',busy:true}),null);
+});
+
+
+test('a locked teacher is visibly gated and cannot be unlocked by an old wine recommendation', async () => {
+  const id = 'vintner', base = { questStage: TUTORIAL_DONE, ids: { vintner: id }, lockedSkillTeachers: [id], wineRecommended: true, live: () => true };
+  assert.equal(markerGrade(markerFor(id, base)), 'skill-locked');
+  assert.equal(markerFor(id, { ...base, lockedSkillTeachers: new Set([id]) })?.kind, 'skill-locked');
+  assert.equal(markerFor(id, { ...base, busy: true }), null);
+  assert.equal(markerFor(id, { ...base, questStage: 1 }), null);
+  assert.equal(markerGrade(markerFor(id, { ...base, skillTeachers: [id] })), 'skill', 'An actual available lesson has priority');
+  assert.equal(markerGrade(markerFor(id, { ...base, arcDestinations: [id] })), 'main');
+  assert.equal(markerGrade(markerFor(id, { ...base, magicTeachers: [id] })), 'magic');
+  const { makeQuestMarker } = await sourceModule('../src/characters.js');
+  const marker = makeQuestMarker('skill-locked');
+  assert.equal(marker.userData.billboard, true);
+  assert.equal(marker.userData.markerLocked, true);
+  assert.ok(marker.getObjectByName('Lesson padlock'), 'The gate has a padlock silhouette as well as a muted colour');
+  assert.notEqual(marker.children[0].material.color.getHex(), makeQuestMarker('skill').children[0].material.color.getHex());
 });

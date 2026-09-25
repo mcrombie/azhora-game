@@ -6,6 +6,7 @@
  * village the game opens in, is the first. Pure: no DOM, no three.
  */
 import { hexAt } from './region-world.js';
+import { WINERY } from './winery.js';
 
 export const MAP_FOG_VERSION = 1;
 /** The chart records ground the traveler has actually stood on: one authored hex at a time. */
@@ -48,6 +49,7 @@ export const SUBREGIONS = Object.freeze([
   // in saves, in the road smoke and in a dozen modules, and nobody reads an id.
   area('lumber-town', 'Nothom', 'Luscia', -729, 384, 55, 'Luscia’s timber town: the square, the smiths, the relay clerk and the stable yard on its edge.'),
   area('burned-hamlet', 'The Burned Hamlet', 'Luscia', -621, 356, 55, 'Roof beams standing in the grass, and a well somebody still keeps clean.'),
+  area('paradise-springs', WINERY.name, WINERY.region, WINERY.centre.x, WINERY.centre.z, WINERY.radius, 'Paradise Springs, in plain words: Lakota’s old winery southeast of Port Calos. A log cabin where the wine is poured, a great hall where it is made, a spring welling out of limestone, and eight grapes in blocks down the slope.'),
   // The Moros Plain
   area('moros-gate', 'The Moros Road', 'Moros Plain', -763, 440, 45, 'The open road from Nothom onto the Moros Plain. The town’s guards keep watch back at its walls.'),
   area('border-stockade', 'The Border Stockade', 'Moros Plain', -667, 527, 70, 'The army’s ditch and stakes on the border, and the ground the battle is fought over.'),
@@ -56,7 +58,6 @@ export const SUBREGIONS = Object.freeze([
   area('west-suval-border', 'Into West Suval', 'West Suval', -636, 685, 60, 'The stockade road crosses into West Suval, and the downs open out toward the sea.'),
   area('suval-downs', 'The Suval Downs', 'West Suval', -600, 745, 70, 'Tawny grass, dry-stone walls, olives and thorn, a broken watchtower and a wayside well.'),
   area('shepherds-fold', 'The Shepherds’ Fold', 'West Suval', -700, 750, 55, 'A dry-stone ring and a turf-roofed hut where the flocks are brought in.'),
-  area('paradise-springs', 'Vaervelm Caelazh', 'West Suval', -455, 700, 60, 'Paradise Springs, in plain words: Lakota’s old winery in the north-east. A log cabin where the wine is poured, a great hall where it is made, a spring welling out of the limestone, and eight grapes in blocks down the slope.'),
   area('solis', 'Solis', 'West Suval', -520, 950, 115, 'The walled city on its promontory: the Gate of Sun Horses, the Court of Oaths, the quay, and the Coalition’s camp outside the walls.'),
   // East Suval
   area('suval-border-post', 'Elod’s Border Post', 'East Suval', -400, 499, 60, 'East Suval’s frontier: a shut stone gate, a ditch, and soldiers in light black armour.'),

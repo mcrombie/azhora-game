@@ -535,6 +535,9 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
     const run = THREE.MathUtils.clamp((pace - 3.5) / 3.7, 0, 1);
     const action = pose.action || 'idle';
+    const castProgress = typeof pose.spellCast === 'number' ? pose.spellCast : pose.spellCast?.progress;
+    const focusCasting = Number.isFinite(castProgress) && !['dead', 'hurt', 'dodge', 'attack'].includes(action) && !pose.fishing && !pose.swimming;
+    let castWrist = 0;
     const sneaking = !goblin && grounded && action === 'idle' && !!pose.sneaking && !pose.riding && !pose.swimming;
     const progress = THREE.MathUtils.clamp(Number.isFinite(pose.progress) ? pose.progress : 0, 0, 1);
     const actionRate = action === 'attack' || action === 'hurt' ? 26 : 15;
@@ -971,6 +974,21 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       if(id==='afraid'){chestX=-.15*ease;headY=Math.sin(seconds*6)*.3*ease;arm[0]=arm[1]=-1.2*ease;elbow[0]=elbow[1]=-1.4*ease;knee[0]=knee[1]=.2*ease;}
       if(id==='proud'){chestX=(progress<.65?-.2:.5)*ease;headX=-.1*ease;armOut[0]=-.5*ease;armOut[1]=.5*ease;}
     }
+    if (focusCasting) {
+      // The traveler casts with the equipped focus in the RIGHT hand. Raise it,
+      // cock the wrist, then flick toward the target at the release key (.5).
+      // Sample these joints directly: projectile release may be sampled between
+      // animation frames and must use the same visible wand-tip position.
+      const p = THREE.MathUtils.clamp(castProgress, 0, 1);
+      const blend = THREE.MathUtils.smoothstep(p, 0, .18) * (1 - THREE.MathUtils.smoothstep(p, .78, 1));
+      arm[1] = THREE.MathUtils.lerp(arm[1], samplePose(p, [[0, -.22], [.36, -.62], [.5, -1.12], [.64, -1.04], [1, -.22]]), blend);
+      elbow[1] = THREE.MathUtils.lerp(elbow[1], samplePose(p, [[0, -.35], [.36, -1.05], [.5, -.12], [.64, -.16], [1, -.35]]), blend);
+      armOut[1] = THREE.MathUtils.lerp(armOut[1], samplePose(p, [[0, .15], [.36, .27], [.5, .13], [1, .15]]), blend);
+      castWrist = samplePose(p, [[0, 0], [.2, 0], [.38, -.28], [.5, 1.13], [.64, 1.04], [1, 0]]) * blend;
+      chestY = THREE.MathUtils.lerp(chestY, samplePose(p, [[0, 0], [.36, -.08], [.5, .04], [1, 0]]), blend);
+      chestX = THREE.MathUtils.lerp(chestX, .025, blend);
+      headY *= 1 - blend;
+    }
     const rotate = (object, x, y, z) => {
       object.rotation.x = THREE.MathUtils.lerp(object.rotation.x, x, damping);
       object.rotation.y = THREE.MathUtils.lerp(object.rotation.y, y, damping);
@@ -1006,8 +1024,10 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       // .81 forward - across the centreline, at chin height, in front of him. The first draft
       // raised it but left it out at his side, where it read as a man holding a plate.
       arm[0] = -1.1; elbow[0] = -1.0; armOut[0] = .55;
-      arm[1] = -.22; elbow[1] = -.55; armOut[1] = .06;
-      chestY = .16; chestX = .05; headY = -.06;
+      if (!focusCasting) {
+        arm[1] = -.22; elbow[1] = -.55; armOut[1] = .06;
+        chestY = .16; chestX = .05; headY = -.06;
+      }
     }
     for (let i = 0; i < 2; i++) {
       const side = i ? 1 : -1;
@@ -1019,6 +1039,11 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       rotate(arms[i], arm[i], side * breath * 0.015 * idle, armOut[i]);
       rotate(elbows[i], elbow[i], 0, side * 0.015);
       rotate(wrists[i], 0, Math.sin(seconds * 1.1 + i + offset) * 0.025 * idle, side * 0.045);
+      if (focusCasting && i === 1) {
+        arms[i].rotation.set(arm[i], 0, armOut[i]);
+        elbows[i].rotation.set(elbow[i], 0, side * .015);
+        wrists[i].rotation.set(castWrist, 0, side * .045);
+      }
     }
     // Analytic sole height keeps one foot in contact with the ground, while
     // the knee bends and the other foot clears it. This also grounds dodges.
@@ -2830,7 +2855,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   }
   const { animate: animatePose, setArmed, setShield } = makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, ankles, weapon, shield: authoredShield, clothPivot, offset: idleOffset, role });
   let fishing = isPondFisher, selectedWeapon = null;
-  const rodTipWorld = new THREE.Vector3();
+  const rodTipWorld = new THREE.Vector3(), focusTipWorld = new THREE.Vector3();
   /**
    * The three poles, made the first time he holds one. They use the props the hired swords
    * already carry (`makeSpearProp`, `makeStaffProp`) rather than new ones, so a spear in his hand
@@ -2884,7 +2909,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   }
   function animate(time, speed = 0, grounded = true, pose = {}) {
     if (typeof pose.fishing === 'boolean') setFishing(pose.fishing);
-    animatePose(time, speed, grounded, { ...pose, fishing });
+    const hasFocus = selectedWeapon === 'wand' || selectedWeapon === 'oak-staff';
+    animatePose(time, speed, grounded, { ...pose, fishing, spellCast: !fishing && hasFocus ? pose.spellCast : null });
     if (weapon && fishing) weapon.visible = false;
     // The shaft goes on the string only while he is actually drawing, so a man standing about
     // with a bow is not standing about with an arrow on it. `pose.draw` is 0 to 1, and is the
@@ -2905,10 +2931,21 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     fishingRod.updateWorldMatrix(true, false);
     return rodTipWorld.set(.056, 1.625, 0).applyMatrix4(fishingRod.matrixWorld);
   }
+  /** Current rendered tip, including the grip, casting joints and actor transform.
+   * The returned vector is reused; callers retaining an origin must copy it. */
+  function focusTip() {
+    const model = weapons[selectedWeapon];
+    if (fishing || !weapon?.visible || !model?.visible || !['wand', 'oak-staff'].includes(selectedWeapon)) return null;
+    model.updateWorldMatrix(true, false);
+    // The staff's crown is tilted -.12 radians, so its actual endpoint is offset.
+    return selectedWeapon === 'wand'
+      ? focusTipWorld.set(0, .4, 0).applyMatrix4(model.matrixWorld)
+      : focusTipWorld.set(.014 + Math.sin(.12) * .12, .83 + Math.cos(.12) * .12, 0).applyMatrix4(model.matrixWorld);
+  }
   if (isPlayer || fights) setWeapon('simple-sword');
   if (isMercenary && !isPlayer) setWeapon(KIT_HELD[look?.weapon] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
-  return { group, animate, setArmed, setShield, setWeapon, setFishing, fishingTip };
+  return { group, animate, setArmed, setShield, setWeapon, setFishing, fishingTip, focusTip };
 }
 
 /** A scrawny woodland raider: a sunken glare, ragged ears and a wary lope. */
@@ -3931,18 +3968,20 @@ export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   group.userData.markerKind = look.kind;
   group.userData.markerOpen = optionalRoad;
   const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  const magicBook = look.shape === 'book-sparkle';
-  if (look.shape === 'book' || magicBook) {
+  const magicBook = look.shape === 'book-sparkle', lockedBook = look.shape === 'book-lock';
+  const bookWithBadge = magicBook || lockedBook;
+  group.userData.markerLocked = lockedBook;
+  if (look.shape === 'book' || bookWithBadge) {
     mat.side = THREE.DoubleSide;
     if (magicBook) mat.emissiveIntensity = .65;
-    const edge = magicBook ? new THREE.MeshBasicMaterial({color:0x302047,side:THREE.DoubleSide,toneMapped:false}) : null;
+    const edge = bookWithBadge ? new THREE.MeshBasicMaterial({color:magicBook?0x302047:0x22372a,side:THREE.DoubleSide,toneMapped:false}) : null;
     for (const side of [-1, 1]) {
       const page = new THREE.Shape();
       page.moveTo(0, .1);page.lineTo(side*.13,.17);page.lineTo(side*.29,.17);page.lineTo(side*.29,-.14);page.lineTo(side*.13,-.14);page.lineTo(0,-.21);page.closePath();
       part(group,new THREE.ShapeGeometry(page),mat,[0,0,0]);
-      if (magicBook) part(group,new THREE.ShapeGeometry(page),edge,[0,0,-.018],[1.12,1.12,1]).name='Sorcery book outline';
+      if (bookWithBadge) part(group,new THREE.ShapeGeometry(page),edge,[0,0,-.018],[1.12,1.12,1]).name=magicBook?'Sorcery book outline':'Locked lesson book outline';
     }
-    const ink=magicBook ? new THREE.MeshBasicMaterial({color:0xf5eaff,side:THREE.DoubleSide,toneMapped:false}) : material(0x204835,{side:THREE.DoubleSide});
+    const ink=bookWithBadge ? new THREE.MeshBasicMaterial({color:magicBook?0xf5eaff:0xe2e5d8,side:THREE.DoubleSide,toneMapped:false}) : material(0x204835,{side:THREE.DoubleSide});
     part(group,new THREE.BoxGeometry(.025,.3,.016),ink,[0,-.05,.02]);
     for(const side of [-1,1])for(const y of [.075,-.01,-.095])part(group,new THREE.BoxGeometry(.16,.014,.015),ink,[side*.165,y,.02]);
     if (magicBook) {
@@ -3956,6 +3995,16 @@ export function makeQuestMarker(kind = 'main', { open = false } = {}) {
       star.closePath();
       part(group,new THREE.ShapeGeometry(star),edge,[.31,.31,.005],[1.22,1.22,1]).name='Sorcery sparkle outline';
       part(group,new THREE.ShapeGeometry(star),new THREE.MeshBasicMaterial({color:0xfff3d1,side:THREE.DoubleSide,toneMapped:false}),[.31,.31,.025]).name='Sorcery sparkle';
+    }
+    if (lockedBook) {
+      // The book remains recognizable as a teacher; a padlock makes the gate
+      // legible without relying on the muted grey-green colour alone.
+      const lock = new THREE.Group(); lock.name='Lesson padlock'; group.add(lock);
+      part(lock,new THREE.BoxGeometry(.21,.18,.02),edge,[.28,.25,.02]);
+      part(lock,new THREE.TorusGeometry(.063,.017,5,14,Math.PI),ink,[.28,.325,.035]);
+      part(lock,new THREE.BoxGeometry(.18,.14,.025),ink,[.28,.255,.045]);
+      part(lock,new THREE.CircleGeometry(.025,10),edge,[.28,.27,.061]);
+      part(lock,new THREE.BoxGeometry(.018,.037,.004),edge,[.28,.243,.062]);
     }
     group.userData.billboard=true;
   } else {

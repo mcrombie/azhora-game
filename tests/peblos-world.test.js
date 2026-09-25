@@ -275,7 +275,7 @@ test('The region card, the developer’s chart and the spawn tell the truth abou
   assert.ok(peblosRegion.description.includes('Cobble'));
   assert.ok(canStand(peblosRegion.spawn.x, peblosRegion.spawn.z, world), 'the region spawn is standable');
   assert.equal(regionAt(peblosRegion.spawn.x, peblosRegion.spawn.z).name, 'Peblos');
-  assert.equal(peblosRegion.npcIds.length, 10, 'four islanders, Troy, four soldiers, and Howie');
+  assert.equal(peblosRegion.npcIds.length, 10, 'four islanders, Troy, four soldiers, and Hallie');
   for (const id of peblosRegion.landmarks) assert.ok(PEBLOS_LANDMARKS.some(place => place.id === id), `${id} is not a place in Peblos`);
   assert.equal(BUILD_STATUS.Peblos.state, 'early');
   const status = regionBuildStatus('Peblos');

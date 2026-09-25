@@ -7,11 +7,12 @@ import { createSkills } from '../src/skills.js';
 import { RENA } from '../src/rena.js';
 import { RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED, createArchaeology, validateArchaeologySnapshot } from '../src/archaeology.js';
 import { WINES, WINE_IDS, createWine, validateWineSnapshot, vintnerConversation } from '../src/wine.js';
-import { WINERY, WINERY_LAYOUT, WINERY_STANDS, VINTNER, VARIETIES, VARIETY_IDS } from '../src/winery.js';
+import { WINERY, WINERY_CELL, WINERY_LAYOUT, WINERY_STANDS, WINEMAKER, VARIETIES, VARIETY_IDS } from '../src/winery.js';
 import { BIRD_WATCHER, LAKOTA_TOPICS, LAKOTA_ARCHAEOLOGY_PITCH, LAKOTA_WINE_PITCH, birdWatcherConversation } from '../src/birding.js';
 import { createLakota, validateLakotaSnapshot } from '../src/lakota.js';
 import { MERCENARY_ROSTER, mercenaryWeapon } from '../src/mercenaries.js';
-import { SOLIS, SOLIS_ROAD } from '../src/region-world.js';
+import { hexAt } from '../src/region-world.js';
+import { PORT_CALOS_TOWN_CELL, PORT_CALOS_PATHS } from '../src/port-calos-world.js';
 
 test('Lakota is the seventh hired sword, and carries the dinosaurs, the chocolate, the machines and his doubts about the world', () => {
   assert.equal(BIRD_WATCHER.name, 'Lakota');
@@ -29,7 +30,7 @@ test('Lakota is the seventh hired sword, and carries the dinosaurs, the chocolat
   assert.match(topics.game, /steered/);
   assert.match(LAKOTA_ARCHAEOLOGY_PITCH.join(' '), /Rena/);
   const wine = LAKOTA_WINE_PITCH.join(' ');
-  assert.match(wine, /Paradise Springs/); assert.match(wine, /north-east of West Suval/); assert.match(wine, /war/);
+  assert.match(wine, /Paradise Springs/); assert.match(wine, /south-?east (?:of )?Port Calos/i);
 });
 
 test('nothing of his is offered until the traveler has worked out what he is', () => {
@@ -96,7 +97,7 @@ test('archaeology: Lakota sends you to Rena, you write up five of his pegged pla
   assert.ok(RENA_FINDS.track.kind === 'fossil' && /three toes/.test(RENA_FINDS.track.note), 'paleontology is part of it');
 });
 
-test('wine: learned from Lakota with a warning, then the winery to visit and a wine from each of its eight grapes to taste', () => {
+test('wine: learned from Lakota, then the Port Calos winery to visit and a wine from each of its eight grapes to taste', () => {
   const skills = createSkills(), wine = createWine({ skills });
   // Tasting needs no introduction any more (the user, 21 September 2026): every skill begins at
   // level 1 and pays from the first glass. Lakota's warning is still what starts the errand.
@@ -104,7 +105,7 @@ test('wine: learned from Lakota with a warning, then the winery to visit and a w
     'a glass drunk before anybody explained it still counts');
   wine.learn({ recommend: true });
   assert.equal(wine.quest, 'recommended');
-  assert.match(wine.task().detail, /war/);
+  assert.match(wine.task().detail, /Port Calos/);
   const visit = wine.visit();
   assert.ok(visit.first && visit.xp > 0);
   assert.equal(wine.task(), null);
@@ -114,31 +115,44 @@ test('wine: learned from Lakota with a warning, then the winery to visit and a w
   assert.deepEqual(WINE_IDS, VARIETY_IDS, 'a wine from every grape they grow, and only those');
   assert.equal(validateWineSnapshot(wine.snapshot()), true);
   assert.equal(validateWineSnapshot({ ...wine.snapshot(), tasted: { claret: 1 } }), false);
-  // Found without Lakota, Livia can teach it herself.
+  // Found without Lakota, KAT can teach it herself.
   let opened = null, acted = [];
   const fresh = createWine();
-  vintnerConversation({ id: VINTNER.id }, { wine: fresh, openDialogue: (npc, lines, e, a, options) => { opened = { lines, options }; }, closeDialogue() {}, act: action => acted.push(action) });
+  vintnerConversation({ id: WINEMAKER.id }, { wine: fresh, openDialogue: (npc, lines, e, a, options) => { opened = { lines, options }; }, closeDialogue() {}, act: action => acted.push(action) });
   assert.deepEqual(acted, ['visit-winery']);
   assert.ok(opened.options.choices.some(choice => choice.id === 'learn-wine-here'));
   assert.match(opened.lines.join(' '), /Paradise Springs/);
   assert.match(opened.lines.join(' '), /Thareth/, 'the spring’s story');
 });
 
-test('Paradise Springs stands in the north-east of West Suval, open ground and people where they should be, a lane to the Solis road', async () => {
+test('Paradise Springs occupies the land hex southeast of Port Calos with a walkable lane from town', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   const centre = WINERY.centre;
-  assert.equal(world.regionAt(centre.x, centre.z)?.name, 'West Suval');
-  assert.ok(centre.x > SOLIS.centre.x + 40 && centre.z < SOLIS.centre.z - 200, 'north and east of Solis');
+  assert.equal(world.regionAt(centre.x, centre.z)?.name, 'Luscia');
+  assert.deepEqual(hexAt(centre.x,centre.z),{q:PORT_CALOS_TOWN_CELL.q,r:PORT_CALOS_TOWN_CELL.r+1});
+  assert.ok(centre.x>PORT_CALOS_TOWN_CELL.x&&centre.z>PORT_CALOS_TOWN_CELL.z,'the immediate southeast neighbor');
+  const expected={q:WINERY_CELL.q,r:WINERY_CELL.r};
+  for(const place of [WINERY_LAYOUT.cabin,WINERY_LAYOUT.hall,WINERY_LAYOUT.terrace])
+    for(const dx of [-place.width/2,place.width/2])for(const dz of [-place.depth/2,place.depth/2])
+      assert.deepEqual(hexAt(place.x+dx,place.z+dz),expected,'buildings stay in the winery hex');
+  assert.ok(!world.colliders.some(c=>c.kind?.startsWith('winery-')&&Math.hypot(c.x+470,c.z-700)<100),'the old winery is removed');
   for (const [id, stand] of Object.entries(WINERY_STANDS)) assert.ok(canStand(stand.x, stand.z, world, .3), `${id} stands on open ground`);
   for (const row of WINERY_LAYOUT.rows) for (const b of [row.from, row.to]) {
     const x = centre.x + row.a, z = centre.z + b;
-    assert.equal(world.regionAt(x, z)?.name, 'West Suval', `the vines at ${x},${z} are in West Suval`);
+    assert.deepEqual(hexAt(x,z),expected,`the vines at ${x},${z} stay inside the winery hex`);
   }
   for (const kind of ['winery-cabin', 'winery-hall', 'winery-spring']) assert.ok(world.colliders.some(c => c.kind === kind), `${kind} is solid`);
   assert.ok(!world.colliders.some(c => c.kind === 'region-tree' && Math.hypot(c.x - centre.x, c.z - centre.z) < WINERY.radius - 2), 'no wild tree in the middle of the winery');
   const end = WINERY_LAYOUT.lane.at(-1);
-  assert.ok(Math.min(...SOLIS_ROAD.map(p => Math.hypot(p.x - end.x, p.z - end.z))) < 25, 'the lane reaches the Solis road');
+  assert.ok(PORT_CALOS_PATHS.some(path=>path.points.some(p=>Math.hypot(p.x-end.x,p.z-end.z)<.01)),'the lane reaches Port Calos');
+  for(let i=1;i<WINERY_LAYOUT.lane.length;i++) {
+    const a=WINERY_LAYOUT.lane[i-1],b=WINERY_LAYOUT.lane[i],steps=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z)/.4);
+    for(let step=0;step<=steps;step++) {
+      const t=step/steps,x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t;
+      assert.ok(canStand(x,z,world,.45),`winery lane stays clear at ${x},${z}`);
+    }
+  }
   assert.ok(world.roadSigns.some(sign => sign.label === WINERY.name), 'the name board stands at the lane’s end');
   // Rena's pegged places are at the ruins, on ground a person can stand beside.
   for (const id of RENA_FIND_IDS) {
@@ -170,7 +184,7 @@ test('there is a real spring: water out of the rock into a basin, and a rill tha
   const heights = course.map(p => world.heightAt(p.x, p.z));
   for (let i = 1; i < heights.length; i++) assert.ok(heights[i] <= heights[i - 1] + .05, `the water runs uphill between ${i - 1} and ${i} (${heights[i - 1].toFixed(2)} to ${heights[i].toFixed(2)})`);
   assert.ok(heights[0] - heights.at(-1) > .3, 'and falls on its way');
-  for (const p of course) assert.equal(world.regionAt(p.x, p.z)?.name, 'West Suval');
+  for (const p of course) assert.deepEqual(hexAt(p.x,p.z),{q:WINERY_CELL.q,r:WINERY_CELL.r},'the spring stays inside the winery hex');
   assert.ok(world.colliders.filter(c => c.kind === 'winery-spring').length >= 3, 'the outcrop, the basin and the pool are solid');
   for (const plate of WINERY_LAYOUT.plates) assert.ok(canStand(plate.x, plate.z - 1.2, world, .3), `the ${plate.variety} plate can be read`);
 });

@@ -7,13 +7,15 @@
  * work in grey stone: a gatehouse with its gate shut between two towers, a wall
  * and ditch running out along the whole Luscian border from the hills to the
  * sea, and behind it a watch platform, a signal beacon, a guard house and a
- * stable. Pickets' watch posts stand along the rest of the region's land border.
+ * stable. Limestone ridges and locked hill passes join it along the rest of
+ * the region's land border, watched from the pickets' posts.
  *
- * The wall is only what can be seen: `closed-border.js` refuses entry to East
- * Suval everywhere. Pure: no three, no DOM.
+ * The walls and ridges are solid; `closed-border.js` also keeps the region
+ * closed to entry. Pure: no three, no DOM.
  */
 import { SUVAL_ROAD, REGION_OUTLINES, insideRegion, isLandHex } from './region-world.js';
 import { fortCircuit } from './fortification.js';
+import { SUVAL_HILL_PASSES } from './frontier-ridges.js';
 
 /** The first point of the branch road inside East Suval, found by walking it. */
 function roadCrossing() {
@@ -136,6 +138,7 @@ export const FRONTIER_APPROACH = Object.freeze(frontierPoint(-12, 0));
 /** The branch road as far as anyone may walk it: from the Lauvel junction to the shut gate. */
 export const FRONTIER_ROUTE = Object.freeze([...SUVAL_ROAD.slice(0, BORDER_CROSSING.segment - 1), FRONTIER_APPROACH]);
 export const FRONTIER_CLEARINGS = Object.freeze([
+  ...SUVAL_HILL_PASSES.map(gate => Object.freeze({ x: gate.x, z: gate.z, r: 24 })),
   Object.freeze({ ...frontierPoint(-4, 0), r: 26 }),
   Object.freeze({ x: -498, z: 536, r: 8 }),
   ...FRONTIER_CIRCUIT.corners.map(p => Object.freeze({ x: p.x, z: p.z, r: 10 })),

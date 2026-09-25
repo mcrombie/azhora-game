@@ -7,7 +7,7 @@ of wind in deep water kills you through the game's ordinary defeat.
 
 ## Harbour lessons and crossings
 
-Jess stays at Tidehaven, Maddie keeps Port Calos, and Howie keeps Cobble in Peblos. Each can teach Swimming and sail to either of the other two ports. Learning from any one of them introduces the shared skill; the introductory option then disappears at all three ports. Their green skill markers use the same taught state. Ferry travel, including a crossing before the tutorial is complete, never grants the lesson automatically.
+Jess stays at Tidehaven, Maddie keeps Port Calos, and Hallie keeps Cobble in Peblos. Each can teach Swimming and sail to either of the other two ports. Learning from any one of them introduces the shared skill; the introductory option then disappears at all three ports. Their green skill markers use the same taught state. Ferry travel, including a crossing before the tutorial is complete, never grants the lesson automatically.
 
 ## What it is
 

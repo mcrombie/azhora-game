@@ -38,7 +38,7 @@ test('the shelves hold nothing from West Suval: eight wines from the peninsula, 
   for (const id of ATTIC_WINE_IDS) {
     const wine = ATTIC_WINES[id];
     assert.doesNotMatch(wine.from, /West Suval|Solis|Vaervelm/, `${wine.name} comes from outside West Suval`);
-    assert.ok(!WINE_IDS.includes(id), `${id} is not one of Livia’s`);
+    assert.ok(!WINE_IDS.includes(id), `${id} is not one of KAT’s`);
     assert.ok(wine.note && wine.pitch && wine.price > 0 && wine.xp > 0);
     const item = INVENTORY_ITEMS[wine.item];
     assert.equal(item.type, 'Food'); assert.equal(item.useVerb, 'Drink');

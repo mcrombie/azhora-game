@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WINES, WINE_IDS, CELLAR_WINES, CELLAR_WINE_IDS, CELLAR_OPENS_AT, TASTING_TERMS, CELLAR_WALK, termsAt,
-  WINE_SKILL, createWine, vintnerConversation, cellarHandConversation, validateWineSnapshot } from '../src/wine.js';
-import { VINTNER, CELLAR_HAND } from '../src/winery.js';
+  WINE_SKILL, WINE_INTRO_TEACHERS, wineIntroChoice, createWine, vintnerConversation, cellarHandConversation, validateWineSnapshot } from '../src/wine.js';
+import { WINEMAKER, CELLAR_HAND } from '../src/winery.js';
 import { createSkills } from '../src/skills.js';
 
 /** A dialogue box that records what was said and lets a test pick a reply. */
@@ -32,16 +32,16 @@ test('the cellar makes five more wines out of the same eight grapes, each by its
   assert.match(CELLAR_WINES['fortified-norton'].made, /Spirit goes in while the ferment is still running/);
 });
 
-test('Livia keeps the cellar back until four of the eight are known, then pours all five', () => {
+test('KAT keeps the cellar back until four of the eight are known, then pours all five', () => {
   const skills = createSkills(), wine = createWine({ skills });
   wine.learn();
-  const early = talk(vintnerConversation, { id: VINTNER.id }, { wine });
+  const early = talk(vintnerConversation, { id: WINEMAKER.id }, { wine });
   assert.equal(early.has('winery-cellar'), false, 'nothing from the cellar yet');
   assert.equal(early.has('winery-cellar-wait'), true, 'but she says why');
   for (const id of WINE_IDS.slice(0, CELLAR_OPENS_AT)) wine.taste(id);
   assert.equal(wine.cellarOpen, true);
   assert.equal(wine.plainTasted, CELLAR_OPENS_AT);
-  const open = talk(vintnerConversation, { id: VINTNER.id }, { wine });
+  const open = talk(vintnerConversation, { id: WINEMAKER.id }, { wine });
   assert.equal(open.has('winery-cellar'), true);
   open.pick('winery-cellar');
   for (const id of CELLAR_WINE_IDS) assert.ok(open.screens.at(-1).choices.some(choice => choice.id === `taste-${id}`), `she offers the ${id}`);
@@ -81,7 +81,7 @@ test('the words for what is in the glass arrive as the skill levels', () => {
   assert.deepEqual(wine.view().terms, wine.terms());
 });
 
-test('Nico walks anybody who asks through the making, in the order it happens', () => {
+test('MAT walks anybody who asks through the making, in the order it happens', () => {
   const walk = talk(cellarHandConversation, { id: CELLAR_HAND.id });
   assert.equal(walk.has('cellar-walk'), true);
   walk.pick('cellar-walk');
@@ -98,9 +98,31 @@ test('the winery journal counts the cellar in, and says how to open it', () => {
   assert.equal(view.total, WINE_IDS.length + CELLAR_WINE_IDS.length + 8, 'eight grapes, five from the cellar, eight of Juan’s');
   const locked = view.entries.find(entry => entry.id === 'amber-viognier');
   assert.match(locked.detail, /Taste 4 of the eight first/);
-  assert.equal(locked.name, 'Something of Livia’s made from the Viognier');
+  assert.equal(locked.name, 'Something of KAT’s made from the Viognier');
   for (const id of WINE_IDS.slice(0, CELLAR_OPENS_AT)) wine.taste(id);
   assert.match(wine.view().entries.find(entry => entry.id === 'amber-viognier').detail, /offered it from the cellar/);
   wine.taste('amber-viognier');
   assert.equal(wine.view().entries.find(entry => entry.id === 'amber-viognier').name, CELLAR_WINES['amber-viognier'].name);
+});
+
+
+test('five requested teachers introduce Wine without a Farming prerequisite and ROB does not', () => {
+  assert.deepEqual(WINE_INTRO_TEACHERS, ['winemaker', 'cellar-hand', 'ben-sorcerer', 'liz-beekeeper', 'bee-keeper']);
+  for (const id of WINE_INTRO_TEACHERS) {
+    const npc = { id }, skills = createSkills(), wine = createWine({ skills }), taughtBy = [];
+    const farmBefore = skills.xp('farming');
+    assert.equal(skills.taught('farming'), false);
+    const choice = wineIntroChoice(npc, { wine, teach: who => { taughtBy.push(who); wine.learn(); } });
+    assert.ok(choice && /wine/i.test(choice.label), `${id} clearly offers the Wine introduction`);
+    assert.equal(wine.met, false, 'Showing the choice does not silently teach the skill');
+    choice.action();
+    assert.deepEqual(taughtBy, [npc], 'The host receives the actual chosen teacher');
+    assert.equal(wine.met, true);
+    assert.equal(wineIntroChoice(npc, { wine, teach: () => assert.fail('Already taught') }), null);
+    assert.equal(skills.taught('farming'), false, 'Wine does not introduce Farming');
+    assert.equal(skills.xp('farming'), farmBefore, 'Wine leaves Farming experience untouched');
+  }
+  for (const id of ['vintner', 'unknown-person']) {
+    assert.equal(wineIntroChoice({ id }, { wine: createWine(), teach: () => assert.fail('Not a Wine teacher') }), null);
+  }
 });

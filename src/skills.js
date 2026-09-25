@@ -88,7 +88,7 @@ export const SKILLS = Object.freeze({
   wine: Object.freeze({
     id: 'wine', name: 'Wine',
     blurb: 'Looking, smelling and tasting properly instead of drinking. Every wine tasted for the first time teaches you something about the grape, the ground it grew in, and what was done to it indoors; the words for what is in the glass arrive as you go.',
-    teacher: 'Lakota on the road, Livia Seravo at Vaervelm Caelazh (Paradise Springs) in West Suval, and Juan at Tharganhom, the Wine Attic in Solis',
+    teacher: 'KAT and MAT at Paradise Springs southeast of Port Calos; Ben, Liz and Troy; Lakota on the road; and Juan at the Wine Attic in Solis',
     // The eight wines of Vaervelm Caelazh are worth 120 and the visit 25 more; the five from its
     // cellar 125 again, and Juan's eight 150. A taster who drinks everything the built world pours
     // reaches 420 experience, level 5, and five of the nine words below. The rest wait on more wine.
@@ -147,7 +147,7 @@ export const SKILLS = Object.freeze({
   swimming: Object.freeze({
     id: 'swimming', name: 'Swimming', kind: 'working',
     blurb: 'Crossing water on your own, which is slower than walking, harder than it looks, and the only way to some of this country. Your wind runs out before your arms do, and what happens after that is drowning.',
-    teacher: 'Jess at Tidehaven, Maddie at Port Calos, Howie at Cobble, or Ed the Word in the traveling company',
+    teacher: 'Jess at Tidehaven, Maddie at Port Calos, Hallie at Cobble, or Ed the Word in the traveling company',
     thresholds: RUNESCAPE_TABLE,
     // What each level opens is a crossing; the distances are measured shore to shore in
     // docs/swimming.md and re-measured by tests/swimming.test.js.

@@ -1267,7 +1267,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   const westSuval = createWestSuvalScenery({ root: world, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign, signs, barrel });
-  // Paradise Springs (src/winery-world.js): Lakota's old winery in the north-east of West Suval.
+  // Paradise Springs (src/winery-world.js): Lakota's old winery southeast of Port Calos.
   const winery = createWineryScenery({ root: world, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs, movingGroups });
   // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
   // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.

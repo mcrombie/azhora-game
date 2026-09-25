@@ -135,7 +135,7 @@ export const JUAN_LESSON = freeze([
 ]);
 const JUAN_TOPICS = freeze({
   rule: [
-    'Okay, so, people ask me that. Here is the thing. Here is the thing. Livia Seravo out at Vaervelm Caelazh? Best Norton in all Suval. I would marry that Norton. But I sell hers, then the guy down the hill wants me to sell his, and the guy next to him —',
+    'Okay, so, people ask me that. Here is the thing. Here is the thing. KAT out at Vaervelm Caelazh, southeast of Port Calos? Best Norton on this coast. I would marry that Norton. But I sell hers, then the guy down the hill wants me to sell his, and the guy next to him —',
     'Suddenly I am in a valley feud. I am not in a valley feud. Up here is nobody’s vineyard. The army comes in, the Coalition comes in, they sit at the same barrel. You know why that works? Because it is not their wine they are fighting about.',
   ],
   war: [
