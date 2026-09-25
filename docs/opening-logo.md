@@ -6,6 +6,6 @@ The user selected **sample D**: a clean gold oak emblem with acorns and a squirr
 
 The runtime asset is [assets/azhora-oak-mark.png](../assets/azhora-oak-mark.png). It was produced with an AI image-generation edit using the selected reference artwork. The oak, acorns, and squirrel belong to that approved direction; later revisions should start from this asset or the selected reference rather than substitute an unrelated tree mark.
 
-[index.html](../index.html) displays the image inside the existing loading screen with descriptive alternative text. [src/style.css](../src/style.css) centers it on the teal background, scales it to fit the viewport, and places the caption "A world worth wandering" below it. The existing opening fade remains in use.
+[index.html](../index.html) displays the image inside the existing loading screen with descriptive alternative text. [src/style.css](../src/style.css) centers it on the teal background and scales it to fit the viewport. The opening has no subtitle. The existing opening fade remains in use.
 
 The native visual review checked the actual teal opening and logo presentation. This record does not claim a new animated logo sequence or any Chapter 3 implementation. The autumn and winter design remains separately documented in [the planning proposal](chapter-3-autumn-proposal.md).
