@@ -250,6 +250,7 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/autopilot.js`, `src/autoplay-smoke.js` | Autoplay: quest planner, trail-following navigation with collision probing and stall detours, combat policy, dialogue pacing; the rendered end-to-end check |
 | `src/forest-places.js`, `src/forest-story.js` | Six woodland places, optional Tamsin errand, shrine repair, journal notes, dialogue, and exactly-once rewards |
 | `src/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
+| `src/spider-den-scenery.js` | Permanent thorn canopy, spiked bramble canes and web strands screening the spider's emergence in Ben's quest |
 | `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
 | `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
 | `src/drent-wildlife.js`, `src/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |
@@ -300,7 +301,7 @@ Each test launch uses its own temporary Electron profile under `tests/.electron-
 
 The three coastal ferry hosts are Jess in Tidehaven, Maddie in Port Calos, and Hallie in Cobble. Each offers both other ports and a Swimming lesson; they remain residents of their home port. Port Calos is a five-building settlement on its single land hex, with the harbor extending to the water. `npm run test:port-calos` exercises all six crossings, lessons, and reloading at each destination.
 
-Paradise Springs (Vaervelm Caelazh) occupies the land hex southeast of Port Calos, reached by a lane from town. Its three residents are ROB, KAT and MAT. KAT and MAT introduce the standalone Wine skill, as can Ben, Liz and Troy; Wine requires no Farming experience. ROB's viticulture lessons are a future Farming branch with a provisional level-5 requirement. His muted book-and-padlock marker shows when that prerequisite is unmet; his dialogue displays the player's level and clearly identifies the lessons as not yet available.
+Paradise Springs (Vaervelm Caelazh) occupies the land hex southeast of Port Calos, reached by a lane from town. Its three residents are Rob, KAT and MAT. KAT and MAT introduce the standalone Wine skill, as can Ben, Liz and Troy; Wine requires no Farming experience. Rob's viticulture lessons are a future Farming branch with a provisional level-5 requirement. His muted book-and-padlock marker shows when that prerequisite is unmet; his dialogue displays the player's level and clearly identifies the lessons as not yet available.
 
 Liz now lives beside a small cottage, a working apiary with straw skeps and wooden hives, and a fenced flower-and-herb garden. Her original interaction point and Mop's return approach remain open.
 

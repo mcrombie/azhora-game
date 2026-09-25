@@ -9439,6 +9439,16 @@ function init() {
             redTailFlight.update(60,{glove,anchor});redTailFlight.update(2.5,{glove,anchor});const step=redTailFlight.update(.1,{glove,anchor});redTail.pose(step,elapsed);
             // Hold her mid-circle and look at her, wings out, from a little below and to the side.
             reviewFrozen=true;reviewTarget=new THREE.Vector3(step.x,step.y,step.z);yaw=step.yaw+1.3;pitch=-.25;distance=targetDistance=3;}}
+        if(view==='spider-thorns'||view==='spider-emerging'){
+          questStage=QUEST_DONE;combat.finishPractice();reviewFrozen=true;player.group.visible=false;
+          player.group.position.set(-790,world.heightAt(-790,279),279);
+          if(view==='spider-emerging'){
+            combat.revive();combat.startEncounter({...SPIDER_DEN,allies:[]});
+            for(let frame=0;frame<85;frame++)combat.update(1/60);
+          }
+          reviewTarget=new THREE.Vector3(-803,world.heightAt(-803,272)+1.3,272);
+          yaw=1.1;pitch=.2;distance=targetDistance=17;grounded=true;verticalSpeed=0;settleCamera();
+        }
         if(view==='goblin'){questStage=QUEST_DONE;combat.revive();const id=`review-goblin-${frameCount}`;combat.startEncounter({...greenwayEncounter,id,enemies:greenwayEncounter.enemies.map(e=>({...e,id:`${id}-${e.id}`})),physicalCompany:true,allies:[]});const enemy=combat.state.enemies[0];if(!enemy)throw new Error('Goblin review fixture failed to start');reviewTarget=new THREE.Vector3(enemy.x,world.heightAt(enemy.x,enemy.z)+1.15,enemy.z);reviewFrozen=true;player.group.visible=false;yaw=0;pitch=.13;distance=targetDistance=3.8;}
         if(view==='stick'){questStage=QUEST_DONE;combat.finishPractice();inventory.grant('forest-stick');weapons.equip('forest-stick');player.group.position.set(-35,world.heightAt(-35,29),29);player.group.rotation.y=Math.PI;yaw=Math.PI+.35;pitch=.24;distance=targetDistance=4.5;}
         if(view==='acorns'){questStage=QUEST_DONE;combat.finishPractice();if(!inventory.count('acorn'))inventory.add('acorn');toggleInventory();inventory.select('acorn');}

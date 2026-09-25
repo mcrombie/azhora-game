@@ -51,8 +51,9 @@ export const SPIDER_DEN = Object.freeze({
   center: Object.freeze({ x: -796, z: 276 }),
   checkpoint: Object.freeze({ x: -774, z: 276 }),
   retreatAxis: 'x', retreatLine: -762,
+  // Start under the permanent thorn canopy, then crawl east into the clearing.
   enemies: Object.freeze([
-    Object.freeze({ id: SPIDER.id, name: SPIDER.name, kind: SPIDER.kind, x: -800, z: 272, hp: SPIDER.hp, entry: .6 }),
+    Object.freeze({ id: SPIDER.id, name: SPIDER.name, kind: SPIDER.kind, x: -805, z: 272, hp: SPIDER.hp, entry: .6 }),
   ]),
   allies: Object.freeze([
     Object.freeze({ id: BEN.id, name: BEN.name, kind: 'sorcerer', x: -790, z: 280, hp: 78,
