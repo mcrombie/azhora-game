@@ -76,6 +76,7 @@ export const SMITH_IDS = Object.freeze(['tidehaven-smith', 'moros-armourer', 'am
 export const OWN_IDS = Object.freeze([
   'lee-anne',           // Fire Making teacher beside Tidehaven's empty village fire ring.
   'sylvia',             // The user's kindly painter, teaching Visual Arts beside the Sunken Lane.
+  'luscia-prophet',     // Caelom warns of winter at the Caloss fork.
   'avrel-farmer',
   'garden-keeper',      // Jean, the user's blonde birding teacher in Tidehaven
   'doomsayer',           // Mark, who reads the signs and teaches Botany and Geology on Tidehaven's shore

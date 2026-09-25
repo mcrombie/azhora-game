@@ -67,6 +67,9 @@ import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from './journey-conte
 import { createRoadCheckpoint } from './road-checkpoint.js';
 import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
 import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
+import { LUSCIA_PROPHET, lusciaProphetConversation } from './luscia-prophet.js';
+import { CALOSS_ROAD_FORK } from './region-world.js';
+import { CALOSS_PROPHET_STAND, CALOSS_ELAGOS_ROAD } from './elagos-world.js';
 import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
 import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './rena-letters.js';
 import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
@@ -326,6 +329,8 @@ function init() {
   }
   npcData.push(...JOURNEY_NPCS);
   npcData.push(...LUSCIA_NPCS.map(npc=>({...npc})),...TOWN_NPCS.map(npc=>({...npc})),{...BEGGAR_NPC});
+  world.npcPositions[LUSCIA_PROPHET.id]={x:CALOSS_PROPHET_STAND.x,z:CALOSS_PROPHET_STAND.z};
+  npcData.push({...LUSCIA_PROPHET,yaw:CALOSS_PROPHET_STAND.yaw});
   // Ben, of the sorcerer's guild, on Nothom's square with a spider to kill (src/spider-quest.js).
   npcData.push({...BEN});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
@@ -4587,6 +4592,7 @@ function init() {
     if(npc.id===PEDDLER.id){peddlerConversation(npc);return;}
     if(fireMakingConversation(npc,{lesson:fireMaking,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
     if(sylviaConversation(npc,{arts:visualArts,openDialogue,closeDialogue,onChange:refreshRoadSkills}))return;
+    if(lusciaProphetConversation(npc,{openDialogue,closeDialogue}))return;
     if(farmingConversation(npc,farmingContext()))return;
     if(npc.id===HARBOURMASTER){jojoOnTheLanding(npc);return;}
     if(npc.id===landingMateId()&&questStage<2){chrisOnTheLanding(npc);return;}
@@ -8158,6 +8164,28 @@ function init() {
           const x=-613.4822,z=141.397;player.group.position.set(x,world.heightAt(x,z),z);
           yaw=2.19810;pitch=.36;distance=targetDistance=9;player.group.rotation.y=Math.PI+yaw;
           clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();reviewFrozen=true;currentRegionId=world.regionAt(x,z).id;return;
+        }
+        if(['luscia-fork','luscia-prophet','caloss-elagos-road','caloss-elagos-join'].includes(view)){
+          testTravel(2);combat.revive();stopAutopilot();reviewFrozen=true;
+          const stand=CALOSS_PROPHET_STAND,npc=npcById.get(LUSCIA_PROPHET.id);
+          if(!npc||!canStand(stand.x,stand.z,world))throw new Error('The Caloss prophet is absent or has no safe footing');
+          npc.actor.group.position.set(stand.x,world.heightAt(stand.x,stand.z),stand.z);npc.actor.group.rotation.y=stand.yaw;
+          player.group.visible=view==='luscia-prophet';
+          if(view==='luscia-prophet'){
+            const x=stand.x+Math.sin(stand.yaw)*1.6,z=stand.z+Math.cos(stand.yaw)*1.6;
+            player.group.position.set(x,world.heightAt(x,z),z);
+            reviewTarget=new THREE.Vector3(stand.x,world.heightAt(stand.x,stand.z)+1.2,stand.z);
+            yaw=stand.yaw+.3;pitch=.14;distance=targetDistance=5.5;
+            conversation(npc);
+            if(mode!=='dialogue')throw new Error('The Caloss prophet did not speak');
+          }else{
+            const p=view==='luscia-fork'?CALOSS_ROAD_FORK:view==='caloss-elagos-join'?CALOSS_ELAGOS_ROAD.at(-1):CALOSS_ELAGOS_ROAD[Math.floor(CALOSS_ELAGOS_ROAD.length/2)];
+            player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);
+            reviewTarget=new THREE.Vector3(p.x,world.heightAt(p.x,p.z)+1,p.z);
+            yaw=view==='luscia-fork'?2.1:1.1;pitch=.66;distance=targetDistance=view==='luscia-fork'?35:45;
+          }
+          currentRegionId=world.regionAt(player.group.position.x,player.group.position.z).id;
+          clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
         if(view==='sylvia'){
           testTravel('village');combat.revive();questStage=QUEST_DONE;player.group.visible=false;

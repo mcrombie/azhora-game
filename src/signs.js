@@ -52,7 +52,7 @@ export const ENGLISH_SIGN_LABELS = Object.freeze([
   'Luscia', 'Reedcutters’ Camp', 'Sava’s Shrine', 'The Waymarkers', 'The Lauvel Relay', 'Quiet fishing bank', 'Return to bridge',
   'The Lauvel', 'The Burned Hamlet', 'Nothom', 'The Stable Yard', 'Notices',
   // The Moros Plain
-  'Moros Plain', 'The Moros Gate', 'The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
+  'Moros Plain', 'The Moros Road', 'The Army Camp', 'The Moros Outpost', 'The Border Stockade', 'Orders',
   'The Shepherd’s Fold', 'The Army Picket', 'Truce',
   // East Suval
   'East Suval', 'Elod', 'The Elodi Frontier', 'Elod’s Border Post', 'Closed by Elod',
@@ -67,7 +67,7 @@ export const ENGLISH_SIGN_LABELS = Object.freeze([
   // West Izol
   'Izolveth', 'The Hearth Road', 'Ardveth', 'Kelvath Cove', 'The camp',
   // Elagos
-  'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine', 'The Strand Forge',
+  'Elagos', 'Ambron', 'Nemmel', 'The Stair', 'The Lake Shrine', 'The Strand Forge',
   // Amod
   'Amod', 'Ostel', 'The Pass Stones', 'Kelmod & Mavren', 'Sareth-am-Vel',
   // Milestones on the Moros

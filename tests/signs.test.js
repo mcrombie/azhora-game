@@ -23,7 +23,7 @@ test('one sign language: four shapes for four meanings, in the village’s woods
   const tools = kit(), root = new THREE.Group(), signs = createSigns(tools);
   const made = {
     direction: signs.direction({ x: 0, z: 0, label: 'Nothom', toward: { x: 10, z: 0 }, back: { x: -10, z: 0 }, backLabel: 'Tidehaven', parent: root }),
-    place: signs.place({ x: 10, z: 0, label: 'The Moros Gate', facing: 1, parent: root }),
+    place: signs.place({ x: 10, z: 0, label: 'The Moros Road', facing: 1, parent: root }),
     notice: signs.notice({ x: 20, z: 0, label: 'Closed by Elod', parent: root }),
     border: signs.border({ x: 30, z: 0, faces: [{ label: 'East Suval', paint: SIGN_COLOURS.paint.elod }, { label: 'Luscia', paint: SIGN_COLOURS.paint.luscia }], parent: root }),
     milestone: signs.milestone({ x: 40, z: 0, label: 'II', parent: root }),
@@ -118,8 +118,9 @@ test('every sign in the world carries a known label, stands on solid posts, and 
     else assert.equal(canStand(sign.x, sign.z, world), false, `${sign.label} has collision`);
   }
   const borders = world.roadSigns.filter(sign => sign.kind === 'border');
-  for (const pair of [['Luscia', 'Moros Plain'], ['East Suval', 'Luscia']])
-    assert.ok(borders.some(sign => sign.label === pair[0] && sign.returnLabel === pair[1]), `a border stone reads ${pair.join(' | ')}`);
+  assert.ok(borders.some(sign => sign.label === 'East Suval' && sign.returnLabel === 'Luscia'), 'the retained frontier stone reads East Suval | Luscia');
+  assert.equal(borders.some(sign => new Set([sign.label, sign.returnLabel]).has('Luscia') && new Set([sign.label, sign.returnLabel]).has('Moros Plain')), false, 'the removed Moros Gate no longer leaves its border stone behind');
+  assert.equal(world.roadSigns.some(sign => sign.label === 'The Moros Gate' || sign.returnLabel === 'The Moros Gate'), false, 'the removed Moros Gate has no place or direction sign');
   for (const label of ['The Avrel Clearing', 'The Caloss Bridge', 'The Army Camp', 'The Elodi Frontier', 'Elod'])
     assert.ok(world.roadSigns.some(sign => sign.kind === 'direction' && sign.label === label && sign.returnLabel), `${label} is signed both ways`);
   assert.equal(world.roadSigns.filter(sign => sign.label === 'Nothom' && sign.kind === 'place').length, 2, 'Nothom is named at both gates');

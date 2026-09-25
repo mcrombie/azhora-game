@@ -11,7 +11,7 @@ import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, reg
 import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
 import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
 import {
-  VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD,
+  VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, CALOSS_ROAD_FORK, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, WOOD_EDGE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
   calossDistance, landDistance, SOLIS, solisPoint,
 } from './region-world.js';
@@ -50,7 +50,8 @@ import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LAND
 import { createEastSuvalScenery } from './east-suval-world.js';
 import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, izolDeckHeight } from './izol-world.js';
 import { createIzolScenery } from './izol-scenery.js';
-import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './elagos-world.js';
+import { drapeRoadOnTerrain, terrainRoadHeight } from './terrain-road.js';
+import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, CALOSS_ELAGOS_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './elagos-world.js';
 import { AMBRON_ENCLOSURE, ambronDeckHeight } from './ambron.js';
 import { ELAGOS_NPC_POSITIONS } from './ambron-people.js';
 import { createElagosScenery } from './elagos-scenery.js';
@@ -233,6 +234,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     }
     return null;
   }
+  let roadHeightAt = () => null;
   function heightAt(x, z) {
     const local = worldToVillage(x, z);
     // The pier deck, exactly as Tidehaven always had it.
@@ -254,7 +256,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Ambron's causeway, over the narrows and down to the made ground of each bank.
     const causeway = ambronDeckHeight(x, z);
     if (causeway !== null) return causeway;
-    return groundHeight(x, z);
+    return roadHeightAt(x, z) ?? groundHeight(x, z);
   }
 
   const fishingSpots = [
@@ -276,6 +278,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Roads: drawn in world metres, sampled locally for Tidehaven's own scatter
   // ---------------------------------------------------------------------------
   const roadSegments = [], paths = [], movingGroups = new Set(), pathSurfaces = [];
+  const drapedRoadCells = new Map(), drapedRoadCellSize = 12;
+  const forkSurfaceStrength = (x, z) => 1 - smooth(25, 45, Math.hypot(x - CALOSS_ROAD_FORK.x, z - CALOSS_ROAD_FORK.z));
+  const roadSurfaceMetrics = { roads: 0, sourceTriangles: 0, renderedTriangles: 0, drapeMilliseconds: 0 };
   /** Road centre lines, coarse, for keeping scatter and scenery off the road. */
   function measurePath(points, width) {
     const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, 0, p.z)));
@@ -303,9 +308,20 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
         const j = i * 2; indices.push(j - 2, j, j - 1, j - 1, j, j + 1);
       }
     }
+    // The fork and its parent road share the actual terrain faces. An analytic
+    // height at the ribbon edges is not enough on this coarse rolling ground.
+    const drapeStarted = performance.now();
+    const draped = points === MAIN_ROAD || points === CALOSS_ELAGOS_ROAD
+      ? drapeRoadOnTerrain(positions, indices, terrainXs, terrainZs, terrainPositions, .045, points === MAIN_ROAD ? forkSurfaceStrength : null) : null;
+    if (draped) {
+      roadSurfaceMetrics.roads++;
+      roadSurfaceMetrics.sourceTriangles += indices.length / 3;
+      roadSurfaceMetrics.renderedTriangles += draped.indices.length / 3;
+      roadSurfaceMetrics.drapeMilliseconds += performance.now() - drapeStarted;
+    }
     const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(draped?.positions ?? positions, 3));
+    geometry.setIndex(draped?.indices ?? indices);
     geometry.computeVertexNormals();
     const path = new THREE.Mesh(geometry, material(kind === 'trail' ? '#a2916c' : '#c6b384', { side: THREE.DoubleSide }));
     path.name = kind === 'trail' ? 'Dirt footpath' : 'Main road';
@@ -318,7 +334,18 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // must not spread this road's navigation points across its tight bends.
     curve.arcLengthDivisions = Math.max(200, points.length * 96);
     curve.updateArcLengths();
-    paths.push(Object.assign(curve.getSpacedPoints(Math.max(2, Math.ceil(curve.getLength() / 3))).map(p => ({ x: p.x, z: p.z })), { kind, width }));
+    const walkingPath = Object.assign(curve.getSpacedPoints(Math.max(2, Math.ceil(curve.getLength() / 3))).map(p => ({ x: p.x, z: p.z })), { kind, width });
+    paths.push(walkingPath);
+    if (draped) for (let i = 1; i < walkingPath.length; i++) {
+      const a = walkingPath[i - 1], b = walkingPath[i], radius = width / 2 + 2.5, segment = { a, b, radius, halfWidth: width / 2, forkOnly: points === MAIN_ROAD };
+      if (segment.forkOnly && Math.hypot((a.x + b.x) / 2 - CALOSS_ROAD_FORK.x, (a.z + b.z) / 2 - CALOSS_ROAD_FORK.z) > 50) continue;
+      for (let gx = Math.floor((Math.min(a.x, b.x) - radius) / drapedRoadCellSize); gx <= Math.floor((Math.max(a.x, b.x) + radius) / drapedRoadCellSize); gx++)
+        for (let gz = Math.floor((Math.min(a.z, b.z) - radius) / drapedRoadCellSize); gz <= Math.floor((Math.max(a.z, b.z) + radius) / drapedRoadCellSize); gz++) {
+          const key = `${gx},${gz}`;
+          if (!drapedRoadCells.has(key)) drapedRoadCells.set(key, []);
+          drapedRoadCells.get(key).push(segment);
+        }
+    }
   }
   function roadDistance(x, z) {
     let min = Infinity;
@@ -407,6 +434,17 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     } else color.multiplyScalar(trange(.955, 1.045));
     terrainColors.set([color.r, color.g, color.b], index * 3);
   }
+  // Only the new west road and nearby fork use the mesh plane for footing. Decks
+  // remain higher priority in heightAt; the rest of the world keeps its ground.
+  roadHeightAt = (x, z) => {
+    let strength = 0;
+    for (const { a, b, radius, halfWidth, forkOnly } of drapedRoadCells.get(`${Math.floor(x / drapedRoadCellSize)},${Math.floor(z / drapedRoadCellSize)}`) ?? []) {
+      const dx = b.x - a.x, dz = b.z - a.z, t = clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz), 0, 1);
+      const distance = Math.hypot(x - a.x - dx * t, z - a.z - dz * t);
+      strength = Math.max(strength, (1 - smooth(halfWidth + .1, radius, distance)) * (forkOnly ? forkSurfaceStrength(x, z) : 1));
+    }
+    return strength ? lerp(groundHeight(x, z), terrainRoadHeight(x, z, terrainXs, terrainZs, terrainPositions), strength) : null;
+  };
   const terrainIndices = [];
   for (let j = 0; j < rows - 1; j++) for (let i = 0; i < columns - 1; i++) {
     const a = j * columns + i;
@@ -1161,7 +1199,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(AMOD_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
   for (const path of IZOL_PATHS) measurePath(path.points, path.width);
-  measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, 2.6);
+  measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   createVisualArtsScenery({root:world,cottage,groundHeight,colliders});
@@ -1221,6 +1259,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   // Elagos and Ambron (src/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
   const elagos = createElagosScenery({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
   bridgeDecks.push(elagos.bridge);
+  signs.direction({ x: -658, z: 176, label: 'Elagos', toward: CALOSS_ELAGOS_ROAD[1],
+    backLabel: 'Nothom', back: MAIN_ROAD[22], parent: world });
   // The four western regions (src/west-regions-scenery.js): their water, their gravel,
   // their sedge and Vastos's sulfur ground. Terrain and wildlife only; nobody lives there.
   const westScenery = createWestScenery({ root: world, material, mesh, pebble, groundHeight, colliders, wornPatch, dummy, color, round });
@@ -1294,7 +1334,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   addPath(HIDEOUT_APPROACH_TRAIL, 1.85);
   addPath(RENA_ROAD, 2.6);
   for (const path of IZOL_PATHS) addPath(path.points, path.width);
-  addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, 2.6);
+  addPath(AMBRON_ROAD, 4.6); addPath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) addPath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
 
   // Footpaths join a road at its edge. Their full centre lines still meet for
   // navigation, but brown faces must not stripe or z-fight across the pale road.
@@ -1720,6 +1760,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   };
   const api = {
     heightAt,
+    roadSurfaceMetrics,
     mapWaters,
     mapBridges: bridgeDecks,
     colliders,
@@ -1784,6 +1825,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     enclosures: [...SOLIS_ENCLOSURES, AMBRON_ENCLOSURE, enclosureOf(OUTPOST_CIRCUIT, 'outpost', 'The Ambroni outpost'), enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade')],
     solisHolder: westSuval.holder,
     elagosRoute: AMBRON_ROAD.map(p => ({ x: p.x, z: p.z })),
+    calossElagosRoute: CALOSS_ELAGOS_ROAD.map(p => ({ x: p.x, z: p.z })),
     lakeRoute: LAKE_ROAD.map(p => ({ x: p.x, z: p.z })),
     elagosMetrics: elagos.metrics,
     puethRoute: PUETH_ROAD.map(p => ({ x: p.x, z: p.z })),

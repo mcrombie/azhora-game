@@ -100,6 +100,14 @@ function spectacles(head, name, wire, glass, { radius = 0.055, y = 0.226, z = 0.
   return specs;
 }
 
+// A leather eye covering can belong to any neighbor, not only a hired sword.
+// Caelom uses look.eyePatch; company members retain their existing appearance mark.
+function eyePatch(parent, strap) {
+  round(parent, strap, [-0.068, 0.228, 0.183], [0.066, 0.056, 0.032]);
+  ribbon(parent, strap, [-0.102, 0.252, 0.158], [-0.166, 0.302, -0.05], 0.024, 0.013);
+  ribbon(parent, strap, [-0.092, 0.204, 0.162], [-0.176, 0.236, -0.05], 0.021, 0.012);
+}
+
 function ribbon(parent, mat, from, to, width = 0.052, depth = 0.022) {
   const start = new THREE.Vector3(...from);
   const end = new THREE.Vector3(...to);
@@ -1830,6 +1838,13 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     }
   }
 
+  if (look?.eyePatch === true && !marks.includes('eye-patch')) {
+    const patch = new THREE.Group(); patch.name = 'Eye patch'; head.add(patch);
+    // The doomsayer's shaded face sits farther forward inside its deep hood.
+    // Fit his covering over that face, rather than burying it under the hood.
+    if (isDoomsayer) patch.position.set(.005, -.012, .09);
+    eyePatch(patch, mercStrap ?? material(isDoomsayer ? 0x80674a : 0x4b3a2b));
+  }
   if (!isMercenary && look?.glasses) spectacles(head, 'Spectacles',
     material(0x53575c, { metalness: .62, roughness: .34 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
   if (isMercenary) for (const mark of marks) {
@@ -1846,9 +1861,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     } else if (mark === 'tattoo') {
       for (let i = 0; i < 3; i++) ribbon(marked, mercInk, [-0.15, 0.262 - i * 0.042, 0.11], [-0.196, 0.232 - i * 0.042, 0.048], 0.02, 0.011);
     } else if (mark === 'eye-patch') {
-      round(marked, mercStrap, [-0.068, 0.228, 0.183], [0.066, 0.056, 0.032]);
-      ribbon(marked, mercStrap, [-0.102, 0.252, 0.158], [-0.166, 0.302, -0.05], 0.024, 0.013);
-      ribbon(marked, mercStrap, [-0.092, 0.204, 0.162], [-0.176, 0.236, -0.05], 0.021, 0.012);
+      eyePatch(marked, mercStrap);
     } else if (mark === 'spectacles') {
       // The same round wire pair Troy and Imani wear, which is the only kind anybody
       // in Azhora makes; on a hired sword they are the thing you notice first.

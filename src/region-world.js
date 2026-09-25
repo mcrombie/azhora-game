@@ -434,6 +434,9 @@ export const MAIN_ROAD = Object.freeze([
   road(-700, 352), road(-752, 348), road(-772, 350),
 ]);
 
+/** The first dry junction beyond the Caloss bridge, before the road turns south to Nothom. */
+export const CALOSS_ROAD_FORK = MAIN_ROAD.find(p => p.x === road(-362, 107).x && p.z === road(-362, 107).z);
+
 /** The branch that leaves the Lauvel for Elod's border post and the town beyond. */
 export const SUVAL_ROAD = Object.freeze([
   road(-390, 162), road(-360, 178), road(-330, 196), road(-300, 216), road(-272, 240),

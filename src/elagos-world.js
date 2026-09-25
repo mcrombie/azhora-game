@@ -36,7 +36,7 @@
  * once into a signed distance field with the water's own level carried outward,
  * so `elagosGround` can answer any point in the world in one bilinear sample.
  */
-import { AMBRON, ambronPoint, MAIN_ROAD, AMBRON_TERRACE } from './region-world.js';
+import { AMBRON, ambronPoint, MAIN_ROAD, AMBRON_TERRACE, CALOSS_ROAD_FORK } from './region-world.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
@@ -337,7 +337,20 @@ export const RAFT_TRACK = freeze([
   ambronPoint(-92, 22), ambronPoint(-106, 20), point(-1394, 300), point(-1408, 288), point(-1416, 272),
 ]);
 
-export const ELAGOS_ROADS = freeze([AMBRON_ROAD, LAKE_ROAD, OSSEN_TRACK, RAFT_TRACK]);
+/**
+ * The west fork immediately beyond the Caloss. The old south road still takes
+ * travelers to Nothom; this dry shelf road reaches Elagos without the Moros
+ * detour, meeting the Ossen farm road continuously outside Ambron's east gate.
+ */
+export const CALOSS_ELAGOS_ROAD = freeze([
+  CALOSS_ROAD_FORK, point(-670, 166), point(-710, 164), point(-760, 172),
+  point(-812, 184), point(-866, 196), point(-922, 202), point(-976, 203),
+  point(-1026, 205), point(-1068, 218), OSSEN_TRACK.at(-1),
+]);
+/** A dry shoulder beside the fork, facing the traveler coming off the bridge. */
+export const CALOSS_PROPHET_STAND = freeze({ ...point(-652, 158), yaw: Math.atan2(CALOSS_ROAD_FORK.x + 652, CALOSS_ROAD_FORK.z - 158) });
+
+export const ELAGOS_ROADS = freeze([AMBRON_ROAD, LAKE_ROAD, OSSEN_TRACK, RAFT_TRACK, CALOSS_ELAGOS_ROAD]);
 /** Ground the water colliders leave open: the causeway's lane is handled by src/ambron.js. */
 export const onLinkBridge = (x, z, margin = 0) => {
   const b = LINK_BRIDGE, dx = x - b.crossing.x, dz = z - b.crossing.z;
@@ -397,6 +410,8 @@ export const ELAGOS_LANDMARKS = freeze([
 // ---------------------------------------------------------------------------
 /** Water, made ground and every built place of Elagos, as circles the scatter keeps out of. */
 export const ELAGOS_CLEARINGS = freeze([
+  freeze({ ...CALOSS_PROPHET_STAND, r: 5 }),
+  freeze({ x: -658, z: 176, r: 4 }), // one fingerpost between the two outgoing lanes
   freeze({ x: AMBRON.centre.x, z: AMBRON.centre.z, r: 124 }),
   freeze({ x: NEMMEL.x, z: NEMMEL.z, r: NEMMEL.radius + 4 }),
   freeze({ x: ICE_ROAD_STONE.x, z: ICE_ROAD_STONE.z, r: 11 }),

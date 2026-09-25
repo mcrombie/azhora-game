@@ -19,7 +19,7 @@ test('the three local workers retain articulated cloth silhouettes within a smal
     assert.equal(actor.group.name, `character-${role}`);
     assert.equal(actor.setWeapon('simple-sword'), false);
     assert.equal(actor.setWeapon('forest-stick'), false);
-    assert.equal(actor.setFishing(true), false);
+    assert.equal(actor.setFishing(false), false, 'idle workers have not created a borrowed fishing rod');
     assert.equal(actor.fishingTip(), null);
     assert.ok(joints.every(name => actor.group.getObjectByName(name)?.isGroup));
     let draws = 0, triangles = 0;
@@ -82,4 +82,25 @@ test('animating a local worker cannot move another character or alter shared sou
   for (let frame = 1; frame <= 90; frame++) first.animate(frame / 30, frame < 45 ? 0 : 2.5, true);
   assert.deepEqual(pose(second), before, 'joint animation leaked between NPC instances');
   for (const [source, positions] of geometry) assert.deepEqual(source.attributes.position.array, positions, 'idle animation rewrote shared vertex data');
+});
+
+
+test('the one-eyed seer wears his covering in front of the hood face while his other eye stays visible', () => {
+  const mark = createCharacter({ role: 'doomsayer' });
+  const seer = createCharacter({ role: 'doomsayer', look: { eyePatch: true } });
+  const eyeSurface = (actor, x) => {
+    actor.group.updateMatrixWorld(true);
+    const head = actor.group.getObjectByName('Head');
+    const ray = new THREE.Raycaster(head.localToWorld(new THREE.Vector3(x, .216, 1)),
+      new THREE.Vector3(0, 0, -1).transformDirection(head.matrixWorld));
+    const hit = ray.intersectObject(head, true)[0], colors = hit.object.geometry.attributes.color;
+    return { depth: head.worldToLocal(hit.point).z,
+      color: [colors.getX(hit.face.a), colors.getY(hit.face.a), colors.getZ(hit.face.a)] };
+  };
+  assert.equal(mark.group.getObjectByName('Eye patch'), undefined, 'Mark keeps his existing face');
+  assert.ok(seer.group.getObjectByName('Eye patch'));
+  const covered = eyeSurface(seer, -.063), original = eyeSurface(mark, -.063);
+  assert.ok(covered.depth > original.depth + .02, 'the covering is not buried behind the hood or its replacement eye');
+  assert.notDeepEqual(covered.color, original.color, 'weathered leather is visible against the hood shadow');
+  assert.deepEqual(eyeSurface(seer, .063), eyeSurface(mark, .063), 'the uninjured eye stays unchanged');
 });

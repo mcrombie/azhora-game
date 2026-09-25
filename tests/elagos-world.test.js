@@ -1,19 +1,19 @@
 import test from 'node:test';
-import { nearestOnPath } from '../src/autopilot.js';
+import { nearestOnPath, roadRoute } from '../src/autopilot.js';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
+import { canStand, moveCharacter } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import { PLAYABLE_SURVEY } from '../src/region-survey.js';
 import {
   REGION_IDS, REGION_TERRAIN, REGION_OUTLINES, WORLD_BOUNDS, AMBRON, ambronPoint, hexCentre,
-  hexOwnerAt, insideRegion, MAIN_ROAD,
+  hexOwnerAt, insideRegion, MAIN_ROAD, CALOSS_ROAD_FORK, CALOSS, LUMBER_TOWN,
 } from '../src/region-world.js';
 import { groundWithRiver, regionBase } from '../src/world-terrain.js';
 import {
   ELAGOS_BASINS, ELAGOS_REACHES, LAKE_ELA, LAKE_BRUL, LAKE_OSSEN, THELAS_BASINS, ELA_SOUTH, THELAS_LINK,
-  AMBRON_ROAD, LAKE_ROAD, ELAGOS_ROADS, AMBRON_JUNCTION, LINK_BRIDGE, ELAGOS_LANDMARKS, ELAGOS_PLACES,
+  AMBRON_ROAD, LAKE_ROAD, ELAGOS_ROADS, CALOSS_ELAGOS_ROAD, CALOSS_PROPHET_STAND, OSSEN_TRACK, AMBRON_JUNCTION, LINK_BRIDGE, ELAGOS_LANDMARKS, ELAGOS_PLACES,
   ELAGOS_CHART_WATERS, ELAGOS_CLEARINGS, NEMMEL, elagosWater, elagosWaterDistance, WATER_FLOOR, WATER_FIELD_BOUNDS,
 } from '../src/elagos-world.js';
 import { SUBREGIONS } from '../src/map-fog.js';
@@ -21,7 +21,8 @@ import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
 import { RIDE } from '../src/riding.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const scene = new THREE.Scene();
+const world = createWorld(scene);
 const WALKER = .45;
 
 test('Elagos is the ninth playable region, true to the atlas', () => {
@@ -193,6 +194,79 @@ test('the haul road comes up from the Moros to Ambron’s Plain Gate, and a ride
       assert.ok(canStand(x, z, world, RIDE.radius), `a rider is stopped at ${x.toFixed(1)}, ${z.toFixed(1)}`);
     }
   }
+});
+
+test('the Caloss fork offers a continuous west road into Elagos and preserves the south road to Nothom', () => {
+  assert.equal(CALOSS_ELAGOS_ROAD[0], CALOSS_ROAD_FORK);
+  assert.ok(MAIN_ROAD.includes(CALOSS_ROAD_FORK), 'the fork is on the existing road');
+  assert.ok(nearestOnPath(world.paths[0], CALOSS_ROAD_FORK).distance < .1, 'the fork meets the rendered main-road curve');
+  const sign = world.roadSigns.find(s => s.x === -658 && s.z === 176);
+  assert.equal(sign?.label, 'Elagos'); assert.equal(sign?.returnLabel, 'Nothom');
+  assert.equal(hexOwnerAt(CALOSS_ROAD_FORK.x, CALOSS_ROAD_FORK.z), 'Luscia');
+  assert.ok(Math.hypot(CALOSS_ROAD_FORK.x - CALOSS.crossing.x, CALOSS_ROAD_FORK.z - CALOSS.crossing.z) < 45,
+    'the choice comes just beyond the bridge');
+  assert.equal(CALOSS_ELAGOS_ROAD.at(-1), OSSEN_TRACK.at(-1), 'the new road meets the farm road without a gap');
+  const path = world.paths.find(path => CALOSS_ELAGOS_ROAD.every(point => nearestOnPath(path, point).distance < 1));
+  assert.ok(path, 'the road is rendered and supplied to navigation and charts');
+  assert.equal(path.kind, 'road'); assert.equal(path.width, 4.2);
+  assert.deepEqual(world.calossElagosRoute, CALOSS_ELAGOS_ROAD.map(p => ({ x: p.x, z: p.z })));
+  assert.ok(path.some(p => hexOwnerAt(p.x, p.z) === 'Elagos'), 'the branch crosses into the Lake Lands');
+  const rider = { ...path[0] };
+  let lastHeight = world.heightAt(rider.x, rider.z), greatestGrade = 0;
+  for (let i = 1; i < path.length; i++) {
+    const target = path[i], previous = path[i - 1], length = Math.hypot(target.x - previous.x, target.z - previous.z);
+    const height = world.heightAt(target.x, target.z);
+    greatestGrade = Math.max(greatestGrade, Math.abs(height - lastHeight) / length); lastHeight = height;
+    assert.ok(canStand(target.x, target.z, world, RIDE.radius), `dry, unobstructed road at ${target.x}, ${target.z}`);
+    moveCharacter(rider, target.x - rider.x, target.z - rider.z, world, RIDE.radius);
+    assert.ok(Math.hypot(rider.x - target.x, rider.z - target.z) < .02, 'a mounted traveler can traverse every section');
+  }
+  assert.ok(greatestGrade < .3, `the shelf road has no cliff or sudden step (grade ${greatestGrade})`);
+  const west = roadRoute(world.paths, CALOSS_ROAD_FORK, ambronPoint(92, -6));
+  assert.ok(west?.length, 'the road graph reaches Ambron');
+  assert.ok(west.every(p => p.z < 310), 'the direct route does not detour through the Moros');
+  assert.ok(Math.hypot(west.at(-1).x - ambronPoint(92, -6).x, west.at(-1).z - ambronPoint(92, -6).z) < 8);
+  const south = roadRoute(world.paths, CALOSS_ROAD_FORK, LUMBER_TOWN.square);
+  assert.ok(south?.length && Math.hypot(south.at(-1).x - LUMBER_TOWN.square.x, south.at(-1).z - LUMBER_TOWN.square.z) < 8,
+    'the original south route still reaches Nothom');
+});
+
+test('fork road footing matches the visible terrain without changing distant ground or bridges', t => {
+  scene.updateMatrixWorld(true);
+  const terrain = [];
+  scene.traverse(object => { if (object.isMesh && (object.name.startsWith('Terrain ') || object.name === 'Whole-world terrain')) terrain.push(object); });
+  const ray = new THREE.Raycaster(), down = new THREE.Vector3(0, -1, 0);
+  const path = world.paths.find(path => CALOSS_ELAGOS_ROAD.every(point => nearestOnPath(path, point).distance < 1));
+  let maximumGap = 0, previousGroundMismatch = 0;
+  for (let i = 0; i < path.length; i += 5) {
+    const p = path[i]; ray.set(new THREE.Vector3(p.x, 150, p.z), down);
+    const hit = ray.intersectObjects(terrain, false)[0]; assert.ok(hit);
+    maximumGap = Math.max(maximumGap, Math.abs(world.heightAt(p.x, p.z) - hit.point.y - .045));
+    previousGroundMismatch = Math.max(previousGroundMismatch, Math.abs(groundWithRiver(p.x, p.z) - hit.point.y));
+  }
+  assert.ok(maximumGap < .01, `no buried feet: maximum road/foot gap ${maximumGap}`);
+  for (const p of [{ x: -800, z: 280 }, { x: -960, z: 350 }])
+    assert.equal(world.heightAt(p.x, p.z), groundWithRiver(p.x, p.z), 'off-road ground is unchanged');
+  const bridge = world.mapBridges.find(b => Math.hypot(b.crossing.x - CALOSS.crossing.x, b.crossing.z - CALOSS.crossing.z) < 1);
+  assert.ok(Math.abs(world.heightAt(bridge.crossing.x, bridge.crossing.z) - bridge.deckY - .09) < 1e-8, 'bridge deck keeps priority');
+  const p = path[30], next = path[31], length = Math.hypot(next.x - p.x, next.z - p.z), nx = -(next.z - p.z) / length, nz = (next.x - p.x) / length;
+  let previous = world.heightAt(p.x + nx * 2, p.z + nz * 2), greatestStep = 0;
+  for (let offset = 2.1; offset <= 5; offset += .1) {
+    const height = world.heightAt(p.x + nx * offset, p.z + nz * offset);
+    greatestStep = Math.max(greatestStep, Math.abs(height - previous)); previous = height;
+  }
+  assert.ok(greatestStep < .15, 'road shoulder blends smoothly into unchanged ground');
+  t.diagnostic(JSON.stringify({ maximumGap, previousGroundMismatch, greatestShoulderStep: greatestStep, ...world.roadSurfaceMetrics }));
+});
+
+test('the prophet shoulder at the fork is dry and reachable without standing in traffic', () => {
+  const p = CALOSS_PROPHET_STAND;
+  assert.ok(canStand(p.x, p.z, world, WALKER));
+  assert.ok(ELAGOS_CLEARINGS.some(c => Math.hypot(c.x - p.x, c.z - p.z) < .1 && c.r >= 4), 'his shoulder stays clear of scatter');
+  const traveler = { ...CALOSS_ROAD_FORK };
+  moveCharacter(traveler, p.x - traveler.x, p.z - traveler.z, world, WALKER);
+  assert.ok(Math.hypot(traveler.x - p.x, traveler.z - p.z) < .02, 'the traveler can walk up from the fork');
+  assert.ok(nearestOnPath(CALOSS_ELAGOS_ROAD, p).distance > 5, 'he stands off the carriageway');
 });
 
 test('the lake road keeps its feet dry, and the Link is crossed on its own slabs', () => {
