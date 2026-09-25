@@ -4,6 +4,14 @@ Decisions the user has made in conversation, written down so that whoever builds
 have to ask again. Newest first. Where an answer supersedes the spoken brief
 (`docs/original-brief.md`) or an earlier note, the answer here wins.
 
+## 2026-09-25 — no unsolicited hats
+
+**Characters are hatless by default.** Add a hat only when the user explicitly
+requests one. An occupation, character role, or model preset must not imply
+headwear. Preserve exceptions the user has explicitly requested.
+
+**Martin has no hat.** His short black hair and glasses should remain visible.
+
 ## 2026-09-21 — the highwayman is a man (the user's answer, on Codex's Chapter 1 brief)
 
 Michael asked Codex to write a Chapter 1 redesign brief, leave it in this codebase and hand it

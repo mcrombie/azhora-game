@@ -91,6 +91,7 @@ One slot, key `azhora-road-checkpoint-v1`, version 1. Older version-1 saves must
 
 ## Conventions and gotchas
 
+- Characters are hatless unless the user explicitly requests a hat. Occupations, roles, and model presets must not add headwear automatically; preserve explicit user-requested exceptions. See `docs/design-answers.md` (2026-09-25).
 - `.gitattributes` sets `* -text`: files are stored byte for byte. `src/main.js`, `index.html` and `src/campaign.js` are CRLF; most other files are LF. Preserve whatever a file already uses.
 - Large heredocs fail in Git Bash on this machine. Write a script to a file and run it instead.
 - `src/main.js` and several modules use very long, dense lines on purpose. Do not reformat surrounding code when editing.

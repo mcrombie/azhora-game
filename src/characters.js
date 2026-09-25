@@ -1413,7 +1413,13 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     // **Bald.** Not the same thing as having no `hairStyle`: that falls through to the role's own
     // hair. This draws nothing, on purpose, and is Ben's (src/spider-quest.js).
     if (hairStyle === 'bald') { /* nothing on top, which is the whole of it */ }
-    else if (hairStyle === 'cropped') { fringe(0.328, 0.194); nape(); }
+    else if (hairStyle === 'cropped') {
+      // Cover the face mesh's crown as well as the rear skull; a fringe alone
+      // leaves a bare patch between them when no headwear is present.
+      part(crop, new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, 1.14),
+        hairMat, [0, .181, .005], [.218, .25, .202]);
+      fringe(0.328, 0.194); nape();
+    }
     else if (hairStyle === 'receding') {
       // A high forehead: hair left only at the temples and the back of the head.
       for (const side of [-1, 1]) {
@@ -2017,16 +2023,21 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     ribbon(body, bagMat, [.222, .84, .035], [.237, 1.052, .041], .034, .029);
     box(body, apronPatch, [.237, 1.049, .041], [.085, .034, .052]);
     const cord = part(body, new THREE.TorusGeometry(.067, .009, 4, 10), linen, [-.242, .852, .043]); cord.rotation.y = -.34;
-    // The faded red headcloth and low tied hair read from the rear as well as
-    // across a conversation, without making another cap-wearing courier.
-    round(head, kerchief, [0, .361, -.027], [.231, .096, .193]);
-    part(head, UNIT_CYLINDER, kerchief, [0, .318, -.008], [.223, .045, .188]);
-    round(head, kerchief, [.041, .282, -.204], [.047, .04, .037]);
-    ribbon(head, kerchief, [.035, .283, -.21], [.088, .139, -.223], .039, .021);
-    ribbon(head, kerchief, [.035, .277, -.21], [-.011, .164, -.243], .035, .018);
-    for (const [x, y, z, size] of [[-.016, .234, -.24, .074], [-.024, .164, -.265, .065], [-.033, .105, -.258, .046]])
-      round(head, hairMat, [x, y, z], [size, size * .94, size * .76]);
-    for (const side of [-1, 1]) round(head, hairMat, [side * .19, .257, .054], [.027, .071, .035]);
+    // A worker's trade does not grant headwear. Martin uses this build for the
+    // apron, with cropped hair and glasses; the headcloth requires an explicit opt-in.
+    if (look?.hat ?? hat) {
+      round(head, kerchief, [0, .361, -.027], [.231, .096, .193]);
+      part(head, UNIT_CYLINDER, kerchief, [0, .318, -.008], [.223, .045, .188]);
+      round(head, kerchief, [.041, .282, -.204], [.047, .04, .037]);
+      ribbon(head, kerchief, [.035, .283, -.21], [.088, .139, -.223], .039, .021);
+      ribbon(head, kerchief, [.035, .277, -.21], [-.011, .164, -.243], .035, .018);
+    }
+    // An explicit crop must not also inherit the woodcutter's tied-back hair.
+    if (!hairStyle) {
+      for (const [x, y, z, size] of [[-.016, .234, -.24, .074], [-.024, .164, -.265, .065], [-.033, .105, -.258, .046]])
+        round(head, hairMat, [x, y, z], [size, size * .94, size * .76]);
+      for (const side of [-1, 1]) round(head, hairMat, [side * .19, .257, .054], [.027, .071, .035]);
+    }
   } else if (isCourier) {
     const scarf = material(0xa64d3a), scarfFold = material(0x7d3c30);
     part(body, UNIT_CYLINDER, scarf, [0, 1.32, .015], [.145, .10, .117]);

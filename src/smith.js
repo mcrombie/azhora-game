@@ -23,7 +23,7 @@ import { BOW } from './archery.js';
 export const SMITH_NPC = Object.freeze({
   id: 'tidehaven-smith', name: 'Martin', role: 'Smith of Tidehaven',
   modelRole: 'forest-woodcutter', color: 0x6b5a3c,
-  look: Object.freeze({ hair: 0x171615, hairStyle: 'cropped', beard: false, glasses: true }),
+  look: Object.freeze({ hair: 0x171615, hairStyle: 'cropped', beard: false, glasses: true, hat: false }),
 });
 
 /** The army's armourer at the Moros outpost, beside the smithy tent that was already standing. */
