@@ -9198,6 +9198,12 @@ function init() {
           const npc=npcById.get(view.slice(4)),g=npc.actor.group,turn=g.rotation.y+.35;g.visible=true;
           const px=g.position.x+Math.sin(turn)*3,pz=g.position.z+Math.cos(turn)*3;player.group.position.set(px,world.heightAt(px,pz),pz);
           reviewTarget=new THREE.Vector3(g.position.x,g.position.y+1.1,g.position.z);yaw=turn;pitch=.08;distance=targetDistance=3;}
+        if((view==='jessi'||view==='jessi-back')&&npcById.has('cobble-jessi')){
+          questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;reviewFrozen=true;
+          const g=npcById.get('cobble-jessi').actor.group;g.rotation.y=-Math.PI/2+(view==='jessi-back'?Math.PI:0);g.visible=true;
+          player.group.position.set(g.position.x-3,g.position.y,g.position.z+1);
+          reviewTarget=g.position.clone().add(new THREE.Vector3(0,1.45,0));yaw=-Math.PI/2+.35;pitch=.14;distance=targetDistance=2.2;settleCamera();
+        }
         // Katy by the spring pool with her spyglass: face on ('katy'), and from behind, for the hair and the cape ('katy-back').
         if(view==='katy'||view==='katy-back'){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
           const k=npcById.get(KATY.id).actor.group,at=k.position,face=KATY_STAND.yaw,turn=view==='katy'?face+.45:face+Math.PI+.35;

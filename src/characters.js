@@ -1186,6 +1186,8 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // not stand in eleven different tunics above one shared pair of olive trousers.
   const trousers = material(isDyer ? 0x8e44ec : isMercenary ? new THREE.Color(tunic).multiplyScalar(0.66).lerp(new THREE.Color(0x585244), 0.45) : isSoldier ? (isSuvaliGuard ? 0x4a4a45 : isElodiGuard ? 0x2c2c30 : 0x5a4a3c) : isLocalWorker ? isReedWorker ? 0x5a685c : 0x655a48 : isWoodcutter ? 0x635846 : isVineKeeper ? 0x584b3a : isWinemaker ? 0x4d4a44 : isRivalKeeper ? 0x232427 : isLightKeeper ? 0x3c4a4e : isBirdWatcher ? 0x3b3129 : isGardenKeeper ? 0x4a4436 : isTraveler ? 0x68523c : role === 'fisher' ? 0x667779 : 0x76714e);
   const hairMat = material(Number.isInteger(look?.hair) ? look.hair : isWineSeller ? 0x241b16 : isWineClerk ? 0xb2461f : isKaty ? 0xead38e : isKeeperKin ? 0x9c8355 : isWinemaker ? 0x53381f : isVineKeeper ? 0x1b1512 : isKeeper ? 0x87301a : isDyer ? 0x6b3a26 : isBirdWatcher ? 0x5c4430 : isGardenKeeper ? 0x877b62 : isShelterKeeper ? 0x797368 : isReedWorker ? 0x403b32 : isMiller ? 0x624731 : isCustodian ? 0x8e8b7d : isBridgeKeeper ? 0x42382e : isClerk ? 0x685445 : isTraveler ? 0x806044 : isCook ? 0x624330 : isDoomsayer ? 0xa2a293 : isPondFisher ? 0x5d5140 : role === 'harbormaster' ? 0x79776b : role === 'warden' ? 0x503d30 : 0x6b462c);
+  const hairColors = hairStyle === 'long-tied' && Array.isArray(look?.hairColors)
+    ? look.hairColors.filter(Number.isInteger).map(color => material(color)) : [];
   const dark = material(0x282d23);
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
@@ -1334,12 +1336,12 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const crownMat = isMercenary && hairStyle === 'none' ? stubbleMat : hairMat;
   const templeMat = isMercenary && ['none', 'shaved-sides', 'topknot'].includes(hairStyle) ? stubbleMat : hairMat;
   part(head, UNIT_CYLINDER, skinMat, [0, -0.035, 0], [0.069, 0.14, 0.069]);
-  round(head, crownMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
+  round(head, hairColors.length ? skinMat : crownMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
   round(head, skinMat, [0, 0.181, 0.015], [isCook || slight || isDyer ? 0.187 : 0.195, 0.228, 0.18]);
   for (const side of [-1, 1]) {
     round(head, skinMat, [side * 0.194, 0.186, 0], [0.047, 0.062, 0.044]);
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
-    if (!isTraveler && !isCook && !isSoldier) box(head, templeMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
+    if (!isTraveler && !isCook && !isSoldier && !hairColors.length) box(head, templeMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
     round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, isAvrelFarmer ? 0.021 : 0.031, 0.016]);
     round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, isAvrelFarmer ? 0.018 : 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
@@ -1454,6 +1456,35 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
         temple.rotation.z = side * 0.32;
       }
       nape();
+    } else if (hairStyle === 'long-tied' && hairColors.length) {
+      // Opaque coloured locks are baked into the normal head batch. The curved
+      // hairline stays above the glasses and wraps the temples and rear scalp.
+      for (const [stripe, tint] of hairColors.entries()) {
+        const start = stripe * Math.PI * 2 / hairColors.length, width = Math.PI * 2 / hairColors.length;
+        const vertices = [], indices = [], rows = 8, columns = 2;
+        for (let row = 0; row <= rows; row++) for (let col = 0; col <= columns; col++) {
+          const phi = start + width * col / columns;
+          const theta = (1.95 - .78 * Math.max(0, Math.sin(phi))) * row / rows;
+          vertices.push(-Math.cos(phi) * Math.sin(theta) * .238,
+            .19 + Math.cos(theta) * .257, -.02 + Math.sin(phi) * Math.sin(theta) * .223);
+        }
+        for (let row = 0; row < rows; row++) for (let col = 0; col < columns; col++) {
+          const i = row * (columns + 1) + col;
+          indices.push(i + 1, i, i + columns + 2, i, i + columns + 1, i + columns + 2);
+        }
+        const lock = new THREE.BufferGeometry();
+        lock.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        lock.setIndex(indices); lock.computeVertexNormals();
+        part(crop, lock, tint, [0, 0, 0]);
+        // Matching streaks continue through the gathering and down the tail.
+        for (const [y, z, sx, sy, sz] of [[.198, -.222, .116, .116, .1],
+          [.088, -.298, .062, .074, .062], [-.022, -.312, .054, .064, .054],
+          [-.126, -.302, .042, .050, .042]]) {
+          part(crop, new THREE.SphereGeometry(1, 2, 6, start, width), tint, [0.008, y, z], [sx, sy, sz]);
+        }
+      }
+      const tie = part(crop, new THREE.TorusGeometry(.052, .013, 4, 8), linen, [0, .174, -.27]);
+      tie.rotation.y = Math.PI / 2;
     } else if (hairStyle === 'long-tied') {
       fringe(0.33, 0.184);
       round(crop, hairMat, [0, 0.198, -0.222], [0.116, 0.116, 0.1]);

@@ -483,3 +483,7 @@ MAT keep their existing names and appearances.
 - Troy is also from Ambron; after his case he takes the Cobble-Port Calos ferry and walks to his own house on Raft Street, west of the river. His house has a named mailbox, sage frontage and reading bench.
 - Cagney, Ben and Troy (the user confirmed Ben, not Bill) go inside once home and paid. Knock at their door and ask them outside to talk. They stay outside while visiting, then go back in after the player leaves. Building interiors remain future work.
 - Travel and residency persist in checkpoints and pause with gameplay; quest playtests reset only their own resident. Older completed quests acquire a home journey without replaying rewards.
+
+### 2026-09-25 - Jessi of Cobble
+
+Jessi has twelve distinct hair colors in streaks across her crown and long tied ponytail. Keep her glasses and no hat; the generic fisher beard does not belong to her. Jess the ferrywoman is a separate character.

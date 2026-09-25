@@ -29,9 +29,11 @@ const soldier = (id, name, role, modelRole) =>
  * of 22 September 2026, and these four stand in their places.
  */
 export const PEBLOS_NPCS = Object.freeze([
-  // **Jessi**: long red and green hair in a ponytail, and glasses. She fishes, and she teaches it.
+  // **Jessi**: twelve distinct hair colours, swept into her long ponytail, and glasses.
   person('cobble-jessi', 'Jessi', 'Fisher, of Cobble', 'pond-fisher', 0x4d6f63,
-    { hair: 0x8c2f2a, hairSplit: 0x3f6b46, hairStyle: 'long-tied', glasses: true }),
+    { hair: 0x8c2f2a, hairColors: Object.freeze([0xc83d49, 0xed7139, 0xe7b343, 0xc5d94f,
+      0x54a653, 0x329b87, 0x4dc8cc, 0x4086cf, 0x5654a8, 0x9665c0, 0xc04496, 0xee8dac]),
+      hairStyle: 'long-tied', glasses: true, beard: false }),
   // **Ari**: brown skin, curly black hair. The village's own accountant, who keeps Cobble's books
   // against the Empire's tally — and who was not where she says she was.
   person('cobble-ari', 'Ari', 'Keeper of the village books', 'rise-custodian', 0x6a5f7d,
