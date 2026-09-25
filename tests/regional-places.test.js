@@ -58,7 +58,9 @@ test('Actual regional roads connect every new activity without removing existing
   const { journeySites, regionNpcPositions, regionFirePits, regionRepairBenches, northernRoad } = await sourceModule('../src/regions.js');
   const scene = new THREE.Scene(), world = createWorld(scene);
   assert.equal(world.regionalPlaces.length, 3); assertRoutes(world);
-  assert.deepEqual(Object.keys(world.journeySites).sort(), Object.keys(journeySites).sort());
+  const { DRENT_SITES } = await import('../src/drent-sites.js');
+  assert.deepEqual(world.journeySites, { ...journeySites,
+    'drent-rebel-evidence': DRENT_SITES.evidence, 'drent-armory-supplies': DRENT_SITES.supplies });
   /**
    * **Reachable, which is not the same as standable on.** Every destination used to be a place
    * you stand; the Caloss bridge repair is the one that is not, because six paces of the span are

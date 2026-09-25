@@ -6,8 +6,9 @@ import { CIVIL_WAR_SERIES } from './civil-war-quests.js';
 import { makeQuestMarker } from './characters.js';
 import { questLive } from './quest-slate.js';
 
-export function createVastosHost({scene,world,npcData}) {
-  const live=questLive(VASTOS_QUEST_ID),camp=live?createVastosCamp(scene,world):null;
+// An explicit opt-in keeps the preserved prototype testable; the game follows the quest slate.
+export function createVastosHost({scene,world,npcData,enabled=questLive(VASTOS_QUEST_ID)}) {
+  const live=enabled===true,camp=live?createVastosCamp(scene,world):null;
   let hooks={},near=null,clock=0,hudKey=null;
   const quest=createVastosCivilWar({inventory:{add:(...args)=>hooks.inventory?.add(...args)??false}});
   if(live){
@@ -32,6 +33,7 @@ export function createVastosHost({scene,world,npcData}) {
   }
   const context=()=>({quest,act,openDialogue:hooks.openDialogue,closeDialogue:hooks.closeDialogue});
   function knownLocations(discovered=false){
+    if(!live)return [];
     const ids=new Set([...quest.view().knownIds,...(discovered?['vastos-herder']:[])]);
     return [...ids].map(id=>{const at=VASTOS_POSITIONS[id],person=VASTOS_NPCS.find(n=>n.id===id);
       return at?{id,...at,name:person?.name??at.name??'The Common Water',description:person?.role??at.prompt??'',kind:'plot'}:null;}).filter(Boolean);

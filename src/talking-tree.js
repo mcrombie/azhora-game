@@ -21,7 +21,7 @@ export const TALKING_TREE_VERSION = 1;
 
 export const TALKING_TREE = Object.freeze({
   id: 'old-tree', name: 'The Old Tree',
-  x: -130, z: 100,
+  x: -136, z: 114,
   trunkRadius: 1.9, height: 24,
   note: 'The biggest tree in Drent, in a clearing of its own south of the Greenway, off every path. It is older than anything near it by a long way.',
 });

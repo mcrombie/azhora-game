@@ -177,7 +177,8 @@ test('the real world exports immutable shoreline, pond, and unbroken Caloss char
   assert.ok(river.points.length > 100 && river.points.length % 2 === 0, 'both banks of the Caloss are charted');
   assert.throws(() => { river.points[0].x = 99; }, TypeError);
   const village = model(world), crossing = model(world, { regionId: 2 });
-  assert.equal(village.buildings.length, 12, 'nine Tidehaven cottages, the barracks, the woodland watch, and the Avrel clearing farm');
+  assert.equal(village.buildings.length, 15, 'the chart includes the expanded authored cottages, farms, and barracks');
+  assert.ok(village.buildings.some(building => building.x === -505 && building.z === 24), 'Sylvia\'s cottage appears on the Drent chart');
   const oldCamp = at(-138, -31), lusciaCamp = at(-456, 154), campCentre = world.forestHideout.center;
   const hasPoint = (chart, point) => chart.paths.some(path => path.some(p => Math.abs(p.x - point.x) < .01 && Math.abs(p.z - point.z) < .01));
   assert.ok(!hasPoint(village, oldCamp), 'Drent is a level 0 province: no goblin camp trail remains on its chart');

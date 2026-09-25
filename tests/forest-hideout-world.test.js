@@ -44,7 +44,11 @@ test('Drent keeps every original collectible, and the goblin camp in southern Pu
   const { createWorld } = await sourceModule('../src/world.js');
   const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), life = createWoodlandLife(scene, world), original = life.state();
-  assert.deepEqual([original.acorns.length, original.sticks.length, original.fruits.length, original.squirrels.length], [24, 14, 12, 4]);
+  assert.deepEqual([original.acorns.length, original.sticks.length, original.fruits.length], [24, 14, 12]);
+  assert.ok(original.squirrels.length > 4, 'the four village squirrels are joined by residents throughout Drent');
+  const treeIds = new Set([...world.broadleafTrees, ...world.regionalBroadleafTrees].map(tree => tree.id));
+  assert.equal(new Set(original.squirrels.map(squirrel => squirrel.tree.id)).size, original.squirrels.length, 'every squirrel has its own tree');
+  assert.ok(original.squirrels.every(squirrel => treeIds.has(squirrel.tree.id)), 'squirrel homes belong to actual woodland trees');
   assert.equal(world.forestHideout.id, site.id);
   const camp = world.forestHideout;
   const curve = new THREE.CatmullRomCurve3(camp.trail.map(p => new THREE.Vector3(p.x, 0, p.z)));

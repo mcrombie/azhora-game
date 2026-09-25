@@ -126,7 +126,9 @@ export function createPortCalosScenery({parent,heightAt,colliders,signs}) {
   trade.beam('#b7ae85',[wx,wy+2.8,wz],[wx,wy+.3,wz],.04);
   push({x:wx,z:wz,r:1.2,kind:'port-well'});
   finish(trade);
-  signs?.place({x:-493,z:309,label:'Port Calos',facing:-Math.PI/2,parent:group});
-  signs?.place({x:-424,z:304,label:'The Quay',facing:-Math.PI/2,parent:group});
+  // These signs stand on the rendered terrace, whose coarse shoreline mesh
+  // can sit below the analytic terrain. Their boards and collision share it.
+  signs?.place({x:-493,z:309,label:'Port Calos',facing:-Math.PI/2,parent:group,groundY:ground(-493,309)});
+  signs?.place({x:-424,z:304,label:'The Quay',facing:-Math.PI/2,parent:group,groundY:ground(-424,304)});
   return {group,metrics,quay:PORT_CALOS_QUAY};
 }

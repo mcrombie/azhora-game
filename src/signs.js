@@ -231,8 +231,8 @@ export function createSigns(kit) {
   }
 
   /** A square name board between two posts, turned to `facing` (the board's normal, radians about Y). */
-  function place({ x, z, label, facing = 0, parent, record = true, collide = true }) {
-    const y = groundFor(parent)(x, z);
+  function place({ x, z, label, facing = 0, parent, record = true, collide = true, groundY = null }) {
+    const y = groundY ?? groundFor(parent)(x, z);
     const group = new THREE.Group(); group.name = `Place board: ${label}`; group.position.set(x, y, z); group.rotation.y = facing; parent.add(group);
     const written = signText(label), length = labelMetres(written) + .7, height = .66, depth = .08;
     for (const side of [-1, 1]) squarePost(group, side * (length / 2 + .08), 0, 0, 2.35, .17);

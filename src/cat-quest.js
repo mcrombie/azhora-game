@@ -208,7 +208,10 @@ export function createMopWalk({ random = Math.random, at = CAT.at } = {}) {
   const gap = (ax, az, bx, bz) => Math.hypot(ax - bx, az - bz);
 
   /** The host places the model each frame, the way it does the harbour cat's. */
-  function place(x, z) { point.x = x; point.z = z; }
+  function place(x, z) {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+    point.x = x; point.z = z; return true;
+  }
 
   // `place` receives the collision-adjusted feet; `update` only proposes a step.
   const snapshot = () => ({ version: 1, x: point.x, z: point.z, mode: state.mode,
@@ -233,7 +236,7 @@ export function createMopWalk({ random = Math.random, at = CAT.at } = {}) {
    * point it is being fought at, and `home` where Liz is standing.
    */
   function update(dt, { player, speed = 0, fight = false, threat = null, home = null } = {}) {
-    const step = Math.max(0, Math.min(.1, dt));
+    const step = Number.isFinite(dt) && dt > 0 ? Math.min(.1, dt) : 0;
     const toPlayer = player ? gap(point.x, point.z, player.x, player.z) : Infinity;
     const frightened = fight && (!threat || gap(point.x, point.z, threat.x, threat.z) < MOP.fight);
     let bolted = false;

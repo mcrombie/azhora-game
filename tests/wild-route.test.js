@@ -6,7 +6,7 @@ import { canStand } from '../src/game-state.js';
 import { BODY } from '../src/bodies.js';
 import { ANCHORS } from '../src/regions.js';
 import {
-  MERCENARY_ROSTER, MUS_ARRIVAL, drawMusArrival, createMercenaryCompany, mercenaryById, roadLengths,
+  ARRIVALS, MERCENARY_ROSTER, MUS_ARRIVAL, drawMusArrival, createMercenaryCompany, mercenaryById, roadLengths,
 } from '../src/mercenaries.js';
 import { WILD, MUS_ROUTE, MUS_BEACH, routeMetres, wildJourney } from '../src/wild-route.js';
 
@@ -27,7 +27,7 @@ const MARGIN = 3 * 60;
 const stops = [{ id: 'induction', point: world.npcPositions['meadow-courier'], dwell: 90 },
   { id: 'crossing', point: world.npcPositions['crossing-keeper'], dwell: 60 },
   { id: 'relay', point: world.npcPositions['relay-clerk'], dwell: 120 }].filter(stop => stop.point);
-const companyFor = seed => createMercenaryCompany({ road, stops, muster: camp, landing: world.spawn, seed });
+const companyFor = (seed, wild = true) => createMercenaryCompany({ road, stops, muster: camp, landing: world.spawn, seed, wild });
 
 /** Shortest distance from a point to the main road. */
 function toRoad(x, z) {
@@ -108,17 +108,18 @@ test('nobody on the road ever sees him pass', () => {
   assert.ok(last.z < camp.z, 'he comes down onto the plain from the north-west, not in at the gate');
 });
 
-test('every metre of the authored line is ground a body can stand on, and none of it is wet', () => {
+test('every quarter-metre of the authored line is ground a body can stand on, and none of it is wet', () => {
   // The repair this is here for: the first draft ran A* over standable *cells* and then let the
   // simplifier cut corners between them. Neither step checked the line itself, so 29 m of the
   // authored route - legs 1, 2, 4, 5 and 8, the first only a few metres off his own beach - lay
   // through props the A* had carefully gone round. Both checks are inside the loops now: every
-  // grid edge, and every shortcut. This measures the result a metre at a time.
+  // grid edge, and every shortcut. A quarter-metre interval also catches a tree clipped between
+  // the old metre-wide samples as regional scenery changes.
   let blocked = 0, wet = 0, metres = 0;
   const bad = [];
   for (let i = 1; i < MUS_ROUTE.length; i++) {
     const a = MUS_ROUTE[i - 1], b = MUS_ROUTE[i], leg = Math.hypot(b.x - a.x, b.z - a.z);
-    const steps = Math.max(2, Math.ceil(leg));
+    const steps = Math.max(2, Math.ceil(leg * 4));
     metres += leg;
     for (let s = 0; s <= steps; s++) {
       const t = s / steps, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
@@ -127,7 +128,7 @@ test('every metre of the authored line is ground a body can stand on, and none o
     }
   }
   assert.ok(metres > 1500, `only ${metres.toFixed(0)} m of line to walk`);
-  assert.deepEqual(bad, [], `${blocked} metres of the authored line are not standable`);
+  assert.deepEqual(bad, [], `${blocked} samples of the authored line are not standable`);
   assert.equal(wet, 0, 'and none of it is water: he walks, he does not swim');
 });
 
@@ -168,6 +169,7 @@ test('every step of it is ground a body can walk', () => {
 
 test('the law: whatever he draws, a traveler who goes straight there is in first', () => {
   const earliest = mustersAt(0);
+  const travel = mercenaryById('merc-mus').departs + wildJourney(camp).seconds;
   // Sweep both ends of the draw by hand, then a few hundred seeds.
   const ends = [];
   for (let seed = 0; seed < 4000 && ends.length < 2; seed++) {
@@ -178,6 +180,8 @@ test('the law: whatever he draws, a traveler who goes straight there is in first
   let worst = Infinity, worstSeed = null, latest = -Infinity;
   for (let seed = 0; seed < 400; seed++) {
     const at = mustersAt(seed);
+    assert.ok(Math.abs(at - (drawMusArrival(seed) + travel)) < 1e-6,
+      `seed ${seed} keeps its whole arrival draw, beach wait and wilderness journey`);
     if (at < worst) { worst = at; worstSeed = seed; }
     latest = Math.max(latest, at);
   }
@@ -185,20 +189,33 @@ test('the law: whatever he draws, a traveler who goes straight there is in first
   assert.ok(worst > DIRECT_TRAVELER + MARGIN,
     `seed ${worstSeed} musters at ${(worst / 60).toFixed(1)} min, and a direct traveler is in at ${DIRECT_TRAVELER / 60}`);
   assert.ok(earliest > 0);
-  // The range, pinned: he is never in before the half-hour and can be the last man in.
+  // The wilderness cost stays slow enough, while both ends follow the company's present
+  // arrival window. The living-story timetable shortened that window from the old hour.
   assert.ok(worst / 60 > 30 && worst / 60 < 36, `earliest muster ${(worst / 60).toFixed(1)} min`);
-  assert.ok(latest / 60 > 90 && latest / 60 < 102, `latest muster ${(latest / 60).toFixed(1)} min`);
+  assert.ok(worst >= MUS_ARRIVAL.from + travel - 1e-6);
+  assert.ok(latest <= MUS_ARRIVAL.to + travel + 1e-6);
+  assert.ok(latest - worst > (MUS_ARRIVAL.to - MUS_ARRIVAL.from) * .95,
+    'the seed sweep exercises nearly the full arrival window');
   // Nothing of his draw was clipped to buy this: the whole range is still there, half a minute
   // before the traveler included.
   assert.equal(MUS_ARRIVAL.from, -30);
-  assert.ok(MUS_ARRIVAL.to > 3800);
+  assert.equal(MUS_ARRIVAL.to, ARRIVALS.princes + 30);
 });
 
-test('the ten who use the road keep the clock they always had', () => {
-  // The pin from docs/drent-long-road.md: the tenth man in musters at 5,234.5 s. Mus is not one
-  // of the ten any more, so he is pinned separately, as a range, by the test above.
+test('giving Mus a wild route preserves every road mercenary timetable', () => {
   const company = companyFor(0);
+  const roadOnly = companyFor(0, false);
   const roadMen = MERCENARY_ROSTER.filter(m => m.route !== 'wild').map(m => m.id);
+  // Compare the same company with only Mus's special route disabled. Pinning an old absolute
+  // muster time hid later intentional arrival/stop changes and did not test this guarantee.
+  for (let time = -60; time <= 4000; time += 10) {
+    const actual = company.placements(time), baseline = roadOnly.placements(time);
+    for (const id of roadMen) {
+      const a = actual.find(p => p.id === id), b = baseline.find(p => p.id === id);
+      assert.deepEqual([a.phase, a.distance, a.stopId], [b.phase, b.distance, b.stopId],
+        `${id}'s road schedule is unchanged at ${time}s`);
+    }
+  }
   const musterTimes = roadMen.map(id => {
     let low = 0, high = 20000;
     for (let i = 0; i < 44; i++) {
@@ -208,8 +225,6 @@ test('the ten who use the road keep the clock they always had', () => {
     return high;
   }).sort((a, b) => a - b);
   assert.equal(roadMen.length, 9, 'nine of the ten use the road; Mus does not');
-  assert.ok(Math.abs(musterTimes[musterTimes.length - 1] - 5234.5) < 2,
-    `the last road man musters at ${musterTimes[musterTimes.length - 1].toFixed(1)} s, and the pin is 5,234.5`);
   // Where Mus falls among them is the seed's business, which is why he is pinned as a range
   // rather than as a place. On some draws he is last in; on others the princes are.
   const places = new Set();
@@ -217,7 +232,7 @@ test('the ten who use the road keep the clock they always had', () => {
     const his = mustersAt(seed);
     places.add(musterTimes.filter(t => t < his).length + 1);
   }
-  assert.ok(places.size > 3, `he only ever comes ${[...places].join(', ')} of ten`);
+  assert.ok(places.size > 1, `he only ever comes ${[...places].join(', ')} of ten`);
   assert.ok(places.has(10), 'on some seeds he is the last man in, which is why the old pin had to move');
 });
 

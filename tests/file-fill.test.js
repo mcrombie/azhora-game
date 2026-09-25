@@ -155,7 +155,8 @@ test('the dead among the fill cost nothing anywhere', async () => {
   // A fill soldier is not on the companions list, so none of the things that happen to a
   // companion can happen to him: he is never `walksWith`, so he is never `died`, never `fallen`,
   // never a card, never a name the Marshal is owed.
-  assert.match(main, /if\(e\.type==='ally-down'&&companions\.walksWith\(e\.id\)\)\{/, 'only a companion is mourned');
+  assert.match(main, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)\{/, 'only a companion or the landing mate is mourned');
+  assert.match(main, /fileOrder=company\.companionIds\?\?\(company\.companionId\?\[company\.companionId\]:\[\]\);/, 'the company file contains named companions, not fill soldiers');
   assert.match(source('companions.js'), /const known = id => COMPANION_IDS\.includes\(id\);/);
   const { COMPANION_IDS, createCompanions } = await import('../src/companions.js');
   const { createFallen } = await import('../src/bystanders.js');

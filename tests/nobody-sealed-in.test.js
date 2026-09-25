@@ -168,20 +168,23 @@ test('every man the company places is on ground a body can stand on', () => {
   // and he is past an obstacle in a second; a waiting, stopped or mustered man holds his place
   // for a minute or more, is drawn and steered the whole time, and if he cannot reach it he
   // spends the dwell walking on the spot against a hedge.
-  const seen = {}, blocked = {}, examples = {};
+  const seen = {}, blocked = {}, examples = {}, peopleByPhase = {};
   let checked = 0;
   for (let t = 0; t <= 25000; t += 5) for (const placement of company.placements(t)) {
     if (placement.phase === 'coming') continue;
     checked++;
     seen[placement.phase] = (seen[placement.phase] ?? 0) + 1;
+    (peopleByPhase[placement.phase] ??= new Set()).add(placement.id);
     if (canStand(placement.x, placement.z, world, BODY.person)) continue;
     blocked[placement.phase] = (blocked[placement.phase] ?? 0) + 1;
     (examples[placement.phase] ??= []).push(`${placement.id} at ${placement.x.toFixed(1)}, ${placement.z.toFixed(1)} ` +
       `(ground ${world.heightAt(placement.x, placement.z).toFixed(2)}) at ${t}s`);
   }
   assert.ok(checked > 40000, `only ${checked} placements checked`);
-  assert.ok(seen.landing > 400 && seen.stopped > 400 && seen.walking > 1000 && seen.mustered > 1000,
-    `the sweep saw ${JSON.stringify(seen)}`);
+  // Coverage follows the people and their phases, not the old length of their landing wait.
+  for (const phase of ['landing', 'mustered'])
+    assert.deepEqual([...peopleByPhase[phase]].sort(), MERCENARY_ROSTER.map(m => m.id).sort(), `${phase} covers every mercenary`);
+  assert.ok(seen.stopped > 0 && seen.walking > 0, `the sweep saw ${JSON.stringify(seen)}`);
   // The three that are held for a long time must be zero, and the message names the phase.
   for (const phase of ['landing', 'stopped', 'mustered'])
     assert.deepEqual(examples[phase]?.slice(0, 4) ?? [], [],
@@ -237,9 +240,14 @@ test('a stopped man is moved to ground he can reach, and nobody else moves at al
 
 /** And Ed the Word, whom the sea put down, waits on his own strand rather than on the boards. */
 test('the man the sea landed waits where the sea landed him', () => {
-  const waiting = company.placements(WORD_ASHORE + 60).find(p => p.id === 'merc-word');
-  assert.equal(waiting.phase, 'landing');
-  assert.deepEqual([waiting.x, waiting.z], [WORD_BEACH.x, WORD_BEACH.z]);
-  assert.ok(canStand(waiting.x, waiting.z, world, BODY.person), 'and it is ground he can stand on');
-  assert.ok(Math.hypot(waiting.x - world.spawn.x, waiting.z - world.spawn.z) > 8, 'nowhere near the boats');
+  const ed = MERCENARY_ROSTER.find(m => m.id === 'merc-word'), leaves = ed.arrival + ed.departs;
+  assert.ok(leaves > WORD_ASHORE, 'he has time to recover after swimming ashore');
+  for (const at of [WORD_ASHORE, (WORD_ASHORE + leaves) / 2, leaves - .01]) {
+    const waiting = company.placements(at).find(p => p.id === ed.id);
+    assert.equal(waiting.phase, 'landing');
+    assert.deepEqual([waiting.x, waiting.z], [WORD_BEACH.x, WORD_BEACH.z]);
+    assert.ok(canStand(waiting.x, waiting.z, world, BODY.person), 'and it is ground he can stand on');
+    assert.ok(Math.hypot(waiting.x - world.spawn.x, waiting.z - world.spawn.z) > 8, 'nowhere near the boats');
+  }
+  assert.equal(company.placements(leaves).find(p => p.id === ed.id).phase, 'walking');
 });

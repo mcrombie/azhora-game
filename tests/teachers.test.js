@@ -424,21 +424,23 @@ test('the loan lives inside the bout and nowhere else', () => {
   const main = source('main.js');
   // It is one closure variable with three readers, and it is in no snapshot anywhere.
   assert.match(main, /let lent=null;/, 'the loan is one variable');
-  // And it is in no save: the one line that writes the checkpoint never mentions it, and the
-  // teaching snapshot holds lessons and nothing else (asserted from the module's side above).
-  const saveAt = main.indexOf('const result=checkpoint.save({');
-  assert.ok(saveAt > 0, 'the checkpoint is still written where it was');
-  const saveLine = main.slice(saveAt, main.indexOf('\n', saveAt));
-  assert.ok(saveLine.includes('teachers:teachers.snapshot()'), 'the lessons given are saved');
-  assert.ok(!/\blent\b/.test(saveLine), 'and nothing borrowed is');
+  // Both road and recovery stores use the same snapshot; neither keeps a borrowed item.
+  const saveAt = main.indexOf('function roadSnapshot(){');
+  const saveEnd = main.indexOf('function saveRoad(', saveAt);
+  assert.ok(saveAt > 0 && saveEnd > saveAt, 'the shared checkpoint snapshot exists');
+  const saveBody = main.slice(saveAt, saveEnd);
+  assert.ok(saveBody.includes('teachers:teachers.snapshot()'), 'the lessons given are saved');
+  assert.ok(!/\blent\b/.test(saveBody), 'and nothing borrowed is');
+  assert.match(main, /const result=store\.save\(roadSnapshot\(\)\);/, 'checkpoint storage writes that shared snapshot');
   assert.deepEqual(Object.keys(createTeachers().snapshot()).sort(), ['lessons', 'version']);
   assert.match(main, /function lentProfile\(\)\{/, 'combat is handed a real weapon built from the table');
   assert.match(main, /const heldWeapon=\(\)=>lentProfile\(\)\?\?weapons\?\.profile\(\)\?\?null;/,
     'what is in his hand is the loan, or his own');
   assert.match(main, /getWeapon:\(\)=>heldWeapon\(\)/, 'and that is what the fight swings');
   assert.match(main, /swingCost:m\.swingCostFor\(heldWeapon\(\)\?\.id\)/, 'and what a swing costs is the loan’s family');
-  assert.match(main, /hasShield:!!lent\?\.shield\|\|!!gear\.wearing\('hand'\)/, 'a lent shield is on his arm');
-  assert.match(main, /const carried=!!lent\?\.shield\|\|!!gear\.wearing\('hand'\);/, 'and is drawn there');
+  assert.match(main, /function hasCarriedShield\(\)\{return !!lent\?\.shield\|\|!!gear\.wearing\('hand'\)\|\|practiceShield\(\);\}/, 'the shared shield rule includes the loan, equipment, and tutorial practice shield');
+  assert.match(main, /hasShield:hasCarriedShield\(\)/, 'a lent shield is handed to combat');
+  assert.match(main, /const carried=hasCarriedShield\(\);/, 'and the same shield rule draws it');
   // Nothing about it reaches the satchel, the weapon rack or the gear.
   assert.doesNotMatch(main, /inventory\.add\(lent/, 'it is never put in the satchel');
   assert.doesNotMatch(main, /weapons\.equip\(lent/, 'it is never equipped');

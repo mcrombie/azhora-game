@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand, waterAt } from '../src/game-state.js';
 import { createSkills } from '../src/skills.js';
 import { PLANT_SPECIES, PLANT_IDS, BOTANIST, BOTANIST_STAND, BOTANY_LESSON, HERB_ITEM, TUCKAHOE_ITEM, LEAF_ITEM, JIMSON_ITEM,
   TREE_IDS, plant, createBotany, validateBotanySnapshot, botanistConversation } from '../src/botany.js';
@@ -401,6 +401,7 @@ test('a tree is named, never taken, and every tree in botany stands somewhere in
   }
   const cypress = standing.find(tree => tree.species === 'bald-cypress');
   assert.ok(!canStand(cypress.x, cypress.z, world, .6), 'the cypress stands in the river, where it belongs');
+  assert.ok(world.heightAt(cypress.x, cypress.z) < waterAt(cypress.x, cypress.z, world), 'its roots are below the actual river surface, not merely blocked by a collider');
   assert.equal(trees.nearest({ x: cypress.x + 1, z: cypress.z }).species, 'bald-cypress');
   assert.equal(trees.colliders.length, standing.length, 'every trunk is solid');
   trees.dispose();

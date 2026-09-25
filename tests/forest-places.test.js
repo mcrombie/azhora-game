@@ -53,14 +53,17 @@ test('Place protection is local and leaves original main quest interaction space
   for (const collider of world.colliders.filter(c => c.kind === 'forest-place')) assert.ok(collider.x > -164 && collider.x < 6);
 });
 
-test('Each trail advertises its destination and terrain tint stays within the authored woodland', () => {
+test('Minor woodland paths stay unsigned while the main road remains marked and terrain tint stays local', () => {
+  const mainRoad = world.roadSigns.find(sign => sign.label === 'The Greenway');
+  assert.ok(mainRoad, 'the main road retains its fingerpost');
+  assert.equal(mainRoad.kind, 'direction');
+  assert.equal(mainRoad.returnLabel, 'Tidehaven Landing');
+  assert.equal(canStand(mainRoad.x, mainRoad.z, world), false, 'the main-road post has physical collision');
   for (const site of forestPlaceDefinitions) {
-    const sign = world.roadSigns.find(sign => sign.label === site.name);
-    assert.ok(sign, `${site.name} needs a visible named junction`);
-    assert.equal(sign.returnLabel, 'Village road');
+    assert.equal(world.roadSigns.some(sign => sign.label === site.name || sign.returnLabel === site.name), false,
+      `${site.name} is discovered by following its unsigned dirt path`);
     const head = W(site.trail[0]);
-    assert.ok(Math.hypot(sign.x - head.x, sign.z - head.z) < 9);
-    assert.equal(canStand(sign.x, sign.z, world), false, 'The visible post must have collision');
+    assert.ok(canStand(head.x, head.z, world, .6), `${site.name}'s unmarked entrance remains walkable`);
   }
   for (const [x, z] of [[0, 5], [0, -162], [20, -230], [-15, -420], [0, -590], [85, -90]]) {
     const initial = new THREE.Color('#85a46b'), copy = initial.clone(); tintForestGround(copy, x, z);

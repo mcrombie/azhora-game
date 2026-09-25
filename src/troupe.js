@@ -30,8 +30,9 @@ const stop = (id, region, where, x, z, yaw) => freeze({ id, region, where, x, z,
 /** Where the wagon camps: level open ground beside a road in each region (found by searching the world with tests/find-troupe-stops.mjs, and checked in tests/troupe.test.js). */
 export const TROUPE_STOPS = freeze([
   stop('avrel', 'Drent', 'the edge of the Avrel clearing', -430.4, 46.4, .785),
-  // The legacy stop id is kept for saves; the stage is now past the Avrel farms.
-  stop('fernway', 'Drent', 'the roadside stage west of the Avrel farms', -546, 78.5, 0),
+  // The legacy stop id is kept for saves; the stage is past the Avrel farms, in the open
+  // verge between the nearby trunks, with room for both the wagon and its audience.
+  stop('fernway', 'Drent', 'the roadside stage west of the Avrel farms', -539.5, 75.8, 0),
   stop('lumber-town', 'Luscia', 'the meadow outside Nothom', -679.1, 334.9, Math.PI / 2),
   stop('moros', 'Moros Plain', 'a wayside on the Moros Plain', -867.1, 543.2, Math.PI),
   stop('solis-road', 'West Suval', 'the verge of the Solis road', -536.5, 865.7, .785),

@@ -27,7 +27,7 @@ function giveSideGift(npc, { aftermath, gear }) {
   const speaker = stage === 'rally' ? chapter.commanderId : stage === 'report' ? chapter.principalId : null;
   if (!speaker || npc.id !== speaker) return [];
   const gift = SIDE_GIFTS[stage], lines = stage === 'rally' ? GIFT_LINES[speaker] : CAP_LINES[speaker];
-  if (!gift || !lines || !giftOwed(gift, gear.wearing(gift.slot))) return [];
+  if (!gift || !lines || !giftOwed(gift, gear.wearing(gift.slot), gear.view().owned)) return [];
   const worn = gear.wear(gift.slot, { weight: gift.weight, tier: gift.tier });
   if (!worn.ok) return [];
   return [...lines];
@@ -41,7 +41,7 @@ test('the copy of the host rule cannot drift from the host', () => {
   assert.match(main, /const speaker=stage==='rally'\?chapter\.commanderId:stage==='report'\?chapter\.principalId:null;/);
   assert.match(main, /if\(!speaker\|\|npc\.id!==speaker\)return \[\];/);
   assert.match(main, /const gift=SIDE_GIFTS\[stage\],lines=stage==='rally'\?GIFT_LINES\[speaker\]:CAP_LINES\[speaker\];/);
-  assert.match(main, /if\(!gift\|\|!lines\|\|!giftOwed\(gift,gear\.wearing\(gift\.slot\)\)\)return \[\];/);
+  assert.match(main, /if\(!gift\|\|!lines\|\|!giftOwed\(gift,gear\.wearing\(gift\.slot\),gear\.view\(\)\.owned\)\)return \[\];/);
   assert.match(main, /const worn=gear\.wear\(gift\.slot,\{weight:gift\.weight,tier:gift\.tier\}\);/);
   assert.match(main, /if\(!worn\.ok\)return \[\];/);
   assert.match(main, /return \[\.\.\.lines\];/);
@@ -151,6 +151,34 @@ test('it is given once: walking up again, being driven off, and loading a save a
     assert.deepEqual(debrief.opened.at(-1).lines, [...CAP_LINES[spec.principalId], ...spec.debrief],
       `${side}: the cap comes with the pay, and the coat does not come back`);
     assert.deepEqual(loaded.gear.wearing('body'), { weight: 'medium', tier: 4 });
+  }
+});
+
+test('packing or replacing issued armour never repeats its gift, including after loading', () => {
+  for (const side of ['empire', 'coalition']) {
+    const played = play(side), { aftermath, gear } = played;
+    const spec = AFTERMATH_VARIANTS[played.campaign.view().chapterId];
+    const commander = { id: spec.commanderId }, payer = { id: spec.principalId };
+    speakTo(commander, played);
+    assert.equal(gear.takeOff('body').ok, true);
+    assert.deepEqual(speakTo(commander, played).opened.at(-1).lines, spec.orders);
+    assert.equal(gear.wearing('body'), null, 'talking again respects unequipping the gift');
+    gear.wear('body', { weight: 'light', tier: 0 });
+    assert.deepEqual(speakTo(commander, played).opened.at(-1).lines, spec.orders);
+    assert.equal(gear.wearing('body').tier, 0, 'the player may choose lighter, weaker equipment');
+    const saved = JSON.parse(JSON.stringify(gear.snapshot()));
+    const restored = createGear();
+    assert.equal(restored.restore(saved), true);
+    assert.equal(giftOwed(SIDE_GIFT, restored.wearing('body'), restored.view().owned), false);
+    assert.equal(giftOwed(SIDE_CAP, restored.wearing('head'), restored.view().owned), true, 'owning a coat does not claim the cap');
+    aftermath.act('begin-assault');
+    aftermath.winEncounter(spec.encounterId);
+    assert.deepEqual(speakTo(payer, played).opened.at(-1).lines, [...CAP_LINES[spec.principalId], ...spec.debrief]);
+    gear.takeOff('head');
+    assert.deepEqual(speakTo(payer, played).opened.at(-1).lines, spec.debrief);
+    assert.equal(gear.wearing('head'), null, 'talking again also respects removing the cap');
+    restored.restore(JSON.parse(JSON.stringify(gear.snapshot())));
+    assert.equal(giftOwed(SIDE_CAP, restored.wearing('head'), restored.view().owned), false);
   }
 });
 

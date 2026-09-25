@@ -43,7 +43,7 @@ function documentAdapter() {
   return { body, createElement: tag => new DomElement(tag), getElementById: id => find(body, id) };
 }
 
-function fixture(t, { existingCamp = false } = {}) {
+function fixture(t, { existingCamp = false, prototype = true } = {}) {
   const previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
   const document = documentAdapter();
   Object.defineProperty(globalThis, 'document', { configurable: true, writable: true, value: document });
@@ -60,7 +60,9 @@ function fixture(t, { existingCamp = false } = {}) {
   world.reindexColliders = () => reindexes++;
   const npcData = [retainedNpc], inventory = createInventoryState(), changes = [], toasts = [], tracked = [], dialogues = [];
   let mode = 'playing', busy = false, closed = 0;
-  const host = createVastosHost({ scene, world, npcData });
+  // The product's slate retires this prototype in favor of Drent. Exercise its preserved
+  // integration explicitly, while the default-disabled test below supplies no override.
+  const host = createVastosHost({ scene, world, npcData, ...(prototype ? { enabled: true } : {}) });
   host.bind({
     inventory,
     canAct: () => ['playing', 'dialogue'].includes(mode) && !busy,
@@ -97,6 +99,30 @@ function fixture(t, { existingCamp = false } = {}) {
 function perform(host, actions) {
   for (const action of actions) assert.equal(host.act(action).ok, true, action);
 }
+
+test('the retired Vastos prototype stays absent by default, including after a legacy restore', t => {
+  const f = fixture(t, { prototype: false });
+  assert.deepEqual(f.npcData, [f.retainedNpc]);
+  assert.deepEqual(f.world.landmarks, []);
+  assert.deepEqual(f.world.colliders, [f.retainedCollider]);
+  assert.equal(f.camp, undefined);
+  assert.equal(f.host.act('accept-herd').ok, false);
+  assert.equal(f.host.converse(VASTOS_NPCS[0]), false);
+  assert.deepEqual(f.host.knownLocations(true), []);
+  assert.deepEqual(f.host.markerIds(), []);
+  // Loading saved state preserves it without resurrecting its cast, scenery or offers.
+  f.host.quest.act('accept-herd');
+  const legacy = f.host.snapshot();
+  assert.equal(f.host.restore(legacy), true);
+  assert.deepEqual(f.host.snapshot(), legacy);
+  f.host.renderJournal(true);f.tick();
+  assert.equal(f.journal.hidden, true);
+  assert.equal(f.hud.hidden, true);
+  assert.equal(f.host.nearby, null);
+  assert.deepEqual(f.host.knownLocations(true), []);
+  assert.deepEqual(f.markers(), []);
+  assert.deepEqual(f.npcData, [f.retainedNpc]);
+});
 
 test('the actual Vastos host registers its camp, three NPCs, silver site markers and initially hidden UI', t => {
   const f = fixture(t, { existingCamp: true });

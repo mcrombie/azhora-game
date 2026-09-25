@@ -74,8 +74,24 @@ test('it stands in its own clearing in Drent, off every path', async () => {
     const x = TALKING_TREE.x + Math.cos(a * .52) * r, z = TALKING_TREE.z + Math.sin(a * .52) * r;
     assert.ok(canStand(x, z, world, .5), `the clearing is blocked at ${x.toFixed(0)},${z.toFixed(0)}`);
   }
-  const road = Math.min(...world.paths.flat().map(p => Math.hypot(p.x - TALKING_TREE.x, p.z - TALKING_TREE.z)));
-  assert.ok(road > 25, `it should be found, not passed (${road.toFixed(0)} m from a road)`);
+  assert.ok(canStand(TALKING_TREE.x, TALKING_TREE.z, world, 3.2), 'its own trunk does not overlap another tree');
+  const tree = createTalkingTree();
+  let road = Infinity;
+  for (const path of world.paths) for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i], dx = b.x - a.x, dz = b.z - a.z;
+    const length = dx * dx + dz * dz;
+    const t = length ? Math.max(0, Math.min(1, ((TALKING_TREE.x - a.x) * dx + (TALKING_TREE.z - a.z) * dz) / length)) : 0;
+    const center = { x: a.x + dx * t, z: a.z + dz * t };
+    const distance = Math.hypot(center.x - TALKING_TREE.x, center.z - TALKING_TREE.z);
+    // Use the path edge nearest the tree, including the spaces between samples.
+    const radius = (path.width ?? 0) / 2;
+    const edge = { x: center.x + (TALKING_TREE.x - center.x) * radius / distance,
+      z: center.z + (TALKING_TREE.z - center.z) * radius / distance };
+    road = Math.min(road, distance - radius);
+    assert.equal(run(tree, edge, 3).phase, 'asleep', 'passing on any road or trail must not wake it');
+  }
+  assert.ok(road > 25, `it should be found, not passed (${road.toFixed(0)} m from a path edge)`);
+  assert.equal(run(tree, at(6), 3).phase, 'watching', 'walking into the clearing reveals its face');
   for (const stand of Object.values(world.npcPositions)) {
     assert.ok(Math.hypot(stand.x - TALKING_TREE.x, stand.z - TALKING_TREE.z) > 30, 'nobody lives next to it');
   }

@@ -60,7 +60,7 @@ test('all three places that look are wired, and the frame still behaves as it di
   assert.doesNotMatch(main, /catch\(error\)\{frameErrors\.note\(error,frameCount\);fail\(error\);requestAnimationFrame/,
     'and the loop is still not rescheduled: one bad frame stops it, as it always has');
   // 2. state() carries it, which is what a harness can ask.
-  assert.match(main, /const state=\(\)=>\(\{frameErrors:frameErrors\.view\(\),/);
+  assert.match(main, /const state=\(\)=>\(\{[^;\n]*\bframeErrors:frameErrors\.view\(\),/);
   // 3. the console once per fault, and a toast while the testing tools are open.
   assert.match(main, /onNew: entry => console\.error\(/);
   assert.match(main, /testingEnabled \|\| new URLSearchParams\(location\.search\)\.has\('test'\)/);

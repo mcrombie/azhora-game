@@ -139,3 +139,15 @@ test('with nobody to ask, every sign letters in the traveler\u2019s own language
   assert.ok(SIGN_LABELS.some(label => signText(label) !== label), 'a reader who has no tongues sees lettering he cannot read');
   setSignReader(null);
 });
+
+
+test('a place board can stand on a made terrace instead of floating above its walking surface', () => {
+  const tools=kit(),root=new THREE.Group(),signs=createSigns(tools);
+  const board=signs.place({x:-424,z:304,label:'The Quay',facing:-Math.PI/2,parent:root,groundY:.4});
+  assert.equal(board.position.y,.4,'The board follows the supplied walking surface, not analytic ground at y=2');
+  assert.equal(tools.colliders.filter(c=>c.kind==='signpost').length,2,'Both physical supporting posts remain solid');
+  root.updateMatrixWorld(true);
+  const plank=board.children.find(child=>child.isMesh&&child.position.y===1.78);
+  const bounds=new THREE.Box3().setFromObject(plank);
+  assert.ok(bounds.min.y-.4<1.6&&bounds.max.y-.4>.6,'The face is in the standing-prop collision band above the actual surface');
+});

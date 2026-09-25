@@ -24,17 +24,25 @@ test('the first person the traveler speaks to is Jojo, the harbourmaster at the 
   assert.match(main, /toast\(landed\.toast\.title,landed\.toast\.kicker\)/, 'which main.js puts on the screen at the landing');
   assert.doesNotMatch(main, /SPEAK TO CHRIS ON THE LANDING/);
   // The letter is hers to give, and the quest only moves when she gives it.
-  const hers = main.slice(main.indexOf('function jojoOnTheLanding'), main.indexOf('function chrisOnTheLanding'));
+  const scene = name => {
+    const start = main.indexOf('  function ' + name + '(');
+    assert.ok(start >= 0, name + ' is an authored scene');
+    const end = main.indexOf('\n  function ', start + 1);
+    return main.slice(start, end < 0 ? main.length : end);
+  };
+  const hers = scene('jojoOnTheLanding');
   assert.match(hers, /updateQuest\('ashore'\)/);
   assert.match(hers, /'accept-letter','Take the letter'/);
   // The letter is addressed to Iven at Nothom now: Corvan's field register is off the slate with
   // the rest of the middle of Chapter 1 (src/quest-slate.js, the user, 22 September 2026).
   assert.match(hers, /letter of introduction, for Iven/);
   assert.match(hers, /Officer Glun first/, 'and she sends him to the post before anything else');
-  // Chris keeps the sword lesson and hands over nothing.
-  const his = main.slice(main.indexOf('function chrisOnTheLanding'), main.indexOf('function doomsayerConversation'));
-  assert.match(his, /straw post at the northern crossroads/);
-  assert.match(his, /repair bench is beside the post/);
+  // Chris follows the same opening independently; his dialogue never gives the player's letter.
+  const his = scene('chrisOnTheLanding');
+  assert.match(his, /Jojo sends us to Officer Glun before we take the west road/);
+  assert.match(his, /reporting to Jojo and doing the drill myself: two strikes, hold the shield, then dodge/);
+  assert.match(his, /lesson\.trained/, 'he distinguishes his completed drill from the player\'s');
+  assert.match(his, /landingPartnershipChoice\(npc\)/, 'his own progress controls the invitation to travel together');
   assert.doesNotMatch(his, /accept-letter/, 'the errand is not Chris’s any more');
   assert.doesNotMatch(his, /updateQuest/, 'and neither is the quest');
 });

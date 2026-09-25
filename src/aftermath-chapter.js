@@ -38,9 +38,8 @@ const SCRIP_NOTE = 'a note for forty more when the Republic has a treasury that 
  * takes a quarter off the dodge and **doubles the wind swimming spends**: a gift he cannot refuse
  * that doubles his drowning is a trap, not a thank-you.
  *
- * **Nothing new is saved.** Nothing else in the game makes tier-4 armour and nothing in the host
- * ever takes a piece off, so *wearing fine steel on that place* is the permanent record that the
- * side gave it, and it is already in the gear snapshot.
+ * **Nothing new is saved.** Fine steel owned for this slot records that the side gave it.
+ * The gear snapshot preserves ownership even when the player packs or replaces the piece.
  */
 export const SIDE_GIFT = Object.freeze({ slot: 'body', weight: 'medium', tier: 4 });
 
@@ -62,7 +61,7 @@ export const SIDE_GIFT = Object.freeze({ slot: 'body', weight: 'medium', tier: 4
  * together turn .32 of every blow - a third - against `MOST_TURNED` of a half.
  *
  * Nothing new is saved, for the coat's own reason: nothing else in the game makes tier-4 armour,
- * so *wearing fine steel on that place* is the record, and it is already in the gear snapshot.
+ * so owning fine steel for that place is the record, already held in the gear snapshot.
  */
 export const SIDE_CAP = Object.freeze({ slot: 'head', weight: 'medium', tier: 4 });
 
@@ -72,10 +71,11 @@ export const SIDE_CAP = Object.freeze({ slot: 'head', weight: 'medium', tier: 4 
  */
 export const SIDE_GIFTS = Object.freeze({ rally: SIDE_GIFT, report: SIDE_CAP });
 
-/** Whether the side still owes a piece, asked of what he has on that place. */
-export const giftOwed = (gift, worn) => (worn?.tier ?? -1) < gift.tier;
+/** Ownership survives unequipping: an issued piece is not owed again just because it is packed. */
+export const giftOwed = (gift, worn, owned = []) => (worn?.tier ?? -1) < gift.tier
+  && !owned.some(piece => piece.slot === gift.slot && piece.tier >= gift.tier);
 /** The coat's own question, kept because the host and its test both ask it by name. */
-export const sideGiftOwed = worn => giftOwed(SIDE_GIFT, worn);
+export const sideGiftOwed = (worn, owned) => giftOwed(SIDE_GIFT, worn, owned);
 
 /**
  * What each captain says as he hands it over, in the voice he already has: Brulan writes things

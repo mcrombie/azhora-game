@@ -114,7 +114,7 @@ export function treeShapes() {
 export const SPECIMEN_TREES = Object.freeze([
   ['white-oak', -84, 44], ['white-oak', -150, 18], ['red-oak', -116, 50], ['tulip-poplar', -72, 14], ['tulip-poplar', -140, 58],
   ['hickory', -100, 60], ['beech', -126, 14], ['red-maple', -88, -4], ['sweetgum', -160, 44],
-  ['sycamore', -108, -8], ['sycamore', -528, 160], ['bald-cypress', -544, 187, true], ['loblolly-pine', -398, 20], ['loblolly-pine', -452, 64],
+  ['sycamore', -108, -8], ['sycamore', -528, 160], ['bald-cypress', -545, 187, true], ['loblolly-pine', -398, 20], ['loblolly-pine', -452, 64],
   ['red-cedar', -412, 72], ['red-cedar', -190, 52], ['holly', -94, 38], ['dogwood', -60, 52], ['dogwood', -130, 45],
   ['persimmon', -454, 14], ['black-walnut', -58, 2],
 ].map(([species, x, z, water = false], i) => Object.freeze({ id: `${species}-${i + 1}`, species, x, z, water })));

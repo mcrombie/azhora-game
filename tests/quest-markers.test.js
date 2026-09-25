@@ -175,6 +175,15 @@ test('the trimmed slate wears gold and copper and nothing else', () => {
   assert.equal(markerGrade(markerFor(IDS.vintner, real({ wineRecommended: true, chapterDestinations: [IDS.vintner] }))), 'main');
 });
 
+test('an independent escort uses the shared silver marker, hides during combat and yields to gold', () => {
+  const offer = { escortDestinations: ['cagney'], questStage: 0 };
+  assert.equal(markerGrade(markerFor('cagney', offer)), 'plot');
+  assert.equal(markerFor('cagney', { ...offer, busy: true }), null);
+  assert.equal(markerFor('cagney', { ...offer, escortDestinations: [] }), null);
+  assert.equal(markerFor('somebody-else', offer), null);
+  assert.equal(markerGrade(markerFor('cagney', { ...offer, arcDestinations: ['cagney'] })), 'main');
+});
+
 test('src/main.js asks the table rather than keeping its own pile of rules', () => {
   const main = source('main.js');
   assert.match(main, /const mark=markerFor\(npc\.id,markerView\),grade=markerGrade\(mark\);/, 'one call decides');

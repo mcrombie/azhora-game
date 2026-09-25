@@ -98,7 +98,7 @@ test('the cap holds the whole company and the largest side an encounter writes',
   // The host can never be the one who exceeds it: it takes only the room that is left.
   assert.match(source('main.js'), /const room=Math\.max\(0,MAX_ALLIES-\(config\.allies\?\.length\?\?0\)\);/,
     'companionAllies takes the room that is left');
-  assert.match(source('main.js'), /fileOrder\.slice\(0,room\)/, 'and the rest hold');
+  assert.match(source('main.js'), /fileOrder(?:\.filter\([^;\n]*?\))?\.slice\(0,room\)/, 'and the rest hold');
 });
 
 /**
@@ -134,7 +134,7 @@ test('no fight is started by a bare if whose refusal does nothing', () => {
     const negated = /\bif\s*\(\s*!/.test(text);
     const after = main.slice(condition.to + 1, condition.to + 700);
     const answered = negated
-      ? /toast\(|return|endEncounter\(|startEncounter\(/.test(after.slice(0, 300))
+      ? /toast\(|return|\bthrow\b|endEncounter\(|startEncounter\(/.test(after.slice(0, 300))
       // A comment may sit between the block and its `else`, and usually should: the else is
       // the refusal path and deserves saying why it is there.
       : /^\s*\{[\s\S]*?\}\s*(?:\/\/[^\n]*\n\s*)*else\b/.test(after)

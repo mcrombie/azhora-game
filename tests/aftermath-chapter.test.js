@@ -240,12 +240,12 @@ test('the host gives the fine steel at the two moments the side has him, and not
   assert.match(main, /const speaker=stage==='rally'\?chapter\.commanderId:stage==='report'\?chapter\.principalId:null;/);
   assert.match(main, /if\(!speaker\|\|npc\.id!==speaker\)return \[\];/);
   assert.match(main, /const gift=SIDE_GIFTS\[stage\],lines=stage==='rally'\?GIFT_LINES\[speaker\]:CAP_LINES\[speaker\];/);
-  // The fine steel on him is the record, asked of the gear that already saves.
-  assert.match(main, /!giftOwed\(gift,gear\.wearing\(gift\.slot\)\)/);
+  // Owned fine steel is the record, asked of the gear snapshot that already saves.
+  assert.match(main, /!giftOwed\(gift,gear\.wearing\(gift\.slot\),gear\.view\(\)\.owned\)/);
   assert.match(main, /gear\.wear\(gift\.slot,\{weight:gift\.weight,tier:gift\.tier\}\)/);
   assert.match(main, /gift:giveSideGift\(npc\)/, 'and the scene is handed it the way it is handed the file fill');
-  // Nothing anywhere takes a piece of armour off again, which is what makes the record permanent.
-  assert.ok(!/gear\.takeOff\(/.test(main), 'the host can take armour off now, so wearing it no longer proves it was given');
+  // The inventory can remove armour; its saved ownership keeps the gift from repeating.
+  assert.match(main, /gear\.view\(\)\.owned/, 'the host asks about packed equipment as well as what is worn');
 });
 
 test('every assault after the battle forms up inside its own ground, wherever its commander stands', async () => {

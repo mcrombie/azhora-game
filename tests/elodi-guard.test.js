@@ -35,7 +35,13 @@ test('Elod’s frontier guards wear light black armour: lamellar, a hood under a
     assert.equal(red, 0, 'nothing of Ambron’s red');
     assert.ok(black >= 3, 'black is the colour of Elod’s guard');
     assert.ok(draws <= 30 && triangles < 7500, `${draws} draws, ${triangles} triangles`);
-    assert.equal(actor.setWeapon('simple-sword'), false);
+    // Ordinary guards can now draw a sword when a fight starts, then resume their watch.
+    const pole = actor.group.getObjectByName('Elodi short spear');
+    if (pole) assert.equal(pole.visible, true);
+    assert.equal(actor.setWeapon('simple-sword'), true);
+    if (pole) assert.equal(pole.visible, false);
+    assert.equal(actor.setWeapon(null), true);
+    if (pole) assert.equal(pole.visible, true);
   }
   assert.ok(spear.group.getObjectByName('Elodi short spear'));
   assert.ok(bow.group.getObjectByName('Hunting bow') && !bow.group.getObjectByName('Elodi short spear'));

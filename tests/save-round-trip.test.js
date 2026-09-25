@@ -17,13 +17,16 @@ for (const file of readdirSync(SRC).filter(name => name.endsWith('.js'))) {
   if (!/export function validate\w*Snapshot/.test(text)) continue;
   if (/from 'three'/.test(text)) continue;   // scene modules need the renderer; they carry no save section
   const module = await import(new URL(`../src/${file}`, import.meta.url));
-  const validate = Object.keys(module).find(name => /^validate\w*Snapshot$/.test(name));
+  const validators = Object.keys(module).filter(name => /^validate\w*Snapshot$/.test(name));
   for (const maker of Object.keys(module).filter(name => /^create[A-Z]/.test(name) && typeof module[name] === 'function')) {
     let made;
     try { made = module[maker](); } catch { continue; }          // needs arguments: covered by its own module's tests
     if (!made || typeof made.snapshot !== 'function' || typeof made.restore !== 'function') continue;
     const snapshot = made.snapshot();
     if (!snapshot || typeof snapshot !== 'object') continue;
+    const expected = maker === 'createMopWalk' ? 'validateMopSnapshot' : 'validate' + maker.slice(6) + 'Snapshot';
+    const validate = validators.includes(expected) ? expected : validators.length === 1 ? validators[0] : null;
+    assert.ok(validate, file + ': specify the matching snapshot validator for ' + maker);
     modules.push({ file, maker, validate: module[validate], validateName: validate, make: module[maker], snapshot });
   }
 }

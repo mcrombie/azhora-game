@@ -12,7 +12,7 @@ const load = main.slice(main.indexOf('function continueRoad('));
 const start = load.indexOf('catQuest.restore(saved.cat');
 const end = load.indexOf('refreshQuest();', start);
 assert.ok(start >= 0 && end > start, 'the cat/law checkpoint boundary exists');
-const restore = new Function('saved', 'catQuest', 'createCatQuest', 'crime', 'CAT', 'vastos', 'drent', 'corpseHost',
+const restore = new Function('saved', 'catQuest', 'createCatQuest', 'crime', 'CAT', 'vastos', 'drent', 'corpseHost', 'cagneyQuest', 'cagneyHost',
   load.slice(start, end));
 
 function fixture(stage, { downed = false, cleaned = true, alive = false } = {}) {
@@ -35,7 +35,7 @@ function fixture(stage, { downed = false, cleaned = true, alive = false } = {}) 
     combat: { state: { phase: 'peaceful', enemies: [], allies: [] } }, position: () => ({ x: 0, z: 0 }),
     onDeath: event => { events.push(event); if (event.permanent) quest.died(); } });
   const ignored = { restore() {} };
-  const reload = () => restore(saved, quest, createCatQuest, crime, CAT, ignored, ignored, ignored);
+  const reload = () => restore(saved, quest, createCatQuest, crime, CAT, ignored, ignored, ignored, ignored, ignored);
   return { quest, crime, events, reload };
 }
 

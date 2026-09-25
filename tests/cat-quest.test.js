@@ -125,6 +125,22 @@ test('malformed companion checkpoints are refused without changing the current e
   }
 });
 
+test('invalid placement and frame deltas cannot poison Mop\'s saved feet or timers', () => {
+  const walk = createMopWalk({ random: () => .5 });
+  walk.place(17, -171);
+  walk.update(0);
+  const before = walk.snapshot();
+  for (const value of [undefined, NaN, Infinity, -Infinity, 'soon', null, {}, []]) {
+    assert.equal(walk.place(value, -171), false);
+    assert.equal(walk.place(17, value), false);
+    walk.update(value);
+    assert.deepEqual(walk.snapshot(), before);
+    assert.ok(validateMopSnapshot(JSON.parse(JSON.stringify(walk.snapshot()))));
+  }
+  walk.update(.1);
+  assert.equal(walk.snapshot().still, .1, 'valid frames still advance his settling timer');
+});
+
 test('Liz pays once and still offers the earned bees lesson after taking coin', () => {
   for (const [id, stageName] of [['purse', 'paid'], ['lesson', 'taught']]) {
     const quest = createCatQuest();

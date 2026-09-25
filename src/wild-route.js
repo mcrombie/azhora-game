@@ -13,16 +13,17 @@
  * So: a strand of his own round the headland south of the harbour, then west through the low
  * country behind Drent, up the long way round the head of the bay, and onto the Moros plain from
  * the north-west, coming down on the camp across open ground rather than in at the gate the
- * others use. The authored line is **1,598 m**, and 1,714 m once the company appends the leg to
- * the muster, against the road's 1,295. He walks it at 0.88 m/s rather than his own 1.42,
- * because there is no road under it, and musters between minute **32.7 and 96.7**, depending on
- * his draw; the direct traveler is in at about 27.
+ * others use. The authored line is about **1,598 m**, and 1,714 m once the company appends the leg
+ * to the muster, against the road's 1,295. He walks it at 0.88 m/s rather than his own 1.42,
+ * because there is no road under it. His arrival range comes from the current company timetable
+ * rather than a separate clock here; the direct traveler is in at about minute 27.
  *
  * Every metre of it was authored against the built world rather than drawn on a map: A* over
  * ground `canStand` accepts - **with each grid edge checked, not only each cell**, because a
  * prop can sit across the line between two standable cell centres - then simplified by taking
- * only shortcuts that are themselves walkable end to end. The first draft checked neither, and
- * the simplifier cut 29 m of corners back through props the A* had gone round.
+ * only shortcuts that are themselves walkable end to end. Small bends also leave space round
+ * the regional trees added since that first survey, including the former blocked western
+ * waypoint. The collision regression checks the full line at quarter-metre intervals.
  *
  * **The authored line is 62.7 m from the main road at its closest**, and every metre of it is
  * ground a body can stand on, with none of it wet. The muster leg the company appends is
@@ -54,22 +55,42 @@ export const WILD = freeze({
  */
 export const MUS_ROUTE = freeze([
   point(10, -60),      // the strand round the headland, south of the harbour and out of sight of it
+  point(-0.6, -58.1),
   point(-50, -60),     // inland, into the low country behind Drent
   point(-60, -70),
+  point(-118.7, -67.4),
+  point(-160.5, -63.2),
   point(-220, -60),
+  point(-261.6, -55.7),
+  point(-287.2, -51.1),
+  point(-331.4, -47.4),
+  point(-422.9, -31.4),
   point(-440, -30),
+  point(-453.5, -32.7),
+  point(-489, -34),
   point(-540, -40),
   point(-580, -30),
-  point(-730, -30),    // west, and well clear of the road the whole way
+  point(-638.3, -31.1),
+  point(-648.3, -32.7),
+  point(-705, -31.3),
+  point(-730, -28),    // west, and well clear of the road the whole way
   point(-740, -20),
+  point(-752.3, -17.1),
   point(-770, -10),
-  point(-830, -10),
+  point(-788.2, -12.7),
+  point(-803.3, -11.9),
+  point(-809.3, -13.9),
+  point(-819.9, -12.1),
+  point(-830, -14),
+  point(-837.5, -18.2),
   point(-850, -20),
+  point(-926.3, -25.8),
   point(-960, -30),
   point(-990, -40),
   point(-1040, -20),
   point(-1060, 0),     // up round the head of the bay
   point(-1070, 60),
+  point(-1055.3, 297.5),
   point(-1050, 420),   // down the long slope toward the plain
   point(-1020, 490),   // and onto it from the north-west, across open ground
 ]);

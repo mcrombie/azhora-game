@@ -13,7 +13,7 @@ test('Acting introduces the skill without resetting prior practice or excluding 
   assert.equal(skills.learn('acting').first, false, 'a later teacher does not reset or duplicate the introduction');
   assert.equal(acting.taught(), true);
   assert.equal(skills.xp('acting'), ACTING_XP);
-  assert.match(ACTING_LESSON.join(' '), /Emotes/);
+  assert.match(ACTING_LESSON.join(' '), /Actions \(U\)/, 'the lesson names the current expression picker and its shortcut');
 });
 
 test('finished expressions award XP once and level-two unlocks a new expression', () => {

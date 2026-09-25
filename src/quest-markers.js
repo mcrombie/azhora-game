@@ -94,6 +94,9 @@ export function markerFor(id, view = {}) {
   // It is copper wherever the traveler is in the story, because it is nobody's step and waits
   // on nothing (`bridgeStage`, src/journey.js; src/quest-slate.js).
   if (id === BRIDGE_QUEST.giver && live('bridge') && !busy && ['offered', 'accepted', 'repaired'].includes(view.bridge)) kinds.push('deed');
+  // An unfinished escort beyond the shore can be found independently of the main road.
+  // Its host stops supplying a destination once it is completed or failed.
+  if (!busy && holds(view.escortDestinations, id)) kinds.push('plot');
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore && stage < 2) return mark(strongestMarker(kinds));
   // A first lesson is a live opportunity even when optional quest chains are parked.

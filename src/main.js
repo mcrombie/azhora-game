@@ -3898,10 +3898,10 @@ function init() {
    * already pays him in that scene"), which is the chapter's `principalId` and is not always the
    * same man. One table, one rule, and the stage picks both the piece and the speaker.
    *
-   * **Nothing new is saved.** Nothing else in the game makes tier-4 armour, no smith sells above
-   * steel, and nothing anywhere takes a piece off again — so the fine steel on him *is* the
-   * record that it was given, and it is already in the gear snapshot. `giftOwed` asks what he is
-   * wearing on that place, so a second walk up to the same man says nothing more about it.
+   * **Nothing new is saved.** The gear snapshot already keeps ownership when armour
+   * is taken off or replaced. Fine steel owned for this slot records that the side
+   * has already supplied it. `giftOwed` checks both worn and packed equipment, so
+   * another conversation does not repeat the gift or undo the player's equipment choice.
    */
   function giveSideGift(npc){
     const chapter=aftermath.spec;
@@ -3910,7 +3910,7 @@ function init() {
     const speaker=stage==='rally'?chapter.commanderId:stage==='report'?chapter.principalId:null;
     if(!speaker||npc.id!==speaker)return [];
     const gift=SIDE_GIFTS[stage],lines=stage==='rally'?GIFT_LINES[speaker]:CAP_LINES[speaker];
-    if(!gift||!lines||!giftOwed(gift,gear.wearing(gift.slot)))return [];
+    if(!gift||!lines||!giftOwed(gift,gear.wearing(gift.slot),gear.view().owned))return [];
     const had=gear.wearing(gift.slot);
     const worn=gear.wear(gift.slot,{weight:gift.weight,tier:gift.tier});
     if(!worn.ok)return [];
@@ -6609,7 +6609,7 @@ function init() {
       updateGlunWood(dt);
       updateFishingLessons(dt);
       const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
-      const markerView={skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
+      const markerView={escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
         // Chip's copper, which is on whenever his bridge is down and is nobody's step.
@@ -6711,7 +6711,7 @@ function init() {
         // A figure is twenty-odd moving parts, and each casts its own shadow: near the traveler that is worth drawing, across a town square it is not.
         {const shadows=d<30;if(npc.shadows!==shadows){setShadowCasting(npc.actor,shadows);npc.shadows=shadows;}}
         // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
-        const mark=npc.id===CAGNEY.id&&!cagneyQuest.state.over&&!markerView.busy?{kind:'plot',open:false}:markerFor(npc.id,markerView),grade=markerGrade(mark);
+        const mark=markerFor(npc.id,markerView),grade=markerGrade(mark);
         if(grade&&npc.markerKind!==grade){scene.remove(npc.marker);npc.marker=makeQuestMarker(mark.kind,{open:mark.open});npc.markerKind=grade;scene.add(npc.marker);}
         npc.marker.visible=!!grade;
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);
