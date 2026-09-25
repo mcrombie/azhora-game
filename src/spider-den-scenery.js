@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { SPIDER_DEN } from './spider-quest.js';
 import { createSceneryBuilder } from './scenery-builder.js';
+import { NOTHOM_THICKET_HEXES, nothomThicketSites } from './nothom-thickets.js';
 
 /** Permanent brambles surround a cart-sized hollow, opening toward Ben's clearing. */
 export function createSpiderDenScenery({ root, groundHeight }) {
@@ -137,5 +138,62 @@ export function createSpiderDenScenery({ root, groundHeight }) {
   webs.name='Old silk among the thorns';group.add(webs);
   group.userData={passable:true,hide:{x:hide.x,z:hide.z},mouth:{...mouth,width:5},canes,thorns,
     drawCalls:2,vertices:mesh.geometry.attributes.position.count+silk.length/3};
+  return group;
+}
+
+/** Related brambles across the two neighboring hexes, without repeated dens or creatures. */
+export function createNothomThicketScenery({ root, groundHeight, roadDistance }) {
+  const sites = nothomThicketSites({ roadDistance });
+  const group = new THREE.Group(); group.name = 'Nothom west and northwest thorn scrub'; root.add(group);
+  const palette = [0x52643b, 0x6a7444, 0x798152, 0x455837], wood = [0x504732, 0x66543a, 0x736044];
+  let vertices = 0;
+  for (const cell of NOTHOM_THICKET_HEXES) {
+    const build = createSceneryBuilder(`Nothom ${cell.name} thickets`);
+    for (const site of sites.filter(p => p.q === cell.q && p.r === cell.r)) {
+      let seed = site.seed;
+      const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296);
+      const range = (a,b) => a + random() * (b-a), at=(x,z,y)=>[x,groundHeight(x,z)+y,z];
+      const sx = Math.cos(site.yaw), sz = Math.sin(site.yaw);
+      const local = (x,z) => ({ x:site.x + x*sx-z*sz, z:site.z+x*sz+z*sx });
+      // Uneven leaf islands: broad old brambles, low spreading tangles, narrow drifts.
+      // No ring, artificial opening, silk, or special encounter marker singles these out.
+      const crownCount = 8 + Math.round(site.radius * 1.6 * site.density);
+      for (let i=0;i<crownCount;i++) {
+        const angle=range(0,Math.PI*2), r=Math.sqrt(random())*site.radius*.56,
+          p=local(Math.cos(angle)*r,Math.sin(angle)*r*.72), size=range(.45,.85)*Math.min(1.5,site.radius/2.6),
+          h=range(.45,.85)*site.height;
+        build.rock(palette[i%palette.length],p.x,groundHeight(p.x,p.z)+h,p.z,
+          size,range(.32,.56)*site.height,size*range(.7,1.15),angle);
+      }
+      const stemCount = Math.round(10+site.radius*1.3);
+      for(let i=0;i<stemCount;i++) {
+        const angle=range(0,Math.PI*2), r=range(.05,.62)*site.radius,
+          start=local(Math.cos(angle)*r,Math.sin(angle)*r*.75),
+          spread=range(.18,.25)*site.radius, turn=angle+range(-.8,.8), height=site.height*range(.6,1.15),points=[];
+        for(let node=0;node<5;node++) {
+          const t=node/4, curl=turn+t*.85;
+          points.push(at(start.x+Math.cos(curl)*spread*t,start.z+Math.sin(curl)*spread*t,
+            .03+Math.sin(t*Math.PI*.79)*height));
+        }
+        for(let j=1;j<points.length;j++) {
+          const a=points[j-1],b=points[j],p=a.map((value,k)=>(value+b[k])/2),
+            width=.055+(1-j/points.length)*.045, spin=i*2.4+j;
+          build.beam(wood[(i+j)%wood.length],a,b,width);
+          // Paired pointed thorns catch the light without multiplying draw calls.
+          const tip=[p[0]+Math.cos(spin)*.25,p[1]+.18,p[2]+Math.sin(spin)*.25],
+            edgeA=[p[0]-.042,p[1]-.045,p[2]],edgeB=[p[0]+.042,p[1]+.045,p[2]];
+          build.triangle(0x8f7950,edgeA,edgeB,tip);build.triangle(0x8f7950,edgeB,edgeA,tip);
+          if(j===3 && i%2===0) {
+            const dx=Math.cos(spin)*.23,dz=Math.sin(spin)*.23;
+            build.sheet(palette[i%palette.length],[p[0]-dx,p[1],p[2]-dz],[p[0]-dz*.45,p[1]+.06,p[2]+dx*.45],
+              [p[0]+dx,p[1]+.08,p[2]+dz],[p[0]+dz*.45,p[1],p[2]-dx*.45]);
+          }
+        }
+      }
+    }
+    const mesh = build.finish(group);
+    if (mesh) { mesh.userData={cell:{q:cell.q,r:cell.r},passable:true}; vertices+=mesh.geometry.attributes.position.count; }
+  }
+  group.userData={sites,passable:true,drawCalls:group.children.length,vertices};
   return group;
 }

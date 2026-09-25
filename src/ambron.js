@@ -172,7 +172,7 @@ export const AMBRON_BUILDINGS = freeze([
   building({ id: 'harbour-inn', name: 'The Chain and Sledge', a: 43, b: 14, w: 16, d: 16, h: 8, layer: 'patched', door: 'west' }),
   building({ id: 'warehouse-3', a: 43, b: 32, w: 16, d: 10, h: 7, kind: 'warehouse', door: 'west' }),
   building({ id: 'record-house', name: 'The Record House', a: 71, b: -54, w: 18, d: 18, h: 8, kind: 'hall', door: 'south' }),
-  building({ id: 'house-ne', a: 85, b: -54, w: 8, d: 18, h: 6.5, layer: 'new' }),
+  building({ id: 'house-ne', name: "Ben's home", a: 85, b: -54, w: 8, d: 18, h: 6.5, layer: 'new', door: 'south' }),
   building({ id: 'lake-temple', name: 'The House of the Lake', a: 70, b: -24, w: 14, d: 22, h: 8.5, layer: 'lake-stone', kind: 'temple', door: 'west' }),
   building({ id: 'clerks-house', a: 84, b: -24, w: 10, d: 22, h: 7, layer: 'patched' }),
   building({ id: 'legate-seat', name: 'The Lord Marshal’s Seat', a: 75, b: 18, w: 28, d: 30, h: 11.5, layer: 'imperial', kind: 'seat', door: 'west' }),
@@ -184,7 +184,7 @@ export const AMBRON_BUILDINGS = freeze([
   building({ id: 'salt-house', name: 'The Salt House', a: -45, b: 14, w: 14, d: 22, h: 6.5, layer: 'patched', kind: 'warehouse', door: 'east' }),
   building({ id: 'strand-store', a: -45, b: 52, w: 14, d: 18, h: 6, layer: 'new', kind: 'warehouse', door: 'east' }),
   building({ id: 'ropewalk', name: 'The Ropewalk', a: -75, b: -50, w: 20, d: 26, h: 5, layer: 'patched', kind: 'shed', door: 'east' }),
-  building({ id: 'poor-row-1', a: -75, b: -22, w: 20, d: 20, h: 5, layer: 'patched', kind: 'row', door: 'east' }),
+  building({ id: 'poor-row-1', name: "Troy's home", a: -75, b: -22, w: 20, d: 20, h: 5, layer: 'patched', kind: 'row', door: 'east' }),
   building({ id: 'boatyard', name: 'The Lake Boatyard', a: -71, b: 22, w: 14, d: 20, h: 6.5, layer: 'new', kind: 'shed', door: 'east' }),
   building({ id: 'poor-row-2', a: -75, b: 52, w: 20, d: 18, h: 4.8, layer: 'patched', kind: 'row', door: 'east' }),
   // The armourer's forge, in the gap between the poor row and the boatyard, fronting the raft

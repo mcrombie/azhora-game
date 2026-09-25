@@ -20,6 +20,10 @@ import {createLivingStory} from '../src/living-story.js';
 import {createLusciaCivilWar} from '../src/luscia-civil-war.js';
 import { createCagneyQuest, CAGNEY_HOME } from '../src/cagney-quest.js';
 import { createCorpses } from '../src/corpses.js';
+import { createSpiderQuest } from '../src/spider-quest.js';
+import { createMurderQuest, WITNESS_IDS, MURDERER } from '../src/murder-quest.js';
+import { QUEST_HOMES } from '../src/quest-homes.js';
+import { FERRY_LANDINGS } from '../src/ferry.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -63,6 +67,37 @@ test('Cagney checkpoints keep escort injuries and casualties without replaying t
   assert.equal(restored.take(), 0, 'a restored completed escort never pays twice');
   assert.equal(checkpoint.save(data).ok, true, 'older saves without this quest remain valid');
   assert.equal(Object.hasOwn(checkpoint.read().data, 'cagney'), false);
+});
+
+test('checkpoints retain returning residents, a ferry in progress and a resident indoors without paying rewards again', () => {
+  const { checkpoint, data } = fixture(), ben = createSpiderQuest(), troy = createMurderQuest(), cagney = createCagneyQuest();
+  ben.ask(); ben.accept(); ben.begin(); ben.settle({ spiderDead: true }); ben.take('bounty');
+  troy.begin(); for (const id of WITNESS_IDS) troy.hear(id); troy.accuse(MURDERER); troy.take('purse');
+  cagney.accept(); cagney.begin(); cagney.settle({ hp: 70, enemies: [0, 0, 0] }); cagney.arrive(CAGNEY_HOME); cagney.take();
+  const homes = { version: 1, people: {
+    'ben-sorcerer': { phase: 'walking', leg: 'home', position: { x: -807, z: 240 }, yaw: -.7, clock: 0 },
+    'bee-keeper': { phase: 'sailing', leg: 'quay', position: { x: FERRY_LANDINGS.peblos.ashore.x, z: FERRY_LANDINGS.peblos.ashore.z }, yaw: 0, clock: 23.5 },
+    cagney: { phase: 'inside', leg: 'home', position: { ...QUEST_HOMES.cagney.door }, yaw: QUEST_HOMES.cagney.yaw, clock: 0 },
+  } };
+  const saved = { ...data, spider: ben.snapshot(), murder: troy.snapshot(), cagney: cagney.snapshot(), homes };
+  const result = checkpoint.save(saved); assert.equal(result.ok, true, result.reason);
+  const loaded = checkpoint.read().data;
+  assert.deepEqual(loaded.homes, homes);
+  assert.deepEqual(loaded.inventory, saved.inventory, 'residence state neither grants nor removes reward items');
+  loaded.homes.people['bee-keeper'].clock = 59;
+  loaded.homes.people['ben-sorcerer'].position.x = 123;
+  assert.deepEqual(checkpoint.read().data.homes, homes, 'resident state and nested positions are independently copied');
+  ben.restore(loaded.spider); troy.restore(loaded.murder); cagney.restore(loaded.cagney);
+  assert.equal(ben.take('bounty'), null); assert.equal(troy.take('purse'), null); assert.equal(cagney.take(), 0);
+  for (const homes of [null, { version: 1, people: { unknown: saved.homes.people.cagney } },
+    { version: 1, people: { cagney: { ...saved.homes.people.cagney, position: { x: 0, z: 0 } } } },
+    { version: 1, people: { 'bee-keeper': { ...saved.homes.people['bee-keeper'], clock: -1 } } }]) {
+    assert.equal(checkpoint.save({ ...saved, homes }).ok, false, 'invalid residence data is rejected');
+    assert.deepEqual(checkpoint.read().data.homes, saved.homes, 'invalid data preserves the last valid checkpoint');
+  }
+  const { homes: ignored, ...legacy } = saved;
+  assert.equal(checkpoint.save(legacy).ok, true, 'completed quest saves predating homes remain loadable');
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'homes'), false);
 });
 
 test('road checkpoint round-trips partial quest progress, satchel, weapon wear, gathering and narrative flags', () => {

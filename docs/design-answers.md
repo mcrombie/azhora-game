@@ -474,3 +474,12 @@ western and southern edges, so a player cannot simply walk around the road gate.
 Display the head winemaker as **Rob**, with short gray hair and no bun or hat.
 The close crop follows his skull without the shared rounded nape tuft. KAT and
 MAT keep their existing names and appearances.
+
+
+### 2026-09-25 - Quest teachers return home
+
+- Scatter similar varied thorn thickets across the authored hexes west and northwest of Nothom, keeping the existing spider den and clear travel routes. No extra spiders.
+- After the reward is chosen, Ben walks home to Ambron. His named-mailbox house is beside Cagney's, on the same lane, with purple shutters and a copper sun.
+- Troy is also from Ambron; after his case he takes the Cobble-Port Calos ferry and walks to his own house on Raft Street, west of the river. His house has a named mailbox, sage frontage and reading bench.
+- Cagney, Ben and Troy (the user confirmed Ben, not Bill) go inside once home and paid. Knock at their door and ask them outside to talk. They stay outside while visiting, then go back in after the player leaves. Building interiors remain future work.
+- Travel and residency persist in checkpoints and pause with gameplay; quest playtests reset only their own resident. Older completed quests acquire a home journey without replaying rewards.

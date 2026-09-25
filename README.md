@@ -251,6 +251,10 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/forest-places.js`, `src/forest-story.js` | Six woodland places, optional Tamsin errand, shrine repair, journal notes, dialogue, and exactly-once rewards |
 | `src/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
 | `src/spider-den-scenery.js` | Permanent thorn canopy, spiked bramble canes and web strands screening the spider's emergence in Ben's quest |
+| `src/nothom-thickets.js` | Varied bramble patches in the exact west and northwest Nothom hexes; roads and quest approaches stay clear |
+| `src/quest-homes.js` | Named Ambron homes, mailboxes, thresholds and porch approaches for Cagney, Ben and Troy |
+| `src/home-residents.js`, `src/home-resident-host.js`, `src/home-return-routes.js`, `src/home-ferry-view.js` | Saved independent walks home, ferry leg, indoor residents and knocking to ask them outside |
+| `src/home-residents-smoke.js` | Native reward-to-home, checkpoint and doorstep interaction checks (`--homes-checks`) |
 | `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
 | `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
 | `src/drent-wildlife.js`, `src/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |

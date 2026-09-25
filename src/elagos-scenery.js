@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createSceneryBuilder } from './scenery-builder.js';
+import { BEN_HOME, TROY_HOME, CAGNEY_RESIDENCE } from './quest-homes.js';
 import {
   ELAGOS_BASINS, ELAGOS_REACHES, ELAGOS_PLACES, ELAGOS_SIGNS, NEMMEL, ICE_ROAD_STONE, LAKE_SHRINE,
   DROWNED_CAUSEWAY, THE_STAIR, LINK_BRIDGE, onLinkBridge, elagosWaterDistance, elagosWaterSurface,
@@ -485,7 +486,7 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     metrics.vertices += detail.vertexCount; detail.finish(district);
 
     // A real letterbox stands beside the entry, never across the three-metre walk in.
-    const mail = P(home.a + 2.8, front - 1.55), ground = y(mail.x, mail.z);
+    const mail = CAGNEY_RESIDENCE.mailbox, ground = y(mail.x, mail.z);
     const box = createSceneryBuilder('Cagney mailbox');
     box.frame(mail.x, ground, mail.z, 0, () => {
       box.block(WOOD_DARK, 0, 0, 0, .15, 1.19, .15);
@@ -512,6 +513,89 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
     label.name = 'Cagney mailbox nameplate'; label.rotation.y = Math.PI;
     label.position.set(mail.x, ground + 1.35, mail.z - .269); district.add(label);
   }
+
+  // Existing houses now belong to Ben and Troy. Their small frontages face the
+  // cross-lanes, with usable thresholds and mailboxes tucked beside the walk in.
+  function questHomeExterior(home, palette) {
+    const building = AMBRON_BUILDINGS.find(entry => entry.id === home.buildingId);
+    const base = cityGround(building.a) - .3;
+    const detail = createSceneryBuilder(`${home.name}'s home frontage`);
+    const path = home === TROY_HOME ? [P(-58, -22), home.entry, home.porch] : [home.entry, home.porch];
+    ribbon(detail, palette.paving, path, 1.8, .075);
+    detail.frame(home.facade.x, base, home.facade.z, home.yaw, () => {
+      detail.block(palette.door, 0, 1.1, -.13, 1.52, 2.4, .12);
+      for (const x of [-.88, .88]) detail.block(LIME, x, 1.03, -.18, .14, 2.58, .18);
+      detail.block(LIME, 0, 3.55, -.18, 1.9, .17, .18);
+      for (const x of [-.37, .37]) detail.block(palette.trim, x, 1.42, -.21, .51, 1.62, .04);
+      detail.rock(BRONZE, .58, 2.20, -.26, .07, .07, .045);
+      detail.roof(palette.roof, 0, 3.96, -.60, 3.05, 1.6, .48, 0, palette.trim);
+      for (const side of [-1, 1]) {
+        detail.beam(WOOD_LIGHT, [side * 1.27, 3.22, -.14], [side * 1.27, 3.96, -1.19], .09);
+        const x = side * (home === TROY_HOME ? 2.5 : 2.35), windowY = home === TROY_HOME ? 3.5 : 4.2;
+        detail.block('#293936', x, windowY, -.10, .94, 1.20, .10);
+        detail.block(LIME, x, windowY - .04, -.18, .055, 1.26, .06);
+        detail.block(LIME, x, windowY + .57, -.18, 1.0, .06, .06);
+        for (const wing of [-1, 1]) detail.block(palette.shutter, x + wing * .64, windowY - .04, -.16, .38, 1.28, .15);
+      }
+      if (home === BEN_HOME) {
+        // A copper sun over the door and a neat wood basket suggest Ben's trade.
+        detail.rock('#b89149', 0, 3.16, -.235, .20, .20, .035);
+        for (let ray = 0; ray < 8; ray++) {
+          const angle = ray * Math.PI / 4;
+          detail.beam('#d4b76e', [Math.cos(angle) * .23, 3.16 + Math.sin(angle) * .23, -.24],
+            [Math.cos(angle) * .32, 3.16 + Math.sin(angle) * .32, -.24], .035);
+        }
+        detail.block(WOOD_DARK, 2.38, .30, -.80, 1.15, .35, .67);
+        for (let log = 0; log < 5; log++) detail.beam(log % 2 ? WOOD_LIGHT : WOOD,
+          [1.95 + log * .18, .59 + log % 2 * .11, -.60], [2.17 + log * .18, .71 + log % 2 * .11, -1.05], .17);
+      } else {
+        // A reading bench and low fragrant plants make Troy's quiet corner his own.
+        detail.box(WOOD_LIGHT, -2.45, 1.03, -.86, 1.58, .12, .64);
+        for (const x of [-3.03, -1.87]) detail.block(WOOD_DARK, x, .30, -.86, .12, .67, .53);
+        detail.block(palette.shutter, -2.45, 1.09, -.55, 1.58, .43, .09);
+        for (let book = 0; book < 3; book++) {
+          detail.box([palette.door, '#82614f', '#b5a57c'][book], -2.70, 1.15 + book * .085, -.89, .37, .08, .28, .12 * book);
+        }
+        detail.cylinder('#9a7558', 2.48, .30, -.86, .46, .58, 0, 7);
+        for (let leaf = 0; leaf < 7; leaf++) {
+          const angle = leaf * Math.PI * 2 / 7;
+          detail.rock(leaf % 2 ? LEAF : '#81936b', 2.48 + Math.cos(angle) * .26, .93 + leaf % 3 * .10,
+            -.86 + Math.sin(angle) * .26, .20, .23, .15, angle);
+        }
+      }
+    });
+    metrics.vertices += detail.vertexCount; detail.finish(district);
+
+    const mail = home.mailbox, ground = y(mail.x, mail.z);
+    const box = createSceneryBuilder(`${home.name} mailbox`);
+    box.frame(mail.x, ground, mail.z, home.yaw, () => {
+      box.block(WOOD_DARK, 0, 0, 0, .15, 1.19, .15);
+      box.box(WOOD_LIGHT, 0, 1.13, 0, .91, .10, .57);
+      box.block(palette.door, 0, 1.17, 0, .80, .48, .50);
+      box.block('#263431', 0, 1.52, -.257, .47, .038, .018);
+      box.roof(palette.roof, 0, 1.66, 0, .97, .65, .19, 0, palette.trim);
+      box.rock(BRONZE, .30, 1.31, -.27, .035, .055, .025);
+    });
+    metrics.vertices += box.vertexCount; box.finish(district);
+    push({ x: mail.x, z: mail.z, r: .49, kind: `${home.name.toLowerCase()}-mailbox`, homeId: home.homeId });
+    metrics.props++;
+    let material = new THREE.MeshStandardMaterial({ color: '#ead9bd', roughness: .95 });
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ead9bd'; context.fillRect(0, 0, 256, 64);
+      context.fillStyle = '#473c3a'; context.font = 'bold 38px Georgia'; context.textAlign = 'center'; context.textBaseline = 'middle';
+      context.fillText(home.name, 128, 33);
+      const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+      material.dispose(); material = new THREE.MeshStandardMaterial({ map: texture, roughness: .95 });
+    }
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(.57, .15), material);
+    plate.name = `${home.name} mailbox nameplate`; plate.rotation.y = home.yaw + Math.PI;
+    plate.position.set(mail.x - Math.sin(home.yaw) * .269, ground + 1.35, mail.z - Math.cos(home.yaw) * .269);
+    plate.userData.homeId = home.homeId; district.add(plate);
+  }
+  questHomeExterior(BEN_HOME, { door: '#7c5238', trim: '#b38755', shutter: '#705975', roof: '#877043', paving: '#a99a80' });
+  questHomeExterior(TROY_HOME, { door: '#526c6a', trim: '#849a8d', shutter: '#667d75', roof: '#515d6c', paving: '#aaa391' });
 
   // The Lord Marshal's Seat: a colonnade and a standard over the plaza.
   {

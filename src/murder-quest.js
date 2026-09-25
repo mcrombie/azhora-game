@@ -198,7 +198,7 @@ export function createMurderQuest({ onEvent = () => {} } = {}) {
  * He does not explain it. His stand is Cobble's (`COBBLE_STANDS`, src/peblos-world.js).
  */
 export const TROY = Object.freeze({
-  id: 'bee-keeper', name: 'Troy', role: 'Of the sorcerer’s guild, in Cobble',
+  id: 'bee-keeper', name: 'Troy', role: 'Of the sorcerer’s guild, from Ambron',
   modelRole: 'bee-keeper', color: 0xe7e0c8, skin: 0xe8b98f,
   look: Object.freeze({ hairSplit: 0xb9995c }),
 });
@@ -288,8 +288,8 @@ export function troyConversation(npc, context) {
     return true;
   }
   if (state.stage === 'paid') {
-    openDialogue(npc, ['Spend it on this island, if you can find anybody selling anything.',
-      'I am going to stay a week and look at the water. Then Ambron, and a chair, and a report nobody reads.'],
+    openDialogue(npc, ['Spend it on something better than the guild would have.',
+      'I am heading home to Ambron by way of Port Calos. My house is on Raft Street, west of the river. Knock if you need me; I will come out.'],
       null, 'Back to the quay', { choices: [
         { id: 'murder-lesson', label: 'Could you still teach me Mind Read?', action: () => { closeDialogue(); act('murder-reward', 'lesson'); } },
         talk, leave] });

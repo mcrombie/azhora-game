@@ -13,6 +13,7 @@ import { createSpiderQuest, validateSpiderQuestSnapshot } from './spider-quest.j
 import { createMurderQuest, validateMurderQuestSnapshot } from './murder-quest.js';
 import { createCatQuest, validateCatQuestSnapshot } from './cat-quest.js';
 import { createCagneyQuest, validateCagneySnapshot } from './cagney-quest.js';
+import { validateHomeResidents } from './home-residents.js';
 import { createVastosCivilWar, validateVastosCivilWarSnapshot } from './vastos-civil-war.js';
 import { createDrentCivilWar, validateDrentCivilWarSnapshot, DRENT_EVIDENCE_ID, DRENT_SUPPLIES_ID } from './drent-civil-war.js';
 import { createJourney } from './journey.js';
@@ -238,6 +239,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.spider !== undefined && !validateSpiderQuestSnapshot(data.spider)) return failed('The saved errand for Ben is invalid.');
     if (data.murder !== undefined && !validateMurderQuestSnapshot(data.murder)) return failed('The saved case in Cobble is invalid.');
     if (data.cat !== undefined && !validateCatQuestSnapshot(data.cat)) return failed('The saved errand for Liz is invalid.');
+    if (!validateHomeResidents(data.homes)) return failed('The saved journeys home are invalid.');
     if (data.cagney !== undefined && !validateCagneySnapshot(data.cagney)) return failed('The saved escort for Cagney is invalid.');
     if (!validateVastosCivilWarSnapshot(data.vastos)) return failed('The saved Common Water settlement is invalid.');
     if (data.magic!==undefined&&!validateMagicSnapshot(data.magic)) return failed('The saved spells are invalid.');
@@ -385,6 +387,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'ogreToll')) { const toll = createOgreToll(); toll.restore(data.ogreToll); result.ogreToll = toll.snapshot(); }
     if (Object.hasOwn(data, 'ambush')) { const road = createRoadAmbush(); road.restore(data.ambush); result.ambush = road.snapshot(); }
     if (Object.hasOwn(data, 'spider')) { const den = createSpiderQuest(); den.restore(data.spider); result.spider = den.snapshot(); }
+    if (Object.hasOwn(data, 'homes')) result.homes = JSON.parse(JSON.stringify(data.homes));
     if (Object.hasOwn(data, 'cagney')) { const escort = createCagneyQuest(); escort.restore(data.cagney); result.cagney = escort.snapshot(); }
     if (Object.hasOwn(data, 'murder')) { const cobble = createMurderQuest(); cobble.restore(data.murder); result.murder = cobble.snapshot(); }
     if (Object.hasOwn(data, 'cat')) { const mop = createCatQuest(); mop.restore(data.cat); result.cat = mop.snapshot(); }
