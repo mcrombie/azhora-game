@@ -2,7 +2,7 @@ import { QUEST_DONE } from '../src/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FERRY_FARE, FERRY_NPC, FERRY_LANDINGS, FERRY_SCENE, FERRY_VERSION, FERRY_CAPTIONS,
+  FERRY_FARE, FERRY_NPC, FERRY_HOSTS, FERRY_HOST_IDS, FERRY_LANDINGS, FERRY_SCENE, FERRY_VERSION, FERRY_CAPTIONS,
   createFerry, ferryConversation, validateFerrySnapshot,
 } from '../src/ferry.js';
 import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
@@ -11,6 +11,9 @@ import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
 import { PORT_CALOS } from '../src/port-calos-world.js';
+import { createSwimming, SWIMMING_LESSON } from '../src/swimming.js';
+import { createSkills } from '../src/skills.js';
+import { keepsNpc } from '../src/cast.js';
 
 /** A ferry with a purse, a place to stand and a record of everything the scene asked for. */
 function harness({ purse = STARTING_PURSE, free = false, charges = false, mounted = false, at = FERRY_LANDINGS.drent.ashore } = {}) {
@@ -147,7 +150,7 @@ test('He brings the traveler back, and waits on the shore they are on', () => {
   assert.equal(ferry.state.crossings, 2);
   assert.deepEqual({ x: log.placed.at(-1).x, z: log.placed.at(-1).z }, { x: FERRY_LANDINGS.drent.ashore.x, z: FERRY_LANDINGS.drent.ashore.z });
   assert.deepEqual(log.stands.at(-1), { side: 'drent', point: FERRY_LANDINGS.drent.stand });
-  // He follows the traveler's shore, even when they got there another way.
+  // The departure follows the traveler's shore, even when they got there another way.
   state.position = { x: FERRY_LANDINGS.peblos.ashore.x, z: FERRY_LANDINGS.peblos.ashore.z };
   assert.equal(ferry.settle(), 'peblos');
   assert.deepEqual(log.stands.at(-1).point, FERRY_LANDINGS.peblos.stand);
@@ -186,7 +189,7 @@ test('His conversation offers the crossing and says plainly why it cannot happen
   // On the island he offers the way home.
   const away = harness({ at: FERRY_LANDINGS.peblos.ashore }), awayBox = open();
   away.ferry.settle();
-  ferryConversation({ ...FERRY_NPC }, { ferry: away.ferry, openDialogue: awayBox.openDialogue, closeDialogue: awayBox.closeDialogue });
+  ferryConversation(FERRY_HOSTS.peblos, { ferry: away.ferry, openDialogue: awayBox.openDialogue, closeDialogue: awayBox.closeDialogue });
   assert.match(awayBox.value.options.choices[0].label, /Tidehaven/);
 });
 
@@ -248,7 +251,7 @@ test('Jess sails directly to Port Calos and returns under the same fare policy',
   const port = FERRY_LANDINGS['port-calos'];
   assert.deepEqual(state.position, { x: port.ashore.x, z: port.ashore.z });
   assert.equal(log.placed.at(-1).veil, 1, 'the new destination also arrives under the fade');
-  assert.equal(ferry.settle(), 'port-calos', 'arrival coordinates keep Jess at this quay');
+  assert.equal(ferry.settle(), 'port-calos', 'arrival coordinates identify this quay');
   assert.deepEqual(log.stands.at(-1), { side: 'port-calos', point: port.stand });
   assert.match(log.toasts.at(-1).kicker, /LUSCIA.*PORT CALOS/);
   assert.ok(log.veil.some(frame => frame.caption === FERRY_CAPTIONS['port-calos']));
@@ -276,19 +279,19 @@ test('Invalid shores and repeat boarding never charge or replace an active cross
   assert.equal(state.mode, 'playing');
   assert.equal(ferry.state.met, false);
   ferry.board('port-calos');
-  assert.equal(ferry.board('peblos').ok, false);
+  assert.equal(ferry.board('port-calos').ok, false);
   assert.equal(ferry.board('port-calos').ok, false);
   assert.equal(state.purse, STARTING_PURSE - FERRY_FARE);
   run(FERRY_SCENE.done + .2);
   assert.equal(ferry.state.side, 'port-calos');
   assert.equal(ferry.state.crossings, 1);
   assert.equal(log.saves, 1);
-  assert.equal(ferry.offer('peblos').ok, false, 'Peblos is reached through Tidehaven');
-  assert.equal(ferry.board('peblos').ok, false);
+  assert.equal(ferry.offer('port-calos').ok, false, 'A ferry never offers its current shore as a destination');
+  assert.equal(ferry.board('port-calos').ok, false);
   assert.equal(state.purse, STARTING_PURSE - FERRY_FARE);
 });
 
-test('Port Calos keeps Jess through town exploration and restores her from a version-one save', () => {
+test('Port Calos remains the current departure through town exploration and version-one saves', () => {
   const { ferry, state, log } = harness({ at: FERRY_LANDINGS['port-calos'].ashore });
   assert.equal(ferry.offer().to, 'drent', 'the first offer settles before selecting its route');
   assert.equal(ferry.state.side, 'port-calos');
@@ -296,7 +299,7 @@ test('Port Calos keeps Jess through town exploration and restores her from a ver
   assert.equal(ferry.settle(), 'port-calos');
   state.position = { x: FERRY_LANDINGS['port-calos'].stand.x, z: FERRY_LANDINGS['port-calos'].stand.z };
   assert.equal(ferry.settle(), 'port-calos');
-  assert.equal(log.stands.length, 1, 'walking ashore does not bounce Jess between ports');
+  assert.equal(log.stands.length, 1, 'walking ashore does not change the departure port');
   const legacySave = { version: 1, crossings: 2, met: true };
   assert.equal(ferry.restore(legacySave), true);
   assert.equal(ferry.settle(), 'port-calos');
@@ -346,16 +349,17 @@ test('The destination choice closes dialogue before ferry mode starts, and swimm
   }
 });
 
-test('Speaking to Jess in Port Calos offers the return rather than another outbound trip', () => {
+test('Maddie offers both other ports from Port Calos', () => {
   const { ferry, state } = harness({ at: FERRY_LANDINGS['port-calos'].ashore });
   let opened;
-  ferryConversation(FERRY_NPC, {
+  ferryConversation(FERRY_HOSTS['port-calos'], {
     ferry, openDialogue: (npc, lines, event, action, options) => { opened = { lines, options }; },
     closeDialogue: () => { state.mode = 'playing'; },
   });
   assert.match(opened.lines.join(' '), /Port Calos.*Luscia/);
   const voyages = opened.options.choices.filter(c => c.id.startsWith('board-ferry'));
-  assert.equal(voyages.length, 1);
+  assert.equal(voyages.length, 2);
+  assert.equal(voyages[1].id, 'board-ferry-peblos');
   assert.equal(voyages[0].id, 'board-ferry');
   assert.match(voyages[0].label, /Tidehaven/);
   voyages[0].action();
@@ -376,4 +380,71 @@ test('A delayed ferry frame still transfers under cover exactly once', () => {
   assert.equal(log.placed.length, 1);
   assert.equal(log.saves, 1);
   assert.deepEqual(log.arrivals, ['port-calos']);
+});
+
+test('The three requested resident hosts offer every directed coastal route, including Cobble to Port Calos', () => {
+  assert.deepEqual(Object.values(FERRY_HOSTS).map(npc => npc.name), ['Jess', 'Howie', 'Maddie']);
+  assert.equal(new Set(FERRY_HOST_IDS).size, 3);
+  for (const host of Object.values(FERRY_HOSTS)) assert.ok(keepsNpc(host), `${host.name} is in the active cast`);
+  for (const [from, host] of Object.entries(FERRY_HOSTS)) {
+    assert.deepEqual([...FERRY_LANDINGS[from].destinations].sort(), Object.keys(FERRY_HOSTS).filter(id => id !== from).sort());
+    for (const to of FERRY_LANDINGS[from].destinations) {
+      const { ferry, state, run, log } = harness({ at: FERRY_LANDINGS[from].ashore, charges: true });
+      let opened, result;
+      ferryConversation(host, { ferry,
+        openDialogue: (npc, lines, event, action, options) => { opened = { npc, lines, options }; state.mode = 'dialogue'; },
+        closeDialogue: () => { state.mode = 'playing'; }, act: value => { result = value; },
+      });
+      assert.equal(opened.npc.id, host.id);
+      const button = opened.options.choices.find(choice => choice.id === (to === FERRY_LANDINGS[from].far ? 'board-ferry' : `board-ferry-${to}`));
+      assert.ok(button?.enabled, `${host.name} offers ${to}`);
+      button.action();
+      assert.equal(result.host, host.name);
+      assert.equal(result.from, from);
+      assert.equal(result.to, to);
+      run(FERRY_SCENE.done + .2);
+      assert.equal(ferry.state.side, to);
+      assert.deepEqual(state.position, { x: FERRY_LANDINGS[to].ashore.x, z: FERRY_LANDINGS[to].ashore.z });
+      assert.equal(state.purse, STARTING_PURSE - FERRY_FARE);
+      assert.equal(log.saves, 1);
+      const saved = ferry.snapshot(), restored = harness({ at: state.position }).ferry;
+      assert.equal(restored.restore(saved), true);
+      assert.equal(restored.settle(), to);
+      let next;
+      ferryConversation(FERRY_HOSTS[to], { ferry: restored, openDialogue: (npc, lines, event, action, options) => { next = { npc, options }; }, closeDialogue() {} });
+      assert.equal(next.npc.id, FERRY_HOSTS[to].id, 'The destination resident, not the departing host, handles the next crossing');
+    }
+  }
+});
+
+test('Jess, Maddie and Howie each teach swimming once, with one shared skill across all ports', () => {
+  for (const first of Object.keys(FERRY_HOSTS)) {
+    const skills = createSkills(), events = [], swimming = createSwimming({ skills, onEvent: event => events.push(event) });
+    for (const side of [first, ...Object.keys(FERRY_HOSTS).filter(id => id !== first)]) {
+      const { ferry } = harness({ at: FERRY_LANDINGS[side].ashore }); let opened;
+      ferryConversation(FERRY_HOSTS[side], { ferry, swimming, swimmingLesson: SWIMMING_LESSON,
+        teachSwimming: () => swimming.learn(), closeDialogue() {},
+        openDialogue: (npc, lines, event, action, options) => { opened = { npc, lines, options }; },
+      });
+      const lesson = opened.options.choices.find(choice => choice.id === 'ferry-swim');
+      if (side === first) {
+        assert.ok(lesson, `${FERRY_HOSTS[first].name} has an introductory swimming lesson`);
+        lesson.action();
+        assert.equal(opened.npc.id, FERRY_HOSTS[first].id);
+        assert.deepEqual(opened.lines, [...SWIMMING_LESSON]);
+        opened.options.onComplete();
+        assert.ok(swimming.taught && skills.taught('swimming'));
+      } else assert.equal(lesson, undefined, 'Another harbourmaster does not repeat or re-award the introduction');
+    }
+    assert.equal(events.filter(event => event.type === 'swimming-learned').length, 1);
+    assert.ok(swimming.swam(20).xp > 0, 'The taught skill earns experience in the water');
+  }
+});
+
+test('A different port resident cannot open or board a ferry from the wrong shore', () => {
+  const { ferry } = harness();
+  let opened = false;
+  assert.equal(ferryConversation(FERRY_HOSTS.peblos, { ferry, openDialogue: () => { opened = true; }, closeDialogue() {} }), false);
+  assert.equal(opened, false);
+  assert.equal(ferry.state.crossing, false);
 });

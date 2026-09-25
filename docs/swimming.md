@@ -5,6 +5,10 @@ drown you for trying. This is the design the user settled on: swimming is a
 skill on the same 99-level table as the rest (`src/skills.js`), and running out
 of wind in deep water kills you through the game's ordinary defeat.
 
+## Harbour lessons and crossings
+
+Jess stays at Tidehaven, Maddie keeps Port Calos, and Howie keeps Cobble in Peblos. Each can teach Swimming and sail to either of the other two ports. Learning from any one of them introduces the shared skill; the introductory option then disappears at all three ports. Their green skill markers use the same taught state. Ferry travel, including a crossing before the tutorial is complete, never grants the lesson automatically.
+
 ## What it is
 
 Swimming is walking on water at reduced speed while your wind runs down.
@@ -136,7 +140,7 @@ world and fails if the ground moves under them.
   `world.mapWaters` are the names).
 - **150** for reaching Peblos by water.
 
-Nothing counts before Ed's lesson. The water does not ask whether anybody has
+Nothing counts before a swimming lesson. The water does not ask whether anybody has
 shown you - you can walk into the sea on your first morning, and the toast says
 as much - but until `swimming.learn()` there is no skill to pay into, and the
 record is left unwritten, so the crossing made blind still pays once he knows
@@ -176,7 +180,7 @@ survivable from level 1 and dry only from level 15, so a traveler who watches it
 and tries the same water learns the same lesson for the same price.
 
 Ask him how it is done and he gives the lesson (`SWIMMING_LESSON`), which is
-what calls `swimming.learn()`. Nothing else in the game teaches it.
+what calls `swimming.learn()`. The three ferry hosts offer the same introduction.
 
 His ship is the rebel ship the Peblos faction quest later hides in a sea cave,
 and her crew are the mutineers who put him over the side

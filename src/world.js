@@ -1237,6 +1237,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const puethScenery = createPuethScenery({
     root: world, material, mesh, box, post, pebble, rope, cottage, fence, barrel, crate, wornPatch, trailSign: (...args) => trailSign(...args),
     groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
+    drapeGround: (vertices, indices) => drapeRoadOnTerrain(vertices, indices, terrainXs, terrainZs, terrainPositions),
     roadDistance, riverMaterial: regionScenery.riverMaterial, regionClear,
     insideVillage: (x, z) => { const local = worldToVillage(x, z); return local.x > -122 && local.x < 122 && local.z > -182 && local.z < 40; },
   });

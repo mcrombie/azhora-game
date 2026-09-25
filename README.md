@@ -291,4 +291,10 @@ The harness writes results and desktop/compact screenshots to `tests/artifacts/`
 
 Each test launch uses its own temporary Electron profile under `tests/.electron-profiles/`, removed when that test exits. Offscreen checks keep their saves in memory and do not share the normal game's Chromium cache.
 
+The three coastal ferry hosts are Jess in Tidehaven, Maddie in Port Calos, and Howie in Cobble. Each offers both other ports and a Swimming lesson; they remain residents of their home port. Port Calos is a five-building settlement on its single land hex, with the harbor extending to the water. `npm run test:port-calos` exercises all six crossings, lessons, and reloading at each destination.
+
+Liz now lives beside a small cottage, a working apiary with straw skeps and wooden hives, and a fenced flower-and-herb garden. Her original interaction point and Mop's return approach remain open.
+
+[Cagney and the Cagnappers](docs/cagney-escort.md) is an optional escort west from Caelom's fork to Ambron. F8 includes a dedicated quest playtest; `npm run test:cagney:autoplay` checks the complete walk, ambush, and reward through ordinary game inputs.
+
 The desktop icon is an abstract gold sun and winding coastal path over teal water. `scripts/create-icon.ps1` generates its seven ICO sizes; `scripts/create-desktop-shortcut.ps1` updates the shortcut without restarting a live game.

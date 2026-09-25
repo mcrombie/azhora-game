@@ -15,12 +15,13 @@ import {
 } from '../src/swimming.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-import { OGRE_ENCOUNTER } from '../src/amod-ogre.js';
-import { LUSCIA_WOLVES } from '../src/luscia-chapter.js';
-import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
-import { borderEncounter } from '../src/border-chapter.js';
-import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import { AFTERMATH_ARENAS } from '../src/aftermath-sites.js';
+// Execute these small host boundaries with controlled dependencies. Matching
+// their outer indentation keeps unrelated revive calls elsewhere out of a test.
+const hostFunction = name => {
+  const found = source('main.js').match(new RegExp(`^  function ${name}\\([^\\n]*\\)\\s*\\{[\\s\\S]*?^  \\}`, 'm'))?.[0];
+  assert.ok(found, `${name} host boundary exists`);
+  return found;
+};
 
 let world = null;
 const built = async () => (world ??= (async () => {
@@ -274,8 +275,10 @@ test('a drowned traveler does not wake up in somebody else’s fight', async () 
   // The old repair, kept as the thing that must not be used for a drowning.
   const shadow = createCombat({ world: w, position: { ...position }, onEvent: () => {} });
   shadow.exhaust(100, 200);
-  shadow.resetEncounter({});
+  assert.equal(shadow.resetEncounter({}),true,'resetting before any encounter accepts the default roster');
   assert.equal(shadow.state.phase, 'active', 'resetEncounter starts a fight, which is the whole bug');
+  assert.equal(shadow.state.enemies.length,3,'the default raiders are instantiated');
+  assert.deepEqual(shadow.state.allies,[],'an encounter with no authored allies starts without them');
   // What a drowning gets instead: on your feet, whole, with nothing happening and nobody moved.
   const back = combat.revive();
   assert.deepEqual([combat.state.phase, combat.state.enemies.length], ['peaceful', 0]);
@@ -307,12 +310,10 @@ test('getting wet in the middle of a fight resets nothing', async () => {
   // exactly where a retreat begins. Read the name and the number both, so neither can drift.
   assert.match(combatSource, /^const LEASH = 45;$/m, 'the leash is 45 m, named once');
   assert.match(combatSource, /distance\(position, lastEncounter\.center\) > LEASH/, 'and the leash is what lets you leave');
-  // But the leash ends a fight with `restorePlayer()`, which is full health and a full bar - and
-  // the bar is wind. A traveler who swims out of a fight must not come out of it with his breath
-  // back and the sea still to cross. Today nothing but the geography of where fights are
-  // authored keeps that out of reach, so the rule is written in code instead.
-  assert.match(combatSource, /restorePlayer\(\);\s*[\s\S]{0,40}\s*emit\('retreat'/, 'the leash still restores, as it should for a walker');
-  assert.match(main, /const windBefore=combat\.state\.player\.stamina;/, 'so the host remembers what the water had taken');
+  // Disengaging now preserves vitals for walkers and swimmers alike. The host
+  // also suppresses ordinary stamina regeneration while a swimmer remains wet.
+  // The actual boundary behavior is exercised in the beach-fight test below.
+  assert.match(main, /const windBefore=combat\.state\.player\.stamina;/, 'the host remembers what the water had taken');
   assert.match(main, /if\(inWater&&combat\.state\.player\.stamina>windBefore\)combat\.state\.player\.stamina=windBefore;/,
     'and while the water has him his wind only ever goes down');
   // A save is never written from the water, so no crossing can be reloaded with a fresh bar of
@@ -343,10 +344,25 @@ test('the two ways out of the water both pay for the swim, and drowning ends a q
   // A drowning does not restart the fight it interrupted, so whatever was told a fight had begun
   // must be told it has ended. The hideout and the toll are ended in the defeat handler; the
   // aftermath is not, because the ordinary retry restarts its fight and leaves it running.
-  assert.match(main, /if\(inAftermathFight\(\)\)aftermath\.endEncounter\(combat\.state\.encounterId\);/,
-    'so the drowned retry ends an aftermath fight itself');
-  const drowned = main.slice(main.indexOf('if(drownedDefeat){'), main.indexOf('combat.revive();'));
-  assert.ok(drowned.includes('inAftermathFight()'), 'and does it before it revives him');
+  const returnDrowned = new Function('combat', 'world', 'lastDry', 'player', 'events', `
+    let drownedDefeat=true,inWater=true,drowning=true,swimMetres=23,retriesTaken=0,
+      mode='defeated',grounded=false,verticalSpeed=-2,yaw=1;
+    const stopAutopilot=()=>{},clearArrows=()=>{},stopInput=()=>{},show=()=>{},toast=()=>{},canvas={focus(){}};
+    const inAftermathFight=()=>true,aftermath={endEncounter:id=>events.push(['end',id])};
+    ${hostFunction('returnToSafety')}
+    returnToSafety();
+    return {drownedDefeat,inWater,drowning,swimMetres,mode,grounded};
+  `);
+  for(const lastDry of [{x:6,z:8},null]) {
+    const events=[],world={spawn:{x:1,z:2},heightAt:(x,z)=>x+z};
+    const player={group:{position:new THREE.Vector3(20,-1,30),rotation:{y:0}}};
+    const combat={state:{encounterId:'water-quest'},revive(){events.push(['revive']);},
+      resetEncounter(){assert.fail('drowning must not restart a fight');}};
+    const returned=returnDrowned(combat,world,lastDry,player,events),ashore=lastDry??world.spawn;
+    assert.deepEqual(events,[['end','water-quest'],['revive']],'quest fight ends before the combat state is revived');
+    assert.deepEqual(player.group.position.toArray(),[ashore.x,world.heightAt(ashore.x,ashore.z),ashore.z]);
+    assert.deepEqual(returned,{drownedDefeat:false,inWater:false,drowning:false,swimMetres:0,mode:'playing',grounded:true});
+  }
 });
 
 test('the checkpoint takes a save made in deep water, which is now the right answer', async () => {
@@ -364,7 +380,18 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
   assert.match(main, /const wet=canSwim\(p\.x,p\.z,playerWorld,\.34\);/, 'the water is what canSwim says it is');
   assert.match(main, /if\(riding\.mounted\)\{[\s\S]{0,400}He will not go in, and he is right/, 'a horse will not go in');
   assert.match(main, /if\(inWater\)\{toast\('Both your hands are busy/, 'and a swimmer cannot swing');
-  assert.match(main, /riding\.mounted\|\|inWater\)return;/, 'nor dodge');
+  const tryDodge=new Function('inWater','mounted','passenger',`
+    const mode='playing',grounded=true,riding={mounted},living={recall:()=>({status:passenger?'passenger':'idle'})};
+    const keys=new Set(),yaw=0,player={group:{rotation:{y:0}}};
+    let dodges=0;
+    const getMovementInput=()=>({forward:1,side:0}),combat={dodge(){dodges++;}};
+    ${hostFunction('dodge')}
+    dodge();return dodges;
+  `);
+  assert.equal(tryDodge(true,false,false),0,'a swimmer cannot dodge');
+  assert.equal(tryDodge(false,true,false),0,'a rider cannot dodge');
+  assert.equal(tryDodge(false,false,true),0,'a passenger cannot dodge');
+  assert.equal(tryDodge(false,false,false),1,'an ordinary traveler still can dodge');
   assert.match(main, /const speed=inWater\?swimSpeed\(swimLevel\)/, 'and moves at his own pace once he is in');
   assert.match(main, /combat\.exhaust\(step\.spent,step\.damage\)/, 'the wind and the blood are combat’s');
   assert.match(main, /swimming:swimming\.snapshot\(\)/, 'and the skill is saved with the road');
@@ -378,47 +405,44 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
   assert.ok(SWIMMING_LESSON.length >= 4 && SWIMMING_LESSON.join(' ').includes('wind'), 'and somebody has words for it');
 });
 
-/**
- * The 45 m leash in src/combat.js ends a fight a traveler has walked out of, and it does that
- * with `restorePlayer()` - full health and a **full bar of wind**. Wind is what every crossing in
- * the table above is priced in, so a swimmer who is still inside a live fight's leash when the
- * water takes his wind is handed a second bar in the middle of the sea. Measured on the real
- * world, off the Tidehaven strand at level 1: 77 m without a fight on, 108 m with one, which is
- * 40% further than the design allows anyone at that level.
- *
- * Nothing in the code stops it. What stops it is that no fight is authored near enough to water,
- * and the nearest - the Bramble scout camp - clears the leash by five metres. That is too thin a
- * thing to leave un-nailed, so it is nailed here: the day somebody authors a fight on a beach,
- * this fails and says which one, rather than the crossing table quietly becoming a lie.
- *
- * The same five metres hold a second one: retry()'s drowned branch returns before the line that
- * tells a chapter module its fight is over, so drowning inside a quest fight would leave the
- * module believing the fight was still running.
- */
-test('no fight the game can start has water inside its leash, which is what keeps the crossings honest', async () => {
-  const w = await built();
-  const allies = Array.from({ length: 4 }, (_, i) => ({ id: `ally-${i}`, kind: 'legionary' }));
-  const fights = [['the ogre at the pass stones', OGRE_ENCOUNTER], ['the wolves on the burial line', LUSCIA_WOLVES],
-    ['the Bramble scout camp', FOREST_HIDEOUT_QUEST.encounter]];
-  for (const side of ['empire', 'coalition']) fights.push([`the border battle, for the ${side}`, borderEncounter(side, allies)]);
-  for (const spec of Object.values(AFTERMATH_VARIANTS)) {
-    const arena = AFTERMATH_ARENAS[spec.arena];
-    if (arena) fights.push([`the day after: ${spec.id}`, aftermathEncounter(spec.id, arena, allies)]);
+// Fights may be near water. What protects swimming balance is preserving the
+// traveler's spent vitals at disengagement, not a restriction on encounter maps.
+test('swimming beyond a beach fight leash gives no health or second bar of wind', async () => {
+  const { createCombat } = await sourceModule('../src/combat.js');
+  const world={bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},colliders:[],
+    heightAt:x=>x<5?1.5:-1,waterAt:()=>WATERLINE};
+  const main=source('main.js'),start=main.indexOf('const windBefore=combat.state.player.stamina;');
+  const end=main.indexOf('magic.update(dt);',start);
+  assert.ok(start>=0&&end>start,'the host combat update and swimming wind guard exist');
+  const hostUpdate=new Function('combat','dt','inWater',`let combatClock=0;${main.slice(start,end)}`);
+  const events=[],position={x:0,z:0},controlPosition={x:0,z:0};
+  const combat=createCombat({world,position,onEvent:event=>events.push(event)});
+  const control=createCombat({world,position:controlPosition});
+  assert.equal(combat.startEncounter({id:'beach-fight',center:{x:0,z:0},checkpoint:{x:0,z:8},retreatZ:18,
+    enemies:[{id:'beach-goblin',x:0,z:-8,hp:75,entry:60}]}),true);
+  const enemy=combat.state.enemies[0];enemy.hp=41;
+  for(const model of [combat,control])model.exhaust(55,37);
+  for(let frame=0;frame<=180;frame++){
+    position.x=controlPosition.x=6+frame*.3;
+    assert.ok(canSwim(position.x,position.z,world),'the whole retreat is in water');
+    for(const model of [combat,control]){
+      hostUpdate(model,1/60,true);
+      const step=swimStep({dt:1/60,level:1,wind:model.state.player.stamina,health:model.state.player.hp});
+      model.exhaust(step.spent,step.damage);
+    }
+    if(frame===0){
+      assert.equal(combat.state.phase,'active','entering water alone does not reset the fight');
+      assert.equal(combat.state.enemies[0],enemy,'the same damaged enemy remains');
+    }
+    assert.equal(combat.state.player.hp,control.state.player.hp,'retreat never heals a swimmer');
+    assert.ok(Math.abs(combat.state.player.stamina-control.state.player.stamina)<1e-8,'retreat never refreshes swimming wind');
   }
-  assert.ok(fights.length >= 8, `only ${fights.length} fights found`);
-  // The leash, read off the source rather than guessed, so a change to it changes this.
-  const leash = Number(source('combat.js').match(/^const LEASH = (\d+);$/m)?.[1]);
-  assert.equal(leash, 45, 'the leash is 45 m');
-  for (const [label, encounter] of fights) {
-    let nearest = Infinity;
-    for (let r = 2; r <= leash + 20; r += 2)
-      for (let i = 0; i < 64; i++) {
-        const a = i / 64 * Math.PI * 2, x = encounter.center.x + Math.sin(a) * r, z = encounter.center.z + Math.cos(a) * r;
-        if (canSwim(x, z, w, .34)) { nearest = Math.min(nearest, r); break; }
-      }
-    assert.ok(nearest > leash, `${label} (${encounter.id}) has swimmable water ${nearest} m from its centre, inside the ${leash} m leash: `
-      + 'a swimmer inside it is handed a full bar of wind by restorePlayer(), and the crossing table stops being true');
-  }
+  assert.equal(combat.state.phase,'peaceful','crossing the outer leash disengages the fight');
+  const retreats=events.filter(event=>event.type==='retreat');
+  assert.equal(retreats.length,1,'a single retreat is reported');
+  assert.equal(retreats[0].enemies[0].hp,41,'the host receives the enemy’s remaining health');
+  assert.equal(combat.state.player.hp,63);
+  assert.ok(combat.state.player.stamina<45,'the swim continues to spend the original wind');
 });
 
 /**

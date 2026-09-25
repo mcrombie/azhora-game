@@ -1853,6 +1853,18 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   }
   if (!isMercenary && look?.glasses) spectacles(head, 'Spectacles',
     material(0x53575c, { metalness: .62, roughness: .34 }), material(0xdfe7ea, { roughness: .12, metalness: .1 }));
+  if (look?.shirtRibbons) {
+    const bows = new THREE.Group(); bows.name = 'Shirt ribbons'; body.add(bows);
+    const cloth = material(0xb85179), knot = material(0xe5a1ae);
+    for (const [x, y] of [[-.10, 1.22], [.12, 1.08]]) {
+      for (const side of [-1, 1]) {
+        const loop = box(bows, cloth, [x + side * .034, y, .188], [.065, .047, .028]);
+        loop.rotation.z = side * .35;
+        ribbon(bows, cloth, [x, y - .01, .19], [x + side * .033, y - .115, .195], .025, .015);
+      }
+      box(bows, knot, [x, y, .212], [.029, .034, .018]);
+    }
+  }
   if (isMercenary) for (const mark of marks) {
     // Small marks, one draw each, put where a face carries them at a distance.
     const marked = lookGroup(head, 'mark', mark);

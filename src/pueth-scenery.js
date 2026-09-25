@@ -4,7 +4,7 @@ import { WORLD_SCALE } from './world-scale.js';
 import {
   PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, TESSEN_POST, RIMEHOLT, RIMEHOLT_BUILDINGS, RIMEHOLT_YARD, rimeholtPoint,
   PUETH_NPC_POSITIONS, PUETH_SIGNS, HIDEOUT_TRAIL_PENNANTS, FERADOM_BARRIER, PUETH_LANDMARKS, puethRiverDistance,
-  LIZ_CLEARING, LIZ_SKEPS, LIZ_BENCH,
+  LIZ_CLEARING, LIZ_SKEPS, LIZ_BENCH, LIZ_COTTAGE, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
 } from './pueth-world.js';
 import { PUETH_RIVER_PROFILES, puethRiverSample, puethRiverHalfWidth, TESSEN_DECK_Y } from './world-terrain.js';
 import { SURVEY } from './region-world.js';
@@ -21,7 +21,7 @@ import { SURVEY } from './region-world.js';
 export function createPuethScenery(kit) {
   const { root, material, mesh, box, post, pebble, rope, cottage, fence, barrel, crate, wornPatch, trailSign,
     groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
-    roadDistance, riverMaterial, insideVillage, regionClear } = kit;
+    roadDistance, riverMaterial, insideVillage, regionClear, drapeGround } = kit;
   let seed = 510331;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
@@ -266,11 +266,35 @@ export function createPuethScenery(kit) {
   }
 
   // -------------------------------------------------------------------------
-  // Liz's skeps, in a clearing off the camp trail (src/cat-quest.js)
+  // Liz's cottage, apiary and flower garden off the camp trail.
   // -------------------------------------------------------------------------
   {
-    const straw = material('#c9a886'), plank = woodLight;
+    const homestead = new THREE.Group(); homestead.name = 'Liz cottage and apiary'; group.add(homestead);
+    const straw = material('#c9a886'), strawShade = material('#a17d51'), plank = woodLight;
+    const home = LIZ_COTTAGE;
+    cottage(home.x,home.z,home.width,home.depth,home.height,home.roof,home.wall,home.yaw,homestead).name = 'Liz cottage';
+    const homeCollider = colliders.findLast(c => c.kind === 'house' && c.x === home.x && c.z === home.z);
+    if (homeCollider) homeCollider.id = home.id;
     wornPatch(LIZ_CLEARING.x, LIZ_CLEARING.z, 4.2, '#8f9068');
+    // A narrow worn approach joins the existing trail. The east side of Liz's
+    // stand stays open so Mop can follow the player home from the goblin camp.
+    for (const path of LIZ_HOME_PATHS) {
+      const vertices=[], indices=[];
+      for(let section=1;section<path.length;section++) {
+        const a=path[section-1],b=path[section],dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz),steps=Math.ceil(length/.65);
+        const start=vertices.length/3;
+        for(let step=0;step<=steps;step++)for(const side of [-1,1]) {
+          const t=step/steps,x=a.x+dx*t-dz/length*.6*side,z=a.z+dz*t+dx/length*.6*side;
+          vertices.push(x,groundHeight(x,z)+.026,z);
+          if(side===1&&step){const index=start+step*2;indices.push(index-2,index,index-1,index-1,index,index+1);}
+        }
+      }
+      const draped=drapeGround?.(vertices,indices);
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(draped?.positions??vertices,3));
+      geometry.setIndex(draped?.indices??indices);geometry.computeVertexNormals();
+      const pathMesh=new THREE.Mesh(geometry,material('#a39979',{side:THREE.DoubleSide}));
+      pathMesh.name='Liz dirt garden path';pathMesh.receiveShadow=true;homestead.add(pathMesh);
+    }
     // The bench: two short posts and a plank, turned so the skeps face away from the trail.
     const benchY = groundHeight(LIZ_BENCH.x, LIZ_BENCH.z);
     for (const end of [-1, 1]) post(wood, LIZ_BENCH.x, benchY + .22, LIZ_BENCH.z + end * (LIZ_BENCH.length / 2 - .4), .09, .44, group);
@@ -282,11 +306,80 @@ export function createPuethScenery(kit) {
       const dome = mesh(round, straw, skep.x, y + .3, skep.z, .46, .54 + i * .02, .46, group);
       dome.rotation.y = i * 1.1;
       dome.name = `Liz\u2019s skep ${i + 1}`;
+      // Actual horizontal straw coils, a dark entrance and a landing board make
+      // these read as skeps instead of faceted stones balanced on a plank.
+      for(let ring=0;ring<8;ring++) {
+        const h=.055+ring*.082, radius=.45*Math.sqrt(Math.max(.025,1-Math.pow((h-.27)/.49,2)));
+        const coil=new THREE.TorusGeometry(radius,.024,4,14);coil.rotateX(Math.PI/2);
+        mesh(coil,ring%2?strawShade:straw,skep.x,y+h,skep.z,1,1,1,homestead);
+      }
+      pebble(darkWood,skep.x+.425,y+.10,skep.z,.018,.075,.085,homestead);
       mesh(cylinder, straw, skep.x, y + .62, skep.z, .1, .1, .1, group);
       pebble(plank, skep.x + .42, y - .02, skep.z, .3, .04, .34, group);
       colliders.push({ x: skep.x, z: skep.z, r: skep.r, kind: 'bee-skep' });
     }
     colliders.push({ x: LIZ_BENCH.x, z: LIZ_BENCH.z, r: .8, kind: 'bee-bench' });
+
+    // A second row of removable wooden hive boxes sits on individual stands.
+    const hivePaint=material('#b8b6a0'), hiveRoof=material('#6b796c'), honey=material('#d4a559');
+    for(const hive of LIZ_WOOD_HIVES) {
+      const y=groundHeight(hive.x,hive.z), hiveGroup=new THREE.Group();hiveGroup.name=hive.id;homestead.add(hiveGroup);
+      for(const dx of [-.42,.42])for(const dz of [-.35,.35])post(wood,hive.x+dx,y+.27,hive.z+dz,.06,.54,hiveGroup);
+      box(plank,hive.x,y+.56,hive.z,1.16,.12,1.02,hiveGroup);
+      for(let tier=0;tier<3;tier++) {
+        box(hivePaint,hive.x,y+.76+tier*.31,hive.z,.96,.28,.85,hiveGroup);
+        box(darkWood,hive.x+.487,y+.78+tier*.31,hive.z,.025,.055,.28,hiveGroup);
+      }
+      box(hiveRoof,hive.x,y+1.62,hive.z,1.18,.15,1.05,hiveGroup);
+      box(plank,hive.x+.66,y+.65,hive.z,.5,.07,.72,hiveGroup);
+      box(darkWood,hive.x+.488,y+.70,hive.z,.03,.075,.5,hiveGroup);
+      pebble(honey,hive.x+.67,y+.70,hive.z+.18,.028,.025,.04,hiveGroup);
+      colliders.push({x:hive.x,z:hive.z,r:hive.r,kind:'bee-hive',id:hive.id});
+    }
+    // Spare frames, a honey jar and a smoker on a working table beside the hives.
+    const tx=-35,tz=-190,ty=groundHeight(tx,tz);
+    box(plank,tx,ty+.87,tz,2.2,.12,1.1,homestead);
+    for(const dx of [-.88,.88])for(const dz of [-.36,.36])box(wood,tx+dx,ty+.41,tz+dz,.12,.82,.12,homestead);
+    for(let i=0;i<3;i++) {
+      box(straw,tx-.65,ty+1.01+i*.11,tz,.65,.055,.72,homestead);
+      for(const dx of [-.3,.3])box(plank,tx-.65+dx,ty+1.01+i*.11,tz,.055,.07,.78,homestead);
+    }
+    post(material('#9b794c'),tx+.26,ty+1.13,tz,.18,.44,homestead);
+    post(material('#777e75'),tx+.77,ty+1.12,tz,.16,.36,homestead);
+    box(wood,tx+.98,ty+1.12,tz,.18,.3,.12,homestead);
+    colliders.push({x:tx,z:tz,hx:1.15,hz:.58,kind:'apiary-table'});
+
+    // A fenced flower-and-herb garden has a person-wide opening on its east
+    // side. Rails follow the slope instead of hovering above the river bank.
+    const garden=LIZ_GARDEN, minX=garden.x-garden.width/2,maxX=garden.x+garden.width/2;
+    const minZ=garden.z-garden.depth/2,maxZ=garden.z+garden.depth/2;
+    for(const [a,b] of [
+      [{x:minX,z:minZ},{x:maxX,z:minZ}],[{x:minX,z:maxZ},{x:maxX,z:maxZ}],
+      [{x:minX,z:minZ},{x:minX,z:maxZ}],[{x:maxX,z:minZ},{x:maxX,z:garden.z-1.6}],
+      [{x:maxX,z:garden.z+1.6},{x:maxX,z:maxZ}],
+    ]) {
+      const length=Math.hypot(b.x-a.x,b.z-a.z),steps=Math.ceil(length/1.3);
+      for(let i=0;i<=steps;i++){const t=i/steps,x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t;post(wood,x,groundHeight(x,z)+.52,z,.055,1.04,homestead);}
+      for(const rise of [.4,.86])rope([new THREE.Vector3(a.x,groundHeight(a.x,a.z)+rise,a.z),new THREE.Vector3(b.x,groundHeight(b.x,b.z)+rise,b.z)],.05,woodLight,homestead);
+      colliders.push({x:(a.x+b.x)/2,z:(a.z+b.z)/2,hx:Math.max(.07,Math.abs(b.x-a.x)/2),hz:Math.max(.07,Math.abs(b.z-a.z)/2),kind:'liz-garden-fence'});
+    }
+    const leaf=material('#5b8250'), stem=material('#718659'), soil=material('#78634b');
+    const petals=['#c9a0bc','#e0ca77','#e4ded0'].map(tint=>material(tint));
+    for(const [bedIndex,bed] of garden.beds.entries()) {
+      const vertices=[],indices=[];
+      for(let x=0;x<=8;x++)for(let z=0;z<=3;z++)vertices.push(bed.x-2.35+x*4.7/8,groundHeight(bed.x-2.35+x*4.7/8,bed.z-.65+z*1.3/3)+.045,bed.z-.65+z*1.3/3);
+      for(let x=0;x<8;x++)for(let z=0;z<3;z++){const i=x*4+z;indices.push(i,i+1,i+4,i+1,i+5,i+4);}
+      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geo.setIndex(indices);geo.computeVertexNormals();
+      const bedMesh=new THREE.Mesh(geo,soil);bedMesh.name='Liz herb and bee-flower bed';bedMesh.receiveShadow=true;homestead.add(bedMesh);
+      for(let i=0;i<18;i++) {
+        const x=bed.x-2.08+(i%9)*.52,z=bed.z+(i<9?-.31:.31),y=groundHeight(x,z),h=.28+(i%4)*.07;
+        post(stem,x,y+h/2,z,.012,h,homestead);
+        pebble(leaf,x-.065,y+h*.42,z,.095,.025,.052,homestead).rotation.z=.3;
+        pebble(leaf,x+.06,y+h*.56,z,.09,.025,.047,homestead).rotation.z=-.4;
+        for(let petal=0;petal<4;petal++){const a=petal*Math.PI/2;pebble(petals[(i+bedIndex)%3],x+Math.cos(a)*.055,y+h,z+Math.sin(a)*.055,.055,.033,.052,homestead);}
+        pebble(honey,x,y+h+.016,z,.026,.026,.026,homestead);
+      }
+    }
   }
 
   // -------------------------------------------------------------------------

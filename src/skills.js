@@ -147,7 +147,7 @@ export const SKILLS = Object.freeze({
   swimming: Object.freeze({
     id: 'swimming', name: 'Swimming', kind: 'working',
     blurb: 'Crossing water on your own, which is slower than walking, harder than it looks, and the only way to some of this country. Your wind runs out before your arms do, and what happens after that is drowning.',
-    teacher: 'Jess at the Caloss crossing, and Ed the Word in the traveling company',
+    teacher: 'Jess at Tidehaven, Maddie at Port Calos, Howie at Cobble, or Ed the Word in the traveling company',
     thresholds: RUNESCAPE_TABLE,
     // What each level opens is a crossing; the distances are measured shore to shore in
     // docs/swimming.md and re-measured by tests/swimming.test.js.

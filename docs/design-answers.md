@@ -427,3 +427,14 @@ Wildlife should be present throughout explorable woods, including the stretches 
 roads and named places. A few populated landmarks do not satisfy this. Drent now uses
 resident home ranges across the province, with birds and squirrels attached to real trees.
 Verify coverage across the whole region as well as visibility, fleeing, revisiting and pause.
+
+## Character additions and the three ports (25 September 2026)
+
+Do not invent or add nonsoldier NPCs without an explicit user request. The user is
+choosing individual characters deliberately; soldiers are the stated exception.
+Remove the unsolicited Port Calos residents. Keep Port Calos to its single land hex
+plus the harbor, deleting overflow buildings and moving its sign closer to town.
+
+Jess serves Tidewater Haven; Maddie, a woman with long brown hair, serves Port Calos;
+Howie, a woman, serves the Peblos port. Each stays based at her own harbor, offers passage
+to either of the other two ports, and can introduce swimming. None has an unsolicited hat.

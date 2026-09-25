@@ -3,7 +3,7 @@ import { createSceneryBuilder } from './scenery-builder.js';
 import { PORT_CALOS_BUILDINGS, PORT_CALOS_QUAY, portCalosDeckHeight } from './port-calos-world.js';
 
 const WOOD='#735236', DARK='#473b2c', LIGHT='#b69a68', STONE='#999b88', PALE='#c1bda3';
-/** A working river port: sixteen roofs, fish market, net lofts and a stone quay. */
+/** A compact river port: five roofs and a fish market in one hex, plus a stone quay. */
 export function createPortCalosScenery({parent,heightAt,colliders,signs}) {
   const group=new THREE.Group(); group.name='Port Calos'; parent.add(group);
   const metrics={buildings:0,vertices:0,batches:0,colliders:0};
@@ -89,8 +89,8 @@ export function createPortCalosScenery({parent,heightAt,colliders,signs}) {
   const trade=createSceneryBuilder('Port Calos market and working waterfront');
   const barrel=(x,z)=>{const y=ground(x,z);trade.cylinder('#a08355',x,y,z,.4,.95);for(const yy of [.14,.76])trade.cylinder('#4f534b',x,y+yy,z,.414,.07);push({x,z,r:.44,kind:'port-barrel'});};
   const crate=(x,z)=>{const y=ground(x,z);trade.block(LIGHT,x,y,z,1,.8,.9);for(const side of [-.35,.35])trade.box(DARK,x+side,y+.4,z,.08,.82,.93);push({x,z,hx:.52,hz:.47,kind:'port-crate'});};
-  for(const [x,z] of [[-442,302],[-442,304],[-444,302],[-432,299],[-432,301],[-514,313],[-528,314]])barrel(x,z);
-  for(const [x,z] of [[-515,313],[-531,315],[-445,307],[-435,301]])crate(x,z);
+  for(const [x,z] of [[-442,302],[-442,304],[-444,302],[-432,299],[-432,301]])barrel(x,z);
+  for(const [x,z] of [[-445,307],[-435,301]])crate(x,z);
   for(const [x,z,tint] of [[-459,299,'#657e80'],[-470,292,'#a88054'],[-491,307,'#92956b']]) {
     const y=ground(x,z);
     for(const dx of [-1.9,1.9])for(const dz of [-.8,.8])trade.block(WOOD,x+dx,y,z+dz,.11,2.5,.11);
@@ -125,13 +125,8 @@ export function createPortCalosScenery({parent,heightAt,colliders,signs}) {
   trade.beam(WOOD,[wx-1.5,wy+2.8,wz],[wx+1.5,wy+2.8,wz],.18);
   trade.beam('#b7ae85',[wx,wy+2.8,wz],[wx,wy+.3,wz],.04);
   push({x:wx,z:wz,r:1.2,kind:'port-well'});
-  for(const [x,z] of [[-511,297],[-485,327]]){
-    const y=ground(x,z);trade.box(WOOD,x,y+.55,z,3,.15,.8);
-    for(const dx of [-1.15,1.15])trade.block(DARK,x+dx,y,z,.18,.5,.6);
-    push({x,z,hx:1.6,hz:.5,kind:'port-bench'});
-  }
   finish(trade);
-  signs?.place({x:-559,z:319,label:'Port Calos',facing:-Math.PI/2,parent:group});
+  signs?.place({x:-493,z:309,label:'Port Calos',facing:-Math.PI/2,parent:group});
   signs?.place({x:-424,z:304,label:'The Quay',facing:-Math.PI/2,parent:group});
   return {group,metrics,quay:PORT_CALOS_QUAY};
 }

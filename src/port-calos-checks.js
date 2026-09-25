@@ -1,4 +1,4 @@
-import { FERRY_NPC, FERRY_LANDINGS, FERRY_SCENE } from './ferry.js';
+import { FERRY_HOSTS, FERRY_LANDINGS, FERRY_SCENE } from './ferry.js';
 import { QUEST_DONE, canStand } from './game-state.js';
 import { createRoadCheckpoint } from './road-checkpoint.js';
 
@@ -37,11 +37,12 @@ export async function runPortCalosChecks(h) {
   };
   const choices = () => h.choices().map(choice => typeof choice === 'string' ? choice : choice.id);
   async function menu() {
-    await h.conversation(h.npcById.get(FERRY_NPC.id));
+    const host=FERRY_HOSTS[h.ferry.settle()];
+    await h.conversation(h.npcById.get(host.id));
     for (let n = 0; n < 16 && h.state().mode === 'dialogue' && !choices().includes('board-ferry'); n++) {
       await h.nextSpeech(); await h.frames(1);
     }
-    assert(h.state().mode === 'dialogue' && choices().includes('board-ferry'), 'Jess presents the ordinary ferry choices');
+    assert(h.state().mode === 'dialogue' && choices().includes('board-ferry'), host.name + ' presents the ordinary ferry choices');
   }
   async function arrive(id, label) {
     await h.advanceFerry(FERRY_SCENE.done + .1); await h.frames(8);
@@ -53,11 +54,16 @@ export async function runPortCalosChecks(h) {
     assert(saved.ferry.crossings === expectedCrossings, label + ': the scene records exactly one crossing');
     assert(canStand(p.x, p.z, h.world) && h.world.heightAt(p.x, p.z) >= h.world.waterAt(p.x, p.z),
       label + ': the arrival deck is solid and above water');
-    const jess = h.npcById.get(FERRY_NPC.id), at = jess?.actor.group.position;
-    assert(!!jess && jess.actor.group.visible && !jess.hidden
+    const host = FERRY_HOSTS[id], resident = h.npcById.get(host.id), at = resident?.actor.group.position;
+    assert(!!resident && resident.actor.group.visible && !resident.hidden
       && Math.hypot(at.x - landing.stand.x, at.z - landing.stand.z) < .35,
-    label + ': the same Jess remains visible beside her boat after normal frames');
-    assert(canStand(landing.stand.x, landing.stand.z, h.world), label + ': Jess has a reachable, solid stand');
+      label + ': ' + host.name + ' remains visible at her own harbour after normal frames');
+    assert(canStand(landing.stand.x, landing.stand.z, h.world), label + ': the resident host has a reachable, solid stand');
+    for (const [home, person] of Object.entries(FERRY_HOSTS)) {
+      const position = h.npcById.get(person.id)?.actor.group.position, stand = FERRY_LANDINGS[home].stand;
+      assert(!!position && Math.hypot(position.x - stand.x, position.z - stand.z) < .35,
+        label + ': ' + person.name + ' keeps her own home port');
+    }
   }
   async function board(choice, label) {
     expectedCrossings = h.ferry.state.crossings + 1;
@@ -90,23 +96,40 @@ export async function runPortCalosChecks(h) {
         label + ': reload stays on the Port Calos quay');
       progressUnchanged(expected, label + ': reload preserves unfinished and completed tutorial state exactly');
       assert(loaded.mapTutorial === arrival.mapTutorial, label + ': reload preserves the regional map hint');
-      assert(h.ferry.state.side === 'port-calos', label + ': reload resolves Jess to Port Calos');
+      assert(h.ferry.state.side === 'port-calos', label + ': reload resolves Port Calos as the current departure');
 
-      await menu(); await board('board-ferry', label + ' return'); await arrive('drent', label + ' return');
-      progressUnchanged(expected, label + ': returning to Tidehaven does not advance the quest');
-      await menu();
-      assert(choices().includes('board-ferry-port-calos'), label + ': Port Calos remains available after a return trip');
-      await board('board-ferry', label + ' Peblos'); await arrive('peblos', label + ' Peblos');
-      await menu(); await board('board-ferry', label + ' Peblos return'); await arrive('drent', label + ' Peblos return');
-      progressUnchanged(expected, label + ': the original Peblos return route preserves quest state');
+      await menu(); await board('board-ferry-peblos', label + ' Calos to Cobble'); await arrive('peblos', label + ' Calos to Cobble');
+      await menu(); await board('board-ferry', label + ' Cobble to Tidehaven'); await arrive('drent', label + ' Cobble to Tidehaven');
+      await menu(); await board('board-ferry', label + ' Tidehaven to Cobble'); await arrive('peblos', label + ' Tidehaven to Cobble');
+      await menu(); await board('board-ferry-port-calos', label + ' Cobble to Calos'); await arrive('port-calos', label + ' Cobble to Calos');
+      await menu(); await board('board-ferry', label + ' Calos to Tidehaven'); await arrive('drent', label + ' Calos to Tidehaven');
+      progressUnchanged(expected, label + ': all six coastal routes preserve quest state');
     }
     await h.testingPort(); await h.frames(8);
     const landing = FERRY_LANDINGS['port-calos'].ashore, at = h.snapshot().position;
     assert(h.state().mode === 'playing' && Math.hypot(at.x - landing.x, at.z - landing.z) < .35,
       'The Testing Tools button closes the panel and places the player on the Port Calos quay');
-    assert(h.ferry.state.side === 'port-calos' && h.npcById.get(FERRY_NPC.id).actor.group.visible,
-      'The Testing Tools visit also places Jess beside the return ferry');
-    assert(!h.state().frameErrors?.count, 'All coastal crossings and reloads complete without renderer errors');
+    assert(h.ferry.state.side === 'port-calos' && h.npcById.get(FERRY_HOSTS['port-calos'].id).actor.group.visible,
+      'The Testing Tools visit leaves Maddie beside her own ferry');
+    // Each teacher must work as the first teacher, even when the tutorial is unfinished.
+    // Reset only the swimming introduction between fixtures; use the live dialogue lesson.
+    for (const side of ['port-calos', 'peblos', 'drent']) {
+      h.resetSwimming();
+      await menu();
+      const host = FERRY_HOSTS[side];
+      assert(choices().includes('ferry-swim'), host.name + ' offers the swimming introduction');
+      await h.choose('ferry-swim');
+      for (let n=0;n<20 && !h.state().swimming.taught;n++) { await h.nextSpeech(); await h.frames(1); }
+      assert(h.state().swimming.taught && h.snapshot().skills.taught.includes('swimming'), host.name + ' teaches the usable swimming skill');
+      await menu();
+      assert(!choices().includes('ferry-swim'), host.name + ' does not award the introduction twice');
+      const to = side === 'port-calos' ? 'peblos' : side === 'peblos' ? 'drent' : 'port-calos';
+      await board(to === FERRY_LANDINGS[side].far ? 'board-ferry' : 'board-ferry-' + to, host.name + ' onward');
+      await arrive(to, host.name + ' onward'); await menu();
+      assert(!choices().includes('ferry-swim'), 'Swimming learned from ' + host.name + ' remains learned at the next port');
+      await h.closeDialogue();
+    }
+    assert(!h.state().frameErrors?.count, 'All coastal crossings, swimming lessons and reloads complete without renderer errors');
   } catch (error) {
     failures.push({ message: error.stack ?? error.message });
   } finally {

@@ -18,6 +18,8 @@ import { METRES_PER_HEX, AUTHORED_METRES_PER_HEX, toWorld } from '../src/world-s
 import { WORLD_BOUNDS as PLAYABLE_BOUNDS } from '../src/regions.js';
 import {createLivingStory} from '../src/living-story.js';
 import {createLusciaCivilWar} from '../src/luscia-civil-war.js';
+import { createCagneyQuest, CAGNEY_HOME } from '../src/cagney-quest.js';
+import { createCorpses } from '../src/corpses.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -44,6 +46,24 @@ function fixture() {
   const storage = memoryStorage();
   return { inventory, weapons, journey, data, storage, checkpoint: createRoadCheckpoint({ storage }) };
 }
+
+test('Cagney checkpoints keep escort injuries and casualties without replaying the reward', () => {
+  const { checkpoint, data } = fixture(), escort = createCagneyQuest();
+  escort.accept(); escort.begin(); escort.settle({ hp: 58, enemies: [0, 12, 48] });
+  const saved = { ...data, cagney: escort.snapshot() };
+  assert.equal(checkpoint.save(saved).ok, true);
+  assert.deepEqual(checkpoint.read().data.cagney, saved.cagney);
+  const damaged = { ...saved, cagney: { ...saved.cagney, ambushCleared: true } };
+  assert.equal(checkpoint.save(damaged).ok, false);
+  assert.deepEqual(checkpoint.read().data.cagney, saved.cagney, 'invalid data leaves the valid checkpoint untouched');
+  escort.begin(); escort.settle({ hp: 58, enemies: [0, 0, 0] }); escort.arrive(CAGNEY_HOME);
+  assert.equal(escort.take(), 45);
+  assert.equal(checkpoint.save({ ...data, cagney: escort.snapshot() }).ok, true);
+  const restored = createCagneyQuest(); restored.restore(checkpoint.read().data.cagney);
+  assert.equal(restored.take(), 0, 'a restored completed escort never pays twice');
+  assert.equal(checkpoint.save(data).ok, true, 'older saves without this quest remain valid');
+  assert.equal(Object.hasOwn(checkpoint.read().data, 'cagney'), false);
+});
 
 test('road checkpoint round-trips partial quest progress, satchel, weapon wear, gathering and narrative flags', () => {
   const { checkpoint, data, storage } = fixture();
@@ -567,4 +587,28 @@ test('guided fishing and fire-making progress survives a checkpoint and malforme
   assert.deepEqual(checkpoint.read().data.fishingLessons, data.fishingLessons);
   const badFire = structuredClone(data); badFire.fireMaking.firesLit = -1;
   assert.equal(checkpoint.save(badFire).ok, false);
+});
+
+
+test('legacy Port Calos bodies for removed civilians disappear without affecting Maddie, other bodies or carried loot', () => {
+  const { data, checkpoint, storage } = fixture(), bodies = createCorpses();
+  const removed = ['innkeeper', 'fishmonger', 'netmaker', 'shipwright', 'carter', 'resident', 'dockhand'].map(id => `port-calos-${id}`);
+  for (const [i, id] of removed.entries()) bodies.add({ id: `npc:${id}`, sourceId: id, npcId: i < 4 ? id : null,
+    name: id, x: -416 + i, z: 282, model: { role: 'villager' }, dead: true });
+  for (const id of ['port-calos-harbourmaster', 'boatman', 'cobble-harbourmaster', 'unrelated-traveler']) {
+    bodies.add({ id: `npc:${id}`, sourceId: id, npcId: id, name: id, x: -418, z: 280,
+      model: { role: 'villager', look: { hat: false } }, dead: true,
+      loot: [{ id: 'copper-piece', quantity: 7 }, { id: 'pawpaw', quantity: 2 }] });
+  }
+  const legacy = { ...data, corpses: bodies.snapshot() }, original = structuredClone(legacy);
+  storage.setItem(ROAD_CHECKPOINT_KEY, JSON.stringify(legacy));
+  const loaded = checkpoint.read();
+  assert.equal(loaded.ok, true, loaded.reason);
+  const expected = original.corpses.bodies.filter(body => !removed.includes(body.sourceId));
+  assert.deepEqual(loaded.data.corpses.bodies, expected, 'Only the seven retired residents are removed, with other appearances and loot intact');
+  assert.equal(loaded.data.corpses.clock, original.corpses.clock);
+  assert.deepEqual(loaded.data.inventory, original.inventory, 'Previously gathered loot remains in the satchel');
+  assert.deepEqual(legacy, original, 'Migration does not mutate its input');
+  assert.equal(checkpoint.save(loaded.data).ok, true);
+  assert.deepEqual(checkpoint.read().data.corpses.bodies, expected, 'Saving the migrated checkpoint does not resurrect old models');
 });

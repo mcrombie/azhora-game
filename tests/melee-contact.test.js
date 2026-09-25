@@ -84,6 +84,41 @@ test('a slain ally falls once and does not declare victory over living opponents
   assert.equal(events.find(event=>event.type==='melee-impact').hits[0].killed,true);
 });
 
+test('capturable allies are wounded by enemy strikes but killed by player friendly fire',()=>{
+  for(const source of ['enemy','player']){
+    const {combat,events,start}=fixture({position:source==='enemy'?{x:6,z:0}:{x:0,z:0}});
+    start([foe('attacker',source==='enemy'?0:8,source==='enemy'?0:8)],
+      [friend('captive',0,1.5,{hp:4,capturable:true,armed:false})]);
+    const ally=combat.state.allies[0];
+    assert.equal(ally.capturable,true,'the encounter preserves the authored capture policy');
+    assert.equal(!!ally.spared,false,'capture does not grant unconditional protection');
+    if(source==='enemy'){
+      const attacker=combat.state.enemies[0];attacker.action='attack';attacker.yaw=0;
+    }else assert.equal(combat.attack(0),true);
+    combat.update(.3);
+    const captured=source==='enemy';
+    assert.equal(ally.hp,0);assert.equal(ally.active,false);
+    assert.equal(!!ally.wounded,captured);
+    assert.equal(events.filter(event=>event.type===(captured?'ally-wounded':'ally-down')).length,1);
+    assert.equal(events.some(event=>event.type===(captured?'ally-down':'ally-wounded')),false);
+    const impact=events.find(event=>event.type==='melee-impact'&&event.source===source);
+    const hit=impact?.hits.find(one=>one.id==='captive');
+    assert.ok(hit,'the physical blow reaches the host impact pipeline');
+    assert.equal(!!hit.spared,captured,'only enemy capture suppresses a death in world NPC health');
+  }
+});
+
+test('capture attribution also distinguishes hostile spells from friendly spells',()=>{
+  for(const source of ['enemy','player','ally']){
+    const {combat,events,start}=fixture();
+    start([foe('enemy',8,8)],[friend('captive',0,1.5,{hp:4,capturable:true})]);
+    const hit=combat.spellHit('captive',100,{source,sourceId:source==='player'?'traveler':source});
+    assert.equal(hit.spared,source==='enemy');
+    assert.equal(events.find(event=>['ally-wounded','ally-down'].includes(event.type))?.type,
+      source==='enemy'?'ally-wounded':'ally-down');
+  }
+});
+
 test('physical contacts exclude walls, rear targets, dead targets, aliases and the source',()=>{
   const impact={sourceId:'traveler',origin:{x:0,z:0},yaw:0,range:2.35,arc:Math.PI*.34};
   const target={id:'target',x:0,z:1.8,hp:100};

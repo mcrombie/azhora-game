@@ -107,7 +107,7 @@ export function createSwimming({ skills = null, onEvent = () => {} } = {}) {
     return { levelled: !!result?.levelled, level: result?.level ?? level() };
   };
 
-  /** Ed the Word, at the water's edge, having just done it the hard way. */
+  /** Any swimming teacher can introduce this shared skill. */
   function learn() {
     if (state.taught) return { ok: true, first: false };
     state.taught = true;
@@ -121,7 +121,7 @@ export function createSwimming({ skills = null, onEvent = () => {} } = {}) {
    * total is capped at the same figure the validator accepts, because a frame that hands in a
    * number nobody could swim must not produce a save that cannot be written as JSON.
    *
-   * Nothing counts before Ed's lesson. A traveler can walk into the sea on his first morning -
+   * Nothing counts before the first lesson. A traveler can walk into the sea on his first morning -
    * the water does not ask whether he has been shown - but there is no skill to pay it into, and
    * leaving the record unwritten means the crossing he made blind still pays once he knows how.
    */

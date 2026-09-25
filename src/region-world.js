@@ -735,7 +735,7 @@ const REGION_TEXT = {
     description: 'Low barrier islands south-east of Drent, an hour under oars from Tidehaven: salt grass and thrift, grey rock at the waterline, gulls, and one fishing village on the quay at Cobble.',
     palette: { ground: '#76855f', accent: '#e7e0c0', fog: '#bdcdc9' },
     npcIds: ['cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster', 'bee-keeper',
-      'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'boatman'],
+      'peblos-decurion', 'peblos-legionary-1', 'peblos-legionary-2', 'peblos-legionary-3', 'cobble-harbourmaster'],
     landmarks: ['cobble', 'cobble-quay', 'sea-shrine', 'headland-light', 'seal-cove', 'drowned-field', 'longstone-beacon', 'gull-scarp', 'pilots-stone', 'wreck-of-the-sea-mare', 'saltings'] },
   // West Izol is authored in world metres too (src/izol-world.js); its spawn is the quay a ship puts the traveler ashore on.
   // The spawn is the quay a ship lands on (IZOL_QUAY.landing). It used to be five metres further

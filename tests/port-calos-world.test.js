@@ -2,34 +2,45 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { regionAt, CALOSS, SUVAL_ROAD, calossDistance, landDistance, LUMBER_TOWN } from '../src/region-world.js';
+import { regionAt, hexAt, CALOSS, SUVAL_ROAD, calossDistance, landDistance, LUMBER_TOWN } from '../src/region-world.js';
 import { groundWithRiver } from '../src/world-terrain.js';
 import { canStand, moveCharacter } from '../src/game-state.js';
 import { roadRoute } from '../src/autopilot.js';
-import { PORT_CALOS, PORT_CALOS_BUILDINGS, PORT_CALOS_PATHS, PORT_CALOS_ROAD, PORT_CALOS_QUAY,
+import { PORT_CALOS, PORT_CALOS_TOWN_CELL, PORT_CALOS_BUILDINGS, PORT_CALOS_PATHS, PORT_CALOS_ROAD, PORT_CALOS_QUAY,
   PORT_CALOS_LANDING, PORT_CALOS_JESS, PORT_CALOS_MOORING, PORT_CALOS_SEA_APPROACH, PORT_CALOS_NPC_POSITIONS,
   portCalosGround, portCalosDeckHeight, inPortCalos } from '../src/port-calos-world.js';
 
 const { createPortCalosScenery } = await sourceModule('../src/port-calos-scenery.js');
 const height=(x,z)=>portCalosGround(x,z,groundWithRiver(x,z));
-const parent=new THREE.Group(), colliders=[];
-const scenery=createPortCalosScenery({parent,heightAt:height,colliders});
+const parent=new THREE.Group(), colliders=[], signs=[];
+const scenery=createPortCalosScenery({parent,heightAt:height,colliders,signs:{place:sign=>signs.push(sign)}});
 
 function unblocked(p,radius=.45) {
   return colliders.every(c=>c.r!==undefined ? Math.hypot(p.x-c.x,p.z-c.z)>=c.r+radius :
     Math.hypot(Math.max(0,Math.abs(p.x-c.x)-c.hx),Math.max(0,Math.abs(p.z-c.z)-c.hz))>=radius);
 }
 
-test('Port Calos occupies the Luscian bank near the river mouth, with sixteen houses',()=>{
+test('Port Calos keeps its remaining houses within one land hex and removes the overflow',()=>{
   assert.equal(regionAt(PORT_CALOS.x,PORT_CALOS.z).name,'Luscia');
-  assert.equal(PORT_CALOS_BUILDINGS.length,16);
-  assert.equal(scenery.metrics.buildings,16);
-  assert.ok(scenery.metrics.batches<=20,'the harbor remains a small number of static draw calls');
+  assert.equal(PORT_CALOS_BUILDINGS.length,5);
+  assert.equal(scenery.metrics.buildings,5);
+  assert.ok(scenery.metrics.batches<=8,'the compact harbor remains a small number of static draw calls');
+  const cell={q:PORT_CALOS_TOWN_CELL.q,r:PORT_CALOS_TOWN_CELL.r};
   for(const b of PORT_CALOS_BUILDINGS) {
     assert.equal(regionAt(b.x,b.z).name,'Luscia',b.id);
     assert.ok(calossDistance(b.x,b.z)>18,`${b.id} is safely ashore`);
     assert.ok(height(b.x,b.z)>2,`${b.id} sits on dry bank`);
+    for(const dx of [-(b.width+1)/2,(b.width+1)/2])for(const dz of [-(b.depth+1)/2,(b.depth+1)/2]){
+      const x=b.x+dx*Math.cos(b.yaw)+dz*Math.sin(b.yaw),z=b.z-dx*Math.sin(b.yaw)+dz*Math.cos(b.yaw);
+      assert.deepEqual(hexAt(x,z),cell,`${b.id}: roof remains inside the town hex`);
+    }
   }
+  assert.ok(!colliders.some(c=>c.id==='port-calos-inn'||c.id==='port-calos-chandlery'),'western houses are removed, not relocated');
+  assert.equal(inPortCalos(-550,289),false,'western neighboring hex is no longer town clearing');
+  assert.equal(portCalosGround(-550,289,4.2),4.2,'western neighboring terrain is not terraced for deleted houses');
+  const sign=signs.find(s=>s.label==='Port Calos');
+  assert.deepEqual(hexAt(sign.x,sign.z),cell,'town sign stands at the actual town');
+  assert.ok(Math.hypot(sign.x-PORT_CALOS.x,sign.z-PORT_CALOS.z)<45,'sign is close to the surviving houses');
 });
 
 test('the quay projects into sea water; terracing leaves river and inlet intact',()=>{

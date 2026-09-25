@@ -4,6 +4,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { VASTOS_NPCS } from '../src/vastos-civil-war.js';
 import { FARMER } from '../src/farming.js';
+import { FERRY_HOST_IDS } from '../src/ferry.js';
 import { LUSCIA_PROPHET } from '../src/luscia-prophet.js';
 import { TRIMMED, KEEP_IDS, QUEST_IDS, OWN_IDS, SMITH_IDS, DROP_IDS, SOLDIER_ROLES, keepsNpc, trimCast } from '../src/cast.js';
 
@@ -63,7 +64,7 @@ test('every id on the list is somebody the world actually places', async () => {
   }
   const known = new Set([...placed,
     // Pushed in by src/main.js from their own modules rather than by the world.
-    'harbormaster', 'instructor', 'garden-keeper', 'lee-anne', 'sylvia', LUSCIA_PROPHET.id, FARMER.id, 'boatman', 'brandy-frank', 'bird-watcher', 'attic-juan', 'attic-nika',
+    'harbormaster', 'instructor', 'garden-keeper', 'lee-anne', 'sylvia', 'cagney', LUSCIA_PROPHET.id, FARMER.id, ...FERRY_HOST_IDS, 'brandy-frank', 'bird-watcher', 'attic-juan', 'attic-nika',
     'solis-secretary', 'john-salt', 'katy', 'vintner', 'winemaker', 'vine-keeper', 'light-keeper',
     'rival-keeper', 'tidehaven-smith', 'moros-armourer', 'ambron-armourer', 'lumber-ostler',
     'aftermath-tribune', 'aftermath-captain', 'aftermath-envoy', 'post-camp-legate',

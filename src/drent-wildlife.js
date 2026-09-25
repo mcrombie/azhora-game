@@ -14,7 +14,9 @@ export const DRENT_WILDLIFE_ZONES = Object.freeze(REGION_CELLS.Drent.map(cell =>
     id: `drent-woods-${cell.q}-${cell.r}`, species, region: 'Drent', keepRegion: true,
     habitat: 'woodland', radius: species === 'boar' ? .7 : species === 'red-deer' ? .55 : .3,
     scale: species === 'red-deer' ? .88 : 1, hornless: true,
-    minX: cell.x - 47, maxX: cell.x + 47, minZ: cell.z - 44, maxZ: cell.z + 44,
+    // Neighboring woods are an escape route, not an invisible fence at the hex edge.
+    // The half-diagonal stays below the distance at which the band is simulated.
+    minX: cell.x - 84, maxX: cell.x + 84, minZ: cell.z - 84, maxZ: cell.z + 84,
     sites: Object.freeze([[-17, -13 * flip], [18, 14 * flip]].map(([dx, dz]) => Object.freeze([cell.x + dx, cell.z + dz]))),
     note: 'Resident Drent woodland animals browse, flee, and return to the same home range.',
   });

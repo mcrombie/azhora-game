@@ -944,7 +944,7 @@ const BIRD_RIG = Object.freeze({
 });
 
 /** Ambient creatures only: they cannot be attacked, collected or block a quest. */
-export function createWestLife(scene, world) {
+export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
   const shapes = models(), flocks = [], creatures = [];
   const dummy = new THREE.Object3D(), rootMatrix = new THREE.Matrix4(), resultMatrix = new THREE.Matrix4();
   const rotation = new THREE.Quaternion(), unit = new THREE.Vector3(1, 1, 1);
@@ -1008,7 +1008,7 @@ export function createWestLife(scene, world) {
     batch.frustumCulled = false; group.add(batch); return batch;
   }
 
-  for (const zone of WEST_LIFE_ZONES) {
+  for (const zone of zones) {
     const group = new THREE.Group(); group.name = zone.id; group.visible = false; scene.add(group);
     const animals = [];
     for (let i = 0; i < zone.sites.length; i++) {
@@ -1039,6 +1039,49 @@ export function createWestLife(scene, world) {
       centre: { x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 } });
   }
 
+  // Woodland residents remember the clear route they actually used. Retracing it
+  // gets them home around trunks and cottages instead of into the same obstacle.
+  function clearEdge(a, b, zone) {
+    const length = Math.hypot(b.x - a.x, b.z - a.z), count = Math.max(1, Math.ceil(length / .15));
+    let y = footingY(a.x, a.z, zone);
+    for (let i = 1; i <= count; i++) {
+      const x = a.x + (b.x - a.x) * i / count, z = a.z + (b.z - a.z) * i / count;
+      const nextY = footingY(x, z, zone);
+      if (!valid(x, z, zone) || Math.abs(nextY - y) > .7) return false;
+      y = nextY;
+    }
+    return true;
+  }
+  function rememberRoute(animal, from) {
+    if (animal.zone.habitat !== 'woodland' || animal.action === 'return') return;
+    const trail = animal.trail ??= [];
+    if (!trail.length) trail.push(from);
+    const last = trail.at(-1);
+    if (Math.hypot(animal.x - last.x, animal.z - last.z) > 1.2 || !clearEdge(last, animal, animal.zone)) trail.push(from);
+    // Remove completed loops so repeated laps do not grow a resident's memory.
+    if (trail.length > 128 && trail.length % 32 === 0 && animal.trailSweep !== trail.length) {
+      animal.trailSweep = trail.length;
+      const earlier = trail.findIndex((p, i) => i < trail.length - 24 && Math.hypot(p.x - animal.x, p.z - animal.z) < 1.2
+        && clearEdge(p, animal, animal.zone));
+      if (earlier >= 0) trail.length = earlier + 1;
+    }
+  }
+  function retraceRoute(animal, step) {
+    const trail = animal.trail;
+    if (!trail?.length) return false;
+    let left = step;
+    while (trail.length && left > .0001) {
+      const to = trail.at(-1), dx = to.x - animal.x, dz = to.z - animal.z, distance = Math.hypot(dx, dz);
+      if (distance < .001) { trail.pop(); continue; }
+      const travel = Math.min(left, distance), next = { x: animal.x + dx / distance * travel, z: animal.z + dz / distance * travel };
+      if (!clearEdge(animal, next, animal.zone)) { trail.length = 0; return false; }
+      animal.x = next.x; animal.z = next.z; animal.yaw = Math.atan2(dx, dz);
+      left -= travel;
+      if (travel >= distance - .0001) trail.pop();
+    }
+    return left < step;
+  }
+
   /**
    * One step along the animal's heading, or a little to either side of it if that is blocked.
    * `footing` says what it may stand on; a bird in the air needs only to stay over its own range.
@@ -1053,7 +1096,7 @@ export function createWestLife(scene, world) {
         const x = animal.x + dx * i / slices, z = animal.z + dz * i / slices;
         if (!footing(x, z, animal.zone) || (footing === valid && Math.abs(footingY(x, z, animal.zone) - animal.y) > .7)) { clear = false; break; }
       }
-      if (clear) { animal.x += dx; animal.z += dz; animal.yaw = yaw; return Math.hypot(animal.x - fromX, animal.z - fromZ); }
+      if (clear) { animal.x += dx; animal.z += dz; animal.yaw = yaw; rememberRoute(animal, { x: fromX, z: fromZ }); return Math.hypot(animal.x - fromX, animal.z - fromZ); }
     }
     animal.yaw += Math.PI * .71;
     return 0;
@@ -1195,8 +1238,39 @@ export function createWestLife(scene, world) {
     return best ? best.yaw : animal.yaw;
   }
 
+  // Look ahead before reaching a tree or the edge of a home range. Choosing
+  // the first clear centimetres of a turn can otherwise lead straight into a
+  // narrowing corner, where even a walking traveler catches a hare.
+  function escapeHeading(animal, player, dt) {
+    animal.escapeFor = Math.max(0, (animal.escapeFor || 0) - dt);
+    if (animal.escapeFor > 0 && animal.lastSpeed > .1) return animal.escapeYaw;
+    const away = Math.atan2(animal.x - player.x, animal.z - player.z), near = Math.hypot(animal.x - player.x, animal.z - player.z);
+    let best = { yaw: away, score: -Infinity };
+    for (let i = 0; i < 24; i++) {
+      const yaw = away + i * TAU / 24, sx = Math.sin(yaw), sz = Math.cos(yaw);
+      // Check the next few strides precisely: a coarse sample can jump a
+      // narrow province seam or a trunk that real footsteps cannot cross.
+      let open = 0, priorY = animal.y;
+      for (let reach = .1; reach <= 16; reach += reach < 3 ? .1 : .5) {
+        const x = animal.x + sx * reach, z = animal.z + sz * reach;
+        const y = footingY(x, z, animal.zone);
+        if (!valid(x, z, animal.zone) || Math.abs(y - priorY) > .7) break;
+        open = reach; priorY = y;
+      }
+      if (open < .5) continue;
+      const end = { x: animal.x + sx * open, z: animal.z + sz * open };
+      const closest = clamp((player.x - animal.x) * sx + (player.z - animal.z) * sz, 0, open);
+      const gap = Math.hypot(animal.x + sx * closest - player.x, animal.z + sz * closest - player.z);
+      const score = Math.hypot(end.x - player.x, end.z - player.z) - near + open * 1.8
+        - Math.abs(angleDelta(yaw, animal.yaw)) * .25 - (gap < 3 ? 50 : 0);
+      if (score > best.score) best = { yaw, score };
+    }
+    animal.escapeYaw = best.yaw; animal.escapeFor = .24;
+    return best.yaw;
+  }
+
   function tickGround(animal, dt, player, flock, motion) {
-    animal.clock += dt; animal.timer -= dt; animal.speed = 0;
+    animal.clock += dt; animal.timer -= dt; animal.lastSpeed = animal.speed; animal.speed = 0;
     animal.calmFor = Math.max(0, (animal.calmFor || 0) - dt);
     if (animal.calmFor > 0) { animal.action = 'graze'; return; }
     const species = animal.species, near = Math.hypot(animal.x - player.x, animal.z - player.z);
@@ -1235,6 +1309,7 @@ export function createWestLife(scene, world) {
       return;
     } else if (near < FLEE_AT[species]) {
       if (FLIES.has(species)) { animal.action = 'fly'; animal.flight = 0; animal.landing = null; fly(animal, dt, player, near); return; }
+      if (animal.action !== 'flee') animal.escapeFor = 0;
       animal.action = 'flee'; animal.timer = 1.9;
       let heading = away;
       if (species === 'hill-sheep') {
@@ -1256,9 +1331,18 @@ export function createWestLife(scene, world) {
       }
       // Something standing that takes fright wheels first and then goes: it does not run at you while it turns.
       if (animal.cornered > 0) heading = animal.breakYaw;   // it has chosen its way out and is taking it
-      const off = angleDelta(heading, animal.yaw);
-      animal.yaw += off * Math.min(1, dt * (Math.abs(off) > 1.2 ? 18 : 6));
-      wheeling = Math.abs(off) > 1.57;
+      if (animal.zone.habitat !== 'woodland' && species !== 'upland-hare') {
+        const off = angleDelta(heading, animal.yaw);
+        animal.yaw += off * Math.min(1, dt * (Math.abs(off) > 1.2 ? 18 : 6));
+        wheeling = Math.abs(off) > 1.57;
+      }
+    }
+    // Keep steering after gaining a few strides, while the animal is still
+    // fleeing; otherwise it can run blindly into a corner just beyond notice.
+    if ((animal.zone.habitat === 'woodland' || species === 'upland-hare') && animal.action === 'flee') {
+      // A hare can change direction within a bound. Follow the checked route
+      // exactly instead of cutting a turning arc through the obstacle beside it.
+      animal.yaw = escapeHeading(animal, player, dt);
     }
     const fromHome = Math.hypot(animal.x - animal.home.x, animal.z - animal.home.z);
     // Nothing sets off for home with the traveler still close, and nothing walks home at them:
@@ -1271,6 +1355,7 @@ export function createWestLife(scene, world) {
     }
     if (animal.action === 'return') {
       if (fromHome < SETTLED || near < wary - 8) { animal.action = 'graze'; animal.timer = 2 + (animal.index % 3) * .8; }
+      else if (animal.zone.habitat === 'woodland' && retraceRoute(animal, RETURN[species] * dt)) animal.speed = RETURN[species];
       else {
         // Straight for home; and when something is in the way, along it for a moment before trying again.
         animal.detour = Math.max(0, animal.detour - dt);
@@ -1308,6 +1393,7 @@ export function createWestLife(scene, world) {
       animal.lift = Math.max(0, Math.sin(animal.clock * (quick ? 16 : 10))) * (quick ? .3 : .13);
     }
     animal.y = footingY(animal.x, animal.z, animal.zone);
+    if (animal.zone.habitat === 'woodland' && fromHome < SETTLED && animal.action !== 'flee') animal.trail = [];
   }
 
   /**
@@ -1329,7 +1415,7 @@ export function createWestLife(scene, world) {
       }
       animal.y = footingY(animal.x, animal.z, flock.zone); animal.lift = 0; animal.flight = 0; animal.landing = null; animal.hidden = false;
       animal.speed = 0; animal.detour = 0; animal.blocked = 0; animal.cornered = 0; animal.homing = false; animal.slip = 0;
-      animal.action = 'graze'; animal.timer = 1 + animal.index * .3;
+      animal.action = 'graze'; animal.timer = 1 + animal.index * .3; animal.trail = [];
     }
   }
 

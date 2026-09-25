@@ -1,9 +1,9 @@
 /**
- * Jess's coastal crossings: Peblos, Port Calos, and the way home to Tidehaven.
+ * Three resident ferry hosts link Tidehaven, Cobble and Port Calos.
  *
  * The woman who rowed the traveler ashore waits at Tidehaven's landing. She
- * sails to Cobble in the Pebbles or Port Calos in Luscia and brings them back.
- * Both routes are open from the first hour, under the same fare policy.
+ * sails to Cobble in the Pebbles or Port Calos in Luscia. Howie and Maddie
+ * handle onward crossings. Every route is open under the same fare policy.
  *
  * The crossing is not a sailing sim. The boat pulls out, the view fades, and
  * the traveler steps onto the other quay. The traveler is in control before and
@@ -16,7 +16,8 @@
  */
 import { COPPER_ITEM, describeSum } from './economy.js';
 import { COBBLE_QUAY, MAIN_ISLAND, FERRY_MOORINGS, quayHeight } from './peblos-world.js';
-import { PORT_CALOS_LANDING, PORT_CALOS_JESS, PORT_CALOS_MOORING, inPortCalos } from './port-calos-world.js';
+import { PORT_CALOS_LANDING, PORT_CALOS_NPC_POSITIONS, PORT_CALOS_MOORING, inPortCalos } from './port-calos-world.js';
+import { PORT_CALOS_NPCS } from './port-calos-people.js';
 
 /**
  * Three copper each way. The traveler lands with `STARTING_PURSE` (24), so the
@@ -35,16 +36,26 @@ export const FERRY_VERSION = 1;
 
 export const FERRY_NPC = Object.freeze({
   // Jess, who was Corran Sell until the user renamed her on 22 September 2026: a woman with
-  // long black hair, the same boat, the same crossing, and the one person on this coast who
-  // will tell you how to swim.
+  // long black hair. She remains at Tidehaven; the other ports have their own hosts.
   id: 'boatman', name: 'Jess', role: 'Boatwoman of the Stills', modelRole: 'bridge-keeper', color: 0x4f6f78,
-  look: Object.freeze({ beard: false, slight: true, hairStyle: 'long', hair: 0x1a1613 }),
+  look: Object.freeze({ beard: false, slight: true, hairStyle: 'long', hair: 0x1a1613, hat: false }),
 });
+
+export const HOWIE_NPC = Object.freeze({
+  id: 'cobble-harbourmaster', name: 'Howie', role: 'Harbourmaster of Cobble', modelRole: 'harbormaster', color: 0x536f74,
+  look: Object.freeze({ beard: false, slight: true, hairStyle: 'short', hat: false }),
+});
+/** Each requested character has one home and one identity, including after a crossing or reload. */
+export const FERRY_HOSTS = Object.freeze({
+  drent: FERRY_NPC, peblos: HOWIE_NPC,
+  'port-calos': PORT_CALOS_NPCS.find(npc => npc.id === 'port-calos-harbourmaster'),
+});
+export const FERRY_HOST_IDS = Object.freeze(Object.values(FERRY_HOSTS).map(npc => npc.id));
 
 const spot = (x, z, yaw = 0) => Object.freeze({ x, z, yaw });
 
 /**
- * The landings. `stand` is where Jess waits, `ashore` where a
+ * The landings. `stand` is where the resident host waits, `ashore` where a
  * traveler is set down, `mooring` where the boat lies, and `out` the bearing it
  * pulls away on.
  */
@@ -61,7 +72,7 @@ export const FERRY_LANDINGS = Object.freeze({
   }),
   peblos: Object.freeze({
     id: 'peblos', name: 'Cobble', far: 'drent', title: 'the quay at Cobble',
-    destinations: Object.freeze(['drent']),
+    destinations: Object.freeze(['drent', 'port-calos']),
     stand: spot(311, 430.2, Math.PI / 2),            // near the quay head, facing up the quay into the village
     ashore: spot(315.5, 428, Math.PI / 2),
     mooring: spot(FERRY_MOORINGS.peblos.x, FERRY_MOORINGS.peblos.z, FERRY_MOORINGS.peblos.yaw),
@@ -69,8 +80,8 @@ export const FERRY_LANDINGS = Object.freeze({
   }),
   'port-calos': Object.freeze({
     id: 'port-calos', name: 'Port Calos', far: 'drent', title: 'Port Calos harbour',
-    destinations: Object.freeze(['drent']),
-    stand: PORT_CALOS_JESS,
+    destinations: Object.freeze(['drent', 'peblos']),
+    stand: PORT_CALOS_NPC_POSITIONS['port-calos-harbourmaster'],
     ashore: PORT_CALOS_LANDING,
     mooring: PORT_CALOS_MOORING,
     out: Object.freeze({ x: 1, z: 0 }),              // out of the inlet before turning toward Tidehaven
@@ -109,7 +120,7 @@ export function createFerry(hooks = {}) {
     position = () => ({ x: 0, z: 0 }), place = noop, setMode = noop, veil = noop,
     boat = noop, carry = noop, save = noop, toast = noop, stand = noop, onArrive = noop,
     // Quays can lie outside the atlas's land hexes. Use each landing's actual
-    // surroundings so Jess remains available while the traveler walks ashore.
+    // surroundings so the current departure stays correct while the traveler walks ashore.
     onPeblos = point => Math.hypot(point.x - MAIN_ISLAND.centre.x, point.z - MAIN_ISLAND.centre.z) < 260,
     onPortCalos = point => inPortCalos(point.x, point.z, 25),
   } = hooks;
@@ -160,7 +171,7 @@ export function createFerry(hooks = {}) {
     veil(0, caption);
     boat(from.mooring.x, from.mooring.z, Math.atan2(from.out.x, from.out.z));
     carry(from.mooring.x, from.mooring.z, 0);
-    return { ok: true, reason: '', fare: chance.fare, to: to.id };
+    return { ok: true, reason: '', fare: chance.fare, from: from.id, to: to.id, host: FERRY_HOSTS[from.id].name };
   }
 
   /** Advance the scene. Safe to call every frame whether or not a boat is out. */
@@ -222,14 +233,16 @@ export function createFerry(hooks = {}) {
 }
 
 /**
- * Jess's conversation, on any of her shores. `context` needs `ferry`,
+ * A resident host's conversation. `context` needs `ferry`,
  * `openDialogue`, `closeDialogue` and `act`, which is called with the result of
  * boarding so the host can toast and start the scene.
  */
 export function ferryConversation(npc, context) {
   const { ferry, openDialogue, closeDialogue, act = noop, swimming = null, swimmingLesson = [], teachSwimming = noop } = context;
-  const here = ferry.settle(), chance = ferry.offer();
-  const lines = here === 'drent' ? drentLines(ferry.state) : here === 'port-calos' ? portCalosLines() : peblosLines(ferry.state);
+  const here = ferry.settle();
+  if (npc.id !== FERRY_HOSTS[here].id) return false;
+  const chance = ferry.offer();
+  const lines = here === 'drent' ? drentLines(ferry.state) : here === 'port-calos' ? portCalosLines() : peblosLines();
   // Why not, in her own mouth: a greyed-out choice with a tooltip is not an answer.
   if (!chance.ok && chance.reason) lines.push(chance.reason);
   const choices = FERRY_LANDINGS[here].destinations.map(destination => {
@@ -237,7 +250,7 @@ export function ferryConversation(npc, context) {
     const label = destination === 'peblos' ? 'Take me out to Peblos.'
       : destination === 'port-calos' ? 'Take me to Port Calos, in Luscia.' : 'Take me back to Tidehaven.';
     return {
-      id: destination === 'port-calos' ? 'board-ferry-port-calos' : 'board-ferry',
+      id: destination === FERRY_LANDINGS[here].far ? 'board-ferry' : `board-ferry-${destination}`,
       label: offer.free ? label : `${label} (${offer.fare} copper)`,
       enabled: offer.ok, reason: offer.reason, title: offer.reason,
       // Closing dialogue restores walking mode. Do it before boarding establishes
@@ -248,11 +261,10 @@ export function ferryConversation(npc, context) {
   choices.push(
     { id: 'leave-ferry', label: here === 'drent' ? 'Another day.' : 'Not yet. I have not seen it all.', action: closeDialogue },
   );
-  // **She is the one who tells you how to swim** (the user, 22 September 2026). She is on this
-  // water every day of her life and the traveler came in over it the colour of the sea, so she is
-  // the obvious person to ask - and she is here on the first morning, which Ed the Word is not.
+  // All three hosts can introduce the same swimming skill. Learning from one
+  // removes the introductory lesson everywhere without affecting ferry access.
   if (swimming && !swimming.taught && swimmingLesson.length) {
-    choices.unshift({ id: 'ferry-swim', label: 'What happens to a man who goes in off this coast?',
+    choices.unshift({ id: 'ferry-swim', label: 'Can you teach me to swim?',
       action: () => openDialogue(npc, [...swimmingLesson], null, 'Back to the shore', { onComplete: teachSwimming }) });
   }
   openDialogue(npc, lines, null, 'Back to the shore', { choices });
@@ -260,7 +272,7 @@ export function ferryConversation(npc, context) {
 }
 
 function drentLines(state) {
-  const port = 'I also sail to Port Calos, at the mouth of the Caloss in Luscia. You can take the coast with me instead of walking across Drent. There is a road inland toward Nothom, and I can bring you back here whenever you are ready.';
+  const port = 'I also sail to Port Calos, at the mouth of the Caloss in Luscia. You can take the coast with me instead of walking across Drent. There is a road inland toward Nothom. Ask Maddie on the Port Calos quay, or Howie in Cobble, for your next crossing.';
   if (!state.met) return [
     'You will not remember much of the crossing. You were the colour of the water the whole way in, and you did not once look up.',
     'Jess. That is my boat, and she is sound, whatever she looked like to you yesterday.',
@@ -284,17 +296,17 @@ function drentLines(state) {
 
 function portCalosLines() {
   return [
-    'Port Calos. River traffic on one side, the inlet on the other, and somebody always shouting for a rope. This is Luscia; the road inland will take you toward Nothom.',
-    FERRY_FREE ? 'I can take you back to Tidehaven whenever you like, with no charge. I will be here by the quay.'
-      : `${FERRY_FARE} copper back to Tidehaven, whenever you are ready. I will be here by the quay.`,
+    'Maddie. I keep Port Calos harbour. This is Luscia; the road inland will take you toward Nothom.',
+    FERRY_FREE ? 'I can take you to Tidehaven or to Cobble in Peblos, with no charge. Jess keeps the Tidehaven crossing, and Howie keeps the quay at Cobble.'
+      : `${FERRY_FARE} copper to Tidehaven or to Cobble in Peblos. Jess and Howie can arrange your onward crossing when you land.`,
   ];
 }
 
-function peblosLines(state) {
+function peblosLines() {
   return [
-    state.crossings > 1 ? 'You again. Seen enough of us?' : 'Cobble. It is smaller than it looked from the water, and it looked small from the water.',
-    FERRY_FREE ? 'Back to Tidehaven whenever you are ready, and nothing owing. I will not go without you; I have a sister up that quay who would hear about it.'
-      : `${FERRY_FARE} copper back to Tidehaven, whenever you are ready. I will not go without you; I have a sister up that quay who would hear about it.`,
+    'Howie. I am the harbourmaster here at Cobble. Welcome to Peblos.',
+    FERRY_FREE ? 'I sail to Tidehaven and Port Calos, and there is no charge. Jess will meet you at Tidehaven; Maddie keeps Port Calos harbour.'
+      : `${FERRY_FARE} copper to Tidehaven or Port Calos. Jess will meet you at Tidehaven; Maddie keeps Port Calos harbour.`,
   ];
 }
 

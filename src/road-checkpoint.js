@@ -12,6 +12,7 @@ import { createRoadAmbush, validateRoadAmbushSnapshot } from './road-ambush.js';
 import { createSpiderQuest, validateSpiderQuestSnapshot } from './spider-quest.js';
 import { createMurderQuest, validateMurderQuestSnapshot } from './murder-quest.js';
 import { createCatQuest, validateCatQuestSnapshot } from './cat-quest.js';
+import { createCagneyQuest, validateCagneySnapshot } from './cagney-quest.js';
 import { createVastosCivilWar, validateVastosCivilWarSnapshot } from './vastos-civil-war.js';
 import { createDrentCivilWar, validateDrentCivilWarSnapshot, DRENT_EVIDENCE_ID, DRENT_SUPPLIES_ID } from './drent-civil-war.js';
 import { createJourney } from './journey.js';
@@ -85,6 +86,10 @@ export const ROAD_CHECKPOINT_VERSION = 1;
 // saved position is judged against the ground that actually exists.
 const WORLD_BOUNDS = Object.freeze({ ...PLAYABLE_BOUNDS });
 const failed = reason => ({ ok: false, data: null, reason });
+// These unrequested Port Calos residents were removed from the authored town.
+// Their old body models must not reintroduce them independently of the NPC cast.
+const REMOVED_PORT_CALOS_CIVILIANS = new Set(['innkeeper', 'fishmonger', 'netmaker', 'shipwright', 'carter', 'resident', 'dockhand']
+  .map(id => `port-calos-${id}`));
 
 /**
  * Stable adventure checkpoints. Legacy onward-only saves remain supported.
@@ -233,6 +238,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.spider !== undefined && !validateSpiderQuestSnapshot(data.spider)) return failed('The saved errand for Ben is invalid.');
     if (data.murder !== undefined && !validateMurderQuestSnapshot(data.murder)) return failed('The saved case in Cobble is invalid.');
     if (data.cat !== undefined && !validateCatQuestSnapshot(data.cat)) return failed('The saved errand for Liz is invalid.');
+    if (data.cagney !== undefined && !validateCagneySnapshot(data.cagney)) return failed('The saved escort for Cagney is invalid.');
     if (!validateVastosCivilWarSnapshot(data.vastos)) return failed('The saved Common Water settlement is invalid.');
     if (data.magic!==undefined&&!validateMagicSnapshot(data.magic)) return failed('The saved spells are invalid.');
     if (data.crime!==undefined&&!validCrimeState(data.crime)) return failed('The saved crime record is invalid.');
@@ -379,12 +385,18 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'ogreToll')) { const toll = createOgreToll(); toll.restore(data.ogreToll); result.ogreToll = toll.snapshot(); }
     if (Object.hasOwn(data, 'ambush')) { const road = createRoadAmbush(); road.restore(data.ambush); result.ambush = road.snapshot(); }
     if (Object.hasOwn(data, 'spider')) { const den = createSpiderQuest(); den.restore(data.spider); result.spider = den.snapshot(); }
+    if (Object.hasOwn(data, 'cagney')) { const escort = createCagneyQuest(); escort.restore(data.cagney); result.cagney = escort.snapshot(); }
     if (Object.hasOwn(data, 'murder')) { const cobble = createMurderQuest(); cobble.restore(data.murder); result.murder = cobble.snapshot(); }
     if (Object.hasOwn(data, 'cat')) { const mop = createCatQuest(); mop.restore(data.cat); result.cat = mop.snapshot(); }
     if (Object.hasOwn(data, 'vastos')) { const water = createVastosCivilWar(); water.restore(data.vastos); result.vastos = water.snapshot(); }
     if (Object.hasOwn(data,'magic')) result.magic=JSON.parse(JSON.stringify(data.magic));
     if (Object.hasOwn(data,'crime')) { const law=createCrime(); law.restore(data.crime); result.crime=law.snapshot(); }
-    if (Object.hasOwn(data,'corpses')) { const bodies=createCorpses(); bodies.restore(data.corpses); result.corpses=bodies.snapshot(); }
+    if (Object.hasOwn(data,'corpses')) {
+      const bodies=createCorpses(), saved=data.corpses && { ...data.corpses,
+        bodies:data.corpses.bodies.filter(body => !REMOVED_PORT_CALOS_CIVILIANS.has(body.npcId)
+          && !REMOVED_PORT_CALOS_CIVILIANS.has(body.sourceId)) };
+      bodies.restore(saved); result.corpses=bodies.snapshot();
+    }
     if (Object.hasOwn(data, 'drentCivilWar')) { const drent = createDrentCivilWar(); drent.restore(data.drentCivilWar); result.drentCivilWar = drent.snapshot(); }
     if(Object.hasOwn(data,'livingStory'))result.livingStory=JSON.parse(JSON.stringify(data.livingStory));
     if(Object.hasOwn(data,'lusciaCivilWar')){const civil=createLusciaCivilWar();civil.restore(data.lusciaCivilWar);result.lusciaCivilWar=civil.snapshot();}

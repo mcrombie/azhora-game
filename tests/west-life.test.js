@@ -44,8 +44,10 @@ const turn = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
  */
 function chase(zone, pace, seconds, { bearing = Math.PI / 2, arm = 3 } = {}) {
   let held = 0;
-  const life = createWestLife(new THREE.Scene(), world);
-  const band = () => life.snapshot().creatures.filter(animal => animal.id.startsWith(`${zone.id}-`));
+  // Other populations never steer this band; isolate it so long chase tests do
+  // not render and copy every unrelated creature in the world on every frame.
+  const life = createWestLife(new THREE.Scene(), world, { zones: [zone] });
+  const band = () => life.state().creatures;
   const first = band()[0], homes = new Map(band().map(animal => [animal.id, { x: animal.x, z: animal.z }]));
   const player = { x: first.x + Math.sin(bearing) * 40, z: first.z + Math.cos(bearing) * 40 };
   const seen = new Set(), report = { life, band, homes, player, zone, target: first.id, closest: Infinity, reachedAt: null, held: 0, within: 0, gap: Infinity, actions: seen, offFooting: 0, facing: [] };

@@ -144,7 +144,7 @@ test('Cobble stands on its terrace: ten roofs, a quay out over the water, and st
   for (let x = COBBLE_QUAY.head.x - 22; x < COBBLE_QUAY.head.x - 2; x += 2)
     assert.ok(bedrockHeight(x, COBBLE_QUAY.head.z) < SEA_LEVEL, `the bay in front of the quay is still water at ${x}`);
   // Every stand: standable, four metres from every other person, and reachable from where the boat lands.
-  const stands = Object.entries(COBBLE_STANDS).concat([['boatman', FERRY_LANDINGS.peblos.stand]]);
+  const stands = Object.entries(COBBLE_STANDS).concat([['cobble-harbourmaster', FERRY_LANDINGS.peblos.stand]]);
   const ashore = FERRY_LANDINGS.peblos.ashore;
   for (const [id, stand] of stands) {
     assert.ok(canStand(stand.x, stand.z, world), `${id} cannot stand at ${stand.x}, ${stand.z}`);
@@ -275,7 +275,7 @@ test('The region card, the developer’s chart and the spawn tell the truth abou
   assert.ok(peblosRegion.description.includes('Cobble'));
   assert.ok(canStand(peblosRegion.spawn.x, peblosRegion.spawn.z, world), 'the region spawn is standable');
   assert.equal(regionAt(peblosRegion.spawn.x, peblosRegion.spawn.z).name, 'Peblos');
-  assert.equal(peblosRegion.npcIds.length, 10, 'four islanders, Troy, four soldiers, and the boatman');
+  assert.equal(peblosRegion.npcIds.length, 10, 'four islanders, Troy, four soldiers, and Howie');
   for (const id of peblosRegion.landmarks) assert.ok(PEBLOS_LANDMARKS.some(place => place.id === id), `${id} is not a place in Peblos`);
   assert.equal(BUILD_STATUS.Peblos.state, 'early');
   const status = regionBuildStatus('Peblos');

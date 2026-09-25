@@ -259,7 +259,7 @@ function encounterConfig(config) {
         || (ally.currentHp !== undefined && (!Number.isFinite(ally.currentHp) || ally.currentHp < 0 || ally.currentHp > 100000))
         || (ally.level !== undefined && (!Number.isInteger(ally.level) || ally.level < 1 || ally.level > TOP_LEVEL))
         || (ally.toughness !== undefined && (!Number.isInteger(ally.toughness) || ally.toughness < 1 || ally.toughness > TOP_LEVEL))
-        || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
+        || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.capturable !== undefined && typeof ally.capturable !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
         || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
         || (ally.refuge !== undefined && (!point(ally.refuge) || !insideBox(fightBox({ ...config, retreatSign: sign }), ally.refuge)))
         || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
@@ -267,7 +267,7 @@ function encounterConfig(config) {
       seen.add(ally.id); if (ally.npcId) seen.add(ally.npcId);
       allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.level !== undefined ? { level: ally.level } : {}), ...(ally.toughness !== undefined ? { toughness: ally.toughness } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
         ...(ally.currentHp !== undefined ? { currentHp: ally.currentHp } : {}),
-        ...(ally.npcId ? { npcId: ally.npcId } : {}), ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
+        ...(ally.npcId ? { npcId: ally.npcId } : {}), ...(ally.refuge ? { refuge: { x: ally.refuge.x, z: ally.refuge.z } } : {}), ...(ally.spared ? { spared: true } : {}), ...(ally.capturable ? { capturable: true } : {}), ...(ally.armed !== undefined ? { armed: ally.armed } : {}) });
     }
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
@@ -561,7 +561,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     position.y = world.heightAt(position.x, position.z);
     return startEncounter({ ...lastEncounter,
       enemies: lastEncounter.enemies.map(({ currentHp, ...enemy }) => enemy),
-      allies: lastEncounter.allies.map(({ currentHp, ...ally }) => ally), ...changes }, { atCheckpoint: true });
+      allies: (lastEncounter.allies ?? []).map(({ currentHp, ...ally }) => ally), ...changes }, { atCheckpoint: true });
   }
 
   /** Release a real-world fight when its targets have escaped or fallen. The
@@ -791,7 +791,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       impact.affectedIds.push(impact.targetId);
       impact.hits.push({ id: impact.targetId, ...(target.npcId ? { npcId: target.npcId } : {}), team,
         damage: Math.max(0, before - target.hp), hp: target.hp, maxHp: target.maxHp, killed: target.hp <= 0,
-        ...(target.spared ? { spared: true } : {}), x: target.x ?? position.x, z: target.z ?? position.z });
+        ...(target.spared || target.wounded ? { spared: true } : {}), x: target.x ?? position.x, z: target.z ?? position.z });
     }
     emit('arrow-impact', impact);
   }
@@ -1051,7 +1051,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
         impact.affectedIds.push(target.id ?? 'traveler');
         impact.hits.push({ id: target.id ?? 'traveler', ...(target.npcId ? { npcId: target.npcId } : {}),
           team: contact.team, damage: dealt, hp: target.hp, maxHp: target.maxHp, killed: target.hp <= 0,
-          ...(target.spared ? { spared: true } : {}), x: contact.x, z: contact.z });
+          ...(target.spared || target.wounded ? { spared: true } : {}), x: contact.x, z: contact.z });
       }
       if (impact.bout && state.phase !== 'active') break;
     }
@@ -1084,7 +1084,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     else hurtAlly(actor, { id: sourceId, x: position.x, z: position.z, yaw }, damage, attribution);
     return { handled: true, id: actor.id, npcId: actor.npcId, team: enemy ? 'enemy' : 'ally',
       damage: Math.max(0, before - actor.hp), hp: actor.hp, maxHp: actor.maxHp,
-      killed: actor.hp <= 0, spared: !!actor.spared, x: actor.x, z: actor.z };
+      killed: actor.hp <= 0, spared: !!(actor.spared || actor.wounded), x: actor.x, z: actor.z };
   }
 
   // Ally spells share the traveler's fireball numbers, but remain in the combat
@@ -1129,7 +1129,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
             impact.affectedIds.push(target.id);
             impact.hits.push({ id: target.id, ...(target.npcId ? { npcId: target.npcId } : {}), team: target.team,
               damage: beforeHp - target.actor.hp, hp: target.actor.hp, maxHp: target.actor.maxHp, killed: target.actor.hp <= 0,
-              ...(target.spared ? { spared: true } : {}), x: target.actor.x ?? position.x, z: target.actor.z ?? position.z });
+              ...(target.actor.spared || target.actor.wounded ? { spared: true } : {}), x: target.actor.x ?? position.x, z: target.actor.z ?? position.z });
           }
           emit('spell-impact', impact);
         } else if (ball.flown >= ball.profile.range - 1e-6) reason = 'spent';
@@ -1499,7 +1499,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const ally = { id: spec.id, name: spec.name, kind: spec.kind, level, ...(spec.npcId ? { npcId: spec.npcId } : {}), ...(spec.model ? { model: spec.model } : {}), ...safePoint(spec.x, spec.z), yaw: 0,
       hp, maxHp: hp, action: 'idle', progress: 0, speed: 0, active: true,
       ...(spec.refuge ? { refuge: { ...spec.refuge }, frozen: profile.freeze ?? 0, escaped: false } : {}),
-      ...(spec.spared ? { spared: true } : {}), ...(spec.armed !== undefined ? { armed: spec.armed } : {}) };
+      ...(spec.spared ? { spared: true } : {}), ...(spec.capturable ? { capturable: true } : {}), ...(spec.armed !== undefined ? { armed: spec.armed } : {}) };
     allyTimers.set(ally.id, { actionTime: 0, cooldown: .4 + index * .3, hitApplied: false, targetId: null });
     return withCurrentHealth(ally, spec);
   }
@@ -1535,14 +1535,18 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     ally.active = ally.hp > 0;
     // Struck, a frozen villager stops freezing and runs.
     if (ally.frozen) ally.frozen = 0;
-    if (!ally.hp && ally.spared) ally.wounded = true;
+    // Captors take this person alive; friendly fire remains lethal. Unlike the
+    // unconditional spared policy, capturable depends on who struck the blow.
+    const spared = ally.spared || (ally.capturable && attribution.source === 'enemy');
+    if (!ally.hp && spared) ally.wounded = true;
     ally.progress = 0;
     ally.speed = 0;
     timers.actionTime = 0;
     timers.hitApplied = false;
     moveCombatant(ally, Math.sin(enemy.yaw) * .4, Math.cos(enemy.yaw) * .4);
     emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, ...attribution });
-    if (!ally.hp) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, ...attribution });
+    if (!ally.hp) emit(spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z,
+      ...(spared ? { spared: true } : {}), ...attribution });
   }
 
   /**
