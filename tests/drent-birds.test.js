@@ -4,6 +4,7 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { canStand } from '../src/game-state.js';
 import { BIRD_SPECIES } from '../src/birding.js';
+import { REGION_CELLS } from '../src/region-world.js';
 
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 let built = null;
@@ -187,5 +188,36 @@ test('the hummingbird comes only while the feeder is hung, and can be observed w
   assert.equal(birds.observable({ x: garden.feeder.x + 40, z: garden.feeder.z }, null, 18)?.species === 'hummingbird', false, 'out of range');
   birds.update(.05, { x: garden.hover.x + .5, z: garden.hover.z }, { feederHung: true });
   assert.equal(hummer().action, 'leave', 'it will not feed with someone standing over it');
+  birds.dispose();
+});
+
+
+test('Familiar woodland birds have stable safe homes throughout Drent, without importing other countries species', async () => {
+  const { world, drentWoodlandHabitats, habitatSpots, createDrentBirds, BIRD_HABITATS } = await fixture();
+  const stands = Object.values(world.npcPositions), homes = drentWoodlandHabitats(world, stands);
+  assert.deepEqual(drentWoodlandHabitats(world, stands), homes, 'Habitat placement is deterministic');
+  assert.ok(homes.length >= 60 && homes.length <= REGION_CELLS.Drent.length * 2);
+  const allowed = new Set(BIRD_HABITATS.filter(h => world.regionAt(habitatSpots(h, world).center.x,
+    habitatSpots(h, world).center.z)?.name === 'Drent').map(h => h.species));
+  const trees = new Map([...world.broadleafTrees, ...world.regionalBroadleafTrees].map(tree => [tree.id, tree]));
+  for (const home of homes) {
+    assert.equal(world.regionAt(home.center.x, home.center.z)?.name, 'Drent');
+    assert.ok(allowed.has(home.species), `${home.species} already belongs in Drent`);
+    assert.ok(trees.has(home.tree), 'A real tree holds the branch');
+    const spots = habitatSpots(home, world, stands);
+    assert.ok(spots.ground.length >= 6, 'There is valid ground for foraging');
+    assert.ok(spots.ground.every(p => canStand(p.x, p.z, world, .2)));
+    assert.ok(Math.hypot(home.branch.start.x - trees.get(home.tree).x,
+      home.branch.start.z - trees.get(home.tree).z) < .5, 'The branch touches its trunk');
+    assert.ok(spots.perches[0].y > world.heightAt(spots.perches[0].x, spots.perches[0].z) + 1);
+  }
+  for (const cell of REGION_CELLS.Drent) assert.ok(homes.some(home => flat(home.center, cell) < 80),
+    `Woodland near ${cell.q},${cell.r} has a bird home`);
+  const birds = createDrentBirds(new THREE.Scene(), world, { avoid: stands });
+  const far = birds.state().birds.find(b => b.habitat.startsWith('drent-wood-') && b.x < -750);
+  for (let i = 0; i < 80; i++) birds.update(.05, world.spawn);
+  assert.deepEqual(birds.state().birds.find(b => b.id === far.id), far, 'An offscreen bird retains its position and behavior');
+  birds.update(.05, { x: far.x + .4, z: far.z });
+  assert.equal(birds.state().birds.find(b => b.id === far.id).action, 'flight', 'It reacts when approached');
   birds.dispose();
 });

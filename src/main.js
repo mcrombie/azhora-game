@@ -9384,6 +9384,19 @@ function init() {
           player.group.rotation.y=Math.PI+yaw;reviewTarget=new THREE.Vector3(forestView.x,world.heightAt(forestView.x,forestView.z)+1.1,forestView.z);
           forestEcology.update(.001,elapsed,player.group.position,true);reviewFrozen=true;settleCamera();
         }
+        if(view==='drent-wildlife-west'||view==='drent-wildlife-north'){
+          questStage=QUEST_DONE;combat.finishPractice();reviewFrozen=true;player.group.visible=false;
+          const id=view.endsWith('west')?'drent-woods-6-105-1':'drent-woods-10-103-1';
+          const animal=westLife.state().creatures.find(a=>a.id===id);
+          if(animal){
+            player.group.position.set(animal.x+5,world.heightAt(animal.x+5,animal.z+5),animal.z+5);
+            westLife.update(.001,player.group.position,true);woodlandLife.update(.001,player.group.position);
+            drentBirds.update(.001,player.group.position,{feederHung:birding.feeder==='hung'});
+            reviewTarget=new THREE.Vector3(animal.x,animal.y+(animal.species==='upland-hare'?.35:.8),animal.z);
+            pitch=.18;const shot=bestOf(reviewTarget,animal.species==='upland-hare'?5:7,[.6,1.1,-.7]);
+            yaw=shot.yaw;distance=targetDistance=shot.distance;grounded=true;verticalSpeed=0;settleCamera();
+          }
+        }
         if(view==='forest-deer'){
           questStage=1;combat.finishPractice();const animal=forestEcology.state().animals[0];
           player.group.position.set(animal.x+3,world.heightAt(animal.x+3,animal.z+4),animal.z+4);
@@ -9397,7 +9410,15 @@ function init() {
           else {for(const site of FOREST_STORY_SITES)forestStory.act(`inspect-${site.id}`);modal('journal');mapTab(false);$('journal-forest').scrollIntoView({block:'start'});}
           reviewFrozen=true;
         }
-        if(view==='squirrel'){questStage=QUEST_DONE;combat.finishPractice();let s=woodlandLife.state().squirrels[0];const observer={x:s.x+1,z:s.z+1};for(let i=0;i<100;i++)woodlandLife.update(.03,observer);s=woodlandLife.state().squirrels[0];reviewTarget=new THREE.Vector3(s.x,s.y+.28,s.z);reviewFrozen=true;player.group.visible=false;distance=targetDistance=3.1;pitch=.12;yaw=Math.atan2(s.x-s.tree.x,s.z-s.tree.z);}
+        if(view==='squirrel'||view==='drent-squirrel'){
+          questStage=QUEST_DONE;combat.finishPractice();
+          const residents=woodlandLife.state().squirrels,index=view==='drent-squirrel'?residents.findIndex(s=>s.x<-750):0;
+          let s=residents[index];
+          if(s){const observer={x:s.x+1,z:s.z+1};player.group.position.set(observer.x,world.heightAt(observer.x,observer.z),observer.z);
+            for(let i=0;i<100;i++)woodlandLife.update(.03,observer);s=woodlandLife.state().squirrels[index];
+            reviewTarget=new THREE.Vector3(s.x,s.y+.28,s.z);reviewFrozen=true;player.group.visible=false;
+            distance=targetDistance=3.1;pitch=.12;yaw=Math.atan2(s.x-s.tree.x,s.z-s.tree.z);settleCamera();}
+        }
         refreshQuest();return state();
       },
       freezeReview(){reviewFrozen=true;return state();}

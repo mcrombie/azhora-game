@@ -420,3 +420,10 @@ bar), with a guide and log behind each tile. Thirteen so far, combat skills to c
   full suite once on `main` at merge time.
 - Local Electron test and visual-review runs are authorized without a separate approval request
   (user correction, 23 September 2026). Use isolated test profiles to protect normal saves.
+
+## Wildlife coverage (25 September 2026)
+
+Wildlife should be present throughout explorable woods, including the stretches away from
+roads and named places. A few populated landmarks do not satisfy this. Drent now uses
+resident home ranges across the province, with birds and squirrels attached to real trees.
+Verify coverage across the whole region as well as visibility, fleeing, revisiting and pause.

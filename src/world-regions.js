@@ -124,6 +124,7 @@ export function createRegionScenery(kit) {
     return districts.get(name);
   };
   const metrics = { trees: 0, rocks: 0, grass: 0, batches: 0 };
+  const broadleafTrees = [];
 
   // -------------------------------------------------------------------------
   // Biome scatter: trees, rocks and ground cover, one instanced batch per block
@@ -204,6 +205,9 @@ export function createRegionScenery(kit) {
         dummy.position.set(tree.x, y + height * .41, tree.z);
         dummy.rotation.set(0, tree.rot, 0); dummy.scale.set(tree.s, height * .82, tree.s); dummy.updateMatrix();
         trunks.setMatrixAt(index, dummy.matrix);
+        if (!tree.pine) broadleafTrees.push({ id: `country-oak-${broadleafTrees.length}`, x: tree.x, z: tree.z, y,
+          height, radius: .38 * tree.s, trunkHeight: height * .82, trunkTopRadius: .21 * tree.s,
+          axis: [0, 1, 0], base: { x: tree.x, y, z: tree.z }, region: name });
         colliders.push({ x: tree.x, z: tree.z, r: .52 * tree.s, kind: 'region-tree' });
         if (tree.pine) for (let c = 0; c < 3; c++) {
           dummy.position.set(tree.x, y + height * (.48 + c * .19), tree.z);
@@ -786,7 +790,7 @@ export function createRegionScenery(kit) {
   wornPatch(FRONTIER.x, FRONTIER.z, 7, '#aca990');
 
   return {
-    metrics, riverMaterial, riverSamples, districts,
+    metrics, riverMaterial, riverSamples, districts, broadleafTrees,
     bridge: { deckY, heading: roadHeading, halfSpan: HALF_SPAN, axis: bridgeAxis, side: bridgeSide, crossing },
     repairedDeck, brokenCord, damagedColliders, millSails, lauvelField,
     bank: { spot: bank, surfaceY: calossSurface(bank.x, bank.z), castPoint: { x: CALOSS_BANK.cast.x, y: calossSurface(CALOSS_BANK.cast.x, CALOSS_BANK.cast.z) + .035, z: CALOSS_BANK.cast.z } },

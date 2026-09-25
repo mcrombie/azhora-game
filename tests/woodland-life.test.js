@@ -14,7 +14,8 @@ test('Woodland pickups, NPCs, repair, cooking, and fishing are reachable from th
   assert.equal(state.sticks.length, 14);
   assert.equal(state.fruits.length, 12);
   assert.equal(state.fruitPatches.length, 6);
-  assert.equal(state.squirrels.length, 4);
+  assert.deepEqual(state.squirrels.slice(0, 4).map(s => s.tree.id), ['oak-1', 'oak-260', 'oak-239', 'oak-243'],
+    'The village squirrels keep their original trees as the rest of Drent is populated');
   for (const acorn of state.acorns) assert.ok(canStand(acorn.x, acorn.z, world, .6), acorn.id);
   for (const stick of state.sticks) {
     assert.ok(canStand(stick.x, stick.z, world, .65), stick.id);
@@ -208,4 +209,26 @@ test('Menus pause wildlife without advancing its simulation', () => {
   const before = life.state();
   for (let i = 0; i < 20; i++) life.update(.05, { x: 0, z: 0 }, false);
   assert.deepEqual(life.state(), before);
+});
+
+
+test('Squirrels persist across Drent on real trees, with distant animals sleeping until approached', () => {
+  const resident = createWoodlandLife(new THREE.Scene(), world), initial = resident.state();
+  const trees = new Map([...world.broadleafTrees, ...world.regionalBroadleafTrees].map(t => [t.id, t]));
+  assert.ok(initial.squirrels.length >= 30, 'The woods beyond the Greenway hold squirrels too');
+  assert.ok(initial.squirrels.some(s => s.x < -750), 'The far western forest has residents');
+  assert.ok(initial.squirrels.some(s => s.z < -180), 'The northern woods have residents');
+  for (const squirrel of initial.squirrels) {
+    assert.ok(trees.has(squirrel.tree.id), 'Each squirrel has a real tree');
+    assert.equal(world.regionAt(squirrel.x, squirrel.z)?.name, 'Drent');
+    assert.ok(canStand(squirrel.x, squirrel.z, world), 'Its home is reachable ground');
+  }
+  const farIndex = initial.squirrels.findIndex(s => s.x < -750);
+  for (let i = 0; i < 100; i++) resident.update(.05, world.spawn);
+  assert.deepEqual(resident.state().squirrels[farIndex], initial.squirrels[farIndex], 'Distant squirrels retain their state');
+  const squirrel = initial.squirrels[farIndex], observer = { x: squirrel.x + .8, z: squirrel.z };
+  resident.update(.05, observer);
+  assert.equal(resident.state().squirrels[farIndex].mode, 'flee', 'The same resident responds when you reach its home');
+  for (let i = 0; i < 180; i++) resident.update(1 / 60, observer);
+  assert.equal(resident.state().squirrels[farIndex].mode, 'perch', 'It reaches the branch on its own tree');
 });

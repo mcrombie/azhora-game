@@ -246,6 +246,7 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
 | `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
 | `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
+| `src/drent-wildlife.js`, `src/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |
 | `src/acorn-quest.js` | Lysa's atomic turn-in and relationship memory |
 | `src/inventory.js`, `src/weapons.js`, `src/consumables.js` | Satchel UI, item stacks, wear, equipment, repairs, and guarded food consumption |
 | `src/campcraft.js` | Fishing timing, catches, fire fuel, and cooking exchanges |

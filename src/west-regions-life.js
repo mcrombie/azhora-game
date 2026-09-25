@@ -3,6 +3,7 @@ import { canStand } from './game-state.js';
 import { SEA_LEVEL } from './region-world.js';
 import { westWaterSurface } from './west-ground.js';
 import { REGIONAL_WILDLIFE_ZONES } from './regional-wildlife.js';
+import { DRENT_WILDLIFE_ZONES } from './drent-wildlife.js';
 
 /**
  * The animals of the four western regions.
@@ -375,6 +376,9 @@ function models() {
       body: geometry([
         S(0x8a6a48, [0, .95, -.05], [.25, .29, .58]),
         S(0x96764f, [0, 1.00, .30], [.23, .26, .22]),
+        // Shoulder and haunch muscles join the slender legs to the belly.
+        ...both(side => S(0x8a6a48, [side * .18, .75, .42], [.105, .22, .14])),
+        ...both(side => S(0x8a6a48, [side * .18, .75, -.42], [.105, .22, .17])),
         S(0xc9b189, [0, .72, .02], [.20, .18, .48]),
         S(0xe3d6ba, [0, .88, -.58], [.105, .125, .085]),
         S(0x7a5c3e, [0, 1.16, -.05], [.075, .05, .42]),
@@ -836,6 +840,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
     note: 'Extension: the fauna overview names no raptor for Nethereum at all. What the ground argues for is the bird that hunts it — a basin of long wet grass is a harrier’s whole living, and a harrier quarters rather than soars, which is why it has the plateau hawk’s rig and none of its flight.',
   }),
   ...REGIONAL_WILDLIFE_ZONES,
+  ...DRENT_WILDLIFE_ZONES,
 ]);
 
 /**
@@ -968,13 +973,29 @@ export function createWestLife(scene, world) {
     const water = westWaterSurface(x, z);
     return water === null ? ground : Math.max(ground, water - .04);
   };
+  // Woodland homes belong beside the roads and settlements, not on their floors
+  // or in the middle of a quest interaction. These constraints apply to choosing
+  // a home; an animal may still cross an open track naturally while roaming.
+  const woodlandSites = [...Object.values(world.npcPositions ?? {}), ...Object.values(world.journeySites ?? {}),
+    ...Object.values(world.storySites ?? {}), ...(world.firePits ?? []), ...(world.repairBenches ?? [])]
+    .filter(p => Number.isFinite(p?.x) && Number.isFinite(p?.z));
+  const woodlandRoads = (world.paths ?? []).flatMap(path => path.slice(1).map((b, i) => ({ a: path[i], b, half: (path.width ?? 2) / 2 })));
+  function suitableHome(x, z, zone) {
+    if (!valid(x, z, zone)) return false;
+    if (zone.habitat !== 'woodland') return true;
+    if (woodlandSites.some(p => Math.hypot(x - p.x, z - p.z) < 8)) return false;
+    return woodlandRoads.every(({ a, b, half }) => {
+      const dx = b.x - a.x, dz = b.z - a.z, t = clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+      return Math.hypot(x - a.x - dx * t, z - a.z - dz * t) > half + 3;
+    });
+  }
   function clearPoint(x, z, zone) {
     // Nothing in the air needs footing, and nothing in the sea has any to need.
     if (zone.air || zone.sea) return inRange(x, z, zone) ? { x, z } : null;
-    if (valid(x, z, zone)) return { x, z };
+    if (suitableHome(x, z, zone)) return { x, z };
     for (let radius = 1; radius <= 26; radius += 1) for (let i = 0; i < 16; i++) {
       const p = { x: x + Math.sin(i / 16 * TAU) * radius, z: z + Math.cos(i / 16 * TAU) * radius };
-      if (valid(p.x, p.z, zone)) return p;
+      if (suitableHome(p.x, p.z, zone)) return p;
     }
     return null;
   }

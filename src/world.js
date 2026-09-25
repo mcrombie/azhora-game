@@ -1930,6 +1930,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     border: { ...worldBorder, name: border.name, westX: WOOD_EDGE.westX,
       regionName: border.regionName, open: true, notice: border.notice },
     routeNorth: routeNorth.map(p => villageToWorld(p.x, p.z)),
+    // Actual country trunks for wildlife homes. Kept separate so the village's
+    // existing flora, acorn and mushroom site IDs do not shift.
+    regionalBroadleafTrees: regionScenery.broadleafTrees,
     broadleafTrees: broadTrees.flatMap((tree, i) => {
       if (tree.hidden) return [];
       const spot = villageToWorld(tree.x, tree.z);

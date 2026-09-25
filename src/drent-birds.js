@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
-import { villageToWorld } from './region-world.js';
+import { villageToWorld, REGION_CELLS } from './region-world.js';
 import { BIRD_SPECIES } from './birding.js';
 
 const TAU = Math.PI * 2;
@@ -507,6 +507,38 @@ export const BIRD_HABITATS = Object.freeze([
     center: { x: -8, z: 49 }, radius: 8, perches: [] },
 ].map(h => Object.freeze({ ...h, birds: Object.freeze(h.birds), perches: Object.freeze(h.perches.map(p => Object.freeze(p))) })));
 
+// Repeat familiar forest species throughout Drent. These are stable homes, chosen
+// from the trees already growing there; moving the traveler does not spawn birds.
+// The authored discovery habitats above, including species outside Drent, stay put.
+export function drentWoodlandHabitats(world, avoid = []) {
+  const trees = [...(world.broadleafTrees ?? []), ...(world.regionalBroadleafTrees ?? [])].filter(tree => tree.base && tree.axis
+    && tree.height > 4 && world.regionAt(tree.x, tree.z)?.name === 'Drent');
+  const species = ['robin', 'wren', 'blue-jay', 'wood-thrush', 'downy-woodpecker', 'nuthatch', 'catbird', 'red-bellied-woodpecker'];
+  const homes = BIRD_HABITATS.map(h => h.world ? h.center : villageToWorld(h.center.x, h.center.z));
+  const used = new Set(), habitats = [];
+  for (const [cellIndex, cell] of REGION_CELLS.Drent.entries()) for (let side = 0; side < 2; side++) {
+    const target = { x: cell.x + (side ? 20 : -20), z: cell.z + (side ? 17 : -17) };
+    const candidates = trees.filter(tree => !used.has(tree.id) && flat(tree, cell) < 46
+      && homes.every(home => flat(home, tree) > 28)).sort((a, b) => flat(a, target) - flat(b, target));
+    for (const tree of candidates) {
+      const height = Math.min(3.2, tree.trunkHeight * .42, tree.height * .30);
+      const start = { x: tree.base.x + tree.axis[0] * height, y: tree.base.y + tree.axis[1] * height,
+        z: tree.base.z + tree.axis[2] * height };
+      const angle = cellIndex * 2.39996 + side * 1.9;
+      const end = { x: start.x + Math.sin(angle) * 1.15, y: start.y + .16, z: start.z + Math.cos(angle) * 1.15 };
+      if (!canStand(end.x, end.z, world, .12) || avoid.some(p => flat(p, end) < 2)
+        || end.y < world.heightAt(end.x, end.z) + 1) continue;
+      const variant = species[(cellIndex * 3 + side) % species.length];
+      const habitat = { id: `drent-wood-${cell.q}-${cell.r}-${side}`, species: variant, birds: [variant], world: true,
+        center: { x: tree.x, z: tree.z }, radius: 9, tree: tree.id, branch: { start, end },
+        perches: [{ ...end, base: { x: tree.x, z: tree.z }, top: end.y - world.heightAt(tree.x, tree.z) }] };
+      if (habitatSpots(habitat, world, avoid).ground.length < 6) continue;
+      habitats.push(habitat); homes.push(habitat.center); used.add(tree.id); break;
+    }
+  }
+  return habitats;
+}
+
 // Two of the kinds are drawn twice, because the cock and the hen do not look
 // remotely alike. Everything else is its own species.
 const VARIANT_SPECIES = Object.freeze({ 'cardinal-male': 'cardinal', 'cardinal-female': 'cardinal',
@@ -525,7 +557,7 @@ export function habitatSpots(habitat, world, avoid = []) {
   }
   const perches = habitat.perches.map(post => {
     const p = place(post.x, post.z), base = place(post.base.x, post.base.z);
-    return { x: p.x, y: world.heightAt(base.x, base.z) + post.top, z: p.z, perch: true };
+    return { x: p.x, y: post.y ?? world.heightAt(base.x, base.z) + post.top, z: p.z, perch: true };
   });
   return { center: { ...center, y: world.heightAt(center.x, center.z) }, ground, perches };
 }
@@ -542,12 +574,29 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .88, flatShading: true, side: THREE.DoubleSide });
   const shapes = birdShapes();
 
+  const woodlandHabitats = drentWoodlandHabitats(world, avoid);
+  const habitats = [...BIRD_HABITATS, ...woodlandHabitats];
+  // The repeat habitats have visible, attached branches, drawn in one batch.
+  const branchGeometry = new THREE.CylinderGeometry(.035, .07, 1, 5);
+  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#795e41', roughness: 1 });
+  const branchMesh = new THREE.InstancedMesh(branchGeometry, branchMaterial, woodlandHabitats.length);
+  branchMesh.name = 'Drent bird branches'; branchMesh.castShadow = true;
+  const branchPose = new THREE.Object3D(), branchUp = new THREE.Vector3(0, 1, 0);
+  woodlandHabitats.forEach(({ branch }, i) => {
+    const start = new THREE.Vector3(branch.start.x, branch.start.y, branch.start.z);
+    const end = new THREE.Vector3(branch.end.x, branch.end.y, branch.end.z), direction = end.clone().sub(start);
+    branchPose.position.copy(start).lerp(end, .5);
+    branchPose.quaternion.setFromUnitVectors(branchUp, direction.clone().normalize());
+    branchPose.scale.set(1, direction.length(), 1); branchPose.updateMatrix();
+    branchMesh.setMatrixAt(i, branchPose.matrix);
+  });
+  branchMesh.computeBoundingSphere(); root.add(branchMesh);
   const birds = [];
-  for (const habitat of BIRD_HABITATS) {
+  for (const habitat of habitats) {
     const spots = habitatSpots(habitat, world, avoid);
     habitat.birds.forEach((variant, i) => {
       const start = spots.ground[(i * 3) % Math.max(1, spots.ground.length)] ?? spots.center;
-      birds.push({ id: `${habitat.id}-${i + 1}`, species: variantSpecies(variant), variant, habitat: habitat.id, spots,
+      birds.push({ id: `${habitat.id}-${i + 1}`, species: variantSpecies(variant), variant, habitat: habitat.id, radius: habitat.radius, spots,
         x: start.x, y: start.y, z: start.z, perched: false, yaw: i * 2.1 + .4, action: 'peck', timer: .6 + i * .5, clock: i * 1.3,
         restless: 8 + i * 5, motion: null, lift: 0, pitch: 0, headYaw: 0, headPitch: 0, flying: false, visible: true, noticed: 0 });
     });
@@ -576,7 +625,7 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
     bird.yaw = Math.atan2(to.x - bird.x, to.z - bird.z); bird.action = 'flight'; bird.flying = true;
   }
   function hop(bird) {
-    const { center } = bird.spots, home = Math.hypot(bird.x - center.x, bird.z - center.z) > (BIRD_HABITATS.find(h => h.id === bird.habitat).radius * .8);
+    const { center } = bird.spots, home = Math.hypot(bird.x - center.x, bird.z - center.z) > (bird.radius * .8);
     const forward = home ? Math.atan2(center.x - bird.x, center.z - bird.z) : bird.yaw + between(-1.6, 1.6);
     const walk = bird.species === 'crow';
     for (const turn of [0, .8, -.8, 1.6, -1.6]) {
@@ -636,7 +685,7 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
       bird.action = rand() < .35 ? 'sing' : 'look'; bird.timer = between(1, 2.4);
       return;
     }
-    const strayed = flat(bird, bird.spots.center) > BIRD_HABITATS.find(h => h.id === bird.habitat).radius + 2;
+    const strayed = flat(bird, bird.spots.center) > bird.radius + 2;
     if ((strayed || bird.restless <= 0) && bird.spots.perches.length) { const to = spot(bird, player, { perch: strayed ? null : true }); if (to) { fly(bird, to); return; } bird.restless = 4; }
     if (bird.action === 'peck') { bird.action = 'look'; bird.timer = between(.4, 1); }
     else if (rand() < .55) hop(bird);
@@ -686,7 +735,7 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
   function pose(flock) {
     const { form, meshes, members } = flock;
     members.forEach((bird, i) => {
-      birdPartMatrices(bird, form, { index: i, shown: bird.visible && flock.group.visible }, out);
+      birdPartMatrices(bird, form, { index: i, shown: bird.visible && bird.nearby !== false && flock.group.visible }, out);
       meshes.body.setMatrixAt(i, out.body); meshes.head.setMatrixAt(i, out.head);
       meshes.wing.setMatrixAt(i * 2, out.wings[0]); meshes.wing.setMatrixAt(i * 2 + 1, out.wings[1]);
     });
@@ -704,6 +753,8 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
       flock.group.visible = flock.members.some(bird => flat(bird, player) < DRAW_RANGE);
       if (!flock.group.visible) continue;
       for (const bird of flock.members) {
+        bird.nearby = flat(bird, player) < DRAW_RANGE;
+        if (!bird.nearby) continue;
         if (bird === hummingbird) tickHummingbird(bird, step, player, feederHung);
         else tickSongbird(bird, step, player);
       }
@@ -780,7 +831,7 @@ export function createDrentBirds(scene, world, { garden = null, avoid = [], rand
     if (disposed) return; disposed = true; root.removeFromParent();
     root.traverse(object => { if (object.isInstancedMesh) object.dispose(); });
     for (const set of Object.values(shapes)) for (const g of Object.values(set)) g.dispose();
-    material.dispose();
+    material.dispose(); branchGeometry.dispose(); branchMaterial.dispose();
   }
 
   for (const flock of flocks.values()) pose(flock);

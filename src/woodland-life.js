@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { canStand } from './game-state.js';
+import { REGION_CELLS } from './region-world.js';
 
 // Small wildlife is scenery with a memory of its own tree, never a combat target.
 // Acorns are separate, individually owned pickup sites; a squirrel cannot consume
@@ -172,7 +173,20 @@ export function createWoodlandLife(scene, world) {
   }
   const squirrels = [];
   const branchGeo = new THREE.CylinderGeometry(.065, .14, 1, 6);
-  for (const [index, tree] of [pockets[0], pockets[1], pockets[3], pockets[4]].filter(Boolean).entries()) {
+  const branchMaterial = new THREE.MeshStandardMaterial({ color: '#795e41', roughness: 1 });
+  // Keep the village's original four homes and their pickup sites. Beyond them,
+  // each wooded survey cell gets one squirrel tied to an actual broadleaf trunk.
+  const squirrelTrees = [pockets[0], pockets[1], pockets[3], pockets[4]].filter(Boolean).map(tree => ({ tree }));
+  const countryTrees = [...(world.broadleafTrees ?? []), ...(world.regionalBroadleafTrees ?? [])].filter(tree => !usedTrees.has(tree.id)
+    && tree.base && tree.axis && world.regionAt(tree.x, tree.z)?.name === 'Drent');
+  for (const cell of REGION_CELLS.Drent) {
+    const near = countryTrees.filter(tree => Math.hypot(tree.x - cell.x, tree.z - cell.z) < 48)
+      .sort((a, b) => Math.hypot(a.x - cell.x, a.z - cell.z) - Math.hypot(b.x - cell.x, b.z - cell.z));
+    for (const tree of near.slice(0, 8)) squirrelTrees.push({ tree, cell: `${cell.q},${cell.r}` });
+  }
+  const occupiedCells = new Set();
+  for (const [index, { tree, cell }] of squirrelTrees.entries()) {
+    if (cell && (occupiedCells.has(cell) || squirrels.some(s => Math.hypot(s.tree.x - tree.x, s.tree.z - tree.z) < 62))) continue;
     const road = closestRoad(tree), initialAngle = Math.atan2(road.x - tree.x, road.z - tree.z);
     let home, radial;
     for (let i = 0; i < 24; i++) {
@@ -183,7 +197,9 @@ export function createWoodlandLife(scene, world) {
       }
     }
     if (!home) continue;
+    if (cell) occupiedCells.add(cell);
     const group = new THREE.Group(); group.name = `Red squirrel ${index + 1}`; root.add(group);
+    group.position.set(home.x, world.heightAt(home.x, home.z), home.z);
     const body = new THREE.Mesh(bodyGeometry, coloredMaterial); group.add(body);
     const tail = new THREE.Mesh(tailGeometry, coloredMaterial); group.add(tail);
     const legs = [];
@@ -201,13 +217,13 @@ export function createWoodlandLife(scene, world) {
     const branchEnd = branchStart.clone().addScaledVector(radial, 1.15); branchEnd.y += .15;
     // A real branch attached to this exact trunk gives the climbing animal a
     // visible destination just under the canopy.
-    const branch = new THREE.Mesh(branchGeo, new THREE.MeshStandardMaterial({ color: '#795e41', roughness: 1 }));
+    const branch = new THREE.Mesh(branchGeo, branchMaterial);
     branch.position.copy(branchStart).lerp(branchEnd, .5);
     const branchDirection = branchEnd.clone().sub(branchStart);
     branch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), branchDirection.clone().normalize());
     branch.scale.y = branchDirection.length(); branch.castShadow = true; root.add(branch);
-    squirrels.push({ group, body, tail, legs, tree, home, radial, axis, branchHeight, branchStart,
-      x: home.x, z: home.z, mode: 'idle', clock: index * 1.7, timer: 3 + index, target: home,
+    squirrels.push({ group, body, tail, legs, branch, tree, home, radial, axis, branchHeight, branchStart,
+      x: home.x, z: home.z, mode: 'idle', clock: index * 1.7, timer: 3 + index % 4, target: home,
       elevation: 0, flees: 0, climbs: 0, branchStep: 0 });
   }
 
@@ -272,7 +288,7 @@ export function createWoodlandLife(scene, world) {
       if (!canStand(x, z, world, 1.15) || Math.hypot(x - road.x, z - road.z) < 3.65
         || Math.hypot(x - world.encounter.x, z - world.encounter.z) < world.encounter.radius + 4
         || occupiedPlaces.some(place => Math.hypot(x - place.x, z - place.z) < 3.7)
-        || squirrels.some(s => Math.hypot(x - s.tree.x, z - s.tree.z) < 5.1)
+        || squirrels.slice(0, 4).some(s => Math.hypot(x - s.tree.x, z - s.tree.z) < 5.1)
         || pickupSites.some(site => Math.hypot(x - site.x, z - site.z) < 1.9)) continue;
       const patchFruit = [];
       for (let f = 0; f < 56 && patchFruit.length < 2; f++) {
@@ -375,8 +391,10 @@ export function createWoodlandLife(scene, world) {
     }
     fruitGlints.instanceMatrix.needsUpdate = true;
     for (const squirrel of squirrels) {
-      squirrel.clock += dt;
       const distance = Math.hypot(squirrel.x - playerPosition.x, squirrel.z - playerPosition.z);
+      squirrel.group.visible = squirrel.branch.visible = distance < 75;
+      if (distance >= 75) continue;
+      squirrel.clock += dt;
       const homeDistance = Math.hypot(squirrel.home.x - playerPosition.x, squirrel.home.z - playerPosition.z);
       if ((squirrel.mode === 'idle' || squirrel.mode === 'forage') && distance < 6.3) startFlee(squirrel);
       if (squirrel.mode === 'idle') {
@@ -444,7 +462,7 @@ export function createWoodlandLife(scene, world) {
     update,
     setObserver(position) {
       if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return;
-      for (const squirrel of squirrels) squirrel.group.visible = Math.hypot(squirrel.x-position.x,squirrel.z-position.z)<75;
+      for (const squirrel of squirrels) squirrel.group.visible = squirrel.branch.visible = Math.hypot(squirrel.x-position.x,squirrel.z-position.z)<75;
     },
     nearestAcorn(position, maxDistance = 2) {
       let nearest = null, distance = maxDistance;
