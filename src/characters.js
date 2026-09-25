@@ -1438,12 +1438,14 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     // **Bald.** Not the same thing as having no `hairStyle`: that falls through to the role's own
     // hair. This draws nothing, on purpose, and is Ben's (src/spider-quest.js).
     if (hairStyle === 'bald') { /* nothing on top, which is the whole of it */ }
-    else if (hairStyle === 'cropped') {
+    else if (hairStyle === 'cropped' || hairStyle === 'short-cropped') {
       // Cover the face mesh's crown as well as the rear skull; a fringe alone
       // leaves a bare patch between them when no headwear is present.
       part(crop, new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, 1.14),
         hairMat, [0, .181, .005], [.218, .25, .202]);
-      fringe(0.328, 0.194); nape();
+      fringe(0.328, 0.194);
+      // The short crop follows the skull; no rounded tuft extends from its nape.
+      if (hairStyle !== 'short-cropped') nape();
     }
     else if (hairStyle === 'receding') {
       // A high forehead: hair left only at the temples and the back of the head.

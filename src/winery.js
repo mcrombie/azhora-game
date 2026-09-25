@@ -29,7 +29,7 @@ export const VARIETIES = freeze({
   viognier: freeze({ name: 'Viognier', colour: 'white', leaf: 0x6b9a3f, fruit: 0xcfc36a,
     vine: 'Small golden grapes in loose, uneven clusters, and fewer of them than the rows around it: a stingy vine that makes a generous wine.' }),
   chardonnay: freeze({ name: 'Chardonnay', colour: 'white', leaf: 0x67943c, fruit: 0xc7d07a,
-    vine: 'Tight clusters of round green-gold berries. It buds first of anything in the vineyard, and ROB watches the spring frosts for it.' }),
+    vine: 'Tight clusters of round green-gold berries. It buds first of anything in the vineyard, and Rob watches the spring frosts for it.' }),
   'vidal-blanc': freeze({ name: 'Vidal Blanc', colour: 'white', leaf: 0x729f45, fruit: 0xd9d488,
     vine: 'Big, heavy clusters of pale berries on a sturdy vine that shrugs off a hard winter. Some are left hanging late, to shrivel and sweeten.' }),
   'cabernet-franc': freeze({ name: 'Cabernet Franc', colour: 'red', leaf: 0x557f33, fruit: 0x4a2b56,
@@ -90,11 +90,11 @@ export function wineryGround(x, z, ground) {
   return ground+(terrace-ground)*weight;
 }
 
-export const VINTNER = freeze({ id: 'vintner', name: 'ROB', role: 'Head winemaker and viticulture teacher', modelRole: 'wine-maker', color: 0x7d3a45, skin: 0xc79a74,
-  look: freeze({hairStyle:'cropped',hair:0x999a94,beard:false,hat:false}) });
+export const VINTNER = freeze({ id: 'vintner', name: 'Rob', role: 'Head winemaker and viticulture teacher', modelRole: 'wine-maker', color: 0x7d3a45, skin: 0xc79a74,
+  look: freeze({hairStyle:'short-cropped',hair:0x999a94,beard:false,hat:false}) });
 export const CELLAR_HAND = freeze({ id: 'cellar-hand', name: 'MAT', role: 'Winemaker and Wine teacher', modelRole: 'wine-maker', color: 0x6a5a44, skin: 0x895b3c,
   look: freeze({hairStyle:'cropped',hair:0x1d1815,beard:false,hat:false}) });
-/** KAT keeps her original appearance; ROB and MAT join her as the three winemakers. */
+/** KAT keeps her original appearance; Rob and MAT join her as the three winemakers. */
 export const WINEMAKER = freeze({ id: 'winemaker', name: 'KAT', role: 'Winemaker and Wine teacher', modelRole: 'wine-maker', color: 0x53657f, skin: 0xd8b48d });
 
 export const WINERY_STANDS = freeze({
@@ -108,7 +108,7 @@ export const WINERY_STANDS = freeze({
 export const KAT_LINES = freeze([
   'Mind your feet, the pad is wet. It is always wet. I have not had a dry boot since the picking started.',
   'This one is three days in and talking to itself. You can hear it from the doors — a sound like rain on a roof, a long way off. When it stops, it is done, and not before.',
-  'Punching down. The skins float up and dry out in a cap on top, and if you leave them there you get vinegar and a lecture from ROB, so: down they go, four times a day, arms in to the elbow.',
-  'KAT, ROB and MAT. Three short names, and more work than three pairs of hands ought to manage.',
-  'ROB decides what comes through those doors and I decide what happens to it afterward, and the truth is he has the harder half. I can rescue a middling grape. Nobody can rescue a bad one.',
+  'Punching down. The skins float up and dry out in a cap on top, and if you leave them there you get vinegar and a lecture from Rob, so: down they go, four times a day, arms in to the elbow.',
+  'KAT, Rob and MAT. Three short names, and more work than three pairs of hands ought to manage.',
+  'Rob decides what comes through those doors and I decide what happens to it afterward, and the truth is he has the harder half. I can rescue a middling grape. Nobody can rescue a bad one.',
 ]);

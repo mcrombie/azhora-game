@@ -1,4 +1,4 @@
-/** ROB's advanced Farming lessons are a visible future offer, not an XP shortcut.
+/** Rob's advanced Farming lessons are a visible future offer, not an XP shortcut.
  * The level-five prerequisite is provisional; production mechanics come later. */
 export const WINERY_LESSON_REQUIREMENT = Object.freeze({
   skill: 'farming', level: 5, provisional: true,

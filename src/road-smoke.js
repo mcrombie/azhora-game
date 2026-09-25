@@ -439,9 +439,6 @@ export async function runRoadTestingSmoke(h) {
   for (const id of [2, 3, 4]) {
     tap('F8');
     assert(getMode() === 'testing', `F8 did not open tools before Region ${id}`);
-    const advanced = document.getElementById('testing-advanced');
-    assert(advanced, 'Advanced travel tools are unavailable');
-    if (!advanced.open) advanced.querySelector('summary').click();
     const region = world.regions.find(item => item.id === id);
     const country = document.getElementById('test-country'), place = document.getElementById('test-place');
     const button = document.getElementById('test-goto');

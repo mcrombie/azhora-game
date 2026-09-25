@@ -2,16 +2,18 @@ import { BEN } from './spider-quest.js';
 import { LIZ } from './cat-quest.js';
 import { TROY } from './murder-quest.js';
 import { CAGNEY } from './cagney-quest.js';
+import { regions } from './region-world.js';
 
-/** Exercise the public quest demo controls without waiting through the quests. */
+/** Exercise the public playtest, story, travel and hack controls without playing entire quests. */
 export async function runTestingToolsChecks(h) {
   const started = performance.now(), checks = [];
   const check = (ok, message) => {
     if (!ok) throw new Error(`Testing tools: ${message}; ${JSON.stringify(h.state())}`);
     checks.push(message);
   };
-  const control = id => {
-    const node = document.getElementById(id);
+  const control = (id, expand = false) => {
+    const node = document.getElementById(id), section = node?.closest('details');
+    if (expand && section && !section.open) section.querySelector('summary').click();
     check(node && !node.disabled && node.getClientRects().length, `${id} is available`);
     return node;
   };
@@ -33,32 +35,40 @@ export async function runTestingToolsChecks(h) {
       h.stop(); await h.frames(2);
       check(!h.autoplay.active, `${npc.name}'s autoplay stops cleanly`);
       unchanged(`${npc.name}'s autoplay`);
-      await open();
-      const quests = JSON.stringify(h.snapshot());
-      control(`test-${kind}`).click();
-      const player = h.position(), person = h.npcPosition(npc.id);
-      check(person && Math.hypot(player.x - person.x, player.z - person.z) < 3.5,
-        `${npc.name}'s jump reaches the actual character`);
-      check(h.state().mode === 'playing' && h.state().testingEnabled && !h.autoplay.active,
-        `${npc.name}'s jump leaves control with the player`);
-      check(JSON.stringify(h.snapshot()) === quests, `${npc.name}'s jump preserves quest progress`);
-      unchanged(`${npc.name}'s jump`);
     }
-    await open(); control('test-ben-autoplay').click(); h.stop();
-    check(h.autoplay.id === 'ben', 'An unfinished Ben pilot is the previous selection');
-    await open(); control('test-main-autoplay').click();
-    check(h.autoplay.active && h.autoplay.id === 'main', 'Main quest starts the road instead of resuming Ben');
-    h.stop();
-    check(!h.autoplay.active, 'Main quest autoplay stops cleanly');
-    unchanged('Main quest autoplay');
+    for (const [kind, npcId] of [['satchel', 'relay-clerk'], ['republic', 'relay-republican'], ['recall', null]]) {
+      await open(); control(`test-story-${kind}`, true).click();
+      check(h.state().mode === 'dialogue' && h.state().testingEnabled && !h.autoplay.active,
+        `${kind} opens its story decision in the testing session`);
+      check(h.dialogueNpc() === (npcId ?? h.recall().courier), `${kind} opens the intended character's conversation`);
+      unchanged(`${kind} story jump`);
+    }
     await open();
-    const advanced = document.getElementById('testing-advanced');
-    check(advanced, 'Advanced tools are available');
-    if (!advanced.open) advanced.querySelector('summary').click();
-    for (const id of ['ghost-dev-open', 'test-reveal-chart', 'test-country', 'test-place', 'test-goto']) control(id);
-    advanced.querySelector('summary').click();
-    check(!advanced.open, 'Advanced tools collapse again after use');
-    unchanged('Advanced tools');
+    const country = control('test-country'), place = control('test-place');
+    const pueth = regions.find(region => region.name === 'Pueth');
+    country.value = pueth.name; country.dispatchEvent(new Event('change', { bubbles: true }));
+    place.value = '0'; control('test-goto').click();
+    check(h.state().mode === 'playing' && Math.hypot(h.position().x - pueth.spawn.x, h.position().z - pueth.spawn.z) < .01,
+      'Country and place travel reaches the selected arrival');
+    unchanged('Country travel');
+    await open();
+    const drent = regions.find(region => region.id === 1).spawn;
+    control('test-point').value = `${drent.x}, ${drent.z}`; control('test-point-go').click();
+    check(h.state().mode === 'playing' && Math.hypot(h.position().x - drent.x, h.position().z - drent.z) < .01,
+      'Coordinate travel reaches the requested point');
+    unchanged('Coordinate travel');
+    await open();
+    const revealed = h.state().chartRevealed;
+    control('test-reveal-chart').click();
+    check(h.state().chartRevealed === !revealed, 'Map reveal toggles on or off');
+    control('test-reveal-chart').click();
+    check(h.state().chartRevealed === revealed, 'Map reveal returns to its previous setting');
+    unchanged('Map reveal');
+    control('test-dev-horse').click();
+    check(h.state().mode === 'playing' && h.state().testingEnabled && h.horse().owned && h.horse().developerMount,
+      'Developer horse is granted as a testing mount');
+    unchanged('Developer horse');
+    await open();
     return { testingToolsChecks: checks.length, checks, elapsedMs: Math.round(performance.now() - started) };
   } finally { h.stop(); }
 }

@@ -9,8 +9,8 @@
 #fishing-panel.bite{border-color:#f0d185;box-shadow:0 0 0 2px #eddaad21}#fishing-panel.bite h3{color:#ffe6a5}#fishing-panel.bite .fishing-meter i{background:#f1ce7d}
 body.fishing #controls{opacity:.4}body.fishing .combat-control{display:none!important}
 #dialogue-choices button:disabled{opacity:.48;cursor:default;background:#e9d39b04;filter:none;border-color:#d9c39030}
-#testing{width:min(600px,calc(100vw - 48px))}#testing h2{font-size:35px}#testing p{font-size:13px}#test-prepare{background:#f3daa0;color:#273e36;padding:14px 20px;border-radius:3px;width:100%;margin:22px 0 14px;font-size:14px;font-weight:600}
-#test-status{padding:12px 15px;background:#f1d7950a;border-left:2px solid #d5bc7d;line-height:1.7;color:#d6dfc6!important}
+#testing{width:min(600px,calc(100vw - 48px))}#testing h2{font-size:35px}#testing p{font-size:13px}
+
 .test-travel{display:flex;gap:12px;margin:18px 0}.test-travel button{flex:1}#testing>button.secondary{width:100%}#testing>small{display:block;color:#b7cbb8;font-size:11px;line-height:1.6;margin-top:18px}
 #testing-badge{position:absolute;right:34px;bottom:80px;padding:7px 11px;border:1px solid #edcf8466;border-radius:3px;background:#473c26c9;color:#f8dfac;font-size:9px;letter-spacing:.1em;pointer-events:none}#testing-badge kbd{margin-left:6px;font-size:9px}
 #journal-camp,#journal-doom{margin-top:22px;border-left:2px solid #b8cda7;padding:2px 18px;background:#d2dda508}#journal-camp h3,#journal-doom h3{margin-top:13px}#journal-camp p,#journal-doom p{font-size:13px;padding-bottom:17px}

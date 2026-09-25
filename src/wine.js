@@ -182,7 +182,7 @@ export function createWine({ skills, onEvent = () => {} } = {}) {
   function task() {
     if (state.quest !== 'recommended') return null;
     return { title: `${WINERY.name}, Paradise Springs`, stage: 'visit', target: WINEMAKER.id,
-      detail: `Paradise Springs lies southeast of Port Calos in Luscia. Follow the lane from the southern street to the vines. KAT and MAT teach Wine; ROB teaches advanced viticulture.` };
+      detail: `Paradise Springs lies southeast of Port Calos in Luscia. Follow the lane from the southern street to the vines. KAT and MAT teach Wine; Rob teaches advanced viticulture.` };
   }
   function view() {
     const attic = ATTIC_WINE_IDS.map(id => ({ id, tasted: !!state.tasted[id], colour: ATTIC_WINES[id].colour,
@@ -260,7 +260,7 @@ export function vintnerConversation(npc, context) {
     { id: 'leave-vintner', label: 'Thank you.', action: closeDialogue },
   ];
   if (npc.id === WINEMAKER.id) opening.unshift(KAT_LINES[0]);
-  else opening.unshift("MAT. Welcome to Paradise Springs. KAT and I can teach you Wine; ROB looks after the vines.");
+  else opening.unshift("MAT. Welcome to Paradise Springs. KAT and I can teach you Wine; Rob looks after the vines.");
   openDialogue(npc, opening, null, 'Back to the terrace', { choices });
   return true;
 }

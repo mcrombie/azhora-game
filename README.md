@@ -168,19 +168,21 @@ The storage key and file keep their original road-checkpoint names. **Older vers
 
 Press **F8**, use the opening screen's testing button, or choose **Testing tools** from Pause. F8 also works from a defeat screen.
 
-**Computer autoplay** comes first: Ben's spider hunt, Liz's rescue of Mop, Troy's investigation, and Cagney's escort. Each card teleports to a fresh run of that quest; the magic quests stop at the reward choice. Any key or click takes control, and **P** resumes. **Autoplay main quest** explicitly selects the main story and continues its current progress, without restarting it. All these demos protect the normal saved adventure.
+**Quest playtests** comes first: Ben's spider hunt, Liz's rescue of Mop, Troy's investigation, and Cagney's escort. Each card teleports to a fresh run of that quest; the magic quests stop at the reward choice. Any key or click takes control, and **P** resumes. These demos protect the normal saved adventure.
 
-**Jump to a character** visits Ben, Liz, Troy, or Cagney without resetting that side quest. **Main & side quest scenarios** folds away the satchel, Republican relay, Imperial recall, Drent investigation, Bramble Scout Camp, and Tamsin shortcuts. The miscellaneous pond, village, and regional shortcut buttons have been removed.
+**Main story jumps** offers Iven's satchel assignment, the Republican at the relay, and the Imperial recall decision.
 
-**Advanced tools & travel** holds ghost view, supplies, horses, map reveal, Port Calos, and general travel. **Go anywhere** lists countries and named places from the world; it searches for standable ground near each destination. **Go to a point** accepts coordinates such as `-1050, 982` or `stand-at:-806.1,-521,-1.57`. Regional travel advances the earlier main-road prerequisites as before. **Skip tutorial & give supplies** restores health and weapons, provides fishing and camp supplies, and keeps existing side-quest progress.
+**General travel** is visible directly in the panel. **Go anywhere** lists countries and named places from the world and searches for standable ground near each destination. **Go to a point** accepts coordinates such as `-1050, 982` or `stand-at:-806.1,-521,-1.57`. Regional travel advances earlier main-road prerequisites as before.
 
-`npm run test:testing-tools` clicks the real autoplay and character-jump buttons, checks main-story selection after a side demo, and verifies that the normal checkpoint is unchanged. Review layouts with `--smoke-test --review-views=testing-tools,testing-tools-advanced`.
+**Hacks** contains just the fast developer horse and whole-map reveal. Older character jumps, individual location buttons, supplies, ordinary horses, and ghost view are removed from the panel.
+
+`npm run test:testing-tools` clicks the four playtests, three story jumps, travel controls, and hacks while verifying that the normal checkpoint is unchanged. Review the panel with `--smoke-test --review-views=testing-tools`.
 
 The **TESTING SESSION** badge identifies the override. Testing supplies and travel **never overwrite the normal road checkpoint**. Reopen the game and choose Continue to recover the normal saved road, or begin from the boat for a fresh playthrough.
 
 ### Developer ghost view
 
-Open **F8 → Advanced tools & travel → Ghost view**. The current adventure pauses, and a translucent traveler becomes your spectator. Choose a region on the actual World Builder atlas, then use its **Fly into** button. All **131 authored region outlines** are clickable. Scroll and drag to inspect the map, or use the Drent and Thalmagar focus buttons.
+Ghost view remains available through automated developer checks and review hooks, including `npm run test:developer`; it is no longer an F8 control. The current adventure pauses, and a translucent traveler becomes your spectator. Choose a region on the actual World Builder atlas, then use its **Fly into** button. All **131 authored region outlines** are clickable. Scroll and drag to inspect the map, or use the Drent and Thalmagar focus buttons.
 
 The four playable regions each carry their own pin on their own authored hexes: Drent, Luscia, the Moros Plain and East Suval. A separate schematic shows their order along the road. Tidehaven's exact place on Drent's coast is still provisional. Every region is tinted by its campaign difficulty level, with provisional levels labeled. Cape Thalmagar opens its own fortress prototype. Every other mapped region opens a **Terrain survey · gameplay not built** scene, using the authored region's hex layout and terrain categories. Survey elevations and scenery are illustrative. These visits do not imply that the whole continent has quests, settlements, or connected playable terrain.
 
@@ -251,6 +253,7 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 | `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
 | `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
 | `src/drent-wildlife.js`, `src/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |
+| `src/regional-wildlife.js`, `src/west-regions-life.js` | Regional animal habitats and shared instanced wildlife; West Suval has persistent ground-animal bands throughout its usable countryside, with Solis, road and quest-site exclusions |
 | `src/acorn-quest.js` | Lysa's atomic turn-in and relationship memory |
 | `src/inventory.js`, `src/weapons.js`, `src/consumables.js` | Satchel UI, item stacks, wear, equipment, repairs, and guarded food consumption |
 | `src/campcraft.js` | Fishing timing, catches, fire fuel, and cooking exchanges |

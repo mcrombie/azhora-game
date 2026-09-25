@@ -450,12 +450,12 @@ the door, path or quest walking route. Liz's cottage now has a named mailbox, as
 Paradise Springs (Vaervelm Caelazh) moves from West Suval into the single Luscian
 land hex immediately southeast of Port Calos, with a lane from the town. Retain
 the log cabin, hall, spring and eight grape varieties; do not duplicate the old site.
-Its three winemakers are ROB, MAT and KAT. KAT keeps her original appearance. ROB
+Its three winemakers are Rob, MAT and KAT. KAT keeps her original appearance. Rob
 has cropped gray hair; MAT has cropped black hair and brown skin. Neither has a hat.
 Do not add extra winery residents.
 
 Wine is a separate skill, not a Farming subskill. KAT, MAT, Ben, Liz and Troy can
-introduce Wine, alongside the existing Lakota and Juan routes. ROB's subject is
+introduce Wine, alongside the existing Lakota and Juan routes. Rob's subject is
 advanced viticulture, a Farming specialty. Its Farming level 5 prerequisite is
 provisional and visibly explained; these advanced lessons are not playable yet.
 Show an unavailable lesson as locked instead of granting a placeholder quest or XP.
@@ -468,3 +468,9 @@ The Peblos harbor master is Hallie (renamed from Howie), with long straight blon
 hair. Keep her ferry routes, swimming lessons and saved identity. East Suval's
 closed land borders need visible physical ridges and locked passes, including the
 western and southern edges, so a player cannot simply walk around the road gate.
+
+### Rob's name and hair (2026-09-25)
+
+Display the head winemaker as **Rob**, with short gray hair and no bun or hat.
+The close crop follows his skull without the shared rounded nape tuft. KAT and
+MAT keep their existing names and appearances.

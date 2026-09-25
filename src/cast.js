@@ -95,7 +95,7 @@ export const OWN_IDS = Object.freeze([
   'solis-secretary',     // Tancredi Vel, who the chameleon's arrangement runs through
   'john-salt',           // John, Sultan of the Salt Trade, and the Sultana he sails
   'katy',                // Katy at Port Calos; her future quest is not active yet
-  'vintner', 'winemaker', 'cellar-hand',   // ROB, KAT and MAT at Paradise Springs
+  'vintner', 'winemaker', 'cellar-hand',   // Rob, KAT and MAT at Paradise Springs
   'light-keeper', 'rival-keeper',// the two lighthouse keepers and their feud
 ]);
 

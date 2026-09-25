@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { canStand } from './game-state.js';
 import { SEA_LEVEL } from './region-world.js';
 import { westWaterSurface } from './west-ground.js';
-import { REGIONAL_WILDLIFE_ZONES } from './regional-wildlife.js';
+import { REGIONAL_WILDLIFE_ZONES, WEST_SUVAL_WILDLIFE_ZONES } from './regional-wildlife.js';
 import { DRENT_WILDLIFE_ZONES } from './drent-wildlife.js';
 
 /**
@@ -19,6 +19,7 @@ import { DRENT_WILDLIFE_ZONES } from './drent-wildlife.js';
  */
 
 const TAU = Math.PI * 2;
+const resident = zone => zone.habitat === 'woodland' || zone.habitat === 'countryside';
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const angleDelta = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 const sphere = new THREE.IcosahedronGeometry(1, 1);
@@ -841,6 +842,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
   }),
   ...REGIONAL_WILDLIFE_ZONES,
   ...DRENT_WILDLIFE_ZONES,
+  ...WEST_SUVAL_WILDLIFE_ZONES,
 ]);
 
 /**
@@ -953,7 +955,8 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
   const inRange = (x, z, zone) => Number.isFinite(x) && Number.isFinite(z)
     && x >= zone.minX && x <= zone.maxX && z >= zone.minZ && z <= zone.maxZ;
   const valid = (x, z, zone) => inRange(x, z, zone) && canStand(x, z, world, zone.radius)
-    && (!zone.keepRegion || !world.regionAt || world.regionAt(x, z)?.name === zone.region);
+    && (!zone.keepRegion || !world.regionAt || world.regionAt(x, z)?.name === zone.region)
+    && !(zone.exclusions ?? []).some(area => x >= area.minX && x <= area.maxX && z >= area.minZ && z <= area.maxZ);
   /**
    * What an animal's feet are on. For everything on legs that is the ground, and
    * for a bird that **floats** it is the water's own surface — a duck sits on a
@@ -982,7 +985,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
   const woodlandRoads = (world.paths ?? []).flatMap(path => path.slice(1).map((b, i) => ({ a: path[i], b, half: (path.width ?? 2) / 2 })));
   function suitableHome(x, z, zone) {
     if (!valid(x, z, zone)) return false;
-    if (zone.habitat !== 'woodland') return true;
+    if (!resident(zone)) return true;
     if (woodlandSites.some(p => Math.hypot(x - p.x, z - p.z) < 8)) return false;
     return woodlandRoads.every(({ a, b, half }) => {
       const dx = b.x - a.x, dz = b.z - a.z, t = clamp(((x - a.x) * dx + (z - a.z) * dz) / (dx * dx + dz * dz || 1), 0, 1);
@@ -1053,7 +1056,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     return true;
   }
   function rememberRoute(animal, from) {
-    if (animal.zone.habitat !== 'woodland' || animal.action === 'return') return;
+    if (!resident(animal.zone) || animal.action === 'return') return;
     const trail = animal.trail ??= [];
     if (!trail.length) trail.push(from);
     const last = trail.at(-1);
@@ -1331,7 +1334,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
       }
       // Something standing that takes fright wheels first and then goes: it does not run at you while it turns.
       if (animal.cornered > 0) heading = animal.breakYaw;   // it has chosen its way out and is taking it
-      if (animal.zone.habitat !== 'woodland' && species !== 'upland-hare') {
+      if (!resident(animal.zone) && species !== 'upland-hare') {
         const off = angleDelta(heading, animal.yaw);
         animal.yaw += off * Math.min(1, dt * (Math.abs(off) > 1.2 ? 18 : 6));
         wheeling = Math.abs(off) > 1.57;
@@ -1339,7 +1342,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     }
     // Keep steering after gaining a few strides, while the animal is still
     // fleeing; otherwise it can run blindly into a corner just beyond notice.
-    if ((animal.zone.habitat === 'woodland' || species === 'upland-hare') && animal.action === 'flee') {
+    if ((resident(animal.zone) || species === 'upland-hare') && animal.action === 'flee') {
       // A hare can change direction within a bound. Follow the checked route
       // exactly instead of cutting a turning arc through the obstacle beside it.
       animal.yaw = escapeHeading(animal, player, dt);
@@ -1355,7 +1358,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     }
     if (animal.action === 'return') {
       if (fromHome < SETTLED || near < wary - 8) { animal.action = 'graze'; animal.timer = 2 + (animal.index % 3) * .8; }
-      else if (animal.zone.habitat === 'woodland' && retraceRoute(animal, RETURN[species] * dt)) animal.speed = RETURN[species];
+      else if (resident(animal.zone) && retraceRoute(animal, RETURN[species] * dt)) animal.speed = RETURN[species];
       else {
         // Straight for home; and when something is in the way, along it for a moment before trying again.
         animal.detour = Math.max(0, animal.detour - dt);
@@ -1393,7 +1396,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
       animal.lift = Math.max(0, Math.sin(animal.clock * (quick ? 16 : 10))) * (quick ? .3 : .13);
     }
     animal.y = footingY(animal.x, animal.z, animal.zone);
-    if (animal.zone.habitat === 'woodland' && fromHome < SETTLED && animal.action !== 'flee') animal.trail = [];
+    if (resident(animal.zone) && fromHome < SETTLED && animal.action !== 'flee') animal.trail = [];
   }
 
   /**

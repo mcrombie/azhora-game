@@ -1,4 +1,4 @@
-import { REGION_CELLS } from './region-world.js';
+import { REGION_CELLS, SOLIS } from './region-world.js';
 
 /** Small authored flocks for regions that had scenery but no ambient animals.
  * Reuse the existing western animal rigs and distance culling. Hex anchors follow
@@ -71,3 +71,28 @@ export const REGIONAL_WILDLIFE_ZONES = Object.freeze([
   habitat('Amod', 'amod-ridge-hawk', 'plateau-hawk', 7, 98, 1,
     'A hawk hunts above the terrace ridges.', { air: 32 }),
 ]);
+
+/** The first Suval pass placed seven ground animals in two isolated hexes.
+ * Persistent small bands cover the remaining downs as well, with stable atlas
+ * identities. Solis and its wall approaches are deliberately not animal habitat.
+ */
+export const SUVAL_WILDLIFE_EXCLUSIONS = Object.freeze([Object.freeze({
+  minX: SOLIS.centre.x - SOLIS.halfX - 18, maxX: SOLIS.centre.x + SOLIS.halfX + 18,
+  minZ: SOLIS.centre.z - SOLIS.halfZ - 18, maxZ: SOLIS.centre.z + SOLIS.halfZ + 18,
+})]);
+const inSolis = cell => SUVAL_WILDLIFE_EXCLUSIONS.some(area =>
+  cell.x >= area.minX && cell.x <= area.maxX && cell.z >= area.minZ && cell.z <= area.maxZ);
+export const WEST_SUVAL_WILDLIFE_ZONES = Object.freeze(REGION_CELLS['West Suval'].filter(cell => !inSolis(cell)).map(cell => {
+  const choice = (cell.q * 17 + cell.r * 31) % 10;
+  const species = cell.terrain === 'hills' ? 'hill-sheep' : choice < 4 ? 'upland-hare' : choice < 8 ? 'red-deer' : 'boar';
+  const flip = (cell.q + cell.r) % 2 ? 1 : -1;
+  return Object.freeze({
+    id: `suval-country-${cell.q}-${cell.r}`, species, region: 'West Suval', keepRegion: true,
+    habitat: 'countryside', radius: species === 'boar' ? .7 : species === 'upland-hare' ? .3 : .55,
+    scale: species === 'red-deer' ? .9 : 1, hornless: true,
+    minX: cell.x - 84, maxX: cell.x + 84, minZ: cell.z - 84, maxZ: cell.z + 84,
+    exclusions: SUVAL_WILDLIFE_EXCLUSIONS,
+    sites: Object.freeze([[-22, -18 * flip], [22, 18 * flip]].map(([dx, dz]) => Object.freeze([cell.x + dx, cell.z + dz]))),
+    note: 'Resident animals graze the Suval downs and scrub outside Solis, flee from travelers, and return to their home range.',
+  });
+}));

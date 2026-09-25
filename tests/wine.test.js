@@ -106,7 +106,7 @@ test('the winery journal counts the cellar in, and says how to open it', () => {
 });
 
 
-test('five requested teachers introduce Wine without a Farming prerequisite and ROB does not', () => {
+test('five requested teachers introduce Wine without a Farming prerequisite and Rob does not', () => {
   assert.deepEqual(WINE_INTRO_TEACHERS, ['winemaker', 'cellar-hand', 'ben-sorcerer', 'liz-beekeeper', 'bee-keeper']);
   for (const id of WINE_INTRO_TEACHERS) {
     const npc = { id }, skills = createSkills(), wine = createWine({ skills }), taughtBy = [];

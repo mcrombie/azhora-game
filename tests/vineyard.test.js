@@ -141,7 +141,7 @@ test('the walk, the carriages and the dragon all survive a save', () => {
 });
 
 
-test('ROB\'s advanced Farming prerequisite is visible but cannot grant a placeholder lesson', async () => {
+test('Rob\'s advanced Farming prerequisite is visible but cannot grant a placeholder lesson', async () => {
   const { WINERY_LESSON_REQUIREMENT, wineryLessonsStatus, wineryLessonLines, robWineryConversation } = await import('../src/winery-lessons.js');
   assert.equal(WINERY_LESSON_REQUIREMENT.level, 5);
   assert.equal(WINERY_LESSON_REQUIREMENT.provisional, true);

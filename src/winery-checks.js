@@ -46,7 +46,7 @@ export async function runWineryChecks(h) {
     const people=[VINTNER,CELLAR_HAND,WINEMAKER];
     for(const person of people)check(h.npcById.get(person.id)?.name===person.name,person.name+' is present under the original saved identity');
     const winemakers=[...h.npcById.values()].filter(npc=>npc.modelRole==='wine-maker').map(npc=>npc.id).sort();
-    check(same(winemakers,people.map(person=>person.id).sort()),'Only ROB, MAT and KAT are spawned as winemakers');
+    check(same(winemakers,people.map(person=>person.id).sort()),'Only Rob, MAT and KAT are spawned as winemakers');
     check(!h.npcById.has('vine-keeper'),'The former winery vine keeper is not spawned');
     check(h.npcById.has(KATY.id),'Katy remains available in Port Calos');
     check(WINE_INTRO_TEACHERS.length===5,'The five requested Wine introductions are registered');
@@ -62,14 +62,14 @@ export async function runWineryChecks(h) {
       await h.prepare();await h.resetWine();await h.farmingLevel(level);
       await talk(VINTNER.id);
       const before=h.snapshot();
-      check(!ids().includes('learn-wine-here'),'ROB at Farming '+level+' does not offer the Wine introduction');
+      check(!ids().includes('learn-wine-here'),'Rob at Farming '+level+' does not offer the Wine introduction');
       await h.close();await h.frames(3);
       const marker=h.marker(VINTNER.id),expected=level<5?'skill-locked':'skill';
-      check(marker?.visible&&marker.kind===expected,'ROB at Farming '+level+' displays the '+expected+' lesson marker');
-      check(!h.wine.met&&!h.skills.taught('wine'),'ROB at Farming '+level+' does not teach Wine');
+      check(marker?.visible&&marker.kind===expected,'Rob at Farming '+level+' displays the '+expected+' lesson marker');
+      check(!h.wine.met&&!h.skills.taught('wine'),'Rob at Farming '+level+' does not teach Wine');
       const after=h.snapshot();
-      check(same(otherLessons(before),otherLessons(after))&&before.skills.skills.wine?.xp===after.skills.skills.wine?.xp,'ROB at Farming '+level+' grants no placeholder XP or lesson');
-      check(same(quests(before),quests(h.snapshot())),'ROB at Farming '+level+' does not create or advance a magic quest');
+      check(same(otherLessons(before),otherLessons(after))&&before.skills.skills.wine?.xp===after.skills.skills.wine?.xp,'Rob at Farming '+level+' grants no placeholder XP or lesson');
+      check(same(quests(before),quests(h.snapshot())),'Rob at Farming '+level+' does not create or advance a magic quest');
     }
     await h.prepare();
     const before=h.snapshot();

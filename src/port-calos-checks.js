@@ -108,7 +108,7 @@ export async function runPortCalosChecks(h) {
     await h.testingPort(); await h.frames(8);
     const landing = FERRY_LANDINGS['port-calos'].ashore, at = h.snapshot().position;
     assert(h.state().mode === 'playing' && Math.hypot(at.x - landing.x, at.z - landing.z) < .35,
-      'The Testing Tools button closes the panel and places the player on the Port Calos quay');
+      'Testing Tools coordinate travel closes the panel and places the player on the Port Calos quay');
     assert(h.ferry.state.side === 'port-calos' && h.npcById.get(FERRY_HOSTS['port-calos'].id).actor.group.visible,
       'The Testing Tools visit leaves Maddie beside her own ferry');
     // Each teacher must work as the first teacher, even when the tutorial is unfinished.

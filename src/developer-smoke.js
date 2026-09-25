@@ -39,15 +39,9 @@ export async function runDeveloperSmoke(h) {
       assert(same(checkpoint.read(), originalSave), `${label}: ghost exploration overwrote the normal adventure checkpoint`);
     };
 
-    await tap('F8');
-    assert(readState().mode === 'testing', 'F8 did not open testing tools');
-    const advanced = $('testing-advanced');
-    assert(advanced, 'testing tools do not expose Advanced tools');
-    if (!advanced.open) await click(advanced.querySelector('summary'));
-    const opener = $('ghost-dev-open');
-    assert(opener?.getClientRects().length, 'Advanced tools do not expose the ghost developer button');
-    await click(opener); await developer.ready; await frames(5);
-    assert(developer.active && developer.state().atlasOpen, 'ghost developer button did not open the atlas');
+    assert(typeof h.openDeveloper === 'function', 'ghost developer entry hook is unavailable');
+    await h.openDeveloper(); await developer.ready; await frames(5);
+    assert(developer.active && developer.state().atlasOpen, 'ghost developer hook did not open the atlas');
     assert(!$('developer-mode').hidden && $('ghost-atlas').getClientRects().length, 'developer atlas panel is hidden');
     const atlas = await developer.ready;
     assert(atlas && atlas.regions.length === 131 && developer.state().regionCount === 131, 'developer atlas is missing authored Azhora regions');

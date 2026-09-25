@@ -4992,7 +4992,6 @@ function init() {
     campcraft.teachFishing();
     for(const [id,count] of [['acorn',5],['forest-stick',6],['raw-fish',2]])if(inventory.count(id)<count)inventory.add(id,count-inventory.count(id));
     combat.startPractice(world.training);combat.finishPractice();weapons.repair();practiceHits=2;practiceGuards=1;practiceDodges=1;lessonSet=true;cartography.learn();chartLesson.restore('complete');questStage=QUEST_DONE;refreshQuest();inventory.refresh();
-    $('test-status').textContent='Ready: tutorial skipped; health and weapons restored. Fishing and camp supplies added.';
     show('testing-badge',true);
   }
   function testTravel(destination){
@@ -5521,25 +5520,12 @@ function init() {
   $('skip-cutscene').onclick=skipOpening;
   $('begin').onclick=begin;$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=returnToSafety;
   $('defeat-restore').onclick=retry;$('defeat-saved').onclick=()=>{stopAutopilot();continueRoad();};
-  $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;$('test-prepare').onclick=prepareTesting;
-  $('test-hideout').onclick=()=>{testTravel(world.regionAt(FOREST_HIDEOUT_QUEST.approach.x,FOREST_HIDEOUT_QUEST.approach.z).id);forestHideout.restore();syncHideout();const p=FOREST_HIDEOUT_QUEST.approach;player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);yaw=0;settleCamera();toast('The scouts attack if you come too close. Keep to the outskirts to pass safely; F surveys the camp from here.','BRAMBLE SCOUT CAMP');};
+  $('testing-button').onclick=testingMenu;$('opening-testing').onclick=testingMenu;
   for(const kind of ['satchel','republic','recall'])$('test-story-'+kind).onclick=()=>stageLivingScenario(kind);
-  $('test-port-calos').onclick=()=>{
-    if(!testingEnabled)prepareTesting();
-    if(riding.mounted)stepDown(true);
-    const landing=FERRY_LANDINGS['port-calos'].ashore;
-    player.group.position.set(landing.x,world.heightAt(landing.x,landing.z),landing.z);
-    yaw=landing.yaw;pitch=.3;distance=targetDistance=9;grounded=true;verticalSpeed=0;inWater=false;
-    ferry.settle();settleCamera();closeModal();
-    toast('Port Calos, at the mouth of the Caloss. Maddie can take you to Tidehaven or Cobble Quay; the inland road leads toward Nothom.','TESTING · PORT CALOS');
-  };
   $('test-reveal-chart').onclick=()=>{
-    chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer chart: showing everything':'Developer chart: reveal the whole map';
+    chartRevealed=!chartRevealed;$('test-reveal-chart').textContent=chartRevealed?'Developer map: revealed':'Developer map: reveal all';
     refreshChart();toast(chartRevealed?'The whole chart is showing, tinted by how far each region is built.':'The chart is fogged again. It fills in as you walk.','DEVELOPER · THE CHART');
   };
-  const vastosTest=document.createElement('button');vastosTest.id='test-vastos-civil-war';vastosTest.className='secondary';vastosTest.textContent='Vastos: the Common Water (parked)';vastosTest.hidden=!questLive('civil-war-vastos');
-  const drentTest=document.createElement('button');drentTest.id='test-drent-civil-war';drentTest.className='secondary';drentTest.textContent='Drent silver quest · After the ambush';
-  document.querySelector('#testing .test-travel').append(drentTest);
   function beginDrentTest(){
     testTravel('village');stopAutopilot();combat.startPractice(world.training);combat.finishPractice();
     inventory.remove(DRENT_EVIDENCE_ID,inventory.count(DRENT_EVIDENCE_ID));inventory.remove('drent-armory-supplies',inventory.count('drent-armory-supplies'));
@@ -5547,23 +5533,17 @@ function init() {
     const p=INSTRUCTOR_STAND;player.group.position.set(p.x+3,world.heightAt(p.x+3,p.z),p.z);settleCamera();
     toast('The ambush is already won in this testing session. Speak to Glun to begin the silver investigation.','CIVIL WAR IN DRENT');
   }
-  drentTest.onclick=beginDrentTest;
-  document.querySelector('#testing .test-travel').append(vastosTest);
-  vastosTest.onclick=()=>{testTravel(11);const p=vastos.start;player.group.position.set(p.x+2,world.heightAt(p.x+2,p.z+2),p.z+2);discoveries.add('vastos-herders-camp');settleCamera();toast('Speak with Mera at the silver marker. J keeps the local terms.','VASTOS');};
-  // Both testing horses go through the same door as every other test-travel button: testing is turned
-  // on and badged before the horse exists, so a real adventure can never be saved on one.
-  const testHorse=fast=>{if(!testingEnabled)prepareTesting();testingEnabled=true;show('testing-badge',true);
+  function beginVastosTest(){testTravel(11);const p=vastos.start;player.group.position.set(p.x+2,world.heightAt(p.x+2,p.z+2),p.z+2);discoveries.add('vastos-herders-camp');settleCamera();toast('Speak with Mera at the silver marker. J keeps the local terms.','VASTOS');}
+  // Enable the testing session before granting a developer horse so it cannot enter a normal save.
+  const testHorse=()=>{if(!testingEnabled)prepareTesting();testingEnabled=true;show('testing-badge',true);
     if(riding.mounted)stepDown(true);const p=player.group.position,spot={x:p.x+1.6,z:p.z+.6};
     if(!riding.owned)riding.grant(spot,yaw+Math.PI);else riding.place(spot,yaw+Math.PI);
-    riding.teach();riding.setDeveloperMount(fast);placeOwnHorse();closeModal();
-    toast(fast?`${DEVELOPER_HORSE_NAME}. ${DEVELOPER_HORSE_SPEED} times the army's pace, and in nobody's records. G mounts · Shift canters · H whistles him up.`
-      :'A horse, here. G mounts and dismounts · Shift canters · H whistles him up.',
-      fast?'TESTING · DEVELOPER HORSE':'TESTING SESSION');};
-  $('test-horse').onclick=()=>testHorse(false);$('test-dev-horse').onclick=()=>testHorse(true);
-  $('test-forest').onclick=()=>{testTravel('village');const p=FOREST_STORY_NPC;player.group.position.set(p.x+1.5,world.heightAt(p.x+1.5,p.z+1),p.z+1);settleCamera();toast('Meet Tamsin, then take the little paths into the woods.','DRENT · WOODLAND TRAILS');};
-  $('ghost-dev-open').onclick=openDeveloper;
+    riding.teach();riding.setDeveloperMount(true);placeOwnHorse();closeModal();
+    toast(`${DEVELOPER_HORSE_NAME}. ${DEVELOPER_HORSE_SPEED} times the army's pace, and in nobody's records. G mounts · Shift canters · H whistles him up.`,
+      'TESTING · DEVELOPER HORSE');};
+  $('test-dev-horse').onclick=testHorse;
   /**
-   * **Go anywhere the world is built.** Advanced travel lists every country and named ground, taken
+   * **Go anywhere the world is built.** Travel lists every country and named ground, taken
    * from the world itself (src/testing-travel.js), so the next one built is here the day it is
    * built. The point box takes a coordinate in any of the shapes this project writes them in -
    * a report's (-1050, 982), a log line's [-1050, 982], or the review runner's own
@@ -5679,10 +5659,6 @@ function init() {
   }
   $('test-liz-autoplay').onclick=()=>testPlayMagicQuest('liz');
   $('test-troy-autoplay').onclick=()=>testPlayMagicQuest('troy');
-  $('test-ben').onclick=()=>testVisitTeacher(BEN,'Fireball');
-  $('test-liz').onclick=()=>testVisitTeacher(LIZ,'Summon Bees');
-  $('test-troy').onclick=()=>testVisitTeacher(TROY,'Mind Read');
-  $('test-cagney').onclick=()=>testVisitTeacher(CAGNEY);
   {
     const countryBox=$('test-country'),placeBox=$('test-place'),countries=travelCountries();
     const standable=(x,z)=>canStand(x,z,world,BODY.person);
@@ -5804,11 +5780,6 @@ function init() {
   }
   function stopAutopilot(reason='Autoplay stopped.'){if(autopilot.active)autopilot.stop(reason);}
   $('autoplay-button').onclick=()=>autopilot.active?stopAutopilot():startAutopilot();$('opening-autoplay').onclick=()=>startAutopilot();
-  $('test-main-autoplay').onclick=()=>{
-    if(living.recall().status==='passenger'){toast('Finish the ride to the muster before starting autoplay.','QUEST PLAYTEST');return;}
-    stopAutopilot();testingEnabled=true;show('testing-badge',true);selectQuest('main');closeModal();
-    if(autopilot.start()){toast('The computer continues your main quest. Any key or click takes control.','MAIN QUEST PLAYTEST');canvas.focus();}
-  };
   document.addEventListener('keydown',e=>{
     if(e.defaultPrevented)return;
     if(mode==='journal'&&e.target?.closest?.('input,textarea,select,[contenteditable="true"]')&&!['Escape','Tab'].includes(e.code))return;
@@ -7038,6 +7009,7 @@ function init() {
         const {runTestingToolsChecks}=await import('./testing-tools-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runTestingToolsChecks({frames,state,autoplay:autopilot,
+          dialogueNpc:()=>activeDialogue?.npc?.id,horse:()=>({owned:riding.owned,developerMount:riding.developerMount}),recall:()=>living.recall(),
           prepare:()=>{forestHooks().prepareVillage();stopAutopilot();closeDialogue();reviewFrozen=false;reviewTarget=null;
             if(!saveRoad(false))throw new Error('Could not prepare a normal checkpoint');},
           open:()=>{if(mode!=='testing')testingMenu();},stop:()=>stopAutopilot(),
@@ -7082,7 +7054,7 @@ function init() {
             if(ferry.state.crossing)throw new Error('The ordinary ferry scene did not finish');
           },
           saveAndReload:()=>{const written=writeRoadCheckpoint(sessionCheckpoint,false);return !!written&&continueRoad(true);},
-          testingPort:()=>{testingMenu();$('test-port-calos').click();},
+          testingPort:()=>{testingMenu();const p=FERRY_LANDINGS['port-calos'].ashore;$('test-point').value=`${p.x}, ${p.z}, ${p.yaw}`;$('test-point-go').click();},
           resetSwimming:()=>{swimming.restore(createSwimming().snapshot());const saved=skills.snapshot();skills.restore({...saved,taught:saved.taught.filter(id=>id!=='swimming')});refreshSkillsSheet();},
           reset:stage=>{
             stopAutopilot();if(mode==='opening')begin();if(mode==='arriving')skipOpening();
@@ -7625,7 +7597,7 @@ function init() {
         assert(chapterOne.frameErrors===0,'Chapter 1 produced a render error');
         return {manualGuard:true,backpedalFacing:true,releaseGuard:true,autoplayGuardLesson:true,trainingPartnership:true,farArrivalsSilent:true,noStaleArrivalReplay:true,nearArrivalNotice:true,shoreWatchMarches:true,chapterOne};
       },
-      vastos:{view:()=>vastos.quest.view(),snapshot:vastos.snapshot,restore:vastos.restore,act:vastos.act,metrics:vastos.metrics,visit:()=>vastosTest.click()},
+      vastos:{view:()=>vastos.quest.view(),snapshot:vastos.snapshot,restore:vastos.restore,act:vastos.act,metrics:vastos.metrics,visit:()=>beginVastosTest()},
       // The tongues, for a review that wants the dialogue panel as a new traveler sees it.
       linguist:{view:()=>linguist.view(),forget:()=>{linguist.restore(createLinguist().snapshot());if(mode==='dialogue')updateSpeech();},
         study:(id,exposure)=>{const result=linguist.study(id,exposure);if(mode==='dialogue')updateSpeech();return result;},
@@ -7790,12 +7762,12 @@ function init() {
         settleCamera();return forestHideout.view();
       },
       developer:()=>developer.state(),
-      runDeveloperChecks:()=>runDeveloperSmoke({...focusedRoadHooks(),developer,
+      runDeveloperChecks:()=>runDeveloperSmoke({...focusedRoadHooks(),developer,openDeveloper:()=>{modal('testing');return openDeveloper();},
         ghostVisibilityState:()=>({camp:hideoutWatch.state(),forest:forestEcology.state(),road:roadLife.state()}),
         prepare:()=>{forestHooks().prepareVillage();saveRoad(false);},
         normalStateSnapshot:()=>({questStage,inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),position:player.group.position.toArray(),health:combat.state.player.hp,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),trackedPlaceId,journey:journey.snapshot(),acornStatus:acornQuest.status,woodland:woodlandLife.state().acorns.map(({id,collected})=>({id,collected})),camp:campcraft.checkpoint()})}),
       async reviewDeveloper(view){
-        if(!developer.active){forestHooks().prepareVillage();modal('testing');$('ghost-dev-open').click();}
+        if(!developer.active){forestHooks().prepareVillage();modal('testing');openDeveloper();}
         await developer.ready;
         if(view==='ghost-atlas'){developer.setAtlas(true);return developer.state();}
         if(view==='ghost-local-atlas'){developer.setAtlas(true);developer.focusRegion('Drent');return developer.state();}
@@ -7827,7 +7799,7 @@ function init() {
         assert($('defeat-checkpoint').textContent.includes('Avrel'),'Meadow defeat named the wrong checkpoint');
         document.dispatchEvent(new KeyboardEvent('keydown',{code:'F8'}));
         assert(mode==='testing'&&combat.state.player.hp===100,'F8 did not open testing from defeat');
-        $('testing-advanced').open=true;$('test-country').value=world.regions.find(region=>region.id===3).name;$('test-country').dispatchEvent(new Event('change'));$('test-place').value='0';$('test-goto').click();await frames(3);
+        $('test-country').value=world.regions.find(region=>region.id===3).name;$('test-country').dispatchEvent(new Event('change'));$('test-place').value='0';$('test-goto').click();await frames(3);
         assert(mode==='playing'&&testingEnabled&&world.regionAt(player.group.position.x,player.group.position.z).id===3,'Defeat testing travel failed');
         assert(JSON.stringify(checkpoint.read().data)===saved,'Defeat testing overwrote the normal checkpoint');
         return {meadowDefeatChecks:4,testingFromDefeat:true};
@@ -8161,10 +8133,10 @@ function init() {
         assert(saveRoad(false),'Completed road checkpoint did not save');const savedRoad=checkpoint.read().data;
         const savedWear=weapons.profile().durability;inventory.add('forest-stick',1);weapons.repair();warp(0,9);
         assert(continueRoad()&&journey.view().complete&&weapons.profile().durability===savedWear&&inventory.count('forest-stick')===savedRoad.inventory.find(item=>item.id==='forest-stick').quantity,'Checkpoint did not restore road progress, inventory, and wear');
-        tap('F8');assert(mode==='testing','F8 did not open testing tools');$('test-prepare').click();
+        tap('F8');assert(mode==='testing','F8 did not open testing tools');prepareTesting();
         assert(testingEnabled&&inventory.has('tinderbox')&&inventory.has('fishing-rod')&&inventory.count('acorn')>=5&&inventory.count('forest-stick')>=6,'Testing supplies failed');
-        $('testing-advanced').open=true;$('test-point').value=`${bank.x}, ${bank.z}`;$('test-point-go').click();assert(mode==='playing'&&Math.hypot(player.group.position.x-bank.x,player.group.position.z-bank.z)<.01,'Testing coordinate travel failed');
-        tap('F8');$('testing-advanced').open=true;$('test-country').value=world.regions.find(region=>region.id===1).name;$('test-country').dispatchEvent(new Event('change'));$('test-place').value='0';$('test-goto').click();assert(mode==='playing'&&world.regionAt(player.group.position.x,player.group.position.z).id===1,'Testing country travel failed');
+        $('test-point').value=`${bank.x}, ${bank.z}`;$('test-point-go').click();assert(mode==='playing'&&Math.hypot(player.group.position.x-bank.x,player.group.position.z-bank.z)<.01,'Testing coordinate travel failed');
+        tap('F8');$('test-country').value=world.regions.find(region=>region.id===1).name;$('test-country').dispatchEvent(new Event('change'));$('test-place').value='0';$('test-goto').click();assert(mode==='playing'&&world.regionAt(player.group.position.x,player.group.position.z).id===1,'Testing country travel failed');
         const roadTestingResults=await runRoadTestingSmoke({world,player,tap,frames,until,getMode:()=>mode,readState:state,journey,inventory});
         warp(world.border.x,world.border.z);assert(questStage===QUEST_DONE,'Side quest overwrote completed main tutorial');
         const collisionChecks=world.colliders.slice(0,50);for(const c of collisionChecks)assert(!canStand(c.x,c.z,world),'Solid collider admits player');
@@ -8182,7 +8154,7 @@ function init() {
         clearTimeout(toastTimer);$('toast').classList.remove('visible');
         leaveOpening();document.body.classList.add('playing');show('opening',false);show('loading',false);show('modal-backdrop',false);show('dialogue',false);mode='playing';
         if(view==='testing-tools'||view==='testing-tools-advanced'){
-          stopAutopilot();prepareTesting();$('testing-scenarios').open=false;$('testing-advanced').open=view.endsWith('-advanced');testingMenu();return;
+          stopAutopilot();prepareTesting();testingMenu();return;
         }
         if(['law-corpse','law-covered','magic-spells','magic-fireball','magic-bees','magic-bees-close','magic-cast-rest','magic-cast-windup','magic-cast-release','magic-cast-follow'].includes(view)){
           testTravel('village');stopAutopilot();combat.revive();crime.restore();corpseHost.restore();closeDialogue();reviewFrozen=true;mode='playing';
@@ -8387,7 +8359,7 @@ function init() {
         }
         // A bounded visual check of the isolated silver quest, using the normal host and UI.
         if(['vastos-camp','vastos-dialogue','vastos-journal','vastos-settled'].includes(view)){
-          vastosTest.click();vastos.restore();player.setArmed(false);yaw=1.7;pitch=.38;distance=targetDistance=10;settleCamera();
+          beginVastosTest();vastos.restore();player.setArmed(false);yaw=1.7;pitch=.38;distance=targetDistance=10;settleCamera();
           if(view!=='vastos-dialogue')vastos.act('accept-herd');
           if(view==='vastos-settled')for(const step of ['find-stray-west','find-stray-east','find-stray-ridge','reopen-watering','hear-herder','hear-republican','hear-monarchist','read-covenant','choose-mediation','secure-republican-concession','secure-monarchist-concession','settle-camp'])vastos.act(step);
           refreshJournal();clearTimeout(toastTimer);$('toast').classList.remove('visible');
@@ -9514,9 +9486,10 @@ function init() {
           player.group.rotation.y=Math.PI+yaw;reviewTarget=new THREE.Vector3(forestView.x,world.heightAt(forestView.x,forestView.z)+1.1,forestView.z);
           forestEcology.update(.001,elapsed,player.group.position,true);reviewFrozen=true;settleCamera();
         }
-        if(view==='drent-wildlife-west'||view==='drent-wildlife-north'){
+        if(['drent-wildlife-west','drent-wildlife-north','suval-wildlife-north','suval-wildlife-middle','suval-wildlife-south'].includes(view)){
           questStage=QUEST_DONE;combat.finishPractice();reviewFrozen=true;player.group.visible=false;
-          const id=view.endsWith('west')?'drent-woods-6-105-1':'drent-woods-10-103-1';
+          const id=({'drent-wildlife-west':'drent-woods-6-105-1','drent-wildlife-north':'drent-woods-10-103-1',
+            'suval-wildlife-north':'suval-country-6-113-1','suval-wildlife-middle':'suval-country-6-116-1','suval-wildlife-south':'suval-country-4-119-1'})[view];
           const animal=westLife.state().creatures.find(a=>a.id===id);
           if(animal){
             player.group.position.set(animal.x+5,world.heightAt(animal.x+5,animal.z+5),animal.z+5);

@@ -79,16 +79,16 @@ test('every id on the list is somebody the world actually places', async () => {
 });
 
 
-test('the winery retains exactly ROB, MAT and KAT, while Katy remains elsewhere and the old vine keeper is retired',()=>{
+test('the winery retains exactly Rob, MAT and KAT, while Katy remains elsewhere and the old vine keeper is retired',()=>{
   const winery=[VINTNER,CELLAR_HAND,WINEMAKER];
-  assert.deepEqual(winery.map(npc=>[npc.id,npc.name]),[['vintner','ROB'],['cellar-hand','MAT'],['winemaker','KAT']]);
+  assert.deepEqual(winery.map(npc=>[npc.id,npc.name]),[['vintner','Rob'],['cellar-hand','MAT'],['winemaker','KAT']]);
   assert.deepEqual(Object.keys(WINERY_STANDS).sort(),winery.map(npc=>npc.id).sort());
   assert.deepEqual(trimCast([...winery,IMANI],{trimmed:true}),winery);
   assert.equal(keepsNpc(IMANI,{trimmed:true}),false);
   assert.equal(keepsNpc(KATY,{trimmed:true}),true,'Katy remains a requested character at Port Calos');
 });
 
-test('KAT keeps her original hair while ROB and MAT render their requested cropped colors',async()=>{
+test('KAT keeps her original hair while Rob and MAT render their requested cropped colors',async()=>{
   const {createCharacter}=await sourceModule('../src/characters.js');
   const make=npc=>createCharacter({role:npc.modelRole,tunic:npc.color,skin:npc.skin,look:npc.look});
   const hasColor=(group,hex)=>{
@@ -105,7 +105,7 @@ test('KAT keeps her original hair while ROB and MAT render their requested cropp
   assert.ok(hasColor(kat.group.getObjectByName('Head'),0x53381f),'KAT keeps brown hair');
   for(const [npc,hairColor,skinColor]of[[VINTNER,0x999a94,0xc79a74],[CELLAR_HAND,0x1d1815,0x895b3c]]){
     const actor=make(npc),head=actor.group.getObjectByName('Head');
-    assert.ok(actor.group.getObjectByName('mercenary-hair-cropped'),`${npc.name} has cropped hair`);
+    assert.ok(actor.group.getObjectByName(`mercenary-hair-${npc.look.hairStyle}`),`${npc.name} has cropped hair`);
     assert.equal(actor.group.getObjectByName('Kat’s hair'),undefined,`${npc.name} does not inherit KAT's hair`);
     assert.ok(hasColor(head,hairColor),`${npc.name} renders the requested hair color`);
     assert.ok(hasColor(head,skinColor),`${npc.name} renders the requested skin tone`);
