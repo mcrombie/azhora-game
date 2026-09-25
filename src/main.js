@@ -5,7 +5,7 @@ import { createSkillsBrowser } from './skills-browser.js';
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole, BUCKLER_NAME } from './characters.js';
-import { markerFor, markerGrade } from './quest-markers.js';
+import { markerFor, markerGrade, magicTeacherIds } from './quest-markers.js';
 import { createCombat, MAX_ALLIES } from './combat.js';
 /** Held, not pressed: the one new verb melee gets (docs/combat-brief.md, phase 4). */
 const GUARD_KEY='KeyV';
@@ -226,13 +226,13 @@ import { moveCharacter, canStand, canSwim, WATERLINE, advanceQuest, questSteps, 
 import { questLive } from './quest-slate.js';
 import { BEN, SPIDER, SPIDER_DEN, SPIDER_QUEST, createSpiderQuest } from './spider-quest.js';
 import { benGuideTarget, restoreBenGuide, BEN_GUIDE_START } from './ben-guide.js';
-import { SPELLS } from './sorcery.js';
+import { SPELLS, SPELL_IDS } from './sorcery.js';
 import { createMagic } from './magic.js';
 import { createMagicView } from './magic-view.js';
 import { createMagicUI } from './magic-ui.js';
 import { createRoadAmbush, AMBUSH, AMBUSH_REBELS, PARTIES, ambushPartiesForRoster, bodyPlace } from './road-ambush.js';
 import { createRoadAmbushHost } from './road-ambush-host.js';
-import { createRoadAmbushWatch } from './road-ambush-watch.js';
+import { createRoadAmbushWatch, createAmbushCamouflage } from './road-ambush-watch.js';
 import { meleeContacts as ambushMeleeContacts } from './melee-contact.js';
 import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
 import { BODY, bodyWorld, stepAround, stepToward, lendFacing } from './bodies.js';
@@ -3089,7 +3089,7 @@ function init() {
     }});
   cagneyHost=createCagneyHost({quest:cagneyQuest,npc:npcById.get(CAGNEY.id),world,combat,player,crime,corpses:corpseHost,toast,
     refresh:refreshQuest,save:()=>saveRoad(false),openDialogue,closeDialogue,focus:selectQuest,
-    makeAmbusher:spec=>{const actor=createCharacter({...spec.model,armed:true});actor.group.name=spec.id;setShadowCasting(actor,false);scene.add(actor.group);return actor;},
+    makeAmbusher:spec=>{const actor=createCharacter({...spec.model,armed:true});actor.group.name=spec.id;actor.ambushCover=createAmbushCamouflage(actor,CAGNAPPERS.findIndex(e=>e.id===spec.id));setShadowCasting(actor,false);scene.add(actor.group);return actor;},
     reward:coins=>{inventory.add(COPPER_ITEM,coins);inventory.refresh();toast(`${coins} copper received. Cagney is home.`,CAGNEY_QUEST.title.toUpperCase());}});
   const magicView=createMagicView({scene,magic});
   const magicUI=createMagicUI({container:document.body,magic,onCast:castSpell,onSelect:()=>saveRoad(false)});
@@ -6297,20 +6297,22 @@ function init() {
       if(mode==='playing'&&!reviewFrozen) {
         const before=player.group.position.clone();
         const {forward,side}=living.recall().status==='passenger'?{forward:0,side:0}:autopilot.active?autopilot.move:getMovementInput(keys),magnitude=Math.hypot(forward,side);
+        // Escort inputs carry their steering basis so a gently trailing camera cannot bend the route.
+        const movementYaw=autopilot.active&&Number.isFinite(autopilot.move.basisYaw)?autopilot.move.basisYaw:yaw;
         const p=combat.state.player;
         const guardKey=living.recall().status!=='passenger'&&(autopilot.active?autopilot.guard:keys.has(GUARD_KEY));
         const shieldFacing=guardKey&&hasCarriedShield();
         if(riding.mounted&&combat.state.phase==='active')stepDown(true);
         if(riding.mounted){
           const canter=!!(autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')));
-          if(magnitude>0){const wx=-Math.sin(yaw)*forward+Math.cos(yaw)*side,wz=-Math.cos(yaw)*forward-Math.sin(yaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,playerWorld,RIDE.radius);}
+          if(magnitude>0){const wx=-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side,wz=-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,playerWorld,RIDE.radius);}
           player.group.rotation.y=mountHeading;p.yaw=mountHeading;
         } else if(magnitude>0) {
           // A swimmer goes at his own pace, and running is not one of the things he can do.
           const swimLevel=skills.level(SWIMMING_SKILL)||1;
           const speed=inWater?swimSpeed(swimLevel)*combat.movementScale()
             :(drent.sneaking?4.2*drent.speedMultiplier:((autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))?7.2:4.2))*combat.movementScale();
-          const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt,dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt;
+          const dx=(-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side)*speed*dt,dz=(-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side)*speed*dt;
           // On foot the waterline is not a wall: `swimming:true` is what lets him walk in at all,
           // and it must not be `inWater`, which only turns true once he is already wet - a closed
           // loop that kept the sea shut to anybody who had not been warped into it. A rider is in
@@ -6609,7 +6611,7 @@ function init() {
       updateGlunWood(dt);
       updateFishingLessons(dt);
       const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
-      const markerView={escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
+      const markerView={magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:availableSkillTeachers(),drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
         // Chip's copper, which is on whenever his bridge is down and is nobody's step.
@@ -7169,6 +7171,7 @@ function init() {
           position:()=>({x:player.group.position.x,z:player.group.position.z}),person:()=>questPilotPerson(CAGNEY.id),
           mode:()=>mode,pilot:()=>({enabled:autopilot.active,id:autopilot.id,intent:autopilot.intent,stopReason:autopilot.stopReason}),
           quest:()=>cagneyQuest.snapshot(),combat,inventory,checkpointCopy:()=>structuredClone(checkpoint.read().data),
+          motion:()=>({time:playSeconds,position:{x:player.group.position.x,y:player.group.position.y,z:player.group.position.z},guide:questPilotPerson(CAGNEY.id),camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},focus:{x:cameraFocus.x,y:cameraFocus.y,z:cameraFocus.z},input:{...autopilot.move}}),
           isTesting:()=>testingEnabled,tracked:()=>questTracker.selectedId,frameErrors:()=>frameErrors.view(),
           save:()=>{recoveryInfo={testing:testingEnabled,encounterId:null};return writeRoadCheckpoint(sessionCheckpoint,false);},
           reload:()=>{stopAutopilot();const ok=continueRoad(true);reviewFrozen=false;reviewTarget=null;return ok;},resume:startAutopilot,
@@ -7184,6 +7187,7 @@ function init() {
           getBenPosition:()=>{const p=npcById.get(BEN.id)?.combatPosition??npcById.get(BEN.id)?.actor.group.position;return p?{x:p.x,z:p.z}:null;},
           mode:()=>mode,pilot:()=>({enabled:autopilot.active,id:autopilot.id,intent:autopilot.intent,guard:autopilot.guard,stopReason:autopilot.stopReason}),
           spiderQuest,combat,magic,skills,weapons,inventory,nextSpeech,checkpointCopy:()=>structuredClone(checkpoint.read().data),
+          motion:()=>({time:playSeconds,position:{x:player.group.position.x,y:player.group.position.y,z:player.group.position.z},guide:questPilotPerson(BEN.id),camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z},focus:{x:cameraFocus.x,y:cameraFocus.y,z:cameraFocus.z},input:{...autopilot.move}}),
           isTesting:()=>testingEnabled,tracked:()=>questTracker.selectedId,frameErrors:()=>frameErrors.view()
         });
       },
@@ -7605,7 +7609,7 @@ function init() {
       // arrival sequence and anything else that runs after it can ask for it (PLAYABLE, companyFor).
       playerCharacter:()=>playerId,chooseCharacter:id=>characterSelect.select(id),
       // Where the camera is and what it is doing: main.cjs --review-views prints it beside each picture.
-      camera:()=>({position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),
+      camera:()=>({cagnappers:{stage:cagneyQuest.state.stage,health:combat.state.encounterId===CAGNEY_AMBUSH.id?combat.state.enemies.map(e=>({id:e.id,hp:e.hp,maxHp:e.maxHp})):[]},magicTeachers:[BEN,LIZ,TROY].map(({id})=>({id,visible:!!npcById.get(id)?.marker.visible,kind:npcById.get(id)?.markerKind})),position:camera.position.toArray().map(v=>+v.toFixed(2)),focus:cameraFocus.toArray().map(v=>+v.toFixed(2)),yaw:+yaw.toFixed(2),pitch:+pitch.toFixed(2),distance:+distance.toFixed(2),
         // What the camera was given and what it actually got: the difference is whatever it was
         // pulled in against, and it is the difference that tells you the shot is wrong.
         stoodBackBy:+cameraPullIn(cameraFocus,distance,yaw).toFixed(2),mode,
@@ -8167,6 +8171,17 @@ function init() {
           }
           skillAnnouncements.clear();magicUI.update();updateHUD();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
         }
+        if(/^magic-teacher-(ben|liz|troy)(-learned)?$/.test(view)){
+          testTravel('village');stopAutopilot();closeDialogue();combat.revive();crime.restore();corpseHost.restore();questStage=QUEST_DONE;
+          spiderQuest.restore(createSpiderQuest().snapshot());catQuest.restore(createCatQuest().snapshot());murder.restore(createMurderQuest().snapshot());
+          magic.restore({version:1,learned:[],selected:null,focus:60,read:[]});
+          const key=view.split('-')[2],teacher={ben:BEN,liz:LIZ,troy:TROY}[key],spell={ben:'fireball',liz:'summon-bees',troy:'mindread'}[key];
+          testVisitTeacher(teacher,SPELLS[spell].name);reviewFrozen=true;player.group.visible=false;
+          const npc=npcById.get(teacher.id),at=npc.actor.group.position;
+          reviewTarget=new THREE.Vector3(at.x,at.y+1.8,at.z);yaw=npc.actor.group.rotation.y+.35;pitch=.18;distance=targetDistance=9;
+          if(view.endsWith('-learned'))magic.learn(spell,{announce:false});
+          skillAnnouncements.clear();refreshQuest();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
+        }
         if(['liz-hair','liz-hair-back','liz-hair-above','liz-hair-left','liz-hair-right','liz-reward','liz-lesson'].includes(view)){
           testVisitTeacher(LIZ,'Summon Bees');stopAutopilot();closeDialogue();combat.revive();reviewFrozen=true;player.group.visible=false;
           const npc=npcById.get(LIZ.id),at=npc.actor.group.position,face=npc.actor.group.rotation.y;
@@ -8185,12 +8200,25 @@ function init() {
           const p=world.npcPositions[MARK.id];player.group.position.set(p.x+1,world.heightAt(p.x+1,p.z+3),p.z+3);yaw=.3;pitch=.3;distance=targetDistance=7;settleCamera();
           if(view==='mark-lessons')conversation(npcById.get(MARK.id));return;
         }
+        if(view==='cagnappers-hidden'||view==='cagnappers-active'){
+          testTravel('village');stopAutopilot();closeDialogue();combat.revive();crime.restore();corpseHost.restore();questStage=QUEST_DONE;
+          cagneyQuest.restore(createCagneyQuest().snapshot());cagneyHost.restore();
+          const center=CAGNEY_AMBUSH.center,npc=npcById.get(CAGNEY.id),active=view==='cagnappers-active';
+          player.group.position.set(center.x+(active?15:29),world.heightAt(center.x+15,center.z),center.z);
+          npc.actor.group.position.set(center.x+9,world.heightAt(center.x+9,center.z),center.z);
+          if(active){cagneyQuest.accept();cagneyHost.frame(3,true);}
+          reviewFrozen=true;player.group.visible=active;reviewTarget=new THREE.Vector3(center.x+2,world.heightAt(center.x,center.z)+1.4,center.z);
+          yaw=Math.PI/2+.1;pitch=.24;distance=targetDistance=active?23:32;
+          refreshQuest();skillAnnouncements.clear();clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();return;
+        }
         if(view==='cagney'||view==='cagney-home'||view==='liz-apiary'){
           testTravel('village');stopAutopilot();reviewFrozen=true;closeDialogue();
           const p=view==='liz-apiary'?{x:-36,z:-182}:view==='cagney-home'?CAGNEY_HOME:CAGNEY_START;
           player.group.position.set(p.x+3,world.heightAt(p.x+3,p.z+6),p.z+6);player.group.visible=false;
-          reviewTarget=new THREE.Vector3(p.x,world.heightAt(p.x,p.z)+(view==='liz-apiary'?2:view==='cagney-home'?11:1.1),p.z);
-          yaw=view==='liz-apiary'?.65:view==='cagney-home'?Math.PI:(npcById.get(CAGNEY.id).actor.group.rotation.y+.3);pitch=view==='liz-apiary'?.62:view==='cagney-home'?.5:.22;distance=targetDistance=view==='liz-apiary'?34:view==='cagney-home'?18:5.5;settleCamera();return;
+          reviewTarget=new THREE.Vector3(p.x,world.heightAt(p.x,p.z)+(view==='liz-apiary'?2:view==='cagney-home'?3:1.1),p.z);
+          yaw=view==='liz-apiary'?.65:view==='cagney-home'?Math.PI:(npcById.get(CAGNEY.id).actor.group.rotation.y+.3);pitch=view==='liz-apiary'?.62:view==='cagney-home'?.1:.22;distance=targetDistance=view==='liz-apiary'?34:view==='cagney-home'?5:5.5;
+          if(view==='cagney-home')reviewTarget.set(p.x+1.4,world.heightAt(p.x,p.z)+2,p.z+.5);
+          settleCamera();return;
         }
         if(view==='skill-combat'||view==='skill-cartography'){
           testTravel('village');stopAutopilot();reviewFrozen=true;skills.restore({version:1,skills:{},taught:[]});skillAnnouncements.clear();

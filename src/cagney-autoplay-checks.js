@@ -1,8 +1,10 @@
 import { CAGNEY_AMBUSH, CAGNEY_HOME } from './cagney-quest.js';
+import { createEscortMotionChecks } from './escort-motion-checks.js';
 
 /** Drives the public F8 button and watches real render frames, ordinary travel and combat. */
 export async function runCagneyAutoplayChecks(h) {
   const checks=[],samples=[],stages=new Set(),check=(ok,message)=>{if(!ok)fail(message);checks.push(message);};
+  const motion=createEscortMotionChecks();
   const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
   const gap=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
   const state=()=>({mode:h.mode(),pilot:h.pilot(),quest:h.quest(),position:h.position(),cagney:h.person(),
@@ -29,6 +31,7 @@ export async function runCagneyAutoplayChecks(h) {
     if(h.mode()==='defeated'||['dead','captured'].includes(h.quest().stage))fail('A member of the escort party fell');
     await frames();const now=h.position(),step=gap(last,now);last=now;travelled+=step;largestStep=Math.max(largestStep,step);
     const q=h.quest(),c=h.combat.state;stages.add(q.stage);
+    motion.observe(h.motion(),q.stage==='escorting'&&c.phase!=='active'&&h.mode()==='playing');
     if(['escorting','ambushed','home'].includes(q.stage)&&h.tracked()!=='cagney-escort')fail('The escort lost objective focus');
     if(c.phase==='active'){
       combatSeen=true;attackSeen ||= c.player.action==='attack';
@@ -43,7 +46,7 @@ export async function runCagneyAutoplayChecks(h) {
       check(h.quest().ambushCleared&&h.quest().enemies.every(hp=>hp===0)&&h.quest().hp===health,'Loading preserves the defeated cagnappers and Cagney health');
       check(gap(position,h.person())<1,'Loading keeps Cagney at her saved road position');
       h.resume();check(h.pilot().enabled&&h.pilot().id==='cagney','P resumes the selected escort after loading');
-      saveChecked=true;last=h.position();
+      saveChecked=true;last=h.position();motion.resetWindow();
     }
     if(performance.now()-lastReport>5000){lastReport=performance.now();samples.push({seconds:Math.round((lastReport-start)/1000),stage:q.stage,
       waypoint:q.walk.waypoint,position:now,cagney:h.person(),hp:c.player.hp,intent:h.pilot().intent});
@@ -56,10 +59,15 @@ export async function runCagneyAutoplayChecks(h) {
   check(saveChecked,'A mid-escort save and load were exercised');
   check(travelled>250&&gap(h.person(),CAGNEY_HOME)<2.6,'The traveler and Cagney walk the western road to her actual house');
   check(largestStep<4,'Autoplay does not teleport during the quest');
+  const following=motion.result();
+  check(following.seconds>8,'Smooth-follow checks observed sustained live walking behind Cagney');
+  check(following.stopRate<.6&&following.inputStopRate<.6&&following.speedJumpRate<.8,
+    `Following Cagney avoids repeated start-stop movement (${JSON.stringify(following)})`);
+  check(following.cameraReversalRate<1.5,'Following Cagney avoids repeated fast camera direction reversals');
   check(h.inventory.count('copper-piece')===initialMoney+45,'The homecoming pays exactly 45 copper');
   check(h.mode()==='playing'&&h.combat.state.player.hp>0,'The completed escort returns ordinary player control');
   check(JSON.stringify(h.checkpointCopy())===savedBefore,'Autoplay preserves the normal saved adventure');
-  const completion={seconds:Math.round((performance.now()-start)/1000),travelled,largestStep,stages:[...stages],position:h.position(),cagney:h.person(),samples};
+  const completion={seconds:Math.round((performance.now()-start)/1000),travelled,largestStep,stages:[...stages],position:h.position(),cagney:h.person(),following,samples};
   await startFromMenu();
   check(!h.quest().ambushCleared&&h.quest().enemies.every(hp=>hp===48),'A repeated playtest resets the completed encounter');
   await until(()=>h.quest().stage==='escorting'&&h.mode()==='playing','The second run did not accept the escort',60);

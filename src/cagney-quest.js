@@ -16,7 +16,7 @@ export const CAGNEY_ROUTE = Object.freeze([
 ].map(p => point(p.x, p.z)));
 export const CAGNEY_QUEST = Object.freeze({ id: 'cagney-escort', title: 'Cagney and the Cagnappers', reward: 45, pace: 2.8 });
 export const CAGNAPPERS = Object.freeze([
-  { id: 'cagnapper-1', x: -946, z: 196 }, { id: 'cagnapper-2', x: -943, z: 206 }, { id: 'cagnapper-3', x: -941, z: 210 },
+  { id: 'cagnapper-1', x: -946, z: 195 }, { id: 'cagnapper-2', x: -937, z: 194 }, { id: 'cagnapper-3', x: -943, z: 210 },
 ].map((p, i) => Object.freeze({ ...p, name: 'Cagnapper', kind: 'rebel', hp: 48,
   model: Object.freeze({ role: 'mercenary', tunic: [0x5d6548, 0x6b5945, 0x4f6259][i], look: Object.freeze({ hat: false }) }) })));
 export const CAGNEY_AMBUSH = Object.freeze({

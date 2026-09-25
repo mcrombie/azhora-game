@@ -1,13 +1,11 @@
-# Magic teacher quest markers — open design
+# Magic teacher quest markers
 
-Ben, Liz, and Troy teach sorcery after a quest. The user wants an overhead quest marker but has not chosen whether it should share the existing green lesson marker. No new marker style is approved yet.
+The chosen direction is a **violet open book with a bright four-point sparkle** (25 September 2026). It identifies Ben, Liz, and Troy as sorcery teachers whose lessons are earned through quests.
 
-Proposed directions:
+- The book faces the camera, with pale page lines and a dark outline for contrast against foliage and buildings. The sparkle distinguishes magic by shape as well as color.
+- It appears while the teacher still offers a quest or an obtainable spell lesson. It hides during combat and after the lesson is learned or permanently unavailable. Dead or hidden NPCs retain the usual marker suppression.
+- Ben's coin reward ends his offer. Liz and Troy can still offer their earned lesson after paying money, so their markers remain until that lesson is learned.
+- Main-story gold takes priority if a teacher is also a current main-story destination. Ordinary skill teachers keep their green book.
+- Quest tiers and journal tracking remain gold, silver, or copper; violet identifies the teaching opportunity, not a new quest tier.
 
-- **Quest-tier diamond with a small green book inset:** preserves each quest tier (including Liz’s copper tier) while making the potential skill reward visible. Recommended starting point.
-- **Violet book with a sparkle:** emphasizes magic, but introduces an additional marker color that needs explanation.
-- **Green book with a small quest diamond:** stays close to ordinary teachers while showing that a quest is required.
-
-Use shape as well as color. A completed prerequisite could give the book a gentle glow to distinguish a ready lesson from an available quest. Avoid constant busy animation.
-
-Liz’s cottage, apiary, and flower garden are independent of this decision and can be implemented immediately.
+Native review views: `magic-teacher-ben`, `magic-teacher-liz`, `magic-teacher-troy`; add `-learned` to check the marker after learning.

@@ -66,6 +66,7 @@ import { createWestScenery } from './west-regions-scenery.js';
 import { DRENT_SITES, DRENT_NPC_POSITIONS, DRENT_LOCAL_PATHS, drentFeatureClear } from './drent-sites.js';
 import { createDrentCivilWarScenery } from './drent-scenery.js';
 import { createRoadAmbushScenery } from './road-ambush-scenery.js';
+import { CAGNEY_AMBUSH, CAGNAPPERS } from './cagney-quest.js';
 import { createRoadSurfaceMask } from './path-junctions.js';
 
 /**
@@ -1565,6 +1566,8 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   const regionalPlaces = createRegionalPlaces(world, { heightAt: groundHeight, colliders });
   const drentCivilWar = createDrentCivilWarScenery({ root: world, material, box, mesh, post, pebble, groundHeight, colliders, wornPatch, roofGeometry, movingGroups });
   createRoadAmbushScenery({ root: world, groundHeight, roadDistance, colliders });
+  createRoadAmbushScenery({ root: world, groundHeight, roadDistance, colliders, name: 'Cagnapper ambush undergrowth',
+    center: CAGNEY_AMBUSH.center, forward: { dx: -1, dz: 0 }, ambushers: CAGNAPPERS, colliderKind: 'cagnapper-sapling' });
 
   const reedMat = material('#758249'), reedHead = material('#705637');
   for (let i = 0; i < 25; i++) {

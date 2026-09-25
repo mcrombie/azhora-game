@@ -451,6 +451,68 @@ export function createElagosScenery({ parent, heightAt, colliders, signs, roadDi
   }
   AMBRON_BUILDINGS.forEach(houseOf);
 
+  // Cagney's house keeps the clerks' old stone shell, with her own painted entry,
+  // ribbon-coloured shutters and flowers. All additions leave the escort's approach open.
+  {
+    const home = AMBRON_BUILDINGS.find(entry => entry.id === 'clerks-house');
+    const front = home.b - home.d / 2, base = cityGround(home.a) - .3, spot = P(home.a, front);
+    const detail = createSceneryBuilder("Cagney's painted doorway and window boxes");
+    const rose = '#b56f83', roseLight = '#d19aab', blue = '#728f98';
+    detail.frame(spot.x, base, spot.z, 0, () => {
+      detail.block(blue, 0, 1.1, -.13, 1.52, 2.4, .12);
+      for (const x of [-.87, .87]) detail.block('#ded3bb', x, 1.03, -.17, .14, 2.56, .18);
+      detail.block('#ded3bb', 0, 3.54, -.17, 1.88, .16, .18);
+      for (const x of [-.38, .38]) detail.block('#8eacb1', x, 1.43, -.20, .50, 1.63, .04);
+      detail.rock(BRONZE, .57, 2.23, -.24, .075, .075, .05);
+      // A modest rain hood and two diagonal brackets, well above a person's head.
+      detail.roof('#6f6371', 0, 3.90, -.54, 2.5, 1.25, .45, 0, '#8a7581');
+      for (const side of [-1, 1]) detail.beam(WOOD_LIGHT, [side * 1.03, 3.32, -.12], [side * 1.03, 3.9, -1.03], .09);
+      // Paired shutters frame the existing upper windows; the boxes tuck against the wall.
+      for (const x of [-2.5, 2.5]) {
+        for (const side of [-1, 1]) {
+          detail.block(rose, x + side * .69, 4.43, -.15, .44, 1.26, .16);
+          for (const h of [4.64, 5.27]) detail.box(roseLight, x + side * .69, h, -.245, .39, .055, .035);
+        }
+        detail.block(WOOD_DARK, x, 4.04, -.37, 1.65, .32, .59);
+        detail.block(rose, x, 4.03, -.70, 1.73, .36, .08);
+        for (let f = 0; f < 7; f++) {
+          const fx = x - .65 + f * .22, fy = 4.55 + (f % 3) * .07;
+          detail.beam(LEAF, [fx, 4.35, -.42], [fx, fy, -.43], .028);
+          detail.rock(f % 2 ? '#ecd2b9' : roseLight, fx, fy, -.44, .115, .10, .11, f);
+        }
+      }
+    });
+    metrics.vertices += detail.vertexCount; detail.finish(district);
+
+    // A real letterbox stands beside the entry, never across the three-metre walk in.
+    const mail = P(home.a + 2.8, front - 1.55), ground = y(mail.x, mail.z);
+    const box = createSceneryBuilder('Cagney mailbox');
+    box.frame(mail.x, ground, mail.z, 0, () => {
+      box.block(WOOD_DARK, 0, 0, 0, .15, 1.19, .15);
+      box.box(WOOD_LIGHT, 0, 1.13, 0, .91, .10, .57);
+      box.block(blue, 0, 1.17, 0, .80, .48, .50);
+      box.block('#263431', 0, 1.52, -.257, .47, .038, .018);
+      box.roof(rose, 0, 1.66, 0, .97, .65, .19, 0, roseLight);
+      box.rock(BRONZE, .30, 1.31, -.27, .035, .055, .025);
+    });
+    metrics.vertices += box.vertexCount; box.finish(district);
+    push({ x: mail.x, z: mail.z, r: .49, kind: 'cagney-mailbox' });
+    metrics.props++;
+    // Lettering is only a small painted plate, not a destination sign or quest marker.
+    let nameplate = new THREE.MeshStandardMaterial({ color: '#ead9bd', roughness: .95 });
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 64;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ead9bd'; context.fillRect(0, 0, 256, 64);
+      context.fillStyle = '#473c3a'; context.font = 'bold 38px Georgia'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('Cagney', 128, 33);
+      const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+      nameplate.dispose(); nameplate = new THREE.MeshStandardMaterial({ map: texture, roughness: .95 });
+    }
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(.57, .15), nameplate);
+    label.name = 'Cagney mailbox nameplate'; label.rotation.y = Math.PI;
+    label.position.set(mail.x, ground + 1.35, mail.z - .269); district.add(label);
+  }
+
   // The Lord Marshal's Seat: a colonnade and a standard over the plaza.
   {
     const seat = AMBRON_BUILDINGS.find(entry => entry.id === 'legate-seat');

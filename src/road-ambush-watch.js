@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createCharacter } from './characters.js';
 
 /** Layered foliage conceals the uniform while leaving a face and boots to notice. */
-function camouflage(actor, index) {
+export function createAmbushCamouflage(actor, index) {
   const body = actor.group.getObjectByName('Weight and hips') ?? actor.group;
   const chest = actor.group.getObjectByName('Chest') ?? body;
   const head = actor.group.getObjectByName('Head') ?? body;
@@ -105,7 +105,7 @@ export function createRoadAmbushWatch({ scene, world, definitions = [] }) {
     const actor = createCharacter({ ...(record?.model ?? definition.model), armed: true });
     actor.group.name = `Roadside ambusher: ${id}`; actor.group.userData.roadAmbushId = id;
     actor.group.visible = false; scene.add(actor.group);
-    const item = { actor, cover: camouflage(actor, definition.index), mode: 'watching', released: false, prior: null };
+    const item = { actor, cover: createAmbushCamouflage(actor, definition.index), mode: 'watching', released: false, prior: null };
     entries.set(id, item); return item;
   }
   for (const id of specs.keys()) create(id);

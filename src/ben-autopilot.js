@@ -1,5 +1,7 @@
 import { clearLine, freeDirection, moveInput } from './autopilot.js';
 import { BEN, SPIDER_DEN } from './spider-quest.js';
+import { createEscortFollower } from './escort-autopilot-follow.js';
+import { BEN_GUIDE_PACE } from './ben-guide.js';
 
 const gap=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const facing=(a,b)=>Math.atan2(a.x-b.x,a.z-b.z);
@@ -63,7 +65,8 @@ export function createBenAutopilot({world,read,act={},options={}}={}){
   const config={...defaults,...options},listeners=new Set();
   let active=false,intent='',stopReason='',move=still(),yaw=null,guard=false;
   let elapsed=0,idle=0,dialogueClock=0,interactClock=0,swingClock=0,eatClock=0,stuck=0,detour=0,side=1;
-  let lastPosition=null,lastProgress='',lastBen=null,breadcrumbs=[];
+  let lastPosition=null,lastProgress='';
+  const follower=createEscortFollower({world,distance:config.followDistance,guideSpeed:BEN_GUIDE_PACE});
   const notify=event=>{for(const listener of listeners)listener(event);};
   function stop(reason='Ben autoplay stopped. You have control.',completed=false){
     if(!active)return false;
@@ -74,7 +77,7 @@ export function createBenAutopilot({world,read,act={},options={}}={}){
     if(active)return false;
     active=true;intent='Speaking with Ben';stopReason='';move=still();yaw=null;guard=false;
     elapsed=idle=dialogueClock=interactClock=swingClock=eatClock=stuck=detour=0;side=1;
-    lastPosition=lastBen=null;lastProgress='';breadcrumbs=[];
+    lastPosition=null;lastProgress='';follower.reset();
     notify({type:'start',questId:'ben-spider'});return true;
   }
   function walk(snapshot,target,radius,dt){
@@ -135,17 +138,13 @@ export function createBenAutopilot({world,read,act={},options={}}={}){
           intent='Eating a pawpaw';actions.push({type:'eat',id:'pawpaw'});eatClock=0;
         }else for(const action of command.actions){
           if(action.type!=='attack'||swingClock>=config.swingEvery){actions.push(action);if(action.type==='attack')swingClock=0;}}
-        breadcrumbs=[];lastBen=null;
+        follower.reset();
       }else if(!point(snapshot.ben)||snapshot.ben.available===false){
         stop('Ben is not available to continue. You have control.');return null;
       }else if(stage==='walking'){
         goal='follow';intent='Following Ben to the thorns';
-        const ben=snapshot.ben;
-        if(!lastBen||gap(ben,lastBen)>.65){breadcrumbs.push({x:ben.x,z:ben.z});lastBen={x:ben.x,z:ben.z};}
-        while(breadcrumbs.length>1&&gap(snapshot.position,breadcrumbs[0])<1.2)breadcrumbs.shift();
-        if(gap(snapshot.position,ben)>config.followDistance)
-          walk(snapshot,breadcrumbs.length>1?breadcrumbs[0]:ben,breadcrumbs.length>1?.75:config.followDistance,dt);
-        else intent='Keeping pace with Ben';
+        ({move,yaw}=follower.step(snapshot.position,snapshot.ben,dt));
+        if(gap(snapshot.position,snapshot.ben)<=config.followDistance+.2)intent='Keeping pace with Ben';
       }else if(['unmet','asked','killed'].includes(stage)){
         intent=stage==='killed'?'Returning to Ben for your reward':'Speaking with Ben';
         const ready=snapshot.interaction?.npcId===BEN.id;

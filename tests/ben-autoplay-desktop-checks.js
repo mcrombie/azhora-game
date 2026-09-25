@@ -1,4 +1,5 @@
 import { BEN, SPIDER } from '../src/spider-quest.js';
+import { createEscortMotionChecks } from '../src/escort-motion-checks.js';
 
 /** Starts the same F8 tool as the player, then only observes normal live frames.
  * The Electron caller supplies trusted native input after the final restart to
@@ -7,6 +8,7 @@ import { BEN, SPIDER } from '../src/spider-quest.js';
 export async function runBenAutoplayDesktopChecks(h) {
   const checks=[];
   const samples=[];
+  const motion=createEscortMotionChecks();
   const check=(value,message)=>{if(!value)throw new Error(`Ben autoplay: ${message}`);checks.push(message);};
   const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
   const gap=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -50,6 +52,7 @@ export async function runBenAutoplayDesktopChecks(h) {
       focusSeen=true;
     }
     const combat=h.combat.state,spider=combat.enemies.find(e=>e.id===SPIDER.id);
+    motion.observe(h.motion(),h.mode()==='playing'&&h.spiderQuest.state.stage==='walking'&&combat.phase!=='active');
     if(combat.phase==='active'){
       combatSeen=true;spellSeen ||= (combat.fireballs??[]).some(p=>p.owner===BEN.id||p.sourceId===BEN.id||p.id.includes(BEN.id));
       playerAttackSeen ||= combat.player.action==='attack';
@@ -68,6 +71,11 @@ export async function runBenAutoplayDesktopChecks(h) {
   check(focusSeen,'Ben’s objective stays focused throughout the escort and fight');
   check(travelled>80&&gap(initialBen,h.getBenPosition())>60,'The traveler and Ben walk the actual route to the den');
   check(largestStep<4,'The pilot follows the route without mid-quest teleporting');
+  const following=motion.result();
+  check(following.seconds>8,'Smooth-follow checks observed sustained live walking behind Ben');
+  check(following.stopRate<.6&&following.inputStopRate<.6&&following.speedJumpRate<.8,
+    `Following Ben avoids repeated start-stop movement (${JSON.stringify(following)})`);
+  check(following.cameraReversalRate<1.5,'Following Ben avoids repeated fast camera direction reversals');
   check(combatSeen&&enemyLowestHp<enemyInitialHp&&h.spiderQuest.state.spiderDown,'The normal combat system defeats the spider');
   check(spellSeen&&playerAttackSeen&&playerDefenceSeen,'Ben casts fireballs while the traveler attacks and defends');
   check(h.spiderQuest.state.stage==='killed'&&!h.magic.known('fireball'),'Autoplay leaves the reward unclaimed for the player');
@@ -81,7 +89,7 @@ export async function runBenAutoplayDesktopChecks(h) {
   check(h.mode()==='playing','The completed quest leaves normal player control available');
   check(h.isTesting()&&JSON.stringify(h.checkpointCopy())===savedBefore,'Completing the test leaves the saved adventure unchanged');
   const completion={seconds:Math.round((performance.now()-start)/1000),travelled,largestStep,stages:[...stages],
-    position:h.getPosition(),ben:h.getBenPosition(),hp:h.combat.state.player.hp,fireball:h.magic.known('fireball'),samples};
+    position:h.getPosition(),ben:h.getBenPosition(),hp:h.combat.state.player.hp,fireball:h.magic.known('fireball'),following,samples};
   await h.capture?.('ben-autoplay-completed');
 
   // Repeat the actual menu action after completion. Leave the second run live

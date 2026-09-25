@@ -2,13 +2,15 @@ import { AMBUSH, AMBUSH_REBELS } from './road-ambush.js';
 import { createSceneryBuilder } from './scenery-builder.js';
 
 /** Permanent undergrowth around the hiding places, independent of the actors' lives. */
-export function createRoadAmbushScenery({ root, groundHeight, roadDistance, colliders }) {
-  const build = createSceneryBuilder('Greenway ambush undergrowth');
+export function createRoadAmbushScenery({ root, groundHeight, roadDistance, colliders,
+  name = 'Greenway ambush undergrowth', center = AMBUSH.point, forward = AMBUSH.forward,
+  ambushers = AMBUSH_REBELS, colliderKind = 'ambush-sapling' }) {
+  const build = createSceneryBuilder(name);
   const leaves = [0x596d3e, 0x738348, 0x4c633b, 0x859454], bark = 0x65583c;
-  const f = AMBUSH.forward;
-  for (const [index, rebel] of AMBUSH_REBELS.entries()) {
-    const home = rebel.home;
-    const side = Math.sign((home.x - AMBUSH.point.x) * f.dz - (home.z - AMBUSH.point.z) * f.dx);
+  const f = forward;
+  for (const [index, rebel] of ambushers.entries()) {
+    const home = rebel.home ?? rebel;
+    const side = Math.sign((home.x - center.x) * f.dz - (home.z - center.z) * f.dx);
     const at = (along, out) => ({
       x: home.x + f.dx * along + f.dz * out * side,
       z: home.z + f.dz * along - f.dx * out * side,
@@ -42,7 +44,7 @@ export function createRoadAmbushScenery({ root, groundHeight, roadDistance, coll
         build.beam(bark, [p.x, y + height * .40, p.z], [x, cy, z], .045);
         build.rock(leaves[(branch + index + i) % leaves.length], x, cy, z, .66, height * .24, .58, a);
       }
-      colliders.push({ ...p, r: .10, height, kind: 'ambush-sapling' });
+      colliders.push({ ...p, r: .10, height, kind: colliderKind });
     }
   }
   const mesh = build.finish(root);

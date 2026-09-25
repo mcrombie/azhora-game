@@ -7,7 +7,7 @@ import { bodyWorld, stepToward, BODY } from '../src/bodies.js';
 import { canStand } from '../src/game-state.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const scene = new THREE.Scene(), world = createWorld(scene);
 
 test('Cagney can walk from the prophet along the actual west road and through Ambron to her front door', () => {
   const position = { ...CAGNEY_START }, nav = bodyWorld(world).moving(position, BODY.person);
@@ -44,4 +44,26 @@ test('Cagney keeps her long hair, glasses and shirt ribbons on the ordinary civi
   actor.group.traverse(object => {
     assert.ok([...object.position.toArray(), ...object.scale.toArray()].every(Number.isFinite));
   });
+});
+
+
+test('cagnappers wait off the road in permanent shrubs and can step out of their cover',()=>{
+  assert.ok(scene.getObjectByName('Cagnapper ambush undergrowth'));
+  assert.equal(world.colliders.filter(c=>c.kind==='cagnapper-sapling').length,6);
+  for(const foe of CAGNAPPERS){
+    assert.ok(Math.abs(foe.z-CAGNEY_AMBUSH.center.z)>6,'Ambushers are off the road');
+    const position={x:foe.x,z:foe.z},nav=bodyWorld(world).moving(position,BODY.person);
+    for(let n=0;n<300&&Math.hypot(position.x-CAGNEY_AMBUSH.center.x,position.z-CAGNEY_AMBUSH.center.z)>.3;n++)
+      stepToward(position,CAGNEY_AMBUSH.center,2.8/30,nav,BODY.person);
+    assert.ok(Math.hypot(position.x-CAGNEY_AMBUSH.center.x,position.z-CAGNEY_AMBUSH.center.z)<.3,'Cover leaves an exit to the road');
+  }
+});
+
+test('Cagney has a named mailbox beside her distinctive doorway without blocking the escort',()=>{
+  assert.ok(scene.getObjectByName("Cagney's painted doorway and window boxes"));
+  assert.ok(scene.getObjectByName('Cagney mailbox'));
+  assert.ok(scene.getObjectByName('Cagney mailbox nameplate'));
+  const box=world.colliders.find(c=>c.kind==='cagney-mailbox');assert.ok(box);
+  assert.ok(Math.hypot(box.x-CAGNEY_HOME.x,box.z-CAGNEY_HOME.z)>2);
+  assert.ok(canStand(CAGNEY_HOME.x,CAGNEY_HOME.z,world,BODY.person));
 });

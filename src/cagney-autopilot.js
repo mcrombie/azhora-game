@@ -1,17 +1,19 @@
 import { clearLine, freeDirection, moveInput } from './autopilot.js';
 import { CAGNEY, CAGNEY_QUEST, CAGNEY_AMBUSH } from './cagney-quest.js';
+import { createEscortFollower } from './escort-autopilot-follow.js';
 
 const gap=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),still=()=>({forward:0,side:0,run:false});
 /** Input-only escort playtest: the single initial teleport belongs to Testing Tools. */
 export function createCagneyAutopilot({world,read,act={},options={}}={}) {
   const listeners=new Set(),config={dialoguePace:1.5,choicePace:1,timeout:1800,...options};
   let active=false,intent='',reason='',move=still(),yaw=null,guard=false,clock=0,speech=0,touch=0,swing=0,eat=0,idle=0;
-  let last=null,progress='',trail=[],lastGuide=null,stuck=0,side=1,detour=0;
+  let last=null,progress='',stuck=0,side=1,detour=0;
+  const follower=createEscortFollower({world,guideSpeed:CAGNEY_QUEST.pace});
   const notify=event=>{for(const listener of listeners)listener(event);};
   function stop(text='Cagney autoplay stopped. You have control.',completed=false){
     if(!active)return false;active=false;reason=text;intent='';move=still();yaw=null;guard=false;notify({type:'stop',reason:text,completed,questId:CAGNEY_QUEST.id});return true;
   }
-  function start(){if(active)return false;active=true;reason='';intent='Speaking with Cagney';clock=speech=touch=swing=eat=idle=stuck=detour=0;trail=[];last=lastGuide=null;progress='';notify({type:'start',questId:CAGNEY_QUEST.id});return true;}
+  function start(){if(active)return false;active=true;reason='';intent='Speaking with Cagney';clock=speech=touch=swing=eat=idle=stuck=detour=0;follower.reset();last=null;progress='';notify({type:'start',questId:CAGNEY_QUEST.id});return true;}
   function walk(s,target,radius,dt){
     if(gap(s.position,target)<=radius)return;
     let d=freeDirection(s.position,target,world,side);
@@ -46,7 +48,7 @@ export function createCagneyAutopilot({world,read,act={},options={}}={}) {
       if(s.riding?.mounted){intent='Dismounting to escort Cagney';if(touch>.8){actions.push({type:'dismount'});touch=0;}}
       else if(c.phase==='active'){
         if(c.encounterId!==CAGNEY_AMBUSH.id){stop('Another fight interrupted the escort.');return null;}
-        intent='Protecting Cagney';trail=[];lastGuide=null;
+        intent='Protecting Cagney';follower.reset();
         const enemies=(c.enemies??[]).filter(e=>e.hp>0&&e.active!==false).sort((a,b)=>gap(a,s.position)-gap(b,s.position)),target=enemies[0];
         if(target){
           yaw=Math.atan2(s.position.x-target.x,s.position.z-target.z);
@@ -65,9 +67,7 @@ export function createCagneyAutopilot({world,read,act={},options={}}={}) {
       }else if(q.stage==='escorting'){
         intent=q.walk?.waiting?'Catching up to Cagney':'Walking with Cagney';
         const guide=s.cagney;if(!guide){stop('Cagney is unavailable.');return null;}
-        if(!lastGuide||gap(lastGuide,guide)>.6){trail.push({x:guide.x,z:guide.z});lastGuide={...guide};}
-        while(trail.length>1&&gap(s.position,trail[0])<1.2)trail.shift();
-        if(gap(s.position,guide)>3)walk(s,trail.length>1?trail[0]:guide,trail.length>1?.7:2.7,dt);
+        ({move,yaw}=follower.step(s.position,guide,dt));
       }else if(['unmet','asked','home'].includes(q.stage)){
         intent=q.stage==='home'?'Collecting Cagney’s reward':'Speaking with Cagney';
         if(s.interaction?.npcId===CAGNEY.id&&c.action==='idle'){if(touch>.8){actions.push({type:'interact'});touch=0;}}

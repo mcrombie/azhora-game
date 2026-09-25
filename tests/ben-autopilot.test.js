@@ -90,7 +90,7 @@ test('the full Ben pilot follows the moving guide, wins through real contacts, a
     pilot.step(dt);
     if(Number.isFinite(pilot.yaw))cameraYaw+=Math.atan2(Math.sin(pilot.yaw-cameraYaw),Math.cos(pilot.yaw-cameraYaw))*(1-Math.exp(-3.5*dt));
     if(mode==='playing'){
-      const {forward,side}=pilot.move,yaw=cameraYaw,speed=4.2*combat.movementScale();
+      const {forward,side}=pilot.move,yaw=pilot.move.basisYaw??cameraYaw,speed=4.2*combat.movementScale();
       moveCharacter(position,(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed*dt,
         (-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed*dt,navigation);
       combat.guard(pilot.guard,pilot.yaw===null?combat.state.player.yaw:pilot.yaw+Math.PI);

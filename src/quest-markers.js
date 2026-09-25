@@ -1,5 +1,6 @@
 /**
- * Quests share a filled diamond and lower ring. Skill teachers use an open book.
+ * Quests share a filled diamond and lower ring. Skill teachers use an open book;
+ * a magic teacher's violet book carries a sparkle.
  * Colour tells
  * the category: gold for the main road, silver for an independent story,
  * copper for a good deed, and green for a lesson. The live quest slate still
@@ -7,8 +8,11 @@
  */
 import { QUEST_DONE } from './game-state.js';
 import { questLive, BRIDGE_QUEST } from './quest-slate.js';
+import { BEN } from './spider-quest.js';
+import { LIZ } from './cat-quest.js';
+import { TROY } from './murder-quest.js';
 
-export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill']);
+export const MARKER_KINDS = Object.freeze(['main', 'plot', 'deed', 'skill', 'magic']);
 /** The optional long-road grade remains distinct for priority and saves, but
  * wears the same filled gold symbol as the main road. */
 export const MARKER_OPEN = 'main-open';
@@ -25,13 +29,15 @@ export const MARKER_STYLE = Object.freeze({
     'A small good deed: it changes the world and does not move the plot.'),
   skill: style('skill', 'book', 1, 0x9ed079, 0x46813a, 0xd6ecb8, 0x6aa456,
     'Somebody who will teach you something, or an errand that pays a skill.'),
+  magic: style('magic', 'book-sparkle', 1, 0xbd8cf0, 0x7440a9, 0xf2ddff, 0xb87be2,
+    'A magic teacher whose quest can earn a new spell, or an earned lesson still available.'),
 });
 
-// The optional road ranks under the main road and over a story of its own: the road the game is
-// about first, then the road Drent would rather you took, then everything else.
-const RANK = Object.freeze({ main: 5, [MARKER_OPEN]: 4, plot: 3, deed: 2, skill: 1 });
+// Both gold roads take precedence; a magic teacher's book then identifies the spell reward
+// even when the same person also offers an ordinary story or lesson.
+const RANK = Object.freeze({ main: 6, [MARKER_OPEN]: 5, magic: 4, plot: 3, deed: 2, skill: 1 });
 
-/** Of the grades somebody qualifies for, the one they wear: main, then open, plot, deed, skill. */
+/** Gold keeps priority; a spell's book distinguishes its teacher from ordinary side offers. */
 export function strongestMarker(kinds) {
   let best = null;
   for (const kind of kinds ?? []) if (RANK[kind] && (!best || RANK[kind] > RANK[best])) best = kind;
@@ -50,6 +56,20 @@ export const MARKER_ROLES = Object.freeze(['harbourmaster', 'instructor', 'cross
 
 const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) : list.includes(value));
 
+/** Only advertise lessons that the current quest and known spells still allow.
+ * Liz and Troy retain their earned lesson after taking coin; Ben's reward choice is final.
+ * The host handles dead/hidden NPCs just as it does for every other quest marker. */
+export function magicTeacherIds({ spider, cat, murder, knownSpells = [] } = {}) {
+  const ids = [];
+  if (!holds(knownSpells, 'fireball') && !spider?.benDown
+    && ['unmet', 'asked', 'walking', 'fighting', 'killed'].includes(spider?.stage ?? 'unmet')) ids.push(BEN.id);
+  if (!holds(knownSpells, 'summon-bees')
+    && ['unmet', 'asked', 'looking', 'following', 'home', 'paid'].includes(cat?.stage ?? 'unmet')) ids.push(LIZ.id);
+  if (!holds(knownSpells, 'mindread')
+    && ['unmet', 'asking', 'solved', 'paid'].includes(murder?.stage ?? 'unmet')) ids.push(TROY.id);
+  return ids;
+}
+
 /**
  * Which gold `id` wears, given what the game currently knows. The host builds
  * `view` once a frame and every rule below is a plain read of it, so the rules
@@ -59,7 +79,7 @@ const holds = (list, value) => !!list && (list instanceof Set ? list.has(value) 
  * the open one, and the two are decided together.
  *
  * `view`: { questStage, busy, heardDoom, ids: {…MARKER_ROLES}, arcDestinations,
- * chapterDestinations, longWay, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
+ * chapterDestinations, longWay, skillTeachers, magicTeachers, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
  * archaeologyReport, forestOpen, wineRecommended }.
  */
 /**
@@ -101,6 +121,7 @@ export function markerFor(id, view = {}) {
   if (!ashore && stage < 2) return mark(strongestMarker(kinds));
   // A first lesson is a live opportunity even when optional quest chains are parked.
   if (!busy && holds(view.skillTeachers, id)) kinds.push('skill');
+  if (!busy && holds(view.magicTeachers, id)) kinds.push('magic');
   if (live('civil-war-drent') && !busy && holds(view.drentDestinations, id)) kinds.push('plot');
   // A regional silver story may live while the older teachers remain off the slate.
   if (live('civil-war-vastos') && !busy && holds(view.silverDestinations, id)) kinds.push('plot');

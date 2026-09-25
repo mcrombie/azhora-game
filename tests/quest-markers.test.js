@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker , TUTORIAL_DONE} from '../src/quest-markers.js';
+import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker, magicTeacherIds, TUTORIAL_DONE } from '../src/quest-markers.js';
+import { BEN, createSpiderQuest } from '../src/spider-quest.js';
+import { LIZ, createCatQuest } from '../src/cat-quest.js';
+import { TROY, MURDERER, WITNESS_IDS, createMurderQuest } from '../src/murder-quest.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -50,8 +53,8 @@ test('the first shore wears one mark, and it is the road the game is about', () 
   assert.equal(markerGrade(markerFor('corvan', view({ questStage: 3, chapterDestinations: ['corvan'] }))), 'main');
 });
 
-test('quest grades share a diamond; skill teachers have a distinct book and colour', () => {
-  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill']);
+test('quest grades share a diamond; ordinary and magic teachers have distinct books and colours', () => {
+  assert.deepEqual(MARKER_KINDS, ['main', 'plot', 'deed', 'skill', 'magic']);
   assert.deepEqual(Object.keys(MARKER_STYLE), [...MARKER_KINDS]);
   const colours = new Set();
   for (const kind of MARKER_KINDS) {
@@ -59,7 +62,7 @@ test('quest grades share a diamond; skill teachers have a distinct book and colo
     assert.equal(style.kind, kind);
     assert.ok(style.what.length > 20, `${kind} says what it means`);
     assert.ok(!colours.has(style.colour), `${kind} has a colour of its own`);
-    assert.equal(style.shape, kind==='skill'?'book':'diamond');
+    assert.equal(style.shape, kind === 'magic' ? 'book-sparkle' : kind === 'skill' ? 'book' : 'diamond');
     colours.add(style.colour);
   }
   assert.equal(MARKER_STYLE.main.scale, 1);
@@ -83,7 +86,11 @@ test('quest geometry is consistent and the teacher book faces the camera', async
   }
   assert.equal(new Set(['main','plot','deed'].map(kind=>built.get(kind))).size, 1, 'quest categories share one silhouette');
   assert.notEqual(built.get('skill'),built.get('main'),'teacher book is visibly distinct');
+  assert.notEqual(built.get('magic'),built.get('skill'),'magic book has its own sparkle silhouette');
   assert.equal(makeQuestMarker('skill').userData.billboard,true);
+  const magic = makeQuestMarker('magic');
+  assert.equal(magic.userData.billboard,true);
+  assert.ok(magic.getObjectByName('Sorcery sparkle')?.isMesh, 'a magic teacher has a visible sparkle');
   assert.equal(built.get('main'), 'OctahedronGeometry,TorusGeometry');
   assert.equal(makeQuestMarker().userData.markerKind, 'main', 'the arc is what you get if nobody says');
   assert.equal(makeQuestMarker('rumour').userData.markerKind, 'main', 'and what you get for a kind that does not exist');
@@ -215,6 +222,67 @@ test('an available first lesson has a book marker independently of parked quest 
   assert.equal(markerFor('doomsayer',{...view,skillTeachers:[]}),null);
   assert.equal(markerFor('doomsayer',{...view,busy:true}),null);
   assert.equal(markerFor('doomsayer',{...view,questStage:0}),null);
+});
+
+test('magic teachers keep their violet book while a quest or earned lesson is available', () => {
+  const spider = createSpiderQuest(), cat = createCatQuest(), murder = createMurderQuest();
+  const teachers = () => magicTeacherIds({ spider: spider.state, cat: cat.state, murder: murder.state });
+  const marked = id => assert.ok(teachers().includes(id));
+  assert.deepEqual(teachers(), [BEN.id, LIZ.id, TROY.id]);
+  for (const step of [() => spider.ask(), () => spider.accept(), () => spider.begin(),
+    () => spider.settle(), () => spider.begin(), () => spider.settle({ spiderDead: true })]) {
+    step(); marked(BEN.id);
+  }
+  assert.ok(spider.take('lesson'));
+  assert.ok(!teachers().includes(BEN.id), 'Ben no longer advertises a learned spell');
+  for (const step of [() => cat.ask(), () => cat.accept(), () => cat.found(), () => cat.bolts(),
+    () => cat.found(), () => cat.home(), () => cat.take('purse')]) {
+    step(); marked(LIZ.id);
+  }
+  assert.ok(cat.take('lesson'));
+  assert.ok(!teachers().includes(LIZ.id), 'Liz keeps the offer through paid, then removes it after teaching');
+  murder.begin(); marked(TROY.id);
+  assert.equal(murder.accuse(WITNESS_IDS.find(id => id !== MURDERER), 0).ok, false);
+  marked(TROY.id);
+  for (const id of WITNESS_IDS) murder.hear(id);
+  assert.equal(murder.accuse(MURDERER, 1000).ok, true); marked(TROY.id);
+  assert.ok(murder.take('purse')); marked(TROY.id);
+  assert.ok(murder.take('lesson'));
+  assert.deepEqual(teachers(), []);
+});
+
+test('unavailable or already known magic lessons are not advertised', () => {
+  const spider = createSpiderQuest(), cat = createCatQuest();
+  spider.ask(); spider.accept(); spider.begin(); spider.settle({ spiderDead: true });
+  spider.take('bounty');
+  assert.ok(!magicTeacherIds({ spider: spider.state }).includes(BEN.id), 'Ben cannot teach after his final coin choice');
+  const fallen = createSpiderQuest(); fallen.benFell();
+  assert.ok(!magicTeacherIds({ spider: fallen.state }).includes(BEN.id));
+  assert.ok(!magicTeacherIds({ spider: { stage: 'fighting', benDown: true } }).includes(BEN.id));
+  cat.ask(); cat.accept(); cat.died();
+  assert.ok(!magicTeacherIds({ cat: cat.state }).includes(LIZ.id), 'Mop dying permanently closes the lesson');
+  for (const [spell, id] of [['fireball', BEN.id], ['summon-bees', LIZ.id], ['mindread', TROY.id]]) {
+    for (const knownSpells of [[spell], new Set([spell])]) {
+      const ids = magicTeacherIds({ knownSpells });
+      assert.equal(ids.length, 2);
+      assert.ok(!ids.includes(id), `${spell} learned elsewhere removes its teaching offer`);
+    }
+  }
+  assert.deepEqual(magicTeacherIds({ spider: { stage: 'taught' }, cat: { stage: 'taught' }, murder: { stage: 'taught' } }), []);
+});
+
+test('magic books follow busy and tutorial rules, work on the current slate and yield to gold', () => {
+  const base = { questStage: TUTORIAL_DONE, magicTeachers: magicTeacherIds(), live: () => false };
+  for (const id of base.magicTeachers) {
+    assert.deepEqual(markerFor(id, base), { kind: 'magic', open: false });
+    assert.equal(markerFor(id, { ...base, busy: true }), null);
+    assert.equal(markerFor(id, { ...base, questStage: 0 }), null);
+    assert.equal(markerFor(id, { ...base, magicTeachers: [] }), null);
+    assert.equal(markerFor(id, { ...base, skillTeachers: [id], escortDestinations: [id] })?.kind, 'magic');
+    assert.equal(markerFor(id, { ...base, arcDestinations: [id] })?.kind, 'main');
+  }
+  assert.equal(strongestMarker(['skill', 'magic', 'plot', 'deed']), 'magic');
+  assert.equal(strongestMarker(['magic', MARKER_OPEN]), MARKER_OPEN);
 });
 
 test('Drent silver markers follow known leads without advertising Killian before reading evidence', () => {

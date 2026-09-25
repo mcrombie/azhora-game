@@ -4,15 +4,15 @@ import { createCagneyHost } from '../src/cagney-host.js';
 import { createCagneyQuest, CAGNEY, CAGNEY_AMBUSH, CAGNAPPERS } from '../src/cagney-quest.js';
 import { createCombat } from '../src/combat.js';
 
-function fixture({realCombat=false}={}){
+function fixture({realCombat=false,region='Drent'}={}){
   const quest=createCagneyQuest(),at={...CAGNEY_AMBUSH.center},pos={...at,y:0,set(x,y,z){Object.assign(this,{x,y,z});}};
-  const npc={id:CAGNEY.id,actor:{group:{position:pos}}},world={bounds:{minX:-2000,maxX:1000,minZ:-1000,maxZ:1000},colliders:[],heightAt:()=>1,npcPositions:{}},player={group:{position:{x:at.x+3,z:at.z}}};
+  const npc={id:CAGNEY.id,actor:{group:{position:pos}}},world={bounds:{minX:-2000,maxX:1000,minZ:-1000,maxZ:1000},colliders:[],heightAt:()=>1,regionAt:()=>({name:region}),npcPositions:{}},player={group:{position:{x:at.x+3,z:at.z}}};
   const events=[],created=[],combatEvents=[],combat=realCombat?createCombat({world,position:player.group.position,onEvent:e=>combatEvents.push(e)}):{state:{phase:'peaceful',encounterId:null,enemies:[],allies:[]},startEncounter(spec){
     this.state={phase:'active',encounterId:spec.id,enemies:spec.enemies.map(e=>({...e,hp:e.currentHp})),allies:spec.allies.map(e=>({...e,hp:e.currentHp}))};return true;}};
   let dialogue=null,down=false;
   const host=createCagneyHost({quest,npc,world,combat,player,crime:{isDown:()=>down},corpses:{ownsNpc:()=>false},toast:(...x)=>events.push(x),
     refresh(){},save(){},openDialogue(...args){dialogue=args;},closeDialogue(){},reward(){},focus(){},makeAmbusher(spec){
-      const actor={group:{visible:true,rotation:{y:0},position:{set(x,y,z){Object.assign(this,{x,y,z});}}},animate(){}};created.push({id:spec.id,actor});return actor;}});
+      const actor={group:{visible:true,rotation:{y:0},position:{set(x,y,z){Object.assign(this,{x,y,z});}}},animate(time,speed,grounded,pose){this.pose=pose;},setArmed(value){this.armed=value;},ambushCover:{visible:false}};created.push({id:spec.id,actor});return actor;}});
   function begin(){quest.accept();quest.rememberWalk({...quest.state.walk,...at});host.frame(.1,true);assert.equal(quest.state.stage,'ambushed');}
   return{quest,npc,world,combat,player,events,created,host,begin,flush(){for(const e of combatEvents.splice(0))host.combatEvent(e);},get dialogue(){return dialogue;},setDown:()=>{down=true;}};
 }
@@ -119,4 +119,31 @@ test('cagnappers killed after Cagney is captured remain dead and the failed ques
   assert.deepEqual(f.quest.state.enemies,[0,0,0]);assert.equal(f.quest.state.stage,'captured');assert.equal(f.quest.take(),0);
   assert.equal(f.created.length,3,'No attacker model is recreated after the failure');
   f.npc.hidden=false;f.host.frame(.1,true);assert.equal(f.npc.hidden,true,'Generic injury recovery cannot restore the failed escort');
+});
+
+
+test('a fresh Luscia ambush starts fully healthy and saves actual injuries as a fraction',()=>{
+  const f=fixture({realCombat:true,region:'Luscia'});f.begin();
+  const foes=f.combat.state.enemies;
+  for(const foe of foes){assert.ok(foe.maxHp>48,'Luscia difficulty is preserved');assert.equal(foe.hp,foe.maxHp);}
+  foes[0].hp=foes[0].maxHp/2;foes[1].hp=0;foes[1].active=false;
+  f.host.remember();assert.deepEqual(f.quest.state.enemies,[24,0,48]);
+  assert.equal(f.combat.disengage(),true);f.flush();f.host.frame(5,true);
+  assert.equal(f.combat.state.phase,'active');
+  assert.equal(f.combat.state.enemies.length,2,'Dead attackers do not return');
+  assert.equal(f.combat.state.enemies[0].hp,f.combat.state.enemies[0].maxHp/2);
+  assert.equal(f.combat.state.enemies[1].hp,f.combat.state.enemies[1].maxHp);
+});
+
+test('waiting cagnappers crouch under cover and the same actors uncover on every combat entry',()=>{
+  const f=fixture();f.host.update(0);
+  const actors=f.created.map(entry=>entry.actor);
+  for(const actor of actors){assert.equal(actor.ambushCover.visible,true);assert.equal(actor.pose.sneaking,true);assert.equal(actor.armed,false);}
+  f.begin();f.host.update(1);
+  for(const actor of actors){assert.equal(actor.ambushCover.visible,false);assert.equal(actor.armed,true);}
+  f.combat.state.phase='peaceful';f.host.combatEvent({type:'retreat'});f.host.update(2);
+  for(const actor of actors)assert.equal(actor.ambushCover.visible,true);
+  f.host.frame(5,true);f.host.update(3);
+  for(const actor of actors)assert.equal(actor.ambushCover.visible,false,'A reused combat renderer still gets an uncovered actor');
+  assert.equal(f.created.length,3);
 });

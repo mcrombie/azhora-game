@@ -3931,16 +3931,32 @@ export function makeQuestMarker(kind = 'main', { open = false } = {}) {
   group.userData.markerKind = look.kind;
   group.userData.markerOpen = optionalRoad;
   const mat = material(look.colour, { emissive: look.emissive, emissiveIntensity: 0.42, roughness: 0.36, metalness: 0.22 });
-  if (look.shape === 'book') {
+  const magicBook = look.shape === 'book-sparkle';
+  if (look.shape === 'book' || magicBook) {
     mat.side = THREE.DoubleSide;
+    if (magicBook) mat.emissiveIntensity = .65;
+    const edge = magicBook ? new THREE.MeshBasicMaterial({color:0x302047,side:THREE.DoubleSide,toneMapped:false}) : null;
     for (const side of [-1, 1]) {
       const page = new THREE.Shape();
       page.moveTo(0, .1);page.lineTo(side*.13,.17);page.lineTo(side*.29,.17);page.lineTo(side*.29,-.14);page.lineTo(side*.13,-.14);page.lineTo(0,-.21);page.closePath();
       part(group,new THREE.ShapeGeometry(page),mat,[0,0,0]);
+      if (magicBook) part(group,new THREE.ShapeGeometry(page),edge,[0,0,-.018],[1.12,1.12,1]).name='Sorcery book outline';
     }
-    const ink=material(0x204835,{side:THREE.DoubleSide});
+    const ink=magicBook ? new THREE.MeshBasicMaterial({color:0xf5eaff,side:THREE.DoubleSide,toneMapped:false}) : material(0x204835,{side:THREE.DoubleSide});
     part(group,new THREE.BoxGeometry(.025,.3,.016),ink,[0,-.05,.02]);
     for(const side of [-1,1])for(const y of [.075,-.01,-.095])part(group,new THREE.BoxGeometry(.16,.014,.015),ink,[side*.165,y,.02]);
+    if (magicBook) {
+      // A four-point sparkle makes the magic lesson readable by silhouette as well as colour.
+      const star=new THREE.Shape();
+      for (let i=0;i<8;i++) {
+        const angle=Math.PI/2+i*Math.PI/4,r=i%2?.035:.14;
+        if(i===0)star.moveTo(Math.cos(angle)*r,Math.sin(angle)*r);
+        else star.lineTo(Math.cos(angle)*r,Math.sin(angle)*r);
+      }
+      star.closePath();
+      part(group,new THREE.ShapeGeometry(star),edge,[.31,.31,.005],[1.22,1.22,1]).name='Sorcery sparkle outline';
+      part(group,new THREE.ShapeGeometry(star),new THREE.MeshBasicMaterial({color:0xfff3d1,side:THREE.DoubleSide,toneMapped:false}),[.31,.31,.025]).name='Sorcery sparkle';
+    }
     group.userData.billboard=true;
   } else {
     const diamond = part(group, new THREE.OctahedronGeometry(0.128, 0), mat, [0, 0, 0], [0.85, 1.45, 0.85]);
