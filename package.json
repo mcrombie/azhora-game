@@ -8,7 +8,7 @@
   "main": "main.cjs",
   "scripts": {
     "start": "node scripts/launch.cjs",
-    "test:living": "node --test --test-isolation=none tests/living-story.test.js tests/living-story-host.test.js tests/company-route-host.test.js tests/company-route-world.test.js tests/company-legacy-route.test.js tests/company-transport.test.js tests/luscia-civil-war.test.js tests/luscia-chapter.test.js tests/border-chapter.test.js tests/campaign.test.js tests/moros-chapter.test.js tests/road-checkpoint.test.js tests/ostler.test.js tests/company-horses.test.js tests/company-file.test.js tests/independent-combat.test.js tests/road-ambush.test.js tests/road-ambush-watch.test.js tests/story-chapters.test.js",
+    "test:living": "node --test --test-isolation=none tests/kayla.test.js tests/kayla-world.test.js tests/kayla-host.test.js tests/kayla-character.test.js tests/kayla-combat.test.js tests/living-story.test.js tests/living-story-host.test.js tests/company-route-host.test.js tests/company-route-world.test.js tests/company-legacy-route.test.js tests/company-transport.test.js tests/luscia-civil-war.test.js tests/luscia-chapter.test.js tests/border-chapter.test.js tests/campaign.test.js tests/moros-chapter.test.js tests/road-checkpoint.test.js tests/ostler.test.js tests/company-horses.test.js tests/company-file.test.js tests/independent-combat.test.js tests/road-ambush.test.js tests/road-ambush-watch.test.js tests/story-chapters.test.js",
     "test:living:desktop": "node scripts/launch.cjs --smoke-test --living-checks",
     "test:republic:desktop": "node scripts/launch.cjs --smoke-test --republic-checks",
     "test:drent": "node --test --test-isolation=none tests/drent-civil-war.test.js tests/drent-host.test.js tests/drent-combat.test.js tests/drent-world.test.js tests/drent-stealth-world.test.js tests/stealth.test.js",
@@ -54,6 +54,7 @@
     "test:woodcutting:desktop": "node scripts/launch.cjs --smoke-test --glun-wood-checks",
     "test:visual-arts:desktop": "node scripts/launch.cjs --smoke-test --visual-arts-checks",
     "test:cagney:autoplay": "node scripts/launch.cjs --smoke-test --cagney-autoplay-checks",
+    "test:kayla": "node scripts/launch.cjs --smoke-test --kayla-checks",
     "test:homes": "node scripts/launch.cjs --smoke-test --homes-checks",
     "test:port-calos": "node scripts/launch.cjs --smoke-test --port-calos-checks",
     "test:winery": "node scripts/launch.cjs --smoke-test --winery-checks",

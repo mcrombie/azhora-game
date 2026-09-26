@@ -487,3 +487,11 @@ MAT keep their existing names and appearances.
 ### 2026-09-25 - Jessi of Cobble
 
 Jessi has twelve distinct hair colors in streaks across her crown and long tied ponytail. Keep her glasses and no hat; the generic fisher beard does not belong to her. Jess the ferrywoman is a separate character.
+
+
+### 2026-09-25 - Kayla, Ari and Jessi
+
+- Kayla is a specifically requested large, kind talking bear. She walks her own honey rounds through Drent, Pueth and Luscia, sometimes visiting Liz for a little comb. The player may give her honeycomb voluntarily. She is peaceful until attacked, then defends herself with formidable strength; her injuries and death persist like those of other named residents. Her route follows actual paths and bridges, with a short swim beside the broken Caloss bridge.
+- Ari keeps her brown skin and purple palette, with long black curls and a long violet dress. No hat.
+- Jessi keeps the twelve-color hair and glasses. They repair carriages, carry workshop tools instead of a fishing pole, and use abundant playful slang about their trade. Their murder-case testimony and alibi concern carriage repairs and deliveries; the clue structure remains unchanged.
+- Addison stands clear of the Suval lighthouse cottage, facing its open yard entrance. Solis gets a connected physical harbor with walkable waterfront piers, moorings and boats. This adds scenery and access, not extra residents or new ferry destinations.

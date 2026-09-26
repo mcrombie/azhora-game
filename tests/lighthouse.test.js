@@ -8,6 +8,15 @@ import { SUVAL_LIGHT, ADDISON, ADDISON_STAND, LIGHT_HEAD, SIGHTLINES, LIGHT_WORK
 import { SEA_LEVEL } from '../src/region-world.js';
 import { createBatmanHunt } from '../src/batman.js';
 import { createMapFog } from '../src/map-fog.js';
+import { canStand } from '../src/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
+
+// The cottage mesh is a yawed rectangle, whose corners extend past its circular proxy.
+function cottageClearance(point) {
+  const c = SUVAL_LIGHT.cottage, dx = point.x - c.x, dz = point.z - c.z;
+  const x = dx * Math.cos(c.yaw) - dz * Math.sin(c.yaw), z = dx * Math.sin(c.yaw) + dz * Math.cos(c.yaw);
+  return Math.hypot(Math.max(0, Math.abs(x) - c.width / 2), Math.max(0, Math.abs(z) - c.depth / 2));
+}
 
 function talk(npc, context) {
   const screens = [], acted = [];
@@ -39,6 +48,11 @@ test('the light stands on the head, and everything on it is inside its own wall'
   assert.ok(Math.hypot(ADDISON_STAND.x - L.yard.x, ADDISON_STAND.z - L.yard.z) < L.yard.radius - 1, 'inside the wall');
   assert.ok(Math.hypot(ADDISON_STAND.x - L.tower.x, ADDISON_STAND.z - L.tower.z) > L.tower.base + 1, 'clear of the tower');
   assert.ok(Math.hypot(ADDISON_STAND.x - L.cottage.x, ADDISON_STAND.z - L.cottage.z) > 4, 'clear of the cottage');
+  assert.ok(cottageClearance(ADDISON_STAND) >= 1.3, 'her entire figure clears the actual rotated cottage wall');
+  const approach = { x: L.yard.x, z: L.head.z - 15 };
+  const facing = Math.atan2(approach.x - ADDISON_STAND.x, approach.z - ADDISON_STAND.z);
+  assert.ok(Math.abs(Math.atan2(Math.sin(ADDISON_STAND.yaw - facing), Math.cos(ADDISON_STAND.yaw - facing))) < .01,
+    'she faces the clear landward approach');
 });
 
 test('she looks out over water from a head that has nothing growing on it', async () => {
@@ -62,8 +76,29 @@ test('she looks out over water from a head that has nothing growing on it', asyn
     assert.ok(world.colliders.some(c => c.kind === kind), `nobody walks through the ${kind}`);
   }
   // Addison stands on ground she can stand on.
-  const { canStand } = await import('../src/game-state.js');
   assert.equal(canStand(ADDISON_STAND.x, ADDISON_STAND.z, world), true);
+  // Approach her through the actual opening, on foot and mounted. Include her body so
+  // reaching talking distance does not mean walking through the keeper herself.
+  const approach = { x: L.yard.x, z: L.head.z - 20 };
+  const direction = { x: Math.sin(ADDISON_STAND.yaw), z: Math.cos(ADDISON_STAND.yaw) };
+  const talk = { x: ADDISON_STAND.x + direction.x * 1.8, z: ADDISON_STAND.z + direction.z * 1.8 };
+  for (const radius of [BODY.traveler, BODY.horse]) {
+    const position = { ...approach }, nav = bodyWorld(world).setBodies([{ id: ADDISON.id, ...ADDISON_STAND, r: BODY.person }]).moving(position, radius, 'visitor');
+    assert.ok(canStand(position.x, position.z, world, radius), 'the approach starts on clear dry ground');
+    let steps = 0;
+    for (; steps < 1000 && Math.hypot(position.x - talk.x, position.z - talk.z) > .1; steps++) {
+      const before = { ...position }; stepToward(position, talk, .12, nav, radius);
+      assert.ok(Math.hypot(position.x - before.x, position.z - before.z) <= .120001, 'the visitor walks without teleporting');
+      assert.ok(canStand(position.x, position.z, world, radius), 'the complete approach clears actual colliders');
+      assert.ok(cottageClearance(position) > radius, 'the route also clears the rendered cottage corners');
+    }
+    assert.ok(steps < 1000, `the ${radius === BODY.horse ? 'horse' : 'traveler'} reaches speaking distance`);
+    assert.ok(Math.hypot(position.x - ADDISON_STAND.x, position.z - ADDISON_STAND.z) < 2,
+      'she can be spoken to without dismounting or entering a wall');
+  }
+  const returnFromElod = { x: ADDISON_STAND.x + 1.6, z: ADDISON_STAND.z + 1.6 };
+  assert.ok(canStand(returnFromElod.x, returnFromElod.z, world, BODY.horse), 'the existing return from the sister light lands in the clear');
+  assert.ok(cottageClearance(returnFromElod) > BODY.horse);
 });
 
 test('the gallery is worth the two hundred and six steps: it charts the coast', () => {

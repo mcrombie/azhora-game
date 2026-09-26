@@ -12,9 +12,12 @@ import {
   COALITION_CAMP, WEST_SUVAL_BORDER, WEST_SUVAL_PLACES, WEST_SUVAL_LANDMARKS, facePoint, wallRuns, gatePassage, solisHolder,
 } from '../src/west-suval.js';
 import { RIDE } from '../src/riding.js';
+import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from '../src/solis-harbor.js';
+import { groundWithRiver } from '../src/world-terrain.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const scene = new THREE.Scene();
+const world = createWorld(scene);
 const P = solisPoint;
 const WALKER = .45;
 
@@ -23,6 +26,43 @@ const nearSolis = (() => {
   const reach = 190, colliders = world.colliders.filter(c => Math.abs(c.x - SOLIS.centre.x) < reach && Math.abs(c.z - SOLIS.centre.z) < reach);
   return { bounds: world.bounds, heightAt: world.heightAt, colliders };
 })();
+
+test('Solis harbour can be walked from the quay approach to both pier heads and the breakwater', () => {
+  for (const path of SOLIS_HARBOR_PATHS) {
+    const walker = { ...path[0] };
+    for (const end of path.slice(1)) {
+      let previousHeight = world.heightAt(walker.x, walker.z);
+      for (let step = 0; step < 1000 && Math.hypot(end.x - walker.x, end.z - walker.z) > .15; step++) {
+        const dx = end.x - walker.x, dz = end.z - walker.z, distance = Math.hypot(dx, dz);
+        moveCharacter(walker, dx / distance * .12, dz / distance * .12, nearSolis, WALKER);
+        const height = world.heightAt(walker.x, walker.z);
+        assert.ok(height >= 2 && Math.abs(height - previousHeight) < .12, 'the deck and ramp have no cliff or water gap');
+        previousHeight = height;
+      }
+      assert.ok(Math.hypot(end.x - walker.x, end.z - walker.z) <= .15, `harbour lane blocked near ${walker.x}, ${walker.z}`);
+    }
+  }
+  assert.equal(world.westSuvalMetrics.harbourDecks, 4);
+  assert.equal(world.westSuvalMetrics.harbourBoats, 3);
+});
+
+test('Solis harbour decks agree with the rendered surfaces, and its boats float entirely over water', () => {
+  scene.updateMatrixWorld(true);
+  const ray = new THREE.Raycaster();
+  for (const [a, b] of [[-72, -8], [-80, -8], [-84.5, 6], [-105, -10], [-100, 14], [-114, 26]]) {
+    const p = P(a, b), expected = solisHarborDeckHeight(p.x, p.z);
+    ray.set(new THREE.Vector3(p.x, 20, p.z), new THREE.Vector3(0, -1, 0));
+    const hit = ray.intersectObjects(scene.children, true).find(hit => hit.object.visible);
+    assert.ok(hit && Math.abs(hit.point.y - expected) < .035, `drawn deck differs from footing at ${a}, ${b}: ${hit?.point.y} / ${expected}`);
+    assert.equal(world.heightAt(p.x, p.z), expected);
+  }
+  for (const boat of SOLIS_HARBOR.boats) for (const u of [-.5, 0, .5]) for (const v of [-.5, 0, .5]) {
+    const x = boat.x + Math.cos(boat.yaw) * u * boat.width + Math.sin(boat.yaw) * v * boat.length;
+    const z = boat.z - Math.sin(boat.yaw) * u * boat.width + Math.cos(boat.yaw) * v * boat.length;
+    assert.ok(groundWithRiver(x, z) < -.55, `${boat.id} is grounded`);
+    assert.equal(solisHarborDeckHeight(x, z), null, `${boat.id} intersects a pier`);
+  }
+});
 
 test('West Suval is the fifth playable region, true to the atlas', () => {
   assert.ok(PLAYABLE_REGIONS.includes('West Suval'));

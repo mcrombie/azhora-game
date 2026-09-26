@@ -26,7 +26,7 @@ const location=npc=>npc?.actor?.group?.position;
  */
 export function createCrimeHost({world,npcById,additionalPeople=()=>[],inventory,combat,position,openDialogue,closeDialogue,
   safeToInterrupt=()=>true,stopAutoplay=()=>{},toast=()=>{},onChange=()=>{},onJail=()=>{},
-  onDeath=()=>{},onRevive=()=>{},onCleanup=()=>{},isGuard=imperialGuard,isEssential=null,
+  onDeath=()=>{},onAssault=()=>{},onRevive=()=>{},onCleanup=()=>{},isGuard=imperialGuard,isEssential=null,
   canRevive=npc=>!npc.fallen,profile=null,jailSpawn=null}={}){
   const crime=createCrime(),controlled=new Map(),fightIds=new Set(),navigators=new Map(),seenImpacts=new Set();
   let offeredId=null,nextOffer=0,leadId=null,saveClock=0;
@@ -69,7 +69,7 @@ export function createCrimeHost({world,npcById,additionalPeople=()=>[],inventory
     if(!result.ok)return result;
     if(result.hp===0)death(npcId,result.person,source);
     if(result.crime){nextOffer=0;offeredId=null;toast(`${npc.name??'A resident'} was ${result.hp?'struck':'felled'}. Bounty: ${result.bounty} copper.`,'ASSAULT · IMPERIAL LAW');}
-    changed();return result;
+    onAssault({npcId,source,hp:result.hp,damage});changed();return result;
   }
   function availableGuards(){const p=position();return people().filter(npc=>isGuard(npc)&&location(npc)
     &&!npc.hidden&&!npc.crimeDown&&!fightIds.has(npc.id)&&health(npc).status==='alive'

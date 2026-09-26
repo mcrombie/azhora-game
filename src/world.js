@@ -28,6 +28,7 @@ import { PLACE_LANDMARKS } from './places.js';
 import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
 import { SOLIS_ROAD } from './region-world.js';
 import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, SOLIS_STREETS, WEST_SUVAL_SEA } from './west-suval.js';
+import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from './solis-harbor.js';
 import { atticDeckHeight } from './wine-attic.js';
 import { createBrandyYard } from './brandy-yard.js';
 import { createLighthouse } from './lighthouse-world.js';
@@ -258,6 +259,9 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     // Izolveth's quay and the two moles that close its harbour, in West Izol.
     const izolDeck = izolDeckHeight(x, z);
     if (izolDeck !== null) return izolDeck;
+    // Solis's ramp, stone quay, timber piers and breakwater share their drawn deck heights.
+    const solisDeck = solisHarborDeckHeight(x, z);
+    if (solisDeck !== null) return solisDeck;
     // Tharganhom's stair and attic floor, on the main street of Solis.
     const attic = atticDeckHeight(x, z, groundHeight);
     if (attic !== null) return attic;
@@ -1316,6 +1320,7 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
     }
     paths.push(Object.assign(line, { kind: 'road', width: street.width }));
   }
+  for (const line of SOLIS_HARBOR_PATHS) paths.push(Object.assign(line.map(p => ({ ...p })), { kind: 'road', width: 3 }));
   for (const spur of roadSpurs) addPath(spur, 2.2);
   // Tidehaven's own lanes and woodland spurs stay in the village's frame.
   function addLocalPath(points, width, kind = 'trail') {
@@ -1760,7 +1765,11 @@ export function createWorld(scene, { spatialBatches = true } = {}) {
   ]);
 
   // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
-  const mapLands = Object.freeze([Object.freeze({id:'port-calos-quay-land',kind:'polygon',region:'Luscia',
+  const mapLands = Object.freeze([...[SOLIS_HARBOR.ramp, ...SOLIS_HARBOR.decks].map(deck => Object.freeze({
+    id: `solis-${deck.id}-land`, kind: 'polygon', region: 'West Suval',
+    points: Object.freeze([[deck.minA, deck.minB], [deck.maxA, deck.minB], [deck.maxA, deck.maxB], [deck.minA, deck.maxB]]
+      .map(([a, b]) => { const p = solisPoint(a, b); return mapPoint(p.x, p.z); })),
+  })), Object.freeze({id:'port-calos-quay-land',kind:'polygon',region:'Luscia',
     points:Object.freeze([[PORT_CALOS_QUAY.minX,PORT_CALOS_QUAY.minZ],[PORT_CALOS_QUAY.maxX,PORT_CALOS_QUAY.minZ],[PORT_CALOS_QUAY.maxX,PORT_CALOS_QUAY.maxZ],[PORT_CALOS_QUAY.minX,PORT_CALOS_QUAY.maxZ]].map(([x,z])=>mapPoint(x,z)))}),...PEBLOS_ISLANDS.flatMap(island => regions.find(region => region.name === 'Peblos')?.border
     ?.filter(loop => loop.some(p => island.cells.some(cell => Math.hypot(cell.x - p.x, cell.z - p.z) < 90)))
     .map((loop, index) => Object.freeze({ id: `${island.id}-land-${index}`, kind: 'polygon', region: 'Peblos',

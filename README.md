@@ -314,3 +314,10 @@ Liz now lives beside a small cottage, a working apiary with straw skeps and wood
 The desktop icon is an abstract gold sun and winding coastal path over teal water. `scripts/create-icon.ps1` generates its seven ICO sizes; `scripts/create-desktop-shortcut.ps1` updates the shortcut without restarting a live game.
 
 `npm run test:winery` checks the five Wine teachers through their actual dialogue buttons, ROB's Farming-gated viticulture placeholder and marker, the three-winemaker cast, and Katy's quest-free Port Calos greeting. `src/winery-lessons.js` keeps viticulture separate from the Wine skill.
+
+
+### Kayla and the Cobble character update
+
+`src/kayla.js` owns Kayla's persistent honey rounds and dialogue; `kayla-host.js` joins her ordinary resident health to her physical roaming and self-defense. `kayla-character.js` is her articulated brown-bear model. Her authored circuit visits Drent, Liz's clearing in Pueth, and Luscia; `kayla-world.test.js` walks the full route against real scenery and the initially broken Caloss bridge. `npm run test:kayla` checks the actual conversation/honey choice, combat, checkpoints and corpse restoration in an isolated Electron run.
+
+Ari has long black curls and a violet dress. Jessi retains all twelve hair colors and now works in carriage repair, with tools, an apron and slang-heavy dialogue; the Troy investigation retains its existing clue identities.

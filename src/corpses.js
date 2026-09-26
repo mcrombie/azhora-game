@@ -26,6 +26,7 @@ export function corpseId({ npcId, encounterId, id, ally = false }) {
 /** Real equipment where known; creature materials never become cooked provisions. */
 export function corpseLoot(person = {}) {
   if (person.dead === false || person.wounded) return [];
+  if (person.kind === 'bear') return [{ id: 'honeycomb', quantity: 1 }];
   if (person.kind === 'wolf') return [{ id: 'wolf-hide', quantity: 1 }];
   if (['dog', 'cat', 'bosco', 'horse', 'batman'].includes(person.kind)) return [{ id: 'animal-hide', quantity: person.kind === 'horse' || person.kind === 'batman' ? 2 : 1 }];
   if (person.kind === 'spider') return [{ id: 'spider-silk', quantity: 2 }];

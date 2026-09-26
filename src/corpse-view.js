@@ -4,6 +4,7 @@ import { createEdModel } from './chameleon-model.js';
 import { createBosco } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { createSpider } from './spider-model.js';
+import { createKaylaBear } from './kayla-character.js';
 
 function wrappedActor(actor) {
   const group = new THREE.Group(); group.name = 'Resting figure'; group.add(actor.group);
@@ -24,6 +25,22 @@ function restingActor(actor, scale = 1) {
   });
   if (!bounds.isEmpty()) actor.group.position.y -= bounds.min.y;
   return { ...wrappedActor(actor), animate() {} };
+}
+
+// A borrowed world actor arrives with a world position and heading. Reset those
+// before the shared side-laying wrapper measures local bounds, and keep the
+// ground shadow horizontal. Mutate the actor handle so ownership stays singular.
+function restingBear(actor = createKaylaBear()) {
+  if (actor.group.userData.restingBear) return actor;
+  restoreFallenFigure(actor);
+  const shadows = [];
+  actor.group.traverse(object => { if (object.userData.groundShadow) shadows.push(object); });
+  for (const shadow of shadows) shadow.removeFromParent();
+  actor.group.removeFromParent(); actor.group.position.set(0, 0, 0); actor.group.rotation.set(0, 0, 0);
+  const resting = restingActor(actor);
+  resting.group.userData.restingBear = true;
+  for (const shadow of shadows) resting.group.add(shadow);
+  return Object.assign(actor, resting);
 }
 
 function burialCloth() {
@@ -77,6 +94,7 @@ function coverBody(item, world) {
 }
 
 export function createCorpseActor(body) {
+  if (body.kind === 'bear') return restingBear();
   if (body.kind === 'puck') return wrappedActor(createGoblin({ wine: true }));
   if (body.kind === 'chameleon') { const actor = createEdModel(); actor.animate(0, 0, { sober: true }); return restingActor(actor, 1.35); }
   if (body.kind === 'bosco') return restingActor(createBosco({ dye: body.model.dye }));
@@ -114,12 +132,12 @@ export function createCorpseView(scene, world) {
     const previous = actors.get(body.id);
     if (previous && supplied && previous.actor !== supplied) release(body.id);
     else if (previous) return true;
-    const actor = supplied ?? createCorpseActor(body);
+    const actor = supplied ? body.kind === 'bear' ? restingBear(supplied) : supplied : createCorpseActor(body);
     restoreFallenFigure(actor);
     actor.group.scale.setScalar(1); actor.group.visible = true;
     actor.group.name = `corpse:${body.id}`;
     scene.add(actor.group); setShadowCasting(actor, false);
-    if (!supplied) actor.group.add(groundShadow(body.kind === 'ogre' ? 1.4 : .45));
+    if (!supplied) actor.group.add(groundShadow(body.kind === 'ogre' ? 1.4 : body.kind === 'bear' ? .8 : .45));
     // Character meshes share materials. Weathering one body must never fade a living NPC.
     const materials = [], figureMeshes = [];
     actor.group.traverse(object => {

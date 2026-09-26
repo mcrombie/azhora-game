@@ -57,11 +57,13 @@ export const SUVAL_LIGHT = freeze({
 });
 export const lightPoint = at;
 /**
- * Inside the yard, between the cottage and the gap in the wall, facing the lane: she hears
- * anybody coming up onto the head a long time before they arrive and is looking at them by
- * the time they do. Clear of the tower, the cottage and the wall, all of which are solid.
+ * At the landward opening, clear of the cottage's rotated walls and its drying nets.
+ * The cottage's circular collision proxy does not cover its corners, so this placement
+ * is checked against the rendered rectangle too. She faces north along the open approach.
  */
-export const ADDISON_STAND = freeze({ ...at(-2.0, -6.4), yaw: -1.54 });
+const addisonAt = at(-1.2, -8.3), addisonApproach = at(-2.4, -15);
+export const ADDISON_STAND = freeze({ ...addisonAt,
+  yaw: Math.atan2(addisonApproach.x - addisonAt.x, addisonApproach.z - addisonAt.z) });
 
 // Never the traveler's own model: dirty blonde, slightly wavy, to the shoulder and tied back off
 // her face; a knitted jersey, oilskin trousers, sea boots, a knife on a lanyard, ink on both arms.

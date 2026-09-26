@@ -329,13 +329,14 @@ export const WEST_SUVAL_LANDMARKS = freeze([
     description: 'Two rearing bronze horses over the landward gate, their manes hammered into rays. Wilted flowers from the summer festival still lie at the foot of the towers.' }),
   freeze({ id: 'court-of-oaths', name: 'The Court of Oaths', ...local(31, 2),
     description: 'The kings of Solis swore their oaths in this hall. The Empire used it for its assizes. The Coalition’s council sits in it now, at a table carried in from the counting house.' }),
-  freeze({ id: 'solis-quay', name: 'The Solis Quay', ...local(-66, -8),
-    description: 'The quay under the sea wall, two harbour towers and the boom chain between them. The white cliffs stand above the harbour to the south.' }),
+  freeze({ id: 'solis-quay', name: 'Solis Harbour', ...local(-66, -8),
+    description: 'Below the quay gate, a stone ramp leads to a working harbour: timber piers, moored coasters and skiffs, stacks of wine and oil, and a cargo derrick. A stone breakwater shelters the water below the white cliffs.' }),
 ]);
 
 /** Ground the regional scatter leaves alone. */
 export const WEST_SUVAL_CLEARINGS = freeze([
   freeze({ ...local(0, 0), r: 82 }),                                         // the city, its ditch and the quay
+  freeze({ ...local(-96, 5), r: 44 }),                                       // the harbour decks and their approach
   freeze({ ...local(0, -74), r: 26 }),                                        // the road outside the gate
   freeze({ ...local(100, 0), r: 46 }),                                        // the camp
   freeze({ ...local(40, -64), r: 26 }),                                       // the camp spur

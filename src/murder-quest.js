@@ -13,9 +13,9 @@
  * do not add up to a murder — and the fourth person, who is not a suspect at all, is the only one
  * they can add up to.
  *
- *   **Jessi**   fishes, and teaches it. Her boat came in light three weeks running and it did
- *               not. She thinks Bregga was cheating her and she is not sorry Bregga is dead,
- *               which she knows sounds bad and says anyway.
+ *   **Jessi**   repairs carriages. The full barrel loads carried from the boats were called
+ *               light three weeks running. They think Bregga was covering for the short
+ *               weights and are not sorry Bregga is dead, which they say plainly.
  *   **Ari**     the village's own accountant, who keeps Cobble's books against the Empire's
  *               tally. She will not say where she was that night, because she was out at the
  *               rocky skerry with men who mutinied off Ed the Word's ship, and that is a hanging
@@ -53,8 +53,8 @@ export const VICTIM = Object.freeze({ name: 'Bregga Sell', was: 'net-mistress of
 export const TESTIMONY = Object.freeze({
   'cobble-jessi': Object.freeze({
     id: 'cobble-jessi', name: 'Jessi',
-    says: 'Three weeks running she told me my boat came in light. It did not come in light. I am not going to stand here and be sorry.',
-    reading: 'She is doing the sum again. Three weeks, and every week the number on the beam was smaller than the number in her own head.',
+    says: 'Mate, I fix the carriages hauling those barrels off the quay. Three weeks straight: full loads, same boats, and Bregga kept saying they came in light. Bruv, that tally was cooked. Proper dodgy. Am I sorry? Nah. I am not going to cap about it.',
+    reading: 'They are checking the carriage deliveries again: three weeks of full barrels from the boats, and every load weighed short at the beam. Nothing had fallen off a carriage. The missing weight was on the quay.',
     gives: 'light-boats',
   }),
   'cobble-ari': Object.freeze({
@@ -228,7 +228,7 @@ export const TROY_PRESSING = Object.freeze([
 
 /** What Troy says to a name that is not the one. Each of the three has its own reason. */
 export const CLEARED = Object.freeze({
-  'cobble-jessi': 'Jessi says out loud that she is not sorry, which is not what somebody who did it says, and she was hauling with two other boats until after light. It is not her.',
+  'cobble-jessi': 'Jessi says out loud that they are not sorry, which is not what somebody who did it says. They were repairing a broken carriage axle with two witnesses until after light. It was not Jessi.',
   'cobble-ari': 'Ari is lying about that night, and she is lying about something that is not this. Whatever she was doing out at the skerry, she was not at the quay root, and I will not be the man who hangs her for the wrong thing.',
   'cobble-imani': 'She came four days ago for kelp and did not know the woman’s name until I said it to her. No.',
 });

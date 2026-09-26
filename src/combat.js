@@ -23,6 +23,10 @@ const ENEMY_RECOVERY = 1.35;
 export const ENEMY_KINDS = Object.freeze({
   goblin: Object.freeze({ tell: ENEMY_TELL, attack: ENEMY_ATTACK, contact: ENEMY_CONTACT, recovery: ENEMY_RECOVERY, damage: 17, speed: 1.8, engage: 2.12, reach: 2.15, lunge: 1.3 }),
   wolf: Object.freeze({ tell: .7, attack: .5, contact: .2, recovery: 1.05, damage: 14, speed: 2.9, engage: 2.35, reach: 2.4, lunge: 3.2 }),
+  // Kayla has her own strength wherever she travels; crossing a border does not change her body.
+  bear: Object.freeze({ tell: .55, attack: .58, contact: .23, recovery: 1.0, damage: 42, speed: 4,
+    engage: 2.6, reach: 2.7, lunge: 3.2, arc: Math.PI * .35, standoff: 1.9,
+    poise: true, stagger: false, knockback: .15, pack: 1, fixedStats: true }),
   // A trained man with a blade and a shield, and nothing like a goblin. Four optional fields make the
   // difference, and every other kind goes on ignoring them:
   //   `guard`  idle and facing the blow, he turns that much of it on his shield;
@@ -455,9 +459,10 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function makeEnemy(id, kind, point, entry = 0, hp = kind === 'dummy' ? 100 : 75) {
+    const radius = kind === 'spider' ? BODY.spider : kind === 'bear' ? BODY.bear : .45;
     const enemy = {
-      id, kind, ...(kind === 'dummy' ? {x:point.x,z:point.z} : safePoint(point.x, point.z, kind === 'spider' ? BODY.spider : .45)), yaw: 0,
-      ...(kind === 'spider' ? { r: BODY.spider } : {}),
+      id, kind, ...(kind === 'dummy' ? {x:point.x,z:point.z} : safePoint(point.x, point.z, radius)), yaw: 0,
+      ...(['spider', 'bear'].includes(kind) ? { r: radius } : {}),
       hp, maxHp: hp,
       action: 'idle', progress: 0, speed: 0, active: true,
       // Read from the same state as mitigation; the view and autopilot must never
@@ -466,6 +471,14 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     };
     enemyTimers.set(id, { actionTime: 0, cooldown: entry, hitApplied: false, entry, index: entry / 1.3 });
     return enemy;
+  }
+
+  function enemyFromSpec(spec, level) {
+    const scale = ENEMY_KINDS[spec.kind]?.fixedStats ? 1 : countryHealth(level);
+    return withCurrentHealth(Object.assign(makeEnemy(spec.id, spec.kind, spec, spec.entry, Math.round(spec.hp * scale)), {
+      ...(spec.look ? { look: spec.look } : {}), ...(spec.name ? { name: spec.name } : {}),
+      ...(spec.npcId ? { npcId: spec.npcId } : {}), ...(spec.model ? { model: spec.model } : {}),
+    }), spec);
   }
 
   function startPractice(point) {
@@ -537,8 +550,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // authored encounter for validation/retries, but instantiate only survivors.
     // Lessons deliberately bypass this death-only host policy.
     const survives = actor => next.bout || !isFallen?.(next.id, actor.id, actor);
-    state.enemies = next.enemies.filter(survives).map(enemy => withCurrentHealth(Object.assign(makeEnemy(enemy.id, enemy.kind ?? 'goblin', enemy, enemy.entry, Math.round(enemy.hp * countryHealth(next.level))), { ...(enemy.look ? { look: enemy.look } : {}),
-      ...(enemy.name ? { name: enemy.name } : {}), ...(enemy.npcId ? { npcId: enemy.npcId } : {}), ...(enemy.model ? { model: enemy.model } : {}) }), enemy));
+    state.enemies = next.enemies.filter(survives).map(enemy => enemyFromSpec(enemy, next.level));
     allyTimers.clear();
     state.allies = next.allies.filter(survives).map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
@@ -549,6 +561,28 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       state.phase = 'won';
       emit('victory', { encounterId: state.encounterId });
     }
+    return true;
+  }
+
+  /** Add one newly hostile world resident without restarting the fight already in progress.
+   * Returns false without mutation for an invalid/duplicate/out-of-arena actor,
+   * a full roster, a fallen resident, or anything outside an active lethal fight.
+   * Entry delay is measured from joining; authored health uses this encounter's
+   * country level except for kinds with fixedStats, such as Kayla. */
+  function joinEnemy(spec) {
+    if (state.phase !== 'active' || lastEncounter.bout || !spec || typeof spec !== 'object'
+      || spec.currentHp === 0 || state.enemies.length >= 12) return false;
+    const identities = new Set(['traveler', ...[...state.enemies, ...state.allies].flatMap(actor => [actor.id, actor.npcId].filter(Boolean))]);
+    if (identities.has(spec.id) || (spec.npcId && identities.has(spec.npcId))) return false;
+    const next = encounterConfig({ ...lastEncounter, enemies: [...lastEncounter.enemies, spec] });
+    if (!next) return false;
+    const arriving = next.enemies.at(-1);
+    if (isFallen?.(next.id, arriving.id, arriving)) return false;
+    const enemy = enemyFromSpec(arriving, next.level);
+    // Replacing only the array refreshes body-world's roster cache while keeping
+    // every existing combatant, projectile and action timer untouched.
+    state.enemies = [...state.enemies, enemy];
+    lastEncounter = next;
     return true;
   }
 
@@ -1395,7 +1429,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       if (!timers.hitApplied && timers.actionTime >= contact) {
         timers.hitApplied = true;
         const reach = rush ? rush.reach : profile.reach, arc = rush ? rush.arc : (profile.arc ?? Math.PI * .25);
-        applyMeleeStrike(enemy, 'enemy', { range: reach, arc, damage: Math.round(profile.damage * countryDamage(lastEncounter.level ?? 0)) });
+        applyMeleeStrike(enemy, 'enemy', { range: reach, arc, damage: Math.round(profile.damage * (profile.fixedStats ? 1 : countryDamage(lastEncounter.level ?? 0))) });
       }
       if (timers.actionTime >= duration && state.phase === 'active') {
         enemy.action = 'idle';
@@ -1804,7 +1838,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, attack, dodge, guard, draw, lowerBow, update, resetEncounter, disengage, pose, movementScale, heal, exhaust, revive, spellHit,
+    state, startPractice, finishPractice, startEncounter, joinEnemy, attack, dodge, guard, draw, lowerBow, update, resetEncounter, disengage, pose, movementScale, heal, exhaust, revive, spellHit,
     setWeaponReady(value) { weaponReady = Boolean(value); },
     /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
     get drawn() { return player.draw ?? 0; },

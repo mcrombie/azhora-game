@@ -2,9 +2,9 @@
  * The people of Cobble, the fishing village in the Pebbles, and the Empire's
  * small garrison there.
  *
- * Ambient conversation only: nobody here moves a quest. The islanders speak
- * plainly and at their own speed, the way people do who see one boat a week;
- * the army speaks in orders and requisitions. Only Imperial soldiers wear army
+ * Ambient conversation only: nobody here moves a quest. Most islanders speak
+ * plainly and at their own speed; Jessi runs on workshop enthusiasm and slang.
+ * The army speaks in orders and requisitions. Only Imperial soldiers wear army
  * armour, and soldiers are men by default.
  *
  * The seam to write on is the Empire's share of the catch — one barrel in five,
@@ -29,15 +29,16 @@ const soldier = (id, name, role, modelRole) =>
  * of 22 September 2026, and these four stand in their places.
  */
 export const PEBLOS_NPCS = Object.freeze([
-  // **Jessi**: twelve distinct hair colours, swept into her long ponytail, and glasses.
-  person('cobble-jessi', 'Jessi', 'Fisher, of Cobble', 'pond-fisher', 0x4d6f63,
+  // **Jessi**: a carriage-repair obsessive, with twelve ponytail colours and glasses.
+  person('cobble-jessi', 'Jessi', 'Carriage mechanic of Cobble', 'carriage-mechanic', 0x4d6f63,
     { hair: 0x8c2f2a, hairColors: Object.freeze([0xc83d49, 0xed7139, 0xe7b343, 0xc5d94f,
       0x54a653, 0x329b87, 0x4dc8cc, 0x4086cf, 0x5654a8, 0x9665c0, 0xc04496, 0xee8dac]),
       hairStyle: 'long-tied', glasses: true, beard: false }),
-  // **Ari**: brown skin, curly black hair. The village's own accountant, who keeps Cobble's books
+  // **Ari**: brown skin, long black curls and a violet dress. The village's own accountant, who keeps Cobble's books
   // against the Empire's tally — and who was not where she says she was.
   person('cobble-ari', 'Ari', 'Keeper of the village books', 'rise-custodian', 0x6a5f7d,
-    { hair: 0x1d1a18, hairStyle: 'curls', slight: true, beard: false, cloak: false, staff: false }, 0xa9713f),
+    { hair: 0x1d1a18, hairStyle: 'long-curly', slight: true, dress: true,
+      beard: false, glasses: false, cloak: false, staff: false }, 0xa9713f),
   // **Imani**: the vine keeper, in Cobble for kelp for Vaervelm Caelazh, and therefore the only
   // person who was at the racks before light. She is the same woman who keeps the vines at the
   // winery and she is built from the same entry (src/vineyard.js), so her skin and her green
@@ -56,9 +57,11 @@ export const PEBLOS_AMBIENT = Object.freeze({
   // **What each of them will say when they are only passing the time.** What they say about the
   // murder is Troy's quest and lives in src/murder-quest.js; this is the rest of them.
   'cobble-jessi': Object.freeze([
-    'Jessi. I fish, and I will show anybody else how to, which in Cobble is like offering to teach somebody to breathe.',
-    'Everyone is very careful around me this week because I said out loud that I am not sorry. I am not going to start being sorry to make the week easier for them.',
-    'The green is not dye, before you ask. It is, but I have stopped explaining it.',
+    'Yo, pal! Jessi. Carriage mechanic, axle goblin, certified wheel nerd. Got a clapped-out rattler? Bring that absolute wagon-shaped disaster here. We are so back, bud.',
+    'Bruv, a wonky spoke is sending the whole wheel sideways. That hub has zero chill. I will true the wheel, grease the axle, snug the linchpin, and have your carriage rolling buttery. No cap. That is my actual favourite thing.',
+    'New springs? Oh, we are cooking now, chief. Give me a carriage that goes clonk-clonk and an afternoon with my tools and I am living the dream. Absolute top-tier tinkering. Squeaks are cringe. A sweet-running axle? That slaps.',
+    'The hair? Twelve colours, mate. Maximum drip, full-spectrum nonsense, immaculate workshop vibes. The axle grease is a bonus colour. Very exclusive. You have to earn that one.',
+    'And, yeah, the whole quay is giving me the side-eye because I said I am not sorry about Bregga. Bestie, I said what I said. I can fix a busted carriage; I cannot put a polite little bow on a dodgy tally.',
   ]),
   'cobble-ari': Object.freeze([
     'Ari. I keep the village’s books, which means I write down what we actually landed and then I read what the Empire says we landed, and then I have a think.',

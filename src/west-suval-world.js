@@ -9,6 +9,8 @@ import {
 import { createWineAtticScenery } from './wine-attic-world.js';
 import { wallStateAt, towerState, buildingState, SUN_HORSE_GATE } from './solis-sack.js';
 import { SEA_WALL_NICHE } from './wine-goblin.js';
+import { createSolisHarborScenery } from './solis-harbor-world.js';
+import { inSolisHarbor } from './solis-harbor.js';
 
 /**
  * The scenery of West Suval: Solis and its walls, the Coalition's camp, and the
@@ -660,7 +662,7 @@ export function createWestSuvalScenery(kit) {
     box(material('#f2eee2'), stoneSpot.x + .31, sy + .7, stoneSpot.z, .02, .25, .45, district);
     push({ x: stoneSpot.x, z: stoneSpot.z, r: .4, kind: 'milestone' });
   }
-  // The quay below the sea wall: a stone apron, two harbour towers and the boom between them.
+  // The original shore approach and watchtowers lead down to the working harbour.
   const quay = { a0: -76, a1: -60, b0: -30, b1: 12 };
   {
     const waterline = a => { const p = P(a, -8); return gy(p.x, p.z); };
@@ -675,16 +677,6 @@ export function createWestSuvalScenery(kit) {
       for (let m = 0; m < 8; m++) { const angle = m / 8 * Math.PI * 2; box(stone, p.x + Math.sin(angle) * 2.3, y + 7.3, p.z + Math.cos(angle) * 2.3, .8, .8, .5, district).rotation.y = angle; }
       push({ x: p.x, z: p.z, r: 2.7, kind: 'harbour-tower' });
     }
-    const north = P(quay.a0 + 2.5, -24), south = P(quay.a0 + 2.5, 8);
-    const chain = [];
-    for (let k = 0; k <= 10; k++) { const u = k / 10; chain.push(new THREE.Vector3(north.x - 6 * Math.sin(u * Math.PI), .12 + (1 - Math.sin(u * Math.PI)) * 1.6, north.z + (south.z - north.z) * u)); }
-    rope(chain, .09, material('#3b3a36', { metalness: .5 }), district);
-    for (let k = 1; k < 10; k += 2) { const c = chain[k]; const log = mesh(cylinder, darkWood, c.x, .15, c.z, .28, 1.8, .28, district); log.rotation.x = Math.PI / 2; }
-    // Two boats at the quay steps.
-    for (const [tb, yaw] of [[-12, .1], [-3, -.08]]) {
-      const p = P(quay.a0 - 3.2, tb), hull = new THREE.Group(); hull.position.set(p.x, .22, p.z); hull.rotation.y = yaw; district.add(hull); movingGroups.add(hull);
-      box(woodLight, 0, 0, 0, 1.6, .5, 5.2, hull); box(darkWood, 0, .28, 0, 1.7, .1, 5.3, hull); post(wood, 0, 1.9, .4, .06, 3.6, hull);
-    }
     // The net loft on the quay.
     const loft = P(-68, -24), ly = gy(loft.x, loft.z);
     if (ly > 1) {
@@ -695,11 +687,15 @@ export function createWestSuvalScenery(kit) {
       metrics.buildings++;
     }
   }
+  const harbour = createSolisHarborScenery({ root: district, material, mesh, box, post, rope, groundHeight,
+    cylinder, colliders, wood, woodLight, darkWood });
+  metrics.harbourDecks = harbour.decks; metrics.harbourBoats = harbour.boats;
   // White cliffs above the harbour, where the city's ground drops to the sea south and west of the walls.
   for (let a = -96; a <= 70; a += 3.2) for (let b = -40; b <= 96; b += 3.2) {
     const inside = Math.abs(a) < SOLIS_CIRCUIT.halfA + 16 && Math.abs(b) < SOLIS_CIRCUIT.halfB + 16;
     if (inside || (b < 20 && a > -60) || (a > quay.a0 - 6 && b > quay.b0 - 8 && b < quay.b1 + 6)) continue;
     const p = P(a, b), h = gy(p.x, p.z);
+    if (inSolisHarbor(p.x, p.z)) continue;
     if (h < .8 || h > 5.5) continue;
     const seaward = [[-4, 0], [0, 4], [-3, 3]].some(([da, db]) => { const q = P(a + da, b + db); return gy(q.x, q.z) < .2; });
     if (!seaward || random() < .25) continue;

@@ -18,6 +18,7 @@ const ROAD_CLOTH = Object.freeze({
   'commons-miller': 0xa18452,
   'reed-worker': 0x5f8078,
   'shelter-keeper': 0x827b6d,
+  'carriage-mechanic': 0x4d6f63,
 });
 // The Empire's men-at-arms wear the red of Ambron: the tabard over their mail, and the tunic under it;
 // Suval's border guards wear slate wool and studded leather instead.
@@ -720,6 +721,14 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         headX = -.012 + stretch * .045;
         headY = Math.sin(seconds * .36 + offset) * .16;
         hip[0] -= .025; knee[1] += .045;
+      } else if (role === 'carriage-mechanic') {
+        // A spanner held ready, and an enthusiastic free hand explaining a repair.
+        const explain = Math.pow(Math.max(0, Math.sin(seconds * .62 + offset)), 3);
+        arm[1] = -.18; elbow[1] = -.78 + breath * .04; armOut[1] = .13;
+        arm[0] = -.12 - explain * .28; elbow[0] = -.36 - explain * .24; armOut[0] = -.14 - explain * .08;
+        chestY += Math.sin(seconds * .44 + offset) * .045;
+        headY = Math.sin(seconds * .39 + offset) * .14;
+        headX = -.015 + explain * .04;
       } else if (role === 'bridge-keeper') {
         // The worker checks the bridge with one thumb hooked over the toolbelt.
         arm[0] = -.12; elbow[0] = -.71; armOut[0] = -.17;
@@ -1112,6 +1121,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const isCourier = role === 'field-courier', isBridgeKeeper = role === 'bridge-keeper';
   const isCustodian = role === 'rise-custodian', isClerk = role === 'relay-clerk';
   const isWoodcutter = role === 'forest-woodcutter';
+  const isCarriageMechanic = role === 'carriage-mechanic';
   const isBirdWatcher = role === 'bird-watcher';
   // Perrin, who keeps the bird garden in Tidehaven. Not a birder: a man with a garden that birds
   // come to, which he considers a different and more sensible thing to be (src/birding.js).
@@ -1124,6 +1134,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   // and Katy's; `look.slight` opens it to anybody, which is how Jojo the harbourmaster and Jess
   // of the Stills read as the women they are (the user, 22 September 2026).
   const isKaty = role === 'bat-seeker', slight = isWineClerk || isKaty || look?.slight === true;
+  const longDress = look?.dress === true;
   // Troy, who kept the bees at the Bee Fold (src/murder-quest.js): curly red hair, half of it gone
   // dirty blonde, a red beard and a grin.
   const isKeeper = role === 'bee-keeper';
@@ -1235,11 +1246,16 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   }
 
   // The traveler wears a short, mended cloth tunic over ordinary trousers.
-  const hem = isShelterKeeper ? new THREE.CylinderGeometry(.218, .30, .60, 9) : isMiller ? new THREE.CylinderGeometry(.218, .285, .46, 8) : isDoomsayer ? new THREE.CylinderGeometry(.219, .35, .81, 9) : isCook ? new THREE.CylinderGeometry(0.214, 0.34, 0.69, 10) : isCourier || isClerk ? new THREE.CylinderGeometry(.218, .27, .42, 8) : isTraveler
+  const hem = longDress ? new THREE.CylinderGeometry(.211, .32, .65, 12) : isShelterKeeper ? new THREE.CylinderGeometry(.218, .30, .60, 9) : isMiller ? new THREE.CylinderGeometry(.218, .285, .46, 8) : isDoomsayer ? new THREE.CylinderGeometry(.219, .35, .81, 9) : isCook ? new THREE.CylinderGeometry(0.214, 0.34, 0.69, 10) : isCourier || isClerk ? new THREE.CylinderGeometry(.218, .27, .42, 8) : isTraveler
     ? new THREE.CylinderGeometry(0.218, 0.244, 0.158, 8)
     : new THREE.CylinderGeometry(0.218, 0.285, 0.275, 8);
-  part(body, hem, cloth, [0, isShelterKeeper ? .64 : isMiller ? .718 : isDoomsayer ? .563 : isCook ? 0.585 : isCourier || isClerk ? .753 : isTraveler ? 0.881 : 0.814, 0], [1, 1, isCook || isDoomsayer ? 0.79 : 0.72]);
-  const torsoShape = new THREE.CylinderGeometry(isCook ? 0.226 : 0.252, isCook ? 0.2 : 0.217, 0.395, 8);
+  part(body, hem, cloth, [0, longDress ? .61 : isShelterKeeper ? .64 : isMiller ? .718 : isDoomsayer ? .563 : isCook ? 0.585 : isCourier || isClerk ? .753 : isTraveler ? 0.881 : 0.814, 0], [1, 1, longDress || isCook || isDoomsayer ? 0.79 : 0.72]);
+  if (longDress) {
+    // A fitted waist and a softly flared, calf-length skirt keep Ari's violet
+    // clothes distinct from the custodian's short travelling tunic.
+    part(body, new THREE.CylinderGeometry(.315, .321, .032, 12), clothLight, [0, .302, 0], [1, 1, .79]);
+  }
+  const torsoShape = new THREE.CylinderGeometry(longDress ? .236 : isCook ? 0.226 : 0.252, longDress ? .205 : isCook ? 0.2 : 0.217, 0.395, 8);
   part(body, torsoShape, cloth, [0, 1.12, 0], [isDyer ? 0.86 : 1, 1, isDyer ? 0.64 : 0.68]);
   if (isMercenary) {
     // The plain laced jerkin is the company's only shared piece, and the two men
@@ -1298,7 +1314,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     elbow.position.set(side * 0.019, -0.245, 0);
     pivot.add(elbow);
     elbows.push(elbow);
-    if (isBridgeKeeper || isWoodcutter || isMiller || isReedWorker || bareForearms || isWineSeller || isVineKeeper || isWinemaker || isKeeperKin) {
+    if (isBridgeKeeper || isWoodcutter || isCarriageMechanic || isMiller || isReedWorker || bareForearms || isWineSeller || isVineKeeper || isWinemaker || isKeeperKin) {
       // Rolled sleeves show bare working forearms, not bracers or armor.
       part(elbow, UNIT_CYLINDER, garment === 'sleeveless' ? skinMat : linen, [0, -.017, .003], [.085, .067, .088]);
       round(elbow, skinMat, [0, -.103, .007], [.067, .082, .07]);
@@ -1573,6 +1589,39 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       for (const side of [-1, 1]) {
         round(crop, hairMat, [side * 0.152, -0.09, -0.108], [0.066, 0.15, 0.084]);
         round(crop, hairMat, [side * 0.146, -0.2, -0.03], [0.058, 0.126, 0.07]);
+      }
+    } else if (hairStyle === 'long-curly') {
+      // Ari's full crown flows into loose curls below the shoulders. The side
+      // lengths stay outside the cheeks, leaving her eyes, smile and jaw clear.
+      const curlLight = material(new THREE.Color(hairMat.color).lerp(new THREE.Color(0x51443a), .16));
+      round(crop, hairMat, [0, .297, -.025], [.22, .145, .211]);
+      for (const [x, y, z, width, tilt] of [[-.085, .351, .097, .119, -.2], [.107, .339, .087, .105, .22],
+        [-.144, .338, -.087, .093, -.3], [.142, .347, -.096, .096, .24], [0, .371, -.11, .12, -.1]]) {
+        const curl = round(crop, hairMat, [x, y, z], [width, .074, .101]);
+        curl.rotation.z = tilt;
+      }
+      // Overlapping rear lengths give the curls a continuous, rounded outline.
+      for (const [y, width] of [[.135, .205], [-.052, .203], [-.24, .17]])
+        round(crop, hairMat, [0, y, -.184], [width, .17, .119]);
+      for (let column = 0; column < 5; column++) {
+        const x = (column - 2) * .078;
+        for (let row = 0; row < 4; row++) {
+          const y = .208 - row * .156 - (column % 2) * .029;
+          const wave = Math.sin(row * 2.25 + column * .8);
+          const curl = round(crop, (column + row) % 4 === 0 ? curlLight : hairMat,
+            [x + wave * .014, y, -.267 - Math.cos(row * 1.9 + column) * .012],
+            [.065 - row * .004, .106, .07]);
+          curl.rotation.z = wave * .23;
+        }
+      }
+      for (const side of [-1, 1]) {
+        for (const [i, y] of [.247, .106, -.035, -.176, -.312].entries()) {
+          const wave = Math.sin(i * 2.15 + (side > 0 ? .65 : 0));
+          const curl = round(crop, i === 2 ? curlLight : hairMat,
+            [side * (.207 + wave * .014), y, i < 2 ? -.018 : .041 + (i - 2) * .013],
+            [.067 - Math.max(0, i - 2) * .005, .098, .077]);
+          curl.rotation.z = side * wave * .17;
+        }
       }
     } else if (hairStyle === 'curls') {
       for (const [x, y, z] of [[-0.12, 0.34, 0.07], [0.02, 0.365, 0.086], [0.136, 0.332, 0.056], [-0.176, 0.3, -0.05],
@@ -2595,6 +2644,33 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       // Stained skin, not gloves: the colour sits in the hand rather than over it.
       round(wrist, material(new THREE.Color(skin).lerp(new THREE.Color(0x4f2a46), .62)), [0, -.068, .012], [.058, .05, .062]);
     }
+  } else if (isCarriageMechanic) {
+    // Jessi's working leather apron, spare linchpins and an open-ended spanner.
+    const apron = material(0x69503a), worn = material(0x937654), grease = material(0x383b31);
+    const iron = material(0x8b9292, { metalness: .45, roughness: .6 });
+    box(body, apron, [0, 1.091, .181], [.235, .3, .03]);
+    box(body, apron, [0, .755, .197], [.34, .43, .032]);
+    for (const side of [-1, 1]) ribbon(body, apron, [side * .11, 1.285, .09], [side * .095, 1.205, .181], .034, .019);
+    box(body, worn, [0, .815, .219], [.29, .125, .018]);
+    for (const [x, y, size] of [[-.075, 1.057, .046], [.091, .681, .063], [-.105, .734, .037]]) {
+      const stain = round(body, grease, [x, y, .228], [size, size * 1.4, .006]);
+      stain.rotation.z = -.27;
+    }
+    for (const x of [-.073, -.027]) {
+      box(body, iron, [x, .867, .237], [.014, .115, .015]);
+      part(body, new THREE.TorusGeometry(.018, .005, 4, 8), iron, [x, .933, .237]);
+    }
+    const mallet = new THREE.Group(); mallet.name = 'Carriage repair mallet'; body.add(mallet);
+    mallet.position.set(.22, .825, .018); mallet.rotation.z = -.18;
+    box(mallet, leather, [0, -.055, 0], [.028, .235, .029]);
+    box(mallet, worn, [0, .073, 0], [.132, .075, .075]);
+    ribbon(body, apron, [.185, .867, .013], [.251, .867, .013], .047, .052);
+    const spanner = new THREE.Group(); spanner.name = 'Carriage repair spanner'; wrists[1].add(spanner);
+    spanner.position.set(0, -.012, .05); spanner.rotation.z = -.18;
+    box(spanner, iron, [0, .044, 0], [.035, .25, .025]);
+    box(spanner, iron, [0, .18, 0], [.098, .05, .031]);
+    for (const side of [-1, 1]) box(spanner, iron, [side * .035, .218, 0], [.028, .065, .031]);
+    part(spanner, new THREE.TorusGeometry(.028, .01, 4, 10), iron, [0, -.099, 0]);
   } else if (isVineKeeper) {
     // The shirt sleeves are rolled to the elbow from the thaw to the leaf fall, and over the
     // shirt a heavy canvas apron wiped down the same two places for eleven years: a bib to the
