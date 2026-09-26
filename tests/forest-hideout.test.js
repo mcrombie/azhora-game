@@ -265,7 +265,7 @@ test('either scout attacks an unbriefed traveler within reach without a quest pr
   }
 });
 
-test('the camp approach and the route to Mop remain safe without inspection', () => {
+test('the camp approach and the route to Olive remain safe without inspection', () => {
   const { quest } = fixture(), before = quest.snapshot();
   const safe = [FOREST_HIDEOUT_QUEST.approach, CAT.at, LIZ_STAND, null, {}, { x: NaN, z: 0 }];
   for (let step = 0; step <= 100; step++) {

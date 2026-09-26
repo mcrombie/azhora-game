@@ -24,6 +24,11 @@ import { createSpiderQuest } from '../src/spider-quest.js';
 import { createMurderQuest, WITNESS_IDS, MURDERER } from '../src/murder-quest.js';
 import { QUEST_HOMES } from '../src/quest-homes.js';
 import { FERRY_LANDINGS } from '../src/ferry.js';
+import { createKayla, KAYLA_START } from '../src/kayla.js';
+import { createKaylaRace, KAYLA_RACE_ROUTE } from '../src/kayla-race.js';
+import { createCubHoneyQuest, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_SOURCE } from '../src/cub-honey-quest.js';
+import { BEAR_HOME_ROUTE } from '../src/bear-family.js';
+import { LIZ_STAND } from '../src/cat-quest.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -50,6 +55,68 @@ function fixture() {
   const storage = memoryStorage();
   return { inventory, weapons, journey, data, storage, checkpoint: createRoadCheckpoint({ storage }) };
 }
+
+const cubHostSnapshot = quest => ({ version: 1, quest, alerted: false, alertTime: 0, patrol: 0, wait: -1, liz: { ...LIZ_STAND } });
+function bearQuestState() {
+  const race = createKaylaRace(); race.accept();
+  const won = race.snapshot(); won.stage = 'won'; won.kayla.next = KAYLA_RACE_ROUTE.length;
+  race.restore(won); race.takeReward();
+  const cub = createCubHoneyQuest(); cub.accept();
+  cub.collect({ source: CUB_HONEY_SOURCE, unseen: true, grant: () => true }); cub.deliver({ take: () => true });
+  return { kaylaRace: race.snapshot(), cubHoney: cubHostSnapshot(cub.snapshot()),
+    bearFamily: { version: 1, phase: 'roaming', next: BEAR_HOME_ROUTE.length, cub: { x: CUB_STAND.x, z: CUB_STAND.z } } };
+}
+
+test('bear quest checkpoints keep both rewards and family positions without rewarding either quest twice', () => {
+  const { data, checkpoint } = fixture(), quests = bearQuestState();
+  const saved = { ...data, ...quests }; const result = checkpoint.save(saved);
+  assert.equal(result.ok, true, result.reason);
+  const loaded = checkpoint.read().data;
+  for (const field of ['kaylaRace', 'cubHoney', 'bearFamily']) assert.deepEqual(loaded[field], quests[field]);
+  loaded.bearFamily.cub.x += 10; loaded.kaylaRace.ed.z += 10;
+  assert.deepEqual(checkpoint.read().data.bearFamily, quests.bearFamily);
+  assert.deepEqual(checkpoint.read().data.kaylaRace, quests.kaylaRace);
+  const race = createKaylaRace(), cub = createCubHoneyQuest(); race.restore(quests.kaylaRace); cub.restore(quests.cubHoney.quest);
+  assert.equal(race.takeReward(), 0); let rewards = 0;
+  assert.equal(cub.deliver({ take: () => true, reward: () => rewards++ }), false); assert.equal(rewards, 0);
+});
+
+test('bear family checkpoints require both quests before roaming and keep the last save when any bear section is invalid', () => {
+  const { data, checkpoint } = fixture(), quests = bearQuestState(), saved = { ...data, ...quests };
+  assert.equal(checkpoint.save(saved).ok, true);
+  const unfinishedRace = createKaylaRace().snapshot(), unfinishedCub = cubHostSnapshot(createCubHoneyQuest().snapshot());
+  for (const changes of [
+    { kaylaRace: null }, { cubHoney: null }, { bearFamily: null },
+    { kaylaRace: { ...quests.kaylaRace, attempts: -1 } },
+    { cubHoney: { ...quests.cubHoney, quest: { ...quests.cubHoney.quest, reward: false } } },
+    { cubHoney: { ...quests.cubHoney, alertTime: -1 } },
+    { bearFamily: { ...quests.bearFamily, next: BEAR_HOME_ROUTE.length + 1 } },
+    { kaylaRace: unfinishedRace }, { kaylaRace: undefined }, { cubHoney: unfinishedCub }, { cubHoney: undefined },
+    { kaylaRace: unfinishedRace, bearFamily: { ...quests.bearFamily, phase: 'returning' } }
+  ]) {
+    assert.equal(checkpoint.save({ ...saved, ...changes }).ok, false, JSON.stringify(changes));
+    assert.deepEqual(checkpoint.read().data.bearFamily, quests.bearFamily);
+  }
+  assert.equal(checkpoint.save({ ...saved, cubHoney: unfinishedCub, bearFamily: { ...quests.bearFamily, phase: 'waiting-cub' } }).ok, true,
+    'Kayla may return first and wait for the cub’s separate quest');
+  assert.equal(checkpoint.save({ ...saved, kaylaRace: unfinishedRace, bearFamily: { ...quests.bearFamily, phase: 'waiting-race', next: 0 } }).ok, true,
+    'the cub’s quest can be completed before the race');
+  const old = { ...data, kayla: createKayla().snapshot() }; assert.equal(checkpoint.save(old).ok, true);
+  const legacy = checkpoint.read().data;
+  assert.deepEqual(legacy.kayla.position, { x: KAYLA_START.x, z: KAYLA_START.z });
+  for (const field of ['kaylaRace', 'cubHoney', 'bearFamily']) assert.equal(Object.hasOwn(legacy, field), false, 'legacy saves do not invent new progress');
+});
+
+test('a saved stolen comb must be the one carried for the cub’s unfinished delivery', () => {
+  const { data, checkpoint } = fixture(), cub = createCubHoneyQuest(); cub.accept();
+  cub.collect({ source: CUB_HONEY_SOURCE, unseen: true, grant: () => true });
+  const carrying = { ...data, cubHoney: cubHostSnapshot(cub.snapshot()), inventory: [...data.inventory, { id: CUB_HONEY_ITEM, quantity: 1 }] };
+  assert.equal(checkpoint.save(carrying).ok, true); assert.deepEqual(checkpoint.read().data.cubHoney, carrying.cubHoney);
+  assert.equal(checkpoint.save({ ...carrying, inventory: data.inventory }).ok, false);
+  assert.equal(checkpoint.save({ ...carrying, cubHoney: cubHostSnapshot(createCubHoneyQuest().snapshot()) }).ok, false);
+  assert.equal(checkpoint.save({ ...carrying, inventory: [...data.inventory, { id: CUB_HONEY_ITEM, quantity: 2 }] }).ok, false);
+  assert.equal(checkpoint.save({ ...data, cubHoney: cubHostSnapshot(cub.snapshot()) }).ok, false, 'ordinary honey never stands in for Liz’s comb');
+});
 
 test('Cagney checkpoints keep escort injuries and casualties without replaying the reward', () => {
   const { checkpoint, data } = fixture(), escort = createCagneyQuest();

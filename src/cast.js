@@ -84,6 +84,7 @@ export const OWN_IDS = Object.freeze([
   'garden-keeper',      // Jean, the user's blonde birding teacher in Tidehaven
   'doomsayer',           // Mark, who reads the signs and teaches Botany and Geology on Tidehaven's shore
   'ben-sorcerer',        // Ben, of the sorcerer's guild, and the only man who teaches fire
+  'kayla-cub',          // The unnamed cub teaching Stealth at the Drent river.
   'kayla',              // The kind talking bear on her honey rounds
   'liz-beekeeper',       // Liz, who keeps the Pueth skeps and the game's honeycomb
   'cobble-jessi', 'cobble-ari', 'cobble-imani', 'cobble-weighmaster',   // Cobble, and the murder

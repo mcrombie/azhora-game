@@ -66,3 +66,8 @@
   #testing .test-goto { grid-template-columns: 1fr 1fr 46px; }
   #testing .test-goto label { grid-column: 1 / -1; }
 }
+
+#bear-race-status { position: absolute; top: 88px; left: 50%; transform: translateX(-50%); padding: 13px 20px; border: 1px solid #ad935c; border-radius: 4px; background: #163d35ed; color: #fff0c9; text-align: center; pointer-events: none; z-index: 4; }
+#bear-race-status strong { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+#bear-race-status p { margin: 6px 0 0; font-size: 13px; }
+.quest-choice[data-grade="skill"] { color: #a9de91; }

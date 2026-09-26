@@ -495,3 +495,19 @@ Jessi has twelve distinct hair colors in streaks across her crown and long tied 
 - Ari keeps her brown skin and purple palette, with long black curls and a long violet dress. No hat.
 - Jessi keeps the twelve-color hair and glasses. They repair carriages, carry workshop tools instead of a fishing pole, and use abundant playful slang about their trade. Their murder-case testimony and alibi concern carriage repairs and deliveries; the clue structure remains unchanged.
 - Addison stands clear of the Suval lighthouse cottage, facing its open yard entrance. Solis gets a connected physical harbor with walkable waterfront piers, moorings and boats. This adds scenery and access, not extra residents or new ferry destinations.
+
+### 2026-09-26 - Kayla's race and her cub's honey lesson
+
+- The user authorized this redesign and its implementation. It supersedes the plan that assigned the stealth theft to Kayla: an unnamed **Bear cub** gives that lesson beside the Drent bank of the Tessen crossing into Pueth. The user will choose the cub's name later.
+- Kayla waits outside Ambron's east/Ossen Gate. Ed the Chameleon stole her honey and demands a race. Accepting makes the existing Ed poof into the scene, riding a unicycle; the player rides and steers Kayla to the prophet's Caloss crossroads. Cagney may already have left on her own quest. Winning awards honey once.
+- The cub teaches Stealth and asks the player to steal a particular comb from Liz's apiary. Real sight, sound, facing, and solid cover determine detection. Liz retaliates against a caught thief with one telegraphed cast of ten bee swarms, using ordinary health, escape, and checkpoint recovery. Ordinary visits to Liz remain safe.
+- After the race, Kayla physically returns to her cub. Both quests can be done in either order. Only after both are complete and the bears have reunited do Kayla and her cub roam together through Drent, Pueth, and Luscia, including Liz's apiary. Neither quest alone starts roaming.
+- Add distinct **Kayla** race and **Bear cub** Stealth computer-autoplay cards alongside Ben, Liz, Troy, and Cagney in Quest playtests. These demonstrations use actual movement and interactions and preserve the normal saved adventure.
+- The implementation and verification contract is in [Kayla, her cub, and the honey quests](kayla-honey-quest-plan.md). Native test completion is reported separately from this accepted design.
+
+
+### 2026-09-26 - Liz's cat is Olive
+
+Liz's rescue quest, dialogue, journal, playtest card and autoplay status use the name
+**Olive**. This renames the existing cat; keep the `liz-cat` identity and saved quest
+progress, behavior and rewards compatible with older checkpoints.

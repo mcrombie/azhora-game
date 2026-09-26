@@ -798,7 +798,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
    * that an arrow and a sword cannot disagree about it - Jerry's mark and Jojo's straw post both
    * run in the practice phase, and nothing shot at a lesson may take anyone below one.
    */
-  const killFloor = () => (lastEncounter.bout || state.phase === 'practice' ? 1 : 0);
+  const killFloor = () => ((state.phase === 'active' && lastEncounter.bout) || state.phase === 'practice' ? 1 : 0);
   /** Whether this body is near enough to the arrow to be the thing it stops on. */
   const inTheWay = (body, arrow, radius = BOW.body) => Math.hypot(body.x - arrow.x, body.z - arrow.z) <= radius;
   const combatantIds = () => [...new Set(['traveler', ...state.enemies.flatMap(actor => [actor.id, actor.npcId]),
@@ -1279,6 +1279,15 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     const attribution = { arrow: true, by, source: arrow.owner ? 'ally' : 'player', impactId: `impact-${arrow.id}` };
     emit('ally-hit', { id: ally.id, damage, x: ally.x, z: ally.z, ...attribution });
     if (!ally.active) emit(ally.spared ? 'ally-wounded' : 'ally-down', { id: ally.id, x: ally.x, z: ally.z, ...attribution });
+  }
+
+  /** NPC-owned magic uses the same armour, dodge protection, hit feedback and defeat as a blow. */
+  function npcSpellHit(damage, {sourceId, spellId='summon-bees', x=position.x, z=position.z, encounterId='liz-apiary'}={}) {
+    if(!Number.isFinite(damage)||damage<=0||!sourceId||player.hp<=0||state.phase==='defeated')return {damage:0};
+    if(state.phase!=='active')state.encounterId=encounterId;
+    const before=player.hp,yaw=Math.atan2(position.x-x,position.z-z);
+    hurtPlayer({id:sourceId,x,z,yaw},damage,{source:'enemy',sourceId,spell:spellId},true);
+    return {damage:before-player.hp,defeated:player.hp<=0};
   }
 
   /** The fight is over and he lost it. One place, so the shield's path cannot drift from the other. */
@@ -1838,7 +1847,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   return {
-    state, startPractice, finishPractice, startEncounter, joinEnemy, attack, dodge, guard, draw, lowerBow, update, resetEncounter, disengage, pose, movementScale, heal, exhaust, revive, spellHit,
+    state, startPractice, finishPractice, startEncounter, joinEnemy, attack, dodge, guard, draw, lowerBow, update, resetEncounter, disengage, pose, movementScale, heal, exhaust, revive, spellHit, npcSpellHit,
     setWeaponReady(value) { weaponReady = Boolean(value); },
     /** How far the bow is drawn right now, 0 to 1, for the picture and the HUD. */
     get drawn() { return player.draw ?? 0; },

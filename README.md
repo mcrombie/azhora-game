@@ -168,7 +168,7 @@ The storage key and file keep their original road-checkpoint names. **Older vers
 
 Press **F8**, use the opening screen's testing button, or choose **Testing tools** from Pause. F8 also works from a defeat screen.
 
-**Quest playtests** comes first: Ben's spider hunt, Liz's rescue of Mop, Troy's investigation, and Cagney's escort. Each card teleports to a fresh run of that quest; the magic quests stop at the reward choice. Any key or click takes control, and **P** resumes. These demos protect the normal saved adventure.
+**Quest playtests** comes first: Ben's spider hunt, Liz's rescue of Olive, Troy's investigation, and Cagney's escort. Each card teleports to a fresh run of that quest; the magic quests stop at the reward choice. Any key or click takes control, and **P** resumes. These demos protect the normal saved adventure.
 
 **Main story jumps** offers Iven's satchel assignment, the Republican at the relay, and the Imperial recall decision.
 
@@ -307,7 +307,7 @@ The three coastal ferry hosts are Jess in Tidehaven, Maddie in Port Calos, and H
 
 Paradise Springs (Vaervelm Caelazh) occupies the land hex southeast of Port Calos, reached by a lane from town. Its three residents are Rob, KAT and MAT. KAT and MAT introduce the standalone Wine skill, as can Ben, Liz and Troy; Wine requires no Farming experience. Rob's viticulture lessons are a future Farming branch with a provisional level-5 requirement. His muted book-and-padlock marker shows when that prerequisite is unmet; his dialogue displays the player's level and clearly identifies the lessons as not yet available.
 
-Liz now lives beside a small cottage, a working apiary with straw skeps and wooden hives, and a fenced flower-and-herb garden. Her original interaction point and Mop's return approach remain open.
+Liz now lives beside a small cottage, a working apiary with straw skeps and wooden hives, and a fenced flower-and-herb garden. Her original interaction point and Olive's return approach remain open.
 
 [Cagney and the Cagnappers](docs/cagney-escort.md) is an optional escort west from Caelom's fork to Ambron. F8 includes a dedicated quest playtest; `npm run test:cagney:autoplay` checks the complete walk, ambush, and reward through ordinary game inputs.
 
@@ -318,6 +318,13 @@ The desktop icon is an abstract gold sun and winding coastal path over teal wate
 
 ### Kayla and the Cobble character update
 
-`src/kayla.js` owns Kayla's persistent honey rounds and dialogue; `kayla-host.js` joins her ordinary resident health to her physical roaming and self-defense. `kayla-character.js` is her articulated brown-bear model. Her authored circuit visits Drent, Liz's clearing in Pueth, and Luscia; `kayla-world.test.js` walks the full route against real scenery and the initially broken Caloss bridge. `npm run test:kayla` checks the actual conversation/honey choice, combat, checkpoints and corpse restoration in an isolated Electron run.
+`src/kayla.js` owns Kayla's persistent honey rounds and dialogue; `kayla-host.js` joins her ordinary resident health to her physical roaming and self-defense. `kayla-character.js` is her articulated brown-bear model. Her authored circuit visits Drent, Liz's clearing in Pueth, and Luscia; `kayla-world.test.js` walks the full route against real scenery and the initially broken Caloss bridge. `npm run test:kayla` checks her race invitation, peaceful refusal, combat, checkpoints and corpse restoration in an isolated Electron run.
 
 Ari has long black curls and a violet dress. Jessi retains all twelve hair colors and now works in carriage repair, with tools, an apron and slang-heavy dialogue; the Troy investigation retains its existing clue identities.
+
+
+### Bear family quests
+
+Kayla waits at Ambron's east gate for **The Honey Race**. Ride her along the Ossen road against Ed the Chameleon on his unicycle. Her unnamed cub offers **A Cub's Share**, a Stealth lesson at the Drent river crossing. Liz retaliates against a detected honey theft with ten bee swarms. The two bears resume their honey rounds only after both quests and their physical reunion.
+
+F8 / Quest playtests includes separate Kayla and Bear cub autoplay cards. `npm run test:bear-quests` runs both real pilots, mounted and carrying checkpoints, reunion, bee damage, escape, and normal defeat recovery in an isolated save. The state machines live in `kayla-race.js`, `cub-honey-quest.js`, and `bear-family.js`; their hosts own movement and dialogue, while `apiary-bees.js` owns the NPC spell.

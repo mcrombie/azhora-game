@@ -41,26 +41,32 @@ export async function runKaylaChecks(h) {
   check(h.combat.state.phase === 'peaceful' && !h.host.state().provoked && h.crime.health(KAYLA.id).hp === 450,
     'Standing beside Kayla is peaceful and she has her own full health');
   check(h.npc.actor === originalActor && h.npc.actor.group.visible && distance(h.npc.actor.group.position, h.host.model.position) < .01,
-    'One visible bear occupies her roaming position');
+    'One visible bear occupies her resident position');
 
-  h.inventory.add('honeycomb', 1);
   const honeyBefore = h.inventory.count('honeycomb'), giftsBefore = h.host.model.state().gifts;
+  const raceBefore = h.race.state();
   h.conversation(h.npc); await render();
-  check(h.host.model.state().met && document.getElementById('speaker')?.textContent === KAYLA.name,
+  check(document.getElementById('speaker')?.textContent === KAYLA.name,
     'The ordinary conversation opens with Kayla');
-  await choose('kayla-give-honey'); h.closeDialogue();
-  check(h.inventory.count('honeycomb') === honeyBefore - 1 && h.host.model.state().gifts === giftsBefore + 1
-    && h.host.model.state().honey > 0 && h.combat.state.phase === 'peaceful',
-  'Her honey gift consumes exactly one comb and leaves the meeting peaceful');
+  for (let page = 0; page < 12 && !document.querySelector('[data-choice="kayla-race-accept"]'); page++) h.nextSpeech();
+  const offer = document.querySelector('[data-choice="kayla-race-accept"]');
+  check(offer && !offer.disabled, 'Kayla visibly offers the honey race at her east-gate home');
+  await choose('kayla-race-leave'); h.closeDialogue();
+  const declined = h.race.state();
+  check(declined.stage === 'available' && declined.attempts === raceBefore.attempts
+    && !declined.mounted && !declined.edVisible && h.inventory.count('honeycomb') === honeyBefore
+    && h.host.model.state().gifts === giftsBefore && h.combat.state.phase === 'peaceful',
+  'Declining the race leaves it available without mounting, summoning Ed or changing honey');
 
   const saved = copy(h.snapshot());
-  check(accepted(h.validate(saved)), 'The complete game checkpoint accepts Kayla and her gift');
+  check(accepted(h.validate(saved)), 'The complete game checkpoint accepts Kayla and her available race');
   const corrupt = copy(saved); corrupt.kayla.next = -1;
   check(!accepted(h.validate(corrupt)), 'An invalid Kayla route cursor rejects the checkpoint');
   const storedKayla = copy(saved.kayla);
   await load(saved);
   check(h.host.model.state().gifts === storedKayla.gifts && distance(h.host.model.position, storedKayla.position) < .001
-    && h.crime.health(KAYLA.id).hp === 450, 'Loading restores her gift, position and health');
+    && h.crime.health(KAYLA.id).hp === 450 && h.race.state().stage === 'available'
+    && h.inventory.count('honeycomb') === honeyBefore, 'Loading restores her resident position, health and unaccepted race');
 
   approach();
   const hit = h.crime.assault({ npcId: KAYLA.id, damage: 12, source: 'player' });

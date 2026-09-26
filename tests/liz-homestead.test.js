@@ -49,7 +49,7 @@ test('the homestead paths, cottage approach and open garden gate can all be walk
   assert.ok(canStand(LIZ_GARDEN.entry.x,LIZ_GARDEN.entry.z,world),'the garden entrance stays open');
 });
 
-test('returning with Mop remains open and completes his existing home condition',()=>{
+test('returning with Olive remains open and completes his existing home condition',()=>{
   // The camp is east of home. The final twenty metres must not be fenced off
   // or occupied by a cottage, hive or garden bed added around Liz.
   const approach={x:LIZ_STAND.x+20,z:LIZ_STAND.z};

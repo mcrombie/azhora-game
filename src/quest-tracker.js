@@ -9,6 +9,7 @@ export const QUEST_TRACKER_TYPES = Object.freeze({
   main: Object.freeze({ label: 'Main quest', grade: 'main', order: 0 }),
   secondary: Object.freeze({ label: 'Secondary quest', grade: 'plot', order: 1 }),
   tertiary: Object.freeze({ label: 'Tertiary quest', grade: 'deed', order: 2 }),
+  skill: Object.freeze({ label: 'Skill training', grade: 'skill', order: 3 }),
 });
 const namedGates = new Set([...LIVE, ...CLOSED]);
 const finished = quest => !!quest?.complete || !!quest?.over || ['complete', 'done', 'closed', 'abandoned', 'failed'].includes(quest?.stage);
@@ -44,9 +45,9 @@ export function activeOptionalQuests({ spider = null, murder = null, cat = null,
     });
   }
   if (cat && ['looking', 'following', 'home'].includes(cat.stage) && !cat.over) {
-    tasks.push({ id: 'liz-cat', active: true, type: 'tertiary', title: 'Bring Mop home', stage: cat.stage,
-      detail: cat.stage === 'looking' ? 'Find Mop near the goblin camp in Pueth. Approach quietly and let him come to you.'
-        : cat.stage === 'following' ? 'Walk Mop back to Liz. Stay close and keep him away from fighting.'
+    tasks.push({ id: 'liz-cat', active: true, type: 'tertiary', title: 'Bring Olive home', stage: cat.stage,
+      detail: cat.stage === 'looking' ? 'Find Olive near the goblin camp in Pueth. Approach quietly and let him come to you.'
+        : cat.stage === 'following' ? 'Walk Olive back to Liz. Stay close and keep him away from fighting.'
           : 'Speak to Liz and choose the coin or her lesson in the bees.',
       destinationIds: cat.stage === 'looking' ? [CAT.id] : [LIZ.id],
     });

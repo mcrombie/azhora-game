@@ -133,7 +133,7 @@ export function createForestHideoutQuest({ inventory, onEvent = () => {} } = {})
   }
 
   // Goblins defend their camp whether or not the traveler accepted its errand.
-  // The approach and Mop's midden are outside this reach; the quest remains avoidable.
+  // The approach and Olive's midden are outside this reach; the quest remains avoidable.
   function alert(position) {
     if (!canAlert(position)) return fail('The scouts have not spotted you.');
     inspect();

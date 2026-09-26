@@ -38,6 +38,54 @@ function tieDye() {
 }
 const DRUNK = [0x5fa84a, 0x3f9e7a, 0xb0a33a, 0x7a3f8f, 0x4f9f52].map(c => new THREE.Color(c)), SOBER = new THREE.Color(0x8a8f86);
 
+/** One wheel, a fork and a saddle; Ed's existing body is the only rider. */
+function makeUnicycle(group, rig, hips, skin) {
+  const cycle = new THREE.Group(); cycle.name = 'Ed’s unicycle'; cycle.visible = false; group.add(cycle);
+  const iron = mat(0x494347, { metalness: .5, roughness: .45 }), brass = mat(0xb9914e), rubber = mat(0x342b25), leather = mat(0x642c39);
+  const wheel = new THREE.Group(); wheel.name = 'Single unicycle wheel'; wheel.position.y = .36; cycle.add(wheel);
+  add(wheel, new THREE.TorusGeometry(.325, .035, 7, 24), rubber, [0, 0, 0], [1, 1, 1], [0, Math.PI / 2, 0]);
+  add(wheel, new THREE.TorusGeometry(.291, .012, 6, 24), brass, [0, 0, 0], [1, 1, 1], [0, Math.PI / 2, 0]);
+  add(wheel, tube, iron, [0, 0, 0], [.035, .28, .035], [0, 0, Math.PI / 2]);
+  for (let k = 0; k < 8; k++) add(wheel, tube, brass, [0, 0, 0], [.006, .58, .006], [k * Math.PI / 8, 0, 0]);
+  for (const side of [-1, 1]) add(cycle, tube, brass, [side * .09, .66, 0], [.022, .6, .022]);
+  add(cycle, tube, iron, [0, .99, 0], [.025, .21, .025]);
+  add(cycle, ball, leather, [0, 1.085, -.015], [.145, .042, .12]);
+  const pedalSets = [], limbPoints = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  for (const side of [-1, 1]) {
+    const crank = new THREE.Group(); crank.name = side < 0 ? 'Left crank and pedal' : 'Right crank and pedal'; cycle.add(crank);
+    add(crank, tube, iron, [side * .14, 0, 0], [.014, .13, .014]);
+    const pedal = add(cycle, new THREE.BoxGeometry(.115, .028, .075), rubber, [side * .2, .36, 0]);
+    const upper = add(cycle, tube, skin, [0, 0, 0], [.028, 1, .028]), lower = add(cycle, tube, skin, [0, 0, 0], [.025, 1, .025]);
+    const foot = add(cycle, ball, skin, [0, 0, 0], [.055, .027, .055]);
+    pedalSets.push({ side, crank, pedal, upper, lower, foot });
+  }
+  let enabled = false, phase = 0;
+  const up = new THREE.Vector3(0, 1, 0), delta = new THREE.Vector3();
+  function segment(mesh, a, b) { delta.subVectors(b, a); mesh.position.copy(a).add(b).multiplyScalar(.5); mesh.scale.y = delta.length(); mesh.quaternion.setFromUnitVectors(up, delta.normalize()); }
+  function setEnabled(value) {
+    enabled = !!value; cycle.visible = enabled;
+    hips[2].visible = hips[3].visible = !enabled;
+    if (!enabled) { rig.position.y = 0; for (const hip of hips) hip.rotation.set(0, 0, 0); }
+  }
+  function update(time, dt, speed) {
+    if (!enabled) return;
+    phase += Math.max(0, speed) * dt / .36; wheel.rotation.x = phase;
+    rig.position.y = .85; rig.rotation.x = -.68; rig.rotation.z = Math.sin(time * 3.1) * .025;
+    for (let i = 0; i < 2; i++) hips[i].rotation.set(-.95, 0, (i ? 1 : -1) * .22);
+    rig.updateMatrixWorld(true);
+    for (let i = 0; i < 2; i++) {
+      const { side, crank, pedal, upper, lower, foot } = pedalSets[i], angle = phase + (side < 0 ? 0 : Math.PI);
+      const y = .36 + Math.cos(angle) * .13, z = Math.sin(angle) * .13;
+      crank.position.set(0, .36 + Math.cos(angle) * .065, Math.sin(angle) * .065); crank.rotation.x = angle;
+      pedal.position.set(side * .2, y, z); foot.position.set(side * .2, y + .035, z);
+      hips[i + 2].getWorldPosition(limbPoints[0]); cycle.worldToLocal(limbPoints[0]);
+      limbPoints[2].copy(foot.position); limbPoints[1].copy(limbPoints[0]).lerp(limbPoints[2], .5); limbPoints[1].x = side * .26; limbPoints[1].z += .13;
+      segment(upper, limbPoints[0], limbPoints[1]); segment(lower, limbPoints[1], limbPoints[2]);
+    }
+  }
+  return { setEnabled, update, get enabled() { return enabled; } };
+}
+
 export function createEdModel() {
   const group = new THREE.Group(); group.name = 'Ed';
   const rig = new THREE.Group(); group.add(rig);            // his sway and hiccups ride on this
@@ -135,9 +183,11 @@ export function createEdModel() {
     ring.visible = ringAge < 1 && lit;
   }
 
+  const unicycle = makeUnicycle(group, rig, hips, skin);
   let hiccup = 0, flick = 0, drift = Math.random() * 10;
   /** A sway, a hiccup, the odd flick of the tongue, colours drifting; a swig flushes him purple. Sober: grey and still. */
-  function animate(time, dt = 1 / 60, { sober = false } = {}) {
+  function animate(time, dt = 1 / 60, { sober = false, riding, speed = 0 } = {}) {
+    if (typeof riding === 'boolean' && riding !== unicycle.enabled) unicycle.setEnabled(riding);
     // A frame's step can be zero or a hair negative (the first frame's stamp can predate the clock), or missing: keep it sane.
     dt = Number.isFinite(dt) ? Math.min(Math.max(dt, 0), .1) : 0;
     const sway = sober ? .01 : .07;
@@ -158,9 +208,10 @@ export function createEdModel() {
     if (sober) skin.color.lerp(SOBER, Math.min(1, dt * 2));
     else skin.color.copy(DRUNK[i]).lerp(DRUNK[next], drift % 1).lerp(DRUNK[3], swig * .7);
     bottle.rotation.x = .5 + swig * .9;
+    unicycle.update(time, dt, speed);
     smoking(time, dt, !sober);
   }
-  return { group, animate, get colour() { return skin.color.getHexString(); }, get smoking() { return smoke.some(w => w.m.visible && w.m.material.opacity > 0); } };
+  return { group, animate, setUnicycle: value => unicycle.setEnabled(value), get riding() { return unicycle.enabled; }, get colour() { return skin.color.getHexString(); }, get smoking() { return smoke.some(w => w.m.visible && w.m.material.opacity > 0); } };
 }
 
 /**
@@ -205,5 +256,5 @@ export function createEdView(scene, { heightAt }) {
     model.animate(time, dt, state);
     puffs.update(dt);
   }
-  return { group: model.group, place, puff: (at = model.group.position) => puffs.puff(at), update, get puffing() { return puffs.puffing; } };
+  return { group: model.group, place, setUnicycle: model.setUnicycle, puff: (at = model.group.position) => puffs.puff(at), update, get puffing() { return puffs.puffing; } };
 }

@@ -162,11 +162,11 @@ export const SKILLS = Object.freeze({
   stealth: Object.freeze({
     id: 'stealth', name: 'Stealth', kind: 'working',
     blurb: 'Moving quietly, keeping out of a watchful eye, and knowing when to wait. Sneaking near danger earns experience; standing still or creeping through an empty wood does not.',
-    teacher: 'A discreet contact in Tidehaven',
+    teacher: 'The bear cub at the Tessen crossing, or a discreet contact in Tidehaven',
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'X to sneak: move slowly and watch the guards'),
       unlock(1, 'Practice by moving near danger without being caught'),
-      unlock(2, 'A first successful theft from the Tidehaven barracks')]),
+      unlock(2, 'Practice quiet approaches and taking guarded supplies')]),
   }),
   farming: Object.freeze({
     id: 'farming', name: 'Farming', kind: 'working',

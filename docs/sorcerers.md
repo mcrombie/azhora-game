@@ -75,7 +75,7 @@ usable where it was learned. **Nowhere else in the game answers it yet** (see be
 clearing 93 m from the goblin camp and 26 m off its trail, and she is **the game's only source of
 honeycomb** now.
 
-**The cat.** Mop is on the midden at the edge of the camp, 22 m from the middle of it and 19 m
+**The cat.** Olive is on the midden at the edge of the camp, 22 m from the middle of it and 19 m
 from the nearest goblin. He will not be carried and will not be led: stand near him quietly and he
 decides about you, then trails four or five metres behind and sits down when you do. A fight near
 enough to hear and he bolts, hides, and has to be walked back to — counted, so a player who keeps
@@ -92,7 +92,7 @@ for. Reward for getting him home alive: **30 copper or beast sorcery**.
   written — which is a decision, not a chore.
 - **How Mind and Beast earn experience**, given neither spell deals damage and damage is what pays
   a school (`spellXp`). Mind has `perReading`; Beast has nothing.
-- **Whether Mop can be killed in play.** The module has the ending; nothing in the host can reach
+- **Whether Olive can be killed in play.** The module has the ending; nothing in the host can reach
   it, because goblins do not attack the cat.
 - **Whether Imani has moved to Cobble or is visiting.** She says she is there for kelp twice a
   year, which reads as visiting, and the vineyard still has her.

@@ -24,7 +24,7 @@ function quietWoods(world) {
 /**
  * Ordinary inputs for Liz's cat errand. The host owns the isolated testing save and launch warp.
  * read(): the Ben pilot snapshot, replacing ben with liz:{x,z,available} and
- * cat:{x,z,available,mode}; quest is catQuest.state. Actions are interact, continue,
+ * cat:{x,z,available,mode}, home?:{x,z}; quest is catQuest.state. Actions are interact, continue,
  * choose({id:'cat-yes'}) and dismount. Reward selection always belongs to the player.
  */
 export function createLizAutopilot({ world, read, act = {}, options = {} } = {}) {
@@ -67,7 +67,7 @@ export function createLizAutopilot({ world, read, act = {}, options = {} } = {})
     if (!snapshot || !point(snapshot.position)) { stop('Liz autoplay could not read the traveler\u2019s position.'); return null; }
     const quest = snapshot.quest ?? {}, combat = snapshot.combat ?? {}, stage = quest.stage;
     if (['paid', 'taught'].includes(stage)) { stop('Liz\u2019s quest is already complete.', true); return null; }
-    if (stage === 'lost' || snapshot.cat?.dead) { stop('Mop has died. Liz\u2019s errand cannot continue. You have control.'); return null; }
+    if (stage === 'lost' || snapshot.cat?.dead) { stop('Olive has died. Liz\u2019s errand cannot continue. You have control.'); return null; }
     if (snapshot.mode === 'defeated' || combat.hp <= 0) { stop('The traveler has fallen. Choose how to recover.'); return null; }
     if (!['playing', 'dialogue'].includes(snapshot.mode)) {
       intent = 'Paused'; return { goal: 'wait', intent, move, yaw, guard: false, actions };
@@ -79,7 +79,7 @@ export function createLizAutopilot({ world, read, act = {}, options = {} } = {})
     if (elapsed > config.maxSeconds || idle > config.idleLimit) {
       stop('Liz autoplay could not find a safe way forward. You have control.'); return null;
     }
-    if (combat.phase === 'active') { stop('A fight has frightened Mop. Resolve the danger, then resume Liz autoplay.'); return null; }
+    if (combat.phase === 'active') { stop('A fight has frightened Olive. Resolve the danger, then resume Liz autoplay.'); return null; }
     if (!point(snapshot.liz) || snapshot.liz.available === false) { stop('Liz is not available to continue. You have control.'); return null; }
     let goal = 'talk';
     if (snapshot.mode === 'dialogue') {
@@ -89,7 +89,7 @@ export function createLizAutopilot({ world, read, act = {}, options = {} } = {})
       }
       const choices = (snapshot.dialogue?.choices ?? []).filter(choice => choice.enabled !== false);
       if (stage === 'home' && choices.some(choice => choice.id === 'cat-lesson') && choices.some(choice => choice.id === 'cat-purse')) {
-        stop('Mop is home. Choose your reward: money or the Summon Bees lesson.', true); return null;
+        stop('Olive is home. Choose your reward: money or the Summon Bees lesson.', true); return null;
       }
       if (choices.length && dialogueClock >= config.choicePace) {
         const choice = choices.find(reply => reply.id === 'cat-yes');
@@ -112,23 +112,23 @@ export function createLizAutopilot({ world, read, act = {}, options = {} } = {})
       } else if (stage === 'looking' || stage === 'following') {
         goal = stage === 'looking' ? 'find-cat' : 'bring-home';
         const cat = snapshot.cat;
-        if (!point(cat) || cat.available === false) { stop('Mop is not available to follow. You have control.'); return null; }
+        if (!point(cat) || cat.available === false) { stop('Olive is not available to follow. You have control.'); return null; }
         const following = stage === 'following' && (!cat.mode || cat.mode === 'following');
-        if (cat.mode === 'bolting') intent = 'Giving Mop room to hide';
+        if (cat.mode === 'bolting') intent = 'Giving Olive room to hide';
         else if (!following) {
           waitingForCat = false;
           intent = gap(snapshot.position, cat) < CAT.reach - .4
-            ? cat.mode === 'hiding' ? 'Waiting quietly for Mop to come out' : 'Standing still so Mop can decide'
-            : 'Approaching Mop quietly';
+            ? cat.mode === 'hiding' ? 'Waiting quietly for Olive to come out' : 'Standing still so Olive can decide'
+            : 'Approaching Olive quietly';
           walk(snapshot, cat, CAT.reach - .8, 'cat');
         } else {
           const distance = gap(snapshot.position, cat);
           if (distance > config.followWait) waitingForCat = true;
           if (distance <= config.followResume) waitingForCat = false;
           if (distance >= MOP.lose - 2) {
-            intent = 'Going back for Mop'; walk(snapshot, cat, config.followResume, 'recover-cat');
-          } else if (waitingForCat) intent = 'Waiting for Mop to catch up';
-          else { intent = 'Walking Mop home to Liz'; walk(snapshot, snapshot.liz, 1.2, 'home'); }
+            intent = 'Going back for Olive'; walk(snapshot, cat, config.followResume, 'recover-cat');
+          } else if (waitingForCat) intent = 'Waiting for Olive to catch up';
+          else { intent = 'Walking Olive home to Liz'; walk(snapshot, snapshot.home ?? snapshot.liz, 1.2, 'home'); }
         }
       } else { stop('Liz\u2019s quest cannot continue from here. You have control.'); return null; }
     }

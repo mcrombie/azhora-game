@@ -54,7 +54,7 @@ test('Ben can be helped in an actual fight; the earned fireball then damages a t
   assert.equal(loaded.magic.known('fireball'),true);assert.equal(loaded.magic.cast('fireball',{yaw:0}).ok,true);
 });
 
-test('Mop really walks back to Liz and the bees lesson attacks hostile targets, not friends',()=>{
+test('Olive really walks back to Liz and the bees lesson attacks hostile targets, not friends',()=>{
   const game=fixture({enemies:[{id:'goblin',x:0,z:5,hp:100,entry:60}],allies:[{id:'friend',kind:'legionary',x:1,z:3,hp:90}]});
   const quest=createCatQuest(),walk=createMopWalk({random:()=>.5});quest.ask();quest.accept();
   let traveler={x:CAT.at.x+1.5,z:CAT.at.z},cat={x:CAT.at.x,z:CAT.at.z},arrived=false;

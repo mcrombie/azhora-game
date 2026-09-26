@@ -23,6 +23,62 @@ function advanceUntil(combat, condition, seconds = 20, observer = () => {}) {
   assert.ok(condition(), `Condition was not reached within ${seconds} seconds`);
 }
 
+test('NPC-owned bees hurt during ordinary exploration and use the normal defeat event', () => {
+  const { combat, position, events } = fixture(), before = { ...position };
+  assert.equal(combat.npcSpellHit(15, { sourceId: 'liz-beekeeper', x: 1, z: -34 }).damage, 15);
+  assert.equal(combat.state.player.hp, 85); assert.equal(combat.state.phase, 'peaceful');
+  assert.equal(combat.state.enemies.length, 0); assert.equal(combat.state.encounterId, 'liz-apiary');
+  const hit = events.find(e => e.type === 'player-hit');
+  assert.equal(hit.source, 'enemy'); assert.equal(hit.sourceId, 'liz-beekeeper'); assert.equal(hit.spell, 'summon-bees');
+  assert.equal(hit.damage, 15); assert.ok(Math.hypot(position.x - before.x, position.z - before.z) <= .56, 'ordinary contact recoil, no encounter relocation');
+  assert.equal(combat.npcSpellHit(15, { sourceId: 'liz-beekeeper' }).damage, 0, 'the normal brief protection prevents swarm hit stacking');
+  combat.update(1.2);
+  assert.equal(combat.npcSpellHit(1000, { sourceId: 'liz-beekeeper' }).defeated, true);
+  assert.equal(combat.state.player.hp, 0); assert.equal(combat.state.phase, 'defeated');
+  const defeat = events.find(e => e.type === 'defeat'); assert.equal(defeat.encounterId, 'liz-apiary'); assert.notEqual(defeat.drowned, true);
+  const count = events.length; assert.equal(combat.npcSpellHit(15, { sourceId: 'liz-beekeeper' }).damage, 0); assert.equal(events.length, count);
+});
+
+test('NPC bee contact respects worn armour and the same dodge window as an ordinary strike', () => {
+  const { combat } = fixture({ combat: { getMargins: () => ({ armourTurns: .4 }) } });
+  combat.setWeaponReady(true);
+  assert.equal(combat.npcSpellHit(20, { sourceId: 'liz-beekeeper' }).damage, 12);
+  combat.update(1.3);
+  assert.equal(combat.dodge({ x: 1, z: 0 }), true); combat.update(.1);
+  const hp = combat.state.player.hp;
+  assert.equal(combat.npcSpellHit(20, { sourceId: 'liz-beekeeper' }).damage, 0); assert.equal(combat.state.player.hp, hp);
+  combat.update(.7); assert.equal(combat.npcSpellHit(20, { sourceId: 'liz-beekeeper' }).damage, 12);
+});
+
+test('an NPC spell does not replace an existing fight or damage its other participants', () => {
+  const { combat, events } = fixture();
+  assert.equal(combat.startEncounter({ id: 'ordinary-fight', center: { x: 0, z: -34 }, checkpoint: { x: 0, z: -34 }, retreatZ: -14,
+    enemies: [{ id: 'raider', x: 8, z: -30, hp: 90 }], allies: [{ id: 'liz-beekeeper', kind: 'sorcerer', x: -8, z: -30 }] }), true);
+  const roster = JSON.stringify({ enemies: combat.state.enemies, allies: combat.state.allies });
+  assert.equal(combat.npcSpellHit(18, { sourceId: 'liz-beekeeper' }).damage, 18, 'a friendly caster identity does not give the player spell immunity');
+  assert.equal(combat.state.encounterId, 'ordinary-fight'); assert.equal(combat.state.phase, 'active');
+  assert.equal(JSON.stringify({ enemies: combat.state.enemies, allies: combat.state.allies }), roster);
+  assert.equal(events.filter(e => ['enemy-hit', 'ally-hit'].includes(e.type)).length, 0, 'Liz’s specifically targeted retaliation cannot hit bystanders');
+  assert.ok(events.filter(e => e.type === 'player-hit').every(e => e.source !== 'player'), 'Liz’s hit is not attributed as player friendly fire');
+});
+
+test('invalid NPC spell damage cannot poison health or produce a hit event', () => {
+  const { combat, events } = fixture(), before = JSON.stringify(combat.state);
+  for (const damage of [NaN, Infinity, -1, 0]) assert.equal(combat.npcSpellHit(damage, { sourceId: 'liz-beekeeper' }).damage, 0);
+  assert.equal(combat.npcSpellHit(20).damage, 0, 'damage requires an identifiable NPC owner');
+  assert.equal(JSON.stringify(combat.state), before); assert.equal(events.length, 0);
+});
+
+test('leaving a friendly training bout does not make later NPC bee spells nonlethal', () => {
+  const { combat, position, events } = fixture();
+  assert.equal(combat.startEncounter({ id: 'training-bout', bout: true, center: { x: 0, z: -34 }, checkpoint: { x: 0, z: -34 }, retreatZ: -14,
+    enemies: [{ id: 'teacher', kind: 'sparring', x: 3, z: -34, hp: 100 }] }), true);
+  position.z = -13; combat.update(.1); assert.equal(combat.state.phase, 'peaceful');
+  assert.equal(combat.npcSpellHit(1000, { sourceId: 'liz-beekeeper' }).defeated, true);
+  assert.equal(combat.state.player.hp, 0); assert.equal(combat.state.phase, 'defeated');
+  assert.ok(events.some(e => e.type === 'defeat' && e.encounterId === 'liz-apiary'));
+});
+
 test('practice contacts occur at the swing window, once, and a late press chains the next swing', () => {
   const { combat, position, events } = fixture();
   combat.startPractice({ x: 0, z: position.z + 1.7 });

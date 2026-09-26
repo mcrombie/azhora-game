@@ -83,9 +83,9 @@ export function buildJournalEntries({ tracker = {}, mainSteps = [], completedCha
     { state: murder, id: 'cobble-murder', title: 'The tally-keeper of Cobble', type: 'secondary',
       paid: 'You solved Bregga’s murder and accepted the guild’s purse from Troy.',
       taught: 'You solved Bregga’s murder. In return, Troy taught you the reading.' },
-    { state: cat, id: 'liz-cat', title: 'Bring Mop home', type: 'tertiary',
-      paid: 'You brought Mop safely home to Liz and accepted her coin.',
-      taught: 'You brought Mop safely home to Liz. In return, she taught you how to summon the bees.' },
+    { state: cat, id: 'liz-cat', title: 'Bring Olive home', type: 'tertiary',
+      paid: 'You brought Olive safely home to Liz and accepted her coin.',
+      taught: 'You brought Olive safely home to Liz. In return, she taught you how to summon the bees.' },
   ];
   for (const ending of endings) {
     // Death/loss is not a completed success and can happen without the player witnessing it.

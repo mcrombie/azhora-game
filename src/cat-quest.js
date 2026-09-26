@@ -44,7 +44,7 @@ export const LIZ = Object.freeze({
  */
 export const LIZ_STAND = Object.freeze({ x: -36, z: -171, yaw: 2.2 });
 export const CAT = Object.freeze({
-  id: 'liz-cat', name: 'Mop',
+  id: 'liz-cat', name: 'Olive',
   /**
    * Twenty-two metres north of the camp's middle and nineteen from the nearest goblin: on its
    * outskirts, in among its scraps, and a ninety-one metre walk from Liz.
@@ -167,7 +167,7 @@ export function createCatQuest({ onEvent = () => {} } = {}) {
 }
 
 /**
- * **Mop, walking.** A pure behaviour, like the harbour cat's (src/village-cat.js): the host tells
+ * **Olive, walking.** A pure behaviour, like the harbour cat's (src/village-cat.js): the host tells
  * it where its model is and what is happening, and it says where the cat wants to be and how it
  * should be posed. It never reads the world itself.
  *
@@ -302,7 +302,7 @@ export const LIZ_LINES = Object.freeze([
 /** The errand, as she puts it, which is not how she would put it to somebody she knew. */
 export const LIZ_ASKING = Object.freeze([
   'Oh — you are a person. Good. I am going to ask you something and you are going to think less of me for it.',
-  'My cat is missing. Four days. He is grey, he is enormous, he answers to Mop when it suits him, and he is not lost — I know where he is.',
+  'My cat is missing. Four days. He is grey, he is enormous, he answers to Olive when it suits him, and he is not lost — I know where he is.',
   'There is a camp south-east of here through the birch, and there is a midden at the edge of it, and there is a cat on the midden. The camp is goblins.',
   'I cannot go. They would see me coming and they would not see a beekeeper. You are carrying a sword and you have not asked me for anything, which puts you ahead of most.',
 ]);

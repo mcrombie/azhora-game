@@ -13,7 +13,16 @@ import { createCombatView } from './combat-view.js';
 import { createCrimeHost, LAW_ENCOUNTER_ID } from './crime-host.js';
 import { createCorpseHost } from './corpse-host.js';
 import { KAYLA, KAYLA_START, kaylaConversation } from './kayla.js';
-import { createKaylaBear } from './kayla-character.js';
+import { createKaylaBear, createBearCub } from './kayla-character.js';
+import { createKaylaRace, KAYLA_RACE, KAYLA_RACE_START } from './kayla-race.js';
+import { createKaylaRaceHost } from './kayla-race-host.js';
+import { createKaylaRaceAutopilot } from './kayla-race-autopilot.js';
+import { CUB, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_QUEST_ID } from './cub-honey-quest.js';
+import { createCubHoneyHost, HONEY_STORE, honeyLineOfSight } from './cub-honey-host.js';
+import { createCubAutopilot } from './cub-autopilot.js';
+import { createBearFamily, BEAR_HOME_ROUTE } from './bear-family.js';
+import { createApiaryBees } from './apiary-bees.js';
+import { createApiaryBeesView } from './apiary-bees-view.js';
 import { createKaylaHost, KAYLA_FIGHT } from './kayla-host.js';
 import {createDrentHost, DRENT_FIGHT_ID} from './drent-host.js';
 import {DRENT_NPCS, DRENT_SITES} from './drent-sites.js';
@@ -460,8 +469,9 @@ function init() {
   // and the honeycomb, in the woods of Pueth (src/cat-quest.js).
   npcData.push({...TROY});
   world.npcPositions[LIZ.id]={x:LIZ_STAND.x,z:LIZ_STAND.z};npcData.push({...LIZ,yaw:LIZ_STAND.yaw});
-  world.npcPositions[KAYLA.id]={...KAYLA_START};npcData.push({...KAYLA,bear:true,kind:'bear',make:createKaylaBear,yaw:KAYLA_START.yaw});
-  // Mop, on the midden at the edge of the goblin camp, until somebody stands still near him.
+  world.npcPositions[KAYLA.id]={...KAYLA_RACE_START};npcData.push({...KAYLA,bear:true,kind:'bear',make:createKaylaBear,yaw:KAYLA_RACE_START.yaw});
+  world.npcPositions[CUB.id]={...CUB_STAND};npcData.push({...CUB,bear:true,cub:true,kind:'bear',make:createBearCub,modelRole:'bear-cub',yaw:CUB_STAND.yaw});
+  // Olive, on the midden at the edge of the goblin camp, until somebody stands still near him.
   world.npcPositions[CAT.id]={x:CAT.at.x,z:CAT.at.z};
   npcData.push({id:CAT.id,name:CAT.name,role:'Liz’s cat, where he should not be',cat:true,stride:true});
   // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
@@ -878,6 +888,7 @@ function init() {
    * answer is built from this rather than invented - "At the Lauvel. Wolves, at night."
    */
   function enemyWordFor(encounterId){
+    if(encounterId==='liz-apiary')return 'Liz’s angry bees';
     if(encounterId===KAYLA_FIGHT)return 'Kayla';
     if(encounterId==='caloss-rebels')return 'The rebel ambushers';
     if(encounterId===LUSCIA_WOLVES.id)return 'Wolves';
@@ -1036,7 +1047,7 @@ function init() {
   const heldWeapon=()=>lentProfile()??weapons?.profile()??null;
   /** Whether that thing is drawn rather than swung. One question, asked in four places. */
   const ranged=()=>!!heldWeapon()?.ranged;
-  let corpseHost=null,crime=null,magic=null,ambushWatch=null,ambushHost=null,cagneyHost=null,kaylaHost=null;
+  let corpseHost=null,crime=null,magic=null,ambushWatch=null,ambushHost=null,cagneyHost=null,kaylaHost=null,raceHost=null,cubHost=null,bearFamily=null;
   const combat=createCombat({world,isFallen:(encounterId,id,actor)=>[`npc:${actor.npcId??id}`,`enemy:${encounterId}:${id}`,`ally:${encounterId}:${id}`].some(key=>corpseHost?.model.get(key)?.status==='dead'),position:player.group.position,onEvent:e=>combatEvents.push(e),getWeapon:()=>heldWeapon(),onWeaponContact:id=>{weapons.contact(id);inventory.refresh();},
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
@@ -1510,10 +1521,10 @@ function init() {
    * the bees. The cat is the quest - the goblins are only what is standing round it.
    */
   const catQuest=createCatQuest({onEvent:event=>{
-    if(event.type==='cat-found')toast('He looks at you for a long moment and decides you are furniture worth walking behind.','MOP');
-    if(event.type==='cat-bolted')toast('Gone, under the nearest thing with a gap beneath it. He will come out when it is quiet.','MOP');
-    if(event.type==='cat-home')toast('Home, filthy, and entirely unbothered.','MOP');
-    if(event.type==='cat-lost')toast('He is not going to get up. That is the one outcome Liz cannot be paid for.','MOP');
+    if(event.type==='cat-found')toast('He looks at you for a long moment and decides you are furniture worth walking behind.','OLIVE');
+    if(event.type==='cat-bolted')toast('Gone, under the nearest thing with a gap beneath it. He will come out when it is quiet.','OLIVE');
+    if(event.type==='cat-home')toast('Home, filthy, and entirely unbothered.','OLIVE');
+    if(event.type==='cat-lost')toast('He is not going to get up. That is the one outcome Liz cannot be paid for.','OLIVE');
   }});
   let mop=createMopWalk();
   /** Whoever's body the traveler has already walked up to, so he is told once and not every frame. */
@@ -2422,7 +2433,7 @@ function init() {
     // Keep positions live: later movers must see where an earlier mover is now.
     for(const npc of npcData){
       if(npc.hidden||npc.fallen||fighting.has(npc.id)||crime?.isDown(npc.id)||corpseHost?.ownsNpc(npc.id)||!npc.actor.group.visible)continue;
-      list.push(liveBody(npc.id,npc.actor.group.position,npc.mounted?RIDE.radius:npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.bear?BODY.bear:npc.ogre?BODY.ogre:BODY.person));}
+      list.push(liveBody(npc.id,npc.actor.group.position,npc.mounted?RIDE.radius:npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.cub?CUB.radius:npc.bear?BODY.bear:npc.ogre?BODY.ogre:BODY.person));}
     for(const npc of crime?.extraPeople()??[]){
       if(npc.horse||npc.hidden||npc.fallen||!npc.actor.group.visible||crime.isDown(npc.id))continue;
       list.push(liveBody(npc.id,npc.actor.group.position,npc.dog?BODY.dog:BODY.person));}
@@ -2448,6 +2459,8 @@ function init() {
     targetDistance=Math.max(4,targetDistance-RIDE.camera.back);return true;
   }
   function toggleMount(){
+    if(mode!=='playing')return;
+    if(raceHost?.mounted){race.abandon('You climbed down before the finish.');raceHost.sync();return;}
     if(mode!=='playing'||!riding.owned||living.recall().status==='passenger')return;
     if(riding.mounted){stepDown();return;}
     const result=riding.mount(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'});
@@ -3097,7 +3110,7 @@ function init() {
       return player.focusTip();
     },
     getBodies:()=>[...crime.people().filter(npc=>!npc.hidden&&!npc.fallen&&!crime.isDown(npc.id)&&npc.actor.group.visible)
-      .map(npc=>({id:npc.id,name:npc.name,role:npc.role,...npc.actor.group.position,hp:crime.health(npc).hp,r:npc.horse?BODY.horse:npc.dog?BODY.dog:npc.cat?BODY.cat:npc.bear?BODY.bear:npc.ogre?BODY.ogre:BODY.person,team:'civilian'})),
+      .map(npc=>({id:npc.id,name:npc.name,role:npc.role,...npc.actor.group.position,hp:crime.health(npc).hp,r:npc.horse?BODY.horse:npc.dog?BODY.dog:npc.cat?BODY.cat:npc.cub?CUB.radius:npc.bear?BODY.bear:npc.ogre?BODY.ogre:BODY.person,team:'civilian'})),
       ...ambush.actors().filter(one=>one.hp>0&&one.mode!=='active').map(one=>({...one,r:BODY.person,team:'enemy'}))],
     damageWorld:(body,damage)=>AMBUSH_REBELS.some(one=>one.id===body.id)?strikeWaitingAmbusher(body.id,damage):crime.assault({npcId:body.npcId??body.id,damage,source:'player'}),
     onEvent:event=>{if(event.type==='spell-learned'){inventory.refresh();refreshSkillsSheet();toast(`${SPELLS[event.id].name} learned. I opens equipment; equip a wand or staff, then Z casts. N changes spells.`, 'SPELL LEARNED');}
@@ -3125,14 +3138,36 @@ function init() {
     complete:id=>id===CAGNEY.id?cagneyQuest.state.stage==='complete':id===BEN.id?['paid','taught'].includes(spiderQuest.state.stage):['paid','taught'].includes(murder.state.stage),
     move:createHomeReturnWalker(npcWorld)});
   kaylaHost=createKaylaHost({npc:npcById.get(KAYLA.id),world,combat,crime,bodies:gatherBodies,playerPosition:()=>player.group.position,
-    lizAlive:()=>!crime.isDown(LIZ.id),toast,save:()=>{if(hasRoadProgress()&&kaylaHost)saveRoad(false);}});
+    lizAlive:()=>!crime.isDown(LIZ.id),roaming:()=>bearFamily?.motherMayRoam??false,toast,save:saveBearProgress});
+  function saveBearProgress(){if(bearFamily&&hasRoadProgress())saveRoad(false);}
+  const race=createKaylaRace();let edRacing=false;
+  function seatOnKayla(){const actor=npcById.get(KAYLA.id).actor;actor.riderPosition(player.group.position);player.group.rotation.y=actor.group.rotation.y;combat.state.player.yaw=actor.group.rotation.y;grounded=true;verticalSpeed=0;inWater=false;}
+  raceHost=createKaylaRaceHost({quest:race,world,bodies:gatherBodies,readKayla:()=>({...kaylaHost.model.position,yaw:npcById.get(KAYLA.id).actor.group.rotation.y}),placeKayla:at=>kaylaHost.placeExternal(at),
+    placeEd:at=>{if(at.visible){edRacing=true;edView.setUnicycle(true);edView.place(at,0);edView.group.rotation.y=at.yaw;edView.group.visible=true;}
+      else if(edRacing){edRacing=false;edView.setUnicycle(false);placeChameleon();}},
+    poof:at=>edView.puff({...at,y:world.heightAt(at.x,at.z)}),onMount:()=>{if(riding.mounted)stepDown(true);if(drent.sneaking)drent.toggleSneak();seatOnKayla();},
+    onDismount:at=>{const spot=clearApproach(at);player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;},
+    save:saveBearProgress,openDialogue,closeDialogue,reward:(id,count)=>{inventory.add(id,count);inventory.refresh();saveBearProgress();},
+    focus:id=>{refreshQuest();selectQuest(id);},toast});
+  const apiaryBees=createApiaryBees({heightAt:world.heightAt,canSee:honeyLineOfSight,
+    onDamage:e=>combat.npcSpellHit(e.damage,{sourceId:LIZ.id,spellId:'summon-bees',...world.npcPositions[LIZ.id]})});
+  const apiaryBeesView=createApiaryBeesView({scene,bees:apiaryBees});
+  cubHost=createCubHoneyHost({npc:npcById.get(CUB.id),liz:npcById.get(LIZ.id),world,skills,inventory,
+    position:()=>player.group.position,sneaking:()=>drent.sneaking,busy:()=>['following','home'].includes(catQuest.state.stage),isLizAlive:()=>!crime.isDown(LIZ.id),isCubAlive:()=>!crime.isDown(CUB.id),toast,
+    onCaught:e=>apiaryBees.cast({...e.position,ownerId:LIZ.id}),onCalm:()=>apiaryBees.clear(),
+    onChange:()=>{refreshQuest();inventory.refresh();saveBearProgress();},
+    prepareCheckpoint:()=>{if(hasRoadProgress()&&combat.state.player.hp>0){sessionCheckpoint.save(roadSnapshot());recoveryInfo={testing:testingEnabled,encounterId:'liz-apiary',title:'Before the honey theft'};}}});
+  bearFamily=createBearFamily({world,kayla:kaylaHost,cub:npcById.get(CUB.id),raceComplete:()=>race.state().complete,
+    cubComplete:()=>cubHost.quest.completed,alive:id=>!crime.isDown(id),bodies:gatherBodies,onChange:saveBearProgress});
+  raceHost.sync();
   const magicView=createMagicView({scene,magic});
   const magicUI=createMagicUI({container:document.body,magic,onCast:castSpell,onSelect:()=>saveRoad(false)});
-  function castSpell(){if(mode!=='playing'||inWater||riding.mounted||living.recall().status==='passenger')return false;
+  function castSpell(){if(mode!=='playing'||raceHost?.mounted||inWater||riding.mounted||living.recall().status==='passenger')return false;
     const result=magic.cast(undefined,{target:currentNPC,yaw:player.group.rotation.y});
     if(!result.ok)toast(result.reason,'SORCERY');return result.ok;}
   const beginEncounter=combat.startEncounter;
   combat.startEncounter=(...args)=>{
+    if(raceHost?.mounted){race.abandon('A fight interrupted the race.');raceHost.sync();}
     const config=args[0],canRecover=combat.state.phase!=='active'&&combat.state.player.hp>0&&hasRoadProgress()&&!config?.bout;
     const before=canRecover?roadSnapshot():null;
     const started=beginEncounter(...args);
@@ -3395,17 +3430,21 @@ function init() {
     const sub=SUBQUESTS.findIndex(entry=>questStage>=entry.from&&questStage<=entry.to);
     $('quest-step').textContent=`CHAPTER 1 · ${sub+1} / ${SUBQUESTS.length}`;
   }
+  function cubQuestView(){const q=cubHost?.state();return {id:CUB_HONEY_QUEST_ID,title:'A Cub’s Share',type:'skill',stage:q?.stage,
+    active:['learning','carrying'].includes(q?.stage),complete:q?.stage==='complete',destinationIds:q?.stage==='carrying'?[CUB.id]:[],
+    target:q?.stage==='learning'?{...HONEY_STORE,id:'liz-honey',name:'Liz’s honey stores'}:null,
+    detail:q?.stage==='carrying'?'Bring the honey to the bear cub beside the river.':'Use X to sneak. Wait for Liz to look away, then take a honeycomb with F. Run if she spots you.'};}
   function questSource(){
     return {main:{active:!(living?.player().imperialRefused&&living.player().allegiance!=='coalition'),title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
       bridge:{stage:journey.state.bridge,sticks:inventory.count('forest-stick')},vastos:vastos.quest.view(),
-      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
+      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),race.trackableView(),cubQuestView(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
   }
   function resolveQuestPoint(id){
     const npc=npcById.get(id),point=npc?.actor?.group?.position||drent.point(id)||world.journeySites?.[id]||(id===LUSCIA_DISPATCH_SITE.id?LUSCIA_DISPATCH_SITE:null)||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||vastos.knownLocations().find(place=>place.id===id);
     return point?{x:point.x,z:point.z,name:npc?.name||point.name||'The next objective',id}:null;
   }
   function selectQuest(id){
-    if(autopilot.active&&id!==({ben:SPIDER_QUEST.id,liz:'liz-cat',troy:'cobble-murder',cagney:CAGNEY_QUEST.id}[autopilot.id]??'main'))stopAutopilot('Following your selected quest.');
+    if(autopilot.active&&id!==({ben:SPIDER_QUEST.id,liz:'liz-cat',troy:'cobble-murder',cagney:CAGNEY_QUEST.id,race:KAYLA_RACE.id,cub:CUB_HONEY_QUEST_ID}[autopilot.id]??'main'))stopAutopilot('Following your selected quest.');
     questTracker.select(id);refreshQuest();
     if(mode==='journal')refreshChart();
     if(hasRoadProgress())saveRoad(false);
@@ -3413,10 +3452,10 @@ function init() {
   function renderQuestChoices(mount,view,expanded=false){
     const stamp=JSON.stringify(view);if(mount.dataset.stamp===stamp)return;mount.dataset.stamp=stamp;
     mount.replaceChildren();
-    for(const type of [view.selected?.type,...['main','secondary','tertiary'].filter(t=>t!==view.selected?.type)]){
+    for(const type of [view.selected?.type,...['main','secondary','tertiary','skill'].filter(t=>t!==view.selected?.type)]){
       const choices=view.choices.filter(q=>q.type===type).sort((a,b)=>(b.id===view.selectedId)-(a.id===view.selectedId));if(!choices.length)continue;
       const group=document.createElement('div');group.className='quest-group';
-      const heading=document.createElement('h4');heading.textContent=type==='main'?'Gold · Main quest':type==='secondary'?'Silver · Side stories':'Copper · Favors';group.append(heading);
+      const heading=document.createElement('h4');heading.textContent=type==='main'?'Gold · Main quest':type==='secondary'?'Silver · Side stories':type==='skill'?'Green · Skill training':'Copper · Favors';group.append(heading);
       for(const quest of choices){const button=document.createElement('button');button.type='button';button.className='quest-choice';button.dataset.grade=quest.grade;
         button.dataset.questId=quest.id;button.setAttribute('aria-pressed',String(view.selectedId===quest.id));button.title=`Focus this quest: ${quest.objective||quest.detail}`;
         const icon=document.createElement('span');icon.className='quest-diamond';icon.textContent='◆';icon.setAttribute('aria-hidden','true');
@@ -3430,7 +3469,7 @@ function init() {
   function trackerStamp(){
     const {stage,benDown,spiderDown}=spiderQuest.state;
     return JSON.stringify([questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
-      drent.state(),republic?.state(),living?.satchel().status,living?.player(),living?.recall().status,Math.floor((living?.clock()??0)/10),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,cagneyQuest.state.stage,burying.snapshot()]);
+      drent.state(),republic?.state(),living?.satchel().status,living?.player(),living?.recall().status,Math.floor((living?.clock()??0)/10),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,cagneyQuest.state.stage,race.state().stage,cubHost.state().stage,burying.snapshot()]);
   }
   function refreshQuest(){
     refreshMainQuest();
@@ -3866,6 +3905,8 @@ function init() {
     if(heardDoom)notes.push({id:'distant-cape',title:'The distant cape',detail:$('journal-doom').querySelector('p').textContent,discovered:true});
     const entries=buildJournalEntries({tracker,mainSteps,completedChapters,notes,bridge:journey.state.bridge,
       spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view()});
+    if(race.state().complete)entries.push({id:KAYLA_RACE.id,title:KAYLA_RACE.title,type:'tertiary',grade:'deed',status:'complete',detail:'You rode Kayla to victory over Ed the Chameleon. She shared three honeycombs and set off to find her cub.'});
+    if(cubHost.quest.completed)entries.push({id:CUB_HONEY_QUEST_ID,title:'A Cub’s Share',type:'skill',grade:'skill',status:'complete',detail:'The cub taught you Stealth. You brought back a comb from Liz’s apiary.'});
     if(cagneyQuest.state.stage==='complete')entries.push({id:CAGNEY_QUEST.id,title:CAGNEY_QUEST.title,type:'secondary',grade:'plot',status:'complete',detail:'You escorted Cagney safely home to Ambron and received 45 copper.'});
     journeyBrowser.update({entries,trackedId:tracker.selectedId});
   }
@@ -4037,7 +4078,7 @@ function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:{x:player.group.position.x,z:player.group.position.z},heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(testingEnabled){if(notify)toast('Testing sessions leave your road checkpoint unchanged.','CHECKPOINT');return false;}
@@ -4109,7 +4150,7 @@ function init() {
           ben.actor.group.position.set(guide.x,world.heightAt(guide.x,guide.z),guide.z);
           world.npcPositions[ben.id]={x:guide.x,z:guide.z};}
       }}
-    homeResidents.restore(saved.homes);kaylaHost.restore(saved.kayla);
+    homeResidents.restore(saved.homes);kaylaHost.restore(saved.kayla);apiaryBees.clear();raceHost.restore(saved.kaylaRace);cubHost.restore(saved.cubHoney);bearFamily.restore(saved.bearFamily);refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();
     {const stored=catQuest.state.cat,npc=npcById.get(CAT.id);
       const at=stored??(['home','paid','taught'].includes(catQuest.state.stage)?{x:LIZ_STAND.x+2,z:LIZ_STAND.z}
         :catQuest.state.stage==='following'?saved.position:CAT.at);
@@ -4613,6 +4654,9 @@ function init() {
     if(crime?.isDown(npc.id))return;
     if(crime?.converse(npc))return;
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
+    if(npc.id===CUB.id){cubHost.conversation({openDialogue,closeDialogue});return;}
+    if(npc.id===LIZ.id&&cubHost.state().alerted){toast('Liz is furious. Leave the apiary and give her time to calm down.','LIZ');return;}
+    if(npc.id===KAYLA.id&&!npc.kaylaFighting&&!kaylaHost.state().provoked&&raceHost.conversation(npc))return;
     if(npc.id===KAYLA.id){if(!crime.isDown(npc.id)&&!npc.kaylaFighting&&!kaylaHost.state().provoked)kaylaConversation(npc,{kayla:kaylaHost.model,openDialogue,closeDialogue,
       hasHoney:()=>inventory.has(HONEYCOMB),takeHoney:()=>inventory.remove(HONEYCOMB,1),onChange:()=>{inventory.refresh();saveRoad(false);}});return;}
     if(drent.converse(npc))return;
@@ -4620,7 +4664,7 @@ function init() {
     if(REGIONAL_LIFE_NPCS.some(person=>person.id===npc.id)){regionalLifeConversation(npc,regionalContext);return;}
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
-    // Mop is not the harbour cat and has nothing to say about fish: what he has is an opinion
+    // Olive is not the harbour cat and has nothing to say about fish: what he has is an opinion
     // about whether you are worth walking behind (src/cat-quest.js).
     if(npc.id===CAT.id){const stage=catQuest.state.stage;
       openDialogue(npc,[stage==='following'?'He is sitting behind you with his feet tucked under him, waiting for you to get on with it.'
@@ -5017,7 +5061,11 @@ function init() {
     }
     show('testing',false);show('testing-badge',true);show('modal-backdrop',false);stopInput();settleCamera();refreshQuest();updateHUD();saveRoad(false);
   }
+  function leaveRaceForTesting(){
+    if(raceHost?.mounted){race.abandon('You left the race to travel elsewhere.');raceHost.sync();}
+  }
   function prepareTesting(){
+    leaveRaceForTesting();
     testingEnabled=true;
     forestHideout.endEncounter(hideoutEncounter.id);
     for(const id of ['harbor-letter','road-token','tinderbox'])inventory.grant(id);
@@ -5027,6 +5075,7 @@ function init() {
     show('testing-badge',true);
   }
   function testTravel(destination){
+    leaveRaceForTesting();
     if(!testingEnabled)prepareTesting();
     // Whatever of the road is on the slate is walked forward; what is off simply is not there,
     // and `journey.act` refuses it rather than the panel pretending it happened (src/quest-slate.js).
@@ -5439,6 +5488,8 @@ function init() {
     if(mode==='fishing'){endFishing();return;}
     if(mode==='dialogue'){nextSpeech();return;}
     if(mode!=='playing'||living.recall().status==='passenger')return;
+    if(raceHost?.mounted)return;
+    if(cubHost?.nearby&&combat.state.phase!=='active'){cubHost.interact();return;}
     if(droppedSatchelNear&&combat.state.phase!=='active'){takeDroppedSatchel();return;}
     if(currentNPC){conversation(currentNPC);return;}
     if(currentHomeDoor&&combat.state.phase!=='active'){homeResidents.knock(currentHomeDoor);return;}
@@ -5531,6 +5582,7 @@ function init() {
     if(ranged())return;
     // A swimmer is a person with both hands busy (docs/swimming.md).
     if(inWater){toast('Both your hands are busy keeping your head where the air is.','IN THE WATER');return;}
+    if(raceHost?.mounted)return;
     if(riding.mounted){toast('He will carry you to a fight, not through one. Press G to step down.','IN THE SADDLE');return;}
     if(!weapons.profile().usable){toast('Repair your sword at any repair bench, or equip a gathered stick in I.','NO USABLE WEAPON');return;}
     combat.attack(player.group.rotation.y);canvas.focus();
@@ -5583,6 +5635,7 @@ function init() {
    * stand-at:-806.1,-521,-1.57, whose third number is the facing.
    */
   function testGoTo(point,title,note){
+    leaveRaceForTesting();
     const here=world.regionAt(point.x,point.z),id=Number(here?.id);
     // The region shortcut closes the road errands behind you; open country has none to close.
     if(Number.isFinite(id)&&id>0)testTravel(id);
@@ -5632,6 +5685,28 @@ function init() {
     if(!autopilot.startQuest('cagney'))return false;canvas.focus();return true;
   }
   $('test-cagney-autoplay').onclick=testPlayCagneyQuest;
+  function testPlayBearQuest(kind){
+    stopAutopilot();testingEnabled=true;show('testing-badge',true);closeDialogue();questChoice.close();
+    if(raceHost.mounted){race.abandon();raceHost.sync();}if(riding.mounted)stepDown(true);
+    prepareTesting();combat.revive();magic.stop();apiaryBees.clear();combatEvents.length=0;sessionCheckpoint.clear();recoveryInfo=null;
+    const ids=kind==='race'?[KAYLA.id,ED.id]:[CUB.id,LIZ.id],dead=fallen.snapshot();dead.ids=dead.ids.filter(id=>!ids.includes(id));fallen.restore(dead);
+    const remains=corpseHost.snapshot();remains.bodies=remains.bodies.filter(b=>!ids.includes(b.sourceId)&&!ids.includes(b.npcId));corpseHost.restore(remains);
+    const law=crime.snapshot();for(const id of ids)delete law.people[id];law.bounty=0;law.phase='clear';crime.restore(law);
+    for(const id of ids){const n=npcById.get(id);if(n){Object.assign(n,{hidden:false,fallen:false,crimeDown:false,lying:false,combatPosition:null});n.actor.group.rotation.set(0,n.yaw??0,0);n.actor.group.visible=true;}}
+    if(kind==='race'){kaylaHost.restore();raceHost.restore();bearFamily.restore();}
+    else {cubHost.restore();if(['following','home'].includes(catQuest.state.stage)){catQuest.restore({...catQuest.snapshot(),stage:'looking'});mop.mode='waiting';}
+      const liz=npcById.get(LIZ.id);world.npcPositions[LIZ.id]={x:LIZ_STAND.x,z:LIZ_STAND.z};liz.actor.group.position.set(LIZ_STAND.x,world.heightAt(LIZ_STAND.x,LIZ_STAND.z),LIZ_STAND.z);liz.actor.group.rotation.y=LIZ_STAND.yaw;inventory.remove(CUB_HONEY_ITEM,inventory.count(CUB_HONEY_ITEM));
+      const saved=bearFamily.snapshot(),reunited=['roaming','waiting-cub'].includes(saved.phase);
+      if(race.state().complete&&reunited)kaylaHost.placeExternal(BEAR_HOME_ROUTE.at(-1));
+      bearFamily.restore({...saved,next:race.state().complete?saved.next:0,phase:race.state().complete?(reunited?'waiting-cub':saved.phase):'waiting-race',cub:{x:CUB_STAND.x,z:CUB_STAND.z}});}
+    if(drent.sneaking)drent.toggleSneak();
+    const spot=clearApproach(kind==='race'?KAYLA_RACE_START:CUB_STAND);
+    testGoTo(spot,kind==='race'?'PLAYTEST — KAYLA':'PLAYTEST — BEAR CUB',kind==='race'?'Ride Kayla in a race against Ed the Chameleon.':'Learn Stealth and sneak a honeycomb out of Liz’s apiary.');
+    skillAnnouncements.clear();mapTutorial.restore(2);renderMapTutorial();reviewFrozen=false;reviewTarget=null;stopInput();refreshQuest();inventory.refresh();
+    autopilot.startQuest(kind);canvas.focus();return true;
+  }
+  $('test-kayla-autoplay').onclick=()=>testPlayBearQuest('race');
+  $('test-cub-autoplay').onclick=()=>testPlayBearQuest('cub');
   function testPlayBenQuest(){
     stopAutopilot();testingEnabled=true;show('testing-badge',true);
     closeDialogue();questChoice.close();if(riding.mounted)stepDown(true);
@@ -5667,7 +5742,7 @@ function init() {
     stopAutopilot();testingEnabled=true;show('testing-badge',true);
     closeDialogue();questChoice.close();if(riding.mounted)stepDown(true);
     prepareTesting();combat.revive();magic.stop();combatEvents.length=0;sessionCheckpoint.clear();recoveryInfo=null;
-    if(liz){catQuest.restore(createCatQuest().snapshot());mop=createMopWalk();lizVisits=0;}
+    if(liz){cubHost.calm();apiaryBees.clear();catQuest.restore(createCatQuest().snapshot());mop=createMopWalk();lizVisits=0;}
     else{homeResidents.reset(TROY.id);murder.restore(createMurderQuest().snapshot());troyVisits=0;}
     const dead=fallen.snapshot();dead.ids=dead.ids.filter(id=>!ids.includes(id));fallen.restore(dead);
     const bodies=corpseHost.snapshot();bodies.bodies=bodies.bodies.filter(body=>!ids.includes(body.sourceId)&&!ids.includes(body.npcId));corpseHost.restore(bodies);
@@ -5686,7 +5761,7 @@ function init() {
     skillAnnouncements.clear();mapTutorial.restore(2);renderMapTutorial();combatEvents.length=0;
     reviewFrozen=false;reviewTarget=null;stopInput();refreshQuest();inventory.refresh();
     if(!autopilot.startQuest(kind))return false;
-    toast(liz?'The computer will bring Mop home, then leave the reward choice to you. Any key or click takes control.'
+    toast(liz?'The computer will bring Olive home, then leave the reward choice to you. Any key or click takes control.'
       :'The computer will question the witnesses and solve the case, then leave the reward choice to you. Any key or click takes control.',`PLAYTEST \u00b7 ${teacher.name.toUpperCase()}`);
     canvas.focus();return true;
   }
@@ -5757,8 +5832,9 @@ function init() {
     riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
     aftermath:{stage:aftermath.view().stage,variant:aftermath.view().variant,complete:aftermath.view().complete,built:aftermathBuilt(aftermath.spec),destinationIds:aftermath.view().destinationIds,actions:aftermath.availableActions()},
     interaction:{npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
-  const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>{document.querySelector(`[data-choice="${id}"]`)?.click();const focus={'ben-yes':SPIDER_QUEST.id,'cat-yes':'liz-cat','murder-take':'cobble-murder','cagney-accept':CAGNEY_QUEST.id}[id];if(focus){refreshQuest();selectQuest(focus);}},interact:()=>interact(),
+  const autopilotActs={begin:()=>begin(),retry:()=>retry(),continue:()=>nextSpeech(),choose:({id})=>{document.querySelector(`[data-choice="${id}"]`)?.click();const focus={'ben-yes':SPIDER_QUEST.id,'cat-yes':'liz-cat','murder-take':'cobble-murder','cagney-accept':CAGNEY_QUEST.id,'cub-honey-yes':CUB_HONEY_QUEST_ID,'kayla-race-accept':KAYLA_RACE.id}[id];if(focus){refreshQuest();selectQuest(focus);}},interact:()=>interact(),
     attack:({yaw:aim})=>{if(mode==='playing'&&grounded&&weapons.profile().usable)combat.attack(aim);},dodge:({x,z})=>{if(mode==='playing'&&grounded)combat.dodge({x,z});},
+    toggleSneak:()=>{if(mode==='playing'&&!raceHost.mounted&&!inWater)drent.toggleSneak();},
     'open-inventory':()=>{if(mode==='playing')toggleInventory();},'close-inventory':()=>{if(mode==='inventory')inventory.close();},'select-item':({id})=>inventory.select(id),
     equip:({id})=>{if(combat.state.player.action==='idle'&&weapons.equip(id))inventory.refresh();},eat:({id})=>consumables.consume(id),
     'open-chart':()=>{if(mode==='playing'){modal('journal');journalTab('world');}},'open-trails':()=>{if(mode==='playing')openLocalMap();},'close-journal':()=>{if(mode==='journal')closeModal();},
@@ -5778,11 +5854,14 @@ function init() {
     return at?{x:at.x,z:at.z,available:!npc.hidden&&!npc.fallen&&!crime.isDown(id)&&!corpseHost.ownsNpc(id)}:null;
   };
   const lizAutopilot=createLizAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>({...autopilotRead(),quest:catQuest.state,
-    liz:questPilotPerson(LIZ.id),cat:{...questPilotPerson(CAT.id),mode:mop.mode}})});
+    liz:questPilotPerson(LIZ.id),home:LIZ_STAND,cat:{...questPilotPerson(CAT.id),mode:mop.mode}})});
   const troyAutopilot=createTroyAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>({...autopilotRead(),quest:murder.state,now:playSeconds,cameraYaw:yaw,
     troy:questPilotPerson(TROY.id),witnesses:Object.fromEntries(Object.keys(TESTIMONY).map(id=>[id,questPilotPerson(id)]))})});
   const cagneyAutopilot=createCagneyAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>({...autopilotRead(),quest:cagneyQuest.state,cagney:questPilotPerson(CAGNEY.id)})});
-  const pilots={main:roadAutopilot,ben:benAutopilot,liz:lizAutopilot,troy:troyAutopilot,cagney:cagneyAutopilot};let pilotId='main';
+  const racePilotWorld=bodyWorld(world);
+  const raceAutopilot=createKaylaRaceAutopilot({world:racePilotWorld,act:autopilotActs,read:()=>{racePilotWorld.setBodies(gatherBodies().filter(b=>!race.mounted||b.id!=='traveler')).moving(race.mounted?race.position:player.group.position,race.mounted?KAYLA_RACE.radius:BODY.traveler,race.mounted?KAYLA.id:'traveler');return {...autopilotRead(),quest:race.state()};}});
+  const cubAutopilot=createCubAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>{const s=autopilotRead();return {...s,quest:cubHost.state(),cameraYaw:yaw,cub:questPilotPerson(CUB.id),liz:questPilotPerson(LIZ.id),sneaking:drent.sneaking,interaction:{...s.interaction,id:cubHost.nearby?.id}};}});
+  const pilots={main:roadAutopilot,ben:benAutopilot,liz:lizAutopilot,troy:troyAutopilot,cagney:cagneyAutopilot,race:raceAutopilot,cub:cubAutopilot};let pilotId='main';
   const autopilot={
     start(){return this.startQuest('main');},
     startQuest(id){if(!pilots[id])return false;if(this.active)this.stop('Starting another playtest.');pilotId=id;return pilots[id].start();},
@@ -5798,14 +5877,14 @@ function init() {
     if(event.type==='stop'){stopInput();toast(event.reason||'Autoplay stopped.','YOU HAVE CONTROL');}});
   function startAutopilot(){
     if(living.recall().status==='passenger')return;
-    const focusedPilot={[SPIDER_QUEST.id]:'ben','liz-cat':'liz','cobble-murder':'troy',[CAGNEY_QUEST.id]:'cagney'}[questTracker.selectedId];
-    const earlyQuest={ben:['unmet','asked'].includes(spiderQuest.state.stage),liz:['unmet','asked'].includes(catQuest.state.stage),troy:murder.state.stage==='unmet',cagney:['unmet','asked'].includes(cagneyQuest.state.stage)};
+    const focusedPilot={[SPIDER_QUEST.id]:'ben','liz-cat':'liz','cobble-murder':'troy',[CAGNEY_QUEST.id]:'cagney',[KAYLA_RACE.id]:'race',[CUB_HONEY_QUEST_ID]:'cub'}[questTracker.selectedId];
+    const earlyQuest={ben:['unmet','asked'].includes(spiderQuest.state.stage),liz:['unmet','asked'].includes(catQuest.state.stage),troy:murder.state.stage==='unmet',cagney:['unmet','asked'].includes(cagneyQuest.state.stage),race:race.state().stage!=='complete',cub:cubHost.state().stage!=='complete'};
     const sidePilot=focusedPilot??(earlyQuest[autopilot.id]?autopilot.id:null);
     if(testingEnabled&&sidePilot){
       if(['pause','journal','testing'].includes(mode))closeModal();
-      if(autopilot.startQuest(sidePilot)){toast(`The computer continues ${ {ben:'Ben',liz:'Liz',troy:'Troy',cagney:'Cagney'}[sidePilot]}'s quest. Any key or click takes control.`,'QUEST AUTOPLAY');canvas.focus();return true;}return false;
+      if(autopilot.startQuest(sidePilot)){toast(`The computer continues ${ {ben:'Ben',liz:'Liz',troy:'Troy',cagney:'Cagney',race:'Kayla',cub:'the bear cub'}[sidePilot]}'s quest. Any key or click takes control.`,'QUEST AUTOPLAY');canvas.focus();return true;}return false;
     }
-    if(questTracker.selectedId!=='main'){toast('F8 offers Ben, Liz, Troy, and Cagney quest playtests. Focus the gold quest to autoplay the main road.','QUEST FOCUS');return false;}
+    if(questTracker.selectedId!=='main'){toast('F8 offers the side-quest playtests, including Kayla and the bear cub. Focus the gold quest to autoplay the main road.','QUEST FOCUS');return false;}
     if(['pause','journal','testing'].includes(mode))closeModal();
     if(!['playing','opening','dialogue','inventory','defeated'].includes(mode))return false;
     if(autopilot.start()){toast('The computer takes the road. Press any key or click to take control back.','AUTOPLAY');if(mode!=='opening')canvas.focus();}
@@ -5853,7 +5932,7 @@ function init() {
     if(e.code===LINGUIST_KEY&&mode==='dialogue'&&gameMode.has('linguist')){e.preventDefault();linguist.toggle();updateSpeech();return;}
     if(mode==='playing'&&living.recall().status==='passenger'){e.preventDefault();return;}
     if(e.code==='KeyF'){interact();return;}
-    if(e.code==='KeyX'&&mode==='playing'){e.preventDefault();if(!riding.mounted&&!inWater&&combat.state.phase!=='active')drent.toggleSneak();return;}
+    if(e.code==='KeyX'&&mode==='playing'){e.preventDefault();if(!raceHost?.mounted&&!riding.mounted&&!inWater&&combat.state.phase!=='active')drent.toggleSneak();return;}
     if(e.code==='KeyZ'&&mode==='playing'){e.preventDefault();castSpell();return;}
     if(e.code==='KeyN'&&mode==='playing'){e.preventDefault();magic.cycle();magicUI.update();saveRoad(false);return;}
     if(e.code==='KeyR'){attack();return;}
@@ -5867,7 +5946,7 @@ function init() {
     if(e.code==='KeyC'){dodge();return;}
     if(mode==='playing'){
       keys.add(e.code);
-      if(e.code==='Space'&&grounded&&!riding.mounted&&combat.state.player.action==='idle'){verticalSpeed=6.3;grounded=false;}
+      if(e.code==='Space'&&grounded&&!raceHost?.mounted&&!riding.mounted&&combat.state.player.action==='idle'){verticalSpeed=6.3;grounded=false;}
     }
   });
   document.addEventListener('keyup',e=>keys.delete(e.code));
@@ -6242,7 +6321,7 @@ function init() {
       // A newly learned survival skill must not cover an enemy that can still hit you.
       // Keep the lesson queued with its full reading time until the danger has passed.
       skillAnnouncements.frame(reviewFrozen?0:dt,mode==='playing'&&!developer.active&&combat.state.phase!=='active');
-      magicUI.update({visible:mode==='playing'&&!developer.active,blockedReason:inWater?'Leave the water before casting.':riding.mounted?'Dismount before casting.':''});
+      magicUI.update({visible:mode==='playing'&&!developer.active,blockedReason:inWater?'Leave the water before casting.':(riding.mounted||raceHost.mounted)?'Dismount before casting.':''});
       if(developer.active){
         developer.update(dt);
         if(developer.scene===scene){
@@ -6293,10 +6372,16 @@ function init() {
         // Escort inputs carry their steering basis so a gently trailing camera cannot bend the route.
         const movementYaw=autopilot.active&&Number.isFinite(autopilot.move.basisYaw)?autopilot.move.basisYaw:yaw;
         const p=combat.state.player;
+        kaylaHost.frame(dt,{playing:true,talking:activeDialogue?.npc?.id===KAYLA.id});
+        if(raceHost.mounted&&(living.recall().status==='passenger'||p.hp<=0||crime.isDown(KAYLA.id)||crime.isDown(ED.id)||kaylaHost.state().provoked)){race.abandon('The race was interrupted.');raceHost.sync();}
+        if(!crime.isDown(KAYLA.id)&&!kaylaHost.state().provoked&&!kaylaHost.state().fighting)raceHost.tick(dt,{playing:true,input:{
+          dx:-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side,dz:-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side,
+          run:!!(autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')))}});
+        bearFamily.frame(dt,{playing:true});
         const guardKey=living.recall().status!=='passenger'&&(autopilot.active?autopilot.guard:keys.has(GUARD_KEY));
         const shieldFacing=guardKey&&hasCarriedShield();
         if(riding.mounted&&combat.state.phase==='active')stepDown(true);
-        if(riding.mounted){
+        if(raceHost.mounted){seatOnKayla();}else if(riding.mounted){
           const canter=!!(autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')));
           if(magnitude>0){const wx=-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side,wz=-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,playerWorld,RIDE.radius);}
           player.group.rotation.y=mountHeading;p.yaw=mountHeading;
@@ -6347,7 +6432,7 @@ function init() {
          * aimed by looking, and offered *before* the fight is stepped so the arrow leaves on the
          * frame the player let go rather than the one after it.
          */
-        const drawKey=living.recall().status!=='passenger'&&ranged()&&!inWater&&!riding.mounted&&(swingHeld||(!autopilot.active&&keys.has('KeyR')));
+        const drawKey=!raceHost.mounted&&living.recall().status!=='passenger'&&ranged()&&!inWater&&!riding.mounted&&(swingHeld||(!autopilot.active&&keys.has('KeyR')));
         if(drawKey&&p.action==='idle'){const angle=Math.PI+yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-16*dt));}
         combat.draw(drawKey,player.group.rotation.y);
         const windBefore=combat.state.player.stamina;
@@ -6378,7 +6463,7 @@ function init() {
         // little over a metre down, which puts the head and shoulders above the waterline.
         else player.group.position.y=(!riding.mounted&&floor<WATERLINE)?WATERLINE-SWIM.sink:floor+((riding.mounted||living.recall().status==='passenger')?RIDE.seat.up:0);
         {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,CLOSED_BORDER_TITLE);}}
-        swimTick(dt,before);
+        if(raceHost.mounted)seatOnKayla();else swimTick(dt,before);
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
         // **The road actually walked together** (REGARD.perMinute, src/companions.js): the slow
         // honest thing that moves a rung, paid by the metre rather than by the minute so that
@@ -6414,7 +6499,7 @@ function init() {
           } else if(!walking||combat.state.phase==='active')spiderHeldOff=false;
         }
         homeResidents.frame(dt,!reviewFrozen);
-        kaylaHost.frame(dt,{playing:!reviewFrozen});
+
         // **And the body, found.** This is the whole point of an event that happens whether you
         // are there or not: you come up the road a quarter of an hour later and he is lying on it.
         // Once each, and saved, so a reload does not tell you again (src/road-ambush.js).
@@ -6457,20 +6542,27 @@ function init() {
       if(mode==='defeated'){combat.update(dt);combatClock+=dt;walkTime+=dt;}
       else if(['playing','fishing','opening','arriving'].includes(mode)&&!reviewFrozen)walkTime+=dt;
       republic?.frame(dt,{playing:mode==='playing'&&!reviewFrozen});
-      const awareness=drent.frame(dt,{playing:mode==='playing'&&!reviewFrozen,canSneak:!inWater&&!riding.mounted&&combat.state.phase!=='active'});
+      const roadAwareness=drent.frame(dt,{playing:mode==='playing'&&!reviewFrozen,canSneak:!raceHost.mounted&&!inWater&&!riding.mounted&&combat.state.phase!=='active'});
+      cubHost.frame(dt,{playing:mode==='playing'&&!reviewFrozen,talking:activeDialogue?.npc?.id===LIZ.id});
+      apiaryBees.update(dt,{playing:mode==='playing'&&!reviewFrozen,player:{...player.group.position,hp:combat.state.player.hp,action:combat.state.player.action},ownerAlive:!crime.isDown(LIZ.id)});
+      apiaryBeesView.update(mode==='playing'&&!reviewFrozen?dt:0);
+      const apiaryNear=['learning','carrying'].includes(cubHost.state().stage)&&Math.hypot(player.group.position.x-HONEY_STORE.x,player.group.position.z-HONEY_STORE.z)<35;
+      const awareness=apiaryNear?cubHost.awareness:roadAwareness;
+      const raceState=race.state();$('bear-race-status').hidden=!(mode==='playing'&&raceHost.mounted);
+      $('bear-race-detail').textContent=raceState.stage==='countdown'?`Ready in ${Math.ceil(raceState.countdown)}…`:raceState.stage==='returning'?'Kayla is carrying you back to Ambron.':`${raceState.kayla.next>raceState.ed.next?'You lead':'Race Ed to the crossroads'} · Shift to run · G to withdraw`;
       const stealthHud=$('stealth-status');stealthHud.hidden=!(drent.sneaking||awareness.suspicion>.01);
       $('stealth-meter').value=awareness.suspicion;
-      $('stealth-caption').textContent=awareness.detected?'Spotted · leave the yard':awareness.visible?'In sight · find cover':awareness.danger?'Hidden near guards · X to stand':'Sneaking · X to stand';
+      $('stealth-caption').textContent=awareness.detected?(apiaryNear?'Liz spotted you · run!':'Spotted · leave the yard'):awareness.visible?'In sight · find cover':awareness.danger?(apiaryNear?'Hidden from Liz · X to stand':'Hidden near guards · X to stand'):'Sneaking · X to stand';
       stealthHud.dataset.alert=String(awareness.detected||awareness.visible);
       chopping(dt,movement);
       const weaponPose=chop?{action:'attack',progress:((SWING-chop.next)/SWING+.46)%1,combo:0,armed:true,alert:false,weaponId:'bearded-axe',weaponUsable:true}:combat.pose();
-      player.setWeapon(weaponPose.weaponUsable?weaponPose.weaponId:null);
+      player.setWeapon(!raceHost.mounted&&weaponPose.weaponUsable?weaponPose.weaponId:null);
       player.setFishing(mode==='fishing');
       acting.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater});
       visualArts.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater||!!acting.pose()||!!combat.state.player.guarding||weaponPose.action==='attack',position:player.group.position});
       artTools.set(!!visualArts.pose());
       if(visualArts.pose()){player.setArmed(false);player.setShield(false);}
-      player.animate(walkTime,(riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,spellCast:magic.pose(),emote:acting.pose(),painting:!!visualArts.pose(),sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!riding.mounted&&!inWater&&!acting.pose()&&!visualArts.pose(),fishing:mode==='fishing',swimming:inWater,riding:(riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
+      player.animate(walkTime,(raceHost.mounted||riding.mounted||living.recall().status==='passenger')?0:movement,grounded,{...weaponPose,spellCast:magic.pose(),emote:acting.pose(),painting:!!visualArts.pose(),sneaking:drent.sneaking,armed:weaponPose.weaponUsable&&!raceHost.mounted&&!riding.mounted&&!inWater&&!acting.pose()&&!visualArts.pose(),fishing:mode==='fishing',swimming:inWater,riding:(raceHost.mounted||riding.mounted||living.recall().status==='passenger')?{pace:movement}:null,
         // The shield is up in the picture exactly when it is up in the rules: `player.guarding`
         // is what `combat.guard` decided this frame, not what the key is doing.
         guarding:!!combat.state.player.guarding,
@@ -6586,7 +6678,7 @@ function init() {
       if(mode==='playing'){const dogNpc=npcById.get(VILLAGE_DOG.id);villageDog.place(dogNpc.actor.group.position.x,dogNpc.actor.group.position.z);const want=villageDog.update(dt,{x:player.group.position.x,z:player.group.position.z});world.npcPositions[VILLAGE_DOG.id]={x:want.x,z:want.z};dogNpc.pace=want.pace;dogNpc.sitting=want.sitting;}
       if(mode==='playing'&&reviewCat){const catNpc=npcById.get(VILLAGE_CAT.id);world.npcPositions[VILLAGE_CAT.id]=reviewCat.at;catNpc.pace=0;catNpc.sitting=true;catNpc.posture=reviewCat.posture;catNpc.face=null;}
       else if(mode==='playing'){const catNpc=npcById.get(VILLAGE_CAT.id),dogAt=npcById.get(VILLAGE_DOG.id).actor.group.position;villageCat.place(catNpc.actor.group.position.x,catNpc.actor.group.position.z);const want=villageCat.update(dt,{player:{x:player.group.position.x,z:player.group.position.z},speed:movement,dog:{x:dogAt.x,z:dogAt.z},fight:combat.state.phase==='active'});world.npcPositions[VILLAGE_CAT.id]={x:want.x,z:want.z};catNpc.pace=want.pace;catNpc.sitting=want.sitting;catNpc.posture=want.posture;catNpc.face=want.face;}
-      // **Mop**, at the edge of the goblins' midden until somebody stands still near him, and
+      // **Olive**, at the edge of the goblins' midden until somebody stands still near him, and
       // then behind them all the way to Liz's clearing (src/cat-quest.js). A fight near enough to
       // hear and he is gone under the nearest thing, and the errand goes back a step.
       if(mode==='playing'&&!catQuest.state.over&&!crime.isDown(CAT.id)&&!corpseHost.ownsNpc(CAT.id)){
@@ -6609,7 +6701,7 @@ function init() {
       updateFishingLessons(dt);
       const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const wineryLesson=wineryLessonsStatus({farmingLevel:skills.level('farming')});
-      const markerView={lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:cagneyQuest.state.over?[]:[CAGNEY.id],skillTeachers:[...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
+      const markerView={lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:[...(cagneyQuest.state.over?[]:[CAGNEY.id]),...(!race.state().complete?[KAYLA.id]:[])],skillTeachers:[...(!cubHost.quest.completed?[CUB.id]:[]),...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
         // Chip's copper, which is on whenever his bridge is down and is nobody's step.
@@ -6691,6 +6783,7 @@ function init() {
         if(fleeing){const dx=home.x-fightAt.x,dz=home.z-fightAt.z,d=Math.hypot(dx,dz)||1;destX=fightAt.x+dx/d*26;destZ=fightAt.z+dz/d*26;}
         const dHome=Math.hypot(destX-pos.x,destZ-pos.z);let pace=0;
         if(crime.controlsNpc(npc.id)){pace=npc.crimeMoving?3.2:0;}
+        else if(npc.id===LIZ.id&&(cubHost.controlsLiz||cubHost.state().alerted)){pace=npc.honeyMotion??0;}
         else if(npc.kaylaMotion!==undefined){pace=mode==='playing'&&!reviewFrozen?npc.kaylaMotion:0;}
         else if(npc.residentMotion!==undefined){pace=mode==='playing'&&!reviewFrozen?npc.residentMotion:0;}
         else if(mode==='playing'&&dHome>(npc.stride?0:.1)&&!npc.swimming){const move=Math.min(dHome,dt*(shoreAlarm?.pace??(fleeing?Math.max(3.4,npc.pace||0):npc.pace||2.4))),bx=pos.x,bz=pos.z;const bodyR=npc.cat?BODY.cat:npc.dog?BODY.dog:npc.horse?BODY.horse:npc.ogre?BODY.ogre:npc.mounted?RIDE.radius:BODY.person;const moverWorld=npc.cat?catWorld:npcWorld;moverWorld.moving(pos,bodyR,npc.id);stepToward(pos,{x:destX,z:destZ},move,moverWorld,bodyR,npc.id.length%2?1:-1);pos.y=world.heightAt(pos.x,pos.z)+(npc.lift??0);pace=Math.hypot(pos.x-bx,pos.z-bz)/dt;if(pace>.1)npc.actor.group.rotation.y=Math.atan2(pos.x-bx,pos.z-bz);}
@@ -6706,7 +6799,7 @@ function init() {
         npc.shownPace=pace;
         const drill=npc.fishingLessonPose??npc.woodLessonPose??npc.placement?.animation;
         if(npc.id===landingMateId())npc.actor.setShield(!!drill?.guarding);
-        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):npc.mounted?0:pace,true,{...npc.residentFerry?.pose,...npc.kaylaPose,alert:alarm,conversing:activeDialogue?.npc?.id===npc.id,sitting:!!npc.sitting&&pace<.1,posture:npc.kaylaPose?.posture??npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming,riding:npc.mounted?{pace}:null,...(pace<.2?drill:null)});
+        if(npc.detail!=='stand-in')npc.actor.animate(walkTime+2,npc.swimming?swimSpeed(WORD_LEVEL):npc.mounted?0:pace,true,{...npc.residentFerry?.pose,...npc.kaylaPose,...(npc.id===LIZ.id?apiaryBees.pose():null),alert:alarm,conversing:activeDialogue?.npc?.id===npc.id,sitting:!!npc.sitting&&pace<.1,posture:npc.kaylaPose?.posture??npc.posture,falconer:!!npc.falconer,swimming:!!npc.swimming,riding:npc.mounted?{pace}:null,...(pace<.2?drill:null)});
         // Talk range is centre to centre, so a body wider than a person's eats into it: the ogre
         // is stopped a metre out by his own bulk before the traveler is anywhere near him.
         const reachIn=npc.bear?1.6:npc.ogre?BODY.ogre-BODY.person:0;
@@ -6716,7 +6809,7 @@ function init() {
         // What kind of gold somebody wears changes at most once in a game, so the mark is only rebuilt when it does.
         const mark=markerFor(npc.id,markerView),grade=markerGrade(mark);
         if(grade&&npc.markerKind!==grade){scene.remove(npc.marker);npc.marker=makeQuestMarker(mark.kind,{open:mark.open});npc.markerKind=grade;scene.add(npc.marker);}
-        npc.marker.visible=!!grade;
+        npc.marker.visible=!!grade&&!(npc.id===KAYLA.id&&raceHost.mounted);
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);
         if(npc.marker.userData.billboard)npc.marker.quaternion.copy(camera.quaternion);else npc.marker.rotation.y=elapsed*.7;
         // Facing the traveler is a loan, given back when the talking is done (src/bodies.js).
@@ -6746,13 +6839,13 @@ function init() {
       {// Ed the Chameleon, anywhere in the built world: he goes when his time is up, and when
        // somebody with nothing in their hands walks into his reach. A bottle buys a conversation.
         const pp=player.group.position,spot=chameleon.spot,alive=!crime.isDown(edNpc.id),near=alive&&Math.hypot(spot.x-pp.x,spot.z-pp.z)<200;
-        if(alive&&mode==='playing')chameleon.update(dt,{x:pp.x,z:pp.z,carrying:carryingForEd(inventory).length>0});
-        edView.group.visible=near&&!reviewTarget;
-        if(near)edView.update(elapsed,dt,{sober:false});
-        {const turned=lendFacing({facing:edFacing,lent:edLent,dt,talking:near&&mode==='dialogue'&&activeDialogue?.npc===edNpc,
+        if(!edRacing&&alive&&mode==='playing')chameleon.update(dt,{x:pp.x,z:pp.z,carrying:carryingForEd(inventory).length>0});
+        edView.group.visible=(edRacing||near)&&alive&&!reviewTarget;
+        if(edRacing||near||edView.puffing)edView.update(elapsed,mode==='playing'&&!reviewFrozen?dt:0,edRacing?{riding:true,speed:race.state().ed.speed}:{sober:false});
+        if(!edRacing){const turned=lendFacing({facing:edFacing,lent:edLent,dt,talking:near&&mode==='dialogue'&&activeDialogue?.npc===edNpc,
           want:Math.atan2(pp.x-edView.group.position.x,pp.z-edView.group.position.z)});
           edFacing=turned.facing;edLent=turned.lent;edView.group.rotation.y=edFacing;}
-        const d=near?edView.group.position.distanceTo(pp):Infinity;if(d<ED.talk&&d<nearest){nearest=d;currentNPC=edNpc;}}
+        const d=near?edView.group.position.distanceTo(pp):Infinity;if(!edRacing&&d<ED.talk&&d<nearest){nearest=d;currentNPC=edNpc;}}
       {// The boat under the Elod head: she waits on the water until first light, and the moment
        // the traveler comes back down the cliff with the glass she takes them home.
         if(mode==='playing'&&heist.stage==='taken'){const pp=player.group.position;
@@ -6914,9 +7007,10 @@ function init() {
       nearFishing=!!currentFishingSpot;
       // A plant, stone, mushroom or tree is always optional: anything else within reach gets the F first, so a tree beside a parcel cannot swallow it.
       if(currentFeederHook||currentHideoutSite||currentForestSite||currentRegionalSite||currentLusciaSite||currentMorosSite||currentJourneySite||currentFire||nearFishing||nearRepair||currentAcorn||currentStick||currentFruit){currentMushroom=null;currentPlant=null;currentStone=null;currentTree=null;currentDig=null;currentVine=null;if(currentNPC?.cat)currentNPC=null;}
+      if(raceHost.mounted)seatOnKayla();
       currentHomeDoor=mode==='playing'?homeResidents.nearby():null;
       const currentCorpse=mode==='playing'?corpseHost.nearest():null;
-      const prompting=mode==='playing'&&living.recall().status!=='passenger'&&(!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||nearArtEasel||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&combat.state.phase!=='active';show('interaction',prompting);
+      const prompting=mode==='playing'&&living.recall().status!=='passenger'&&(!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!cubHost.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||nearArtEasel||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&!raceHost.mounted&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ${currentFishingSpot?.id==='avrel-pool'?'ask Stanley for a lesson':currentFishingSpot?.id==='reedwater'?'ask Chip for a rod':'ask Glun, Mark, Jean or Bran to teach you'}`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentNPC?.marker.visible&&currentNPC.markerKind==='skill')$('interaction-label').textContent+=' \u00b7 Skill teacher';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
@@ -6943,6 +7037,7 @@ function init() {
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
       if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Survey Bramble Scout Camp · keep your distance';
+      if(cubHost.nearby)$('interaction-label').textContent=cubHost.nearby.prompt;
       // A prompt that is off the screen must not leave its words behind. Opening a conversation
       // hides this panel on the spot (openDialogue), and everything that writes the label is
       // gated on play, so the HUD otherwise keeps offering whatever it offered last. No player
@@ -6957,7 +7052,7 @@ function init() {
       if(!prompting)$('interaction-label').textContent='';
       distance=THREE.MathUtils.lerp(distance,targetDistance,1-Math.exp(-6*dt));
       combatCamera=THREE.MathUtils.lerp(combatCamera,combat.state.phase==='active'?1:0,1-Math.exp(-3*dt));
-      rideCamera=THREE.MathUtils.lerp(rideCamera,riding.mounted?1:0,1-Math.exp(-4*dt));
+      rideCamera=THREE.MathUtils.lerp(rideCamera,(riding.mounted||raceHost.mounted)?1:0,1-Math.exp(-4*dt));
       const viewDistance=distance+combatCamera*1.2,viewPitch=THREE.MathUtils.lerp(pitch,Math.max(pitch,.56),combatCamera);
       cameraFocus.copy(player.group.position).add(new THREE.Vector3(0,1.5-combatCamera*.22+rideCamera*(RIDE.camera.up-RIDE.seat.up*.35),0));
       if(mode==='opening'){cameraTarget.set(15+Math.sin(elapsed*.09)*2,12.5,57);cameraFocus.set(0,3.5,14);}
@@ -6988,7 +7083,7 @@ function init() {
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({kayla:kaylaHost.state(),homes:homeResidents.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({kaylaRace:race.state(),cubHoney:cubHost.state(),bearFamily:bearFamily.snapshot(),apiaryBees:apiaryBees.state(),kayla:kaylaHost.state(),homes:homeResidents.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       // The opening sequence, for a harness that would rather not sit through forty-four seconds.
@@ -7199,15 +7294,41 @@ function init() {
         yaw=Math.atan2(f.dx,f.dz)-Math.PI;pitch=.65;distance=targetDistance=12;settleCamera();await frames();
         return {ok:true,checks,corpseBounds:{x:size.x,y:size.y,z:size.z},frameErrors:frameErrors.view()};
       },
+      async runBearQuestChecks(){
+        const {runBearQuestChecks}=await import('./bear-quests-smoke.js');
+        const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+        const warp=at=>{player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);grounded=true;verticalSpeed=0;inWater=false;};
+        return runBearQuestChecks({frames,
+          prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();
+            crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();combatEvents.length=0;
+            companions.restore(createCompanions().snapshot());companionOffTheClock=true;
+            mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;writeRoadCheckpoint(checkpoint);testingEnabled=true;await frames(2);},
+          setup:async kind=>{testingMenu();await frames(2);$('test-'+(kind==='race'?'kayla':'cub')+'-autoplay').click();await frames(2);},
+          read:()=>({mode,player:{...player.group.position,hp:combat.state.player.hp},race:race.state(),cub:cubHost.state(),
+            family:{...bearFamily.snapshot(),roaming:bearFamily.roaming,kayla:{...kaylaHost.model.position}},
+            bees:{...apiaryBees.state(),swarmCount:apiaryBees.state().count,elapsed:apiaryBees.state().age},
+            pilot:{active:autopilot.active,id:autopilot.id,intent:autopilot.intent,reason:autopilot.stopReason},
+            checkpointAvailable:!!sessionCheckpoint.read().data,testing:testingEnabled,stealthTaught:skills.taught('stealth'),honeyCount:inventory.count('honeycomb'),cubItemCount:inventory.count(CUB_HONEY_ITEM),frameErrors:frameErrors.view().count,frames:frameCount}),
+          stopPilot:()=>stopAutopilot(),resumePilot:kind=>autopilot.startQuest(kind),snapshot:roadSnapshot,
+          validate:value=>createRoadCheckpoint({storage:{setItem(){}}}).save(value),
+          restore:async value=>{const result=sessionCheckpoint.save(value);if(!result.ok)throw new Error(result.reason);recoveryInfo={testing:true,encounterId:null};const ok=continueRoad(true);reviewFrozen=false;mode='playing';await frames(2);return ok;},
+          checkpointCopy:()=>checkpoint.read().data,warp,setSneaking:value=>{if(drent.sneaking!==value)drent.toggleSneak();},interact,
+          speakCub:()=>conversation(npcById.get(CUB.id)),nextSpeech,closeDialogue,
+          chooseCub:id=>document.querySelector(`[data-choice="${id}"]`)?.click(),
+          pause:value=>{mode=value?'pause':'playing';},setHealth:hp=>{combat.state.player.hp=hp;},recover:()=>$('defeat-restore').click(),
+          stepFamily:async seconds=>{const frozen=reviewFrozen;reviewFrozen=true;for(let t=0;t<seconds;t+=.05){kaylaHost.frame(.05,{playing:true});bearFamily.frame(.05,{playing:true});}reviewFrozen=frozen;await frames(2);},
+          capture:async name=>{window.__BEAR_CAPTURE__=name;console.log('BEAR_CAPTURE '+name);await frames(8);},
+        });
+      },
       async runKaylaChecks(){
         const frames=async(n=2)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         const {runKaylaChecks}=await import('./kayla-smoke.js');
-        return runKaylaChecks({host:kaylaHost,crime,combat,npc:npcById.get(KAYLA.id),world,player,
+        return runKaylaChecks({host:kaylaHost,race,crime,combat,npc:npcById.get(KAYLA.id),world,player,
           conversation,closeDialogue,nextSpeech,inventory,corpses:corpseHost,frames,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();
             crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();combatEvents.length=0;
             companions.restore(createCompanions().snapshot());companionOffTheClock=true;
-            kaylaHost.restore();mode='playing';reviewFrozen=true;reviewTarget=null;testingEnabled=true;await frames(2);},
+            kaylaHost.restore();raceHost.restore();cubHost.restore();bearFamily.restore();mode='playing';reviewFrozen=true;reviewTarget=null;testingEnabled=true;await frames(2);},
           snapshot:roadSnapshot,validate:value=>createRoadCheckpoint({storage:{setItem(){}}}).save(value),
           restore:async value=>{const result=checkpoint.save(value);if(!result.ok)throw new Error(result.reason);
             const restored=continueRoad();reviewFrozen=true;combatEvents.length=0;await frames(2);return restored;},
@@ -7267,7 +7388,8 @@ function init() {
         const {runMagicAutoplayDesktopChecks}=await import('../tests/magic-autoplay-desktop-checks.js');
         return runMagicAutoplayDesktopChecks(kind,{
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
-            if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
+            if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);if(kind==='liz'){cubHost.quest.accept({teach:()=>skills.learn('stealth').ok});cubHost.catchThief();}},
+          apiaryState:()=>({lesson:cubHost.state(),bees:apiaryBees.state()}),
           press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code})),release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code})),
           position:()=>({x:player.group.position.x,z:player.group.position.z}),person:questPilotPerson,
           mode:()=>mode,pilot:()=>({enabled:autopilot.active,id:autopilot.id,intent:autopilot.intent,stopReason:autopilot.stopReason}),

@@ -378,6 +378,10 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'Dark, sweet berries from the thorn tangles. Restores up to 15 health.',
     description: 'Restores up to 15 health. Picked from the same brambles that give the bramble goblins their name. They stain the fingers and bruise within a day, so eat them soon.',
   }),
+  'liz-stolen-honey': Object.freeze({
+    name: "Liz's stolen honey", type: 'Quest item', icon: 'honeycomb', stackable: false,
+    description: 'A comb quietly taken from Liz’s private stores for the bear cub. Return it to the cub by the Tessen crossing.',
+  }),
   honeycomb: Object.freeze({
     name: 'Honeycomb', type: 'Food', icon: 'honeycomb', stackable: true, eatName: 'piece of honeycomb',
     brief: 'A dripping piece of comb from the bee-fold hives. Restores up to 30 health.',

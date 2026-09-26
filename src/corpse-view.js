@@ -4,7 +4,10 @@ import { createEdModel } from './chameleon-model.js';
 import { createBosco } from './bosco-model.js';
 import { createBatman } from './batman-model.js';
 import { createSpider } from './spider-model.js';
-import { createKaylaBear } from './kayla-character.js';
+import { createKaylaBear, createBearCub } from './kayla-character.js';
+
+const isBearCub = body => body.model?.cub === true || body.model?.role === 'bear-cub'
+  || body.npcId === 'kayla-cub' || body.sourceId === 'kayla-cub';
 
 function wrappedActor(actor) {
   const group = new THREE.Group(); group.name = 'Resting figure'; group.add(actor.group);
@@ -94,7 +97,7 @@ function coverBody(item, world) {
 }
 
 export function createCorpseActor(body) {
-  if (body.kind === 'bear') return restingBear();
+  if (body.kind === 'bear') return restingBear(isBearCub(body) ? createBearCub() : createKaylaBear());
   if (body.kind === 'puck') return wrappedActor(createGoblin({ wine: true }));
   if (body.kind === 'chameleon') { const actor = createEdModel(); actor.animate(0, 0, { sober: true }); return restingActor(actor, 1.35); }
   if (body.kind === 'bosco') return restingActor(createBosco({ dye: body.model.dye }));
@@ -137,7 +140,7 @@ export function createCorpseView(scene, world) {
     actor.group.scale.setScalar(1); actor.group.visible = true;
     actor.group.name = `corpse:${body.id}`;
     scene.add(actor.group); setShadowCasting(actor, false);
-    if (!supplied) actor.group.add(groundShadow(body.kind === 'ogre' ? 1.4 : body.kind === 'bear' ? .8 : .45));
+    if (!supplied) actor.group.add(groundShadow(body.kind === 'ogre' ? 1.4 : body.kind === 'bear' && !isBearCub(body) ? .8 : .45));
     // Character meshes share materials. Weathering one body must never fade a living NPC.
     const materials = [], figureMeshes = [];
     actor.group.traverse(object => {

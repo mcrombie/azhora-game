@@ -61,7 +61,7 @@ test('the one outcome she cannot be paid for', () => {
   assert.equal(quest.found(), false);
   assert.equal(quest.died(), false, 'death is recorded once');
   const beforeMeeting = createCatQuest();
-  assert.equal(beforeMeeting.died(), true, 'Liz cannot offer a living-cat errand after Mop has already died');
+  assert.equal(beforeMeeting.died(), true, 'Liz cannot offer a living-cat errand after Olive has already died');
   assert.equal(beforeMeeting.ask(), false);
 });
 
@@ -125,7 +125,7 @@ test('malformed companion checkpoints are refused without changing the current e
   }
 });
 
-test('invalid placement and frame deltas cannot poison Mop\'s saved feet or timers', () => {
+test('invalid placement and frame deltas cannot poison Olive\'s saved feet or timers', () => {
   const walk = createMopWalk({ random: () => .5 });
   walk.place(17, -171);
   walk.update(0);

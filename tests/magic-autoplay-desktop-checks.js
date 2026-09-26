@@ -29,6 +29,7 @@ export async function runMagicAutoplayDesktopChecks(kind,h){
   const savedBefore=JSON.stringify(h.checkpointCopy());
   check(!!h.checkpointCopy(),'A normal adventure checkpoint exists before testing');
   await start();
+  if(liz&&h.apiaryState)check(h.apiaryState().lesson.stage==='learning'&&!h.apiaryState().lesson.alerted&&!h.apiaryState().bees.active, 'Liz playtest clears retaliation while preserving the unfinished cub lesson');
   check(!h.magic.known(spell),'The spell is not awarded before the quest');
   const began=performance.now();let last=h.position(),travelled=0,largestStep=0,lastReport=0,reloaded=false,paused=false;
   const initialCat=liz?h.person(CAT.id):null;
@@ -42,14 +43,14 @@ export async function runMagicAutoplayDesktopChecks(kind,h){
       tap('Escape');const clock=h.clock(),still=h.position(),cat=liz?h.person(CAT.id):null;
       await frames(10);
       check(h.mode()==='pause'&&h.clock()===clock&&gap(h.position(),still)<.01,'Pause freezes the pilot and world clock');
-      if(liz)check(gap(h.person(CAT.id),cat)<.01,'Mop stays still while paused');
+      if(liz)check(gap(h.person(CAT.id),cat)<.01,'Olive stays still while paused');
       tap('Escape');paused=true;
     }
     if(!reloaded&&h.mode()==='playing'&&(liz?quest.stage==='following'&&gap(h.person(CAT.id),initialCat)>15:quest.heard.length===1)){
       check(h.save(),'Progress can be saved in the testing session');
       const before=h.session(),cat=liz?h.person(CAT.id):null;
       check(h.reload(),'The testing checkpoint reloads');
-      if(liz){check(gap(h.person(CAT.id),cat)<.05&&h.catMode()==='following','Reload keeps Mop at his actual feet and following');}
+      if(liz){check(gap(h.person(CAT.id),cat)<.05&&h.catMode()==='following','Reload keeps Olive at his actual feet and following');}
       else check(JSON.stringify(h.quest().heard)===JSON.stringify(before.murder.heard),'Reload preserves the first testimony');
       check(h.resume(),'The focused quest resumes after loading');last=h.position();reloaded=true;
     }
@@ -64,7 +65,7 @@ export async function runMagicAutoplayDesktopChecks(kind,h){
     &&document.querySelector(`[data-choice="${prefix}-lesson"]`)?.getClientRects().length,'Both reward choices are visible when the pilot stops');
   check(!h.magic.known(spell),'Autoplay leaves the reward to the player');
   check(travelled>(liz?150:20)&&largestStep<4,'The quest uses continuous walking after its initial teleport');
-  if(liz){check(stages.has('looking')&&stages.has('following')&&gap(initialCat,h.person(CAT.id))>60,'Mop walks home through the actual NPC frame loop');}
+  if(liz){check(stages.has('looking')&&stages.has('following')&&gap(initialCat,h.person(CAT.id))>60,'Olive walks home through the actual NPC frame loop');}
   else check(CLUES.every(clue=>h.quest().heard.includes(clue)),'All three actual witness conversations supply the evidence');
   if(liz){
     const lesson=document.querySelector('[data-choice="cat-lesson"]'),coin=document.querySelector('[data-choice="cat-purse"]');

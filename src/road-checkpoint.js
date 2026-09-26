@@ -14,6 +14,10 @@ import { createMurderQuest, validateMurderQuestSnapshot } from './murder-quest.j
 import { createCatQuest, validateCatQuestSnapshot } from './cat-quest.js';
 import { createCagneyQuest, validateCagneySnapshot } from './cagney-quest.js';
 import { validateKaylaSnapshot } from './kayla.js';
+import { createKaylaRace, validateKaylaRaceSnapshot } from './kayla-race.js';
+import { CUB_HONEY_ITEM } from './cub-honey-quest.js';
+import { validateCubHoneySnapshot } from './cub-honey-host.js';
+import { validateBearFamilySnapshot } from './bear-family.js';
 import { validateHomeResidents } from './home-residents.js';
 import { createVastosCivilWar, validateVastosCivilWarSnapshot } from './vastos-civil-war.js';
 import { createDrentCivilWar, validateDrentCivilWarSnapshot, DRENT_EVIDENCE_ID, DRENT_SUPPLIES_ID } from './drent-civil-war.js';
@@ -241,6 +245,16 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.murder !== undefined && !validateMurderQuestSnapshot(data.murder)) return failed('The saved case in Cobble is invalid.');
     if (data.cat !== undefined && !validateCatQuestSnapshot(data.cat)) return failed('The saved errand for Liz is invalid.');
     if (!validateKaylaSnapshot(data.kayla)) return failed('The saved honey rounds are invalid.');
+    if (!validateKaylaRaceSnapshot(data.kaylaRace)) return failed('The saved race for Kayla is invalid.');
+    if (!validateCubHoneySnapshot(data.cubHoney)) return failed('The saved honey lesson for the cub is invalid.');
+    if (!validateBearFamilySnapshot(data.bearFamily)) return failed('The saved bear family is invalid.');
+    if (data.bearFamily && data.bearFamily.phase !== 'waiting-race' && data.kaylaRace?.stage !== 'complete')
+      return failed('Kayla cannot return to her cub before finishing her race.');
+    if (data.bearFamily?.phase === 'roaming' && data.cubHoney?.quest.stage !== 'complete')
+      return failed('The bear family cannot roam before both honey errands are complete.');
+    if (stock.has(CUB_HONEY_ITEM) !== (data.cubHoney?.quest.stage === 'carrying')
+      || (stock.has(CUB_HONEY_ITEM) && stock.get(CUB_HONEY_ITEM) !== 1))
+      return failed('The stolen honey does not match the cub’s errand.');
     if (!validateHomeResidents(data.homes)) return failed('The saved journeys home are invalid.');
     if (data.cagney !== undefined && !validateCagneySnapshot(data.cagney)) return failed('The saved escort for Cagney is invalid.');
     if (!validateVastosCivilWarSnapshot(data.vastos)) return failed('The saved Common Water settlement is invalid.');
@@ -390,6 +404,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'ambush')) { const road = createRoadAmbush(); road.restore(data.ambush); result.ambush = road.snapshot(); }
     if (Object.hasOwn(data, 'spider')) { const den = createSpiderQuest(); den.restore(data.spider); result.spider = den.snapshot(); }
     if (Object.hasOwn(data, 'kayla')) result.kayla = JSON.parse(JSON.stringify(data.kayla));
+    if (data.kaylaRace !== undefined) { const race = createKaylaRace(); race.restore(data.kaylaRace); result.kaylaRace = race.snapshot(); }
+    if (data.cubHoney !== undefined) result.cubHoney = JSON.parse(JSON.stringify(data.cubHoney));
+    if (data.bearFamily !== undefined) result.bearFamily = JSON.parse(JSON.stringify(data.bearFamily));
     if (Object.hasOwn(data, 'homes')) result.homes = JSON.parse(JSON.stringify(data.homes));
     if (Object.hasOwn(data, 'cagney')) { const escort = createCagneyQuest(); escort.restore(data.cagney); result.cagney = escort.snapshot(); }
     if (Object.hasOwn(data, 'murder')) { const cobble = createMurderQuest(); cobble.restore(data.murder); result.murder = cobble.snapshot(); }

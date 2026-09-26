@@ -2,6 +2,8 @@ import { BEN } from './spider-quest.js';
 import { LIZ } from './cat-quest.js';
 import { TROY } from './murder-quest.js';
 import { CAGNEY } from './cagney-quest.js';
+import { KAYLA } from './kayla.js';
+import { CUB } from './cub-honey-quest.js';
 import { regions } from './region-world.js';
 
 /** Exercise the public playtest, story, travel and hack controls without playing entire quests. */
@@ -25,10 +27,16 @@ export async function runTestingToolsChecks(h) {
   const saved = h.saved();
   check(!!saved, 'A normal adventure checkpoint exists before testing');
   const unchanged = label => check(h.saved() === saved, `${label} preserves the normal checkpoint`);
+  const mountRace = async () => {
+    await open(); control('test-kayla-autoplay').click();
+    for (let n = 0; n < 1200 && !h.state().kaylaRace.mounted && h.autoplay.active; n++) await h.frames(1);
+    check(h.state().kaylaRace.mounted, 'Kayla autoplay mounts through the actual race invitation');
+    h.stop();
+  };
   try {
-    for (const [kind, npc] of [['ben', BEN], ['liz', LIZ], ['troy', TROY], ['cagney', CAGNEY]]) {
+    for (const [kind, npc] of [['ben', BEN], ['liz', LIZ], ['troy', TROY], ['cagney', CAGNEY], ['race', KAYLA], ['cub', CUB]]) {
       await open();
-      control(`test-${kind}-autoplay`).click();
+      control(`test-${kind==='race'?'kayla':kind}-autoplay`).click();
       check(h.autoplay.active && h.autoplay.id === kind && h.state().testingEnabled,
         `${npc.name}'s card starts its own testing autoplay`);
       // Stop synchronously, before a frame can advance dialogue or movement.
@@ -43,17 +51,19 @@ export async function runTestingToolsChecks(h) {
       check(h.dialogueNpc() === (npcId ?? h.recall().courier), `${kind} opens the intended character's conversation`);
       unchanged(`${kind} story jump`);
     }
-    await open();
+    await mountRace(); await open();
     const country = control('test-country'), place = control('test-place');
     const pueth = regions.find(region => region.name === 'Pueth');
     country.value = pueth.name; country.dispatchEvent(new Event('change', { bubbles: true }));
-    place.value = '0'; control('test-goto').click();
+    place.value = '0'; control('test-goto').click(); await h.frames(12);
+    check(!h.state().kaylaRace.mounted, 'Country travel dismounts an active testing race');
     check(h.state().mode === 'playing' && Math.hypot(h.position().x - pueth.spawn.x, h.position().z - pueth.spawn.z) < .01,
       'Country and place travel reaches the selected arrival');
     unchanged('Country travel');
-    await open();
+    await mountRace(); await open();
     const drent = regions.find(region => region.id === 1).spawn;
-    control('test-point').value = `${drent.x}, ${drent.z}`; control('test-point-go').click();
+    control('test-point').value = `${drent.x}, ${drent.z}`; control('test-point-go').click(); await h.frames(12);
+    check(!h.state().kaylaRace.mounted, 'Coordinate travel dismounts an active testing race');
     check(h.state().mode === 'playing' && Math.hypot(h.position().x - drent.x, h.position().z - drent.z) < .01,
       'Coordinate travel reaches the requested point');
     unchanged('Coordinate travel');

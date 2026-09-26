@@ -47,7 +47,7 @@ test('pause freezes Liz dialogue clocks, elapsed limit, and movement', () => {
   assert.deepEqual(calls, ['line']);
 });
 
-test('Mop is approached slowly, given time to hide, and allowed to catch up', () => {
+test('Olive is approached slowly, given time to hide, and allowed to catch up', () => {
   const snapshot = base(); snapshot.quest.stage = 'looking'; snapshot.position = { x: CAT.at.x - 2, z: CAT.at.z };
   const pilot = createLizAutopilot({ world: flatWorld(), read: () => snapshot }); pilot.start();
   pilot.step(.1); assert.equal(pilot.move.forward, 0); assert.match(pilot.intent, /Standing still/);
@@ -57,6 +57,24 @@ test('Mop is approached slowly, given time to hide, and allowed to catch up', ()
   pilot.step(.1); assert.equal(pilot.move.forward, 0); assert.match(pilot.intent, /catch up/);
   snapshot.cat.x = snapshot.position.x + 5; pilot.step(.1); assert.ok(pilot.move.forward > 0); assert.equal(pilot.move.run, false);
   snapshot.cat.mode = 'waiting'; pilot.step(.1); assert.match(pilot.intent, /Approaching/);
+});
+
+test('Olive returns to the clearing before the pilot seeks Liz at her moving hive station', () => {
+  const snapshot = base();
+  snapshot.position = { x: 0, z: -10 };
+  snapshot.home = { x: 0, z: 0 };
+  snapshot.liz = { x: 30, z: -10, available: true };
+  snapshot.cat = { x: 0, z: -13, available: true, mode: 'following' };
+  snapshot.quest.stage = 'following'; snapshot.interaction = {};
+  const pilot = createLizAutopilot({ world: flatWorld(), read: () => snapshot });
+  pilot.start(); pilot.step(.1);
+  assert.ok(pilot.move.forward > 0);
+  assert.ok(Math.abs(Math.sin(pilot.yaw)) < .001 && Math.cos(pilot.yaw) < -.99,
+    'the escort heads south to the cat home, not east to Liz in the private honey stores');
+  snapshot.quest.stage = 'home'; pilot.step(.1);
+  assert.ok(pilot.move.forward > 0);
+  assert.ok(Math.sin(pilot.yaw) < -.99 && Math.abs(Math.cos(pilot.yaw)) < .001,
+    'after Olive arrives safely, the reward conversation follows Liz herself');
 });
 
 test('manual interruption, missing actors, deaths and combat release inputs without mutating the quest', () => {
@@ -129,8 +147,8 @@ test('the complete Liz pilot walks the built forest, earns trust and returns the
   const result = JSON.stringify({ frames, stage: quest.state.stage, position, cat, mode: mop.mode, stop: pilot.stopReason });
   assert.equal(quest.state.stage, 'home', result); assert.equal(events.at(-1)?.completed, true, result);
   assert.ok(distance(cat, LIZ_STAND) < CAT.home, result); assert.ok(walked > 170, `walked ${walked}m`);
-  assert.ok(maximumGap < 10, `Mop was left ${maximumGap}m behind`); assert.ok(closestCamp > 18, `entered the camp at ${closestCamp}m`);
-  assert.ok(intentions.has('Standing still so Mop can decide')); assert.ok(intentions.has('Waiting for Mop to catch up'));
+  assert.ok(maximumGap < 10, `Olive was left ${maximumGap}m behind`); assert.ok(closestCamp > 18, `entered the camp at ${closestCamp}m`);
+  assert.ok(intentions.has('Standing still so Olive can decide')); assert.ok(intentions.has('Waiting for Olive to catch up'));
   assert.deepEqual(choicesTaken, ['cat-yes']); assert.equal(mode, 'dialogue');
   assert.deepEqual(dialogue.options.choices.map(choice => choice.id), ['cat-purse', 'cat-lesson']);
 });

@@ -6,7 +6,7 @@ export const KAYLA_FIGHT = 'kayla-self-defense';
 
 /** One named bear: her roaming feet, conversation and combat share one body and one health record. */
 export function createKaylaHost({ npc, world, combat, crime, bodies = () => [], playerPosition,
-  lizAlive = () => true, toast = () => {}, save = () => {} }) {
+  lizAlive = () => true, roaming = () => true, toast = () => {}, save = () => {} }) {
   const model = createKayla({ onEvent(event) {
     if (event.type === 'kayla-liz-honey' && Math.hypot(model.position.x - playerPosition().x, model.position.z - playerPosition().z) < 24)
       toast(event.text, 'KAYLA AND LIZ');
@@ -63,6 +63,7 @@ export function createKaylaHost({ npc, world, combat, crime, bodies = () => [], 
       // If a training bout or distant fight cannot admit another body, she waits rather than duplicating it.
       return;
     }
+    if(!roaming()&&!provoked)return;
     // Combat needs dry footing. Keep her anger while she swims normally to the bank;
     // admitting her midriver would let combat's safe-point search move her off her route.
     navigation.setBodies(bodies()).moving(model.position, KAYLA_RADIUS, npc.id);
@@ -91,6 +92,9 @@ export function createKaylaHost({ npc, world, combat, crime, bodies = () => [], 
   }
   place(); npc.kaylaMotion = 0;
   return { model, frame, assault, combatEvent, restore,
+    placeExternal(at){if(fighting||provoked||crime.isDown(npc.id))return false;
+      model.position.x=at.x;model.position.z=at.z;if(Number.isFinite(at.yaw))npc.actor.group.rotation.y=at.yaw;
+      npc.kaylaMotion=at.speed??0;npc.kaylaPose={};place();return true;},
     snapshot: () => ({ ...model.snapshot(), provoked }),
     state: () => ({ ...model.state(), provoked, fighting, health: crime.health(npc.id) }) };
 }

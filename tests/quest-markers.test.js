@@ -260,7 +260,7 @@ test('unavailable or already known magic lessons are not advertised', () => {
   assert.ok(!magicTeacherIds({ spider: fallen.state }).includes(BEN.id));
   assert.ok(!magicTeacherIds({ spider: { stage: 'fighting', benDown: true } }).includes(BEN.id));
   cat.ask(); cat.accept(); cat.died();
-  assert.ok(!magicTeacherIds({ cat: cat.state }).includes(LIZ.id), 'Mop dying permanently closes the lesson');
+  assert.ok(!magicTeacherIds({ cat: cat.state }).includes(LIZ.id), 'Olive dying permanently closes the lesson');
   for (const [spell, id] of [['fireball', BEN.id], ['summon-bees', LIZ.id], ['mindread', TROY.id]]) {
     for (const knownSpells of [[spell], new Set([spell])]) {
       const ids = magicTeacherIds({ knownSpells });

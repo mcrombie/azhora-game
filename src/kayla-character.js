@@ -58,8 +58,9 @@ function envelope(progress, points) {
   return points.at(-1)[1];
 }
 
-export function createKaylaBear() {
-  const group = new THREE.Group(); group.name = 'Kayla the bear';
+export function createKaylaBear({ cub = false } = {}) {
+  const group = new THREE.Group(); group.name = cub ? 'Kayla’s cub' : 'Kayla the bear';
+  if (cub) group.scale.setScalar(.58);
   const { part, finish } = modelBuilder(), c = PALETTE;
   const body = joint(group, 'Weight and hips');
   const spine = joint(body, 'Spine', 0, .96, 0);
@@ -72,6 +73,7 @@ export function createKaylaBear() {
   part(neck, c.coat, [0, -.01, .05], [.35, .31, .34]);
   part(neck, c.light, [0, -.16, .14], [.26, .2, .22]);
   const head = joint(neck, 'Head', 0, .12, .25);
+  if (cub) { head.scale.setScalar(1.12); head.position.y += .025; }
   part(head, c.coat, [0, .01, .015], [.305, .27, .31]);
   part(head, c.light, [0, .035, .125], [.255, .215, .235]);
   // The light, wide muzzle and rounded cheek pads keep her expression open.
@@ -109,6 +111,9 @@ export function createKaylaBear() {
     }
   }
   finish();
+  // A contact anchor follows the actual broad back, including its small gait sway.
+  // It carries no saddle; the player sits astride Kayla's fur for the race.
+  const seat = joint(spine, 'Bear rider seat', 0, .345, -.17);
 
   let lastTime, stride = .7, movement = 0;
   function animate(time, speed = 0, grounded = true, pose = {}) {
@@ -176,5 +181,11 @@ export function createKaylaBear() {
     }
   }
   animate(0);
-  return { group, animate, setWeapon: () => false, setShield: () => {}, setArmed: () => {} };
+  return { group, animate, seat,
+    seatPosition(target = new THREE.Vector3()) { return seat.getWorldPosition(target); },
+    riderPosition(target = new THREE.Vector3()) { seat.getWorldPosition(target); target.y -= .58; return target; },
+    setWeapon: () => false, setShield: () => {}, setArmed: () => {} };
 }
+
+/** The unnamed cub has a larger head in proportion and the same grounded bear rig. */
+export function createBearCub() { return createKaylaBear({ cub: true }); }

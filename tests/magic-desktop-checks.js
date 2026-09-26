@@ -4,7 +4,7 @@ import { CAT, LIZ, LIZ_STAND } from '../src/cat-quest.js';
 import { TROY, WITNESS_IDS, MURDERER, TESTIMONY } from '../src/murder-quest.js';
 
 /** Real host dialogue, quest frame triggers, combat, rewards, input and persisted spells.
- * Warps keep this bounded; the Node test separately walks Mop all the way back to Liz.
+ * Warps keep this bounded; the Node test separately walks Olive all the way back to Liz.
  */
 export async function runMagicDesktopChecks(h) {
   const checks=[];
@@ -126,11 +126,11 @@ export async function runMagicDesktopChecks(h) {
 
   h.unfreeze();talk(LIZ.id);choice('cat-yes');h.closeDialogue();
   h.warp({x:CAT.at.x+1.5,z:CAT.at.z});
-  await until(()=>h.catQuest.state.stage==='following','Mop notices the player and follows through the live frame');
+  await until(()=>h.catQuest.state.stage==='following','Olive notices the player and follows through the live frame');
   // Fixture relocation exercises the real home trigger without a minute of screen-time walking.
   const cat=h.npcById.get(CAT.id);cat.actor.group.position.set(LIZ_STAND.x+2,h.world.heightAt(LIZ_STAND.x+2,LIZ_STAND.z),LIZ_STAND.z);
   h.world.npcPositions[CAT.id]={x:LIZ_STAND.x+2,z:LIZ_STAND.z};h.warp(LIZ_STAND);
-  await until(()=>h.catQuest.state.stage==='home','Mop arriving in Liz’s clearing completes the escort');h.freeze();
+  await until(()=>h.catQuest.state.stage==='home','Olive arriving in Liz’s clearing completes the escort');h.freeze();
   talk(LIZ.id);choice('cat-purse');h.closeDialogue();check(h.catQuest.state.stage==='paid','Liz pays the chosen coin reward');
   check(h.save()&&h.reload(),'Liz’s paid quest reloads with its earned lesson still available');
   talk(LIZ.id);choice('cat-lesson');check(h.magic.view().selected==='summon-bees','Liz selects the new spell even when Fireball was selected');h.closeDialogue();

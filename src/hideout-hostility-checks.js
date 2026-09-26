@@ -20,7 +20,7 @@ export async function runHideoutHostilityChecks(h) {
     check(getMode() === 'playing' && combat.state.phase !== 'active' && !forestHideout.state.inspected,
       'The outer approach is safe without inspecting the camp');
     warp(CAT.at.x, CAT.at.z); await frames(30);
-    check(combat.state.phase !== 'active', 'Mop can be reached quietly on the camp outskirts');
+    check(combat.state.phase !== 'active', 'Olive can be reached quietly on the camp outskirts');
     warp(approach.x, approach.z); await frames(5);
     weapons.setCondition('simple-sword', 0);
     check(!weapons.profile().usable, 'The hostility test starts with an unusable sword');

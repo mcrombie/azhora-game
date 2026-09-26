@@ -276,7 +276,7 @@ export function createPuethScenery(kit) {
     const homeCollider = colliders.findLast(c => c.kind === 'house' && c.x === home.x && c.z === home.z);
     if (homeCollider) homeCollider.id = home.id;
     // Her name belongs on a modest letterbox beside the cottage approach.
-    // Keep the path, porch and Mop's return corridor open.
+    // Keep the path, porch and Olive's return corridor open.
     const mail=LIZ_MAILBOX, mailbox=new THREE.Group();mailbox.name='Liz mailbox';
     mailbox.position.set(mail.x,groundHeight(mail.x,mail.z),mail.z);mailbox.rotation.y=mail.yaw;homestead.add(mailbox);
     const mailPaint=material('#c7ac6d'),mailRoof=material(home.roof),mailDark=material('#364638');
@@ -300,7 +300,7 @@ export function createPuethScenery(kit) {
     colliders.push({x:mail.x,z:mail.z,r:.49,kind:'liz-mailbox'});
     wornPatch(LIZ_CLEARING.x, LIZ_CLEARING.z, 4.2, '#8f9068');
     // A narrow worn approach joins the existing trail. The east side of Liz's
-    // stand stays open so Mop can follow the player home from the goblin camp.
+    // stand stays open so Olive can follow the player home from the goblin camp.
     for (const path of LIZ_HOME_PATHS) {
       const vertices=[], indices=[];
       for(let section=1;section<path.length;section++) {
